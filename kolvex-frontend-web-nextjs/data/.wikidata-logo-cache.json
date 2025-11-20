@@ -1,0 +1,2517 @@
+{
+  "3M": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/1/15/3M_wordmark.svg",
+    "logoFile": "3M wordmark.svg",
+    "_wikidata": "Q159433"
+  },
+  "Adobe Inc.": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/e/e0/Adobe_logo_and_wordmark_%282017%29.svg",
+    "logoFile": "Adobe logo and wordmark (2017).svg",
+    "_wikidata": "Q11463"
+  },
+  "A. O. Smith": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/0/04/AO_Smith_logo.svg",
+    "logoFile": "AO Smith logo.svg",
+    "_wikidata": "Q4648219"
+  },
+  "Abbott Laboratories": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/2/2e/Abbott_Laboratories_2025_logo.svg",
+    "logoFile": "Abbott Laboratories 2025 logo.svg",
+    "_wikidata": "Q306764"
+  },
+  "Accenture": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/c/cd/Accenture.svg",
+    "logoFile": "Accenture.svg",
+    "_wikidata": "Q338825"
+  },
+  "AbbVie": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/c/cc/AbbVie_logo.svg",
+    "logoFile": "AbbVie logo.svg",
+    "_wikidata": "Q14662364"
+  },
+  "Air Products": {
+    "logoUrl": null,
+    "_wikidata": "Q29002336",
+    "_note": "no-P154"
+  },
+  "Aflac": {
+    "logoUrl": null,
+    "_wikidata": "Q26311",
+    "_note": "no-P154"
+  },
+  "AES Corporation": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/d/d0/AES_Corporation_logo.svg",
+    "logoFile": "AES Corporation logo.svg",
+    "_wikidata": "Q291508"
+  },
+  "Advanced Micro Devices": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/7/7c/AMD_Logo.svg",
+    "logoFile": "AMD Logo.svg",
+    "_wikidata": "Q128896"
+  },
+  "Agilent Technologies": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/8/8c/Agilent_Technologies-Logo.svg",
+    "logoFile": "Agilent Technologies-Logo.svg",
+    "_wikidata": "Q393762"
+  },
+  "Airbnb": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/6/69/Airbnb_Logo_B%C3%A9lo.svg",
+    "logoFile": "Airbnb Logo Bélo.svg",
+    "_wikidata": "Q63327"
+  },
+  "Alexandria Real Estate Equities": {
+    "logoUrl": null,
+    "_wikidata": "Q48739877",
+    "_note": "no-P154"
+  },
+  "Akamai Technologies": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/8/8b/Akamai_logo.svg",
+    "logoFile": "Akamai logo.svg",
+    "_wikidata": "Q415598"
+  },
+  "Albemarle Corporation": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/3/3e/Albermarle_Corporation.svg",
+    "logoFile": "Albermarle Corporation.svg",
+    "_wikidata": "Q127074"
+  },
+  "Allegion": {
+    "logoUrl": null,
+    "_wikidata": "Q16738121",
+    "_note": "no-P154"
+  },
+  "Align Technology": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/9/97/Align_Technology_logo.svg",
+    "logoFile": "Align Technology logo.svg",
+    "_wikidata": "Q30272258"
+  },
+  "Alliant Energy": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/6/6a/Alliant_Energy_logo.svg",
+    "logoFile": "Alliant Energy logo.svg",
+    "_wikidata": "Q4732492"
+  },
+  "Allstate": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/8/88/Allstate_wordmark.svg",
+    "logoFile": "Allstate wordmark.svg",
+    "_wikidata": "Q2645636"
+  },
+  "Altria": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/f/ff/Altria_Group.svg",
+    "logoFile": "Altria Group.svg",
+    "_wikidata": "Q445007"
+  },
+  "Amazon": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/a/a9/Amazon_logo.svg",
+    "logoFile": "Amazon logo.svg",
+    "_wikidata": "Q3884"
+  },
+  "Amcor": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/7/73/Amcor-Logo.svg",
+    "logoFile": "Amcor-Logo.svg",
+    "_wikidata": "Q460307"
+  },
+  "Alphabet Inc. (Class A)": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/7/7a/Alphabet_Inc_Logo_2015.svg",
+    "logoFile": "Alphabet Inc Logo 2015.svg",
+    "_wikidata": "Q20800404"
+  },
+  "Alphabet Inc. (Class C)": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/7/7a/Alphabet_Inc_Logo_2015.svg",
+    "logoFile": "Alphabet Inc Logo 2015.svg",
+    "_wikidata": "Q20800404"
+  },
+  "Ameren": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/8/8c/Ameren_logo.svg",
+    "logoFile": "Ameren logo.svg",
+    "_wikidata": "Q462984"
+  },
+  "American Electric Power": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/5/5f/AEP_logo.svg",
+    "logoFile": "AEP logo.svg",
+    "_wikidata": "Q464092"
+  },
+  "American International Group": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/b/b3/AIG_logo.svg",
+    "logoFile": "AIG logo.svg",
+    "_wikidata": "Q212235"
+  },
+  "American Express": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/3/30/American_Express_logo.svg",
+    "logoFile": "American Express logo.svg",
+    "_wikidata": "Q194360"
+  },
+  "American Tower": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/7/73/American_Tower_Corporation_logo.svg",
+    "logoFile": "American Tower Corporation logo.svg",
+    "_wikidata": "Q4745263"
+  },
+  "American Water Works": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/6/6c/American_Water_Works_Company_Logo.svg",
+    "logoFile": "American Water Works Company Logo.svg",
+    "_wikidata": "Q467238"
+  },
+  "Ameriprise Financial": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/0/08/Ameriprise_Financial_logo.svg",
+    "logoFile": "Ameriprise Financial logo.svg",
+    "_wikidata": "Q2843129"
+  },
+  "Ametek": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/f/f3/Ametek-Logo.svg",
+    "logoFile": "Ametek-Logo.svg",
+    "_wikidata": "Q470317"
+  },
+  "Amphenol": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/e/ee/Logo_Amphenol.svg",
+    "logoFile": "Logo Amphenol.svg",
+    "_wikidata": "Q474621"
+  },
+  "Amgen": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/a/ab/Amgen.svg",
+    "logoFile": "Amgen.svg",
+    "_wikidata": "Q470517"
+  },
+  "Analog Devices": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/8/86/Analog_Devices_Logo.svg",
+    "logoFile": "Analog Devices Logo.svg",
+    "_wikidata": "Q484930"
+  },
+  "APA Corporation": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/0/09/Apache_Corporation_Logo.svg",
+    "logoFile": "Apache Corporation Logo.svg",
+    "_wikidata": "Q119991"
+  },
+  "Aon plc": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/7/72/Aon_Corporation_logo.svg",
+    "logoFile": "Aon Corporation logo.svg",
+    "_wikidata": "Q739518"
+  },
+  "Apollo Global Management": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/8/8e/Apollo_Global_Management_logo.svg",
+    "logoFile": "Apollo Global Management logo.svg",
+    "_wikidata": "Q619121"
+  },
+  "Applied Materials": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/0/03/Applied_Materials_Logo.svg",
+    "logoFile": "Applied Materials Logo.svg",
+    "_wikidata": "Q621610"
+  },
+  "Apple Inc.": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/f/fa/Apple_logo_black.svg",
+    "logoFile": "Apple logo black.svg",
+    "_wikidata": "Q312"
+  },
+  "Arch Capital Group": {
+    "logoUrl": null,
+    "_wikidata": "Q28155430",
+    "_note": "no-P154"
+  },
+  "Aptiv": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/a/a5/Delphi.svg",
+    "logoFile": "Delphi.svg",
+    "_wikidata": "Q643626"
+  },
+  "Archer Daniels Midland": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/3/36/Archer_Daniels_Midland_logo.svg",
+    "logoFile": "Archer Daniels Midland logo.svg",
+    "_wikidata": "Q632694"
+  },
+  "Arista Networks": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/9/99/Arista-networks-logo.svg",
+    "logoFile": "Arista-networks-logo.svg",
+    "_wikidata": "Q2861324"
+  },
+  "Arthur J. Gallagher & Co.": {
+    "logoUrl": null,
+    "_wikidata": "Q4799191",
+    "_note": "no-P154"
+  },
+  "Assurant": {
+    "logoUrl": null,
+    "_wikidata": "Q4810399",
+    "_note": "no-P154"
+  },
+  "AT&T": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/3/31/AT%26T_logo_2016.svg",
+    "logoFile": "AT&T logo 2016.svg",
+    "_wikidata": "Q35476"
+  },
+  "Atmos Energy": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/f/fa/Atmos_Energy_Logo.svg",
+    "logoFile": "Atmos Energy Logo.svg",
+    "_wikidata": "Q4817084"
+  },
+  "Autodesk": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/4/41/Autodesk_Logo_2021.svg",
+    "logoFile": "Autodesk Logo 2021.svg",
+    "_wikidata": "Q628051"
+  },
+  "Automatic Data Processing": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/a/ad/Automatic-Data-Processing-Logo.svg",
+    "logoFile": "Automatic-Data-Processing-Logo.svg",
+    "_wikidata": "Q489080"
+  },
+  "AvalonBay Communities": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/3/39/Avalon-Bay-logo.jpg",
+    "logoFile": "Avalon-Bay-logo.jpg",
+    "_wikidata": "Q4827537"
+  },
+  "AutoZone": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/3/38/Logo_of_AutoZone.png",
+    "logoFile": "Logo of AutoZone.png",
+    "_wikidata": "Q4826087"
+  },
+  "Avery Dennison": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/7/7c/Avery_Dennison_logo_red.svg",
+    "logoFile": "Avery Dennison logo red.svg",
+    "_wikidata": "Q790650"
+  },
+  "Axon Enterprise": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/f/fd/AXON_Company_logo.svg",
+    "logoFile": "AXON Company logo.svg",
+    "_wikidata": "Q690604"
+  },
+  "Baker Hughes": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/6/69/Baker_Hughes_logo.svg",
+    "logoFile": "Baker Hughes logo.svg",
+    "_wikidata": "Q804353"
+  },
+  "Ball Corporation": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/9/99/Logo_Ball_Corporation.svg",
+    "logoFile": "Logo Ball Corporation.svg",
+    "_wikidata": "Q4034815"
+  },
+  "Bank of America": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/2/20/Bank_of_America_logo.svg",
+    "logoFile": "Bank of America logo.svg",
+    "_wikidata": "Q487907"
+  },
+  "Baxter International": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/d/d4/Baxter.svg",
+    "logoFile": "Baxter.svg",
+    "_wikidata": "Q761965"
+  },
+  "Becton Dickinson": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/f/fd/BD_%28company%29_logo.svg",
+    "logoFile": "BD (company) logo.svg",
+    "_wikidata": "Q813780"
+  },
+  "Berkshire Hathaway": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/6/6e/Berkshire-Hathaway-Logo.svg",
+    "logoFile": "Berkshire-Hathaway-Logo.svg",
+    "_wikidata": "Q217583"
+  },
+  "Bio-Techne": {
+    "logoUrl": null,
+    "_wikidata": "Q19873469",
+    "_note": "no-P154"
+  },
+  "Biogen": {
+    "logoUrl": null,
+    "_wikidata": "Q864338",
+    "_note": "no-P154"
+  },
+  "Best Buy": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/c/c4/Best_Buy_logo_2018.svg",
+    "logoFile": "Best Buy logo 2018.svg",
+    "_wikidata": "Q533415"
+  },
+  "BlackRock": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/8/85/BlackRock_wordmark.svg",
+    "logoFile": "BlackRock wordmark.svg",
+    "_wikidata": "Q219635"
+  },
+  "Block, Inc.": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/3/3d/Square%2C_Inc._logo.svg",
+    "logoFile": "Square, Inc. logo.svg",
+    "_wikidata": "Q110778747"
+  },
+  "Blackstone Inc.": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/5/5b/The_Blackstone_Group_logo_%282%29.svg",
+    "logoFile": "The Blackstone Group logo (2).svg",
+    "_wikidata": "Q880942"
+  },
+  "BNY Mellon": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/a/a2/BNY_Mellon.svg",
+    "logoFile": "BNY Mellon.svg",
+    "_wikidata": "Q589288"
+  },
+  "Boeing": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/4/4f/Boeing_full_logo.svg",
+    "logoFile": "Boeing full logo.svg",
+    "_wikidata": "Q66"
+  },
+  "Booking Holdings": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/e/ea/Logo_of_Booking_Holdings_Inc%2C%28lock_up%2C_stacked_with_Brands%2C_full_color%29.PNG",
+    "logoFile": "Logo of Booking Holdings Inc,(lock up, stacked with Brands, full color).PNG",
+    "_wikidata": "Q18674747"
+  },
+  "Boston Scientific": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/0/02/Boston_Scientific_Logo.svg",
+    "logoFile": "Boston Scientific Logo.svg",
+    "_wikidata": "Q894585"
+  },
+  "Broadridge Financial Solutions": {
+    "logoUrl": null,
+    "_wikidata": "Q4972280",
+    "_note": "no-P154"
+  },
+  "Broadcom": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/4/46/Avago_Technologies_logo.svg",
+    "logoFile": "Avago Technologies logo.svg",
+    "_wikidata": "Q790060"
+  },
+  "Brown & Brown": {
+    "logoUrl": null,
+    "_wikidata": "Q4976010",
+    "_note": "no-P154"
+  },
+  "Bristol Myers Squibb": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/c/c6/Bristol-Myers_Squibb_logo_%282020%29.svg",
+    "logoFile": "Bristol-Myers Squibb logo (2020).svg",
+    "_wikidata": "Q266423"
+  },
+  "Brown–Forman": {
+    "logoUrl": null,
+    "_wikidata": "Q392221",
+    "_note": "no-P154"
+  },
+  "Builders FirstSource": {
+    "logoUrl": null,
+    "_wikidata": "Q27686100",
+    "_note": "no-P154"
+  },
+  "Caesars Entertainment": {
+    "logoUrl": null,
+    "_wikidata": "Q18636524",
+    "_note": "no-P154"
+  },
+  "C.H. Robinson": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/3/3f/C._H._Robinson_logo.svg",
+    "logoFile": "C. H. Robinson logo.svg",
+    "_wikidata": "Q931200"
+  },
+  "Cadence Design Systems": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/4/48/Cadence-Logo.svg",
+    "logoFile": "Cadence-Logo.svg",
+    "_wikidata": "Q608776"
+  },
+  "Camden Property Trust": {
+    "logoUrl": null,
+    "_wikidata": "Q5025803",
+    "_note": "no-P154"
+  },
+  "Bunge Global": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/0/0c/Bunge_Limited_Logo.svg",
+    "logoFile": "Bunge Limited Logo.svg",
+    "_wikidata": "Q1009458"
+  },
+  "BXP, Inc.": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/b/b2/Bxp_boston_logo.png",
+    "logoFile": "Bxp boston logo.png",
+    "_wikidata": "Q4844439"
+  },
+  "Capital One": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/9/98/Capital_One_logo.svg",
+    "logoFile": "Capital One logo.svg",
+    "_wikidata": "Q1034654"
+  },
+  "Carnival": {
+    "logoUrl": null,
+    "_wikidata": "Q4618",
+    "_note": "no-P154"
+  },
+  "Cardinal Health": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/e/e1/Cardinal_Health_Logo.svg",
+    "logoFile": "Cardinal Health Logo.svg",
+    "_wikidata": "Q902397"
+  },
+  "CarMax": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/b/bd/CarMax_Logo.svg",
+    "logoFile": "CarMax Logo.svg",
+    "_wikidata": "Q5037190"
+  },
+  "Carrier Global": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/8/8f/Logo_of_the_Carrier_Corporation.svg",
+    "logoFile": "Logo of the Carrier Corporation.svg",
+    "_wikidata": "Q731912"
+  },
+  "Campbell's Company (The)": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/e/e2/Campbell%27s_2021.svg",
+    "logoFile": "Campbell's 2021.svg",
+    "_wikidata": "Q1030544"
+  },
+  "Cboe Global Markets": {
+    "logoUrl": null,
+    "_wikidata": "Q30635731",
+    "_note": "no-P154"
+  },
+  "Caterpillar Inc.": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/d/d0/Caterpillar_logo.svg",
+    "logoFile": "Caterpillar logo.svg",
+    "_wikidata": "Q459965"
+  },
+  "CBRE Group": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/2/25/CBRE_Group_logo_%28till_2021%29.svg",
+    "logoFile": "CBRE Group logo (till 2021).svg",
+    "_wikidata": "Q1023013"
+  },
+  "CDW Corporation": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/b/be/CDW_Logo.svg",
+    "logoFile": "CDW Logo.svg",
+    "_wikidata": "Q1023155"
+  },
+  "Cencora": {
+    "logoUrl": null,
+    "_wikidata": "Q118072148",
+    "_note": "no-P154"
+  },
+  "Centene Corporation": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/b/bb/Centene_Corporation_Logo.svg",
+    "logoFile": "Centene Corporation Logo.svg",
+    "_wikidata": "Q5059102"
+  },
+  "CenterPoint Energy": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/0/06/CenterPoint_Energy_logo.svg",
+    "logoFile": "CenterPoint Energy logo.svg",
+    "_wikidata": "Q1053560"
+  },
+  "CF Industries": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/7/78/CF_Industries_New_Logo.svg",
+    "logoFile": "CF Industries New Logo.svg",
+    "_wikidata": "Q905806"
+  },
+  "Charles River Laboratories": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/3/36/Charles_River_Laboratories_Logo.svg",
+    "logoFile": "Charles River Laboratories Logo.svg",
+    "_wikidata": "Q5082076"
+  },
+  "Charter Communications": {
+    "logoUrl": null,
+    "_wikidata": "Q16910938",
+    "_note": "no-P154"
+  },
+  "Charles Schwab Corporation": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/4/4b/Charles_Schwab_Corporation_logo.svg",
+    "logoFile": "Charles Schwab Corporation logo.svg",
+    "_wikidata": "Q1066028"
+  },
+  "Chipotle Mexican Grill": {
+    "logoUrl": null,
+    "_wikidata": "Q465751",
+    "_note": "no-P154"
+  },
+  "Chevron Corporation": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/8/86/Chevron_Logo.svg",
+    "logoFile": "Chevron Logo.svg",
+    "_wikidata": "Q319642"
+  },
+  "Church & Dwight": {
+    "logoUrl": null,
+    "_wikidata": "Q5116536",
+    "_note": "no-P154"
+  },
+  "Cigna": {
+    "logoUrl": null,
+    "_wikidata": "Q37201188",
+    "_note": "no-P154"
+  },
+  "Chubb Limited": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/4/48/Chubb-Limited-logo.svg",
+    "logoFile": "Chubb-Limited-logo.svg",
+    "_wikidata": "Q1089060"
+  },
+  "Cincinnati Financial": {
+    "logoUrl": null,
+    "_wikidata": "Q5120253",
+    "_note": "no-P154"
+  },
+  "Cintas": {
+    "logoUrl": null,
+    "_wikidata": "Q36951779",
+    "_note": "no-P154"
+  },
+  "Citigroup": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/1/1b/Citi.svg",
+    "logoFile": "Citi.svg",
+    "_wikidata": "Q219508"
+  },
+  "Cisco": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/6/64/Cisco_logo.svg",
+    "logoFile": "Cisco logo.svg",
+    "_wikidata": "Q173395"
+  },
+  "Citizens Financial Group": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/9/9c/Citizens_Financial_Group_logo.svg",
+    "logoFile": "Citizens Financial Group logo.svg",
+    "_wikidata": "Q5122694"
+  },
+  "Clorox": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/3/34/The_Clorox_Company_logo.svg",
+    "logoFile": "The Clorox Company logo.svg",
+    "_wikidata": "Q910368"
+  },
+  "CME Group": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/f/f0/CME_Group_Logo.svg",
+    "logoFile": "CME Group Logo.svg",
+    "_wikidata": "Q1023876"
+  },
+  "CMS Energy": {
+    "logoUrl": null,
+    "_wikidata": "Q5013012",
+    "_note": "no-P154"
+  },
+  "Cognizant": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/6/6f/Cognizant_Technology_Solutions_-_Kolkata_2011-08-29_4824.JPG",
+    "logoFile": "Cognizant Technology Solutions - Kolkata 2011-08-29 4824.JPG",
+    "_wikidata": "Q1107035"
+  },
+  "Coinbase": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/1/1a/Coinbase.svg",
+    "logoFile": "Coinbase.svg",
+    "_wikidata": "Q16972754"
+  },
+  "Colgate-Palmolive": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/8/86/Colgate-Palmolive_%282025%29.svg",
+    "logoFile": "Colgate-Palmolive (2025).svg",
+    "_wikidata": "Q609466"
+  },
+  "Conagra Brands": {
+    "logoUrl": null,
+    "_wikidata": "Q1123399",
+    "_note": "no-P154"
+  },
+  "Comcast": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/8/87/Comcast.svg",
+    "logoFile": "Comcast.svg",
+    "_wikidata": "Q1113804"
+  },
+  "Coca-Cola Company (The)": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/0/09/The_Coca-Cola_Company_%282020%29.svg",
+    "logoFile": "The Coca-Cola Company (2020).svg",
+    "_wikidata": "Q3295867"
+  },
+  "Constellation Energy": {
+    "logoUrl": null,
+    "_wikidata": "Q259195",
+    "_note": "no-P154"
+  },
+  "Constellation Brands": {
+    "logoUrl": null,
+    "_wikidata": "Q1128160",
+    "_note": "no-P154"
+  },
+  "ConocoPhillips": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/0/0c/ConocoPhillips_Logo.svg",
+    "logoFile": "ConocoPhillips Logo.svg",
+    "_wikidata": "Q214763"
+  },
+  "Consolidated Edison": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/0/0c/ConEd_logo.svg",
+    "logoFile": "ConEd logo.svg",
+    "_wikidata": "Q1127536"
+  },
+  "Copart": {
+    "logoUrl": null,
+    "_wikidata": "Q16951448",
+    "_note": "no-P154"
+  },
+  "Corning Inc.": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/6/63/Corning_Incorporated_Logo.svg",
+    "logoFile": "Corning Incorporated Logo.svg",
+    "_wikidata": "Q5842736"
+  },
+  "Corpay": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/0/07/The_logo_of_Fleetcor.png",
+    "logoFile": "The logo of Fleetcor.png",
+    "_wikidata": "Q16838618"
+  },
+  "Cooper Companies (The)": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/e/ee/Cooper_companies_logo.png",
+    "logoFile": "Cooper companies logo.png",
+    "_wikidata": "Q1129792"
+  },
+  "Corteva": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/f/f0/Corteva_logo.svg",
+    "logoFile": "Corteva logo.svg",
+    "_wikidata": "Q63197674"
+  },
+  "CoStar Group": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/1/17/CoStar_Group_%2853819751837%29.jpg",
+    "logoFile": "CoStar Group (53819751837).jpg",
+    "_wikidata": "Q16988748"
+  },
+  "Costco": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/5/59/Costco_Wholesale_logo_2010-10-26.svg",
+    "logoFile": "Costco Wholesale logo 2010-10-26.svg",
+    "_wikidata": "Q715583"
+  },
+  "Coterra": {
+    "logoUrl": null,
+    "_wikidata": "Q4035714",
+    "_note": "no-P154"
+  },
+  "Cummins": {
+    "logoUrl": null,
+    "_wikidata": "Q16865944",
+    "_note": "no-P154"
+  },
+  "CrowdStrike": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/4/4f/CrowdStrike_logo.svg",
+    "logoFile": "CrowdStrike logo.svg",
+    "_wikidata": "Q24890758"
+  },
+  "Crown Castle": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/5/5d/Crown_Castle_Logo.svg",
+    "logoFile": "Crown Castle Logo.svg",
+    "_wikidata": "Q5189320"
+  },
+  "CSX Corporation": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/f/fe/CSX_transp_logo.svg",
+    "logoFile": "CSX transp logo.svg",
+    "_wikidata": "Q1024454"
+  },
+  "CVS Health": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/d/df/CVS_Health_Logo.svg",
+    "logoFile": "CVS Health Logo.svg",
+    "_wikidata": "Q624375"
+  },
+  "Darden Restaurants": {
+    "logoUrl": null,
+    "_wikidata": "Q742196",
+    "_note": "no-P154"
+  },
+  "Datadog": {
+    "logoUrl": null,
+    "_wikidata": "Q16248637",
+    "_note": "no-P154"
+  },
+  "Danaher Corporation": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/d/d8/Danaher_Corporation_logo.svg",
+    "logoFile": "Danaher Corporation logo.svg",
+    "_wikidata": "Q1159256"
+  },
+  "DaVita": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/f/f3/DaVita_logo.svg",
+    "logoFile": "DaVita logo.svg",
+    "_wikidata": "Q5207184"
+  },
+  "Dayforce": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/5/5d/Ceridian_wordmark.svg",
+    "logoFile": "Ceridian wordmark.svg",
+    "_wikidata": "Q5064245"
+  },
+  "Deckers Brands": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/5/5c/Deckers_Brands_logo.png",
+    "logoFile": "Deckers Brands logo.png",
+    "_wikidata": "Q1181953"
+  },
+  "Deere & Company": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/1/15/John_Deere_text_only.png",
+    "logoFile": "John Deere text only.png",
+    "_wikidata": "Q496302"
+  },
+  "Dell Technologies": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/5/56/Dell_Technologies_logo.svg",
+    "logoFile": "Dell Technologies logo.svg",
+    "_wikidata": "Q27500963"
+  },
+  "Delta Air Lines": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/d/d1/Delta_logo.svg",
+    "logoFile": "Delta logo.svg",
+    "_wikidata": "Q188920"
+  },
+  "Dexcom": {
+    "logoUrl": null,
+    "_wikidata": "Q15109865",
+    "_note": "no-P154"
+  },
+  "Devon Energy": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/6/67/Devon-Energy-Logo.svg",
+    "logoFile": "Devon-Energy-Logo.svg",
+    "_wikidata": "Q1206980"
+  },
+  "Diamondback Energy": {
+    "logoUrl": null,
+    "_wikidata": "Q65091423",
+    "_note": "no-P154"
+  },
+  "Digital Realty": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/f/f2/Digital_Realty_TM_Brandmark_RGB_Black.svg",
+    "logoFile": "Digital Realty TM Brandmark RGB Black.svg",
+    "_wikidata": "Q5275969"
+  },
+  "Dollar Tree": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/c/c2/Dollar_Tree_logo.svg",
+    "logoFile": "Dollar Tree logo.svg",
+    "_wikidata": "Q5289230"
+  },
+  "Domino's": {
+    "logoUrl": null,
+    "_wikidata": "Q111180916",
+    "_note": "no-P154"
+  },
+  "Dollar General": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/0/05/Dollar_General_logo.svg",
+    "logoFile": "Dollar General logo.svg",
+    "_wikidata": "Q145168"
+  },
+  "Dominion Energy": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/b/b8/Dominion_Energy_logo.svg",
+    "logoFile": "Dominion Energy logo.svg",
+    "_wikidata": "Q677464"
+  },
+  "DoorDash": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/6/6a/DoorDash_Logo.svg",
+    "logoFile": "DoorDash Logo.svg",
+    "_wikidata": "Q20714323"
+  },
+  "Dow Inc.": {
+    "logoUrl": null,
+    "_wikidata": "Q62739842",
+    "_note": "no-P154"
+  },
+  "Dover Corporation": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/a/ae/Dover_Corporation_logo.png",
+    "logoFile": "Dover Corporation logo.png",
+    "_wikidata": "Q16974527"
+  },
+  "D. R. Horton": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/9/93/D._R._Horton_logo.svg",
+    "logoFile": "D. R. Horton logo.svg",
+    "_wikidata": "Q5203782"
+  },
+  "DTE Energy": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/0/07/DTE_Logo_Blue.svg",
+    "logoFile": "DTE Logo Blue.svg",
+    "_wikidata": "Q5206232"
+  },
+  "Duke Energy": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/2/2e/Duke_Energy_logo.svg",
+    "logoFile": "Duke Energy logo.svg",
+    "_wikidata": "Q1264404"
+  },
+  "DuPont": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/a/a3/DuPont_logo.svg",
+    "logoFile": "DuPont logo.svg",
+    "_wikidata": "Q221062"
+  },
+  "Eastman Chemical Company": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/1/16/Eastman_Chemical_Company_logo.svg",
+    "logoFile": "Eastman Chemical Company logo.svg",
+    "_wikidata": "Q899022"
+  },
+  "Eaton Corporation": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/d/d8/Eaton_Corporation_Logo.svg",
+    "logoFile": "Eaton Corporation Logo.svg",
+    "_wikidata": "Q48872"
+  },
+  "eBay Inc.": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/1/1b/EBay_logo.svg",
+    "logoFile": "EBay logo.svg",
+    "_wikidata": "Q58024"
+  },
+  "Ecolab": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/2/26/Ecolab.svg",
+    "logoFile": "Ecolab.svg",
+    "_wikidata": "Q1282031"
+  },
+  "Edison International": {
+    "logoUrl": null,
+    "_wikidata": "Q662095",
+    "_note": "no-P154"
+  },
+  "Edwards Lifesciences": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/e/e9/Edwards_Lifesciences.svg",
+    "logoFile": "Edwards Lifesciences.svg",
+    "_wikidata": "Q16966841"
+  },
+  "Elevance Health": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/4/4b/WellPoint_logo.svg",
+    "logoFile": "WellPoint logo.svg",
+    "_wikidata": "Q677488"
+  },
+  "Emerson Electric": {
+    "logoUrl": null,
+    "_wikidata": "Q1335585",
+    "_note": "no-P154"
+  },
+  "Electronic Arts": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/2/23/Electronic_Arts_historical_logo_80s.svg",
+    "logoFile": "Electronic Arts historical logo 80s.svg",
+    "_wikidata": "Q173941"
+  },
+  "Entergy": {
+    "logoUrl": null,
+    "_wikidata": "Q1344587",
+    "_note": "no-P154"
+  },
+  "Enphase Energy": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/2/2d/Enphase_logo.svg",
+    "logoFile": "Enphase logo.svg",
+    "_wikidata": "Q17012234"
+  },
+  "EOG Resources": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/c/c7/EOG_Resources_logo.svg",
+    "logoFile": "EOG Resources logo.svg",
+    "_wikidata": "Q1275577"
+  },
+  "EPAM Systems": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/7/72/Effective_Programming_for_America_logo.svg",
+    "logoFile": "Effective Programming for America logo.svg",
+    "_wikidata": "Q1275613"
+  },
+  "Equifax": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/2/24/Equifax.svg",
+    "logoFile": "Equifax.svg",
+    "_wikidata": "Q5384453"
+  },
+  "Equinix": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/f/f7/Equinix_logo.svg",
+    "logoFile": "Equinix logo.svg",
+    "_wikidata": "Q851641"
+  },
+  "Equity Residential": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/1/1f/Equity_Residential_logo.svg",
+    "logoFile": "Equity Residential logo.svg",
+    "_wikidata": "Q187740"
+  },
+  "EQT Corporation": {
+    "logoUrl": null,
+    "_wikidata": "Q5323987",
+    "_note": "no-P154"
+  },
+  "Erie Indemnity": {
+    "logoUrl": null,
+    "_wikidata": "Q106222020",
+    "_note": "no-P154"
+  },
+  "Essex Property Trust": {
+    "logoUrl": null,
+    "_wikidata": "Q134703255",
+    "_note": "no-P154"
+  },
+  "Eversource Energy": {
+    "logoUrl": null,
+    "_wikidata": "Q3344199",
+    "_note": "no-P154"
+  },
+  "Evergy": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/e/e1/Evergy_logo.svg",
+    "logoFile": "Evergy logo.svg",
+    "_wikidata": "Q7987107"
+  },
+  "Everest Group": {
+    "logoUrl": null,
+    "_wikidata": "Q1381973",
+    "_note": "no-P154"
+  },
+  "Exelon": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/5/50/Exelon_logo.svg",
+    "logoFile": "Exelon logo.svg",
+    "_wikidata": "Q1383669"
+  },
+  "Expand Energy": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/6/60/Chesapeake_Energy_logo.svg",
+    "logoFile": "Chesapeake Energy logo.svg",
+    "_wikidata": "Q2962826"
+  },
+  "Estée Lauder Companies (The)": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/0/03/Est%C3%A9e_Lauder_Companies_logo.svg",
+    "logoFile": "Estée Lauder Companies logo.svg",
+    "_wikidata": "Q1260606"
+  },
+  "Expedia Group": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/4/42/Expedia_Inc._logo.svg",
+    "logoFile": "Expedia Inc. logo.svg",
+    "_wikidata": "Q8085893"
+  },
+  "Expeditors International": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/f/f9/Expeditors_logo.svg",
+    "logoFile": "Expeditors logo.svg",
+    "_wikidata": "Q1384324"
+  },
+  "Extra Space Storage": {
+    "logoUrl": null,
+    "_wikidata": "Q5422162",
+    "_note": "no-P154"
+  },
+  "ExxonMobil": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/1/18/Exxon_Mobil_Logo.svg",
+    "logoFile": "Exxon Mobil Logo.svg",
+    "_wikidata": "Q156238"
+  },
+  "F5, Inc.": {
+    "logoUrl": null,
+    "_wikidata": "Q3029296",
+    "_note": "no-P154"
+  },
+  "FactSet": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/4/41/FactSet_wordmark.svg",
+    "logoFile": "FactSet wordmark.svg",
+    "_wikidata": "Q1885491"
+  },
+  "Fair Isaac": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/0/09/FICO_logo_blue_2019.png",
+    "logoFile": "FICO logo blue 2019.png",
+    "_wikidata": "Q1392999"
+  },
+  "Federal Realty Investment Trust": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/a/a1/Federal_Realty_Investment_Trust_logo.svg",
+    "logoFile": "Federal Realty Investment Trust logo.svg",
+    "_wikidata": "Q27988152"
+  },
+  "Fastenal": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/2/21/Fastenal_logo.svg",
+    "logoFile": "Fastenal logo.svg",
+    "_wikidata": "Q3067119"
+  },
+  "FedEx": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/b/b9/FedEx_Corporation_-_2016_Logo.svg",
+    "logoFile": "FedEx Corporation - 2016 Logo.svg",
+    "_wikidata": "Q459477"
+  },
+  "Fidelity National Information Services": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/8/83/FIS_logo.svg",
+    "logoFile": "FIS logo.svg",
+    "_wikidata": "Q1411295"
+  },
+  "Fifth Third Bancorp": {
+    "logoUrl": null,
+    "_wikidata": "Q130624258",
+    "_note": "no-P154"
+  },
+  "First Solar": {
+    "logoUrl": null,
+    "_wikidata": "Q1138888",
+    "_note": "no-P154"
+  },
+  "FirstEnergy": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/a/a4/FirstEnergy_Logo.svg",
+    "logoFile": "FirstEnergy Logo.svg",
+    "_wikidata": "Q1419248"
+  },
+  "Fiserv": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/0/00/Fiserv_Logo.svg",
+    "logoFile": "Fiserv Logo.svg",
+    "_wikidata": "Q1420513"
+  },
+  "Ford Motor Company": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/3/3e/Ford_logo_flat.svg",
+    "logoFile": "Ford logo flat.svg",
+    "_wikidata": "Q44294"
+  },
+  "Fortinet": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/6/62/Fortinet_logo.svg",
+    "logoFile": "Fortinet logo.svg",
+    "_wikidata": "Q2749364"
+  },
+  "Fortive": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/1/19/Fortive_Logo.svg",
+    "logoFile": "Fortive Logo.svg",
+    "_wikidata": "Q27919383"
+  },
+  "Franklin Resources": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/2/27/Logo_Ben_Head.jpg",
+    "logoFile": "Logo Ben Head.jpg",
+    "_wikidata": "Q744683"
+  },
+  "Fox Corporation (Class A)": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/2/25/FOX_wordmark.svg",
+    "logoFile": "FOX wordmark.svg",
+    "_wikidata": "Q60238941"
+  },
+  "Gartner": {
+    "logoUrl": null,
+    "_wikidata": "Q28837914",
+    "_note": "no-P154"
+  },
+  "Freeport-McMoRan": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/2/2b/Freeport_McMoRan.png",
+    "logoFile": "Freeport McMoRan.png",
+    "_wikidata": "Q1453620"
+  },
+  "Garmin": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/a/a6/Garmin_logo_2006.svg",
+    "logoFile": "Garmin logo 2006.svg",
+    "_wikidata": "Q658789"
+  },
+  "Fox Corporation (Class B)": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/2/25/FOX_wordmark.svg",
+    "logoFile": "FOX wordmark.svg",
+    "_wikidata": "Q60238941"
+  },
+  "GE Aerospace": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/2/2e/GE_Aerospace_logo.svg",
+    "logoFile": "GE Aerospace logo.svg",
+    "_wikidata": "Q1485061"
+  },
+  "GE HealthCare": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/b/bc/GE_HealthCare_logo_2023.svg",
+    "logoFile": "GE HealthCare logo 2023.svg",
+    "_wikidata": "Q1152374"
+  },
+  "GE Vernova": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/6/65/GE_Vernova_logo.svg",
+    "logoFile": "GE Vernova logo.svg",
+    "_wikidata": "Q118957699"
+  },
+  "Gen Digital": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/b/b0/Logo_NortonLifeLock.svg",
+    "logoFile": "Logo NortonLifeLock.svg",
+    "_wikidata": "Q677085"
+  },
+  "Generac": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/e/ee/Generac_Power_Systems_logo.png",
+    "logoFile": "Generac Power Systems logo.png",
+    "_wikidata": "Q5531627"
+  },
+  "General Dynamics": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/7/71/General-Dynamics-Logo.svg",
+    "logoFile": "General-Dynamics-Logo.svg",
+    "_wikidata": "Q502940"
+  },
+  "General Mills": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/0/00/General_Mills_logo.svg",
+    "logoFile": "General Mills logo.svg",
+    "_wikidata": "Q629998"
+  },
+  "Gilead Sciences": {
+    "logoUrl": null,
+    "_wikidata": "Q663596",
+    "_note": "no-P154"
+  },
+  "General Motors": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/5/57/General_motors_logo_with_wordmark.svg",
+    "logoFile": "General motors logo with wordmark.svg",
+    "_wikidata": "Q81965"
+  },
+  "Genuine Parts Company": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/e/eb/Genuine_Parts_Company_logo.svg",
+    "logoFile": "Genuine Parts Company logo.svg",
+    "_wikidata": "Q5533818"
+  },
+  "Global Payments": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/1/10/Global_Payments_Inc._logo.svg",
+    "logoFile": "Global Payments Inc. logo.svg",
+    "_wikidata": "Q5570544"
+  },
+  "Globe Life": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/a/a9/Globe_Life_logo.svg",
+    "logoFile": "Globe Life logo.svg",
+    "_wikidata": "Q7825574"
+  },
+  "GoDaddy": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/f/fa/GoDaddy_logo.svg",
+    "logoFile": "GoDaddy logo.svg",
+    "_wikidata": "Q1416215"
+  },
+  "Halliburton": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/8/8b/Halliburton_logo.svg",
+    "logoFile": "Halliburton logo.svg",
+    "_wikidata": "Q656165"
+  },
+  "Goldman Sachs": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/1/1d/Goldman_Sachs_logo.svg",
+    "logoFile": "Goldman Sachs logo.svg",
+    "_wikidata": "Q193326"
+  },
+  "Hasbro": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/e/ea/Hasbro_logo.svg",
+    "logoFile": "Hasbro logo.svg",
+    "_wikidata": "Q501476"
+  },
+  "HCA Healthcare": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/6/6c/2019_HCA_logo.svg",
+    "logoFile": "2019 HCA logo.svg",
+    "_wikidata": "Q1630431"
+  },
+  "Hartford (The)": {
+    "logoUrl": null,
+    "_wikidata": "Q33486",
+    "_note": "no-P154"
+  },
+  "Healthpeak Properties": {
+    "logoUrl": null,
+    "_wikidata": "Q16975567",
+    "_note": "no-P154"
+  },
+  "Henry Schein": {
+    "logoUrl": null,
+    "_wikidata": "Q905086",
+    "_note": "no-P154"
+  },
+  "Hewlett Packard Enterprise": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/e/e7/Hewlett_Packard_Enterprise_logo_2025.svg",
+    "logoFile": "Hewlett Packard Enterprise logo 2025.svg",
+    "_wikidata": "Q19923099"
+  },
+  "Hilton Worldwide": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/8/8a/Hilton_Worldwide_logo.svg",
+    "logoFile": "Hilton Worldwide logo.svg",
+    "_wikidata": "Q1057464"
+  },
+  "Honeywell": {
+    "logoUrl": null,
+    "_wikidata": "Q37147733",
+    "_note": "no-P154"
+  },
+  "Hologic": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/2/27/Hologic_logo.svg",
+    "logoFile": "Hologic logo.svg",
+    "_wikidata": "Q5884072"
+  },
+  "Hershey Company (The)": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/8/81/HersheyCo.svg",
+    "logoFile": "HersheyCo.svg",
+    "_wikidata": "Q1056637"
+  },
+  "Hormel Foods": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/3/34/Hormel_Foods_logo.png",
+    "logoFile": "Hormel Foods logo.png",
+    "_wikidata": "Q1454852"
+  },
+  "Home Depot (The)": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/5/5f/TheHomeDepot.svg",
+    "logoFile": "TheHomeDepot.svg",
+    "_wikidata": "Q864407"
+  },
+  "Howmet Aerospace": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/0/05/Howmet_Aerospace_logo.svg",
+    "logoFile": "Howmet Aerospace logo.svg",
+    "_wikidata": "Q25104597"
+  },
+  "Host Hotels & Resorts": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/d/d2/Logo_Host_Hotels_%26_Resorts.svg",
+    "logoFile": "Logo Host Hotels & Resorts.svg",
+    "_wikidata": "Q1630559"
+  },
+  "HP Inc.": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/0/05/HP_logo_2025.svg",
+    "logoFile": "HP logo 2025.svg",
+    "_wikidata": "Q21404084"
+  },
+  "Hubbell Incorporated": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/8/89/Hubbell.svg",
+    "logoFile": "Hubbell.svg",
+    "_wikidata": "Q21036456"
+  },
+  "Humana": {
+    "logoUrl": null,
+    "_wikidata": "Q37484541",
+    "_note": "no-P154"
+  },
+  "IDEX Corporation": {
+    "logoUrl": null,
+    "_wikidata": "Q5970002",
+    "_note": "no-P154"
+  },
+  "Huntington Ingalls Industries": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/b/b9/HII_logo.svg",
+    "logoFile": "HII logo.svg",
+    "_wikidata": "Q7257522"
+  },
+  "Huntington Bancshares": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/c/ca/Huntington_Bancshares_Inc._logo.svg",
+    "logoFile": "Huntington Bancshares Inc. logo.svg",
+    "_wikidata": "Q798819"
+  },
+  "IBM": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/5/51/IBM_logo.svg",
+    "logoFile": "IBM logo.svg",
+    "_wikidata": "Q37156"
+  },
+  "Idexx Laboratories": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/a/ac/IDEXX_Labs.svg",
+    "logoFile": "IDEXX Labs.svg",
+    "_wikidata": "Q1758392"
+  },
+  "Illinois Tool Works": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/f/fe/ITW.svg",
+    "logoFile": "ITW.svg",
+    "_wikidata": "Q1510378"
+  },
+  "Insulet Corporation": {
+    "logoUrl": null,
+    "_wikidata": "Q104480795",
+    "_note": "no-P154"
+  },
+  "Ingersoll Rand": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/a/a4/Ingersoll_Rand_logo.svg",
+    "logoFile": "Ingersoll Rand logo.svg",
+    "_wikidata": "Q1663044"
+  },
+  "Incyte": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/5/5a/Incyte_logo.svg",
+    "logoFile": "Incyte logo.svg",
+    "_wikidata": "Q6015591"
+  },
+  "Intercontinental Exchange": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/0/0f/Logo_of_the_IntercontinentalExchange.svg",
+    "logoFile": "Logo of the IntercontinentalExchange.svg",
+    "_wikidata": "Q841458"
+  },
+  "Intel": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/d/de/Intel_logo_%281968-2006%29.svg",
+    "logoFile": "Intel logo (1968-2006).svg",
+    "_wikidata": "Q248"
+  },
+  "International Flavors & Fragrances": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/d/dc/International-Flavors-%26-Fragrances-Logo.svg",
+    "logoFile": "International-Flavors-&-Fragrances-Logo.svg",
+    "_wikidata": "Q1666568"
+  },
+  "Intuit": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/5/57/Intuit_logo_2022.svg",
+    "logoFile": "Intuit logo 2022.svg",
+    "_wikidata": "Q1318848"
+  },
+  "Invesco": {
+    "logoUrl": null,
+    "_wikidata": "Q522617",
+    "_note": "no-P154"
+  },
+  "Intuitive Surgical": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/0/01/Intuitive_Surgical_logo.svg",
+    "logoFile": "Intuitive Surgical logo.svg",
+    "_wikidata": "Q2743863"
+  },
+  "Invitation Homes": {
+    "logoUrl": null,
+    "_wikidata": "Q85769855",
+    "_note": "no-P154"
+  },
+  "International Paper": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/6/6d/InternationalPaper_logo_2023.svg",
+    "logoFile": "InternationalPaper logo 2023.svg",
+    "_wikidata": "Q202972"
+  },
+  "Interpublic Group of Companies (The)": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/9/91/Interpublic_Group_of_Companies_logo.svg",
+    "logoFile": "Interpublic Group of Companies logo.svg",
+    "_wikidata": "Q1501630"
+  },
+  "IQVIA": {
+    "logoUrl": null,
+    "_wikidata": "Q1543633",
+    "_note": "no-P154"
+  },
+  "Iron Mountain": {
+    "logoUrl": null,
+    "_wikidata": "Q567814",
+    "_note": "no-P154"
+  },
+  "J.B. Hunt": {
+    "logoUrl": null,
+    "_wikidata": "Q4041705",
+    "_note": "no-P154"
+  },
+  "Jabil": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/3/38/Jabil_Circuit_Logo.svg",
+    "logoFile": "Jabil Circuit Logo.svg",
+    "_wikidata": "Q2171646"
+  },
+  "Jack Henry & Associates": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/d/df/Jack-henry-logo.svg",
+    "logoFile": "Jack-henry-logo.svg",
+    "_wikidata": "Q6113060"
+  },
+  "Jacobs Solutions": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/8/8e/Jacobs_Engineering_Group_2019_logo.svg",
+    "logoFile": "Jacobs Engineering Group 2019 logo.svg",
+    "_wikidata": "Q3157622"
+  },
+  "Johnson & Johnson": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/b/be/JNJ_Logo_New.svg",
+    "logoFile": "JNJ Logo New.svg",
+    "_wikidata": "Q333718"
+  },
+  "Johnson Controls": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/4/46/Johnson_Controls_old_logo.svg",
+    "logoFile": "Johnson Controls old logo.svg",
+    "_wikidata": "Q667865"
+  },
+  "JPMorgan Chase": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/0/07/J_P_Morgan_Chase_Logo_2008_1.svg",
+    "logoFile": "J P Morgan Chase Logo 2008 1.svg",
+    "_wikidata": "Q192314"
+  },
+  "Kellanova": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/5/59/Kellanova_logo.svg",
+    "logoFile": "Kellanova logo.svg",
+    "_wikidata": "Q856897"
+  },
+  "Kenvue": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/e/e1/Kenvue_logo.svg",
+    "logoFile": "Kenvue logo.svg",
+    "_wikidata": "Q118905792"
+  },
+  "Keurig Dr Pepper": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/3/35/Keurig_Dr_Pepper.svg",
+    "logoFile": "Keurig Dr Pepper.svg",
+    "_wikidata": "Q3116111"
+  },
+  "KeyCorp": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/d/d8/KeyBank.png",
+    "logoFile": "KeyBank.png",
+    "_wikidata": "Q1740314"
+  },
+  "Keysight Technologies": {
+    "logoUrl": null,
+    "_wikidata": "Q17551096",
+    "_note": "no-P154"
+  },
+  "Kimberly-Clark": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/8/88/Kimberly-Clark_logo.svg",
+    "logoFile": "Kimberly-Clark logo.svg",
+    "_wikidata": "Q1741634"
+  },
+  "Kinder Morgan": {
+    "logoUrl": null,
+    "_wikidata": "Q931032",
+    "_note": "no-P154"
+  },
+  "Kimco Realty": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/a/a6/Kimco_Logo.png",
+    "logoFile": "Kimco Logo.png",
+    "_wikidata": "Q6410043"
+  },
+  "KKR & Co.": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/e/e7/Kohlberg_Kravis_Roberts_%28logo%29.svg",
+    "logoFile": "Kohlberg Kravis Roberts (logo).svg",
+    "_wikidata": "Q1570773"
+  },
+  "KLA Corporation": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/0/08/KLA_Corp._logo.svg",
+    "logoFile": "KLA Corp. logo.svg",
+    "_wikidata": "Q624649"
+  },
+  "Kraft Heinz": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/5/55/KraftHeinz.svg",
+    "logoFile": "KraftHeinz.svg",
+    "_wikidata": "Q19681433"
+  },
+  "Kroger": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/6/69/Kroger_logo_%281961-2019%29.svg",
+    "logoFile": "Kroger logo (1961-2019).svg",
+    "_wikidata": "Q153417"
+  },
+  "L3Harris": {
+    "logoUrl": null,
+    "_wikidata": "Q30291091",
+    "_note": "no-P154"
+  },
+  "Labcorp": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/2/28/Labcorp_Logo_updated_12-2020.svg",
+    "logoFile": "Labcorp Logo updated 12-2020.svg",
+    "_wikidata": "Q6466630"
+  },
+  "Lam Research": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/6/68/Lam-Research-Logo.svg",
+    "logoFile": "Lam-Research-Logo.svg",
+    "_wikidata": "Q1342041"
+  },
+  "Las Vegas Sands": {
+    "logoUrl": null,
+    "_wikidata": "Q1506045",
+    "_note": "no-P154"
+  },
+  "Lamb Weston": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/2/20/Lamb_Weston_logo.svg",
+    "logoFile": "Lamb Weston logo.svg",
+    "_wikidata": "Q3216600"
+  },
+  "Lennar": {
+    "logoUrl": null,
+    "_wikidata": "Q19760064",
+    "_note": "no-P154"
+  },
+  "Leidos": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/3/38/Leidos_logo_2013.svg",
+    "logoFile": "Leidos logo 2013.svg",
+    "_wikidata": "Q502132"
+  },
+  "Lennox International": {
+    "logoUrl": null,
+    "_wikidata": "Q224751",
+    "_note": "no-P154"
+  },
+  "Live Nation Entertainment": {
+    "logoUrl": null,
+    "_wikidata": "Q1061903",
+    "_note": "no-P154"
+  },
+  "Linde plc": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/f/f4/TheLindeGroup-Logo.svg",
+    "logoFile": "TheLindeGroup-Logo.svg",
+    "_wikidata": "Q682759"
+  },
+  "LKQ Corporation": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/f/ff/LKQ_Corporation_logo.svg",
+    "logoFile": "LKQ Corporation logo.svg",
+    "_wikidata": "Q20711490"
+  },
+  "Lilly (Eli)": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/2/2b/Eli_Lilly_and_Company.svg",
+    "logoFile": "Eli Lilly and Company.svg",
+    "_wikidata": "Q632240"
+  },
+  "Loews Corporation": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/e/e0/Loews-Corporation-Logo.svg",
+    "logoFile": "Loews-Corporation-Logo.svg",
+    "_wikidata": "Q826526"
+  },
+  "Lockheed Martin": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/9/99/Lockheed_Martin_logo.svg",
+    "logoFile": "Lockheed Martin logo.svg",
+    "_wikidata": "Q7240"
+  },
+  "Lowe's": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/2/2c/Lowes_Companies_Logo.svg",
+    "logoFile": "Lowes Companies Logo.svg",
+    "_wikidata": "Q1373493"
+  },
+  "Lululemon Athletica": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/2/22/Lululemon_Athletica_logo.svg",
+    "logoFile": "Lululemon Athletica logo.svg",
+    "_wikidata": "Q6702957"
+  },
+  "LyondellBasell": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/6/6c/Logo_of_LyondellBasell_%282023%29.svg",
+    "logoFile": "Logo of LyondellBasell (2023).svg",
+    "_wikidata": "Q899255"
+  },
+  "MarketAxess": {
+    "logoUrl": null,
+    "_wikidata": "Q55622230",
+    "_note": "no-P154"
+  },
+  "M&T Bank": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/d/d6/M%26T_Bank_wordmark.svg",
+    "logoFile": "M&T Bank wordmark.svg",
+    "_wikidata": "Q3272257"
+  },
+  "Marathon Petroleum": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/b/bb/Marathon_Oil_Logo.svg",
+    "logoFile": "Marathon Oil Logo.svg",
+    "_wikidata": "Q458363"
+  },
+  "Marriott International": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/e/e7/Marriott_International.svg",
+    "logoFile": "Marriott International.svg",
+    "_wikidata": "Q1141173"
+  },
+  "Marsh McLennan": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/d/dc/Marsh_%26_McLennan_Companies.svg",
+    "logoFile": "Marsh & McLennan Companies.svg",
+    "_wikidata": "Q1786345"
+  },
+  "Martin Marietta Materials": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/4/4a/MLMcompanylogo.gif",
+    "logoFile": "MLMcompanylogo.gif",
+    "_wikidata": "Q6776123"
+  },
+  "Masco": {
+    "logoUrl": null,
+    "_wikidata": "Q37557797",
+    "_note": "no-P154"
+  },
+  "Match Group": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/1/1f/MG_Logo_Horizontal_LightBackground.png",
+    "logoFile": "MG Logo Horizontal LightBackground.png",
+    "_wikidata": "Q23133268"
+  },
+  "Mastercard": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/a/a4/Mastercard_2019_logo.svg",
+    "logoFile": "Mastercard 2019 logo.svg",
+    "_wikidata": "Q489921"
+  },
+  "McCormick & Company": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/e/ec/McCormick.svg",
+    "logoFile": "McCormick.svg",
+    "_wikidata": "Q1915049"
+  },
+  "McDonald's": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/c/ca/McDonald%27s_with_slogan_2020.svg",
+    "logoFile": "McDonald's with slogan 2020.svg",
+    "_wikidata": "Q38076"
+  },
+  "McKesson Corporation": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/9/93/Mck_logo_pos_col_rgb.svg",
+    "logoFile": "Mck logo pos col rgb.svg",
+    "_wikidata": "Q570473"
+  },
+  "Medtronic": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/2/2c/Medtronic_logo.svg",
+    "logoFile": "Medtronic logo.svg",
+    "_wikidata": "Q642189"
+  },
+  "Merck & Co.": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/9/94/Merck_Logo.svg",
+    "logoFile": "Merck Logo.svg",
+    "_wikidata": "Q247489"
+  },
+  "Meta Platforms": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/1/18/Facebook%2C_Inc._Logo_2019.svg",
+    "logoFile": "Facebook, Inc. Logo 2019.svg",
+    "_wikidata": "Q380"
+  },
+  "MetLife": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/c/c6/MetLife_logo.svg",
+    "logoFile": "MetLife logo.svg",
+    "_wikidata": "Q607131"
+  },
+  "MGM Resorts": {
+    "logoUrl": null,
+    "_wikidata": "Q568532",
+    "_note": "no-P154"
+  },
+  "Mettler Toledo": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/5/56/Mettler_Toledo.svg",
+    "logoFile": "Mettler Toledo.svg",
+    "_wikidata": "Q680186"
+  },
+  "Microchip Technology": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/c/ca/Microchip-Logo.svg",
+    "logoFile": "Microchip-Logo.svg",
+    "_wikidata": "Q1545076"
+  },
+  "Micron Technology": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/1/16/Micron_Technology_logo_2024.svg",
+    "logoFile": "Micron Technology logo 2024.svg",
+    "_wikidata": "Q1197548"
+  },
+  "Microsoft": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/9/96/Microsoft_logo_%282012%29.svg",
+    "logoFile": "Microsoft logo (2012).svg",
+    "_wikidata": "Q2283"
+  },
+  "Moderna": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/6/6a/Moderna_logo.svg",
+    "logoFile": "Moderna logo.svg",
+    "_wikidata": "Q17081612"
+  },
+  "Mohawk Industries": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/4/44/Mohawk_Industries_logo.svg",
+    "logoFile": "Mohawk Industries logo.svg",
+    "_wikidata": "Q6893780"
+  },
+  "Molina Healthcare": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/6/69/Molina_Healthcare_logo.svg",
+    "logoFile": "Molina Healthcare logo.svg",
+    "_wikidata": "Q6896175"
+  },
+  "Mid-America Apartment Communities": {
+    "logoUrl": null,
+    "_wikidata": "Q27988239",
+    "_note": "no-P154"
+  },
+  "Molson Coors Beverage Company": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/7/75/Molson_Coors_Beverage_Company_logo.svg",
+    "logoFile": "Molson Coors Beverage Company logo.svg",
+    "_wikidata": "Q3319685"
+  },
+  "Mondelez International": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/c/c7/Mondelez_international_2012_logo.svg",
+    "logoFile": "Mondelez international 2012 logo.svg",
+    "_wikidata": "Q12857502"
+  },
+  "Monster Beverage": {
+    "logoUrl": null,
+    "_wikidata": "Q1945295",
+    "_note": "no-P154"
+  },
+  "Monolithic Power Systems": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/2/28/Monolithic_Power_Systems_Logo.svg",
+    "logoFile": "Monolithic Power Systems Logo.svg",
+    "_wikidata": "Q22058448"
+  },
+  "Moody's Corporation": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/1/12/Moody%27s_new_logo.png",
+    "logoFile": "Moody's new logo.png",
+    "_wikidata": "Q675585"
+  },
+  "Morgan Stanley": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/3/34/Morgan_Stanley_Logo_1.svg",
+    "logoFile": "Morgan Stanley Logo 1.svg",
+    "_wikidata": "Q334204"
+  },
+  "Motorola Solutions": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/a/a5/Motorola_Solutions_Logo.svg",
+    "logoFile": "Motorola Solutions Logo.svg",
+    "_wikidata": "Q634815"
+  },
+  "Nasdaq, Inc.": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/8/87/NASDAQ_Logo.svg",
+    "logoFile": "NASDAQ Logo.svg",
+    "_wikidata": "Q1472929"
+  },
+  "MSCI Inc.": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/2/2f/MSCI_logo.svg",
+    "logoFile": "MSCI logo.svg",
+    "_wikidata": "Q768773"
+  },
+  "NetApp": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/9/9f/NetApp_logo.svg",
+    "logoFile": "NetApp logo.svg",
+    "_wikidata": "Q727883"
+  },
+  "Mosaic Company (The)": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/7/7b/Mosaic_Logo.svg",
+    "logoFile": "Mosaic Logo.svg",
+    "_wikidata": "Q7752327"
+  },
+  "Netflix": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/6/69/Netflix_logo.svg",
+    "logoFile": "Netflix logo.svg",
+    "_wikidata": "Q907311"
+  },
+  "Newmont": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/c/c7/Newmont-Mining-Logo.svg",
+    "logoFile": "Newmont-Mining-Logo.svg",
+    "_wikidata": "Q1785405"
+  },
+  "NextEra Energy": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/e/e0/NextEra_Energy_logo_%281%29.svg",
+    "logoFile": "NextEra Energy logo (1).svg",
+    "_wikidata": "Q967868"
+  },
+  "NiSource": {
+    "logoUrl": null,
+    "_wikidata": "Q1984481",
+    "_note": "no-P154"
+  },
+  "Nike, Inc.": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/a/a6/Logo_NIKE.svg",
+    "logoFile": "Logo NIKE.svg",
+    "_wikidata": "Q483915"
+  },
+  "News Corp (Class B)": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/5/55/News_Corp_logo_2013.svg",
+    "logoFile": "News Corp logo 2013.svg",
+    "_wikidata": "Q14289857"
+  },
+  "Nordson Corporation": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/4/49/Nordson_Corporation_Logo.svg",
+    "logoFile": "Nordson Corporation Logo.svg",
+    "_wikidata": "Q1998662"
+  },
+  "Norfolk Southern": {
+    "logoUrl": null,
+    "_wikidata": "Q20858163",
+    "_note": "no-P154"
+  },
+  "News Corp (Class A)": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/5/55/News_Corp_logo_2013.svg",
+    "logoFile": "News Corp logo 2013.svg",
+    "_wikidata": "Q14289857"
+  },
+  "Northern Trust": {
+    "logoUrl": null,
+    "_wikidata": "Q970695",
+    "_note": "no-P154"
+  },
+  "Northrop Grumman": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/3/36/Northrop_Grumman_logo_blue-on-clear_2020.svg",
+    "logoFile": "Northrop Grumman logo blue-on-clear 2020.svg",
+    "_wikidata": "Q329953"
+  },
+  "Norwegian Cruise Line Holdings": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/d/d6/NCLH_logo.png",
+    "logoFile": "NCLH logo.png",
+    "_wikidata": "Q60767471"
+  },
+  "NRG Energy": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/f/ff/Logo_NRG_Energy.svg",
+    "logoFile": "Logo NRG Energy.svg",
+    "_wikidata": "Q6955139"
+  },
+  "NVR, Inc.": {
+    "logoUrl": null,
+    "_wikidata": "Q6955706",
+    "_note": "no-P154"
+  },
+  "Nucor": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/a/ad/Nucor.svg",
+    "logoFile": "Nucor.svg",
+    "_wikidata": "Q1645081"
+  },
+  "Nvidia": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/a/a4/NVIDIA_logo.svg",
+    "logoFile": "NVIDIA logo.svg",
+    "_wikidata": "Q182477"
+  },
+  "NXP Semiconductors": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/5/50/NXP_Semiconductors_logo_2023.svg",
+    "logoFile": "NXP Semiconductors logo 2023.svg",
+    "_wikidata": "Q1155668"
+  },
+  "Old Dominion": {
+    "logoUrl": null,
+    "_wikidata": "Q20685018",
+    "_note": "no-P154"
+  },
+  "O’Reilly Automotive": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/a/a5/O%27Reilly_Auto_Parts_Logo.svg",
+    "logoFile": "O'Reilly Auto Parts Logo.svg",
+    "_wikidata": "Q7071951"
+  },
+  "Occidental Petroleum": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/3/37/Occidental-Petroleum-Logo.svg",
+    "logoFile": "Occidental-Petroleum-Logo.svg",
+    "_wikidata": "Q2013357"
+  },
+  "Omnicom Group": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/3/35/Omnicom.svg",
+    "logoFile": "Omnicom.svg",
+    "_wikidata": "Q1519267"
+  },
+  "ON Semiconductor": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/c/c5/Onsemi_logo_2021.svg",
+    "logoFile": "Onsemi logo 2021.svg",
+    "_wikidata": "Q1671509"
+  },
+  "Oneok": {
+    "logoUrl": null,
+    "_wikidata": "Q11074156",
+    "_note": "no-P154"
+  },
+  "Oracle Corporation": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/5/50/Oracle_logo.svg",
+    "logoFile": "Oracle logo.svg",
+    "_wikidata": "Q19900"
+  },
+  "Otis Worldwide": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/7/71/Otis_logo.SVG",
+    "logoFile": "Otis logo.SVG",
+    "_wikidata": "Q1134069"
+  },
+  "Packaging Corporation of America": {
+    "logoUrl": null,
+    "_wikidata": "Q16983334",
+    "_note": "no-P154"
+  },
+  "Paccar": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/2/28/PACCAR-logo.svg",
+    "logoFile": "PACCAR-logo.svg",
+    "_wikidata": "Q1477661"
+  },
+  "Palantir Technologies": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/1/13/Palantir_Technologies_logo.svg",
+    "logoFile": "Palantir Technologies logo.svg",
+    "_wikidata": "Q2047336"
+  },
+  "Palo Alto Networks": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/d/de/PaloAltoNetworks_2020_Logo.svg",
+    "logoFile": "PaloAltoNetworks 2020 Logo.svg",
+    "_wikidata": "Q7128508"
+  },
+  "Paramount Skydance Corporation": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/c/ce/Paramount_Skydance_Corporation_Logo.svg",
+    "logoFile": "Paramount Skydance Corporation Logo.svg",
+    "_wikidata": "Q135485147"
+  },
+  "Parker Hannifin": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/9/9e/Parker_Hannifin.svg",
+    "logoFile": "Parker Hannifin.svg",
+    "_wikidata": "Q1470619"
+  },
+  "Paychex": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/6/6b/Paychex_logo.svg",
+    "logoFile": "Paychex logo.svg",
+    "_wikidata": "Q946080"
+  },
+  "Paycom": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/2/2e/Paycom_logo_%282015%29.png",
+    "logoFile": "Paycom logo (2015).png",
+    "_wikidata": "Q17084959"
+  },
+  "PayPal": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/6/64/Paypal.svg",
+    "logoFile": "Paypal.svg",
+    "_wikidata": "Q483959"
+  },
+  "Pentair": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/6/68/Pentair_Schroff_Logo.svg",
+    "logoFile": "Pentair Schroff Logo.svg",
+    "_wikidata": "Q7165001"
+  },
+  "PG&E Corporation": {
+    "logoUrl": null,
+    "_wikidata": "Q108535726",
+    "_note": "no-P154"
+  },
+  "PepsiCo": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/8/82/PepsiCo_%282025%2C_wordmark%29.svg",
+    "logoFile": "PepsiCo (2025, wordmark).svg",
+    "_wikidata": "Q334800"
+  },
+  "Pfizer": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/5/57/Pfizer_%282021%29.svg",
+    "logoFile": "Pfizer (2021).svg",
+    "_wikidata": "Q206921"
+  },
+  "Philip Morris International": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/f/f0/Pmi_logo_text_only.svg",
+    "logoFile": "Pmi logo text only.svg",
+    "_wikidata": "Q1852556"
+  },
+  "Pinnacle West Capital": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/4/43/Pinnacle_West_Capital_logo.png",
+    "logoFile": "Pinnacle West Capital logo.png",
+    "_wikidata": "Q26110522"
+  },
+  "Phillips 66": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/6/6d/Phillips_66_logo.svg",
+    "logoFile": "Phillips 66 logo.svg",
+    "_wikidata": "Q1656230"
+  },
+  "Pool Corporation": {
+    "logoUrl": null,
+    "_wikidata": "Q101209811",
+    "_note": "no-P154"
+  },
+  "PNC Financial Services": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/1/1b/PNClogo.svg",
+    "logoFile": "PNClogo.svg",
+    "_wikidata": "Q38928"
+  },
+  "PPG Industries": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/d/db/PPG_Logo.svg",
+    "logoFile": "PPG Logo.svg",
+    "_wikidata": "Q48754"
+  },
+  "PPL Corporation": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/9/9c/Pennsylvania_Power_and_Light_logo.svg",
+    "logoFile": "Pennsylvania Power and Light logo.svg",
+    "_wikidata": "Q2044512"
+  },
+  "Principal Financial Group": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/c/c2/Principal_Financial_Group_logo.svg",
+    "logoFile": "Principal Financial Group logo.svg",
+    "_wikidata": "Q3403513"
+  },
+  "Procter & Gamble": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/8/85/Procter_%26_Gamble_logo.svg",
+    "logoFile": "Procter & Gamble logo.svg",
+    "_wikidata": "Q212405"
+  },
+  "Prologis": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/e/e5/Prologis_logo.svg",
+    "logoFile": "Prologis logo.svg",
+    "_wikidata": "Q16983765"
+  },
+  "Progressive Corporation": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/d/d8/Logo_of_the_Progressive_Corporation.svg",
+    "logoFile": "Logo of the Progressive Corporation.svg",
+    "_wikidata": "Q7248721"
+  },
+  "Prudential Financial": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/6/6a/Logo-prudential-do-brasil.png",
+    "logoFile": "Logo-prudential-do-brasil.png",
+    "_wikidata": "Q2114414"
+  },
+  "Public Service Enterprise Group": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/4/4f/PSEG_logo.svg",
+    "logoFile": "PSEG logo.svg",
+    "_wikidata": "Q930919"
+  },
+  "PTC Inc.": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/1/1d/PTC_logo.svg",
+    "logoFile": "PTC logo.svg",
+    "_wikidata": "Q1760641"
+  },
+  "PulteGroup": {
+    "logoUrl": null,
+    "_wikidata": "Q7259716",
+    "_note": "no-P154"
+  },
+  "Public Storage": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/d/d6/Public_Storage_logo.svg",
+    "logoFile": "Public Storage logo.svg",
+    "_wikidata": "Q1156045"
+  },
+  "Quanta Services": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/9/98/QScolorjpg.jpg",
+    "logoFile": "QScolorjpg.jpg",
+    "_wikidata": "Q7268886"
+  },
+  "Quest Diagnostics": {
+    "logoUrl": null,
+    "_wikidata": "Q7271456",
+    "_note": "no-P154"
+  },
+  "Qualcomm": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/f/fc/Qualcomm-Logo.svg",
+    "logoFile": "Qualcomm-Logo.svg",
+    "_wikidata": "Q544847"
+  },
+  "Ralph Lauren Corporation": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/6/63/Ralph_Lauren_Corporation.png",
+    "logoFile": "Ralph Lauren Corporation.png",
+    "_wikidata": "Q1641437"
+  },
+  "Raymond James Financial": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/6/64/Raymond_James_Logo.JPG",
+    "logoFile": "Raymond James Logo.JPG",
+    "_wikidata": "Q7298901"
+  },
+  "RTX Corporation": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/a/a8/Raytheon_Technologies_logo.svg",
+    "logoFile": "Raytheon Technologies logo.svg",
+    "_wikidata": "Q89368734"
+  },
+  "Realty Income": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/9/9b/Realty_Income_logo.svg",
+    "logoFile": "Realty Income logo.svg",
+    "_wikidata": "Q7301386"
+  },
+  "Regency Centers": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/3/3f/Regency_Centers_Corporation_logo.svg",
+    "logoFile": "Regency Centers Corporation logo.svg",
+    "_wikidata": "Q7308000"
+  },
+  "Regeneron Pharmaceuticals": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/4/48/Regeneron_logo.svg",
+    "logoFile": "Regeneron logo.svg",
+    "_wikidata": "Q7308054"
+  },
+  "ResMed": {
+    "logoUrl": null,
+    "_wikidata": "Q50038129",
+    "_note": "no-P154"
+  },
+  "Regions Financial Corporation": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/9/93/Regions_Financial_Corp_logo.svg",
+    "logoFile": "Regions Financial Corp logo.svg",
+    "_wikidata": "Q917131"
+  },
+  "Republic Services": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/2/28/Republic_Services_logo.svg",
+    "logoFile": "Republic Services logo.svg",
+    "_wikidata": "Q7314415"
+  },
+  "Revvity": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/a/aa/Revvity_Logo.png",
+    "logoFile": "Revvity Logo.png",
+    "_wikidata": "Q120467527"
+  },
+  "Rockwell Automation": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/a/a5/Rockwell_Automation_logo_%282019%29.svg",
+    "logoFile": "Rockwell Automation logo (2019).svg",
+    "_wikidata": "Q1529234"
+  },
+  "Roper Technologies": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/2/20/Roper_Technologies_logo.svg",
+    "logoFile": "Roper Technologies logo.svg",
+    "_wikidata": "Q16932392"
+  },
+  "Ross Stores": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/f/f7/Ross_Stores_logo.svg",
+    "logoFile": "Ross Stores logo.svg",
+    "_wikidata": "Q3442791"
+  },
+  "Royal Caribbean Group": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/b/bd/Royal_Caribbean_Group_logo.svg",
+    "logoFile": "Royal Caribbean Group logo.svg",
+    "_wikidata": "Q427881"
+  },
+  "Rollins, Inc.": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/0/0f/Rollins%2C_Inc._Logo.svg",
+    "logoFile": "Rollins, Inc. Logo.svg",
+    "_wikidata": "Q7361273"
+  },
+  "S&P Global": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/e/ee/S%26P_Global_logo.svg",
+    "logoFile": "S&P Global logo.svg",
+    "_wikidata": "Q868587"
+  },
+  "Salesforce": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/f/f9/Salesforce.com_logo.svg",
+    "logoFile": "Salesforce.com logo.svg",
+    "_wikidata": "Q941127"
+  },
+  "SBA Communications": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/b/bd/SBA_Communications_Logo.svg",
+    "logoFile": "SBA Communications Logo.svg",
+    "_wikidata": "Q7388926"
+  },
+  "Schlumberger": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/d/d6/SLB_Logo_2022.svg",
+    "logoFile": "SLB Logo 2022.svg",
+    "_wikidata": "Q1425316"
+  },
+  "Seagate Technology": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/7/7f/Seagate_logo.svg",
+    "logoFile": "Seagate logo.svg",
+    "_wikidata": "Q705392"
+  },
+  "Sempra": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/d/dc/Sempra_Energy_logo.svg",
+    "logoFile": "Sempra Energy logo.svg",
+    "_wikidata": "Q7449804"
+  },
+  "ServiceNow": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/5/57/ServiceNow_logo.svg",
+    "logoFile": "ServiceNow logo.svg",
+    "_wikidata": "Q7455653"
+  },
+  "Sherwin-Williams": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/7/79/Sherwin-Williams_wordmark.svg",
+    "logoFile": "Sherwin-Williams wordmark.svg",
+    "_wikidata": "Q48881"
+  },
+  "Simon Property Group": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/3/30/Simon_Property_Group_Logo_2014.svg",
+    "logoFile": "Simon Property Group Logo 2014.svg",
+    "_wikidata": "Q2287759"
+  },
+  "Skyworks Solutions": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/5/51/Skyworks_logo.svg",
+    "logoFile": "Skyworks logo.svg",
+    "_wikidata": "Q7538146"
+  },
+  "Smurfit Westrock": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/0/04/Smurfit_Kappa_Group_Logo.svg",
+    "logoFile": "Smurfit Kappa Group Logo.svg",
+    "_wikidata": "Q1536176"
+  },
+  "Snap-on": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/3/36/Snap-on_logo.svg",
+    "logoFile": "Snap-on logo.svg",
+    "_wikidata": "Q1631922"
+  },
+  "J.M. Smucker Company (The)": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/b/b1/Smuckers_logo.svg",
+    "logoFile": "Smuckers logo.svg",
+    "_wikidata": "Q7742790"
+  },
+  "Solventum": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/2/29/Solventum_logo_2024.png",
+    "logoFile": "Solventum logo 2024.png",
+    "_wikidata": "Q124795355"
+  },
+  "Southern Company": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/2/29/Southern_Company_logo.svg",
+    "logoFile": "Southern Company logo.svg",
+    "_wikidata": "Q2304693"
+  },
+  "Southwest Airlines": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/c/c4/Southwest_Airlines_logo_2014.svg",
+    "logoFile": "Southwest Airlines logo 2014.svg",
+    "_wikidata": "Q503308"
+  },
+  "Stanley Black & Decker": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/2/2c/Stanley_Black_%26_Decker_Logo.svg",
+    "logoFile": "Stanley Black & Decker Logo.svg",
+    "_wikidata": "Q706094"
+  },
+  "Starbucks": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/5/5e/Starbucks_coffee_wordmark.png",
+    "logoFile": "Starbucks coffee wordmark.png",
+    "_wikidata": "Q37158"
+  },
+  "State Street Corporation": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/6/65/State-street-logo-final.svg",
+    "logoFile": "State-street-logo-final.svg",
+    "_wikidata": "Q2037125"
+  },
+  "Steel Dynamics": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/f/f6/Steel_Dynamics.svg",
+    "logoFile": "Steel Dynamics.svg",
+    "_wikidata": "Q7605667"
+  },
+  "Steris": {
+    "logoUrl": null,
+    "_wikidata": "Q31074628",
+    "_note": "no-P154"
+  },
+  "Stryker Corporation": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/7/79/Stryker_logo.svg",
+    "logoFile": "Stryker logo.svg",
+    "_wikidata": "Q2357515"
+  },
+  "Supermicro": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/1/1d/Super_Micro_Computer_Logo.svg",
+    "logoFile": "Super Micro Computer Logo.svg",
+    "_wikidata": "Q1817174"
+  },
+  "Synchrony Financial": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/2/22/Synchrony_Financial_logo.svg",
+    "logoFile": "Synchrony Financial logo.svg",
+    "_wikidata": "Q18387139"
+  },
+  "Sysco": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/b/bf/Sysco-Logo.svg",
+    "logoFile": "Sysco-Logo.svg",
+    "_wikidata": "Q2376711"
+  },
+  "Synopsys": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/6/6c/Synopsys_Logo.svg",
+    "logoFile": "Synopsys Logo.svg",
+    "_wikidata": "Q2303478"
+  },
+  "T-Mobile US": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/f/f5/T-Mobile_US_Logo_2020_RGB_Magenta_on_Transparent.svg",
+    "logoFile": "T-Mobile US Logo 2020 RGB Magenta on Transparent.svg",
+    "_wikidata": "Q3511885"
+  },
+  "T. Rowe Price": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/e/e4/T._Rowe_Price_Logo_2017.png",
+    "logoFile": "T. Rowe Price Logo 2017.png",
+    "_wikidata": "Q3511946"
+  },
+  "Take-Two Interactive": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/d/d6/Take-Two_Interactive_Logo.svg",
+    "logoFile": "Take-Two Interactive Logo.svg",
+    "_wikidata": "Q94933"
+  },
+  "Targa Resources": {
+    "logoUrl": null,
+    "_wikidata": "Q7685824",
+    "_note": "no-P154"
+  },
+  "Tapestry, Inc.": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/2/21/Tapestry_logo.svg",
+    "logoFile": "Tapestry logo.svg",
+    "_wikidata": "Q56273715"
+  },
+  "Target Corporation": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/9/9a/Target_logo.svg",
+    "logoFile": "Target logo.svg",
+    "_wikidata": "Q1046951"
+  },
+  "TE Connectivity": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/b/b1/TE_Connectivity_logo.svg",
+    "logoFile": "TE Connectivity logo.svg",
+    "_wikidata": "Q663452"
+  },
+  "Teledyne Technologies": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/4/4c/Teledyne_logo.svg",
+    "logoFile": "Teledyne logo.svg",
+    "_wikidata": "Q7696127"
+  },
+  "Teradyne": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/0/04/Teradyne_logo_2014.svg",
+    "logoFile": "Teradyne logo 2014.svg",
+    "_wikidata": "Q2404292"
+  },
+  "Tesla, Inc.": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/b/bd/Tesla_Motors.svg",
+    "logoFile": "Tesla Motors.svg",
+    "_wikidata": "Q478214"
+  },
+  "Texas Instruments": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/b/ba/TexasInstruments-Logo.svg",
+    "logoFile": "TexasInstruments-Logo.svg",
+    "_wikidata": "Q193412"
+  },
+  "Textron": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/8/84/Textron.svg",
+    "logoFile": "Textron.svg",
+    "_wikidata": "Q2140315"
+  },
+  "Thermo Fisher Scientific": {
+    "logoUrl": null,
+    "_wikidata": "Q30260387",
+    "_note": "no-P154"
+  },
+  "Texas Pacific Land Corporation": {
+    "logoUrl": null,
+    "_wikidata": "Q7707900",
+    "_note": "no-P154"
+  },
+  "TJX Companies": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/a/a2/TJXLogo.svg",
+    "logoFile": "TJXLogo.svg",
+    "_wikidata": "Q1285819"
+  },
+  "TKO Group Holdings": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/2/22/TKO_Group_Holdings_Logo_2024.svg",
+    "logoFile": "TKO Group Holdings Logo 2024.svg",
+    "_wikidata": "Q120435068"
+  },
+  "Trane Technologies": {
+    "logoUrl": null,
+    "_wikidata": "Q131744111",
+    "_note": "no-P154"
+  },
+  "Tractor Supply": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/8/86/TractorSupplyCompanylogo.svg",
+    "logoFile": "TractorSupplyCompanylogo.svg",
+    "_wikidata": "Q15109925"
+  },
+  "TransDigm Group": {
+    "logoUrl": null,
+    "_wikidata": "Q7833612",
+    "_note": "no-P154"
+  },
+  "Trade Desk (The)": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/c/c1/The_Trade_Desk.svg",
+    "logoFile": "The Trade Desk.svg",
+    "_wikidata": "Q60744565"
+  },
+  "Trimble Inc.": {
+    "logoUrl": null,
+    "_wikidata": "Q2297063",
+    "_note": "no-P154"
+  },
+  "Tyler Technologies": {
+    "logoUrl": null,
+    "_wikidata": "Q48802335",
+    "_note": "no-P154"
+  },
+  "Truist Financial": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/8/8b/Truist_Financial_logo.svg",
+    "logoFile": "Truist Financial logo.svg",
+    "_wikidata": "Q795486"
+  },
+  "Travelers Companies (The)": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/d/d4/Trav_umb_5inch.jpg",
+    "logoFile": "Trav umb 5inch.jpg",
+    "_wikidata": "Q942471"
+  },
+  "U.S. Bancorp": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/c/c5/U.S._Bancorp_logo.svg",
+    "logoFile": "U.S. Bancorp logo.svg",
+    "_wikidata": "Q739084"
+  },
+  "Tyson Foods": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/8/8c/Tyson_Foods_logo.svg",
+    "logoFile": "Tyson Foods logo.svg",
+    "_wikidata": "Q1325987"
+  },
+  "Uber": {
+    "logoUrl": null,
+    "_wikidata": "Q37307685",
+    "_note": "no-P154"
+  },
+  "Ulta Beauty": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/9/9e/Ulta_Beauty_logo.svg",
+    "logoFile": "Ulta Beauty logo.svg",
+    "_wikidata": "Q7880076"
+  },
+  "United Airlines Holdings": {
+    "logoUrl": null,
+    "_wikidata": "Q871700",
+    "_note": "no-P154"
+  },
+  "Union Pacific Corporation": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/d/de/Union_pacific_railroad_logo.svg",
+    "logoFile": "Union pacific railroad logo.svg",
+    "_wikidata": "Q20183163"
+  },
+  "United Parcel Service": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/6/6b/United_Parcel_Service_logo_2014.svg",
+    "logoFile": "United Parcel Service logo 2014.svg",
+    "_wikidata": "Q155026"
+  },
+  "UDR, Inc.": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/e/e0/UDR%2C_Inc._logo.png",
+    "logoFile": "UDR, Inc. logo.png",
+    "_wikidata": "Q27988153"
+  },
+  "United Rentals": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/b/b3/United_Rentals_Logo.svg",
+    "logoFile": "United Rentals Logo.svg",
+    "_wikidata": "Q7889101"
+  },
+  "UnitedHealth Group": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/f/f3/UnitedHealth_Group_logo.svg",
+    "logoFile": "UnitedHealth Group logo.svg",
+    "_wikidata": "Q2103926"
+  },
+  "Universal Health Services": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/8/8f/UHS_logo.svg",
+    "logoFile": "UHS logo.svg",
+    "_wikidata": "Q7893967"
+  },
+  "Ventas": {
+    "logoUrl": null,
+    "_wikidata": "Q2014690",
+    "_note": "no-P154"
+  },
+  "Veralto": {
+    "logoUrl": null,
+    "_wikidata": "Q124721239",
+    "_note": "no-P154"
+  },
+  "Valero Energy": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/3/3b/Valero_Energy_logo.svg",
+    "logoFile": "Valero Energy logo.svg",
+    "_wikidata": "Q1283291"
+  },
+  "Verisign": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/3/30/Verisign_logo.svg",
+    "logoFile": "Verisign logo.svg",
+    "_wikidata": "Q734338"
+  },
+  "Verisk Analytics": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/2/2f/Verisk_Analytics_Logo.svg",
+    "logoFile": "Verisk Analytics Logo.svg",
+    "_wikidata": "Q7921370"
+  },
+  "Verizon": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/8/81/Verizon_2015_logo_-vector.svg",
+    "logoFile": "Verizon 2015 logo -vector.svg",
+    "_wikidata": "Q919641"
+  },
+  "Vertex Pharmaceuticals": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/5/5a/VertexPharma-logo2.png",
+    "logoFile": "VertexPharma-logo2.png",
+    "_wikidata": "Q2744099"
+  },
+  "Viatris": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/f/ff/Viatris.svg",
+    "logoFile": "Viatris.svg",
+    "_wikidata": "Q101983981"
+  },
+  "Vici Properties": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/e/ee/Vici_Properties_logo.svg",
+    "logoFile": "Vici Properties logo.svg",
+    "_wikidata": "Q54263910"
+  },
+  "Visa Inc.": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/a/ac/Old_Visa_Logo.svg",
+    "logoFile": "Old Visa Logo.svg",
+    "_wikidata": "Q328840"
+  },
+  "Vistra Corp.": {
+    "logoUrl": null,
+    "_wikidata": "Q104158381",
+    "_note": "no-P154"
+  },
+  "W. R. Berkley Corporation": {
+    "logoUrl": null,
+    "_wikidata": "Q1369955",
+    "_note": "no-P154"
+  },
+  "Vulcan Materials Company": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/7/79/Vulcan_Materials_logo.svg",
+    "logoFile": "Vulcan Materials logo.svg",
+    "_wikidata": "Q1685287"
+  },
+  "W. W. Grainger": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/3/3d/W._W._Grainger_logo.svg",
+    "logoFile": "W. W. Grainger logo.svg",
+    "_wikidata": "Q1627894"
+  },
+  "Wabtec": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/2/2e/Wabtec_logo.svg",
+    "logoFile": "Wabtec logo.svg",
+    "_wikidata": "Q741707"
+  },
+  "Walgreens Boots Alliance": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/b/b0/Walgreens_Boots_Alliance.svg",
+    "logoFile": "Walgreens Boots Alliance.svg",
+    "_wikidata": "Q18712620"
+  },
+  "Walmart": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/5/5b/Walmart_logo_%282025%29.svg",
+    "logoFile": "Walmart logo (2025).svg",
+    "_wikidata": "Q483551"
+  },
+  "Waste Management": {
+    "logoUrl": null,
+    "_wikidata": "Q15758656",
+    "_note": "no-P154"
+  },
+  "Warner Bros. Discovery": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/6/64/Warner_Bros._Discovery.svg",
+    "logoFile": "Warner Bros. Discovery.svg",
+    "_wikidata": "Q107074885"
+  },
+  "Waters Corporation": {
+    "logoUrl": null,
+    "_wikidata": "Q1322011",
+    "_note": "no-P154"
+  },
+  "WEC Energy Group": {
+    "logoUrl": null,
+    "_wikidata": "Q8027166",
+    "_note": "no-P154"
+  },
+  "Walt Disney Company (The)": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/4/44/The_Walt_Disney_Company_Logo.svg",
+    "logoFile": "The Walt Disney Company Logo.svg",
+    "_wikidata": "Q7414"
+  },
+  "West Pharmaceutical Services": {
+    "logoUrl": null,
+    "_wikidata": "Q30338243",
+    "_note": "no-P154"
+  },
+  "Wells Fargo": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/b/b3/Wells_Fargo_Bank.svg",
+    "logoFile": "Wells Fargo Bank.svg",
+    "_wikidata": "Q744149"
+  },
+  "Welltower": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/3/3d/Welltower_Logo.png",
+    "logoFile": "Welltower Logo.png",
+    "_wikidata": "Q20486917"
+  },
+  "Western Digital": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/b/bc/Western_Digital_logo_%282025%29.svg",
+    "logoFile": "Western Digital logo (2025).svg",
+    "_wikidata": "Q738770"
+  },
+  "Weyerhaeuser": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/4/47/Weyerhaeuser.svg",
+    "logoFile": "Weyerhaeuser.svg",
+    "_wikidata": "Q1780382"
+  },
+  "Willis Towers Watson": {
+    "logoUrl": null,
+    "_wikidata": "Q21189883",
+    "_note": "no-P154"
+  },
+  "Williams-Sonoma, Inc.": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/f/fc/Williams-Sonoma%2C_Inc._logo.png",
+    "logoFile": "Williams-Sonoma, Inc. logo.png",
+    "_wikidata": "Q2581220"
+  },
+  "Williams Companies": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/8/81/Williams_Companies_logo.svg",
+    "logoFile": "Williams Companies logo.svg",
+    "_wikidata": "Q930639"
+  },
+  "Workday, Inc.": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/8/80/Workday_logo.svg",
+    "logoFile": "Workday logo.svg",
+    "_wikidata": "Q8034666"
+  },
+  "Wynn Resorts": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/e/e1/Wynn_Resorts_logo_2025.png",
+    "logoFile": "Wynn Resorts logo 2025.png",
+    "_wikidata": "Q2274089"
+  },
+  "Xcel Energy": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/4/43/Xcel-energy.svg",
+    "logoFile": "Xcel-energy.svg",
+    "_wikidata": "Q1486956"
+  },
+  "Xylem Inc.": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/2/2d/Xylem_Logo.svg",
+    "logoFile": "Xylem Logo.svg",
+    "_wikidata": "Q3146975"
+  },
+  "Zebra Technologies": {
+    "logoUrl": null,
+    "_wikidata": "Q2443609",
+    "_note": "no-P154"
+  },
+  "Yum! Brands": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/5/59/Yum%21_Brands_logo.svg",
+    "logoFile": "Yum! Brands logo.svg",
+    "_wikidata": "Q668737"
+  },
+  "Zimmer Biomet": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/0/05/Zimmer_Holdings_logo.svg",
+    "logoFile": "Zimmer Holdings logo.svg",
+    "_wikidata": "Q203552"
+  },
+  "Zoetis": {
+    "logoUrl": "https://upload.wikimedia.org/wikipedia/commons/0/0f/Zoetis_logo.svg",
+    "logoFile": "Zoetis logo.svg",
+    "_wikidata": "Q8073337"
+  }
+}
