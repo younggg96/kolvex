@@ -1,0 +1,55 @@
+# 生产环境 Dockerfile
+# 多阶段构建，优化镜像大小
+
+# 构建阶段
+FROM python:3.11-slim as builder
+
+WORKDIR /app
+
+# 安装构建依赖
+RUN apt-get update && apt-get install -y \
+    gcc \
+    postgresql-client \
+    && rm -rf /var/lib/apt/lists/*
+
+# 复制依赖文件
+COPY requirements.txt .
+
+# 安装依赖到本地目录
+RUN pip install --user --no-cache-dir -r requirements.txt
+
+# 运行阶段
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# 创建非 root 用户
+RUN useradd -m -u 1000 appuser && \
+    apt-get update && \
+    apt-get install -y --no-install-recommends postgresql-client && \
+    rm -rf /var/lib/apt/lists/*
+
+# 从构建阶段复制依赖
+COPY --from=builder /root/.local /home/appuser/.local
+
+# 复制应用代码
+COPY --chown=appuser:appuser . .
+
+# 设置环境变量
+ENV PATH=/home/appuser/.local/bin:$PATH \
+    PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1
+
+# 切换到非 root 用户
+USER appuser
+
+# 暴露端口
+EXPOSE 8000
+
+# 健康检查
+HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
+    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"
+
+# 生产环境启动命令（不使用 reload）
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "4"]
+

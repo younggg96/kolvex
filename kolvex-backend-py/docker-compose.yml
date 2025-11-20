@@ -1,0 +1,50 @@
+version: '3.8'
+
+services:
+  # PostgreSQL 数据库
+  db:
+    image: postgres:15-alpine
+    container_name: kolvex-db
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-kolvex}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-kolvex123}
+      POSTGRES_DB: ${POSTGRES_DB:-kolvex}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-kolvex}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - kolvex-network
+
+  # FastAPI 后端
+  backend:
+    build: .
+    container_name: kolvex-backend
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-kolvex}:${POSTGRES_PASSWORD:-kolvex123}@db:5432/${POSTGRES_DB:-kolvex}
+      SECRET_KEY: ${SECRET_KEY:-your-secret-key-change-this-in-production}
+      DEBUG: ${DEBUG:-True}
+    volumes:
+      - .:/app
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - kolvex-network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+
+networks:
+  kolvex-network:
+    driver: bridge
+
