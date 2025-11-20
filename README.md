@@ -63,7 +63,7 @@ High-performance Python backend built with FastAPI, providing:
 
 ### Prerequisites
 
-- Node.js 18+ 
+- Node.js 18+
 - Python 3.11+
 - PostgreSQL 14+
 - npm or yarn
@@ -206,7 +206,7 @@ kolvex/
 
 ### 前提条件
 
-- Node.js 18+ 
+- Node.js 18+
 - Python 3.11+
 - PostgreSQL 14+
 - npm 或 yarn
@@ -303,4 +303,3 @@ MIT License - 详见 [LICENSE](LICENSE) 文件
 **Built with ❤️ by Kolvex Team**
 
 </div>
-
