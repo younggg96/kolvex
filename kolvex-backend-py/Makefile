@@ -11,12 +11,12 @@ help: ## 显示帮助信息
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2}'
 
 install: ## 安装依赖（虚拟环境）
-	python -m venv venv
+	python3 -m venv venv
 	. venv/bin/activate && pip install --upgrade pip
 	. venv/bin/activate && pip install -r requirements.txt
 
 dev: ## 启动开发服务器（本地）
-	. venv/bin/activate && python main.py
+	. venv/bin/activate && python3 main.py
 
 docker-dev: ## 使用 Docker 启动开发环境
 	docker-compose up -d
@@ -72,7 +72,7 @@ env: ## 创建 .env 文件
 	@echo "✅ 已创建 .env 文件，请根据需要修改配置"
 
 health: ## 健康检查
-	@curl -s http://localhost:8000/health | python -m json.tool
+	@curl -s http://localhost:8000/health | python3 -m json.tool 2>/dev/null || curl -s http://localhost:8000/health
 
 setup: env docker-dev ## 初始化项目（创建 .env + 启动服务）
 	@echo ""

@@ -123,6 +123,7 @@ const nextConfig = {
         'self'
         https://*.tradingview.com
         https://platform.twitter.com
+        https://*.supabase.co
         https://va.vercel-scripts.com
         https://*.vercel-insights.com
       ;
