@@ -33,7 +33,7 @@ export default function ForgotPasswordForm() {
         "Password reset email sent! Please check your inbox and follow the instructions."
       );
     } else {
-      toast.error(getErrorMessage(result.errorCode, result.error));
+      toast.error(getErrorMessage(result.error));
     }
     setIsLoading(false);
   };

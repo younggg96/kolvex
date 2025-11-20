@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { mockCreators, mockUserData, Platform } from "@/lib/mockData";
 
-export type KOLPlatform = "twitter" | "reddit" | "youtube" | "rednote" | "x";
+export type KOLPlatform = "twitter" | "reddit" | "youtube" | "xiaohongshu" | "rednote" | "x";
 
 export interface KOL {
   id: string;
@@ -22,6 +22,7 @@ const platformMap: Record<KOLPlatform, Platform> = {
   x: "TWITTER",
   reddit: "REDDIT",
   youtube: "YOUTUBE",
+  xiaohongshu: "XIAOHONGSHU",
   rednote: "REDNOTE",
 };
 
@@ -29,6 +30,7 @@ const reversePlatformMap: Record<Platform, KOLPlatform> = {
   TWITTER: "twitter",
   REDDIT: "reddit",
   YOUTUBE: "youtube",
+  XIAOHONGSHU: "xiaohongshu",
   REDNOTE: "rednote",
 };
 

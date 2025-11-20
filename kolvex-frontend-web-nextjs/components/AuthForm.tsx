@@ -58,7 +58,7 @@ export default function AuthForm({ mode, onModeChange }: AuthFormProps) {
           router.push("/dashboard");
         }, 1000);
       } else {
-        toast.error(getErrorMessage(result.errorCode, result.error));
+        toast.error(getErrorMessage(result.error));
       }
       setIsLoading(false);
     } else {
@@ -71,7 +71,7 @@ export default function AuthForm({ mode, onModeChange }: AuthFormProps) {
         );
         setIsLoading(false);
       } else {
-        toast.error(getErrorMessage(result.errorCode, result.error));
+        toast.error(getErrorMessage(result.error));
         setIsLoading(false);
       }
     }
@@ -84,7 +84,7 @@ export default function AuthForm({ mode, onModeChange }: AuthFormProps) {
       const result = await signInWithGoogle();
 
       if (!result.success) {
-        toast.error(getErrorMessage(result.errorCode, result.error));
+        toast.error(getErrorMessage(result.error));
         setIsGoogleLoading(false);
       }
       // If successful, the user will be redirected to Google's OAuth page

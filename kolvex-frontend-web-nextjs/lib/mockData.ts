@@ -1,6 +1,6 @@
 // Mock数据中心 - 用于所有API的模拟数据
 
-export type Platform = "TWITTER" | "REDDIT" | "YOUTUBE" | "REDNOTE";
+export type Platform = "TWITTER" | "REDDIT" | "YOUTUBE" | "XIAOHONGSHU" | "REDNOTE";
 
 export interface Creator {
   id: string;

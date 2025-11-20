@@ -52,7 +52,7 @@ export default function ResetPasswordForm() {
         router.push("/auth");
       }, 500);
     } else {
-      toast.error(getErrorMessage(result.errorCode, result.error));
+      toast.error(getErrorMessage(result.error));
       setIsLoading(false);
     }
   };

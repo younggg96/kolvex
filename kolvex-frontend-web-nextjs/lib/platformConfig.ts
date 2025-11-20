@@ -3,8 +3,8 @@
  * Centralized configuration for all social media platforms
  */
 
-export type Platform = "TWITTER" | "REDDIT" | "YOUTUBE" | "REDNOTE";
-export type PlatformLowercase = "twitter" | "reddit" | "youtube" | "rednote" | "x";
+export type Platform = "TWITTER" | "REDDIT" | "YOUTUBE" | "XIAOHONGSHU" | "REDNOTE";
+export type PlatformLowercase = "twitter" | "reddit" | "youtube" | "xiaohongshu" | "rednote" | "x";
 
 export interface PlatformConfig {
   name: string;
@@ -35,6 +35,12 @@ export const PLATFORM_CONFIG: Record<Platform, PlatformConfig> = {
     color: "#FF0000",
     colorClass: "text-[#FF0000]",
   },
+  XIAOHONGSHU: {
+    name: "Xiaohongshu",
+    icon: "/logo/rednote.svg",
+    color: "#FF2442",
+    colorClass: "text-[#FF2442]",
+  },
   REDNOTE: {
     name: "Rednote",
     icon: "/logo/rednote.svg",
@@ -54,6 +60,7 @@ export const PLATFORM_CONFIG_LOWERCASE: Record<
   x: PLATFORM_CONFIG.TWITTER,
   reddit: PLATFORM_CONFIG.REDDIT,
   youtube: PLATFORM_CONFIG.YOUTUBE,
+  xiaohongshu: PLATFORM_CONFIG.XIAOHONGSHU,
   rednote: PLATFORM_CONFIG.REDNOTE,
 } as const;
 

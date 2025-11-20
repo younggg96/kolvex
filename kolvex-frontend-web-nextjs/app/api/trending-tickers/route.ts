@@ -10,6 +10,7 @@ export interface TrendingTicker {
   sentiment_score: number;
   mention_count: number;
   engagement_score: number;
+  unique_authors_count?: number;
   price_change_24h: number | null;
   last_seen_at: string;
   first_seen_at: string;
@@ -19,6 +20,12 @@ export interface TrendingTicker {
   price_change?: number;
   price_change_percent?: number;
 }
+
+export type TrendingTickerWithPrice = TrendingTicker & {
+  current_price: number;
+  price_change: number;
+  price_change_percent: number;
+};
 
 export type SortBy =
   | "trending_score"

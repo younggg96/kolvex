@@ -1,21 +1,18 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "./useAuth";
-
-export interface UserProfile {
-  id: string;
-  email: string;
-  full_name?: string;
-  avatar_url?: string;
-  created_at: string;
-  updated_at: string;
-}
+import type { UserProfile } from "@/lib/supabase/database.types";
 
 // Mock profile
 const MOCK_PROFILE: UserProfile = {
   id: "mock-user-123",
   email: "demo@example.com",
+  username: "demouser",
   full_name: "Demo User",
   avatar_url: "https://i.pravatar.cc/150?img=10",
+  membership: "FREE",
+  theme: "SYSTEM",
+  is_subscribe_newsletter: false,
+  notification_method: "EMAIL",
   created_at: new Date().toISOString(),
   updated_at: new Date().toISOString(),
 };
