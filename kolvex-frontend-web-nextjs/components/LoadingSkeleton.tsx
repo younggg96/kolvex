@@ -123,9 +123,9 @@ export function ProfileInfoSkeleton() {
         <div className="h-9 bg-gray-200 dark:bg-white/5 rounded-lg border border-gray-200 dark:border-white/10"></div>
       </div>
 
-      {/* Username Skeleton */}
+      {/* Full Name Skeleton */}
       <div className="space-y-1.5">
-        <div className="h-3 bg-gray-300 dark:bg-white/10 rounded w-20 mb-2"></div>
+        <div className="h-3 bg-gray-300 dark:bg-white/10 rounded w-24 mb-2"></div>
         <div className="h-9 bg-gray-200 dark:bg-white/5 rounded-lg border border-gray-200 dark:border-white/10"></div>
       </div>
 

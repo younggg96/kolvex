@@ -172,7 +172,6 @@ function SettingsContent() {
 
   // Form data
   const [formData, setFormData] = useState({
-    username: "",
     full_name: "",
     email: "",
     phone: "",
@@ -188,7 +187,6 @@ function SettingsContent() {
   useEffect(() => {
     if (profile) {
       setFormData({
-        username: profile.username || "",
         full_name: profile.full_name || "",
         email: profile.email || "",
         phone: profile.phone_e164 || "",
@@ -453,7 +451,6 @@ function SettingsContent() {
     setIsSaving(true);
     try {
       const updates: UserProfileUpdate = {
-        username: formData.username || undefined,
         full_name: formData.full_name || undefined,
         phone_e164:
           formData.phone && formData.phone.trim() !== ""
@@ -486,7 +483,6 @@ function SettingsContent() {
   const handleCancelEdit = () => {
     if (profile) {
       setFormData({
-        username: profile.username || "",
         full_name: profile.full_name || "",
         email: profile.email || "",
         phone: profile.phone_e164 || "",
@@ -593,13 +589,9 @@ function SettingsContent() {
                               </button>
                             ) : (
                               <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center text-white text-xl sm:text-2xl font-bold shadow-lg">
-                                {profile?.username
-                                  ? profile.username
-                                      .substring(0, 2)
-                                      .toUpperCase()
-                                  : profile?.email
-                                      ?.substring(0, 2)
-                                      .toUpperCase() || "US"}
+                                {profile?.email
+                                  ?.substring(0, 2)
+                                  .toUpperCase() || "US"}
                               </div>
                             )}
                             <button
@@ -861,34 +853,6 @@ function SettingsContent() {
                             </p>
                           )}
                         </div>
-
-                        {/* Username */}
-                        <div className="space-y-1.5">
-                          <Label className="text-xs font-medium text-gray-700 dark:text-white/70 flex items-center gap-1.5">
-                            <User className="w-3 h-3" />
-                            Username
-                          </Label>
-                          {isEditing ? (
-                            <Input
-                              id="username"
-                              type="text"
-                              value={formData.username}
-                              onChange={(e) =>
-                                setFormData({
-                                  ...formData,
-                                  username: e.target.value,
-                                })
-                              }
-                              placeholder="Enter username"
-                              className="h-8 sm:h-9 text-xs sm:text-sm"
-                            />
-                          ) : (
-                            <p className="text-xs sm:text-sm text-gray-900 dark:text-white py-1.5 sm:py-2 px-2.5 sm:px-3 bg-gray-50 dark:bg-white/5 rounded-lg border border-gray-200 dark:border-white/10">
-                              {formData.username || "-"}
-                            </p>
-                          )}
-                        </div>
-
                         {/* Phone */}
                         <div className="space-y-1.5">
                           <Label className="text-xs font-medium text-gray-700 dark:text-white/70 flex items-center gap-1.5">
@@ -1074,13 +1038,12 @@ function SettingsContent() {
                   >
                     <div className="px-4 pb-4 space-y-3 sm:space-y-4">
                       {/* Language */}
-                      <div className="space-y-1.5">
-                        <Label className="text-xs font-medium text-gray-700 dark:text-white/70 flex items-center gap-1.5">
-                          <Globe className="w-3 h-3" />
+                      <div className="space-y-2">
+                        <Label className="text-xs font-medium text-gray-700 dark:text-white/70">
                           Language
                         </Label>
                         <Select defaultValue="english">
-                          <SelectTrigger className="h-8 sm:h-9 text-xs sm:text-sm">
+                          <SelectTrigger className="h-8 sm:h-9 text-xs sm:text-sm w-full sm:w-[400px]">
                             <SelectValue placeholder="Select language" />
                           </SelectTrigger>
                           <SelectContent>
@@ -1094,8 +1057,7 @@ function SettingsContent() {
                       {/* Theme Selection */}
                       <div className="space-y-2">
                         <Label className="text-xs font-medium text-gray-700 dark:text-white/70 flex items-center gap-1.5">
-                          <SunMoon className="w-3 h-3" />
-                          Theme Mode
+                          Theme
                         </Label>
                         {mounted && (
                           <div className="flex flex-wrap gap-2">
@@ -1156,55 +1118,6 @@ function SettingsContent() {
                             })}
                           </div>
                         )}
-                      </div>
-                      {/* Data Display */}
-                      <div>
-                        <h3 className="text-xs font-medium mb-2 text-gray-700 dark:text-white/70">
-                          Data Display
-                        </h3>
-                        <div className="space-y-2">
-                          {[
-                            {
-                              id: "percentage-change",
-                              label: "Show percentage change",
-                              description:
-                                "Display price changes as percentages",
-                            },
-                            {
-                              id: "auto-refresh",
-                              label: "Auto-refresh data",
-                              description:
-                                "Automatically refresh market data every 30 seconds",
-                            },
-                            {
-                              id: "compact-view",
-                              label: "Compact view",
-                              description: "Show more data in less space",
-                            },
-                          ].map((item) => (
-                            <div
-                              key={item.id}
-                              className="flex items-center justify-between p-2 sm:p-2.5 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/5 rounded-lg hover:bg-gray-100 dark:hover:bg-white/10 transition-colors duration-200"
-                            >
-                              <div className="flex-1 space-y-0.5 pr-2">
-                                <Label
-                                  htmlFor={item.id}
-                                  className="text-xs sm:text-sm font-medium text-gray-900 dark:text-white cursor-pointer"
-                                >
-                                  {item.label}
-                                </Label>
-                                <p className="text-[10px] sm:text-xs text-gray-600 dark:text-white/60">
-                                  {item.description}
-                                </p>
-                              </div>
-                              <Switch
-                                id={item.id}
-                                defaultChecked
-                                className="ml-2 flex-shrink-0"
-                              />
-                            </div>
-                          ))}
-                        </div>
                       </div>
                     </div>
                   </SectionCard>

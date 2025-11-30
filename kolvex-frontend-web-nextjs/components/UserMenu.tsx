@@ -1,19 +1,8 @@
 "use client";
 
-import { useTheme } from "next-themes";
-import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import {
-  ChevronDown,
-  User,
-  CreditCard,
-  Bell,
-  Settings,
-  Sun,
-  Moon,
-  LogOut,
-} from "lucide-react";
+import { ChevronDown, User, CreditCard, Bell, LogOut } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -30,23 +19,17 @@ interface UserMenuProps {
 
 export default function UserMenu({ isCollapsed = false }: UserMenuProps) {
   const router = useRouter();
-  const [mounted, setMounted] = useState(false);
-  const { theme, setTheme } = useTheme();
   const { user, signOut } = useAuth();
   const { profile } = useUserProfile();
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  // Get display name (username or email)
-  const displayName = profile?.username || user?.email?.split("@")[0] || "User";
+  // Get display name (full name or email)
+  const displayName = profile?.full_name || "User";
   const displayEmail = user?.email || "";
 
   // Get initials for avatar
   const getInitials = () => {
-    if (profile?.username) {
-      return profile.username.substring(0, 2).toUpperCase();
+    if (profile?.full_name) {
+      return profile.full_name.substring(0, 2).toUpperCase();
     }
     if (user?.email) {
       return user.email.substring(0, 2).toUpperCase();
@@ -138,29 +121,6 @@ export default function UserMenu({ isCollapsed = false }: UserMenuProps) {
         >
           <Bell className="w-3 h-3" />
           <span>Notifications</span>
-        </DropdownMenuItem>
-
-        <DropdownMenuSeparator />
-
-        <DropdownMenuItem
-          onClick={() => {
-            if (mounted) {
-              setTheme(theme === "dark" ? "light" : "dark");
-            }
-          }}
-        >
-          {mounted && theme === "dark" ? (
-            <Sun className="w-3 h-3" />
-          ) : (
-            <Moon className="w-3 h-3" />
-          )}
-          <span>
-            {mounted
-              ? theme === "dark"
-                ? "Switch to Light Mode"
-                : "Switch to Dark Mode"
-              : "Theme"}
-          </span>
         </DropdownMenuItem>
 
         <DropdownMenuSeparator />
