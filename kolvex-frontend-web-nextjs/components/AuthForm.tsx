@@ -79,7 +79,6 @@ export default function AuthForm({ mode, onModeChange }: AuthFormProps) {
 
   const handleGoogleSignIn = async () => {
     setIsGoogleLoading(true);
-    console.log("handleGoogleSignIn");
     try {
       const result = await signInWithGoogle();
 

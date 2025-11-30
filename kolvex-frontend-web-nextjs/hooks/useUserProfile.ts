@@ -1,21 +1,16 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "./useAuth";
-import type { UserProfile } from "@/lib/supabase/database.types";
+import {
+  getCurrentUserProfile,
+  updateCurrentUserProfile,
+  updateUserTheme,
+  updateUserNotifications,
+  type UserProfile,
+  type UserProfileUpdate,
+  type UserNotificationUpdate,
+} from "@/lib/api/userApi";
 
-// Mock profile
-const MOCK_PROFILE: UserProfile = {
-  id: "mock-user-123",
-  email: "demo@example.com",
-  username: "demouser",
-  full_name: "Demo User",
-  avatar_url: "https://i.pravatar.cc/150?img=10",
-  membership: "FREE",
-  theme: "SYSTEM",
-  is_subscribe_newsletter: false,
-  notification_method: "EMAIL",
-  created_at: new Date().toISOString(),
-  updated_at: new Date().toISOString(),
-};
+export type { UserProfile, UserProfileUpdate, UserNotificationUpdate };
 
 export function useUserProfile() {
   const { user } = useAuth();
@@ -23,48 +18,106 @@ export function useUserProfile() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    async function loadProfile() {
-      if (!user?.id) {
-        setProfile(null);
-        setIsLoading(false);
-        return;
-      }
-
-      setIsLoading(true);
-      setError(null);
-
-      try {
-        // Simulate loading delay
-        await new Promise((resolve) => setTimeout(resolve, 300));
-        
-        // Return mock profile
-        setProfile(MOCK_PROFILE);
-      } catch (err) {
-        setError("Failed to load profile");
-      } finally {
-        setIsLoading(false);
-      }
+  const loadProfile = useCallback(async () => {
+    if (!user?.id) {
+      setProfile(null);
+      setIsLoading(false);
+      return;
     }
 
-    loadProfile();
-  }, [user?.id]);
-
-  const refresh = async () => {
-    if (!user?.id) return;
+    setIsLoading(true);
+    setError(null);
 
     try {
-      await new Promise((resolve) => setTimeout(resolve, 300));
-      setProfile(MOCK_PROFILE);
-    } catch (err) {
-      setError("Failed to refresh profile");
+      const result = await getCurrentUserProfile();
+
+      if (result.success && result.data) {
+        setProfile(result.data);
+      } else {
+        setError(result.error || "Failed to load profile");
+      }
+    } catch (err: any) {
+      setError(err.message || "Failed to load profile");
+    } finally {
+      setIsLoading(false);
     }
-  };
+  }, [user?.id]);
+
+  useEffect(() => {
+    loadProfile();
+  }, [loadProfile]);
+
+  const refresh = useCallback(async () => {
+    await loadProfile();
+  }, [loadProfile]);
+
+  const updateProfile = useCallback(
+    async (updates: UserProfileUpdate) => {
+      if (!user?.id) return { success: false, error: "Not authenticated" };
+
+      try {
+        const result = await updateCurrentUserProfile(updates);
+
+        if (result.success && result.data) {
+          setProfile(result.data);
+          return { success: true };
+        }
+
+        return { success: false, error: result.error };
+      } catch (err: any) {
+        return { success: false, error: err.message };
+      }
+    },
+    [user?.id]
+  );
+
+  const updateTheme = useCallback(
+    async (theme: "LIGHT" | "DARK" | "SYSTEM") => {
+      if (!user?.id) return { success: false, error: "Not authenticated" };
+
+      try {
+        const result = await updateUserTheme(theme);
+
+        if (result.success && result.data) {
+          setProfile(result.data);
+          return { success: true };
+        }
+
+        return { success: false, error: result.error };
+      } catch (err: any) {
+        return { success: false, error: err.message };
+      }
+    },
+    [user?.id]
+  );
+
+  const updateNotifications = useCallback(
+    async (updates: UserNotificationUpdate) => {
+      if (!user?.id) return { success: false, error: "Not authenticated" };
+
+      try {
+        const result = await updateUserNotifications(updates);
+
+        if (result.success && result.data) {
+          setProfile(result.data);
+          return { success: true };
+        }
+
+        return { success: false, error: result.error };
+      } catch (err: any) {
+        return { success: false, error: err.message };
+      }
+    },
+    [user?.id]
+  );
 
   return {
     profile,
     isLoading,
     error,
     refresh,
+    updateProfile,
+    updateTheme,
+    updateNotifications,
   };
 }

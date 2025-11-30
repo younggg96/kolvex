@@ -151,7 +151,9 @@ export async function signOut() {
 /**
  * Send password reset email
  */
-export async function resetPassword(data: { email: string }): Promise<AuthResponse> {
+export async function resetPassword(data: {
+  email: string;
+}): Promise<AuthResponse> {
   try {
     const supabase = createClient();
 
@@ -182,7 +184,9 @@ export async function resetPassword(data: { email: string }): Promise<AuthRespon
 /**
  * Update password (must be called from reset password page)
  */
-export async function updatePassword(data: { password: string }): Promise<AuthResponse> {
+export async function updatePassword(data: {
+  password: string;
+}): Promise<AuthResponse> {
   try {
     const supabase = createClient();
 
@@ -241,4 +245,3 @@ export function getErrorMessage(error: any): string {
   // Return the original message if no match
   return message;
 }
-

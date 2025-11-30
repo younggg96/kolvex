@@ -7,5 +7,10 @@ export {
 } from "./useStockData";
 export { useBreakpoints, Breakpoints } from "./useBreakpoints";
 export { useAuth, type UseAuthReturn } from "./useAuth";
-export { useUserProfile } from "./useUserProfile";
+export {
+  useUserProfile,
+  type UserProfile,
+  type UserProfileUpdate,
+  type UserNotificationUpdate,
+} from "./useUserProfile";
 export { useTrackedKOLs } from "./useTrackedKOLs";

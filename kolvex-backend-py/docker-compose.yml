@@ -28,10 +28,18 @@ services:
     command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
     ports:
       - "8000:8000"
+    env_file:
+      - .env
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-kolvex}:${POSTGRES_PASSWORD:-kolvex123}@db:5432/${POSTGRES_DB:-kolvex}
       SECRET_KEY: ${SECRET_KEY:-your-secret-key-change-this-in-production}
       DEBUG: ${DEBUG:-True}
+      # Supabase 配置（从 .env 文件读取）
+      SUPABASE_URL: ${SUPABASE_URL}
+      SUPABASE_KEY: ${SUPABASE_KEY}
+      SUPABASE_SERVICE_KEY: ${SUPABASE_SERVICE_KEY:-}
+      # CORS 配置
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:3000,http://localhost:3001}
     volumes:
       - .:/app
     depends_on:

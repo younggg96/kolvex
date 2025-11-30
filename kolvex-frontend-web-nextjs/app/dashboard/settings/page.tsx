@@ -1,9 +1,11 @@
 "use client";
 
-import { useEffect, useState, Suspense } from "react";
+import { useEffect, useState, Suspense, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useTheme } from "next-themes";
 import Image from "next/image";
+import Cropper from "react-easy-crop";
+import type { Area, Point } from "react-easy-crop";
 import {
   CreditCard,
   Bell,
@@ -22,12 +24,19 @@ import {
   Camera,
   Upload,
   Image as ImageIcon,
+  UserCircle,
+  X,
+  ZoomIn,
+  ZoomOut,
+  RotateCcw,
+  Maximize2,
 } from "lucide-react";
 import { toast } from "sonner";
 import DashboardLayout from "@/components/DashboardLayout";
 import SectionCard from "@/components/SectionCard";
 import PricingCard from "@/components/PricingCard";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { SwitchTab } from "@/components/ui/switch-tab";
 import {
   Select,
   SelectContent,
@@ -39,12 +48,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useAuth, useUserProfile } from "@/hooks";
-import {
-  updateTheme as updateThemeDb,
-  updateUserProfile,
-} from "@/lib/supabase/api/users";
-import type { Theme as ThemeType } from "@/lib/supabase/database.types";
+import { useAuth } from "@/hooks";
 import {
   Dialog,
   DialogContent,
@@ -56,6 +60,12 @@ import {
 } from "@/components/ui/dialog";
 import { createClient } from "@/lib/supabase/client";
 import { ProfileInfoSkeleton } from "@/components/LoadingSkeleton";
+import {
+  useCurrentUserProfile,
+  updateUserTheme,
+  updateUserNotifications,
+  type UserProfileUpdate,
+} from "@/lib/api/userApi";
 
 const settingsTabs = [
   { value: "account", icon: User, label: "Account" },
@@ -132,9 +142,12 @@ function SettingsContent() {
   const { user, isLoading: authLoading } = useAuth();
   const {
     profile,
-    isLoading: profileLoading,
-    refresh: refreshProfile,
-  } = useUserProfile();
+    loading: profileLoading,
+    updateProfile,
+    updateTheme: updateProfileTheme,
+    updateNotifications,
+    refetch: refreshProfile,
+  } = useCurrentUserProfile();
 
   const [activeTab, setActiveTab] = useState("account");
   const [mounted, setMounted] = useState(false);
@@ -143,24 +156,32 @@ function SettingsContent() {
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [avatarDialogOpen, setAvatarDialogOpen] = useState(false);
+  const [avatarPreviewOpen, setAvatarPreviewOpen] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+
+  // Cropper state
+  const [crop, setCrop] = useState<Point>({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1);
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
+
+  // Drag and drop state
+  const [isDragging, setIsDragging] = useState(false);
 
   // Form data
   const [formData, setFormData] = useState({
     username: "",
+    full_name: "",
     email: "",
     phone: "",
   });
 
   // Notification settings state
   const [notificationSettings, setNotificationSettings] = useState({
-    priceAlerts: true,
-    marketNews: true,
-    portfolioUpdates: true,
-    breakingNews: true,
-    tradeConfirmations: true,
+    is_subscribe_newsletter: false,
+    notification_method: "EMAIL" as "EMAIL" | "MESSAGE",
   });
 
   // Load profile data into form
@@ -168,8 +189,13 @@ function SettingsContent() {
     if (profile) {
       setFormData({
         username: profile.username || "",
+        full_name: profile.full_name || "",
         email: profile.email || "",
         phone: profile.phone_e164 || "",
+      });
+      setNotificationSettings({
+        is_subscribe_newsletter: profile.is_subscribe_newsletter || false,
+        notification_method: profile.notification_method || "EMAIL",
       });
     }
   }, [profile]);
@@ -192,67 +218,213 @@ function SettingsContent() {
   const handleThemeChange = async (newTheme: string) => {
     setTheme(newTheme);
 
-    if (user && profile) {
-      // Update theme in database
-      const themeValue = newTheme.toUpperCase() as ThemeType;
-      await updateThemeDb(user.id, themeValue);
+    if (profile) {
+      // Update theme in database via API
+      const themeValue = newTheme.toUpperCase() as "LIGHT" | "DARK" | "SYSTEM";
+      const result = await updateProfileTheme(themeValue);
+
+      if (!result.success) {
+        toast.error("Failed to update theme");
+      }
     }
+  };
+
+  const processFile = (file: File) => {
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error("File size must be less than 2MB");
+      return;
+    }
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please select an image file");
+      return;
+    }
+
+    setSelectedFile(file);
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setPreviewUrl(reader.result as string);
+      // Reset cropper state
+      setCrop({ x: 0, y: 0 });
+      setZoom(1);
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      if (file.size > 2 * 1024 * 1024) {
-        toast.error("File size must be less than 2MB");
-        return;
-      }
-      if (!file.type.startsWith("image/")) {
-        toast.error("Please select an image file");
-        return;
-      }
-
-      setSelectedFile(file);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setPreviewUrl(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+      processFile(file);
     }
   };
 
+  const handleDragOver = (e: React.DragEvent<HTMLLabelElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent<HTMLLabelElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLLabelElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+
+    const file = e.dataTransfer.files?.[0];
+    if (file) {
+      processFile(file);
+    }
+  };
+
+  const onCropComplete = useCallback(
+    (croppedArea: Area, croppedAreaPixels: Area) => {
+      setCroppedAreaPixels(croppedAreaPixels);
+    },
+    []
+  );
+
+  const createCroppedImage = async (
+    imageSrc: string,
+    pixelCrop: Area
+  ): Promise<Blob | null> => {
+    const image = document.createElement("img");
+    image.src = imageSrc;
+
+    return new Promise((resolve) => {
+      image.onload = () => {
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
+
+        if (!ctx) {
+          resolve(null);
+          return;
+        }
+
+        // Set canvas size to desired output size (square)
+        const size = Math.min(pixelCrop.width, pixelCrop.height);
+        canvas.width = size;
+        canvas.height = size;
+
+        // Draw the cropped image
+        ctx.drawImage(
+          image,
+          pixelCrop.x,
+          pixelCrop.y,
+          pixelCrop.width,
+          pixelCrop.height,
+          0,
+          0,
+          size,
+          size
+        );
+
+        canvas.toBlob(
+          (blob) => {
+            resolve(blob);
+          },
+          "image/jpeg",
+          0.95
+        );
+      };
+    });
+  };
+
+  const clearAvatarState = () => {
+    setSelectedFile(null);
+    setPreviewUrl(null);
+    setCrop({ x: 0, y: 0 });
+    setZoom(1);
+    setCroppedAreaPixels(null);
+    setUploadProgress(0);
+  };
+
+  const handleAvatarDialogClose = (open: boolean) => {
+    if (!open) {
+      clearAvatarState();
+    }
+    setAvatarDialogOpen(open);
+  };
+
   const handleUploadAvatar = async () => {
-    if (!selectedFile || !user) return;
+    if (!previewUrl || !user || !croppedAreaPixels) return;
 
     setIsUploading(true);
+    setUploadProgress(0);
+
     try {
+      // Simulate progress for cropping
+      setUploadProgress(10);
+
+      // Create cropped image
+      const croppedBlob = await createCroppedImage(
+        previewUrl,
+        croppedAreaPixels
+      );
+      if (!croppedBlob) {
+        throw new Error("Failed to crop image");
+      }
+
+      setUploadProgress(30);
+
       const supabase = createClient();
-      const fileExt = selectedFile.name.split(".").pop();
-      const fileName = `${user.id}-${Date.now()}.${fileExt}`;
+      const fileName = `${user.id}-${Date.now()}.jpg`;
       const filePath = `avatars/${fileName}`;
+
+      // Simulate upload progress
+      const progressInterval = setInterval(() => {
+        setUploadProgress((prev) => {
+          if (prev >= 80) {
+            clearInterval(progressInterval);
+            return prev;
+          }
+          return prev + 10;
+        });
+      }, 200);
 
       const { error: uploadError } = await supabase.storage
         .from("user-uploads")
-        .upload(filePath, selectedFile, {
+        .upload(filePath, croppedBlob, {
           cacheControl: "3600",
           upsert: true,
+          contentType: "image/jpeg",
         });
 
-      if (uploadError) throw uploadError;
+      clearInterval(progressInterval);
+      setUploadProgress(90);
+
+      if (uploadError) {
+        // Provide more helpful error messages
+        if (uploadError.message?.includes("Bucket not found")) {
+          throw new Error(
+            "Storage not configured. Please contact administrator to set up the 'user-uploads' bucket in Supabase."
+          );
+        }
+        if (uploadError.message?.includes("row-level security")) {
+          throw new Error(
+            "Permission denied. Please check Storage RLS policies."
+          );
+        }
+        throw uploadError;
+      }
 
       const {
         data: { publicUrl },
       } = supabase.storage.from("user-uploads").getPublicUrl(filePath);
 
-      const result = await updateUserProfile(user.id, {
+      // Update via backend API
+      const result = await updateProfile({
         avatar_url: publicUrl,
       });
 
+      setUploadProgress(100);
+
       if (result.success) {
         toast.success("Avatar updated successfully");
-        await refreshProfile();
-        setAvatarDialogOpen(false);
-        setSelectedFile(null);
-        setPreviewUrl(null);
+        handleAvatarDialogClose(false);
       } else {
         throw new Error(result.error);
       }
@@ -261,6 +433,7 @@ function SettingsContent() {
       toast.error(error.message || "Failed to upload avatar");
     } finally {
       setIsUploading(false);
+      setUploadProgress(0);
     }
   };
 
@@ -279,17 +452,19 @@ function SettingsContent() {
 
     setIsSaving(true);
     try {
-      const result = await updateUserProfile(user.id, {
-        username: formData.username || null,
+      const updates: UserProfileUpdate = {
+        username: formData.username || undefined,
+        full_name: formData.full_name || undefined,
         phone_e164:
           formData.phone && formData.phone.trim() !== ""
             ? formData.phone
-            : null,
-      });
+            : undefined,
+      };
+
+      const result = await updateProfile(updates);
 
       if (result.success) {
         toast.success("Profile updated successfully");
-        await refreshProfile();
         setIsEditing(false);
       } else {
         throw new Error(result.error);
@@ -312,6 +487,7 @@ function SettingsContent() {
     if (profile) {
       setFormData({
         username: profile.username || "",
+        full_name: profile.full_name || "",
         email: profile.email || "",
         phone: profile.phone_e164 || "",
       });
@@ -321,13 +497,33 @@ function SettingsContent() {
 
   const handleNotificationChange = async (
     key: keyof typeof notificationSettings,
-    value: boolean
+    value: boolean | "EMAIL" | "MESSAGE"
   ) => {
-    setNotificationSettings((prev) => ({ ...prev, [key]: value }));
+    const newSettings = { ...notificationSettings, [key]: value };
+    setNotificationSettings(newSettings as typeof notificationSettings);
 
-    // TODO: Save to database when notification settings are mapped to database fields
-    // For now, just update local state
+    // Update via backend API
+    try {
+      const result = await updateNotifications(newSettings);
+
+      if (result.success) {
+        toast.success("Notification settings updated");
+      } else {
+        throw new Error(result.error);
+      }
+    } catch (error: any) {
+      console.error("Notification update error:", error);
+      toast.error(error.message || "Failed to update notification settings");
+      // Revert on error
+      setNotificationSettings(notificationSettings);
+    }
   };
+
+  const tabOptions = settingsTabs.map((tab) => ({
+    value: tab.value,
+    label: tab.label,
+    icon: <tab.icon className="w-4 h-4" />,
+  }));
 
   return (
     <DashboardLayout title="Settings">
@@ -335,53 +531,15 @@ function SettingsContent() {
         <div className="p-2 min-w-0">
           {/* Settings Tabs */}
           <Tabs value={activeTab} onValueChange={handleTabChange}>
-            <div className="flex flex-col md:flex-row gap-2">
-              {/* Vertical Tab List (Tablet/Desktop) / Horizontal Tab List (Mobile) */}
-              <div className="w-full md:w-48 flex-shrink-0">
-                {/* Mobile: Horizontal scrolling tabs */}
-                <TabsList className="h-auto rounded-lg flex md:hidden flex-row items-center gap-1.5 bg-white dark:bg-card-dark border border-border-light dark:border-border-dark p-1.5 overflow-x-auto scrollbar-hide">
-                  {settingsTabs.map((tab) => {
-                    const isActive = activeTab === tab.value;
-                    const Icon = tab.icon;
-                    return (
-                      <TabsTrigger
-                        key={tab.value}
-                        value={tab.value}
-                        className={`flex-shrink-0 flex items-center gap-1.5 px-3 h-8 rounded-lg text-xs font-medium transition-all duration-200 whitespace-nowrap ${
-                          isActive
-                            ? "bg-primary/15 text-primary"
-                            : "text-gray-600 dark:text-white/50 hover:bg-gray-200 dark:hover:bg-white/5 hover:text-gray-900 dark:hover:text-white/70"
-                        }`}
-                      >
-                        <Icon className="w-3.5 h-3.5" />
-                        <span>{tab.label}</span>
-                      </TabsTrigger>
-                    );
-                  })}
-                </TabsList>
-
-                {/* Tablet/Desktop: Vertical tabs */}
-                <TabsList className="hidden md:flex h-auto flex-col items-stretch gap-1 bg-white dark:bg-card-dark border border-border-light dark:border-border-dark rounded-lg p-2 sticky top-0">
-                  {settingsTabs.map((tab) => {
-                    const isActive = activeTab === tab.value;
-                    const Icon = tab.icon;
-                    return (
-                      <TabsTrigger
-                        key={tab.value}
-                        value={tab.value}
-                        className={`w-full flex items-center justify-start gap-2 px-2.5 h-9 rounded-lg text-xs font-medium transition-all duration-200 ${
-                          isActive
-                            ? "bg-primary/15 text-primary"
-                            : "text-gray-600 dark:text-white/50 hover:bg-gray-200 dark:hover:bg-white/5 hover:text-gray-900 dark:hover:text-white/70"
-                        }`}
-                      >
-                        <Icon className="w-4 h-4" />
-                        <span className="flex-1 text-left">{tab.label}</span>
-                      </TabsTrigger>
-                    );
-                  })}
-                </TabsList>
-              </div>
+            <div className="flex flex-col gap-2">
+              <SwitchTab
+                value={activeTab}
+                onValueChange={handleTabChange}
+                options={tabOptions}
+                size="md"
+                variant="pills"
+                className="!w-fit border border-gray-200 dark:border-white/10 rounded-lg"
+              />
 
               {/* Tab Content Area */}
               <div className="flex-1 min-w-0">
@@ -414,104 +572,240 @@ function SettingsContent() {
                       <ProfileInfoSkeleton />
                     ) : (
                       <div className="space-y-4 px-4 pb-4">
-                        {/* Avatar */}
+                        {/* Avatar with fullscreen preview */}
+                        <div className="flex items-center gap-3 sm:gap-4 p-2 sm:p-3">
+                          <div className="relative">
+                            {profile?.avatar_url ? (
+                              <button
+                                onClick={() => setAvatarPreviewOpen(true)}
+                                className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-full overflow-hidden shadow-lg cursor-pointer group"
+                              >
+                                <Image
+                                  src={profile.avatar_url}
+                                  alt="Profile"
+                                  fill
+                                  className="object-cover transition-transform duration-200 group-hover:scale-110"
+                                  sizes="(max-width: 640px) 64px, 80px"
+                                />
+                                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-200 flex items-center justify-center">
+                                  <Maximize2 className="w-5 h-5 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
+                                </div>
+                              </button>
+                            ) : (
+                              <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center text-white text-xl sm:text-2xl font-bold shadow-lg">
+                                {profile?.username
+                                  ? profile.username
+                                      .substring(0, 2)
+                                      .toUpperCase()
+                                  : profile?.email
+                                      ?.substring(0, 2)
+                                      .toUpperCase() || "US"}
+                              </div>
+                            )}
+                            <button
+                              onClick={() => setAvatarDialogOpen(true)}
+                              className="absolute -bottom-1 -right-1 w-6 h-6 sm:w-7 sm:h-7 bg-white dark:bg-card-dark rounded-full flex items-center justify-center shadow-md border-2 border-gray-200 dark:border-white/10 hover:scale-110 transition-all duration-200 cursor-pointer"
+                            >
+                              <Camera className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-gray-600 dark:text-white/70" />
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Avatar fullscreen preview dialog */}
+                        <Dialog
+                          open={avatarPreviewOpen}
+                          onOpenChange={setAvatarPreviewOpen}
+                        >
+                          <DialogContent className="w-[90vw] h-[90vh] max-w-[90vw] max-h-[90vh] !p-0 bg-black/95 border-none flex items-center justify-center">
+                            {profile?.avatar_url && (
+                              <div className="relative w-full h-full flex items-center justify-center">
+                                <Image
+                                  src={profile.avatar_url}
+                                  alt="Profile"
+                                  fill
+                                  className="object-contain"
+                                  sizes="90vw"
+                                  priority
+                                />
+                              </div>
+                            )}
+                          </DialogContent>
+                        </Dialog>
+
+                        {/* Avatar upload dialog with cropper */}
                         <Dialog
                           open={avatarDialogOpen}
-                          onOpenChange={setAvatarDialogOpen}
+                          onOpenChange={handleAvatarDialogClose}
                         >
-                          <div className="flex items-center gap-3 sm:gap-4 p-2 sm:p-3">
-                            <div className="relative">
-                              {profile?.avatar_url ? (
-                                <div className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-full overflow-hidden shadow-lg">
-                                  <Image
-                                    src={profile.avatar_url}
-                                    alt="Profile"
-                                    fill
-                                    className="object-cover"
-                                    sizes="(max-width: 640px) 64px, 80px"
-                                  />
-                                </div>
-                              ) : (
-                                <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center text-white text-xl sm:text-2xl font-bold shadow-lg">
-                                  {profile?.username
-                                    ? profile.username
-                                        .substring(0, 2)
-                                        .toUpperCase()
-                                    : profile?.email
-                                        ?.substring(0, 2)
-                                        .toUpperCase() || "US"}
-                                </div>
-                              )}
-                              <DialogTrigger asChild>
-                                <button className="absolute -bottom-1 -right-1 w-6 h-6 sm:w-7 sm:h-7 bg-white dark:bg-card-dark rounded-full flex items-center justify-center shadow-md border-2 border-gray-200 dark:border-white/10 hover:scale-110 transition-all duration-200 cursor-pointer">
-                                  <Camera className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-gray-600 dark:text-white/70" />
-                                </button>
-                              </DialogTrigger>
-                            </div>
-                          </div>
-
-                          <DialogContent className="w-[calc(100%-2rem)] max-w-md mx-auto">
+                          <DialogContent className="w-[calc(100%-2rem)] max-w-lg mx-auto max-h-[90vh] overflow-y-auto">
                             <DialogHeader>
                               <DialogTitle className="text-base sm:text-lg">
                                 Upload Avatar
                               </DialogTitle>
                               <DialogDescription className="text-xs sm:text-sm">
-                                Choose an image file to upload as your profile
-                                picture.
+                                {previewUrl
+                                  ? "Drag to reposition, scroll to zoom. Image will be cropped to a square."
+                                  : "Choose an image file to upload as your profile picture."}
                               </DialogDescription>
                             </DialogHeader>
-                            <div className="space-y-4">
-                              <div className="flex items-center justify-center w-full">
-                                <label
-                                  htmlFor="avatar-upload"
-                                  className="flex flex-col items-center justify-center w-full h-48 sm:h-64 border-2 border-gray-300 dark:border-white/10 border-dashed rounded-xl cursor-pointer bg-gray-50 dark:bg-white/5 hover:bg-gray-100 dark:hover:bg-white/10 transition-colors duration-200"
-                                >
-                                  {previewUrl ? (
-                                    <div className="relative w-full h-full p-3 sm:p-4">
-                                      <div className="relative w-full h-full">
-                                        <Image
-                                          src={previewUrl}
-                                          alt="Preview"
-                                          fill
-                                          className="object-cover rounded-lg"
-                                          sizes="(max-width: 640px) 300px, 400px"
+                            <div>
+                              {/* Image cropper (shown when image is selected) */}
+                              {previewUrl ? (
+                                <div className="space-y-4 mb-4">
+                                  {/* Cropper area */}
+                                  <div className="relative w-full aspect-square bg-gray-900 rounded-xl overflow-hidden">
+                                    <Cropper
+                                      image={previewUrl}
+                                      crop={crop}
+                                      zoom={zoom}
+                                      aspect={1}
+                                      cropShape="round"
+                                      showGrid={false}
+                                      onCropChange={setCrop}
+                                      onCropComplete={onCropComplete}
+                                      onZoomChange={setZoom}
+                                    />
+                                  </div>
+
+                                  {/* Zoom controls */}
+                                  <div className="flex items-center gap-3 px-2">
+                                    <ZoomOut className="w-4 h-4 text-gray-500 dark:text-white/50" />
+                                    <input
+                                      type="range"
+                                      min={1}
+                                      max={3}
+                                      step={0.1}
+                                      value={zoom}
+                                      onChange={(e) =>
+                                        setZoom(Number(e.target.value))
+                                      }
+                                      className="flex-1 h-2 bg-gray-200 dark:bg-white/10 rounded-lg appearance-none cursor-pointer accent-primary"
+                                    />
+                                    <ZoomIn className="w-4 h-4 text-gray-500 dark:text-white/50" />
+                                  </div>
+
+                                  {/* Action buttons for cropper */}
+                                  <div className="flex items-center justify-between">
+                                    <Button
+                                      type="button"
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => {
+                                        setCrop({ x: 0, y: 0 });
+                                        setZoom(1);
+                                      }}
+                                      className="gap-1.5 h-8 text-xs"
+                                    >
+                                      <RotateCcw className="w-3 h-3" />
+                                      Reset
+                                    </Button>
+                                    <label
+                                      htmlFor="avatar-upload-change"
+                                      className="cursor-pointer"
+                                    >
+                                      <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        className="gap-1.5 h-8 text-xs pointer-events-none"
+                                      >
+                                        <ImageIcon className="w-3 h-3" />
+                                        Change Image
+                                      </Button>
+                                      <input
+                                        id="avatar-upload-change"
+                                        type="file"
+                                        className="hidden"
+                                        accept="image/*"
+                                        onChange={handleFileSelect}
+                                      />
+                                    </label>
+                                  </div>
+                                </div>
+                              ) : (
+                                /* Upload area (shown when no image selected) */
+                                <div className="flex items-center justify-center w-full">
+                                  <label
+                                    htmlFor="avatar-upload"
+                                    onDragOver={handleDragOver}
+                                    onDragLeave={handleDragLeave}
+                                    onDrop={handleDrop}
+                                    className={`flex flex-col items-center justify-center w-full h-48 sm:h-64 border-2 border-dashed rounded-xl cursor-pointer transition-all duration-200 ${
+                                      isDragging
+                                        ? "border-primary bg-primary/10 dark:bg-primary/20 scale-[1.02]"
+                                        : "border-gray-300 dark:border-white/10 bg-gray-50 dark:bg-white/5 hover:bg-gray-100 dark:hover:bg-white/10"
+                                    }`}
+                                  >
+                                    <div className="flex flex-col items-center justify-center pt-4 pb-5 sm:pt-5 sm:pb-6 px-4">
+                                      <div
+                                        className={`mb-3 sm:mb-4 transition-transform duration-200 ${
+                                          isDragging ? "scale-110" : ""
+                                        }`}
+                                      >
+                                        <ImageIcon
+                                          className={`w-10 h-10 sm:w-12 sm:h-12 ${
+                                            isDragging
+                                              ? "text-primary"
+                                              : "text-gray-400 dark:text-white/40"
+                                          }`}
                                         />
                                       </div>
-                                    </div>
-                                  ) : (
-                                    <div className="flex flex-col items-center justify-center pt-4 pb-5 sm:pt-5 sm:pb-6 px-4">
-                                      <ImageIcon className="w-10 h-10 sm:w-12 sm:h-12 mb-3 sm:mb-4 text-gray-400 dark:text-white/40" />
-                                      <p className="mb-2 text-xs sm:text-sm text-gray-600 dark:text-white/60 text-center">
-                                        <span className="font-semibold">
-                                          Click to upload
-                                        </span>{" "}
-                                        or drag and drop
+                                      <p
+                                        className={`mb-2 text-xs sm:text-sm text-center ${
+                                          isDragging
+                                            ? "text-primary font-medium"
+                                            : "text-gray-600 dark:text-white/60"
+                                        }`}
+                                      >
+                                        {isDragging ? (
+                                          "Drop image here"
+                                        ) : (
+                                          <>
+                                            <span className="font-semibold">
+                                              Click to upload
+                                            </span>{" "}
+                                            or drag and drop
+                                          </>
+                                        )}
                                       </p>
                                       <p className="text-[10px] sm:text-xs text-gray-500 dark:text-white/40">
                                         PNG, JPG or GIF (MAX. 2MB)
                                       </p>
                                     </div>
-                                  )}
-                                  <input
-                                    id="avatar-upload"
-                                    type="file"
-                                    className="hidden"
-                                    accept="image/*"
-                                    onChange={handleFileSelect}
-                                  />
-                                </label>
-                              </div>
+                                    <input
+                                      id="avatar-upload"
+                                      type="file"
+                                      className="hidden"
+                                      accept="image/*"
+                                      onChange={handleFileSelect}
+                                    />
+                                  </label>
+                                </div>
+                              )}
+
+                              {/* Upload progress bar */}
+                              {isUploading && (
+                                <div className="space-y-2">
+                                  <div className="flex items-center justify-between text-xs text-gray-600 dark:text-white/60">
+                                    <span>Uploading...</span>
+                                    <span>{uploadProgress}%</span>
+                                  </div>
+                                  <div className="w-full h-2 bg-gray-200 dark:bg-white/10 rounded-full overflow-hidden">
+                                    <div
+                                      className="h-full bg-primary rounded-full transition-all duration-300 ease-out"
+                                      style={{ width: `${uploadProgress}%` }}
+                                    />
+                                  </div>
+                                </div>
+                              )}
                             </div>
                             <DialogFooter className="gap-2 flex-col sm:flex-row">
                               <Button
                                 type="button"
                                 variant="outline"
                                 size="sm"
-                                onClick={() => {
-                                  setAvatarDialogOpen(false);
-                                  setSelectedFile(null);
-                                  setPreviewUrl(null);
-                                }}
+                                onClick={() => handleAvatarDialogClose(false)}
+                                disabled={isUploading}
                                 className="w-full sm:w-auto h-8 text-xs"
                               >
                                 Cancel
@@ -520,7 +814,7 @@ function SettingsContent() {
                                 type="button"
                                 size="sm"
                                 onClick={handleUploadAvatar}
-                                disabled={!selectedFile || isUploading}
+                                disabled={!previewUrl || isUploading}
                                 className="gap-1.5 w-full sm:w-auto h-8 text-xs"
                               >
                                 <Upload className="w-3 h-3" />
@@ -539,6 +833,33 @@ function SettingsContent() {
                           <p className="text-xs sm:text-sm text-gray-900 dark:text-white py-1.5 sm:py-2 px-2.5 sm:px-3 bg-gray-50 dark:bg-white/5 rounded-lg border border-gray-200 dark:border-white/10 break-all">
                             {formData.email}
                           </p>
+                        </div>
+
+                        {/* Full Name */}
+                        <div className="space-y-1.5">
+                          <Label className="text-xs font-medium text-gray-700 dark:text-white/70 flex items-center gap-1.5">
+                            <UserCircle className="w-3 h-3" />
+                            Full Name
+                          </Label>
+                          {isEditing ? (
+                            <Input
+                              id="full_name"
+                              type="text"
+                              value={formData.full_name}
+                              onChange={(e) =>
+                                setFormData({
+                                  ...formData,
+                                  full_name: e.target.value,
+                                })
+                              }
+                              placeholder="Enter your full name"
+                              className="h-8 sm:h-9 text-xs sm:text-sm"
+                            />
+                          ) : (
+                            <p className="text-xs sm:text-sm text-gray-900 dark:text-white py-1.5 sm:py-2 px-2.5 sm:px-3 bg-gray-50 dark:bg-white/5 rounded-lg border border-gray-200 dark:border-white/10">
+                              {formData.full_name || "-"}
+                            </p>
+                          )}
                         </div>
 
                         {/* Username */}
@@ -589,6 +910,10 @@ function SettingsContent() {
                                 placeholder="+14155552671"
                                 className="h-8 sm:h-9 text-xs sm:text-sm"
                               />
+                              <p className="text-[10px] text-gray-500 dark:text-white/40">
+                                Format: +[country code][number] (e.g.,
+                                +14155552671)
+                              </p>
                             </div>
                           ) : (
                             <p className="text-xs sm:text-sm text-gray-900 dark:text-white py-1.5 sm:py-2 px-2.5 sm:px-3 bg-gray-50 dark:bg-white/5 rounded-lg border border-gray-200 dark:border-white/10">
@@ -655,99 +980,81 @@ function SettingsContent() {
                     sectionHeaderSubtitle="Manage how you receive notifications"
                   >
                     <div className="px-4 pb-4 space-y-4 sm:space-y-5">
-                      {/* Email Notifications */}
+                      {/* Newsletter Subscription */}
                       <div>
                         <h3 className="text-xs font-medium mb-2 text-gray-700 dark:text-white/70">
                           Email Notifications
                         </h3>
                         <div className="space-y-2">
-                          {[
-                            {
-                              id: "price-alerts",
-                              label: "Price Alerts",
-                              description:
-                                "Get notified when your watchlist stocks hit target prices",
-                            },
-                            {
-                              id: "market-news",
-                              label: "Market News",
-                              description:
-                                "Receive daily market news and analysis",
-                            },
-                            {
-                              id: "portfolio-updates",
-                              label: "Portfolio Updates",
-                              description:
-                                "Weekly summary of your portfolio performance",
-                            },
-                          ].map((item) => (
-                            <div
-                              key={item.id}
-                              className="flex items-center justify-between p-2 sm:p-2.5 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/5 rounded-lg hover:bg-gray-100 dark:hover:bg-white/10 transition-colors duration-200"
-                            >
-                              <div className="flex-1 space-y-0.5 pr-2">
-                                <Label
-                                  htmlFor={item.id}
-                                  className="text-xs sm:text-sm font-medium text-gray-900 dark:text-white cursor-pointer"
-                                >
-                                  {item.label}
-                                </Label>
-                                <p className="text-[10px] sm:text-xs text-gray-600 dark:text-white/60">
-                                  {item.description}
-                                </p>
-                              </div>
-                              <Switch
-                                id={item.id}
-                                defaultChecked
-                                className="ml-2 flex-shrink-0"
-                              />
+                          <div className="flex items-center justify-between p-2 sm:p-2.5 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/5 rounded-lg hover:bg-gray-100 dark:hover:bg-white/10 transition-colors duration-200">
+                            <div className="flex-1 space-y-0.5 pr-2">
+                              <Label
+                                htmlFor="newsletter"
+                                className="text-xs sm:text-sm font-medium text-gray-900 dark:text-white cursor-pointer"
+                              >
+                                Subscribe to Newsletter
+                              </Label>
+                              <p className="text-[10px] sm:text-xs text-gray-600 dark:text-white/60">
+                                Receive market updates, new features, and more
+                              </p>
                             </div>
-                          ))}
+                            <Switch
+                              id="newsletter"
+                              checked={
+                                notificationSettings.is_subscribe_newsletter
+                              }
+                              onCheckedChange={(checked) =>
+                                handleNotificationChange(
+                                  "is_subscribe_newsletter",
+                                  checked
+                                )
+                              }
+                              className="ml-2 flex-shrink-0"
+                            />
+                          </div>
                         </div>
                       </div>
 
-                      {/* Push Notifications */}
+                      {/* Notification Method */}
                       <div>
                         <h3 className="text-xs font-medium mb-2 text-gray-700 dark:text-white/70">
-                          Push Notifications
+                          Notification Method
                         </h3>
-                        <div className="space-y-2">
-                          {[
-                            {
-                              id: "breaking-news",
-                              label: "Breaking News",
-                              description:
-                                "Instant alerts for major market events",
-                            },
-                            {
-                              id: "trade-confirmations",
-                              label: "Trade Confirmations",
-                              description:
-                                "Notifications when trades are executed",
-                            },
-                          ].map((item) => (
-                            <div
-                              key={item.id}
-                              className="flex items-center justify-between p-2 sm:p-2.5 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/5 rounded-lg hover:bg-gray-100 dark:hover:bg-white/10 transition-colors duration-200"
-                            >
-                              <div className="flex-1 space-y-0.5 pr-2">
-                                <Label
-                                  htmlFor={item.id}
-                                  className="text-xs sm:text-sm font-medium text-gray-900 dark:text-white cursor-pointer"
-                                >
-                                  {item.label}
-                                </Label>
-                                <p className="text-[10px] sm:text-xs text-gray-600 dark:text-white/60">
-                                  {item.description}
-                                </p>
-                              </div>
-                              <Switch
-                                id={item.id}
-                                defaultChecked
-                                className="ml-2 flex-shrink-0"
-                              />
-                            </div>
-                          ))}
+                        <div className="space-y-1.5">
+                          <Label className="text-xs font-medium text-gray-700 dark:text-white/70">
+                            Choose your preferred notification method
+                          </Label>
+                          <Select
+                            value={notificationSettings.notification_method}
+                            onValueChange={(value: "EMAIL" | "MESSAGE") =>
+                              handleNotificationChange(
+                                "notification_method",
+                                value
+                              )
+                            }
+                          >
+                            <SelectTrigger className="h-8 sm:h-9 text-xs sm:text-sm">
+                              <SelectValue placeholder="Select notification method" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="EMAIL">
+                                <div className="flex items-center gap-2">
+                                  <Mail className="w-4 h-4" />
+                                  <span>Email</span>
+                                </div>
+                              </SelectItem>
+                              <SelectItem value="MESSAGE">
+                                <div className="flex items-center gap-2">
+                                  <Bell className="w-4 h-4" />
+                                  <span>In-app Message</span>
+                                </div>
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <p className="text-[10px] text-gray-500 dark:text-white/40">
+                            You will receive important system notifications via
+                            this method
+                          </p>
                         </div>
                       </div>
                     </div>
