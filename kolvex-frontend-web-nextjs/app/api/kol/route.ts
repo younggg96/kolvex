@@ -1,116 +1,84 @@
 import { NextRequest, NextResponse } from "next/server";
-import { mockCreators, mockUserData, Platform } from "@/lib/mockData";
 
-export type KOLPlatform = "twitter" | "reddit" | "youtube" | "xiaohongshu" | "rednote" | "x";
-
-export interface KOL {
-  id: string;
-  name: string;
+// KOL Profile from backend API
+export interface KOLProfile {
+  id: number;
   username: string;
-  platform: KOLPlatform;
-  followers: number;
-  description?: string;
-  avatarUrl?: string;
-  isTracking: boolean;
-  createdAt: string;
-  updatedAt: string;
+  display_name: string | null;
+  description: string | null;
+  category: string | null;
+  followers_count: number;
+  following_count: number;
+  posts_count: number;
+  avatar_url: string | null;
+  banner_url: string | null;
+  is_active: boolean;
+  is_verified: boolean;
+  verification_type: string | null;
+  rest_id: string | null;
+  join_date: string | null;
+  location: string | null;
+  website: string | null;
+  bio: string | null;
+  created_at: string | null;
+  updated_at: string | null;
 }
 
-// Map KOL platform types to database platform types
-const platformMap: Record<KOLPlatform, Platform> = {
-  twitter: "TWITTER",
-  x: "TWITTER",
-  reddit: "REDDIT",
-  youtube: "YOUTUBE",
-  xiaohongshu: "XIAOHONGSHU",
-  rednote: "REDNOTE",
-};
+// KOL Profile Detail response from backend
+export interface KOLProfileDetail {
+  profile: KOLProfile;
+  tweet_count: number;
+  total_likes: number;
+  total_retweets: number;
+}
 
-const reversePlatformMap: Record<Platform, KOLPlatform> = {
-  TWITTER: "twitter",
-  REDDIT: "reddit",
-  YOUTUBE: "youtube",
-  XIAOHONGSHU: "xiaohongshu",
-  REDNOTE: "rednote",
-};
+// Backend API base URL
+const BACKEND_API_URL = process.env.BACKEND_API_URL || "http://127.0.0.1:8000";
 
-// GET - Fetch all KOLs
+// GET - Fetch specific KOL profile
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
-    const platform = searchParams.get("platform") as KOLPlatform | null;
-    const isTracking = searchParams.get("isTracking");
+    const kolId = searchParams.get("kolId");
 
-    let filteredCreators = [...mockCreators];
-
-    // Filter by platform if provided
-    if (platform) {
-      const dbPlatform = platformMap[platform];
-      filteredCreators = filteredCreators.filter((c) => c.platform === dbPlatform);
+    if (!kolId) {
+      return NextResponse.json(
+        { error: "kolId (username) is required" },
+        { status: 400 }
+      );
     }
 
-    // Transform creators data to KOL format
-    let kols: KOL[] = filteredCreators.map((creator) => ({
-      id: creator.id,
-      name: creator.display_name,
-      username: creator.username || creator.creator_id,
-      platform: reversePlatformMap[creator.platform],
-      followers: creator.followers_count,
-      description: creator.bio || undefined,
-      avatarUrl: creator.avatar_url || undefined,
-      isTracking: mockUserData.trackedKols.has(creator.creator_id),
-      createdAt: creator.created_at,
-      updatedAt: creator.updated_at,
-    }));
+    // Fetch data from backend API
+    // We use include_tweets=false to only get profile details
+    const response = await fetch(
+      `${BACKEND_API_URL}/api/v1/kol-tweets/profile/${kolId}?include_tweets=false`,
+      {
+        headers: {
+          accept: "application/json",
+        },
+        cache: "no-store",
+      }
+    );
 
-    // Filter by tracking status if provided
-    if (isTracking !== null) {
-      const tracking = isTracking === "true";
-      kols = kols.filter((kol) => kol.isTracking === tracking);
+    if (response.status === 404) {
+      return NextResponse.json(null, { status: 200 });
     }
 
-    return NextResponse.json(kols);
+    if (!response.ok) {
+      throw new Error(`Backend API responded with status: ${response.status}`);
+    }
+
+    const data: KOLProfileDetail = await response.json();
+
+    return NextResponse.json(data);
   } catch (error) {
-    console.error("Error fetching KOLs:", error);
+    console.error("Error fetching KOL profile:", error);
     return NextResponse.json(
       {
-        error: "Failed to fetch KOLs",
+        error: "Failed to fetch KOL profile",
         details: error instanceof Error ? error.message : "Unknown error",
       },
       { status: 500 }
     );
   }
-}
-
-// POST - Create a new KOL (Not supported)
-export async function POST(request: NextRequest) {
-  return NextResponse.json(
-    {
-      error: "Creating creators is not supported through this API",
-      message: "Creators are automatically discovered and managed by the system",
-    },
-    { status: 403 }
-  );
-}
-
-// PATCH - Update an existing KOL (Not supported)
-export async function PATCH(request: NextRequest) {
-  return NextResponse.json(
-    {
-      error: "Updating creators is not supported through this API",
-      message: "Creators are automatically updated by the system. To track/untrack a creator, use the tracking API instead.",
-    },
-    { status: 403 }
-  );
-}
-
-// DELETE - Delete a KOL (Not supported)
-export async function DELETE(request: NextRequest) {
-  return NextResponse.json(
-    {
-      error: "Deleting creators is not supported through this API",
-      message: "Creators are managed by the system. To untrack a creator, use the tracking API instead.",
-    },
-    { status: 403 }
-  );
 }

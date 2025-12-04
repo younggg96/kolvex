@@ -19,7 +19,6 @@ import { RotateCcw } from "lucide-react";
 import { MultiSelectOption } from "./ui/multi-select";
 import { FilterSheet, DateRange, Sentiment } from "./FilterSheet";
 import PostFeedList from "./PostFeedList";
-import LiveButton from "./LiveButton";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -43,6 +42,8 @@ const PlatformTabOption = [
       />
     ),
   },
+  /* 
+  // Temporarily hidden other platforms
   {
     value: "reddit",
     label: "Reddit",
@@ -82,6 +83,7 @@ const PlatformTabOption = [
       />
     ),
   },
+  */
 ];
 
 export default function PostList({ className }: { className?: string }) {
@@ -92,7 +94,6 @@ export default function PostList({ className }: { className?: string }) {
   const [selectedSentiments, setSelectedSentiments] = useState<Sentiment[]>([]);
   const [timeRange, setTimeRange] = useState<string>("all");
   const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
-  const [isLive, setIsLive] = useState(false);
 
   // Cache posts data for each platform
   const [platformPosts, setPlatformPosts] = useState<
@@ -140,6 +141,18 @@ export default function PostList({ className }: { className?: string }) {
     youtube: true,
     rednote: true,
   });
+
+  // Track offset for each platform for pagination
+  const [platformOffset, setPlatformOffset] = useState<
+    Record<Platform, number>
+  >({
+    x: 0,
+    reddit: 0,
+    youtube: 0,
+    rednote: 0,
+  });
+
+  const PAGE_SIZE = 20;
 
   // Get current platform data
   const currentPosts = platformPosts[selectedPlatform];
@@ -340,6 +353,16 @@ export default function PostList({ className }: { className?: string }) {
       ...prev,
       [selectedPlatform]: [],
     }));
+    // Reset offset when switching tabs
+    setPlatformOffset((prev) => ({
+      ...prev,
+      [selectedPlatform]: 0,
+    }));
+    // Reset hasMore when switching tabs
+    setPlatformHasMore((prev) => ({
+      ...prev,
+      [selectedPlatform]: true,
+    }));
     setLoadedPlatforms((prev) => {
       const newSet = new Set(prev);
       newSet.delete(selectedPlatform);
@@ -409,8 +432,15 @@ export default function PostList({ className }: { className?: string }) {
       setPlatformLoading((prev) => ({ ...prev, [selectedPlatform]: true }));
       setPlatformErrors((prev) => ({ ...prev, [selectedPlatform]: null }));
 
+      // Reset offset when fetching fresh data
+      setPlatformOffset((prev) => ({ ...prev, [selectedPlatform]: 0 }));
+
       const endpoint = getApiEndpoint(selectedPlatform);
-      const response = await fetch(endpoint, {
+      // Add pagination parameters for initial load
+      const separator = endpoint.includes("?") ? "&" : "?";
+      const paginatedEndpoint = `${endpoint}${separator}limit=${PAGE_SIZE}&offset=0`;
+
+      const response = await fetch(paginatedEndpoint, {
         // Force refresh bypasses cache
         cache: forceRefresh ? "no-store" : "default",
       });
@@ -431,7 +461,7 @@ export default function PostList({ className }: { className?: string }) {
       // Update hasMore for current platform
       setPlatformHasMore((prev) => ({
         ...prev,
-        [selectedPlatform]: unifiedPosts.length >= 20,
+        [selectedPlatform]: unifiedPosts.length >= PAGE_SIZE,
       }));
 
       // Mark this platform as loaded
@@ -457,8 +487,15 @@ export default function PostList({ className }: { className?: string }) {
 
     try {
       setLoadingMore(true);
+      const currentOffset = platformOffset[selectedPlatform];
+      const newOffset = currentOffset + PAGE_SIZE;
+
       const endpoint = getApiEndpoint(selectedPlatform);
-      const response = await fetch(endpoint);
+      // Add pagination parameters to the endpoint
+      const separator = endpoint.includes("?") ? "&" : "?";
+      const paginatedEndpoint = `${endpoint}${separator}limit=${PAGE_SIZE}&offset=${newOffset}`;
+
+      const response = await fetch(paginatedEndpoint);
 
       if (!response.ok) {
         throw new Error("Failed to fetch more posts");
@@ -480,10 +517,16 @@ export default function PostList({ className }: { className?: string }) {
         [selectedPlatform]: [...prev[selectedPlatform], ...filteredNewPosts],
       }));
 
-      // Update hasMore for current platform
+      // Update offset for current platform
+      setPlatformOffset((prev) => ({
+        ...prev,
+        [selectedPlatform]: newOffset,
+      }));
+
+      // Update hasMore based on whether we received a full page of results
       setPlatformHasMore((prev) => ({
         ...prev,
-        [selectedPlatform]: filteredNewPosts.length > 0,
+        [selectedPlatform]: newUnifiedPosts.length >= PAGE_SIZE,
       }));
     } catch (err) {
       console.error("Failed to load more posts:", err);
@@ -539,93 +582,10 @@ export default function PostList({ className }: { className?: string }) {
 
   const handleTabChange = (value: string) => {
     setSelectedTab(value);
-    // Disable live mode when switching away from "all"
-    if (value !== "all" && isLive) {
-      setIsLive(false);
-    }
   };
-
-  // Handle live toggle
-  const handleLiveToggle = useCallback((live: boolean) => {
-    setIsLive(live);
-  }, []);
-
-  // Real-time subscription for new posts (only when live and tab is "all")
-  useEffect(() => {
-    if (!isLive || selectedTab !== "all") {
-      return;
-    }
-
-    const supabase = createClient();
-
-    const channel = supabase
-      .channel("all-new-posts")
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "social_posts",
-        },
-        (payload) => {
-          try {
-            // Convert the new post to UnifiedPost format
-            const newPost = socialPostToUnifiedPost(payload.new as any);
-
-            if (!newPost || !newPost.isMarketRelated) {
-              return;
-            }
-
-            // Determine which platform this post belongs to
-            let platform: Platform;
-            if (newPost.platform === "x") platform = "x";
-            else if (newPost.platform === "reddit") platform = "reddit";
-            else if (newPost.platform === "youtube") platform = "youtube";
-            else if (newPost.platform === "rednote") platform = "rednote";
-            else {
-              return;
-            }
-
-            // Add new post to the beginning of the corresponding platform array
-            setPlatformPosts((prev) => {
-              const platformPostsList = prev[platform];
-
-              // Check if post already exists
-              if (platformPostsList.some((p) => p.id === newPost.id)) {
-                return prev;
-              }
-
-              return {
-                ...prev,
-                [platform]: [newPost, ...platformPostsList],
-              };
-            });
-
-            // Show toast notification
-            toast.success(
-              `New ${platform.toUpperCase()} post from ${newPost.author}`,
-              {
-                duration: 3000,
-              }
-            );
-          } catch (error) {
-            console.error("Error processing new post:", error);
-          }
-        }
-      )
-      .subscribe((status) => {
-        console.log("Subscription status:", status);
-      });
-
-    // Cleanup function
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [isLive, selectedTab]);
 
   return (
     <SectionCard
-      showLiveIndicator
       headerBorder
       padding="md"
       scrollable
@@ -681,8 +641,6 @@ export default function PostList({ className }: { className?: string }) {
         </div>
       }
       headerClassName="!pb-0 !pt-2"
-      liveIndicatorClassName="!mb-2"
-      onLiveToggle={handleLiveToggle}
     >
       {isLoading && (
         <div className="flex flex-col gap-2">

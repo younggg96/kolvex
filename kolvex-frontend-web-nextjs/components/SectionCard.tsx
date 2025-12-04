@@ -1,7 +1,6 @@
-import { ReactNode, useState } from "react";
+import { ReactNode } from "react";
 import { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
-import LiveButton from "./LiveButton";
 import { toast } from "sonner";
 
 interface SectionCardProps {
@@ -9,7 +8,6 @@ interface SectionCardProps {
   title?: string;
   titleSize?: "sm" | "md" | "lg";
   icon?: ReactNode;
-  showLiveIndicator?: boolean;
   headerExtra?: ReactNode;
   headerRightExtra?: ReactNode;
   headerBorder?: boolean;
@@ -31,15 +29,12 @@ interface SectionCardProps {
   // Container props
   className?: string;
   padding?: "sm" | "md" | "lg" | "none";
-  liveIndicatorClassName?: string;
-  onLiveToggle?: (live: boolean) => void;
 }
 
 export default function SectionCard({
   title,
   titleSize = "md",
   icon,
-  showLiveIndicator = false,
   headerClassName = "",
   headerExtra,
   headerRightExtra,
@@ -55,8 +50,6 @@ export default function SectionCard({
   onScroll,
   className = "",
   padding = "md",
-  liveIndicatorClassName = "",
-  onLiveToggle,
 }: SectionCardProps) {
   const titleSizeClasses = {
     sm: "text-[16px]",
@@ -74,15 +67,6 @@ export default function SectionCard({
   const headerBottomClasses = {
     withBorder: "pb-4",
     withoutBorder: "pb-4",
-  };
-
-  const handleLiveToggle = (live: boolean) => {
-    if (live) {
-      toast.success("Live updates enabled");
-    } else {
-      toast.info("Live updates disabled");
-    }
-    onLiveToggle?.(live);
   };
 
   return (
@@ -145,13 +129,6 @@ export default function SectionCard({
             <div className="flex items-center gap-4">
               {headerRightExtra && (
                 <div className="w-full sm:w-auto">{headerRightExtra}</div>
-              )}
-              {showLiveIndicator && (
-                <LiveButton
-                  isEnabled={true}
-                  onLiveToggle={handleLiveToggle}
-                  className={liveIndicatorClassName}
-                />
               )}
             </div>
           </div>

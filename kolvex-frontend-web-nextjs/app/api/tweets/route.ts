@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { mockSocialPosts, mockCreators, mockUserData } from "@/lib/mockData";
+
+// Backend API base URL
+// Using 127.0.0.1 instead of localhost to avoid Node.js IPv6 resolution issues
+const BACKEND_API_URL = process.env.BACKEND_API_URL || "http://127.0.0.1:8000";
 
 export interface Tweet {
   post_id: string;
@@ -13,24 +16,17 @@ export interface Tweet {
   media_urls: string[] | null;
   likes_count: number | null;
   ai_summary: string | null;
+  ai_analysis: string | null;
   ai_sentiment: "negative" | "neutral" | "positive" | string | null;
   ai_tags: string[] | null;
+  ai_analyzed_at: string | null;
+  ai_model: string | null;
   is_market_related: boolean | null;
   user_liked?: boolean;
   user_favorited?: boolean;
   user_tracked?: boolean;
   total_likes?: number;
   total_favorites?: number;
-  // Legacy fields
-  tweet_id?: string;
-  screen_name?: string;
-  user_id?: string;
-  created_at?: string;
-  num_likes?: number;
-  fetched_at?: string;
-  tweet_url?: string;
-  full_text?: string;
-  profile_image_url?: string;
 }
 
 export interface TweetsResponse {
@@ -41,71 +37,65 @@ export interface TweetsResponse {
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
-    const limit = parseInt(searchParams.get("limit") || "50");
+    const limit = parseInt(searchParams.get("limit") || "20");
     const offset = parseInt(searchParams.get("offset") || "0");
-    const sentiment = searchParams.get("sentiment");
-    const marketRelated = searchParams.get("market_related");
 
-    // Filter Twitter posts
-    let filteredPosts = mockSocialPosts.filter((p) => p.platform === "TWITTER");
+    // Calculate page and page_size for the backend API
+    const page = Math.floor(offset / limit) + 1;
+    const pageSize = limit;
 
-    // Apply filters
-    if (sentiment) {
-      filteredPosts = filteredPosts.filter((p) => p.ai_sentiment === sentiment);
-    }
-
-    if (marketRelated === "true") {
-      filteredPosts = filteredPosts.filter((p) => p.is_market_related);
-    }
-
-    // Sort by published date
-    filteredPosts.sort((a, b) => 
-      new Date(b.published_at).getTime() - new Date(a.published_at).getTime()
+    // Fetch data from backend API
+    const response = await fetch(
+      `${BACKEND_API_URL}/api/v1/kol-tweets/?page=${page}&page_size=${pageSize}`,
+      {
+        headers: {
+          accept: "application/json",
+        },
+        cache: "no-store",
+      }
     );
 
-    // Paginate
-    const total = filteredPosts.length;
-    const paginatedPosts = filteredPosts.slice(offset, offset + limit);
+    if (!response.ok) {
+      throw new Error(`Backend API responded with status: ${response.status}`);
+    }
 
-    // Transform to tweet format with creator data
-    const tweets: Tweet[] = paginatedPosts.map((post) => {
-      const creator = mockCreators.find((c) => c.creator_id === post.creator_id);
+    const data = await response.json();
+
+    console.log(data);
+    // Transform backend data to frontend format
+    const tweets: Tweet[] = data.tweets.map((tweet: any) => {
       return {
-        ...post,
-        creator_name: creator?.display_name || "",
-        creator_avatar_url: creator?.avatar_url || "",
-        creator_username: creator?.username || "",
-        creator_verified: creator?.verified || false,
-        creator_bio: creator?.bio || null,
-        creator_followers_count: creator?.followers_count || 0,
-        creator_category: creator?.category || null,
-        creator_influence_score: creator?.influence_score || 0,
-        creator_trending_score: creator?.trending_score || 0,
-        // Legacy field mappings
-        tweet_id: post.post_id,
-        screen_name: creator?.display_name || "",
-        user_id: post.creator_id,
-        created_at: post.published_at,
-        num_likes: post.likes_count || 0,
-        fetched_at: post.published_at,
-        tweet_url: post.content_url,
-        full_text: post.content,
-        profile_image_url: creator?.avatar_url || "",
-        // User interaction data
-        user_liked: mockUserData.likes.has(post.post_id),
-        user_favorited: mockUserData.favorites.has(post.post_id),
-        user_tracked: mockUserData.trackedKols.has(post.creator_id),
+        post_id: tweet.id.toString(),
+        platform: "TWITTER",
+        creator_id: tweet.username,
+        creator_name: tweet.display_name || tweet.username,
+        creator_avatar_url: tweet.avatar_url,
+        content: tweet.tweet_text,
+        content_url: tweet.permalink,
+        published_at: tweet.created_at,
+        media_urls: tweet.media_urls || [],
+        likes_count: tweet.like_count,
+        ai_summary: tweet.summary || tweet.summary_en || null,
+        ai_analysis: tweet.sentiment?.reasoning || null,
+        ai_sentiment: tweet.sentiment?.value || tweet.sentiment || "neutral",
+        ai_tags: [...(tweet.tags || []), ...(tweet.tickers || [])],
+        ai_analyzed_at: tweet.ai_analyzed_at,
+        ai_model: tweet.ai_model,
+        is_market_related: true,
+        user_liked: false,
+        user_favorited: false,
+        user_tracked: false,
         total_likes: 0,
         total_favorites: 0,
       };
     });
 
-    const response: TweetsResponse = {
-      count: total,
+    const result: TweetsResponse = {
+      count: data.total,
       tweets,
     };
 
-    return NextResponse.json(response);
+    return NextResponse.json(result);
   } catch (error) {
     console.error("API Error:", error);
     return NextResponse.json(

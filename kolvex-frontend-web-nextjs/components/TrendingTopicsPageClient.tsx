@@ -144,7 +144,6 @@ export default function TrendingTopicsPageClient({
         <div className="space-y-2">
           <SectionCard
             useSectionHeader={false}
-            showLiveIndicator={false}
             headerBorder
             padding="md"
             scrollable

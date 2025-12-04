@@ -7,6 +7,7 @@ import { trackKOL, untrackKOL } from "@/lib/trackedKolApi";
 import type { Platform } from "@/lib/supabase/database.types";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
+import KOLHoverCard from "./KOLHoverCard";
 
 interface TweetHeaderProps {
   screenName: string;
@@ -76,26 +77,39 @@ export default function TweetHeader({
 
   return (
     <div className="flex items-center gap-3 mb-3">
-      {profileImageUrl ? (
-        <Image
-          src={profileImageUrl}
-          alt={screenName}
-          width={32}
-          height={32}
-          className="w-8 h-8 rounded-full flex-shrink-0"
-        />
-      ) : (
-        <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-800 flex items-center justify-center text-gray-500 dark:text-white text-xs font-bold flex-shrink-0">
-          {screenName.substring(0, 2).toUpperCase()}
-        </div>
-      )}
+      <KOLHoverCard
+        kolId={kolId}
+        screenName={screenName}
+        profileImageUrl={profileImageUrl}
+      >
+        {profileImageUrl ? (
+          <Image
+            src={profileImageUrl}
+            alt={screenName}
+            width={32}
+            height={32}
+            className="w-8 h-8 rounded-full flex-shrink-0 cursor-pointer"
+          />
+        ) : (
+          <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-800 flex items-center justify-center text-gray-500 dark:text-white text-xs font-bold flex-shrink-0 cursor-pointer">
+            {screenName.substring(0, 2).toUpperCase()}
+          </div>
+        )}
+      </KOLHoverCard>
+
       <div className="flex-1 min-w-0 flex items-center gap-3">
-        <p className="font-bold text-sm text-gray-900 dark:text-white">
-          {screenName}
-          <span className="text-gray-500 dark:text-white/50 font-normal text-xs">
+        <div className="font-bold text-sm text-gray-900 dark:text-white flex items-center">
+          <KOLHoverCard
+            kolId={kolId}
+            screenName={screenName}
+            profileImageUrl={profileImageUrl}
+          >
+            <span className="hover:underline cursor-pointer">{screenName}</span>
+          </KOLHoverCard>
+          <span className="text-gray-500 dark:text-white/50 font-normal text-xs ml-1">
             @{screenName.toLowerCase()} · {onFormatDate(createdAt)}
           </span>
-        </p>
+        </div>
         <Button
           variant={isTracking ? "default" : "outline"}
           size="xs"

@@ -1,6 +1,7 @@
 """
 应用配置
 """
+
 from pydantic_settings import BaseSettings
 from typing import List, Union
 from pydantic import field_validator
@@ -8,29 +9,40 @@ from pydantic import field_validator
 
 class Settings(BaseSettings):
     """应用配置"""
-    
+
     # 基础配置
     APP_NAME: str = "Kolvex API"
     APP_VERSION: str = "1.0.0"
     DEBUG: bool = True
     API_VERSION: str = "v1"
-    
+
     # 数据库配置
     DATABASE_URL: str = "postgresql://user:password@localhost:5432/kolvex"
-    
+
     # Supabase 配置
     SUPABASE_URL: str = ""
     SUPABASE_KEY: str = ""
     SUPABASE_SERVICE_KEY: str = ""
-    
+
     # JWT 配置
     SECRET_KEY: str = "your-secret-key-change-this-in-production"
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
-    
+
+    # Apify 配置（用于 Twitter/X 内容追踪）
+    APIFY_TOKEN: str = ""
+    APIFY_TWEET_SCRAPER_ACTOR_ID: str = "apidojo~tweet-scraper"
+
+    # MCP Server 配置
+    MCP_HOST: str = "0.0.0.0"
+    MCP_PORT: int = 8001
+    MCP_TRANSPORT: str = "streamable-http"
+
     # CORS 配置
-    ALLOWED_ORIGINS: Union[List[str], str] = "http://localhost:3000,http://localhost:3001"
-    
+    ALLOWED_ORIGINS: Union[List[str], str] = (
+        "http://localhost:3000,http://localhost:3001"
+    )
+
     @field_validator("ALLOWED_ORIGINS", mode="before")
     @classmethod
     def parse_allowed_origins(cls, v):
@@ -38,7 +50,7 @@ class Settings(BaseSettings):
         if isinstance(v, str):
             return [origin.strip() for origin in v.split(",")]
         return v
-    
+
     class Config:
         env_file = ".env"
         case_sensitive = True
@@ -46,4 +58,3 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
-

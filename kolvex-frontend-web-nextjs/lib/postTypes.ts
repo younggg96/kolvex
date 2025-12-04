@@ -25,6 +25,8 @@ export interface UnifiedPost {
   aiSummary: string;
   aiAnalysis: string;
   aiTags: string[];
+  aiAnalyzedAt?: string | null;
+  aiModel?: string | null;
   sentiment: "bullish" | "bearish" | "neutral";
   isMarketRelated: boolean;
   // User interaction data
@@ -78,18 +80,20 @@ export function tweetToUnifiedPost(tweet: any): UnifiedPost {
   return {
     id: tweet.post_id,
     platform: "x",
-    author: tweet.screen_name,
-    authorId: tweet.user_id,
-    avatarUrl: tweet.profile_image_url,
-    content: tweet.full_text,
-    url: tweet.tweet_url,
-    createdAt: tweet.created_at,
-    likes: tweet.num_likes,
+    author: tweet.screen_name || tweet.creator_name,
+    authorId: tweet.user_id || tweet.creator_id,
+    avatarUrl: tweet.profile_image_url || tweet.creator_avatar_url,
+    content: tweet.full_text || tweet.content,
+    url: tweet.tweet_url || tweet.content_url,
+    createdAt: tweet.created_at || tweet.published_at,
+    likes: tweet.num_likes || tweet.likes_count,
     comments: 0,
     mediaUrls: tweet.media_urls || [],
     aiSummary: tweet.ai_summary,
     aiAnalysis: tweet.ai_analysis,
     aiTags: tweet.ai_tags || [],
+    aiAnalyzedAt: tweet.ai_analyzed_at,
+    aiModel: tweet.ai_model,
     sentiment: mapSentiment(tweet.ai_sentiment),
     isMarketRelated: tweet.is_market_related,
     userLiked: tweet.user_liked,
@@ -233,6 +237,8 @@ export function socialPostToUnifiedPost(post: any): UnifiedPost {
     aiSummary: post.ai_summary || "",
     aiAnalysis: post.ai_analysis || "",
     aiTags: post.ai_tags || [],
+    aiAnalyzedAt: post.ai_analyzed_at,
+    aiModel: post.ai_model,
     sentiment: mapSentiment(post.ai_sentiment || "neutral"),
     isMarketRelated: post.is_market_related ?? false,
     userLiked: post.user_liked,

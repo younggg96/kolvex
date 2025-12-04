@@ -16,6 +16,7 @@ import {
   PanelLeft,
   BookmarkIcon,
   Hash,
+  MessageSquare,
 } from "lucide-react";
 import UserMenu from "./UserMenu";
 import { Button } from "./ui/button";

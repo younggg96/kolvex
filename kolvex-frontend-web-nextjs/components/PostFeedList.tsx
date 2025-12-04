@@ -95,78 +95,78 @@ export default function PostFeedList({
             totalFavorites={post.totalFavorites}
           />
         );
-      case "reddit":
-        return (
-          <RedditContent
-            title={post.title}
-            fullText={post.content}
-            url={post.url}
-            id={post.id}
-            mediaUrls={post.mediaUrls}
-            aiSummary={post.aiSummary}
-            aiAnalysis={post.aiAnalysis}
-            aiTags={post.aiTags}
-            sentiment={post.sentiment}
-            onFormatText={onFormatText}
-            subreddit={post.platformData?.subreddit}
-            score={post.platformData?.score}
-            permalink={post.platformData?.permalink}
-            topComments={post.platformData?.topComments}
-            likesCount={post.likes}
-            userLiked={post.userLiked}
-            userFavorited={post.userFavorited}
-            totalLikes={post.totalLikes}
-            totalFavorites={post.totalFavorites}
-          />
-        );
-      case "youtube":
-        return (
-          <YouTubeContent
-            title={post.title}
-            fullText={post.content}
-            url={post.url}
-            id={post.id}
-            mediaUrls={post.mediaUrls}
-            aiSummary={post.aiSummary}
-            aiAnalysis={post.aiAnalysis}
-            aiTags={post.aiTags}
-            sentiment={post.sentiment}
-            onFormatText={onFormatText}
-            viewCount={post.platformData?.viewCount}
-            likeCount={post.platformData?.likeCount}
-            commentCount={post.platformData?.commentCount}
-            duration={post.platformData?.duration}
-            thumbnailUrl={post.platformData?.thumbnailUrl}
-            channelName={post.platformData?.channelName}
-            channelThumbnailUrl={post.platformData?.channelThumbnailUrl}
-            publishedAt={post.platformData?.publishedAt}
-            likesCount={post.likes}
-            userLiked={post.userLiked}
-            userFavorited={post.userFavorited}
-            totalLikes={post.totalLikes}
-            totalFavorites={post.totalFavorites}
-          />
-        );
-      case "rednote":
-        return (
-          <RednoteContent
-            title={post.title}
-            fullText={post.content}
-            url={post.url}
-            id={post.id}
-            mediaUrls={post.mediaUrls}
-            aiSummary={post.aiSummary}
-            aiAnalysis={post.aiAnalysis}
-            aiTags={post.aiTags}
-            sentiment={post.sentiment}
-            onFormatText={onFormatText}
-            likesCount={post.likes}
-            userLiked={post.userLiked}
-            userFavorited={post.userFavorited}
-            totalLikes={post.totalLikes}
-            totalFavorites={post.totalFavorites}
-          />
-        );
+      // case "reddit":
+      //   return (
+      //     <RedditContent
+      //       title={post.title}
+      //       fullText={post.content}
+      //       url={post.url}
+      //       id={post.id}
+      //       mediaUrls={post.mediaUrls}
+      //       aiSummary={post.aiSummary}
+      //       aiAnalysis={post.aiAnalysis}
+      //       aiTags={post.aiTags}
+      //       sentiment={post.sentiment}
+      //       onFormatText={onFormatText}
+      //       subreddit={post.platformData?.subreddit}
+      //       score={post.platformData?.score}
+      //       permalink={post.platformData?.permalink}
+      //       topComments={post.platformData?.topComments}
+      //       likesCount={post.likes}
+      //       userLiked={post.userLiked}
+      //       userFavorited={post.userFavorited}
+      //       totalLikes={post.totalLikes}
+      //       totalFavorites={post.totalFavorites}
+      //     />
+      //   );
+      // case "youtube":
+      //   return (
+      //     <YouTubeContent
+      //       title={post.title}
+      //       fullText={post.content}
+      //       url={post.url}
+      //       id={post.id}
+      //       mediaUrls={post.mediaUrls}
+      //       aiSummary={post.aiSummary}
+      //       aiAnalysis={post.aiAnalysis}
+      //       aiTags={post.aiTags}
+      //       sentiment={post.sentiment}
+      //       onFormatText={onFormatText}
+      //       viewCount={post.platformData?.viewCount}
+      //       likeCount={post.platformData?.likeCount}
+      //       commentCount={post.platformData?.commentCount}
+      //       duration={post.platformData?.duration}
+      //       thumbnailUrl={post.platformData?.thumbnailUrl}
+      //       channelName={post.platformData?.channelName}
+      //       channelThumbnailUrl={post.platformData?.channelThumbnailUrl}
+      //       publishedAt={post.platformData?.publishedAt}
+      //       likesCount={post.likes}
+      //       userLiked={post.userLiked}
+      //       userFavorited={post.userFavorited}
+      //       totalLikes={post.totalLikes}
+      //       totalFavorites={post.totalFavorites}
+      //     />
+      //   );
+      // case "rednote":
+      //   return (
+      //     <RednoteContent
+      //       title={post.title}
+      //       fullText={post.content}
+      //       url={post.url}
+      //       id={post.id}
+      //       mediaUrls={post.mediaUrls}
+      //       aiSummary={post.aiSummary}
+      //       aiAnalysis={post.aiAnalysis}
+      //       aiTags={post.aiTags}
+      //       sentiment={post.sentiment}
+      //       onFormatText={onFormatText}
+      //       likesCount={post.likes}
+      //       userLiked={post.userLiked}
+      //       userFavorited={post.userFavorited}
+      //       totalLikes={post.totalLikes}
+      //       totalFavorites={post.totalFavorites}
+      //     />
+      //   );
       default:
         return null;
     }
@@ -188,7 +188,7 @@ export default function PostFeedList({
               platform={mapPlatform(post.platform)}
               initialTracked={post.userTracked}
             />
-
+            <pre>{JSON.stringify(post, null, 2)}</pre>
             {renderPostContent(post)}
 
             {index < posts.length - 1 && <Separator className="my-2" />}

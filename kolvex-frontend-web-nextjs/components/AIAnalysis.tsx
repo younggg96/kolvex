@@ -1,31 +1,88 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Sparkles } from "lucide-react";
+import { Sparkles, Loader2 } from "lucide-react";
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import { Button } from "@/components/ui/button";
 import TranslateButton from "./TranslateButton";
+import { toast } from "sonner";
 
 interface AIAnalysisProps {
   aiAnalysis?: string;
   sentiment?: "bullish" | "bearish" | "neutral";
+  postId?: string;
 }
 
 export default function AIAnalysis({
   aiAnalysis,
   sentiment = "neutral",
+  postId,
 }: AIAnalysisProps) {
+  const [analysis, setAnalysis] = useState(aiAnalysis || "");
+  const [currentSentiment, setCurrentSentiment] = useState(sentiment);
   const [displayText, setDisplayText] = useState(aiAnalysis || "");
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    setDisplayText(aiAnalysis || "");
-  }, [aiAnalysis]);
+    if (aiAnalysis) {
+      setAnalysis(aiAnalysis);
+      setDisplayText(aiAnalysis);
+    }
+    setCurrentSentiment(sentiment);
+  }, [aiAnalysis, sentiment]);
 
-  if (!aiAnalysis) return null;
+  const handleAnalyze = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (!postId) return;
+
+    try {
+      setIsLoading(true);
+      const response = await fetch("/api/ai/analyze", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ tweet_id: postId }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Analysis failed");
+      }
+
+      const data = await response.json();
+
+      if (data.analysis) {
+        // Map backend sentiment to frontend format
+        let newSentiment: "bullish" | "bearish" | "neutral" = "neutral";
+        if (data.analysis.sentiment?.sentiment === "positive")
+          newSentiment = "bullish";
+        if (data.analysis.sentiment?.sentiment === "negative")
+          newSentiment = "bearish";
+
+        const newAnalysis =
+          data.analysis.sentiment?.reasoning ||
+          data.analysis.summary ||
+          "Analysis completed";
+
+        setAnalysis(newAnalysis);
+        setDisplayText(newAnalysis);
+        setCurrentSentiment(newSentiment);
+        toast.success("AI Analysis completed");
+      }
+    } catch (error) {
+      console.error("Analysis error:", error);
+      toast.error("Failed to analyze tweet");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleTranslate = (translated: string) => {
     setDisplayText(translated);
@@ -54,6 +111,34 @@ export default function AIAnalysis({
     }
   };
 
+  if (!analysis && !postId) return null;
+
+  if (!analysis) {
+    return (
+      <div className="mt-2">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleAnalyze}
+          disabled={isLoading}
+          className="w-full justify-center text-xs h-8 gap-2 bg-primary/5 hover:bg-primary/10 border-primary/20 text-primary"
+        >
+          {isLoading ? (
+            <>
+              <Loader2 className="w-3 h-3 animate-spin" />
+              Analyzing...
+            </>
+          ) : (
+            <>
+              <Sparkles className="w-3 h-3" />
+              Analyze with AI
+            </>
+          )}
+        </Button>
+      </div>
+    );
+  }
+
   return (
     <Accordion
       type="single"
@@ -72,9 +157,9 @@ export default function AIAnalysis({
               <h4 className="font-semibold text-xs text-gray-900 dark:text-white">
                 AI Analysis
               </h4>
-              {getSentimentBadge(sentiment)}
+              {getSentimentBadge(currentSentiment)}
             </div>
-            <TranslateButton text={aiAnalysis} onTranslate={handleTranslate} />
+            <TranslateButton text={analysis} onTranslate={handleTranslate} />
           </div>
         </AccordionTrigger>
         <AccordionContent className="px-2 pb-2">

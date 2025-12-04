@@ -19,10 +19,12 @@ import { TwitterContentProps } from "./types";
 export default function TwitterContent({
   url,
   id,
+  fullText,
   aiSummary,
   aiAnalysis,
   aiTags,
   sentiment,
+  onFormatText,
   likesCount,
   userLiked,
   userFavorited,
@@ -57,7 +59,7 @@ export default function TwitterContent({
     return () => window.removeEventListener("message", handleMessage);
   }, []);
 
-  const summary = aiSummary || "";
+  const content = fullText || aiSummary || "";
 
   return (
     <>
@@ -67,25 +69,15 @@ export default function TwitterContent({
           onOpenModal={() => setIsModalOpen(true)}
           ariaLabel="Open tweet in modal"
         >
-          {summary}
+          {onFormatText ? onFormatText(content) : content}
         </ContentWithModal>
 
         {/* Tags */}
         <Tags tags={aiTags || []} />
 
         {/* AI Analysis */}
-        <AIAnalysis aiAnalysis={aiAnalysis} sentiment={sentiment} />
+        <AIAnalysis aiAnalysis={aiAnalysis} sentiment={sentiment} postId={id} />
       </div>
-
-      {/* Post Actions */}
-      <PostActions
-        postId={`twitter_${id}`}
-        postUrl={url}
-        liked={userLiked}
-        favorited={userFavorited}
-        likesCount={totalLikes || likesCount}
-        favoritesCount={totalFavorites}
-      />
 
       {/* Twitter Embed Modal */}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
@@ -99,9 +91,9 @@ export default function TwitterContent({
             {mounted && (
               <iframe
                 key={theme}
-                src={`https://platform.twitter.com/embed/Tweet.html?id=${id}&theme=${
-                  theme === "light" ? "light" : "dark"
-                }`}
+                src={`https://platform.twitter.com/embed/Tweet.html?id=${url
+                  .split("/")
+                  .pop()}&theme=${theme === "light" ? "light" : "dark"}`}
                 width="100%"
                 height={iframeHeight}
                 frameBorder="0"
