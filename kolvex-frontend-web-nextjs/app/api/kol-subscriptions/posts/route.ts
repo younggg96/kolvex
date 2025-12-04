@@ -16,11 +16,7 @@ export interface SocialPost {
   ai_sentiment: "negative" | "neutral" | "positive" | string | null;
   ai_tags: string[] | null;
   is_market_related: boolean | null;
-  user_liked?: boolean;
-  user_favorited?: boolean;
   user_tracked?: boolean;
-  total_likes?: number;
-  total_favorites?: number;
 }
 
 export interface SubscribedPostsResponse {
@@ -91,11 +87,7 @@ export async function GET(request: NextRequest) {
         creator_category: creator?.category || null,
         creator_influence_score: creator?.influence_score || 0,
         creator_trending_score: creator?.trending_score || 0,
-        user_liked: mockUserData.likes.has(post.post_id),
-        user_favorited: mockUserData.favorites.has(post.post_id),
         user_tracked: true,
-        total_likes: 0,
-        total_favorites: 0,
       };
     });
 

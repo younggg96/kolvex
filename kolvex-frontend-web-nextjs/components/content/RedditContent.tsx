@@ -20,7 +20,6 @@ import ContentWithModal from "../ContentWithModal";
 import ExpandableText from "../ExpandableText";
 import AIAnalysis from "../AIAnalysis";
 import Tags from "../Tags";
-import PostActions from "../PostActions";
 import TranslateButton, { useTranslation } from "../TranslateButton";
 import { RedditContentProps } from "./types";
 
@@ -39,11 +38,6 @@ export default function RedditContent({
   score,
   permalink,
   topComments = [],
-  likesCount,
-  userLiked,
-  userFavorited,
-  totalLikes,
-  totalFavorites,
 }: RedditContentProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -330,16 +324,6 @@ export default function RedditContent({
         {/* AI Analysis */}
         <AIAnalysis aiAnalysis={aiAnalysis} sentiment={sentiment} />
       </div>
-
-      {/* Post Actions */}
-      <PostActions
-        postId={id}
-        postUrl={url}
-        liked={userLiked}
-        favorited={userFavorited}
-        likesCount={totalLikes || likesCount || score}
-        favoritesCount={totalFavorites}
-      />
 
       {/* Reddit Embed Modal */}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>

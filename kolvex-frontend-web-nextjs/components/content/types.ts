@@ -20,11 +20,6 @@ export interface BaseContentProps {
   sentiment?: "bullish" | "bearish" | "neutral";
   onFormatText: (text: string) => React.ReactNode;
   likesCount?: number;
-  // User interaction data
-  userLiked?: boolean;
-  userFavorited?: boolean;
-  totalLikes?: number;
-  totalFavorites?: number;
 }
 
 export interface TwitterContentProps extends BaseContentProps {

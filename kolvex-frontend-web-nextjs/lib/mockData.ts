@@ -501,8 +501,6 @@ export const mockEarnings = [
 
 // In-memory storage for user interactions
 export const mockUserData = {
-  likes: new Set<string>(),
-  favorites: new Map<string, { notes?: string; created_at: string }>(),
   trackedKols: new Set<string>(),
   trackedStocks: new Set<string>(),
 };

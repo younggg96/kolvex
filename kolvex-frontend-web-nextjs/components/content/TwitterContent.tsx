@@ -13,7 +13,6 @@ import {
 import ContentWithModal from "../ContentWithModal";
 import AIAnalysis from "../AIAnalysis";
 import Tags from "../Tags";
-import PostActions from "../PostActions";
 import { TwitterContentProps } from "./types";
 
 export default function TwitterContent({
@@ -25,11 +24,6 @@ export default function TwitterContent({
   aiTags,
   sentiment,
   onFormatText,
-  likesCount,
-  userLiked,
-  userFavorited,
-  totalLikes,
-  totalFavorites,
 }: TwitterContentProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [mounted, setMounted] = useState(false);

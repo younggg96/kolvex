@@ -16,11 +16,7 @@ export interface YouTubeVideo {
   ai_sentiment: "negative" | "neutral" | "positive" | string | null;
   ai_tags: string[] | null;
   is_market_related: boolean | null;
-  user_liked?: boolean;
-  user_favorited?: boolean;
   user_tracked?: boolean;
-  total_likes?: number;
-  total_favorites?: number;
   // Legacy fields
   video_id?: string;
   channel_id?: string;
@@ -98,11 +94,7 @@ export async function GET(request: NextRequest) {
         thumbnail_url: post.media_urls?.[0] || "",
         duration: post.platform_metadata?.duration_seconds?.toString() || "0",
         // User interaction data
-        user_liked: mockUserData.likes.has(post.post_id),
-        user_favorited: mockUserData.favorites.has(post.post_id),
         user_tracked: mockUserData.trackedKols.has(post.creator_id),
-        total_likes: 0,
-        total_favorites: 0,
       };
     });
 

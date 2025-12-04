@@ -30,14 +30,7 @@ export interface UnifiedPost {
   sentiment: "bullish" | "bearish" | "neutral";
   isMarketRelated: boolean;
   // User interaction data
-  userLiked?: boolean;
-  userFavorited?: boolean;
   userTracked?: boolean;
-  totalLikes?: number;
-  totalFavorites?: number;
-  favoriteId?: string; // Favorite record ID
-  likedAt?: string; // When user liked this post
-  favoritedAt?: string; // When user favorited this post
   // Platform-specific data
   platformData?: {
     // For Reddit
@@ -96,11 +89,7 @@ export function tweetToUnifiedPost(tweet: any): UnifiedPost {
     aiModel: tweet.ai_model,
     sentiment: mapSentiment(tweet.ai_sentiment),
     isMarketRelated: tweet.is_market_related,
-    userLiked: tweet.user_liked,
-    userFavorited: tweet.user_favorited,
     userTracked: tweet.user_tracked,
-    totalLikes: tweet.total_likes,
-    totalFavorites: tweet.total_favorites,
   };
 }
 
@@ -123,11 +112,7 @@ export function redditPostToUnifiedPost(post: any): UnifiedPost {
     aiTags: post.ai_tags || [],
     sentiment: mapSentiment(post.ai_sentiment),
     isMarketRelated: post.is_market_related,
-    userLiked: post.user_liked,
-    userFavorited: post.user_favorited,
     userTracked: post.user_tracked,
-    totalLikes: post.total_likes,
-    totalFavorites: post.total_favorites,
     platformData: {
       subreddit: post.subreddit,
       score: post.score,
@@ -157,11 +142,7 @@ export function youtubeVideoToUnifiedPost(video: any): UnifiedPost {
     aiTags: video.ai_tags || [],
     sentiment: mapSentiment(video.ai_sentiment),
     isMarketRelated: video.is_market_related,
-    userLiked: video.user_liked,
-    userFavorited: video.user_favorited,
     userTracked: video.user_tracked,
-    totalLikes: video.total_likes,
-    totalFavorites: video.total_favorites,
     platformData: {
       viewCount: video.view_count,
       likeCount: video.like_count,
@@ -196,11 +177,7 @@ export function RednoteNoteToUnifiedPost(note: any): UnifiedPost {
     aiTags: note.ai_tags || [],
     sentiment: mapSentiment(note.ai_sentiment),
     isMarketRelated: note.is_market_related,
-    userLiked: note.user_liked,
-    userFavorited: note.user_favorited,
     userTracked: note.user_tracked,
-    totalLikes: note.total_likes,
-    totalFavorites: note.total_favorites,
   };
 }
 
@@ -241,13 +218,6 @@ export function socialPostToUnifiedPost(post: any): UnifiedPost {
     aiModel: post.ai_model,
     sentiment: mapSentiment(post.ai_sentiment || "neutral"),
     isMarketRelated: post.is_market_related ?? false,
-    userLiked: post.user_liked,
-    userFavorited: post.user_favorited,
     userTracked: post.user_tracked,
-    totalLikes: post.total_likes,
-    totalFavorites: post.total_favorites,
-    favoriteId: post.favorite_id,
-    likedAt: post.liked_at,
-    favoritedAt: post.created_at, // Use the created_at from the join table
   };
 }

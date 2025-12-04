@@ -13,7 +13,6 @@ import ContentWithModal from "../ContentWithModal";
 import ExpandableText from "../ExpandableText";
 import AIAnalysis from "../AIAnalysis";
 import Tags from "../Tags";
-import PostActions from "../PostActions";
 import { RednoteContentProps } from "./types";
 
 export default function RednoteContent({
@@ -25,11 +24,6 @@ export default function RednoteContent({
   aiTags,
   sentiment,
   onFormatText,
-  likesCount,
-  userLiked,
-  userFavorited,
-  totalLikes,
-  totalFavorites,
 }: RednoteContentProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -61,16 +55,6 @@ export default function RednoteContent({
         {/* AI Analysis */}
         <AIAnalysis aiAnalysis={aiAnalysis} sentiment={sentiment} />
       </div>
-
-      {/* Post Actions */}
-      <PostActions
-        postId={id}
-        postUrl={url}
-        liked={userLiked}
-        favorited={userFavorited}
-        likesCount={totalLikes || likesCount}
-        favoritesCount={totalFavorites}
-      />
 
       {/* Rednote Modal */}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>

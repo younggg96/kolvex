@@ -24,11 +24,7 @@ export interface RedditPost {
   ai_sentiment: "negative" | "neutral" | "positive" | string | null;
   ai_tags: string[] | null;
   is_market_related: boolean | null;
-  user_liked?: boolean;
-  user_favorited?: boolean;
   user_tracked?: boolean;
-  total_likes?: number;
-  total_favorites?: number;
   // Legacy fields
   user_id?: string;
   username?: string;
@@ -106,11 +102,7 @@ export async function GET(request: NextRequest) {
         created_utc: post.published_at,
         top_comments: [],
         // User interaction data
-        user_liked: mockUserData.likes.has(post.post_id),
-        user_favorited: mockUserData.favorites.has(post.post_id),
         user_tracked: mockUserData.trackedKols.has(post.creator_id),
-        total_likes: 0,
-        total_favorites: 0,
       };
     });
 

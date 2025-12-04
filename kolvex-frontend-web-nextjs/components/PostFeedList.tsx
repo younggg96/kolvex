@@ -89,10 +89,6 @@ export default function PostFeedList({
             sentiment={post.sentiment}
             onFormatText={onFormatText}
             likesCount={post.likes}
-            userLiked={post.userLiked}
-            userFavorited={post.userFavorited}
-            totalLikes={post.totalLikes}
-            totalFavorites={post.totalFavorites}
           />
         );
       // case "reddit":
@@ -113,10 +109,6 @@ export default function PostFeedList({
       //       permalink={post.platformData?.permalink}
       //       topComments={post.platformData?.topComments}
       //       likesCount={post.likes}
-      //       userLiked={post.userLiked}
-      //       userFavorited={post.userFavorited}
-      //       totalLikes={post.totalLikes}
-      //       totalFavorites={post.totalFavorites}
       //     />
       //   );
       // case "youtube":
@@ -141,10 +133,6 @@ export default function PostFeedList({
       //       channelThumbnailUrl={post.platformData?.channelThumbnailUrl}
       //       publishedAt={post.platformData?.publishedAt}
       //       likesCount={post.likes}
-      //       userLiked={post.userLiked}
-      //       userFavorited={post.userFavorited}
-      //       totalLikes={post.totalLikes}
-      //       totalFavorites={post.totalFavorites}
       //     />
       //   );
       // case "rednote":
@@ -161,10 +149,6 @@ export default function PostFeedList({
       //       sentiment={post.sentiment}
       //       onFormatText={onFormatText}
       //       likesCount={post.likes}
-      //       userLiked={post.userLiked}
-      //       userFavorited={post.userFavorited}
-      //       totalLikes={post.totalLikes}
-      //       totalFavorites={post.totalFavorites}
       //     />
       //   );
       default:

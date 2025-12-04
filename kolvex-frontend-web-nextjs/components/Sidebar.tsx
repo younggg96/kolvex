@@ -9,14 +9,11 @@ import {
   Settings,
   TrendingUp,
   Users,
-  Heart,
   ChevronDown,
   FolderOpen,
   PanelLeftClose,
   PanelLeft,
-  BookmarkIcon,
   Hash,
-  MessageSquare,
 } from "lucide-react";
 import UserMenu from "./UserMenu";
 import { Button } from "./ui/button";
@@ -64,16 +61,6 @@ const collectionItems = [
     icon: Users,
     title: "KOL Tracker",
     href: "/dashboard/kol",
-  },
-  {
-    icon: Heart,
-    title: "Liked Posts",
-    href: "/dashboard/liked",
-  },
-  {
-    icon: BookmarkIcon,
-    title: "Favorite Posts",
-    href: "/dashboard/favorites",
   },
 ];
 

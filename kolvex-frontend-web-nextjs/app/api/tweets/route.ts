@@ -22,11 +22,7 @@ export interface Tweet {
   ai_analyzed_at: string | null;
   ai_model: string | null;
   is_market_related: boolean | null;
-  user_liked?: boolean;
-  user_favorited?: boolean;
   user_tracked?: boolean;
-  total_likes?: number;
-  total_favorites?: number;
 }
 
 export interface TweetsResponse {
@@ -82,11 +78,7 @@ export async function GET(request: NextRequest) {
         ai_analyzed_at: tweet.ai_analyzed_at,
         ai_model: tweet.ai_model,
         is_market_related: true,
-        user_liked: false,
-        user_favorited: false,
         user_tracked: false,
-        total_likes: 0,
-        total_favorites: 0,
       };
     });
 
