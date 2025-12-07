@@ -8,7 +8,7 @@ export async function GET(request: NextRequest) {
   const code = requestUrl.searchParams.get("code");
 
   if (code) {
-    const supabase = createServerSupabaseClient();
+    const supabase = await createServerSupabaseClient();
     // Exchange code for session
     const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
 

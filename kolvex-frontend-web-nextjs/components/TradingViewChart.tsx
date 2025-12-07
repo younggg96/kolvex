@@ -163,7 +163,7 @@ export default function TradingViewChart({
   return (
     <div className="w-full h-full min-h-[500px] relative">
       {showSkeleton && (
-        <div className="absolute inset-0 flex flex-col gap-3 p-4 bg-white dark:bg-card-dark z-10">
+        <div className="absolute inset-0 flex flex-col gap-3 p-0 bg-white dark:bg-card-dark z-10">
           {/* Chart Header Skeleton */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -191,7 +191,7 @@ export default function TradingViewChart({
 
           {/* Main Chart Area Skeleton */}
           <div className="flex-1 flex flex-col gap-2">
-            {[...Array(8)].map((_, i) => (
+            {[...Array(6)].map((_, i) => (
               <div key={i} className="flex items-center gap-2 h-12">
                 <Skeleton className="h-4 w-16" />
                 <Skeleton className="h-full flex-1" />

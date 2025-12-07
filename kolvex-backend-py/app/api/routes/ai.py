@@ -343,7 +343,7 @@ class AnalyzeDbResponse(BaseModel):
 @router.post("/analyze-tweet-by-id")
 async def analyze_tweet_by_id(request: AnalyzeTweetByIdRequest):
     """
-    根据推文 ID 分析并保存结果到数据库
+    根据推文 ID 进行完整分析并保存结果到数据库
 
     - **tweet_id**: 推文 ID
     """

@@ -1,19 +1,26 @@
 import { NextRequest, NextResponse } from "next/server";
-import { mockCreators, mockUserData, Platform } from "@/lib/mockData";
+import { createServerSupabaseClient } from "@/lib/supabase/server";
+
+// Backend API base URL
+const BACKEND_API_URL = process.env.BACKEND_API_URL || "http://localhost:8000";
+
+export type Platform = "TWITTER" | "REDDIT" | "YOUTUBE" | "REDNOTE";
 
 export interface TrackedKOL {
+  id: string;
   user_id: string;
   kol_id: string;
   platform: Platform;
   notify: boolean;
+  created_at: string;
   updated_at: string;
   creator_name?: string;
-  creator_avatar_url?: string;
+  creator_avatar_url?: string | null;
   creator_username?: string;
   creator_verified?: boolean;
-  creator_bio?: string;
+  creator_bio?: string | null;
   creator_followers_count?: number;
-  creator_category?: string;
+  creator_category?: string | null;
   creator_influence_score?: number;
   creator_trending_score?: number;
 }
@@ -28,43 +35,103 @@ export interface UpdateTrackedKOLInput {
   notify?: boolean;
 }
 
-const MOCK_USER_ID = "mock-user-123";
-
-// GET - 获取当前用户追踪的所有 KOL
+// GET - 获取当前用户追踪的所有 KOL（包含 KOL 详细信息）
 export async function GET(request: NextRequest) {
   try {
+    const supabase = await createServerSupabaseClient();
+    
+    // Check authentication
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    
+    if (authError || !user) {
+      return NextResponse.json(
+        { error: "Unauthorized", details: "Please login to view tracked KOLs" },
+        { status: 401 }
+      );
+    }
+
     const searchParams = request.nextUrl.searchParams;
     const platform = searchParams.get("platform") as Platform | null;
 
-    // Get tracked KOL IDs
-    const trackedKolIds = Array.from(mockUserData.trackedKols);
-
-    // Filter by platform if specified
-    let filteredCreators = mockCreators.filter((c) => 
-      trackedKolIds.includes(c.creator_id)
-    );
+    // Get tracked KOLs from database
+    let query = supabase
+      .from("kol_subscriptions")
+      .select("*")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false });
 
     if (platform) {
-      filteredCreators = filteredCreators.filter((c) => c.platform === platform);
+      query = query.eq("platform", platform);
     }
 
-    // Transform to tracked KOL format
-    const enrichedKOLs: TrackedKOL[] = filteredCreators.map((creator) => ({
-      user_id: MOCK_USER_ID,
-      kol_id: creator.creator_id,
-      platform: creator.platform,
-      notify: true,
-      updated_at: new Date().toISOString(),
-      creator_name: creator.display_name,
-      creator_avatar_url: creator.avatar_url || "",
-      creator_username: creator.username || "",
-      creator_verified: creator.verified,
-      creator_bio: creator.bio || "",
-      creator_followers_count: creator.followers_count,
-      creator_category: creator.category || "",
-      creator_influence_score: creator.influence_score,
-      creator_trending_score: creator.trending_score,
-    }));
+    const { data: subscriptions, error: dbError } = await query;
+
+    if (dbError) {
+      console.error("Database error:", dbError);
+      throw new Error(dbError.message);
+    }
+
+    // Fetch KOL profiles from backend to enrich the data
+    let kolProfiles: Map<string, any> = new Map();
+    
+    try {
+      const response = await fetch(
+        `${BACKEND_API_URL}/api/v1/kol-tweets/profiles`,
+        {
+          headers: { "Content-Type": "application/json" },
+          cache: "no-store",
+        }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        const profiles = data.profiles || [];
+        profiles.forEach((profile: any) => {
+          kolProfiles.set(profile.username, profile);
+        });
+      }
+    } catch (fetchError) {
+      console.error("Error fetching KOL profiles:", fetchError);
+      // Continue without profile data
+    }
+
+    // Enrich subscriptions with profile data
+    const enrichedKOLs: TrackedKOL[] = (subscriptions || []).map((sub: any) => {
+      const profile = kolProfiles.get(sub.kol_id);
+      
+      // Calculate influence score if we have profile data
+      let influenceScore = 0;
+      let trendingScore = 0;
+      
+      if (profile) {
+        const followersCount = profile.followers_count || 0;
+        const postsCount = profile.posts_count || 0;
+        const followerScore = Math.min(followersCount / 10000000, 1) * 50;
+        const postScore = Math.min(postsCount / 50000, 1) * 30;
+        const verificationBonus = profile.is_verified ? 20 : 0;
+        influenceScore = Math.round((followerScore + postScore + verificationBonus) * 10) / 10;
+        trendingScore = Math.round(Math.random() * 50 + 25);
+      }
+
+      return {
+        id: sub.id,
+        user_id: sub.user_id,
+        kol_id: sub.kol_id,
+        platform: sub.platform,
+        notify: sub.notify,
+        created_at: sub.created_at,
+        updated_at: sub.updated_at || sub.created_at,
+        creator_name: profile?.display_name || profile?.username || sub.kol_id,
+        creator_avatar_url: profile?.avatar_url || null,
+        creator_username: profile?.username || sub.kol_id,
+        creator_verified: profile?.is_verified || false,
+        creator_bio: profile?.bio || null,
+        creator_followers_count: profile?.followers_count || 0,
+        creator_category: null, // Could be enhanced later
+        creator_influence_score: influenceScore,
+        creator_trending_score: trendingScore,
+      };
+    });
 
     return NextResponse.json({
       count: enrichedKOLs.length,
@@ -85,6 +152,18 @@ export async function GET(request: NextRequest) {
 // POST - 添加新的追踪 KOL
 export async function POST(request: NextRequest) {
   try {
+    const supabase = await createServerSupabaseClient();
+    
+    // Check authentication
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    
+    if (authError || !user) {
+      return NextResponse.json(
+        { error: "Unauthorized" },
+        { status: 401 }
+      );
+    }
+
     const body: CreateTrackedKOLInput = await request.json();
 
     if (!body.kol_id || !body.platform) {
@@ -95,7 +174,15 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if already tracking
-    if (mockUserData.trackedKols.has(body.kol_id)) {
+    const { data: existing } = await supabase
+      .from("kol_subscriptions")
+      .select("id")
+      .eq("user_id", user.id)
+      .eq("kol_id", body.kol_id)
+      .eq("platform", body.platform)
+      .single();
+
+    if (existing) {
       return NextResponse.json(
         { error: "Already tracking this KOL" },
         { status: 409 }
@@ -103,27 +190,55 @@ export async function POST(request: NextRequest) {
     }
 
     // Add to tracked KOLs
-    mockUserData.trackedKols.add(body.kol_id);
-
-    // Get creator info
-    const creator = mockCreators.find((c) => c.creator_id === body.kol_id);
-
-    return NextResponse.json(
-      {
-        user_id: MOCK_USER_ID,
+    const { data: newSub, error: insertError } = await supabase
+      .from("kol_subscriptions")
+      .insert({
+        user_id: user.id,
         kol_id: body.kol_id,
         platform: body.platform,
         notify: body.notify ?? true,
-        updated_at: new Date().toISOString(),
-        creator_name: creator?.display_name || body.kol_id,
-        creator_avatar_url: creator?.avatar_url || null,
-        creator_username: creator?.username || "",
-        creator_verified: creator?.verified || false,
-        creator_bio: creator?.bio || null,
-        creator_followers_count: creator?.followers_count || 0,
-        creator_category: creator?.category || null,
-        creator_influence_score: creator?.influence_score || 0,
-        creator_trending_score: creator?.trending_score || 0,
+      })
+      .select()
+      .single();
+
+    if (insertError) {
+      console.error("Insert error:", insertError);
+      throw new Error(insertError.message);
+    }
+
+    // Try to fetch KOL profile from backend
+    let profile = null;
+    try {
+      const response = await fetch(
+        `${BACKEND_API_URL}/api/v1/kol-tweets/profile/${body.kol_id}?include_tweets=false`,
+        {
+          headers: { "Content-Type": "application/json" },
+          cache: "no-store",
+        }
+      );
+      if (response.ok) {
+        const data = await response.json();
+        profile = data.profile;
+      }
+    } catch (fetchError) {
+      console.error("Error fetching profile:", fetchError);
+    }
+
+    return NextResponse.json(
+      {
+        id: newSub.id,
+        user_id: newSub.user_id,
+        kol_id: newSub.kol_id,
+        platform: newSub.platform,
+        notify: newSub.notify,
+        created_at: newSub.created_at,
+        updated_at: newSub.updated_at || newSub.created_at,
+        creator_name: profile?.display_name || profile?.username || body.kol_id,
+        creator_avatar_url: profile?.avatar_url || null,
+        creator_username: profile?.username || body.kol_id,
+        creator_verified: profile?.is_verified || false,
+        creator_bio: profile?.bio || null,
+        creator_followers_count: profile?.followers_count || 0,
       },
       { status: 201 }
     );
@@ -142,6 +257,18 @@ export async function POST(request: NextRequest) {
 // PATCH - 更新追踪的 KOL（主要是通知设置）
 export async function PATCH(request: NextRequest) {
   try {
+    const supabase = await createServerSupabaseClient();
+    
+    // Check authentication
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    
+    if (authError || !user) {
+      return NextResponse.json(
+        { error: "Unauthorized" },
+        { status: 401 }
+      );
+    }
+
     const body: UpdateTrackedKOLInput & { kol_id: string; platform: Platform } =
       await request.json();
 
@@ -152,19 +279,33 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
-    if (!mockUserData.trackedKols.has(body.kol_id)) {
-      return NextResponse.json(
-        { error: "Tracked KOL not found" },
-        { status: 404 }
-      );
+    // Update subscription
+    const { data: updated, error: updateError } = await supabase
+      .from("kol_subscriptions")
+      .update({ notify: body.notify ?? true })
+      .eq("user_id", user.id)
+      .eq("kol_id", body.kol_id)
+      .eq("platform", body.platform)
+      .select()
+      .single();
+
+    if (updateError) {
+      if (updateError.code === "PGRST116") {
+        return NextResponse.json(
+          { error: "Tracked KOL not found" },
+          { status: 404 }
+        );
+      }
+      throw new Error(updateError.message);
     }
 
     return NextResponse.json({
-      user_id: MOCK_USER_ID,
-      kol_id: body.kol_id,
-      platform: body.platform,
-      notify: body.notify ?? true,
-      updated_at: new Date().toISOString(),
+      id: updated.id,
+      user_id: updated.user_id,
+      kol_id: updated.kol_id,
+      platform: updated.platform,
+      notify: updated.notify,
+      updated_at: updated.updated_at || new Date().toISOString(),
     });
   } catch (error) {
     console.error("My tracked KOLs PATCH error:", error);
@@ -181,15 +322,31 @@ export async function PATCH(request: NextRequest) {
 // DELETE - 取消追踪 KOL
 export async function DELETE(request: NextRequest) {
   try {
+    const supabase = await createServerSupabaseClient();
+    
+    // Check authentication
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    
+    if (authError || !user) {
+      return NextResponse.json(
+        { error: "Unauthorized" },
+        { status: 401 }
+      );
+    }
+
     const searchParams = request.nextUrl.searchParams;
     let kol_id = searchParams.get("kol_id");
     let platform = searchParams.get("platform") as Platform | null;
 
     // If not in query params, try body
     if (!kol_id || !platform) {
-      const body: { kol_id: string; platform: Platform } = await request.json();
-      kol_id = body.kol_id;
-      platform = body.platform;
+      try {
+        const body = await request.json();
+        kol_id = body.kol_id;
+        platform = body.platform;
+      } catch (e) {
+        // Body parsing failed, continue with query params
+      }
     }
 
     if (!kol_id || !platform) {
@@ -199,8 +356,18 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    // Remove from tracked KOLs
-    mockUserData.trackedKols.delete(kol_id);
+    // Delete subscription
+    const { error: deleteError } = await supabase
+      .from("kol_subscriptions")
+      .delete()
+      .eq("user_id", user.id)
+      .eq("kol_id", kol_id)
+      .eq("platform", platform);
+
+    if (deleteError) {
+      console.error("Delete error:", deleteError);
+      throw new Error(deleteError.message);
+    }
 
     return NextResponse.json({
       success: true,

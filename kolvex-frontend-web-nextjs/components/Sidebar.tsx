@@ -9,11 +9,8 @@ import {
   Settings,
   TrendingUp,
   Users,
-  ChevronDown,
-  FolderOpen,
   PanelLeftClose,
   PanelLeft,
-  Hash,
 } from "lucide-react";
 import UserMenu from "./UserMenu";
 import { Button } from "./ui/button";
@@ -31,11 +28,6 @@ import {
   SidebarProvider,
   useSidebar,
 } from "@/components/ui/sidebar";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
 import { useBreakpoints } from "@/hooks";
 
 const mainNavItems = [
@@ -49,14 +41,6 @@ const mainNavItems = [
     title: "Stocks",
     href: "/dashboard/stocks",
   },
-  {
-    icon: Hash,
-    title: "Trending Topics",
-    href: "/dashboard/trending",
-  },
-];
-
-const collectionItems = [
   {
     icon: Users,
     title: "KOL Tracker",
@@ -78,7 +62,6 @@ interface AppSidebarProps {
 
 function AppSidebar({ onNavigate }: AppSidebarProps) {
   const pathname = usePathname();
-  const [isCollectionsOpen, setIsCollectionsOpen] = useState(true);
   const { state, toggleSidebar, isInitialized } = useSidebar();
   const [isMounted, setIsMounted] = useState(false);
 
@@ -158,72 +141,6 @@ function AppSidebar({ onNavigate }: AppSidebarProps) {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
-
-        {/* Collections */}
-        {!isMounted || !isInitialized || state === "expanded" ? (
-          <Collapsible
-            open={isCollectionsOpen}
-            onOpenChange={setIsCollectionsOpen}
-            className="group/collapsible"
-          >
-            <SidebarGroup>
-              <SidebarGroupLabel asChild>
-                <CollapsibleTrigger className="flex h-9 my-1 w-full items-center justify-between gap-2 overflow-hidden rounded-md p-2 text-xs text-gray-600 dark:text-white/90 outline-none transition-colors hover:bg-gray-200 dark:hover:bg-white/5 [&>svg]:size-4 [&>svg]:shrink-0">
-                  <div className="flex items-center gap-2">
-                    <FolderOpen className="h-4 w-4" />
-                    <span>Collections</span>
-                  </div>
-                  <ChevronDown
-                    className={`transition-transform duration-200 ${
-                      isCollectionsOpen ? "rotate-180" : ""
-                    }`}
-                  />
-                </CollapsibleTrigger>
-              </SidebarGroupLabel>
-              <CollapsibleContent>
-                <SidebarGroupContent>
-                  <SidebarMenu className="flex flex-col !gap-1 pl-2">
-                    {collectionItems.map((item) => (
-                      <SidebarMenuItem key={item.title}>
-                        <SidebarMenuButton
-                          asChild
-                          isActive={isActive(item.href)}
-                          onClick={onNavigate}
-                        >
-                          <Link href={item.href}>
-                            <item.icon />
-                            <span>{item.title}</span>
-                          </Link>
-                        </SidebarMenuButton>
-                      </SidebarMenuItem>
-                    ))}
-                  </SidebarMenu>
-                </SidebarGroupContent>
-              </CollapsibleContent>
-            </SidebarGroup>
-          </Collapsible>
-        ) : (
-          <SidebarGroup className="mt-1">
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {collectionItems.map((item) => (
-                  <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton
-                      asChild
-                      isActive={isActive(item.href)}
-                      onClick={onNavigate}
-                    >
-                      <Link href={item.href}>
-                        <item.icon />
-                        <span>{item.title}</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        )}
 
         {/* Bottom Navigation */}
         <SidebarGroup className="mt-auto">

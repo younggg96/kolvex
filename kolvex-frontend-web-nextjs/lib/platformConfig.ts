@@ -3,8 +3,8 @@
  * Centralized configuration for all social media platforms
  */
 
-export type Platform = "TWITTER" | "REDDIT" | "YOUTUBE" | "XIAOHONGSHU" | "REDNOTE";
-export type PlatformLowercase = "twitter" | "reddit" | "youtube" | "xiaohongshu" | "rednote" | "x";
+export type Platform = "TWITTER" | "REDDIT" | "YOUTUBE" | "REDNOTE";
+export type PlatformLowercase = "twitter" | "x" | "reddit" | "youtube" | "rednote";
 
 export interface PlatformConfig {
   name: string;
@@ -27,25 +27,19 @@ export const PLATFORM_CONFIG: Record<Platform, PlatformConfig> = {
     name: "Reddit",
     icon: "/logo/reddit.svg",
     color: "#FF4500",
-    colorClass: "text-[#FF4500]",
+    colorClass: "text-orange-500",
   },
   YOUTUBE: {
     name: "YouTube",
     icon: "/logo/youtube.svg",
     color: "#FF0000",
-    colorClass: "text-[#FF0000]",
-  },
-  XIAOHONGSHU: {
-    name: "Xiaohongshu",
-    icon: "/logo/rednote.svg",
-    color: "#FF2442",
-    colorClass: "text-[#FF2442]",
+    colorClass: "text-red-500",
   },
   REDNOTE: {
-    name: "Rednote",
+    name: "RedNote",
     icon: "/logo/rednote.svg",
-    color: "#FF2442",
-    colorClass: "text-[#FF2442]",
+    color: "#FE2C55",
+    colorClass: "text-pink-500",
   },
 } as const;
 
@@ -60,7 +54,6 @@ export const PLATFORM_CONFIG_LOWERCASE: Record<
   x: PLATFORM_CONFIG.TWITTER,
   reddit: PLATFORM_CONFIG.REDDIT,
   youtube: PLATFORM_CONFIG.YOUTUBE,
-  xiaohongshu: PLATFORM_CONFIG.XIAOHONGSHU,
   rednote: PLATFORM_CONFIG.REDNOTE,
 } as const;
 
@@ -104,7 +97,7 @@ export const PLATFORM_TAB_OPTIONS = [
   },
   {
     value: "rednote",
-    label: "Rednote",
+    label: "RedNote",
     iconPath: "/logo/rednote.svg",
   },
 ] as const;
@@ -124,4 +117,3 @@ export const POST_TAB_OPTIONS = [
     icon: "",
   },
 ] as const;
-

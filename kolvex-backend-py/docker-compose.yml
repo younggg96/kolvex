@@ -40,35 +40,11 @@ services:
       SUPABASE_SERVICE_KEY: ${SUPABASE_SERVICE_KEY:-}
       # CORS 配置
       ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:3000,http://localhost:3001}
-      # Apify 配置
-      APIFY_TOKEN: ${APIFY_TOKEN:-}
-      APIFY_TWEET_SCRAPER_ACTOR_ID: ${APIFY_TWEET_SCRAPER_ACTOR_ID:-apidojotweet-scraper}
     volumes:
       - .:/app
     depends_on:
       db:
         condition: service_healthy
-    networks:
-      - kolvex-network
-    restart: unless-stopped
-
-  # MCP Server (Twitter/X 内容追踪)
-  mcp-twitter:
-    build: .
-    container_name: kolvex-mcp-twitter
-    command: python -m app.mcp.twitter_mcp_server
-    ports:
-      - "8001:8001"
-    env_file:
-      - .env
-    environment:
-      MCP_HOST: "0.0.0.0"
-      MCP_PORT: "8001"
-      MCP_TRANSPORT: "streamable-http"
-      APIFY_TOKEN: ${APIFY_TOKEN:-}
-      APIFY_TWEET_SCRAPER_ACTOR_ID: ${APIFY_TWEET_SCRAPER_ACTOR_ID:-apidojo~tweet-scraper}
-    volumes:
-      - .:/app
     networks:
       - kolvex-network
     restart: unless-stopped

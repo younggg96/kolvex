@@ -5,26 +5,17 @@ import { CardSkeleton } from "./LoadingSkeleton";
 import { EmptyState, ErrorState } from "./EmptyState";
 import SectionCard from "./SectionCard";
 import Image from "next/image";
-import {
-  UnifiedPost,
-  tweetToUnifiedPost,
-  redditPostToUnifiedPost,
-  youtubeVideoToUnifiedPost,
-  RednoteNoteToUnifiedPost,
-  socialPostToUnifiedPost,
-} from "@/lib/postTypes";
+import { KOLTweet } from "@/lib/kolTweetsApi";
 import { SwitchTab } from "./ui/switch-tab";
 import { Button } from "./ui/button";
 import { RotateCcw } from "lucide-react";
 import { MultiSelectOption } from "./ui/multi-select";
-import { FilterSheet, DateRange, Sentiment } from "./FilterSheet";
+import { FilterSheet, DateRange } from "./FilterSheet";
 import PostFeedList from "./PostFeedList";
-import { createClient } from "@/lib/supabase/client";
-import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { POST_TAB_OPTIONS } from "@/lib/platformConfig";
 
-type Platform = "x" | "reddit" | "youtube" | "rednote";
+type Platform = "x";
 
 const PostTabOption = [...POST_TAB_OPTIONS];
 
@@ -42,48 +33,6 @@ const PlatformTabOption = [
       />
     ),
   },
-  /* 
-  // Temporarily hidden other platforms
-  {
-    value: "reddit",
-    label: "Reddit",
-    icon: (
-      <Image
-        src="/logo/reddit.svg"
-        alt="Reddit"
-        width={16}
-        height={16}
-        className="w-4 h-4"
-      />
-    ),
-  },
-  {
-    value: "youtube",
-    label: "YouTube",
-    icon: (
-      <Image
-        src="/logo/youtube.svg"
-        alt="YouTube"
-        width={16}
-        height={16}
-        className="w-4 h-4"
-      />
-    ),
-  },
-  {
-    value: "rednote",
-    label: "Rednote",
-    icon: (
-      <Image
-        src="/logo/rednote.svg"
-        alt="Rednote"
-        width={16}
-        height={16}
-        className="w-4 h-4"
-      />
-    ),
-  },
-  */
 ];
 
 export default function PostList({ className }: { className?: string }) {
@@ -91,18 +40,14 @@ export default function PostList({ className }: { className?: string }) {
   const [selectedTab, setSelectedTab] = useState<string>("all");
   const [selectedAuthors, setSelectedAuthors] = useState<string[]>([]);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
-  const [selectedSentiments, setSelectedSentiments] = useState<Sentiment[]>([]);
   const [timeRange, setTimeRange] = useState<string>("all");
   const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
 
   // Cache posts data for each platform
   const [platformPosts, setPlatformPosts] = useState<
-    Record<Platform, UnifiedPost[]>
+    Record<Platform, KOLTweet[]>
   >({
     x: [],
-    reddit: [],
-    youtube: [],
-    rednote: [],
   });
 
   // Track loading state for each platform
@@ -110,9 +55,6 @@ export default function PostList({ className }: { className?: string }) {
     Record<Platform, boolean>
   >({
     x: false,
-    reddit: false,
-    youtube: false,
-    rednote: false,
   });
 
   // Track which platforms have been loaded
@@ -127,9 +69,6 @@ export default function PostList({ className }: { className?: string }) {
     Record<Platform, string | null>
   >({
     x: null,
-    reddit: null,
-    youtube: null,
-    rednote: null,
   });
 
   // Track hasMore for each platform
@@ -137,9 +76,6 @@ export default function PostList({ className }: { className?: string }) {
     Record<Platform, boolean>
   >({
     x: true,
-    reddit: true,
-    youtube: true,
-    rednote: true,
   });
 
   // Track offset for each platform for pagination
@@ -147,9 +83,6 @@ export default function PostList({ className }: { className?: string }) {
     Record<Platform, number>
   >({
     x: 0,
-    reddit: 0,
-    youtube: 0,
-    rednote: 0,
   });
 
   const PAGE_SIZE = 20;
@@ -168,11 +101,16 @@ export default function PostList({ className }: { className?: string }) {
     >();
 
     currentPosts.forEach((post) => {
-      if (post.isMarketRelated && !uniqueAuthorsMap.has(post.authorId)) {
-        uniqueAuthorsMap.set(post.authorId, {
-          author: post.author,
-          authorId: post.authorId,
-          avatarUrl: post.avatarUrl,
+      // Assuming KOLTweet has username/display_name instead of author/authorId
+      // and we want to use username as authorId
+      const authorId = post.username;
+      const authorName = post.display_name || post.username;
+
+      if (!uniqueAuthorsMap.has(authorId)) {
+        uniqueAuthorsMap.set(authorId, {
+          author: authorName,
+          authorId: authorId,
+          avatarUrl: post.avatar_url || "",
         });
       }
     });
@@ -189,7 +127,7 @@ export default function PostList({ className }: { className?: string }) {
       value: author.authorId,
       icon: (
         <Image
-          src={author.avatarUrl}
+          src={author.avatarUrl || "/placeholder-user.jpg"}
           alt={author.author}
           width={16}
           height={16}
@@ -204,8 +142,8 @@ export default function PostList({ className }: { className?: string }) {
     const uniqueTagsSet = new Set<string>();
 
     currentPosts.forEach((post) => {
-      if (post.aiTags) {
-        post.aiTags.forEach((tag) => {
+      if (post.tags) {
+        post.tags.forEach((tag) => {
           uniqueTagsSet.add(tag);
         });
       }
@@ -224,7 +162,8 @@ export default function PostList({ className }: { className?: string }) {
 
   // Helper function to filter by time range
   const isWithinTimeRange = useCallback(
-    (postDate: string, range: string): boolean => {
+    (postDate: string | null, range: string): boolean => {
+      if (!postDate) return false;
       if (range === "all") return true;
 
       const now = new Date();
@@ -267,14 +206,14 @@ export default function PostList({ className }: { className?: string }) {
     [dateRange]
   );
 
-  // Filter posts based on selected authors, tags, sentiments, and time range
+  // Filter posts based on selected authors, tags, and time range
   const filteredPosts = useMemo(() => {
     let filtered = currentPosts;
 
     // Filter by authors
     if (selectedAuthors.length > 0) {
       filtered = filtered.filter((post) =>
-        selectedAuthors.includes(post.authorId)
+        selectedAuthors.includes(post.username)
       );
     }
 
@@ -282,22 +221,15 @@ export default function PostList({ className }: { className?: string }) {
     if (selectedTags.length > 0) {
       filtered = filtered.filter(
         (post) =>
-          post.aiTags && post.aiTags.some((tag) => selectedTags.includes(tag))
-      );
-    }
-
-    // Filter by sentiments
-    if (selectedSentiments.length > 0) {
-      filtered = filtered.filter((post) =>
-        selectedSentiments.includes(post.sentiment)
+          post.tags && post.tags.some((tag) => selectedTags.includes(tag))
       );
     }
 
     // Filter by time range or custom date range
-    // When dateRange is set, use it regardless of timeRange value
     if (dateRange?.from || dateRange?.to) {
       filtered = filtered.filter((post) => {
-        const postTime = new Date(post.createdAt);
+        if (!post.created_at) return false;
+        const postTime = new Date(post.created_at);
         const hasFrom = dateRange.from !== undefined;
         const hasTo = dateRange.to !== undefined;
 
@@ -311,9 +243,8 @@ export default function PostList({ className }: { className?: string }) {
         return true;
       });
     } else if (timeRange !== "all" && timeRange !== "") {
-      // Only use preset time range if no custom date range is set
       filtered = filtered.filter((post) =>
-        isWithinTimeRange(post.createdAt, timeRange)
+        isWithinTimeRange(post.created_at, timeRange)
       );
     }
 
@@ -322,7 +253,6 @@ export default function PostList({ className }: { className?: string }) {
     currentPosts,
     selectedAuthors,
     selectedTags,
-    selectedSentiments,
     timeRange,
     dateRange,
     isWithinTimeRange,
@@ -333,10 +263,9 @@ export default function PostList({ className }: { className?: string }) {
     let count = 0;
     if (selectedAuthors.length > 0) count++;
     if (selectedTags.length > 0) count++;
-    if (selectedSentiments.length > 0) count++;
     if (timeRange !== "all" || dateRange?.from || dateRange?.to) count++;
     return count;
-  }, [selectedAuthors, selectedTags, selectedSentiments, timeRange, dateRange]);
+  }, [selectedAuthors, selectedTags, timeRange, dateRange]);
 
   useEffect(() => {
     // Only fetch if this platform hasn't been loaded yet
@@ -375,7 +304,6 @@ export default function PostList({ className }: { className?: string }) {
   useEffect(() => {
     setSelectedAuthors([]);
     setSelectedTags([]);
-    setSelectedSentiments([]);
     setTimeRange("all");
     setDateRange(undefined);
   }, [selectedPlatform]);
@@ -385,9 +313,6 @@ export default function PostList({ className }: { className?: string }) {
     if (selectedTab === "tracking") {
       const platformMap = {
         x: "TWITTER",
-        reddit: "REDDIT",
-        youtube: "YOUTUBE",
-        rednote: "REDNOTE",
       };
       return `/api/kol-subscriptions/posts?platform=${platformMap[platform]}`;
     }
@@ -395,35 +320,8 @@ export default function PostList({ className }: { className?: string }) {
     // Default endpoints for "all" tab
     const endpoints = {
       x: "/api/tweets",
-      reddit: "/api/reddit",
-      youtube: "/api/youtube",
-      rednote: "/api/rednote",
     };
     return endpoints[platform];
-  };
-
-  const convertToUnifiedPosts = (
-    data: any,
-    platform: Platform
-  ): UnifiedPost[] => {
-    // If we're in tracking tab, use the unified social posts format
-    if (selectedTab === "tracking" && data.posts) {
-      return data.posts.map(socialPostToUnifiedPost) || [];
-    }
-
-    // Default conversion for "all" tab
-    switch (platform) {
-      case "x":
-        return data.tweets?.map(tweetToUnifiedPost) || [];
-      case "reddit":
-        return data.posts?.map(redditPostToUnifiedPost) || [];
-      case "youtube":
-        return data.videos?.map(youtubeVideoToUnifiedPost) || [];
-      case "rednote":
-        return data.notes?.map(RednoteNoteToUnifiedPost) || [];
-      default:
-        return [];
-    }
   };
 
   const fetchPosts = async (forceRefresh: boolean = false) => {
@@ -450,18 +348,20 @@ export default function PostList({ className }: { className?: string }) {
       }
 
       const data = await response.json();
-      const unifiedPosts = convertToUnifiedPosts(data, selectedPlatform);
+
+      // Handle both API response structures (tweets property or direct array)
+      const fetchedPosts = data.tweets || data.posts || [];
 
       // Update posts for current platform
       setPlatformPosts((prev) => ({
         ...prev,
-        [selectedPlatform]: unifiedPosts,
+        [selectedPlatform]: fetchedPosts,
       }));
 
       // Update hasMore for current platform
       setPlatformHasMore((prev) => ({
         ...prev,
-        [selectedPlatform]: unifiedPosts.length >= PAGE_SIZE,
+        [selectedPlatform]: fetchedPosts.length >= PAGE_SIZE,
       }));
 
       // Mark this platform as loaded
@@ -502,12 +402,11 @@ export default function PostList({ className }: { className?: string }) {
       }
 
       const data = await response.json();
-      const newUnifiedPosts = convertToUnifiedPosts(data, selectedPlatform);
+      const fetchedPosts = data.tweets || data.posts || [];
 
-      // 过滤掉已存在的帖子，避免重复
       const currentPlatformPosts = platformPosts[selectedPlatform];
-      const filteredNewPosts = newUnifiedPosts.filter(
-        (newPost) =>
+      const filteredNewPosts = fetchedPosts.filter(
+        (newPost: KOLTweet) =>
           !currentPlatformPosts.some((post) => post.id === newPost.id)
       );
 
@@ -526,7 +425,7 @@ export default function PostList({ className }: { className?: string }) {
       // Update hasMore based on whether we received a full page of results
       setPlatformHasMore((prev) => ({
         ...prev,
-        [selectedPlatform]: newUnifiedPosts.length >= PAGE_SIZE,
+        [selectedPlatform]: fetchedPosts.length >= PAGE_SIZE,
       }));
     } catch (err) {
       console.error("Failed to load more posts:", err);
@@ -602,14 +501,14 @@ export default function PostList({ className }: { className?: string }) {
             variant="pills"
             className="!w-fit mb-2"
           />
-          <SwitchTab
+          {/* <SwitchTab
             options={PlatformTabOption}
             value={selectedPlatform}
             onValueChange={handlePlatformChange}
             size="md"
             variant="underline"
             className="w-auto"
-          />
+          /> */}
         </div>
       }
       headerRightExtra={
@@ -630,8 +529,6 @@ export default function PostList({ className }: { className?: string }) {
             tagOptions={tagOptions}
             selectedTags={selectedTags}
             onTagsChange={setSelectedTags}
-            selectedSentiments={selectedSentiments}
-            onSentimentsChange={setSelectedSentiments}
             timeRange={timeRange}
             onTimeRangeChange={setTimeRange}
             dateRange={dateRange}
@@ -654,16 +551,12 @@ export default function PostList({ className }: { className?: string }) {
         <div className="flex items-center justify-center h-full min-h-[400px]">
           <EmptyState
             title={
-              selectedAuthors.length > 0 ||
-              selectedTags.length > 0 ||
-              selectedSentiments.length > 0
+              selectedAuthors.length > 0 || selectedTags.length > 0
                 ? "No posts match your filters"
                 : "No posts available"
             }
             description={
-              selectedAuthors.length > 0 ||
-              selectedTags.length > 0 ||
-              selectedSentiments.length > 0
+              selectedAuthors.length > 0 || selectedTags.length > 0
                 ? "Try adjusting your filters or clear them to see more posts."
                 : "There are no posts to display at the moment."
             }

@@ -29,7 +29,6 @@ import {
   Star,
   TrendingUp,
   Users,
-  MessageSquare,
   Activity,
   ArrowUpDown,
   ArrowUp,
@@ -68,11 +67,6 @@ const sortOptions: { value: SortBy; label: string; icon: React.ReactNode }[] = [
     value: "followers_count",
     label: "Followers",
     icon: <Users className="w-3.5 h-3.5" />,
-  },
-  {
-    value: "total_posts_count",
-    label: "Total Posts",
-    icon: <MessageSquare className="w-3.5 h-3.5" />,
   },
   {
     value: "avg_engagement_rate",
@@ -543,19 +537,6 @@ export default function TopCreators({
                       </Button>
                     </div>
                   </TableHead>
-                  <TableHead className="text-xs text-center font-semibold hidden md:table-cell">
-                    <div className="flex items-center justify-center gap-1">
-                      <span>Posts</span>
-                      <Button
-                        variant="ghost"
-                        size="xs"
-                        onClick={() => handleSort("total_posts_count")}
-                        className="!px-1 !py-0 hover:bg-gray-200 dark:hover:bg-white/20"
-                      >
-                        {getSortIcon("total_posts_count")}
-                      </Button>
-                    </div>
-                  </TableHead>
                   <TableHead className="text-xs text-center font-semibold hidden lg:table-cell">
                     <div className="flex items-center justify-center gap-1">
                       <span>Engagement</span>
@@ -667,11 +648,6 @@ export default function TopCreators({
                       {formatNumber(creator.followers_count)}
                     </TableCell>
 
-                    {/* Total Posts */}
-                    <TableCell className="text-xs text-center font-medium text-gray-700 dark:text-white/80 py-3 hidden md:table-cell">
-                      {formatNumber(creator.total_posts_count)}
-                    </TableCell>
-
                     {/* Engagement Rate */}
                     <TableCell className="text-xs text-center font-medium text-gray-700 dark:text-white/80 py-3 hidden lg:table-cell">
                       {creator.avg_engagement_rate.toFixed(2)}%
@@ -712,7 +688,7 @@ export default function TopCreators({
                 {/* Loading More Indicator */}
                 {isLoadingMore && (
                   <TableRow>
-                    <TableCell colSpan={10} className="text-center py-6">
+                    <TableCell colSpan={9} className="text-center py-6">
                       <div className="inline-flex items-center gap-2 text-sm text-gray-500 dark:text-white/50">
                         <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
                         <span>Loading more creators...</span>
@@ -725,7 +701,7 @@ export default function TopCreators({
                 {!hasMore && filteredCreators.length > 0 && !isLoadingMore && (
                   <TableRow>
                     <TableCell
-                      colSpan={10}
+                      colSpan={9}
                       className="text-center py-6 text-sm text-gray-400 dark:text-white/40 font-medium"
                     >
                       No more creators to load

@@ -29,10 +29,6 @@ class Settings(BaseSettings):
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
 
-    # Apify 配置（用于 Twitter/X 内容追踪）
-    APIFY_TOKEN: str = ""
-    APIFY_TWEET_SCRAPER_ACTOR_ID: str = "apidojo~tweet-scraper"
-
     # MCP Server 配置
     MCP_HOST: str = "0.0.0.0"
     MCP_PORT: int = 8001

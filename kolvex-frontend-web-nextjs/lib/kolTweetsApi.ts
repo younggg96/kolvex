@@ -16,7 +16,7 @@ export interface MediaItem {
 // ========== AI 分析类型 ==========
 
 export interface SentimentAnalysis {
-  value: "bullish" | "bearish" | "neutral" | null;
+  value: "bullish" | "bearish" | "neutral" | string | null;
   confidence: number | null;
   reasoning: string | null;
 }
@@ -25,6 +25,7 @@ export interface TradingSignal {
   action: "buy" | "sell" | "hold" | null;
   tickers: string[];
   confidence: number | null;
+  reasoning: string | null;
 }
 
 export interface KOLTweet {
@@ -62,7 +63,6 @@ export interface KOLTweet {
   trading_signal: TradingSignal | null;
   // 摘要
   summary: string | null;
-  summary_en: string | null;
   // AI 分析元数据
   ai_analyzed_at: string | null;
   ai_model: string | null;
@@ -82,9 +82,6 @@ export interface KOLProfile {
   description: string | null;
   category: string | null;
   avatar_url: string | null;
-  tweet_count: number;
-  total_likes: number;
-  total_retweets: number;
   last_scraped_at: string | null;
 }
 
@@ -96,8 +93,6 @@ export interface KOLProfilesResponse {
 export interface CategoryStats {
   category: string;
   kol_count: number;
-  tweet_count: number;
-  total_likes: number;
   last_scraped_at: string | null;
 }
 
@@ -123,6 +118,64 @@ export interface KOLTweetsParams {
 }
 
 // ============================================================
+// 股票讨论类型定义
+// ============================================================
+
+export interface KOLSummary {
+  username: string;
+  display_name: string | null;
+  avatar_url: string | null;
+  followers_count: number;
+  is_verified: boolean;
+  tweet_count: number;
+  avg_sentiment: number | null;
+  latest_tweet_at: string | null;
+}
+
+export interface StockTweet {
+  id: number;
+  username: string;
+  display_name: string | null;
+  avatar_url: string | null;
+  tweet_text: string;
+  created_at: string | null;
+  permalink: string | null;
+  media_urls: MediaItem[] | null;
+  is_repost: boolean;
+  original_author: string | null;
+  like_count: number;
+  retweet_count: number;
+  reply_count: number;
+  bookmark_count: number;
+  views_count: number;
+  sentiment: SentimentAnalysis | null;
+  tickers: string[];
+  tags: string[];
+  trading_signal: TradingSignal | null;
+  summary: string | null;
+  ai_analyzed_at: string | null;
+  ai_model: string | null;
+}
+
+export interface StockDiscussionsResponse {
+  ticker: string;
+  total_tweets: number;
+  total_kols: number;
+  kols: KOLSummary[];
+  tweets: StockTweet[];
+  page: number;
+  page_size: number;
+  has_more: boolean;
+}
+
+export interface StockDiscussionsParams {
+  page?: number;
+  page_size?: number;
+  sort_by?: "created_at" | "engagement";
+  sort_direction?: "asc" | "desc";
+}
+
+// ============================================================
 // API 基础配置
 // ============================================================
 
@@ -133,7 +186,7 @@ async function fetchAPI<T>(
   options: RequestInit = {}
 ): Promise<T> {
   const url = `${API_BASE_URL}/api/v1${endpoint}`;
-  
+
   const response = await fetch(url, {
     ...options,
     headers: {
@@ -161,7 +214,7 @@ export async function getKOLTweets(
   params: KOLTweetsParams = {}
 ): Promise<KOLTweetsResponse> {
   const searchParams = new URLSearchParams();
-  
+
   if (params.page) searchParams.set("page", String(params.page));
   if (params.page_size) searchParams.set("page_size", String(params.page_size));
   if (params.category) searchParams.set("category", params.category);
@@ -209,11 +262,37 @@ export async function getUserTweets(
   );
 }
 
+/**
+ * 获取股票相关讨论
+ * @param ticker 股票代码 (如 NVDA, AAPL)
+ * @param params 查询参数
+ */
+export async function getStockDiscussions(
+  ticker: string,
+  params: StockDiscussionsParams = {}
+): Promise<StockDiscussionsResponse> {
+  const searchParams = new URLSearchParams();
+
+  if (params.page) searchParams.set("page", String(params.page));
+  if (params.page_size) searchParams.set("page_size", String(params.page_size));
+  if (params.sort_by) searchParams.set("sort_by", params.sort_by);
+  if (params.sort_direction)
+    searchParams.set("sort_direction", params.sort_direction);
+
+  const query = searchParams.toString();
+  return fetchAPI<StockDiscussionsResponse>(
+    `/stocks/${ticker.toUpperCase()}/discussions${query ? `?${query}` : ""}`
+  );
+}
+
 // ============================================================
 // 类别配置（静态数据，用于快速渲染）
 // ============================================================
 
-export const CATEGORY_CONFIG: Record<string, { name: string; icon: string; color: string }> = {
+export const CATEGORY_CONFIG: Record<
+  string,
+  { name: string; icon: string; color: string }
+> = {
   news_flow: {
     name: "News & Flow",
     icon: "🚨",
@@ -267,17 +346,17 @@ export function formatNumber(num: number): string {
  */
 export function formatTimeAgo(dateString: string | null): string {
   if (!dateString) return "";
-  
+
   const date = new Date(dateString);
   const now = new Date();
   const seconds = Math.floor((now.getTime() - date.getTime()) / 1000);
 
-  if (seconds < 60) return "刚刚";
-  if (seconds < 3600) return `${Math.floor(seconds / 60)}分钟前`;
-  if (seconds < 86400) return `${Math.floor(seconds / 3600)}小时前`;
-  if (seconds < 604800) return `${Math.floor(seconds / 86400)}天前`;
-  
-  return date.toLocaleDateString("zh-CN", {
+  if (seconds < 60) return "Just now";
+  if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
+  if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
+  if (seconds < 604800) return `${Math.floor(seconds / 86400)}d ago`;
+
+  return date.toLocaleDateString("en-US", {
     month: "short",
     day: "numeric",
   });
@@ -335,11 +414,11 @@ export function getSentimentIcon(sentiment: string | null): string {
 export function getSentimentLabel(sentiment: string | null): string {
   switch (sentiment) {
     case "bullish":
-      return "看涨";
+      return "Bullish";
     case "bearish":
-      return "看跌";
+      return "Bearish";
     default:
-      return "中性";
+      return "Neutral";
   }
 }
 
@@ -365,13 +444,13 @@ export function getTradingSignalColor(action: string | null): string {
 export function getTradingSignalLabel(action: string | null): string {
   switch (action) {
     case "buy":
-      return "买入";
+      return "Buy";
     case "sell":
-      return "卖出";
+      return "Sell";
     case "hold":
-      return "持有";
+      return "Hold";
     default:
-      return "无信号";
+      return "None";
   }
 }
 
@@ -382,4 +461,3 @@ export function formatConfidence(confidence: number | null): string {
   if (confidence === null || confidence === undefined) return "";
   return `${Math.round(confidence * 100)}%`;
 }
-

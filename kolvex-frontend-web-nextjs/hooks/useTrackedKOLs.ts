@@ -1,154 +1,211 @@
 import { useState, useEffect, useCallback } from "react";
-import {
-  fetchTrackedKOLs,
-  trackKOL,
-  updateTrackedKOL,
-  untrackKOL,
-  toggleTrackKOL,
-  type TrackedKOL,
-  type CreateTrackedKOLInput,
-  type UpdateTrackedKOLInput,
-} from "@/lib/trackedKolApi";
-import type { Platform } from "@/lib/mockData";
-import { toast } from "sonner";
+import { useAuth } from "./useAuth";
+import { createClient } from "@/lib/supabase/client";
+import type { Platform } from "@/lib/supabase/database.types";
 
-export function useTrackedKOLs(platform?: Platform, notify?: boolean) {
+export interface TrackedKOL {
+  id: string;
+  user_id: string;
+  platform: Platform;
+  kol_id: string;
+  notify: boolean;
+  created_at: string;
+  updated_at: string;
+  // Creator profile info (joined from backend or fetched separately)
+  creator_name?: string;
+  creator_username?: string;
+  creator_avatar_url?: string;
+  creator_bio?: string;
+  creator_followers_count?: number;
+  creator_verified?: boolean;
+  creator_influence_score?: number;
+  creator_trending_score?: number;
+}
+
+interface UseTrackedKOLsReturn {
+  trackedKOLs: TrackedKOL[];
+  isLoading: boolean;
+  error: string | null;
+  refresh: () => Promise<void>;
+  trackKOL: (
+    kolId: string,
+    platform: Platform,
+    notify?: boolean
+  ) => Promise<boolean>;
+  untrackKOL: (kolId: string, platform: Platform) => Promise<boolean>;
+  isTracking: (kolId: string, platform: Platform) => boolean;
+}
+
+/**
+ * Custom hook for managing tracked KOLs
+ *
+ * Usage:
+ * ```typescript
+ * const { trackedKOLs, isLoading, trackKOL, untrackKOL } = useTrackedKOLs();
+ * ```
+ */
+export function useTrackedKOLs(): UseTrackedKOLsReturn {
+  const { user, isAuthenticated } = useAuth();
   const [trackedKOLs, setTrackedKOLs] = useState<TrackedKOL[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // 加载追踪的 KOL 列表
-  const loadTrackedKOLs = useCallback(async () => {
+  const fetchTrackedKOLs = useCallback(async () => {
+    if (!isAuthenticated || !user?.id) {
+      setTrackedKOLs([]);
+      setIsLoading(false);
+      return;
+    }
+
     try {
       setIsLoading(true);
       setError(null);
-      const response = await fetchTrackedKOLs(platform, notify);
-      setTrackedKOLs(response.tracked_kols);
+
+      // Fetch from API to get enriched data with creator profiles
+      const response = await fetch("/api/my-tracked-kols", {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          setTrackedKOLs([]);
+          setIsLoading(false);
+          return;
+        }
+        throw new Error("Failed to fetch tracked KOLs");
+      }
+
+      const data = await response.json();
+      const mappedData: TrackedKOL[] = (data.tracked_kols || []).map(
+        (item: any) => ({
+          id: item.id,
+          user_id: item.user_id,
+          platform: item.platform,
+          kol_id: item.kol_id,
+          notify: item.notify,
+          created_at: item.created_at,
+          updated_at: item.updated_at || item.created_at,
+          creator_name: item.creator_name,
+          creator_username: item.creator_username || item.kol_id,
+          creator_avatar_url: item.creator_avatar_url,
+          creator_bio: item.creator_bio,
+          creator_followers_count: item.creator_followers_count,
+          creator_verified: item.creator_verified,
+          creator_influence_score: item.creator_influence_score,
+          creator_trending_score: item.creator_trending_score,
+        })
+      );
+
+      setTrackedKOLs(mappedData);
     } catch (err) {
-      const message =
-        err instanceof Error ? err.message : "Failed to load tracked KOLs";
-      setError(message);
-      toast.error(message);
+      console.error("Error fetching tracked KOLs:", err);
+      setError(err instanceof Error ? err.message : "An error occurred");
+      setTrackedKOLs([]);
     } finally {
       setIsLoading(false);
     }
-  }, [platform, notify]);
+  }, [isAuthenticated, user?.id]);
 
-  // 初始加载
-  useEffect(() => {
-    loadTrackedKOLs();
-  }, [loadTrackedKOLs]);
+  const trackKOL = useCallback(
+    async (
+      kolId: string,
+      platform: Platform,
+      notify: boolean = true
+    ): Promise<boolean> => {
+      if (!isAuthenticated || !user?.id) {
+        return false;
+      }
 
-  // 添加追踪
-  const addTrack = useCallback(async (data: CreateTrackedKOLInput) => {
-    try {
-      const newKOL = await trackKOL(data);
-      setTrackedKOLs((prev) => [newKOL, ...prev]);
-      toast.success(`Successfully tracking ${data.kol_id}`);
-      return newKOL;
-    } catch (err) {
-      const message =
-        err instanceof Error ? err.message : "Failed to track KOL";
-      toast.error(message);
-      throw err;
-    }
-  }, []);
-
-  // 更新追踪
-  const updateTrack = useCallback(
-    async (kol_id: string, platform: Platform, data: UpdateTrackedKOLInput) => {
       try {
-        const updated = await updateTrackedKOL(kol_id, platform, data);
-        setTrackedKOLs((prev) =>
-          prev.map((kol) =>
-            kol.kol_id === kol_id && kol.platform === platform ? updated : kol
-          )
-        );
-        toast.success("Successfully updated tracking settings");
-        return updated;
+        const supabase = createClient();
+
+        const { error: insertError } = await supabase
+          .from("kol_subscriptions")
+          .upsert(
+            {
+              user_id: user.id,
+              platform,
+              kol_id: kolId,
+              notify,
+            },
+            {
+              onConflict: "user_id,platform,kol_id",
+            }
+          );
+
+        if (insertError) {
+          throw insertError;
+        }
+
+        // Refresh the list to get updated data with creator info
+        await fetchTrackedKOLs();
+        return true;
       } catch (err) {
-        const message =
-          err instanceof Error ? err.message : "Failed to update tracking";
-        toast.error(message);
-        throw err;
+        console.error("Error tracking KOL:", err);
+        return false;
       }
     },
-    []
+    [isAuthenticated, user?.id, fetchTrackedKOLs]
   );
 
-  // 取消追踪
-  const removeTrack = useCallback(
-    async (kol_id: string, platform: Platform) => {
+  const untrackKOL = useCallback(
+    async (kolId: string, platform: Platform): Promise<boolean> => {
+      if (!isAuthenticated || !user?.id) {
+        return false;
+      }
+
       try {
-        await untrackKOL(kol_id, platform);
+        const supabase = createClient();
+
+        const { error: deleteError } = await supabase
+          .from("kol_subscriptions")
+          .delete()
+          .eq("user_id", user.id)
+          .eq("platform", platform)
+          .eq("kol_id", kolId);
+
+        if (deleteError) {
+          throw deleteError;
+        }
+
+        // Update local state
         setTrackedKOLs((prev) =>
           prev.filter(
-            (kol) => !(kol.kol_id === kol_id && kol.platform === platform)
+            (kol) => !(kol.kol_id === kolId && kol.platform === platform)
           )
         );
-        toast.success(`Successfully untracked ${kol_id}`);
+        return true;
       } catch (err) {
-        const message =
-          err instanceof Error ? err.message : "Failed to untrack KOL";
-        toast.error(message);
-        throw err;
+        console.error("Error untracking KOL:", err);
+        return false;
       }
     },
-    []
+    [isAuthenticated, user?.id]
   );
 
-  // 切换追踪状态
-  const toggleTrack = useCallback(
-    async (kol_id: string, platform: Platform) => {
-      try {
-        const result = await toggleTrackKOL(kol_id, platform);
-        await loadTrackedKOLs(); // 重新加载列表
-        toast.success(
-          result.isTracking
-            ? `Now tracking ${kol_id}`
-            : `Stopped tracking ${kol_id}`
-        );
-        return result.isTracking;
-      } catch (err) {
-        const message =
-          err instanceof Error ? err.message : "Failed to toggle tracking";
-        toast.error(message);
-        throw err;
-      }
-    },
-    [loadTrackedKOLs]
-  );
-
-  // 检查是否正在追踪
   const isTracking = useCallback(
-    (kol_id: string, platform: Platform) => {
+    (kolId: string, platform: Platform): boolean => {
       return trackedKOLs.some(
-        (kol) => kol.kol_id === kol_id && kol.platform === platform
+        (kol) => kol.kol_id === kolId && kol.platform === platform
       );
     },
     [trackedKOLs]
   );
 
-  // 获取特定 KOL 的追踪信息
-  const getTrackedKOL = useCallback(
-    (kol_id: string, platform: Platform) => {
-      return trackedKOLs.find(
-        (kol) => kol.kol_id === kol_id && kol.platform === platform
-      );
-    },
-    [trackedKOLs]
-  );
+  useEffect(() => {
+    fetchTrackedKOLs();
+  }, [fetchTrackedKOLs]);
 
   return {
     trackedKOLs,
     isLoading,
     error,
-    refresh: loadTrackedKOLs,
-    addTrack,
-    updateTrack,
-    removeTrack,
-    toggleTrack,
+    refresh: fetchTrackedKOLs,
+    trackKOL,
+    untrackKOL,
     isTracking,
-    getTrackedKOL,
   };
 }

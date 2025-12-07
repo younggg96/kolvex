@@ -1,158 +1,181 @@
-// Tracked Stock types and API functions
-
-export interface KOLOpinion {
-  id: string;
-  kolId: string;
-  kolName: string;
-  kolUsername: string;
-  kolPlatform: string;
-  kolAvatarUrl?: string;
-  sentiment: "bullish" | "bearish" | "neutral";
-  opinion: string;
-  confidence?: number; // 1-10
-  targetPrice?: number;
-  timeframe?: string; // "short-term", "medium-term", "long-term"
-  publishedAt: string;
-  sourceUrl?: string;
-}
+// API functions for tracked stock operations
+import { createClient } from "@/lib/supabase/client";
 
 export interface TrackedStock {
   id: string;
+  user_id: string;
   symbol: string;
-  companyName: string;
-  currentPrice?: number;
-  change?: number;
-  changePercent?: number;
-  isTracking: boolean;
-  addedAt: string;
-  opinions: KOLOpinion[];
-  logo?: string;
+  company_name?: string | null;
+  logo_url?: string | null;
+  notify: boolean;
+  created_at: string;
 }
 
-export interface CreateTrackedStockInput {
+export interface KOLOpinion {
+  id: string;
+  kolName: string;
+  kolAvatar: string;
+  sentiment: "bullish" | "bearish" | "neutral";
+  summary: string;
+  timestamp: string;
+}
+
+interface CreateTrackedStockParams {
   symbol: string;
-  companyName: string;
+  companyName?: string;
   logo?: string;
+  notify?: boolean;
 }
 
-export interface UpdateTrackedStockInput {
-  isTracking?: boolean;
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const API_PREFIX = "/api/v1";
+
+/**
+ * Get auth token from Supabase
+ */
+async function getAuthToken(): Promise<string | null> {
+  const supabase = createClient();
+  const { data: { session } } = await supabase.auth.getSession();
+  return session?.access_token || null;
 }
 
-// Sentiment colors and labels (matching home page design)
-export const sentimentConfig = {
-  bullish: {
-    label: "Bullish",
-    color: "text-green-500",
-    bgColor: "bg-green-500/20",
-    borderColor: "border-green-500/40",
-    dotColor: "bg-green-500",
-  },
-  bearish: {
-    label: "Bearish",
-    color: "text-red-500",
-    bgColor: "bg-red-500/20",
-    borderColor: "border-red-500/40",
-    dotColor: "bg-red-500",
-  },
-  neutral: {
-    label: "Neutral",
-    color: "text-gray-500",
-    bgColor: "bg-gray-500/20",
-    borderColor: "border-gray-500/40",
-    dotColor: "bg-gray-500",
-  },
-} as const;
-
-// API functions
-export async function fetchTrackedStocks(): Promise<TrackedStock[]> {
-  const response = await fetch("/api/tracked-stocks");
-  if (!response.ok) {
-    throw new Error("Failed to fetch tracked stocks");
-  }
-  return response.json();
-}
-
+/**
+ * Create a new tracked stock (add to watchlist)
+ */
 export async function createTrackedStock(
-  data: CreateTrackedStockInput
+  params: CreateTrackedStockParams
 ): Promise<TrackedStock> {
-  const response = await fetch("/api/tracked-stocks", {
+  const token = await getAuthToken();
+  if (!token) {
+    throw new Error("未登录，请先登录");
+  }
+
+  const response = await fetch(`${API_BASE_URL}${API_PREFIX}/tracked-stocks`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
     },
-    body: JSON.stringify(data),
+    body: JSON.stringify({
+      symbol: params.symbol,
+      company_name: params.companyName,
+      logo_url: params.logo,
+      notify: params.notify ?? true,
+    }),
   });
+
   if (!response.ok) {
-    throw new Error("Failed to create tracked stock");
+    const error = await response.json().catch(() => ({}));
+    throw new Error(error.detail || "Failed to add stock to watchlist");
   }
+
   return response.json();
 }
 
-export async function updateTrackedStock(
-  id: string,
-  data: UpdateTrackedStockInput
-): Promise<TrackedStock> {
-  const response = await fetch("/api/tracked-stocks", {
-    method: "PATCH",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ id, ...data }),
-  });
-  if (!response.ok) {
-    throw new Error("Failed to update tracked stock");
+/**
+ * Delete a tracked stock from watchlist
+ */
+export async function deleteTrackedStock(stockId: string): Promise<void> {
+  const token = await getAuthToken();
+  if (!token) {
+    throw new Error("未登录，请先登录");
   }
-  return response.json();
-}
 
-export async function deleteTrackedStock(id: string): Promise<void> {
-  const response = await fetch("/api/tracked-stocks", {
-    method: "DELETE",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ id }),
-  });
-  if (!response.ok) {
-    throw new Error("Failed to delete tracked stock");
-  }
-}
-
-// Helper functions
-export function getSentimentCounts(opinions: KOLOpinion[]) {
-  return opinions.reduce(
-    (acc, opinion) => {
-      acc[opinion.sentiment] = (acc[opinion.sentiment] || 0) + 1;
-      return acc;
-    },
-    { bullish: 0, bearish: 0, neutral: 0 } as Record<string, number>
+  const response = await fetch(
+    `${API_BASE_URL}${API_PREFIX}/tracked-stocks/${stockId}`,
+    {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
   );
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}));
+    throw new Error(error.detail || "Failed to remove stock from watchlist");
+  }
 }
 
-export function getOverallSentiment(
-  opinions: KOLOpinion[]
-): "bullish" | "bearish" | "neutral" {
-  if (opinions.length === 0) return "neutral";
+/**
+ * Get all tracked stocks for current user
+ */
+export async function getTrackedStocks(): Promise<TrackedStock[]> {
+  const token = await getAuthToken();
+  if (!token) {
+    throw new Error("未登录，请先登录");
+  }
 
-  const counts = getSentimentCounts(opinions);
-  const max = Math.max(counts.bullish, counts.bearish, counts.neutral);
+  const response = await fetch(`${API_BASE_URL}${API_PREFIX}/tracked-stocks`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
 
-  if (counts.bullish === max) return "bullish";
-  if (counts.bearish === max) return "bearish";
-  return "neutral";
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}));
+    throw new Error(error.detail || "Failed to fetch watchlist");
+  }
+
+  const data = await response.json();
+  return data.stocks || [];
 }
 
-export function formatPrice(price: number): string {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(price);
+/**
+ * Update tracked stock settings (e.g., notify)
+ */
+export async function updateTrackedStock(
+  stockId: string,
+  updates: { notify?: boolean }
+): Promise<TrackedStock> {
+  const token = await getAuthToken();
+  if (!token) {
+    throw new Error("未登录，请先登录");
+  }
+
+  const response = await fetch(
+    `${API_BASE_URL}${API_PREFIX}/tracked-stocks/${stockId}`,
+    {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(updates),
+    }
+  );
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}));
+    throw new Error(error.detail || "Failed to update stock settings");
+  }
+
+  return response.json();
 }
 
-export function formatPercentage(percent: number): string {
-  const sign = percent >= 0 ? "+" : "";
-  return `${sign}${percent.toFixed(2)}%`;
+/**
+ * Check if a stock is being tracked
+ */
+export async function checkStockTracked(
+  symbol: string
+): Promise<{ symbol: string; is_tracked: boolean; stock_id: string | null }> {
+  const token = await getAuthToken();
+  if (!token) {
+    return { symbol: symbol.toUpperCase(), is_tracked: false, stock_id: null };
+  }
+
+  const response = await fetch(
+    `${API_BASE_URL}${API_PREFIX}/tracked-stocks/check/${symbol}`,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
+
+  if (!response.ok) {
+    return { symbol: symbol.toUpperCase(), is_tracked: false, stock_id: null };
+  }
+
+  return response.json();
 }

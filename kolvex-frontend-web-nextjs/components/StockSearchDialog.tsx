@@ -192,11 +192,11 @@ export default function StockSearchDialog({
                   className="flex items-center gap-2.5 px-6 py-3 transition-colors border-b border-gray-100 dark:border-white/5 last:border-b-0 hover:bg-gray-50 dark:hover:bg-white/5"
                 >
                   {/* Logo */}
-                  {stock.logo ? (
+                  {stock.logo_url ? (
                     <CompanyLogo
-                      logoUrl={stock.logo}
+                      logoUrl={stock.logo_url}
                       symbol={stock.symbol}
-                      name={stock.companyName}
+                      name={stock.company_name || stock.symbol}
                       size="sm"
                       shape="rounded"
                       border="light"
@@ -214,7 +214,7 @@ export default function StockSearchDialog({
                       {stock.symbol}
                     </div>
                     <div className="text-xs text-gray-500 dark:text-white/50 truncate">
-                      {stock.companyName}
+                      {stock.company_name || stock.symbol}
                     </div>
                   </div>
 

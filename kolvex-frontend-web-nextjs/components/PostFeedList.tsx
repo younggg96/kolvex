@@ -1,30 +1,21 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { UnifiedPost } from "@/lib/postTypes";
+import { KOLTweet } from "@/lib/kolTweetsApi";
 import TweetHeader from "./TweetHeader";
-import {
-  TwitterContent,
-  RedditContent,
-  YouTubeContent,
-  RednoteContent,
-} from "./content";
+import { TwitterContent } from "./content";
 import { Separator } from "./ui/separator";
 import type { Platform } from "@/lib/supabase/database.types";
 
 // Helper function to map post platform to database Platform type
 const mapPlatform = (platform: string): Platform | undefined => {
-  const platformMap: Record<string, Platform> = {
-    x: "TWITTER",
-    reddit: "REDDIT",
-    youtube: "YOUTUBE",
-    rednote: "REDNOTE",
-  };
-  return platformMap[platform];
+  // Since we only support TWITTER now, and backend might not return platform field in KOLTweet
+  // We default to TWITTER for now or check if there's a platform field
+  return "TWITTER";
 };
 
 interface PostFeedListProps {
-  posts: UnifiedPost[];
+  posts: KOLTweet[];
   formatDate?: (dateString: string) => string;
   formatText?: (text: string) => React.ReactNode;
 }
@@ -73,112 +64,42 @@ export default function PostFeedList({
   const onFormatDate = formatDate || defaultFormatDate;
   const onFormatText = formatText || defaultFormatText;
 
-  const renderPostContent = (post: UnifiedPost) => {
-    switch (post.platform) {
-      case "x":
-        return (
-          <TwitterContent
-            title={post.title}
-            fullText={post.content}
-            url={post.url}
-            id={post.id.split("_")[1] || post.id}
-            mediaUrls={post.mediaUrls}
-            aiSummary={post.aiSummary}
-            aiAnalysis={post.aiAnalysis}
-            aiTags={post.aiTags}
-            sentiment={post.sentiment}
-            onFormatText={onFormatText}
-            likesCount={post.likes}
-          />
-        );
-      // case "reddit":
-      //   return (
-      //     <RedditContent
-      //       title={post.title}
-      //       fullText={post.content}
-      //       url={post.url}
-      //       id={post.id}
-      //       mediaUrls={post.mediaUrls}
-      //       aiSummary={post.aiSummary}
-      //       aiAnalysis={post.aiAnalysis}
-      //       aiTags={post.aiTags}
-      //       sentiment={post.sentiment}
-      //       onFormatText={onFormatText}
-      //       subreddit={post.platformData?.subreddit}
-      //       score={post.platformData?.score}
-      //       permalink={post.platformData?.permalink}
-      //       topComments={post.platformData?.topComments}
-      //       likesCount={post.likes}
-      //     />
-      //   );
-      // case "youtube":
-      //   return (
-      //     <YouTubeContent
-      //       title={post.title}
-      //       fullText={post.content}
-      //       url={post.url}
-      //       id={post.id}
-      //       mediaUrls={post.mediaUrls}
-      //       aiSummary={post.aiSummary}
-      //       aiAnalysis={post.aiAnalysis}
-      //       aiTags={post.aiTags}
-      //       sentiment={post.sentiment}
-      //       onFormatText={onFormatText}
-      //       viewCount={post.platformData?.viewCount}
-      //       likeCount={post.platformData?.likeCount}
-      //       commentCount={post.platformData?.commentCount}
-      //       duration={post.platformData?.duration}
-      //       thumbnailUrl={post.platformData?.thumbnailUrl}
-      //       channelName={post.platformData?.channelName}
-      //       channelThumbnailUrl={post.platformData?.channelThumbnailUrl}
-      //       publishedAt={post.platformData?.publishedAt}
-      //       likesCount={post.likes}
-      //     />
-      //   );
-      // case "rednote":
-      //   return (
-      //     <RednoteContent
-      //       title={post.title}
-      //       fullText={post.content}
-      //       url={post.url}
-      //       id={post.id}
-      //       mediaUrls={post.mediaUrls}
-      //       aiSummary={post.aiSummary}
-      //       aiAnalysis={post.aiAnalysis}
-      //       aiTags={post.aiTags}
-      //       sentiment={post.sentiment}
-      //       onFormatText={onFormatText}
-      //       likesCount={post.likes}
-      //     />
-      //   );
-      default:
-        return null;
-    }
+  const renderPostContent = (post: KOLTweet) => {
+    return (
+      <TwitterContent
+        fullText={post.tweet_text}
+        url={post.permalink || ""}
+        id={post.id.toString()}
+        mediaUrls={post.media_urls?.map((m) => m.url || "") || []}
+        aiSummary={post.summary}
+        aiTradingSignal={post.trading_signal}
+        aiTags={post.tags}
+        aiModel={post.ai_model}
+        aiAnalyzedAt={post.ai_analyzed_at}
+        sentiment={post.sentiment}
+        onFormatText={onFormatText}
+        likesCount={post.like_count}
+      />
+    );
   };
 
   return (
     <>
-      {posts.map((post, index) => {
-        if (!post.isMarketRelated) return null;
-
-        return (
-          <div key={post.id}>
-            <TweetHeader
-              screenName={post.author}
-              createdAt={post.createdAt}
-              profileImageUrl={post.avatarUrl}
-              onFormatDate={onFormatDate}
-              kolId={post.authorId}
-              platform={mapPlatform(post.platform)}
-              initialTracked={post.userTracked}
-            />
-            <pre>{JSON.stringify(post, null, 2)}</pre>
-            {renderPostContent(post)}
-
-            {index < posts.length - 1 && <Separator className="my-2" />}
-          </div>
-        );
-      })}
+      {posts.map((post, index) => (
+        <div key={post.id}>
+          <TweetHeader
+            screenName={post.username}
+            createdAt={post.created_at || new Date().toISOString()}
+            profileImageUrl={post.avatar_url || undefined}
+            onFormatDate={onFormatDate}
+            kolId={post.username}
+            platform={mapPlatform("x")}
+            initialTracked={false}
+          />
+          {renderPostContent(post)}
+          {index < posts.length - 1 && <Separator className="my-2" />}
+        </div>
+      ))}
     </>
   );
 }

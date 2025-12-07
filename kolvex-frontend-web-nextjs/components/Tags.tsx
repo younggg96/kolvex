@@ -1,13 +1,15 @@
 "use client";
 
 import { useState } from "react";
+import { cn } from "@/lib/utils";
 
 interface TagsProps {
   tags: string[];
   maxVisible?: number;
+  className?: string;
 }
 
-export default function Tags({ tags, maxVisible = 5 }: TagsProps) {
+export default function Tags({ tags, maxVisible = 5, className }: TagsProps) {
   const [isExpanded, setIsExpanded] = useState(false);
 
   if (!tags || tags.length === 0) return null;
@@ -16,7 +18,7 @@ export default function Tags({ tags, maxVisible = 5 }: TagsProps) {
   const displayedTags = isExpanded ? tags : tags.slice(0, maxVisible);
 
   return (
-    <div className="flex flex-wrap gap-1.5">
+    <div className={cn("flex flex-wrap gap-1.5", className)}>
       {displayedTags.map((tag, index) => (
         <span
           key={index}
@@ -37,4 +39,3 @@ export default function Tags({ tags, maxVisible = 5 }: TagsProps) {
     </div>
   );
 }
-

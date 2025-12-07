@@ -1,192 +1,179 @@
-// API functions for managing tracked KOLs
-import type { Platform } from "@/lib/mockData";
+// API functions for tracked KOL operations
+import { createClient } from "@/lib/supabase/client";
+import type { Platform } from "@/lib/supabase/database.types";
 
-export interface TrackedKOL {
-  user_id: string;
-  kol_id: string;
-  platform: Platform;
-  notify: boolean;
-  updated_at: string;
-  creator_name?: string;
-  creator_avatar_url?: string;
-  creator_username?: string;
-  creator_verified?: boolean;
-  creator_bio?: string | null;
-  creator_followers_count?: number;
-  creator_category?: string | null;
-  creator_influence_score?: number;
-  creator_trending_score?: number;
-  posts_count?: number;
-  latest_post_date?: string;
-}
-
-export interface CreateTrackedKOLInput {
+interface TrackKOLParams {
   kol_id: string;
   platform: Platform;
   notify?: boolean;
 }
 
-export interface UpdateTrackedKOLInput {
-  notify?: boolean;
-}
+/**
+ * Track a KOL (add to subscriptions)
+ */
+export async function trackKOL(params: TrackKOLParams): Promise<void> {
+  const supabase = createClient();
 
-export interface TrackedKOLsResponse {
-  count: number;
-  tracked_kols: TrackedKOL[];
-}
+  // Get current user
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
 
-// GET - 获取追踪的 KOL 列表
-export async function fetchTrackedKOLs(
-  platform?: Platform,
-  notify?: boolean
-): Promise<TrackedKOLsResponse> {
-  const params = new URLSearchParams();
-  if (platform) params.append("platform", platform);
-  if (notify !== undefined) params.append("notify", notify.toString());
-
-  const url = `/api/my-tracked-kols${
-    params.toString() ? `?${params.toString()}` : ""
-  }`;
-
-  const response = await fetch(url, {
-    method: "GET",
-    cache: "no-store",
-  });
-
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({}));
-    throw new Error(error.message || "Failed to fetch tracked KOLs");
+  if (userError || !user) {
+    throw new Error("User not authenticated");
   }
 
-  return response.json();
-}
-
-// POST - 添加追踪的 KOL
-export async function trackKOL(
-  data: CreateTrackedKOLInput
-): Promise<TrackedKOL> {
-  const response = await fetch("/api/my-tracked-kols", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
+  const { error } = await supabase.from("kol_subscriptions").upsert(
+    {
+      user_id: user.id,
+      platform: params.platform,
+      kol_id: params.kol_id,
+      notify: params.notify ?? true,
     },
-    body: JSON.stringify(data),
-  });
-
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({}));
-    throw new Error(error.message || "Failed to track KOL");
-  }
-
-  return response.json();
-}
-
-// PATCH - 更新追踪的 KOL
-export async function updateTrackedKOL(
-  kol_id: string,
-  platform: Platform,
-  data: UpdateTrackedKOLInput
-): Promise<TrackedKOL> {
-  const response = await fetch("/api/my-tracked-kols", {
-    method: "PATCH",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      kol_id,
-      platform,
-      ...data,
-    }),
-  });
-
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({}));
-    throw new Error(error.message || "Failed to update tracked KOL");
-  }
-
-  return response.json();
-}
-
-// DELETE - 取消追踪 KOL
-export async function untrackKOL(
-  kol_id: string,
-  platform: Platform
-): Promise<void> {
-  const response = await fetch("/api/my-tracked-kols", {
-    method: "DELETE",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      kol_id,
-      platform,
-    }),
-  });
-
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({}));
-    throw new Error(error.message || "Failed to untrack KOL");
-  }
-}
-
-// 批量操作 - 追踪多个 KOL
-export async function trackMultipleKOLs(
-  kols: CreateTrackedKOLInput[]
-): Promise<{ success: number; failed: number; errors: string[] }> {
-  const results = await Promise.allSettled(kols.map((kol) => trackKOL(kol)));
-
-  const success = results.filter((r) => r.status === "fulfilled").length;
-  const failed = results.filter((r) => r.status === "rejected").length;
-  const errors = results
-    .filter((r): r is PromiseRejectedResult => r.status === "rejected")
-    .map((r) => r.reason.message);
-
-  return { success, failed, errors };
-}
-
-// 批量操作 - 取消追踪多个 KOL
-export async function untrackMultipleKOLs(
-  kols: { kol_id: string; platform: Platform }[]
-): Promise<{ success: number; failed: number; errors: string[] }> {
-  const results = await Promise.allSettled(
-    kols.map((kol) => untrackKOL(kol.kol_id, kol.platform))
+    {
+      onConflict: "user_id,platform,kol_id",
+    }
   );
 
-  const success = results.filter((r) => r.status === "fulfilled").length;
-  const failed = results.filter((r) => r.status === "rejected").length;
-  const errors = results
-    .filter((r): r is PromiseRejectedResult => r.status === "rejected")
-    .map((r) => r.reason.message);
-
-  return { success, failed, errors };
+  if (error) {
+    console.error("Track KOL error:", error);
+    throw new Error(error.message);
+  }
 }
 
-// 检查是否正在追踪某个 KOL
-export async function isTrackingKOL(
-  kol_id: string,
+/**
+ * Untrack a KOL (remove from subscriptions)
+ */
+export async function untrackKOL(
+  kolId: string,
+  platform: Platform
+): Promise<void> {
+  const supabase = createClient();
+
+  // Get current user
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+
+  if (userError || !user) {
+    throw new Error("User not authenticated");
+  }
+
+  const { error } = await supabase
+    .from("kol_subscriptions")
+    .delete()
+    .eq("user_id", user.id)
+    .eq("platform", platform)
+    .eq("kol_id", kolId);
+
+  if (error) {
+    console.error("Untrack KOL error:", error);
+    throw new Error(error.message);
+  }
+}
+
+/**
+ * Check if a KOL is being tracked
+ */
+export async function isKOLTracked(
+  kolId: string,
   platform: Platform
 ): Promise<boolean> {
-  try {
-    const response = await fetchTrackedKOLs(platform);
-    return response.tracked_kols.some((kol) => kol.kol_id === kol_id);
-  } catch (error) {
-    console.error("Error checking if tracking KOL:", error);
+  const supabase = createClient();
+
+  // Get current user
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+
+  if (userError || !user) {
     return false;
   }
+
+  const { data, error } = await supabase
+    .from("kol_subscriptions")
+    .select("id")
+    .eq("user_id", user.id)
+    .eq("platform", platform)
+    .eq("kol_id", kolId)
+    .single();
+
+  if (error) {
+    return false;
+  }
+
+  return !!data;
 }
 
-// 切换追踪状态
-export async function toggleTrackKOL(
-  kol_id: string,
-  platform: Platform
-): Promise<{ isTracking: boolean }> {
-  const isTracking = await isTrackingKOL(kol_id, platform);
+/**
+ * Get all tracked KOLs for current user
+ */
+export async function getTrackedKOLs(platform?: Platform): Promise<any[]> {
+  const supabase = createClient();
 
-  if (isTracking) {
-    await untrackKOL(kol_id, platform);
-    return { isTracking: false };
-  } else {
-    await trackKOL({ kol_id, platform, notify: true });
-    return { isTracking: true };
+  // Get current user
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+
+  if (userError || !user) {
+    throw new Error("User not authenticated");
+  }
+
+  let query = supabase
+    .from("kol_subscriptions")
+    .select("*")
+    .eq("user_id", user.id)
+    .order("created_at", { ascending: false });
+
+  if (platform) {
+    query = query.eq("platform", platform);
+  }
+
+  const { data, error } = await query;
+
+  if (error) {
+    console.error("Get tracked KOLs error:", error);
+    throw new Error(error.message);
+  }
+
+  return data || [];
+}
+
+/**
+ * Update notification setting for a tracked KOL
+ */
+export async function updateKOLNotification(
+  kolId: string,
+  platform: Platform,
+  notify: boolean
+): Promise<void> {
+  const supabase = createClient();
+
+  // Get current user
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+
+  if (userError || !user) {
+    throw new Error("User not authenticated");
+  }
+
+  const { error } = await supabase
+    .from("kol_subscriptions")
+    .update({ notify })
+    .eq("user_id", user.id)
+    .eq("platform", platform)
+    .eq("kol_id", kolId);
+
+  if (error) {
+    console.error("Update KOL notification error:", error);
+    throw new Error(error.message);
   }
 }
+

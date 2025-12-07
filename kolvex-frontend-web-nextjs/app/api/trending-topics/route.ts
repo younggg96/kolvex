@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { mockTrendingTopics, Platform } from "@/lib/mockData";
+
+export type Platform = "TWITTER" | "REDDIT" | "YOUTUBE" | "REDNOTE";
 
 export interface TrendingTopic {
   id: string;
@@ -22,6 +23,9 @@ export type SortBy =
   | "mention_count"
   | "last_seen_at";
 
+// Backend API base URL
+const BACKEND_API_URL = process.env.BACKEND_API_URL || "http://localhost:8000";
+
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
@@ -32,38 +36,33 @@ export async function GET(request: NextRequest) {
     const sortBy = (searchParams.get("sort_by") as SortBy) || "trending_score";
     const sortDirection = searchParams.get("sort_direction") || "desc";
 
-    // Filter topics
-    let filteredTopics = [...mockTrendingTopics];
+    // For now, return empty array since we don't have trending topics in backend yet
+    // This can be connected to real data when the backend endpoint is available
+    
+    // Try to fetch from backend if available
+    try {
+      const response = await fetch(
+        `${BACKEND_API_URL}/api/trending-topics?limit=${limit}&offset=${offset}`,
+        {
+          headers: { "Content-Type": "application/json" },
+          cache: "no-store",
+        }
+      );
 
-    if (platform) {
-      filteredTopics = filteredTopics.filter((t) => t.platform === platform);
+      if (response.ok) {
+        const data = await response.json();
+        return NextResponse.json(data);
+      }
+    } catch (fetchError) {
+      // Backend not available, return empty data
+      console.log("Trending topics backend not available");
     }
 
-    if (topicType) {
-      filteredTopics = filteredTopics.filter((t) => t.topic_type === topicType);
-    }
-
-    // Sort topics
-    filteredTopics.sort((a, b) => {
-      const aVal = a[sortBy] || 0;
-      const bVal = b[sortBy] || 0;
-      return sortDirection === "asc"
-        ? aVal > bVal
-          ? 1
-          : -1
-        : aVal > bVal
-        ? -1
-        : 1;
-    });
-
-    // Paginate
-    const total = filteredTopics.length;
-    const paginatedTopics = filteredTopics.slice(offset, offset + limit);
-
+    // Return empty response when backend is not available
     return NextResponse.json({
-      topics: paginatedTopics,
-      count: paginatedTopics.length,
-      total,
+      topics: [],
+      count: 0,
+      total: 0,
     });
   } catch (error) {
     console.error("Error in trending topics API:", error);

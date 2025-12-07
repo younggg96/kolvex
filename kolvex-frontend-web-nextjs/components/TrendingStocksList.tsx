@@ -13,7 +13,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useRouter } from "next/navigation";
-import { TrendingTickerWithPrice } from "@/app/api/trending-tickers/route";
+import { TrendingStock } from "@/app/api/trending-stocks/route";
 import { MessageSquare, Plus, Users } from "lucide-react";
 import sp500Data from "@/data/sp500.constituents.wikilogo.json";
 import { Button } from "./ui/button";
@@ -229,9 +229,7 @@ export default function TrendingStocksList({
   onAddClick,
 }: TrendingStocksListProps = {}) {
   const router = useRouter();
-  const [trendingTickers, setTrendingTickers] = useState<
-    TrendingTickerWithPrice[]
-  >([]);
+  const [trendingStocks, setTrendingStocks] = useState<TrendingStock[]>([]);
   const [internalLoading, setInternalLoading] = useState(fetchFromApi);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [offset, setOffset] = useState(0);
@@ -240,19 +238,19 @@ export default function TrendingStocksList({
 
   const loading = fetchFromApi ? internalLoading : externalLoading;
 
-  // Convert trendingTickers to StockDisplayItem format
-  const convertedTrendingTickers: TrendingStockDisplayItem[] = useMemo(() => {
-    return trendingTickers.map((ticker) => ({
-      ticker: ticker.ticker,
-      platform: ticker.platform,
-      mentionCount: ticker.mention_count,
-      sentimentScore: ticker.sentiment_score,
-      trendingScore: ticker.trending_score,
-      uniqueAuthors: ticker.unique_authors_count,
+  // Convert trendingStocks to StockDisplayItem format
+  const convertedTrendingStocks: TrendingStockDisplayItem[] = useMemo(() => {
+    return trendingStocks.map((stock) => ({
+      ticker: stock.ticker,
+      platform: stock.platform,
+      mentionCount: stock.mention_count,
+      sentimentScore: stock.sentiment_score ?? undefined,
+      trendingScore: stock.trending_score ?? undefined,
+      uniqueAuthors: stock.unique_authors_count,
     }));
-  }, [trendingTickers]);
+  }, [trendingStocks]);
 
-  const displayStocks = externalStocks || convertedTrendingTickers;
+  const displayStocks = externalStocks || convertedTrendingStocks;
 
   // Create a Map for quick logo lookup
   const stockLogoMap = useMemo(() => {
@@ -268,7 +266,7 @@ export default function TrendingStocksList({
     return map;
   }, []);
 
-  const fetchTrendingTickers = async (reset: boolean = false) => {
+  const fetchTrendingStocks = async (reset: boolean = false) => {
     if (!fetchFromApi) return;
 
     try {
@@ -278,29 +276,30 @@ export default function TrendingStocksList({
         setIsLoadingMore(true);
       }
 
-      const currentOffset = reset ? 0 : offset;
+      const currentPage = reset ? 1 : Math.floor(offset / limit) + 1;
       const response = await fetch(
-        `/api/trending-tickers?limit=${limit}&offset=${currentOffset}&sort_by=trending_score&sort_direction=desc`
+        `/api/trending-stocks?page=${currentPage}&page_size=${limit}&sort_by=trending_score&sort_direction=desc`
       );
 
       if (!response.ok) {
-        throw new Error("Failed to fetch trending tickers");
+        throw new Error("Failed to fetch trending stocks");
       }
 
       const data = await response.json();
-      const newTickers = data.tickers || [];
+      const newStocks = data.stocks || [];
 
       if (reset) {
-        setTrendingTickers(newTickers);
+        setTrendingStocks(newStocks);
+        setOffset(newStocks.length);
       } else {
-        setTrendingTickers((prev) => [...prev, ...newTickers]);
+        setTrendingStocks((prev) => [...prev, ...newStocks]);
+        setOffset((prev) => prev + newStocks.length);
       }
 
       // Check if there are more items to load
-      setHasMore(newTickers.length === limit);
-      setOffset(currentOffset + newTickers.length);
+      setHasMore(data.has_more ?? newStocks.length === limit);
     } catch (err) {
-      console.error("Error fetching trending tickers:", err);
+      console.error("Error fetching trending stocks:", err);
     } finally {
       setInternalLoading(false);
       setIsLoadingMore(false);
@@ -311,13 +310,13 @@ export default function TrendingStocksList({
     if (!fetchFromApi) return;
 
     // Reset and fetch when component mounts
-    setTrendingTickers([]);
+    setTrendingStocks([]);
     setOffset(0);
     setHasMore(true);
-    fetchTrendingTickers(true);
+    fetchTrendingStocks(true);
 
     // Refresh every 60 seconds
-    const interval = setInterval(() => fetchTrendingTickers(true), 60000);
+    const interval = setInterval(() => fetchTrendingStocks(true), 60000);
     return () => clearInterval(interval);
   }, [fetchFromApi]);
 
@@ -334,7 +333,7 @@ export default function TrendingStocksList({
 
     // Load more when scrolled to 90% of the content
     if (scrollPercentage > 0.9) {
-      fetchTrendingTickers(false);
+      fetchTrendingStocks(false);
     }
   };
 

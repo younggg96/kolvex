@@ -1,7 +1,7 @@
 // Database types for Supabase
 
 export type NotificationMethod = "EMAIL" | "MESSAGE";
-export type Platform = "TWITTER" | "REDDIT" | "YOUTUBE" | "XIAOHONGSHU" | "REDNOTE";
+export type Platform = "TWITTER" | "REDDIT" | "YOUTUBE" | "REDNOTE";
 export type Theme = "LIGHT" | "DARK" | "SYSTEM";
 export type Membership = "FREE" | "PRO" | "ENTERPRISE";
 
@@ -46,19 +46,3 @@ export interface ProfileUpdate {
   phone_e164?: string | null;
   is_subscribe_newsletter?: boolean;
 }
-
-export interface TrendingTopic {
-  id: string;
-  topic: string;
-  topic_type: string;
-  platform: Platform;
-  trending_score: number;
-  engagement_score: number;
-  mention_count: number;
-  related_tickers: string[] | null;
-  first_seen_at: string;
-  last_seen_at: string;
-  created_at: string;
-  updated_at: string;
-}
-

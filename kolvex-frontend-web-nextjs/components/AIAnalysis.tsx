@@ -1,149 +1,102 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Sparkles, Loader2 } from "lucide-react";
+import { Sparkles, TrendingUp, TrendingDown, Minus } from "lucide-react";
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { Button } from "@/components/ui/button";
-import TranslateButton from "./TranslateButton";
-import { toast } from "sonner";
+import type { TradingSignal } from "@/lib/kolTweetsApi";
+import { cn } from "@/lib/utils";
 
 interface AIAnalysisProps {
-  aiAnalysis?: string;
-  sentiment?: "bullish" | "bearish" | "neutral";
-  postId?: string;
+  summary?: string | null;
+  tradingSignal?: TradingSignal | null;
+  model?: string | null;
+  analyzedAt?: string | null;
 }
 
 export default function AIAnalysis({
-  aiAnalysis,
-  sentiment = "neutral",
-  postId,
+  summary,
+  tradingSignal,
+  model,
+  analyzedAt,
 }: AIAnalysisProps) {
-  const [analysis, setAnalysis] = useState(aiAnalysis || "");
-  const [currentSentiment, setCurrentSentiment] = useState(sentiment);
-  const [displayText, setDisplayText] = useState(aiAnalysis || "");
-  const [isLoading, setIsLoading] = useState(false);
+  // If no summary and no trading signal, don't render anything
+  if (!summary && !tradingSignal?.action) {
+    return null;
+  }
 
-  useEffect(() => {
-    if (aiAnalysis) {
-      setAnalysis(aiAnalysis);
-      setDisplayText(aiAnalysis);
-    }
-    setCurrentSentiment(sentiment);
-  }, [aiAnalysis, sentiment]);
+  // Get badge config based on signal action
+  const getSignalConfig = (action?: string | null) => {
+    if (!action || action === "null") return null;
 
-  const handleAnalyze = async (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
+    const normalizedAction = action.toLowerCase();
 
-    if (!postId) return;
-
-    try {
-      setIsLoading(true);
-      const response = await fetch("/api/ai/analyze", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ tweet_id: postId }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Analysis failed");
-      }
-
-      const data = await response.json();
-
-      if (data.analysis) {
-        // Map backend sentiment to frontend format
-        let newSentiment: "bullish" | "bearish" | "neutral" = "neutral";
-        if (data.analysis.sentiment?.sentiment === "positive")
-          newSentiment = "bullish";
-        if (data.analysis.sentiment?.sentiment === "negative")
-          newSentiment = "bearish";
-
-        const newAnalysis =
-          data.analysis.sentiment?.reasoning ||
-          data.analysis.summary ||
-          "Analysis completed";
-
-        setAnalysis(newAnalysis);
-        setDisplayText(newAnalysis);
-        setCurrentSentiment(newSentiment);
-        toast.success("AI Analysis completed");
-      }
-    } catch (error) {
-      console.error("Analysis error:", error);
-      toast.error("Failed to analyze tweet");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleTranslate = (translated: string) => {
-    setDisplayText(translated);
-  };
-
-  const getSentimentBadge = (sentiment: string) => {
-    switch (sentiment) {
-      case "bullish":
-        return (
-          <div className="ml-3 rounded px-2 py-0.5 text-xs font-medium bg-green-500/20 text-green-500 border border-green-500/40 flex items-center gap-1">
-            Bullish <div className="w-1 h-1 bg-green-500 rounded-full"></div>
-          </div>
-        );
-      case "bearish":
-        return (
-          <div className="ml-3 rounded px-2 py-0.5 text-xs font-medium bg-red-500/20 text-red-500 border border-red-500/40 flex items-center gap-1">
-            Bearish <div className="w-1 h-1 bg-red-500 rounded-full"></div>
-          </div>
-        );
+    switch (normalizedAction) {
+      case "buy":
+        return {
+          label: "BUY",
+          icon: TrendingUp,
+          className:
+            "bg-green-100 dark:bg-green-500/20 text-green-700 dark:text-green-400 border-green-200 dark:border-green-500/30",
+          iconClass: "text-green-600 dark:text-green-400",
+        };
+      case "sell":
+        return {
+          label: "SELL",
+          icon: TrendingDown,
+          className:
+            "bg-red-100 dark:bg-red-500/20 text-red-700 dark:text-red-400 border-red-200 dark:border-red-500/30",
+          iconClass: "text-red-600 dark:text-red-400",
+        };
+      case "hold":
+        return {
+          label: "HOLD",
+          icon: Minus,
+          className:
+            "bg-gray-100 dark:bg-gray-500/20 text-gray-700 dark:text-gray-400 border-gray-200 dark:border-gray-500/30",
+          iconClass: "text-gray-600 dark:text-gray-400",
+        };
       default:
-        return (
-          <div className="ml-3 rounded px-2 py-0.5 text-xs font-medium bg-gray-500/20 text-gray-500 border border-gray-500/40 flex items-center gap-1">
-            Neutral <div className="w-1 h-1 bg-gray-500 rounded-full"></div>
-          </div>
-        );
+        return null;
     }
   };
 
-  if (!analysis && !postId) return null;
+  const signalConfig = getSignalConfig(tradingSignal?.action);
+  const SignalIcon = signalConfig?.icon;
 
-  if (!analysis) {
-    return (
-      <div className="mt-2">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handleAnalyze}
-          disabled={isLoading}
-          className="w-full justify-center text-xs h-8 gap-2 bg-primary/5 hover:bg-primary/10 border-primary/20 text-primary"
-        >
-          {isLoading ? (
-            <>
-              <Loader2 className="w-3 h-3 animate-spin" />
-              Analyzing...
-            </>
-          ) : (
-            <>
-              <Sparkles className="w-3 h-3" />
-              Analyze with AI
-            </>
-          )}
-        </Button>
-      </div>
-    );
+  // Construct display text (Summary + Trading Reasoning)
+  let analysisText = "";
+
+  // Summary
+  if (summary) {
+    analysisText = summary;
+  }
+
+  // Trading Reasoning
+  if (tradingSignal?.reasoning) {
+    if (analysisText) {
+      analysisText += "\n\n";
+    }
+    // Add prefix only if we have summary as well, to distinguish
+    if (summary) {
+      analysisText += "Trading Analysis: ";
+    }
+    analysisText += tradingSignal.reasoning;
+  }
+
+  // Default text
+  if (!analysisText.trim()) {
+    analysisText = "Analysis completed - No significant summary details.";
   }
 
   return (
     <Accordion
       type="single"
       collapsible
-      className="w-full"
+      className="w-full mt-2"
       defaultValue="ai-analysis"
     >
       <AccordionItem
@@ -152,20 +105,51 @@ export default function AIAnalysis({
       >
         <AccordionTrigger className="p-2 hover:no-underline">
           <div className="flex flex-1 items-center justify-between pr-2">
-            <div className="flex items-center">
-              <Sparkles className="w-3 h-3 text-primary mr-2" />
-              <h4 className="font-semibold text-xs text-gray-900 dark:text-white">
-                AI Analysis
-              </h4>
-              {getSentimentBadge(currentSentiment)}
+            <div className="flex items-center gap-2">
+              <div className="flex items-center">
+                <Sparkles className="w-3 h-3 text-primary mr-2" />
+                <h4 className="font-semibold text-xs text-gray-900 dark:text-white">
+                  AI Analysis
+                </h4>
+              </div>
+
+              {/* Trading Signal Badge */}
+              {signalConfig && (
+                <div
+                  className={cn(
+                    "flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold border uppercase tracking-wider ml-1",
+                    signalConfig.className
+                  )}
+                >
+                  {SignalIcon && (
+                    <SignalIcon
+                      className={cn("w-3 h-3", signalConfig.iconClass)}
+                    />
+                  )}
+                  {signalConfig.label}
+                  {tradingSignal?.confidence && (
+                    <span className="ml-0.5 opacity-80 font-medium">
+                      {Math.round(tradingSignal.confidence * 100)}%
+                    </span>
+                  )}
+                </div>
+              )}
             </div>
-            <TranslateButton text={analysis} onTranslate={handleTranslate} />
           </div>
         </AccordionTrigger>
         <AccordionContent className="px-2 pb-2">
-          <p className="text-xs text-gray-700 dark:text-gray-300 leading-relaxed">
-            {displayText}
+          <p className="text-xs text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-wrap">
+            {analysisText}
           </p>
+          {/* 
+          {(model || analyzedAt) && (
+            <div className="flex items-center gap-2 text-[10px] text-gray-400 border-t border-gray-200 dark:border-white/10 pt-2 mt-2">
+              {model && <span>Model: {model.split("/").pop()}</span>}
+              {analyzedAt && (
+                <span>Analyzed: {new Date(analyzedAt).toLocaleString()}</span>
+              )}
+            </div>
+          )} */}
         </AccordionContent>
       </AccordionItem>
     </Accordion>

@@ -1,7 +1,6 @@
-// KOL types and API functions
-import { PLATFORM_CONFIG_LOWERCASE, PlatformLowercase } from "./platformConfig";
+// KOL API types and utilities
 
-export type Platform = PlatformLowercase;
+export type Platform = "twitter" | "reddit" | "youtube" | "rednote";
 
 export interface KOL {
   id: string;
@@ -12,8 +11,7 @@ export interface KOL {
   description?: string;
   avatarUrl?: string;
   isTracking: boolean;
-  createdAt: string;
-  updatedAt: string;
+  notify?: boolean;
 }
 
 export interface CreateKOLInput {
@@ -23,80 +21,68 @@ export interface CreateKOLInput {
   followers: number;
   description?: string;
   avatarUrl?: string;
-  isTracking?: boolean;
+  isTracking: boolean;
 }
 
-export interface UpdateKOLInput {
-  name?: string;
-  username?: string;
-  followers?: number;
-  description?: string;
-  avatarUrl?: string;
-  isTracking?: boolean;
+export interface PlatformConfig {
+  name: string;
+  icon: string;
+  color: string;
+  colorClass: string;
 }
 
-// Platform display names and icons
-export const platformConfig = PLATFORM_CONFIG_LOWERCASE;
+/**
+ * Platform configuration for display
+ */
+export const platformConfig: Record<Platform, PlatformConfig> = {
+  twitter: {
+    name: "X (Twitter)",
+    icon: "/logo/x.svg",
+    color: "#1DA1F2",
+    colorClass: "text-black dark:text-white",
+  },
+  reddit: {
+    name: "Reddit",
+    icon: "/logo/reddit.svg",
+    color: "#FF4500",
+    colorClass: "text-orange-500",
+  },
+  youtube: {
+    name: "YouTube",
+    icon: "/logo/youtube.svg",
+    color: "#FF0000",
+    colorClass: "text-red-500",
+  },
+  rednote: {
+    name: "RedNote",
+    icon: "/logo/rednote.svg",
+    color: "#FE2C55",
+    colorClass: "text-pink-500",
+  },
+};
 
-// Format follower count
+/**
+ * Format followers count for display (1000 -> 1K, 1000000 -> 1M)
+ */
 export function formatFollowers(count: number): string {
   if (count >= 1000000) {
-    return `${(count / 1000000).toFixed(1)}M`;
-  } else if (count >= 1000) {
-    return `${(count / 1000).toFixed(1)}K`;
+    return (count / 1000000).toFixed(1).replace(/\.0$/, "") + "M";
   }
-  return count.toString();
+  if (count >= 1000) {
+    return (count / 1000).toFixed(1).replace(/\.0$/, "") + "K";
+  }
+  return String(count);
 }
 
-// API functions
-export async function fetchKOLs(): Promise<KOL[]> {
-  const response = await fetch("/api/kol");
-  if (!response.ok) {
-    throw new Error("Failed to fetch KOLs");
-  }
-  return response.json();
-}
-
-export async function createKOL(data: CreateKOLInput): Promise<KOL> {
-  const response = await fetch("/api/kol", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(data),
-  });
-  if (!response.ok) {
-    throw new Error("Failed to create KOL");
-  }
-  return response.json();
-}
-
+/**
+ * Update KOL (placeholder for API call)
+ * This function is a placeholder and should be replaced with actual API call
+ */
 export async function updateKOL(
   id: string,
-  data: UpdateKOLInput
-): Promise<KOL> {
-  const response = await fetch("/api/kol", {
-    method: "PATCH",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ id, ...data }),
-  });
-  if (!response.ok) {
-    throw new Error("Failed to update KOL");
-  }
-  return response.json();
+  data: Partial<KOL>
+): Promise<void> {
+  // This is a placeholder - the actual tracking is done through trackKOL/untrackKOL
+  console.log("updateKOL called with:", id, data);
 }
 
-export async function deleteKOL(id: string): Promise<void> {
-  const response = await fetch("/api/kol", {
-    method: "DELETE",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ id }),
-  });
-  if (!response.ok) {
-    throw new Error("Failed to delete KOL");
-  }
-}

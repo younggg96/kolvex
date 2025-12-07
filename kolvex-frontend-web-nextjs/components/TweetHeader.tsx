@@ -1,12 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useState, useEffect } from "react";
-import { Button } from "./ui/button";
-import { trackKOL, untrackKOL } from "@/lib/trackedKolApi";
 import type { Platform } from "@/lib/supabase/database.types";
-import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
 import KOLHoverCard from "./KOLHoverCard";
 
 interface TweetHeaderProps {
@@ -28,59 +23,17 @@ export default function TweetHeader({
   initialTracked = false,
   onTrackChange,
   kolId,
-  platform,
+  platform = "TWITTER",
 }: TweetHeaderProps) {
-  const [isTracking, setIsTracking] = useState(initialTracked);
-  const [isLoading, setIsLoading] = useState(false);
-
-  // Update state when initialTracked prop changes
-  useEffect(() => {
-    setIsTracking(initialTracked);
-  }, [initialTracked]);
-
-  const handleTrackToggle = async () => {
-    // If no kolId or platform, just toggle state locally
-    if (!kolId || !platform) {
-      const newTrackingState = !isTracking;
-      setIsTracking(newTrackingState);
-      onTrackChange?.(newTrackingState);
-      return;
-    }
-
-    setIsLoading(true);
-
-    try {
-      if (isTracking) {
-        // Untrack
-        await untrackKOL(kolId, platform);
-        setIsTracking(false);
-        onTrackChange?.(false);
-        toast.success(`Untracked ${screenName}`);
-      } else {
-        // Track
-        await trackKOL({
-          kol_id: kolId,
-          platform,
-          notify: true,
-        });
-        setIsTracking(true);
-        onTrackChange?.(true);
-        toast.success(`Now tracking ${screenName}`);
-      }
-    } catch (error: any) {
-      console.error("Error toggling track status:", error);
-      toast.error(error.message || "Failed to update tracking status");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   return (
     <div className="flex items-center gap-3 mb-3">
       <KOLHoverCard
         kolId={kolId}
         screenName={screenName}
         profileImageUrl={profileImageUrl}
+        platform={platform}
+        initialTracked={initialTracked}
+        onTrackChange={onTrackChange}
       >
         {profileImageUrl ? (
           <Image
@@ -97,12 +50,15 @@ export default function TweetHeader({
         )}
       </KOLHoverCard>
 
-      <div className="flex-1 min-w-0 flex items-center gap-3">
+      <div className="flex-1 min-w-0">
         <div className="font-bold text-sm text-gray-900 dark:text-white flex items-center">
           <KOLHoverCard
             kolId={kolId}
             screenName={screenName}
             profileImageUrl={profileImageUrl}
+            platform={platform}
+            initialTracked={initialTracked}
+            onTrackChange={onTrackChange}
           >
             <span className="hover:underline cursor-pointer">{screenName}</span>
           </KOLHoverCard>
@@ -110,26 +66,6 @@ export default function TweetHeader({
             @{screenName.toLowerCase()} · {onFormatDate(createdAt)}
           </span>
         </div>
-        <Button
-          variant={isTracking ? "default" : "outline"}
-          size="xs"
-          onClick={handleTrackToggle}
-          disabled={isLoading}
-          className={
-            isTracking
-              ? "bg-primary hover:bg-primary/90 text-white dark:text-white"
-              : "border-gray-300 dark:border-white/20 hover:bg-gray-100 dark:hover:bg-white/10 text-gray-500 dark:text-white/50"
-          }
-        >
-          {isLoading ? (
-            <>
-              <Loader2 className="w-3 h-3 animate-spin mr-1" />
-              <span>{isTracking ? "Untracking..." : "Tracking..."}</span>
-            </>
-          ) : (
-            <span>{isTracking ? "Tracking" : "Track"}</span>
-          )}
-        </Button>
       </div>
     </div>
   );

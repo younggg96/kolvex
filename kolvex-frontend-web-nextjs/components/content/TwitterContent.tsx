@@ -11,20 +11,25 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import ContentWithModal from "../ContentWithModal";
-import AIAnalysis from "../AIAnalysis";
 import Tags from "../Tags";
-import { TwitterContentProps } from "./types";
+import SentimentBadge from "../SentimentBadge";
+import TweetMedia from "../TweetMedia";
+import AIAnalysis from "../AIAnalysis";
+import { BaseContentProps } from "./types";
 
 export default function TwitterContent({
   url,
   id,
   fullText,
+  mediaUrls,
   aiSummary,
-  aiAnalysis,
+  aiTradingSignal,
   aiTags,
+  aiModel,
+  aiAnalyzedAt,
   sentiment,
   onFormatText,
-}: TwitterContentProps) {
+}: BaseContentProps & { fullText: string }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const { theme } = useTheme();
@@ -53,11 +58,18 @@ export default function TwitterContent({
     return () => window.removeEventListener("message", handleMessage);
   }, []);
 
+  // Use fullText as the main content, falling back to summary if empty (though fullText should usually be present)
   const content = fullText || aiSummary || "";
 
   return (
     <>
       <div className="space-y-2 mb-1">
+        {/* Tags and Sentiment */}
+        <div className="flex items-center gap-2 flex-wrap my-2">
+          {aiTags && aiTags.length > 0 && <Tags tags={aiTags} />}
+          <SentimentBadge sentiment={sentiment} />
+        </div>
+
         {/* Tweet Text */}
         <ContentWithModal
           onOpenModal={() => setIsModalOpen(true)}
@@ -66,11 +78,18 @@ export default function TwitterContent({
           {onFormatText ? onFormatText(content) : content}
         </ContentWithModal>
 
-        {/* Tags */}
-        <Tags tags={aiTags || []} />
+        {/* Media Images/Videos */}
+        {mediaUrls && mediaUrls.length > 0 && (
+          <TweetMedia mediaUrls={mediaUrls} />
+        )}
 
-        {/* AI Analysis */}
-        <AIAnalysis aiAnalysis={aiAnalysis} sentiment={sentiment} postId={id} />
+        {/* AI Analysis (Summary & Trading Signal) */}
+        <AIAnalysis
+          summary={aiSummary}
+          tradingSignal={aiTradingSignal}
+          model={aiModel}
+          analyzedAt={aiAnalyzedAt}
+        />
       </div>
 
       {/* Twitter Embed Modal */}

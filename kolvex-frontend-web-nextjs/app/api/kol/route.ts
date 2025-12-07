@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { KOLTweet } from "@/lib/kolTweetsApi";
 
 // KOL Profile from backend API
 export interface KOLProfile {
@@ -27,9 +28,7 @@ export interface KOLProfile {
 // KOL Profile Detail response from backend
 export interface KOLProfileDetail {
   profile: KOLProfile;
-  tweet_count: number;
-  total_likes: number;
-  total_retweets: number;
+  recent_tweets?: KOLTweet[];
 }
 
 // Backend API base URL
@@ -40,6 +39,8 @@ export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
     const kolId = searchParams.get("kolId");
+    const includeTweets = searchParams.get("include_tweets") === "true";
+    const tweetLimit = searchParams.get("tweet_limit") || "10";
 
     if (!kolId) {
       return NextResponse.json(
@@ -49,9 +50,8 @@ export async function GET(request: NextRequest) {
     }
 
     // Fetch data from backend API
-    // We use include_tweets=false to only get profile details
     const response = await fetch(
-      `${BACKEND_API_URL}/api/v1/kol-tweets/profile/${kolId}?include_tweets=false`,
+      `${BACKEND_API_URL}/api/v1/kol-tweets/profile/${kolId}?include_tweets=${includeTweets}&tweet_limit=${tweetLimit}`,
       {
         headers: {
           accept: "application/json",
@@ -61,7 +61,10 @@ export async function GET(request: NextRequest) {
     );
 
     if (response.status === 404) {
-      return NextResponse.json(null, { status: 200 });
+      return NextResponse.json(
+        { error: "KOL not found" },
+        { status: 404 }
+      );
     }
 
     if (!response.ok) {

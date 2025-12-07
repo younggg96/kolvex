@@ -14,7 +14,7 @@
     "value": "v1%3A176478964734918875",
     "domain": ".x.com",
     "path": "/",
-    "expires": 1799371363.384054,
+    "expires": 1799598599.672249,
     "httpOnly": false,
     "secure": true,
     "sameSite": "None"
@@ -24,7 +24,7 @@
     "value": "v1%3A176478964734918875",
     "domain": ".x.com",
     "path": "/",
-    "expires": 1799371363.384006,
+    "expires": 1799598599.672204,
     "httpOnly": false,
     "secure": true,
     "sameSite": "None"
@@ -54,7 +54,7 @@
     "value": "2208f71d7eff44f1943e65d49d40f322",
     "domain": ".x.com",
     "path": "/",
-    "expires": 1799371363,
+    "expires": 1799598600,
     "httpOnly": false,
     "secure": false,
     "sameSite": "Lax"
@@ -440,16 +440,6 @@
     "sameSite": "Lax"
   },
   {
-    "name": "att",
-    "value": "1-kXTwCC7aR5n9senP0k5Yjyhmr2aIC4GOqwpMJWTo",
-    "domain": ".x.com",
-    "path": "/",
-    "expires": 1764876265.078354,
-    "httpOnly": true,
-    "secure": true,
-    "sameSite": "None"
-  },
-  {
     "name": "lang",
     "value": "en",
     "domain": "x.com",
@@ -464,27 +454,27 @@
     "value": "u%3D1996295537252073473",
     "domain": ".x.com",
     "path": "/",
-    "expires": 1796347365.720442,
+    "expires": 1796574599.672266,
     "httpOnly": false,
     "secure": true,
     "sameSite": "None"
   },
   {
     "name": "IDE",
-    "value": "AHWqTUkdoFlAPTOawg2gN2kB1a_0Ed9wwtKQvWNjbC1njfsZ1Lw6lRkpGtxFEWa0-8E",
+    "value": "AHWqTUmT5yDGz6UJR2fYG6CKJGruLlebRIIMh9r8GvYyTOinevh9K7sTalS2SF5Spy8",
     "domain": ".doubleclick.net",
     "path": "/",
-    "expires": 1799349973.493701,
+    "expires": 1799531484.938047,
     "httpOnly": true,
     "secure": true,
     "sameSite": "None"
   },
   {
     "name": "__cf_bm",
-    "value": "Xjfy6nsFqsmO5kk0IwfL1EzuqR9A_tVPvl5jRKadG7U-1764811378.5427387-1.0.1.1-A2YAVyONpwjRulwd6nMTww6AmhRyxIakmPVBWdQH30UrXPRrNuaHFzKoltAAWW72QdU7QKk0Qa_Dz2KmTyAT552fjUxkjZgLqoOepgBaPsH7BNHyGrKcgutnOgmkvwtT",
+    "value": "UEFczsTTYzZU_mh7xozdorjEjtga.QiO86_XCJwYT4A-1765038627.774542-1.0.1.1-rQc9jvlX2s83TpV.0CGA._j2gIfYlsqP2p78b7OXYiR2s.EZClunC40QECwciQnsKsErXusNB_S7oqVCnKX_Pmi6aAjD1ORwyNlLZ76vu1IzMN1xQL.4mV.Te6msxLfE",
     "domain": ".x.com",
     "path": "/",
-    "expires": 1764813178.60133,
+    "expires": 1765040427.84092,
     "httpOnly": true,
     "secure": true,
     "sameSite": "Lax"

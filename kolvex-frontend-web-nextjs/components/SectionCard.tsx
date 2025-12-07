@@ -3,7 +3,7 @@ import { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
-interface SectionCardProps {
+export interface SectionCardProps {
   // Header props
   title?: string;
   titleSize?: "sm" | "md" | "lg";
@@ -12,6 +12,7 @@ interface SectionCardProps {
   headerRightExtra?: ReactNode;
   headerBorder?: boolean;
   headerClassName?: string;
+  showLiveIndicator?: boolean;
 
   // SectionHeader props (optional, 使用这些会替换默认的简单 header)
   useSectionHeader?: boolean;
@@ -39,6 +40,7 @@ export default function SectionCard({
   headerExtra,
   headerRightExtra,
   headerBorder = false,
+  showLiveIndicator = false,
   useSectionHeader = true,
   sectionHeaderIcon,
   sectionHeaderSubtitle,

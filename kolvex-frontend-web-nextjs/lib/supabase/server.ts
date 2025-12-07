@@ -2,8 +2,8 @@ import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { supabaseUrl, supabaseAnonKey } from "./config";
 
-export function createServerSupabaseClient() {
-  const cookieStore = cookies();
+export async function createServerSupabaseClient() {
+  const cookieStore = await cookies();
 
   return createServerClient(supabaseUrl, supabaseAnonKey, {
     cookies: {
@@ -31,4 +31,3 @@ export function createServerSupabaseClient() {
     },
   });
 }
-

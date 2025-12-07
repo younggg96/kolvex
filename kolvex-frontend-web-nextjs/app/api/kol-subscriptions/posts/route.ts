@@ -1,112 +1,98 @@
 import { NextRequest, NextResponse } from "next/server";
-import { mockSocialPosts, mockCreators, mockUserData, Platform } from "@/lib/mockData";
+import { createServerSupabaseClient } from "@/lib/supabase/server";
 
-export interface SocialPost {
-  post_id: string;
-  platform: string;
-  creator_id: string;
-  creator_name: string;
-  creator_avatar_url: string | null;
-  content: string;
-  content_url: string;
-  published_at: string;
-  media_urls: string[] | null;
-  likes_count: number | null;
-  ai_summary: string | null;
-  ai_sentiment: "negative" | "neutral" | "positive" | string | null;
-  ai_tags: string[] | null;
-  is_market_related: boolean | null;
-  user_tracked?: boolean;
-}
+// Backend API base URL
+const BACKEND_API_URL = process.env.BACKEND_API_URL || "http://127.0.0.1:8000";
 
-export interface SubscribedPostsResponse {
-  count: number;
-  posts: SocialPost[];
-  subscriptions_count: number;
-  kol_ids: string[];
-}
-
-// GET - 获取订阅的 KOL 的帖子
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
-    const platform = searchParams.get("platform") as Platform | null;
-    const limit = parseInt(searchParams.get("limit") || "50");
+    const limit = parseInt(searchParams.get("limit") || "20");
     const offset = parseInt(searchParams.get("offset") || "0");
-    const sentiment = searchParams.get("sentiment");
-    const marketRelated = searchParams.get("market_related");
+    const platform = searchParams.get("platform"); // Optional platform filter
 
-    // Get tracked KOL IDs
-    const kolIds = Array.from(mockUserData.trackedKols);
+    // Get current user and their subscriptions
+    const supabase = await createServerSupabaseClient();
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
 
-    if (kolIds.length === 0) {
+    if (authError || !user) {
+      return NextResponse.json(
+        { error: "Unauthorized", tweets: [], total: 0, has_more: false },
+        { status: 401 }
+      );
+    }
+
+    // Fetch user's KOL subscriptions
+    let subscriptionsQuery = supabase
+      .from("kol_subscriptions")
+      .select("kol_id, platform")
+      .eq("user_id", user.id);
+
+    // Filter by platform if provided
+    if (platform) {
+      subscriptionsQuery = subscriptionsQuery.eq("platform", platform);
+    }
+
+    const { data: subscriptions, error: subError } = await subscriptionsQuery;
+
+    if (subError) {
+      console.error("Error fetching subscriptions:", subError);
+      return NextResponse.json(
+        { error: "Failed to fetch subscriptions", tweets: [], total: 0, has_more: false },
+        { status: 500 }
+      );
+    }
+
+    // If no subscriptions, return empty result
+    if (!subscriptions || subscriptions.length === 0) {
       return NextResponse.json({
-        count: 0,
-        posts: [],
-        subscriptions_count: 0,
-        kol_ids: [],
+        tweets: [],
+        total: 0,
+        page: 1,
+        page_size: limit,
+        has_more: false,
       });
     }
 
-    // Filter posts from tracked KOLs
-    let filteredPosts = mockSocialPosts.filter((p) => kolIds.includes(p.creator_id));
+    // Extract unique kol_ids (usernames)
+    const kolIds = [...new Set(subscriptions.map((s) => s.kol_id))];
 
-    // Apply filters
-    if (platform) {
-      filteredPosts = filteredPosts.filter((p) => p.platform === platform);
-    }
+    // Calculate page for backend API
+    const page = Math.floor(offset / limit) + 1;
 
-    if (sentiment) {
-      filteredPosts = filteredPosts.filter((p) => p.ai_sentiment === sentiment);
-    }
+    // Fetch tweets from backend API with multiple usernames
+    const usernamesParam = kolIds.join(",");
+    const backendUrl = `${BACKEND_API_URL}/api/v1/kol-tweets/?page=${page}&page_size=${limit}&usernames=${encodeURIComponent(usernamesParam)}`;
 
-    if (marketRelated === "true") {
-      filteredPosts = filteredPosts.filter((p) => p.is_market_related);
-    }
-
-    // Sort by published date
-    filteredPosts.sort((a, b) => 
-      new Date(b.published_at).getTime() - new Date(a.published_at).getTime()
-    );
-
-    // Paginate
-    const total = filteredPosts.length;
-    const paginatedPosts = filteredPosts.slice(offset, offset + limit);
-
-    // Enrich with creator and interaction data
-    const enrichedPosts: SocialPost[] = paginatedPosts.map((post) => {
-      const creator = mockCreators.find((c) => c.creator_id === post.creator_id);
-      return {
-        ...post,
-        creator_name: creator?.display_name || "",
-        creator_avatar_url: creator?.avatar_url || "",
-        creator_username: creator?.username || "",
-        creator_verified: creator?.verified || false,
-        creator_bio: creator?.bio || null,
-        creator_followers_count: creator?.followers_count || 0,
-        creator_category: creator?.category || null,
-        creator_influence_score: creator?.influence_score || 0,
-        creator_trending_score: creator?.trending_score || 0,
-        user_tracked: true,
-      };
+    const response = await fetch(backendUrl, {
+      headers: {
+        accept: "application/json",
+      },
+      cache: "no-store",
     });
 
-    const response: SubscribedPostsResponse = {
-      count: total,
-      posts: enrichedPosts,
-      subscriptions_count: kolIds.length,
-      kol_ids: kolIds,
-    };
+    if (!response.ok) {
+      throw new Error(`Backend API responded with status: ${response.status}`);
+    }
 
-    return NextResponse.json(response);
+    const data = await response.json();
+
+    return NextResponse.json(data);
   } catch (error) {
-    console.error("KOL subscriptions posts GET error:", error);
+    console.error("API Error:", error);
     return NextResponse.json(
       {
-        error: "Internal server error",
+        error: "Failed to fetch tracked KOL posts",
         details: error instanceof Error ? error.message : "Unknown error",
+        tweets: [],
+        total: 0,
+        has_more: false,
       },
       { status: 500 }
     );
   }
 }
+

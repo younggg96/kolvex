@@ -5,29 +5,54 @@ import { NextRequest, NextResponse } from "next/server";
 const BACKEND_API_URL = process.env.BACKEND_API_URL || "http://127.0.0.1:8000";
 
 export interface Tweet {
-  post_id: string;
-  platform: string;
-  creator_id: string;
-  creator_name: string;
-  creator_avatar_url: string | null;
-  content: string;
-  content_url: string;
-  published_at: string;
-  media_urls: string[] | null;
-  likes_count: number | null;
-  ai_summary: string | null;
-  ai_analysis: string | null;
-  ai_sentiment: "negative" | "neutral" | "positive" | string | null;
-  ai_tags: string[] | null;
-  ai_analyzed_at: string | null;
-  ai_model: string | null;
-  is_market_related: boolean | null;
-  user_tracked?: boolean;
+  id: number;
+  username: string;
+  display_name: string;
+  avatar_url: string;
+  tweet_text: string;
+  created_at: string;
+  permalink: string;
+  media_urls: {
+    type: string;
+    url: string;
+    poster: string;
+  }[];
+  is_repost: boolean;
+  original_author: string;
+  like_count: number;
+  retweet_count: number;
+  reply_count: number;
+  bookmark_count: number;
+  views_count: number;
+  scraped_at: string;
+  sentiment: {
+    value: string;
+    confidence: number;
+    reasoning: string;
+  };
+  tickers: string[];
+  tags: string[];
+  trading_signal: {
+    action: string;
+    tickers: string[];
+    confidence: number;
+  };
+  summary: string;
+  is_stock_related: {
+    is_related: boolean;
+    confidence: number;
+    reason: string;
+  };
+  ai_analyzed_at: string;
+  ai_model: string;
 }
 
 export interface TweetsResponse {
-  count: number;
   tweets: Tweet[];
+  total: number;
+  page: number;
+  page_size: number;
+  has_more: boolean;
 }
 
 export async function GET(request: NextRequest) {
@@ -57,37 +82,7 @@ export async function GET(request: NextRequest) {
 
     const data = await response.json();
 
-    console.log(data);
-    // Transform backend data to frontend format
-    const tweets: Tweet[] = data.tweets.map((tweet: any) => {
-      return {
-        post_id: tweet.id.toString(),
-        platform: "TWITTER",
-        creator_id: tweet.username,
-        creator_name: tweet.display_name || tweet.username,
-        creator_avatar_url: tweet.avatar_url,
-        content: tweet.tweet_text,
-        content_url: tweet.permalink,
-        published_at: tweet.created_at,
-        media_urls: tweet.media_urls || [],
-        likes_count: tweet.like_count,
-        ai_summary: tweet.summary || tweet.summary_en || null,
-        ai_analysis: tweet.sentiment?.reasoning || null,
-        ai_sentiment: tweet.sentiment?.value || tweet.sentiment || "neutral",
-        ai_tags: [...(tweet.tags || []), ...(tweet.tickers || [])],
-        ai_analyzed_at: tweet.ai_analyzed_at,
-        ai_model: tweet.ai_model,
-        is_market_related: true,
-        user_tracked: false,
-      };
-    });
-
-    const result: TweetsResponse = {
-      count: data.total,
-      tweets,
-    };
-
-    return NextResponse.json(result);
+    return NextResponse.json(data);
   } catch (error) {
     console.error("API Error:", error);
     return NextResponse.json(

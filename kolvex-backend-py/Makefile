@@ -74,20 +74,8 @@ env: ## 创建 .env 文件
 health: ## 健康检查
 	@curl -s http://localhost:8000/health | python3 -m json.tool 2>/dev/null || curl -s http://localhost:8000/health
 
-mcp: ## 启动 MCP Server（本地）
-	. venv/bin/activate && python -m app.mcp.twitter_mcp_server
-
-mcp-docker: ## 使用 Docker 启动 MCP Server
-	docker-compose up -d mcp-twitter
-	@echo "✅ MCP Server 已启动"
-	@echo "📍 MCP: http://localhost:8001"
-
-logs-mcp: ## 查看 MCP Server 日志
-	docker-compose logs -f mcp-twitter
-
 setup: env docker-dev ## 初始化项目（创建 .env + 启动服务）
 	@echo ""
 	@echo "✅ 项目设置完成！"
 	@echo "📍 API: http://localhost:8000"
 	@echo "📍 文档: http://localhost:8000/docs"
-	@echo "📍 MCP: http://localhost:8001 (需要单独启动: make mcp-docker)"

@@ -4,6 +4,10 @@
 
 @import "react-day-picker/dist/style.css";
 
+html {
+  font-size: 18px;
+}
+
 :root {
   --background: #f7f8fa;
   --foreground: #171717;

@@ -1,13 +1,15 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import {
   HoverCard,
   HoverCardContent,
   HoverCardTrigger,
 } from "@/components/ui/hover-card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
 import {
   CalendarDays,
   Users,
@@ -15,10 +17,18 @@ import {
   Link as LinkIcon,
   BadgeCheck,
   UserPlus,
-  Heart,
-  Repeat,
+  Loader2,
+  Check,
+  Plus,
+  ExternalLink,
 } from "lucide-react";
 import { KOLProfileDetail } from "@/app/api/kol/route";
+import { trackKOL, untrackKOL, isKOLTracked } from "@/lib/trackedKolApi";
+import type { Platform } from "@/lib/supabase/database.types";
+import { toast } from "sonner";
+
+// Global cache for tracking status
+const kolTrackingCache = new Map<string, boolean>();
 
 // Global cache for KOL profile data
 const kolProfileCache = new Map<string, KOLProfileDetail>();
@@ -38,6 +48,9 @@ interface KOLHoverCardProps {
   kolId?: string; // username
   screenName: string;
   profileImageUrl?: string;
+  platform?: Platform;
+  initialTracked?: boolean;
+  onTrackChange?: (tracked: boolean) => void;
 }
 
 export default function KOLHoverCard({
@@ -45,17 +58,73 @@ export default function KOLHoverCard({
   kolId,
   screenName,
   profileImageUrl,
+  platform = "TWITTER",
+  initialTracked = false,
+  onTrackChange,
 }: KOLHoverCardProps) {
   const [profileData, setProfileData] = useState<KOLProfileDetail | null>(null);
   const [loading, setLoading] = useState(false);
   const [hasFetched, setHasFetched] = useState(false);
+  const [isTracking, setIsTracking] = useState(initialTracked);
+  const [isTrackLoading, setIsTrackLoading] = useState(false);
 
-  // Fetch profile data only when hover card opens
+  // Update state when initialTracked prop changes
+  useEffect(() => {
+    setIsTracking(initialTracked);
+  }, [initialTracked]);
+
+  const handleTrackToggle = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!kolId) return;
+
+    const cacheKey = `${kolId}-${platform}`;
+    setIsTrackLoading(true);
+    try {
+      if (isTracking) {
+        await untrackKOL(kolId, platform);
+        setIsTracking(false);
+        kolTrackingCache.set(cacheKey, false);
+        onTrackChange?.(false);
+        toast.success(`Untracked @${screenName}`);
+      } else {
+        await trackKOL({ kol_id: kolId, platform, notify: true });
+        setIsTracking(true);
+        kolTrackingCache.set(cacheKey, true);
+        onTrackChange?.(true);
+        toast.success(`Now tracking @${screenName}`);
+      }
+    } catch (error: any) {
+      console.error("Error toggling track status:", error);
+      toast.error(error.message || "Failed to update tracking status");
+    } finally {
+      setIsTrackLoading(false);
+    }
+  };
+
+  // Fetch profile data and tracking status when hover card opens
   const handleOpenChange = useCallback(
     async (open: boolean) => {
-      if (!open || !kolId || hasFetched) return;
+      if (!open || !kolId) return;
 
-      // Check cache first
+      // Always check tracking status when opening (but use cache if available)
+      const cacheKey = `${kolId}-${platform}`;
+      if (kolTrackingCache.has(cacheKey)) {
+        setIsTracking(kolTrackingCache.get(cacheKey)!);
+      } else {
+        // Check tracking status from API
+        try {
+          const tracked = await isKOLTracked(kolId, platform);
+          setIsTracking(tracked);
+          kolTrackingCache.set(cacheKey, tracked);
+        } catch (error) {
+          console.error("Failed to check tracking status", error);
+        }
+      }
+
+      // Skip profile fetch if already fetched
+      if (hasFetched) return;
+
+      // Check profile cache first
       const cachedData = kolProfileCache.get(kolId);
       if (cachedData) {
         setProfileData(cachedData);
@@ -63,7 +132,7 @@ export default function KOLHoverCard({
         return;
       }
 
-      // Fetch from API
+      // Fetch profile from API
       setLoading(true);
       try {
         const response = await fetch(`/api/kol?kolId=${kolId}`);
@@ -82,7 +151,7 @@ export default function KOLHoverCard({
         setHasFetched(true);
       }
     },
-    [kolId, hasFetched]
+    [kolId, platform, hasFetched]
   );
 
   // If no KOL ID, just render children
@@ -143,12 +212,38 @@ export default function KOLHoverCard({
                     @{profile.username}
                   </p>
                 </div>
-                {profile.category && (
-                  <span className="px-2 py-0.5 text-[10px] font-medium bg-primary/10 text-primary rounded-full">
-                    {profile.category}
-                  </span>
-                )}
+                {/* Track Button */}
+                <Button
+                  variant={isTracking ? "default" : "outline"}
+                  size="sm"
+                  onClick={handleTrackToggle}
+                  disabled={isTrackLoading}
+                  className={`flex-shrink-0 ${
+                    isTracking
+                      ? "bg-primary hover:bg-primary/90 text-white"
+                      : "border-gray-300 dark:border-white/20 hover:bg-gray-100 dark:hover:bg-white/10"
+                  }`}
+                >
+                  {isTrackLoading ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : isTracking ? (
+                    <>
+                      <Check className="w-3.5 h-3.5 mr-1" />
+                      <span>Tracking</span>
+                    </>
+                  ) : (
+                    <>
+                      <Plus className="w-3.5 h-3.5 mr-1" />
+                      <span>Track</span>
+                    </>
+                  )}
+                </Button>
               </div>
+              {profile.category && (
+                <span className="inline-block px-2 py-0.5 text-[10px] font-medium bg-primary/10 text-primary rounded-full">
+                  {profile.category}
+                </span>
+              )}
 
               {/* Bio */}
               {profile.bio && (
@@ -174,26 +269,6 @@ export default function KOLHoverCard({
                   <span className="text-muted-foreground">Following</span>
                 </div>
               </div>
-
-              {/* Tweet stats */}
-              {profileData && (
-                <div className="flex items-center gap-4 text-xs border-t border-border pt-2 dark:border-border-dark">
-                  <div className="flex items-center gap-1">
-                    <Heart className="h-3 w-3 text-muted-foreground" />
-                    <span className="font-medium">
-                      {formatFollowers(profileData.total_likes)}
-                    </span>
-                    <span className="text-muted-foreground">Likes</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Repeat className="h-3 w-3 text-muted-foreground" />
-                    <span className="font-medium">
-                      {formatFollowers(profileData.total_retweets)}
-                    </span>
-                    <span className="text-muted-foreground">RTs</span>
-                  </div>
-                </div>
-              )}
 
               {/* Location and website */}
               <div className="flex flex-col gap-1 text-xs text-muted-foreground">
@@ -227,19 +302,74 @@ export default function KOLHoverCard({
                   </div>
                 )}
               </div>
+
+              {/* View Profile Button */}
+              <div className="pt-3 mt-1">
+                <Button
+                  variant="secondary"
+                  className="w-full gap-2 h-8 text-xs font-medium"
+                  asChild
+                >
+                  <Link href={`/dashboard/kol/${kolId}`}>
+                    <span>View Profile</span>
+                    <ExternalLink className="h-3 w-3 opacity-50" />
+                  </Link>
+                </Button>
+              </div>
             </div>
           </div>
         ) : (
-          <div className="flex items-center gap-3 p-4">
-            <Avatar className="h-12 w-12">
-              <AvatarImage src={profileImageUrl} />
-              <AvatarFallback>
-                {screenName.substring(0, 2).toUpperCase()}
-              </AvatarFallback>
-            </Avatar>
-            <div>
-              <h4 className="text-sm font-semibold">{screenName}</h4>
-              <p className="text-xs text-muted-foreground">@{kolId}</p>
+          <div className="p-4 space-y-3">
+            <div className="flex items-center gap-3">
+              <Avatar className="h-12 w-12">
+                <AvatarImage src={profileImageUrl} />
+                <AvatarFallback>
+                  {screenName.substring(0, 2).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+              <div className="flex-1 min-w-0">
+                <h4 className="text-sm font-semibold">{screenName}</h4>
+                <p className="text-xs text-muted-foreground">@{kolId}</p>
+              </div>
+              {/* Track Button */}
+              <Button
+                variant={isTracking ? "default" : "outline"}
+                size="sm"
+                onClick={handleTrackToggle}
+                disabled={isTrackLoading}
+                className={`flex-shrink-0 ${
+                  isTracking
+                    ? "bg-primary hover:bg-primary/90 text-white"
+                    : "border-gray-300 dark:border-white/20 hover:bg-gray-100 dark:hover:bg-white/10"
+                }`}
+              >
+                {isTrackLoading ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : isTracking ? (
+                  <>
+                    <Check className="w-3.5 h-3.5 mr-1" />
+                    <span>Tracking</span>
+                  </>
+                ) : (
+                  <>
+                    <Plus className="w-3.5 h-3.5 mr-1" />
+                    <span>Track</span>
+                  </>
+                )}
+              </Button>
+            </div>
+            {/* View Profile Button */}
+            <div className="pt-3 mt-1">
+              <Button
+                variant="secondary"
+                className="w-full gap-2 h-8 text-xs font-medium"
+                asChild
+              >
+                <Link href={`/dashboard/kol/${kolId}`}>
+                  <span>View Profile</span>
+                  <ExternalLink className="h-3 w-3 opacity-50" />
+                </Link>
+              </Button>
             </div>
           </div>
         )}

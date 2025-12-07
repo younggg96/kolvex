@@ -141,8 +141,10 @@ export default function TrackedStocksTable({
       const realtimeQuote = quotesMap.get(stock.symbol);
       return {
         ...stock,
-        price: realtimeQuote?.price ?? stock.currentPrice,
-        changePercent: realtimeQuote?.changePercent ?? stock.changePercent,
+        companyName: stock.company_name || stock.symbol,
+        logo: stock.logo_url,
+        price: realtimeQuote?.price ?? 0,
+        changePercent: realtimeQuote?.changePercent ?? 0,
       };
     });
   }, [stocks, quotesMap]);

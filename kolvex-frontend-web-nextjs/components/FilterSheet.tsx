@@ -11,24 +11,15 @@ import {
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { TriggerButton } from "@/components/ui/trigger-button";
-import {
-  Filter,
-  RotateCcw,
-  TrendingUp,
-  TrendingDown,
-  Minus,
-} from "lucide-react";
+import { Filter, RotateCcw } from "lucide-react";
 import { MultiSelectOption } from "@/components/ui/multi-select";
 import { ExpandableOptions } from "@/components/ui/expandable-options";
 import { Separator } from "@/components/ui/separator";
 import { Label } from "@/components/ui/label";
 import { DateRangePicker, DateRange } from "@/components/ui/date-range-picker";
 
-// Re-export DateRange and Sentiment for consumers
+// Re-export DateRange for consumers
 export type { DateRange };
-
-export type Sentiment = "bullish" | "bearish" | "neutral";
-
 interface FilterSheetProps {
   // Author filters
   authorOptions: MultiSelectOption[];
@@ -39,10 +30,6 @@ interface FilterSheetProps {
   tagOptions: MultiSelectOption[];
   selectedTags: string[];
   onTagsChange: (tags: string[]) => void;
-
-  // Sentiment filters
-  selectedSentiments: Sentiment[];
-  onSentimentsChange: (sentiments: Sentiment[]) => void;
 
   // Time range filters
   timeRange: string;
@@ -63,30 +50,6 @@ const timeRangeOptions = [
   { label: "Last 7 Days", value: "7d" },
 ];
 
-const sentimentOptions = [
-  {
-    label: "Bullish",
-    value: "bullish" as Sentiment,
-    icon: TrendingUp,
-    iconColor: "text-green-500",
-    variant: "green" as const,
-  },
-  {
-    label: "Bearish",
-    value: "bearish" as Sentiment,
-    icon: TrendingDown,
-    iconColor: "text-red-500",
-    variant: "red" as const,
-  },
-  {
-    label: "Neutral",
-    value: "neutral" as Sentiment,
-    icon: Minus,
-    iconColor: "text-gray-500 dark:text-gray-400",
-    variant: "gray" as const,
-  },
-];
-
 export function FilterSheet({
   authorOptions,
   selectedAuthors,
@@ -94,8 +57,6 @@ export function FilterSheet({
   tagOptions,
   selectedTags,
   onTagsChange,
-  selectedSentiments,
-  onSentimentsChange,
   timeRange,
   onTimeRangeChange,
   dateRange,
@@ -107,14 +68,6 @@ export function FilterSheet({
   const handleReset = () => {
     onTimeRangeChange("all");
     onDateRangeChange?.(undefined);
-  };
-
-  const toggleSentiment = (sentiment: Sentiment) => {
-    if (selectedSentiments.includes(sentiment)) {
-      onSentimentsChange(selectedSentiments.filter((s) => s !== sentiment));
-    } else {
-      onSentimentsChange([...selectedSentiments, sentiment]);
-    }
   };
 
   // Handle Time Range option click - clear DateRangePicker when option is selected
@@ -239,52 +192,6 @@ export function FilterSheet({
                 No tags available for this platform
               </p>
             )}
-          </div>
-
-          <Separator />
-
-          {/* Sentiment Filter */}
-          <div className="space-y-3">
-            <div className="flex items-center justify-between h-6">
-              <Label className="text-base font-semibold">Sentiment</Label>
-              <div className="flex items-center gap-2 flex-shrink-0">
-                {selectedSentiments.length > 0 && (
-                  <span className="text-xs text-gray-500 dark:text-white/50">
-                    {selectedSentiments.length} selected
-                  </span>
-                )}
-                {selectedSentiments.length > 0 && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="!p-0 !w-6 !h-6"
-                    onClick={() => onSentimentsChange([])}
-                    aria-label="Clear sentiments"
-                  >
-                    <RotateCcw className="w-3 h-3" />
-                  </Button>
-                )}
-              </div>
-            </div>
-            <div className="grid grid-cols-3 gap-2">
-              {sentimentOptions.map((option) => {
-                const IconComponent = option.icon;
-                const isSelected = selectedSentiments.includes(option.value);
-                return (
-                  <TriggerButton
-                    key={option.value}
-                    onClick={() => toggleSentiment(option.value)}
-                    selected={isSelected}
-                    size="sm"
-                    variant={option.variant}
-                    className="w-full flex items-center justify-center gap-1"
-                  >
-                    <IconComponent className={`w-3 h-3 ${option.iconColor}`} />
-                    <span className="text-xs">{option.label}</span>
-                  </TriggerButton>
-                );
-              })}
-            </div>
           </div>
 
           <Separator />
