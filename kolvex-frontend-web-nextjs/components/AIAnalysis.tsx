@@ -114,7 +114,7 @@ export default function AIAnalysis({
               </div>
 
               {/* Trading Signal Badge */}
-              {signalConfig && (
+              {/* {signalConfig && (
                 <div
                   className={cn(
                     "flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold border uppercase tracking-wider ml-1",
@@ -133,7 +133,7 @@ export default function AIAnalysis({
                     </span>
                   )}
                 </div>
-              )}
+              )} */}
             </div>
           </div>
         </AccordionTrigger>
@@ -141,8 +141,8 @@ export default function AIAnalysis({
           <p className="text-xs text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-wrap">
             {analysisText}
           </p>
-          {/* 
-          {(model || analyzedAt) && (
+
+          {/* {(model || analyzedAt) && (
             <div className="flex items-center gap-2 text-[10px] text-gray-400 border-t border-gray-200 dark:border-white/10 pt-2 mt-2">
               {model && <span>Model: {model.split("/").pop()}</span>}
               {analyzedAt && (

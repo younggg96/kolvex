@@ -5,7 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { CardSkeleton } from "@/components/LoadingSkeleton";
+import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState, ErrorState } from "@/components/EmptyState";
 import SectionCard from "@/components/SectionCard";
 import PostFeedList from "@/components/PostFeedList";
@@ -20,12 +20,10 @@ import {
   Link as LinkIcon,
   CalendarDays,
   Loader2,
-  Check,
-  Plus,
-  ExternalLink,
   MessageSquare,
 } from "lucide-react";
 import { SwitchTab } from "@/components/ui/switch-tab";
+import DashboardLayout from "@/components/DashboardLayout";
 
 interface KOLProfilePageClientProps {
   username: string;
@@ -62,6 +60,89 @@ function formatTweetText(text: string) {
     }
     return word;
   });
+}
+
+function ProfileSkeleton() {
+  return (
+    <div className="mx-auto w-full pb-8">
+      <div className="animate-pulse">
+        {/* Banner Skeleton */}
+        <Skeleton className="w-full h-32 sm:h-48 rounded-none" />
+        <div className="px-4 pb-4">
+          {/* Avatar Row */}
+          <div className="relative flex justify-between items-end -mt-10 sm:-mt-14 mb-3">
+            <div className="h-20 w-20 sm:h-28 sm:w-28 shrink-0 relative">
+              <Skeleton className="h-full w-full !rounded-full border-4 border-background" />
+            </div>
+            <div className="flex gap-2 mb-1">
+              <Skeleton className="h-8 w-24 rounded-full" />
+              <Skeleton className="h-8 w-24 rounded-full" />
+            </div>
+          </div>
+          {/* Name & Handle */}
+          <div className="space-y-2 mb-4">
+            <Skeleton className="h-7 w-48" />
+            <Skeleton className="h-4 w-32" />
+          </div>
+          {/* Bio */}
+          <div className="space-y-1 mb-4 max-w-lg">
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-2/3" />
+          </div>
+          {/* Metadata */}
+          <div className="flex gap-4 mb-4">
+            <Skeleton className="h-4 w-24" />
+            <Skeleton className="h-4 w-32" />
+          </div>
+          {/* Stats */}
+          <div className="flex gap-4">
+            <Skeleton className="h-4 w-20" />
+            <Skeleton className="h-4 w-20" />
+          </div>
+        </div>
+        {/* Tabs Skeleton */}
+        <div className="px-4 mt-4 pt-2">
+          <Skeleton className="h-9 w-20 rounded-none" />
+        </div>
+      </div>
+      {/* Feed Skeleton */}
+      <div className="p-4 space-y-4">
+        {[...Array(3)].map((_, i) => (
+          <div key={i} className="space-y-4">
+            {/* Post Header Skeleton */}
+            <div className="flex items-center gap-3">
+              <Skeleton className="h-10 w-10 rounded-full shrink-0" />
+              <div className="space-y-1.5 flex-1">
+                <Skeleton className="h-4 w-32" />
+                <Skeleton className="h-3 w-24" />
+              </div>
+            </div>
+
+            {/* Post Content Skeleton */}
+            <div className="pl-[52px] space-y-3">
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-11/12" />
+                <Skeleton className="h-4 w-2/3" />
+              </div>
+
+              {/* Media Skeleton (simulating occasional media) */}
+              {i % 2 === 0 && (
+                <Skeleton className="w-full h-48 sm:h-64 rounded-xl mt-3" />
+              )}
+
+              {/* Action Buttons Skeleton */}
+              <div className="flex gap-6 pt-1">
+                <Skeleton className="h-4 w-8" />
+                <Skeleton className="h-4 w-8" />
+                <Skeleton className="h-4 w-8" />
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 export default function KOLProfilePageClient({
@@ -177,251 +258,253 @@ export default function KOLProfilePageClient({
 
   const profile = profileData?.profile;
 
+  // Back button component for DashboardLayout header
+  const backButton = (
+    <Button
+      variant="ghost"
+      size="icon"
+      className="h-8 w-8 rounded-full mr-2"
+      onClick={() => window.history.back()}
+    >
+      <ArrowLeft className="w-4 h-4" />
+    </Button>
+  );
+
   return (
-    <div className="flex flex-col h-full bg-background">
-      {/* Top Navigation */}
-      <div className="sticky top-0 z-20 flex items-center gap-3 px-4 py-2 bg-background/80 backdrop-blur-md">
-        <Link href="/dashboard/kol">
-          <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full">
-            <ArrowLeft className="w-4 h-4" />
-          </Button>
-        </Link>
-        <div className="flex flex-col">
-          <h1 className="text-sm font-bold leading-tight">
-            {profile?.display_name || username}
-          </h1>
-          {profile && (
-            <span className="text-xs text-muted-foreground">
-              {formatNumber(profile.posts_count)} posts
-            </span>
-          )}
-        </div>
-      </div>
-
-      {isLoading ? (
-        <div className="p-4 space-y-4 max-w-4xl mx-auto w-full">
-          <CardSkeleton lines={6} />
-          <CardSkeleton lines={4} />
-        </div>
-      ) : error ? (
-        <div className="p-8">
-          <ErrorState
-            title="Failed to load profile"
-            message={error}
-            retry={fetchProfile}
-          />
-        </div>
-      ) : profile ? (
-        <div className="flex-1 overflow-auto" onScroll={handleScroll}>
-          <div className="max-w-4xl mx-auto w-full pb-8">
-            {/* Profile Header Card */}
-            <div className="bg-card">
-              {/* Banner */}
-              <div className="relative w-full h-32 sm:h-48 bg-muted">
-                {profile.banner_url ? (
-                  <Image
-                    src={profile.banner_url}
-                    alt="Banner"
-                    fill
-                    className="object-cover"
-                    priority
-                  />
-                ) : (
-                  <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 to-purple-500/20" />
-                )}
-              </div>
-
-              <div className="px-4 pb-4">
-                {/* Avatar & Edit/Track Button Row */}
-                <div className="relative flex justify-between items-end -mt-10 sm:-mt-14 mb-3">
-                  <Avatar className="h-20 w-20 sm:h-28 sm:w-28 border-4 border-background ring-1 ring-black/5 dark:ring-white/10">
-                    <AvatarImage src={profile.avatar_url || undefined} />
-                    <AvatarFallback className="text-2xl font-bold">
-                      {(profile.display_name || username)
-                        .substring(0, 2)
-                        .toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
-
-                  <div className="flex gap-2 mb-1">
-                    {/* View on X Button */}
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="rounded-full h-8 px-3 gap-1.5"
-                      asChild
-                    >
-                      <a
-                        href={`https://twitter.com/${profile.username}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        <Image
-                          src="/logo/x.svg"
-                          alt="X"
-                          width={12}
-                          height={12}
-                          className="opacity-70 dark:invert"
-                        />
-                        <span className="hidden sm:inline text-xs">
-                          View on X
-                        </span>
-                      </a>
-                    </Button>
-
-                    {/* Track Button */}
-                    <Button
-                      variant={isTracking ? "default" : "outline"}
-                      size="sm"
-                      className={`rounded-full h-8 px-4 min-w-[90px] ${
-                        isTracking
-                          ? "bg-primary text-primary-foreground hover:bg-primary/90"
-                          : "border-primary text-primary hover:bg-primary/5"
-                      }`}
-                      onClick={handleTrackToggle}
-                      disabled={isTrackLoading}
-                    >
-                      {isTrackLoading ? (
-                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                      ) : isTracking ? (
-                        "Tracking"
-                      ) : (
-                        "Track"
-                      )}
-                    </Button>
-                  </div>
+    <DashboardLayout
+      title={profile?.display_name || username}
+      headerLeftAction={backButton}
+    >
+      <div className="h-full flex flex-col p-2">
+        <SectionCard
+          className="flex-1 flex flex-col overflow-hidden"
+          contentClassName="p-0"
+          scrollable
+          onScroll={handleScroll}
+          useSectionHeader={false}
+        >
+          {isLoading ? (
+            <ProfileSkeleton />
+          ) : error ? (
+            <div className="p-8 flex items-center justify-center h-full">
+              <ErrorState
+                title="Failed to load profile"
+                message={error || "An error occurred"}
+                retry={fetchProfile}
+              />
+            </div>
+          ) : profile ? (
+            <div className="mx-auto w-full pb-8">
+              {/* Profile Header Card */}
+              <div className="bg-card">
+                {/* Banner */}
+                <div className="relative w-full h-32 sm:h-48 bg-muted overflow-hidden">
+                  {profile!.banner_url ? (
+                    <Image
+                      src={profile!.banner_url!}
+                      alt="Banner"
+                      fill
+                      className="object-cover"
+                      priority
+                      sizes="(max-width: 768px) 100vw, 896px"
+                    />
+                  ) : (
+                    <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 to-purple-500/20" />
+                  )}
                 </div>
 
-                {/* Name & Handle */}
-                <div className="mb-3">
-                  <div className="flex items-center gap-1.5">
-                    <h2 className="text-xl font-bold text-foreground">
-                      {profile.display_name || username}
-                    </h2>
-                    {profile.is_verified && (
-                      <BadgeCheck className="h-5 w-5 text-blue-500" />
+                <div className="px-4 pb-4">
+                  {/* Avatar & Edit/Track Button Row */}
+                  <div className="relative flex justify-between items-end -mt-10 sm:-mt-14 mb-3">
+                    <Avatar className="h-20 w-20 sm:h-28 sm:w-28 border-4 border-background ring-1 ring-black/5 dark:ring-white/10">
+                      <AvatarImage src={profile!.avatar_url || undefined} />
+                      <AvatarFallback className="text-2xl font-bold">
+                        {(profile!.display_name || username)
+                          .substring(0, 2)
+                          .toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+
+                    <div className="flex gap-2 mb-1">
+                      {/* View on X Button */}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="rounded-full h-8 px-3 gap-1.5"
+                        asChild
+                      >
+                        <a
+                          href={`https://twitter.com/${profile!.username}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          <Image
+                            src="/logo/x.svg"
+                            alt="X"
+                            width={12}
+                            height={12}
+                            className="opacity-70 dark:invert"
+                          />
+                          <span className="hidden sm:inline text-xs">
+                            View on X
+                          </span>
+                        </a>
+                      </Button>
+
+                      {/* Track Button */}
+                      <Button
+                        variant={isTracking ? "default" : "outline"}
+                        size="sm"
+                        className={`rounded-full h-8 px-4 min-w-[90px] ${
+                          isTracking
+                            ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                            : "border-primary text-primary hover:bg-primary/5"
+                        }`}
+                        onClick={handleTrackToggle}
+                        disabled={isTrackLoading}
+                      >
+                        {isTrackLoading ? (
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        ) : isTracking ? (
+                          "Tracking"
+                        ) : (
+                          "Track"
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Name & Handle */}
+                  <div className="mb-3">
+                    <div className="flex items-center gap-1.5">
+                      <h2 className="text-xl font-bold text-foreground">
+                        {profile!.display_name || username}
+                      </h2>
+                      {profile!.is_verified && (
+                        <BadgeCheck className="h-5 w-5 text-blue-500" />
+                      )}
+                    </div>
+                    <div className="text-muted-foreground">
+                      @{profile!.username}
+                    </div>
+                  </div>
+
+                  {/* Bio */}
+                  {profile!.bio && (
+                    <p className="text-sm text-foreground mb-3 whitespace-pre-wrap">
+                      {profile!.bio}
+                    </p>
+                  )}
+
+                  {/* Metadata Row */}
+                  <div className="flex flex-wrap gap-x-4 gap-y-2 text-sm text-muted-foreground mb-3">
+                    {profile!.location && (
+                      <div className="flex items-center gap-1">
+                        <MapPin className="h-3.5 w-3.5" />
+                        <span>{profile!.location}</span>
+                      </div>
+                    )}
+                    {profile!.website && (
+                      <div className="flex items-center gap-1">
+                        <LinkIcon className="h-3.5 w-3.5" />
+                        <a
+                          href={
+                            profile!.website!.startsWith("http")
+                              ? profile!.website!
+                              : `https://${profile!.website}`
+                          }
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-primary hover:underline truncate max-w-[200px]"
+                        >
+                          {profile!.website!.replace(/^https?:\/\//, "")}
+                        </a>
+                      </div>
+                    )}
+                    {profile!.join_date && (
+                      <div className="flex items-center gap-1">
+                        <CalendarDays className="h-3.5 w-3.5" />
+                        <span>Joined {profile!.join_date}</span>
+                      </div>
                     )}
                   </div>
-                  <div className="text-muted-foreground">
-                    @{profile.username}
+
+                  {/* Stats Row */}
+                  <div className="flex items-center gap-4 text-sm">
+                    <div className="flex gap-1 hover:underline cursor-pointer">
+                      <span className="font-bold text-foreground">
+                        {formatNumber(profile!.following_count)}
+                      </span>
+                      <span className="text-muted-foreground">Following</span>
+                    </div>
+                    <div className="flex gap-1 hover:underline cursor-pointer">
+                      <span className="font-bold text-foreground">
+                        {formatNumber(profile!.followers_count)}
+                      </span>
+                      <span className="text-muted-foreground">Followers</span>
+                    </div>
                   </div>
                 </div>
 
-                {/* Bio */}
-                {profile.bio && (
-                  <p className="text-sm text-foreground mb-3 whitespace-pre-wrap">
-                    {profile.bio}
-                  </p>
-                )}
-
-                {/* Metadata Row */}
-                <div className="flex flex-wrap gap-x-4 gap-y-2 text-sm text-muted-foreground mb-3">
-                  {profile.location && (
-                    <div className="flex items-center gap-1">
-                      <MapPin className="h-3.5 w-3.5" />
-                      <span>{profile.location}</span>
-                    </div>
-                  )}
-                  {profile.website && (
-                    <div className="flex items-center gap-1">
-                      <LinkIcon className="h-3.5 w-3.5" />
-                      <a
-                        href={
-                          profile.website.startsWith("http")
-                            ? profile.website
-                            : `https://${profile.website}`
-                        }
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-primary hover:underline truncate max-w-[200px]"
-                      >
-                        {profile.website.replace(/^https?:\/\//, "")}
-                      </a>
-                    </div>
-                  )}
-                  {profile.join_date && (
-                    <div className="flex items-center gap-1">
-                      <CalendarDays className="h-3.5 w-3.5" />
-                      <span>Joined {profile.join_date}</span>
-                    </div>
-                  )}
-                </div>
-
-                {/* Stats Row */}
-                <div className="flex items-center gap-4 text-sm">
-                  <div className="flex gap-1 hover:underline cursor-pointer">
-                    <span className="font-bold text-foreground">
-                      {formatNumber(profile.following_count)}
-                    </span>
-                    <span className="text-muted-foreground">Following</span>
-                  </div>
-                  <div className="flex gap-1 hover:underline cursor-pointer">
-                    <span className="font-bold text-foreground">
-                      {formatNumber(profile.followers_count)}
-                    </span>
-                    <span className="text-muted-foreground">Followers</span>
-                  </div>
+                {/* Tabs Navigation */}
+                <div className="px-4">
+                  <SwitchTab
+                    options={[
+                      {
+                        label: "Posts",
+                        value: "posts",
+                        icon: <MessageSquare className="w-3.5 h-3.5" />,
+                      },
+                      // Add more tabs here in future (e.g., Media, Replies)
+                    ]}
+                    value={activeTab}
+                    onValueChange={setActiveTab}
+                    variant="underline"
+                    className="w-full justify-start"
+                  />
                 </div>
               </div>
 
-              {/* Tabs Navigation */}
-              <div className="px-4">
-                <SwitchTab
-                  options={[
-                    {
-                      label: "Posts",
-                      value: "posts",
-                      icon: <MessageSquare className="w-3.5 h-3.5" />,
-                    },
-                    // Add more tabs here in future (e.g., Media, Replies)
-                  ]}
-                  value={activeTab}
-                  onValueChange={setActiveTab}
-                  variant="underline"
-                  className="w-full justify-start"
-                />
-              </div>
-            </div>
+              {/* Tweets Feed */}
+              <div className="min-h-[200px] p-4">
+                {tweets.length === 0 ? (
+                  <div className="mt-8">
+                    <EmptyState
+                      title="No posts yet"
+                      description={`@${username} hasn't posted anything yet.`}
+                    />
+                  </div>
+                ) : (
+                  <>
+                    <PostFeedList
+                      posts={tweets}
+                      formatDate={formatDate}
+                      formatText={formatTweetText}
+                    />
 
-            {/* Tweets Feed */}
-            <div className="min-h-[200px] p-4">
-              {tweets.length === 0 ? (
-                <div className="mt-8">
-                  <EmptyState
-                    title="No posts yet"
-                    description={`@${username} hasn't posted anything yet.`}
-                  />
-                </div>
-              ) : (
-                <>
-                  <PostFeedList
-                    posts={tweets}
-                    formatDate={formatDate}
-                    formatText={formatTweetText}
-                  />
-
-                  {/* Loading More */}
-                  {isLoadingMore && (
-                    <div className="py-6 text-center">
-                      <div className="inline-flex items-center gap-2 text-sm text-muted-foreground">
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                        <span>Loading more posts...</span>
+                    {/* Loading More */}
+                    {isLoadingMore && (
+                      <div className="py-6 text-center">
+                        <div className="inline-flex items-center gap-2 text-sm text-muted-foreground">
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          <span>Loading more posts...</span>
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    )}
 
-                  {/* End of Feed */}
-                  {!hasMore && tweets.length > 0 && (
-                    <div className="py-8 text-center text-xs text-muted-foreground">
-                      No more posts to load
-                    </div>
-                  )}
-                </>
-              )}
+                    {/* End of Feed */}
+                    {!hasMore && tweets.length > 0 && (
+                      <div className="py-8 text-center text-xs text-muted-foreground">
+                        No more posts to load
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
             </div>
-          </div>
-        </div>
-      ) : null}
-    </div>
+          ) : null}
+        </SectionCard>
+      </div>
+    </DashboardLayout>
   );
 }

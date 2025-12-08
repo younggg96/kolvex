@@ -9,6 +9,7 @@ import {
   Settings,
   TrendingUp,
   Users,
+  Newspaper,
   PanelLeftClose,
   PanelLeft,
 } from "lucide-react";
@@ -40,6 +41,11 @@ const mainNavItems = [
     icon: TrendingUp,
     title: "Stocks",
     href: "/dashboard/stocks",
+  },
+  {
+    icon: Newspaper,
+    title: "News",
+    href: "/dashboard/news",
   },
   {
     icon: Users,

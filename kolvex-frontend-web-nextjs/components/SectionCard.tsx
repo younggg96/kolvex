@@ -1,7 +1,5 @@
 import { ReactNode } from "react";
 import { LucideIcon } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { toast } from "sonner";
 
 export interface SectionCardProps {
   // Header props
@@ -40,7 +38,6 @@ export default function SectionCard({
   headerExtra,
   headerRightExtra,
   headerBorder = false,
-  showLiveIndicator = false,
   useSectionHeader = true,
   sectionHeaderIcon,
   sectionHeaderSubtitle,

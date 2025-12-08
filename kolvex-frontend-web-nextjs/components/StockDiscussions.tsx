@@ -292,10 +292,10 @@ export default function StockDiscussions({ ticker }: StockDiscussionsProps) {
                 className={cn(
                   "flex items-center gap-1",
                   avgSentiment > 20
-                    ? "bg-green-500/10 text-green-600"
+                    ? "bg-green-500/10 text-green-600 border-green-500/20"
                     : avgSentiment < -20
-                    ? "bg-red-500/10 text-red-600"
-                    : "bg-gray-500/10 text-gray-600"
+                    ? "bg-red-500/10 text-red-600 border-red-500/20"
+                    : "bg-gray-500/10 text-gray-600 border-gray-500/20"
                 )}
               >
                 {avgSentiment > 20 ? (

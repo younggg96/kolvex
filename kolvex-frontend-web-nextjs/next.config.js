@@ -92,6 +92,8 @@ const nextConfig = {
         https://*.tradingview.com
         https://va.vercel-scripts.com
         https://*.vercel-insights.com
+        https://*.financialjuice.com
+        https://feed.financialjuice.com
       ;
 
       script-src-elem
@@ -102,6 +104,8 @@ const nextConfig = {
         https://*.tradingview.com
         https://va.vercel-scripts.com
         https://*.vercel-insights.com
+        https://*.financialjuice.com
+        https://feed.financialjuice.com
       ;
 
       style-src
@@ -109,6 +113,8 @@ const nextConfig = {
         'unsafe-inline'
         https://platform.twitter.com
         https://*.tradingview.com
+        https://*.financialjuice.com
+        https://feed.financialjuice.com
       ;
 
       img-src
@@ -131,6 +137,8 @@ const nextConfig = {
         https://*.supabase.co
         https://va.vercel-scripts.com
         https://*.vercel-insights.com
+        https://*.financialjuice.com
+        https://feed.financialjuice.com
         ${isDevelopment ? localApiUrl : ""}
       ;
 
@@ -142,6 +150,8 @@ const nextConfig = {
         https://www.youtube.com
         https://embed.reddit.com
         https://*.tradingview.com
+        https://*.financialjuice.com
+        https://feed.financialjuice.com
       ;
 
       worker-src

@@ -3,6 +3,7 @@
 import { useState, useCallback, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   HoverCard,
   HoverCardContent,
@@ -52,6 +53,35 @@ interface KOLHoverCardProps {
   initialTracked?: boolean;
   onTrackChange?: (tracked: boolean) => void;
 }
+
+const KOLHoverCardSkeleton = () => (
+  <div className="animate-pulse">
+    {/* Banner Skeleton */}
+    <Skeleton className="w-full h-20 rounded-none" />
+    <div className="px-4 pb-4 -mt-6">
+      {/* Avatar Skeleton */}
+      <div className="flex items-end gap-3 mb-3">
+        <div className="h-14 w-14 shrink-0 relative z-10">
+          <Skeleton className="h-full w-full !rounded-full" />
+        </div>
+        <div className="flex-1 pb-1 space-y-1.5">
+          <Skeleton className="h-4 w-24" />
+          <Skeleton className="h-3 w-16" />
+        </div>
+      </div>
+      {/* Bio Skeleton */}
+      <div className="space-y-1 mb-3">
+        <Skeleton className="h-3 w-full" />
+        <Skeleton className="h-3 w-2/3" />
+      </div>
+      {/* Stats Skeleton */}
+      <div className="flex gap-4">
+        <Skeleton className="h-3 w-16" />
+        <Skeleton className="h-3 w-16" />
+      </div>
+    </div>
+  </div>
+);
 
 export default function KOLHoverCard({
   children,
@@ -162,13 +192,16 @@ export default function KOLHoverCard({
   return (
     <HoverCard onOpenChange={handleOpenChange}>
       <HoverCardTrigger asChild>
-        <div className="cursor-pointer inline-block">{children}</div>
+        <Link
+          href={`/dashboard/kol/${kolId}`}
+          className="cursor-pointer inline-block"
+        >
+          {children}
+        </Link>
       </HoverCardTrigger>
       <HoverCardContent className="w-80 !p-0 overflow-hidden">
         {loading ? (
-          <div className="flex items-center justify-center py-8">
-            <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-          </div>
+          <KOLHoverCardSkeleton />
         ) : profile ? (
           <div className="space-y-3">
             {/* Banner */}
@@ -319,59 +352,7 @@ export default function KOLHoverCard({
             </div>
           </div>
         ) : (
-          <div className="p-4 space-y-3">
-            <div className="flex items-center gap-3">
-              <Avatar className="h-12 w-12">
-                <AvatarImage src={profileImageUrl} />
-                <AvatarFallback>
-                  {screenName.substring(0, 2).toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
-              <div className="flex-1 min-w-0">
-                <h4 className="text-sm font-semibold">{screenName}</h4>
-                <p className="text-xs text-muted-foreground">@{kolId}</p>
-              </div>
-              {/* Track Button */}
-              <Button
-                variant={isTracking ? "default" : "outline"}
-                size="sm"
-                onClick={handleTrackToggle}
-                disabled={isTrackLoading}
-                className={`flex-shrink-0 ${
-                  isTracking
-                    ? "bg-primary hover:bg-primary/90 text-white"
-                    : "border-gray-300 dark:border-white/20 hover:bg-gray-100 dark:hover:bg-white/10"
-                }`}
-              >
-                {isTrackLoading ? (
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                ) : isTracking ? (
-                  <>
-                    <Check className="w-3.5 h-3.5 mr-1" />
-                    <span>Tracking</span>
-                  </>
-                ) : (
-                  <>
-                    <Plus className="w-3.5 h-3.5 mr-1" />
-                    <span>Track</span>
-                  </>
-                )}
-              </Button>
-            </div>
-            {/* View Profile Button */}
-            <div className="pt-3 mt-1">
-              <Button
-                variant="secondary"
-                className="w-full gap-2 h-8 text-xs font-medium"
-                asChild
-              >
-                <Link href={`/dashboard/kol/${kolId}`}>
-                  <span>View Profile</span>
-                  <ExternalLink className="h-3 w-3 opacity-50" />
-                </Link>
-              </Button>
-            </div>
-          </div>
+          <KOLHoverCardSkeleton />
         )}
       </HoverCardContent>
     </HoverCard>

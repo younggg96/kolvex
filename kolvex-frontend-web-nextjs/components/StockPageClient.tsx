@@ -76,7 +76,7 @@ export default function StockPageClient() {
   };
 
   return (
-    <DashboardLayout title="Stock Tracker">
+    <DashboardLayout title="Stocks">
       <div className="flex-1 grid grid-cols-1 xl:grid-cols-3 gap-2 p-2 overflow-hidden">
         {/* Left Column - Trending Stocks */}
         <div className="xl:col-span-2">

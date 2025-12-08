@@ -221,7 +221,7 @@ export default function TrendingStocksList({
   stocks: externalStocks,
   fetchFromApi = false,
   loading: externalLoading = false,
-  title = "Stock Tracker",
+  title = "Stocks",
   showPlatform = true,
   showMetrics = true,
   enableInfiniteScroll = false,

@@ -3,7 +3,7 @@ import NewsPageClient from "@/components/NewsPageClient";
 import type { Metadata } from "next";
 
 // 定义有效的分类
-const validCategories = ["market", "earnings"];
+const validCategories = ["market"];
 
 // 生成静态参数（可选：用于静态生成）
 export async function generateStaticParams() {
@@ -22,12 +22,10 @@ export async function generateMetadata({
   
   const titles: Record<string, string> = {
     market: "Market News - Kolvex",
-    earnings: "Earnings Calendar - Kolvex",
   };
 
   const descriptions: Record<string, string> = {
     market: "Stay updated with the latest market news and trends",
-    earnings: "Track important earnings announcements and dates",
   };
 
   return {
@@ -54,4 +52,3 @@ export default function NewsPage({ params }: NewsPageProps) {
   // 服务器端渲染：传递参数给客户端组件
   return <NewsPageClient category={category} />;
 }
-

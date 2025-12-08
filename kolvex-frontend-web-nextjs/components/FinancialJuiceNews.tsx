@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useId } from "react";
 import { useTheme } from "next-themes";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface FinancialJuiceNewsProps {
   width?: string;
@@ -16,15 +17,62 @@ export default function FinancialJuiceNews({
   const { resolvedTheme } = useTheme();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  const [containerHeight, setContainerHeight] = useState<string>(height);
   const initializingRef = useRef(false);
+  const widgetInitializedRef = useRef(false);
+
+  // 使用 useId 生成唯一的容器ID
+  const uniqueId = useId();
+  const containerId = `fj-news-widget-${uniqueId.replace(/:/g, "")}`;
+
+  // 等待客户端挂载
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // 计算实际高度（将百分比转换为像素）
+  useEffect(() => {
+    if (!mounted || !containerRef.current) return;
+
+    const updateHeight = () => {
+      if (!containerRef.current) return;
+
+      // 如果 height 是百分比，计算实际像素值
+      if (height.includes("%")) {
+        const parentHeight = containerRef.current.parentElement?.clientHeight;
+        if (parentHeight && parentHeight > 0) {
+          const percentage = parseInt(height) / 100;
+          const calculatedHeight = Math.floor(parentHeight * percentage);
+          setContainerHeight(`${Math.max(calculatedHeight, 400)}px`);
+        } else {
+          // 回退到默认高度
+          setContainerHeight("600px");
+        }
+      } else {
+        setContainerHeight(height);
+      }
+    };
+
+    updateHeight();
+
+    // 监听窗口大小变化
+    window.addEventListener("resize", updateHeight);
+    return () => window.removeEventListener("resize", updateHeight);
+  }, [mounted, height]);
 
   useEffect(() => {
-    if (!containerRef.current) return;
+    // 等待挂载和主题解析
+    if (!mounted || !resolvedTheme || !containerRef.current) return;
+
+    // 如果已经初始化过，不再重复
+    if (widgetInitializedRef.current) return;
 
     // 检查容器是否已经有 iframe（widget 已加载）
     const hasIframe = containerRef.current.querySelector("iframe");
     if (hasIframe) {
       setLoading(false);
+      widgetInitializedRef.current = true;
       return;
     }
 
@@ -106,16 +154,22 @@ export default function FinancialJuiceNews({
       if (containerRef.current.querySelector("iframe")) {
         setLoading(false);
         initializingRef.current = false;
+        widgetInitializedRef.current = true;
         return;
       }
 
       const isDark = resolvedTheme === "dark";
 
+      // 使用计算后的高度
+      const actualHeight = containerHeight.includes("%")
+        ? "600px"
+        : containerHeight;
+
       const options = {
-        container: containerRef.current.id,
+        container: containerId,
         mode: isDark ? "Dark" : "Light",
         width: width,
-        height: height,
+        height: actualHeight,
         backColor: isDark ? "0f172a" : "f8fafc",
         fontColor: isDark ? "e2e8f0" : "334155",
         widgetType: "NEWS",
@@ -125,6 +179,7 @@ export default function FinancialJuiceNews({
         new window.FJWidgets.createWidget(options);
         setLoading(false);
         initializingRef.current = false;
+        widgetInitializedRef.current = true;
       } catch (error) {
         console.error("Error initializing FinancialJuice widget:", error);
         setError(true);
@@ -133,64 +188,116 @@ export default function FinancialJuiceNews({
       }
     };
 
-    // 延迟初始化以确保主题已加载
+    // 延迟初始化以确保DOM完全准备好
     const timer = setTimeout(() => {
       initWidget();
-    }, 100);
+    }, 200);
 
     return () => {
       clearTimeout(timer);
       clearTimeout(loadingTimeout);
       initializingRef.current = false;
     };
-  }, [width, height, resolvedTheme]);
+  }, [mounted, resolvedTheme, width, containerHeight, containerId]);
+
+  // 在挂载前显示骨架屏
+  if (!mounted) {
+    return (
+      <div
+        className="relative w-full h-full"
+        style={{ minHeight: height === "100%" ? "600px" : height }}
+      >
+        <div className="absolute inset-0 bg-white dark:bg-[#242d38] z-10 rounded-lg p-4 overflow-hidden">
+          <div className="space-y-4">
+            {[...Array(10)].map((_, index) => (
+              <div
+                key={index}
+                className="flex items-start gap-3 pb-3 border-b border-gray-100 dark:border-gray-800 last:border-0 last:pb-0"
+              >
+                <Skeleton className="flex-shrink-0 w-8 h-8 rounded mt-1" />
+                <div className="flex-1 space-y-2">
+                  <Skeleton className="h-4 w-full rounded" />
+                  <div className="flex gap-2">
+                    <Skeleton className="h-3 w-16 rounded opacity-60" />
+                    <Skeleton className="h-3 w-24 rounded opacity-60" />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (error) {
     return (
-      <div className="flex items-center justify-center w-full h-full">
+      <div
+        className="flex items-center justify-center w-full h-full"
+        style={{ minHeight: containerHeight }}
+      >
         <div className="text-center">
           <p className="text-sm text-gray-500 dark:text-white/50">
             Failed to load news feed
           </p>
+          <button
+            onClick={() => {
+              setError(false);
+              setLoading(true);
+              widgetInitializedRef.current = false;
+              initializingRef.current = false;
+            }}
+            className="mt-2 text-xs text-blue-500 hover:text-blue-600 dark:text-blue-400"
+          >
+            Retry
+          </button>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="relative w-full h-full">
+    <div
+      className="relative w-full h-full"
+      style={{ minHeight: containerHeight }}
+    >
       {loading && (
-        <div className="absolute inset-0 bg-gray-50/50 dark:bg-white/[0.02] z-10 rounded-lg p-4 space-y-[5px] transition-opacity duration-200">
+        <div className="absolute inset-0 bg-white dark:bg-[#242d38] z-10 rounded-lg p-4 overflow-hidden transition-opacity duration-200">
           {/* Skeleton Loading */}
-          {[...Array(8)].map((_, index) => (
-            <div
-              key={index}
-              className="animate-pulse flex items-center gap-3 h-[50px] px-3 bg-gray-100/80 dark:bg-white/5 rounded-lg"
-            >
-              <div className="flex-shrink-0 w-10 h-10 bg-gray-200 dark:bg-white/10 rounded"></div>
-              <div className="flex-1 space-y-2">
-                <div className="h-3 bg-gray-200 dark:bg-white/10 rounded w-3/4"></div>
-                <div className="h-2.5 bg-gray-200 dark:bg-white/10 rounded w-full"></div>
+          <div className="space-y-4">
+            {[...Array(10)].map((_, index) => (
+              <div
+                key={index}
+                className="flex items-start gap-3 pb-3 border-b border-gray-100 dark:border-gray-800 last:border-0 last:pb-0"
+              >
+                <Skeleton className="flex-shrink-0 w-8 h-8 rounded mt-1" />
+                <div className="flex-1 space-y-2">
+                  <Skeleton className="h-4 w-full rounded" />
+                  <div className="flex gap-2">
+                    <Skeleton className="h-3 w-16 rounded opacity-60" />
+                    <Skeleton className="h-3 w-24 rounded opacity-60" />
+                  </div>
+                </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       )}
       <div
-        id="financialjuice-news-widget-container"
+        id={containerId}
         ref={containerRef}
         className="w-full h-full rounded-lg overflow-hidden [&_iframe]:rounded-lg transition-opacity duration-200"
-        style={{ minHeight: height, opacity: loading ? 0 : 1 }}
+        style={{ minHeight: containerHeight, opacity: loading ? 0 : 1 }}
       />
       <style jsx global>{`
-        #financialjuice-news-widget-container {
+        [id^="fj-news-widget-"] {
           border-radius: 0.5rem;
         }
-        #financialjuice-news-widget-container iframe {
+        [id^="fj-news-widget-"] iframe {
           border-radius: 0.5rem;
           border: none !important;
         }
-        #financialjuice-news-widget-container * {
+        [id^="fj-news-widget-"] * {
           font-family: inherit !important;
         }
       `}</style>
