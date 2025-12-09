@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Star } from "lucide-react";
 import TradingViewChart from "@/components/TradingViewChart";
 import { useStockOverview } from "@/hooks/useStockData";
 import { useTheme } from "next-themes";
@@ -17,6 +17,13 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import StockInfoSkeleton from "@/components/StockInfoSkeleton";
+import {
+  checkStockTracked,
+  createTrackedStock,
+  deleteTrackedStock,
+} from "@/lib/trackedStockApi";
+import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 interface StockPageProps {
   params: {
@@ -31,6 +38,14 @@ export default function StockPage({ params }: StockPageProps) {
   const [mounted, setMounted] = useState(false);
   const [canGoBack, setCanGoBack] = useState(false);
 
+  // Track button state
+  const [isTracked, setIsTracked] = useState(false);
+  const [trackingStockId, setTrackingStockId] = useState<string | null>(null);
+  const [isTrackLoading, setIsTrackLoading] = useState(false);
+
+  // Company profile expansion state
+  const [isProfileExpanded, setIsProfileExpanded] = useState(false);
+
   // Fetch stock overview data (quote, company, financials)
   const {
     data: stockOverview,
@@ -42,12 +57,55 @@ export default function StockPage({ params }: StockPageProps) {
   const company = stockOverview?.company;
   const financials = stockOverview?.financials;
 
+  // Check if stock is tracked on mount
+  const checkTrackedStatus = useCallback(async () => {
+    try {
+      const result = await checkStockTracked(symbol);
+      setIsTracked(result.is_tracked);
+      setTrackingStockId(result.stock_id);
+    } catch (error) {
+      console.error("Failed to check tracked status:", error);
+    }
+  }, [symbol]);
+
   useEffect(() => {
     setMounted(true);
-
     const hasHistory = window.history.length > 1;
     setCanGoBack(hasHistory);
-  }, []);
+    checkTrackedStatus();
+  }, [checkTrackedStatus]);
+
+  // Handle track/untrack
+  const handleToggleTrack = async () => {
+    if (isTrackLoading) return;
+
+    setIsTrackLoading(true);
+    try {
+      if (isTracked && trackingStockId) {
+        await deleteTrackedStock(trackingStockId);
+        setIsTracked(false);
+        setTrackingStockId(null);
+        toast.success("Removed from watchlist");
+      } else {
+        const result = await createTrackedStock({
+          symbol,
+          companyName: quote?.name,
+        });
+        setIsTracked(true);
+        setTrackingStockId(result.id);
+        toast.success("Added to watchlist");
+      }
+    } catch (error) {
+      toast.error(
+        isTracked
+          ? "Failed to remove from watchlist"
+          : "Failed to add to watchlist"
+      );
+      console.error(error);
+    } finally {
+      setIsTrackLoading(false);
+    }
+  };
 
   const isPositive = quote ? (quote.change || 0) >= 0 : true;
 
@@ -64,8 +122,8 @@ export default function StockPage({ params }: StockPageProps) {
             }
           }}
           variant="ghost"
-          size="sm"
-          className="flex items-center gap-2"
+          size="icon"
+          className="flex items-center gap-2 h-3.5 w-3.5"
         >
           <ArrowLeft className="w-4 h-4" />
         </Button>
@@ -112,6 +170,28 @@ export default function StockPage({ params }: StockPageProps) {
                               {quote.name}
                             </p>
                           </div>
+                          <Button
+                            variant="ghost"
+                            size="xs"
+                            onClick={handleToggleTrack}
+                            disabled={isTrackLoading}
+                            className={cn(
+                              "h-7 gap-1",
+                              isTracked
+                                ? "text-amber-500 hover:text-amber-600"
+                                : "text-muted-foreground hover:text-foreground"
+                            )}
+                          >
+                            <Star
+                              className={cn(
+                                "w-3.5 h-3.5",
+                                isTracked && "fill-current"
+                              )}
+                            />
+                            <span className="text-xs">
+                              {isTracked ? "Tracked" : "Track"}
+                            </span>
+                          </Button>
                         </div>
                         <div className="flex items-baseline gap-1.5 mt-1.5">
                           <span className="text-xl font-bold text-gray-900 dark:text-white">
@@ -247,9 +327,29 @@ export default function StockPage({ params }: StockPageProps) {
                         </AccordionTrigger>
                         <AccordionContent className="px-3 pb-3">
                           {/* Summary */}
-                          <p className="text-xs text-gray-600 dark:text-gray-300 leading-relaxed mb-3">
-                            {company.business_summary}
-                          </p>
+                          <div className="mb-3">
+                            <p
+                              className={cn(
+                                "text-xs text-gray-600 dark:text-gray-300 leading-relaxed",
+                                !isProfileExpanded && "line-clamp-3"
+                              )}
+                            >
+                              {company.business_summary}
+                            </p>
+                            {company.business_summary &&
+                              company.business_summary.length > 150 && (
+                                <button
+                                  onClick={() =>
+                                    setIsProfileExpanded(!isProfileExpanded)
+                                  }
+                                  className="mt-1.5 text-[11px] text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300 font-medium"
+                                >
+                                  {isProfileExpanded
+                                    ? "Show less"
+                                    : "Show more"}
+                                </button>
+                              )}
+                          </div>
 
                           {/* Key Info */}
                           <div className="space-y-2 pt-2 border-t border-gray-100 dark:border-white/5">

@@ -119,7 +119,6 @@ export default function StockSearchDialog({
         {/* Logo */}
         {stock.logo ? (
           <CompanyLogo
-            logoUrl={stock.logo}
             symbol={stock.symbol}
             name={stock.name}
             size="sm"
@@ -194,7 +193,6 @@ export default function StockSearchDialog({
                   {/* Logo */}
                   {stock.logo_url ? (
                     <CompanyLogo
-                      logoUrl={stock.logo_url}
                       symbol={stock.symbol}
                       name={stock.company_name || stock.symbol}
                       size="sm"

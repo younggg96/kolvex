@@ -263,10 +263,10 @@ export default function KOLProfilePageClient({
     <Button
       variant="ghost"
       size="icon"
-      className="h-8 w-8 rounded-full mr-2"
+      className="h-3.5 w-3.5 rounded-full mr-2"
       onClick={() => window.history.back()}
     >
-      <ArrowLeft className="w-4 h-4" />
+      <ArrowLeft className="w-3.5 h-3.5" />
     </Button>
   );
 

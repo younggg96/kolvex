@@ -2,6 +2,14 @@ import { NextRequest, NextResponse } from "next/server";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
+export interface TopAuthor {
+  username: string;
+  display_name?: string | null;
+  avatar_url?: string | null;
+  tweet_count: number;
+  sentiment?: string | null;
+}
+
 export interface TrendingStock {
   ticker: string;
   company_name?: string | null;
@@ -11,6 +19,7 @@ export interface TrendingStock {
   trending_score: number | null;
   engagement_score: number | null;
   unique_authors_count: number;
+  top_authors: TopAuthor[];
   last_seen_at: string | null;
   first_seen_at: string | null;
 }

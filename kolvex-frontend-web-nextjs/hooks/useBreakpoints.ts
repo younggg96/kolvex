@@ -1,19 +1,20 @@
 "use client";
 
 import { useState, useEffect } from "react";
+
 /**
  * Custom hook to get the current window width
+ * Uses a default desktop width to prevent hydration mismatches
  * @returns current window width in pixels
  */
 function useWindowWidth(): number {
-  const [width, setWidth] = useState(
-    typeof window !== "undefined" ? window.innerWidth : 0
-  );
+  // Use a large default value (desktop) to prevent hydration mismatch
+  // Server and client first render will both use this value
+  const [width, setWidth] = useState(1280);
 
   useEffect(() => {
-    if (typeof window === "undefined") {
-      return;
-    }
+    // Set actual window width after hydration
+    setWidth(window.innerWidth);
 
     const handleResize = () => {
       setWidth(window.innerWidth);

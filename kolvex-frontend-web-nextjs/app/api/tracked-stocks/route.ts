@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
     }
 
     const response = await fetch(
-      `${API_BASE_URL}${API_PREFIX}/tracked-stocks`,
+      `${API_BASE_URL}${API_PREFIX}/stocks/tracked`,
       {
         headers: {
           Authorization: `Bearer ${session.access_token}`,
@@ -68,7 +68,7 @@ export async function POST(request: NextRequest) {
     }
 
     const response = await fetch(
-      `${API_BASE_URL}${API_PREFIX}/tracked-stocks`,
+      `${API_BASE_URL}${API_PREFIX}/stocks/tracked`,
       {
         method: "POST",
         headers: {
@@ -123,7 +123,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     const response = await fetch(
-      `${API_BASE_URL}${API_PREFIX}/tracked-stocks/${id}`,
+      `${API_BASE_URL}${API_PREFIX}/stocks/tracked/${id}`,
       {
         method: "PATCH",
         headers: {
@@ -183,7 +183,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     const response = await fetch(
-      `${API_BASE_URL}${API_PREFIX}/tracked-stocks/${id}`,
+      `${API_BASE_URL}${API_PREFIX}/stocks/tracked/${id}`,
       {
         method: "DELETE",
         headers: {

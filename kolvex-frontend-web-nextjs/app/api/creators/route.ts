@@ -17,7 +17,6 @@ export interface Creator {
   category: string | null;
   influence_score: number;
   total_posts_count: number;
-  avg_engagement_rate: number;
   last_post_at: string | null;
   trending_score: number;
   metadata: any;
@@ -29,7 +28,6 @@ export interface Creator {
 export type SortBy =
   | "influence_score"
   | "total_posts_count"
-  | "avg_engagement_rate"
   | "trending_score"
   | "followers_count";
 
@@ -54,7 +52,6 @@ export async function GET(request: NextRequest) {
     const sortFieldMap: Record<string, string> = {
       influence_score: "followers_count", // Use followers_count as proxy for influence
       total_posts_count: "posts_count",
-      avg_engagement_rate: "followers_count",
       trending_score: "followers_count",
       followers_count: "followers_count",
     };
@@ -128,12 +125,6 @@ export async function GET(request: NextRequest) {
         // Calculate trending score (simplified)
         const trendingScore = Math.round(Math.random() * 50 + 25); // Placeholder - would need real engagement data
 
-        // Calculate engagement rate (simplified)
-        const avgEngagementRate =
-          postsCount > 0
-            ? Math.round((Math.random() * 5 + 0.5) * 100) / 100
-            : 0;
-
         return {
           id: profile.id.toString(),
           platform: "TWITTER" as Platform,
@@ -147,7 +138,6 @@ export async function GET(request: NextRequest) {
           category: null, // Could be added later based on bio/content analysis
           influence_score: influenceScore,
           total_posts_count: postsCount,
-          avg_engagement_rate: avgEngagementRate,
           last_post_at: profile.updated_at,
           trending_score: trendingScore,
           metadata: {
@@ -185,10 +175,6 @@ export async function GET(request: NextRequest) {
         case "total_posts_count":
           aVal = a.total_posts_count;
           bVal = b.total_posts_count;
-          break;
-        case "avg_engagement_rate":
-          aVal = a.avg_engagement_rate;
-          bVal = b.avg_engagement_rate;
           break;
         default:
           aVal = a.influence_score;

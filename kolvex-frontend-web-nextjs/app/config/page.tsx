@@ -431,7 +431,6 @@ export default function ConfigPage() {
                       className="pointer-events-none"
                     />
                     <CompanyLogo
-                      logoUrl={stock.logoUrl}
                       symbol={stock.symbol}
                       name={stock.name}
                       size="sm"

@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import Image from "next/image";
 import { useBreakpoints } from "@/hooks";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { CreatorInfo } from "@/components/ui/creator-info";
 import {
   Table,
   TableBody,
@@ -14,7 +15,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { SearchInput } from "@/components/ui/search-input";
 import {
   Dialog,
   DialogContent,
@@ -30,19 +30,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
-import {
-  KOL,
-  Platform,
-  platformConfig,
-  formatFollowers,
-  CreateKOLInput,
-} from "@/lib/kolApi";
+import { KOL, Platform, formatFollowers, CreateKOLInput } from "@/lib/kolApi";
 import { trackKOL, untrackKOL } from "@/lib/trackedKolApi";
 import type { Platform as DBPlatform } from "@/lib/supabase/database.types";
-import { Trash2, Plus, Star } from "lucide-react";
+import { Trash2, Star } from "lucide-react";
 import { toast } from "sonner";
-import { CardSkeleton } from "./LoadingSkeleton";
+import { PlatformBadge } from "./ui/platform-badge";
 
 interface KOLTrackerTableProps {
   kols: KOL[];
@@ -59,8 +52,6 @@ export default function KOLTrackerTable({
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [deletingKOLId, setDeletingKOLId] = useState<string | null>(null);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [filterPlatform, setFilterPlatform] = useState<Platform | "all">("all");
 
   // Form state for add/edit
   const [formData, setFormData] = useState<CreateKOLInput>({
@@ -71,20 +62,6 @@ export default function KOLTrackerTable({
     description: "",
     avatarUrl: "",
     isTracking: false,
-  });
-
-  // Filter KOLs (only tracked KOLs are shown in this component)
-  const filteredKOLs = kols.filter((kol) => {
-    // Search filter
-    const matchesSearch =
-      kol.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      kol.username.toLowerCase().includes(searchTerm.toLowerCase());
-
-    // Platform filter
-    const matchesPlatform =
-      filterPlatform === "all" || kol.platform === filterPlatform;
-
-    return matchesSearch && matchesPlatform;
   });
 
   // Reset form
@@ -246,15 +223,6 @@ export default function KOLTrackerTable({
   if (loading) {
     return (
       <div className="space-y-3">
-        {/* Filters Skeleton */}
-        <div className="flex flex-col sm:flex-row gap-2 items-start sm:items-center justify-between animate-pulse">
-          <div className="flex flex-col sm:flex-row gap-2 flex-1 w-full">
-            <div className="h-10 bg-gray-200 dark:bg-white/5 rounded-lg border border-border-light dark:border-border-dark flex-1"></div>
-            <div className="h-10 bg-gray-200 dark:bg-white/5 rounded-lg border border-border-light dark:border-border-dark w-full sm:w-[200px]"></div>
-          </div>
-          <div className="h-10 bg-gray-200 dark:bg-white/5 rounded-lg w-full sm:w-auto sm:min-w-[140px]"></div>
-        </div>
-
         {/* Table/Cards Skeleton */}
         {isMobile ? (
           <div className="space-y-2">
@@ -292,58 +260,10 @@ export default function KOLTrackerTable({
 
   return (
     <div className="space-y-3">
-      {/* Filters and Search */}
-      <div className="flex flex-col sm:flex-row gap-2 items-start sm:items-center justify-between">
-        <div className="flex flex-col sm:flex-row gap-2 flex-1 w-full">
-          <SearchInput
-            placeholder="Search tracked KOLs..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-          <Select
-            value={filterPlatform}
-            onValueChange={(value) =>
-              setFilterPlatform(value as Platform | "all")
-            }
-          >
-            <SelectTrigger className="w-full sm:w-[200px]">
-              <SelectValue>
-                <span className="text-xs">All Platforms</span>
-              </SelectValue>
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">
-                <span className="text-xs">All Platforms</span>
-              </SelectItem>
-              <SelectItem value="twitter">
-                <span className="text-xs">X (Twitter)</span>
-              </SelectItem>
-              <SelectItem value="reddit">
-                <span className="text-xs">Reddit</span>
-              </SelectItem>
-              <SelectItem value="rednote">
-                <span className="text-xs">Rednote</span>
-              </SelectItem>
-              <SelectItem value="youtube">
-                <span className="text-xs">YouTube</span>
-              </SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        <Button
-          onClick={openAddDialog}
-          size="lg"
-          className="flex items-center gap-1.5 h-[40px] w-full sm:w-auto"
-        >
-          <Plus className="w-3.5 h-3.5" />
-          Track New KOL
-        </Button>
-      </div>
-
       {/* Mobile Card View */}
       {isMobile ? (
         <div className="space-y-2">
-          {filteredKOLs.length === 0 ? (
+          {kols.length === 0 ? (
             <div className="text-center py-8 border border-border-light dark:border-border-dark rounded-lg">
               <p className="text-xs text-gray-500 dark:text-white/50">
                 {kols.length === 0
@@ -352,7 +272,7 @@ export default function KOLTrackerTable({
               </p>
             </div>
           ) : (
-            filteredKOLs.map((kol) => (
+            kols.map((kol) => (
               <div
                 key={kol.id}
                 className="border border-border-light dark:border-border-dark rounded-lg p-3 bg-card-light dark:bg-card-dark"
@@ -360,21 +280,12 @@ export default function KOLTrackerTable({
                 {/* Header with Avatar, Name and Actions */}
                 <div className="flex items-start gap-3 mb-2">
                   {/* Avatar */}
-                  {kol.avatarUrl ? (
-                    <Image
-                      src={kol.avatarUrl}
-                      alt={kol.name}
-                      width={40}
-                      height={40}
-                      className="w-10 h-10 rounded-full flex-shrink-0 ring-2 ring-gray-200 dark:ring-white/10"
-                    />
-                  ) : (
-                    <div className="w-10 h-10 rounded-full bg-gray-200 dark:bg-white/10 flex items-center justify-center flex-shrink-0 ring-2 ring-gray-200 dark:ring-white/10">
-                      <span className="text-xs font-bold text-gray-600 dark:text-white/60">
-                        {kol.name.substring(0, 2).toUpperCase()}
-                      </span>
-                    </div>
-                  )}
+                  <Avatar className="w-10 h-10 flex-shrink-0 ring-1 ring-gray-200 dark:ring-white/10">
+                    <AvatarImage src={kol.avatarUrl || ""} alt={kol.name} />
+                    <AvatarFallback className="text-xs font-bold bg-gray-200 dark:bg-white/10 text-gray-600 dark:text-white/60">
+                      {kol.name.substring(0, 2).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
 
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1">
@@ -410,18 +321,7 @@ export default function KOLTrackerTable({
 
                 {/* Platform and Followers */}
                 <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-1.5">
-                    <Image
-                      src={platformConfig[kol.platform].icon}
-                      alt={platformConfig[kol.platform].name}
-                      width={14}
-                      height={14}
-                      className="opacity-70"
-                    />
-                    <span className="text-xs text-gray-700 dark:text-white/70">
-                      {platformConfig[kol.platform].name}
-                    </span>
-                  </div>
+                  <PlatformBadge platform={kol.platform} size="sm" />
                   <span className="text-xs font-medium text-gray-900 dark:text-white">
                     {formatFollowers(kol.followers)} followers
                   </span>
@@ -444,7 +344,7 @@ export default function KOLTrackerTable({
             <TableHeader>
               <TableRow>
                 <TableHead className="text-xs">Creator</TableHead>
-                <TableHead className="text-xs">Platform</TableHead>
+                <TableHead className="text-xs text-center">Platform</TableHead>
                 <TableHead className="text-xs text-center">Followers</TableHead>
                 <TableHead className="text-xs hidden lg:table-cell">
                   Description
@@ -453,7 +353,7 @@ export default function KOLTrackerTable({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredKOLs.length === 0 ? (
+              {kols.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={5} className="text-center py-8">
                     <p className="text-xs text-gray-500 dark:text-white/50">
@@ -464,49 +364,22 @@ export default function KOLTrackerTable({
                   </TableCell>
                 </TableRow>
               ) : (
-                filteredKOLs.map((kol) => (
+                kols.map((kol) => (
                   <TableRow key={kol.id}>
                     {/* Creator with Avatar */}
                     <TableCell className="py-3">
-                      <div className="flex items-center gap-2.5">
-                        {kol.avatarUrl ? (
-                          <Image
-                            src={kol.avatarUrl}
-                            alt={kol.name}
-                            width={36}
-                            height={36}
-                            className="w-9 h-9 rounded-full ring-2 ring-gray-100 dark:ring-white/10 flex-shrink-0"
-                          />
-                        ) : (
-                          <div className="w-9 h-9 rounded-full bg-gray-200 dark:bg-white/10 flex items-center justify-center ring-2 ring-gray-100 dark:ring-white/10 flex-shrink-0">
-                            <span className="text-xs font-bold text-gray-600 dark:text-white/60">
-                              {kol.name.substring(0, 2).toUpperCase()}
-                            </span>
-                          </div>
-                        )}
-                        <div className="min-w-0">
-                          <div className="text-sm font-semibold text-gray-900 dark:text-white truncate">
-                            {kol.name}
-                          </div>
-                          <div className="text-xs text-gray-500 dark:text-white/50 truncate">
-                            {kol.username}
-                          </div>
-                        </div>
-                      </div>
+                      <CreatorInfo
+                        avatarUrl={kol.avatarUrl}
+                        name={kol.name}
+                        username={kol.username}
+                        platform={kol.platform}
+                        showPlatformBadge={false}
+                      />
                     </TableCell>
                     {/* Platform */}
                     <TableCell className="py-3">
-                      <div className="flex items-center gap-1.5">
-                        <Image
-                          src={platformConfig[kol.platform].icon}
-                          alt={platformConfig[kol.platform].name}
-                          width={16}
-                          height={16}
-                          className="opacity-80"
-                        />
-                        <span className="text-xs">
-                          {platformConfig[kol.platform].name}
-                        </span>
+                      <div className="flex items-center justify-center">
+                        <PlatformBadge platform={kol.platform} size="sm" />
                       </div>
                     </TableCell>
                     {/* Followers */}

@@ -1,6 +1,14 @@
 // API functions for tracked stock operations
 import { createClient } from "@/lib/supabase/client";
 
+export interface TopAuthor {
+  username: string;
+  display_name?: string | null;
+  avatar_url?: string | null;
+  tweet_count: number;
+  sentiment?: string | null;
+}
+
 export interface TrackedStock {
   id: string;
   user_id: string;
@@ -9,6 +17,14 @@ export interface TrackedStock {
   logo_url?: string | null;
   notify: boolean;
   created_at: string;
+  // KOL 数据
+  mention_count: number;
+  sentiment_score?: number | null;
+  trending_score?: number | null;
+  engagement_score?: number | null;
+  unique_authors_count: number;
+  top_authors: TopAuthor[];
+  last_seen_at?: string | null;
 }
 
 export interface KOLOpinion {
@@ -35,7 +51,9 @@ const API_PREFIX = "/api/v1";
  */
 async function getAuthToken(): Promise<string | null> {
   const supabase = createClient();
-  const { data: { session } } = await supabase.auth.getSession();
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
   return session?.access_token || null;
 }
 
@@ -50,7 +68,7 @@ export async function createTrackedStock(
     throw new Error("未登录，请先登录");
   }
 
-  const response = await fetch(`${API_BASE_URL}${API_PREFIX}/tracked-stocks`, {
+  const response = await fetch(`${API_BASE_URL}${API_PREFIX}/stocks/tracked`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -82,7 +100,7 @@ export async function deleteTrackedStock(stockId: string): Promise<void> {
   }
 
   const response = await fetch(
-    `${API_BASE_URL}${API_PREFIX}/tracked-stocks/${stockId}`,
+    `${API_BASE_URL}${API_PREFIX}/stocks/tracked/${stockId}`,
     {
       method: "DELETE",
       headers: {
@@ -106,7 +124,7 @@ export async function getTrackedStocks(): Promise<TrackedStock[]> {
     throw new Error("未登录，请先登录");
   }
 
-  const response = await fetch(`${API_BASE_URL}${API_PREFIX}/tracked-stocks`, {
+  const response = await fetch(`${API_BASE_URL}${API_PREFIX}/stocks/tracked`, {
     headers: {
       Authorization: `Bearer ${token}`,
     },
@@ -134,7 +152,7 @@ export async function updateTrackedStock(
   }
 
   const response = await fetch(
-    `${API_BASE_URL}${API_PREFIX}/tracked-stocks/${stockId}`,
+    `${API_BASE_URL}${API_PREFIX}/stocks/tracked/${stockId}`,
     {
       method: "PATCH",
       headers: {
@@ -165,7 +183,7 @@ export async function checkStockTracked(
   }
 
   const response = await fetch(
-    `${API_BASE_URL}${API_PREFIX}/tracked-stocks/check/${symbol}`,
+    `${API_BASE_URL}${API_PREFIX}/stocks/tracked/check/${symbol}`,
     {
       headers: {
         Authorization: `Bearer ${token}`,

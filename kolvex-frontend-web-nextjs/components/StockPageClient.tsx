@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import HotStocksList from "./TrendingStocksList";
 import TrackedStocksTable from "@/components/TrackedStocksTable";
@@ -21,6 +21,13 @@ export default function StockPageClient() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("trending");
+
+  // 将 stocks 转换为 Map 供 TrendingStocksList 使用
+  const trackedStocksMap = useMemo(() => {
+    const map = new Map<string, string>();
+    stocks.forEach((s) => map.set(s.symbol, s.id));
+    return map;
+  }, [stocks]);
 
   // Load stocks on mount
   useEffect(() => {
@@ -87,8 +94,8 @@ export default function StockPageClient() {
       icon: <TrendingUp className="w-3.5 h-3.5" />,
     },
     {
-      value: "watchlist",
-      label: "Watchlist",
+      value: "tracked-stocks",
+      label: "Tracked Stocks",
       icon: <Star className="w-3.5 h-3.5" />,
     },
   ];
@@ -112,7 +119,7 @@ export default function StockPageClient() {
               variant="pills"
               className="!w-fit"
             />
-            {activeTab === "watchlist" && (
+            {activeTab === "tracked-stocks" && (
               <Button onClick={openAddDialog} size="sm" variant="ghost">
                 <Plus className="w-3.5 h-3.5" />
               </Button>
@@ -127,6 +134,8 @@ export default function StockPageClient() {
                 enableInfiniteScroll={true}
                 withCard={false}
                 maxHeight="calc(100vh - 200px)"
+                trackedStocksMap={trackedStocksMap}
+                onTrackedStocksChange={loadStocks}
               />
             ) : (
               <TrackedStocksTable

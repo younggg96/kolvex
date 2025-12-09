@@ -2,10 +2,11 @@ import { useState } from "react";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
 
+/** Financial Modeling Prep 图片 URL 基础路径 */
+const FMP_IMAGE_BASE_URL = "https://financialmodelingprep.com/image-stock";
+
 interface CompanyLogoProps {
-  /** Logo URL */
-  logoUrl: string;
-  /** Stock symbol for fallback display */
+  /** Stock symbol (用于生成图片 URL 和 fallback 显示) */
   symbol: string;
   /** Company name for alt text */
   name?: string;
@@ -43,7 +44,7 @@ const sizeMap = {
 
 const shapeMap = {
   square: "rounded-none",
-  rounded: "rounded",
+  rounded: "rounded-lg", // 稍微增加圆角，更现代
   circle: "rounded-full",
 };
 
@@ -55,7 +56,7 @@ const borderMap = {
 };
 
 const borderColorMap = {
-  gray: "border-gray-200 dark:border-gray-700",
+  gray: "border-gray-100 dark:border-gray-800", // 更淡的边框，更现代
   primary: "border-primary/20 dark:border-primary/40",
   orange: "border-orange-200 dark:border-orange-700",
   custom: "",
@@ -65,12 +66,12 @@ const borderColorMap = {
  * CompanyLogo - 统一的公司 Logo 组件
  *
  * 用于显示公司 logo，支持多种尺寸、形状、边框样式
+ * 图片自动从 Financial Modeling Prep 获取
  * 当图片加载失败时，自动显示股票代码缩写作为回退
  *
  * @example
  * ```tsx
  * <CompanyLogo
- *   logoUrl="https://example.com/logo.png"
  *   symbol="AAPL"
  *   name="Apple Inc."
  *   size="md"
@@ -80,7 +81,6 @@ const borderColorMap = {
  * ```
  */
 export default function CompanyLogo({
-  logoUrl,
   symbol,
   name,
   size = "md",
@@ -90,12 +90,15 @@ export default function CompanyLogo({
   borderColor = "gray",
   customBorderColor,
   bgColor = "bg-white",
-  textColor = "text-gray-700 dark:text-gray-300",
+  textColor = "text-gray-500 dark:text-gray-400", // 更柔和的文字颜色
   unoptimized = false,
   className = "",
   imageClassName = "",
 }: CompanyLogoProps) {
   const [hasError, setHasError] = useState(false);
+
+  // 根据股票代码生成图片 URL
+  const logoUrl = `${FMP_IMAGE_BASE_URL}/${symbol.toUpperCase()}.png`;
 
   // 获取尺寸配置
   const sizeConfig = sizeMap[size];
@@ -111,22 +114,23 @@ export default function CompanyLogo({
     ? customBorderColor
     : borderColorMap[borderColor];
 
-  // 生成缩写（取前 3 个字符）
-  const abbreviation = symbol.substring(0, 3).toUpperCase();
+  const abbreviation = symbol.toUpperCase();
 
   return (
     <div
       className={cn(
-        "p-1 flex items-center justify-center flex-shrink-0 overflow-hidden",
+        "flex items-center justify-center flex-shrink-0 overflow-hidden relative transition-all bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark",
+        "p-1", // 保持内边距，让 logo 有呼吸感
         containerSize,
-        bgColor,
+        // 如果出错使用柔和的灰色背景，否则使用传入的背景（默认白色）
+        hasError ? "bg-gray-50 dark:bg-gray-800" : bgColor,
         shapeClass,
         borderClass,
         borderColorClass,
         className
       )}
     >
-      {!hasError && logoUrl ? (
+      {!hasError ? (
         <Image
           src={logoUrl}
           alt={name || symbol}
@@ -142,7 +146,7 @@ export default function CompanyLogo({
       ) : (
         <span
           className={cn(
-            "font-bold",
+            "font-medium tracking-tight", // 字体加粗度适中，稍微紧凑
             customSize ? `text-[${customSize / 4}px]` : sizeConfig.text,
             textColor
           )}
