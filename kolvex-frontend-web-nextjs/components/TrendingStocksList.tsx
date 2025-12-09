@@ -44,6 +44,7 @@ interface TrendingStocksListProps {
   enableInfiniteScroll?: boolean;
   maxHeight?: string;
   onAddClick?: () => void;
+  withCard?: boolean;
 }
 
 interface TrendingStockItemProps {
@@ -227,6 +228,7 @@ export default function TrendingStocksList({
   enableInfiniteScroll = false,
   maxHeight = "32rem",
   onAddClick,
+  withCard = true,
 }: TrendingStocksListProps = {}) {
   const router = useRouter();
   const [trendingStocks, setTrendingStocks] = useState<TrendingStock[]>([]);
@@ -351,6 +353,125 @@ export default function TrendingStocksList({
     return null;
   };
 
+  const tableContent = (
+    <div className="border border-border-light dark:border-border-dark rounded-lg overflow-hidden">
+      <div
+        className="overflow-auto"
+        style={{ maxHeight }}
+        onScroll={handleScroll}
+      >
+        <Table>
+          <TableHeader>
+            <TableRow className="border-b border-gray-200 dark:border-white/10">
+              <TableHead className="text-xs font-semibold">Stock</TableHead>
+              {showPriceData ? (
+                <>
+                  <TableHead className="text-xs text-right font-semibold">
+                    Price
+                  </TableHead>
+                  <TableHead className="text-xs text-right font-semibold">
+                    Change
+                  </TableHead>
+                </>
+              ) : showMetrics ? (
+                <>
+                  <TableHead className="text-xs text-center font-semibold">
+                    Mentions
+                  </TableHead>
+                  <TableHead className="text-xs text-center font-semibold">
+                    Authors
+                  </TableHead>
+                  <TableHead className="text-xs text-center font-semibold">
+                    Sentiment
+                  </TableHead>
+                  <TableHead className="text-xs text-center font-semibold">
+                    Trending
+                  </TableHead>
+                </>
+              ) : null}
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {loading && displayStocks.length === 0 ? (
+              <>
+                {[...Array(6)].map((_, i) => (
+                  <TrendingStockSkeleton key={i} />
+                ))}
+              </>
+            ) : displayStocks.length === 0 ? (
+              <TableRow>
+                <TableCell
+                  colSpan={showPriceData ? 3 : showMetrics ? 5 : 1}
+                  className="text-center py-8 text-sm text-gray-500 dark:text-white/50"
+                >
+                  No stocks to display
+                </TableCell>
+              </TableRow>
+            ) : (
+              <>
+                {displayStocks.map((stock, index) => {
+                  const stockInfo = stockLogoMap.get(stock.ticker);
+                  return (
+                    <TrendingStockItem
+                      key={`${stock.ticker}-${index}`}
+                      ticker={stock.ticker}
+                      mentionCount={stock.mentionCount}
+                      sentimentScore={stock.sentimentScore}
+                      trendingScore={stock.trendingScore}
+                      uniqueAuthors={stock.uniqueAuthors}
+                      platform={stock.platform}
+                      price={stock.price}
+                      changePercent={stock.changePercent}
+                      logoUrl={stock.logoUrl || stockInfo?.logoUrl}
+                      companyName={stock.companyName || stockInfo?.name}
+                      showPlatform={showPlatform}
+                      showMetrics={showMetrics}
+                      onClick={() => handleStockClick(stock.ticker)}
+                    />
+                  );
+                })}
+
+                {/* Loading More Indicator */}
+                {enableInfiniteScroll && isLoadingMore && (
+                  <TableRow>
+                    <TableCell
+                      colSpan={showPriceData ? 3 : showMetrics ? 5 : 1}
+                      className="text-center py-6"
+                    >
+                      <div className="inline-flex items-center gap-2 text-sm text-gray-500 dark:text-white/50">
+                        <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+                        <span>Loading more stocks...</span>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                )}
+
+                {/* No More Data Indicator */}
+                {enableInfiniteScroll &&
+                  !hasMore &&
+                  displayStocks.length > 0 &&
+                  !isLoadingMore && (
+                    <TableRow>
+                      <TableCell
+                        colSpan={showPriceData ? 3 : showMetrics ? 5 : 1}
+                        className="text-center py-6 text-sm text-gray-400 dark:text-white/40 font-medium"
+                      >
+                        No more stocks to load
+                      </TableCell>
+                    </TableRow>
+                  )}
+              </>
+            )}
+          </TableBody>
+        </Table>
+      </div>
+    </div>
+  );
+
+  if (!withCard) {
+    return tableContent;
+  }
+
   return (
     <SectionCard
       title={title}
@@ -358,118 +479,7 @@ export default function TrendingStocksList({
       contentClassName="px-4 pb-4"
       headerRightExtra={<RightExtra />}
     >
-      <div className="border border-border-light dark:border-border-dark rounded-lg overflow-hidden">
-        <div
-          className="overflow-auto"
-          style={{ maxHeight }}
-          onScroll={handleScroll}
-        >
-          <Table>
-            <TableHeader>
-              <TableRow className="border-b border-gray-200 dark:border-white/10">
-                <TableHead className="text-xs font-semibold">Stock</TableHead>
-                {showPriceData ? (
-                  <>
-                    <TableHead className="text-xs text-right font-semibold">
-                      Price
-                    </TableHead>
-                    <TableHead className="text-xs text-right font-semibold">
-                      Change
-                    </TableHead>
-                  </>
-                ) : showMetrics ? (
-                  <>
-                    <TableHead className="text-xs text-center font-semibold">
-                      Mentions
-                    </TableHead>
-                    <TableHead className="text-xs text-center font-semibold">
-                      Authors
-                    </TableHead>
-                    <TableHead className="text-xs text-center font-semibold">
-                      Sentiment
-                    </TableHead>
-                    <TableHead className="text-xs text-center font-semibold">
-                      Trending
-                    </TableHead>
-                  </>
-                ) : null}
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {loading && displayStocks.length === 0 ? (
-                <>
-                  {[...Array(6)].map((_, i) => (
-                    <TrendingStockSkeleton key={i} />
-                  ))}
-                </>
-              ) : displayStocks.length === 0 ? (
-                <TableRow>
-                  <TableCell
-                    colSpan={showPriceData ? 3 : showMetrics ? 5 : 1}
-                    className="text-center py-8 text-sm text-gray-500 dark:text-white/50"
-                  >
-                    No stocks to display
-                  </TableCell>
-                </TableRow>
-              ) : (
-                <>
-                  {displayStocks.map((stock, index) => {
-                    const stockInfo = stockLogoMap.get(stock.ticker);
-                    return (
-                      <TrendingStockItem
-                        key={`${stock.ticker}-${index}`}
-                        ticker={stock.ticker}
-                        mentionCount={stock.mentionCount}
-                        sentimentScore={stock.sentimentScore}
-                        trendingScore={stock.trendingScore}
-                        uniqueAuthors={stock.uniqueAuthors}
-                        platform={stock.platform}
-                        price={stock.price}
-                        changePercent={stock.changePercent}
-                        logoUrl={stock.logoUrl || stockInfo?.logoUrl}
-                        companyName={stock.companyName || stockInfo?.name}
-                        showPlatform={showPlatform}
-                        showMetrics={showMetrics}
-                        onClick={() => handleStockClick(stock.ticker)}
-                      />
-                    );
-                  })}
-
-                  {/* Loading More Indicator */}
-                  {enableInfiniteScroll && isLoadingMore && (
-                    <TableRow>
-                      <TableCell
-                        colSpan={showPriceData ? 3 : showMetrics ? 5 : 1}
-                        className="text-center py-6"
-                      >
-                        <div className="inline-flex items-center gap-2 text-sm text-gray-500 dark:text-white/50">
-                          <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
-                          <span>Loading more stocks...</span>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  )}
-
-                  {/* No More Data Indicator */}
-                  {enableInfiniteScroll &&
-                    !hasMore &&
-                    displayStocks.length > 0 &&
-                    !isLoadingMore && (
-                      <TableRow>
-                        <TableCell
-                          colSpan={showPriceData ? 3 : showMetrics ? 5 : 1}
-                          className="text-center py-6 text-sm text-gray-400 dark:text-white/40 font-medium"
-                        >
-                          No more stocks to load
-                        </TableCell>
-                      </TableRow>
-                    )}
-                </>
-              )}
-            </TableBody>
-          </Table>
-        </div>
-      </div>
+      {tableContent}
     </SectionCard>
   );
 }

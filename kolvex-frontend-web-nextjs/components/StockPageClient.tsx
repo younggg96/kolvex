@@ -5,6 +5,10 @@ import DashboardLayout from "@/components/DashboardLayout";
 import HotStocksList from "./TrendingStocksList";
 import TrackedStocksTable from "@/components/TrackedStocksTable";
 import StockSearchDialog from "@/components/StockSearchDialog";
+import SectionCard from "@/components/SectionCard";
+import { SwitchTab } from "@/components/ui/switch-tab";
+import { Button } from "@/components/ui/button";
+import { Plus, TrendingUp, Star } from "lucide-react";
 import {
   TrackedStock,
   createTrackedStock,
@@ -16,6 +20,7 @@ export default function StockPageClient() {
   const [stocks, setStocks] = useState<TrackedStock[]>([]);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState("trending");
 
   // Load stocks on mount
   useEffect(() => {
@@ -75,27 +80,64 @@ export default function StockPageClient() {
     }
   };
 
+  const tabOptions = [
+    {
+      value: "trending",
+      label: "Trending",
+      icon: <TrendingUp className="w-3.5 h-3.5" />,
+    },
+    {
+      value: "watchlist",
+      label: "Watchlist",
+      icon: <Star className="w-3.5 h-3.5" />,
+    },
+  ];
+
   return (
     <DashboardLayout title="Stocks">
-      <div className="flex-1 grid grid-cols-1 xl:grid-cols-3 gap-2 p-2 overflow-hidden">
-        {/* Left Column - Trending Stocks */}
-        <div className="xl:col-span-2">
-          <HotStocksList
-            fetchFromApi={true}
-            enableInfiniteScroll={true}
-            title="Trending Stocks"
-          />
-        </div>
+      <div className="flex-1 p-2 overflow-hidden">
+        <SectionCard
+          useSectionHeader={false}
+          padding="md"
+          className="h-full flex flex-col"
+          contentClassName="flex-1 overflow-hidden flex flex-col"
+        >
+          {/* Header with Tabs and Add Button */}
+          <div className="flex items-center justify-between gap-4 px-4 pt-4 pb-3">
+            <SwitchTab
+              options={tabOptions}
+              value={activeTab}
+              onValueChange={setActiveTab}
+              size="md"
+              variant="pills"
+              className="!w-fit"
+            />
+            {activeTab === "watchlist" && (
+              <Button onClick={openAddDialog} size="sm" variant="ghost">
+                <Plus className="w-3.5 h-3.5" />
+              </Button>
+            )}
+          </div>
 
-        {/* Right Column - My Watchlist */}
-        <div className="space-y-2 xl:row-span-2">
-          <TrackedStocksTable
-            onAddClick={openAddDialog}
-            stocks={stocks}
-            onUpdate={loadStocks}
-            loading={isLoading}
-          />
-        </div>
+          {/* Content */}
+          <div className="flex-1 overflow-hidden px-4 pb-4">
+            {activeTab === "trending" ? (
+              <HotStocksList
+                fetchFromApi={true}
+                enableInfiniteScroll={true}
+                withCard={false}
+                maxHeight="calc(100vh - 200px)"
+              />
+            ) : (
+              <TrackedStocksTable
+                stocks={stocks}
+                onUpdate={loadStocks}
+                loading={isLoading}
+                withCard={false}
+              />
+            )}
+          </div>
+        </SectionCard>
       </div>
 
       {/* Stock Search Dialog */}

@@ -9,9 +9,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 
-const SIDEBAR_COOKIE_NAME = "sidebar:state";
-const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7;
-const SIDEBAR_WIDTH = "16rem";
+const SIDEBAR_WIDTH = "13rem";
 const SIDEBAR_WIDTH_MOBILE = "18rem";
 const SIDEBAR_WIDTH_ICON = "3rem";
 const SIDEBAR_KEYBOARD_SHORTCUT = "b";
@@ -57,16 +55,7 @@ const SidebarProvider = React.forwardRef<
     },
     ref
   ) => {
-    // Read from localStorage synchronously on client-side to prevent flash
-    const getInitialOpenState = () => {
-      if (typeof window !== "undefined") {
-        const stored = localStorage.getItem(SIDEBAR_COOKIE_NAME);
-        return stored !== null ? stored === "true" : defaultOpen;
-      }
-      return defaultOpen;
-    };
-
-    const [_open, _setOpen] = React.useState(getInitialOpenState);
+    const [_open, _setOpen] = React.useState(defaultOpen);
     const [isInitialized, setIsInitialized] = React.useState(false);
 
     const open = openProp ?? _open;
@@ -77,10 +66,6 @@ const SidebarProvider = React.forwardRef<
           setOpenProp(openState);
         } else {
           _setOpen(openState);
-          // Save to localStorage
-          if (typeof window !== "undefined") {
-            localStorage.setItem(SIDEBAR_COOKIE_NAME, String(openState));
-          }
         }
       },
       [setOpenProp, open]

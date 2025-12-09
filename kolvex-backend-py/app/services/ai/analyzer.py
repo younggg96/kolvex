@@ -3,8 +3,12 @@
 使用 Ollama + Llama-3-8B-Finance 进行推文分析
 """
 
+import asyncio
+import re
 from typing import Dict, List, Any
 from datetime import datetime, timezone
+
+import yfinance as yf
 
 from .client import OllamaClient, OllamaClientSync
 from .utils import extract_json_object, extract_json_array
@@ -162,10 +166,10 @@ Respond with ONLY a JSON object, no other text:
 
     async def extract_tickers(self, tweet_text: str) -> List[str]:
         """
-        从推文中提取股票代码
+        从推文中提取股票代码，包含清洗和 yfinance 验证
 
         Returns:
-            ["AAPL", "TSLA", ...]
+            ["AAPL", "TSLA", ...] - 仅返回经过验证的有效股票代码
         """
         prompt = f"""Extract stock tickers from this tweet.
 
@@ -184,13 +188,185 @@ If no tickers found, respond: []"""
             )
 
             result = extract_json_array(response)
-            if result is not None:
-                return result
+            if result is None or not result:
+                return []
 
+            # Step 1: 清洗 ticker
+            cleaned_tickers = self._clean_tickers(result)
+            if not cleaned_tickers:
+                return []
+
+            # Step 2: 使用 yfinance 验证（在线程池中运行避免阻塞）
+            validated_tickers = await asyncio.to_thread(
+                self._validate_tickers_sync, cleaned_tickers
+            )
+
+            return validated_tickers
+
+        except Exception as e:
+            print(f"⚠️ Extract tickers failed: {e}")
             return []
 
-        except Exception:
+    def _clean_tickers(self, raw_tickers: List[Any]) -> List[str]:
+        """
+        清洗 LLM 输出的 ticker 列表
+
+        - 转大写
+        - 移除 $ 符号
+        - 去除空白
+        - 过滤长度不合适的（<1 或 >6）
+        - 去重
+        - 过滤常见的误报词
+
+        Returns:
+            清洗后的 ticker 列表
+        """
+        # 常见的误报词（LLM 容易误认为是股票代码的词）
+        false_positives = {
+            "IT",
+            "US",
+            "UK",
+            "EU",
+            "CEO",
+            "CFO",
+            "IPO",
+            "ETF",
+            "USD",
+            "EUR",
+            "GBP",
+            "JPY",
+            "BTC",
+            "ETH",
+            "NFT",
+            "API",
+            "Q1",
+            "Q2",
+            "Q3",
+            "Q4",
+            "YOY",
+            "QOQ",
+            "MOM",
+            "EPS",
+            "PE",
+            "DD",
+            "TA",
+            "FA",
+            "ATH",
+            "ATL",
+            "HODL",
+            "FOMO",
+            "FUD",
+            "IMO",
+            "TBH",
+            "FYI",
+            "ASAP",
+            "AM",
+            "PM",
+            "ETA",
+            "USA",
+            "GDP",
+            "CPI",
+            "PPI",
+            "FED",
+            "SEC",
+            "NYSE",
+            "NASDAQ",
+            "DOW",
+            "SPX",
+            "VIX",
+            "OTC",
+            "YOLO",
+            "LMAO",
+            "LOL",
+            "OMG",
+        }
+
+        cleaned = set()
+        for ticker in raw_tickers:
+            if not isinstance(ticker, str):
+                continue
+
+            # 清洗：大写、移除$、去空白
+            t = ticker.upper().replace("$", "").strip()
+
+            # 移除非字母数字字符（保留字母和数字，部分ETF有数字）
+            t = re.sub(r"[^A-Z0-9]", "", t)
+
+            # 长度检查：有效股票代码 1-6 字符
+            if not t or len(t) < 1 or len(t) > 6:
+                continue
+
+            # 过滤纯数字
+            if t.isdigit():
+                continue
+
+            # 过滤常见误报词
+            if t in false_positives:
+                continue
+
+            cleaned.add(t)
+
+        return list(cleaned)
+
+    def _validate_tickers_sync(self, tickers: List[str]) -> List[str]:
+        """
+        使用 yfinance 批量验证 ticker 是否有效（同步方法）
+
+        验证标准：yfinance 返回的数据中 'Close' 列不全为 NaN
+
+        Args:
+            tickers: 清洗后的 ticker 列表
+
+        Returns:
+            验证通过的有效 ticker 列表
+        """
+        if not tickers:
             return []
+
+        valid_tickers = []
+
+        try:
+            # 批量下载一天的数据进行验证
+            # progress=False 避免打印进度条
+            data = yf.download(
+                tickers,
+                period="1d",
+                group_by="ticker",
+                progress=False,
+                threads=True,
+            )
+
+            if data.empty:
+                return []
+
+            # 单个 ticker 时，yfinance 返回的 DataFrame 结构不同
+            if len(tickers) == 1:
+                ticker = tickers[0]
+                # 单 ticker 时，列是 ('Open', 'High', ...) 而不是 (ticker, 'Open')
+                if "Close" in data.columns and not data["Close"].isna().all():
+                    valid_tickers.append(ticker)
+            else:
+                # 多个 ticker 时，DataFrame 是多级列索引 (ticker, field)
+                for ticker in tickers:
+                    try:
+                        # 检查该 ticker 的 Close 列是否有有效数据
+                        if ticker in data.columns.get_level_values(0):
+                            ticker_data = data[ticker]
+                            if "Close" in ticker_data.columns:
+                                close_series = ticker_data["Close"]
+                                if not close_series.isna().all():
+                                    valid_tickers.append(ticker)
+                    except (KeyError, TypeError):
+                        # 该 ticker 数据不存在或格式异常，跳过
+                        continue
+
+        except Exception as e:
+            print(f"⚠️ yfinance validation failed: {e}")
+            # 验证失败时，返回空列表（保守策略）
+            # 如需宽松策略，可以返回原始 tickers
+            return []
+
+        return valid_tickers
 
     async def summarize(self, tweet_text: str, max_length: int = 100) -> str:
         """

@@ -16,18 +16,22 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { SwitchTab } from "@/components/ui/switch-tab";
 import TweetHeader from "./TweetHeader";
 import { TwitterContent } from "./content";
+import SectionCard from "./SectionCard";
 import {
   Users,
   MessageSquare,
-  TrendingUp,
-  TrendingDown,
   ChevronDown,
   Loader2,
   AlertCircle,
+  MoreHorizontal,
+  Newspaper,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import KOLHoverCard from "./KOLHoverCard";
+import SentimentBadge from "./SentimentBadge";
 
 interface StockDiscussionsProps {
   ticker: string;
@@ -35,41 +39,80 @@ interface StockDiscussionsProps {
 
 // KOL 头像组件
 function KOLAvatar({ kol }: { kol: KOLSummary }) {
-  return (
-    <div className="flex flex-col items-center gap-1 min-w-[60px]">
+  const avatarContent = (
+    <div className="flex flex-col items-center gap-1 min-w-[60px] cursor-pointer group">
       <div className="relative">
+        {/* 波纹动画背景 */}
+        <div className="absolute inset-0 rounded-full">
+          <span className="absolute inset-0 rounded-full bg-primary/20 animate-ping [animation-duration:2s]" />
+          <span className="absolute inset-0 rounded-full bg-primary/10 animate-pulse [animation-duration:1.5s]" />
+        </div>
         {kol.avatar_url ? (
           <img
             src={kol.avatar_url}
             alt={kol.username}
-            className="w-10 h-10 rounded-full object-cover ring-2 ring-border/50"
+            className="relative w-10 h-10 rounded-full object-cover ring-2 ring-primary/30 group-hover:ring-primary/50 transition-all"
           />
         ) : (
-          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary/20 to-primary/40 flex items-center justify-center ring-2 ring-border/50">
+          <div className="relative w-10 h-10 rounded-full bg-gradient-to-br from-primary/20 to-primary/40 flex items-center justify-center ring-2 ring-primary/30 group-hover:ring-primary/50 transition-all">
             <span className="text-sm font-semibold text-primary">
               {kol.username.charAt(0).toUpperCase()}
             </span>
           </div>
         )}
-        {kol.is_verified && (
-          <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center">
-            <svg
-              className="w-2.5 h-2.5 text-white"
-              fill="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
-            </svg>
-          </div>
-        )}
+        {/* 推文数量 badge */}
+        <Badge className="absolute -top-0.5 -right-0.5 z-10 !w-[14px] !h-[14px] rounded-full !p-0 !text-[10px] justify-center bg-primary text-white border-primary/20">
+          {kol.tweet_count}
+        </Badge>
       </div>
-      <span className="text-xs text-muted-foreground truncate max-w-[60px]">
+      <span className="text-xs text-muted-foreground truncate max-w-[60px] group-hover:text-primary transition-colors">
         @{kol.username}
       </span>
-      <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
-        <MessageSquare className="w-3 h-3" />
-        <span>{kol.tweet_count}</span>
-      </div>
+    </div>
+  );
+
+  return (
+    <KOLHoverCard
+      kolId={kol.username}
+      screenName={kol.username}
+      profileImageUrl={kol.avatar_url || undefined}
+      platform="TWITTER"
+    >
+      {avatarContent}
+    </KOLHoverCard>
+  );
+}
+
+// 展开更多按钮组件（圆形三个点）
+function ExpandButton({
+  totalCount,
+  showAll,
+  onClick,
+}: {
+  totalCount: number;
+  showAll: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <div className="flex flex-col items-center gap-1 min-w-[60px]">
+      <button
+        onClick={onClick}
+        className={cn(
+          "w-10 h-10 rounded-full flex items-center justify-center transition-all",
+          "bg-muted hover:bg-muted/80 ring-2 ring-primary/20 hover:ring-primary/50",
+          showAll && "bg-primary/10 ring-primary/30"
+        )}
+        title={showAll ? "Collapse" : `View all ${totalCount} KOLs`}
+      >
+        {showAll ? (
+          <ChevronDown className="w-4 h-4 text-primary rotate-180" />
+        ) : (
+          <MoreHorizontal className="w-4 h-4 text-primary" />
+        )}
+      </button>
+      <span className="text-xs text-muted-foreground">
+        {showAll ? "Collapse" : `+${totalCount - 7}`}
+      </span>
     </div>
   );
 }
@@ -77,40 +120,21 @@ function KOLAvatar({ kol }: { kol: KOLSummary }) {
 // KOL 列表组件
 function KOLList({ kols }: { kols: KOLSummary[] }) {
   const [showAll, setShowAll] = useState(false);
-  const displayKols = showAll ? kols : kols.slice(0, 8);
+  const maxVisible = 7; // 显示7个头像 + 1个展开按钮
+  const hasMore = kols.length > maxVisible;
+  const displayKols = showAll ? kols : kols.slice(0, maxVisible);
 
   return (
-    <div className="space-y-3">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Users className="w-4 h-4 text-muted-foreground" />
-          <h3 className="text-sm font-medium">
-            KOLs discussing this stock ({kols.length})
-          </h3>
-        </div>
-      </div>
-
-      <div className="flex flex-wrap gap-4">
-        {displayKols.map((kol) => (
-          <KOLAvatar key={kol.username} kol={kol} />
-        ))}
-      </div>
-
-      {kols.length > 8 && (
-        <Button
-          variant="ghost"
-          size="sm"
+    <div className="flex flex-wrap gap-4 pt-3">
+      {displayKols.map((kol) => (
+        <KOLAvatar key={kol.username} kol={kol} />
+      ))}
+      {hasMore && (
+        <ExpandButton
+          totalCount={kols.length}
+          showAll={showAll}
           onClick={() => setShowAll(!showAll)}
-          className="w-full text-xs"
-        >
-          {showAll ? "Collapse" : `View all ${kols.length} KOLs`}
-          <ChevronDown
-            className={cn(
-              "w-4 h-4 ml-1 transition-transform",
-              showAll && "rotate-180"
-            )}
-          />
-        </Button>
+        />
       )}
     </div>
   );
@@ -189,6 +213,7 @@ export default function StockDiscussions({ ticker }: StockDiscussionsProps) {
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
+  const [activeTab, setActiveTab] = useState("discussions");
   const pageSize = 10;
 
   const fetchData = useCallback(
@@ -241,23 +266,31 @@ export default function StockDiscussions({ ticker }: StockDiscussionsProps) {
 
   if (error) {
     return (
-      <div className="bg-white dark:bg-card-dark rounded-lg border border-border-light dark:border-border-dark p-6 transition-colors duration-300">
+      <SectionCard
+        useSectionHeader={false}
+        padding="none"
+        contentClassName="p-6"
+      >
         <div className="flex items-center justify-center gap-2 py-8 text-red-500">
           <AlertCircle className="w-5 h-5" />
           <span>{error}</span>
         </div>
-      </div>
+      </SectionCard>
     );
   }
 
   if (!data || data.total_tweets === 0) {
     return (
-      <div className="bg-white dark:bg-card-dark rounded-lg border border-border-light dark:border-border-dark p-6 transition-colors duration-300">
+      <SectionCard
+        useSectionHeader={false}
+        padding="none"
+        contentClassName="p-6"
+      >
         <div className="text-center py-8 text-muted-foreground">
           <MessageSquare className="w-8 h-8 mx-auto mb-2 opacity-50" />
           <p>No KOL discussions yet</p>
         </div>
-      </div>
+      </SectionCard>
     );
   }
 
@@ -269,132 +302,156 @@ export default function StockDiscussions({ ticker }: StockDiscussionsProps) {
         sentimentKols.length
       : null;
 
+  const tabOptions = [
+    {
+      value: "discussions",
+      label: "Discussions",
+      icon: <MessageSquare className="w-3.5 h-3.5" />,
+    },
+    {
+      value: "news",
+      label: "News",
+      icon: <Newspaper className="w-3.5 h-3.5" />,
+    },
+  ];
+
   return (
-    <div className="bg-white dark:bg-card-dark rounded-lg border border-border-light dark:border-border-dark p-4 transition-colors duration-300">
-      {/* 头部统计 */}
-      <div className="mb-6">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-base font-semibold text-gray-900 dark:text-white">
-            {ticker} KOL Discussions
-          </h2>
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-              <Users className="w-4 h-4" />
-              <span>{data.total_kols} KOLs</span>
+    <SectionCard useSectionHeader={false} padding="none" contentClassName="p-3">
+      {/* Switch Tab */}
+      <SwitchTab
+        options={tabOptions}
+        value={activeTab}
+        onValueChange={setActiveTab}
+        size="md"
+        variant="pills"
+        className="mb-3 !w-fit"
+      />
+
+      {/* Discussions Tab Content */}
+      {activeTab === "discussions" && (
+        <>
+          {/* 头部统计 */}
+          <div className="mb-4">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm text-muted-foreground flex items-center gap-1">
+                <Users className="w-3 h-3" />
+                <span>Discussions</span>
+              </span>
+              {avgSentiment !== null && (
+                <SentimentBadge
+                  sentiment={{
+                    value:
+                      avgSentiment > 20
+                        ? "bullish"
+                        : avgSentiment < -20
+                        ? "bearish"
+                        : "neutral",
+                    confidence: null,
+                    reasoning: null,
+                  }}
+                />
+              )}
             </div>
-            <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-              <MessageSquare className="w-4 h-4" />
-              <span>{data.total_tweets} Tweets</span>
+
+            {/* KOL 列表 */}
+            <KOLList kols={data.kols} />
+          </div>
+
+          <Separator className="mb-3" />
+
+          {/* 推文列表 */}
+          <div>
+            <div className="space-y-1">
+              {data.tweets.map((tweet, index) => (
+                <React.Fragment key={tweet.id}>
+                  <TweetCard tweet={tweet} />
+                  {index < data.tweets.length - 1 && (
+                    <Separator className="my-3" />
+                  )}
+                </React.Fragment>
+              ))}
             </div>
-            {avgSentiment !== null && (
-              <Badge
-                variant="secondary"
-                className={cn(
-                  "flex items-center gap-1",
-                  avgSentiment > 20
-                    ? "bg-green-500/10 text-green-600 border-green-500/20"
-                    : avgSentiment < -20
-                    ? "bg-red-500/10 text-red-600 border-red-500/20"
-                    : "bg-gray-500/10 text-gray-600 border-gray-500/20"
-                )}
-              >
-                {avgSentiment > 20 ? (
-                  <TrendingUp className="w-3 h-3" />
-                ) : avgSentiment < -20 ? (
-                  <TrendingDown className="w-3 h-3" />
-                ) : null}
-                <span>
-                  {avgSentiment > 20
-                    ? "Bullish"
-                    : avgSentiment < -20
-                    ? "Bearish"
-                    : "Neutral"}
-                </span>
-              </Badge>
+
+            {/* 加载更多 */}
+            {data.has_more && (
+              <div className="mt-4">
+                <Button
+                  variant="outline"
+                  onClick={loadMore}
+                  disabled={loadingMore}
+                  className="w-full"
+                >
+                  {loadingMore ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Loading...
+                    </>
+                  ) : (
+                    <>
+                      Load More
+                      <ChevronDown className="w-4 h-4 ml-1" />
+                    </>
+                  )}
+                </Button>
+              </div>
             )}
           </div>
+        </>
+      )}
+
+      {/* News Tab Content */}
+      {activeTab === "news" && (
+        <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+          <Newspaper className="w-10 h-10 mb-3 opacity-40" />
+          <p className="text-sm font-medium">News coming soon</p>
+          <p className="text-xs mt-1">
+            Stay tuned for the latest news about {ticker}
+          </p>
         </div>
-
-        {/* KOL 列表 */}
-        <KOLList kols={data.kols} />
-      </div>
-
-      <Separator className="my-6" />
-
-      {/* 推文列表 */}
-      <div>
-        <h3 className="text-sm font-medium mb-4 flex items-center gap-2">
-          <MessageSquare className="w-4 h-4 text-muted-foreground" />
-          Latest Discussions
-        </h3>
-
-        <div className="space-y-1">
-          {data.tweets.map((tweet, index) => (
-            <React.Fragment key={tweet.id}>
-              <TweetCard tweet={tweet} />
-              {index < data.tweets.length - 1 && <Separator className="my-3" />}
-            </React.Fragment>
-          ))}
-        </div>
-
-        {/* 加载更多 */}
-        {data.has_more && (
-          <div className="mt-4 pt-4 border-t border-border/30">
-            <Button
-              variant="outline"
-              onClick={loadMore}
-              disabled={loadingMore}
-              className="w-full"
-            >
-              {loadingMore ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Loading...
-                </>
-              ) : (
-                <>
-                  Load More
-                  <ChevronDown className="w-4 h-4 ml-1" />
-                </>
-              )}
-            </Button>
-          </div>
-        )}
-      </div>
-    </div>
+      )}
+    </SectionCard>
   );
 }
 
 // 骨架屏
 export function StockDiscussionsSkeleton() {
   return (
-    <div className="bg-white dark:bg-card-dark rounded-lg border border-border-light dark:border-border-dark p-4 animate-pulse">
-      <div className="flex items-center justify-between mb-4">
-        <div className="h-5 bg-muted rounded w-32" />
-        <div className="flex gap-4">
-          <div className="h-4 bg-muted rounded w-20" />
-          <div className="h-4 bg-muted rounded w-20" />
+    <SectionCard useSectionHeader={false} padding="none" contentClassName="p-3">
+      <div className="animate-pulse">
+        {/* Tab 骨架 */}
+        <div className="h-10 bg-muted rounded-lg mb-3" />
+
+        {/* 头部统计骨架 */}
+        <div className="flex items-center justify-between mb-4">
+          <div className="h-4 bg-muted rounded w-24" />
+          <div className="h-5 bg-muted rounded w-16" />
+        </div>
+
+        {/* KOL 头像骨架 */}
+        <div className="flex gap-4 mb-6 pt-3">
+          {[...Array(6)].map((_, i) => (
+            <div key={i} className="flex flex-col items-center gap-1">
+              <div className="w-10 h-10 bg-muted rounded-full" />
+              <div className="h-3 bg-muted rounded w-12" />
+            </div>
+          ))}
+        </div>
+
+        <div className="h-px bg-muted mb-3" />
+
+        {/* 推文骨架 */}
+        <div className="space-y-4">
+          {[...Array(3)].map((_, i) => (
+            <div key={i} className="space-y-2">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 bg-muted rounded-full" />
+                <div className="h-4 bg-muted rounded w-24" />
+              </div>
+              <div className="h-16 bg-muted rounded" />
+            </div>
+          ))}
         </div>
       </div>
-      <div className="flex gap-4 mb-6">
-        {[...Array(6)].map((_, i) => (
-          <div key={i} className="flex flex-col items-center gap-1">
-            <div className="w-10 h-10 bg-muted rounded-full" />
-            <div className="h-3 bg-muted rounded w-12" />
-          </div>
-        ))}
-      </div>
-      <div className="space-y-4">
-        {[...Array(3)].map((_, i) => (
-          <div key={i} className="space-y-2">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-muted rounded-full" />
-              <div className="h-4 bg-muted rounded w-24" />
-            </div>
-            <div className="h-16 bg-muted rounded" />
-          </div>
-        ))}
-      </div>
-    </div>
+    </SectionCard>
   );
 }

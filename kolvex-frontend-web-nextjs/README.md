@@ -154,7 +154,6 @@ kolvex/
 │   ├── EmailSignup.tsx          # Email signup form component
 │   ├── Sidebar.tsx              # Vertical navigation sidebar
 │   ├── MarketIndex.tsx          # Market index card component
-│   ├── StockChartWithControls.tsx # Chart with timeframe controls
 │   ├── Watchlist.tsx            # Stock watchlist component
 │   ├── MarketNews.tsx           # Market news component
 │   ├── Header.tsx               # Header component (legacy)

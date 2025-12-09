@@ -5,7 +5,10 @@ import { KOLTweet } from "@/lib/kolTweetsApi";
 import TweetHeader from "./TweetHeader";
 import { TwitterContent } from "./content";
 import { Separator } from "./ui/separator";
+import { Button } from "./ui/button";
 import type { Platform } from "@/lib/supabase/database.types";
+import { AlertCircle } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 // Helper function to map post platform to database Platform type
 const mapPlatform = (platform: string): Platform | undefined => {
@@ -26,10 +29,34 @@ export default function PostFeedList({
   formatText,
 }: PostFeedListProps) {
   const [mounted, setMounted] = useState(false);
+  // 跟踪哪些"非股市相关"的推文被手动展开了
+  const [expandedNonStockPosts, setExpandedNonStockPosts] = useState<
+    Set<number>
+  >(new Set());
 
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  // 检查推文是否与股市相关
+  const isStockRelated = (post: KOLTweet): boolean => {
+    // 如果没有 is_stock_related 字段，默认显示（向后兼容）
+    if (!post.is_stock_related) return true;
+    return post.is_stock_related.is_related === true;
+  };
+
+  // 切换非股市相关推文的展开状态
+  const toggleNonStockPost = (postId: number) => {
+    setExpandedNonStockPosts((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(postId)) {
+        newSet.delete(postId);
+      } else {
+        newSet.add(postId);
+      }
+      return newSet;
+    });
+  };
 
   const defaultFormatDate = (dateString: string) => {
     if (!mounted) {
@@ -83,23 +110,85 @@ export default function PostFeedList({
     );
   };
 
+  // 渲染折叠的非股市相关推文提示
+  const renderCollapsedNonStockPost = (post: KOLTweet) => {
+    return (
+      <div className="py-1">
+        <Button
+          variant="ghost"
+          size="xs"
+          onClick={() => toggleNonStockPost(post.id)}
+          className="w-fit h-6 gap-1.5 text-amber-600/80 hover:bg-amber-50 dark:text-amber-500/80 dark:hover:text-amber-400 dark:hover:bg-amber-900/20 font-normal"
+        >
+          <div className="flex items-center gap-2">
+            <AlertCircle className="w-3 h-3" />
+            <span className="text-xs">
+              This tweet is unrelated to stocks. Click to view
+            </span>
+          </div>
+        </Button>
+      </div>
+    );
+  };
+
   return (
     <>
-      {posts.map((post, index) => (
-        <div key={post.id}>
-          <TweetHeader
-            screenName={post.username}
-            createdAt={post.created_at || new Date().toISOString()}
-            profileImageUrl={post.avatar_url || undefined}
-            onFormatDate={onFormatDate}
-            kolId={post.username}
-            platform={mapPlatform("x")}
-            initialTracked={false}
-          />
-          {renderPostContent(post)}
-          {index < posts.length - 1 && <Separator className="my-2" />}
-        </div>
-      ))}
+      {posts.map((post, index) => {
+        const stockRelated = isStockRelated(post);
+        const isExpanded = expandedNonStockPosts.has(post.id);
+        const shouldCollapse = !stockRelated && !isExpanded;
+
+        return (
+          <div key={post.id}>
+            {shouldCollapse ? (
+              // 折叠状态：只显示头部和提示
+              <>
+                <TweetHeader
+                  screenName={post.username}
+                  createdAt={post.created_at || new Date().toISOString()}
+                  profileImageUrl={post.avatar_url || undefined}
+                  onFormatDate={onFormatDate}
+                  kolId={post.username}
+                  platform={mapPlatform("x")}
+                  initialTracked={false}
+                />
+                {renderCollapsedNonStockPost(post)}
+              </>
+            ) : (
+              // 正常显示或已展开状态
+              <>
+                <TweetHeader
+                  screenName={post.username}
+                  createdAt={post.created_at || new Date().toISOString()}
+                  profileImageUrl={post.avatar_url || undefined}
+                  onFormatDate={onFormatDate}
+                  kolId={post.username}
+                  platform={mapPlatform("x")}
+                  initialTracked={false}
+                />
+                {/* 如果是展开的非股市相关推文，显示收起按钮 */}
+                {!stockRelated && isExpanded && (
+                  <div className="py-1">
+                    <Button
+                      variant="ghost"
+                      size="xs"
+                      onClick={() => toggleNonStockPost(post.id)}
+                      className="w-fit h-6 gap-1.5 text-amber-600/80 hover:bg-amber-50 dark:text-amber-500/80 dark:hover:text-amber-400 dark:hover:bg-amber-900/20 font-normal"
+                    >
+                      <AlertCircle className="w-3 h-3" />
+                      <span className="text-xs">
+                        Unrelated to stocks. Click to hide
+                      </span>
+                    </Button>
+                  </div>
+                )}
+                {renderPostContent(post)}
+              </>
+            )}
+            {index < posts.length - 1 && <Separator className="my-2" />}
+          </div>
+        );
+      })}
     </>
   );
 }

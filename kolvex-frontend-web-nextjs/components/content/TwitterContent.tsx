@@ -65,7 +65,7 @@ export default function TwitterContent({
     <>
       <div className="space-y-2 mb-1">
         {/* Tags and Sentiment */}
-        <div className="flex items-center gap-2 flex-wrap my-2">
+        <div className="flex items-center justify-between gap-2 flex-wrap my-2">
           {aiTags && aiTags.length > 0 && <Tags tags={aiTags} />}
           <SentimentBadge sentiment={sentiment} />
         </div>

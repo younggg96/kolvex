@@ -126,7 +126,7 @@ function AppSidebar({ onNavigate }: AppSidebarProps) {
         {/* Main Navigation */}
         <SidebarGroup>
           <SidebarGroupLabel className="sr-only">
-            <span>HomeStocks</span>
+            <span>Kolvex</span>
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>

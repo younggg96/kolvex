@@ -245,6 +245,9 @@ DATABASE_URL=postgresql://user:pass@host:5432/dbname
 
 # CORS
 ALLOWED_ORIGINS=http://localhost:3000,https://yourdomain.com
+
+# 第三方 API
+BENZINGA_API_KEY=your-api-key  # Benzinga 新闻 API (https://www.benzinga.com/apis/)
 ```
 
 生产环境注意事项：

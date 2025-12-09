@@ -34,6 +34,9 @@ class Settings(BaseSettings):
     MCP_PORT: int = 8001
     MCP_TRANSPORT: str = "streamable-http"
 
+    # Benzinga API 配置
+    BENZINGA_API_KEY: str = ""
+    
     # CORS 配置
     ALLOWED_ORIGINS: Union[List[str], str] = (
         "http://localhost:3000,http://localhost:3001"

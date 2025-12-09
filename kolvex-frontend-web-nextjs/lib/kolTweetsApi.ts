@@ -28,6 +28,12 @@ export interface TradingSignal {
   reasoning: string | null;
 }
 
+export interface IsStockRelated {
+  is_related: boolean;
+  confidence: number | null;
+  reason: string | null;
+}
+
 export interface KOLTweet {
   id: number;
   username: string;
@@ -66,6 +72,8 @@ export interface KOLTweet {
   // AI 分析元数据
   ai_analyzed_at: string | null;
   ai_model: string | null;
+  // 股市相关性
+  is_stock_related: IsStockRelated | null;
 }
 
 export interface KOLTweetsResponse {

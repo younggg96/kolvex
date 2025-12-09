@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { StockQuote, MarketIndex, ChartData } from "@/lib/stockApi";
+import { StockQuote, ChartData, StockOverview } from "@/lib/stockApi";
 
 export function useStockQuote(symbol: string, refreshInterval?: number) {
   const [data, setData] = useState<StockQuote | null>(null);
@@ -77,40 +77,6 @@ export function useMultipleQuotes(symbols: string[], refreshInterval?: number) {
   return { data, loading, error };
 }
 
-export function useMarketIndices(refreshInterval?: number) {
-  const [data, setData] = useState<MarketIndex[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        const response = await fetch("/api/stocks?action=indices");
-        if (!response.ok) throw new Error("Failed to fetch");
-        const indices = await response.json();
-        setData(indices);
-        setError(null);
-      } catch (err) {
-        setError(
-          err instanceof Error ? err.message : "Failed to fetch market indices"
-        );
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-
-    if (refreshInterval) {
-      const interval = setInterval(fetchData, refreshInterval);
-      return () => clearInterval(interval);
-    }
-  }, [refreshInterval]);
-
-  return { data, loading, error };
-}
-
 export function useChartData(symbol: string, interval: string = "5min") {
   const [data, setData] = useState<ChartData[]>([]);
   const [loading, setLoading] = useState(true);
@@ -138,6 +104,42 @@ export function useChartData(symbol: string, interval: string = "5min") {
 
     fetchData();
   }, [symbol, interval]);
+
+  return { data, loading, error };
+}
+
+export function useStockOverview(symbol: string, refreshInterval?: number) {
+  const [data, setData] = useState<StockOverview | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch(
+          `/api/stocks?action=overview&symbol=${symbol}`
+        );
+        if (!response.ok) throw new Error("Failed to fetch");
+        const overview = await response.json();
+        setData(overview);
+        setError(null);
+      } catch (err) {
+        setError(
+          err instanceof Error ? err.message : "Failed to fetch stock overview"
+        );
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+
+    if (refreshInterval) {
+      const interval = setInterval(fetchData, refreshInterval);
+      return () => clearInterval(interval);
+    }
+  }, [symbol, refreshInterval]);
 
   return { data, loading, error };
 }

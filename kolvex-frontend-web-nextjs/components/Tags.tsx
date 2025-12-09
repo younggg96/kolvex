@@ -22,12 +22,12 @@ export default function Tags({ tags, maxVisible = 5, className }: TagsProps) {
       {displayedTags.map((tag, index) => (
         <span
           key={index}
-          className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-primary/10 text-primary border border-primary/20"
+          className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary border border-primary/20"
         >
           {tag}
         </span>
       ))}
-      
+
       {shouldShowButton && (
         <button
           onClick={() => setIsExpanded(!isExpanded)}

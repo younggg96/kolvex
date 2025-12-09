@@ -1,5 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
-import { useAuth } from "@/hooks";
+import { useUserProfileContext } from "@/components/UserProfileProvider";
 import type {
   UserProfile,
   Theme,
@@ -25,173 +24,75 @@ interface ApiResult {
   error?: string;
 }
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-const API_PREFIX = "/api/v1";
-
 /**
  * Hook to get and manage current user profile
+ * Uses global UserProfileContext to avoid redundant API calls
  */
 export function useCurrentUserProfile() {
-  const { user, session, isAuthenticated, isLoading: authLoading } = useAuth();
-  const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const {
+    profile,
+    isLoading,
+    error,
+    refresh,
+    updateProfile: contextUpdateProfile,
+    updateNotifications: contextUpdateNotifications,
+  } = useUserProfileContext();
 
-  const fetchProfile = useCallback(async () => {
-    if (!isAuthenticated || !session?.access_token) {
-      setProfile(null);
-      setLoading(false);
-      return;
+  const updateProfile = async (
+    updates: UserProfileUpdate
+  ): Promise<ApiResult> => {
+    const success = await contextUpdateProfile(updates);
+    if (success) {
+      return { success: true, data: profile || undefined };
     }
+    return { success: false, error: "Failed to update profile" };
+  };
 
+  const updateTheme = async (theme: Theme): Promise<ApiResult> => {
     try {
-      setLoading(true);
-      setError(null);
-
-      const response = await fetch(`${API_BASE_URL}${API_PREFIX}/users/me`, {
+      const response = await fetch("/api/users/me/theme", {
+        method: "PATCH",
         headers: {
-          Authorization: `Bearer ${session.access_token}`,
           "Content-Type": "application/json",
         },
+        body: JSON.stringify({ theme }),
       });
 
       if (!response.ok) {
-        if (response.status === 404) {
-          setProfile(null);
-          return;
-        }
-        throw new Error("Failed to fetch profile");
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || "Failed to update theme");
       }
 
       const data = await response.json();
-      setProfile(data);
+      // Refresh profile to get updated data
+      await refresh();
+      return { success: true, data };
     } catch (err) {
-      console.error("Error fetching profile:", err);
-      setError(err instanceof Error ? err.message : "An error occurred");
-      setProfile(null);
-    } finally {
-      setLoading(false);
+      console.error("Error updating theme:", err);
+      return {
+        success: false,
+        error: err instanceof Error ? err.message : "An error occurred",
+      };
     }
-  }, [isAuthenticated, session?.access_token]);
+  };
 
-  const updateProfile = useCallback(
-    async (updates: UserProfileUpdate): Promise<ApiResult> => {
-      if (!isAuthenticated || !session?.access_token) {
-        return { success: false, error: "Not authenticated" };
-      }
-
-      try {
-        const response = await fetch(`${API_BASE_URL}${API_PREFIX}/users/me`, {
-          method: "PUT",
-          headers: {
-            Authorization: `Bearer ${session.access_token}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(updates),
-        });
-
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}));
-          throw new Error(errorData.detail || "Failed to update profile");
-        }
-
-        const data = await response.json();
-        setProfile(data);
-        return { success: true, data };
-      } catch (err) {
-        console.error("Error updating profile:", err);
-        return {
-          success: false,
-          error: err instanceof Error ? err.message : "An error occurred",
-        };
-      }
-    },
-    [isAuthenticated, session?.access_token]
-  );
-
-  const updateTheme = useCallback(
-    async (theme: Theme): Promise<ApiResult> => {
-      if (!isAuthenticated || !session?.access_token) {
-        return { success: false, error: "Not authenticated" };
-      }
-
-      try {
-        const response = await fetch(`${API_BASE_URL}${API_PREFIX}/users/me/theme`, {
-          method: "PATCH",
-          headers: {
-            Authorization: `Bearer ${session.access_token}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ theme }),
-        });
-
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}));
-          throw new Error(errorData.detail || "Failed to update theme");
-        }
-
-        const data = await response.json();
-        setProfile(data);
-        return { success: true, data };
-      } catch (err) {
-        console.error("Error updating theme:", err);
-        return {
-          success: false,
-          error: err instanceof Error ? err.message : "An error occurred",
-        };
-      }
-    },
-    [isAuthenticated, session?.access_token]
-  );
-
-  const updateNotifications = useCallback(
-    async (settings: NotificationUpdate): Promise<ApiResult> => {
-      if (!isAuthenticated || !session?.access_token) {
-        return { success: false, error: "Not authenticated" };
-      }
-
-      try {
-        const response = await fetch(`${API_BASE_URL}${API_PREFIX}/users/me/notifications`, {
-          method: "PATCH",
-          headers: {
-            Authorization: `Bearer ${session.access_token}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(settings),
-        });
-
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}));
-          throw new Error(
-            errorData.detail || "Failed to update notification settings"
-          );
-        }
-
-        const data = await response.json();
-        setProfile(data);
-        return { success: true, data };
-      } catch (err) {
-        console.error("Error updating notifications:", err);
-        return {
-          success: false,
-          error: err instanceof Error ? err.message : "An error occurred",
-        };
-      }
-    },
-    [isAuthenticated, session?.access_token]
-  );
-
-  useEffect(() => {
-    if (!authLoading) {
-      fetchProfile();
+  const updateNotifications = async (
+    settings: NotificationUpdate
+  ): Promise<ApiResult> => {
+    const success = await contextUpdateNotifications({
+      notification_method: settings.notification_method,
+    });
+    if (success) {
+      return { success: true, data: profile || undefined };
     }
-  }, [fetchProfile, authLoading]);
+    return { success: false, error: "Failed to update notification settings" };
+  };
 
   return {
     profile,
-    loading: loading || authLoading,
+    loading: isLoading,
     error,
-    refetch: fetchProfile,
+    refetch: refresh,
     updateProfile,
     updateTheme,
     updateNotifications,
@@ -201,15 +102,11 @@ export function useCurrentUserProfile() {
 /**
  * Update user theme (standalone function)
  */
-export async function updateUserTheme(
-  accessToken: string,
-  theme: Theme
-): Promise<ApiResult> {
+export async function updateUserTheme(theme: Theme): Promise<ApiResult> {
   try {
-    const response = await fetch(`${API_BASE_URL}${API_PREFIX}/users/me/theme`, {
+    const response = await fetch("/api/users/me/theme", {
       method: "PATCH",
       headers: {
-        Authorization: `Bearer ${accessToken}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({ theme }),
@@ -217,7 +114,7 @@ export async function updateUserTheme(
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.detail || "Failed to update theme");
+      throw new Error(errorData.error || "Failed to update theme");
     }
 
     const data = await response.json();
@@ -235,14 +132,12 @@ export async function updateUserTheme(
  * Update user notification settings (standalone function)
  */
 export async function updateUserNotifications(
-  accessToken: string,
   settings: NotificationUpdate
 ): Promise<ApiResult> {
   try {
-    const response = await fetch(`${API_BASE_URL}${API_PREFIX}/users/me/notifications`, {
+    const response = await fetch("/api/users/me/notifications", {
       method: "PATCH",
       headers: {
-        Authorization: `Bearer ${accessToken}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify(settings),
@@ -251,7 +146,7 @@ export async function updateUserNotifications(
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
       throw new Error(
-        errorData.detail || "Failed to update notification settings"
+        errorData.error || "Failed to update notification settings"
       );
     }
 
@@ -265,4 +160,3 @@ export async function updateUserNotifications(
     };
   }
 }
-
