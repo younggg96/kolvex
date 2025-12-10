@@ -59,10 +59,8 @@ const getSentimentRingColor = (sentiment?: string | null) => {
 };
 
 function StockRow({
-  id,
   symbol,
   companyName,
-  logo,
   price,
   changePercent,
   sparklineData,
@@ -436,7 +434,7 @@ export default function TrackedStocksTable({
 
   return (
     <SectionCard
-      title="Tracked Stocks"
+      title="Tracking Stocks"
       padding="md"
       contentClassName="px-4 pb-4"
       headerRightExtra={<RightExtra />}

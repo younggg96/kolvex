@@ -4,7 +4,7 @@ import { useState, useMemo, useEffect } from "react";
 import DashboardLayout from "@/components/DashboardLayout";
 import SectionCard from "@/components/SectionCard";
 import KOLTrackerTable from "@/components/KOLTrackerTable";
-import TopCreators from "@/components/TopCreators";
+import TopKols from "@/components/TopKols";
 import { SwitchTab } from "@/components/ui/switch-tab";
 import { KOL } from "@/lib/kolApi";
 import { Star, TrendingUp } from "lucide-react";
@@ -37,12 +37,12 @@ export default function KOLPageClient() {
 
       return {
         id: tracking.kol_id, // Use kol_id directly as ID
-        name: tracking.creator_name || tracking.kol_id,
-        username: tracking.creator_username || tracking.kol_id,
+        name: tracking.kol_name || tracking.kol_id,
+        username: tracking.kol_username || tracking.kol_id,
         platform: platformMap[tracking.platform],
-        followers: tracking.creator_followers_count || 0,
-        description: tracking.creator_bio || "-",
-        avatarUrl: tracking.creator_avatar_url || undefined,
+        followers: tracking.kol_followers_count || 0,
+        description: tracking.kol_bio || "-",
+        avatarUrl: tracking.kol_avatar_url || undefined,
         isTracking: true,
         createdAt: tracking.updated_at,
         updatedAt: tracking.updated_at,
@@ -102,7 +102,7 @@ export default function KOLPageClient() {
                 loading={isLoadingTrackingKOLs}
               />
             ) : (
-              <TopCreators
+              <TopKols
                 limit={20}
                 showFilters={true}
                 enableInfiniteScroll={true}

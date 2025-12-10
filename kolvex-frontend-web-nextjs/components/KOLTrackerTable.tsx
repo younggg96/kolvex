@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useBreakpoints } from "@/hooks";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { CreatorInfo } from "@/components/ui/creator-info";
+import { KolInfo } from "@/components/ui/kol-info";
 import {
   Table,
   TableBody,
@@ -34,6 +34,7 @@ import { KOL, Platform, formatFollowers, CreateKOLInput } from "@/lib/kolApi";
 import { trackKOL, untrackKOL } from "@/lib/trackedKolApi";
 import type { Platform as DBPlatform } from "@/lib/supabase/database.types";
 import { Trash2, Star } from "lucide-react";
+import Link from "next/link";
 import { toast } from "sonner";
 import { PlatformBadge } from "./ui/platform-badge";
 
@@ -235,7 +236,7 @@ export default function KOLTrackerTable({
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="text-xs">Creator</TableHead>
+                  <TableHead className="text-xs">KOL</TableHead>
                   <TableHead className="text-xs">Platform</TableHead>
                   <TableHead className="text-xs text-center">
                     Followers
@@ -279,24 +280,29 @@ export default function KOLTrackerTable({
               >
                 {/* Header with Avatar, Name and Actions */}
                 <div className="flex items-start gap-3 mb-2">
-                  {/* Avatar */}
-                  <Avatar className="w-10 h-10 flex-shrink-0 ring-1 ring-gray-200 dark:ring-white/10">
-                    <AvatarImage src={kol.avatarUrl || ""} alt={kol.name} />
-                    <AvatarFallback className="text-xs font-bold bg-gray-200 dark:bg-white/10 text-gray-600 dark:text-white/60">
-                      {kol.name.substring(0, 2).toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
+                  {/* Avatar and Name - Clickable */}
+                  <Link
+                    href={`/dashboard/kol/${kol.username}`}
+                    className="flex items-center gap-3 flex-1 min-w-0 hover:opacity-80 transition-opacity"
+                  >
+                    <Avatar className="w-10 h-10 flex-shrink-0 ring-1 ring-gray-200 dark:ring-white/10">
+                      <AvatarImage src={kol.avatarUrl || ""} alt={kol.name} />
+                      <AvatarFallback className="text-xs font-bold bg-gray-200 dark:bg-white/10 text-gray-600 dark:text-white/60">
+                        {kol.name.substring(0, 2).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
 
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-1">
-                      <h3 className="text-sm font-semibold text-gray-900 dark:text-white truncate">
-                        {kol.name}
-                      </h3>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1">
+                        <h3 className="text-sm font-semibold text-gray-900 dark:text-white truncate hover:underline">
+                          {kol.name}
+                        </h3>
+                      </div>
+                      <p className="text-xs text-gray-600 dark:text-white/60 truncate">
+                        {kol.username}
+                      </p>
                     </div>
-                    <p className="text-xs text-gray-600 dark:text-white/60 truncate">
-                      {kol.username}
-                    </p>
-                  </div>
+                  </Link>
                   <div className="flex gap-1 ml-2">
                     <Button
                       variant="ghost"
@@ -343,7 +349,7 @@ export default function KOLTrackerTable({
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="text-xs">Creator</TableHead>
+                <TableHead className="text-xs">KOL</TableHead>
                 <TableHead className="text-xs text-center">Platform</TableHead>
                 <TableHead className="text-xs text-center">Followers</TableHead>
                 <TableHead className="text-xs hidden lg:table-cell">
@@ -366,14 +372,15 @@ export default function KOLTrackerTable({
               ) : (
                 kols.map((kol) => (
                   <TableRow key={kol.id}>
-                    {/* Creator with Avatar */}
+                    {/* KOL with Avatar */}
                     <TableCell className="py-3">
-                      <CreatorInfo
+                      <KolInfo
                         avatarUrl={kol.avatarUrl}
                         name={kol.name}
                         username={kol.username}
                         platform={kol.platform}
                         showPlatformBadge={false}
+                        href={`/dashboard/kol/${kol.username}`}
                       />
                     </TableCell>
                     {/* Platform */}
@@ -418,14 +425,14 @@ export default function KOLTrackerTable({
           <DialogHeader>
             <DialogTitle>Track New KOL</DialogTitle>
             <DialogDescription>
-              Add a creator from our database to your tracking list. You can
-              find creator IDs from the Top Ranking tab.
+              Add a KOL from our database to your tracking list. You can find
+              KOL IDs from the Top Ranking tab.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3 py-3">
             <div className="space-y-1.5">
               <Label htmlFor="username" className="text-xs">
-                Creator ID *
+                KOL ID *
               </Label>
               <Input
                 id="username"
@@ -433,11 +440,11 @@ export default function KOLTrackerTable({
                 onChange={(e) =>
                   setFormData({ ...formData, username: e.target.value })
                 }
-                placeholder="Enter creator ID from database"
+                placeholder="Enter KOL ID from database"
                 className="h-8 text-xs"
               />
               <p className="text-xs text-gray-500 dark:text-white/50">
-                Find creators in the Top Ranking tab and use their ID
+                Find KOLs in the Top Ranking tab and use their ID
               </p>
             </div>
             <div className="space-y-1.5">

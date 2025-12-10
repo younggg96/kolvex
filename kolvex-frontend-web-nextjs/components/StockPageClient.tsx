@@ -95,7 +95,7 @@ export default function StockPageClient() {
     },
     {
       value: "tracked-stocks",
-      label: "Tracked Stocks",
+      label: "Tracking Stocks",
       icon: <Star className="w-3.5 h-3.5" />,
     },
   ];

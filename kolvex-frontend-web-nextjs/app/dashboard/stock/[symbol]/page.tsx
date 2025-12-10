@@ -189,7 +189,7 @@ export default function StockPage({ params }: StockPageProps) {
                               )}
                             />
                             <span className="text-xs">
-                              {isTracked ? "Tracked" : "Track"}
+                              {isTracked ? "Tracking" : "Track"}
                             </span>
                           </Button>
                         </div>
@@ -342,7 +342,7 @@ export default function StockPage({ params }: StockPageProps) {
                                   onClick={() =>
                                     setIsProfileExpanded(!isProfileExpanded)
                                   }
-                                  className="mt-1.5 text-[11px] text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300 font-medium"
+                                  className="mt-1.5 text-[11px] text-primary hover:text-primary/80 font-medium"
                                 >
                                   {isProfileExpanded
                                     ? "Show less"

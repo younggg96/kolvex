@@ -155,3 +155,5 @@ class StatsResponse(BaseModel):
     total_tweets: int
     total_kols: int
 
+
+

@@ -4,10 +4,10 @@ import { createServerSupabaseClient } from "@/lib/supabase/server";
 // Platform type matching the database
 export type Platform = "TWITTER" | "REDDIT" | "YOUTUBE" | "REDNOTE";
 
-export interface Creator {
+export interface Kol {
   id: string;
   platform: Platform;
-  creator_id: string;
+  kol_id: string;
   username: string | null;
   display_name: string;
   avatar_url: string | null;
@@ -31,9 +31,9 @@ export type SortBy =
   | "trending_score"
   | "followers_count";
 
-export interface CreatorsResponse {
+export interface KolsResponse {
   count: number;
-  creators: Creator[];
+  kols: Kol[];
 }
 
 // Backend API base URL
@@ -109,7 +109,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Calculate influence and trending scores based on available data
-    const creatorsWithScores = filteredProfiles.map(
+    const kolsWithScores = filteredProfiles.map(
       (profile: any, index: number) => {
         const followersCount = profile.followers_count || 0;
         const postsCount = profile.posts_count || 0;
@@ -128,7 +128,7 @@ export async function GET(request: NextRequest) {
         return {
           id: profile.id.toString(),
           platform: "TWITTER" as Platform,
-          creator_id: profile.username,
+          kol_id: profile.username,
           username: profile.username,
           display_name: profile.display_name || profile.username,
           avatar_url: profile.avatar_url,
@@ -154,8 +154,8 @@ export async function GET(request: NextRequest) {
       }
     );
 
-    // Sort creators
-    creatorsWithScores.sort((a: Creator, b: Creator) => {
+    // Sort kols
+    kolsWithScores.sort((a: Kol, b: Kol) => {
       let aVal: number = 0;
       let bVal: number = 0;
 
@@ -185,12 +185,12 @@ export async function GET(request: NextRequest) {
     });
 
     // Paginate
-    const total = creatorsWithScores.length;
-    const paginatedCreators = creatorsWithScores.slice(offset, offset + limit);
+    const total = kolsWithScores.length;
+    const paginatedKols = kolsWithScores.slice(offset, offset + limit);
 
-    const responseData: CreatorsResponse = {
+    const responseData: KolsResponse = {
       count: total,
-      creators: paginatedCreators,
+      kols: paginatedKols,
     };
 
     return NextResponse.json(responseData);
@@ -198,10 +198,11 @@ export async function GET(request: NextRequest) {
     console.error("API Error:", error);
     return NextResponse.json(
       {
-        error: "Failed to fetch creators data",
+        error: "Failed to fetch kols data",
         details: error instanceof Error ? error.message : "Unknown error",
       },
       { status: 500 }
     );
   }
 }
+

@@ -14,15 +14,15 @@ export interface TrackedKOL {
   notify: boolean;
   created_at: string;
   updated_at: string;
-  creator_name?: string;
-  creator_avatar_url?: string | null;
-  creator_username?: string;
-  creator_verified?: boolean;
-  creator_bio?: string | null;
-  creator_followers_count?: number;
-  creator_category?: string | null;
-  creator_influence_score?: number;
-  creator_trending_score?: number;
+  kol_name?: string;
+  kol_avatar_url?: string | null;
+  kol_username?: string;
+  kol_verified?: boolean;
+  kol_bio?: string | null;
+  kol_followers_count?: number;
+  kol_category?: string | null;
+  kol_influence_score?: number;
+  kol_trending_score?: number;
 }
 
 export interface CreateTrackedKOLInput {
@@ -39,10 +39,13 @@ export interface UpdateTrackedKOLInput {
 export async function GET(request: NextRequest) {
   try {
     const supabase = await createServerSupabaseClient();
-    
+
     // Check authentication
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+
     if (authError || !user) {
       return NextResponse.json(
         { error: "Unauthorized", details: "Please login to view tracked KOLs" },
@@ -73,7 +76,7 @@ export async function GET(request: NextRequest) {
 
     // Fetch KOL profiles from backend to enrich the data
     let kolProfiles: Map<string, any> = new Map();
-    
+
     try {
       const response = await fetch(
         `${BACKEND_API_URL}/api/v1/kol-tweets/profiles`,
@@ -98,18 +101,19 @@ export async function GET(request: NextRequest) {
     // Enrich subscriptions with profile data
     const enrichedKOLs: TrackedKOL[] = (subscriptions || []).map((sub: any) => {
       const profile = kolProfiles.get(sub.kol_id);
-      
+
       // Calculate influence score if we have profile data
       let influenceScore = 0;
       let trendingScore = 0;
-      
+
       if (profile) {
         const followersCount = profile.followers_count || 0;
         const postsCount = profile.posts_count || 0;
         const followerScore = Math.min(followersCount / 10000000, 1) * 50;
         const postScore = Math.min(postsCount / 50000, 1) * 30;
         const verificationBonus = profile.is_verified ? 20 : 0;
-        influenceScore = Math.round((followerScore + postScore + verificationBonus) * 10) / 10;
+        influenceScore =
+          Math.round((followerScore + postScore + verificationBonus) * 10) / 10;
         trendingScore = Math.round(Math.random() * 50 + 25);
       }
 
@@ -121,15 +125,15 @@ export async function GET(request: NextRequest) {
         notify: sub.notify,
         created_at: sub.created_at,
         updated_at: sub.updated_at || sub.created_at,
-        creator_name: profile?.display_name || profile?.username || sub.kol_id,
-        creator_avatar_url: profile?.avatar_url || null,
-        creator_username: profile?.username || sub.kol_id,
-        creator_verified: profile?.is_verified || false,
-        creator_bio: profile?.bio || null,
-        creator_followers_count: profile?.followers_count || 0,
-        creator_category: null, // Could be enhanced later
-        creator_influence_score: influenceScore,
-        creator_trending_score: trendingScore,
+        kol_name: profile?.display_name || profile?.username || sub.kol_id,
+        kol_avatar_url: profile?.avatar_url || null,
+        kol_username: profile?.username || sub.kol_id,
+        kol_verified: profile?.is_verified || false,
+        kol_bio: profile?.bio || null,
+        kol_followers_count: profile?.followers_count || 0,
+        kol_category: null, // Could be enhanced later
+        kol_influence_score: influenceScore,
+        kol_trending_score: trendingScore,
       };
     });
 
@@ -153,15 +157,15 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createServerSupabaseClient();
-    
+
     // Check authentication
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+
     if (authError || !user) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const body: CreateTrackedKOLInput = await request.json();
@@ -233,12 +237,12 @@ export async function POST(request: NextRequest) {
         notify: newSub.notify,
         created_at: newSub.created_at,
         updated_at: newSub.updated_at || newSub.created_at,
-        creator_name: profile?.display_name || profile?.username || body.kol_id,
-        creator_avatar_url: profile?.avatar_url || null,
-        creator_username: profile?.username || body.kol_id,
-        creator_verified: profile?.is_verified || false,
-        creator_bio: profile?.bio || null,
-        creator_followers_count: profile?.followers_count || 0,
+        kol_name: profile?.display_name || profile?.username || body.kol_id,
+        kol_avatar_url: profile?.avatar_url || null,
+        kol_username: profile?.username || body.kol_id,
+        kol_verified: profile?.is_verified || false,
+        kol_bio: profile?.bio || null,
+        kol_followers_count: profile?.followers_count || 0,
       },
       { status: 201 }
     );
@@ -258,15 +262,15 @@ export async function POST(request: NextRequest) {
 export async function PATCH(request: NextRequest) {
   try {
     const supabase = await createServerSupabaseClient();
-    
+
     // Check authentication
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+
     if (authError || !user) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const body: UpdateTrackedKOLInput & { kol_id: string; platform: Platform } =
@@ -292,7 +296,7 @@ export async function PATCH(request: NextRequest) {
     if (updateError) {
       if (updateError.code === "PGRST116") {
         return NextResponse.json(
-          { error: "Tracked KOL not found" },
+          { error: "Tracking KOL not found" },
           { status: 404 }
         );
       }
@@ -323,15 +327,15 @@ export async function PATCH(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   try {
     const supabase = await createServerSupabaseClient();
-    
+
     // Check authentication
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+
     if (authError || !user) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const searchParams = request.nextUrl.searchParams;

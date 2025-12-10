@@ -11,15 +11,15 @@ export interface TrackedKOL {
   notify: boolean;
   created_at: string;
   updated_at: string;
-  // Creator profile info (joined from backend or fetched separately)
-  creator_name?: string;
-  creator_username?: string;
-  creator_avatar_url?: string;
-  creator_bio?: string;
-  creator_followers_count?: number;
-  creator_verified?: boolean;
-  creator_influence_score?: number;
-  creator_trending_score?: number;
+  // KOL profile info (joined from backend or fetched separately)
+  kol_name?: string;
+  kol_username?: string;
+  kol_avatar_url?: string;
+  kol_bio?: string;
+  kol_followers_count?: number;
+  kol_verified?: boolean;
+  kol_influence_score?: number;
+  kol_trending_score?: number;
 }
 
 interface UseTrackedKOLsReturn {
@@ -61,7 +61,7 @@ export function useTrackedKOLs(): UseTrackedKOLsReturn {
       setIsLoading(true);
       setError(null);
 
-      // Fetch from API to get enriched data with creator profiles
+      // Fetch from API to get enriched data with KOL profiles
       const response = await fetch("/api/my-tracked-kols", {
         method: "GET",
         headers: {
@@ -88,14 +88,14 @@ export function useTrackedKOLs(): UseTrackedKOLsReturn {
           notify: item.notify,
           created_at: item.created_at,
           updated_at: item.updated_at || item.created_at,
-          creator_name: item.creator_name,
-          creator_username: item.creator_username || item.kol_id,
-          creator_avatar_url: item.creator_avatar_url,
-          creator_bio: item.creator_bio,
-          creator_followers_count: item.creator_followers_count,
-          creator_verified: item.creator_verified,
-          creator_influence_score: item.creator_influence_score,
-          creator_trending_score: item.creator_trending_score,
+          kol_name: item.kol_name,
+          kol_username: item.kol_username || item.kol_id,
+          kol_avatar_url: item.kol_avatar_url,
+          kol_bio: item.kol_bio,
+          kol_followers_count: item.kol_followers_count,
+          kol_verified: item.kol_verified,
+          kol_influence_score: item.kol_influence_score,
+          kol_trending_score: item.kol_trending_score,
         })
       );
 
@@ -140,7 +140,7 @@ export function useTrackedKOLs(): UseTrackedKOLsReturn {
           throw insertError;
         }
 
-        // Refresh the list to get updated data with creator info
+        // Refresh the list to get updated data with KOL info
         await fetchTrackedKOLs();
         return true;
       } catch (err) {

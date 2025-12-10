@@ -1,11 +1,12 @@
 "use client";
 
+import Link from "next/link";
 import { Avatar, AvatarImage, AvatarFallback } from "./avatar";
 import { PlatformBadge } from "./platform-badge";
 import { CheckCircle } from "lucide-react";
 import type { Platform } from "@/lib/supabase/database.types";
 
-interface CreatorInfoProps {
+interface KolInfoProps {
   avatarUrl?: string | null;
   name: string;
   username?: string | null;
@@ -13,9 +14,10 @@ interface CreatorInfoProps {
   verified?: boolean;
   showPlatformBadge?: boolean;
   category?: string | null;
+  href?: string;
 }
 
-export function CreatorInfo({
+export function KolInfo({
   avatarUrl,
   name,
   username,
@@ -23,9 +25,10 @@ export function CreatorInfo({
   verified = false,
   showPlatformBadge = true,
   category,
-}: CreatorInfoProps) {
-  return (
-    <div className="flex items-center justify-between w-full gap-2.5">
+  href,
+}: KolInfoProps) {
+  const content = (
+    <div className={`flex items-center justify-between w-full gap-2.5 ${href ? "cursor-pointer hover:opacity-80 transition-opacity" : ""}`}>
       <div className="flex items-center gap-2.5">
         <Avatar className="w-9 h-9 flex-shrink-0 ring-1 ring-gray-200 dark:ring-white/10">
           <AvatarImage src={avatarUrl || ""} alt={name} />
@@ -36,7 +39,7 @@ export function CreatorInfo({
         <div className="flex flex-row gap-1">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-1">
-              <h3 className="text-sm font-semibold text-gray-900 dark:text-white truncate">
+              <h3 className={`text-sm font-semibold text-gray-900 dark:text-white truncate ${href ? "hover:underline" : ""}`}>
                 {name}
               </h3>
               {verified && (
@@ -65,4 +68,11 @@ export function CreatorInfo({
       )}
     </div>
   );
+
+  if (href) {
+    return <Link href={href}>{content}</Link>;
+  }
+
+  return content;
 }
+

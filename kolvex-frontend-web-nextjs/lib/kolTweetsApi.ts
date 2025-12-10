@@ -184,6 +184,36 @@ export interface StockDiscussionsParams {
 }
 
 // ============================================================
+// 新闻相关类型定义
+// ============================================================
+
+export interface NewsArticle {
+  id: number | null;
+  published_at: string;
+  title: string;
+  summary: string;
+  url: string;
+  tags: string[];
+  tickers: string[];
+  source: string;
+  created_at: string | null;
+}
+
+export interface NewsListResponse {
+  articles: NewsArticle[];
+  total: number;
+  page: number;
+  page_size: number;
+  has_more: boolean;
+}
+
+export interface NewsParams {
+  page?: number;
+  page_size?: number;
+  ticker?: string;
+}
+
+// ============================================================
 // API 基础配置
 // ============================================================
 
@@ -291,6 +321,23 @@ export async function getStockDiscussions(
   return fetchAPI<StockDiscussionsResponse>(
     `/stocks/${ticker.toUpperCase()}/discussions${query ? `?${query}` : ""}`
   );
+}
+
+/**
+ * 获取股票相关新闻
+ * @param params 查询参数
+ */
+export async function getStockNews(
+  params: NewsParams = {}
+): Promise<NewsListResponse> {
+  const searchParams = new URLSearchParams();
+
+  if (params.page) searchParams.set("page", String(params.page));
+  if (params.page_size) searchParams.set("page_size", String(params.page_size));
+  if (params.ticker) searchParams.set("ticker", params.ticker.toUpperCase());
+
+  const query = searchParams.toString();
+  return fetchAPI<NewsListResponse>(`/news/${query ? `?${query}` : ""}`);
 }
 
 // ============================================================

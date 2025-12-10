@@ -18,7 +18,7 @@ import { Kol, SortBy } from "@/app/api/kols/route";
 import type { Platform } from "@/lib/supabase/database.types";
 import { trackKOL, untrackKOL } from "@/lib/trackedKolApi";
 import { toast } from "sonner";
-import { Check, Plus, Loader2 } from "lucide-react";
+import { CheckCircle, Check, Plus, Loader2 } from "lucide-react";
 import { useBreakpoints } from "@/hooks";
 import { PLATFORM_CONFIG } from "@/lib/platformConfig";
 import { SortableHeader } from "@/components/ui/sortable-header";
@@ -281,7 +281,6 @@ export default function TopKols({
                   username={kol.username}
                   platform={kol.platform}
                   verified={kol.verified}
-                  href={`/dashboard/kol/${kol.username}`}
                 />
               </div>
 
@@ -378,7 +377,9 @@ export default function TopKols({
                   </TableHeader>
                   <TableBody>
                     {isLoading ? (
-                      [...Array(10)].map((_, i) => <KolTableSkeleton key={i} />)
+                      [...Array(10)].map((_, i) => (
+                        <KolTableSkeleton key={i} />
+                      ))
                     ) : (
                       <>
                         {kols.map((kol, index) => (
@@ -413,7 +414,6 @@ export default function TopKols({
                                 verified={kol.verified}
                                 showPlatformBadge={false}
                                 category={kol.category}
-                                href={`/dashboard/kol/${kol.username}`}
                               />
                             </TableCell>
 

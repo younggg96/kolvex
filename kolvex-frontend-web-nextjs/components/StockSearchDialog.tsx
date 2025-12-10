@@ -173,7 +173,7 @@ export default function StockSearchDialog({
           </div>
         </DialogHeader>
 
-        {/* Tracked Stocks List */}
+        {/* Tracking Stocks List */}
         <div className="max-h-[calc(85vh-140px)] sm:max-h-[460px] overflow-y-auto">
           {trackedStocks.length === 0 ? (
             <div className="flex flex-col items-center justify-center text-center py-20 text-gray-500 dark:text-white/50">
