@@ -33,6 +33,9 @@ import {
   Newspaper,
   ExternalLink,
   Clock,
+  ChevronRight,
+  ChevronUp,
+  ChevronLeft,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import KOLHoverCard from "./KOLHoverCard";
@@ -100,21 +103,21 @@ function ExpandButton({
 }) {
   return (
     <div className="flex flex-col items-center gap-1 min-w-[60px]">
-      <button
+      <Button
+        variant="outline"
+        size="icon"
         onClick={onClick}
         className={cn(
-          "w-10 h-10 rounded-full flex items-center justify-center transition-all",
-          "bg-muted hover:bg-muted/80 ring-2 ring-primary/20 hover:ring-primary/50",
-          showAll && "bg-primary/10 ring-primary/30"
+          "w-10 h-10 !rounded-full flex items-center justify-center transition-all !border-primary/60 hover:!border-primary hover:!bg-primary/20"
         )}
         title={showAll ? "Collapse" : `View all ${totalCount} KOLs`}
       >
         {showAll ? (
-          <ChevronDown className="w-4 h-4 text-primary rotate-180" />
+          <ChevronLeft className="w-4 h-4 text-primary" />
         ) : (
-          <MoreHorizontal className="w-4 h-4 text-primary" />
+          <ChevronRight className="w-4 h-4 text-primary" />
         )}
-      </button>
+      </Button>
       <span className="text-xs text-muted-foreground">
         {showAll ? "Collapse" : `+${totalCount - 7}`}
       </span>

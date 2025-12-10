@@ -84,8 +84,8 @@ export default function RootLayout({
             <Toaster />
           </UserProfileProvider>
         </ThemeProvider>
-        <Analytics />
       </body>
+      <Analytics />
     </html>
   );
 }
