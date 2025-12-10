@@ -41,6 +41,12 @@ export default function Footer() {
           >
             Privacy Policy
           </Link>
+          <Link
+            href="/contact"
+            className={`transition-colors whitespace-nowrap ${textColorClass}`}
+          >
+            Contact Us
+          </Link>
         </div>
       </div>
     </footer>
