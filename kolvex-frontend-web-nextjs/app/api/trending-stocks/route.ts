@@ -46,6 +46,7 @@ export async function GET(request: NextRequest) {
     const sortBy = searchParams.get("sort_by") || "mention_count";
     const sortDirection = searchParams.get("sort_direction") || "desc";
     const minMentions = parseInt(searchParams.get("min_mentions") || "1");
+    const query = searchParams.get("query");
 
     // 调用后端 API
     const backendUrl = new URL(`${API_BASE_URL}/api/v1/stocks/trending`);
@@ -54,6 +55,9 @@ export async function GET(request: NextRequest) {
     backendUrl.searchParams.set("sort_by", sortBy);
     backendUrl.searchParams.set("sort_direction", sortDirection);
     backendUrl.searchParams.set("min_mentions", String(minMentions));
+    if (query) {
+      backendUrl.searchParams.set("query", query);
+    }
 
     const response = await fetch(backendUrl.toString(), {
       headers: {

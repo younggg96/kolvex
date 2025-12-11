@@ -53,3 +53,5 @@ export {
   SheetTitle,
   SheetDescription,
 } from "./sheet";
+export { HeroSection } from "./hero-section";
+export type { HeroSectionProps, FeaturePill } from "./hero-section";

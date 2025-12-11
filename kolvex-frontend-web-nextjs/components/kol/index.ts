@@ -4,4 +4,5 @@ export { default as KOLProfilePageClient } from "./KOLProfilePageClient";
 export { default as KOLTrackerTable } from "./KOLTrackerTable";
 export { default as KOLTweetCard } from "./KOLTweetCard";
 export { default as TopKols } from "./TopKols";
+export { KOLHeroSection } from "./KOLHeroSection";
 

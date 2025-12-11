@@ -17,7 +17,7 @@ interface SortableHeaderProps<T extends string> {
   label: string;
   sortKey: T;
   currentSortKey?: T | null;
-  sortDirection?: "asc" | "desc";
+  sortDirection?: "asc" | "desc" | null;
   onSort: (key: T) => void;
   align?: "left" | "center" | "right";
   className?: string;

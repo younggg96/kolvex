@@ -9,6 +9,7 @@ import { SwitchTab } from "@/components/ui/switch-tab";
 import { KOL } from "@/lib/kolApi";
 import { Star, TrendingUp } from "lucide-react";
 import { useTrackedKOLs } from "@/hooks";
+import { KOLHeroSection } from "./KOLHeroSection";
 
 export default function KOLPageClient() {
   const [activeTab, setActiveTab] = useState<"trackingKOLs" | "ranking">(
@@ -75,14 +76,16 @@ export default function KOLPageClient() {
   );
 
   return (
-    <DashboardLayout title="KOL Tracker">
-      <div className="flex-1 p-2 overflow-y-auto">
-        <div className="space-y-2">
-          {/* Unified KOL Table with Tab Switcher */}
+    <DashboardLayout title="KOL Tracker" showHeader={false}>
+      <div className="relative flex-1 overflow-y-auto bg-background-light dark:bg-background-dark h-full">
+        <div className="absolute inset-0 bg-grid opacity-50 pointer-events-none" />
+        <div className="relative p-4 min-w-0 space-y-6">
+          <KOLHeroSection />
+          {/* KOL Table with Tab Switcher */}
           <SectionCard
             useSectionHeader
-            padding="md"
-            contentClassName="px-4 pb-4"
+            padding="sm"
+            contentClassName="px-3 pb-3"
             headerExtra={
               <SwitchTab
                 options={tabOptions}

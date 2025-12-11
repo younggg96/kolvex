@@ -96,6 +96,7 @@ async def get_trending_stocks(
     ),
     sort_direction: str = Query("desc", description="排序方向: asc, desc"),
     min_mentions: int = Query(1, ge=0, description="最小提及次数，设为0显示所有"),
+    query: str = Query(None, description="搜索关键词，按股票代码过滤"),
 ):
     """
     获取趋势股票列表
@@ -220,6 +221,17 @@ async def get_trending_stocks(
             }
         else:
             filtered_stats = ticker_stats
+
+        # 搜索过滤：按股票代码过滤
+        if query:
+            search_term = query.strip().upper()
+            if search_term.startswith("$"):
+                search_term = search_term[1:]
+            filtered_stats = {
+                k: v
+                for k, v in filtered_stats.items()
+                if search_term in k.upper()
+            }
 
         # 构建结果列表
         stocks_list = []

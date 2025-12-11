@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState } from "react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import TrendingStocksList from "@/components/trending-stocks";
 import TrackedStocksTable from "@/components/stock/TrackedStocksTable";
@@ -9,46 +9,15 @@ import SectionCard from "@/components/layout/SectionCard";
 import { SwitchTab } from "@/components/ui/switch-tab";
 import { Button } from "@/components/ui/button";
 import { Plus, TrendingUp, Star } from "lucide-react";
-import {
-  TrackedStock,
-  createTrackedStock,
-  deleteTrackedStock,
-} from "@/lib/trackedStockApi";
+import { createTrackedStock, deleteTrackedStock } from "@/lib/trackedStockApi";
 import { toast } from "sonner";
+import { SearchInput } from "../ui/search-input";
+import { StockHeroSection } from "./StockHeroSection";
 
 export default function StockPageClient() {
-  const [stocks, setStocks] = useState<TrackedStock[]>([]);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("trending");
-
-  // 将 stocks 转换为 Map 供 TrendingStocksList 使用
-  const trackedStocksMap = useMemo(() => {
-    const map = new Map<string, string>();
-    stocks.forEach((s) => map.set(s.symbol, s.id));
-    return map;
-  }, [stocks]);
-
-  // Load stocks on mount
-  useEffect(() => {
-    loadStocks();
-  }, []);
-
-  // Reload stocks
-  const loadStocks = async () => {
-    try {
-      setIsLoading(true);
-      const response = await fetch("/api/tracked-stocks");
-      if (!response.ok) throw new Error("Failed to fetch stocks");
-      const data = await response.json();
-      setStocks(data);
-    } catch (error) {
-      console.error("Error loading stocks:", error);
-      toast.error("Failed to load watchlist");
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const [searchQuery, setSearchQuery] = useState("");
 
   // Handle stock selection from search dialog
   const handleStockSelect = async (stock: {
@@ -64,7 +33,6 @@ export default function StockPageClient() {
       });
       toast.success("Stock added successfully");
       setIsAddDialogOpen(false);
-      loadStocks();
     } catch (error) {
       toast.error("Failed to add stock");
       console.error(error);
@@ -80,7 +48,6 @@ export default function StockPageClient() {
     try {
       await deleteTrackedStock(stockId);
       toast.success("Stock deleted successfully");
-      loadStocks();
     } catch (error) {
       console.error("Error deleting stock:", error);
       toast.error("Failed to delete stock");
@@ -101,60 +68,53 @@ export default function StockPageClient() {
   ];
 
   return (
-    <DashboardLayout title="Stocks">
-      <div className="flex-1 p-2 overflow-hidden">
-        <SectionCard
-          useSectionHeader={false}
-          padding="md"
-          className="h-full flex flex-col"
-          contentClassName="flex-1 overflow-hidden flex flex-col"
-        >
+    <DashboardLayout title="Stocks" showHeader={false}>
+      <div className="relative flex-1 overflow-y-auto bg-background-light dark:bg-background-dark">
+        <div className="absolute inset-0 bg-grid opacity-50 pointer-events-none" />
+        <div className="relative p-4 min-w-0">
+          <StockHeroSection />
           {/* Header with Tabs and Add Button */}
-          <div className="flex items-center justify-between gap-4 px-4 pt-4 pb-3">
-            <SwitchTab
-              options={tabOptions}
-              value={activeTab}
-              onValueChange={setActiveTab}
-              size="md"
-              variant="pills"
-              className="!w-fit"
-            />
-            {activeTab === "tracked-stocks" && (
-              <Button onClick={openAddDialog} size="sm" variant="ghost">
-                <Plus className="w-3.5 h-3.5" />
-              </Button>
-            )}
-          </div>
+          <div className="space-y-3 mt-6 w-full">
+            <div className="flex items-center justify-between gap-4 w-full">
+              <SwitchTab
+                options={tabOptions}
+                value={activeTab}
+                onValueChange={setActiveTab}
+                size="md"
+                variant="pills"
+                className="!w-fit"
+              />
+              {activeTab === "tracked-stocks" && (
+                <Button onClick={openAddDialog} size="sm" variant="ghost">
+                  <Plus className="w-3.5 h-3.5" />
+                </Button>
+              )}
+              {activeTab === "trending" && (
+                <SearchInput
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-[300px]"
+                  placeholder="Search stocks..."
+                />
+              )}
+            </div>
 
-          {/* Content */}
-          <div className="flex-1 overflow-hidden px-4 pb-4">
-            {activeTab === "trending" ? (
-              <TrendingStocksList
-                fetchFromApi={true}
-                enableInfiniteScroll={true}
-                withCard={false}
-                maxHeight="calc(100vh - 100px)"
-                trackedStocksMap={trackedStocksMap}
-                onTrackedStocksChange={loadStocks}
-              />
-            ) : (
-              <TrackedStocksTable
-                stocks={stocks}
-                onUpdate={loadStocks}
-                loading={isLoading}
-                withCard={false}
-              />
-            )}
+            {/* Content */}
+            <div className="flex-1 overflow-hidden">
+              {activeTab === "trending" ? (
+                <TrendingStocksList searchQuery={searchQuery} />
+              ) : (
+                <TrackedStocksTable />
+              )}
+            </div>
           </div>
-        </SectionCard>
+        </div>
       </div>
-
       {/* Stock Search Dialog */}
       <StockSearchDialog
         open={isAddDialogOpen}
         onOpenChange={setIsAddDialogOpen}
         onSelect={handleStockSelect}
-        trackedStocks={stocks}
         onDelete={handleDeleteStock}
       />
     </DashboardLayout>

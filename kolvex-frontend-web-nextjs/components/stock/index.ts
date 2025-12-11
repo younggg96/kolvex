@@ -9,4 +9,5 @@ export { default as TrackedStocksTable } from "./TrackedStocksTable";
 export { default as TradingViewChart } from "./TradingViewChart";
 export { default as CompanyLogo } from "@/components/stock/CompanyLogo";
 export { default as MiniSparkline } from "@/components/stock/MiniSparkline";
+export { StockHeroSection } from "./StockHeroSection";
 

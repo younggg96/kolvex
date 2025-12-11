@@ -13,7 +13,6 @@ import {
   Check,
   AlertCircle,
   Loader2,
-  MoreHorizontal,
   LogOut,
   ArrowUpRight,
   ArrowDownRight,
@@ -30,8 +29,9 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { PortfolioSkeleton } from "./PortfolioSkeleton";
+import { PortfolioStatsGrid } from "./PortfolioStatsGrid";
 import {
   Table,
   TableBody,
@@ -86,17 +86,10 @@ import type {
   SnapTradeHoldings,
   SnapTradePosition,
 } from "@/lib/supabase/database.types";
+import { PortfolioHeaderActions } from "./PortfolioHeaderActions";
+import type { PortfolioHeaderActionsProps } from "./PortfolioHeaderActions";
 
-export interface PortfolioHeaderActionsProps {
-  syncing: boolean;
-  onSync: () => void;
-  holdings: SnapTradeHoldings | null;
-  onTogglePublic: (isPublic: boolean) => void;
-  onCopyShareLink: () => void;
-  copied: boolean;
-  onConnect: () => void;
-  onDisconnect: () => void;
-}
+export type { PortfolioHeaderActionsProps };
 
 interface PortfolioHoldingsProps {
   userId?: string;
@@ -444,43 +437,7 @@ export default function PortfolioHoldings({
     ) || 0;
 
   if (loading) {
-    return (
-      <div className="space-y-2">
-        {/* Stats Grid Skeleton */}
-        <div className="grid gap-2 grid-cols-2 lg:grid-cols-4">
-          {[...Array(4)].map((_, i) => (
-            <Card key={i} className="relative overflow-hidden">
-              <CardContent className="!p-4">
-                <div className="flex items-center justify-between">
-                  <Skeleton className="h-3 w-20" />
-                  <Skeleton className="h-4 w-4 rounded" />
-                </div>
-                <Skeleton className="h-8 w-28 mt-2" />
-                {i === 1 && <Skeleton className="h-3 w-20 mt-1" />}
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-
-        {/* Account Cards Skeleton */}
-        {[...Array(2)].map((_, i) => (
-          <Card key={i} className="overflow-hidden">
-            <CardHeader className="py-3 px-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <Skeleton className="h-4 w-4" />
-                  <div className="space-y-1.5">
-                    <Skeleton className="h-4 w-32" />
-                    <Skeleton className="h-3 w-16" />
-                  </div>
-                </div>
-                <Skeleton className="h-5 w-20 rounded-full" />
-              </div>
-            </CardHeader>
-          </Card>
-        ))}
-      </div>
-    );
+    return <PortfolioSkeleton />;
   }
 
   // State 1: Not registered
@@ -561,7 +518,7 @@ export default function PortfolioHoldings({
   }
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-3">
       {/* Inline Header Actions (when onHeaderActionsReady is not provided) */}
       {isOwner && !onHeaderActionsReady && status?.is_connected && (
         <PortfolioHeaderActions
@@ -577,84 +534,13 @@ export default function PortfolioHoldings({
       )}
 
       {/* Stats Grid */}
-      <div className="grid gap-2 grid-cols-2 lg:grid-cols-4">
-        <Card className="relative overflow-hidden">
-          <CardContent className="!p-4">
-            <div className="flex items-center justify-between">
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                Total Value
-              </p>
-              <Wallet className="h-4 w-4 text-muted-foreground/50" />
-            </div>
-            <p className="text-2xl font-bold mt-2 tabular-nums">
-              {formatCurrency(totalValue)}
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card
-          className={`relative overflow-hidden ${
-            totalPnL >= 0 ? "bg-green-500" : "bg-red-500"
-          }`}
-        >
-          <CardContent className="!p-4">
-            <div className="flex items-center justify-between">
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                Unrealized P&L
-              </p>
-              {totalPnL >= 0 ? (
-                <TrendingUp className="h-4 w-4 text-green-500" />
-              ) : (
-                <TrendingDown className="h-4 w-4 text-red-500" />
-              )}
-            </div>
-            <p
-              className={`text-2xl font-bold mt-2 tabular-nums ${
-                totalPnL >= 0 ? "text-green-600" : "text-red-600"
-              }`}
-            >
-              {totalPnL >= 0 ? "+" : ""}
-              {formatCurrency(totalPnL)}
-            </p>
-            <p
-              className={`text-xs mt-1 ${
-                pnlPercent >= 0 ? "text-green-600" : "text-red-600"
-              }`}
-            >
-              {pnlPercent >= 0 ? "+" : ""}
-              {formatPercent(pnlPercent)} all time
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="relative overflow-hidden">
-          <CardContent className="!p-4">
-            <div className="flex items-center justify-between">
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                Positions
-              </p>
-              <BarChart3 className="h-4 w-4 text-muted-foreground/50" />
-            </div>
-            <p className="text-2xl font-bold mt-2 tabular-nums">
-              {totalPositions}
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="relative overflow-hidden">
-          <CardContent className="!p-4">
-            <div className="flex items-center justify-between">
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                Accounts
-              </p>
-              <Briefcase className="h-4 w-4 text-muted-foreground/50" />
-            </div>
-            <p className="text-2xl font-bold mt-2 tabular-nums">
-              {holdings?.accounts?.length || 0}
-            </p>
-          </CardContent>
-        </Card>
-      </div>
+      <PortfolioStatsGrid
+        totalValue={totalValue}
+        totalPnL={totalPnL}
+        pnlPercent={pnlPercent}
+        totalPositions={totalPositions}
+        accountsCount={holdings?.accounts?.length || 0}
+      />
 
       {/* Holdings List */}
       <div className="space-y-2">
@@ -1114,99 +1000,6 @@ export default function PortfolioHoldings({
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
-  );
-}
-
-/**
- * Standalone Header Actions component for Portfolio
- * Can be used in DashboardLayout's headerActions prop
- */
-export function PortfolioHeaderActions({
-  syncing,
-  onSync,
-  holdings,
-  onTogglePublic,
-  onCopyShareLink,
-  copied,
-  onConnect,
-  onDisconnect,
-}: PortfolioHeaderActionsProps) {
-  return (
-    <div className="flex items-center gap-2">
-      <span className="text-xs text-muted-foreground hidden sm:inline opacity-60">
-        {holdings?.last_synced_at
-          ? `Updated ${new Date(holdings.last_synced_at).toLocaleTimeString()}`
-          : "Not synced"}
-      </span>
-
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={onSync}
-        disabled={syncing}
-        className="gap-1.5"
-      >
-        <RefreshCw className={`w-3.5 h-3.5 ${syncing ? "animate-spin" : ""}`} />
-        <span className="hidden sm:inline">Sync</span>
-      </Button>
-
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="outline" size="sm">
-            <Settings2 className="w-3.5 h-3.5" />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-56">
-          <div className="px-2 py-1">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4 text-xs">
-                {holdings?.is_public ? (
-                  <Globe className="h-4 w-4 text-green-500" />
-                ) : (
-                  <Lock className="h-4 w-4" />
-                )}
-                <span>Public Profile</span>
-              </div>
-              <Switch
-                checked={holdings?.is_public || false}
-                onCheckedChange={onTogglePublic}
-                size="sm"
-              />
-            </div>
-          </div>
-          {holdings?.is_public && (
-            <DropdownMenuItem onClick={onCopyShareLink}>
-              {copied ? (
-                <Check className="mr-2 h-4 w-4" />
-              ) : (
-                <Copy className="mr-2 h-4 w-4" />
-              )}
-              Copy Share Link
-            </DropdownMenuItem>
-          )}
-          <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={onConnect}>
-            <Link2 className="mr-2 h-4 w-4" />
-            Add Another Broker
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            className="text-destructive focus:text-destructive"
-            onClick={onDisconnect}
-          >
-            <LogOut className="mr-2 h-4 w-4" />
-            Disconnect
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-
-      <Link href="/community">
-        <Button variant="outline" size="sm" className="gap-1.5 group">
-          <Users className="w-3.5 h-3.5" />
-          <span className="hidden sm:inline">Community</span>
-          <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
-        </Button>
-      </Link>
     </div>
   );
 }

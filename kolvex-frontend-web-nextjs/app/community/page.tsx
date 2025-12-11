@@ -22,6 +22,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { HeroSection } from "@/components/ui/hero-section";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import SectionCard from "@/components/layout/SectionCard";
 import { EmptyState } from "@/components/common/EmptyState";
@@ -283,40 +284,39 @@ export default function CommunityPage() {
 
   return (
     <DashboardLayout showHeader={false}>
-      <div className="flex-1 overflow-y-auto bg-background-light dark:bg-background-dark h-full">
+      <div className="relative flex-1 overflow-y-auto bg-background-light dark:bg-background-dark h-full">
+        <div className="absolute inset-0 bg-grid opacity-50 pointer-events-none" />
         <div className="p-4 min-w-0 space-y-6">
           {/* Hero Section */}
-          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary/10 via-primary/5 to-transparent dark:from-primary/20 dark:via-primary/10 dark:to-transparent border border-primary/20 p-6">
-            <div className="absolute inset-0 bg-grid opacity-30" />
-            <div className="relative">
-              <div className="flex items-center gap-2 mb-2">
-                <div>
-                  <h1 className="text-xl font-bold text-gray-900 dark:text-white">
-                    Community Portfolios
-                  </h1>
-                  <p className="text-sm text-gray-600 dark:text-white/60">
-                    Discover and learn from investors who share their holdings
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center gap-6 mt-4">
-                <div className="flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-primary" />
-                  <span className="text-sm text-gray-600 dark:text-white/60">
-                    <span className="font-semibold text-gray-900 dark:text-white">
-                      {total}
-                    </span>{" "}
-                    public portfolios
-                  </span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Eye className="w-4 h-4 text-primary" />
-                  <span className="text-sm text-gray-600 dark:text-white/60">
-                    Transparent & Real-time
-                  </span>
-                </div>
-              </div>
-            </div>
+          <div className="relative">
+            <HeroSection
+              title="Community Portfolios"
+              description="Discover and learn from investors who share their holdings"
+              features={[
+                {
+                  icon: Sparkles,
+                  label: `${total} Public Portfolios`,
+                  iconClassName: "w-3.5 h-3.5 text-primary",
+                },
+                {
+                  icon: Eye,
+                  label: "Transparent & Real-time Tracking",
+                  iconClassName: "w-3.5 h-3.5 text-blue-600 dark:text-blue-400",
+                },
+              ]}
+              actions={
+                <Link href="/dashboard/portfolio">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-2 whitespace-nowrap"
+                  >
+                    <Briefcase className="w-3.5 h-3.5" />
+                    Manage Portfolio
+                  </Button>
+                </Link>
+              }
+            />
           </div>
 
           {/* Loading State */}
@@ -380,27 +380,6 @@ export default function CommunityPage() {
               )}
             </>
           )}
-
-          {/* CTA Section */}
-          <div className="bg-gradient-to-r from-primary/5 to-transparent dark:from-primary/10 rounded-xl p-6 border border-primary/10">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-              <div>
-                <h3 className="font-semibold text-gray-900 dark:text-white mb-1">
-                  Want to share your portfolio?
-                </h3>
-                <p className="text-sm text-gray-600 dark:text-white/60">
-                  Connect your brokerage and enable public sharing to join the
-                  community
-                </p>
-              </div>
-              <Link href="/dashboard/portfolio">
-                <Button className="gap-2 whitespace-nowrap">
-                  <Briefcase className="w-4 h-4" />
-                  Manage Portfolio
-                </Button>
-              </Link>
-            </div>
-          </div>
         </div>
       </div>
     </DashboardLayout>
