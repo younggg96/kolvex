@@ -32,10 +32,10 @@ import {
 import { toast } from "sonner";
 import Image from "next/image";
 import sp500Data from "@/data/sp500.constituents.wikilogo.json";
-import SectionCard from "@/components/SectionCard";
-import CompanyLogo from "@/components/CompanyLogo";
-import ThemeToggle from "@/components/ThemeToggle";
-import LoadingSpinner from "@/components/LoadingSpinner";
+import SectionCard from "@/components/layout/SectionCard";
+import CompanyLogo from "@/components/stock/CompanyLogo";
+import ThemeToggle from "@/components/theme/ThemeToggle";
+import LoadingSpinner from "@/components/common/LoadingSpinner";
 import type {
   NotificationMethod,
   Platform,

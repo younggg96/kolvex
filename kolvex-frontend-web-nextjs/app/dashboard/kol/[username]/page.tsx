@@ -1,5 +1,5 @@
 import { Metadata } from "next";
-import KOLProfilePageClient from "@/components/KOLProfilePageClient";
+import KOLProfilePageClient from "@/components/kol/KOLProfilePageClient";
 
 interface PageProps {
   params: Promise<{ username: string }>;

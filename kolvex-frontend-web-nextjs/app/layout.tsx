@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import { Manrope } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
-import { ThemeProvider } from "@/components/ThemeProvider";
-import { UserProfileProvider } from "@/components/UserProfileProvider";
+import { ThemeProvider } from "@/components/theme/ThemeProvider";
+import { UserProfileProvider } from "@/components/user/UserProfileProvider";
 
 import { Analytics } from "@vercel/analytics/next";
 
@@ -84,8 +84,8 @@ export default function RootLayout({
             <Toaster />
           </UserProfileProvider>
         </ThemeProvider>
+        <Analytics />
       </body>
-      <Analytics />
     </html>
   );
 }

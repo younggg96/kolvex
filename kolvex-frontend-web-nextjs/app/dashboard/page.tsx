@@ -1,7 +1,7 @@
 "use client";
 
-import DashboardLayout from "@/components/DashboardLayout";
-import PostList from "@/components/PostList";
+import DashboardLayout from "@/components/layout/DashboardLayout";
+import PostList from "@/components/tweet/PostList";
 
 export default function Dashboard() {
   return (

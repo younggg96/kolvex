@@ -35,3 +35,6 @@ playwright>=1.40.0
 # 股票数据
 yfinance>=0.2.40
 
+# SnapTrade API
+snaptrade-python-sdk>=11.0.0
+

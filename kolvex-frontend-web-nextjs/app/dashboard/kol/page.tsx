@@ -1,4 +1,4 @@
-import KOLPageClient from "@/components/KOLPageClient";
+import KOLPageClient from "@/components/kol/KOLPageClient";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {

@@ -1,4 +1,4 @@
-import { useUserProfileContext } from "@/components/UserProfileProvider";
+import { useUserProfileContext } from "@/components/user/UserProfileProvider";
 import type {
   UserProfile as DBUserProfile,
   ProfileUpdate,

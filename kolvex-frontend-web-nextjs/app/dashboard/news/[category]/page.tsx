@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import NewsPageClient from "@/components/NewsPageClient";
+import NewsPageClient from "@/components/news/NewsPageClient";
 import type { Metadata } from "next";
 
 // 定义有效的分类

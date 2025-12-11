@@ -1,6 +1,6 @@
 import { Metadata } from "next";
 import { Suspense } from "react";
-import AuthPageClient from "@/components/AuthPageClient";
+import AuthPageClient from "@/components/auth/AuthPageClient";
 
 export const metadata: Metadata = {
   title: "Authentication | Kolvex AI",

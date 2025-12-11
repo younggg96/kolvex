@@ -1,7 +1,7 @@
 "use client";
 
-import DashboardLayout from "@/components/DashboardLayout";
-import SectionCard from "@/components/SectionCard";
+import DashboardLayout from "@/components/layout/DashboardLayout";
+import SectionCard from "@/components/layout/SectionCard";
 import { Star, TrendingUp } from "lucide-react";
 
 export default function KOLTrackerLoading() {

@@ -1,4 +1,4 @@
-import StockPageClient from "@/components/StockPageClient";
+import StockPageClient from "@/components/stock/StockPageClient";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {

@@ -3,12 +3,12 @@
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Star } from "lucide-react";
-import TradingViewChart from "@/components/TradingViewChart";
+import TradingViewChart from "@/components/stock/TradingViewChart";
 import { useStockOverview } from "@/hooks/useStockData";
 import { useTheme } from "next-themes";
-import DashboardLayout from "@/components/DashboardLayout";
+import DashboardLayout from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
-import StockDiscussions from "@/components/StockDiscussions";
+import StockDiscussions from "@/components/stock/StockDiscussions";
 import { formatMarketCap, formatVolume } from "@/lib/stockApi";
 import {
   Accordion,
@@ -16,7 +16,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import StockInfoSkeleton from "@/components/StockInfoSkeleton";
+import StockInfoSkeleton from "@/components/stock/StockInfoSkeleton";
 import {
   checkStockTracked,
   createTrackedStock,

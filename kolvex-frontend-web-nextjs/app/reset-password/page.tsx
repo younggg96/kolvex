@@ -1,5 +1,5 @@
 import { Metadata } from "next";
-import ResetPasswordPageClient from "@/components/ResetPasswordPageClient";
+import ResetPasswordPageClient from "@/components/auth/ResetPasswordPageClient";
 
 export const metadata: Metadata = {
   title: "Reset Password | Kolvex",

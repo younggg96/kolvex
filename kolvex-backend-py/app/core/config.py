@@ -37,6 +37,10 @@ class Settings(BaseSettings):
     # Benzinga API 配置
     BENZINGA_API_KEY: str = ""
     
+    # SnapTrade API 配置
+    SNAPTRADE_CLIENT_ID: str = ""
+    SNAPTRADE_CONSUMER_KEY: str = ""
+    
     # CORS 配置
     ALLOWED_ORIGINS: Union[List[str], str] = (
         "http://localhost:3000,http://localhost:3001"

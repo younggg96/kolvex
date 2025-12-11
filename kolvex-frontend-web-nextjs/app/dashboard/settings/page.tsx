@@ -32,9 +32,9 @@ import {
   Maximize2,
 } from "lucide-react";
 import { toast } from "sonner";
-import DashboardLayout from "@/components/DashboardLayout";
-import SectionCard from "@/components/SectionCard";
-import PricingCard from "@/components/PricingCard";
+import DashboardLayout from "@/components/layout/DashboardLayout";
+import SectionCard from "@/components/layout/SectionCard";
+import PricingCard from "@/components/common/PricingCard";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SwitchTab } from "@/components/ui/switch-tab";
 import {
@@ -59,7 +59,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { createClient } from "@/lib/supabase/client";
-import { ProfileInfoSkeleton } from "@/components/LoadingSkeleton";
+import { ProfileInfoSkeleton } from "@/components/common/LoadingSkeleton";
 import {
   useCurrentUserProfile,
   updateUserTheme,
