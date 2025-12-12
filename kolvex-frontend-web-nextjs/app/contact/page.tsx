@@ -33,7 +33,7 @@ export default function ContactPage() {
               Contact Us
             </h1>
             <p className="text-gray-600 dark:text-gray-400 mb-8 text-lg">
-              Have questions, suggestions, or need support? We're here to help.
+              Have questions, suggestions, or need support? We&apos;re here to help.
               Reach out to us through any of the following channels.
             </p>
 

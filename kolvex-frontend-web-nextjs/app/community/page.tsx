@@ -375,7 +375,7 @@ export default function CommunityPage() {
               {/* End of list */}
               {!hasMore && users.length > 0 && (
                 <div className="text-center py-4 text-sm text-gray-400 dark:text-white/40">
-                  You've reached the end of the list
+                  You&apos;ve reached the end of the list
                 </div>
               )}
             </>

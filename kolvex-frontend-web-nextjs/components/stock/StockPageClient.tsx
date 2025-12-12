@@ -2,10 +2,9 @@
 
 import { useState } from "react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
-import TrendingStocksList from "@/components/trending-stocks";
-import TrackedStocksTable from "@/components/stock/TrackedStocksTable";
+import TrendingStocksTable from "@/components/trending-stocks";
+import TrackedStocksTable from "@/components/tracking-stocks/TrackingStocksTable";
 import StockSearchDialog from "@/components/stock/StockSearchDialog";
-import SectionCard from "@/components/layout/SectionCard";
 import { SwitchTab } from "@/components/ui/switch-tab";
 import { Button } from "@/components/ui/button";
 import { Plus, TrendingUp, Star } from "lucide-react";
@@ -93,7 +92,7 @@ export default function StockPageClient() {
                 <SearchInput
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-[300px]"
+                  className="!w-[300px]"
                   placeholder="Search stocks..."
                 />
               )}
@@ -102,7 +101,7 @@ export default function StockPageClient() {
             {/* Content */}
             <div className="flex-1 overflow-hidden">
               {activeTab === "trending" ? (
-                <TrendingStocksList searchQuery={searchQuery} />
+                <TrendingStocksTable searchQuery={searchQuery} />
               ) : (
                 <TrackedStocksTable />
               )}

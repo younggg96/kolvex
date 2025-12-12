@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import { StockQuote, ChartData, StockOverview } from "@/lib/stockApi";
 
 export function useStockQuote(symbol: string, refreshInterval?: number) {
@@ -108,15 +108,25 @@ export function useChartData(symbol: string, interval: string = "5min") {
   return { data, loading, error };
 }
 
-export function useStockOverview(symbol: string, refreshInterval?: number) {
-  const [data, setData] = useState<StockOverview | null>(null);
-  const [loading, setLoading] = useState(true);
+export function useStockOverview(
+  symbol: string,
+  refreshInterval?: number,
+  initialData?: StockOverview | null
+) {
+  const [data, setData] = useState<StockOverview | null>(initialData ?? null);
+  const [loading, setLoading] = useState(!initialData);
   const [error, setError] = useState<string | null>(null);
+  const dataRef = useRef<StockOverview | null>(initialData ?? null);
+
+  useEffect(() => {
+    dataRef.current = data;
+  }, [data]);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        setLoading(true);
+        // `loading` is "initial loading" only. For background refreshes, keep UI stable.
+        if (!dataRef.current) setLoading(true);
         const response = await fetch(
           `/api/stocks?action=overview&symbol=${symbol}`
         );
@@ -133,6 +143,8 @@ export function useStockOverview(symbol: string, refreshInterval?: number) {
       }
     };
 
+    // If SSR provided initial data, avoid immediately flashing loading state.
+    // Still fetch once to refresh on the client after hydration.
     fetchData();
 
     if (refreshInterval) {

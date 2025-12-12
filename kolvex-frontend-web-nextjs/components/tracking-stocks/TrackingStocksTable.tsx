@@ -103,10 +103,6 @@ function StockRow({
 
       <TableCell className="py-3 hidden md:table-cell">
         <div className="flex flex-col items-center gap-1">
-          <div className="flex items-center gap-1 text-xs text-gray-600 dark:text-white/60">
-            <MessageSquare className="w-3.5 h-3.5 text-gray-400" />
-            <span className="font-medium">{mentionCount}</span>
-          </div>
           {topAuthors.length > 0 && (
             <div className="flex -space-x-2">
               {topAuthors.slice(0, 4).map((author, idx) => (
@@ -132,7 +128,7 @@ function StockRow({
                 </div>
               ))}
               {topAuthors.length > 4 && (
-                <div className="w-6 h-6 rounded-full bg-gray-100 dark:bg-gray-800 ring-2 ring-white dark:ring-gray-900 flex items-center justify-center text-[10px] font-medium">
+                <div className="relative w-6 h-6 rounded-full bg-gray-100 dark:bg-gray-800 ring-2 ring-white dark:ring-gray-900 flex items-center justify-center text-[10px] font-medium">
                   +{topAuthors.length - 4}
                 </div>
               )}

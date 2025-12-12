@@ -976,7 +976,7 @@ export default function PortfolioHoldings({
           <DialogHeader>
             <DialogTitle>Disconnect Broker?</DialogTitle>
             <DialogDescription>
-              This will remove the connection and delete all synced data. You'll
+              This will remove the connection and delete all synced data. You&apos;ll
               need to reconnect to view holdings again.
             </DialogDescription>
           </DialogHeader>

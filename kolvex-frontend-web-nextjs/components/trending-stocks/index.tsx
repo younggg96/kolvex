@@ -33,7 +33,7 @@ interface TrendingStocksListProps {
   searchQuery?: string;
 }
 
-export default function TrendingStocksList({
+export default function TrendingStocksTable({
   searchQuery = "",
 }: TrendingStocksListProps) {
   const [stocks, setStocks] = useState<TrendingStock[]>([]);
@@ -94,13 +94,9 @@ export default function TrendingStocksList({
     fetchStocks(1, sortConfig, searchQuery, true);
   }, [searchQuery]);
 
-  // 排序变化时重新加载
   const handleSort = useCallback(
     (key: SortBy) => {
       setSortConfig((current) => {
-        // 与 PortfolioHoldings 中一致的三段式逻辑：
-        // 同一个字段：desc -> asc -> 清除排序
-        // 新字段：从 desc 开始
         if (current.key === key) {
           if (current.direction === "desc") {
             const newConfig: SortConfig = { key, direction: "asc" };
