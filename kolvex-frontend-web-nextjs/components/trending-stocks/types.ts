@@ -41,6 +41,13 @@ export const getSentimentColor = (score?: number) => {
   return "text-gray-900 dark:text-white";
 };
 
+export const getSentimentText = (score?: number) => {
+  if (!score) return "Neutral";
+  if (score > 50) return "Bullish";
+  if (score < -50) return "Bearish";
+  return "Neutral";
+};
+
 export const getSentimentRingColor = (sentiment?: string | null) => {
   if (!sentiment) return "ring-gray-300 dark:ring-gray-600";
   if (sentiment === "bullish") return "ring-green-400 dark:ring-green-500";

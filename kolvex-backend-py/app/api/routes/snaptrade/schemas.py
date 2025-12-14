@@ -77,10 +77,10 @@ class PublicUserSummary(BaseModel):
     full_name: Optional[str] = None
     avatar_url: Optional[str] = None
     last_synced_at: Optional[str] = None
-    total_value: float = 0
-    total_pnl: float = 0
-    pnl_percent: float = 0
-    positions_count: int = 0
+    total_value: Optional[float] = None  # None if hidden by privacy settings
+    total_pnl: Optional[float] = None  # None if hidden by privacy settings
+    pnl_percent: Optional[float] = None  # None if hidden by privacy settings
+    positions_count: Optional[int] = None  # None if hidden by privacy settings
     top_positions: List[TopPosition] = []
 
 
@@ -95,6 +95,36 @@ class PublicUsersResponse(BaseModel):
 class TogglePublicRequest(BaseModel):
     """Toggle public sharing request"""
     is_public: bool = Field(..., description="Whether to make portfolio public")
+
+
+class TogglePositionVisibilityRequest(BaseModel):
+    """Toggle position visibility request"""
+    is_hidden: bool = Field(..., description="Whether to hide position from public view")
+
+
+class BatchTogglePositionVisibilityRequest(BaseModel):
+    """Batch toggle position visibility request"""
+    position_ids: List[str] = Field(..., description="List of position IDs to update")
+    is_hidden: bool = Field(..., description="Whether to hide positions from public view")
+
+
+class PrivacySettings(BaseModel):
+    """Privacy settings for public portfolio sharing"""
+    show_total_value: Optional[bool] = Field(None, description="Show total portfolio value")
+    show_total_pnl: Optional[bool] = Field(None, description="Show total unrealized P&L")
+    show_pnl_percent: Optional[bool] = Field(None, description="Show P&L percentage")
+    show_positions_count: Optional[bool] = Field(None, description="Show number of positions")
+    show_accounts_count: Optional[bool] = Field(None, description="Show number of accounts")
+    show_shares: Optional[bool] = Field(None, description="Show number of shares per position")
+    show_position_value: Optional[bool] = Field(None, description="Show value per position")
+    show_position_pnl: Optional[bool] = Field(None, description="Show P&L per position")
+    show_position_weight: Optional[bool] = Field(None, description="Show weight percentage per position")
+    show_position_price: Optional[bool] = Field(None, description="Show price per position")
+
+
+class PrivacySettingsResponse(BaseModel):
+    """Privacy settings response"""
+    settings: Dict[str, bool]
 
 
 # ========== Common Schemas ==========

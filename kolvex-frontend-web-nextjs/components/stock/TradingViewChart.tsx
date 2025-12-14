@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
 
 interface TradingViewChartProps {
   symbol: string;
@@ -163,7 +164,7 @@ export default function TradingViewChart({
   return (
     <div className="w-full h-full min-h-[500px] relative">
       {showSkeleton && (
-        <div className="absolute inset-0 flex flex-col gap-3 p-0 bg-white dark:bg-card-dark z-10">
+        <div className="absolute inset-0 flex flex-col gap-3 p-2 bg-white dark:bg-card-dark z-10">
           {/* Chart Header Skeleton */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -209,7 +210,11 @@ export default function TradingViewChart({
       )}
 
       {/* 渲染容器（唯一 ID + ref） */}
-      <div id={idRef.current} ref={containerRef} className="w-full h-full" />
+      <div
+        id={idRef.current}
+        ref={containerRef}
+        className={cn("w-full h-full", { "opacity-0": showSkeleton })}
+      />
     </div>
   );
 }

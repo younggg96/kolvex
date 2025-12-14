@@ -1,10 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import Image from "next/image";
-import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState, ErrorState } from "@/components/common/EmptyState";
 import SectionCard from "@/components/layout/SectionCard";
@@ -13,29 +10,13 @@ import { KOLProfileDetail } from "@/app/api/kol/route";
 import { KOLTweet } from "@/lib/kolTweetsApi";
 import { trackKOL, untrackKOL, isKOLTracked } from "@/lib/trackedKolApi";
 import { toast } from "sonner";
-import {
-  ArrowLeft,
-  BadgeCheck,
-  MapPin,
-  Link as LinkIcon,
-  CalendarDays,
-  Loader2,
-  MessageSquare,
-} from "lucide-react";
-import { SwitchTab } from "@/components/ui/switch-tab";
+import { ArrowLeft, Loader2 } from "lucide-react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
+import KOLAnalysisPanel from "./KOLAnalysisPanel";
+import KOLProfileHeader from "./KOLProfileHeader";
 
 interface KOLProfilePageClientProps {
   username: string;
-}
-
-function formatNumber(num: number): string {
-  if (num >= 1000000) {
-    return `${(num / 1000000).toFixed(1)}M`;
-  } else if (num >= 1000) {
-    return `${(num / 1000).toFixed(1)}K`;
-  }
-  return num.toString();
 }
 
 function formatDate(dateString: string): string {
@@ -275,9 +256,10 @@ export default function KOLProfilePageClient({
       title={profile?.display_name || username}
       headerLeftAction={backButton}
     >
-      <div className="h-full flex flex-col p-2">
+      <div className="h-full flex gap-2 p-2">
+        {/* Left Column - Profile & Tweets */}
         <SectionCard
-          className="flex-1 flex flex-col overflow-hidden"
+          className="flex-1 flex flex-col overflow-hidden lg:max-w-[calc(100%-320px)]"
           contentClassName="p-0"
           scrollable
           onScroll={handleScroll}
@@ -295,175 +277,14 @@ export default function KOLProfilePageClient({
             </div>
           ) : profile ? (
             <div className="mx-auto w-full pb-8">
-              {/* Profile Header Card */}
-              <div className="bg-card">
-                {/* Banner */}
-                <div className="relative w-full h-32 sm:h-48 bg-muted overflow-hidden">
-                  {profile!.banner_url ? (
-                    <Image
-                      src={profile!.banner_url!}
-                      alt="Banner"
-                      fill
-                      className="object-cover"
-                      priority
-                      sizes="(max-width: 768px) 100vw, 896px"
-                    />
-                  ) : (
-                    <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 to-purple-500/20" />
-                  )}
-                </div>
-
-                <div className="px-4 pb-4">
-                  {/* Avatar & Edit/Track Button Row */}
-                  <div className="relative flex justify-between items-end -mt-10 sm:-mt-14 mb-3">
-                    <Avatar className="h-20 w-20 sm:h-28 sm:w-28 border-4 border-background ring-1 ring-black/5 dark:ring-white/10">
-                      <AvatarImage src={profile!.avatar_url || undefined} />
-                      <AvatarFallback className="text-2xl font-bold">
-                        {(profile!.display_name || username)
-                          .substring(0, 2)
-                          .toUpperCase()}
-                      </AvatarFallback>
-                    </Avatar>
-
-                    <div className="flex gap-2 mb-1">
-                      {/* View on X Button */}
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="rounded-full h-8 px-3 gap-1.5"
-                        asChild
-                      >
-                        <a
-                          href={`https://twitter.com/${profile!.username}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                        >
-                          <Image
-                            src="/logo/x.svg"
-                            alt="X"
-                            width={12}
-                            height={12}
-                            className="opacity-70 dark:invert"
-                          />
-                          <span className="hidden sm:inline text-xs">
-                            View on X
-                          </span>
-                        </a>
-                      </Button>
-
-                      {/* Track Button */}
-                      <Button
-                        variant={isTracking ? "default" : "outline"}
-                        size="sm"
-                        className={`rounded-full h-8 px-4 min-w-[90px] ${
-                          isTracking
-                            ? "bg-primary text-primary-foreground hover:bg-primary/90"
-                            : "border-primary text-primary hover:bg-primary/5"
-                        }`}
-                        onClick={handleTrackToggle}
-                        disabled={isTrackLoading}
-                      >
-                        {isTrackLoading ? (
-                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                        ) : isTracking ? (
-                          "Tracking"
-                        ) : (
-                          "Track"
-                        )}
-                      </Button>
-                    </div>
-                  </div>
-
-                  {/* Name & Handle */}
-                  <div className="mb-3">
-                    <div className="flex items-center gap-1.5">
-                      <h2 className="text-xl font-bold text-foreground">
-                        {profile!.display_name || username}
-                      </h2>
-                      {profile!.is_verified && (
-                        <BadgeCheck className="h-5 w-5 text-blue-500" />
-                      )}
-                    </div>
-                    <div className="text-muted-foreground">
-                      @{profile!.username}
-                    </div>
-                  </div>
-
-                  {/* Bio */}
-                  {profile!.bio && (
-                    <p className="text-sm text-foreground mb-3 whitespace-pre-wrap">
-                      {profile!.bio}
-                    </p>
-                  )}
-
-                  {/* Metadata Row */}
-                  <div className="flex flex-wrap gap-x-4 gap-y-2 text-sm text-muted-foreground mb-3">
-                    {profile!.location && (
-                      <div className="flex items-center gap-1">
-                        <MapPin className="h-3.5 w-3.5" />
-                        <span>{profile!.location}</span>
-                      </div>
-                    )}
-                    {profile!.website && (
-                      <div className="flex items-center gap-1">
-                        <LinkIcon className="h-3.5 w-3.5" />
-                        <a
-                          href={
-                            profile!.website!.startsWith("http")
-                              ? profile!.website!
-                              : `https://${profile!.website}`
-                          }
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-primary hover:underline truncate max-w-[200px]"
-                        >
-                          {profile!.website!.replace(/^https?:\/\//, "")}
-                        </a>
-                      </div>
-                    )}
-                    {profile!.join_date && (
-                      <div className="flex items-center gap-1">
-                        <CalendarDays className="h-3.5 w-3.5" />
-                        <span>Joined {profile!.join_date}</span>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Stats Row */}
-                  <div className="flex items-center gap-4 text-sm">
-                    <div className="flex gap-1 hover:underline cursor-pointer">
-                      <span className="font-bold text-foreground">
-                        {formatNumber(profile!.following_count)}
-                      </span>
-                      <span className="text-muted-foreground">Following</span>
-                    </div>
-                    <div className="flex gap-1 hover:underline cursor-pointer">
-                      <span className="font-bold text-foreground">
-                        {formatNumber(profile!.followers_count)}
-                      </span>
-                      <span className="text-muted-foreground">Followers</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Tabs Navigation */}
-                <div className="px-4">
-                  <SwitchTab
-                    options={[
-                      {
-                        label: "Posts",
-                        value: "posts",
-                        icon: <MessageSquare className="w-3.5 h-3.5" />,
-                      },
-                      // Add more tabs here in future (e.g., Media, Replies)
-                    ]}
-                    value={activeTab}
-                    onValueChange={setActiveTab}
-                    variant="underline"
-                    className="w-full justify-start"
-                  />
-                </div>
-              </div>
+              {/* Profile Header */}
+              <KOLProfileHeader
+                profile={profile}
+                username={username}
+                isTracking={isTracking}
+                isTrackLoading={isTrackLoading}
+                onTrackToggle={handleTrackToggle}
+              />
 
               {/* Tweets Feed */}
               <div className="min-h-[200px] p-4">
@@ -504,6 +325,23 @@ export default function KOLProfilePageClient({
             </div>
           ) : null}
         </SectionCard>
+
+        {/* Right Column - Analysis Panel (Desktop Only) */}
+        <div className="hidden lg:block w-[800px] shrink-0">
+          <SectionCard
+            className="h-full flex flex-col overflow-hidden"
+            contentClassName="p-0 flex-1"
+            useSectionHeader={false}
+          >
+            <KOLAnalysisPanel
+              username={username}
+              displayName={profile?.display_name}
+              avatarUrl={profile?.avatar_url}
+              tweets={tweets}
+              isLoading={isLoading}
+            />
+          </SectionCard>
+        </div>
       </div>
     </DashboardLayout>
   );

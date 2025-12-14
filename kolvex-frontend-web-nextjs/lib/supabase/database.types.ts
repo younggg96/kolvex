@@ -90,6 +90,11 @@ export interface SnapTradePosition {
   strike_price?: number;
   expiration_date?: string;
   underlying_symbol?: string;
+  // Calculated fields from API
+  weight_percent?: number; // Portfolio weight percentage (0-100)
+  market_value?: number; // Current market value
+  // Visibility control
+  is_hidden?: boolean; // Whether position is hidden from public view
   created_at: string;
   updated_at: string;
 }
@@ -107,12 +112,32 @@ export interface SnapTradeHoldings {
   is_public: boolean;
   last_synced_at?: string;
   accounts: SnapTradeAccount[];
+  total_value?: number; // Total portfolio value calculated by backend
 }
 
 export interface SnapTradePublicHoldings {
   user_id: string;
   last_synced_at?: string;
   accounts: SnapTradeAccount[];
+  total_value?: number | null; // Total portfolio value (null if hidden)
+  total_pnl?: number | null; // Total P&L (null if hidden)
+  pnl_percent?: number | null; // P&L percentage (null if hidden)
+  positions_count?: number | null; // Number of positions (null if hidden)
+  accounts_count?: number | null; // Number of accounts (null if hidden)
+  privacy_settings?: PrivacySettings; // Privacy settings applied
+}
+
+export interface PrivacySettings {
+  show_total_value: boolean;
+  show_total_pnl: boolean;
+  show_pnl_percent: boolean;
+  show_positions_count: boolean;
+  show_accounts_count: boolean;
+  show_shares: boolean;
+  show_position_value: boolean;
+  show_position_pnl: boolean;
+  show_position_weight: boolean;
+  show_position_price: boolean;
 }
 
 export interface TopPosition {
@@ -127,10 +152,10 @@ export interface PublicUserSummary {
   full_name?: string;
   avatar_url?: string;
   last_synced_at?: string;
-  total_value: number;
-  total_pnl: number;
-  pnl_percent: number;
-  positions_count: number;
+  total_value: number | null; // null if hidden by privacy settings
+  total_pnl: number | null; // null if hidden by privacy settings
+  pnl_percent: number | null; // null if hidden by privacy settings
+  positions_count: number | null; // null if hidden by privacy settings
   top_positions: TopPosition[];
 }
 

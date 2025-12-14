@@ -153,6 +153,10 @@ MIT License - see [LICENSE](LICENSE) file for details
 - Repository: https://github.com/younggg96/kolvex
 - Issues: https://github.com/younggg96/kolvex/issues
 
+## 🧾 Progress Log
+
+- **2025-12-12**: Refactored `TrackingStocksTable` row components into dedicated files under `kolvex-frontend-web-nextjs/components/tracking-stocks/`. Also converted stock detail page to SSR (server `page.tsx` + client interaction boundary).
+
 ---
 
 <a name="chinese"></a>
@@ -295,6 +299,10 @@ MIT License - 详见 [LICENSE](LICENSE) 文件
 
 - 项目地址：https://github.com/younggg96/kolvex
 - 问题反馈：https://github.com/younggg96/kolvex/issues
+
+## 🧾 进度日志
+
+- **2025-12-12**：将 `TrackingStocksTable` 的行/骨架/表头组件拆分为 `kolvex-frontend-web-nextjs/components/tracking-stocks/` 下的独立文件；并将股票详情页改为 SSR（服务端 `page.tsx` + 客户端交互边界）。
 
 ---
 

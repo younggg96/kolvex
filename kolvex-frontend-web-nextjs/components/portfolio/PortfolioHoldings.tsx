@@ -24,6 +24,8 @@ import {
   BarChart3,
   Settings2,
   Users,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -62,11 +64,18 @@ import {
 } from "@/components/ui/collapsible";
 import { SortableHeader } from "@/components/ui/sortable-header";
 import { EmptyState } from "@/components/common/EmptyState";
-import CompanyLogo from "@/components/stock/CompanyLogo";
+import CompanyLogo from "@/components/ui/company-logo";
 import MiniSparkline from "@/components/stock/MiniSparkline";
 
-type EquitySortKey = "symbol" | "price" | "units" | "value" | "pnl";
-type OptionSortKey = "symbol" | "type" | "strike" | "units" | "value" | "pnl";
+type EquitySortKey = "symbol" | "price" | "units" | "value" | "pnl" | "weight";
+type OptionSortKey =
+  | "symbol"
+  | "type"
+  | "strike"
+  | "units"
+  | "value"
+  | "pnl"
+  | "weight";
 import {
   getConnectionStatus,
   getConnectionPortalUrl,
@@ -75,6 +84,7 @@ import {
   getMyHoldings,
   togglePublicSharing,
   disconnectSnapTrade,
+  togglePositionVisibility,
   calculateTotalValue,
   calculateTotalPnL,
   formatCurrency,
@@ -296,6 +306,37 @@ export default function PortfolioHoldings({
     }
   };
 
+  const handleTogglePositionVisibility = async (
+    e: React.MouseEvent,
+    positionId: string,
+    currentlyHidden: boolean
+  ) => {
+    e.stopPropagation();
+    try {
+      await togglePositionVisibility(positionId, !currentlyHidden);
+      // Update local state
+      setHoldings((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          accounts: prev.accounts.map((account) => ({
+            ...account,
+            snaptrade_positions: account.snaptrade_positions?.map((pos) =>
+              pos.id === positionId
+                ? { ...pos, is_hidden: !currentlyHidden }
+                : pos
+            ),
+          })),
+        };
+      });
+      toast.success(
+        currentlyHidden ? "Position now visible" : "Position hidden from public"
+      );
+    } catch (error: any) {
+      toast.error(error.message || "Failed to update visibility");
+    }
+  };
+
   const toggleAccount = (accountId: string) => {
     setExpandedAccounts((prev) => {
       const next = new Set(prev);
@@ -368,6 +409,10 @@ export default function PortfolioHoldings({
           aVal = a.open_pnl || 0;
           bVal = b.open_pnl || 0;
           break;
+        case "weight":
+          aVal = a.weight_percent || 0;
+          bVal = b.weight_percent || 0;
+          break;
       }
       if (typeof aVal === "string" && typeof bVal === "string") {
         return equitySortDir === "asc"
@@ -412,6 +457,10 @@ export default function PortfolioHoldings({
           const bCost = (b.average_purchase_price || 0) * b.units;
           aVal = (a.price || 0) * a.units * 100 - aCost;
           bVal = (b.price || 0) * b.units * 100 - bCost;
+          break;
+        case "weight":
+          aVal = a.weight_percent || 0;
+          bVal = b.weight_percent || 0;
           break;
       }
       if (typeof aVal === "string" && typeof bVal === "string") {
@@ -657,8 +706,26 @@ export default function PortfolioHoldings({
                               onSort={handleEquitySort}
                               align="right"
                               type="amount"
-                              className="pr-4"
                             />
+                            <SortableHeader
+                              label="Weight"
+                              sortKey="weight"
+                              currentSortKey={equitySortKey}
+                              sortDirection={equitySortDir}
+                              onSort={handleEquitySort}
+                              align="right"
+                              type="numeric"
+                              className={
+                                isOwner && holdings?.is_public ? "" : "pr-4"
+                              }
+                            />
+                            {isOwner && holdings?.is_public && (
+                              <TableHead className="w-[50px] pr-4">
+                                <span className="text-xs text-muted-foreground">
+                                  Public
+                                </span>
+                              </TableHead>
+                            )}
                           </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -724,7 +791,7 @@ export default function PortfolioHoldings({
                                   <TableCell className="text-right tabular-nums font-medium">
                                     {formatCurrency(value)}
                                   </TableCell>
-                                  <TableCell className="text-right pr-4">
+                                  <TableCell className="text-right">
                                     <span
                                       className={`inline-flex items-center gap-0.5 tabular-nums font-medium ${
                                         profit
@@ -740,6 +807,59 @@ export default function PortfolioHoldings({
                                       {formatCurrency(Math.abs(pnl))}
                                     </span>
                                   </TableCell>
+                                  <TableCell
+                                    className={`text-right ${
+                                      isOwner && holdings?.is_public
+                                        ? ""
+                                        : "pr-4"
+                                    }`}
+                                  >
+                                    <div className="flex items-center justify-end gap-1.5">
+                                      <div className="w-12 h-1.5 bg-muted rounded-full overflow-hidden">
+                                        <div
+                                          className="h-full bg-primary/60 rounded-full transition-all"
+                                          style={{
+                                            width: `${Math.min(
+                                              pos.weight_percent || 0,
+                                              100
+                                            )}%`,
+                                          }}
+                                        />
+                                      </div>
+                                      <span className="text-xs tabular-nums text-muted-foreground min-w-[36px] text-right">
+                                        {(pos.weight_percent || 0).toFixed(1)}%
+                                      </span>
+                                    </div>
+                                  </TableCell>
+                                  {isOwner && holdings?.is_public && (
+                                    <TableCell className="text-center pr-4">
+                                      <button
+                                        onClick={(e) =>
+                                          handleTogglePositionVisibility(
+                                            e,
+                                            pos.id,
+                                            pos.is_hidden || false
+                                          )
+                                        }
+                                        className={`p-1.5 rounded-md transition-colors ${
+                                          pos.is_hidden
+                                            ? "text-muted-foreground hover:text-foreground hover:bg-muted"
+                                            : "text-green-600 hover:text-green-700 hover:bg-green-50 dark:hover:bg-green-950"
+                                        }`}
+                                        title={
+                                          pos.is_hidden
+                                            ? "Hidden from public - Click to show"
+                                            : "Visible to public - Click to hide"
+                                        }
+                                      >
+                                        {pos.is_hidden ? (
+                                          <EyeOff className="w-4 h-4" />
+                                        ) : (
+                                          <Eye className="w-4 h-4" />
+                                        )}
+                                      </button>
+                                    </TableCell>
+                                  )}
                                 </TableRow>
                               );
                             }
@@ -816,8 +936,26 @@ export default function PortfolioHoldings({
                                 onSort={handleOptionSort}
                                 align="right"
                                 type="amount"
-                                className="pr-4"
                               />
+                              <SortableHeader
+                                label="Weight"
+                                sortKey="weight"
+                                currentSortKey={optionSortKey}
+                                sortDirection={optionSortDir}
+                                onSort={handleOptionSort}
+                                align="right"
+                                type="numeric"
+                                className={
+                                  isOwner && holdings?.is_public ? "" : "pr-4"
+                                }
+                              />
+                              {isOwner && holdings?.is_public && (
+                                <TableHead className="w-[50px] pr-4">
+                                  <span className="text-xs text-muted-foreground">
+                                    Public
+                                  </span>
+                                </TableHead>
+                              )}
                             </TableRow>
                           </TableHeader>
                           <TableBody>
@@ -913,7 +1051,7 @@ export default function PortfolioHoldings({
                                     <TableCell className="text-center tabular-nums font-medium">
                                       {formatCurrency(value)}
                                     </TableCell>
-                                    <TableCell className="text-right pr-4">
+                                    <TableCell className="text-right">
                                       <span
                                         className={`inline-flex items-center gap-0.5 tabular-nums font-medium ${
                                           profit
@@ -929,6 +1067,60 @@ export default function PortfolioHoldings({
                                         {formatCurrency(Math.abs(pnl))}
                                       </span>
                                     </TableCell>
+                                    <TableCell
+                                      className={`text-right ${
+                                        isOwner && holdings?.is_public
+                                          ? ""
+                                          : "pr-4"
+                                      }`}
+                                    >
+                                      <div className="flex items-center justify-end gap-1.5">
+                                        <div className="w-12 h-1.5 bg-muted rounded-full overflow-hidden">
+                                          <div
+                                            className="h-full bg-primary/60 rounded-full transition-all"
+                                            style={{
+                                              width: `${Math.min(
+                                                pos.weight_percent || 0,
+                                                100
+                                              )}%`,
+                                            }}
+                                          />
+                                        </div>
+                                        <span className="text-xs tabular-nums text-muted-foreground min-w-[36px] text-right">
+                                          {(pos.weight_percent || 0).toFixed(1)}
+                                          %
+                                        </span>
+                                      </div>
+                                    </TableCell>
+                                    {isOwner && holdings?.is_public && (
+                                      <TableCell className="text-center pr-4">
+                                        <button
+                                          onClick={(e) =>
+                                            handleTogglePositionVisibility(
+                                              e,
+                                              pos.id,
+                                              pos.is_hidden || false
+                                            )
+                                          }
+                                          className={`p-1.5 rounded-md transition-colors ${
+                                            pos.is_hidden
+                                              ? "text-muted-foreground hover:text-foreground hover:bg-muted"
+                                              : "text-green-600 hover:text-green-700 hover:bg-green-50 dark:hover:bg-green-950"
+                                          }`}
+                                          title={
+                                            pos.is_hidden
+                                              ? "Hidden from public - Click to show"
+                                              : "Visible to public - Click to hide"
+                                          }
+                                        >
+                                          {pos.is_hidden ? (
+                                            <EyeOff className="w-4 h-4" />
+                                          ) : (
+                                            <Eye className="w-4 h-4" />
+                                          )}
+                                        </button>
+                                      </TableCell>
+                                    )}
                                   </TableRow>
                                 );
                               }
@@ -976,8 +1168,8 @@ export default function PortfolioHoldings({
           <DialogHeader>
             <DialogTitle>Disconnect Broker?</DialogTitle>
             <DialogDescription>
-              This will remove the connection and delete all synced data. You&apos;ll
-              need to reconnect to view holdings again.
+              This will remove the connection and delete all synced data.
+              You&apos;ll need to reconnect to view holdings again.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="gap-2">

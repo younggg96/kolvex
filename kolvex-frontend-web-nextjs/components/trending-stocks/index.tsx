@@ -18,6 +18,7 @@ import {
   NoMoreDataRow,
   EmptyRow,
 } from "./TrendingStockSkeleton";
+import { SectionCard } from "../layout";
 
 const PAGE_SIZE = 10;
 const SCROLL_THRESHOLD = 100;
@@ -42,8 +43,8 @@ export default function TrendingStocksTable({
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [sortConfig, setSortConfig] = useState<SortConfig>({
-    key: null,
-    direction: null,
+    key: "trending_score",
+    direction: "desc",
   });
   const isFetching = useRef(false);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -150,10 +151,12 @@ export default function TrendingStocksTable({
   const COL_SPAN = 10;
 
   return (
-    <div
-      ref={scrollRef}
+    <SectionCard
+      padding="none"
+      useSectionHeader={false}
+      scrollable
+      contentClassName="h-full max-h-[600px] overflow-y-auto custom-scrollbar"
       onScroll={handleScroll}
-      className="h-full max-h-[600px] overflow-y-auto border border-gray-200 dark:border-white/10 rounded-md"
     >
       <Table>
         <TableHeader className="sticky top-0 bg-white dark:bg-card-dark z-10">
@@ -231,7 +234,7 @@ export default function TrendingStocksTable({
           )}
         </TableBody>
       </Table>
-    </div>
+    </SectionCard>
   );
 }
 

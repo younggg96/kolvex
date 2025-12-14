@@ -12,7 +12,7 @@ async function proxyRequest(
   request: NextRequest,
   path: string,
   options: {
-    method: "GET" | "POST" | "DELETE";
+    method: "GET" | "POST" | "PUT" | "DELETE";
     requireAuth?: boolean;
     hasBody?: boolean;
   }
@@ -105,6 +105,10 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       );
     }
 
+    case "privacy-settings":
+      // /api/snaptrade/privacy-settings - get privacy settings
+      return proxyRequest(request, "/privacy-settings", { method: "GET" });
+
     default:
       return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
@@ -142,6 +146,25 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     case "toggle-public":
       return proxyRequest(request, "/toggle-public", {
         method: "POST",
+        hasBody: true,
+      });
+
+    default:
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+}
+
+/**
+ * PUT handler
+ * - /api/snaptrade/privacy-settings -> PUT /privacy-settings
+ */
+export async function PUT(request: NextRequest, { params }: RouteParams) {
+  const { path } = await params;
+
+  switch (path[0]) {
+    case "privacy-settings":
+      return proxyRequest(request, "/privacy-settings", {
+        method: "PUT",
         hasBody: true,
       });
 

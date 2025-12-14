@@ -26,7 +26,7 @@ import { HeroSection } from "@/components/ui/hero-section";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import SectionCard from "@/components/layout/SectionCard";
 import { EmptyState } from "@/components/common/EmptyState";
-import CompanyLogo from "@/components/stock/CompanyLogo";
+import CompanyLogo from "@/components/ui/company-logo";
 import {
   getPublicUsers,
   formatCurrency,
@@ -90,7 +90,7 @@ function RankBadge({ rank }: { rank: number }) {
 
 function UserCard({ user, rank }: { user: PublicUserSummary; rank: number }) {
   const router = useRouter();
-  const isProfit = user.total_pnl >= 0;
+  const isProfit = (user.total_pnl ?? 0) >= 0;
   const displayName = user.full_name || user.username || "Investor";
   const initials = displayName
     .split(" ")
@@ -98,6 +98,12 @@ function UserCard({ user, rank }: { user: PublicUserSummary; rank: number }) {
     .join("")
     .toUpperCase()
     .slice(0, 2);
+
+  // Check if values are hidden (null)
+  const hasValue = user.total_value !== null;
+  const hasPnl = user.total_pnl !== null;
+  const hasPnlPercent = user.pnl_percent !== null;
+  const hasPositionsCount = user.positions_count !== null;
 
   return (
     <div
@@ -143,44 +149,56 @@ function UserCard({ user, rank }: { user: PublicUserSummary; rank: number }) {
             Portfolio Value
           </p>
           <p className="text-lg font-bold text-gray-900 dark:text-white tabular-nums">
-            {formatCurrency(user.total_value)}
+            {hasValue ? formatCurrency(user.total_value!) : "—"}
           </p>
         </div>
         <div
           className={`rounded-lg p-3 ${
-            isProfit
-              ? "bg-green-50 dark:bg-green-500/10"
-              : "bg-red-50 dark:bg-red-500/10"
+            hasPnl
+              ? isProfit
+                ? "bg-green-50 dark:bg-green-500/10"
+                : "bg-red-50 dark:bg-red-500/10"
+              : "bg-gray-50 dark:bg-white/5"
           }`}
         >
           <p className="text-[10px] text-gray-500 dark:text-white/50 uppercase tracking-wider mb-1 font-medium">
             Total P&L
           </p>
-          <div className="flex items-center gap-1">
-            {isProfit ? (
-              <ArrowUpRight className="w-4 h-4 text-green-600 dark:text-green-400" />
-            ) : (
-              <ArrowDownRight className="w-4 h-4 text-red-600 dark:text-red-400" />
-            )}
-            <p
-              className={`text-lg font-bold tabular-nums ${
-                isProfit
-                  ? "text-green-600 dark:text-green-400"
-                  : "text-red-600 dark:text-red-400"
-              }`}
-            >
-              {formatCurrency(Math.abs(user.total_pnl))}
+          {hasPnl ? (
+            <>
+              <div className="flex items-center gap-1">
+                {isProfit ? (
+                  <ArrowUpRight className="w-4 h-4 text-green-600 dark:text-green-400" />
+                ) : (
+                  <ArrowDownRight className="w-4 h-4 text-red-600 dark:text-red-400" />
+                )}
+                <p
+                  className={`text-lg font-bold tabular-nums ${
+                    isProfit
+                      ? "text-green-600 dark:text-green-400"
+                      : "text-red-600 dark:text-red-400"
+                  }`}
+                >
+                  {formatCurrency(Math.abs(user.total_pnl!))}
+                </p>
+              </div>
+              {hasPnlPercent && (
+                <p
+                  className={`text-[10px] ${
+                    isProfit
+                      ? "text-green-600 dark:text-green-400"
+                      : "text-red-600 dark:text-red-400"
+                  }`}
+                >
+                  {formatPercent(user.pnl_percent!)}
+                </p>
+              )}
+            </>
+          ) : (
+            <p className="text-lg font-bold text-gray-400 dark:text-white/40 tabular-nums">
+              —
             </p>
-          </div>
-          <p
-            className={`text-[10px] ${
-              isProfit
-                ? "text-green-600 dark:text-green-400"
-                : "text-red-600 dark:text-red-400"
-            }`}
-          >
-            {formatPercent(user.pnl_percent)}
-          </p>
+          )}
         </div>
       </div>
 
@@ -188,7 +206,9 @@ function UserCard({ user, rank }: { user: PublicUserSummary; rank: number }) {
       <div className="flex items-center gap-2 mb-3">
         <Briefcase className="w-3.5 h-3.5 text-gray-400 dark:text-white/40" />
         <span className="text-xs text-gray-500 dark:text-white/50">
-          {user.positions_count} positions
+          {hasPositionsCount
+            ? `${user.positions_count} positions`
+            : "— positions"}
         </span>
       </div>
 

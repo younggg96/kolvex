@@ -10,6 +10,7 @@ import type {
   SnapTradeAccount,
   PublicUserSummary,
   PublicUsersResponse,
+  PrivacySettings,
 } from "@/lib/supabase/database.types";
 
 const API_PREFIX = "/api/snaptrade";
@@ -150,6 +151,73 @@ export async function disconnectSnapTrade(): Promise<{
   return apiRequest<{ message: string; success: boolean }>("/disconnect", {
     method: "DELETE",
   });
+}
+
+// ========== Position Visibility ==========
+
+/**
+ * Toggle visibility of a single position
+ * @param positionId Position ID to toggle
+ * @param isHidden Whether to hide the position from public view
+ */
+export async function togglePositionVisibility(
+  positionId: string,
+  isHidden: boolean
+): Promise<{ message: string; success: boolean }> {
+  return apiRequest<{ message: string; success: boolean }>(
+    `/positions/${positionId}/visibility`,
+    {
+      method: "POST",
+      body: JSON.stringify({ is_hidden: isHidden }),
+    }
+  );
+}
+
+/**
+ * Batch toggle visibility of multiple positions
+ * @param positionIds Array of position IDs to toggle
+ * @param isHidden Whether to hide the positions from public view
+ */
+export async function batchTogglePositionVisibility(
+  positionIds: string[],
+  isHidden: boolean
+): Promise<{ message: string; success: boolean }> {
+  return apiRequest<{ message: string; success: boolean }>(
+    "/positions/visibility/batch",
+    {
+      method: "POST",
+      body: JSON.stringify({ position_ids: positionIds, is_hidden: isHidden }),
+    }
+  );
+}
+
+// ========== Privacy Settings ==========
+
+/**
+ * Get current privacy settings
+ */
+export async function getPrivacySettings(): Promise<PrivacySettings> {
+  const result = await apiRequest<{ settings: PrivacySettings }>(
+    "/privacy-settings"
+  );
+  return result.settings;
+}
+
+/**
+ * Update privacy settings
+ * @param settings Partial settings to update
+ */
+export async function updatePrivacySettings(
+  settings: Partial<PrivacySettings>
+): Promise<PrivacySettings> {
+  const result = await apiRequest<{ settings: PrivacySettings }>(
+    "/privacy-settings",
+    {
+      method: "PUT",
+      body: JSON.stringify(settings),
+    }
+  );
+  return result.settings;
 }
 
 // ========== Helper Functions ==========

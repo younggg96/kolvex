@@ -211,6 +211,7 @@ export interface NewsParams {
   page?: number;
   page_size?: number;
   ticker?: string;
+  tag?: string;
 }
 
 // ============================================================
@@ -335,6 +336,7 @@ export async function getStockNews(
   if (params.page) searchParams.set("page", String(params.page));
   if (params.page_size) searchParams.set("page_size", String(params.page_size));
   if (params.ticker) searchParams.set("ticker", params.ticker.toUpperCase());
+  if (params.tag) searchParams.set("tag", params.tag);
 
   const query = searchParams.toString();
   return fetchAPI<NewsListResponse>(`/news/${query ? `?${query}` : ""}`);

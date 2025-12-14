@@ -8,7 +8,7 @@ import StockSearchDialog from "@/components/stock/StockSearchDialog";
 import { SwitchTab } from "@/components/ui/switch-tab";
 import { Button } from "@/components/ui/button";
 import { Plus, TrendingUp, Star } from "lucide-react";
-import { createTrackedStock, deleteTrackedStock } from "@/lib/trackedStockApi";
+import { createTrackedStock } from "@/lib/trackedStockApi";
 import { toast } from "sonner";
 import { SearchInput } from "../ui/search-input";
 import { StockHeroSection } from "./StockHeroSection";
@@ -40,17 +40,6 @@ export default function StockPageClient() {
 
   const openAddDialog = () => {
     setIsAddDialogOpen(true);
-  };
-
-  // Handle delete stock
-  const handleDeleteStock = async (stockId: string) => {
-    try {
-      await deleteTrackedStock(stockId);
-      toast.success("Stock deleted successfully");
-    } catch (error) {
-      console.error("Error deleting stock:", error);
-      toast.error("Failed to delete stock");
-    }
   };
 
   const tabOptions = [
@@ -92,8 +81,8 @@ export default function StockPageClient() {
                 <SearchInput
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="!w-[300px]"
                   placeholder="Search stocks..."
+                  containerClassName="w-full max-w-[300px]"
                 />
               )}
             </div>
@@ -114,7 +103,6 @@ export default function StockPageClient() {
         open={isAddDialogOpen}
         onOpenChange={setIsAddDialogOpen}
         onSelect={handleStockSelect}
-        onDelete={handleDeleteStock}
       />
     </DashboardLayout>
   );

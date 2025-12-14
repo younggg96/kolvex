@@ -18,7 +18,7 @@ import { Kol, SortBy } from "@/app/api/kols/route";
 import type { Platform } from "@/lib/supabase/database.types";
 import { trackKOL, untrackKOL } from "@/lib/trackedKolApi";
 import { toast } from "sonner";
-import { CheckCircle, Check, Plus, Loader2 } from "lucide-react";
+import { CheckCircle, Check, Plus, Loader2, Star } from "lucide-react";
 import { useBreakpoints } from "@/hooks";
 import { PLATFORM_CONFIG } from "@/lib/platformConfig";
 import { SortableHeader } from "@/components/ui/sortable-header";
@@ -377,9 +377,7 @@ export default function TopKols({
                   </TableHeader>
                   <TableBody>
                     {isLoading ? (
-                      [...Array(10)].map((_, i) => (
-                        <KolTableSkeleton key={i} />
-                      ))
+                      [...Array(10)].map((_, i) => <KolTableSkeleton key={i} />)
                     ) : (
                       <>
                         {kols.map((kol, index) => (
@@ -458,10 +456,10 @@ export default function TopKols({
                                 size="xs"
                                 onClick={() => handleTrackToggle(kol)}
                                 disabled={loadingStates[kol.kol_id]}
-                                className={`min-w-[80px] transition-all text-xs ${
+                                className={`min-w-[80px] transition-all text-xs !border-yellow-500 ${
                                   trackingStates[kol.kol_id]
-                                    ? "bg-primary hover:bg-primary/90 text-white shadow-sm"
-                                    : "border-gray-300 dark:border-white/20 hover:bg-gray-100 dark:hover:bg-white/10"
+                                    ? "bg-yellow-500 hover:bg-yellow-500/90 text-white shadow-sm"
+                                    : "border-yellow-500 hover:bg-yellow-500/40 text-yellow-500"
                                 }`}
                               >
                                 {loadingStates[kol.kol_id] ? (
@@ -471,12 +469,12 @@ export default function TopKols({
                                   </>
                                 ) : trackingStates[kol.kol_id] ? (
                                   <>
-                                    <Check className="w-3.5 h-3.5 mr-1.5" />
+                                    <Star className="w-3.5 h-3.5 mr-1.5 fill-yellow-500" />
                                     Tracking
                                   </>
                                 ) : (
                                   <>
-                                    <Plus className="w-3.5 h-3.5 mr-1.5" />
+                                    <Star className="w-3.5 h-3.5 mr-1.5 text-yellow-500" />
                                     Track
                                   </>
                                 )}

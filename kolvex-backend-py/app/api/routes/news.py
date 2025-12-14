@@ -29,7 +29,7 @@ router = APIRouter(prefix="/news", tags=["News"])
 
 
 class SchedulerStatus:
-    """定时任务状态"""
+    """KOL 标的新闻定时任务状态"""
 
     last_run_at: Optional[datetime] = None
     last_run_tickers: List[str] = []
@@ -41,6 +41,23 @@ class SchedulerStatus:
 
 
 scheduler_status = SchedulerStatus()
+
+
+class BulkNewsSchedulerStatus:
+    """批量新闻定时任务状态"""
+
+    is_enabled: bool = False
+    is_running: bool = False
+    last_run_at: Optional[datetime] = None
+    last_run_fetched: int = 0
+    last_run_saved: int = 0
+    last_run_duration_seconds: float = 0.0
+    next_run_at: Optional[datetime] = None
+    error_message: Optional[str] = None
+    interval_hours: int = 1
+
+
+bulk_news_scheduler_status = BulkNewsSchedulerStatus()
 
 
 # ============================================================
@@ -107,6 +124,44 @@ class FetchAllKOLTickersResponse(BaseModel):
     duration_seconds: float
 
 
+class FetchBulkNewsResponse(BaseModel):
+    """批量获取全量新闻响应"""
+
+    success: bool
+    message: str
+    total_articles_fetched: int
+    total_articles_saved: int
+    time_periods: List[dict] = Field(
+        default_factory=list, description="每个时间段的获取详情"
+    )
+    start_time: str
+    end_time: str
+    duration_seconds: float
+
+
+class BulkNewsSchedulerStatusResponse(BaseModel):
+    """批量新闻定时任务状态响应"""
+
+    is_enabled: bool = Field(..., description="定时任务是否已启用")
+    is_running: bool = Field(..., description="是否正在执行")
+    last_run_at: Optional[str] = Field(None, description="上次执行时间")
+    last_run_fetched: int = Field(0, description="上次获取的文章数")
+    last_run_saved: int = Field(0, description="上次保存的文章数")
+    last_run_duration_seconds: float = Field(0.0, description="上次执行耗时")
+    next_run_at: Optional[str] = Field(None, description="下次执行时间")
+    interval_hours: int = Field(1, description="执行间隔（小时）")
+    error_message: Optional[str] = Field(None, description="错误信息")
+
+
+class SchedulerControlResponse(BaseModel):
+    """定时任务控制响应"""
+
+    success: bool
+    message: str
+    is_enabled: bool
+    next_run_at: Optional[str] = None
+
+
 # ============================================================
 # 辅助函数
 # ============================================================
@@ -128,31 +183,51 @@ async def save_articles_to_db(articles: List[NewsArticle]) -> int:
     supabase = get_supabase_service()
     saved_count = 0
 
+    # 批量 upsert：显著减少 Supabase 往返次数，避免逐条写入导致慢/容易触发限流
+    payload: List[dict] = []
     for article in articles:
-        try:
-            data = {
+        # URL 是唯一键；缺失 URL 的数据无法去重，也无法写入（schema: url NOT NULL UNIQUE）
+        if not article.url:
+            continue
+        payload.append(
+            {
                 "published_at": article.published_at,
                 "title": article.title,
                 "summary": article.summary,
                 "url": article.url,
                 "tags": article.tags,
-                "tickers": article.tickers,
+                "tickers": [
+                    t.upper()
+                    for t in (article.tickers or [])
+                    if isinstance(t, str) and t
+                ],
                 "source": "benzinga",
             }
+        )
 
-            # 使用 upsert 避免重复 (基于 URL 唯一性)
+    if not payload:
+        return 0
+
+    # 单个 ticker 最大 50 篇；这里仍做 chunk 以防未来调大 limit 或其他调用复用
+    chunk_size = 200
+    for i in range(0, len(payload), chunk_size):
+        chunk = payload[i : i + chunk_size]
+        try:
             result = (
                 supabase.table("news_articles")
-                .upsert(data, on_conflict="url")
+                .upsert(chunk, on_conflict="url")
                 .execute()
             )
 
-            if result.data:
-                saved_count += 1
-
+            # supabase-py 通常会返回写入后的行数据；但在某些配置下可能为空数组
+            if getattr(result, "data", None) is not None:
+                saved_count += len(result.data or [])
+            else:
+                # 无返回数据时，保守认为写入成功（若失败通常会抛异常）
+                saved_count += len(chunk)
         except Exception as e:
-            logger.error(f"保存文章失败: {article.title[:50]}... - {e}")
-            continue
+            # 记录更完整的错误信息，便于定位 RLS/key/schema 问题
+            logger.exception(f"批量保存新闻失败 (chunk={i}-{i+len(chunk)-1}): {e}")
 
     return saved_count
 
@@ -161,15 +236,33 @@ def db_row_to_response(row: dict) -> NewsArticleResponse:
     """将数据库行转换为 API 响应模型"""
     return NewsArticleResponse(
         id=row.get("id"),
-        published_at=row.get("published_at", ""),
+        published_at=str(row.get("published_at") or ""),
         title=row.get("title", ""),
-        summary=row.get("summary", ""),
+        summary=str(row.get("summary") or ""),
         url=row.get("url", ""),
         tags=row.get("tags") or [],
         tickers=row.get("tickers") or [],
         source=row.get("source", "benzinga"),
         created_at=row.get("created_at"),
     )
+
+
+def _normalize_ticker(raw: str) -> Optional[str]:
+    """
+    清理并验证 ticker 格式
+    - 去掉 $ 符号
+    - 只保留 1-5 位大写字母的标准 ticker
+    """
+    import re
+
+    if not raw:
+        return None
+    # 去掉 $ 符号和空格
+    cleaned = raw.strip().lstrip("$").upper()
+    # 标准 ticker: 1-5 位大写字母
+    if re.match(r"^[A-Z]{1,5}$", cleaned):
+        return cleaned
+    return None
 
 
 async def get_all_kol_mentioned_tickers() -> List[str]:
@@ -201,8 +294,9 @@ async def get_all_kol_mentioned_tickers() -> List[str]:
                     continue
             if isinstance(tickers, list):
                 for ticker in tickers:
-                    if ticker and isinstance(ticker, str):
-                        all_tickers.add(ticker.upper())
+                    normalized = _normalize_ticker(ticker)
+                    if normalized:
+                        all_tickers.add(normalized)
 
     return sorted(list(all_tickers))
 
@@ -246,6 +340,7 @@ async def get_news_list(
     page: int = Query(1, ge=1, description="页码"),
     page_size: int = Query(20, ge=1, le=100, description="每页数量"),
     ticker: Optional[str] = Query(None, description="按股票代码筛选"),
+    tag: Optional[str] = Query(None, description="按标签筛选"),
 ):
     """
     获取数据库中的新闻列表
@@ -253,6 +348,7 @@ async def get_news_list(
     - **page**: 页码，从 1 开始
     - **page_size**: 每页数量，默认 20
     - **ticker**: 可选，按股票代码筛选
+    - **tag**: 可选，按标签筛选
     """
     try:
         supabase = get_supabase_service()
@@ -262,6 +358,9 @@ async def get_news_list(
 
         if ticker:
             query = query.contains("tickers", [ticker.upper()])
+        
+        if tag:
+            query = query.contains("tags", [tag])
 
         result = (
             query.order("published_at", desc=True)
@@ -443,6 +542,104 @@ async def fetch_all_kol_tickers_news(
         raise HTTPException(status_code=500, detail=f"获取失败: {str(e)}")
 
 
+@router.post(
+    "/fetch-bulk",
+    response_model=FetchBulkNewsResponse,
+    summary="批量获取全量新闻",
+)
+async def fetch_bulk_news(
+    days: int = Query(30, ge=1, le=90, description="获取最近多少天的新闻"),
+    batch_size: int = Query(100, ge=10, le=500, description="每批获取的新闻数量"),
+    batch_days: int = Query(7, ge=1, le=14, description="每批覆盖的天数"),
+):
+    """
+    批量获取 Benzinga 全量新闻并保存到数据库
+
+    此端点不按 ticker 过滤，直接获取所有新闻，能获取更多独特的文章。
+
+    工作方式：
+    1. 将时间范围分成多个批次（每批 batch_days 天）
+    2. 对每个时间段调用 Benzinga API
+    3. 将所有新闻保存到数据库（自动去重）
+
+    - **days**: 获取最近多少天的新闻（默认 30 天）
+    - **batch_size**: 每批获取的最大新闻数量（默认 100）
+    - **batch_days**: 每批覆盖的天数（默认 7 天）
+
+    注意：Benzinga API 每次请求最多返回约 25 篇，会自动分批请求。
+    """
+    import time
+
+    start_time = datetime.now(timezone.utc)
+    start_ts = time.time()
+
+    try:
+        date_to = date.today()
+        total_fetched = 0
+        total_saved = 0
+        time_periods = []
+
+        async with BenzingaClient() as client:
+            # 分批获取不同时间段
+            for days_ago in range(0, days, batch_days):
+                period_end = date_to - timedelta(days=days_ago)
+                period_start = date_to - timedelta(
+                    days=min(days_ago + batch_days, days)
+                )
+
+                response = await client.get_news(
+                    tickers="",  # 空字符串 = 获取全部
+                    limit=batch_size,
+                    date_from=period_start.isoformat(),
+                    date_to=period_end.isoformat(),
+                )
+
+                fetched_count = len(response.articles) if response.articles else 0
+                saved_count = 0
+
+                if response.articles:
+                    saved_count = await save_articles_to_db(response.articles)
+
+                total_fetched += fetched_count
+                total_saved += saved_count
+
+                period_info = {
+                    "period_start": period_start.isoformat(),
+                    "period_end": period_end.isoformat(),
+                    "articles_fetched": fetched_count,
+                    "articles_saved": saved_count,
+                }
+                time_periods.append(period_info)
+
+                logger.info(
+                    f"批次 {period_start} ~ {period_end}: "
+                    f"获取 {fetched_count}, 保存 {saved_count}"
+                )
+
+        end_time = datetime.now(timezone.utc)
+        duration = time.time() - start_ts
+
+        logger.info(
+            f"批量新闻获取完成: 共获取 {total_fetched} 篇, "
+            f"保存 {total_saved} 篇, 耗时 {duration:.2f}s"
+        )
+
+        return FetchBulkNewsResponse(
+            success=True,
+            message=f"完成 {days} 天新闻的批量获取",
+            total_articles_fetched=total_fetched,
+            total_articles_saved=total_saved,
+            time_periods=time_periods,
+            start_time=start_time.isoformat(),
+            end_time=end_time.isoformat(),
+            duration_seconds=round(duration, 2),
+        )
+
+    except Exception as e:
+        logger.error(f"批量获取新闻失败: {e}")
+        raise HTTPException(status_code=500, detail=f"获取失败: {str(e)}")
+
+
 @router.get(
     "/scheduler-status",
     response_model=SchedulerStatusResponse,
@@ -554,3 +751,220 @@ async def scheduled_fetch_kol_news(
         scheduler_status.is_running = False
         scheduler_status.error_message = str(e)
         logger.error(f"定时任务失败: {e}")
+
+
+async def scheduled_fetch_bulk_news(
+    days: int = 1,
+    batch_size: int = 100,
+):
+    """
+    定时任务：获取全量新闻
+
+    此函数供定时任务调度器调用，每小时获取最近 1 天的新闻
+
+    Args:
+        days: 获取最近多少天的新闻（默认 1 天，只获取最新的）
+        batch_size: 每批获取数量
+    """
+    import time
+
+    start_time = datetime.now(timezone.utc)
+    start_ts = time.time()
+
+    bulk_news_scheduler_status.is_running = True
+    bulk_news_scheduler_status.error_message = None
+
+    try:
+        date_to = date.today()
+        date_from = date_to - timedelta(days=days)
+        total_fetched = 0
+        total_saved = 0
+
+        logger.info(f"⏰ 定时任务开始: 获取 {date_from} ~ {date_to} 的全量新闻")
+
+        async with BenzingaClient() as client:
+            response = await client.get_news(
+                tickers="",  # 获取全部
+                limit=batch_size,
+                date_from=date_from.isoformat(),
+                date_to=date_to.isoformat(),
+            )
+
+            if response.articles:
+                total_fetched = len(response.articles)
+                total_saved = await save_articles_to_db(response.articles)
+
+        duration = time.time() - start_ts
+
+        # 更新状态
+        bulk_news_scheduler_status.is_running = False
+        bulk_news_scheduler_status.last_run_at = start_time
+        bulk_news_scheduler_status.last_run_fetched = total_fetched
+        bulk_news_scheduler_status.last_run_saved = total_saved
+        bulk_news_scheduler_status.last_run_duration_seconds = round(duration, 2)
+        bulk_news_scheduler_status.next_run_at = start_time + timedelta(
+            hours=bulk_news_scheduler_status.interval_hours
+        )
+
+        logger.info(
+            f"✅ 定时任务完成: 获取 {total_fetched} 篇, "
+            f"保存 {total_saved} 篇, 耗时 {duration:.2f}s"
+        )
+
+    except Exception as e:
+        bulk_news_scheduler_status.is_running = False
+        bulk_news_scheduler_status.error_message = str(e)
+        logger.error(f"❌ 批量新闻定时任务失败: {e}")
+
+
+# ============================================================
+# 定时任务控制 API
+# ============================================================
+
+
+@router.get(
+    "/bulk-scheduler-status",
+    response_model=BulkNewsSchedulerStatusResponse,
+    summary="获取批量新闻定时任务状态",
+)
+async def get_bulk_scheduler_status():
+    """
+    获取批量新闻定时任务的执行状态
+
+    返回：
+    - 是否已启用
+    - 是否正在运行
+    - 上次运行时间和结果
+    - 下次运行时间
+    """
+    return BulkNewsSchedulerStatusResponse(
+        is_enabled=bulk_news_scheduler_status.is_enabled,
+        is_running=bulk_news_scheduler_status.is_running,
+        last_run_at=(
+            bulk_news_scheduler_status.last_run_at.isoformat()
+            if bulk_news_scheduler_status.last_run_at
+            else None
+        ),
+        last_run_fetched=bulk_news_scheduler_status.last_run_fetched,
+        last_run_saved=bulk_news_scheduler_status.last_run_saved,
+        last_run_duration_seconds=bulk_news_scheduler_status.last_run_duration_seconds,
+        next_run_at=(
+            bulk_news_scheduler_status.next_run_at.isoformat()
+            if bulk_news_scheduler_status.next_run_at
+            else None
+        ),
+        interval_hours=bulk_news_scheduler_status.interval_hours,
+        error_message=bulk_news_scheduler_status.error_message,
+    )
+
+
+@router.post(
+    "/bulk-scheduler/start",
+    response_model=SchedulerControlResponse,
+    summary="启动批量新闻定时任务",
+)
+async def start_bulk_scheduler(
+    interval_hours: int = Query(1, ge=1, le=24, description="执行间隔（小时）"),
+):
+    """
+    启动批量新闻定时任务
+
+    - **interval_hours**: 执行间隔，默认每 1 小时执行一次
+    """
+    try:
+        from main import scheduler
+
+        if scheduler is None:
+            raise HTTPException(status_code=500, detail="调度器未初始化")
+
+        # 检查任务是否已存在
+        existing_job = scheduler.get_job("fetch_bulk_news")
+        if existing_job:
+            scheduler.remove_job("fetch_bulk_news")
+
+        # 添加新任务
+        from apscheduler.triggers.interval import IntervalTrigger
+
+        scheduler.add_job(
+            scheduled_fetch_bulk_news,
+            IntervalTrigger(hours=interval_hours),
+            id="fetch_bulk_news",
+            name="获取全量新闻",
+            replace_existing=True,
+        )
+
+        # 更新状态
+        bulk_news_scheduler_status.is_enabled = True
+        bulk_news_scheduler_status.interval_hours = interval_hours
+
+        job = scheduler.get_job("fetch_bulk_news")
+        next_run = job.next_run_time if job else None
+        bulk_news_scheduler_status.next_run_at = next_run
+
+        logger.info(f"✅ 批量新闻定时任务已启动 (每 {interval_hours} 小时)")
+
+        return SchedulerControlResponse(
+            success=True,
+            message=f"定时任务已启动，每 {interval_hours} 小时执行一次",
+            is_enabled=True,
+            next_run_at=next_run.isoformat() if next_run else None,
+        )
+
+    except ImportError:
+        raise HTTPException(status_code=500, detail="APScheduler 未安装")
+    except Exception as e:
+        logger.error(f"启动定时任务失败: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post(
+    "/bulk-scheduler/stop",
+    response_model=SchedulerControlResponse,
+    summary="停止批量新闻定时任务",
+)
+async def stop_bulk_scheduler():
+    """
+    停止批量新闻定时任务
+    """
+    try:
+        from main import scheduler
+
+        if scheduler is None:
+            raise HTTPException(status_code=500, detail="调度器未初始化")
+
+        job = scheduler.get_job("fetch_bulk_news")
+        if job:
+            scheduler.remove_job("fetch_bulk_news")
+            bulk_news_scheduler_status.is_enabled = False
+            bulk_news_scheduler_status.next_run_at = None
+
+            logger.info("🛑 批量新闻定时任务已停止")
+
+            return SchedulerControlResponse(
+                success=True,
+                message="定时任务已停止",
+                is_enabled=False,
+            )
+        else:
+            return SchedulerControlResponse(
+                success=True,
+                message="定时任务未在运行",
+                is_enabled=False,
+            )
+
+    except Exception as e:
+        logger.error(f"停止定时任务失败: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post(
+    "/bulk-scheduler/run-now",
+    response_model=FetchBulkNewsResponse,
+    summary="立即执行一次批量新闻获取",
+)
+async def run_bulk_scheduler_now():
+    """
+    立即执行一次批量新闻获取（不影响定时任务）
+    """
+    # 复用 fetch_bulk_news 的逻辑
+    return await fetch_bulk_news(days=1, batch_size=100, batch_days=1)

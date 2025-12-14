@@ -57,11 +57,11 @@ export const SwitchTab = React.memo(function SwitchTab({
   const variantConfig = {
     pills: {
       container:
-        "bg-gray-100 dark:bg-white/5 rounded-lg w-full border border-gray-200 dark:border-white/5",
-      indicator: "bg-white dark:bg-white/10 rounded-md shadow-sm",
-      active: "text-gray-900 dark:text-white",
+        "bg-card-light dark:bg-card-dark rounded-lg w-full border border-border-light dark:border-primary/10",
+      indicator: "bg-primary/20 dark:bg-primary/80 rounded-md",
+      active: "text-primary dark:text-white",
       inactive:
-        "text-gray-600 dark:text-white/60 hover:text-gray-800 dark:hover:text-white/80",
+        "text-gray-500 dark:text-white/60 hover:text-gray-800 dark:hover:text-white/80",
     },
     tabs: {
       container: "bg-transparent border-b border-gray-200 dark:border-gray-700",

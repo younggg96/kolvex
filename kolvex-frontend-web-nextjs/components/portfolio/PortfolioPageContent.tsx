@@ -74,45 +74,6 @@ export function PortfolioPageContent() {
               onHeaderActionsReady={setHeaderActionsProps}
             />
           )}
-
-          {/* Community CTA (shown when portfolio has holdings) */}
-          {headerActionsProps?.holdings?.is_public && (
-            <div className="bg-gradient-to-r from-green-500/10 via-emerald-500/5 to-transparent dark:from-green-500/20 dark:via-emerald-500/10 rounded-xl p-4 border border-green-500/20">
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-green-500/20 flex items-center justify-center">
-                    <Globe className="w-5 h-5 text-green-600 dark:text-green-400" />
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <h3 className="font-semibold text-gray-900 dark:text-white">
-                        Your Portfolio is Public
-                      </h3>
-                      <Badge
-                        variant="outline"
-                        className="border-green-500/30 text-green-600 dark:text-green-400 text-[10px]"
-                      >
-                        Live
-                      </Badge>
-                    </div>
-                    <p className="text-sm text-gray-600 dark:text-white/60">
-                      Other investors can view and learn from your holdings
-                    </p>
-                  </div>
-                </div>
-                <Link href="/community">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="gap-2 border-green-500/30 text-green-600 dark:text-green-400 hover:bg-green-500/10"
-                  >
-                    <Eye className="w-4 h-4" />
-                    View in Community
-                  </Button>
-                </Link>
-              </div>
-            </div>
-          )}
         </div>
       </div>
     </DashboardLayout>

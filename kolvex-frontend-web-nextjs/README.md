@@ -24,7 +24,6 @@ A modern stock market analysis and tracking platform built with Next.js 14, Type
   - Desktop collapsible sidebar preserved
 - 📈 Market indices cards (Dow Jones, NASDAQ, S&P 500)
 - 📊 Interactive Chart.js charts with multiple timeframes (1D, 1W, 1M, 1Y, ALL)
-- 👀 "My Watchlist" with real-time price updates
 - 📰 "Market News" section with latest updates
 - 🎨 Dark theme optimized for trading (#0D110D background)
 - ⚡ Fast performance with Next.js App Router

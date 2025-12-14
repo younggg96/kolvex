@@ -33,7 +33,7 @@ import { toast } from "sonner";
 import Image from "next/image";
 import sp500Data from "@/data/sp500.constituents.wikilogo.json";
 import SectionCard from "@/components/layout/SectionCard";
-import CompanyLogo from "@/components/stock/CompanyLogo";
+import CompanyLogo from "@/components/ui/company-logo";
 import ThemeToggle from "@/components/theme/ThemeToggle";
 import LoadingSpinner from "@/components/common/LoadingSpinner";
 import type {

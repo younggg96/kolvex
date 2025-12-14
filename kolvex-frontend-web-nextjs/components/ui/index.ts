@@ -55,3 +55,4 @@ export {
 } from "./sheet";
 export { HeroSection } from "./hero-section";
 export type { HeroSectionProps, FeaturePill } from "./hero-section";
+export { default as CompanyLogo } from "./company-logo";

@@ -33,12 +33,14 @@ def setup_scheduler():
 
         scheduler = AsyncIOScheduler()
 
-        # 添加每小时执行的任务：获取所有 KOL 标的的新闻
-        async def scheduled_news_fetch():
+        # ============================================================
+        # 任务 1: 每小时获取 KOL 标的新闻（按 ticker 查询）
+        # ============================================================
+        async def scheduled_kol_news_fetch():
             """定时任务：获取 KOL 标的新闻"""
             from app.api.routes.news import scheduled_fetch_kol_news
 
-            logger.info("⏰ 定时任务触发: 开始获取 KOL 标的新闻")
+            logger.info("⏰ [KOL] 定时任务触发: 开始获取 KOL 标的新闻")
             try:
                 await scheduled_fetch_kol_news(
                     limit_per_ticker=10,
@@ -46,28 +48,59 @@ def setup_scheduler():
                     max_concurrent=3,
                 )
             except Exception as e:
-                logger.error(f"❌ 定时任务执行失败: {e}")
+                logger.error(f"❌ [KOL] 定时任务执行失败: {e}")
 
         scheduler.add_job(
-            scheduled_news_fetch,
+            scheduled_kol_news_fetch,
             IntervalTrigger(hours=1),
             id="fetch_kol_news",
             name="获取 KOL 标的新闻",
             replace_existing=True,
         )
 
+        # ============================================================
+        # 任务 2: 每小时获取全量新闻（不按 ticker 过滤）
+        # ============================================================
+        async def scheduled_bulk_news_fetch():
+            """定时任务：获取全量新闻"""
+            from app.api.routes.news import (
+                scheduled_fetch_bulk_news,
+                bulk_news_scheduler_status,
+            )
+
+            logger.info("⏰ [BULK] 定时任务触发: 开始获取全量新闻")
+            try:
+                await scheduled_fetch_bulk_news(days=1, batch_size=100)
+            except Exception as e:
+                logger.error(f"❌ [BULK] 定时任务执行失败: {e}")
+
+        scheduler.add_job(
+            scheduled_bulk_news_fetch,
+            IntervalTrigger(hours=1),
+            id="fetch_bulk_news",
+            name="获取全量新闻",
+            replace_existing=True,
+        )
+
         scheduler.start()
-        logger.info("✅ 定时任务调度器已启动 (每小时执行一次)")
+        logger.info("✅ 定时任务调度器已启动")
 
-        # 获取下次执行时间
-        job = scheduler.get_job("fetch_kol_news")
-        if job:
-            next_run = job.next_run_time
-            logger.info(f"📅 下次执行时间: {next_run}")
-
-            # 更新状态
+        # 更新 KOL 任务状态
+        kol_job = scheduler.get_job("fetch_kol_news")
+        if kol_job:
             from app.api.routes.news import scheduler_status
-            scheduler_status.next_run_at = next_run
+
+            scheduler_status.next_run_at = kol_job.next_run_time
+            logger.info(f"📅 [KOL] 下次执行时间: {kol_job.next_run_time}")
+
+        # 更新批量新闻任务状态
+        bulk_job = scheduler.get_job("fetch_bulk_news")
+        if bulk_job:
+            from app.api.routes.news import bulk_news_scheduler_status
+
+            bulk_news_scheduler_status.is_enabled = True
+            bulk_news_scheduler_status.next_run_at = bulk_job.next_run_time
+            logger.info(f"📅 [BULK] 下次执行时间: {bulk_job.next_run_time}")
 
     except ImportError:
         logger.warning("⚠️ APScheduler 未安装，定时任务功能不可用")

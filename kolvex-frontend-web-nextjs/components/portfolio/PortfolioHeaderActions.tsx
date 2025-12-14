@@ -21,8 +21,10 @@ import {
   Settings2,
   Users,
   ChevronRight,
+  Eye,
 } from "lucide-react";
 import type { SnapTradeHoldings } from "@/lib/supabase/database.types";
+import PrivacySettingsDialog from "./PrivacySettingsDialog";
 
 export interface PortfolioHeaderActionsProps {
   syncing: boolean;
@@ -93,14 +95,24 @@ export function PortfolioHeaderActions({
             </div>
           </div>
           {holdings?.is_public && (
-            <DropdownMenuItem onClick={onCopyShareLink}>
-              {copied ? (
-                <Check className="mr-2 h-4 w-4" />
-              ) : (
-                <Copy className="mr-2 h-4 w-4" />
-              )}
-              Copy Share Link
-            </DropdownMenuItem>
+            <>
+              <DropdownMenuItem onClick={onCopyShareLink}>
+                {copied ? (
+                  <Check className="mr-2 h-4 w-4" />
+                ) : (
+                  <Copy className="mr-2 h-4 w-4" />
+                )}
+                Copy Share Link
+              </DropdownMenuItem>
+              <PrivacySettingsDialog
+                trigger={
+                  <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                    <Eye className="mr-2 h-4 w-4" />
+                    Privacy Settings
+                  </DropdownMenuItem>
+                }
+              />
+            </>
           )}
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={onConnect}>

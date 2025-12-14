@@ -9,6 +9,7 @@ Stocks API 模块
 - tickers_routes.py: 股票代码列表端点
 - discussions_routes.py: 股票讨论端点
 - tracked_routes.py: 用户追踪股票端点
+- search_routes.py: 股票搜索端点
 """
 
 from fastapi import APIRouter
@@ -17,6 +18,7 @@ from .trending_routes import router as trending_router
 from .tickers_routes import router as tickers_router
 from .discussions_routes import router as discussions_router
 from .tracked_routes import router as tracked_router
+from .search_routes import router as search_router
 
 # 创建主路由器
 router = APIRouter(prefix="/stocks", tags=["Stocks"])
@@ -26,6 +28,7 @@ router.include_router(trending_router)
 router.include_router(tickers_router)
 router.include_router(discussions_router)
 router.include_router(tracked_router)
+router.include_router(search_router)
 
 __all__ = ["router"]
 

@@ -6,7 +6,6 @@ import { ArrowLeft, Star } from "lucide-react";
 import { useTheme } from "next-themes";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import TradingViewChart from "@/components/stock/TradingViewChart";
-import StockDiscussions from "@/components/stock/StockDiscussions";
 import StockInfoSkeleton from "@/components/stock/StockInfoSkeleton";
 import { Button } from "@/components/ui/button";
 import {
@@ -16,7 +15,11 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { cn } from "@/lib/utils";
-import { formatMarketCap, formatVolume, type StockOverview } from "@/lib/stockApi";
+import {
+  formatMarketCap,
+  formatVolume,
+  type StockOverview,
+} from "@/lib/stockApi";
 import {
   checkStockTracked,
   createTrackedStock,
@@ -24,6 +27,7 @@ import {
 } from "@/lib/trackedStockApi";
 import { useStockOverview } from "@/hooks/useStockData";
 import { toast } from "sonner";
+import StockInfoBoard from "@/components/stock/StockInfoBoard";
 
 type TrackedStatus = {
   is_tracked: boolean;
@@ -58,11 +62,11 @@ export default function StockPageClient({
   const [isProfileExpanded, setIsProfileExpanded] = useState(false);
 
   // Client refresh for overview (SSR provides initialOverview)
-  const { data: stockOverview, loading, error } = useStockOverview(
-    symbol,
-    30000,
-    initialOverview
-  );
+  const {
+    data: stockOverview,
+    loading,
+    error,
+  } = useStockOverview(symbol, 30000, initialOverview);
 
   const quote = stockOverview?.quote;
   const company = stockOverview?.company;
@@ -106,7 +110,9 @@ export default function StockPageClient({
       }
     } catch (e) {
       toast.error(
-        isTracked ? "Failed to remove from watchlist" : "Failed to add to watchlist"
+        isTracked
+          ? "Failed to remove from watchlist"
+          : "Failed to add to watchlist"
       );
       console.error(e);
     } finally {
@@ -150,7 +156,7 @@ export default function StockPageClient({
             </div>
 
             {/* KOL Discussions Section */}
-            {mounted && <StockDiscussions ticker={symbol} />}
+            {mounted && <StockInfoBoard ticker={symbol} />}
           </div>
 
           {/* Sidebar - Stock Info */}
@@ -207,7 +213,8 @@ export default function StockPageClient({
                             }`}
                           >
                             {isPositive ? "+" : ""}
-                            {quote.change?.toFixed(2)} ({quote.change_percent?.toFixed(2)}%)
+                            {quote.change?.toFixed(2)} (
+                            {quote.change_percent?.toFixed(2)}%)
                           </span>
                         </div>
                       </div>
@@ -237,7 +244,9 @@ export default function StockPageClient({
                             High
                           </p>
                           <p className="text-xs font-semibold text-gray-900 dark:text-white">
-                            {quote.day_high ? `$${quote.day_high.toFixed(2)}` : "N/A"}
+                            {quote.day_high
+                              ? `$${quote.day_high.toFixed(2)}`
+                              : "N/A"}
                           </p>
                         </div>
                         <div>
@@ -245,7 +254,9 @@ export default function StockPageClient({
                             Low
                           </p>
                           <p className="text-xs font-semibold text-gray-900 dark:text-white">
-                            {quote.day_low ? `$${quote.day_low.toFixed(2)}` : "N/A"}
+                            {quote.day_low
+                              ? `$${quote.day_low.toFixed(2)}`
+                              : "N/A"}
                           </p>
                         </div>
                         <div>
@@ -281,7 +292,9 @@ export default function StockPageClient({
                             Avg Volume
                           </p>
                           <p className="text-xs font-semibold text-gray-900 dark:text-white">
-                            {quote.avg_volume ? formatVolume(quote.avg_volume) : "N/A"}
+                            {quote.avg_volume
+                              ? formatVolume(quote.avg_volume)
+                              : "N/A"}
                           </p>
                         </div>
                         <div className="col-span-2">
@@ -289,7 +302,9 @@ export default function StockPageClient({
                             Market Cap
                           </p>
                           <p className="text-xs font-semibold text-gray-900 dark:text-white">
-                            {quote.market_cap ? formatMarketCap(quote.market_cap) : "N/A"}
+                            {quote.market_cap
+                              ? formatMarketCap(quote.market_cap)
+                              : "N/A"}
                           </p>
                         </div>
                       </div>
@@ -339,7 +354,9 @@ export default function StockPageClient({
                                   }
                                   className="mt-1.5 text-[11px] text-primary hover:text-primary/80 font-medium"
                                 >
-                                  {isProfileExpanded ? "Show less" : "Show more"}
+                                  {isProfileExpanded
+                                    ? "Show less"
+                                    : "Show more"}
                                 </button>
                               )}
                           </div>
@@ -376,7 +393,9 @@ export default function StockPageClient({
                                   {company.website.replace(/^https?:\/\//, "")}
                                 </a>
                               ) : (
-                                <span className="text-xs text-gray-400">N/A</span>
+                                <span className="text-xs text-gray-400">
+                                  N/A
+                                </span>
                               )}
                             </div>
                             <div className="flex items-center justify-between">
@@ -446,7 +465,9 @@ export default function StockPageClient({
                               </span>
                               <span className="text-xs font-medium text-gray-900 dark:text-white">
                                 {financials.profit_margins
-                                  ? `${(financials.profit_margins * 100).toFixed(2)}%`
+                                  ? `${(
+                                      financials.profit_margins * 100
+                                    ).toFixed(2)}%`
                                   : "N/A"}
                               </span>
                             </div>
@@ -464,7 +485,9 @@ export default function StockPageClient({
                               </span>
                               <span className="text-xs font-medium text-gray-900 dark:text-white">
                                 {financials.return_on_equity
-                                  ? `${(financials.return_on_equity * 100).toFixed(2)}%`
+                                  ? `${(
+                                      financials.return_on_equity * 100
+                                    ).toFixed(2)}%`
                                   : "N/A"}
                               </span>
                             </div>
@@ -502,5 +525,3 @@ export default function StockPageClient({
     </DashboardLayout>
   );
 }
-
-

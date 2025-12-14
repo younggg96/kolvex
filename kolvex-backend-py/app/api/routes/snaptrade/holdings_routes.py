@@ -14,7 +14,11 @@ from .schemas import (
     HoldingsResponse, 
     PublicHoldingsResponse, 
     PublicUsersResponse,
-    TogglePublicRequest, 
+    TogglePublicRequest,
+    TogglePositionVisibilityRequest,
+    BatchTogglePositionVisibilityRequest,
+    PrivacySettings,
+    PrivacySettingsResponse,
     MessageResponse
 )
 
@@ -119,5 +123,121 @@ async def toggle_public_sharing(
         raise HTTPException(
             status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Operation failed: {str(e)}",
+        )
+
+
+@router.post("/positions/{position_id}/visibility", response_model=MessageResponse)
+async def toggle_position_visibility(
+    position_id: str,
+    request: TogglePositionVisibilityRequest,
+    current_user_id: str = Depends(get_current_user_id),
+    service: SnapTradeService = Depends(get_snaptrade_service),
+):
+    """
+    Toggle visibility of a single position when portfolio is public
+    
+    Hidden positions will not be shown in public portfolio view
+    """
+    try:
+        success = await service.toggle_position_visibility(
+            user_id=current_user_id,
+            position_id=position_id,
+            is_hidden=request.is_hidden
+        )
+
+        if success:
+            status_text = "hidden" if request.is_hidden else "visible"
+            return MessageResponse(
+                message=f"Position is now {status_text}",
+                success=True
+            )
+        else:
+            return MessageResponse(message="Operation failed", success=False)
+    except Exception as e:
+        logger.error(f"Failed to toggle position visibility: {e}")
+        raise HTTPException(
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Operation failed: {str(e)}",
+        )
+
+
+@router.post("/positions/visibility/batch", response_model=MessageResponse)
+async def batch_toggle_position_visibility(
+    request: BatchTogglePositionVisibilityRequest,
+    current_user_id: str = Depends(get_current_user_id),
+    service: SnapTradeService = Depends(get_snaptrade_service),
+):
+    """
+    Batch toggle visibility of multiple positions
+    
+    Useful for hiding/showing multiple positions at once
+    """
+    try:
+        count = await service.batch_toggle_position_visibility(
+            user_id=current_user_id,
+            position_ids=request.position_ids,
+            is_hidden=request.is_hidden
+        )
+
+        status_text = "hidden" if request.is_hidden else "visible"
+        return MessageResponse(
+            message=f"{count} positions are now {status_text}",
+            success=True
+        )
+    except Exception as e:
+        logger.error(f"Failed to batch toggle position visibility: {e}")
+        raise HTTPException(
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Operation failed: {str(e)}",
+        )
+
+
+@router.get("/privacy-settings", response_model=PrivacySettingsResponse)
+async def get_privacy_settings(
+    current_user_id: str = Depends(get_current_user_id),
+    service: SnapTradeService = Depends(get_snaptrade_service),
+):
+    """
+    Get current privacy settings for public portfolio sharing
+    """
+    try:
+        settings = await service.get_privacy_settings(current_user_id)
+        return PrivacySettingsResponse(settings=settings)
+    except Exception as e:
+        logger.error(f"Failed to get privacy settings: {e}")
+        raise HTTPException(
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to get privacy settings: {str(e)}",
+        )
+
+
+@router.put("/privacy-settings", response_model=PrivacySettingsResponse)
+async def update_privacy_settings(
+    request: PrivacySettings,
+    current_user_id: str = Depends(get_current_user_id),
+    service: SnapTradeService = Depends(get_snaptrade_service),
+):
+    """
+    Update privacy settings for public portfolio sharing
+    
+    Only provided fields will be updated
+    """
+    try:
+        # Convert request to dict, excluding None values
+        settings_update = {
+            k: v for k, v in request.model_dump().items() if v is not None
+        }
+        
+        updated_settings = await service.update_privacy_settings(
+            user_id=current_user_id,
+            settings=settings_update
+        )
+        
+        return PrivacySettingsResponse(settings=updated_settings)
+    except Exception as e:
+        logger.error(f"Failed to update privacy settings: {e}")
+        raise HTTPException(
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to update privacy settings: {str(e)}",
         )
 
