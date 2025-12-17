@@ -98,9 +98,11 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       // /api/snaptrade/public-users - get all public users (no auth)
       const limit = searchParams.get("limit") || "20";
       const offset = searchParams.get("offset") || "0";
+      const sortBy = searchParams.get("sort_by") || "updated";
+      const sortOrder = searchParams.get("sort_order") || "desc";
       return proxyRequest(
         request,
-        `/public-users?limit=${limit}&offset=${offset}`,
+        `/public-users?limit=${limit}&offset=${offset}&sort_by=${sortBy}&sort_order=${sortOrder}`,
         { method: "GET", requireAuth: false }
       );
     }
@@ -120,6 +122,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
  * - /api/snaptrade/sync/accounts -> POST /sync/accounts
  * - /api/snaptrade/sync/positions -> POST /sync/positions
  * - /api/snaptrade/toggle-public -> POST /toggle-public
+ * - /api/snaptrade/positions/:id/visibility -> POST /positions/:id/visibility
+ * - /api/snaptrade/positions/visibility/batch -> POST /batch-toggle-position-visibility
  */
 export async function POST(request: NextRequest, { params }: RouteParams) {
   const { path } = await params;
@@ -148,6 +152,24 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         method: "POST",
         hasBody: true,
       });
+
+    case "positions":
+      // /api/snaptrade/positions/visibility/batch -> POST /positions/visibility/batch
+      // /api/snaptrade/positions/:id/visibility -> POST /positions/:id/visibility
+      if (path[1] === "visibility" && path[2] === "batch") {
+        return proxyRequest(request, "/positions/visibility/batch", {
+          method: "POST",
+          hasBody: true,
+        });
+      } else if (path[2] === "visibility") {
+        // path[1] is position ID
+        const positionId = path[1];
+        return proxyRequest(request, `/positions/${positionId}/visibility`, {
+          method: "POST",
+          hasBody: true,
+        });
+      }
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
 
     default:
       return NextResponse.json({ error: "Not found" }, { status: 404 });

@@ -328,190 +328,181 @@ export default function TopKols({
       {/* Desktop Table View */}
       {!isMobile && (kols.length > 0 || isLoading) && (
         <SectionCard padding="none" useSectionHeader={false}>
-          <div className="overflow-x-auto">
-            <div className="hidden md:block">
-              <div className="max-h-[600px] overflow-y-auto custom-scrollbar">
-                <Table>
-                  <TableHeader className="sticky top-0 z-10 backdrop-blur">
-                    <TableRow className="border-b border-gray-200 dark:border-white/10">
-                      <TableHead className="text-xs text-center w-12 font-semibold">
-                        Rank
-                      </TableHead>
-                      <TableHead className="text-xs text-left font-semibold">
-                        KOL
-                      </TableHead>
-                      <TableHead className="text-xs text-center font-semibold">
-                        Platform
-                      </TableHead>
-                      <SortableHeader
-                        label="Influence"
-                        sortKey="influence_score"
-                        currentSortKey={sortBy}
-                        sortDirection={sortDirection}
-                        onSort={handleSort}
-                        type="numeric"
-                      />
-                      <SortableHeader
-                        label="Trending"
-                        sortKey="trending_score"
-                        currentSortKey={sortBy}
-                        sortDirection={sortDirection}
-                        onSort={handleSort}
-                        type="numeric"
-                      />
-                      <SortableHeader
-                        label="Followers"
-                        sortKey="followers_count"
-                        currentSortKey={sortBy}
-                        sortDirection={sortDirection}
-                        onSort={handleSort}
-                        type="amount"
-                      />
-                      <TableHead className="text-xs text-center font-semibold hidden xl:table-cell">
-                        Last Post
-                      </TableHead>
-                      <TableHead className="text-xs text-center font-semibold">
-                        Action
-                      </TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {isLoading ? (
-                      [...Array(10)].map((_, i) => <KolTableSkeleton key={i} />)
-                    ) : (
-                      <>
-                        {kols.map((kol, index) => (
-                          <TableRow
-                            key={kol.id}
-                            className="hover:bg-gray-50 dark:hover:bg-white/5 transition-colors border-b border-gray-100 dark:border-white/5"
+          <div className="max-h-[600px] hidden md:block overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="text-xs text-center w-12 font-semibold">
+                    Rank
+                  </TableHead>
+                  <TableHead className="text-xs text-left font-semibold">
+                    KOL
+                  </TableHead>
+                  <TableHead className="text-xs text-center font-semibold">
+                    Platform
+                  </TableHead>
+                  <SortableHeader
+                    label="Influence"
+                    sortKey="influence_score"
+                    currentSortKey={sortBy}
+                    sortDirection={sortDirection}
+                    onSort={handleSort}
+                    type="numeric"
+                  />
+                  <SortableHeader
+                    label="Trending"
+                    sortKey="trending_score"
+                    currentSortKey={sortBy}
+                    sortDirection={sortDirection}
+                    onSort={handleSort}
+                    type="numeric"
+                  />
+                  <SortableHeader
+                    label="Followers"
+                    sortKey="followers_count"
+                    currentSortKey={sortBy}
+                    sortDirection={sortDirection}
+                    onSort={handleSort}
+                    type="amount"
+                  />
+                  <TableHead className="text-xs text-center font-semibold hidden xl:table-cell">
+                    Last Post
+                  </TableHead>
+                  <TableHead className="text-xs text-center font-semibold">
+                    Action
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {isLoading ? (
+                  [...Array(10)].map((_, i) => <KolTableSkeleton key={i} />)
+                ) : (
+                  <>
+                    {kols.map((kol, index) => (
+                      <TableRow
+                        key={kol.id}
+                        className="hover:bg-gray-50 dark:hover:bg-white/5 transition-colors border-b border-gray-100 dark:border-white/5"
+                      >
+                        {/* Rank */}
+                        <TableCell className="text-xs font-bold text-center py-3">
+                          <div
+                            className={`inline-flex items-center justify-center w-7 h-7 rounded-full text-xs font-bold ${
+                              index === 0
+                                ? "bg-yellow-100 dark:bg-yellow-500/20 text-yellow-600 dark:text-yellow-500"
+                                : index === 1
+                                ? "bg-gray-100 dark:bg-gray-500/20 text-gray-600 dark:text-gray-400"
+                                : index === 2
+                                ? "bg-orange-100 dark:bg-orange-500/20 text-orange-600 dark:text-orange-500"
+                                : "text-gray-500 dark:text-white/50"
+                            }`}
                           >
-                            {/* Rank */}
-                            <TableCell className="text-xs font-bold text-center py-3">
-                              <div
-                                className={`inline-flex items-center justify-center w-7 h-7 rounded-full text-xs font-bold ${
-                                  index === 0
-                                    ? "bg-yellow-100 dark:bg-yellow-500/20 text-yellow-600 dark:text-yellow-500"
-                                    : index === 1
-                                    ? "bg-gray-100 dark:bg-gray-500/20 text-gray-600 dark:text-gray-400"
-                                    : index === 2
-                                    ? "bg-orange-100 dark:bg-orange-500/20 text-orange-600 dark:text-orange-500"
-                                    : "text-gray-500 dark:text-white/50"
-                                }`}
-                              >
-                                {index + 1}
-                              </div>
-                            </TableCell>
+                            {index + 1}
+                          </div>
+                        </TableCell>
 
-                            {/* KOL */}
-                            <TableCell className="py-3">
-                              <KolInfo
-                                avatarUrl={kol.avatar_url}
-                                name={kol.display_name}
-                                username={kol.username}
-                                platform={kol.platform}
-                                verified={kol.verified}
-                                showPlatformBadge={false}
-                                category={kol.category}
-                              />
-                            </TableCell>
+                        {/* KOL */}
+                        <TableCell className="py-3">
+                          <KolInfo
+                            avatarUrl={kol.avatar_url}
+                            name={kol.display_name}
+                            username={kol.username}
+                            platform={kol.platform}
+                            verified={kol.verified}
+                            showPlatformBadge={false}
+                            category={kol.category}
+                          />
+                        </TableCell>
 
-                            {/* Platform */}
-                            <TableCell className="py-3">
-                              <div className="flex items-center justify-center">
-                                <PlatformBadge
-                                  platform={kol.platform}
-                                  size="sm"
-                                />
-                              </div>
-                            </TableCell>
+                        {/* Platform */}
+                        <TableCell className="py-3">
+                          <div className="flex items-center justify-center">
+                            <PlatformBadge platform={kol.platform} size="sm" />
+                          </div>
+                        </TableCell>
 
-                            {/* Influence Score */}
-                            <TableCell className="text-xs text-center font-bold text-gray-900 dark:text-white py-3">
-                              {(kol.influence_score ?? 0).toFixed(1)}
-                            </TableCell>
+                        {/* Influence Score */}
+                        <TableCell className="text-xs text-center font-bold text-gray-900 dark:text-white py-3">
+                          {(kol.influence_score ?? 0).toFixed(1)}
+                        </TableCell>
 
-                            {/* Trending Score */}
-                            <TableCell className="text-xs text-center font-bold text-gray-900 dark:text-white py-3">
-                              {(kol.trending_score ?? 0).toFixed(1)}
-                            </TableCell>
+                        {/* Trending Score */}
+                        <TableCell className="text-xs text-center font-bold text-gray-900 dark:text-white py-3">
+                          {(kol.trending_score ?? 0).toFixed(1)}
+                        </TableCell>
 
-                            {/* Followers */}
-                            <TableCell className="text-xs text-center font-semibold text-gray-800 dark:text-white/90 py-3">
-                              {formatNumber(kol.followers_count)}
-                            </TableCell>
+                        {/* Followers */}
+                        <TableCell className="text-xs text-center font-semibold text-gray-800 dark:text-white/90 py-3">
+                          {formatNumber(kol.followers_count)}
+                        </TableCell>
 
-                            {/* Last Post */}
-                            <TableCell className="text-xs text-center text-gray-600 dark:text-white/60 font-medium py-3 hidden xl:table-cell">
-                              {formatDate(kol.last_post_at)}
-                            </TableCell>
+                        {/* Last Post */}
+                        <TableCell className="text-xs text-center text-gray-600 dark:text-white/60 font-medium py-3 hidden xl:table-cell">
+                          {formatDate(kol.last_post_at)}
+                        </TableCell>
 
-                            {/* Action */}
-                            <TableCell className="text-center py-3">
-                              <Button
-                                variant={
-                                  trackingStates[kol.kol_id]
-                                    ? "default"
-                                    : "outline"
-                                }
-                                size="xs"
-                                onClick={() => handleTrackToggle(kol)}
-                                disabled={loadingStates[kol.kol_id]}
-                                className={`min-w-[80px] transition-all text-xs !border-yellow-500 ${
-                                  trackingStates[kol.kol_id]
-                                    ? "bg-yellow-500 hover:bg-yellow-500/90 text-white shadow-sm"
-                                    : "border-yellow-500 hover:bg-yellow-500/40 text-yellow-500"
-                                }`}
-                              >
-                                {loadingStates[kol.kol_id] ? (
-                                  <>
-                                    <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
-                                    Loading
-                                  </>
-                                ) : trackingStates[kol.kol_id] ? (
-                                  <>
-                                    <Star className="w-3.5 h-3.5 mr-1.5 fill-yellow-500" />
-                                    Tracking
-                                  </>
-                                ) : (
-                                  <>
-                                    <Star className="w-3.5 h-3.5 mr-1.5 text-yellow-500" />
-                                    Track
-                                  </>
-                                )}
-                              </Button>
-                            </TableCell>
-                          </TableRow>
-                        ))}
+                        {/* Action */}
+                        <TableCell className="text-center py-3">
+                          <Button
+                            variant={
+                              trackingStates[kol.kol_id] ? "default" : "outline"
+                            }
+                            size="xs"
+                            onClick={() => handleTrackToggle(kol)}
+                            disabled={loadingStates[kol.kol_id]}
+                            className={`min-w-[80px] transition-all text-xs !border-yellow-500 ${
+                              trackingStates[kol.kol_id]
+                                ? "bg-yellow-500 hover:bg-yellow-500/90 text-white shadow-sm"
+                                : "border-yellow-500 hover:bg-yellow-500/40 text-yellow-500"
+                            }`}
+                          >
+                            {loadingStates[kol.kol_id] ? (
+                              <>
+                                <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+                                Loading
+                              </>
+                            ) : trackingStates[kol.kol_id] ? (
+                              <>
+                                <Star className="w-3.5 h-3.5 mr-1.5 fill-yellow-500" />
+                                Tracking
+                              </>
+                            ) : (
+                              <>
+                                <Star className="w-3.5 h-3.5 mr-1.5 text-yellow-500" />
+                                Track
+                              </>
+                            )}
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
 
-                        {/* Loading More Indicator */}
-                        {isLoadingMore && (
-                          <TableRow>
-                            <TableCell colSpan={8} className="text-center py-6">
-                              <div className="inline-flex items-center gap-2 text-sm text-gray-500 dark:text-white/50">
-                                <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
-                                <span>Loading more KOLs...</span>
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        )}
-
-                        {/* No More Data Indicator */}
-                        {!hasMore && kols.length > 0 && !isLoadingMore && (
-                          <TableRow>
-                            <TableCell
-                              colSpan={8}
-                              className="text-center py-6 text-sm text-gray-400 dark:text-white/40 font-medium"
-                            >
-                              No more KOLs to load
-                            </TableCell>
-                          </TableRow>
-                        )}
-                      </>
+                    {/* Loading More Indicator */}
+                    {isLoadingMore && (
+                      <TableRow>
+                        <TableCell colSpan={8} className="text-center py-6">
+                          <div className="inline-flex items-center gap-2 text-sm text-gray-500 dark:text-white/50">
+                            <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+                            <span>Loading more KOLs...</span>
+                          </div>
+                        </TableCell>
+                      </TableRow>
                     )}
-                  </TableBody>
-                </Table>
-              </div>
-            </div>
+
+                    {/* No More Data Indicator */}
+                    {!hasMore && kols.length > 0 && !isLoadingMore && (
+                      <TableRow>
+                        <TableCell
+                          colSpan={8}
+                          className="text-center py-6 text-sm text-gray-400 dark:text-white/40 font-medium"
+                        >
+                          No more KOLs to load
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </>
+                )}
+              </TableBody>
+            </Table>
           </div>
         </SectionCard>
       )}

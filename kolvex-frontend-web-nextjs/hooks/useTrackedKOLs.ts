@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "./useAuth";
-import { createClient } from "@/lib/supabase/client";
 import type { Platform } from "@/lib/supabase/database.types";
 
 export interface TrackedKOL {
@@ -120,24 +119,21 @@ export function useTrackedKOLs(): UseTrackedKOLsReturn {
       }
 
       try {
-        const supabase = createClient();
+        const response = await fetch("/api/my-tracked-kols", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            kol_id: kolId,
+            platform,
+            notify,
+          }),
+        });
 
-        const { error: insertError } = await supabase
-          .from("kol_subscriptions")
-          .upsert(
-            {
-              user_id: user.id,
-              platform,
-              kol_id: kolId,
-              notify,
-            },
-            {
-              onConflict: "user_id,platform,kol_id",
-            }
-          );
-
-        if (insertError) {
-          throw insertError;
+        if (!response.ok) {
+          const data = await response.json().catch(() => ({}));
+          throw new Error(data.error || "Failed to track KOL");
         }
 
         // Refresh the list to get updated data with KOL info
@@ -158,17 +154,17 @@ export function useTrackedKOLs(): UseTrackedKOLsReturn {
       }
 
       try {
-        const supabase = createClient();
+        const url = new URL("/api/my-tracked-kols", window.location.origin);
+        url.searchParams.set("kol_id", kolId);
+        url.searchParams.set("platform", platform);
 
-        const { error: deleteError } = await supabase
-          .from("kol_subscriptions")
-          .delete()
-          .eq("user_id", user.id)
-          .eq("platform", platform)
-          .eq("kol_id", kolId);
+        const response = await fetch(url.toString(), {
+          method: "DELETE",
+        });
 
-        if (deleteError) {
-          throw deleteError;
+        if (!response.ok) {
+          const data = await response.json().catch(() => ({}));
+          throw new Error(data.error || "Failed to untrack KOL");
         }
 
         // Update local state

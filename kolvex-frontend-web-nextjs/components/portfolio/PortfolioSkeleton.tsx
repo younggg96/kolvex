@@ -3,7 +3,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 export function PortfolioSkeleton() {
   return (
-    <div>
+    <div className="space-y-2">
       {/* Stats Grid Skeleton */}
       <div className="grid gap-2 grid-cols-2 lg:grid-cols-4">
         {[...Array(4)].map((_, i) => (
@@ -40,4 +40,3 @@ export function PortfolioSkeleton() {
     </div>
   );
 }
-

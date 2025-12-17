@@ -59,42 +59,40 @@ export default function StockPageClient() {
     <DashboardLayout title="Stocks" showHeader={false}>
       <div className="relative flex-1 overflow-y-auto bg-background-light dark:bg-background-dark">
         <div className="absolute inset-0 bg-grid opacity-50 pointer-events-none" />
-        <div className="relative p-4 min-w-0">
-          <StockHeroSection />
-          {/* Header with Tabs and Add Button */}
-          <div className="space-y-3 mt-6 w-full">
-            <div className="flex items-center justify-between gap-4 w-full">
-              <SwitchTab
-                options={tabOptions}
-                value={activeTab}
-                onValueChange={setActiveTab}
-                size="md"
-                variant="pills"
-                className="!w-fit"
+        <StockHeroSection />
+        {/* Header with Tabs and Add Button */}
+        <div className="space-y-3 w-full relative p-4 min-w-0">
+          <div className="flex items-center justify-between gap-4 w-full">
+            <SwitchTab
+              options={tabOptions}
+              value={activeTab}
+              onValueChange={setActiveTab}
+              size="md"
+              variant="pills"
+              className="!w-fit"
+            />
+            {activeTab === "tracked-stocks" && (
+              <Button onClick={openAddDialog} size="sm" variant="ghost">
+                <Plus className="w-3.5 h-3.5" />
+              </Button>
+            )}
+            {activeTab === "trending" && (
+              <SearchInput
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search stocks..."
+                containerClassName="w-full max-w-[300px]"
               />
-              {activeTab === "tracked-stocks" && (
-                <Button onClick={openAddDialog} size="sm" variant="ghost">
-                  <Plus className="w-3.5 h-3.5" />
-                </Button>
-              )}
-              {activeTab === "trending" && (
-                <SearchInput
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search stocks..."
-                  containerClassName="w-full max-w-[300px]"
-                />
-              )}
-            </div>
+            )}
+          </div>
 
-            {/* Content */}
-            <div className="flex-1 overflow-hidden">
-              {activeTab === "trending" ? (
-                <TrendingStocksTable searchQuery={searchQuery} />
-              ) : (
-                <TrackedStocksTable />
-              )}
-            </div>
+          {/* Content */}
+          <div className="flex-1 overflow-hidden">
+            {activeTab === "trending" ? (
+              <TrendingStocksTable searchQuery={searchQuery} />
+            ) : (
+              <TrackedStocksTable />
+            )}
           </div>
         </div>
       </div>

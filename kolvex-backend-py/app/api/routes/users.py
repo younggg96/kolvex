@@ -2,11 +2,11 @@
 用户相关 API 路由
 """
 from fastapi import APIRouter, Depends, status, Query
-from typing import Optional
+from typing import Optional, List
 from supabase import Client
 
 from app.core.supabase import get_supabase_service
-from app.api.dependencies.auth import get_current_user_id, get_current_user_email
+from app.api.dependencies.auth import get_current_user_id, get_current_user_email, get_optional_user_id
 from app.services.user_service import UserService
 from app.schemas.user import (
     UserProfileCreate,
@@ -15,6 +15,9 @@ from app.schemas.user import (
     UserThemeUpdate,
     UserNotificationUpdate,
     MessageResponse,
+    UserFollowResponse,
+    FollowStatusResponse,
+    FollowListResponse,
 )
 
 router = APIRouter(prefix="/users", tags=["users"])
@@ -167,4 +170,127 @@ async def list_users(
     TODO: 添加管理员权限检查
     """
     return await user_service.list_users(page, page_size, search)
+
+
+# ===== Follow 相关路由 =====
+
+
+@router.post("/{user_id}/follow", response_model=UserFollowResponse, summary="关注用户")
+async def follow_user(
+    user_id: str,
+    current_user_id: str = Depends(get_current_user_id),
+    user_service: UserService = Depends(get_user_service),
+):
+    """
+    关注指定用户
+    
+    需要认证：Bearer token
+    
+    Args:
+        user_id: 要关注的用户ID
+    """
+    return await user_service.follow_user(current_user_id, user_id)
+
+
+@router.delete("/{user_id}/follow", response_model=MessageResponse, summary="取消关注用户")
+async def unfollow_user(
+    user_id: str,
+    current_user_id: str = Depends(get_current_user_id),
+    user_service: UserService = Depends(get_user_service),
+):
+    """
+    取消关注指定用户
+    
+    需要认证：Bearer token
+    
+    Args:
+        user_id: 要取消关注的用户ID
+    """
+    result = await user_service.unfollow_user(current_user_id, user_id)
+    return MessageResponse(
+        message=result.get("message", "已取消关注"),
+        success=True
+    )
+
+
+@router.get("/{user_id}/follow-status", response_model=FollowStatusResponse, summary="获取关注状态")
+async def get_follow_status(
+    user_id: str,
+    current_user_id: Optional[str] = Depends(get_optional_user_id),
+    user_service: UserService = Depends(get_user_service),
+):
+    """
+    获取指定用户的关注状态
+    
+    可选认证：Bearer token（用于判断当前用户是否关注目标用户）
+    
+    Args:
+        user_id: 目标用户ID
+        
+    Returns:
+        FollowStatusResponse: 包含是否关注、粉丝数、关注数
+    """
+    return await user_service.get_follow_status(current_user_id, user_id)
+
+
+@router.get("/{user_id}/followers", response_model=FollowListResponse, summary="获取用户粉丝列表")
+async def get_followers(
+    user_id: str,
+    page: int = Query(1, ge=1, description="页码"),
+    page_size: int = Query(20, ge=1, le=100, description="每页数量"),
+    current_user_id: Optional[str] = Depends(get_optional_user_id),
+    user_service: UserService = Depends(get_user_service),
+):
+    """
+    获取指定用户的粉丝列表
+    
+    可选认证：Bearer token（用于判断当前用户是否关注这些粉丝）
+    
+    Args:
+        user_id: 目标用户ID
+        page: 页码
+        page_size: 每页数量
+    """
+    return await user_service.get_followers(user_id, current_user_id, page, page_size)
+
+
+@router.get("/{user_id}/following", response_model=FollowListResponse, summary="获取用户关注列表")
+async def get_following(
+    user_id: str,
+    page: int = Query(1, ge=1, description="页码"),
+    page_size: int = Query(20, ge=1, le=100, description="每页数量"),
+    current_user_id: Optional[str] = Depends(get_optional_user_id),
+    user_service: UserService = Depends(get_user_service),
+):
+    """
+    获取指定用户的关注列表
+    
+    可选认证：Bearer token（用于判断当前用户是否也关注这些用户）
+    
+    Args:
+        user_id: 目标用户ID
+        page: 页码
+        page_size: 每页数量
+    """
+    return await user_service.get_following(user_id, current_user_id, page, page_size)
+
+
+@router.post("/batch-follow-status", response_model=dict, summary="批量检查关注状态")
+async def batch_check_follow_status(
+    user_ids: List[str] = Query(..., description="用户ID列表"),
+    current_user_id: str = Depends(get_current_user_id),
+    user_service: UserService = Depends(get_user_service),
+):
+    """
+    批量检查当前用户是否关注了指定用户列表
+    
+    需要认证：Bearer token
+    
+    Args:
+        user_ids: 要检查的用户ID列表
+        
+    Returns:
+        Dict[str, bool]: 用户ID到是否关注的映射
+    """
+    return await user_service.check_batch_following(current_user_id, user_ids)
 

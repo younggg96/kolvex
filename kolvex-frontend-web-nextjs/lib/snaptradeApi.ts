@@ -117,12 +117,17 @@ export async function getPublicHoldings(
  * @param limit Number of users to fetch
  * @param offset Pagination offset
  */
+export type PublicUsersSortBy = "updated" | "pnl_percent";
+export type SortOrder = "asc" | "desc";
+
 export async function getPublicUsers(
   limit: number = 20,
-  offset: number = 0
+  offset: number = 0,
+  sortBy: PublicUsersSortBy = "updated",
+  sortOrder: SortOrder = "desc"
 ): Promise<PublicUsersResponse> {
   return apiRequest<PublicUsersResponse>(
-    `/public-users?limit=${limit}&offset=${offset}`
+    `/public-users?limit=${limit}&offset=${offset}&sort_by=${sortBy}&sort_order=${sortOrder}`
   );
 }
 

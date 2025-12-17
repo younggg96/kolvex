@@ -9,6 +9,10 @@ from app.schemas.user import (
     UserProfileResponse,
     UserThemeUpdate,
     UserNotificationUpdate,
+    UserFollowResponse,
+    FollowStatusResponse,
+    FollowListResponse,
+    FollowUserInfo,
 )
 from fastapi import HTTPException, status
 
@@ -330,5 +334,383 @@ class UserService:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"获取用户列表失败: {str(e)}"
+            )
+    
+    # ===== Follow 相关方法 =====
+    
+    async def follow_user(self, follower_id: str, following_id: str) -> UserFollowResponse:
+        """
+        关注用户
+        
+        Args:
+            follower_id: 关注者用户ID
+            following_id: 被关注者用户ID
+            
+        Returns:
+            UserFollowResponse: 关注记录
+            
+        Raises:
+            HTTPException: 400 如果尝试关注自己或已关注
+        """
+        if follower_id == following_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="不能关注自己"
+            )
+        
+        try:
+            # 检查是否已经关注
+            existing = (
+                self.supabase.table("user_follows")
+                .select("*")
+                .eq("follower_id", follower_id)
+                .eq("following_id", following_id)
+                .execute()
+            )
+            
+            if existing.data:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="已经关注该用户"
+                )
+            
+            # 检查被关注用户是否存在
+            target_user = (
+                self.supabase.table("user_profiles")
+                .select("id")
+                .eq("id", following_id)
+                .single()
+                .execute()
+            )
+            
+            if not target_user.data:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="用户不存在"
+                )
+            
+            # 创建关注记录
+            response = (
+                self.supabase.table("user_follows")
+                .insert({
+                    "follower_id": follower_id,
+                    "following_id": following_id
+                })
+                .execute()
+            )
+            
+            if not response.data:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="关注失败"
+                )
+            
+            return UserFollowResponse(**response.data[0])
+            
+        except HTTPException:
+            raise
+        except Exception as e:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"关注失败: {str(e)}"
+            )
+    
+    async def unfollow_user(self, follower_id: str, following_id: str) -> Dict[str, Any]:
+        """
+        取消关注用户
+        
+        Args:
+            follower_id: 关注者用户ID
+            following_id: 被关注者用户ID
+            
+        Returns:
+            Dict: 操作结果
+            
+        Raises:
+            HTTPException: 404 如果未关注该用户
+        """
+        try:
+            response = (
+                self.supabase.table("user_follows")
+                .delete()
+                .eq("follower_id", follower_id)
+                .eq("following_id", following_id)
+                .execute()
+            )
+            
+            if not response.data:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="未关注该用户"
+                )
+            
+            return {
+                "success": True,
+                "message": "已取消关注"
+            }
+            
+        except HTTPException:
+            raise
+        except Exception as e:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"取消关注失败: {str(e)}"
+            )
+    
+    async def get_follow_status(
+        self, 
+        current_user_id: Optional[str], 
+        target_user_id: str
+    ) -> FollowStatusResponse:
+        """
+        获取关注状态
+        
+        Args:
+            current_user_id: 当前用户ID（可选，用于判断是否关注）
+            target_user_id: 目标用户ID
+            
+        Returns:
+            FollowStatusResponse: 关注状态
+        """
+        try:
+            # 获取目标用户的 followers_count 和 following_count
+            user_response = (
+                self.supabase.table("user_profiles")
+                .select("followers_count, following_count")
+                .eq("id", target_user_id)
+                .single()
+                .execute()
+            )
+            
+            followers_count = 0
+            following_count = 0
+            if user_response.data:
+                followers_count = user_response.data.get("followers_count", 0) or 0
+                following_count = user_response.data.get("following_count", 0) or 0
+            
+            # 检查当前用户是否关注目标用户
+            is_following = False
+            if current_user_id and current_user_id != target_user_id:
+                follow_check = (
+                    self.supabase.table("user_follows")
+                    .select("id")
+                    .eq("follower_id", current_user_id)
+                    .eq("following_id", target_user_id)
+                    .execute()
+                )
+                is_following = bool(follow_check.data)
+            
+            return FollowStatusResponse(
+                is_following=is_following,
+                followers_count=followers_count,
+                following_count=following_count
+            )
+            
+        except Exception as e:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"获取关注状态失败: {str(e)}"
+            )
+    
+    async def get_followers(
+        self, 
+        user_id: str, 
+        current_user_id: Optional[str] = None,
+        page: int = 1, 
+        page_size: int = 20
+    ) -> FollowListResponse:
+        """
+        获取用户的粉丝列表
+        
+        Args:
+            user_id: 目标用户ID
+            current_user_id: 当前用户ID（用于判断互相关注状态）
+            page: 页码
+            page_size: 每页数量
+            
+        Returns:
+            FollowListResponse: 粉丝列表
+        """
+        try:
+            offset = (page - 1) * page_size
+            
+            # 获取粉丝列表
+            response = (
+                self.supabase.table("user_follows")
+                .select("follower_id, created_at", count="exact")
+                .eq("following_id", user_id)
+                .order("created_at", desc=True)
+                .range(offset, offset + page_size - 1)
+                .execute()
+            )
+            
+            follower_ids = [f["follower_id"] for f in response.data] if response.data else []
+            
+            # 获取用户信息
+            users = []
+            if follower_ids:
+                user_response = (
+                    self.supabase.table("user_profiles")
+                    .select("id, username, full_name, avatar_url")
+                    .in_("id", follower_ids)
+                    .execute()
+                )
+                
+                user_map = {u["id"]: u for u in user_response.data} if user_response.data else {}
+                
+                # 检查当前用户是否关注这些粉丝
+                following_set = set()
+                if current_user_id:
+                    following_check = (
+                        self.supabase.table("user_follows")
+                        .select("following_id")
+                        .eq("follower_id", current_user_id)
+                        .in_("following_id", follower_ids)
+                        .execute()
+                    )
+                    following_set = {f["following_id"] for f in following_check.data} if following_check.data else set()
+                
+                for fid in follower_ids:
+                    user_info = user_map.get(fid, {})
+                    users.append(FollowUserInfo(
+                        user_id=fid,
+                        username=user_info.get("username"),
+                        full_name=user_info.get("full_name"),
+                        avatar_url=user_info.get("avatar_url"),
+                        is_following=fid in following_set
+                    ))
+            
+            return FollowListResponse(
+                users=users,
+                total=response.count or 0,
+                page=page,
+                page_size=page_size
+            )
+            
+        except Exception as e:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"获取粉丝列表失败: {str(e)}"
+            )
+    
+    async def get_following(
+        self, 
+        user_id: str, 
+        current_user_id: Optional[str] = None,
+        page: int = 1, 
+        page_size: int = 20
+    ) -> FollowListResponse:
+        """
+        获取用户的关注列表
+        
+        Args:
+            user_id: 目标用户ID
+            current_user_id: 当前用户ID（用于判断是否也关注）
+            page: 页码
+            page_size: 每页数量
+            
+        Returns:
+            FollowListResponse: 关注列表
+        """
+        try:
+            offset = (page - 1) * page_size
+            
+            # 获取关注列表
+            response = (
+                self.supabase.table("user_follows")
+                .select("following_id, created_at", count="exact")
+                .eq("follower_id", user_id)
+                .order("created_at", desc=True)
+                .range(offset, offset + page_size - 1)
+                .execute()
+            )
+            
+            following_ids = [f["following_id"] for f in response.data] if response.data else []
+            
+            # 获取用户信息
+            users = []
+            if following_ids:
+                user_response = (
+                    self.supabase.table("user_profiles")
+                    .select("id, username, full_name, avatar_url")
+                    .in_("id", following_ids)
+                    .execute()
+                )
+                
+                user_map = {u["id"]: u for u in user_response.data} if user_response.data else {}
+                
+                # 检查当前用户是否也关注这些用户
+                following_set = set()
+                if current_user_id and current_user_id != user_id:
+                    following_check = (
+                        self.supabase.table("user_follows")
+                        .select("following_id")
+                        .eq("follower_id", current_user_id)
+                        .in_("following_id", following_ids)
+                        .execute()
+                    )
+                    following_set = {f["following_id"] for f in following_check.data} if following_check.data else set()
+                elif current_user_id == user_id:
+                    # 如果查看的是自己的关注列表，所有人都是已关注状态
+                    following_set = set(following_ids)
+                
+                for fid in following_ids:
+                    user_info = user_map.get(fid, {})
+                    users.append(FollowUserInfo(
+                        user_id=fid,
+                        username=user_info.get("username"),
+                        full_name=user_info.get("full_name"),
+                        avatar_url=user_info.get("avatar_url"),
+                        is_following=fid in following_set
+                    ))
+            
+            return FollowListResponse(
+                users=users,
+                total=response.count or 0,
+                page=page,
+                page_size=page_size
+            )
+            
+        except Exception as e:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"获取关注列表失败: {str(e)}"
+            )
+    
+    async def check_batch_following(
+        self, 
+        current_user_id: str, 
+        user_ids: List[str]
+    ) -> Dict[str, bool]:
+        """
+        批量检查当前用户是否关注了指定用户列表
+        
+        Args:
+            current_user_id: 当前用户ID
+            user_ids: 要检查的用户ID列表
+            
+        Returns:
+            Dict[str, bool]: 用户ID到是否关注的映射
+        """
+        if not user_ids:
+            return {}
+        
+        try:
+            response = (
+                self.supabase.table("user_follows")
+                .select("following_id")
+                .eq("follower_id", current_user_id)
+                .in_("following_id", user_ids)
+                .execute()
+            )
+            
+            following_set = {f["following_id"] for f in response.data} if response.data else set()
+            
+            return {uid: uid in following_set for uid in user_ids}
+            
+        except Exception as e:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"批量检查关注状态失败: {str(e)}"
             )
 

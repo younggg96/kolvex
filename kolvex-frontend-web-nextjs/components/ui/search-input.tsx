@@ -14,7 +14,7 @@ const SearchInput = React.forwardRef<HTMLInputElement, SearchInputProps>(
     return (
       <div
         className={cn(
-          "relative w-fit bg-card-light dark:bg-card-dark rounded-lg border border-border-light dark:border-primary/20 transition-colors duration-200",
+          "relative w-fit bg-white dark:bg-card-dark rounded-lg border border-border-light dark:border-primary/20 transition-colors duration-200",
           containerClassName
         )}
       >

@@ -154,3 +154,46 @@ class ErrorResponse(BaseModel):
             }
         }
     )
+
+
+# ===== Follow 相关 Schemas =====
+
+
+class UserFollowResponse(BaseModel):
+    """用户关注响应"""
+
+    id: str
+    follower_id: str
+    following_id: str
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class FollowStatusResponse(BaseModel):
+    """关注状态响应"""
+
+    is_following: bool
+    followers_count: int = 0
+    following_count: int = 0
+
+
+class FollowListResponse(BaseModel):
+    """关注列表响应"""
+
+    users: list["FollowUserInfo"]
+    total: int
+    page: int
+    page_size: int
+
+
+class FollowUserInfo(BaseModel):
+    """关注用户基本信息"""
+
+    user_id: str
+    username: Optional[str] = None
+    full_name: Optional[str] = None
+    avatar_url: Optional[str] = None
+    is_following: bool = False  # 当前用户是否关注该用户
+
+    model_config = ConfigDict(from_attributes=True)

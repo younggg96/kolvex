@@ -14,7 +14,7 @@ from .schemas import (
     HoldingsResponse, 
     PublicHoldingsResponse, 
     PublicUsersResponse,
-    TogglePublicRequest,
+    TogglePublicRequest, 
     TogglePositionVisibilityRequest,
     BatchTogglePositionVisibilityRequest,
     PrivacySettings,
@@ -50,15 +50,26 @@ async def get_my_holdings(
 async def get_public_users(
     limit: int = 20,
     offset: int = 0,
+    sort_by: str = "updated",  # "updated" or "pnl_percent"
+    sort_order: str = "desc",  # "asc" or "desc"
     service: SnapTradeService = Depends(get_snaptrade_service),
 ):
     """
     Get list of users who have public portfolios
     
     No authentication required - this is public data
+    
+    Args:
+        sort_by: Sort field - "updated" (last_synced_at) or "pnl_percent"
+        sort_order: Sort order - "asc" or "desc"
     """
     try:
-        result = await service.get_public_users(limit=limit, offset=offset)
+        result = await service.get_public_users(
+            limit=limit, 
+            offset=offset, 
+            sort_by=sort_by, 
+            sort_order=sort_order
+        )
         return PublicUsersResponse(**result)
     except Exception as e:
         logger.error(f"Failed to get public users: {e}")

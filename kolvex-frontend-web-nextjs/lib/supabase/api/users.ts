@@ -1,63 +1,22 @@
-// User-related API functions
+// User-related API functions - Re-export from new API module
+// Legacy file kept for backward compatibility
+
+// Re-export all user API functions from new location
+export {
+  getUserProfile,
+  getCurrentUserProfile,
+  updateUserProfile,
+  updateTheme,
+  updateNotificationSettings,
+  type UserProfile,
+} from "@/lib/api/users";
+
 import { createClient } from "../client";
-import type { Theme, ProfileUpdate } from "../database.types";
 
 interface ApiResponse<T = any> {
   success: boolean;
   data?: T;
   error?: string;
-}
-
-/**
- * Update user theme preference
- */
-export async function updateTheme(
-  userId: string,
-  theme: Theme
-): Promise<ApiResponse> {
-  try {
-    const supabase = createClient();
-
-    const { data, error } = await supabase
-      .from("user_profiles")
-      .update({ theme })
-      .eq("id", userId)
-      .select()
-      .single();
-
-    if (error) throw error;
-
-    return { success: true, data };
-  } catch (error: any) {
-    console.error("Update theme error:", error);
-    return { success: false, error: error.message };
-  }
-}
-
-/**
- * Update user profile
- */
-export async function updateUserProfile(
-  userId: string,
-  updates: ProfileUpdate
-): Promise<ApiResponse> {
-  try {
-    const supabase = createClient();
-
-    const { data, error } = await supabase
-      .from("user_profiles")
-      .update(updates)
-      .eq("id", userId)
-      .select()
-      .single();
-
-    if (error) throw error;
-
-    return { success: true, data };
-  } catch (error: any) {
-    console.error("Update profile error:", error);
-    return { success: false, error: error.message };
-  }
 }
 
 /**

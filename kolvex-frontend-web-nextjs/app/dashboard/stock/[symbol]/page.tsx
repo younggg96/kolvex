@@ -1,7 +1,10 @@
 import StockPageClient from "./StockPageClient";
 import { getStockOverviewServer } from "@/lib/stockApi.server";
-import { checkStockTrackedServer } from "@/lib/trackedStockApi.server";
+import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { Metadata } from "next";
+
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const API_PREFIX = "/api/v1";
 
 interface StockPageProps {
   params: {
@@ -29,6 +32,54 @@ export async function generateMetadata({
 }
 
 export const dynamic = "force-dynamic";
+
+/**
+ * Server-side check if stock is tracked
+ */
+async function checkStockTrackedServer(symbol: string): Promise<{
+  symbol: string;
+  is_tracked: boolean;
+  stock_id: string | null;
+}> {
+  const normalized = symbol.trim().toUpperCase();
+  if (!normalized) {
+    return { symbol: normalized, is_tracked: false, stock_id: null };
+  }
+
+  try {
+    const supabase = await createServerSupabaseClient();
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+
+    if (!session?.access_token) {
+      return { symbol: normalized, is_tracked: false, stock_id: null };
+    }
+
+    const res = await fetch(
+      `${API_BASE_URL}${API_PREFIX}/stocks/tracked/check/${encodeURIComponent(
+        normalized
+      )}`,
+      {
+        cache: "no-store",
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      }
+    );
+
+    if (!res.ok) {
+      return { symbol: normalized, is_tracked: false, stock_id: null };
+    }
+
+    const json = await res.json();
+    return {
+      symbol: json.symbol?.toUpperCase?.() || normalized,
+      is_tracked: Boolean(json.is_tracked),
+      stock_id: json.stock_id ?? null,
+    };
+  } catch {
+    return { symbol: normalized, is_tracked: false, stock_id: null };
+  }
+}
 
 export default async function StockPage({ params }: StockPageProps) {
   const symbol = params.symbol.toUpperCase();

@@ -11,6 +11,7 @@ from supabase import Client
 
 from app.core.supabase import get_supabase_service
 from .client import SnapTradeClient, get_snaptrade_client
+from app.services.notification_service import NotificationService, get_notification_service
 
 logger = logging.getLogger(__name__)
 
@@ -22,9 +23,11 @@ class SnapTradeService:
         self,
         client: Optional[SnapTradeClient] = None,
         supabase: Optional[Client] = None,
+        notification_service: Optional[NotificationService] = None,
     ):
         self.client = client or get_snaptrade_client()
         self.supabase = supabase or get_supabase_service()
+        self.notification_service = notification_service or get_notification_service()
 
     async def get_or_create_snaptrade_user(self, user_id: str) -> Dict[str, Any]:
         """
@@ -194,6 +197,29 @@ class SnapTradeService:
         )
 
         all_positions = []
+        
+        # ===== 持仓变化检测 =====
+        # 获取旧持仓数据用于比较（只针对 equity 类型，期权暂不通知）
+        old_positions_map: Dict[str, Dict[str, Any]] = {}
+        for account in accounts.data or []:
+            old_positions = (
+                self.supabase.table("snaptrade_positions")
+                .select("symbol, units, price, position_type")
+                .eq("account_id", account["id"])
+                .eq("position_type", "equity")
+                .execute()
+            )
+            for pos in old_positions.data or []:
+                symbol = pos.get("symbol")
+                if symbol:
+                    # 累加同一股票在不同账户的持仓
+                    if symbol in old_positions_map:
+                        old_positions_map[symbol]["units"] += pos.get("units", 0)
+                    else:
+                        old_positions_map[symbol] = {
+                            "units": pos.get("units", 0),
+                            "price": pos.get("price", 0),
+                        }
 
         for account in accounts.data or []:
             try:
@@ -309,7 +335,117 @@ class SnapTradeService:
             {"last_synced_at": datetime.utcnow().isoformat()}
         ).eq("id", connection["id"]).execute()
 
+        # ===== 检测持仓变化并通知粉丝 =====
+        # 只有当用户设置了公开且有粉丝时才发送通知
+        if connection.get("is_public", False):
+            await self._detect_and_notify_position_changes(
+                user_id, old_positions_map, all_positions
+            )
+
         return all_positions
+    
+    async def _detect_and_notify_position_changes(
+        self,
+        user_id: str,
+        old_positions: Dict[str, Dict[str, Any]],
+        new_positions: List[Dict[str, Any]],
+    ) -> None:
+        """
+        检测持仓变化并通知粉丝
+        
+        Args:
+            user_id: 用户ID
+            old_positions: 旧持仓映射 {symbol: {units, price}}
+            new_positions: 新持仓列表
+        """
+        try:
+            # 构建新持仓映射（只处理 equity 类型）
+            new_positions_map: Dict[str, Dict[str, Any]] = {}
+            for pos in new_positions:
+                if pos.get("position_type") != "equity":
+                    continue
+                symbol = pos.get("symbol")
+                if symbol:
+                    if symbol in new_positions_map:
+                        new_positions_map[symbol]["units"] += pos.get("units", 0)
+                    else:
+                        new_positions_map[symbol] = {
+                            "units": pos.get("units", 0),
+                            "price": pos.get("price", 0),
+                        }
+            
+            changes = []
+            
+            # 检测买入（新增）和加仓
+            for symbol, new_data in new_positions_map.items():
+                old_data = old_positions.get(symbol)
+                new_units = new_data.get("units", 0)
+                
+                if old_data is None:
+                    # 新买入
+                    changes.append({
+                        "type": "buy",
+                        "symbol": symbol,
+                        "units_change": new_units,
+                        "current_units": new_units,
+                        "price": new_data.get("price"),
+                    })
+                else:
+                    old_units = old_data.get("units", 0)
+                    if new_units > old_units:
+                        # 加仓
+                        changes.append({
+                            "type": "increase",
+                            "symbol": symbol,
+                            "units_change": new_units - old_units,
+                            "current_units": new_units,
+                            "price": new_data.get("price"),
+                        })
+                    elif new_units < old_units:
+                        # 减仓
+                        changes.append({
+                            "type": "decrease",
+                            "symbol": symbol,
+                            "units_change": old_units - new_units,
+                            "current_units": new_units,
+                            "price": new_data.get("price"),
+                        })
+            
+            # 检测卖出（完全清仓）
+            for symbol, old_data in old_positions.items():
+                if symbol not in new_positions_map:
+                    changes.append({
+                        "type": "sell",
+                        "symbol": symbol,
+                        "units_change": old_data.get("units", 0),
+                        "current_units": 0,
+                        "price": old_data.get("price"),
+                    })
+            
+            # 如果有变化，通知粉丝
+            if changes:
+                # 获取用户名
+                user_profile = (
+                    self.supabase.table("user_profiles")
+                    .select("username, full_name")
+                    .eq("id", user_id)
+                    .single()
+                    .execute()
+                )
+                
+                username = "Someone you follow"
+                if user_profile.data:
+                    username = user_profile.data.get("full_name") or user_profile.data.get("username") or username
+                
+                logger.info(f"检测到用户 {user_id} 的 {len(changes)} 个持仓变化")
+                await self.notification_service.notify_followers_of_position_changes(
+                    user_id=user_id,
+                    username=username,
+                    changes=changes,
+                )
+                
+        except Exception as e:
+            logger.error(f"检测持仓变化失败: {e}")
 
     async def get_user_holdings(self, user_id: str) -> Dict[str, Any]:
         """
@@ -323,7 +459,12 @@ class SnapTradeService:
         """
         connection = await self._get_connection(user_id)
         if not connection:
-            return {"accounts": [], "is_connected": False, "is_public": False, "total_value": 0}
+            return {
+                "accounts": [],
+                "is_connected": False,
+                "is_public": False,
+                "total_value": 0,
+            }
 
         # 获取账户和持仓（包含 is_hidden 字段供用户管理）
         accounts = (
@@ -334,7 +475,7 @@ class SnapTradeService:
         )
 
         accounts_data = accounts.data or []
-        
+
         # 计算总市值
         total_portfolio_value = 0.0
         for account in accounts_data:
@@ -354,13 +495,15 @@ class SnapTradeService:
                 position_type = pos.get("position_type", "equity")
                 multiplier = 100 if position_type == "option" else 1
                 value = price * units * multiplier
-                
+
                 # 计算持仓权重 (0-100)
                 if total_portfolio_value > 0:
-                    pos["weight_percent"] = round((value / total_portfolio_value) * 100, 2)
+                    pos["weight_percent"] = round(
+                        (value / total_portfolio_value) * 100, 2
+                    )
                 else:
                     pos["weight_percent"] = 0.0
-                
+
                 # 同时添加持仓市值
                 pos["market_value"] = round(value, 2)
 
@@ -395,48 +538,56 @@ class SnapTradeService:
             return None
 
         connection = result.data[0]
-        
+
         # 获取隐私设置
         default_settings = {
             "show_total_value": True,
             "show_total_pnl": True,
             "show_pnl_percent": True,
             "show_positions_count": True,
-            "show_accounts_count": True,
             "show_shares": True,
             "show_position_value": True,
             "show_position_pnl": True,
             "show_position_weight": True,
-            "show_position_price": True,
+            "show_position_cost": True,
+            "hidden_accounts": [],  # 隐藏的账户 ID 列表
         }
-        privacy_settings = {**default_settings, **(connection.get("privacy_settings") or {})}
+        privacy_settings = {
+            **default_settings,
+            **(connection.get("privacy_settings") or {}),
+        }
 
-        # 获取账户和持仓（排除隐藏的持仓）
+        # 获取隐藏的账户 ID 列表
+        hidden_account_ids = set(privacy_settings.get("hidden_accounts", []))
+
+        # 获取账户和持仓（获取所有字段，然后过滤隐藏持仓）
         accounts = (
             self.supabase.table("snaptrade_accounts")
-            .select(
-                "id, brokerage_name, account_name, account_type, snaptrade_positions(id, symbol, security_name, units, price, open_pnl, currency, position_type, is_hidden)"
-            )
+            .select("*, snaptrade_positions(*)")
             .eq("connection_id", connection["id"])
             .execute()
         )
 
-        accounts_data = accounts.data or []
-        
-        # 过滤掉隐藏的持仓
-        for account in accounts_data:
-            positions = account.get("snaptrade_positions", [])
-            account["snaptrade_positions"] = [
-                pos for pos in positions if not pos.get("is_hidden", False)
-            ]
-        
-        # 计算总市值和盈亏（仅计算可见持仓）
+        # 过滤掉隐藏的账户
+        accounts_data = [
+            acc
+            for acc in (accounts.data or [])
+            if acc.get("id") not in hidden_account_ids
+        ]
+
+        # 计算总市值和盈亏（仅计算可见持仓用于统计）
         total_portfolio_value = 0.0
         total_pnl = 0.0
         positions_count = 0
-        
+        hidden_positions_count = 0
+
         for account in accounts_data:
             for pos in account.get("snaptrade_positions", []):
+                is_hidden = pos.get("is_hidden", False)
+                if is_hidden:
+                    hidden_positions_count += 1
+                    continue  # 隐藏持仓不计入总值统计
+
                 price = pos.get("price") or 0
                 units = pos.get("units") or 0
                 position_type = pos.get("position_type", "equity")
@@ -449,75 +600,96 @@ class SnapTradeService:
         # 为每个持仓计算权重百分比，并应用隐私设置
         for account in accounts_data:
             for pos in account.get("snaptrade_positions", []):
+                is_hidden = pos.get("is_hidden", False)
                 price = pos.get("price") or 0
                 units = pos.get("units") or 0
                 position_type = pos.get("position_type", "equity")
                 multiplier = 100 if position_type == "option" else 1
                 value = price * units * multiplier
-                
-                if total_portfolio_value > 0:
-                    pos["weight_percent"] = round((value / total_portfolio_value) * 100, 2)
+
+                if total_portfolio_value > 0 and not is_hidden:
+                    pos["weight_percent"] = round(
+                        (value / total_portfolio_value) * 100, 2
+                    )
                 else:
                     pos["weight_percent"] = 0.0
-                
-                pos["market_value"] = round(value, 2)
-                
-                # 移除 is_hidden 字段，不暴露给公开 API
-                pos.pop("is_hidden", None)
-                
-                # 应用隐私设置 - 隐藏用户不想公开的字段
-                if not privacy_settings.get("show_shares"):
-                    pos["units"] = None
-                if not privacy_settings.get("show_position_value"):
-                    pos["market_value"] = None
-                if not privacy_settings.get("show_position_pnl"):
-                    pos["open_pnl"] = None
-                if not privacy_settings.get("show_position_weight"):
-                    pos["weight_percent"] = None
-                if not privacy_settings.get("show_position_price"):
-                    pos["price"] = None
 
-        # 构建响应，应用隐私设置
+                pos["market_value"] = round(value, 2)
+
+                # 如果持仓被隐藏，将敏感数据设为 null（前端显示 *）
+                if is_hidden:
+                    pos["units"] = None
+                    pos["price"] = None
+                    pos["market_value"] = None
+                    pos["open_pnl"] = None
+                    pos["weight_percent"] = None
+                    pos["average_purchase_price"] = None
+                else:
+                    # 应用隐私设置 - 隐藏用户不想公开的字段
+                    if not privacy_settings.get("show_shares"):
+                        pos["units"] = None
+                    if not privacy_settings.get("show_position_value"):
+                        pos["market_value"] = None
+                    if not privacy_settings.get("show_position_pnl"):
+                        pos["open_pnl"] = None
+                    if not privacy_settings.get("show_position_weight"):
+                        pos["weight_percent"] = None
+                    if not privacy_settings.get("show_position_cost"):
+                        pos["average_purchase_price"] = None
+
+        # 构建响应，应用隐私设置（与 get_user_holdings 格式保持一致）
         response = {
             "user_id": user_id,
+            "is_connected": True,  # 公开持仓必然已连接
+            "is_public": True,  # 公开持仓必然已公开
             "last_synced_at": connection.get("last_synced_at"),
             "accounts": accounts_data,
             "privacy_settings": privacy_settings,
         }
-        
+
         # 根据隐私设置决定是否返回汇总数据
         if privacy_settings.get("show_total_value"):
             response["total_value"] = round(total_portfolio_value, 2)
         else:
             response["total_value"] = None
-            
+
         if privacy_settings.get("show_total_pnl"):
             response["total_pnl"] = round(total_pnl, 2)
         else:
             response["total_pnl"] = None
-            
+
         if privacy_settings.get("show_pnl_percent"):
             if total_portfolio_value > total_pnl and total_portfolio_value > 0:
-                response["pnl_percent"] = round((total_pnl / (total_portfolio_value - total_pnl)) * 100, 2)
+                response["pnl_percent"] = round(
+                    (total_pnl / (total_portfolio_value - total_pnl)) * 100, 2
+                )
             else:
                 response["pnl_percent"] = 0
         else:
             response["pnl_percent"] = None
-            
+
         if privacy_settings.get("show_positions_count"):
             response["positions_count"] = positions_count
         else:
             response["positions_count"] = None
-            
-        if privacy_settings.get("show_accounts_count"):
-            response["accounts_count"] = len(accounts_data)
-        else:
-            response["accounts_count"] = None
+
+        # 账户数量（已过滤隐藏账户后的数量）
+        response["accounts_count"] = len(accounts_data)
+
+        # 隐藏的账户数量（让前端知道有多少被隐藏）
+        response["hidden_accounts_count"] = len(hidden_account_ids)
+
+        # 添加隐藏持仓数量（让前端知道有多少被隐藏）
+        response["hidden_positions_count"] = hidden_positions_count
 
         return response
 
     async def get_public_users(
-        self, limit: int = 20, offset: int = 0
+        self,
+        limit: int = 20,
+        offset: int = 0,
+        sort_by: str = "updated",
+        sort_order: str = "desc",
     ) -> Dict[str, Any]:
         """
         获取所有公开持仓的用户列表
@@ -525,20 +697,30 @@ class SnapTradeService:
         Args:
             limit: 返回数量限制
             offset: 分页偏移量
+            sort_by: 排序字段 - "updated" (last_synced_at) 或 "pnl_percent"
+            sort_order: 排序顺序 - "asc" 或 "desc"
 
         Returns:
             包含用户列表和总数的字典
         """
+        # 对于 pnl_percent 排序，需要获取所有数据后再排序
+        # 对于 updated 排序，可以直接在数据库查询时排序
+        is_pnl_sort = sort_by == "pnl_percent"
+
         # 获取所有公开的连接，关联用户资料和隐私设置
-        result = (
+        query = (
             self.supabase.table("snaptrade_connections")
             .select("user_id, last_synced_at, created_at, privacy_settings")
             .eq("is_public", True)
             .eq("is_connected", True)
-            .order("last_synced_at", desc=True)
-            .range(offset, offset + limit - 1)
-            .execute()
         )
+
+        # 如果是按更新时间排序，直接在查询中排序并分页
+        if not is_pnl_sort:
+            query = query.order("last_synced_at", desc=(sort_order == "desc"))
+            query = query.range(offset, offset + limit - 1)
+
+        result = query.execute()
 
         # 获取总数
         count_result = (
@@ -558,19 +740,19 @@ class SnapTradeService:
             "show_total_pnl": True,
             "show_pnl_percent": True,
             "show_positions_count": True,
-            "show_accounts_count": True,
             "show_shares": True,
             "show_position_value": True,
             "show_position_pnl": True,
             "show_position_weight": True,
-            "show_position_price": True,
+            "show_position_cost": True,
+            "hidden_accounts": [],
         }
-        
+
         # 获取用户详细信息和持仓汇总
         users = []
         for conn in result.data:
             user_id = conn["user_id"]
-            
+
             # 获取隐私设置
             privacy = {**default_privacy, **(conn.get("privacy_settings") or {})}
 
@@ -598,6 +780,9 @@ class SnapTradeService:
             top_positions = []
 
             if connection.data:
+                # 获取隐藏的账户 ID 列表
+                hidden_account_ids = set(privacy.get("hidden_accounts", []))
+
                 # 获取账户和持仓（包含 is_hidden 字段）
                 accounts = (
                     self.supabase.table("snaptrade_accounts")
@@ -607,11 +792,15 @@ class SnapTradeService:
                 )
 
                 for account in accounts.data or []:
+                    # 跳过隐藏的账户
+                    if account.get("id") in hidden_account_ids:
+                        continue
+
                     for pos in account.get("snaptrade_positions", []):
                         # 跳过隐藏的持仓
                         if pos.get("is_hidden", False):
                             continue
-                            
+
                         price = pos.get("price") or 0
                         units = pos.get("units") or 0
                         position_type = pos.get("position_type", "equity")
@@ -623,17 +812,18 @@ class SnapTradeService:
                         total_pnl += pnl
                         positions_count += 1
 
-                        # 收集前5个持仓
-                        if len(top_positions) < 5:
-                            top_positions.append({
+                        # 收集持仓用于排序
+                        top_positions.append(
+                            {
                                 "symbol": pos.get("symbol"),
                                 "value": value,
                                 "pnl": pnl,
-                            })
+                            }
+                        )
 
             # 按价值排序top持仓
             top_positions.sort(key=lambda x: x["value"], reverse=True)
-            
+
             # 根据隐私设置决定返回的字段
             user_data = {
                 "user_id": user_id,
@@ -644,15 +834,34 @@ class SnapTradeService:
                 "total_value": total_value if privacy.get("show_total_value") else None,
                 "total_pnl": total_pnl if privacy.get("show_total_pnl") else None,
                 "pnl_percent": (
-                    (total_pnl / (total_value - total_pnl) * 100) 
-                    if total_value > total_pnl and total_value > 0 
-                    else 0
-                ) if privacy.get("show_pnl_percent") else None,
-                "positions_count": positions_count if privacy.get("show_positions_count") else None,
+                    (
+                        (total_pnl / (total_value - total_pnl) * 100)
+                        if total_value > total_pnl and total_value > 0
+                        else 0
+                    )
+                    if privacy.get("show_pnl_percent")
+                    else None
+                ),
+                "positions_count": (
+                    positions_count if privacy.get("show_positions_count") else None
+                ),
                 "top_positions": top_positions[:5],
             }
 
             users.append(user_data)
+
+        # 如果是按 pnl_percent 排序，需要在内存中排序后分页
+        if is_pnl_sort:
+            # 对于 pnl_percent 为 None 的用户，使用 -infinity 或 +infinity 来排序
+            def get_sort_key(u):
+                pnl = u.get("pnl_percent")
+                if pnl is None:
+                    return float("-inf") if sort_order == "desc" else float("inf")
+                return pnl
+
+            users.sort(key=get_sort_key, reverse=(sort_order == "desc"))
+            # 分页
+            users = users[offset : offset + limit]
 
         return {
             "users": users,
@@ -797,12 +1006,12 @@ class SnapTradeService:
             "show_total_pnl": True,
             "show_pnl_percent": True,
             "show_positions_count": True,
-            "show_accounts_count": True,
             "show_shares": True,
             "show_position_value": True,
             "show_position_pnl": True,
             "show_position_weight": True,
-            "show_position_price": True,
+            "show_position_cost": True,
+            "hidden_accounts": [],
         }
 
         # 合并存储的设置
@@ -810,8 +1019,8 @@ class SnapTradeService:
         return {**default_settings, **stored_settings}
 
     async def update_privacy_settings(
-        self, user_id: str, settings: Dict[str, bool]
-    ) -> Dict[str, bool]:
+        self, user_id: str, settings: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """
         更新用户的隐私设置
 
@@ -828,7 +1037,7 @@ class SnapTradeService:
 
         # 获取当前设置
         current_settings = await self.get_privacy_settings(user_id)
-        
+
         # 合并新设置
         updated_settings = {**current_settings, **settings}
 

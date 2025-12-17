@@ -58,7 +58,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { createClient } from "@/lib/supabase/client";
 import { ProfileInfoSkeleton } from "@/components/common/LoadingSkeleton";
 import {
   useCurrentUserProfile,
@@ -368,10 +367,6 @@ function SettingsContent() {
 
       setUploadProgress(30);
 
-      const supabase = createClient();
-      const fileName = `${user.id}-${Date.now()}.jpg`;
-      const filePath = `avatars/${fileName}`;
-
       // Simulate upload progress
       const progressInterval = setInterval(() => {
         setUploadProgress((prev) => {
@@ -383,39 +378,27 @@ function SettingsContent() {
         });
       }, 200);
 
-      const { error: uploadError } = await supabase.storage
-        .from("user-uploads")
-        .upload(filePath, croppedBlob, {
-          cacheControl: "3600",
-          upsert: true,
-          contentType: "image/jpeg",
-        });
+      // Upload via backend API
+      const formData = new FormData();
+      formData.append("file", croppedBlob, `avatar-${Date.now()}.jpg`);
+
+      const uploadResponse = await fetch("/api/upload/avatar", {
+        method: "POST",
+        body: formData,
+      });
 
       clearInterval(progressInterval);
       setUploadProgress(90);
 
-      if (uploadError) {
-        // Provide more helpful error messages
-        if (uploadError.message?.includes("Bucket not found")) {
-          throw new Error(
-            "Storage not configured. Please contact administrator to set up the 'user-uploads' bucket in Supabase."
-          );
-        }
-        if (uploadError.message?.includes("row-level security")) {
-          throw new Error(
-            "Permission denied. Please check Storage RLS policies."
-          );
-        }
-        throw uploadError;
+      const uploadResult = await uploadResponse.json();
+
+      if (!uploadResult.success) {
+        throw new Error(uploadResult.error || "Failed to upload avatar");
       }
 
-      const {
-        data: { publicUrl },
-      } = supabase.storage.from("user-uploads").getPublicUrl(filePath);
-
-      // Update via backend API
+      // Update profile with new avatar URL
       const result = await updateProfile({
-        avatar_url: publicUrl,
+        avatar_url: uploadResult.url,
       });
 
       setUploadProgress(100);

@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 // Backend API base URL
-const BACKEND_API_URL = process.env.BACKEND_API_URL || "http://localhost:8000";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const API_PREFIX = "/api/v1";
 
 export type Platform = "TWITTER" | "REDDIT" | "YOUTUBE" | "REDNOTE";
 
@@ -35,112 +36,43 @@ export interface UpdateTrackedKOLInput {
   notify?: boolean;
 }
 
-// GET - 获取当前用户追踪的所有 KOL（包含 KOL 详细信息）
+// GET - 获取当前用户追踪的所有 KOL
 export async function GET(request: NextRequest) {
   try {
     const supabase = await createServerSupabaseClient();
-
-    // Check authentication
     const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
+      data: { session },
+    } = await supabase.auth.getSession();
 
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: "Unauthorized", details: "Please login to view tracked KOLs" },
-        { status: 401 }
-      );
+    if (!session?.access_token) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const searchParams = request.nextUrl.searchParams;
-    const platform = searchParams.get("platform") as Platform | null;
+    const platform = searchParams.get("platform");
 
-    // Get tracked KOLs from database
-    let query = supabase
-      .from("kol_subscriptions")
-      .select("*")
-      .eq("user_id", user.id)
-      .order("created_at", { ascending: false });
-
+    const url = new URL(`${API_BASE_URL}${API_PREFIX}/kol-subscriptions/tracked`);
     if (platform) {
-      query = query.eq("platform", platform);
+      url.searchParams.set("platform", platform);
     }
 
-    const { data: subscriptions, error: dbError } = await query;
+    const response = await fetch(url.toString(), {
+      headers: {
+        Authorization: `Bearer ${session.access_token}`,
+        "Content-Type": "application/json",
+      },
+    });
 
-    if (dbError) {
-      console.error("Database error:", dbError);
-      throw new Error(dbError.message);
-    }
-
-    // Fetch KOL profiles from backend to enrich the data
-    let kolProfiles: Map<string, any> = new Map();
-
-    try {
-      const response = await fetch(
-        `${BACKEND_API_URL}/api/v1/kol-tweets/profiles`,
-        {
-          headers: { "Content-Type": "application/json" },
-          cache: "no-store",
-        }
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      return NextResponse.json(
+        { error: error.detail || "Failed to fetch tracked KOLs" },
+        { status: response.status }
       );
-
-      if (response.ok) {
-        const data = await response.json();
-        const profiles = data.profiles || [];
-        profiles.forEach((profile: any) => {
-          kolProfiles.set(profile.username, profile);
-        });
-      }
-    } catch (fetchError) {
-      console.error("Error fetching KOL profiles:", fetchError);
-      // Continue without profile data
     }
 
-    // Enrich subscriptions with profile data
-    const enrichedKOLs: TrackedKOL[] = (subscriptions || []).map((sub: any) => {
-      const profile = kolProfiles.get(sub.kol_id);
-
-      // Calculate influence score if we have profile data
-      let influenceScore = 0;
-      let trendingScore = 0;
-
-      if (profile) {
-        const followersCount = profile.followers_count || 0;
-        const postsCount = profile.posts_count || 0;
-        const followerScore = Math.min(followersCount / 10000000, 1) * 50;
-        const postScore = Math.min(postsCount / 50000, 1) * 30;
-        const verificationBonus = profile.is_verified ? 20 : 0;
-        influenceScore =
-          Math.round((followerScore + postScore + verificationBonus) * 10) / 10;
-        trendingScore = Math.round(Math.random() * 50 + 25);
-      }
-
-      return {
-        id: sub.id,
-        user_id: sub.user_id,
-        kol_id: sub.kol_id,
-        platform: sub.platform,
-        notify: sub.notify,
-        created_at: sub.created_at,
-        updated_at: sub.updated_at || sub.created_at,
-        kol_name: profile?.display_name || profile?.username || sub.kol_id,
-        kol_avatar_url: profile?.avatar_url || null,
-        kol_username: profile?.username || sub.kol_id,
-        kol_verified: profile?.is_verified || false,
-        kol_bio: profile?.bio || null,
-        kol_followers_count: profile?.followers_count || 0,
-        kol_category: null, // Could be enhanced later
-        kol_influence_score: influenceScore,
-        kol_trending_score: trendingScore,
-      };
-    });
-
-    return NextResponse.json({
-      count: enrichedKOLs.length,
-      tracked_kols: enrichedKOLs,
-    });
+    const data = await response.json();
+    return NextResponse.json(data);
   } catch (error) {
     console.error("My tracked KOLs GET error:", error);
     return NextResponse.json(
@@ -157,14 +89,11 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createServerSupabaseClient();
-
-    // Check authentication
     const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
+      data: { session },
+    } = await supabase.auth.getSession();
 
-    if (authError || !user) {
+    if (!session?.access_token) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -177,75 +106,32 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check if already tracking
-    const { data: existing } = await supabase
-      .from("kol_subscriptions")
-      .select("id")
-      .eq("user_id", user.id)
-      .eq("kol_id", body.kol_id)
-      .eq("platform", body.platform)
-      .single();
-
-    if (existing) {
-      return NextResponse.json(
-        { error: "Already tracking this KOL" },
-        { status: 409 }
-      );
-    }
-
-    // Add to tracked KOLs
-    const { data: newSub, error: insertError } = await supabase
-      .from("kol_subscriptions")
-      .insert({
-        user_id: user.id,
-        kol_id: body.kol_id,
-        platform: body.platform,
-        notify: body.notify ?? true,
-      })
-      .select()
-      .single();
-
-    if (insertError) {
-      console.error("Insert error:", insertError);
-      throw new Error(insertError.message);
-    }
-
-    // Try to fetch KOL profile from backend
-    let profile = null;
-    try {
-      const response = await fetch(
-        `${BACKEND_API_URL}/api/v1/kol-tweets/profile/${body.kol_id}?include_tweets=false`,
-        {
-          headers: { "Content-Type": "application/json" },
-          cache: "no-store",
-        }
-      );
-      if (response.ok) {
-        const data = await response.json();
-        profile = data.profile;
-      }
-    } catch (fetchError) {
-      console.error("Error fetching profile:", fetchError);
-    }
-
-    return NextResponse.json(
+    const response = await fetch(
+      `${API_BASE_URL}${API_PREFIX}/kol-subscriptions/tracked`,
       {
-        id: newSub.id,
-        user_id: newSub.user_id,
-        kol_id: newSub.kol_id,
-        platform: newSub.platform,
-        notify: newSub.notify,
-        created_at: newSub.created_at,
-        updated_at: newSub.updated_at || newSub.created_at,
-        kol_name: profile?.display_name || profile?.username || body.kol_id,
-        kol_avatar_url: profile?.avatar_url || null,
-        kol_username: profile?.username || body.kol_id,
-        kol_verified: profile?.is_verified || false,
-        kol_bio: profile?.bio || null,
-        kol_followers_count: profile?.followers_count || 0,
-      },
-      { status: 201 }
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          kol_id: body.kol_id,
+          platform: body.platform,
+          notify: body.notify ?? true,
+        }),
+      }
     );
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      return NextResponse.json(
+        { error: error.detail || "Failed to track KOL" },
+        { status: response.status }
+      );
+    }
+
+    const data = await response.json();
+    return NextResponse.json(data, { status: 201 });
   } catch (error) {
     console.error("My tracked KOLs POST error:", error);
     return NextResponse.json(
@@ -262,14 +148,11 @@ export async function POST(request: NextRequest) {
 export async function PATCH(request: NextRequest) {
   try {
     const supabase = await createServerSupabaseClient();
-
-    // Check authentication
     const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
+      data: { session },
+    } = await supabase.auth.getSession();
 
-    if (authError || !user) {
+    if (!session?.access_token) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -283,34 +166,29 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
-    // Update subscription
-    const { data: updated, error: updateError } = await supabase
-      .from("kol_subscriptions")
-      .update({ notify: body.notify ?? true })
-      .eq("user_id", user.id)
-      .eq("kol_id", body.kol_id)
-      .eq("platform", body.platform)
-      .select()
-      .single();
+    const url = new URL(`${API_BASE_URL}${API_PREFIX}/kol-subscriptions/tracked`);
+    url.searchParams.set("kol_id", body.kol_id);
+    url.searchParams.set("platform", body.platform);
 
-    if (updateError) {
-      if (updateError.code === "PGRST116") {
-        return NextResponse.json(
-          { error: "Tracking KOL not found" },
-          { status: 404 }
-        );
-      }
-      throw new Error(updateError.message);
+    const response = await fetch(url.toString(), {
+      method: "PATCH",
+      headers: {
+        Authorization: `Bearer ${session.access_token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ notify: body.notify }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      return NextResponse.json(
+        { error: error.detail || "Failed to update tracked KOL" },
+        { status: response.status }
+      );
     }
 
-    return NextResponse.json({
-      id: updated.id,
-      user_id: updated.user_id,
-      kol_id: updated.kol_id,
-      platform: updated.platform,
-      notify: updated.notify,
-      updated_at: updated.updated_at || new Date().toISOString(),
-    });
+    const data = await response.json();
+    return NextResponse.json(data);
   } catch (error) {
     console.error("My tracked KOLs PATCH error:", error);
     return NextResponse.json(
@@ -327,14 +205,11 @@ export async function PATCH(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   try {
     const supabase = await createServerSupabaseClient();
-
-    // Check authentication
     const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
+      data: { session },
+    } = await supabase.auth.getSession();
 
-    if (authError || !user) {
+    if (!session?.access_token) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -348,7 +223,7 @@ export async function DELETE(request: NextRequest) {
         const body = await request.json();
         kol_id = body.kol_id;
         platform = body.platform;
-      } catch (e) {
+      } catch {
         // Body parsing failed, continue with query params
       }
     }
@@ -360,17 +235,23 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    // Delete subscription
-    const { error: deleteError } = await supabase
-      .from("kol_subscriptions")
-      .delete()
-      .eq("user_id", user.id)
-      .eq("kol_id", kol_id)
-      .eq("platform", platform);
+    const url = new URL(`${API_BASE_URL}${API_PREFIX}/kol-subscriptions/tracked`);
+    url.searchParams.set("kol_id", kol_id);
+    url.searchParams.set("platform", platform);
 
-    if (deleteError) {
-      console.error("Delete error:", deleteError);
-      throw new Error(deleteError.message);
+    const response = await fetch(url.toString(), {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${session.access_token}`,
+      },
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      return NextResponse.json(
+        { error: error.detail || "Failed to untrack KOL" },
+        { status: response.status }
+      );
     }
 
     return NextResponse.json({

@@ -1,4 +1,4 @@
-// Authentication functions using Supabase
+// Authentication functions using backend API
 import { createClient } from "./client";
 
 export interface SignUpData {
@@ -20,36 +20,68 @@ export interface AuthResponse {
   errorCode?: string;
 }
 
+interface SessionData {
+  access_token: string;
+  refresh_token?: string;
+  expires_in?: number;
+  expires_at?: number;
+}
+
+/**
+ * Set session in Supabase client after successful auth
+ */
+async function setSupabaseSession(session: SessionData): Promise<void> {
+  if (!session.access_token || !session.refresh_token) {
+    return;
+  }
+
+  const supabase = createClient();
+  await supabase.auth.setSession({
+    access_token: session.access_token,
+    refresh_token: session.refresh_token,
+  });
+}
+
 /**
  * Sign up a new user with email and password
  */
 export async function signUp(data: SignUpData): Promise<AuthResponse> {
   try {
-    const supabase = createClient();
-
-    const { data: authData, error } = await supabase.auth.signUp({
-      email: data.email,
-      password: data.password,
-      options: {
-        data: {
-          display_name: data.name || data.display_name,
-          full_name: data.name || data.display_name,
-        },
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
+    const response = await fetch("/api/auth/signup", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
       },
+      body: JSON.stringify({
+        email: data.email,
+        password: data.password,
+        name: data.name,
+        display_name: data.display_name,
+      }),
     });
 
-    if (error) {
+    const result = await response.json();
+
+    if (!result.success) {
       return {
         success: false,
-        error: error.message,
-        errorCode: error.name,
+        error: result.error || "Registration failed",
+        errorCode: result.error_code,
       };
+    }
+
+    // If session is returned, set it in Supabase client
+    if (result.session) {
+      await setSupabaseSession(result.session);
     }
 
     return {
       success: true,
-      data: authData,
+      data: {
+        user: result.user,
+        session: result.session,
+        message: result.message,
+      },
     };
   } catch (error: any) {
     return {
@@ -65,24 +97,38 @@ export async function signUp(data: SignUpData): Promise<AuthResponse> {
  */
 export async function signIn(data: SignInData): Promise<AuthResponse> {
   try {
-    const supabase = createClient();
-
-    const { data: authData, error } = await supabase.auth.signInWithPassword({
-      email: data.email,
-      password: data.password,
+    const response = await fetch("/api/auth/signin", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        email: data.email,
+        password: data.password,
+      }),
     });
 
-    if (error) {
+    const result = await response.json();
+
+    if (!result.success) {
       return {
         success: false,
-        error: error.message,
-        errorCode: error.name,
+        error: result.error || "Login failed",
+        errorCode: result.error_code,
       };
+    }
+
+    // Set session in Supabase client
+    if (result.session) {
+      await setSupabaseSession(result.session);
     }
 
     return {
       success: true,
-      data: authData,
+      data: {
+        user: result.user,
+        session: result.session,
+      },
     };
   } catch (error: any) {
     return {
@@ -98,30 +144,31 @@ export async function signIn(data: SignInData): Promise<AuthResponse> {
  */
 export async function signInWithGoogle(): Promise<AuthResponse> {
   try {
-    const supabase = createClient();
-
-    const { data, error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
-        queryParams: {
-          access_type: "offline",
-          prompt: "consent",
-        },
+    const response = await fetch("/api/auth/oauth", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
       },
+      body: JSON.stringify({
+        provider: "google",
+      }),
     });
 
-    if (error) {
+    const result = await response.json();
+
+    if (!result.success || !result.url) {
       return {
         success: false,
-        error: error.message,
-        errorCode: error.name,
+        error: result.error || "Failed to initiate Google sign in",
       };
     }
 
+    // Redirect to OAuth URL
+    window.location.href = result.url;
+
     return {
       success: true,
-      data,
+      data: { url: result.url },
     };
   } catch (error: any) {
     return {
@@ -136,13 +183,19 @@ export async function signInWithGoogle(): Promise<AuthResponse> {
  * Sign out the current user
  */
 export async function signOut() {
-  const supabase = createClient();
-
-  const { error } = await supabase.auth.signOut();
-
-  if (error) {
-    throw error;
+  try {
+    // Call backend API
+    await fetch("/api/auth/signout", {
+      method: "POST",
+    });
+  } catch (error) {
+    // Ignore errors, continue with client-side sign out
+    console.error("Sign out API error:", error);
   }
+
+  // Also sign out from Supabase client
+  const supabase = createClient();
+  await supabase.auth.signOut();
 
   // Redirect to home page
   window.location.href = "/";
@@ -155,22 +208,29 @@ export async function resetPassword(data: {
   email: string;
 }): Promise<AuthResponse> {
   try {
-    const supabase = createClient();
-
-    const { error } = await supabase.auth.resetPasswordForEmail(data.email, {
-      redirectTo: `${window.location.origin}/reset-password`,
+    const response = await fetch("/api/auth/reset-password", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        email: data.email,
+      }),
     });
 
-    if (error) {
+    const result = await response.json();
+
+    if (!result.success) {
       return {
         success: false,
-        error: error.message,
-        errorCode: error.name,
+        error: result.error || "Failed to send reset email",
+        errorCode: result.error_code,
       };
     }
 
     return {
       success: true,
+      data: { message: result.message },
     };
   } catch (error: any) {
     return {
@@ -188,22 +248,29 @@ export async function updatePassword(data: {
   password: string;
 }): Promise<AuthResponse> {
   try {
-    const supabase = createClient();
-
-    const { error } = await supabase.auth.updateUser({
-      password: data.password,
+    const response = await fetch("/api/auth/update-password", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        password: data.password,
+      }),
     });
 
-    if (error) {
+    const result = await response.json();
+
+    if (!result.success) {
       return {
         success: false,
-        error: error.message,
-        errorCode: error.name,
+        error: result.error || "Failed to update password",
+        errorCode: result.error_code,
       };
     }
 
     return {
       success: true,
+      data: { message: result.message },
     };
   } catch (error: any) {
     return {
@@ -215,24 +282,24 @@ export async function updatePassword(data: {
 }
 
 /**
- * Get user-friendly error message from Supabase auth error
+ * Get user-friendly error message from auth error
  */
 export function getErrorMessage(error: any): string {
   if (!error) return "An unknown error occurred";
 
-  // Handle common Supabase auth errors
-  const message = error.message || error.toString();
+  // Handle common auth errors
+  const message = error.message || error.error || error.toString();
 
-  if (message.includes("Invalid login credentials")) {
+  if (message.includes("Invalid login credentials") || message.includes("Invalid email or password")) {
     return "Invalid email or password";
   }
-  if (message.includes("User already registered")) {
+  if (message.includes("User already registered") || message.includes("already exists")) {
     return "An account with this email already exists";
   }
-  if (message.includes("Email not confirmed")) {
+  if (message.includes("Email not confirmed") || message.includes("verify your email")) {
     return "Please verify your email address";
   }
-  if (message.includes("Password should be")) {
+  if (message.includes("Password should be") || message.includes("at least 6")) {
     return "Password must be at least 6 characters";
   }
   if (message.includes("Invalid email")) {
@@ -240,6 +307,9 @@ export function getErrorMessage(error: any): string {
   }
   if (message.includes("network")) {
     return "Network error. Please check your connection";
+  }
+  if (message.includes("rate limit") || message.includes("Too many")) {
+    return "Too many attempts. Please try again later";
   }
 
   // Return the original message if no match

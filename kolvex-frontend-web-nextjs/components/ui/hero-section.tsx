@@ -23,7 +23,9 @@ export function HeroSection({
   className = "",
 }: HeroSectionProps) {
   return (
-    <div className={`relative overflow-hidden ${className}`}>
+    <div
+      className={`relative overflow-hidden ${className} bg-card-light dark:bg-card-dark`}
+    >
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <div>
@@ -63,4 +65,3 @@ export function HeroSection({
     </div>
   );
 }
-

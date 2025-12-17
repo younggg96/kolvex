@@ -72,12 +72,13 @@ export function PortfolioHeaderActions({
 
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" className="gap-1.5">
             <Settings2 className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Settings</span>
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-56">
-          <div className="px-2 py-1">
+        <DropdownMenuContent align="end" className="w-56 space-y-2">
+          <div className="px-2 py-2">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4 text-xs">
                 {holdings?.is_public ? (
@@ -114,13 +115,13 @@ export function PortfolioHeaderActions({
               />
             </>
           )}
-          <DropdownMenuSeparator />
           <DropdownMenuItem onClick={onConnect}>
             <Link2 className="mr-2 h-4 w-4" />
             Add Another Broker
           </DropdownMenuItem>
+          <DropdownMenuSeparator />
           <DropdownMenuItem
-            className="text-destructive focus:text-destructive"
+            className="!text-red-500 focus:!text-red-500"
             onClick={onDisconnect}
           >
             <LogOut className="mr-2 h-4 w-4" />
@@ -139,4 +140,3 @@ export function PortfolioHeaderActions({
     </div>
   );
 }
-

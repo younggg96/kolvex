@@ -114,17 +114,17 @@ class PrivacySettings(BaseModel):
     show_total_pnl: Optional[bool] = Field(None, description="Show total unrealized P&L")
     show_pnl_percent: Optional[bool] = Field(None, description="Show P&L percentage")
     show_positions_count: Optional[bool] = Field(None, description="Show number of positions")
-    show_accounts_count: Optional[bool] = Field(None, description="Show number of accounts")
     show_shares: Optional[bool] = Field(None, description="Show number of shares per position")
     show_position_value: Optional[bool] = Field(None, description="Show value per position")
     show_position_pnl: Optional[bool] = Field(None, description="Show P&L per position")
     show_position_weight: Optional[bool] = Field(None, description="Show weight percentage per position")
-    show_position_price: Optional[bool] = Field(None, description="Show price per position")
+    show_position_cost: Optional[bool] = Field(None, description="Show cost basis per position")
+    hidden_accounts: Optional[List[str]] = Field(None, description="List of account IDs to hide")
 
 
 class PrivacySettingsResponse(BaseModel):
     """Privacy settings response"""
-    settings: Dict[str, bool]
+    settings: Dict[str, Any]  # Can contain bool values and hidden_accounts list
 
 
 # ========== Common Schemas ==========

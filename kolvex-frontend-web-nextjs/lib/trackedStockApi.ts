@@ -1,5 +1,4 @@
 // API functions for tracked stock operations
-import { createClient } from "@/lib/supabase/client";
 
 export interface TopAuthor {
   username: string;
@@ -43,48 +42,28 @@ interface CreateTrackedStockParams {
   notify?: boolean;
 }
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-const API_PREFIX = "/api/v1";
-
-/**
- * Get auth token from Supabase
- */
-async function getAuthToken(): Promise<string | null> {
-  const supabase = createClient();
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-  return session?.access_token || null;
-}
-
 /**
  * Create a new tracked stock (add to watchlist)
  */
 export async function createTrackedStock(
   params: CreateTrackedStockParams
 ): Promise<TrackedStock> {
-  const token = await getAuthToken();
-  if (!token) {
-    throw new Error("未登录，请先登录");
-  }
-
-  const response = await fetch(`${API_BASE_URL}${API_PREFIX}/stocks/tracked`, {
+  const response = await fetch("/api/tracked-stocks", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
     },
     body: JSON.stringify({
       symbol: params.symbol,
-      company_name: params.companyName,
-      logo_url: params.logo,
+      companyName: params.companyName,
+      logo: params.logo,
       notify: params.notify ?? true,
     }),
   });
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({}));
-    throw new Error(error.detail || "Failed to add stock to watchlist");
+    throw new Error(error.error || "Failed to add stock to watchlist");
   }
 
   return response.json();
@@ -94,24 +73,16 @@ export async function createTrackedStock(
  * Delete a tracked stock from watchlist
  */
 export async function deleteTrackedStock(stockId: string): Promise<void> {
-  const token = await getAuthToken();
-  if (!token) {
-    throw new Error("未登录，请先登录");
-  }
+  const url = new URL("/api/tracked-stocks", window.location.origin);
+  url.searchParams.set("id", stockId);
 
-  const response = await fetch(
-    `${API_BASE_URL}${API_PREFIX}/stocks/tracked/${stockId}`,
-    {
-      method: "DELETE",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    }
-  );
+  const response = await fetch(url.toString(), {
+    method: "DELETE",
+  });
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({}));
-    throw new Error(error.detail || "Failed to remove stock from watchlist");
+    throw new Error(error.error || "Failed to remove stock from watchlist");
   }
 }
 
@@ -119,24 +90,14 @@ export async function deleteTrackedStock(stockId: string): Promise<void> {
  * Get all tracked stocks for current user
  */
 export async function getTrackedStocks(): Promise<TrackedStock[]> {
-  const token = await getAuthToken();
-  if (!token) {
-    throw new Error("未登录，请先登录");
-  }
-
-  const response = await fetch(`${API_BASE_URL}${API_PREFIX}/stocks/tracked`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
+  const response = await fetch("/api/tracked-stocks");
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({}));
-    throw new Error(error.detail || "Failed to fetch watchlist");
+    throw new Error(error.error || "Failed to fetch watchlist");
   }
 
-  const data = await response.json();
-  return data.stocks || [];
+  return response.json();
 }
 
 /**
@@ -146,26 +107,20 @@ export async function updateTrackedStock(
   stockId: string,
   updates: { notify?: boolean }
 ): Promise<TrackedStock> {
-  const token = await getAuthToken();
-  if (!token) {
-    throw new Error("未登录，请先登录");
-  }
-
-  const response = await fetch(
-    `${API_BASE_URL}${API_PREFIX}/stocks/tracked/${stockId}`,
-    {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(updates),
-    }
-  );
+  const response = await fetch("/api/tracked-stocks", {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      id: stockId,
+      ...updates,
+    }),
+  });
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({}));
-    throw new Error(error.detail || "Failed to update stock settings");
+    throw new Error(error.error || "Failed to update stock settings");
   }
 
   return response.json();
@@ -177,23 +132,17 @@ export async function updateTrackedStock(
 export async function checkStockTracked(
   symbol: string
 ): Promise<{ symbol: string; is_tracked: boolean; stock_id: string | null }> {
-  const token = await getAuthToken();
-  if (!token) {
-    return { symbol: symbol.toUpperCase(), is_tracked: false, stock_id: null };
-  }
+  try {
+    const response = await fetch(
+      `/api/tracked-stocks/check/${encodeURIComponent(symbol.toUpperCase())}`
+    );
 
-  const response = await fetch(
-    `${API_BASE_URL}${API_PREFIX}/stocks/tracked/check/${symbol}`,
-    {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
+    if (!response.ok) {
+      return { symbol: symbol.toUpperCase(), is_tracked: false, stock_id: null };
     }
-  );
 
-  if (!response.ok) {
+    return response.json();
+  } catch {
     return { symbol: symbol.toUpperCase(), is_tracked: false, stock_id: null };
   }
-
-  return response.json();
 }

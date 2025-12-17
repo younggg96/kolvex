@@ -14,6 +14,7 @@ import {
   PanelLeft,
   Briefcase,
   Globe,
+  Bell,
 } from "lucide-react";
 import UserMenu from "@/components/user/UserMenu";
 import { Button } from "@/components/ui/button";
@@ -67,6 +68,11 @@ const mainNavItems = [
 ];
 
 const bottomNavItems = [
+  {
+    icon: Bell,
+    title: "Notifications",
+    href: "/dashboard/notifications",
+  },
   {
     icon: Settings,
     title: "Settings",

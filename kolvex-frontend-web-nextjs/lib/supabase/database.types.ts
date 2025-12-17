@@ -113,17 +113,24 @@ export interface SnapTradeHoldings {
   last_synced_at?: string;
   accounts: SnapTradeAccount[];
   total_value?: number; // Total portfolio value calculated by backend
+  privacy_settings?: PrivacySettings; // Privacy settings for public view
+  hidden_positions_count?: number; // Number of hidden positions (public view only)
+  hidden_accounts_count?: number; // Number of hidden accounts (public view only)
 }
 
 export interface SnapTradePublicHoldings {
   user_id: string;
+  is_connected: boolean; // Always true for public holdings
+  is_public: boolean; // Always true for public holdings
   last_synced_at?: string;
   accounts: SnapTradeAccount[];
   total_value?: number | null; // Total portfolio value (null if hidden)
   total_pnl?: number | null; // Total P&L (null if hidden)
   pnl_percent?: number | null; // P&L percentage (null if hidden)
-  positions_count?: number | null; // Number of positions (null if hidden)
-  accounts_count?: number | null; // Number of accounts (null if hidden)
+  positions_count?: number | null; // Number of visible positions (null if hidden)
+  accounts_count?: number; // Number of visible accounts
+  hidden_positions_count?: number; // Number of hidden positions
+  hidden_accounts_count?: number; // Number of hidden accounts
   privacy_settings?: PrivacySettings; // Privacy settings applied
 }
 
@@ -132,12 +139,12 @@ export interface PrivacySettings {
   show_total_pnl: boolean;
   show_pnl_percent: boolean;
   show_positions_count: boolean;
-  show_accounts_count: boolean;
   show_shares: boolean;
   show_position_value: boolean;
   show_position_pnl: boolean;
   show_position_weight: boolean;
-  show_position_price: boolean;
+  show_position_cost: boolean;
+  hidden_accounts: string[]; // Account IDs to hide
 }
 
 export interface TopPosition {
@@ -162,4 +169,64 @@ export interface PublicUserSummary {
 export interface PublicUsersResponse {
   users: PublicUserSummary[];
   total: number;
+}
+
+// Follow 相关类型
+export interface UserFollow {
+  id: string;
+  follower_id: string;
+  following_id: string;
+  created_at: string;
+}
+
+export interface FollowStatus {
+  is_following: boolean;
+  followers_count: number;
+  following_count: number;
+}
+
+export interface FollowUserInfo {
+  user_id: string;
+  username?: string;
+  full_name?: string;
+  avatar_url?: string;
+  is_following: boolean;
+}
+
+export interface FollowListResponse {
+  users: FollowUserInfo[];
+  total: number;
+  page: number;
+  page_size: number;
+}
+
+// Notification 相关类型
+export type NotificationType =
+  | "POSITION_BUY"
+  | "POSITION_SELL"
+  | "POSITION_INCREASE"
+  | "POSITION_DECREASE"
+  | "NEW_FOLLOWER"
+  | "SYSTEM";
+
+export interface Notification {
+  id: string;
+  user_id: string;
+  type: NotificationType;
+  title: string;
+  message: string;
+  related_user_id?: string;
+  related_symbol?: string;
+  related_data?: Record<string, unknown>;
+  is_read: boolean;
+  read_at?: string;
+  created_at: string;
+}
+
+export interface NotificationListResponse {
+  notifications: Notification[];
+  total: number;
+  page: number;
+  page_size: number;
+  unread_count: number;
 }

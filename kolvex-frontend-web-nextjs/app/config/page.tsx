@@ -178,7 +178,7 @@ export default function ConfigPage() {
 
     try {
       // 1. Update notification settings
-      const notificationResult = await updateNotificationSettings(user.id, {
+      const notificationResult = await updateNotificationSettings({
         notification_method: notificationMethod,
       });
 
@@ -189,7 +189,7 @@ export default function ConfigPage() {
       }
 
       // 2. Update newsletter subscription
-      const profileResult = await updateUserProfile(user.id, {
+      const profileResult = await updateUserProfile({
         is_subscribe_newsletter: isSubscribeNewsletter,
       });
 

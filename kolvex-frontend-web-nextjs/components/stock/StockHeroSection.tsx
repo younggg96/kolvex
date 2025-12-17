@@ -17,6 +17,7 @@ export function StockHeroSection() {
       title="Stocks"
       description="Track trending stocks and manage your watchlist"
       features={stockFeatures}
+      className="p-4 border-b border-border-light dark:border-border-dark shadow-sm"
     />
   );
 }

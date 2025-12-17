@@ -41,7 +41,12 @@ export async function GET(request: NextRequest) {
     if (subError) {
       console.error("Error fetching subscriptions:", subError);
       return NextResponse.json(
-        { error: "Failed to fetch subscriptions", tweets: [], total: 0, has_more: false },
+        {
+          error: "Failed to fetch subscriptions",
+          tweets: [],
+          total: 0,
+          has_more: false,
+        },
         { status: 500 }
       );
     }
@@ -65,7 +70,9 @@ export async function GET(request: NextRequest) {
 
     // Fetch tweets from backend API with multiple usernames
     const usernamesParam = kolIds.join(",");
-    const backendUrl = `${BACKEND_API_URL}/api/v1/kol-tweets/?page=${page}&page_size=${limit}&usernames=${encodeURIComponent(usernamesParam)}`;
+    const backendUrl = `${BACKEND_API_URL}/api/v1/kol-tweets/?page=${page}&page_size=${limit}&usernames=${encodeURIComponent(
+      usernamesParam
+    )}`;
 
     const response = await fetch(backendUrl, {
       headers: {
@@ -95,4 +102,3 @@ export async function GET(request: NextRequest) {
     );
   }
 }
-

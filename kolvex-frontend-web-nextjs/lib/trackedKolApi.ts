@@ -1,5 +1,4 @@
 // API functions for tracked KOL operations
-import { createClient } from "@/lib/supabase/client";
 import type { Platform } from "@/lib/supabase/database.types";
 
 interface TrackKOLParams {
@@ -8,37 +7,49 @@ interface TrackKOLParams {
   notify?: boolean;
 }
 
+interface TrackedKOL {
+  id: string;
+  user_id: string;
+  kol_id: string;
+  platform: Platform;
+  notify: boolean;
+  created_at: string;
+  updated_at?: string;
+  kol_name?: string;
+  kol_avatar_url?: string | null;
+  kol_username?: string;
+  kol_verified?: boolean;
+  kol_bio?: string | null;
+  kol_followers_count?: number;
+  kol_category?: string | null;
+  kol_influence_score?: number;
+  kol_trending_score?: number;
+}
+
+interface TrackedKOLsResponse {
+  count: number;
+  tracked_kols: TrackedKOL[];
+}
+
 /**
  * Track a KOL (add to subscriptions)
  */
 export async function trackKOL(params: TrackKOLParams): Promise<void> {
-  const supabase = createClient();
-
-  // Get current user
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser();
-
-  if (userError || !user) {
-    throw new Error("User not authenticated");
-  }
-
-  const { error } = await supabase.from("kol_subscriptions").upsert(
-    {
-      user_id: user.id,
-      platform: params.platform,
-      kol_id: params.kol_id,
-      notify: params.notify ?? true,
+  const response = await fetch("/api/my-tracked-kols", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
     },
-    {
-      onConflict: "user_id,platform,kol_id",
-    }
-  );
+    body: JSON.stringify({
+      kol_id: params.kol_id,
+      platform: params.platform,
+      notify: params.notify ?? true,
+    }),
+  });
 
-  if (error) {
-    console.error("Track KOL error:", error);
-    throw new Error(error.message);
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}));
+    throw new Error(error.error || error.detail || "Failed to track KOL");
   }
 }
 
@@ -49,28 +60,17 @@ export async function untrackKOL(
   kolId: string,
   platform: Platform
 ): Promise<void> {
-  const supabase = createClient();
+  const url = new URL("/api/my-tracked-kols", window.location.origin);
+  url.searchParams.set("kol_id", kolId);
+  url.searchParams.set("platform", platform);
 
-  // Get current user
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser();
+  const response = await fetch(url.toString(), {
+    method: "DELETE",
+  });
 
-  if (userError || !user) {
-    throw new Error("User not authenticated");
-  }
-
-  const { error } = await supabase
-    .from("kol_subscriptions")
-    .delete()
-    .eq("user_id", user.id)
-    .eq("platform", platform)
-    .eq("kol_id", kolId);
-
-  if (error) {
-    console.error("Untrack KOL error:", error);
-    throw new Error(error.message);
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}));
+    throw new Error(error.error || error.detail || "Failed to untrack KOL");
   }
 }
 
@@ -81,67 +81,44 @@ export async function isKOLTracked(
   kolId: string,
   platform: Platform
 ): Promise<boolean> {
-  const supabase = createClient();
+  try {
+    const response = await fetch(`/api/my-tracked-kols?platform=${platform}`);
 
-  // Get current user
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser();
+    if (!response.ok) {
+      return false;
+    }
 
-  if (userError || !user) {
+    const data: TrackedKOLsResponse = await response.json();
+    return data.tracked_kols.some(
+      (kol) => kol.kol_id === kolId && kol.platform === platform
+    );
+  } catch {
     return false;
   }
-
-  const { data, error } = await supabase
-    .from("kol_subscriptions")
-    .select("id")
-    .eq("user_id", user.id)
-    .eq("platform", platform)
-    .eq("kol_id", kolId)
-    .single();
-
-  if (error) {
-    return false;
-  }
-
-  return !!data;
 }
 
 /**
  * Get all tracked KOLs for current user
  */
-export async function getTrackedKOLs(platform?: Platform): Promise<any[]> {
-  const supabase = createClient();
-
-  // Get current user
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser();
-
-  if (userError || !user) {
-    throw new Error("User not authenticated");
-  }
-
-  let query = supabase
-    .from("kol_subscriptions")
-    .select("*")
-    .eq("user_id", user.id)
-    .order("created_at", { ascending: false });
-
+export async function getTrackedKOLs(
+  platform?: Platform
+): Promise<TrackedKOL[]> {
+  const url = new URL("/api/my-tracked-kols", window.location.origin);
   if (platform) {
-    query = query.eq("platform", platform);
+    url.searchParams.set("platform", platform);
   }
 
-  const { data, error } = await query;
+  const response = await fetch(url.toString());
 
-  if (error) {
-    console.error("Get tracked KOLs error:", error);
-    throw new Error(error.message);
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}));
+    throw new Error(
+      error.error || error.detail || "Failed to get tracked KOLs"
+    );
   }
 
-  return data || [];
+  const data: TrackedKOLsResponse = await response.json();
+  return data.tracked_kols || [];
 }
 
 /**
@@ -152,28 +129,22 @@ export async function updateKOLNotification(
   platform: Platform,
   notify: boolean
 ): Promise<void> {
-  const supabase = createClient();
+  const response = await fetch("/api/my-tracked-kols", {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      kol_id: kolId,
+      platform: platform,
+      notify: notify,
+    }),
+  });
 
-  // Get current user
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser();
-
-  if (userError || !user) {
-    throw new Error("User not authenticated");
-  }
-
-  const { error } = await supabase
-    .from("kol_subscriptions")
-    .update({ notify })
-    .eq("user_id", user.id)
-    .eq("platform", platform)
-    .eq("kol_id", kolId);
-
-  if (error) {
-    console.error("Update KOL notification error:", error);
-    throw new Error(error.message);
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}));
+    throw new Error(
+      error.error || error.detail || "Failed to update KOL notification"
+    );
   }
 }
-
