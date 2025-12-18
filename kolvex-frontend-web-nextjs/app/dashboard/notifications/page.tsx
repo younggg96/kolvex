@@ -9,11 +9,27 @@ import {
   Trash2,
   Loader2,
   ExternalLink,
+  TrendingUp,
+  TrendingDown,
+  UserPlus,
+  ArrowUpRight,
+  ArrowDownRight,
+  Info,
+  DollarSign,
+  ShoppingCart,
+  Zap,
+  History,
+  Activity,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import SectionCard from "@/components/layout/SectionCard";
 import { EmptyState } from "@/components/common/EmptyState";
+import { HeroSection } from "@/components/ui/hero-section";
+import {
+  NotificationItemSkeleton,
+  SkeletonGrid,
+} from "@/components/common/LoadingSkeleton";
 import { cn } from "@/lib/utils";
 import {
   getNotifications,
@@ -156,6 +172,66 @@ export default function NotificationsPage() {
     }
   };
 
+  const renderNotificationIcon = (type: Notification["type"]) => {
+    switch (type) {
+      case "POSITION_BUY":
+        return (
+          <div className="w-9 h-9 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-500">
+            <ShoppingCart className="w-4.5 h-4.5" />
+          </div>
+        );
+      case "POSITION_SELL":
+        return (
+          <div className="w-9 h-9 rounded-full bg-orange-500/10 flex items-center justify-center text-orange-500">
+            <DollarSign className="w-4.5 h-4.5" />
+          </div>
+        );
+      case "POSITION_INCREASE":
+        return (
+          <div className="w-9 h-9 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-500">
+            <TrendingUp className="w-4.5 h-4.5" />
+          </div>
+        );
+      case "POSITION_DECREASE":
+        return (
+          <div className="w-9 h-9 rounded-full bg-rose-500/10 flex items-center justify-center text-rose-500">
+            <TrendingDown className="w-4.5 h-4.5" />
+          </div>
+        );
+      case "NEW_FOLLOWER":
+        return (
+          <div className="w-9 h-9 rounded-full bg-purple-500/10 flex items-center justify-center text-purple-500">
+            <UserPlus className="w-4.5 h-4.5" />
+          </div>
+        );
+      case "SYSTEM":
+      default:
+        return (
+          <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+            <Info className="w-4.5 h-4.5" />
+          </div>
+        );
+    }
+  };
+
+  const notificationFeatures = [
+    {
+      icon: Zap,
+      label: "Real-time Alerts",
+      iconClassName: "w-3.5 h-3.5 text-amber-500",
+    },
+    {
+      icon: Activity,
+      label: "Portfolio Updates",
+      iconClassName: "w-3.5 h-3.5 text-primary",
+    },
+    {
+      icon: History,
+      label: "Signal History",
+      iconClassName: "w-3.5 h-3.5 text-blue-500",
+    },
+  ];
+
   // Redirect if not authenticated
   if (!authLoading && !isAuthenticated) {
     router.push("/auth");
@@ -163,59 +239,65 @@ export default function NotificationsPage() {
   }
 
   return (
-    <DashboardLayout
-      title="Notifications"
-      headerActions={
-        notifications.length > 0 && (
-          <div className="flex items-center gap-2">
-            {unreadCount > 0 && (
-              <Button
-                variant="outline"
-                size="sm"
-                className="gap-1.5"
-                onClick={handleMarkAllAsRead}
-              >
-                <CheckCheck className="h-4 w-4" />
-                <span className="hidden sm:inline">Mark all read</span>
-              </Button>
-            )}
-            <Button
-              variant="outline"
-              size="sm"
-              className="gap-1.5 text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-500/10"
-              onClick={handleDeleteAll}
-            >
-              <Trash2 className="h-4 w-4" />
-              <span className="hidden sm:inline">Delete all</span>
-            </Button>
-          </div>
-        )
-      }
-    >
+    <DashboardLayout title="Notifications" showHeader={false}>
       <div className="relative flex-1 overflow-y-auto bg-background-light dark:bg-background-dark">
         <div className="absolute inset-0 bg-grid opacity-50 pointer-events-none" />
-        <div className="relative p-4 min-w-0 space-y-4">
-          {/* Stats */}
-          {!loading && notifications.length > 0 && (
-            <div className="flex items-center justify-between text-sm text-muted-foreground">
-              <span>
-                {total} notification{total !== 1 && "s"} · {unreadCount} unread
-              </span>
-            </div>
-          )}
-
+        {/* Hero Section */}
+        <HeroSection
+          title="Notifications"
+          description="Stay updated with portfolio changes and market signals"
+          features={notificationFeatures}
+          actions={
+            notifications.length > 0 ? (
+              <div className="flex items-center gap-2">
+                {unreadCount > 0 && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-1.5 h-9 text-xs font-medium bg-background/50 backdrop-blur-sm"
+                    onClick={handleMarkAllAsRead}
+                  >
+                    <CheckCheck className="h-4 w-4" />
+                    <span className="hidden sm:inline">Mark all read</span>
+                  </Button>
+                )}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-1.5 h-9 text-xs font-medium text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-500/10 bg-background/50 backdrop-blur-sm"
+                  onClick={handleDeleteAll}
+                >
+                  <Trash2 className="h-4 w-4" />
+                  <span className="hidden sm:inline">Delete all</span>
+                </Button>
+              </div>
+            ) : undefined
+          }
+        />
+        <div className="relative p-4 min-w-0 space-y-6">
           {/* Loading State */}
           {loading && (
-            <SectionCard useSectionHeader={false}>
-              <div className="flex items-center justify-center py-12">
-                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-              </div>
+            <SectionCard
+              useSectionHeader={false}
+              padding="sm"
+              scrollable
+              contentClassName="space-y-0 p-4"
+              className="p-0"
+            >
+              <SkeletonGrid count={8}>
+                <NotificationItemSkeleton />
+              </SkeletonGrid>
             </SectionCard>
           )}
 
           {/* Empty State */}
           {!loading && notifications.length === 0 && (
-            <SectionCard useSectionHeader={false}>
+            <SectionCard
+              useSectionHeader={false}
+              padding="sm"
+              scrollable
+              contentClassName="space-y-0 p-4"
+            >
               <EmptyState
                 icon={Bell}
                 title="No Notifications"
@@ -226,56 +308,81 @@ export default function NotificationsPage() {
 
           {/* Notifications List */}
           {!loading && notifications.length > 0 && (
-            <SectionCard useSectionHeader={false} className="p-0">
-              <div className="divide-y divide-border">
+            <SectionCard
+              useSectionHeader={false}
+              padding="sm"
+              scrollable
+              contentClassName="space-y-0 p-4"
+            >
+              <div className="divide-y divide-border-light dark:divide-border-dark overflow-y-auto max-h-[calc(100vh-240px)]">
                 {notifications.map((notification) => (
                   <div
                     key={notification.id}
                     className={cn(
-                      "group px-4 py-4 hover:bg-muted/50 cursor-pointer transition-colors",
-                      !notification.is_read && "bg-primary/5"
+                      "group px-4 py-4 hover:bg-gray-50/80 dark:hover:bg-primary/5 cursor-pointer transition-all duration-200 relative",
+                      !notification.is_read &&
+                        "bg-primary/[0.02] dark:bg-primary/[0.01]"
                     )}
                     onClick={() => handleNotificationClick(notification)}
                   >
-                    <div className="flex items-start gap-4">
-                      {/* Icon */}
-                      <span className="text-2xl flex-shrink-0 mt-0.5">
-                        {getNotificationIcon(notification.type)}
-                      </span>
+                    {/* Unread indicator on the left side edge */}
+                    {!notification.is_read && (
+                      <div className="absolute left-[2px] top-1/2 -translate-y-1/2 bottom-0 w-1 h-[calc(100%-10px)] bg-primary/80 rounded-full" />
+                    )}
 
-                      {/* Content */}
-                      <div className="flex-1 min-w-0">
-                        <p
-                          className={cn(
-                            "text-sm",
-                            !notification.is_read && "font-semibold"
-                          )}
-                        >
-                          {notification.title}
-                        </p>
-                        <p className="text-sm text-muted-foreground mt-1">
-                          {notification.message}
-                        </p>
-                        <div className="flex items-center gap-3 mt-2">
-                          <span className="text-xs text-muted-foreground">
+                    <div className="flex items-start gap-4">
+                      {/* Icon Section */}
+                      <div className="flex-shrink-0 mt-0.5">
+                        {renderNotificationIcon(notification.type)}
+                      </div>
+
+                      {/* Content Section */}
+                      <div className="flex-1 min-w-0 space-y-1">
+                        <div className="flex items-center justify-between gap-2">
+                          <p
+                            className={cn(
+                              "text-sm leading-snug",
+                              !notification.is_read
+                                ? "font-semibold text-gray-900 dark:text-white"
+                                : "text-gray-700 dark:text-white/80"
+                            )}
+                          >
+                            {notification.title}
+                          </p>
+                          <span className="text-[11px] text-gray-400 dark:text-white/30 whitespace-nowrap font-medium">
                             {formatNotificationTime(notification.created_at)}
                           </span>
+                        </div>
+
+                        <p className="text-xs text-gray-500 dark:text-white/50 line-clamp-2 leading-relaxed">
+                          {notification.message}
+                        </p>
+
+                        <div className="flex items-center gap-3 pt-1">
                           {notification.related_symbol && (
-                            <span className="inline-flex items-center gap-1 text-xs text-primary font-medium hover:underline">
-                              ${notification.related_symbol}
-                              <ExternalLink className="h-3 w-3" />
+                            <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-primary/5 text-primary border border-primary/10">
+                              <span className="text-[10px] font-bold tracking-wider">
+                                ${notification.related_symbol}
+                              </span>
+                              <ExternalLink className="w-2.5 h-2.5" />
+                            </div>
+                          )}
+
+                          {!notification.is_read && (
+                            <span className="text-[10px] font-bold text-primary uppercase tracking-tighter px-1.5 py-0.5 rounded bg-primary/10">
+                              New
                             </span>
                           )}
                         </div>
                       </div>
 
-                      {/* Actions */}
-                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      {/* Actions Section */}
+                      <div className="flex flex-col items-center gap-1 opacity-0 group-hover:opacity-100 transition-all duration-200 -mr-1">
                         {!notification.is_read && (
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-8 w-8"
+                            className="h-8 w-8 text-gray-400 hover:text-primary hover:bg-primary/10 rounded-full"
                             onClick={(e) => {
                               e.stopPropagation();
                               handleMarkAsRead(notification.id);
@@ -283,7 +390,7 @@ export default function NotificationsPage() {
                             disabled={markingRead === notification.id}
                           >
                             {markingRead === notification.id ? (
-                              <Loader2 className="h-4 w-4 animate-spin" />
+                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
                             ) : (
                               <Check className="h-4 w-4" />
                             )}
@@ -292,7 +399,7 @@ export default function NotificationsPage() {
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-8 w-8 text-muted-foreground hover:text-red-500"
+                          className="h-8 w-8 text-gray-400 hover:text-red-500 hover:bg-red-500/10 rounded-full"
                           onClick={(e) => {
                             e.stopPropagation();
                             handleDelete(notification.id);
@@ -300,7 +407,7 @@ export default function NotificationsPage() {
                           disabled={deleting === notification.id}
                         >
                           {deleting === notification.id ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
                           ) : (
                             <Trash2 className="h-4 w-4" />
                           )}
@@ -313,29 +420,23 @@ export default function NotificationsPage() {
 
               {/* Load More */}
               {hasMore && (
-                <div className="flex justify-center py-4 border-t border-border">
+                <div className="flex justify-center py-4 border-t border-gray-100 dark:border-white/5">
                   <Button
-                    variant="outline"
+                    variant="ghost"
+                    size="sm"
                     onClick={handleLoadMore}
                     disabled={loadingMore}
-                    className="gap-2"
+                    className="gap-2 h-9 text-xs text-gray-500 hover:text-primary font-semibold"
                   >
                     {loadingMore ? (
                       <>
-                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
                         Loading...
                       </>
                     ) : (
-                      "Load More"
+                      "View more notifications"
                     )}
                   </Button>
-                </div>
-              )}
-
-              {/* End of list */}
-              {!hasMore && notifications.length > 0 && (
-                <div className="text-center py-4 text-sm text-muted-foreground border-t border-border">
-                  You&apos;ve reached the end
                 </div>
               )}
             </SectionCard>
@@ -345,4 +446,3 @@ export default function NotificationsPage() {
     </DashboardLayout>
   );
 }
-

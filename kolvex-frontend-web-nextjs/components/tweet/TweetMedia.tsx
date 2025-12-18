@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
+import { proxyImageUrl } from "@/lib/utils";
 
 interface TweetMediaProps {
   mediaUrls: string[];
@@ -33,7 +34,7 @@ export default function TweetMedia({ mediaUrls }: TweetMediaProps) {
               onClick={() => setSelectedImage(url)}
             >
               <img
-                src={url}
+                src={proxyImageUrl(url)}
                 alt={`Media ${index + 1}`}
                 className="w-full h-full rounded-lg object-cover transition-opacity group-hover:opacity-90"
               />
@@ -55,7 +56,7 @@ export default function TweetMedia({ mediaUrls }: TweetMediaProps) {
           </VisuallyHidden>
           {selectedImage && (
             <img
-              src={selectedImage}
+              src={proxyImageUrl(selectedImage)}
               alt="Full size media"
               className="max-h-[90vh] w-auto h-auto object-contain rounded-lg"
             />

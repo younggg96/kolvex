@@ -25,7 +25,7 @@ export function PublicPortfolioSkeleton({
           </Button>
 
           {/* Profile Header Skeleton */}
-          <div className="rounded-lg border border-border/50 dark:border-border-dark bg-card dark:bg-card-dark p-4">
+          <div className="rounded-lg border border-border-light dark:border-border-dark bg-card-light dark:bg-card-dark p-4">
             <div className="flex items-start justify-between">
               <div className="flex items-center gap-4">
                 <Skeleton className="w-12 h-12 rounded-full" />

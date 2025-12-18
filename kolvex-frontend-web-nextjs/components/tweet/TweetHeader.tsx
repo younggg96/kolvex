@@ -3,6 +3,7 @@
 import Image from "next/image";
 import type { Platform } from "@/lib/supabase/database.types";
 import KOLHoverCard from "@/components/kol/KOLHoverCard";
+import { proxyImageUrl } from "@/lib/utils";
 
 interface TweetHeaderProps {
   screenName: string;
@@ -36,12 +37,12 @@ export default function TweetHeader({
         onTrackChange={onTrackChange}
       >
         {profileImageUrl ? (
-          <Image
-            src={profileImageUrl}
+          <img
+            src={proxyImageUrl(profileImageUrl)}
             alt={screenName}
             width={32}
             height={32}
-            className="w-8 h-8 rounded-full flex-shrink-0 cursor-pointer"
+            className="w-8 h-8 rounded-full flex-shrink-0 cursor-pointer object-cover"
           />
         ) : (
           <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-800 flex items-center justify-center text-gray-500 dark:text-white text-xs font-bold flex-shrink-0 cursor-pointer">

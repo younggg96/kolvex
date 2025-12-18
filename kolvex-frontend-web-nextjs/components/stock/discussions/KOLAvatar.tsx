@@ -3,6 +3,7 @@
 import { Badge } from "@/components/ui/badge";
 import KOLHoverCard from "@/components/kol/KOLHoverCard";
 import { KOLSummary } from "@/lib/kolTweetsApi";
+import { proxyImageUrl } from "@/lib/utils";
 
 interface KOLAvatarProps {
   kol: KOLSummary;
@@ -19,7 +20,7 @@ export default function KOLAvatar({ kol }: KOLAvatarProps) {
         </div>
         {kol.avatar_url ? (
           <img
-            src={kol.avatar_url}
+            src={proxyImageUrl(kol.avatar_url)}
             alt={kol.username}
             className="relative w-10 h-10 rounded-full object-cover ring-2 ring-primary/30 group-hover:ring-primary/50 transition-all"
           />

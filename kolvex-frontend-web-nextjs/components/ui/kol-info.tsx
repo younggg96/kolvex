@@ -5,6 +5,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "./avatar";
 import { PlatformBadge } from "./platform-badge";
 import { CheckCircle } from "lucide-react";
 import type { Platform } from "@/lib/supabase/database.types";
+import { proxyImageUrl } from "@/lib/utils";
 
 interface KolInfoProps {
   avatarUrl?: string | null;
@@ -31,7 +32,7 @@ export function KolInfo({
     <div className={`flex items-center justify-between w-full gap-2.5 ${href ? "cursor-pointer hover:opacity-80 transition-opacity" : ""}`}>
       <div className="flex items-center gap-2.5">
         <Avatar className="w-9 h-9 flex-shrink-0 ring-1 ring-gray-200 dark:ring-white/10">
-          <AvatarImage src={avatarUrl || ""} alt={name} />
+          <AvatarImage src={proxyImageUrl(avatarUrl)} alt={name} />
           <AvatarFallback className="text-xs font-bold bg-gray-200 dark:bg-white/10 text-gray-600 dark:text-white/60">
             {name.substring(0, 2).toUpperCase()}
           </AvatarFallback>

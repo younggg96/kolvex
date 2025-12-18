@@ -636,17 +636,23 @@ export default function PortfolioHoldings({
       {/* Stats Grid */}
       <PortfolioStatsGrid
         totalValue={totalValue}
-        totalPnL={holdings?.privacy_settings?.show_total_pnl ? totalPnL : "***"}
+        totalPnL={
+          isOwner || holdings?.privacy_settings?.show_total_pnl
+            ? totalPnL
+            : "***"
+        }
         pnlPercent={
-          holdings?.privacy_settings?.show_pnl_percent ? pnlPercent : "***"
+          isOwner || holdings?.privacy_settings?.show_pnl_percent
+            ? pnlPercent
+            : "***"
         }
         totalPositions={
-          holdings?.privacy_settings?.show_positions_count
+          isOwner || holdings?.privacy_settings?.show_positions_count
             ? totalPositions
             : "***"
         }
         accountsCount={
-          holdings?.privacy_settings?.show_positions_count
+          isOwner || holdings?.privacy_settings?.show_positions_count
             ? holdings?.accounts?.length || 0
             : "***"
         }

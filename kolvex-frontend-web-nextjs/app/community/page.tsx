@@ -188,55 +188,54 @@ export default function CommunityPage() {
   };
 
   // Handle follow/unfollow to update followingIds
-  const handleFollowChange = useCallback((userId: string, isFollowing: boolean) => {
-    setFollowingIds((prev) => {
-      const newSet = new Set(prev);
-      if (isFollowing) {
-        newSet.add(userId);
-      } else {
-        newSet.delete(userId);
-      }
-      return newSet;
-    });
-  }, []);
+  const handleFollowChange = useCallback(
+    (userId: string, isFollowing: boolean) => {
+      setFollowingIds((prev) => {
+        const newSet = new Set(prev);
+        if (isFollowing) {
+          newSet.add(userId);
+        } else {
+          newSet.delete(userId);
+        }
+        return newSet;
+      });
+    },
+    []
+  );
 
   return (
     <DashboardLayout showHeader={false}>
       <div className="relative flex-1 overflow-y-auto bg-background-light dark:bg-background-dark h-full">
         <div className="absolute inset-0 bg-grid opacity-50 pointer-events-none" />
-        <div className="p-4 min-w-0 space-y-6">
-          {/* Hero Section */}
-          <div className="relative">
-            <HeroSection
-              title="Community Portfolios"
-              description="Discover and learn from investors who share their portfolios"
-              features={[
-                {
-                  icon: Sparkles,
-                  label: `${total} Public Portfolios`,
-                  iconClassName: "w-3.5 h-3.5 text-primary",
-                },
-                {
-                  icon: Eye,
-                  label: "Transparent & Real-time Tracking",
-                  iconClassName: "w-3.5 h-3.5 text-blue-600 dark:text-blue-400",
-                },
-              ]}
-              actions={
-                <Link href="/dashboard/portfolio">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="gap-2 whitespace-nowrap"
-                  >
-                    <Briefcase className="w-3.5 h-3.5" />
-                    Manage My Portfolio
-                  </Button>
-                </Link>
-              }
-            />
-          </div>
-
+        <HeroSection
+          title="Community Portfolios"
+          description="Discover and learn from investors who share their portfolios"
+          features={[
+            {
+              icon: Sparkles,
+              label: `${total} Public Portfolios`,
+              iconClassName: "w-3.5 h-3.5 text-primary",
+            },
+            {
+              icon: Eye,
+              label: "Transparent & Real-time Tracking",
+              iconClassName: "w-3.5 h-3.5 text-blue-600 dark:text-blue-400",
+            },
+          ]}
+          actions={
+            <Link href="/dashboard/portfolio">
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-2 whitespace-nowrap"
+              >
+                <Briefcase className="w-3.5 h-3.5" />
+                Manage My Portfolio
+              </Button>
+            </Link>
+          }
+        />
+        <div className="min-w-0 space-y-6 p-4">
           {/* Tab & Sort Controls */}
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
             <SwitchTab

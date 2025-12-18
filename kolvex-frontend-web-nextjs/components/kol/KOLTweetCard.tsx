@@ -8,7 +8,7 @@ import {
   formatNumber,
   formatTimeAgo,
 } from "@/lib/kolTweetsApi";
-import { cn } from "@/lib/utils";
+import { cn, proxyImageUrl } from "@/lib/utils";
 
 interface KOLTweetCardProps {
   tweet: KOLTweet;
@@ -46,7 +46,7 @@ export default function KOLTweetCard({
         <div className="relative flex-shrink-0">
           {tweet.avatar_url ? (
             <img
-              src={tweet.avatar_url}
+              src={proxyImageUrl(tweet.avatar_url)}
               alt={tweet.username}
               className="w-10 h-10 rounded-full object-cover ring-2 ring-border/50"
             />

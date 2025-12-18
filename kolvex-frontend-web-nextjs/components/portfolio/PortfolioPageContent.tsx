@@ -60,12 +60,11 @@ export function PortfolioPageContent() {
     <DashboardLayout showHeader={false}>
       <div className="relative flex-1 overflow-y-auto bg-background-light dark:bg-background-dark">
         <div className="absolute inset-0 bg-grid opacity-50 pointer-events-none" />
+        {/* Hero Section */}
+        <PortfolioHeroSection
+          headerActionsProps={headerActionsProps ?? undefined}
+        />
         <div className="relative p-4 min-w-0 space-y-6">
-          {/* Hero Section */}
-          <PortfolioHeroSection
-            headerActionsProps={headerActionsProps ?? undefined}
-          />
-
           {/* Main Portfolio Content */}
           {user && (
             <PortfolioHoldings

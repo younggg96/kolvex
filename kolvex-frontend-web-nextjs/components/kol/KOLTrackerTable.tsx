@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useBreakpoints } from "@/hooks";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { KolInfo } from "@/components/ui/kol-info";
+import { proxyImageUrl } from "@/lib/utils";
 import {
   Table,
   TableBody,
@@ -286,7 +287,7 @@ export default function KOLTrackerTable({
                     className="flex items-center gap-3 flex-1 min-w-0 hover:opacity-80 transition-opacity"
                   >
                     <Avatar className="w-10 h-10 flex-shrink-0 ring-1 ring-gray-200 dark:ring-white/10">
-                      <AvatarImage src={kol.avatarUrl || ""} alt={kol.name} />
+                      <AvatarImage src={proxyImageUrl(kol.avatarUrl)} alt={kol.name} />
                       <AvatarFallback className="text-xs font-bold bg-gray-200 dark:bg-white/10 text-gray-600 dark:text-white/60">
                         {kol.name.substring(0, 2).toUpperCase()}
                       </AvatarFallback>

@@ -137,3 +137,31 @@ export function ProfileInfoSkeleton() {
     </div>
   );
 }
+
+// 通知项骨架屏
+export function NotificationItemSkeleton() {
+  return (
+    <div className="px-4 py-4 animate-pulse border-b border-gray-100 dark:border-white/5 last:border-0">
+      <div className="flex items-start gap-4">
+        {/* Icon Skeleton */}
+        <div className="w-9 h-9 rounded-full bg-gray-200 dark:bg-white/10 flex-shrink-0 mt-0.5"></div>
+
+        {/* Content Skeleton */}
+        <div className="flex-1 min-w-0 space-y-2">
+          <div className="flex items-center justify-between gap-2">
+            <div className="h-4 bg-gray-300 dark:bg-white/10 rounded w-1/3"></div>
+            <div className="h-3 bg-gray-200 dark:bg-white/5 rounded w-16"></div>
+          </div>
+          <div className="space-y-1.5">
+            <div className="h-3 bg-gray-200 dark:bg-white/5 rounded w-full"></div>
+            <div className="h-3 bg-gray-200 dark:bg-white/5 rounded w-5/6"></div>
+          </div>
+          <div className="flex items-center gap-2 pt-1">
+            <div className="h-5 bg-gray-200 dark:bg-white/5 rounded-md w-14"></div>
+            <div className="h-5 bg-gray-200 dark:bg-white/5 rounded w-10"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

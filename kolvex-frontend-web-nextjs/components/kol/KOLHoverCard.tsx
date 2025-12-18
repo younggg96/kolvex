@@ -27,6 +27,7 @@ import { KOLProfileDetail } from "@/app/api/kol/route";
 import { trackKOL, untrackKOL, isKOLTracked } from "@/lib/trackedKolApi";
 import type { Platform } from "@/lib/supabase/database.types";
 import { toast } from "sonner";
+import { proxyImageUrl } from "@/lib/utils";
 
 // Global cache for tracking status
 const kolTrackingCache = new Map<string, boolean>();
@@ -225,7 +226,7 @@ export default function KOLHoverCard({
               {/* Avatar overlapping banner */}
               <div className="flex items-end gap-3">
                 <Avatar className="h-14 w-14 border-4 border-white dark:border-card-dark relative z-10">
-                  <AvatarImage src={profile.avatar_url || profileImageUrl} />
+                  <AvatarImage src={proxyImageUrl(profile.avatar_url || profileImageUrl)} />
                   <AvatarFallback>
                     {(profile.display_name || screenName)
                       .substring(0, 2)

@@ -12,6 +12,7 @@ import {
   Star,
 } from "lucide-react";
 import { KOLProfile } from "@/app/api/kol/route";
+import { proxyImageUrl } from "@/lib/utils";
 
 // ============================================================
 // Types
@@ -71,7 +72,7 @@ export default function KOLProfileHeader({
         {/* Avatar & Edit/Track Button Row */}
         <div className="relative flex justify-between items-end -mt-10 sm:-mt-14 mb-3">
           <Avatar className="h-20 w-20 sm:h-28 sm:w-28 border-4 border-background ring-1 ring-black/5 dark:ring-white/10">
-            <AvatarImage src={profile.avatar_url || undefined} />
+            <AvatarImage src={proxyImageUrl(profile.avatar_url)} />
             <AvatarFallback className="text-2xl font-bold">
               {(profile.display_name || username).substring(0, 2).toUpperCase()}
             </AvatarFallback>
