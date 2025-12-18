@@ -6,7 +6,7 @@ const API_PREFIX = "/api/v1";
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { provider } = body;
+    const { provider, redirectTo } = body;
 
     if (!provider) {
       return NextResponse.json(
@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
 
     // 获取重定向 URL
     const origin = request.headers.get("origin") || request.nextUrl.origin;
-    const redirectUrl = `${origin}/auth/callback`;
+    const callbackUrl = `${origin}/auth/callback`;
 
     const response = await fetch(`${API_BASE_URL}${API_PREFIX}/auth/oauth/url`, {
       method: "POST",
@@ -26,12 +26,27 @@ export async function POST(request: NextRequest) {
       },
       body: JSON.stringify({
         provider,
-        redirect_url: redirectUrl,
+        redirect_url: callbackUrl,
       }),
     });
 
     const data = await response.json();
-    return NextResponse.json(data, { status: response.status });
+    
+    // Create response with cookie to store redirectTo
+    const jsonResponse = NextResponse.json(data, { status: response.status });
+    
+    // Store the redirectTo URL in a cookie for the callback to use
+    if (redirectTo) {
+      jsonResponse.cookies.set("auth_redirect_to", redirectTo, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        maxAge: 60 * 10, // 10 minutes
+        path: "/",
+      });
+    }
+    
+    return jsonResponse;
   } catch (error) {
     console.error("OAuth API error:", error);
     return NextResponse.json(

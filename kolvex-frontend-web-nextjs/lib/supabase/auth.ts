@@ -141,8 +141,9 @@ export async function signIn(data: SignInData): Promise<AuthResponse> {
 
 /**
  * Sign in with Google OAuth
+ * @param redirectTo - Optional URL to redirect to after successful sign in
  */
-export async function signInWithGoogle(): Promise<AuthResponse> {
+export async function signInWithGoogle(redirectTo?: string): Promise<AuthResponse> {
   try {
     const response = await fetch("/api/auth/oauth", {
       method: "POST",
@@ -151,6 +152,7 @@ export async function signInWithGoogle(): Promise<AuthResponse> {
       },
       body: JSON.stringify({
         provider: "google",
+        redirectTo: redirectTo || "/dashboard",
       }),
     });
 

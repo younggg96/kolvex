@@ -200,3 +200,23 @@ body {
     background-position: 100% 100%;
   }
 }
+
+@keyframes dash {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes grow {
+  from {
+    height: 0;
+  }
+}
+
+.animate-dash {
+  animation: dash 3s ease-out forwards;
+}
+
+.animate-grow {
+  animation: grow 1s ease-out forwards;
+}

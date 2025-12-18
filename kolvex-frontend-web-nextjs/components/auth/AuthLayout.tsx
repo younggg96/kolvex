@@ -14,7 +14,7 @@ export default function AuthLayout({
 }: AuthLayoutProps) {
   return (
     <BaseLayout>
-      <div className="relative z-10 flex-1 flex items-start justify-center text-center px-4 sm:px-6 md:px-8 py-6 sm:py-8 md:py-10">
+      <div className="relative z-10 flex-1 flex items-start justify-center text-center px-4 sm:px-6 md:px-8 py-8 sm:py-10 md:py-12">
         <div className="w-full max-w-sm sm:max-w-md">
           <div className="flex flex-col gap-4 sm:gap-6 items-center justify-center">
             <div className="flex flex-col gap-1.5 sm:gap-2 animate-fade-in-up">

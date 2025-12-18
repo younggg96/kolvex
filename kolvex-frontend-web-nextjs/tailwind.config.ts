@@ -74,6 +74,10 @@ const config: Config = {
           from: { opacity: "1" },
           to: { opacity: "0" },
         },
+        ticker: {
+          "0%": { transform: "translateX(0)" },
+          "100%": { transform: "translateX(-33.33%)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -89,6 +93,7 @@ const config: Config = {
         "slide-out-to-bottom": "slide-out-to-bottom 0.3s ease-in",
         "fade-in": "fade-in 0.2s ease-out",
         "fade-out": "fade-out 0.2s ease-in",
+        ticker: "ticker 40s linear infinite",
       },
     },
   },

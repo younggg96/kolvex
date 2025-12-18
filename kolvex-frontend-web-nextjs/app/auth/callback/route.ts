@@ -8,6 +8,9 @@ export async function GET(request: NextRequest) {
   const code = requestUrl.searchParams.get("code");
   const type = requestUrl.searchParams.get("type");
 
+  // Get the stored redirect URL from cookie
+  const redirectTo = request.cookies.get("auth_redirect_to")?.value || "/dashboard";
+
   if (code) {
     const supabase = await createServerSupabaseClient();
     // Exchange code for session
@@ -31,8 +34,13 @@ export async function GET(request: NextRequest) {
       return NextResponse.redirect(new URL("/auth/reset-password", request.url));
     }
 
-    // Regular login - redirect to dashboard
-    return NextResponse.redirect(new URL("/dashboard", request.url));
+    // Regular login - redirect to stored URL or dashboard
+    const response = NextResponse.redirect(new URL(redirectTo, request.url));
+    
+    // Clear the redirect cookie
+    response.cookies.delete("auth_redirect_to");
+    
+    return response;
   }
 
   // No code provided - redirect to auth page

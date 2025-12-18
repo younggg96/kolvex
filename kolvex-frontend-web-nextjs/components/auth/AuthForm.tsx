@@ -2,7 +2,7 @@
 
 import { useState, FormEvent } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   signUp,
   signIn,
@@ -24,11 +24,15 @@ interface AuthFormProps {
 
 export default function AuthForm({ mode, onModeChange }: AuthFormProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+
+  // Get redirect URL from query params, default to /dashboard
+  const redirectTo = searchParams.get("redirectTo") || "/dashboard";
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -55,7 +59,7 @@ export default function AuthForm({ mode, onModeChange }: AuthFormProps) {
       if (result.success) {
         toast.success("Login successful! Redirecting...");
         setTimeout(() => {
-          router.push("/dashboard");
+          router.push(redirectTo);
         }, 1000);
       } else {
         toast.error(getErrorMessage(result.error));
@@ -80,7 +84,7 @@ export default function AuthForm({ mode, onModeChange }: AuthFormProps) {
   const handleGoogleSignIn = async () => {
     setIsGoogleLoading(true);
     try {
-      const result = await signInWithGoogle();
+      const result = await signInWithGoogle(redirectTo);
 
       if (!result.success) {
         toast.error(getErrorMessage(result.error));
