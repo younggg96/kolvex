@@ -19,29 +19,48 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
-MANIFEST
 
-# Virtual Environment
+# Virtual environments
 venv/
-env/
 ENV/
+env/
+.venv/
+path/
 
-# IDE
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
-
-# Environment
+# Environment files
 .env
 .env.local
+.env.development
+.env.production
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Git
+.git
+.gitignore
 
 # Testing
 .pytest_cache/
 .coverage
 htmlcov/
 .tox/
+.nox/
+coverage.xml
+*.cover
+.hypothesis/
+
+# Documentation
+*.md
+LICENSE
+docs/
 
 # Database
 *.db
@@ -49,15 +68,13 @@ htmlcov/
 
 # Logs
 *.log
-
-# OS
-.DS_Store
-Thumbs.db
+logs/
 
 # Docker
-docker-compose.override.yml
+Dockerfile*
+docker-compose*.yml
+.docker/
 
-# Git
-.git/
-.gitignore
-
+# Misc
+migrations/
+tests/

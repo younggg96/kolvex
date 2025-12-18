@@ -46,6 +46,15 @@ export default function AuthPageClient() {
       const hashError = hashParams.get("error");
       const hashErrorCode = hashParams.get("error_code");
       const hashErrorDescription = hashParams.get("error_description");
+      const type = hashParams.get("type");
+      const accessToken = hashParams.get("access_token");
+
+      // Handle password recovery redirect
+      if (type === "recovery" && accessToken) {
+        // Redirect to reset-password page with the hash intact
+        router.replace(`/auth/reset-password${hash}`);
+        return;
+      }
 
       if (hashError || hashErrorCode) {
         if (hashErrorCode === "otp_expired" || hashError === "access_denied") {

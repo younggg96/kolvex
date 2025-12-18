@@ -6,6 +6,7 @@ import { NextRequest } from "next/server";
 export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url);
   const code = requestUrl.searchParams.get("code");
+  const type = requestUrl.searchParams.get("type");
 
   if (code) {
     const supabase = await createServerSupabaseClient();
@@ -14,14 +15,26 @@ export async function GET(request: NextRequest) {
 
     if (exchangeError) {
       console.error("Auth callback error:", exchangeError);
+      // Handle password recovery error
+      if (type === "recovery") {
+        return NextResponse.redirect(
+          new URL("/auth/forgot-password?error=reset_link_expired", request.url)
+        );
+      }
       return NextResponse.redirect(
         new URL("/auth?error=verification_failed", request.url)
       );
     }
 
+    // Handle password recovery - redirect to reset password page
+    if (type === "recovery") {
+      return NextResponse.redirect(new URL("/auth/reset-password", request.url));
+    }
+
+    // Regular login - redirect to dashboard
     return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 
-  // Regular login or returning user - redirect to dashboard
-  return NextResponse.redirect(new URL("/dashboard", request.url));
+  // No code provided - redirect to auth page
+  return NextResponse.redirect(new URL("/auth", request.url));
 }

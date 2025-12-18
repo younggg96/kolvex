@@ -250,7 +250,7 @@ export default function AuthForm({ mode, onModeChange }: AuthFormProps) {
             >
               <div className="flex justify-end">
                 <Link
-                  href="/forgot-password"
+                  href="/auth/forgot-password"
                   className="text-primary text-xs hover:text-primary/80 transition-all duration-200 hover:underline"
                 >
                   Forgot password?

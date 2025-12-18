@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import Link from "next/link";
 import {
   Users,
@@ -9,13 +9,15 @@ import {
   ChevronRight,
   Loader2,
   Briefcase,
-  ArrowUpDown,
   Clock,
   TrendingUp,
   ChevronDown,
+  UserCheck,
+  Globe,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { HeroSection } from "@/components/ui/hero-section";
+import { SwitchTab } from "@/components/ui/switch-tab";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -31,6 +33,8 @@ import {
   type PublicUsersSortBy,
   type SortOrder,
 } from "@/lib/snaptradeApi";
+import { getFollowing } from "@/lib/followApi";
+import { useAuth } from "@/hooks/useAuth";
 import type { PublicUserSummary } from "@/lib/supabase/database.types";
 
 type SortOption = {
@@ -56,14 +60,75 @@ const SORT_OPTIONS: SortOption[] = [
   },
 ];
 
+type TabValue = "all" | "following";
+
 export default function CommunityPage() {
+  const { user, isAuthenticated, isLoading: authLoading } = useAuth();
+  const [activeTab, setActiveTab] = useState<TabValue>("all");
   const [users, setUsers] = useState<PublicUserSummary[]>([]);
+  const [followingIds, setFollowingIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [total, setTotal] = useState(0);
   const [sortOption, setSortOption] = useState<SortOption>(SORT_OPTIONS[0]);
   const LIMIT = 12;
+
+  // Tab options
+  const tabOptions = useMemo(
+    () => [
+      {
+        value: "all",
+        label: "All",
+        icon: <Globe className="w-3.5 h-3.5" />,
+      },
+      {
+        value: "following",
+        label: "Following",
+        icon: <UserCheck className="w-3.5 h-3.5" />,
+        disabled: !isAuthenticated,
+      },
+    ],
+    [isAuthenticated]
+  );
+
+  // Fetch following IDs when authenticated
+  useEffect(() => {
+    const fetchFollowingIds = async () => {
+      if (!user?.id) {
+        setFollowingIds(new Set());
+        return;
+      }
+      try {
+        const result = await getFollowing(user.id, 1, 1000);
+        const ids = new Set(result.users.map((u) => u.user_id));
+        setFollowingIds(ids);
+      } catch (error) {
+        console.error("Failed to fetch following list:", error);
+        setFollowingIds(new Set());
+      }
+    };
+
+    if (!authLoading) {
+      fetchFollowingIds();
+    }
+  }, [user?.id, authLoading]);
+
+  // Filter users based on active tab
+  const displayedUsers = useMemo(() => {
+    if (activeTab === "following") {
+      return users.filter((u) => followingIds.has(u.user_id));
+    }
+    return users;
+  }, [users, activeTab, followingIds]);
+
+  // Calculate displayed total
+  const displayedTotal = useMemo(() => {
+    if (activeTab === "following") {
+      return displayedUsers.length;
+    }
+    return total;
+  }, [activeTab, displayedUsers.length, total]);
 
   const fetchUsers = useCallback(
     async (reset: boolean = false) => {
@@ -159,12 +224,24 @@ export default function CommunityPage() {
             />
           </div>
 
-          {/* Sort Controls */}
-          {!loading && users.length > 0 && (
-            <div className="flex items-center justify-between">
-              <p className="text-sm text-muted-foreground">
-                Showing {users.length} of {total} portfolios
-              </p>
+          {/* Tab & Sort Controls */}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <SwitchTab
+              options={tabOptions}
+              value={activeTab}
+              onValueChange={(value) => setActiveTab(value as TabValue)}
+              size="md"
+              className="w-full sm:w-auto"
+            />
+
+            <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end">
+              {!loading && displayedUsers.length > 0 && (
+                <p className="text-sm text-muted-foreground whitespace-nowrap">
+                  {activeTab === "following"
+                    ? `${displayedTotal} following`
+                    : `${displayedUsers.length} of ${total}`}
+                </p>
+              )}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" size="sm" className="gap-2">
@@ -191,7 +268,7 @@ export default function CommunityPage() {
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
-          )}
+          </div>
 
           {/* Loading State */}
           {loading && (
@@ -203,27 +280,35 @@ export default function CommunityPage() {
           )}
 
           {/* Empty State */}
-          {!loading && users.length === 0 && (
+          {!loading && displayedUsers.length === 0 && (
             <SectionCard useSectionHeader={false}>
               <EmptyState
-                icon={Users}
-                title="No Public Portfolios Yet"
-                description="Be the first to share your portfolio with the community! Enable public sharing in your portfolio settings."
+                icon={activeTab === "following" ? UserCheck : Users}
+                title={
+                  activeTab === "following"
+                    ? "No Following Portfolios"
+                    : "No Public Portfolios Yet"
+                }
+                description={
+                  activeTab === "following"
+                    ? "You haven't followed anyone with a public portfolio yet. Discover investors in the All tab and follow them!"
+                    : "Be the first to share your portfolio with the community! Enable public sharing in your portfolio settings."
+                }
               />
             </SectionCard>
           )}
 
           {/* User Grid */}
-          {!loading && users.length > 0 && (
+          {!loading && displayedUsers.length > 0 && (
             <>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {users.map((user, index) => (
-                  <UserCard key={user.user_id} user={user} rank={index + 1} />
+                {displayedUsers.map((u, index) => (
+                  <UserCard key={u.user_id} user={u} rank={index + 1} />
                 ))}
               </div>
 
-              {/* Load More */}
-              {hasMore && (
+              {/* Load More - only show for "All" tab */}
+              {activeTab === "all" && hasMore && (
                 <div className="flex justify-center pt-4">
                   <Button
                     variant="outline"
@@ -247,11 +332,13 @@ export default function CommunityPage() {
               )}
 
               {/* End of list */}
-              {!hasMore && users.length > 0 && (
-                <div className="text-center py-4 text-sm text-gray-400 dark:text-white/40">
-                  You&apos;ve reached the end of the list
-                </div>
-              )}
+              {((activeTab === "all" && !hasMore) ||
+                activeTab === "following") &&
+                displayedUsers.length > 0 && (
+                  <div className="text-center py-4 text-sm text-gray-400 dark:text-white/40">
+                    You&apos;ve reached the end of the list
+                  </div>
+                )}
             </>
           )}
         </div>

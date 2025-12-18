@@ -243,34 +243,33 @@ export async function resetPassword(data: {
 
 /**
  * Update password (must be called from reset password page)
+ * Uses Supabase client directly since the token is in URL hash
  */
 export async function updatePassword(data: {
   password: string;
 }): Promise<AuthResponse> {
   try {
-    const response = await fetch("/api/auth/update-password", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        password: data.password,
-      }),
+    const supabase = createClient();
+    
+    // Supabase automatically handles the token from URL hash
+    const { data: result, error } = await supabase.auth.updateUser({
+      password: data.password,
     });
 
-    const result = await response.json();
-
-    if (!result.success) {
+    if (error) {
       return {
         success: false,
-        error: result.error || "Failed to update password",
-        errorCode: result.error_code,
+        error: error.message || "Failed to update password",
+        errorCode: error.name,
       };
     }
 
+    // Sign out after password update to force re-login
+    await supabase.auth.signOut();
+
     return {
       success: true,
-      data: { message: result.message },
+      data: { message: "Password updated successfully", user: result.user },
     };
   } catch (error: any) {
     return {

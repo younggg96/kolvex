@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, FormEvent } from "react";
+import { useState, useEffect, FormEvent } from "react";
 import { Lock, ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { updatePassword, getErrorMessage } from "@/lib/supabase/auth";
+import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
 import { PasswordInput } from "@/components/ui/password-input";
 
@@ -15,6 +16,59 @@ export default function ResetPasswordForm() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isSuccess, setIsSuccess] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isReady, setIsReady] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Handle recovery token from URL hash (implicit flow) or check existing session
+  useEffect(() => {
+    const handleRecoveryToken = async () => {
+      const supabase = createClient();
+      const hash = window.location.hash;
+      
+      if (hash && hash.includes("access_token")) {
+        // Parse hash parameters
+        const hashParams = new URLSearchParams(hash.substring(1));
+        const accessToken = hashParams.get("access_token");
+        const refreshToken = hashParams.get("refresh_token");
+        
+        if (accessToken && refreshToken) {
+          // Set the session using tokens from hash
+          const { error: sessionError } = await supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken,
+          });
+          
+          if (sessionError) {
+            console.error("Session set error:", sessionError);
+            setError("Invalid or expired reset link. Please request a new one.");
+            return;
+          }
+          
+          // Clean up the URL hash
+          window.history.replaceState(null, "", window.location.pathname);
+          setIsReady(true);
+          return;
+        }
+      }
+      
+      // No hash tokens - check if there's already a session
+      const { data, error } = await supabase.auth.getSession();
+      
+      if (error) {
+        console.error("Session check error:", error);
+        setError("Invalid or expired reset link. Please request a new one.");
+        return;
+      }
+      
+      if (data.session) {
+        setIsReady(true);
+      } else {
+        setError("Invalid or expired reset link. Please request a new one.");
+      }
+    };
+
+    handleRecoveryToken();
+  }, []);
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -56,6 +110,48 @@ export default function ResetPasswordForm() {
       setIsLoading(false);
     }
   };
+
+  // Show loading state while checking token
+  if (!isReady && !error) {
+    return (
+      <div className="w-full max-w-sm sm:max-w-md px-4 sm:px-0 animate-fade-in-up">
+        <div className="relative bg-white dark:bg-[#0a0e0a] backdrop-blur-xl border border-gray-200 dark:border-[#1a1f1a] rounded-2xl p-6 sm:p-8 shadow-2xl">
+          <div className="flex flex-col items-center justify-center gap-4">
+            <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+            <p className="text-gray-600 dark:text-white/60 text-sm">Verifying reset link...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state if token is invalid
+  if (error) {
+    return (
+      <div className="w-full max-w-sm sm:max-w-md px-4 sm:px-0 animate-fade-in-up">
+        <div className="relative bg-white dark:bg-[#0a0e0a] backdrop-blur-xl border border-gray-200 dark:border-[#1a1f1a] rounded-2xl p-6 sm:p-8 shadow-2xl">
+          <div className="flex flex-col items-center justify-center gap-4">
+            <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4 w-full">
+              <p className="text-red-500 text-sm text-center">{error}</p>
+            </div>
+            <Link
+              href="/auth/forgot-password"
+              className="text-primary hover:text-primary/80 text-sm font-medium transition-colors"
+            >
+              Request a new reset link
+            </Link>
+            <Link
+              href="/auth"
+              className="inline-flex items-center gap-2 text-gray-600 dark:text-white/60 hover:text-primary text-sm transition-all duration-200 group"
+            >
+              <ArrowLeft className="w-[18px] h-[18px] group-hover:-translate-x-1 transition-transform" />
+              Back to Login
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full max-w-sm sm:max-w-md px-4 sm:px-0 animate-fade-in-up">

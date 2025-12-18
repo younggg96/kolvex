@@ -15,9 +15,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 获取重定向 URL
+    // 获取重定向 URL - 必须指向 callback 来处理 PKCE code
     const origin = request.headers.get("origin") || request.nextUrl.origin;
-    const redirectUrl = `${origin}/reset-password`;
+    const redirectUrl = `${origin}/auth/callback?type=recovery`;
 
     const response = await fetch(
       `${API_BASE_URL}${API_PREFIX}/auth/reset-password`,

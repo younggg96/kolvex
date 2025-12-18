@@ -1,0 +1,281 @@
+name: Deploy
+
+on:
+  # 手动触发部署
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+          - staging
+          - production
+      deploy_backend:
+        description: 'Deploy backend'
+        required: false
+        default: true
+        type: boolean
+      deploy_frontend:
+        description: 'Deploy frontend'
+        required: false
+        default: true
+        type: boolean
+
+  # Docker 构建完成后自动部署到 staging
+  workflow_run:
+    workflows: ["Docker Build and Push"]
+    types:
+      - completed
+    branches: [main]
+
+env:
+  REGISTRY: ghcr.io
+  BACKEND_IMAGE: ${{ github.repository }}/backend
+  FRONTEND_IMAGE: ${{ github.repository }}/frontend
+
+jobs:
+  # ============================================
+  # 准备部署
+  # ============================================
+  prepare:
+    name: Prepare Deployment
+    runs-on: ubuntu-latest
+    outputs:
+      environment: ${{ steps.set-env.outputs.environment }}
+      should_deploy: ${{ steps.check.outputs.should_deploy }}
+      image_tag: ${{ steps.set-tag.outputs.tag }}
+
+    steps:
+      - name: Determine environment
+        id: set-env
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            echo "environment=${{ github.event.inputs.environment }}" >> $GITHUB_OUTPUT
+          else
+            # workflow_run 触发时默认部署到 staging
+            echo "environment=staging" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Check if should deploy
+        id: check
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            echo "should_deploy=true" >> $GITHUB_OUTPUT
+          elif [ "${{ github.event.workflow_run.conclusion }}" == "success" ]; then
+            echo "should_deploy=true" >> $GITHUB_OUTPUT
+          else
+            echo "should_deploy=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Set image tag
+        id: set-tag
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            echo "tag=sha-${{ github.sha }}" >> $GITHUB_OUTPUT
+          else
+            echo "tag=sha-${{ github.event.workflow_run.head_sha }}" >> $GITHUB_OUTPUT
+          fi
+
+  # ============================================
+  # 部署到 Staging 环境
+  # ============================================
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    needs: prepare
+    if: needs.prepare.outputs.should_deploy == 'true' && needs.prepare.outputs.environment == 'staging'
+    environment:
+      name: staging
+      url: ${{ vars.STAGING_URL }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Deploy to staging server via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.STAGING_HOST }}
+          username: ${{ secrets.STAGING_USER }}
+          key: ${{ secrets.STAGING_SSH_KEY }}
+          port: ${{ secrets.STAGING_SSH_PORT || 22 }}
+          script: |
+            # 登录到 GitHub Container Registry
+            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+            
+            # 拉取最新镜像
+            docker pull ${{ env.REGISTRY }}/${{ env.BACKEND_IMAGE }}:${{ needs.prepare.outputs.image_tag }}
+            docker pull ${{ env.REGISTRY }}/${{ env.FRONTEND_IMAGE }}:${{ needs.prepare.outputs.image_tag }}
+            
+            # 进入部署目录
+            cd ${{ vars.DEPLOY_PATH || '/opt/kolvex' }}
+            
+            # 更新 docker-compose 中的镜像标签
+            export IMAGE_TAG=${{ needs.prepare.outputs.image_tag }}
+            
+            # 重启服务
+            docker compose pull
+            docker compose up -d --remove-orphans
+            
+            # 清理旧镜像
+            docker image prune -f
+
+      - name: Health check
+        run: |
+          echo "等待服务启动..."
+          sleep 30
+          
+          # 检查后端健康状态
+          if curl -sf "${{ vars.STAGING_API_URL }}/health" > /dev/null; then
+            echo "✅ Backend health check passed"
+          else
+            echo "❌ Backend health check failed"
+            exit 1
+          fi
+          
+          # 检查前端
+          if curl -sf "${{ vars.STAGING_URL }}" > /dev/null; then
+            echo "✅ Frontend health check passed"
+          else
+            echo "❌ Frontend health check failed"
+            exit 1
+          fi
+        continue-on-error: true
+
+      - name: Deployment Summary
+        run: |
+          echo "## 🚀 Staging Deployment Complete" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Environment:** Staging" >> $GITHUB_STEP_SUMMARY
+          echo "- **Image Tag:** \`${{ needs.prepare.outputs.image_tag }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **URL:** ${{ vars.STAGING_URL }}" >> $GITHUB_STEP_SUMMARY
+
+  # ============================================
+  # 部署到 Production 环境
+  # ============================================
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: prepare
+    if: needs.prepare.outputs.should_deploy == 'true' && needs.prepare.outputs.environment == 'production'
+    environment:
+      name: production
+      url: ${{ vars.PRODUCTION_URL }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Deploy to production server via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.PRODUCTION_HOST }}
+          username: ${{ secrets.PRODUCTION_USER }}
+          key: ${{ secrets.PRODUCTION_SSH_KEY }}
+          port: ${{ secrets.PRODUCTION_SSH_PORT || 22 }}
+          script: |
+            # 登录到 GitHub Container Registry
+            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+            
+            # 拉取最新镜像
+            docker pull ${{ env.REGISTRY }}/${{ env.BACKEND_IMAGE }}:${{ needs.prepare.outputs.image_tag }}
+            docker pull ${{ env.REGISTRY }}/${{ env.FRONTEND_IMAGE }}:${{ needs.prepare.outputs.image_tag }}
+            
+            # 进入部署目录
+            cd ${{ vars.DEPLOY_PATH || '/opt/kolvex' }}
+            
+            # 更新镜像标签
+            export IMAGE_TAG=${{ needs.prepare.outputs.image_tag }}
+            
+            # 使用滚动更新重启服务
+            docker compose pull
+            docker compose up -d --remove-orphans --scale backend=2 || docker compose up -d --remove-orphans
+            
+            # 等待新容器启动
+            sleep 10
+            
+            # 清理旧镜像
+            docker image prune -f
+
+      - name: Health check
+        run: |
+          echo "等待服务启动..."
+          sleep 30
+          
+          # 检查后端健康状态
+          if curl -sf "${{ vars.PRODUCTION_API_URL }}/health" > /dev/null; then
+            echo "✅ Backend health check passed"
+          else
+            echo "❌ Backend health check failed"
+            exit 1
+          fi
+          
+          # 检查前端
+          if curl -sf "${{ vars.PRODUCTION_URL }}" > /dev/null; then
+            echo "✅ Frontend health check passed"
+          else
+            echo "❌ Frontend health check failed"
+            exit 1
+          fi
+
+      - name: Deployment Summary
+        run: |
+          echo "## 🚀 Production Deployment Complete" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Environment:** Production" >> $GITHUB_STEP_SUMMARY
+          echo "- **Image Tag:** \`${{ needs.prepare.outputs.image_tag }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **URL:** ${{ vars.PRODUCTION_URL }}" >> $GITHUB_STEP_SUMMARY
+
+      - name: Create deployment tag
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const tag = `deploy-${new Date().toISOString().split('T')[0]}-${context.sha.substring(0, 7)}`;
+            await github.rest.git.createRef({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: `refs/tags/${tag}`,
+              sha: context.sha
+            });
+            core.info(`Created deployment tag: ${tag}`);
+        continue-on-error: true
+
+  # ============================================
+  # 部署失败通知
+  # ============================================
+  notify-failure:
+    name: Notify on Failure
+    runs-on: ubuntu-latest
+    needs: [deploy-staging, deploy-production]
+    if: failure()
+
+    steps:
+      - name: Send failure notification
+        run: |
+          echo "## ❌ Deployment Failed" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Please check the workflow logs for details." >> $GITHUB_STEP_SUMMARY
+          
+          # 如果配置了 Slack Webhook，发送通知
+          if [ -n "${{ secrets.SLACK_WEBHOOK_URL }}" ]; then
+            curl -X POST -H 'Content-type: application/json' \
+              --data '{"text":"❌ Kolvex deployment failed! Check GitHub Actions for details."}' \
+              ${{ secrets.SLACK_WEBHOOK_URL }}
+          fi
+

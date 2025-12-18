@@ -1,0 +1,148 @@
+# Dependabot 配置 - 自动更新依赖
+# https://docs.github.com/en/code-security/dependabot/dependabot-version-updates
+
+version: 2
+updates:
+  # ============================================
+  # GitHub Actions 依赖更新
+  # ============================================
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Asia/Shanghai"
+    commit-message:
+      prefix: "ci"
+    labels:
+      - "dependencies"
+      - "github-actions"
+    reviewers:
+      - "guanggengyang"
+    open-pull-requests-limit: 5
+
+  # ============================================
+  # 前端 npm 依赖更新
+  # ============================================
+  - package-ecosystem: "npm"
+    directory: "/kolvex-frontend-web-nextjs"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Asia/Shanghai"
+    commit-message:
+      prefix: "deps(frontend)"
+    labels:
+      - "dependencies"
+      - "frontend"
+      - "npm"
+    reviewers:
+      - "guanggengyang"
+    open-pull-requests-limit: 10
+    # 将次要和补丁版本更新分组
+    groups:
+      react-ecosystem:
+        patterns:
+          - "react"
+          - "react-dom"
+          - "@types/react*"
+      nextjs:
+        patterns:
+          - "next"
+          - "next-*"
+          - "@next/*"
+      radix-ui:
+        patterns:
+          - "@radix-ui/*"
+      supabase:
+        patterns:
+          - "@supabase/*"
+      dev-dependencies:
+        dependency-type: "development"
+        update-types:
+          - "minor"
+          - "patch"
+    ignore:
+      # 忽略 Next.js 的主版本更新（需要手动升级）
+      - dependency-name: "next"
+        update-types: ["version-update:semver-major"]
+
+  # ============================================
+  # 后端 pip 依赖更新
+  # ============================================
+  - package-ecosystem: "pip"
+    directory: "/kolvex-backend-py"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Asia/Shanghai"
+    commit-message:
+      prefix: "deps(backend)"
+    labels:
+      - "dependencies"
+      - "backend"
+      - "python"
+    reviewers:
+      - "guanggengyang"
+    open-pull-requests-limit: 10
+    groups:
+      fastapi-ecosystem:
+        patterns:
+          - "fastapi"
+          - "uvicorn*"
+          - "pydantic*"
+      database:
+        patterns:
+          - "sqlalchemy"
+          - "alembic"
+          - "asyncpg"
+          - "supabase"
+          - "postgrest"
+      security:
+        patterns:
+          - "python-jose*"
+          - "passlib*"
+          - "cryptography"
+    ignore:
+      # 忽略 FastAPI 的主版本更新
+      - dependency-name: "fastapi"
+        update-types: ["version-update:semver-major"]
+
+  # ============================================
+  # Docker 依赖更新
+  # ============================================
+  - package-ecosystem: "docker"
+    directory: "/kolvex-backend-py"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Asia/Shanghai"
+    commit-message:
+      prefix: "deps(docker)"
+    labels:
+      - "dependencies"
+      - "docker"
+    reviewers:
+      - "guanggengyang"
+    open-pull-requests-limit: 3
+
+  - package-ecosystem: "docker"
+    directory: "/kolvex-frontend-web-nextjs"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Asia/Shanghai"
+    commit-message:
+      prefix: "deps(docker)"
+    labels:
+      - "dependencies"
+      - "docker"
+    reviewers:
+      - "guanggengyang"
+    open-pull-requests-limit: 3
+

@@ -15,6 +15,8 @@ const withPWA = require("@ducanh2912/next-pwa").default({
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  // Docker 部署需要 standalone 输出模式
+  output: 'standalone',
 
   images: {
     domains: [

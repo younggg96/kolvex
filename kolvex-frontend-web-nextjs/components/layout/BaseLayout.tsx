@@ -8,7 +8,7 @@ interface BaseLayoutProps {
 
 export default function BaseLayout({ children }: BaseLayoutProps) {
   return (
-    <div className="relative flex h-screen w-full flex-col overflow-hidden bg-background-light dark:bg-background-dark transition-colors duration-300">
+    <div className="relative flex min-h-screen w-full flex-col overflow-y-auto bg-background-light dark:bg-background-dark transition-colors duration-300">
       {/* Animated Grid Background */}
       <div className="absolute inset-0 bg-grid z-0"></div>
       <div className="absolute inset-0 bg-gradient-to-b from-transparent via-background-light/90 dark:via-background-dark/90 to-background-light dark:to-background-dark z-0"></div>
