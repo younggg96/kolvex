@@ -167,6 +167,12 @@ async def root():
     }
 
 
+@app.get("/health")
+async def health_check():
+    """健康检查端点 - 用于 Railway 部署"""
+    return {"status": "healthy", "version": settings.APP_VERSION}
+
+
 # 注册 API 路由
 app.include_router(api_router, prefix="/api/v1")
 
