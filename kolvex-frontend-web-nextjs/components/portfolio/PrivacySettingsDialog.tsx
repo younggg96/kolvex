@@ -462,7 +462,7 @@ export default function PrivacySettingsDialog({
             <AccountsSection />
 
             <p className="text-xs text-muted-foreground text-center pt-2">
-              Hidden fields show "***" and hidden accounts are not displayed
+              Hidden fields show &quot;***&quot; and hidden accounts are not displayed
             </p>
           </div>
         ) : null}

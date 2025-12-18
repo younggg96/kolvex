@@ -335,7 +335,7 @@ export default function NotificationsPage() {
               {/* End of list */}
               {!hasMore && notifications.length > 0 && (
                 <div className="text-center py-4 text-sm text-muted-foreground border-t border-border">
-                  You've reached the end
+                  You&apos;ve reached the end
                 </div>
               )}
             </SectionCard>

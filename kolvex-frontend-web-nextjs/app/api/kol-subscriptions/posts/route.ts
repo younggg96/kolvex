@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
+export const dynamic = "force-dynamic";
+
 // Backend API base URL
 const BACKEND_API_URL = process.env.BACKEND_API_URL || "http://127.0.0.1:8000";
 

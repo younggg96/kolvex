@@ -46,6 +46,7 @@ export default function TrackedStocksTable() {
 
   const symbols = useMemo(() => stocks.map((s) => s.symbol), [stocks]);
   const { data: realtimeQuotes } = useMultipleQuotes(symbols, REFRESH_INTERVAL);
+  const symbolsKey = symbols.join(",");
 
   // 获取迷你图数据
   useEffect(() => {
@@ -75,7 +76,8 @@ export default function TrackedStocksTable() {
     };
 
     fetchSparklines();
-  }, [symbols.join(",")]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [symbolsKey]);
 
   const quotesMap = useMemo(() => {
     const map = new Map();

@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { KOLTweet } from "@/lib/kolTweetsApi";
 
+export const dynamic = 'force-dynamic';
+
 // KOL Profile from backend API
 export interface KOLProfile {
   id: number;

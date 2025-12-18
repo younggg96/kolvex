@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
+export const dynamic = 'force-dynamic';
+
 export type Platform = "TWITTER" | "REDDIT" | "YOUTUBE" | "REDNOTE";
 
 export interface TrendingTopic {
