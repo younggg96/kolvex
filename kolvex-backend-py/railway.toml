@@ -2,10 +2,10 @@
 builder = "nixpacks"
 
 [deploy]
-# 修改 1: 简化端口参数，确保必须使用 $PORT
-startCommand = "uvicorn main:app --host 0.0.0.0 --port $PORT"
+# Use shell to properly expand $PORT environment variable
+startCommand = "sh -c 'uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}'"
 
-# 修改 2: 将健康检查路径改为 /health (确保你的代码里有这个接口)
+# Health check endpoint
 healthcheckPath = "/health"
 healthcheckTimeout = 100
 restartPolicyType = "ON_FAILURE"
