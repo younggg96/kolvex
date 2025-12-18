@@ -20,6 +20,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "../ui/button";
 import { createTrackedStock } from "@/lib/trackedStockApi";
 import { toast } from "sonner";
+import { proxyImageUrl } from "@/lib/utils";
 
 export interface TrendingStockItemProps {
   ticker: string;
@@ -134,8 +135,8 @@ export function TrendingStockItem({
                   >
                     <Avatar className="w-6 h-6">
                       <AvatarImage
-                        src={author.avatarUrl}
-                        alt={author.username}
+                        src={proxyImageUrl(author.avatarUrl)}
+                        alt={author.username || ""}
                       />
                       <AvatarFallback className="text-[8px] bg-gray-200 dark:bg-gray-700">
                         {author.username[0]?.toUpperCase()}
@@ -167,8 +168,8 @@ export function TrendingStockItem({
                     >
                       <Avatar className="w-7 h-7">
                         <AvatarImage
-                          src={author.avatarUrl}
-                          alt={author.username}
+                          src={proxyImageUrl(author.avatarUrl)}
+                          alt={author.username || ""}
                         />
                         <AvatarFallback className="text-[9px] bg-gray-200 dark:bg-gray-700">
                           {author.username[0]?.toUpperCase()}
