@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 
 // Backend API base URL
-const BACKEND_API_URL = process.env.BACKEND_API_URL || "http://localhost:8000";
+const NEXT_PUBLIC_BACKEND_API_URL =
+  process.env.NEXT_PUBLIC_BACKEND_API_URL || "http://localhost:8000";
 
 /**
  * GET /api/notifications/unread-count - Get unread notification count
@@ -24,7 +25,7 @@ export async function GET(request: NextRequest) {
     }
 
     const response = await fetch(
-      `${BACKEND_API_URL}/api/v1/notifications/unread-count`,
+      `${NEXT_PUBLIC_BACKEND_API_URL}/api/v1/notifications/unread-count`,
       {
         method: "GET",
         headers: {

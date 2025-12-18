@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 
 // Backend API base URL
 // Using 127.0.0.1 instead of localhost to avoid Node.js IPv6 resolution issues
-const BACKEND_API_URL = process.env.BACKEND_API_URL || "http://127.0.0.1:8000";
+const NEXT_PUBLIC_BACKEND_API_URL =
+  process.env.NEXT_PUBLIC_BACKEND_API_URL || "http://127.0.0.1:8000";
 
 export interface Tweet {
   id: number;
@@ -69,7 +70,7 @@ export async function GET(request: NextRequest) {
 
     // Fetch data from backend API
     const response = await fetch(
-      `${BACKEND_API_URL}/api/v1/kol-tweets/?page=${page}&page_size=${pageSize}`,
+      `${NEXT_PUBLIC_BACKEND_API_URL}/api/v1/kol-tweets/?page=${page}&page_size=${pageSize}`,
       {
         headers: {
           accept: "application/json",

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 
 export type Platform = "TWITTER" | "REDDIT" | "YOUTUBE" | "REDNOTE";
 
@@ -26,7 +26,8 @@ export type SortBy =
   | "last_seen_at";
 
 // Backend API base URL
-const BACKEND_API_URL = process.env.BACKEND_API_URL || "http://localhost:8000";
+const NEXT_PUBLIC_BACKEND_API_URL =
+  process.env.NEXT_PUBLIC_BACKEND_API_URL || "http://localhost:8000";
 
 export async function GET(request: NextRequest) {
   try {
@@ -40,11 +41,11 @@ export async function GET(request: NextRequest) {
 
     // For now, return empty array since we don't have trending topics in backend yet
     // This can be connected to real data when the backend endpoint is available
-    
+
     // Try to fetch from backend if available
     try {
       const response = await fetch(
-        `${BACKEND_API_URL}/api/trending-topics?limit=${limit}&offset=${offset}`,
+        `${NEXT_PUBLIC_BACKEND_API_URL}/api/trending-topics?limit=${limit}&offset=${offset}`,
         {
           headers: { "Content-Type": "application/json" },
           cache: "no-store",

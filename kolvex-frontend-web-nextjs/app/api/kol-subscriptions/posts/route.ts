@@ -4,7 +4,8 @@ import { createServerSupabaseClient } from "@/lib/supabase/server";
 export const dynamic = "force-dynamic";
 
 // Backend API base URL
-const BACKEND_API_URL = process.env.BACKEND_API_URL || "http://127.0.0.1:8000";
+const NEXT_PUBLIC_BACKEND_API_URL =
+  process.env.NEXT_PUBLIC_BACKEND_API_URL || "http://127.0.0.1:8000";
 
 export async function GET(request: NextRequest) {
   try {
@@ -72,7 +73,7 @@ export async function GET(request: NextRequest) {
 
     // Fetch tweets from backend API with multiple usernames
     const usernamesParam = kolIds.join(",");
-    const backendUrl = `${BACKEND_API_URL}/api/v1/kol-tweets/?page=${page}&page_size=${limit}&usernames=${encodeURIComponent(
+    const backendUrl = `${NEXT_PUBLIC_BACKEND_API_URL}/api/v1/kol-tweets/?page=${page}&page_size=${limit}&usernames=${encodeURIComponent(
       usernamesParam
     )}`;
 

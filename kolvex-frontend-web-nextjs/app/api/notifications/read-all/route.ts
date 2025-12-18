@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 // Backend API base URL
-const BACKEND_API_URL = process.env.BACKEND_API_URL || "http://localhost:8000";
+const NEXT_PUBLIC_BACKEND_API_URL =
+  process.env.NEXT_PUBLIC_BACKEND_API_URL || "http://localhost:8000";
 
 /**
  * POST /api/notifications/read-all - Mark all notifications as read
@@ -22,7 +23,7 @@ export async function POST(request: NextRequest) {
     }
 
     const response = await fetch(
-      `${BACKEND_API_URL}/api/v1/notifications/read-all`,
+      `${NEXT_PUBLIC_BACKEND_API_URL}/api/v1/notifications/read-all`,
       {
         method: "POST",
         headers: {
@@ -50,4 +51,3 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-

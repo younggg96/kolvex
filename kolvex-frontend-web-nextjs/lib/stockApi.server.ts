@@ -1,6 +1,7 @@
 import type { StockOverview } from "@/lib/stockApi";
 
-const BACKEND_API_URL = process.env.BACKEND_API_URL || "http://127.0.0.1:8000";
+const NEXT_PUBLIC_BACKEND_API_URL =
+  process.env.NEXT_PUBLIC_BACKEND_API_URL || "http://127.0.0.1:8000";
 
 /**
  * Server-side fetcher for stock overview.
@@ -16,7 +17,7 @@ export async function getStockOverviewServer(
 
   try {
     const res = await fetch(
-      `${BACKEND_API_URL}/api/v1/market/overview/${encodeURIComponent(
+      `${NEXT_PUBLIC_BACKEND_API_URL}/api/v1/market/overview/${encodeURIComponent(
         normalized
       )}`,
       { next: { revalidate: 300 } }
@@ -27,5 +28,3 @@ export async function getStockOverviewServer(
     return null;
   }
 }
-
-

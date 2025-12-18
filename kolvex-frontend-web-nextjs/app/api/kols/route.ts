@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 
 // Platform type matching the database
 export type Platform = "TWITTER" | "REDDIT" | "YOUTUBE" | "REDNOTE";
@@ -39,7 +39,8 @@ export interface KolsResponse {
 }
 
 // Backend API base URL
-const BACKEND_API_URL = process.env.BACKEND_API_URL || "http://localhost:8000";
+const NEXT_PUBLIC_BACKEND_API_URL =
+  process.env.NEXT_PUBLIC_BACKEND_API_URL || "http://localhost:8000";
 
 export async function GET(request: NextRequest) {
   try {
@@ -61,7 +62,7 @@ export async function GET(request: NextRequest) {
     const backendSortField = sortFieldMap[sortBy] || "followers_count";
 
     // Fetch KOL profiles from backend API
-    const backendUrl = `${BACKEND_API_URL}/api/v1/kol-tweets/profiles?sort_by=${backendSortField}&sort_order=${sortDirection}`;
+    const backendUrl = `${NEXT_PUBLIC_BACKEND_API_URL}/api/v1/kol-tweets/profiles?sort_by=${backendSortField}&sort_order=${sortDirection}`;
 
     const response = await fetch(backendUrl, {
       method: "GET",
@@ -207,4 +208,3 @@ export async function GET(request: NextRequest) {
     );
   }
 }
-

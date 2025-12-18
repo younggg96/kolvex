@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const BACKEND_API_URL = process.env.BACKEND_API_URL || "http://127.0.0.1:8000";
+const NEXT_PUBLIC_BACKEND_API_URL =
+  process.env.NEXT_PUBLIC_BACKEND_API_URL || "http://127.0.0.1:8000";
 
 // Backend API response interface
 interface BackendQuote {
@@ -63,7 +64,7 @@ export async function GET(request: NextRequest) {
         }
         try {
           const quoteResponse = await fetch(
-            `${BACKEND_API_URL}/api/v1/market/quote/${symbol}`,
+            `${NEXT_PUBLIC_BACKEND_API_URL}/api/v1/market/quote/${symbol}`,
             { next: { revalidate: 900 } }
           );
           if (!quoteResponse.ok) {
@@ -109,7 +110,7 @@ export async function GET(request: NextRequest) {
             .map((s) => `symbols=${encodeURIComponent(s)}`)
             .join("&");
           const quotesResponse = await fetch(
-            `${BACKEND_API_URL}/api/v1/market/quotes?${queryParams}`,
+            `${NEXT_PUBLIC_BACKEND_API_URL}/api/v1/market/quotes?${queryParams}`,
             {
               method: "POST",
               headers: { "Content-Type": "application/json" },
@@ -154,7 +155,7 @@ export async function GET(request: NextRequest) {
         try {
           const interval = searchParams.get("interval") || "5m";
           const historyResponse = await fetch(
-            `${BACKEND_API_URL}/api/v1/market/intraday/${symbol}?interval=${interval}`,
+            `${NEXT_PUBLIC_BACKEND_API_URL}/api/v1/market/intraday/${symbol}?interval=${interval}`,
             { next: { revalidate: 300 } }
           );
           if (!historyResponse.ok) {
@@ -189,7 +190,7 @@ export async function GET(request: NextRequest) {
         }
         try {
           const overviewResponse = await fetch(
-            `${BACKEND_API_URL}/api/v1/market/overview/${symbol}`,
+            `${NEXT_PUBLIC_BACKEND_API_URL}/api/v1/market/overview/${symbol}`,
             { next: { revalidate: 300 } }
           );
 

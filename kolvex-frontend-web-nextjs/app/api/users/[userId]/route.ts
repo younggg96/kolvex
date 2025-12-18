@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 
 // Backend API base URL
-const BACKEND_API_URL = process.env.BACKEND_API_URL || "http://localhost:8000";
+const NEXT_PUBLIC_BACKEND_API_URL =
+  process.env.NEXT_PUBLIC_BACKEND_API_URL || "http://localhost:8000";
 
 type RouteParams = { params: Promise<{ userId: string }> };
 
@@ -13,7 +14,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     const { userId } = await params;
 
     const response = await fetch(
-      `${BACKEND_API_URL}/api/v1/users/${userId}`,
+      `${NEXT_PUBLIC_BACKEND_API_URL}/api/v1/users/${userId}`,
       {
         method: "GET",
         headers: {
@@ -25,10 +26,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
     if (!response.ok) {
       if (response.status === 404) {
-        return NextResponse.json(
-          { error: "User not found" },
-          { status: 404 }
-        );
+        return NextResponse.json({ error: "User not found" }, { status: 404 });
       }
       const errorData = await response.json().catch(() => ({}));
       return NextResponse.json(
@@ -47,4 +45,3 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     );
   }
 }
-

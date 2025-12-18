@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 // Backend API base URL
-const BACKEND_API_URL = process.env.BACKEND_API_URL || "http://localhost:8000";
+const NEXT_PUBLIC_BACKEND_API_URL =
+  process.env.NEXT_PUBLIC_BACKEND_API_URL || "http://localhost:8000";
 
 type RouteParams = { params: Promise<{ userId: string }> };
 
@@ -33,7 +34,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     }
 
     const response = await fetch(
-      `${BACKEND_API_URL}/api/v1/users/${userId}/followers?page=${page}&page_size=${pageSize}`,
+      `${NEXT_PUBLIC_BACKEND_API_URL}/api/v1/users/${userId}/followers?page=${page}&page_size=${pageSize}`,
       {
         method: "GET",
         headers,
@@ -59,4 +60,3 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     );
   }
 }
-

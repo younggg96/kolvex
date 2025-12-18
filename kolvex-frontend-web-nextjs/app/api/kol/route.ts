@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { KOLTweet } from "@/lib/kolTweetsApi";
 
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 
 // KOL Profile from backend API
 export interface KOLProfile {
@@ -34,7 +34,8 @@ export interface KOLProfileDetail {
 }
 
 // Backend API base URL
-const BACKEND_API_URL = process.env.BACKEND_API_URL || "http://127.0.0.1:8000";
+const NEXT_PUBLIC_BACKEND_API_URL =
+  process.env.NEXT_PUBLIC_BACKEND_API_URL || "http://127.0.0.1:8000";
 
 // GET - Fetch specific KOL profile
 export async function GET(request: NextRequest) {
@@ -53,7 +54,7 @@ export async function GET(request: NextRequest) {
 
     // Fetch data from backend API
     const response = await fetch(
-      `${BACKEND_API_URL}/api/v1/kol-tweets/profile/${kolId}?include_tweets=${includeTweets}&tweet_limit=${tweetLimit}`,
+      `${NEXT_PUBLIC_BACKEND_API_URL}/api/v1/kol-tweets/profile/${kolId}?include_tweets=${includeTweets}&tweet_limit=${tweetLimit}`,
       {
         headers: {
           accept: "application/json",
@@ -63,10 +64,7 @@ export async function GET(request: NextRequest) {
     );
 
     if (response.status === 404) {
-      return NextResponse.json(
-        { error: "KOL not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "KOL not found" }, { status: 404 });
     }
 
     if (!response.ok) {

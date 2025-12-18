@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 // Backend API base URL
-const BACKEND_API_URL = process.env.BACKEND_API_URL || "http://localhost:8000";
+const NEXT_PUBLIC_BACKEND_API_URL =
+  process.env.NEXT_PUBLIC_BACKEND_API_URL || "http://localhost:8000";
 
 /**
  * POST /api/users/batch-follow-status - Batch check follow status
@@ -25,15 +26,12 @@ export async function POST(request: NextRequest) {
     } = await supabase.auth.getSession();
 
     if (sessionError || !session) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const queryParams = userIds.map((id) => `user_ids=${id}`).join("&");
     const response = await fetch(
-      `${BACKEND_API_URL}/api/v1/users/batch-follow-status?${queryParams}`,
+      `${NEXT_PUBLIC_BACKEND_API_URL}/api/v1/users/batch-follow-status?${queryParams}`,
       {
         method: "POST",
         headers: {
@@ -61,4 +59,3 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-

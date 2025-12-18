@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 
 // Backend API base URL
-const BACKEND_API_URL = process.env.BACKEND_API_URL || "http://localhost:8000";
+const NEXT_PUBLIC_BACKEND_API_URL =
+  process.env.NEXT_PUBLIC_BACKEND_API_URL || "http://localhost:8000";
 
 /**
  * GET /api/users/me - Get current user profile
@@ -20,18 +21,24 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const response = await fetch(`${BACKEND_API_URL}/api/v1/users/me`, {
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${session.access_token}`,
-        "Content-Type": "application/json",
-      },
-      cache: "no-store",
-    });
+    const response = await fetch(
+      `${NEXT_PUBLIC_BACKEND_API_URL}/api/v1/users/me`,
+      {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+          "Content-Type": "application/json",
+        },
+        cache: "no-store",
+      }
+    );
 
     if (!response.ok) {
       if (response.status === 404) {
-        return NextResponse.json({ error: "Profile not found" }, { status: 404 });
+        return NextResponse.json(
+          { error: "Profile not found" },
+          { status: 404 }
+        );
       }
       const errorData = await response.json().catch(() => ({}));
       return NextResponse.json(
@@ -67,14 +74,17 @@ export async function PUT(request: NextRequest) {
 
     const body = await request.json();
 
-    const response = await fetch(`${BACKEND_API_URL}/api/v1/users/me`, {
-      method: "PUT",
-      headers: {
-        Authorization: `Bearer ${session.access_token}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(body),
-    });
+    const response = await fetch(
+      `${NEXT_PUBLIC_BACKEND_API_URL}/api/v1/users/me`,
+      {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(body),
+      }
+    );
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
@@ -94,4 +104,3 @@ export async function PUT(request: NextRequest) {
     );
   }
 }
-
