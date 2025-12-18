@@ -1,10 +1,7 @@
 import StockPageClient from "./StockPageClient";
 import { getStockOverviewServer } from "@/lib/stockApi.server";
-import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { headers } from "next/headers";
 import { Metadata } from "next";
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-const API_PREFIX = "/api/v1";
 
 interface StockPageProps {
   params: {
@@ -34,7 +31,7 @@ export async function generateMetadata({
 export const dynamic = "force-dynamic";
 
 /**
- * Server-side check if stock is tracked
+ * Server-side check if stock is tracked via internal API route
  */
 async function checkStockTrackedServer(symbol: string): Promise<{
   symbol: string;
@@ -47,22 +44,20 @@ async function checkStockTrackedServer(symbol: string): Promise<{
   }
 
   try {
-    const supabase = await createServerSupabaseClient();
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
-
-    if (!session?.access_token) {
-      return { symbol: normalized, is_tracked: false, stock_id: null };
-    }
+    // Get the host from headers for internal API call
+    const headersList = await headers();
+    const host = headersList.get("host") || "localhost:3000";
+    const protocol = process.env.NODE_ENV === "production" ? "https" : "http";
 
     const res = await fetch(
-      `${API_BASE_URL}${API_PREFIX}/stocks/tracked/check/${encodeURIComponent(
+      `${protocol}://${host}/api/tracked-stocks/check/${encodeURIComponent(
         normalized
       )}`,
       {
         cache: "no-store",
-        headers: { Authorization: `Bearer ${session.access_token}` },
+        headers: {
+          cookie: headersList.get("cookie") || "",
+        },
       }
     );
 

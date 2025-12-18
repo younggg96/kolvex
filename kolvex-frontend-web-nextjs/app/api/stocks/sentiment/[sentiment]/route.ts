@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_BACKEND_API_URL || "http://localhost:8000";
 
 type SentimentType = "bullish" | "bearish";
 
@@ -35,7 +36,9 @@ interface TrendingStocksResponse {
 }
 
 // Helper function to determine sentiment type from score
-function getSentimentType(score: number | null | undefined): SentimentType | null {
+function getSentimentType(
+  score: number | null | undefined
+): SentimentType | null {
   if (score === null || score === undefined || score === 0) return null;
   if (score > 0) return "bullish";
   if (score < 0) return "bearish";
@@ -136,4 +139,3 @@ export async function GET(
     );
   }
 }
-

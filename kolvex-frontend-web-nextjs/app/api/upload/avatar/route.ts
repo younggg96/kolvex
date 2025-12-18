@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_BACKEND_API_URL || "http://localhost:8000";
 const API_PREFIX = "/api/v1";
 
 // POST - 上传头像（支持 multipart/form-data 或 base64）
@@ -126,7 +127,9 @@ export async function DELETE(request: NextRequest) {
     }
 
     const response = await fetch(
-      `${API_BASE_URL}${API_PREFIX}/upload/avatar?file_path=${encodeURIComponent(filePath)}`,
+      `${API_BASE_URL}${API_PREFIX}/upload/avatar?file_path=${encodeURIComponent(
+        filePath
+      )}`,
       {
         method: "DELETE",
         headers: {
@@ -148,4 +151,3 @@ export async function DELETE(request: NextRequest) {
     );
   }
 }
-

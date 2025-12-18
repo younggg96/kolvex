@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 // Backend API base URL
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_BACKEND_API_URL || "http://localhost:8000";
 const API_PREFIX = "/api/v1";
 
 export type Platform = "TWITTER" | "REDDIT" | "YOUTUBE" | "REDNOTE";
@@ -51,7 +52,9 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams;
     const platform = searchParams.get("platform");
 
-    const url = new URL(`${API_BASE_URL}${API_PREFIX}/kol-subscriptions/tracked`);
+    const url = new URL(
+      `${API_BASE_URL}${API_PREFIX}/kol-subscriptions/tracked`
+    );
     if (platform) {
       url.searchParams.set("platform", platform);
     }
@@ -166,7 +169,9 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
-    const url = new URL(`${API_BASE_URL}${API_PREFIX}/kol-subscriptions/tracked`);
+    const url = new URL(
+      `${API_BASE_URL}${API_PREFIX}/kol-subscriptions/tracked`
+    );
     url.searchParams.set("kol_id", body.kol_id);
     url.searchParams.set("platform", body.platform);
 
@@ -235,7 +240,9 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    const url = new URL(`${API_BASE_URL}${API_PREFIX}/kol-subscriptions/tracked`);
+    const url = new URL(
+      `${API_BASE_URL}${API_PREFIX}/kol-subscriptions/tracked`
+    );
     url.searchParams.set("kol_id", kol_id);
     url.searchParams.set("platform", platform);
 

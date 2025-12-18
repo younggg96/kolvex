@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_BACKEND_API_URL || "http://localhost:8000";
 const API_PREFIX = "/api/v1";
 
 export async function POST(request: NextRequest) {
@@ -58,4 +59,3 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-

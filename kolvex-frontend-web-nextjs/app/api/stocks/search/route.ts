@@ -1,15 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
 
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_BACKEND_API_URL || "http://localhost:8000";
 
 export interface StockSearchResult {
   symbol: string;
   name?: string;
   sector?: string;
   exchange?: string;
-  type: "equity" | "crypto" | "etf" | "index" | "mutualfund" | "currency" | "future";
+  type:
+    | "equity"
+    | "crypto"
+    | "etf"
+    | "index"
+    | "mutualfund"
+    | "currency"
+    | "future";
   mention_count?: number;
 }
 
@@ -26,7 +34,8 @@ export async function GET(request: NextRequest) {
     const limit = searchParams.get("limit") || "10";
     const includeCrypto = searchParams.get("include_crypto") || "false";
     const mode = searchParams.get("mode") || "search"; // "search" | "autocomplete" | "popular"
-    const includeKolMentions = searchParams.get("include_kol_mentions") || "true";
+    const includeKolMentions =
+      searchParams.get("include_kol_mentions") || "true";
 
     // 模式 1: 获取热门股票（无查询词）
     if (!query.trim() || mode === "popular") {

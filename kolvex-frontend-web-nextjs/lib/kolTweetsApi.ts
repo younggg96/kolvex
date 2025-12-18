@@ -218,13 +218,25 @@ export interface NewsParams {
 // API 基础配置
 // ============================================================
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+/**
+ * 获取内部 API 基础 URL
+ * 客户端使用相对路径，服务端需要完整 URL
+ */
+function getApiBaseUrl(): string {
+  if (typeof window !== "undefined") {
+    // 客户端：使用相对路径
+    return "";
+  }
+  // 服务端：需要完整 URL
+  return process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+}
 
 async function fetchAPI<T>(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<T> {
-  const url = `${API_BASE_URL}/api/v1${endpoint}`;
+  const baseUrl = getApiBaseUrl();
+  const url = `${baseUrl}/api${endpoint}`;
 
   const response = await fetch(url, {
     ...options,
@@ -236,7 +248,9 @@ async function fetchAPI<T>(
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({}));
-    throw new Error(error.detail || `API error: ${response.status}`);
+    throw new Error(
+      error.detail || error.error || `API error: ${response.status}`
+    );
   }
 
   return response.json();
@@ -261,7 +275,7 @@ export async function getKOLTweets(
   if (params.search) searchParams.set("search", params.search);
 
   const query = searchParams.toString();
-  return fetchAPI<KOLTweetsResponse>(`/kol-tweets/${query ? `?${query}` : ""}`);
+  return fetchAPI<KOLTweetsResponse>(`/kol-tweets${query ? `?${query}` : ""}`);
 }
 
 /**
@@ -271,21 +285,21 @@ export async function getKOLProfiles(
   category?: string
 ): Promise<KOLProfilesResponse> {
   const query = category ? `?category=${category}` : "";
-  return fetchAPI<KOLProfilesResponse>(`/kol-tweets/profiles${query}`);
+  return fetchAPI<KOLProfilesResponse>(`/kol-profiles${query}`);
 }
 
 /**
  * 获取统计信息
  */
 export async function getKOLStats(): Promise<StatsResponse> {
-  return fetchAPI<StatsResponse>("/kol-tweets/stats");
+  return fetchAPI<StatsResponse>("/kol-stats");
 }
 
 /**
  * 获取所有类别
  */
 export async function getCategories(): Promise<{ categories: Category[] }> {
-  return fetchAPI<{ categories: Category[] }>("/kol-tweets/categories");
+  return fetchAPI<{ categories: Category[] }>("/kol-categories");
 }
 
 /**
@@ -297,7 +311,9 @@ export async function getUserTweets(
   pageSize: number = 20
 ): Promise<KOLTweetsResponse> {
   return fetchAPI<KOLTweetsResponse>(
-    `/kol-tweets/user/${username}?page=${page}&page_size=${pageSize}`
+    `/kol-tweets/user/${encodeURIComponent(
+      username
+    )}?page=${page}&page_size=${pageSize}`
   );
 }
 
@@ -339,7 +355,7 @@ export async function getStockNews(
   if (params.tag) searchParams.set("tag", params.tag);
 
   const query = searchParams.toString();
-  return fetchAPI<NewsListResponse>(`/news/${query ? `?${query}` : ""}`);
+  return fetchAPI<NewsListResponse>(`/news${query ? `?${query}` : ""}`);
 }
 
 // ============================================================
