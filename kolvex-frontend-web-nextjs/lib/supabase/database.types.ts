@@ -112,7 +112,7 @@ export interface SnapTradeHoldings {
   is_public: boolean;
   last_synced_at?: string;
   accounts: SnapTradeAccount[];
-  total_value?: number; // Total portfolio value calculated by backend
+  total_value?: number | string; // Total portfolio value ("***" if hidden in public view)
   privacy_settings?: PrivacySettings; // Privacy settings for public view
   hidden_positions_count?: number; // Number of hidden positions (public view only)
   hidden_accounts_count?: number; // Number of hidden accounts (public view only)
@@ -124,10 +124,10 @@ export interface SnapTradePublicHoldings {
   is_public: boolean; // Always true for public holdings
   last_synced_at?: string;
   accounts: SnapTradeAccount[];
-  total_value?: number | null; // Total portfolio value (null if hidden)
-  total_pnl?: number | null; // Total P&L (null if hidden)
-  pnl_percent?: number | null; // P&L percentage (null if hidden)
-  positions_count?: number | null; // Number of visible positions (null if hidden)
+  total_value?: number | string; // Total portfolio value ("***" if hidden)
+  total_pnl?: number | string; // Total P&L ("***" if hidden)
+  pnl_percent?: number | string; // P&L percentage ("***" if hidden)
+  positions_count?: number | string; // Number of visible positions ("***" if hidden)
   accounts_count?: number; // Number of visible accounts
   hidden_positions_count?: number; // Number of hidden positions
   hidden_accounts_count?: number; // Number of hidden accounts

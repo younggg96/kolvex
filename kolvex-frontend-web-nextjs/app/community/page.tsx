@@ -187,6 +187,19 @@ export default function CommunityPage() {
     }
   };
 
+  // Handle follow/unfollow to update followingIds
+  const handleFollowChange = useCallback((userId: string, isFollowing: boolean) => {
+    setFollowingIds((prev) => {
+      const newSet = new Set(prev);
+      if (isFollowing) {
+        newSet.add(userId);
+      } else {
+        newSet.delete(userId);
+      }
+      return newSet;
+    });
+  }, []);
+
   return (
     <DashboardLayout showHeader={false}>
       <div className="relative flex-1 overflow-y-auto bg-background-light dark:bg-background-dark h-full">
@@ -303,7 +316,13 @@ export default function CommunityPage() {
             <>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {displayedUsers.map((u, index) => (
-                  <UserCard key={u.user_id} user={u} rank={index + 1} />
+                  <UserCard
+                    key={u.user_id}
+                    user={u}
+                    rank={index + 1}
+                    initialIsFollowing={followingIds.has(u.user_id)}
+                    onFollowChange={handleFollowChange}
+                  />
                 ))}
               </div>
 

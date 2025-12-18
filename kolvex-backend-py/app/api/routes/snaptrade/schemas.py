@@ -59,8 +59,18 @@ class HoldingsResponse(BaseModel):
 class PublicHoldingsResponse(BaseModel):
     """Public holdings response"""
     user_id: str
+    is_connected: bool = True
+    is_public: bool = True
     last_synced_at: Optional[str] = None
     accounts: List[Dict[str, Any]]
+    total_value: Any = None  # "***" if hidden by privacy settings
+    total_pnl: Any = None  # "***" if hidden by privacy settings
+    pnl_percent: Any = None  # "***" if hidden by privacy settings
+    positions_count: Any = None  # "***" if hidden by privacy settings
+    accounts_count: Optional[int] = None
+    hidden_positions_count: Optional[int] = None
+    hidden_accounts_count: Optional[int] = None
+    privacy_settings: Optional[Dict[str, Any]] = None
 
 
 class TopPosition(BaseModel):

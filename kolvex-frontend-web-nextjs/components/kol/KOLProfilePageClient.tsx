@@ -327,10 +327,10 @@ export default function KOLProfilePageClient({
         </SectionCard>
 
         {/* Right Column - Analysis Panel (Desktop Only) */}
-        <div className="hidden lg:block w-[800px] shrink-0">
+        <div className="hidden lg:flex w-[800px] shrink-0 h-full">
           <SectionCard
-            className="h-full flex flex-col overflow-hidden"
-            contentClassName="p-0 flex-1"
+            className="flex-1 flex flex-col overflow-hidden"
+            contentClassName="p-0 flex-1 min-h-0"
             useSectionHeader={false}
           >
             <KOLAnalysisPanel

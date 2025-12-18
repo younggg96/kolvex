@@ -237,7 +237,7 @@ async def get_follow_status(
 async def get_followers(
     user_id: str,
     page: int = Query(1, ge=1, description="页码"),
-    page_size: int = Query(20, ge=1, le=100, description="每页数量"),
+    page_size: int = Query(20, ge=1, le=1000, description="每页数量"),
     current_user_id: Optional[str] = Depends(get_optional_user_id),
     user_service: UserService = Depends(get_user_service),
 ):
@@ -258,7 +258,7 @@ async def get_followers(
 async def get_following(
     user_id: str,
     page: int = Query(1, ge=1, description="页码"),
-    page_size: int = Query(20, ge=1, le=100, description="每页数量"),
+    page_size: int = Query(20, ge=1, le=1000, description="每页数量"),
     current_user_id: Optional[str] = Depends(get_optional_user_id),
     user_service: UserService = Depends(get_user_service),
 ):

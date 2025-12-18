@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { UserPlus, UserMinus, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { followUser, unfollowUser } from "@/lib/followApi";
@@ -31,6 +31,11 @@ export function FollowButton({
   const { user, isAuthenticated } = useAuth();
   const [isFollowing, setIsFollowing] = useState(initialIsFollowing);
   const [isLoading, setIsLoading] = useState(false);
+
+  // Sync isFollowing state when initialIsFollowing prop changes
+  useEffect(() => {
+    setIsFollowing(initialIsFollowing);
+  }, [initialIsFollowing]);
 
   // Don't show follow button for own profile
   if (user?.id === userId) {

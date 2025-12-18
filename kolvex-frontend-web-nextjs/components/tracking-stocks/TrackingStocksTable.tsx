@@ -143,11 +143,13 @@ export default function TrackedStocksTable() {
   // 空状态
   if (stocks.length === 0) {
     return (
-      <div className="text-center py-8 text-gray-500 dark:text-white/50">
-        <Building2 className="w-12 h-12 mx-auto mb-2 opacity-50" />
-        <p className="text-sm">No tracked stocks yet</p>
-        <p className="text-xs mt-2">Click the add button to start tracking</p>
-      </div>
+      <SectionCard padding="none" useSectionHeader={false}>
+        <div className="text-center py-8 text-gray-500 dark:text-white/50">
+          <Building2 className="w-12 h-12 mx-auto mb-2 opacity-50" />
+          <p className="text-sm">No tracked stocks yet</p>
+          <p className="text-xs mt-2">Click the add button to start tracking</p>
+        </div>{" "}
+      </SectionCard>
     );
   }
 

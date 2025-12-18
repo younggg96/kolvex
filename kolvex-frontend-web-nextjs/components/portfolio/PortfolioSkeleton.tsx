@@ -3,7 +3,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 export function PortfolioSkeleton() {
   return (
-    <div className="space-y-2">
+    <div className="!mt-3">
       {/* Stats Grid Skeleton */}
       <div className="grid gap-2 grid-cols-2 lg:grid-cols-4">
         {[...Array(4)].map((_, i) => (
@@ -19,7 +19,7 @@ export function PortfolioSkeleton() {
           </Card>
         ))}
       </div>
-      <div className="space-y-2 mt-2">
+      <div className="space-y-2 mt-3">
         {[...Array(8)].map((_, i) => (
           <Card key={i} className="overflow-hidden">
             <CardHeader className="py-3 px-4">

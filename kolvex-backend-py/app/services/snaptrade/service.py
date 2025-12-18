@@ -616,26 +616,26 @@ class SnapTradeService:
 
                 pos["market_value"] = round(value, 2)
 
-                # 如果持仓被隐藏，将敏感数据设为 null（前端显示 *）
+                # 如果持仓被隐藏，将敏感数据设为 "***"
                 if is_hidden:
-                    pos["units"] = None
-                    pos["price"] = None
-                    pos["market_value"] = None
-                    pos["open_pnl"] = None
-                    pos["weight_percent"] = None
-                    pos["average_purchase_price"] = None
+                    pos["units"] = "***"
+                    pos["price"] = "***"
+                    pos["market_value"] = "***"
+                    pos["open_pnl"] = "***"
+                    pos["weight_percent"] = "***"
+                    pos["average_purchase_price"] = "***"
                 else:
                     # 应用隐私设置 - 隐藏用户不想公开的字段
                     if not privacy_settings.get("show_shares"):
-                        pos["units"] = None
+                        pos["units"] = "***"
                     if not privacy_settings.get("show_position_value"):
-                        pos["market_value"] = None
+                        pos["market_value"] = "***"
                     if not privacy_settings.get("show_position_pnl"):
-                        pos["open_pnl"] = None
+                        pos["open_pnl"] = "***"
                     if not privacy_settings.get("show_position_weight"):
-                        pos["weight_percent"] = None
+                        pos["weight_percent"] = "***"
                     if not privacy_settings.get("show_position_cost"):
-                        pos["average_purchase_price"] = None
+                        pos["average_purchase_price"] = "***"
 
         # 构建响应，应用隐私设置（与 get_user_holdings 格式保持一致）
         response = {
@@ -647,16 +647,16 @@ class SnapTradeService:
             "privacy_settings": privacy_settings,
         }
 
-        # 根据隐私设置决定是否返回汇总数据
+        # 根据隐私设置决定是否返回汇总数据，隐藏时返回 "***"
         if privacy_settings.get("show_total_value"):
             response["total_value"] = round(total_portfolio_value, 2)
         else:
-            response["total_value"] = None
+            response["total_value"] = "***"
 
         if privacy_settings.get("show_total_pnl"):
             response["total_pnl"] = round(total_pnl, 2)
         else:
-            response["total_pnl"] = None
+            response["total_pnl"] = "***"
 
         if privacy_settings.get("show_pnl_percent"):
             if total_portfolio_value > total_pnl and total_portfolio_value > 0:
@@ -666,12 +666,12 @@ class SnapTradeService:
             else:
                 response["pnl_percent"] = 0
         else:
-            response["pnl_percent"] = None
+            response["pnl_percent"] = "***"
 
         if privacy_settings.get("show_positions_count"):
             response["positions_count"] = positions_count
         else:
-            response["positions_count"] = None
+            response["positions_count"] = "***"
 
         # 账户数量（已过滤隐藏账户后的数量）
         response["accounts_count"] = len(accounts_data)

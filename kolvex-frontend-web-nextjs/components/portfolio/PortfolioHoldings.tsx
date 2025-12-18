@@ -491,23 +491,51 @@ export default function PortfolioHoldings({
   };
 
   // Calculate summary data
-  const totalValue = holdings ? calculateTotalValue(holdings) : 0;
-  const totalPnL = holdings ? calculateTotalPnL(holdings) : 0;
-  const pnlPercent =
-    totalValue > 0 ? (totalPnL / (totalValue - totalPnL)) * 100 : 0;
-  const totalPositions =
-    holdings?.accounts?.reduce(
-      (acc, curr) => acc + (curr.snaptrade_positions?.length || 0),
-      0
-    ) || 0;
+  // For owner: calculate locally; For public view: use backend values (which may be "***")
+  const publicHoldings = holdings as any; // Cast to access public holdings fields
+  const totalValue = isOwner
+    ? holdings
+      ? calculateTotalValue(holdings)
+      : 0
+    : publicHoldings?.total_value ?? 0;
+  const totalPnL = isOwner
+    ? holdings
+      ? calculateTotalPnL(holdings)
+      : 0
+    : publicHoldings?.total_pnl ?? 0;
+  const pnlPercent = isOwner
+    ? typeof totalValue === "number" && totalValue > 0
+      ? ((totalPnL as number) /
+          ((totalValue as number) - (totalPnL as number))) *
+        100
+      : 0
+    : publicHoldings?.pnl_percent ?? 0;
+  const totalPositions = isOwner
+    ? holdings?.accounts?.reduce(
+        (acc, curr) => acc + (curr.snaptrade_positions?.length || 0),
+        0
+      ) || 0
+    : publicHoldings?.positions_count ?? 0;
 
-  // Privacy settings for public view (only applied when viewing others' portfolios)
-  const privacy = !isOwner ? holdings?.privacy_settings : undefined;
-  const showCost = isOwner || privacy?.show_position_cost !== false;
-  const showShares = isOwner || privacy?.show_shares !== false;
-  const showValue = isOwner || privacy?.show_position_value !== false;
-  const showPnL = isOwner || privacy?.show_position_pnl !== false;
-  const showWeight = isOwner || privacy?.show_position_weight !== false;
+  // For position-level display, check if values are hidden ("***" from backend or null)
+  const isHiddenValue = (val: any): val is string =>
+    val === "***" || val === null || val === undefined;
+
+  // Helper to format or show hidden value
+  const formatOrHidden = (
+    val: any,
+    formatter: (v: number) => string = (v) => String(v)
+  ) => {
+    if (isHiddenValue(val)) return "***";
+    return formatter(val);
+  };
+
+  // Always show all columns - the backend returns "***" for hidden values
+  const showCost = true;
+  const showShares = true;
+  const showValue = true;
+  const showPnL = true;
+  const showWeight = true;
 
   if (loading) {
     return <PortfolioSkeleton />;
@@ -605,20 +633,28 @@ export default function PortfolioHoldings({
           onDisconnect={() => setDisconnectDialogOpen(true)}
         />
       )}
-
       {/* Stats Grid */}
       <PortfolioStatsGrid
         totalValue={totalValue}
-        totalPnL={totalPnL}
-        pnlPercent={pnlPercent}
-        totalPositions={totalPositions}
-        accountsCount={holdings?.accounts?.length || 0}
-        privacySettings={!isOwner ? holdings?.privacy_settings : undefined}
+        totalPnL={holdings?.privacy_settings?.show_total_pnl ? totalPnL : "***"}
+        pnlPercent={
+          holdings?.privacy_settings?.show_pnl_percent ? pnlPercent : "***"
+        }
+        totalPositions={
+          holdings?.privacy_settings?.show_positions_count
+            ? totalPositions
+            : "***"
+        }
+        accountsCount={
+          holdings?.privacy_settings?.show_positions_count
+            ? holdings?.accounts?.length || 0
+            : "***"
+        }
         hiddenPositionsCount={
-          !isOwner ? (holdings as any)?.hidden_positions_count : undefined
+          !isOwner ? publicHoldings?.hidden_positions_count : undefined
         }
         hiddenAccountsCount={
-          !isOwner ? (holdings as any)?.hidden_accounts_count : undefined
+          !isOwner ? publicHoldings?.hidden_accounts_count : undefined
         }
       />
 
@@ -862,36 +898,35 @@ export default function PortfolioHoldings({
                                     </div>
                                   </TableCell>
                                   <TableCell className="text-right tabular-nums">
-                                    {isSecretStock ? (
+                                    {isSecretStock ||
+                                    isHiddenValue(pos.price) ? (
                                       <span className="text-muted-foreground">
                                         ***
                                       </span>
-                                    ) : pos.price != null ? (
-                                      formatCurrency(pos.price)
                                     ) : (
-                                      "—"
+                                      formatCurrency(pos.price as number)
                                     )}
                                   </TableCell>
                                   {showCost && (
                                     <TableCell className="text-right tabular-nums text-muted-foreground">
-                                      {isSecretStock ? (
+                                      {isSecretStock ||
+                                      isHiddenValue(
+                                        pos.average_purchase_price
+                                      ) ? (
                                         <span className="text-muted-foreground">
                                           ***
                                         </span>
-                                      ) : pos.average_purchase_price != null ? (
-                                        formatCurrency(
-                                          pos.average_purchase_price
-                                        )
                                       ) : (
-                                        <span className="text-muted-foreground">
-                                          —
-                                        </span>
+                                        formatCurrency(
+                                          pos.average_purchase_price as number
+                                        )
                                       )}
                                     </TableCell>
                                   )}
                                   {showShares && (
                                     <TableCell className="text-center tabular-nums">
-                                      {isSecretStock || pos.units == null ? (
+                                      {isSecretStock ||
+                                      isHiddenValue(pos.units) ? (
                                         <span className="text-muted-foreground">
                                           ***
                                         </span>
@@ -903,18 +938,21 @@ export default function PortfolioHoldings({
                                   {showValue && (
                                     <TableCell className="text-right tabular-nums font-medium">
                                       {isSecretStock ||
-                                      pos.market_value == null ? (
+                                      isHiddenValue(pos.market_value) ? (
                                         <span className="text-muted-foreground">
                                           ***
                                         </span>
                                       ) : (
-                                        formatCurrency(pos.market_value)
+                                        formatCurrency(
+                                          pos.market_value as number
+                                        )
                                       )}
                                     </TableCell>
                                   )}
                                   {showPnL && (
                                     <TableCell className="text-right">
-                                      {isSecretStock || pos.open_pnl == null ? (
+                                      {isSecretStock ||
+                                      isHiddenValue(pos.open_pnl) ? (
                                         <span className="text-muted-foreground">
                                           ***
                                         </span>
@@ -945,7 +983,7 @@ export default function PortfolioHoldings({
                                       }`}
                                     >
                                       {isSecretStock ||
-                                      pos.weight_percent == null ? (
+                                      isHiddenValue(pos.weight_percent) ? (
                                         <span className="text-muted-foreground">
                                           ***
                                         </span>
@@ -1246,25 +1284,24 @@ export default function PortfolioHoldings({
                                     </TableCell>
                                     {showCost && (
                                       <TableCell className="text-right tabular-nums text-muted-foreground">
-                                        {isSecretOption ? (
+                                        {isSecretOption ||
+                                        isHiddenValue(
+                                          pos.average_purchase_price
+                                        ) ? (
                                           <span className="text-muted-foreground">
                                             ***
                                           </span>
-                                        ) : pos.average_purchase_price !=
-                                          null ? (
-                                          formatCurrency(
-                                            pos.average_purchase_price
-                                          )
                                         ) : (
-                                          <span className="text-muted-foreground">
-                                            —
-                                          </span>
+                                          formatCurrency(
+                                            pos.average_purchase_price as number
+                                          )
                                         )}
                                       </TableCell>
                                     )}
                                     {showShares && (
                                       <TableCell className="text-center tabular-nums">
-                                        {isSecretOption || pos.units == null ? (
+                                        {isSecretOption ||
+                                        isHiddenValue(pos.units) ? (
                                           <span className="text-muted-foreground">
                                             ***
                                           </span>
@@ -1276,19 +1313,21 @@ export default function PortfolioHoldings({
                                     {showValue && (
                                       <TableCell className="text-center tabular-nums font-medium">
                                         {isSecretOption ||
-                                        pos.market_value == null ? (
+                                        isHiddenValue(pos.market_value) ? (
                                           <span className="text-muted-foreground">
                                             ***
                                           </span>
                                         ) : (
-                                          formatCurrency(pos.market_value)
+                                          formatCurrency(
+                                            pos.market_value as number
+                                          )
                                         )}
                                       </TableCell>
                                     )}
                                     {showPnL && (
                                       <TableCell className="text-right">
                                         {isSecretOption ||
-                                        pos.open_pnl == null ? (
+                                        isHiddenValue(pos.open_pnl) ? (
                                           <span className="text-muted-foreground">
                                             ***
                                           </span>
@@ -1319,7 +1358,7 @@ export default function PortfolioHoldings({
                                         }`}
                                       >
                                         {isSecretOption ||
-                                        pos.weight_percent == null ? (
+                                        isHiddenValue(pos.weight_percent) ? (
                                           <span className="text-muted-foreground">
                                             ***
                                           </span>

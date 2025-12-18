@@ -9,6 +9,7 @@ import {
   ArrowDownRight,
   Briefcase,
   Users,
+  Calendar,
 } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -19,13 +20,38 @@ import { RankBadge } from "./RankBadge";
 import { FollowButton } from "./FollowButton";
 import { getFollowStatus } from "@/lib/followApi";
 
+// Format relative time (e.g., "2 hours ago", "3 days ago")
+function formatTimeAgo(date: Date): string {
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffSec = Math.floor(diffMs / 1000);
+  const diffMin = Math.floor(diffSec / 60);
+  const diffHour = Math.floor(diffMin / 60);
+  const diffDay = Math.floor(diffHour / 24);
+  const diffWeek = Math.floor(diffDay / 7);
+  const diffMonth = Math.floor(diffDay / 30);
+
+  if (diffMin < 1) return "just now";
+  if (diffMin < 60) return `${diffMin}m ago`;
+  if (diffHour < 24) return `${diffHour}h ago`;
+  if (diffDay < 7) return `${diffDay}d ago`;
+  if (diffWeek < 4) return `${diffWeek}w ago`;
+  return `${diffMonth}mo ago`;
+}
+
 interface UserCardProps {
   user: PublicUserSummary;
   rank: number;
   initialIsFollowing?: boolean;
+  onFollowChange?: (userId: string, isFollowing: boolean) => void;
 }
 
-export function UserCard({ user, rank, initialIsFollowing }: UserCardProps) {
+export function UserCard({
+  user,
+  rank,
+  initialIsFollowing,
+  onFollowChange,
+}: UserCardProps) {
   const router = useRouter();
   const isProfit = (user.total_pnl ?? 0) >= 0;
   const displayName = user.full_name || user.username || "Investor";
@@ -44,18 +70,26 @@ export function UserCard({ user, rank, initialIsFollowing }: UserCardProps) {
   const [isFollowing, setIsFollowing] = useState(initialIsFollowing ?? false);
   const [followersCount, setFollowersCount] = useState(0);
 
-  // Fetch follow status on mount if not provided
+  // Sync isFollowing state when initialIsFollowing prop changes
   useEffect(() => {
-    if (initialIsFollowing === undefined) {
-      getFollowStatus(user.user_id)
-        .then((status) => {
-          setIsFollowing(status.is_following);
-          setFollowersCount(status.followers_count);
-        })
-        .catch(() => {
-          // Ignore errors - user might not be logged in
-        });
+    if (initialIsFollowing !== undefined) {
+      setIsFollowing(initialIsFollowing);
     }
+  }, [initialIsFollowing]);
+
+  // Always fetch followers count on mount
+  useEffect(() => {
+    getFollowStatus(user.user_id)
+      .then((status) => {
+        setFollowersCount(status.followers_count);
+        // Only update isFollowing if not provided by parent
+        if (initialIsFollowing === undefined) {
+          setIsFollowing(status.is_following);
+        }
+      })
+      .catch(() => {
+        // Ignore errors - user might not be logged in
+      });
   }, [user.user_id, initialIsFollowing]);
 
   const handleFollowChange = (newIsFollowing: boolean) => {
@@ -63,12 +97,14 @@ export function UserCard({ user, rank, initialIsFollowing }: UserCardProps) {
     setFollowersCount((prev) =>
       newIsFollowing ? prev + 1 : Math.max(0, prev - 1)
     );
+    // Notify parent to update followingIds
+    onFollowChange?.(user.user_id, newIsFollowing);
   };
 
   return (
     <div className="group bg-white dark:bg-card-dark border border-border-light dark:border-border-dark rounded-lg p-4 hover:shadow-lg hover:shadow-primary/5 hover:border-primary/30 dark:hover:border-primary/30 transition-all duration-300">
       {/* Header */}
-      <div className="flex items-start justify-between mb-4">
+      <div className="flex items-start justify-between mb-4 gap-2">
         <div className="flex items-center gap-3">
           <div className="relative">
             <Avatar className="w-8 h-8 ring-2 ring-primary/20 group-hover:ring-primary/40 transition-all">
@@ -82,22 +118,23 @@ export function UserCard({ user, rank, initialIsFollowing }: UserCardProps) {
             <RankBadge rank={rank} />
           </div>
           <div>
-            <h3 className="font-semibold text-gray-900 dark:text-white group-hover:text-primary transition-colors text-sm">
+            <h3 className="font-semibold text-gray-900 dark:text-white group-hover:text-primary transition-colors text-sm line-clamp-1">
               {displayName}
             </h3>
-            {followersCount > 0 && (
-              <div className="flex items-center gap-1 text-[10px] text-gray-400 dark:text-white/40">
-                <Users className="w-3 h-3" />
-                <span>{followersCount} followers</span>
-              </div>
-            )}
+            <div className="flex items-center gap-1 text-[10px] text-gray-400 dark:text-white/40">
+              <Users className="w-3 h-3" />
+              <span>{followersCount} followers</span>
+            </div>
           </div>
         </div>
         {/* Last Synced */}
         {user.last_synced_at && (
-          <p className="text-xs text-gray-400 dark:text-white/30">
-            Updated {new Date(user.last_synced_at).toLocaleDateString()}
-          </p>
+          <div className="flex items-center gap-1">
+            <Calendar className="w-2.5 h-2.5 text-gray-400 dark:text-white/40" />
+            <p className="text-xs text-gray-400 dark:text-white/30">
+              {formatTimeAgo(new Date(user.last_synced_at))}
+            </p>
+          </div>
         )}
       </div>
       {/* Stats */}
