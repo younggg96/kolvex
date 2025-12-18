@@ -18,8 +18,6 @@ updates:
     labels:
       - "dependencies"
       - "github-actions"
-    reviewers:
-      - "guanggengyang"
     open-pull-requests-limit: 5
 
   # ============================================
@@ -38,10 +36,7 @@ updates:
       - "dependencies"
       - "frontend"
       - "npm"
-    reviewers:
-      - "guanggengyang"
     open-pull-requests-limit: 10
-    # 将次要和补丁版本更新分组
     groups:
       react-ecosystem:
         patterns:
@@ -65,7 +60,6 @@ updates:
           - "minor"
           - "patch"
     ignore:
-      # 忽略 Next.js 的主版本更新（需要手动升级）
       - dependency-name: "next"
         update-types: ["version-update:semver-major"]
 
@@ -85,8 +79,6 @@ updates:
       - "dependencies"
       - "backend"
       - "python"
-    reviewers:
-      - "guanggengyang"
     open-pull-requests-limit: 10
     groups:
       fastapi-ecosystem:
@@ -107,42 +99,5 @@ updates:
           - "passlib*"
           - "cryptography"
     ignore:
-      # 忽略 FastAPI 的主版本更新
       - dependency-name: "fastapi"
         update-types: ["version-update:semver-major"]
-
-  # ============================================
-  # Docker 依赖更新
-  # ============================================
-  - package-ecosystem: "docker"
-    directory: "/kolvex-backend-py"
-    schedule:
-      interval: "weekly"
-      day: "monday"
-      time: "09:00"
-      timezone: "Asia/Shanghai"
-    commit-message:
-      prefix: "deps(docker)"
-    labels:
-      - "dependencies"
-      - "docker"
-    reviewers:
-      - "guanggengyang"
-    open-pull-requests-limit: 3
-
-  - package-ecosystem: "docker"
-    directory: "/kolvex-frontend-web-nextjs"
-    schedule:
-      interval: "weekly"
-      day: "monday"
-      time: "09:00"
-      timezone: "Asia/Shanghai"
-    commit-message:
-      prefix: "deps(docker)"
-    labels:
-      - "dependencies"
-      - "docker"
-    reviewers:
-      - "guanggengyang"
-    open-pull-requests-limit: 3
-
