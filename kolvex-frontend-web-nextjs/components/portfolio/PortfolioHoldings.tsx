@@ -48,6 +48,7 @@ import {
 import { SortableHeader } from "@/components/ui/sortable-header";
 import { EmptyState } from "@/components/common/EmptyState";
 import CompanyLogo from "@/components/ui/company-logo";
+import { WeightIndicator } from "@/components/ui/weight-indicator";
 import MiniSparkline from "@/components/stock/MiniSparkline";
 
 type EquitySortKey =
@@ -994,25 +995,9 @@ export default function PortfolioHoldings({
                                           ***
                                         </span>
                                       ) : (
-                                        <div className="flex items-center justify-end gap-1.5">
-                                          <div className="w-12 h-1.5 bg-muted rounded-full overflow-hidden">
-                                            <div
-                                              className="h-full bg-primary/60 rounded-full transition-all"
-                                              style={{
-                                                width: `${Math.min(
-                                                  pos.weight_percent || 0,
-                                                  100
-                                                )}%`,
-                                              }}
-                                            />
-                                          </div>
-                                          <span className="text-xs tabular-nums text-muted-foreground min-w-[36px] text-right">
-                                            {(pos.weight_percent || 0).toFixed(
-                                              1
-                                            )}
-                                            %
-                                          </span>
-                                        </div>
+                                        <WeightIndicator
+                                          percent={pos.weight_percent || 0}
+                                        />
                                       )}
                                     </TableCell>
                                   )}
@@ -1092,11 +1077,11 @@ export default function PortfolioHoldings({
                                 currentSortKey={optionSortKey}
                                 sortDirection={optionSortDir}
                                 onSort={handleOptionSort}
-                                align="right"
+                                align="center"
                                 type="amount"
                               />
                               {showCost && (
-                                <TableHead className="text-right">
+                                <TableHead className="text-center">
                                   <span className="text-xs text-muted-foreground">
                                     Cost
                                   </span>
@@ -1172,7 +1157,7 @@ export default function PortfolioHoldings({
                                 const cost =
                                   (pos.average_purchase_price || 0) *
                                   (pos.units || 0);
-                                const pnl = pos.open_pnl ?? value - cost;
+                                const pnl = value - cost;
                                 const profit = pnl >= 0;
                                 const isCall = pos.option_type === "call";
 
@@ -1223,7 +1208,7 @@ export default function PortfolioHoldings({
                                           <div className="font-semibold flex items-center gap-1.5">
                                             {isSecretOption ? (
                                               <span className="text-muted-foreground">
-                                                ???
+                                                ***
                                               </span>
                                             ) : (
                                               pos.underlying_symbol ||
@@ -1277,19 +1262,24 @@ export default function PortfolioHoldings({
                                         )}
                                       </div>
                                     </TableCell>
-                                    <TableCell className="text-right tabular-nums">
+                                    <TableCell className="text-center tabular-nums">
                                       {isSecretOption ? (
                                         <span className="text-muted-foreground">
                                           ***
                                         </span>
                                       ) : pos.strike_price ? (
-                                        formatCurrency(pos.strike_price)
+                                        formatCurrency(
+                                          pos.strike_price,
+                                          "USD",
+                                          0,
+                                          0
+                                        )
                                       ) : (
                                         "-"
                                       )}
                                     </TableCell>
                                     {showCost && (
-                                      <TableCell className="text-right tabular-nums text-muted-foreground">
+                                      <TableCell className="text-center tabular-nums text-muted-foreground">
                                         {isSecretOption ||
                                         isHiddenValue(
                                           pos.average_purchase_price
@@ -1369,25 +1359,9 @@ export default function PortfolioHoldings({
                                             ***
                                           </span>
                                         ) : (
-                                          <div className="flex items-center justify-end gap-1.5">
-                                            <div className="w-12 h-1.5 bg-muted rounded-full overflow-hidden">
-                                              <div
-                                                className="h-full bg-primary/60 rounded-full transition-all"
-                                                style={{
-                                                  width: `${Math.min(
-                                                    pos.weight_percent || 0,
-                                                    100
-                                                  )}%`,
-                                                }}
-                                              />
-                                            </div>
-                                            <span className="text-xs tabular-nums text-muted-foreground min-w-[36px] text-right">
-                                              {(
-                                                pos.weight_percent || 0
-                                              ).toFixed(1)}
-                                              %
-                                            </span>
-                                          </div>
+                                          <WeightIndicator
+                                            percent={pos.weight_percent || 0}
+                                          />
                                         )}
                                       </TableCell>
                                     )}

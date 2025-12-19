@@ -278,12 +278,17 @@ export function calculateTotalPnL(holdings: SnapTradeHoldings): number {
 /**
  * Format currency
  */
-export function formatCurrency(value: number, currency = "USD"): string {
+export function formatCurrency(
+  value: number,
+  currency = "USD",
+  minimumFractionDigits = 2,
+  maximumFractionDigits = 2
+): string {
   return new Intl.NumberFormat("en-US", {
     style: "currency",
     currency,
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
+    minimumFractionDigits,
+    maximumFractionDigits,
   }).format(value);
 }
 

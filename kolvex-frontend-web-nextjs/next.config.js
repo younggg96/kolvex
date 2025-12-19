@@ -21,6 +21,8 @@ const nextConfig = {
       // General
       "images.unsplash.com",
       "i.pravatar.cc",
+      // Google (User Avatars)
+      "lh3.googleusercontent.com",
       // Twitter/X
       "pbs.twimg.com",
       "abs.twimg.com",
