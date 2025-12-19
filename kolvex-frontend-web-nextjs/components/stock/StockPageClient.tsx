@@ -12,11 +12,13 @@ import { createTrackedStock } from "@/lib/trackedStockApi";
 import { toast } from "sonner";
 import { SearchInput } from "../ui/search-input";
 import { StockHeroSection } from "./StockHeroSection";
+import { useBreakpoints } from "@/hooks/useBreakpoints";
 
 export default function StockPageClient() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("trending");
   const [searchQuery, setSearchQuery] = useState("");
+  const { isMobile, isTablet, isLaptop, isDesktop, isWide } = useBreakpoints();
 
   // Handle stock selection from search dialog
   const handleStockSelect = async (stock: {
@@ -56,10 +58,13 @@ export default function StockPageClient() {
   ];
 
   return (
-    <DashboardLayout title="Stocks" showHeader={false}>
+    <DashboardLayout
+      title="Stocks"
+      showHeader={isMobile || isTablet || isLaptop}
+    >
       <div className="relative flex-1 overflow-y-auto bg-background-light dark:bg-background-dark">
         <div className="absolute inset-0 bg-grid opacity-50 pointer-events-none" />
-        <StockHeroSection />
+        {(isDesktop || isWide) && <StockHeroSection />}
         {/* Header with Tabs and Add Button */}
         <div className="space-y-3 w-full relative p-4 min-w-0">
           <div className="flex items-center justify-between gap-4 w-full">

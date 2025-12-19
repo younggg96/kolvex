@@ -89,6 +89,8 @@ import type {
 } from "@/lib/supabase/database.types";
 import { PortfolioHeaderActions } from "./PortfolioHeaderActions";
 import type { PortfolioHeaderActionsProps } from "./PortfolioHeaderActions";
+import { DashboardLayout } from "../layout";
+import { PortfolioHeroSection } from "./PortfolioHeroSection";
 
 export type { PortfolioHeaderActionsProps };
 

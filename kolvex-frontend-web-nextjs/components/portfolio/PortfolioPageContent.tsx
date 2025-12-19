@@ -14,6 +14,7 @@ import PortfolioHoldings, {
 import { PortfolioHeroSection } from "./PortfolioHeroSection";
 import { PortfolioSkeleton } from "./PortfolioSkeleton";
 import { useAuth } from "@/hooks";
+import { useBreakpoints } from "@/hooks/useBreakpoints";
 
 export function PortfolioPageContent() {
   const searchParams = useSearchParams();
@@ -21,6 +22,7 @@ export function PortfolioPageContent() {
   const { user, isLoading } = useAuth();
   const [headerActionsProps, setHeaderActionsProps] =
     useState<PortfolioHeaderActionsProps | null>(null);
+  const { isMobile, isTablet, isLaptop, isDesktop, isWide } = useBreakpoints();
 
   // Handle connection callback
   const handleConnectionCallback = useCallback(() => {
@@ -45,25 +47,27 @@ export function PortfolioPageContent() {
   // Show loading while auth is loading
   if (isLoading) {
     return (
-      <DashboardLayout showHeader={false}>
-        <div className="relative p-4 min-w-0 space-y-6">
+      <DashboardLayout showHeader={isMobile || isTablet}>
+        <div className="relative min-w-0 space-y-6">
           {/* Hero Skeleton */}
-          <PortfolioHeroSection />
+          {(isDesktop || isLaptop || isWide) && <PortfolioHeroSection />}
           {/* Content Skeleton */}
-          <PortfolioSkeleton />
+          <PortfolioSkeleton className="p-4" />
         </div>
       </DashboardLayout>
     );
   }
 
   return (
-    <DashboardLayout showHeader={false}>
+    <DashboardLayout title="My Holdings" showHeader={isMobile || isTablet}>
       <div className="relative flex-1 overflow-y-auto bg-background-light dark:bg-background-dark">
         <div className="absolute inset-0 bg-grid opacity-50 pointer-events-none" />
         {/* Hero Section */}
-        <PortfolioHeroSection
-          headerActionsProps={headerActionsProps ?? undefined}
-        />
+        {(isDesktop || isLaptop || isWide) && (
+          <PortfolioHeroSection
+            headerActionsProps={headerActionsProps ?? undefined}
+          />
+        )}
         <div className="relative p-4 min-w-0 space-y-6">
           {/* Main Portfolio Content */}
           {user && (

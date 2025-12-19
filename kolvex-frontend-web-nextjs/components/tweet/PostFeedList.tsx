@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import type { Platform } from "@/lib/supabase/database.types";
 import { AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
+import Link from "next/link";
 
 // Helper function to map post platform to database Platform type
 const mapPlatform = (platform: string): Platform | undefined => {
@@ -77,7 +78,24 @@ export default function PostFeedList({
 
   const defaultFormatText = (text: string) => {
     return text.split(/(\s+)/).map((word, index) => {
-      if (word.startsWith("#") || word.startsWith("$")) {
+      if (word.startsWith("$") && word.length > 1) {
+        // Extract ticker symbol (remove $ and any trailing punctuation)
+        const ticker = word
+          .slice(1)
+          .replace(/[.,!?;:'")\]]+$/, "")
+          .toUpperCase();
+        return (
+          <Link
+            key={index}
+            href={`/dashboard/stock/${ticker}`}
+            className="text-sky-400 hover:text-sky-300 hover:underline cursor-pointer"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {word}
+          </Link>
+        );
+      }
+      if (word.startsWith("#")) {
         return (
           <span key={index} className="text-sky-400">
             {word}
@@ -89,7 +107,7 @@ export default function PostFeedList({
   };
 
   const onFormatDate = formatDate || defaultFormatDate;
-  const onFormatText = formatText || defaultFormatText;
+  const onFormatText = defaultFormatText;
 
   const renderPostContent = (post: KOLTweet) => {
     return (

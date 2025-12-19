@@ -10,7 +10,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import ContentWithModal from "@/components/common/ContentWithModal";
 import Tags from "@/components/common/Tags";
 import SentimentBadge from "@/components/common/SentimentBadge";
 import TweetMedia from "@/components/tweet/TweetMedia";
@@ -19,7 +18,6 @@ import { BaseContentProps } from "./types";
 
 export default function TwitterContent({
   url,
-  id,
   fullText,
   mediaUrls,
   aiSummary,
@@ -71,12 +69,7 @@ export default function TwitterContent({
         </div>
 
         {/* Tweet Text */}
-        <ContentWithModal
-          onOpenModal={() => setIsModalOpen(true)}
-          ariaLabel="Open tweet in modal"
-        >
-          {onFormatText ? onFormatText(content) : content}
-        </ContentWithModal>
+        <div className="text-sm">{onFormatText(content)}</div>
 
         {/* Media Images/Videos */}
         {mediaUrls && mediaUrls.length > 0 && (

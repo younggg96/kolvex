@@ -1,9 +1,10 @@
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
 
-export function PortfolioSkeleton() {
+export function PortfolioSkeleton({ className }: { className?: string }) {
   return (
-    <div className="!mt-3">
+    <div className={cn("!mt-0 ", className)}>
       {/* Stats Grid Skeleton */}
       <div className="grid gap-2 grid-cols-2 lg:grid-cols-4">
         {[...Array(4)].map((_, i) => (

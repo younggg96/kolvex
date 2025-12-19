@@ -9,12 +9,14 @@ import { SwitchTab } from "@/components/ui/switch-tab";
 import { KOL } from "@/lib/kolApi";
 import { Star, TrendingUp } from "lucide-react";
 import { useTrackedKOLs } from "@/hooks";
+import { useBreakpoints } from "@/hooks/useBreakpoints";
 import { KOLHeroSection } from "./KOLHeroSection";
 
 export default function KOLPageClient() {
   const [activeTab, setActiveTab] = useState<"trackingKOLs" | "ranking">(
     "ranking"
   );
+  const { isMobile, isTablet, isLaptop, isDesktop, isWide } = useBreakpoints();
 
   // Use the trackingKOLs hook to get real data from the API
   const {
@@ -76,10 +78,10 @@ export default function KOLPageClient() {
   );
 
   return (
-    <DashboardLayout title="KOL Tracker" showHeader={false}>
+    <DashboardLayout title="KOL Tracker" showHeader={isMobile || isTablet}>
       <div className="relative flex-1 overflow-y-auto bg-background-light dark:bg-background-dark h-full">
         <div className="absolute inset-0 bg-grid opacity-50 pointer-events-none" />
-        <KOLHeroSection />
+        {(isDesktop || isLaptop || isWide) && <KOLHeroSection />}
         <div className="relative p-4 min-w-0 space-y-6">
           {/* KOL Table with Tab Switcher */}
           <SectionCard
