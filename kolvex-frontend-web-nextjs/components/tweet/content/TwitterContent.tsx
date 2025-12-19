@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { ExternalLink } from "lucide-react";
+import { ExternalLink, Eye } from "lucide-react";
 import { useTheme } from "next-themes";
 import {
   Dialog,
@@ -15,6 +15,7 @@ import SentimentBadge from "@/components/common/SentimentBadge";
 import TweetMedia from "@/components/tweet/TweetMedia";
 import AIAnalysis from "@/components/common/AIAnalysis";
 import { BaseContentProps } from "./types";
+import { Button } from "@/components/ui/button";
 
 export default function TwitterContent({
   url,
@@ -65,7 +66,18 @@ export default function TwitterContent({
         {/* Tags and Sentiment */}
         <div className="flex items-center justify-between gap-2 flex-wrap my-2">
           {aiTags && aiTags.length > 0 && <Tags tags={aiTags} />}
-          <SentimentBadge sentiment={sentiment} />
+          <div className="flex items-center gap-2">
+            <SentimentBadge sentiment={sentiment} />
+            <Button
+              variant="ghost"
+              size="xs"
+              onClick={() => setIsModalOpen(true)}
+              className="text-primary hover:!bg-primary/10"
+            >
+              Details
+              <ExternalLink className="w-3.5 h-3.5 ml-1" />
+            </Button>
+          </div>
         </div>
 
         {/* Tweet Text */}
