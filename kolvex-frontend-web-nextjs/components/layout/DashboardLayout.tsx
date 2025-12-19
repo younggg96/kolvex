@@ -9,6 +9,7 @@ interface DashboardLayoutProps {
   children: ReactNode;
   title?: string;
   showHeader?: boolean;
+  hasSidebarTrigger?: boolean;
   headerLeftAction?: ReactNode;
   headerActions?: ReactNode;
 }
@@ -17,6 +18,7 @@ export default function DashboardLayout({
   children,
   title = "Dashboard",
   showHeader = true,
+  hasSidebarTrigger = true,
   headerLeftAction,
   headerActions,
 }: DashboardLayoutProps) {
@@ -28,6 +30,7 @@ export default function DashboardLayout({
           {showHeader && (
             <Header
               title={title}
+              hasSidebarTrigger={hasSidebarTrigger}
               leftAction={headerLeftAction}
               actions={headerActions}
             />

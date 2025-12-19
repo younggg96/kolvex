@@ -1,29 +1,15 @@
 "use client";
 
-import { ArrowLeft } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { PortfolioSkeleton } from "../portfolio/PortfolioSkeleton";
 
-interface PublicPortfolioSkeletonProps {
-  onBack: () => void;
-}
-
-export function PublicPortfolioSkeleton({
-  onBack,
-}: PublicPortfolioSkeletonProps) {
+export function PublicPortfolioSkeleton() {
   return (
-    <DashboardLayout showHeader={false}>
+    <DashboardLayout hasSidebarTrigger={false} title="Loading Portfolio...">
       <div className="relative flex-1 overflow-y-auto bg-background-light dark:bg-background-dark">
         <div className="absolute inset-0 bg-grid opacity-50 pointer-events-none" />
-        <div className="relative p-4 min-w-0 space-y-4">
-          {/* Back Button */}
-          <Button variant="ghost" size="sm" className="gap-2" onClick={onBack}>
-            <ArrowLeft className="w-4 h-4" />
-            Back
-          </Button>
-
+        <div className="relative p-4 min-w-0 space-y-3">
           {/* Profile Header Skeleton */}
           <div className="rounded-lg border border-border-light dark:border-border-dark bg-card-light dark:bg-card-dark p-4">
             <div className="flex items-start justify-between">

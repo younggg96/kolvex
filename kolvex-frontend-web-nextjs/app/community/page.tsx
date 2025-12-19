@@ -36,6 +36,7 @@ import {
 import { getFollowing } from "@/lib/followApi";
 import { useAuth } from "@/hooks/useAuth";
 import type { PublicUserSummary } from "@/lib/supabase/database.types";
+import { useBreakpoints } from "@/hooks/useBreakpoints";
 
 type SortOption = {
   value: PublicUsersSortBy;
@@ -73,7 +74,7 @@ export default function CommunityPage() {
   const [total, setTotal] = useState(0);
   const [sortOption, setSortOption] = useState<SortOption>(SORT_OPTIONS[0]);
   const LIMIT = 12;
-
+  const { isMobile, isTablet } = useBreakpoints();
   // Tab options
   const tabOptions = useMemo(
     () => [
@@ -204,12 +205,28 @@ export default function CommunityPage() {
   );
 
   return (
-    <DashboardLayout showHeader={false}>
+    <DashboardLayout
+      showHeader={isMobile || isTablet}
+      title="Community Portfolios"
+      headerActions={
+        <Link href="/dashboard/portfolio">
+          <Button
+            variant="outline"
+            size="xs"
+            className="gap-2 whitespace-nowrap"
+          >
+            <Briefcase className="w-3.5 h-3.5" />
+            Manage
+          </Button>
+        </Link>
+      }
+    >
       <div className="relative flex-1 overflow-y-auto bg-background-light dark:bg-background-dark h-full">
         <div className="absolute inset-0 bg-grid opacity-50 pointer-events-none" />
         <HeroSection
           title="Community Portfolios"
           description="Discover and learn from investors who share their portfolios"
+          className="lg:block hidden"
           features={[
             {
               icon: Sparkles,
@@ -230,23 +247,23 @@ export default function CommunityPage() {
                 className="gap-2 whitespace-nowrap"
               >
                 <Briefcase className="w-3.5 h-3.5" />
-                Manage My Portfolio
+                Manage Portfolio
               </Button>
             </Link>
           }
         />
         <div className="min-w-0 space-y-6 p-4">
           {/* Tab & Sort Controls */}
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div className="flex items-start sm:items-center justify-between gap-3">
             <SwitchTab
               options={tabOptions}
               value={activeTab}
               onValueChange={(value) => setActiveTab(value as TabValue)}
               size="md"
-              className="w-full sm:w-auto"
+              className="!w-fit"
             />
 
-            <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end">
+            <div className="flex items-center gap-3 w-auto justify-end">
               {!loading && displayedUsers.length > 0 && (
                 <p className="text-sm text-muted-foreground whitespace-nowrap">
                   {activeTab === "following"

@@ -87,7 +87,7 @@ export function PublicPortfolioPageClient({
 
   // Loading state
   if (loading) {
-    return <PublicPortfolioSkeleton onBack={handleBack} />;
+    return <PublicPortfolioSkeleton />;
   }
 
   // Not found state
@@ -98,6 +98,7 @@ export function PublicPortfolioPageClient({
   return (
     <DashboardLayout
       title={`${displayName}'s Portfolio`}
+      hasSidebarTrigger={false}
       headerLeftAction={
         <Button
           variant="ghost"

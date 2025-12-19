@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 
 export function PortfolioSkeleton({ className }: { className?: string }) {
   return (
-    <div className={cn("!mt-0 ", className)}>
+    <div className={cn("space-y-3", className)}>
       {/* Stats Grid Skeleton */}
       <div className="grid gap-2 grid-cols-2 lg:grid-cols-4">
         {[...Array(4)].map((_, i) => (
@@ -20,7 +20,7 @@ export function PortfolioSkeleton({ className }: { className?: string }) {
           </Card>
         ))}
       </div>
-      <div className="space-y-2 mt-3">
+      <div className="space-y-3">
         {[...Array(8)].map((_, i) => (
           <Card key={i} className="overflow-hidden">
             <CardHeader className="py-3 px-4">

@@ -9,6 +9,7 @@ import {
 
 interface PortfolioHeroSectionProps {
   headerActionsProps?: PortfolioHeaderActionsProps;
+  className?: string;
 }
 
 const portfolioFeatures = [
@@ -31,9 +32,11 @@ const portfolioFeatures = [
 
 export function PortfolioHeroSection({
   headerActionsProps,
+  className,
 }: PortfolioHeroSectionProps) {
   return (
     <HeroSection
+      className={className}
       title="My Holdings"
       description="Track and share your investment holdings"
       actions={

@@ -1,29 +1,30 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useSyncExternalStore } from "react";
 
 /**
  * Custom hook to get the current window width
  * Uses a default desktop width to prevent hydration mismatches
  * @returns current window width in pixels
  */
+function subscribe(callback: () => void) {
+  window.addEventListener("resize", callback);
+  return () => window.removeEventListener("resize", callback);
+}
+
+function getSnapshot() {
+  return window.innerWidth;
+}
+
+function getServerSnapshot() {
+  // Server-side default - will be replaced immediately on client
+  return 1280;
+}
+
 function useWindowWidth(): number {
-  // Use a large default value (desktop) to prevent hydration mismatch
-  // Server and client first render will both use this value
-  const [width, setWidth] = useState(1280);
-
-  useEffect(() => {
-    // Set actual window width after hydration
-    setWidth(window.innerWidth);
-
-    const handleResize = () => {
-      setWidth(window.innerWidth);
-    };
-
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
-
+  // useSyncExternalStore ensures we get the correct value on first client render
+  // This avoids the flash of wrong layout that useState + useEffect causes
+  const width = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
   return width;
 }
 

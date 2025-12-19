@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import type { SnapTradeHoldings } from "@/lib/supabase/database.types";
 import PrivacySettingsDialog from "./PrivacySettingsDialog";
+import { cn } from "@/lib/utils";
 
 export interface PortfolioHeaderActionsProps {
   syncing: boolean;
@@ -35,6 +36,7 @@ export interface PortfolioHeaderActionsProps {
   copied: boolean;
   onConnect: () => void;
   onDisconnect: () => void;
+  size?: "sm" | "xs";
 }
 
 /**
@@ -45,6 +47,7 @@ export function PortfolioHeaderActions({
   syncing,
   onSync,
   holdings,
+  size = "sm",
   onTogglePublic,
   onCopyShareLink,
   copied,
@@ -61,20 +64,26 @@ export function PortfolioHeaderActions({
 
       <Button
         variant="outline"
-        size="sm"
+        size={size}
         onClick={onSync}
         disabled={syncing}
         className="gap-1.5"
       >
         <RefreshCw className={`w-3.5 h-3.5 ${syncing ? "animate-spin" : ""}`} />
-        <span className="hidden sm:inline">Sync</span>
+        <span className={cn("hidden sm:inline", size === "xs" && "text-xs")}>
+          Sync
+        </span>
       </Button>
 
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="outline" size="sm" className="gap-1.5">
+          <Button variant="outline" size={size} className="gap-1.5">
             <Settings2 className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Settings</span>
+            <span
+              className={cn("hidden sm:inline", size === "xs" && "text-xs")}
+            >
+              Settings
+            </span>
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-56 space-y-2">
@@ -131,9 +140,11 @@ export function PortfolioHeaderActions({
       </DropdownMenu>
 
       <Link href="/community">
-        <Button variant="outline" size="sm" className="gap-1.5 group">
+        <Button variant="outline" size={size} className="gap-1.5 group">
           <Users className="w-3.5 h-3.5" />
-          <span className="hidden sm:inline">Community</span>
+          <span className={cn("hidden sm:inline", size === "xs" && "text-xs")}>
+            {size === "xs" ? "View" : "Community"}
+          </span>
           <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
         </Button>
       </Link>
