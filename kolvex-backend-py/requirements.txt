@@ -6,13 +6,13 @@ pydantic-settings==2.6.0
 email-validator==2.2.0
 
 # 数据库
-sqlalchemy==2.0.35
-alembic==1.13.3
+sqlalchemy==2.0.45
+alembic==1.17.2
 asyncpg>=0.30.0
 
 # Supabase
-supabase==2.7.4
-postgrest==0.16.8
+supabase==2.27.0
+postgrest==2.27.0
 
 # 认证
 python-jose[cryptography]==3.3.0
