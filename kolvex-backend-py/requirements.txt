@@ -24,7 +24,7 @@ python-dotenv==1.0.1
 httpx==0.27.2
 
 # 定时任务
-apscheduler==3.10.4
+apscheduler==3.11.2
 
 # MCP (Model Context Protocol)
 mcp>=1.0.0
