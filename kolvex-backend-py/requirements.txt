@@ -1,8 +1,8 @@
 # FastAPI 后端依赖
-fastapi==0.115.0
-uvicorn[standard]==0.32.0
-pydantic==2.9.2
-pydantic-settings==2.6.0
+fastapi==0.127.0
+uvicorn[standard]==0.40.0
+pydantic==2.12.5
+pydantic-settings==2.12.0
 email-validator==2.2.0
 
 # 数据库
