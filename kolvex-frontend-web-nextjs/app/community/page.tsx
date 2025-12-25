@@ -36,7 +36,6 @@ import {
 import { getFollowing } from "@/lib/followApi";
 import { useAuth } from "@/hooks/useAuth";
 import type { PublicUserSummary } from "@/lib/supabase/database.types";
-import { useBreakpoints } from "@/hooks/useBreakpoints";
 
 type SortOption = {
   value: PublicUsersSortBy;
@@ -74,7 +73,7 @@ export default function CommunityPage() {
   const [total, setTotal] = useState(0);
   const [sortOption, setSortOption] = useState<SortOption>(SORT_OPTIONS[0]);
   const LIMIT = 12;
-  const { isMobile, isTablet } = useBreakpoints();
+
   // Tab options
   const tabOptions = useMemo(
     () => [
@@ -206,7 +205,7 @@ export default function CommunityPage() {
 
   return (
     <DashboardLayout
-      showHeader={isMobile || isTablet}
+      headerClassName="lg:hidden"
       title="Community Portfolios"
       headerActions={
         <Link href="/dashboard/portfolio">

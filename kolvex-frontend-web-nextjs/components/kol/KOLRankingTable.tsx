@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { KolInfo } from "@/components/ui/kol-info";
 import {
   Table,
@@ -15,25 +14,27 @@ import {
 import { CardSkeleton } from "@/components/common/LoadingSkeleton";
 import { EmptyState } from "@/components/common/EmptyState";
 import { Kol, SortBy } from "@/app/api/kols/route";
-import type { Platform } from "@/lib/supabase/database.types";
 import { trackKOL, untrackKOL } from "@/lib/trackedKolApi";
 import { toast } from "sonner";
-import { CheckCircle, Check, Plus, Loader2, Star } from "lucide-react";
-import { useBreakpoints } from "@/hooks";
+import { Loader2, Star } from "lucide-react";
 import { PLATFORM_CONFIG } from "@/lib/platformConfig";
 import { SortableHeader } from "@/components/ui/sortable-header";
 import { PlatformBadge } from "@/components/ui/platform-badge";
 import SectionCard from "@/components/layout/SectionCard";
 
-interface TopKolsProps {
-  limit?: number;
-  platform?: Platform;
-  showFilters?: boolean;
-  enableInfiniteScroll?: boolean;
-  maxHeight?: string;
-}
-
 export const platformConfig = PLATFORM_CONFIG;
+
+export interface KOLRankingTableProps {
+  kols: Kol[];
+  loading?: boolean;
+  isLoadingMore?: boolean;
+  hasMore?: boolean;
+  sortBy: SortBy | null;
+  sortDirection: "asc" | "desc";
+  onSort: (column: SortBy) => void;
+  onLoadMore: () => void;
+  onUpdate: () => void;
+}
 
 function KolTableSkeleton() {
   return (
@@ -72,82 +73,38 @@ function KolTableSkeleton() {
   );
 }
 
-export default function TopKols({
-  limit = 20,
-  platform,
-  showFilters = true,
-  enableInfiniteScroll = true,
-  maxHeight = "600px",
-}: TopKolsProps) {
-  const { isMobile } = useBreakpoints();
-  const [kols, setKols] = useState<Kol[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isLoadingMore, setIsLoadingMore] = useState(false);
-  const [sortBy, setSortBy] = useState<SortBy | null>(null);
-  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
+export default function KOLRankingTable({
+  kols,
+  loading = false,
+  isLoadingMore = false,
+  hasMore = true,
+  sortBy,
+  sortDirection,
+  onSort,
+  onLoadMore,
+  onUpdate,
+}: KOLRankingTableProps) {
   const [trackingStates, setTrackingStates] = useState<Record<string, boolean>>(
-    {}
+    () => {
+      const states: Record<string, boolean> = {};
+      kols.forEach((kol) => {
+        states[kol.kol_id] = kol.user_tracked || false;
+      });
+      return states;
+    }
   );
   const [loadingStates, setLoadingStates] = useState<Record<string, boolean>>(
     {}
   );
-  const [offset, setOffset] = useState(0);
-  const [hasMore, setHasMore] = useState(true);
 
+  // Sync tracking states when kols change
   useEffect(() => {
-    // Reset and fetch when sort or platform changes
-    setKols([]);
-    setOffset(0);
-    setHasMore(true);
-    fetchKols(true);
-  }, [sortBy, sortDirection]);
-
-  const fetchKols = async (reset: boolean = false) => {
-    try {
-      if (reset) {
-        setIsLoading(true);
-      } else {
-        setIsLoadingMore(true);
-      }
-
-      const currentOffset = reset ? 0 : offset;
-      const params = new URLSearchParams({
-        limit: limit.toString(),
-        offset: currentOffset.toString(),
-        sort_by: sortBy || "influence_score",
-        sort_direction: sortDirection,
-      });
-
-      const response = await fetch(`/api/kols?${params}`);
-      if (!response.ok) throw new Error("Failed to fetch kols");
-
-      const data = await response.json();
-      const newKols = data.kols || [];
-
-      if (reset) {
-        setKols(newKols);
-      } else {
-        setKols((prev) => [...prev, ...newKols]);
-      }
-
-      // Check if there are more items to load
-      setHasMore(newKols.length === limit);
-      setOffset(currentOffset + newKols.length);
-
-      // Initialize/update tracking states
-      const states: Record<string, boolean> = {};
-      newKols.forEach((kol: Kol) => {
-        states[kol.kol_id] = kol.user_tracked || false;
-      });
-      setTrackingStates((prev) => ({ ...prev, ...states }));
-    } catch (error) {
-      console.error("Error fetching kols:", error);
-      toast.error("Failed to load KOLs");
-    } finally {
-      setIsLoading(false);
-      setIsLoadingMore(false);
-    }
-  };
+    const states: Record<string, boolean> = {};
+    kols.forEach((kol) => {
+      states[kol.kol_id] = kol.user_tracked || false;
+    });
+    setTrackingStates((prev) => ({ ...prev, ...states }));
+  }, [kols]);
 
   const handleTrackToggle = async (kol: Kol) => {
     const isTracked = trackingStates[kol.kol_id];
@@ -167,6 +124,7 @@ export default function TopKols({
         setTrackingStates((prev) => ({ ...prev, [kol.kol_id]: true }));
         toast.success(`Now tracking ${kol.display_name}`);
       }
+      onUpdate();
     } catch (error: any) {
       console.error("Error toggling track status:", error);
       toast.error(error.message || "Failed to update tracking status");
@@ -196,26 +154,11 @@ export default function TopKols({
   };
 
   const handleSort = (column: string) => {
-    // Cast string back to SortBy
-    const sortByColumn = column as SortBy;
-    if (sortBy === sortByColumn) {
-      // Toggle sequence: desc -> asc -> default (null)
-      if (sortDirection === "desc") {
-        setSortDirection("asc");
-      } else {
-        // If current is asc, reset to default (null)
-        setSortBy(null);
-        setSortDirection("desc");
-      }
-    } else {
-      // Set new column with default desc direction
-      setSortBy(sortByColumn);
-      setSortDirection("desc");
-    }
+    onSort(column as SortBy);
   };
 
   const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
-    if (!enableInfiniteScroll || !hasMore || isLoadingMore) return;
+    if (!hasMore || isLoadingMore) return;
 
     const target = e.currentTarget;
     const scrollPercentage =
@@ -223,14 +166,14 @@ export default function TopKols({
 
     // Load more when scrolled to 90% of the content
     if (scrollPercentage > 0.9) {
-      fetchKols(false);
+      onLoadMore();
     }
   };
 
   return (
     <div className="space-y-3">
       {/* Loading State - Mobile */}
-      {isLoading && isMobile && (
+      {loading && (
         <div className="space-y-2">
           {[...Array(5)].map((_, i) => (
             <CardSkeleton key={i} lines={3} />
@@ -239,7 +182,7 @@ export default function TopKols({
       )}
 
       {/* Empty State */}
-      {!isLoading && kols.length === 0 && (
+      {!loading && kols.length === 0 && (
         <EmptyState
           title="No KOLs found"
           description={"No KOLs found. Try again later."}
@@ -247,10 +190,9 @@ export default function TopKols({
       )}
 
       {/* Mobile Card View */}
-      {!isLoading && kols.length > 0 && isMobile && (
+      {!loading && kols.length > 0 && (
         <div
-          className="space-y-2 overflow-auto"
-          style={{ maxHeight }}
+          className="space-y-2 overflow-auto md:hidden"
           onScroll={handleScroll}
         >
           {kols.map((kol, index) => (
@@ -326,9 +268,16 @@ export default function TopKols({
       )}
 
       {/* Desktop Table View */}
-      {!isMobile && (kols.length > 0 || isLoading) && (
-        <SectionCard padding="none" useSectionHeader={false}>
-          <div className="max-h-[600px] hidden md:block overflow-x-auto">
+      {(kols.length > 0 || loading) && (
+        <SectionCard
+          padding="none"
+          useSectionHeader={false}
+          className="hidden md:block"
+        >
+          <div
+            className="max-h-[600px] overflow-x-auto"
+            onScroll={handleScroll}
+          >
             <Table>
               <TableHeader>
                 <TableRow>
@@ -374,7 +323,7 @@ export default function TopKols({
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {isLoading ? (
+                {loading ? (
                   [...Array(10)].map((_, i) => <KolTableSkeleton key={i} />)
                 ) : (
                   <>

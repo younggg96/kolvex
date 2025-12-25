@@ -10,7 +10,6 @@ import PortfolioHoldings, {
 import { PortfolioHeroSection } from "./PortfolioHeroSection";
 import { PortfolioSkeleton } from "./PortfolioSkeleton";
 import { useAuth } from "@/hooks";
-import { useBreakpoints } from "@/hooks/useBreakpoints";
 import { PortfolioHeaderActions } from "./PortfolioHeaderActions";
 
 export function PortfolioPageContent() {
@@ -19,7 +18,6 @@ export function PortfolioPageContent() {
   const { user, isLoading } = useAuth();
   const [headerActionsProps, setHeaderActionsProps] =
     useState<PortfolioHeaderActionsProps | null>(null);
-  const { isMobile, isTablet } = useBreakpoints();
 
   // Handle connection callback
   const handleConnectionCallback = useCallback(() => {
@@ -44,10 +42,7 @@ export function PortfolioPageContent() {
   // Show loading while auth is loading
   if (isLoading) {
     return (
-      <DashboardLayout
-        showHeader={isMobile || isTablet}
-        title="Loading Portfolio..."
-      >
+      <DashboardLayout headerClassName="lg:hidden" title="Loading Portfolio...">
         <div className="relative min-w-0 space-y-3">
           {/* Hero Skeleton */}
           <PortfolioHeroSection className="lg:block hidden" />
@@ -61,7 +56,7 @@ export function PortfolioPageContent() {
   return (
     <DashboardLayout
       title="My Holdings"
-      showHeader={isMobile || isTablet}
+      headerClassName="lg:hidden"
       headerActions={
         headerActionsProps ? (
           <PortfolioHeaderActions {...headerActionsProps} size="xs" />

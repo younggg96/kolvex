@@ -224,7 +224,7 @@ export default function KOLTrackerTable({
 
   if (loading) {
     return (
-      <div className="space-y-3">
+      <>
         {/* Table/Cards Skeleton */}
         {isMobile ? (
           <div className="space-y-2">
@@ -233,7 +233,7 @@ export default function KOLTrackerTable({
             ))}
           </div>
         ) : (
-          <div className="border border-border-light dark:border-border-dark rounded-lg overflow-auto">
+          <div className="border border-border-light dark:border-border-dark rounded-lg overflow-hidden">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -256,7 +256,7 @@ export default function KOLTrackerTable({
             </Table>
           </div>
         )}
-      </div>
+      </>
     );
   }
 
@@ -287,7 +287,10 @@ export default function KOLTrackerTable({
                     className="flex items-center gap-3 flex-1 min-w-0 hover:opacity-80 transition-opacity"
                   >
                     <Avatar className="w-10 h-10 flex-shrink-0 ring-1 ring-gray-200 dark:ring-white/10">
-                      <AvatarImage src={proxyImageUrl(kol.avatarUrl)} alt={kol.name} />
+                      <AvatarImage
+                        src={proxyImageUrl(kol.avatarUrl)}
+                        alt={kol.name}
+                      />
                       <AvatarFallback className="text-xs font-bold bg-gray-200 dark:bg-white/10 text-gray-600 dark:text-white/60">
                         {kol.name.substring(0, 2).toUpperCase()}
                       </AvatarFallback>

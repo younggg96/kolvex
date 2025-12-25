@@ -9,6 +9,8 @@ interface DashboardLayoutProps {
   children: ReactNode;
   title?: string;
   showHeader?: boolean;
+  /** Tailwind CSS classes for responsive header visibility, e.g. "lg:hidden" */
+  headerClassName?: string;
   hasSidebarTrigger?: boolean;
   headerLeftAction?: ReactNode;
   headerActions?: ReactNode;
@@ -18,6 +20,7 @@ export default function DashboardLayout({
   children,
   title = "Dashboard",
   showHeader = true,
+  headerClassName,
   hasSidebarTrigger = true,
   headerLeftAction,
   headerActions,
@@ -28,12 +31,14 @@ export default function DashboardLayout({
         <AppSidebar />
         <SidebarInset className="flex flex-col min-w-0 overflow-hidden">
           {showHeader && (
-            <Header
-              title={title}
-              hasSidebarTrigger={hasSidebarTrigger}
-              leftAction={headerLeftAction}
-              actions={headerActions}
-            />
+            <div className={headerClassName}>
+              <Header
+                title={title}
+                hasSidebarTrigger={hasSidebarTrigger}
+                leftAction={headerLeftAction}
+                actions={headerActions}
+              />
+            </div>
           )}
           <div className="flex flex-col flex-1 overflow-hidden">{children}</div>
         </SidebarInset>

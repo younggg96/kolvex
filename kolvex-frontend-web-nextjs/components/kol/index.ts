@@ -5,6 +5,5 @@ export { default as KOLProfileHeader } from "./KOLProfileHeader";
 export { default as KOLAnalysisPanel } from "./KOLAnalysisPanel";
 export { default as KOLTrackerTable } from "./KOLTrackerTable";
 export { default as KOLTweetCard } from "./KOLTweetCard";
-export { default as TopKols } from "./TopKols";
+export { default as TopKols } from "./KOLRankingTable";
 export { KOLHeroSection } from "./KOLHeroSection";
-

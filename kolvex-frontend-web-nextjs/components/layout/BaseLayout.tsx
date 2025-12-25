@@ -4,9 +4,13 @@ import Footer from "@/components/layout/Footer";
 
 interface BaseLayoutProps {
   children: ReactNode;
+  hasFooter?: boolean;
 }
 
-export default function BaseLayout({ children }: BaseLayoutProps) {
+export default function BaseLayout({
+  children,
+  hasFooter = true,
+}: BaseLayoutProps) {
   return (
     <div className="relative flex min-h-screen w-full flex-col overflow-y-auto bg-background-light dark:bg-background-dark transition-colors duration-300">
       {/* Animated Grid Background */}
@@ -20,7 +24,7 @@ export default function BaseLayout({ children }: BaseLayoutProps) {
       {children}
 
       {/* Footer */}
-      <Footer />
+      {hasFooter && <Footer />}
     </div>
   );
 }

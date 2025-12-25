@@ -2,13 +2,12 @@
 
 import React from "react";
 import TypewriterText from "@/components/common/TypewriterText";
-import EmailSignup from "@/components/user/EmailSignup";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 
 export default function LandingHero() {
   return (
-    <section className="relative pt-20 pb-16 md:pt-32 md:pb-24 overflow-hidden">
+    <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
       <div className="container px-4 mx-auto relative z-10">
         <div className="flex flex-col items-center text-center max-w-4xl mx-auto">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-bold mb-6 animate-fade-in">

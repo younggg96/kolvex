@@ -30,25 +30,6 @@ export default function LandingCTA() {
             {/* Inner decorative patterns */}
             <div className="absolute inset-0 bg-grid opacity-10" />
 
-            {/* Animated stock line */}
-            <div className="absolute bottom-0 left-0 right-0 h-32 opacity-40 overflow-hidden">
-              <svg
-                className="w-full h-full"
-                viewBox="0 0 1200 100"
-                preserveAspectRatio="none"
-              >
-                <path
-                  d="M0,80 Q100,60 200,70 T400,50 T600,60 T800,30 T1000,40 T1200,20"
-                  fill="none"
-                  stroke="#00C805"
-                  strokeWidth="2"
-                  strokeDasharray="1200"
-                  strokeDashoffset="1200"
-                  className="animate-dash"
-                />
-              </svg>
-            </div>
-
             <div className="relative z-10">
               {/* Badge */}
               <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/20 border border-primary/40 text-primary text-xs font-bold mb-8 animate-bounce-subtle">

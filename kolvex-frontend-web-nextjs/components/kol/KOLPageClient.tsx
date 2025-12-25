@@ -1,22 +1,22 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import SectionCard from "@/components/layout/SectionCard";
 import KOLTrackerTable from "@/components/kol/KOLTrackerTable";
-import TopKols from "@/components/kol/TopKols";
 import { SwitchTab } from "@/components/ui/switch-tab";
 import { KOL } from "@/lib/kolApi";
+import { Kol, SortBy } from "@/app/api/kols/route";
 import { Star, TrendingUp } from "lucide-react";
 import { useTrackedKOLs } from "@/hooks";
-import { useBreakpoints } from "@/hooks/useBreakpoints";
 import { KOLHeroSection } from "./KOLHeroSection";
+import KOLRankingTable from "@/components/kol/KOLRankingTable";
+import { toast } from "sonner";
 
 export default function KOLPageClient() {
   const [activeTab, setActiveTab] = useState<"trackingKOLs" | "ranking">(
     "ranking"
   );
-  const { isMobile, isTablet, isLaptop, isDesktop, isWide } = useBreakpoints();
 
   // Use the trackingKOLs hook to get real data from the API
   const {
@@ -24,6 +24,103 @@ export default function KOLPageClient() {
     isLoading: isLoadingTrackingKOLs,
     refresh: refreshTrackingKOLs,
   } = useTrackedKOLs();
+
+  // Ranking KOLs state
+  const [rankingKols, setRankingKols] = useState<Kol[]>([]);
+  const [isLoadingRanking, setIsLoadingRanking] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [sortBy, setSortBy] = useState<SortBy | null>(null);
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
+  const [offset, setOffset] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
+
+  // Fetch ranking KOLs
+  const fetchRankingKols = useCallback(
+    async (reset: boolean = false) => {
+      try {
+        if (reset) {
+          setIsLoadingRanking(true);
+        } else {
+          setIsLoadingMore(true);
+        }
+
+        const currentOffset = reset ? 0 : offset;
+        const params = new URLSearchParams({
+          limit: "20",
+          offset: currentOffset.toString(),
+          sort_by: sortBy || "influence_score",
+          sort_direction: sortDirection,
+        });
+
+        const response = await fetch(`/api/kols?${params}`);
+        if (!response.ok) throw new Error("Failed to fetch kols");
+
+        const data = await response.json();
+        const newKols = data.kols || [];
+
+        if (reset) {
+          setRankingKols(newKols);
+        } else {
+          setRankingKols((prev) => [...prev, ...newKols]);
+        }
+
+        // Check if there are more items to load
+        setHasMore(newKols.length === 20);
+        setOffset(currentOffset + newKols.length);
+      } catch (error) {
+        console.error("Error fetching kols:", error);
+        toast.error("Failed to load KOLs");
+      } finally {
+        setIsLoadingRanking(false);
+        setIsLoadingMore(false);
+      }
+    },
+    [offset, sortBy, sortDirection]
+  );
+
+  // Reset and fetch when sort changes
+  useEffect(() => {
+    setRankingKols([]);
+    setOffset(0);
+    setHasMore(true);
+    fetchRankingKols(true);
+  }, [sortBy, sortDirection]);
+
+  // Refresh ranking data
+  const refreshRankingKols = useCallback(() => {
+    setRankingKols([]);
+    setOffset(0);
+    setHasMore(true);
+    fetchRankingKols(true);
+  }, [fetchRankingKols]);
+
+  // Handle sort change
+  const handleSort = useCallback(
+    (column: SortBy) => {
+      if (sortBy === column) {
+        // Toggle sequence: desc -> asc -> default (null)
+        if (sortDirection === "desc") {
+          setSortDirection("asc");
+        } else {
+          // If current is asc, reset to default (null)
+          setSortBy(null);
+          setSortDirection("desc");
+        }
+      } else {
+        // Set new column with default desc direction
+        setSortBy(column);
+        setSortDirection("desc");
+      }
+    },
+    [sortBy, sortDirection]
+  );
+
+  // Handle load more
+  const handleLoadMore = useCallback(() => {
+    if (!isLoadingMore && hasMore) {
+      fetchRankingKols(false);
+    }
+  }, [isLoadingMore, hasMore, fetchRankingKols]);
 
   // Convert trackingKOLs to KOL format for compatibility with KOLTrackerTable
   const convertedTrackingKOLs = useMemo<KOL[]>(() => {
@@ -78,10 +175,17 @@ export default function KOLPageClient() {
   );
 
   return (
-    <DashboardLayout title="KOL Tracker" showHeader={isMobile || isTablet}>
+    <DashboardLayout
+      title={
+        activeTab === "trackingKOLs" ? "Tracking KOLs" : "Top Ranking KOLs"
+      }
+      headerClassName="lg:hidden"
+    >
       <div className="relative flex-1 overflow-y-auto bg-background-light dark:bg-background-dark h-full">
         <div className="absolute inset-0 bg-grid opacity-50 pointer-events-none" />
-        {(isDesktop || isLaptop || isWide) && <KOLHeroSection />}
+        <div className="hidden lg:block">
+          <KOLHeroSection />
+        </div>
         <div className="relative p-4 min-w-0 space-y-6">
           {/* KOL Table with Tab Switcher */}
           <SectionCard
@@ -107,11 +211,16 @@ export default function KOLPageClient() {
                 loading={isLoadingTrackingKOLs}
               />
             ) : (
-              <TopKols
-                limit={20}
-                showFilters={true}
-                enableInfiniteScroll={true}
-                maxHeight="calc(100vh - 220px)"
+              <KOLRankingTable
+                kols={rankingKols}
+                loading={isLoadingRanking}
+                isLoadingMore={isLoadingMore}
+                hasMore={hasMore}
+                sortBy={sortBy}
+                sortDirection={sortDirection}
+                onSort={handleSort}
+                onLoadMore={handleLoadMore}
+                onUpdate={refreshRankingKols}
               />
             )}
           </SectionCard>

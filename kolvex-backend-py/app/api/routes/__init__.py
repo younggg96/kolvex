@@ -11,6 +11,7 @@ from app.api.routes.stocks import router as stocks_router
 from app.api.routes.kol_tweets import router as kol_tweets_router
 from app.api.routes.kol_subscriptions import router as kol_subscriptions_router
 from app.api.routes.snaptrade import router as snaptrade_router
+from app.api.routes.xiaohongshu import router as xiaohongshu_router
 
 # Create API router
 api_router = APIRouter()
@@ -29,5 +30,6 @@ api_router.include_router(news.router)
 api_router.include_router(market_data.router)
 api_router.include_router(snaptrade_router)
 api_router.include_router(notifications.router)
+api_router.include_router(xiaohongshu_router)
 
 __all__ = ["api_router"]
