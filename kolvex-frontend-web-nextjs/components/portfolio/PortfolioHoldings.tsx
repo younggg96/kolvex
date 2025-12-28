@@ -992,7 +992,9 @@ export default function PortfolioHoldings({
                                           </span>
                                         ) : (
                                           <WeightIndicator
-                                            percent={pos.weight_percent || 0}
+                                            percent={Math.abs(
+                                              pos.weight_percent || 0
+                                            )}
                                           />
                                         )}
                                       </TableCell>
@@ -1250,6 +1252,8 @@ export default function PortfolioHoldings({
                                               }
                                               className="!text-[10px] !px-1.5 !py-0.5 capitalize"
                                             >
+                                              {(pos.weight_percent ?? 0) < 0 &&
+                                                "Sell"}{" "}
                                               {pos.option_type || "-"}
                                             </Badge>
                                             <span className="text-[12px] text-muted-foreground">
@@ -1379,7 +1383,9 @@ export default function PortfolioHoldings({
                                             </span>
                                           ) : (
                                             <WeightIndicator
-                                              percent={pos.weight_percent || 0}
+                                              percent={Math.abs(
+                                                pos.weight_percent || 0
+                                              )}
                                             />
                                           )}
                                         </TableCell>
