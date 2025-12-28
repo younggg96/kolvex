@@ -14,11 +14,13 @@ router = APIRouter()
 
 @router.get("/", response_model=KOLTweetsResponse)
 async def get_kol_tweets(
-    page: int = Query(1, ge=1, description="页码"),
-    page_size: int = Query(20, ge=1, le=100, description="每页数量"),
-    username: Optional[str] = Query(None, description="用户名筛选（单个）"),
-    usernames: Optional[str] = Query(None, description="用户名筛选（多个，逗号分隔）"),
-    search: Optional[str] = Query(None, description="搜索关键词"),
+    page: int = Query(1, ge=1, description="Page number"),
+    page_size: int = Query(20, ge=1, le=100, description="Items per page"),
+    username: Optional[str] = Query(None, description="Filter by single username"),
+    usernames: Optional[str] = Query(
+        None, description="Filter by multiple usernames (comma-separated)"
+    ),
+    search: Optional[str] = Query(None, description="Search keyword"),
 ):
     """
     获取 KOL 推文列表
@@ -95,7 +97,9 @@ async def get_kol_tweets(
         )
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"获取推文失败: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Failed to get tweets: {str(e)}"
+        )
 
 
 @router.get("/user/{username}", response_model=KOLTweetsResponse)

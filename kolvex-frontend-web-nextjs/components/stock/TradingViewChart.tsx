@@ -162,39 +162,38 @@ export default function TradingViewChart({
   const showSkeleton = !chartReady;
 
   return (
-    <div className="w-full h-full min-h-[500px] relative">
+    <div className="w-full h-full min-h-[280px] sm:min-h-[350px] md:min-h-[450px] lg:min-h-[500px] relative">
       {showSkeleton && (
-        <div className="absolute inset-0 flex flex-col gap-3 p-2 bg-white dark:bg-card-dark z-10">
+        <div className="absolute inset-0 flex flex-col gap-2 sm:gap-3 p-2 bg-white dark:bg-card-dark z-10">
           {/* Chart Header Skeleton */}
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Skeleton className="h-8 w-32" />
-              <Skeleton className="h-6 w-20" />
-              <Skeleton className="h-6 w-24" />
+            <div className="flex items-center gap-2 sm:gap-3">
+              <Skeleton className="h-6 sm:h-8 w-24 sm:w-32" />
+              <Skeleton className="h-5 sm:h-6 w-16 sm:w-20 hidden sm:block" />
+              <Skeleton className="h-5 sm:h-6 w-20 sm:w-24 hidden md:block" />
             </div>
-            <div className="flex items-center gap-2">
-              <Skeleton className="h-8 w-8 rounded" />
-              <Skeleton className="h-8 w-8 rounded" />
-              <Skeleton className="h-8 w-8 rounded" />
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              <Skeleton className="h-6 sm:h-8 w-6 sm:w-8 rounded" />
+              <Skeleton className="h-6 sm:h-8 w-6 sm:w-8 rounded" />
+              <Skeleton className="h-6 sm:h-8 w-6 sm:w-8 rounded hidden sm:block" />
             </div>
           </div>
 
           {/* Chart Toolbar Skeleton */}
-          <div className="flex items-center gap-2">
-            <Skeleton className="h-7 w-16" />
-            <Skeleton className="h-7 w-16" />
-            <Skeleton className="h-7 w-16" />
-            <Skeleton className="h-7 w-16" />
-            <Skeleton className="h-7 w-20" />
+          <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto">
+            <Skeleton className="h-6 sm:h-7 w-12 sm:w-16 flex-shrink-0" />
+            <Skeleton className="h-6 sm:h-7 w-12 sm:w-16 flex-shrink-0" />
+            <Skeleton className="h-6 sm:h-7 w-12 sm:w-16 flex-shrink-0 hidden sm:block" />
+            <Skeleton className="h-6 sm:h-7 w-12 sm:w-16 flex-shrink-0 hidden md:block" />
             <div className="flex-1" />
-            <Skeleton className="h-7 w-24" />
+            <Skeleton className="h-6 sm:h-7 w-20 sm:w-24 flex-shrink-0" />
           </div>
 
           {/* Main Chart Area Skeleton */}
-          <div className="flex-1 flex flex-col gap-2">
-            {[...Array(6)].map((_, i) => (
-              <div key={i} className="flex items-center gap-2 h-12">
-                <Skeleton className="h-4 w-16" />
+          <div className="flex-1 flex flex-col gap-1 sm:gap-2">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="flex items-center gap-1.5 sm:gap-2 h-8 sm:h-12">
+                <Skeleton className="h-3 sm:h-4 w-10 sm:w-16" />
                 <Skeleton className="h-full flex-1" />
               </div>
             ))}
@@ -202,8 +201,8 @@ export default function TradingViewChart({
 
           {/* Timeline Skeleton */}
           <div className="flex justify-between">
-            {[...Array(6)].map((_, i) => (
-              <Skeleton key={i} className="h-4 w-16" />
+            {[...Array(4)].map((_, i) => (
+              <Skeleton key={i} className="h-3 sm:h-4 w-10 sm:w-16" />
             ))}
           </div>
         </div>

@@ -32,6 +32,10 @@ from .database import (
     insert_post,
     get_stats,
     get_recent_posts,
+    # 图片处理
+    download_image,
+    upload_image_to_storage,
+    process_and_upload_images,
 )
 
 from .extractors import (
@@ -66,6 +70,10 @@ __all__ = [
     "insert_post",
     "get_stats",
     "get_recent_posts",
+    # Image processing
+    "download_image",
+    "upload_image_to_storage",
+    "process_and_upload_images",
     # Extractors
     "parse_count",
     "parse_xhs_date",

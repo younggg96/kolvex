@@ -1,4 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
+import {
+  chartCache,
+  quoteCache,
+  overviewCache,
+  CACHE_TTL,
+  getCacheKey,
+} from "@/lib/cache";
 
 const NEXT_PUBLIC_BACKEND_API_URL =
   process.env.NEXT_PUBLIC_BACKEND_API_URL || "http://127.0.0.1:8000";
@@ -19,6 +26,13 @@ interface BackendQuote {
   previous_close?: number;
   fifty_two_week_high?: number;
   fifty_two_week_low?: number;
+}
+
+// Chart data interface
+interface ChartDataPoint {
+  time: string;
+  value: number;
+  volume: number;
 }
 
 // Transform backend response to frontend format
@@ -44,8 +58,8 @@ function transformQuote(quote: BackendQuote) {
 // Enable runtime edge for faster responses
 export const runtime = "nodejs";
 
-// Revalidate data every 15 minutes (900 seconds)
-export const revalidate = 900;
+// Force dynamic to ensure fresh cache checks
+export const dynamic = "force-dynamic";
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
@@ -62,19 +76,38 @@ export async function GET(request: NextRequest) {
             { status: 400 }
           );
         }
+
+        // 检查内存缓存
+        const quoteCacheKey = getCacheKey("quote", symbol);
+        const cachedQuote = quoteCache.get(quoteCacheKey);
+        if (cachedQuote) {
+          return NextResponse.json(cachedQuote, {
+            headers: {
+              "Cache-Control":
+                "public, s-maxage=60, stale-while-revalidate=120",
+              "X-Cache": "HIT",
+            },
+          });
+        }
+
         try {
           const quoteResponse = await fetch(
-            `${NEXT_PUBLIC_BACKEND_API_URL}/api/v1/market/quote/${symbol}`,
-            { next: { revalidate: 900 } }
+            `${NEXT_PUBLIC_BACKEND_API_URL}/api/v1/market/quote/${symbol}`
           );
           if (!quoteResponse.ok) {
             throw new Error(`Backend returned ${quoteResponse.status}`);
           }
           const quoteData: BackendQuote = await quoteResponse.json();
-          return NextResponse.json(transformQuote(quoteData), {
+          const transformedQuote = transformQuote(quoteData);
+
+          // 存入缓存
+          quoteCache.set(quoteCacheKey, transformedQuote, CACHE_TTL.QUOTE);
+
+          return NextResponse.json(transformedQuote, {
             headers: {
               "Cache-Control":
-                "public, s-maxage=900, stale-while-revalidate=1800",
+                "public, s-maxage=60, stale-while-revalidate=120",
+              "X-Cache": "MISS",
             },
           });
         } catch (error) {
@@ -104,9 +137,35 @@ export async function GET(request: NextRequest) {
           return NextResponse.json([], { status: 200 });
         }
 
+        // 检查缓存，找出需要从后端获取的股票
+        const cachedQuotes: ReturnType<typeof transformQuote>[] = [];
+        const symbolsToFetch: string[] = [];
+
+        for (const sym of symbolArray) {
+          const cacheKey = getCacheKey("quote", sym);
+          const cached =
+            quoteCache.get<ReturnType<typeof transformQuote>>(cacheKey);
+          if (cached) {
+            cachedQuotes.push(cached);
+          } else {
+            symbolsToFetch.push(sym);
+          }
+        }
+
+        // 如果所有股票都在缓存中，直接返回
+        if (symbolsToFetch.length === 0) {
+          return NextResponse.json(cachedQuotes, {
+            headers: {
+              "Cache-Control":
+                "public, s-maxage=60, stale-while-revalidate=120",
+              "X-Cache": "HIT",
+            },
+          });
+        }
+
         try {
           // Build query string for symbols array
-          const queryParams = symbolArray
+          const queryParams = symbolsToFetch
             .map((s) => `symbols=${encodeURIComponent(s)}`)
             .join("&");
           const quotesResponse = await fetch(
@@ -114,7 +173,6 @@ export async function GET(request: NextRequest) {
             {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              next: { revalidate: 900 },
             }
           );
           if (!quotesResponse.ok) {
@@ -125,11 +183,22 @@ export async function GET(request: NextRequest) {
             await quotesResponse.json();
           const transformedQuotes = Object.values(quotesData)
             .filter((q) => !("error" in q))
-            .map(transformQuote);
-          return NextResponse.json(transformedQuotes, {
+            .map((q) => {
+              const transformed = transformQuote(q);
+              // 存入缓存
+              const cacheKey = getCacheKey("quote", q.symbol);
+              quoteCache.set(cacheKey, transformed, CACHE_TTL.QUOTE);
+              return transformed;
+            });
+
+          // 合并缓存的和新获取的
+          const allQuotes = [...cachedQuotes, ...transformedQuotes];
+
+          return NextResponse.json(allQuotes, {
             headers: {
               "Cache-Control":
-                "public, s-maxage=900, stale-while-revalidate=1800",
+                "public, s-maxage=60, stale-while-revalidate=120",
+              "X-Cache": cachedQuotes.length > 0 ? "PARTIAL" : "MISS",
             },
           });
         } catch (error) {
@@ -152,28 +221,47 @@ export async function GET(request: NextRequest) {
             { status: 400 }
           );
         }
+
+        const interval = searchParams.get("interval") || "5m";
+        const chartCacheKey = getCacheKey("chart", symbol, interval);
+
+        // 检查内存缓存
+        const cachedChart = chartCache.get<ChartDataPoint[]>(chartCacheKey);
+        if (cachedChart) {
+          return NextResponse.json(cachedChart, {
+            headers: {
+              "Cache-Control":
+                "public, s-maxage=300, stale-while-revalidate=600",
+              "X-Cache": "HIT",
+            },
+          });
+        }
+
         try {
-          const interval = searchParams.get("interval") || "5m";
           const historyResponse = await fetch(
-            `${NEXT_PUBLIC_BACKEND_API_URL}/api/v1/market/intraday/${symbol}?interval=${interval}`,
-            { next: { revalidate: 300 } }
+            `${NEXT_PUBLIC_BACKEND_API_URL}/api/v1/market/intraday/${symbol}?interval=${interval}`
           );
           if (!historyResponse.ok) {
             throw new Error(`Backend returned ${historyResponse.status}`);
           }
           const historyData = await historyResponse.json();
           // Transform to chart format
-          const chartData = (historyData.data || []).map(
+          const chartData: ChartDataPoint[] = (historyData.data || []).map(
             (d: { date: string; close: number; volume: number }) => ({
               time: d.date,
               value: d.close,
               volume: d.volume,
             })
           );
+
+          // 存入缓存（5 分钟）
+          chartCache.set(chartCacheKey, chartData, CACHE_TTL.CHART);
+
           return NextResponse.json(chartData, {
             headers: {
               "Cache-Control":
                 "public, s-maxage=300, stale-while-revalidate=600",
+              "X-Cache": "MISS",
             },
           });
         } catch (error) {
@@ -188,10 +276,24 @@ export async function GET(request: NextRequest) {
             { status: 400 }
           );
         }
+
+        const overviewCacheKey = getCacheKey("overview", symbol);
+
+        // 检查内存缓存
+        const cachedOverview = overviewCache.get(overviewCacheKey);
+        if (cachedOverview) {
+          return NextResponse.json(cachedOverview, {
+            headers: {
+              "Cache-Control":
+                "public, s-maxage=600, stale-while-revalidate=1200",
+              "X-Cache": "HIT",
+            },
+          });
+        }
+
         try {
           const overviewResponse = await fetch(
-            `${NEXT_PUBLIC_BACKEND_API_URL}/api/v1/market/overview/${symbol}`,
-            { next: { revalidate: 300 } }
+            `${NEXT_PUBLIC_BACKEND_API_URL}/api/v1/market/overview/${symbol}`
           );
 
           if (!overviewResponse.ok) {
@@ -199,10 +301,15 @@ export async function GET(request: NextRequest) {
           }
 
           const overviewData = await overviewResponse.json();
+
+          // 存入缓存（10 分钟）
+          overviewCache.set(overviewCacheKey, overviewData, CACHE_TTL.OVERVIEW);
+
           return NextResponse.json(overviewData, {
             headers: {
               "Cache-Control":
-                "public, s-maxage=300, stale-while-revalidate=600",
+                "public, s-maxage=600, stale-while-revalidate=1200",
+              "X-Cache": "MISS",
             },
           });
         } catch (error) {

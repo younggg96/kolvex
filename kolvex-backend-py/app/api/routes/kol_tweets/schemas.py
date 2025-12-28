@@ -156,6 +156,115 @@ class StatsResponse(BaseModel):
     total_kols: int
 
 
+# ============================================================
+# 数据分析模型
+# ============================================================
+
+
+class TrendDataPoint(BaseModel):
+    """趋势数据点"""
+    date: str
+    count: int
+
+
+class TrendSummary(BaseModel):
+    """趋势统计摘要"""
+    total_tweets: int
+    average_daily: float
+    max_daily: int
+    min_daily: int
+    peak_date: Optional[str] = None
+    days_analyzed: int
+
+
+class TrendAnalysisData(BaseModel):
+    """趋势分析数据"""
+    trends: List[TrendDataPoint]
+    summary: TrendSummary
+
+
+class TrendAnalysisResponse(BaseModel):
+    """趋势分析响应"""
+    success: bool
+    data: TrendAnalysisData
+
+
+class KOLRanking(BaseModel):
+    """KOL 排名数据"""
+    rank: int
+    username: str
+    avatar_url: Optional[str] = None
+    total_views: int
+    total_likes: int
+    total_retweets: int
+    total_replies: int
+    total_bookmarks: int
+    tweet_count: int
+    engagement_rate: float
+
+
+class SentimentDistribution(BaseModel):
+    """情感分布"""
+    bullish: int
+    bearish: int
+    neutral: int
+
+
+class SentimentMetrics(BaseModel):
+    """情感指标"""
+    total_analyzed: int
+    sentiment_score: float
+    sentiment_label: str
+    bull_bear_ratio: float
+
+
+class TickerAnalysis(BaseModel):
+    """股票代码分析"""
+    rank: int
+    ticker: str
+    mention_count: int
+    total_views: int
+    total_likes: int
+    total_retweets: int
+    unique_author_count: int
+    sentiment_score: float
+    sentiment_counts: Optional[SentimentDistribution] = None
+
+
+class DashboardOverview(BaseModel):
+    """仪表盘概览"""
+    total_tweets: int
+    total_views: int
+    total_engagement: int
+    unique_authors: int
+    stock_related_tweets: int
+    avg_views_per_tweet: float
+    avg_engagement_per_tweet: float
+
+
+class KeywordItem(BaseModel):
+    """关键词项"""
+    word: str
+    count: int
+
+
+class TagItem(BaseModel):
+    """标签项"""
+    tag: str
+    count: int
+
+
+class SentimentEngagementComparison(BaseModel):
+    """情感互动对比"""
+    tweet_count: int
+    avg_views: float
+    avg_likes: float
+    avg_retweets: float
+    avg_engagement_rate: float
+    total_views: int
+    total_likes: int
+
+
 
 
 

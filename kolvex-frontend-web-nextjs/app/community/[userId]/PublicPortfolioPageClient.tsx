@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, Calendar, Users } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { ShareDropdown } from "@/components/ui/share-dropdown";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import PortfolioHoldings from "@/components/portfolio/PortfolioHoldings";
 import {
@@ -108,6 +108,13 @@ export function PublicPortfolioPageClient({
         >
           <ArrowLeft className="w-4 h-4" />
         </Button>
+      }
+      headerActions={
+        <ShareDropdown
+          shareLink={`https://kolvex.app/community/${userId}`}
+          shareText={`Check out ${displayName}'s investment portfolio on Kolvex!`}
+          emailSubject={`${displayName}'s Portfolio on Kolvex`}
+        />
       }
     >
       <div className="relative flex-1 overflow-y-auto bg-background-light dark:bg-background-dark">

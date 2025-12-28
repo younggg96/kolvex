@@ -23,11 +23,15 @@ html {
 :root {
   --background: #f7f8fa;
   --foreground: #171717;
+  --muted: #f1f5f9;
+  --muted-foreground: #64748b;
 }
 
 .dark {
   --background: #0a0e0f;
   --foreground: #e5e7eb;
+  --muted: #1e2124;
+  --muted-foreground: #9ca3af;
 }
 
 body {

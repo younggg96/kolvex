@@ -30,7 +30,7 @@ export default function PostFeedList({
   formatText,
 }: PostFeedListProps) {
   const [mounted, setMounted] = useState(false);
-  // 跟踪哪些"非股市相关"的推文被手动展开了
+
   const [expandedNonStockPosts, setExpandedNonStockPosts] = useState<
     Set<number>
   >(new Set());
@@ -39,14 +39,14 @@ export default function PostFeedList({
     setMounted(true);
   }, []);
 
-  // 检查推文是否与股市相关
+  // check if the post is stock related
   const isStockRelated = (post: KOLTweet): boolean => {
-    // 如果没有 is_stock_related 字段，默认显示（向后兼容）
+    // if there is no is_stock_related field, default to true for backward compatibility
     if (!post.is_stock_related) return true;
     return post.is_stock_related.is_related === true;
   };
 
-  // 切换非股市相关推文的展开状态
+  // toggle the expanded state of the non-stock related posts
   const toggleNonStockPost = (postId: number) => {
     setExpandedNonStockPosts((prev) => {
       const newSet = new Set(prev);
@@ -61,7 +61,7 @@ export default function PostFeedList({
 
   const defaultFormatDate = (dateString: string) => {
     if (!mounted) {
-      // Return a static format during SSR to prevent hydration mismatch
+      // return a static format during SSR to prevent hydration mismatch
       return new Date(dateString).toLocaleDateString();
     }
 
@@ -79,7 +79,7 @@ export default function PostFeedList({
   const defaultFormatText = (text: string) => {
     return text.split(/(\s+)/).map((word, index) => {
       if (word.startsWith("$") && word.length > 1) {
-        // Extract ticker symbol (remove $ and any trailing punctuation)
+        // extract ticker symbol (remove $ and any trailing punctuation)
         const ticker = word
           .slice(1)
           .replace(/[.,!?;:'")\]]+$/, "")
@@ -128,7 +128,7 @@ export default function PostFeedList({
     );
   };
 
-  // 渲染折叠的非股市相关推文提示
+  // render the collapsed non-stock related post提示
   const renderCollapsedNonStockPost = (post: KOLTweet) => {
     return (
       <div className="py-1">
@@ -159,7 +159,7 @@ export default function PostFeedList({
         return (
           <div key={post.id}>
             {shouldCollapse ? (
-              // 折叠状态：只显示头部和提示
+              // collapsed state: only show the header and the hint
               <>
                 <TweetHeader
                   screenName={post.username}
@@ -173,7 +173,7 @@ export default function PostFeedList({
                 {renderCollapsedNonStockPost(post)}
               </>
             ) : (
-              // 正常显示或已展开状态
+              // normal state or expanded state
               <>
                 <TweetHeader
                   screenName={post.username}
@@ -184,7 +184,7 @@ export default function PostFeedList({
                   platform={mapPlatform("x")}
                   initialTracked={false}
                 />
-                {/* 如果是展开的非股市相关推文，显示收起按钮 */}
+                {/* if the post is expanded and non-stock related, show the collapse button */}
                 {!stockRelated && isExpanded && (
                   <div className="py-1">
                     <Button

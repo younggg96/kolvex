@@ -15,94 +15,33 @@ import PostFeedList from "./PostFeedList";
 import { cn } from "@/lib/utils";
 import { POST_TAB_OPTIONS } from "@/lib/platformConfig";
 
-type Platform = "x";
-
 const PostTabOption = [...POST_TAB_OPTIONS];
 
-const PlatformTabOption = [
-  {
-    value: "x",
-    label: "X",
-    icon: (
-      <Image
-        src="/logo/x.svg"
-        alt="X"
-        width={16}
-        height={16}
-        className="w-4 h-4"
-      />
-    ),
-  },
-];
-
 export default function PostList({ className }: { className?: string }) {
-  const [selectedPlatform, setSelectedPlatform] = useState<Platform>("x");
   const [selectedTab, setSelectedTab] = useState<string>("all");
   const [selectedAuthors, setSelectedAuthors] = useState<string[]>([]);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [timeRange, setTimeRange] = useState<string>("all");
   const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
 
-  // Cache posts data for each platform
-  const [platformPosts, setPlatformPosts] = useState<
-    Record<Platform, KOLTweet[]>
-  >({
-    x: [],
-  });
-
-  // Track loading state for each platform
-  const [platformLoading, setPlatformLoading] = useState<
-    Record<Platform, boolean>
-  >({
-    x: false,
-  });
-
-  // Track which platforms have been loaded
-  const [loadedPlatforms, setLoadedPlatforms] = useState<Set<Platform>>(
-    new Set()
-  );
-
+  const [posts, setPosts] = useState<KOLTweet[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
-
-  // Track errors for each platform
-  const [platformErrors, setPlatformErrors] = useState<
-    Record<Platform, string | null>
-  >({
-    x: null,
-  });
-
-  // Track hasMore for each platform
-  const [platformHasMore, setPlatformHasMore] = useState<
-    Record<Platform, boolean>
-  >({
-    x: true,
-  });
-
-  // Track offset for each platform for pagination
-  const [platformOffset, setPlatformOffset] = useState<
-    Record<Platform, number>
-  >({
-    x: 0,
-  });
+  const [error, setError] = useState<string | null>(null);
+  const [hasMore, setHasMore] = useState(true);
+  const [offset, setOffset] = useState(0);
+  const [isLoaded, setIsLoaded] = useState(false);
 
   const PAGE_SIZE = 20;
 
-  // Get current platform data
-  const currentPosts = platformPosts[selectedPlatform];
-  const isLoading = platformLoading[selectedPlatform];
-  const currentError = platformErrors[selectedPlatform];
-  const hasMore = platformHasMore[selectedPlatform];
-
-  // Extract unique authors from current platform posts
+  // Extract unique authors from posts
   const availableAuthors = useMemo(() => {
     const uniqueAuthorsMap = new Map<
       string,
       { author: string; authorId: string; avatarUrl: string }
     >();
 
-    currentPosts.forEach((post) => {
-      // Assuming KOLTweet has username/display_name instead of author/authorId
-      // and we want to use username as authorId
+    posts.forEach((post) => {
       const authorId = post.username;
       const authorName = post.display_name || post.username;
 
@@ -118,7 +57,7 @@ export default function PostList({ className }: { className?: string }) {
     return Array.from(uniqueAuthorsMap.values()).sort((a, b) =>
       a.author.localeCompare(b.author)
     );
-  }, [currentPosts]);
+  }, [posts]);
 
   // Convert authors to MultiSelect options
   const authorOptions: MultiSelectOption[] = useMemo(() => {
@@ -137,11 +76,11 @@ export default function PostList({ className }: { className?: string }) {
     }));
   }, [availableAuthors]);
 
-  // Extract unique tags from current platform posts
+  // Extract unique tags from posts
   const availableTags = useMemo(() => {
     const uniqueTagsSet = new Set<string>();
 
-    currentPosts.forEach((post) => {
+    posts.forEach((post) => {
       if (post.tags) {
         post.tags.forEach((tag) => {
           uniqueTagsSet.add(tag);
@@ -150,7 +89,7 @@ export default function PostList({ className }: { className?: string }) {
     });
 
     return Array.from(uniqueTagsSet).sort();
-  }, [currentPosts]);
+  }, [posts]);
 
   // Convert tags to MultiSelect options
   const tagOptions: MultiSelectOption[] = useMemo(() => {
@@ -208,7 +147,7 @@ export default function PostList({ className }: { className?: string }) {
 
   // Filter posts based on selected authors, tags, and time range
   const filteredPosts = useMemo(() => {
-    let filtered = currentPosts;
+    let filtered = posts;
 
     // Filter by authors
     if (selectedAuthors.length > 0) {
@@ -250,7 +189,7 @@ export default function PostList({ className }: { className?: string }) {
 
     return filtered;
   }, [
-    currentPosts,
+    posts,
     selectedAuthors,
     selectedTags,
     timeRange,
@@ -268,78 +207,39 @@ export default function PostList({ className }: { className?: string }) {
   }, [selectedAuthors, selectedTags, timeRange, dateRange]);
 
   useEffect(() => {
-    // Only fetch if this platform hasn't been loaded yet
-    if (!loadedPlatforms.has(selectedPlatform)) {
+    if (!isLoaded) {
       fetchPosts();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedPlatform, loadedPlatforms.size]);
+  }, [isLoaded]);
 
   // Reset data and refetch when switching tabs
   useEffect(() => {
-    // Clear current platform's data and reload
-    setPlatformPosts((prev) => ({
-      ...prev,
-      [selectedPlatform]: [],
-    }));
-    // Reset offset when switching tabs
-    setPlatformOffset((prev) => ({
-      ...prev,
-      [selectedPlatform]: 0,
-    }));
-    // Reset hasMore when switching tabs
-    setPlatformHasMore((prev) => ({
-      ...prev,
-      [selectedPlatform]: true,
-    }));
-    setLoadedPlatforms((prev) => {
-      const newSet = new Set(prev);
-      newSet.delete(selectedPlatform);
-      return newSet;
-    });
+    setPosts([]);
+    setOffset(0);
+    setHasMore(true);
+    setIsLoaded(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedTab]);
 
-  // Reset filters when switching platforms
-  useEffect(() => {
-    setSelectedAuthors([]);
-    setSelectedTags([]);
-    setTimeRange("all");
-    setDateRange(undefined);
-  }, [selectedPlatform]);
-
-  const getApiEndpoint = (platform: Platform): string => {
-    // If tracking tab is selected, use the tracking API with platform filter
+  const getApiEndpoint = (): string => {
     if (selectedTab === "tracking") {
-      const platformMap = {
-        x: "TWITTER",
-      };
-      return `/api/kol-subscriptions/posts?platform=${platformMap[platform]}`;
+      return `/api/kol-subscriptions/posts?platform=TWITTER`;
     }
-
-    // Default endpoints for "all" tab
-    const endpoints = {
-      x: "/api/tweets",
-    };
-    return endpoints[platform];
+    return "/api/tweets";
   };
 
   const fetchPosts = async (forceRefresh: boolean = false) => {
     try {
-      // Set loading state for current platform
-      setPlatformLoading((prev) => ({ ...prev, [selectedPlatform]: true }));
-      setPlatformErrors((prev) => ({ ...prev, [selectedPlatform]: null }));
+      setIsLoading(true);
+      setError(null);
+      setOffset(0);
 
-      // Reset offset when fetching fresh data
-      setPlatformOffset((prev) => ({ ...prev, [selectedPlatform]: 0 }));
-
-      const endpoint = getApiEndpoint(selectedPlatform);
-      // Add pagination parameters for initial load
+      const endpoint = getApiEndpoint();
       const separator = endpoint.includes("?") ? "&" : "?";
       const paginatedEndpoint = `${endpoint}${separator}limit=${PAGE_SIZE}&offset=0`;
 
       const response = await fetch(paginatedEndpoint, {
-        // Force refresh bypasses cache
         cache: forceRefresh ? "no-store" : "default",
       });
 
@@ -348,37 +248,19 @@ export default function PostList({ className }: { className?: string }) {
       }
 
       const data = await response.json();
-
-      // Handle both API response structures (tweets property or direct array)
       const fetchedPosts = data.tweets || data.posts || [];
 
-      // Update posts for current platform
-      setPlatformPosts((prev) => ({
-        ...prev,
-        [selectedPlatform]: fetchedPosts,
-      }));
-
-      // Update hasMore for current platform
-      setPlatformHasMore((prev) => ({
-        ...prev,
-        [selectedPlatform]: fetchedPosts.length >= PAGE_SIZE,
-      }));
-
-      // Mark this platform as loaded
-      setLoadedPlatforms((prev) => new Set(prev).add(selectedPlatform));
+      setPosts(fetchedPosts);
+      setHasMore(fetchedPosts.length >= PAGE_SIZE);
+      setIsLoaded(true);
     } catch (err) {
-      setPlatformErrors((prev) => ({
-        ...prev,
-        [selectedPlatform]:
-          err instanceof Error ? err.message : "An error occurred",
-      }));
+      setError(err instanceof Error ? err.message : "An error occurred");
     } finally {
-      setPlatformLoading((prev) => ({ ...prev, [selectedPlatform]: false }));
+      setIsLoading(false);
     }
   };
 
-  // Function to refresh current platform data
-  const refreshCurrentPlatform = () => {
+  const refreshPosts = () => {
     fetchPosts(true);
   };
 
@@ -387,11 +269,9 @@ export default function PostList({ className }: { className?: string }) {
 
     try {
       setLoadingMore(true);
-      const currentOffset = platformOffset[selectedPlatform];
-      const newOffset = currentOffset + PAGE_SIZE;
+      const newOffset = offset + PAGE_SIZE;
 
-      const endpoint = getApiEndpoint(selectedPlatform);
-      // Add pagination parameters to the endpoint
+      const endpoint = getApiEndpoint();
       const separator = endpoint.includes("?") ? "&" : "?";
       const paginatedEndpoint = `${endpoint}${separator}limit=${PAGE_SIZE}&offset=${newOffset}`;
 
@@ -404,29 +284,13 @@ export default function PostList({ className }: { className?: string }) {
       const data = await response.json();
       const fetchedPosts = data.tweets || data.posts || [];
 
-      const currentPlatformPosts = platformPosts[selectedPlatform];
       const filteredNewPosts = fetchedPosts.filter(
-        (newPost: KOLTweet) =>
-          !currentPlatformPosts.some((post) => post.id === newPost.id)
+        (newPost: KOLTweet) => !posts.some((post) => post.id === newPost.id)
       );
 
-      // Update posts for current platform
-      setPlatformPosts((prev) => ({
-        ...prev,
-        [selectedPlatform]: [...prev[selectedPlatform], ...filteredNewPosts],
-      }));
-
-      // Update offset for current platform
-      setPlatformOffset((prev) => ({
-        ...prev,
-        [selectedPlatform]: newOffset,
-      }));
-
-      // Update hasMore based on whether we received a full page of results
-      setPlatformHasMore((prev) => ({
-        ...prev,
-        [selectedPlatform]: fetchedPosts.length >= PAGE_SIZE,
-      }));
+      setPosts((prev) => [...prev, ...filteredNewPosts]);
+      setOffset(newOffset);
+      setHasMore(fetchedPosts.length >= PAGE_SIZE);
     } catch (err) {
       console.error("Failed to load more posts:", err);
     } finally {
@@ -474,11 +338,6 @@ export default function PostList({ className }: { className?: string }) {
     });
   };
 
-  // Memoize platform change handler to prevent recreating function on each render
-  const handlePlatformChange = useCallback((val: string) => {
-    setSelectedPlatform(val as Platform);
-  }, []);
-
   const handleTabChange = (value: string) => {
     setSelectedTab(value);
   };
@@ -501,14 +360,6 @@ export default function PostList({ className }: { className?: string }) {
             variant="pills"
             className="!w-fit mb-2"
           />
-          {/* <SwitchTab
-            options={PlatformTabOption}
-            value={selectedPlatform}
-            onValueChange={handlePlatformChange}
-            size="md"
-            variant="underline"
-            className="w-auto"
-          /> */}
         </div>
       }
       headerRightExtra={
@@ -516,7 +367,7 @@ export default function PostList({ className }: { className?: string }) {
           <Button
             variant="ghost"
             size="sm"
-            onClick={refreshCurrentPlatform}
+            onClick={refreshPosts}
             aria-label="Refresh"
           >
             <RotateCcw className="w-3 h-3" />
@@ -547,7 +398,7 @@ export default function PostList({ className }: { className?: string }) {
         </div>
       )}
 
-      {filteredPosts.length === 0 && !isLoading && !currentError && (
+      {filteredPosts.length === 0 && !isLoading && !error && (
         <div className="flex items-center justify-center h-full min-h-[400px]">
           <EmptyState
             title={
@@ -564,12 +415,12 @@ export default function PostList({ className }: { className?: string }) {
         </div>
       )}
 
-      {currentError && !isLoading && (
+      {error && !isLoading && (
         <div className="flex items-center justify-center h-full min-h-[400px]">
           <ErrorState
             title="Failed to load posts"
-            message={currentError}
-            retry={refreshCurrentPlatform}
+            message={error}
+            retry={refreshPosts}
           />
         </div>
       )}

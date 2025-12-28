@@ -57,28 +57,31 @@ BROWSER_VIEWPORT = {"width": 1440, "height": 900}
 BROWSER_LOCALE = "zh-CN"
 BROWSER_TIMEZONE = "Asia/Shanghai"
 
-# 小红书 CSS 选择器（可能需要根据实际页面结构调整）
+# 小红书 CSS 选择器 (2024/2025 新版页面结构)
 SELECTORS = {
     # 搜索结果页面
-    "note_card": 'section.note-item, [data-v-a264b01a].note-item, .note-item',
-    "note_link": 'a.cover, a[href*="/explore/"], a[href*="/search_result/"]',
-    "note_title": ".title, .note-title, span.title",
-    "note_author": ".author-wrapper .name, .author .name, .user-name",
-    "note_likes": '.like-wrapper .count, .like .count, .like-count, [class*="like"] span',
-    "note_cover": ".cover img, img.cover, .note-cover img",
+    "note_card": "section.note-item",
+    "note_link": "a.cover",
+    "note_title": "a.title, .title",
+    "note_author": ".author .name, .name-time-wrapper .name, .name",
+    "note_author_avatar": "img.author-avatar",
+    "note_likes": ".like-wrapper .count",
+    "note_cover": "a.cover img",
+    "note_time": ".time",
     
-    # 笔记详情页面
-    "detail_title": ".title, h1.title, .note-title",
-    "detail_content": '#detail-desc .desc, .note-text, .content .desc, [class*="desc"]',
-    "detail_author": ".user-info .name, .author .name, .user-name",
-    "detail_avatar": ".user-info img, .author img, .avatar img",
-    "detail_likes": '.like-wrapper .count, [class*="like"] .count',
-    "detail_collects": '.collect-wrapper .count, [class*="collect"] .count',
-    "detail_comments": '.comment-wrapper .count, [class*="comment"] .count',
-    "detail_images": ".swiper-slide img, .carousel img, .image-container img",
-    "detail_video": "video, .video-container video",
-    "detail_tags": ".tag, .hashtag, #hash-tag span, a[href*='/search_result?keyword']",
-    "detail_time": ".date, .time, .publish-date",
+    # 笔记详情页面（弹窗模式）
+    "detail_container": "#noteContainer, .note-container, .note-detail-mask",
+    "detail_title": "#detail-title, #noteContainer .title",
+    "detail_content": "#detail-desc .note-text, #detail-desc, .note-text",
+    "detail_author": "#noteContainer .author .name, #noteContainer .username, #noteContainer .name",
+    "detail_avatar": "#noteContainer .avatar-item, .author-wrapper img",
+    "detail_likes": ".engage-bar-container .like-wrapper .count, .like-wrapper .count",
+    "detail_collects": ".engage-bar-container .collect-wrapper .count, .collect-wrapper .count",
+    "detail_comments": ".engage-bar-container .chat-wrapper .count, .comment-wrapper .count",
+    "detail_images": ".swiper-slide .note-slider-img img, .swiper-slide .img-container img, .swiper-slide img",
+    "detail_video": "#noteContainer video, .media-container video",
+    "detail_tags": '#noteContainer a[href*="/search_result?keyword="], #noteContainer .tag',
+    "detail_time": "#noteContainer .bottom-container span, #noteContainer .date, .publish-date",
     
     # 登录检测
     "login_button": '.login-btn, [class*="login"]',
@@ -86,7 +89,6 @@ SELECTORS = {
     
     # 登录弹窗关闭按钮
     "login_popup_close": [
-        # 小红书登录弹窗关闭按钮选择器
         '[class*="login"] [class*="close"]',
         '[class*="modal"] [class*="close"]',
         '[class*="dialog"] [class*="close"]',

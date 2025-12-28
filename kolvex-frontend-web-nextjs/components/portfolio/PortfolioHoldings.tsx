@@ -685,7 +685,7 @@ export default function PortfolioHoldings({
             >
               <Card className="overflow-hidden">
                 <CollapsibleTrigger asChild>
-                  <CardHeader className="cursor-pointer select-none hover:bg-muted/50 transition-colors py-3 px-4">
+                  <CardHeader className="cursor-pointer select-none hover:bg-primary/10 transition-colors py-3 px-4">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         <ChevronRight
@@ -725,344 +725,19 @@ export default function PortfolioHoldings({
                   <CardContent className="!p-0 border-t dark:border-border-dark">
                     {/* Equities */}
                     {equityPositions.length > 0 && (
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <SortableHeader
-                              label="Symbol"
-                              sortKey="symbol"
-                              currentSortKey={equitySortKey}
-                              sortDirection={equitySortDir}
-                              onSort={handleEquitySort}
-                              align="left"
-                              type="alpha"
-                              className="w-[25%] pl-4"
-                            />
-                            <TableHead className="w-[80px] hidden sm:table-cell">
-                              <span className="text-xs text-muted-foreground">
-                                Chart
-                              </span>
-                            </TableHead>
-                            <SortableHeader
-                              label="Price"
-                              sortKey="price"
-                              currentSortKey={equitySortKey}
-                              sortDirection={equitySortDir}
-                              onSort={handleEquitySort}
-                              align="right"
-                              type="amount"
-                            />
-                            {showCost && (
-                              <SortableHeader
-                                label="Cost"
-                                sortKey="cost"
-                                currentSortKey={equitySortKey}
-                                sortDirection={equitySortDir}
-                                onSort={handleEquitySort}
-                                align="right"
-                                type="amount"
-                              />
-                            )}
-                            {showShares && (
-                              <SortableHeader
-                                label="Shares"
-                                sortKey="units"
-                                currentSortKey={equitySortKey}
-                                sortDirection={equitySortDir}
-                                onSort={handleEquitySort}
-                                align="center"
-                                type="numeric"
-                              />
-                            )}
-                            {showValue && (
-                              <SortableHeader
-                                label="Value"
-                                sortKey="value"
-                                currentSortKey={equitySortKey}
-                                sortDirection={equitySortDir}
-                                onSort={handleEquitySort}
-                                align="right"
-                                type="amount"
-                              />
-                            )}
-                            {showPnL && (
-                              <SortableHeader
-                                label="P&L"
-                                sortKey="pnl"
-                                currentSortKey={equitySortKey}
-                                sortDirection={equitySortDir}
-                                onSort={handleEquitySort}
-                                align="right"
-                                type="amount"
-                              />
-                            )}
-                            {showWeight && (
-                              <SortableHeader
-                                label="Weight"
-                                sortKey="weight"
-                                currentSortKey={equitySortKey}
-                                sortDirection={equitySortDir}
-                                onSort={handleEquitySort}
-                                align="right"
-                                type="numeric"
-                                className={
-                                  isOwner && holdings?.is_public ? "" : "pr-4"
-                                }
-                              />
-                            )}
-                            {isOwner && holdings?.is_public && (
-                              <TableHead className="w-[50px] pr-4">
-                                <span className="text-xs text-muted-foreground">
-                                  Public
-                                </span>
-                              </TableHead>
-                            )}
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {sortEquityPositions(equityPositions).map(
-                            (pos: SnapTradePosition) => {
-                              const isHiddenPosition =
-                                pos.is_hidden || pos.units == null;
-                              const pnl = pos.open_pnl ?? 0;
-                              const profit = pnl >= 0;
-
-                              const isSecretStock =
-                                isHiddenPosition && !isOwner;
-
-                              return (
-                                <TableRow
-                                  key={pos.id}
-                                  onClick={() =>
-                                    !isSecretStock &&
-                                    router.push(
-                                      `/dashboard/stock/${pos.symbol}`
-                                    )
-                                  }
-                                  className={`${
-                                    isSecretStock
-                                      ? "opacity-70"
-                                      : "cursor-pointer hover:bg-muted/50"
-                                  } transition-colors`}
-                                >
-                                  <TableCell className="pl-4 py-3">
-                                    <div className="flex items-center gap-2.5">
-                                      {isSecretStock ? (
-                                        <div className="w-8 h-8 rounded-lg bg-muted/80 flex items-center justify-center">
-                                          <Lock className="w-4 h-4 text-muted-foreground" />
-                                        </div>
-                                      ) : (
-                                        <CompanyLogo
-                                          symbol={pos.symbol}
-                                          name={pos.security_name || pos.symbol}
-                                          size="sm"
-                                          shape="rounded"
-                                          border="light"
-                                        />
-                                      )}
-                                      <div className="min-w-0">
-                                        <div className="font-semibold flex items-center gap-1.5">
-                                          {isSecretStock ? (
-                                            <span className="text-muted-foreground">
-                                              ****
-                                            </span>
-                                          ) : (
-                                            pos.symbol
-                                          )}
-                                        </div>
-                                        <div
-                                          className="text-xs text-muted-foreground truncate max-w-[150px]"
-                                          title={
-                                            isSecretStock
-                                              ? ""
-                                              : pos.security_name || ""
-                                          }
-                                        >
-                                          {isSecretStock
-                                            ? "Locked Stock"
-                                            : pos.security_name}
-                                        </div>
-                                      </div>
-                                    </div>
-                                  </TableCell>
-                                  <TableCell className="hidden sm:table-cell">
-                                    <div className="flex justify-center">
-                                      {isSecretStock ? (
-                                        <div className="w-20 h-5 bg-muted/50 rounded" />
-                                      ) : (
-                                        <MiniSparkline
-                                          data={
-                                            sparklineDataMap.get(pos.symbol) ||
-                                            []
-                                          }
-                                          width={80}
-                                          height={20}
-                                          strokeWidth={1.2}
-                                        />
-                                      )}
-                                    </div>
-                                  </TableCell>
-                                  <TableCell className="text-right tabular-nums">
-                                    {isSecretStock ||
-                                    isHiddenValue(pos.price) ? (
-                                      <span className="text-muted-foreground">
-                                        ***
-                                      </span>
-                                    ) : (
-                                      formatCurrency(pos.price as number)
-                                    )}
-                                  </TableCell>
-                                  {showCost && (
-                                    <TableCell className="text-right tabular-nums text-muted-foreground">
-                                      {isSecretStock ||
-                                      isHiddenValue(
-                                        pos.average_purchase_price
-                                      ) ? (
-                                        <span className="text-muted-foreground">
-                                          ***
-                                        </span>
-                                      ) : (
-                                        formatCurrency(
-                                          pos.average_purchase_price as number
-                                        )
-                                      )}
-                                    </TableCell>
-                                  )}
-                                  {showShares && (
-                                    <TableCell className="text-center tabular-nums">
-                                      {isSecretStock ||
-                                      isHiddenValue(pos.units) ? (
-                                        <span className="text-muted-foreground">
-                                          ***
-                                        </span>
-                                      ) : (
-                                        pos.units
-                                      )}
-                                    </TableCell>
-                                  )}
-                                  {showValue && (
-                                    <TableCell className="text-right tabular-nums font-medium">
-                                      {isSecretStock ||
-                                      isHiddenValue(pos.market_value) ? (
-                                        <span className="text-muted-foreground">
-                                          ***
-                                        </span>
-                                      ) : (
-                                        formatCurrency(
-                                          pos.market_value as number
-                                        )
-                                      )}
-                                    </TableCell>
-                                  )}
-                                  {showPnL && (
-                                    <TableCell className="text-right">
-                                      {isSecretStock ||
-                                      isHiddenValue(pos.open_pnl) ? (
-                                        <span className="text-muted-foreground">
-                                          ***
-                                        </span>
-                                      ) : (
-                                        <span
-                                          className={`inline-flex items-center gap-0.5 tabular-nums font-medium ${
-                                            profit
-                                              ? "text-green-600"
-                                              : "text-red-600"
-                                          }`}
-                                        >
-                                          {profit ? (
-                                            <ArrowUpRight className="w-3 h-3" />
-                                          ) : (
-                                            <ArrowDownRight className="w-3 h-3" />
-                                          )}
-                                          {formatCurrency(Math.abs(pnl))}
-                                        </span>
-                                      )}
-                                    </TableCell>
-                                  )}
-                                  {showWeight && (
-                                    <TableCell
-                                      className={`text-right ${
-                                        isOwner && holdings?.is_public
-                                          ? ""
-                                          : "pr-4"
-                                      }`}
-                                    >
-                                      {isSecretStock ||
-                                      isHiddenValue(pos.weight_percent) ? (
-                                        <span className="text-muted-foreground">
-                                          ***
-                                        </span>
-                                      ) : (
-                                        <WeightIndicator
-                                          percent={pos.weight_percent || 0}
-                                        />
-                                      )}
-                                    </TableCell>
-                                  )}
-                                  {isOwner && holdings?.is_public && (
-                                    <TableCell className="text-center pr-4">
-                                      <button
-                                        onClick={(e) =>
-                                          handleTogglePositionVisibility(
-                                            e,
-                                            pos.id,
-                                            pos.is_hidden || false
-                                          )
-                                        }
-                                        className={`p-1.5 rounded-md transition-colors ${
-                                          pos.is_hidden
-                                            ? "text-muted-foreground hover:text-foreground hover:bg-muted"
-                                            : "text-green-600 hover:text-green-700 hover:bg-green-50 dark:hover:bg-green-950"
-                                        }`}
-                                        title={
-                                          pos.is_hidden
-                                            ? "Hidden from public - Click to show"
-                                            : "Visible to public - Click to hide"
-                                        }
-                                      >
-                                        {pos.is_hidden ? (
-                                          <EyeOff className="w-4 h-4" />
-                                        ) : (
-                                          <Eye className="w-4 h-4" />
-                                        )}
-                                      </button>
-                                    </TableCell>
-                                  )}
-                                </TableRow>
-                              );
-                            }
-                          )}
-                        </TableBody>
-                      </Table>
-                    )}
-
-                    {/* Options */}
-                    {optionPositions.length > 0 && (
-                      <>
-                        <div className="px-4 py-4 bg-primary/5 text-xs font-medium text-primary dark:text-primary-dark flex items-center border-y border-primary/30 dark:border-border-dark">
-                          Options Contracts
-                        </div>
+                      <div className="overflow-x-auto">
                         <Table>
                           <TableHeader>
                             <TableRow>
                               <SortableHeader
-                                label="Contract"
+                                label="Symbol"
                                 sortKey="symbol"
-                                currentSortKey={optionSortKey}
-                                sortDirection={optionSortDir}
-                                onSort={handleOptionSort}
+                                currentSortKey={equitySortKey}
+                                sortDirection={equitySortDir}
+                                onSort={handleEquitySort}
                                 align="left"
                                 type="alpha"
-                                className="w-[15%] pl-4"
-                              />
-                              <SortableHeader
-                                label="Type"
-                                sortKey="type"
-                                currentSortKey={optionSortKey}
-                                sortDirection={optionSortDir}
-                                onSort={handleOptionSort}
-                                align="center"
-                                type="amount"
+                                className="w-[25%] pl-4"
                               />
                               <TableHead className="w-[80px] hidden sm:table-cell">
                                 <span className="text-xs text-muted-foreground">
@@ -1070,28 +745,32 @@ export default function PortfolioHoldings({
                                 </span>
                               </TableHead>
                               <SortableHeader
-                                label="Strike"
-                                sortKey="strike"
-                                currentSortKey={optionSortKey}
-                                sortDirection={optionSortDir}
-                                onSort={handleOptionSort}
-                                align="center"
+                                label="Price"
+                                sortKey="price"
+                                currentSortKey={equitySortKey}
+                                sortDirection={equitySortDir}
+                                onSort={handleEquitySort}
+                                align="right"
                                 type="amount"
                               />
                               {showCost && (
-                                <TableHead className="text-center">
-                                  <span className="text-xs text-muted-foreground">
-                                    Cost
-                                  </span>
-                                </TableHead>
+                                <SortableHeader
+                                  label="Cost"
+                                  sortKey="cost"
+                                  currentSortKey={equitySortKey}
+                                  sortDirection={equitySortDir}
+                                  onSort={handleEquitySort}
+                                  align="right"
+                                  type="amount"
+                                />
                               )}
                               {showShares && (
                                 <SortableHeader
-                                  label="Contracts"
+                                  label="Shares"
                                   sortKey="units"
-                                  currentSortKey={optionSortKey}
-                                  sortDirection={optionSortDir}
-                                  onSort={handleOptionSort}
+                                  currentSortKey={equitySortKey}
+                                  sortDirection={equitySortDir}
+                                  onSort={handleEquitySort}
                                   align="center"
                                   type="numeric"
                                 />
@@ -1100,10 +779,10 @@ export default function PortfolioHoldings({
                                 <SortableHeader
                                   label="Value"
                                   sortKey="value"
-                                  currentSortKey={optionSortKey}
-                                  sortDirection={optionSortDir}
-                                  onSort={handleOptionSort}
-                                  align="center"
+                                  currentSortKey={equitySortKey}
+                                  sortDirection={equitySortDir}
+                                  onSort={handleEquitySort}
+                                  align="right"
                                   type="amount"
                                 />
                               )}
@@ -1111,9 +790,9 @@ export default function PortfolioHoldings({
                                 <SortableHeader
                                   label="P&L"
                                   sortKey="pnl"
-                                  currentSortKey={optionSortKey}
-                                  sortDirection={optionSortDir}
-                                  onSort={handleOptionSort}
+                                  currentSortKey={equitySortKey}
+                                  sortDirection={equitySortDir}
+                                  onSort={handleEquitySort}
                                   align="right"
                                   type="amount"
                                 />
@@ -1122,9 +801,9 @@ export default function PortfolioHoldings({
                                 <SortableHeader
                                   label="Weight"
                                   sortKey="weight"
-                                  currentSortKey={optionSortKey}
-                                  sortDirection={optionSortDir}
-                                  onSort={handleOptionSort}
+                                  currentSortKey={equitySortKey}
+                                  sortDirection={equitySortDir}
+                                  onSort={handleEquitySort}
                                   align="right"
                                   type="numeric"
                                   className={
@@ -1142,60 +821,36 @@ export default function PortfolioHoldings({
                             </TableRow>
                           </TableHeader>
                           <TableBody>
-                            {sortOptionPositions(optionPositions).map(
+                            {sortEquityPositions(equityPositions).map(
                               (pos: SnapTradePosition) => {
-                                // 检查是否为隐藏持仓（公开视图中敏感数据为 null）
                                 const isHiddenPosition =
                                   pos.is_hidden || pos.units == null;
-                                const value =
-                                  pos.market_value ??
-                                  (pos.price || 0) * (pos.units || 0) * 100;
-                                // Calculate option P&L: current value - cost basis
-                                // average_purchase_price is the total cost per contract
-                                const cost =
-                                  (pos.average_purchase_price || 0) *
-                                  (pos.units || 0);
-                                const pnl = value - cost;
+                                const pnl = pos.open_pnl ?? 0;
                                 const profit = pnl >= 0;
-                                const isCall = pos.option_type === "call";
 
-                                // 是否应该完全隐藏（神秘期权）
-                                const isSecretOption =
+                                const isSecretStock =
                                   isHiddenPosition && !isOwner;
 
                                 return (
                                   <TableRow
                                     key={pos.id}
-                                    onClick={() =>
-                                      !isSecretOption &&
-                                      router.push(
-                                        `/dashboard/stock/${
-                                          pos.underlying_symbol || pos.symbol
-                                        }`
-                                      )
-                                    }
                                     className={`${
-                                      isSecretOption
+                                      isSecretStock
                                         ? "opacity-70"
                                         : "cursor-pointer hover:bg-muted/50"
                                     } transition-colors`}
                                   >
                                     <TableCell className="pl-4 py-3">
                                       <div className="flex items-center gap-2.5">
-                                        {isSecretOption ? (
+                                        {isSecretStock ? (
                                           <div className="w-8 h-8 rounded-lg bg-muted/80 flex items-center justify-center">
                                             <Lock className="w-4 h-4 text-muted-foreground" />
                                           </div>
                                         ) : (
                                           <CompanyLogo
-                                            symbol={
-                                              pos.underlying_symbol ||
-                                              pos.symbol
-                                            }
+                                            symbol={pos.symbol}
                                             name={
-                                              pos.security_name ||
-                                              pos.underlying_symbol ||
-                                              pos.symbol
+                                              pos.security_name || pos.symbol
                                             }
                                             size="sm"
                                             shape="rounded"
@@ -1204,53 +859,38 @@ export default function PortfolioHoldings({
                                         )}
                                         <div className="min-w-0">
                                           <div className="font-semibold flex items-center gap-1.5">
-                                            {isSecretOption ? (
+                                            {isSecretStock ? (
                                               <span className="text-muted-foreground">
-                                                ***
+                                                ****
                                               </span>
                                             ) : (
-                                              pos.underlying_symbol ||
                                               pos.symbol
                                             )}
+                                          </div>
+                                          <div
+                                            className="text-xs text-muted-foreground truncate max-w-[150px]"
+                                            title={
+                                              isSecretStock
+                                                ? ""
+                                                : pos.security_name || ""
+                                            }
+                                          >
+                                            {isSecretStock
+                                              ? "Locked Stock"
+                                              : pos.security_name}
                                           </div>
                                         </div>
                                       </div>
                                     </TableCell>
-                                    <TableCell className="text-center">
-                                      {isSecretOption ? (
-                                        <span className="text-muted-foreground">
-                                          ***
-                                        </span>
-                                      ) : (
-                                        <div className="flex justify-center items-center gap-1">
-                                          <Badge
-                                            variant={
-                                              isCall ? "default" : "destructive"
-                                            }
-                                            className="!text-[10px] !px-1.5 !py-0.5 capitalize"
-                                          >
-                                            {pos.option_type || "-"}
-                                          </Badge>
-                                          <span className="text-[12px] text-muted-foreground">
-                                            {pos.expiration_date
-                                              ? new Date(
-                                                  pos.expiration_date
-                                                ).toLocaleDateString()
-                                              : "-"}
-                                          </span>
-                                        </div>
-                                      )}
-                                    </TableCell>
                                     <TableCell className="hidden sm:table-cell">
                                       <div className="flex justify-center">
-                                        {isSecretOption ? (
+                                        {isSecretStock ? (
                                           <div className="w-20 h-5 bg-muted/50 rounded" />
                                         ) : (
                                           <MiniSparkline
                                             data={
                                               sparklineDataMap.get(
-                                                pos.underlying_symbol ||
-                                                  pos.symbol
+                                                pos.symbol
                                               ) || []
                                             }
                                             width={80}
@@ -1260,25 +900,19 @@ export default function PortfolioHoldings({
                                         )}
                                       </div>
                                     </TableCell>
-                                    <TableCell className="text-center tabular-nums">
-                                      {isSecretOption ? (
+                                    <TableCell className="text-right tabular-nums">
+                                      {isSecretStock ||
+                                      isHiddenValue(pos.price) ? (
                                         <span className="text-muted-foreground">
                                           ***
                                         </span>
-                                      ) : pos.strike_price ? (
-                                        formatCurrency(
-                                          pos.strike_price,
-                                          "USD",
-                                          0,
-                                          0
-                                        )
                                       ) : (
-                                        "-"
+                                        formatCurrency(pos.price as number)
                                       )}
                                     </TableCell>
                                     {showCost && (
-                                      <TableCell className="text-center tabular-nums text-muted-foreground">
-                                        {isSecretOption ||
+                                      <TableCell className="text-right tabular-nums text-muted-foreground">
+                                        {isSecretStock ||
                                         isHiddenValue(
                                           pos.average_purchase_price
                                         ) ? (
@@ -1294,7 +928,7 @@ export default function PortfolioHoldings({
                                     )}
                                     {showShares && (
                                       <TableCell className="text-center tabular-nums">
-                                        {isSecretOption ||
+                                        {isSecretStock ||
                                         isHiddenValue(pos.units) ? (
                                           <span className="text-muted-foreground">
                                             ***
@@ -1305,8 +939,8 @@ export default function PortfolioHoldings({
                                       </TableCell>
                                     )}
                                     {showValue && (
-                                      <TableCell className="text-center tabular-nums font-medium">
-                                        {isSecretOption ||
+                                      <TableCell className="text-right tabular-nums font-medium">
+                                        {isSecretStock ||
                                         isHiddenValue(pos.market_value) ? (
                                           <span className="text-muted-foreground">
                                             ***
@@ -1320,7 +954,7 @@ export default function PortfolioHoldings({
                                     )}
                                     {showPnL && (
                                       <TableCell className="text-right">
-                                        {isSecretOption ||
+                                        {isSecretStock ||
                                         isHiddenValue(pos.open_pnl) ? (
                                           <span className="text-muted-foreground">
                                             ***
@@ -1351,7 +985,7 @@ export default function PortfolioHoldings({
                                             : "pr-4"
                                         }`}
                                       >
-                                        {isSecretOption ||
+                                        {isSecretStock ||
                                         isHiddenValue(pos.weight_percent) ? (
                                           <span className="text-muted-foreground">
                                             ***
@@ -1398,6 +1032,394 @@ export default function PortfolioHoldings({
                             )}
                           </TableBody>
                         </Table>
+                      </div>
+                    )}
+
+                    {/* Options */}
+                    {optionPositions.length > 0 && (
+                      <>
+                        <div className="px-4 py-4 bg-primary/5 text-xs font-medium text-primary dark:text-primary-dark flex items-center border-y border-primary/30 dark:border-border-dark">
+                          Options Contracts
+                        </div>
+                        <div className="overflow-x-auto">
+                          <Table>
+                            <TableHeader>
+                              <TableRow>
+                                <SortableHeader
+                                  label="Contract"
+                                  sortKey="symbol"
+                                  currentSortKey={optionSortKey}
+                                  sortDirection={optionSortDir}
+                                  onSort={handleOptionSort}
+                                  align="left"
+                                  type="alpha"
+                                  className="w-[15%] pl-4"
+                                />
+                                <SortableHeader
+                                  label="Type"
+                                  sortKey="type"
+                                  currentSortKey={optionSortKey}
+                                  sortDirection={optionSortDir}
+                                  onSort={handleOptionSort}
+                                  align="center"
+                                  type="amount"
+                                />
+                                <TableHead className="w-[80px] hidden sm:table-cell">
+                                  <span className="text-xs text-muted-foreground">
+                                    Chart
+                                  </span>
+                                </TableHead>
+                                <SortableHeader
+                                  label="Strike"
+                                  sortKey="strike"
+                                  currentSortKey={optionSortKey}
+                                  sortDirection={optionSortDir}
+                                  onSort={handleOptionSort}
+                                  align="center"
+                                  type="amount"
+                                />
+                                {showCost && (
+                                  <TableHead className="text-center">
+                                    <span className="text-xs text-muted-foreground">
+                                      Cost
+                                    </span>
+                                  </TableHead>
+                                )}
+                                {showShares && (
+                                  <SortableHeader
+                                    label="Contracts"
+                                    sortKey="units"
+                                    currentSortKey={optionSortKey}
+                                    sortDirection={optionSortDir}
+                                    onSort={handleOptionSort}
+                                    align="center"
+                                    type="numeric"
+                                  />
+                                )}
+                                {showValue && (
+                                  <SortableHeader
+                                    label="Value"
+                                    sortKey="value"
+                                    currentSortKey={optionSortKey}
+                                    sortDirection={optionSortDir}
+                                    onSort={handleOptionSort}
+                                    align="center"
+                                    type="amount"
+                                  />
+                                )}
+                                {showPnL && (
+                                  <SortableHeader
+                                    label="P&L"
+                                    sortKey="pnl"
+                                    currentSortKey={optionSortKey}
+                                    sortDirection={optionSortDir}
+                                    onSort={handleOptionSort}
+                                    align="right"
+                                    type="amount"
+                                  />
+                                )}
+                                {showWeight && (
+                                  <SortableHeader
+                                    label="Weight"
+                                    sortKey="weight"
+                                    currentSortKey={optionSortKey}
+                                    sortDirection={optionSortDir}
+                                    onSort={handleOptionSort}
+                                    align="right"
+                                    type="numeric"
+                                    className={
+                                      isOwner && holdings?.is_public
+                                        ? ""
+                                        : "pr-4"
+                                    }
+                                  />
+                                )}
+                                {isOwner && holdings?.is_public && (
+                                  <TableHead className="w-[50px] pr-4">
+                                    <span className="text-xs text-muted-foreground">
+                                      Public
+                                    </span>
+                                  </TableHead>
+                                )}
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {sortOptionPositions(optionPositions).map(
+                                (pos: SnapTradePosition) => {
+                                  // 检查是否为隐藏持仓（公开视图中敏感数据为 null）
+                                  const isHiddenPosition =
+                                    pos.is_hidden || pos.units == null;
+
+                                  // 安全获取数值，处理隐藏值 "***" 的情况
+                                  const safeMarketValue = isHiddenValue(
+                                    pos.market_value
+                                  )
+                                    ? null
+                                    : (pos.market_value as number);
+                                  const safePrice = isHiddenValue(pos.price)
+                                    ? 0
+                                    : (pos.price as number);
+                                  const safeUnits = isHiddenValue(pos.units)
+                                    ? 0
+                                    : (pos.units as number);
+                                  const safeAvgPrice = isHiddenValue(
+                                    pos.average_purchase_price
+                                  )
+                                    ? 0
+                                    : (pos.average_purchase_price as number);
+
+                                  const value =
+                                    safeMarketValue ??
+                                    safePrice * safeUnits * 100;
+                                  // Calculate option P&L: current value - cost basis
+                                  // average_purchase_price is the total cost per contract
+                                  const cost = safeAvgPrice * safeUnits;
+                                  const pnl = value - cost;
+                                  const profit = pnl >= 0;
+                                  const isCall = pos.option_type === "call";
+
+                                  // 是否应该完全隐藏（神秘期权）
+                                  const isSecretOption =
+                                    isHiddenPosition && !isOwner;
+
+                                  return (
+                                    <TableRow
+                                      key={pos.id}
+                                      onClick={() =>
+                                        !isSecretOption &&
+                                        router.push(
+                                          `/dashboard/stock/${
+                                            pos.underlying_symbol || pos.symbol
+                                          }`
+                                        )
+                                      }
+                                      className={`${
+                                        isSecretOption
+                                          ? "opacity-70"
+                                          : "cursor-pointer hover:bg-muted/50"
+                                      } transition-colors`}
+                                    >
+                                      <TableCell className="pl-4 py-3">
+                                        <div className="flex items-center gap-2.5">
+                                          {isSecretOption ? (
+                                            <div className="w-8 h-8 rounded-lg bg-muted/80 flex items-center justify-center">
+                                              <Lock className="w-4 h-4 text-muted-foreground" />
+                                            </div>
+                                          ) : (
+                                            <CompanyLogo
+                                              symbol={
+                                                pos.underlying_symbol ||
+                                                pos.symbol
+                                              }
+                                              name={
+                                                pos.security_name ||
+                                                pos.underlying_symbol ||
+                                                pos.symbol
+                                              }
+                                              size="sm"
+                                              shape="rounded"
+                                              border="light"
+                                            />
+                                          )}
+                                          <div className="min-w-0">
+                                            <div className="font-semibold flex items-center gap-1.5">
+                                              {isSecretOption ? (
+                                                <span className="text-muted-foreground">
+                                                  ***
+                                                </span>
+                                              ) : (
+                                                pos.underlying_symbol ||
+                                                pos.symbol
+                                              )}
+                                            </div>
+                                          </div>
+                                        </div>
+                                      </TableCell>
+                                      <TableCell className="text-center">
+                                        {isSecretOption ? (
+                                          <span className="text-muted-foreground">
+                                            ***
+                                          </span>
+                                        ) : (
+                                          <div className="flex justify-start items-center gap-1">
+                                            <Badge
+                                              variant={
+                                                isCall
+                                                  ? "default"
+                                                  : "destructive"
+                                              }
+                                              className="!text-[10px] !px-1.5 !py-0.5 capitalize"
+                                            >
+                                              {pos.option_type || "-"}
+                                            </Badge>
+                                            <span className="text-[12px] text-muted-foreground">
+                                              {pos.expiration_date
+                                                ? new Date(
+                                                    pos.expiration_date
+                                                  ).toLocaleDateString()
+                                                : "-"}
+                                            </span>
+                                          </div>
+                                        )}
+                                      </TableCell>
+                                      <TableCell className="hidden sm:table-cell">
+                                        <div className="flex justify-center">
+                                          {isSecretOption ? (
+                                            <div className="w-20 h-5 bg-muted/50 rounded" />
+                                          ) : (
+                                            <MiniSparkline
+                                              data={
+                                                sparklineDataMap.get(
+                                                  pos.underlying_symbol ||
+                                                    pos.symbol
+                                                ) || []
+                                              }
+                                              width={80}
+                                              height={20}
+                                              strokeWidth={1.2}
+                                            />
+                                          )}
+                                        </div>
+                                      </TableCell>
+                                      <TableCell className="text-center tabular-nums">
+                                        {isSecretOption ? (
+                                          <span className="text-muted-foreground">
+                                            ***
+                                          </span>
+                                        ) : pos.strike_price ? (
+                                          formatCurrency(
+                                            pos.strike_price,
+                                            "USD",
+                                            0,
+                                            0
+                                          )
+                                        ) : (
+                                          "-"
+                                        )}
+                                      </TableCell>
+                                      {showCost && (
+                                        <TableCell className="text-center tabular-nums text-muted-foreground">
+                                          {isSecretOption ||
+                                          isHiddenValue(
+                                            pos.average_purchase_price
+                                          ) ? (
+                                            <span className="text-muted-foreground">
+                                              ***
+                                            </span>
+                                          ) : (
+                                            formatCurrency(
+                                              pos.average_purchase_price as number
+                                            )
+                                          )}
+                                        </TableCell>
+                                      )}
+                                      {showShares && (
+                                        <TableCell className="text-center tabular-nums">
+                                          {isSecretOption ||
+                                          isHiddenValue(pos.units) ? (
+                                            <span className="text-muted-foreground">
+                                              ***
+                                            </span>
+                                          ) : (
+                                            pos.units
+                                          )}
+                                        </TableCell>
+                                      )}
+                                      {showValue && (
+                                        <TableCell className="text-center tabular-nums font-medium">
+                                          {isSecretOption ||
+                                          isHiddenValue(pos.market_value) ? (
+                                            <span className="text-muted-foreground">
+                                              ***
+                                            </span>
+                                          ) : (
+                                            formatCurrency(
+                                              pos.market_value as number
+                                            )
+                                          )}
+                                        </TableCell>
+                                      )}
+                                      {showPnL && (
+                                        <TableCell className="text-right">
+                                          {isSecretOption ||
+                                          isHiddenValue(pos.open_pnl) ? (
+                                            <span className="text-muted-foreground">
+                                              ***
+                                            </span>
+                                          ) : (
+                                            <span
+                                              className={`inline-flex items-center gap-0.5 tabular-nums font-medium ${
+                                                profit
+                                                  ? "text-green-600"
+                                                  : "text-red-600"
+                                              }`}
+                                            >
+                                              {profit ? (
+                                                <ArrowUpRight className="w-3 h-3" />
+                                              ) : (
+                                                <ArrowDownRight className="w-3 h-3" />
+                                              )}
+                                              {formatCurrency(pnl)}
+                                            </span>
+                                          )}
+                                        </TableCell>
+                                      )}
+                                      {showWeight && (
+                                        <TableCell
+                                          className={`text-right ${
+                                            isOwner && holdings?.is_public
+                                              ? ""
+                                              : "pr-4"
+                                          }`}
+                                        >
+                                          {isSecretOption ||
+                                          isHiddenValue(pos.weight_percent) ? (
+                                            <span className="text-muted-foreground">
+                                              ***
+                                            </span>
+                                          ) : (
+                                            <WeightIndicator
+                                              percent={pos.weight_percent || 0}
+                                            />
+                                          )}
+                                        </TableCell>
+                                      )}
+                                      {isOwner && holdings?.is_public && (
+                                        <TableCell className="text-center pr-4">
+                                          <button
+                                            onClick={(e) =>
+                                              handleTogglePositionVisibility(
+                                                e,
+                                                pos.id,
+                                                pos.is_hidden || false
+                                              )
+                                            }
+                                            className={`p-1.5 rounded-md transition-colors ${
+                                              pos.is_hidden
+                                                ? "text-muted-foreground hover:text-foreground hover:bg-muted"
+                                                : "text-green-600 hover:text-green-700 hover:bg-green-50 dark:hover:bg-green-950"
+                                            }`}
+                                            title={
+                                              pos.is_hidden
+                                                ? "Hidden from public - Click to show"
+                                                : "Visible to public - Click to hide"
+                                            }
+                                          >
+                                            {pos.is_hidden ? (
+                                              <EyeOff className="w-4 h-4" />
+                                            ) : (
+                                              <Eye className="w-4 h-4" />
+                                            )}
+                                          </button>
+                                        </TableCell>
+                                      )}
+                                    </TableRow>
+                                  );
+                                }
+                              )}
+                            </TableBody>
+                          </Table>
+                        </div>
                       </>
                     )}
 

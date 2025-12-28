@@ -17,8 +17,8 @@ router = APIRouter()
 
 @router.get("/profiles", response_model=KOLProfilesResponse)
 async def get_kol_profiles(
-    sort_by: str = Query("followers_count", description="排序字段"),
-    sort_order: str = Query("desc", description="排序顺序 asc/desc"),
+    sort_by: str = Query("followers_count", description="Sort by field"),
+    sort_order: str = Query("desc", description="Sort order: asc/desc"),
 ):
     """
     获取 KOL 列表（完整 profile 数据，包含推文互动统计）
@@ -82,14 +82,14 @@ async def get_kol_profiles(
         )
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"获取 KOL 列表失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to get KOL list: {str(e)}")
 
 
 @router.get("/profile/{username}", response_model=KOLProfileDetail)
 async def get_kol_profile_detail(
     username: str,
-    include_tweets: bool = Query(True, description="是否包含最近推文"),
-    tweet_limit: int = Query(10, ge=1, le=50, description="最近推文数量"),
+    include_tweets: bool = Query(True, description="Include recent tweets"),
+    tweet_limit: int = Query(10, ge=1, le=50, description="Number of recent tweets"),
 ):
     """
     获取特定 KOL 的完整 Profile 信息
@@ -115,7 +115,7 @@ async def get_kol_profile_detail(
         )
 
         if not profile_result.data:
-            raise HTTPException(status_code=404, detail=f"KOL '{username}' 不存在")
+            raise HTTPException(status_code=404, detail=f"KOL '{username}' not found")
 
         row = profile_result.data[0]
         profile = KOLProfile(
@@ -169,26 +169,4 @@ async def get_kol_profile_detail(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"获取 KOL 信息失败: {str(e)}")
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+        raise HTTPException(status_code=500, detail=f"Failed to get KOL info: {str(e)}")

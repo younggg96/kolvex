@@ -13,6 +13,15 @@ const PROXY_DOMAINS = [
   "financialmodelingprep.com",
   "static.finnhub.io",
   "static2.finnhub.io",
+  // 小红书图片 CDN
+  "sns-webpic-qc.xhscdn.com",
+  "sns-webpic-bd.xhscdn.com",
+  "sns-webpic-hw.xhscdn.com",
+  "sns-img-qc.xhscdn.com",
+  "sns-img-bd.xhscdn.com",
+  "sns-img-hw.xhscdn.com",
+  "sns-avatar-qc.xhscdn.com",
+  "ci.xiaohongshu.com",
 ];
 
 /**
