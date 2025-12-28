@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { TrendingUp, Search, RefreshCw } from "lucide-react";
+import CompanyLogo from "@/components/ui/company-logo";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import SectionCard from "@/components/layout/SectionCard";
 import { Input } from "@/components/ui/input";
@@ -165,24 +166,19 @@ export default function InvestorsPage() {
                     ))}
                   </div>
                 ) : (
-                  <div className="space-y-2">
+                  <div className="space-y-1.5 sm:space-y-2">
                     {filteredInvestors.map((investor) => (
                       <Link
                         key={investor.id}
                         href={`/dashboard/investors/${investor.code}`}
                         className="block"
                       >
-                        <div className="flex items-center justify-between p-3 rounded-lg border border-border-light dark:border-border-dark hover:bg-muted/50 transition-colors">
+                        <div className="flex items-center justify-between p-2.5 sm:p-3 rounded-lg border border-border-light dark:border-border-dark hover:bg-muted/50 active:bg-muted/70 transition-colors">
                           <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2">
-                              <h3 className="font-semibold text-sm truncate">
-                                {investor.name}
-                              </h3>
-                              {/* <Badge variant="outline" size="xs">
-                                {investor.code}
-                              </Badge> */}
-                            </div>
-                            <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
+                            <h3 className="font-semibold text-xs sm:text-sm truncate w-[280px] sm:w-[600px] lg:w-[360px]">
+                              {investor.name}
+                            </h3>
+                            <div className="flex items-center gap-2 sm:gap-3 mt-0.5 sm:mt-1 text-[11px] sm:text-xs text-muted-foreground">
                               {investor.stock_count && (
                                 <span>{investor.stock_count} stocks</span>
                               )}
@@ -227,35 +223,35 @@ export default function InvestorsPage() {
                   </div>
                 ) : (
                   <div className="space-y-2">
-                    {popularStocks.map((stock, index) => (
+                    {popularStocks.map((stock) => (
                       <Link
                         key={stock.ticker}
                         href={`/dashboard/stock/${stock.ticker}`}
                         className="block"
                       >
-                        <div className="flex items-center gap-3 p-3 rounded-lg border border-border-light dark:border-border-dark hover:bg-muted/50 transition-colors">
-                          <div className="flex items-center justify-center w-7 h-7 rounded-full bg-primary/10 text-primary font-bold text-xs">
-                            {index + 1}
-                          </div>
+                        <div className="flex items-center gap-2.5 sm:gap-3 p-2.5 sm:p-3 rounded-lg border border-border-light dark:border-border-dark hover:bg-muted/50 active:bg-muted/70 transition-colors">
+                          <CompanyLogo
+                            symbol={stock.ticker}
+                            name={stock.company_name || undefined}
+                            size="sm"
+                            shape="rounded"
+                            border="light"
+                          />
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2">
-                              <span className="font-semibold text-sm">
+                              <span className="font-semibold text-xs sm:text-sm">
                                 {stock.ticker}
                               </span>
-                              <Badge
-                                variant="secondary"
-                                className="text-xs"
-                                size="xs"
-                              >
+                              <Badge size="xs">
                                 {stock.holder_count} holders
                               </Badge>
                             </div>
-                            <p className="text-xs text-muted-foreground truncate">
+                            <p className="text-[11px] sm:text-xs text-muted-foreground truncate">
                               {stock.company_name || "-"}
                             </p>
                           </div>
                           <div className="text-right">
-                            <p className="text-xs font-medium">
+                            <p className="text-[11px] sm:text-xs font-medium">
                               {formatMoney(stock.total_market_value)}
                             </p>
                           </div>

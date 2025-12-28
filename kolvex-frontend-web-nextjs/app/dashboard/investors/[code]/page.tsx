@@ -163,37 +163,41 @@ export default function InvestorDetailPage() {
                 No holdings data available
               </div>
             ) : (
-              <div className="overflow-x-auto -mx-3">
-                <Table>
+              <div className="overflow-x-auto -mx-3 scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent">
+                <Table className="min-w-[800px]">
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="w-[80px] pl-3">Stock</TableHead>
-                      <TableHead className="hidden sm:table-cell">
-                        Company
+                      <TableHead className="w-[70px] pl-3 sticky left-0 bg-card-light dark:bg-card-dark z-10">
+                        Stock
                       </TableHead>
-                      <TableHead className="text-right">Weight</TableHead>
-                      <TableHead className="text-center hidden md:table-cell">
+                      <TableHead className="min-w-[120px]">Company</TableHead>
+                      <TableHead className="text-right min-w-[80px]">
+                        Weight
+                      </TableHead>
+                      <TableHead className="text-center min-w-[80px]">
                         Activity
                       </TableHead>
-                      <TableHead className="text-right hidden lg:table-cell">
+                      <TableHead className="text-right min-w-[90px]">
                         Shares
                       </TableHead>
-                      <TableHead className="text-right hidden xl:table-cell">
+                      <TableHead className="text-right min-w-[80px]">
                         Reported
                       </TableHead>
-                      <TableHead className="text-right hidden xl:table-cell">
+                      <TableHead className="text-right min-w-[80px]">
                         Current
                       </TableHead>
-                      <TableHead className="text-right hidden lg:table-cell">
+                      <TableHead className="text-right min-w-[80px]">
                         Change
                       </TableHead>
-                      <TableHead className="text-right pr-3">Value</TableHead>
+                      <TableHead className="text-right pr-3 min-w-[100px]">
+                        Value
+                      </TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {holdings.map((holding) => (
                       <TableRow key={holding.id}>
-                        <TableCell className="pl-3">
+                        <TableCell className="pl-3 sticky left-0 bg-card-light dark:bg-card-dark z-10">
                           <Link
                             href={`/dashboard/stock/${holding.ticker}`}
                             className="font-semibold text-sm hover:text-primary transition-colors"
@@ -201,13 +205,13 @@ export default function InvestorDetailPage() {
                             {holding.ticker}
                           </Link>
                         </TableCell>
-                        <TableCell className="max-w-[150px] truncate text-sm hidden sm:table-cell">
+                        <TableCell className="max-w-[150px] truncate text-sm">
                           {holding.company_name || "-"}
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex items-center justify-end gap-2">
                             <div
-                              className="h-1.5 bg-primary rounded-full hidden sm:block"
+                              className="h-1.5 bg-primary rounded-full"
                               style={{
                                 width: `${Math.min(
                                   (holding.portfolio_percent || 0) * 2,
@@ -220,11 +224,11 @@ export default function InvestorDetailPage() {
                             </span>
                           </div>
                         </TableCell>
-                        <TableCell className="text-center hidden md:table-cell">
+                        <TableCell className="text-center">
                           {holding.change_type &&
                           holding.change_type !== "unchanged" ? (
                             <Badge
-                              variant="outline"
+                              size="xs"
                               className={`text-xs ${getChangeTypeColor(
                                 holding.change_type
                               )}`}
@@ -237,20 +241,20 @@ export default function InvestorDetailPage() {
                             </span>
                           )}
                         </TableCell>
-                        <TableCell className="text-right font-mono text-sm hidden lg:table-cell">
+                        <TableCell className="text-right font-mono text-sm">
                           {formatShares(holding.shares)}
                         </TableCell>
-                        <TableCell className="text-right font-mono text-sm hidden xl:table-cell">
+                        <TableCell className="text-right font-mono text-sm">
                           {holding.reported_price
                             ? `$${holding.reported_price.toFixed(2)}`
                             : "-"}
                         </TableCell>
-                        <TableCell className="text-right font-mono text-sm hidden xl:table-cell">
+                        <TableCell className="text-right font-mono text-sm">
                           {holding.current_price
                             ? `$${holding.current_price.toFixed(2)}`
                             : "-"}
                         </TableCell>
-                        <TableCell className="text-right hidden lg:table-cell">
+                        <TableCell className="text-right">
                           {holding.price_change_percent !== null ? (
                             <span
                               className={`text-sm ${

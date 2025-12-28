@@ -178,17 +178,23 @@ async function fetchAPI<T>(
 /**
  * 获取投资者列表
  */
-export async function getInvestors(params: {
-  limit?: number;
-  offset?: number;
-  search?: string;
-  is_active?: boolean;
-} = {}): Promise<{ data: SuperInvestor[]; pagination: { total: number; has_more: boolean } }> {
+export async function getInvestors(
+  params: {
+    limit?: number;
+    offset?: number;
+    search?: string;
+    is_active?: boolean;
+  } = {}
+): Promise<{
+  data: SuperInvestor[];
+  pagination: { total: number; has_more: boolean };
+}> {
   const searchParams = new URLSearchParams();
   if (params.limit) searchParams.set("limit", String(params.limit));
   if (params.offset) searchParams.set("offset", String(params.offset));
   if (params.search) searchParams.set("search", params.search);
-  if (params.is_active !== undefined) searchParams.set("is_active", String(params.is_active));
+  if (params.is_active !== undefined)
+    searchParams.set("is_active", String(params.is_active));
 
   const query = searchParams.toString();
   const baseUrl = getApiBaseUrl();
@@ -196,7 +202,7 @@ export async function getInvestors(params: {
     `${baseUrl}/api/dataroma/investors${query ? `?${query}` : ""}`,
     { headers: { "Content-Type": "application/json" } }
   );
-  
+
   if (!response.ok) throw new Error("Failed to fetch investors");
   return response.json();
 }
@@ -211,7 +217,9 @@ export async function getInvestor(code: string): Promise<SuperInvestor> {
 /**
  * 获取投资者摘要
  */
-export async function getInvestorSummary(code: string): Promise<InvestorSummary> {
+export async function getInvestorSummary(
+  code: string
+): Promise<InvestorSummary> {
   return fetchAPI<InvestorSummary>(`/investors/${code}/summary`);
 }
 
@@ -249,28 +257,35 @@ export async function getStockHolders(
 /**
  * 获取热门股票
  */
-export async function getPopularStocks(params: {
-  quarter?: string;
-  min_holders?: number;
-  limit?: number;
-} = {}): Promise<PopularStock[]> {
+export async function getPopularStocks(
+  params: {
+    quarter?: string;
+    min_holders?: number;
+    limit?: number;
+  } = {}
+): Promise<PopularStock[]> {
   const searchParams = new URLSearchParams();
   if (params.quarter) searchParams.set("quarter", params.quarter);
-  if (params.min_holders) searchParams.set("min_holders", String(params.min_holders));
+  if (params.min_holders)
+    searchParams.set("min_holders", String(params.min_holders));
   if (params.limit) searchParams.set("limit", String(params.limit));
 
   const query = searchParams.toString();
-  return fetchAPI<PopularStock[]>(`/holdings/popular${query ? `?${query}` : ""}`);
+  return fetchAPI<PopularStock[]>(
+    `/holdings/popular${query ? `?${query}` : ""}`
+  );
 }
 
 /**
  * 获取持仓变动
  */
-export async function getHoldingChanges(params: {
-  quarter?: string;
-  change_type?: string;
-  limit?: number;
-} = {}): Promise<Holding[]> {
+export async function getHoldingChanges(
+  params: {
+    quarter?: string;
+    change_type?: string;
+    limit?: number;
+  } = {}
+): Promise<Holding[]> {
   const searchParams = new URLSearchParams();
   if (params.quarter) searchParams.set("quarter", params.quarter);
   if (params.change_type) searchParams.set("change_type", params.change_type);
@@ -294,13 +309,16 @@ export async function getSyncStatus(): Promise<SyncStatus> {
 /**
  * 触发全量同步
  */
-export async function triggerSyncAll(): Promise<{ success: boolean; message: string }> {
+export async function triggerSyncAll(): Promise<{
+  success: boolean;
+  message: string;
+}> {
   const baseUrl = getApiBaseUrl();
   const response = await fetch(`${baseUrl}/api/dataroma/sync/all`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
   });
-  
+
   if (!response.ok) throw new Error("Failed to trigger sync");
   return response.json();
 }
@@ -314,7 +332,7 @@ export async function triggerSyncAll(): Promise<{ success: boolean; message: str
  */
 export function formatMoney(value: number | null): string {
   if (value === null || value === undefined) return "-";
-  
+
   if (value >= 1e12) {
     return `$${(value / 1e12).toFixed(2)}T`;
   }
@@ -393,4 +411,3 @@ export function getChangeTypeLabel(changeType: string | null): string {
       return "-";
   }
 }
-
