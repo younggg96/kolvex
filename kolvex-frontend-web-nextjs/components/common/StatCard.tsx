@@ -46,7 +46,7 @@ export function StatCard({
     <Card className={cn("relative overflow-hidden", className)}>
       <CardContent className="!p-4">
         <div className="flex items-center justify-between">
-          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+          <p className="text-xs font-medium text-muted-foreground tracking-wide">
             {label}
           </p>
           {Icon && <Icon className="h-4 w-4 text-muted-foreground/50" />}

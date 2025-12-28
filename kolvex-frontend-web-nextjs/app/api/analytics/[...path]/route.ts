@@ -5,7 +5,8 @@
 
 import { NextRequest, NextResponse } from "next/server";
 
-const BACKEND_URL = process.env.BACKEND_API_URL || "http://localhost:8000";
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_BACKEND_API_URL || "http://localhost:8000";
 
 export async function GET(
   request: NextRequest,
@@ -15,7 +16,7 @@ export async function GET(
     const { path } = await params;
     const pathString = path.join("/");
     const searchParams = request.nextUrl.searchParams.toString();
-    const url = `${BACKEND_URL}/api/v1/kol-tweets/analytics/${pathString}${
+    const url = `${API_BASE_URL}/api/v1/kol-tweets/analytics/${pathString}${
       searchParams ? `?${searchParams}` : ""
     }`;
 
@@ -44,4 +45,3 @@ export async function GET(
     );
   }
 }
-

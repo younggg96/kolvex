@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const BACKEND_URL = process.env.BACKEND_API_URL || "http://localhost:8000";
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_BACKEND_API_URL || "http://localhost:8000";
 
 export async function GET(
   request: NextRequest,
@@ -9,7 +10,9 @@ export async function GET(
   const { path } = await params;
   const pathname = path.join("/");
   const searchParams = request.nextUrl.searchParams.toString();
-  const url = `${BACKEND_URL}/api/v1/dataroma/${pathname}${searchParams ? `?${searchParams}` : ""}`;
+  const url = `${API_BASE_URL}/api/v1/dataroma/${pathname}${
+    searchParams ? `?${searchParams}` : ""
+  }`;
 
   try {
     const response = await fetch(url, {
@@ -19,7 +22,9 @@ export async function GET(
     });
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({ detail: "Backend error" }));
+      const error = await response
+        .json()
+        .catch(() => ({ detail: "Backend error" }));
       return NextResponse.json(error, { status: response.status });
     }
 
@@ -40,7 +45,7 @@ export async function POST(
 ) {
   const { path } = await params;
   const pathname = path.join("/");
-  const url = `${BACKEND_URL}/api/v1/dataroma/${pathname}`;
+  const url = `${API_BASE_URL}/api/v1/dataroma/${pathname}`;
 
   try {
     const body = await request.json().catch(() => ({}));
@@ -53,7 +58,9 @@ export async function POST(
     });
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({ detail: "Backend error" }));
+      const error = await response
+        .json()
+        .catch(() => ({ detail: "Backend error" }));
       return NextResponse.json(error, { status: response.status });
     }
 
@@ -74,7 +81,7 @@ export async function PATCH(
 ) {
   const { path } = await params;
   const pathname = path.join("/");
-  const url = `${BACKEND_URL}/api/v1/dataroma/${pathname}`;
+  const url = `${API_BASE_URL}/api/v1/dataroma/${pathname}`;
 
   try {
     const body = await request.json().catch(() => ({}));
@@ -87,7 +94,9 @@ export async function PATCH(
     });
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({ detail: "Backend error" }));
+      const error = await response
+        .json()
+        .catch(() => ({ detail: "Backend error" }));
       return NextResponse.json(error, { status: response.status });
     }
 
@@ -101,4 +110,3 @@ export async function PATCH(
     );
   }
 }
-
