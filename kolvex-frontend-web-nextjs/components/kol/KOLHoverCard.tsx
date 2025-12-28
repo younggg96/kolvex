@@ -166,7 +166,7 @@ export default function KOLHoverCard({
       // Fetch profile from API
       setLoading(true);
       try {
-        const response = await fetch(`/api/kol?kolId=${kolId}`);
+        const response = await fetch(`/api/kol?kolId=${kolId}&platform=${platform}`);
         if (response.ok) {
           const data = await response.json();
           if (data) {
@@ -190,11 +190,17 @@ export default function KOLHoverCard({
 
   const profile = profileData?.profile;
 
+  // Build KOL profile URL with platform query param for non-Twitter platforms
+  const kolProfileUrl =
+    platform === "TWITTER"
+      ? `/dashboard/kol/${kolId}`
+      : `/dashboard/kol/${kolId}?platform=${platform}`;
+
   return (
     <HoverCard onOpenChange={handleOpenChange}>
       <HoverCardTrigger asChild>
         <Link
-          href={`/dashboard/kol/${kolId}`}
+          href={kolProfileUrl}
           className="cursor-pointer inline-block"
         >
           {children}
@@ -344,7 +350,7 @@ export default function KOLHoverCard({
                   className="w-full gap-2 h-8 text-xs font-medium"
                   asChild
                 >
-                  <Link href={`/dashboard/kol/${kolId}`}>
+                  <Link href={kolProfileUrl}>
                     <span>View Profile</span>
                     <ExternalLink className="h-3 w-3 opacity-50" />
                   </Link>

@@ -1,0 +1,235 @@
+"""
+小红书 KOL API 路由
+获取 KOL 博主信息和帖子数据
+"""
+
+from fastapi import APIRouter, HTTPException, Query
+from typing import Dict, List, Optional
+import json
+
+from app.services.xiaohongshu import get_supabase_client
+
+router = APIRouter()
+
+
+def _format_kol(kol: Dict) -> Dict:
+    """
+    格式化 KOL 数据
+    """
+
+    def parse_jsonb(value):
+        if value is None:
+            return []
+        if isinstance(value, str):
+            try:
+                return json.loads(value)
+            except:
+                return []
+        return value if isinstance(value, list) else []
+
+    return {
+        "id": kol.get("id"),
+        "user_id": kol.get("user_id"),
+        "nickname": kol.get("nickname"),
+        "red_id": kol.get("red_id"),
+        "avatar_url": kol.get("avatar_url"),
+        "description": kol.get("description"),
+        "location": kol.get("location"),
+        "gender": kol.get("gender"),
+        "is_verified": kol.get("is_verified", False),
+        "verified_type": kol.get("verified_type"),
+        "verified_info": kol.get("verified_info"),
+        "followers_count": kol.get("followers_count", 0),
+        "following_count": kol.get("following_count", 0),
+        "likes_count": kol.get("likes_count", 0),
+        "notes_count": kol.get("notes_count", 0),
+        "collected_count": kol.get("collected_count", 0),
+        "profile_url": kol.get("profile_url"),
+        "tags": parse_jsonb(kol.get("tags")),
+        "category": kol.get("category"),
+        "scraped_at": kol.get("scraped_at"),
+        "updated_at": kol.get("updated_at"),
+    }
+
+
+def _format_post(post: Dict) -> Dict:
+    """
+    格式化单个帖子数据
+    """
+
+    def parse_jsonb(value):
+        if value is None:
+            return []
+        if isinstance(value, str):
+            try:
+                return json.loads(value)
+            except:
+                return []
+        return value if isinstance(value, list) else []
+
+    return {
+        "id": post.get("id"),
+        "note_id": post.get("note_id"),
+        "title": post.get("title"),
+        "content": post.get("content"),
+        "note_type": post.get("note_type", "normal"),
+        "permalink": post.get("permalink"),
+        "author_name": post.get("author_name"),
+        "author_id": post.get("author_id"),
+        "author_avatar": post.get("author_avatar"),
+        "cover_url": post.get("cover_url"),
+        "image_urls": parse_jsonb(post.get("image_urls")),
+        "video_url": post.get("video_url"),
+        "like_count": post.get("like_count", 0),
+        "collect_count": post.get("collect_count", 0),
+        "comment_count": post.get("comment_count", 0),
+        "share_count": post.get("share_count", 0),
+        "tags": parse_jsonb(post.get("tags")),
+        "ai_sentiment": post.get("ai_sentiment"),
+        "ai_tickers": parse_jsonb(post.get("ai_tickers")),
+        "ai_summary": post.get("ai_summary"),
+        "ai_is_stock_related": post.get("ai_is_stock_related", False),
+        "created_at": post.get("created_at"),
+        "scraped_at": post.get("scraped_at"),
+    }
+
+
+@router.get("/kols", response_model=Dict)
+def get_xhs_kols(
+    limit: int = Query(20, ge=1, le=100, description="返回数量"),
+    offset: int = Query(0, ge=0, description="偏移量"),
+    category: Optional[str] = Query(None, description="分类筛选"),
+    min_followers: int = Query(0, ge=0, description="最小粉丝数"),
+    sort_by: str = Query("followers_count", description="排序字段"),
+    sort_desc: bool = Query(True, description="是否降序"),
+):
+    """
+    📋 获取小红书 KOL 列表
+    """
+    supabase = get_supabase_client()
+    if not supabase:
+        raise HTTPException(status_code=503, detail="数据库未连接")
+
+    try:
+        query = (
+            supabase.table("xhs_kols")
+            .select("*", count="exact")
+            .gte("followers_count", min_followers)
+        )
+
+        if category:
+            query = query.eq("category", category)
+
+        query = query.order(sort_by, desc=sort_desc)
+        query = query.range(offset, offset + limit - 1)
+
+        result = query.execute()
+        kols = result.data or []
+        total = result.count or 0
+
+        return {
+            "success": True,
+            "data": [_format_kol(k) for k in kols],
+            "pagination": {
+                "total": total,
+                "limit": limit,
+                "offset": offset,
+                "has_more": offset + len(kols) < total,
+            },
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"查询失败: {str(e)}")
+
+
+@router.get("/kols/{user_id}", response_model=Dict)
+def get_xhs_kol_detail(
+    user_id: str,
+    include_posts: bool = Query(False, description="是否包含帖子"),
+    post_limit: int = Query(20, ge=1, le=50, description="帖子数量限制"),
+):
+    """
+    📄 获取单个 KOL 详情
+
+    根据小红书用户 ID 获取 KOL 信息，可选择包含其帖子列表。
+    """
+    supabase = get_supabase_client()
+    if not supabase:
+        raise HTTPException(status_code=503, detail="数据库未连接")
+
+    try:
+        # 先从 xhs_kols 表查询
+        kol_result = (
+            supabase.table("xhs_kols")
+            .select("*")
+            .eq("user_id", user_id)
+            .limit(1)
+            .execute()
+        )
+
+        kol_data = None
+        if kol_result.data:
+            kol_data = _format_kol(kol_result.data[0])
+        else:
+            # 如果 xhs_kols 表中没有，尝试从 xhs_posts 表获取作者信息
+            posts_result = (
+                supabase.table("xhs_posts")
+                .select("author_id, author_name, author_avatar")
+                .eq("author_id", user_id)
+                .limit(1)
+                .execute()
+            )
+
+            if posts_result.data:
+                post = posts_result.data[0]
+                # 构建一个基础的 KOL 信息
+                kol_data = {
+                    "id": None,
+                    "user_id": user_id,
+                    "nickname": post.get("author_name"),
+                    "red_id": None,
+                    "avatar_url": post.get("author_avatar"),
+                    "description": None,
+                    "location": None,
+                    "gender": None,
+                    "is_verified": False,
+                    "verified_type": None,
+                    "verified_info": None,
+                    "followers_count": 0,
+                    "following_count": 0,
+                    "likes_count": 0,
+                    "notes_count": 0,
+                    "collected_count": 0,
+                    "profile_url": f"https://www.xiaohongshu.com/user/profile/{user_id}",
+                    "tags": [],
+                    "category": None,
+                    "scraped_at": None,
+                    "updated_at": None,
+                }
+            else:
+                raise HTTPException(status_code=404, detail=f"KOL 不存在: {user_id}")
+
+        # 获取帖子
+        posts = []
+        if include_posts:
+            posts_result = (
+                supabase.table("xhs_posts")
+                .select("*")
+                .eq("author_id", user_id)
+                .order("created_at", desc=True)
+                .limit(post_limit)
+                .execute()
+            )
+            posts = [_format_post(p) for p in (posts_result.data or [])]
+
+        return {
+            "success": True,
+            "profile": kol_data,
+            "recent_posts": posts if include_posts else None,
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"查询失败: {str(e)}")
+

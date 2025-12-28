@@ -16,6 +16,10 @@
 - GET  /api/xiaohongshu/posts               - 获取帖子列表（支持多种筛选）
 - GET  /api/xiaohongshu/posts/{note_id}     - 获取单个帖子详情
 
+👤 KOL 端点：
+- GET  /api/xiaohongshu/kols                - 获取 KOL 列表
+- GET  /api/xiaohongshu/kols/{user_id}      - 获取 KOL 详情和帖子
+
 返回数据包含：
 - 基础信息（标题、内容、链接）
 - 作者信息（名称、头像）
@@ -31,6 +35,7 @@ from fastapi import APIRouter
 
 from .posts_routes import router as posts_router
 from .scrape_routes import router as scrape_router
+from .kols_routes import router as kols_router
 
 # 创建主路由器
 router = APIRouter(prefix="/xiaohongshu", tags=["小红书"])
@@ -38,6 +43,7 @@ router = APIRouter(prefix="/xiaohongshu", tags=["小红书"])
 # 注册子路由
 router.include_router(posts_router)
 router.include_router(scrape_router)
+router.include_router(kols_router)
 
 __all__ = ["router"]
 

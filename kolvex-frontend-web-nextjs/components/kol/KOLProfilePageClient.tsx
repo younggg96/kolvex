@@ -1,19 +1,23 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState, ErrorState } from "@/components/common/EmptyState";
 import SectionCard from "@/components/layout/SectionCard";
 import PostFeedList from "@/components/tweet/PostFeedList";
+import XhsPostFeedList from "@/components/xhs/XhsPostFeedList";
 import { KOLProfileDetail } from "@/app/api/kol/route";
 import { KOLTweet } from "@/lib/kolTweetsApi";
+import { XhsPost } from "@/lib/xhsApi";
 import { trackKOL, untrackKOL, isKOLTracked } from "@/lib/trackedKolApi";
 import { toast } from "sonner";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import KOLAnalysisPanel from "./KOLAnalysisPanel";
 import KOLProfileHeader from "./KOLProfileHeader";
+import type { Platform } from "@/lib/supabase/database.types";
 
 interface KOLProfilePageClientProps {
   username: string;
@@ -129,8 +133,12 @@ function ProfileSkeleton() {
 export default function KOLProfilePageClient({
   username,
 }: KOLProfilePageClientProps) {
+  const searchParams = useSearchParams();
+  const platform = (searchParams.get("platform") as Platform) || "TWITTER";
+
   const [profileData, setProfileData] = useState<KOLProfileDetail | null>(null);
   const [tweets, setTweets] = useState<KOLTweet[]>([]);
+  const [xhsPosts, setXhsPosts] = useState<XhsPost[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -142,15 +150,15 @@ export default function KOLProfilePageClient({
 
   const PAGE_SIZE = 20;
 
-  // Fetch profile and initial tweets
+  // Fetch profile and initial posts
   const fetchProfile = useCallback(async () => {
     setIsLoading(true);
     setError(null);
 
     try {
-      // Fetch profile with tweets
+      // Fetch profile with posts
       const response = await fetch(
-        `/api/kol?kolId=${username}&include_tweets=true&tweet_limit=${PAGE_SIZE}`
+        `/api/kol?kolId=${username}&include_tweets=true&tweet_limit=${PAGE_SIZE}&platform=${platform}`
       );
 
       if (!response.ok) {
@@ -162,18 +170,25 @@ export default function KOLProfilePageClient({
 
       const data: KOLProfileDetail = await response.json();
       setProfileData(data);
-      setTweets(data.recent_tweets || []);
-      setHasMore((data.recent_tweets?.length || 0) >= PAGE_SIZE);
+
+      // Handle posts based on platform
+      if (platform === "REDNOTE") {
+        setXhsPosts(data.recent_posts || []);
+        setHasMore((data.recent_posts?.length || 0) >= PAGE_SIZE);
+      } else {
+        setTweets(data.recent_tweets || []);
+        setHasMore((data.recent_tweets?.length || 0) >= PAGE_SIZE);
+      }
 
       // Check tracking status
-      const tracked = await isKOLTracked(username, "TWITTER");
+      const tracked = await isKOLTracked(username, platform);
       setIsTracking(tracked);
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred");
     } finally {
       setIsLoading(false);
     }
-  }, [username]);
+  }, [username, platform]);
 
   // Load more tweets
   const loadMoreTweets = async () => {
@@ -217,11 +232,11 @@ export default function KOLProfilePageClient({
     setIsTrackLoading(true);
     try {
       if (isTracking) {
-        await untrackKOL(username, "TWITTER");
+        await untrackKOL(username, platform);
         setIsTracking(false);
         toast.success(`Untracked @${username}`);
       } else {
-        await trackKOL({ kol_id: username, platform: "TWITTER", notify: true });
+        await trackKOL({ kol_id: username, platform, notify: true });
         setIsTracking(true);
         toast.success(`Now tracking @${username}`);
       }
@@ -286,40 +301,78 @@ export default function KOLProfilePageClient({
                 onTrackToggle={handleTrackToggle}
               />
 
-              {/* Tweets Feed */}
+              {/* Posts Feed */}
               <div className="min-h-[200px] p-4">
-                {tweets.length === 0 ? (
-                  <div className="mt-8">
-                    <EmptyState
-                      title="No posts yet"
-                      description={`@${username} hasn't posted anything yet.`}
-                    />
-                  </div>
-                ) : (
-                  <>
-                    <PostFeedList
-                      posts={tweets}
-                      formatDate={formatDate}
-                      formatText={formatTweetText}
-                    />
+                {platform === "REDNOTE" ? (
+                  // Xiaohongshu posts
+                  xhsPosts.length === 0 ? (
+                    <div className="mt-8">
+                      <EmptyState
+                        title="No posts yet"
+                        description={`This user hasn't posted anything yet.`}
+                      />
+                    </div>
+                  ) : (
+                    <>
+                      <XhsPostFeedList
+                        posts={xhsPosts}
+                        formatDate={formatDate}
+                        formatText={(text: string) => text}
+                      />
 
-                    {/* Loading More */}
-                    {isLoadingMore && (
-                      <div className="py-6 text-center">
-                        <div className="inline-flex items-center gap-2 text-sm text-muted-foreground">
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                          <span>Loading more posts...</span>
+                      {/* Loading More */}
+                      {isLoadingMore && (
+                        <div className="py-6 text-center">
+                          <div className="inline-flex items-center gap-2 text-sm text-muted-foreground">
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            <span>Loading more posts...</span>
+                          </div>
                         </div>
-                      </div>
-                    )}
+                      )}
 
-                    {/* End of Feed */}
-                    {!hasMore && tweets.length > 0 && (
-                      <div className="py-8 text-center text-xs text-muted-foreground">
-                        No more posts to load
-                      </div>
-                    )}
-                  </>
+                      {/* End of Feed */}
+                      {!hasMore && xhsPosts.length > 0 && (
+                        <div className="py-8 text-center text-xs text-muted-foreground">
+                          No more posts to load
+                        </div>
+                      )}
+                    </>
+                  )
+                ) : (
+                  // Twitter tweets
+                  tweets.length === 0 ? (
+                    <div className="mt-8">
+                      <EmptyState
+                        title="No posts yet"
+                        description={`@${username} hasn't posted anything yet.`}
+                      />
+                    </div>
+                  ) : (
+                    <>
+                      <PostFeedList
+                        posts={tweets}
+                        formatDate={formatDate}
+                        formatText={formatTweetText}
+                      />
+
+                      {/* Loading More */}
+                      {isLoadingMore && (
+                        <div className="py-6 text-center">
+                          <div className="inline-flex items-center gap-2 text-sm text-muted-foreground">
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            <span>Loading more posts...</span>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* End of Feed */}
+                      {!hasMore && tweets.length > 0 && (
+                        <div className="py-8 text-center text-xs text-muted-foreground">
+                          No more posts to load
+                        </div>
+                      )}
+                    </>
+                  )
                 )}
               </div>
             </div>
