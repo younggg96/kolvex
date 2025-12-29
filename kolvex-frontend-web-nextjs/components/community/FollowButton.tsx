@@ -12,7 +12,7 @@ interface FollowButtonProps {
   userId: string;
   initialIsFollowing?: boolean;
   onFollowChange?: (isFollowing: boolean) => void;
-  size?: "sm" | "default" | "lg" | "icon";
+  size?: "xs" | "sm" | "default" | "lg" | "icon";
   className?: string;
   showIcon?: boolean;
   showText?: boolean;
@@ -22,9 +22,8 @@ export function FollowButton({
   userId,
   initialIsFollowing = false,
   onFollowChange,
-  size = "sm",
+  size = "default",
   className,
-  showIcon = true,
   showText = true,
 }: FollowButtonProps) {
   const router = useRouter();

@@ -105,7 +105,10 @@ export function UserCard({
     <div className="group bg-white dark:bg-card-dark border border-border-light dark:border-border-dark rounded-lg p-4 hover:shadow-lg hover:shadow-primary/5 hover:border-primary/30 dark:hover:border-primary/30 transition-all duration-300">
       {/* Header */}
       <div className="flex items-start justify-between mb-4 gap-2">
-        <div className="flex items-center gap-3">
+        <div
+          className="flex items-center gap-3 cursor-pointer"
+          onClick={() => router.push(`/community/${user.user_id}`)}
+        >
           <div className="relative">
             <Avatar className="w-8 h-8 ring-2 ring-primary/20 group-hover:ring-primary/40 transition-all">
               {user.avatar_url ? (
@@ -127,15 +130,23 @@ export function UserCard({
             </div>
           </div>
         </div>
-        {/* Last Synced */}
-        {user.last_synced_at && (
-          <div className="flex items-center gap-1">
-            <Calendar className="w-2.5 h-2.5 text-gray-400 dark:text-white/40" />
-            <p className="text-xs text-gray-400 dark:text-white/30">
-              {formatTimeAgo(new Date(user.last_synced_at))}
-            </p>
-          </div>
-        )}
+        <div className="flex items-center gap-3">
+          <FollowButton
+            userId={user.user_id}
+            initialIsFollowing={isFollowing}
+            onFollowChange={handleFollowChange}
+            size="xs"
+          />
+          {/* Last Synced */}
+          {user.last_synced_at && (
+            <div className="flex items-center gap-1">
+              <Calendar className="w-2.5 h-2.5 text-gray-400 dark:text-white/40" />
+              <p className="text-xs text-gray-400 dark:text-white/30">
+                {formatTimeAgo(new Date(user.last_synced_at))}
+              </p>
+            </div>
+          )}
+        </div>
       </div>
       {/* Stats */}
       {(user.total_value !== null || user.total_pnl !== null) && (
@@ -233,27 +244,6 @@ export function UserCard({
           </div>
         </div>
       )}
-      {/* Follow and View Button */}
-      <div className="mt-3 pt-3 border-t border-gray-100 dark:border-white/5">
-        <div className="flex items-center gap-2">
-          <FollowButton
-            userId={user.user_id}
-            initialIsFollowing={isFollowing}
-            onFollowChange={handleFollowChange}
-            size="sm"
-          />
-          <Button
-            variant="outline"
-            size="sm"
-            className="flex items-center gap-1 text-gray-400 dark:text-white/40 group-hover:text-primary transition-colors border-border-light dark:border-border-dark group-hover:border-primary dark:group-hover:border-primary/60 group-hover:!bg-primary/10"
-            onClick={() => router.push(`/community/${user.user_id}`)}
-          >
-            <Eye className="w-3.5 h-3.5" />
-            <span className="text-xs">View</span>
-            <ChevronRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
-          </Button>
-        </div>
-      </div>
     </div>
   );
 }
