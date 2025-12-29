@@ -465,9 +465,9 @@ export default function KOLTrackerTable({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="twitter">X (Twitter)</SelectItem>
+                  <SelectItem value="twitter">X / Twitter</SelectItem>
                   <SelectItem value="reddit">Reddit</SelectItem>
-                  <SelectItem value="rednote">Rednote</SelectItem>
+                  <SelectItem value="rednote">RedNote</SelectItem>
                   <SelectItem value="youtube">YouTube</SelectItem>
                 </SelectContent>
               </Select>

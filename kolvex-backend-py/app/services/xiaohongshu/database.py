@@ -159,21 +159,9 @@ def process_and_upload_images(
                 updated_data["cover_url"] = new_url
                 print(f"      ✅ 封面图已转存")
 
-    # 2. 处理作者头像
-    author_avatar = post_data.get("author_avatar")
-    if author_avatar and "xhscdn.com" in author_avatar:
-        print(f"      📥 下载作者头像...")
-        image_data = download_image(author_avatar)
-        if image_data:
-            author_id = post_data.get("author_id", "unknown")
-            new_url = upload_image_to_storage(
-                client, image_data, f"avatar_{author_id}", 0, "avatar"
-            )
-            if new_url:
-                updated_data["author_avatar"] = new_url
-                print(f"      ✅ 作者头像已转存")
+    # 注意：作者头像不再从帖子中保存，统一从 xhs_kols 表获取
 
-    # 3. 处理图片列表
+    # 2. 处理图片列表
     image_urls = post_data.get("image_urls", [])
     if image_urls:
         new_image_urls = []
@@ -312,7 +300,6 @@ def insert_post(
             - content: 帖子内容
             - author_name: 作者名称
             - author_id: 作者 ID
-            - author_avatar: 作者头像 URL
             - cover_url: 封面图 URL
             - image_urls: 图片 URL 列表
             - video_url: 视频 URL（如果是视频笔记）
@@ -402,7 +389,7 @@ def insert_post(
             "content": content,
             "author_name": safe_str(post_data.get("author_name"), 255),
             "author_id": safe_str(post_data.get("author_id"), 64),
-            "author_avatar": post_data.get("author_avatar"),
+            # 注意：author_avatar 不再保存在帖子中，统一从 xhs_kols 表获取
             "cover_url": post_data.get("cover_url"),
             "image_urls": image_urls_json,
             "video_url": post_data.get("video_url"),

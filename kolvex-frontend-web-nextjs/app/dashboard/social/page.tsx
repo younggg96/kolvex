@@ -11,3 +11,4 @@ export default function SocialPage() {
   redirect("/dashboard/social/twitter");
 }
 
+

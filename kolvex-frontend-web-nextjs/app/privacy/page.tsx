@@ -3,8 +3,7 @@ import Link from "next/link";
 
 export const metadata: Metadata = {
   title: "Privacy Policy - Kolvex",
-  description:
-    "Privacy Policy for Kolvex AI-powered investment platform",
+  description: "Privacy Policy for Kolvex AI-powered investment platform",
 };
 
 export default function PrivacyPage() {
@@ -33,10 +32,10 @@ export default function PrivacyPage() {
               1. Introduction
             </h2>
             <p className="text-gray-700 dark:text-gray-300 mb-4">
-              Kolvex AI (&quot;we,&quot; &quot;us,&quot; or &quot;our&quot;)
-              is committed to protecting your privacy. This Privacy Policy
-              explains how we collect, use, disclose, and safeguard your
-              information when you use Kolvex (&quot;the Service&quot;).
+              Kolvex AI (&quot;we,&quot; &quot;us,&quot; or &quot;our&quot;) is
+              committed to protecting your privacy. This Privacy Policy explains
+              how we collect, use, disclose, and safeguard your information when
+              you use Kolvex (&quot;the Service&quot;).
             </p>
             <p className="text-gray-700 dark:text-gray-300 mb-4">
               Please read this Privacy Policy carefully. By accessing or using
@@ -212,8 +211,8 @@ export default function PrivacyPage() {
               <li>Legal process, court orders, or government requests</li>
               <li>Enforce our Terms of Service or other policies</li>
               <li>
-                Protect the rights, property, or safety of Kolvex AI, our
-                users, or others
+                Protect the rights, property, or safety of Kolvex AI, our users,
+                or others
               </li>
               <li>
                 Detect, prevent, or address fraud, security, or technical issues
@@ -328,9 +327,8 @@ export default function PrivacyPage() {
               </li>
             </ul>
             <p className="text-gray-700 dark:text-gray-300 mb-4">
-              To exercise these rights, please contact us at
-              privacy@kolvex.ai. We will respond to your request within 30
-              days.
+              To exercise these rights, please contact us at privacy@kolvex.ai.
+              We will respond to your request within 30 days.
             </p>
           </section>
 
@@ -376,7 +374,7 @@ export default function PrivacyPage() {
             </p>
             <p className="text-gray-700 dark:text-gray-300 mb-4">
               The Service aggregates content from third-party platforms
-              (Twitter, Reddit, YouTube, Rednote). Your interactions with that
+              (Twitter, Reddit, YouTube, RedNote). Your interactions with that
               content may be subject to those platforms&apos; privacy policies.
             </p>
           </section>
@@ -482,9 +480,9 @@ export default function PrivacyPage() {
 
           <div className="mt-12 pt-8 border-t border-gray-200 dark:border-gray-800">
             <p className="text-sm text-gray-600 dark:text-gray-400">
-              By using Kolvex, you acknowledge that you have read and
-              understood this Privacy Policy and agree to the collection, use,
-              and disclosure of your information as described herein.
+              By using Kolvex, you acknowledge that you have read and understood
+              this Privacy Policy and agree to the collection, use, and
+              disclosure of your information as described herein.
             </p>
           </div>
         </div>

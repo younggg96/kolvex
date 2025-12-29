@@ -18,8 +18,7 @@ CREATE TABLE IF NOT EXISTS xhs_posts (
     
     -- 作者信息
     author_name VARCHAR(255),                        -- 作者名称
-    author_id VARCHAR(64),                           -- 作者 ID
-    author_avatar TEXT,                              -- 作者头像 URL
+    author_id VARCHAR(64),                           -- 作者 ID（关联 xhs_kols 表获取头像）
     
     -- 媒体资源
     cover_url TEXT,                                  -- 封面图 URL
@@ -71,6 +70,7 @@ CREATE INDEX IF NOT EXISTS idx_xhs_posts_keyword ON xhs_posts(search_keyword);
 
 -- 作者索引
 CREATE INDEX IF NOT EXISTS idx_xhs_posts_author ON xhs_posts(author_name);
+CREATE INDEX IF NOT EXISTS idx_xhs_posts_author_id ON xhs_posts(author_id);
 
 -- 时间索引（按时间查询）
 CREATE INDEX IF NOT EXISTS idx_xhs_posts_created_at ON xhs_posts(created_at DESC);

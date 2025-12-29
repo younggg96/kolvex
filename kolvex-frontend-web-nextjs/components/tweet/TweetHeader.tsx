@@ -1,9 +1,9 @@
 "use client";
 
-import Image from "next/image";
 import type { Platform } from "@/lib/supabase/database.types";
 import KOLHoverCard from "@/components/kol/KOLHoverCard";
 import { proxyImageUrl } from "@/lib/utils";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
 interface TweetHeaderProps {
   screenName: string;
@@ -36,19 +36,16 @@ export default function TweetHeader({
         initialTracked={initialTracked}
         onTrackChange={onTrackChange}
       >
-        {profileImageUrl ? (
-          <img
-            src={proxyImageUrl(profileImageUrl)}
+        <Avatar className="w-8 h-8 flex-shrink-0 cursor-pointer">
+          <AvatarImage
+            src={proxyImageUrl(profileImageUrl || "")}
             alt={screenName}
-            width={32}
-            height={32}
-            className="w-8 h-8 rounded-full flex-shrink-0 cursor-pointer object-cover"
+            className="object-cover"
           />
-        ) : (
-          <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-800 flex items-center justify-center text-gray-500 dark:text-white text-xs font-bold flex-shrink-0 cursor-pointer">
+          <AvatarFallback className="bg-gray-200 dark:bg-gray-800 text-gray-500 dark:text-white text-xs font-bold">
             {screenName.substring(0, 2).toUpperCase()}
-          </div>
-        )}
+          </AvatarFallback>
+        </Avatar>
       </KOLHoverCard>
 
       <div className="flex-1 min-w-0">

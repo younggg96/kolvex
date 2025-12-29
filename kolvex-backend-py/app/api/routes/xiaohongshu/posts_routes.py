@@ -12,10 +12,58 @@ from app.services.xiaohongshu import get_supabase_client
 router = APIRouter()
 
 
-def _format_post(post: Dict) -> Dict:
+def _get_author_avatars(supabase, author_ids: List[str]) -> Dict[str, str]:
+    """
+    批量从 xhs_kols 表获取作者头像
+    
+    Args:
+        supabase: Supabase 客户端
+        author_ids: 作者 ID 列表
+        
+    Returns:
+        Dict[str, str]: author_id -> avatar_url 映射
+    """
+    if not author_ids:
+        return {}
+    
+    try:
+        # 去重
+        unique_ids = list(set(id for id in author_ids if id))
+        if not unique_ids:
+            return {}
+        
+        # 批量查询 KOL 头像
+        result = (
+            supabase.table("xhs_kols")
+            .select("user_id, avatar_url")
+            .in_("user_id", unique_ids)
+            .execute()
+        )
+        
+        # 构建映射
+        avatar_map = {}
+        for kol in result.data or []:
+            user_id = kol.get("user_id")
+            avatar_url = kol.get("avatar_url")
+            if user_id and avatar_url:
+                avatar_map[user_id] = avatar_url
+        
+        return avatar_map
+    except Exception as e:
+        print(f"⚠️ 获取作者头像失败: {e}")
+        return {}
+
+
+def _format_post(post: Dict, author_avatars: Dict[str, str] = None) -> Dict:
     """
     格式化单个帖子数据，确保返回完整结构
+    
+    Args:
+        post: 帖子数据
+        author_avatars: 作者头像映射 (author_id -> avatar_url)
     """
+    if author_avatars is None:
+        author_avatars = {}
 
     # 处理 JSONB 字段
     def parse_jsonb(value):
@@ -30,6 +78,10 @@ def _format_post(post: Dict) -> Dict:
                 return []
         return value if isinstance(value, list) else []
 
+    # 从 xhs_kols 表获取作者头像
+    author_id = post.get("author_id")
+    author_avatar = author_avatars.get(author_id) if author_id else None
+
     return {
         # === 基础信息 ===
         "id": post.get("id"),
@@ -41,8 +93,8 @@ def _format_post(post: Dict) -> Dict:
         "permalink": post.get("permalink"),
         # === 作者信息 ===
         "author_name": post.get("author_name"),
-        "author_id": post.get("author_id"),
-        "author_avatar": post.get("author_avatar"),
+        "author_id": author_id,
+        "author_avatar": author_avatar,  # 从 xhs_kols 表获取
         # === 媒体资源 ===
         "cover_url": post.get("cover_url"),
         "image_urls": parse_jsonb(post.get("image_urls")),
@@ -153,6 +205,10 @@ def get_xhs_posts(
         posts = result.data or []
         total = result.count or 0
 
+        # 批量获取作者头像
+        author_ids = [p.get("author_id") for p in posts if p.get("author_id")]
+        author_avatars = _get_author_avatars(supabase, author_ids)
+
         # 内存中过滤 has_images（JSONB 数组非空查询复杂）
         if has_images is not None:
             formatted = []
@@ -160,10 +216,10 @@ def get_xhs_posts(
                 image_urls = post.get("image_urls")
                 has_img = bool(image_urls and len(image_urls) > 0)
                 if has_images == has_img:
-                    formatted.append(_format_post(post))
+                    formatted.append(_format_post(post, author_avatars))
             posts = formatted
         else:
-            posts = [_format_post(p) for p in posts]
+            posts = [_format_post(p, author_avatars) for p in posts]
 
         return {
             "success": True,
@@ -203,9 +259,15 @@ def get_xhs_post_detail(note_id: str):
         if not result.data:
             raise HTTPException(status_code=404, detail=f"帖子不存在: {note_id}")
 
+        post = result.data[0]
+        
+        # 获取作者头像
+        author_id = post.get("author_id")
+        author_avatars = _get_author_avatars(supabase, [author_id]) if author_id else {}
+
         return {
             "success": True,
-            "data": _format_post(result.data[0]),
+            "data": _format_post(post, author_avatars),
         }
 
     except HTTPException:

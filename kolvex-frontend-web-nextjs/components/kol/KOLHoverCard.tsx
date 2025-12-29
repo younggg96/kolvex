@@ -166,7 +166,9 @@ export default function KOLHoverCard({
       // Fetch profile from API
       setLoading(true);
       try {
-        const response = await fetch(`/api/kol?kolId=${kolId}&platform=${platform}`);
+        const response = await fetch(
+          `/api/kol?kolId=${kolId}&platform=${platform}`
+        );
         if (response.ok) {
           const data = await response.json();
           if (data) {
@@ -190,6 +192,11 @@ export default function KOLHoverCard({
 
   const profile = profileData?.profile;
 
+  // For RedNote, display the first 8 characters of the username and an ellipsis
+  const userDisplayId =
+    platform === "REDNOTE"
+      ? profile?.username?.slice(0, 8) + "..."
+      : profile?.username || "";
   // Build KOL profile URL with platform query param for non-Twitter platforms
   const kolProfileUrl =
     platform === "TWITTER"
@@ -199,10 +206,7 @@ export default function KOLHoverCard({
   return (
     <HoverCard onOpenChange={handleOpenChange}>
       <HoverCardTrigger asChild>
-        <Link
-          href={kolProfileUrl}
-          className="cursor-pointer inline-block"
-        >
+        <Link href={kolProfileUrl} className="cursor-pointer inline-block">
           {children}
         </Link>
       </HoverCardTrigger>
@@ -224,7 +228,7 @@ export default function KOLHoverCard({
                 <div className="absolute inset-0 bg-gradient-to-b from-black/10 to-black/30" />
               </div>
             ) : (
-              <div className="w-full h-20 bg-gradient-to-r from-primary/20 to-primary/10" />
+              <div className="w-full" />
             )}
 
             {/* Content with padding */}
@@ -232,7 +236,9 @@ export default function KOLHoverCard({
               {/* Avatar overlapping banner */}
               <div className="flex items-end gap-3">
                 <Avatar className="h-14 w-14 border-4 border-white dark:border-card-dark relative z-10">
-                  <AvatarImage src={proxyImageUrl(profile.avatar_url || profileImageUrl)} />
+                  <AvatarImage
+                    src={proxyImageUrl(profile.avatar_url || profileImageUrl)}
+                  />
                   <AvatarFallback>
                     {(profile.display_name || screenName)
                       .substring(0, 2)
@@ -249,13 +255,13 @@ export default function KOLHoverCard({
                     )}
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    @{profile.username}
+                    @{userDisplayId}
                   </p>
                 </div>
                 {/* Track Button */}
                 <Button
                   variant={isTracking ? "default" : "outline"}
-                  size="sm"
+                  size="xs"
                   onClick={handleTrackToggle}
                   disabled={isTrackLoading}
                   className={`flex-shrink-0 ${

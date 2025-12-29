@@ -11,7 +11,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { CardSkeleton } from "@/components/common/LoadingSkeleton";
 import { EmptyState } from "@/components/common/EmptyState";
 import { Kol, SortBy } from "@/app/api/kols/route";
 import { trackKOL, untrackKOL } from "@/lib/trackedKolApi";
@@ -63,7 +62,7 @@ function KolTableSkeleton() {
       <TableCell className="py-3">
         <div className="w-10 h-3.5 rounded bg-gray-200 dark:bg-white/10 animate-pulse mx-auto" />
       </TableCell>
-      <TableCell className="py-3 hidden xl:table-cell">
+      <TableCell className="py-3">
         <div className="w-16 h-3.5 rounded bg-gray-200 dark:bg-white/10 animate-pulse mx-auto" />
       </TableCell>
       <TableCell className="py-3">
@@ -172,15 +171,6 @@ export default function KOLRankingTable({
 
   return (
     <div className="space-y-3">
-      {/* Loading State - Mobile */}
-      {loading && (
-        <div className="space-y-2">
-          {[...Array(5)].map((_, i) => (
-            <CardSkeleton key={i} lines={3} />
-          ))}
-        </div>
-      )}
-
       {/* Empty State */}
       {!loading && kols.length === 0 && (
         <EmptyState
@@ -189,91 +179,9 @@ export default function KOLRankingTable({
         />
       )}
 
-      {/* Mobile Card View */}
-      {!loading && kols.length > 0 && (
-        <div
-          className="space-y-2 overflow-auto md:hidden"
-          onScroll={handleScroll}
-        >
-          {kols.map((kol, index) => (
-            <div
-              key={kol.id}
-              className="border border-gray-200 dark:border-white/10 rounded-lg p-2 hover:shadow-sm transition-shadow"
-            >
-              {/* Header: Rank + Avatar + Name + Track Button */}
-              <div className="flex items-center gap-2.5 mb-2.5">
-                {/* Rank Badge */}
-                <div
-                  className={`flex-shrink-0 flex items-center justify-center w-7 h-7 rounded-full text-xs font-bold ${
-                    index === 0
-                      ? "bg-yellow-100 dark:bg-yellow-500/20 text-yellow-600 dark:text-yellow-500"
-                      : index === 1
-                      ? "bg-gray-100 dark:bg-gray-500/20 text-gray-600 dark:text-gray-400"
-                      : index === 2
-                      ? "bg-orange-100 dark:bg-orange-500/20 text-orange-600 dark:text-orange-500"
-                      : "text-gray-400 dark:text-white/40"
-                  }`}
-                >
-                  {index + 1}
-                </div>
-
-                <KolInfo
-                  avatarUrl={kol.avatar_url}
-                  name={kol.display_name}
-                  username={kol.username}
-                  platform={kol.platform}
-                  verified={kol.verified}
-                />
-              </div>
-
-              {/* Key Stats - Only 2 most important metrics */}
-              <div className="grid grid-cols-2 gap-2">
-                <div className="bg-gray-50 dark:bg-white/5 rounded-lg p-2.5">
-                  <div className="text-[10px] text-gray-500 dark:text-white/50 mb-0.5 font-medium">
-                    Influence
-                  </div>
-                  <div className="text-lg font-bold text-gray-900 dark:text-white">
-                    {(kol.influence_score ?? 0).toFixed(1)}
-                  </div>
-                </div>
-                <div className="bg-gray-50 dark:bg-white/5 rounded-lg p-2.5">
-                  <div className="text-[10px] text-gray-500 dark:text-white/50 mb-0.5 font-medium">
-                    Followers
-                  </div>
-                  <div className="text-lg font-bold text-gray-900 dark:text-white">
-                    {formatNumber(kol.followers_count)}
-                  </div>
-                </div>
-              </div>
-            </div>
-          ))}
-
-          {/* Loading More Indicator */}
-          {isLoadingMore && (
-            <div className="text-center py-4">
-              <div className="inline-flex items-center gap-2 text-sm text-gray-500 dark:text-white/50">
-                <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
-                <span>Loading...</span>
-              </div>
-            </div>
-          )}
-
-          {/* No More Data Indicator */}
-          {!hasMore && kols.length > 0 && !isLoadingMore && (
-            <div className="text-center py-3 text-xs text-gray-400 dark:text-white/40">
-              No more data
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Desktop Table View */}
+      {/* Table View - Horizontally scrollable on mobile */}
       {(kols.length > 0 || loading) && (
-        <SectionCard
-          padding="none"
-          useSectionHeader={false}
-          className="hidden md:block"
-        >
+        <SectionCard padding="none" useSectionHeader={false}>
           <div
             className="max-h-[600px] overflow-x-auto"
             onScroll={handleScroll}
@@ -281,13 +189,13 @@ export default function KOLRankingTable({
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="text-xs text-center w-12 font-semibold">
+                  <TableHead className="text-xs text-center w-12 font-semibold whitespace-nowrap">
                     Rank
                   </TableHead>
-                  <TableHead className="text-xs text-left font-semibold">
+                  <TableHead className="text-xs text-left font-semibold whitespace-nowrap min-w-[180px]">
                     KOL
                   </TableHead>
-                  <TableHead className="text-xs text-center font-semibold">
+                  <TableHead className="text-xs text-center font-semibold whitespace-nowrap">
                     Platform
                   </TableHead>
                   <SortableHeader
@@ -314,10 +222,10 @@ export default function KOLRankingTable({
                     onSort={handleSort}
                     type="amount"
                   />
-                  <TableHead className="text-xs text-center font-semibold hidden xl:table-cell">
+                  <TableHead className="text-xs text-center font-semibold whitespace-nowrap">
                     Last Post
                   </TableHead>
-                  <TableHead className="text-xs text-center font-semibold">
+                  <TableHead className="text-xs text-center font-semibold whitespace-nowrap">
                     Action
                   </TableHead>
                 </TableRow>
@@ -385,7 +293,7 @@ export default function KOLRankingTable({
                         </TableCell>
 
                         {/* Last Post */}
-                        <TableCell className="text-xs text-center text-gray-600 dark:text-white/60 font-medium py-3 hidden xl:table-cell">
+                        <TableCell className="text-xs text-center text-gray-600 dark:text-white/60 font-medium py-3 whitespace-nowrap">
                           {formatDate(kol.last_post_at)}
                         </TableCell>
 

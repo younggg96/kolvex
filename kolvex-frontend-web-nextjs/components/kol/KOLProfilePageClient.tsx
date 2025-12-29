@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState, ErrorState } from "@/components/common/EmptyState";
@@ -15,12 +14,13 @@ import { trackKOL, untrackKOL, isKOLTracked } from "@/lib/trackedKolApi";
 import { toast } from "sonner";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
-import KOLAnalysisPanel from "./KOLAnalysisPanel";
+import { KOLAnalysisPanel } from "./kol-analysis";
 import KOLProfileHeader from "./KOLProfileHeader";
 import type { Platform } from "@/lib/supabase/database.types";
 
 interface KOLProfilePageClientProps {
   username: string;
+  platform: Platform;
 }
 
 function formatDate(dateString: string): string {
@@ -132,10 +132,8 @@ function ProfileSkeleton() {
 
 export default function KOLProfilePageClient({
   username,
+  platform,
 }: KOLProfilePageClientProps) {
-  const searchParams = useSearchParams();
-  const platform = (searchParams.get("platform") as Platform) || "TWITTER";
-
   const [profileData, setProfileData] = useState<KOLProfileDetail | null>(null);
   const [tweets, setTweets] = useState<KOLTweet[]>([]);
   const [xhsPosts, setXhsPosts] = useState<XhsPost[]>([]);
@@ -274,7 +272,9 @@ export default function KOLProfilePageClient({
       <div className="h-full flex gap-2 p-2">
         {/* Left Column - Profile & Tweets */}
         <SectionCard
-          className="flex-1 flex flex-col overflow-hidden lg:max-w-[calc(100%-320px)]"
+          className={`flex-1 flex flex-col overflow-hidden ${
+            tweets.length > 0 ? "lg:max-w-[calc(100%-320px)]" : ""
+          }`}
           contentClassName="p-0"
           scrollable
           onScroll={handleScroll}
@@ -293,7 +293,9 @@ export default function KOLProfilePageClient({
           ) : profile ? (
             <div className="mx-auto w-full pb-8">
               {/* Profile Header */}
+              {JSON.stringify(platform)}
               <KOLProfileHeader
+                platform={platform}
                 profile={profile}
                 username={username}
                 isTracking={isTracking}
@@ -318,6 +320,7 @@ export default function KOLProfilePageClient({
                         posts={xhsPosts}
                         formatDate={formatDate}
                         formatText={(text: string) => text}
+                        profileAvatar={profile?.avatar_url}
                       />
 
                       {/* Loading More */}
@@ -338,63 +341,63 @@ export default function KOLProfilePageClient({
                       )}
                     </>
                   )
+                ) : // Twitter tweets
+                tweets.length === 0 ? (
+                  <div className="mt-8">
+                    <EmptyState
+                      title="No posts yet"
+                      description={`@${username} hasn't posted anything yet.`}
+                    />
+                  </div>
                 ) : (
-                  // Twitter tweets
-                  tweets.length === 0 ? (
-                    <div className="mt-8">
-                      <EmptyState
-                        title="No posts yet"
-                        description={`@${username} hasn't posted anything yet.`}
-                      />
-                    </div>
-                  ) : (
-                    <>
-                      <PostFeedList
-                        posts={tweets}
-                        formatDate={formatDate}
-                        formatText={formatTweetText}
-                      />
+                  <>
+                    <PostFeedList
+                      posts={tweets}
+                      formatDate={formatDate}
+                      formatText={formatTweetText}
+                    />
 
-                      {/* Loading More */}
-                      {isLoadingMore && (
-                        <div className="py-6 text-center">
-                          <div className="inline-flex items-center gap-2 text-sm text-muted-foreground">
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                            <span>Loading more posts...</span>
-                          </div>
+                    {/* Loading More */}
+                    {isLoadingMore && (
+                      <div className="py-6 text-center">
+                        <div className="inline-flex items-center gap-2 text-sm text-muted-foreground">
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          <span>Loading more posts...</span>
                         </div>
-                      )}
+                      </div>
+                    )}
 
-                      {/* End of Feed */}
-                      {!hasMore && tweets.length > 0 && (
-                        <div className="py-8 text-center text-xs text-muted-foreground">
-                          No more posts to load
-                        </div>
-                      )}
-                    </>
-                  )
+                    {/* End of Feed */}
+                    {!hasMore && tweets.length > 0 && (
+                      <div className="py-8 text-center text-xs text-muted-foreground">
+                        No more posts to load
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             </div>
           ) : null}
         </SectionCard>
 
-        {/* Right Column - Analysis Panel (Desktop Only) */}
-        <div className="hidden lg:flex w-[800px] shrink-0 h-full">
-          <SectionCard
-            className="flex-1 flex flex-col overflow-hidden"
-            contentClassName="p-0 flex-1 min-h-0"
-            useSectionHeader={false}
-          >
-            <KOLAnalysisPanel
-              username={username}
-              displayName={profile?.display_name}
-              avatarUrl={profile?.avatar_url}
-              tweets={tweets}
-              isLoading={isLoading}
-            />
-          </SectionCard>
-        </div>
+        {/* Right Column - Analysis Panel (Desktop Only, only show when tweets exist) */}
+        {tweets.length > 0 && (
+          <div className="hidden lg:flex w-[800px] shrink-0 h-full">
+            <SectionCard
+              className="flex-1 flex flex-col overflow-hidden"
+              contentClassName="p-0 flex-1 min-h-0"
+              useSectionHeader={false}
+            >
+              <KOLAnalysisPanel
+                username={username}
+                displayName={profile?.display_name}
+                avatarUrl={profile?.avatar_url}
+                tweets={tweets}
+                isLoading={isLoading}
+              />
+            </SectionCard>
+          </div>
+        )}
       </div>
     </DashboardLayout>
   );

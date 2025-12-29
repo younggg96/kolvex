@@ -1,22 +1,64 @@
 "use client";
 
 import { useState, useMemo, useEffect, useCallback } from "react";
+import Image from "next/image";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import SectionCard from "@/components/layout/SectionCard";
 import KOLTrackerTable from "@/components/kol/KOLTrackerTable";
 import { SwitchTab } from "@/components/ui/switch-tab";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { KOL } from "@/lib/kolApi";
-import { Kol, SortBy } from "@/app/api/kols/route";
+import { Kol, SortBy, Platform } from "@/app/api/kols/route";
 import { Star, TrendingUp } from "lucide-react";
 import { useTrackedKOLs } from "@/hooks";
 import { KOLHeroSection } from "./KOLHeroSection";
 import KOLRankingTable from "@/components/kol/KOLRankingTable";
 import { toast } from "sonner";
 
+// Platform options for KOL selector (no "all" option)
+const KOL_PLATFORM_OPTIONS: {
+  value: Platform;
+  label: string;
+  iconPath: string;
+  disabled: boolean;
+}[] = [
+  {
+    value: "TWITTER",
+    label: "X / Twitter",
+    iconPath: "/logo/x.svg",
+    disabled: false,
+  },
+  {
+    value: "REDNOTE",
+    label: "RedNote",
+    iconPath: "/logo/rednote.svg",
+    disabled: false,
+  },
+  {
+    value: "REDDIT",
+    label: "Reddit",
+    iconPath: "/logo/reddit.svg",
+    disabled: true,
+  },
+  {
+    value: "YOUTUBE",
+    label: "YouTube",
+    iconPath: "/logo/youtube.svg",
+    disabled: true,
+  },
+];
+
 export default function KOLPageClient() {
   const [activeTab, setActiveTab] = useState<"trackingKOLs" | "ranking">(
     "ranking"
   );
+  const [selectedPlatform, setSelectedPlatform] = useState<Platform>("REDNOTE");
 
   // Use the trackingKOLs hook to get real data from the API
   const {
@@ -33,6 +75,18 @@ export default function KOLPageClient() {
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
   const [offset, setOffset] = useState(0);
   const [hasMore, setHasMore] = useState(true);
+
+  // Get API endpoint based on selected platform
+  const getApiEndpoint = useCallback((platform: Platform): string => {
+    switch (platform) {
+      case "REDNOTE":
+        return "/api/xhs-kols";
+      case "TWITTER":
+        return "/api/kols";
+      default:
+        return "/api/kols";
+    }
+  }, []);
 
   // Fetch ranking KOLs
   const fetchRankingKols = useCallback(
@@ -52,7 +106,8 @@ export default function KOLPageClient() {
           sort_direction: sortDirection,
         });
 
-        const response = await fetch(`/api/kols?${params}`);
+        const apiEndpoint = getApiEndpoint(selectedPlatform);
+        const response = await fetch(`${apiEndpoint}?${params}`);
         if (!response.ok) throw new Error("Failed to fetch kols");
 
         const data = await response.json();
@@ -75,16 +130,16 @@ export default function KOLPageClient() {
         setIsLoadingMore(false);
       }
     },
-    [offset, sortBy, sortDirection]
+    [offset, sortBy, sortDirection, selectedPlatform, getApiEndpoint]
   );
 
-  // Reset and fetch when sort changes
+  // Reset and fetch when sort or platform changes
   useEffect(() => {
     setRankingKols([]);
     setOffset(0);
     setHasMore(true);
     fetchRankingKols(true);
-  }, [sortBy, sortDirection]);
+  }, [sortBy, sortDirection, selectedPlatform]);
 
   // Refresh ranking data
   const refreshRankingKols = useCallback(() => {
@@ -193,15 +248,88 @@ export default function KOLPageClient() {
             padding="sm"
             contentClassName="px-3 pb-3"
             headerExtra={
-              <SwitchTab
-                options={tabOptions}
-                value={activeTab}
-                onValueChange={(value) =>
-                  setActiveTab(value as "trackingKOLs" | "ranking")
-                }
-                size="md"
-                variant="pills"
-              />
+              <div className="flex items-center justify-between gap-3 w-">
+                <SwitchTab
+                  options={tabOptions}
+                  value={activeTab}
+                  onValueChange={(value) =>
+                    setActiveTab(value as "trackingKOLs" | "ranking")
+                  }
+                  size="md"
+                  variant="pills"
+                />
+              </div>
+            }
+            headerRightExtra={
+              <>
+                {activeTab === "ranking" && (
+                  <Select
+                    value={selectedPlatform}
+                    onValueChange={(value) =>
+                      setSelectedPlatform(value as Platform)
+                    }
+                  >
+                    <SelectTrigger className="w-[140px] h-8 text-xs">
+                      <SelectValue>
+                        <div className="flex items-center gap-2">
+                          <Image
+                            src={
+                              KOL_PLATFORM_OPTIONS.find(
+                                (p) => p.value === selectedPlatform
+                              )?.iconPath || ""
+                            }
+                            alt={selectedPlatform}
+                            width={16}
+                            height={16}
+                            className={
+                              selectedPlatform === "TWITTER"
+                                ? "dark:invert"
+                                : ""
+                            }
+                          />
+                          <span>
+                            {
+                              KOL_PLATFORM_OPTIONS.find(
+                                (p) => p.value === selectedPlatform
+                              )?.label
+                            }
+                          </span>
+                        </div>
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      {KOL_PLATFORM_OPTIONS.map((platform) => (
+                        <SelectItem
+                          key={platform.value}
+                          value={platform.value}
+                          disabled={platform.disabled}
+                          className="text-xs"
+                        >
+                          <div className="flex items-center gap-2">
+                            <Image
+                              src={platform.iconPath}
+                              alt={platform.label}
+                              width={16}
+                              height={16}
+                              className={
+                                platform.value === "TWITTER"
+                                  ? "dark:invert"
+                                  : ""
+                              }
+                            />
+                            <span>{platform.label}</span>
+                            {platform.disabled && (
+                              <span className="text-[10px] text-gray-400 ml-1">
+                                (Coming Soon)
+                              </span>
+                            )}
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              </>
             }
           >
             {activeTab === "trackingKOLs" ? (

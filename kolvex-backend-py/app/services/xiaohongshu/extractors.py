@@ -71,11 +71,7 @@ def extract_all_note_cards(page: "Page") -> List[Dict]:
                             result.author_name = authorNameEl.innerText?.trim() || '';
                         }
                         
-                        // 提取作者头像
-                        const avatarImg = el.querySelector('img.author-avatar');
-                        if (avatarImg) {
-                            result.author_avatar = avatarImg.getAttribute('src') || '';
-                        }
+                        // 注意：作者头像不再从帖子卡片提取，统一从 xhs_kols 表获取
                         
                         // 提取发布时间
                         const timeEl = el.querySelector('.time');
@@ -359,11 +355,7 @@ def extract_note_card(card: "ElementHandle") -> Optional[Dict]:
                     result.author_name = authorNameEl.innerText?.trim() || '';
                 }
                 
-                // 提取作者头像
-                const avatarImg = el.querySelector('img.author-avatar');
-                if (avatarImg) {
-                    result.author_avatar = avatarImg.getAttribute('src') || '';
-                }
+                // 注意：作者头像不再从帖子卡片提取，统一从 xhs_kols 表获取
                 
                 // 提取发布时间
                 const timeEl = el.querySelector('.time');
@@ -497,23 +489,7 @@ def extract_note_detail(page: "Page") -> Dict:
     except Exception:
         pass
 
-    # 提取作者头像 - 新版选择器
-    try:
-        avatar_selectors = [
-            "#noteContainer .avatar-item",
-            "#noteContainer img.avatar",
-            ".author-wrapper img",
-            ".author img",
-        ]
-        for selector in avatar_selectors:
-            el = page.query_selector(selector)
-            if el:
-                src = el.get_attribute("src")
-                if src and "avatar" in src.lower():
-                    data["author_avatar"] = src
-                    break
-    except Exception:
-        pass
+    # 注意：作者头像不再从帖子详情页提取，统一从 xhs_kols 表获取
 
     # 提取作者 ID（从作者链接中提取）- 关键！用于爬取 KOL 资料
     try:

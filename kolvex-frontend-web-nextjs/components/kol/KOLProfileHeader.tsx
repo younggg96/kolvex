@@ -13,12 +13,15 @@ import {
 } from "lucide-react";
 import { KOLProfile } from "@/app/api/kol/route";
 import { proxyImageUrl } from "@/lib/utils";
+import type { Platform } from "@/lib/supabase/database.types";
+import { PLATFORM_CONFIG } from "@/lib/platformConfig";
 
 // ============================================================
 // Types
 // ============================================================
 
 interface KOLProfileHeaderProps {
+  platform: Platform;
   profile: KOLProfile;
   username: string;
   isTracking: boolean;
@@ -44,17 +47,24 @@ function formatNumber(num: number): string {
 // ============================================================
 
 export default function KOLProfileHeader({
+  platform,
   profile,
   username,
   isTracking,
   isTrackLoading,
   onTrackToggle,
 }: KOLProfileHeaderProps) {
+  // For RedNote, display the first 8 characters of the username and an ellipsis
+  const userDisplayId =
+    platform === "REDNOTE"
+      ? profile.username.slice(0, 8) + "..."
+      : profile.username;
+
   return (
     <>
       {/* Banner */}
-      <div className="relative w-full h-32 sm:h-48 bg-muted overflow-hidden">
-        {profile.banner_url ? (
+      {profile.banner_url ? (
+        <div className="relative w-full h-32 sm:h-48 bg-muted overflow-hidden">
           <Image
             src={profile.banner_url}
             alt="Banner"
@@ -63,10 +73,10 @@ export default function KOLProfileHeader({
             priority
             sizes="(max-width: 768px) 100vw, 896px"
           />
-        ) : (
-          <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 to-purple-500/20" />
-        )}
-      </div>
+        </div>
+      ) : (
+        <div className="relative w-full h-12" />
+      )}
 
       <div className="px-4 pb-4">
         {/* Avatar & Edit/Track Button Row */}
@@ -87,18 +97,19 @@ export default function KOLProfileHeader({
               asChild
             >
               <a
-                href={`https://twitter.com/${profile.username}`}
+                href={`${PLATFORM_CONFIG[platform].url}/${profile.username}`}
                 target="_blank"
                 rel="noopener noreferrer"
               >
                 <Image
-                  src="/logo/x.svg"
-                  alt="X"
+                  src={PLATFORM_CONFIG[platform].icon}
+                  alt={PLATFORM_CONFIG[platform].name}
                   width={12}
                   height={12}
-                  className="opacity-70 dark:invert"
                 />
-                <span className="hidden sm:inline text-xs">View on X</span>
+                <span className="hidden sm:inline text-xs">
+                  View on {PLATFORM_CONFIG[platform].name}
+                </span>
               </a>
             </Button>
 
@@ -141,7 +152,7 @@ export default function KOLProfileHeader({
               <BadgeCheck className="h-5 w-5 text-blue-500" />
             )}
           </div>
-          <div className="text-muted-foreground">@{profile.username}</div>
+          <div className="text-muted-foreground">@{userDisplayId}</div>
         </div>
 
         {/* Bio */}
@@ -203,4 +214,3 @@ export default function KOLProfileHeader({
     </>
   );
 }
-

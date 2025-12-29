@@ -3,8 +3,7 @@ import Link from "next/link";
 
 export const metadata: Metadata = {
   title: "Terms of Service - Kolvex",
-  description:
-    "Terms of Service for Kolvex AI-powered investment platform",
+  description: "Terms of Service for Kolvex AI-powered investment platform",
 };
 
 export default function TermsPage() {
@@ -33,10 +32,9 @@ export default function TermsPage() {
               1. Acceptance of Terms
             </h2>
             <p className="text-gray-700 dark:text-gray-300 mb-4">
-              By accessing or using Kolvex (&quot;the Service&quot;),
-              you agree to be bound by these Terms of Service
-              (&quot;Terms&quot;). If you do not agree to these Terms, please do
-              not use the Service.
+              By accessing or using Kolvex (&quot;the Service&quot;), you agree
+              to be bound by these Terms of Service (&quot;Terms&quot;). If you
+              do not agree to these Terms, please do not use the Service.
             </p>
             <p className="text-gray-700 dark:text-gray-300 mb-4">
               These Terms constitute a legally binding agreement between you and
@@ -50,13 +48,13 @@ export default function TermsPage() {
               2. Description of Service
             </h2>
             <p className="text-gray-700 dark:text-gray-300 mb-4">
-              Kolvex is an AI-powered investment intelligence platform
-              that provides:
+              Kolvex is an AI-powered investment intelligence platform that
+              provides:
             </p>
             <ul className="list-disc pl-6 text-gray-700 dark:text-gray-300 mb-4 space-y-2">
               <li>
                 Social media monitoring and analysis from platforms including
-                Twitter, Reddit, YouTube, and Rednote
+                Twitter, Reddit, YouTube, and RedNote
               </li>
               <li>Key Opinion Leader (KOL) tracking and sentiment analysis</li>
               <li>Stock market data aggregation and visualization</li>
@@ -74,10 +72,10 @@ export default function TermsPage() {
                 IMPORTANT: NOT FINANCIAL ADVICE
               </p>
               <p className="text-gray-700 dark:text-gray-300 mb-4">
-                The information provided through Kolvex is for
-                informational and educational purposes only. It does not
-                constitute financial advice, investment advice, trading advice,
-                or any other sort of advice.
+                The information provided through Kolvex is for informational and
+                educational purposes only. It does not constitute financial
+                advice, investment advice, trading advice, or any other sort of
+                advice.
               </p>
               <p className="text-gray-700 dark:text-gray-300 mb-4">
                 You should not treat any of the Service&apos;s content as a
@@ -254,10 +252,9 @@ export default function TermsPage() {
               10. Indemnification
             </h2>
             <p className="text-gray-700 dark:text-gray-300 mb-4">
-              You agree to indemnify and hold harmless Kolvex AI, its
-              officers, directors, employees, and agents from any claims,
-              damages, losses, liabilities, and expenses (including attorney
-              fees) arising from:
+              You agree to indemnify and hold harmless Kolvex AI, its officers,
+              directors, employees, and agents from any claims, damages, losses,
+              liabilities, and expenses (including attorney fees) arising from:
             </p>
             <ul className="list-disc pl-6 text-gray-700 dark:text-gray-300 mb-4 space-y-2">
               <li>Your use of the Service</li>
@@ -320,8 +317,8 @@ export default function TermsPage() {
 
           <div className="mt-12 pt-8 border-t border-gray-200 dark:border-gray-800">
             <p className="text-sm text-gray-600 dark:text-gray-400">
-              By using Kolvex, you acknowledge that you have read,
-              understood, and agree to be bound by these Terms of Service.
+              By using Kolvex, you acknowledge that you have read, understood,
+              and agree to be bound by these Terms of Service.
             </p>
           </div>
         </div>

@@ -50,13 +50,13 @@ import { cn } from "@/lib/utils";
 // Social Media 子菜单
 const socialMediaSubItems = [
   {
-    title: "Twitter / X",
+    title: "X / Twitter",
     href: "/dashboard/social/twitter",
     iconSrc: "/logo/x.svg",
     disabled: false,
   },
   {
-    title: "Rednote",
+    title: "RedNote",
     href: "/dashboard/social/xiaohongshu",
     iconSrc: "/logo/rednote.svg",
     disabled: false,

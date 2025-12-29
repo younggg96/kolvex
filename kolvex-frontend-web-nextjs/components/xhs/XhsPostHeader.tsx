@@ -2,6 +2,7 @@
 
 import KOLHoverCard from "@/components/kol/KOLHoverCard";
 import { proxyImageUrl } from "@/lib/utils";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import Image from "next/image";
 
 interface XhsPostHeaderProps {
@@ -35,19 +36,16 @@ export default function XhsPostHeader({
         initialTracked={initialTracked}
         onTrackChange={onTrackChange}
       >
-        {authorAvatar ? (
-          <img
-            src={proxyImageUrl(authorAvatar)}
+        <Avatar className="w-8 h-8 flex-shrink-0 cursor-pointer">
+          <AvatarImage
+            src={proxyImageUrl(authorAvatar || "")}
             alt={displayName}
-            width={32}
-            height={32}
-            className="w-8 h-8 rounded-full flex-shrink-0 cursor-pointer object-cover"
+            className="object-cover"
           />
-        ) : (
-          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-rose-400 to-pink-500 flex items-center justify-center text-white text-xs font-bold flex-shrink-0 cursor-pointer">
+          <AvatarFallback className="bg-gradient-to-br from-rose-400 to-pink-500 text-white text-xs font-bold">
             {displayName.substring(0, 1).toUpperCase()}
-          </div>
-        )}
+          </AvatarFallback>
+        </Avatar>
       </KOLHoverCard>
 
       <div className="flex-1 min-w-0">
@@ -67,7 +65,7 @@ export default function XhsPostHeader({
           <span className="text-gray-500 dark:text-white/50 font-normal text-xs ml-1 flex items-center gap-1">
             <Image
               src="/logo/rednote.svg"
-              alt="Rednote"
+              alt="RedNote"
               width={12}
               height={12}
               className="w-3 h-3"

@@ -13,12 +13,15 @@ interface XhsPostFeedListProps {
   posts: XhsPost[];
   formatDate?: (dateString: string) => string;
   formatText?: (text: string) => React.ReactNode;
+  /** 统一使用的头像URL（用于KOL个人资料页面） */
+  profileAvatar?: string | null;
 }
 
 export default function XhsPostFeedList({
   posts,
   formatDate,
   formatText,
+  profileAvatar,
 }: XhsPostFeedListProps) {
   const [mounted, setMounted] = useState(false);
   // 跟踪哪些"非股市相关"的帖子被手动展开了
@@ -139,7 +142,9 @@ export default function XhsPostFeedList({
                     post.created_at ||
                     new Date().toISOString()
                   }
-                  authorAvatar={post.author_avatar || undefined}
+                  authorAvatar={
+                    profileAvatar || post.author_avatar || undefined
+                  }
                   onFormatDate={onFormatDate}
                   initialTracked={false}
                 />
@@ -156,7 +161,9 @@ export default function XhsPostFeedList({
                     post.created_at ||
                     new Date().toISOString()
                   }
-                  authorAvatar={post.author_avatar || undefined}
+                  authorAvatar={
+                    profileAvatar || post.author_avatar || undefined
+                  }
                   onFormatDate={onFormatDate}
                   initialTracked={false}
                 />

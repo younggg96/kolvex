@@ -52,9 +52,13 @@ def _format_kol(kol: Dict) -> Dict:
     }
 
 
-def _format_post(post: Dict) -> Dict:
+def _format_post(post: Dict, author_avatar: str = None) -> Dict:
     """
     格式化单个帖子数据
+    
+    Args:
+        post: 帖子数据
+        author_avatar: 作者头像 URL（从 xhs_kols 表获取）
     """
 
     def parse_jsonb(value):
@@ -76,7 +80,7 @@ def _format_post(post: Dict) -> Dict:
         "permalink": post.get("permalink"),
         "author_name": post.get("author_name"),
         "author_id": post.get("author_id"),
-        "author_avatar": post.get("author_avatar"),
+        "author_avatar": author_avatar,  # 从 xhs_kols 表获取
         "cover_url": post.get("cover_url"),
         "image_urls": parse_jsonb(post.get("image_urls")),
         "video_url": post.get("video_url"),
@@ -174,7 +178,7 @@ def get_xhs_kol_detail(
             # 如果 xhs_kols 表中没有，尝试从 xhs_posts 表获取作者信息
             posts_result = (
                 supabase.table("xhs_posts")
-                .select("author_id, author_name, author_avatar")
+                .select("author_id, author_name")
                 .eq("author_id", user_id)
                 .limit(1)
                 .execute()
@@ -182,13 +186,13 @@ def get_xhs_kol_detail(
 
             if posts_result.data:
                 post = posts_result.data[0]
-                # 构建一个基础的 KOL 信息
+                # 构建一个基础的 KOL 信息（头像需要从 xhs_kols 表获取，这里为空）
                 kol_data = {
                     "id": None,
                     "user_id": user_id,
                     "nickname": post.get("author_name"),
                     "red_id": None,
-                    "avatar_url": post.get("author_avatar"),
+                    "avatar_url": None,  # 头像统一从 xhs_kols 表获取
                     "description": None,
                     "location": None,
                     "gender": None,
@@ -220,7 +224,9 @@ def get_xhs_kol_detail(
                 .limit(post_limit)
                 .execute()
             )
-            posts = [_format_post(p) for p in (posts_result.data or [])]
+            # 使用 KOL 的头像作为所有帖子的作者头像
+            kol_avatar = kol_data.get("avatar_url") if kol_data else None
+            posts = [_format_post(p, kol_avatar) for p in (posts_result.data or [])]
 
         return {
             "success": True,

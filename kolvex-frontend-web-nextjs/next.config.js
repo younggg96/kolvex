@@ -37,7 +37,7 @@ const nextConfig = {
       "i.ytimg.com",
       "yt3.ggpht.com",
       "img.youtube.com",
-      // Rednote (小红书)
+      // RedNote (小红书)
       "sns-img-qc.xhscdn.com",
       "sns-img-bd.xhscdn.com",
       "sns-img-hw.xhscdn.com",
