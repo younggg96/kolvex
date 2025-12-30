@@ -58,7 +58,7 @@ export default function KOLPageClient() {
   const [activeTab, setActiveTab] = useState<"trackingKOLs" | "ranking">(
     "ranking"
   );
-  const [selectedPlatform, setSelectedPlatform] = useState<Platform>("REDNOTE");
+  const [selectedPlatform, setSelectedPlatform] = useState<Platform>("TWITTER");
 
   // Use the trackingKOLs hook to get real data from the API
   const {

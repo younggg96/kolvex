@@ -11,7 +11,10 @@ from supabase import Client
 
 from app.core.supabase import get_supabase_service
 from .client import SnapTradeClient, get_snaptrade_client
-from app.services.notification_service import NotificationService, get_notification_service
+from app.services.notification_service import (
+    NotificationService,
+    get_notification_service,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -197,7 +200,7 @@ class SnapTradeService:
         )
 
         all_positions = []
-        
+
         # ===== 持仓变化检测 =====
         # 获取旧持仓数据用于比较（只针对 equity 类型，期权暂不通知）
         old_positions_map: Dict[str, Dict[str, Any]] = {}
@@ -343,7 +346,7 @@ class SnapTradeService:
             )
 
         return all_positions
-    
+
     async def _detect_and_notify_position_changes(
         self,
         user_id: str,
@@ -352,7 +355,7 @@ class SnapTradeService:
     ) -> None:
         """
         检测持仓变化并通知粉丝
-        
+
         Args:
             user_id: 用户ID
             old_positions: 旧持仓映射 {symbol: {units, price}}
@@ -373,55 +376,63 @@ class SnapTradeService:
                             "units": pos.get("units", 0),
                             "price": pos.get("price", 0),
                         }
-            
+
             changes = []
-            
+
             # 检测买入（新增）和加仓
             for symbol, new_data in new_positions_map.items():
                 old_data = old_positions.get(symbol)
                 new_units = new_data.get("units", 0)
-                
+
                 if old_data is None:
                     # 新买入
-                    changes.append({
-                        "type": "buy",
-                        "symbol": symbol,
-                        "units_change": new_units,
-                        "current_units": new_units,
-                        "price": new_data.get("price"),
-                    })
+                    changes.append(
+                        {
+                            "type": "buy",
+                            "symbol": symbol,
+                            "units_change": new_units,
+                            "current_units": new_units,
+                            "price": new_data.get("price"),
+                        }
+                    )
                 else:
                     old_units = old_data.get("units", 0)
                     if new_units > old_units:
                         # 加仓
-                        changes.append({
-                            "type": "increase",
-                            "symbol": symbol,
-                            "units_change": new_units - old_units,
-                            "current_units": new_units,
-                            "price": new_data.get("price"),
-                        })
+                        changes.append(
+                            {
+                                "type": "increase",
+                                "symbol": symbol,
+                                "units_change": new_units - old_units,
+                                "current_units": new_units,
+                                "price": new_data.get("price"),
+                            }
+                        )
                     elif new_units < old_units:
                         # 减仓
-                        changes.append({
-                            "type": "decrease",
-                            "symbol": symbol,
-                            "units_change": old_units - new_units,
-                            "current_units": new_units,
-                            "price": new_data.get("price"),
-                        })
-            
+                        changes.append(
+                            {
+                                "type": "decrease",
+                                "symbol": symbol,
+                                "units_change": old_units - new_units,
+                                "current_units": new_units,
+                                "price": new_data.get("price"),
+                            }
+                        )
+
             # 检测卖出（完全清仓）
             for symbol, old_data in old_positions.items():
                 if symbol not in new_positions_map:
-                    changes.append({
-                        "type": "sell",
-                        "symbol": symbol,
-                        "units_change": old_data.get("units", 0),
-                        "current_units": 0,
-                        "price": old_data.get("price"),
-                    })
-            
+                    changes.append(
+                        {
+                            "type": "sell",
+                            "symbol": symbol,
+                            "units_change": old_data.get("units", 0),
+                            "current_units": 0,
+                            "price": old_data.get("price"),
+                        }
+                    )
+
             # 如果有变化，通知粉丝
             if changes:
                 # 获取用户名
@@ -432,18 +443,22 @@ class SnapTradeService:
                     .single()
                     .execute()
                 )
-                
+
                 username = "Someone you follow"
                 if user_profile.data:
-                    username = user_profile.data.get("full_name") or user_profile.data.get("username") or username
-                
+                    username = (
+                        user_profile.data.get("full_name")
+                        or user_profile.data.get("username")
+                        or username
+                    )
+
                 logger.info(f"检测到用户 {user_id} 的 {len(changes)} 个持仓变化")
                 await self.notification_service.notify_followers_of_position_changes(
                     user_id=user_id,
                     username=username,
                     changes=changes,
                 )
-                
+
         except Exception as e:
             logger.error(f"检测持仓变化失败: {e}")
 
@@ -812,10 +827,20 @@ class SnapTradeService:
                         total_pnl += pnl
                         positions_count += 1
 
+                        # 提取基础股票代码
+                        raw_symbol = pos.get("symbol") or ""
+                        if position_type == "option" and " " in raw_symbol:
+                            # 期权格式: "SRPT 260116C00030000" -> 提取 "SRPT"
+                            base_symbol = raw_symbol.split(" ")[0]
+                        else:
+                            base_symbol = raw_symbol
+
                         # 收集持仓用于排序
                         top_positions.append(
                             {
-                                "symbol": pos.get("symbol"),
+                                "symbol": base_symbol,
+                                "raw_symbol": raw_symbol,
+                                "position_type": position_type,
                                 "value": value,
                                 "pnl": pnl,
                             }
@@ -827,9 +852,9 @@ class SnapTradeService:
             # 根据隐私设置决定返回的字段
             user_data = {
                 "user_id": user_id,
-                "username": profile.data.get("username") if profile.data else None,
-                "full_name": profile.data.get("full_name") if profile.data else None,
-                "avatar_url": profile.data.get("avatar_url") if profile.data else None,
+                "username": profile.data.get("username"),
+                "full_name": profile.data.get("full_name"),
+                "avatar_url": profile.data.get("avatar_url"),
                 "last_synced_at": conn.get("last_synced_at"),
                 "total_value": total_value if privacy.get("show_total_value") else None,
                 "total_pnl": total_pnl if privacy.get("show_total_pnl") else None,

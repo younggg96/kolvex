@@ -118,7 +118,7 @@ export function UserCard({
                 {initials}
               </AvatarFallback>
             </Avatar>
-            <RankBadge rank={rank} />
+            {/* <RankBadge rank={rank} /> */}
           </div>
           <div>
             <h3 className="font-semibold text-gray-900 dark:text-white group-hover:text-primary transition-colors text-sm line-clamp-1">
@@ -224,24 +224,19 @@ export function UserCard({
       )}
       {/* Top Holdings */}
       {user.top_positions.length > 0 && (
-        <div>
-          <p className="text-[10px] text-gray-500 dark:text-white/50 uppercase tracking-wider mb-2 font-medium">
-            Top Positions
-          </p>
-          <div className="flex flex-wrap gap-1.5">
-            {user.top_positions.slice(0, 5).map((pos, i) => (
-              <div
-                key={i}
-                className="cursor-pointer flex items-center gap-1 px-2.5 py-1 bg-gray-100 dark:bg-white/5 rounded-full group/chip hover:bg-primary/60 dark:hover:bg-primary/50 dark:hover:border-primary transition-colors"
-                onClick={() => router.push(`/dashboard/stock/${pos.symbol}`)}
-              >
-                <CompanyLogo symbol={pos.symbol} name={pos.symbol} size="xs" />
-                <span className="text-xs font-medium text-gray-700 dark:text-white/80">
-                  {pos.symbol}
-                </span>
-              </div>
-            ))}
-          </div>
+        <div className="flex flex-wrap">
+          {user.top_positions.slice(0, 5).map((pos, i) => (
+            <div
+              key={i}
+              className="cursor-pointer flex items-center gap-1 px-2.5 py-1 bg-gray-100 dark:bg-white/5 rounded-full group/chip hover:bg-primary/60 dark:hover:bg-primary/50 dark:hover:border-primary transition-colors"
+              onClick={() => router.push(`/dashboard/stock/${pos.symbol}`)}
+            >
+              <CompanyLogo symbol={pos.symbol} name={pos.symbol} size="xs" />
+              <span className="text-xs font-medium text-gray-700 dark:text-white/80">
+                {pos.symbol}
+              </span>
+            </div>
+          ))}
         </div>
       )}
     </div>

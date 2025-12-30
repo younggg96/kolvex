@@ -149,6 +149,8 @@ export interface PrivacySettings {
 
 export interface TopPosition {
   symbol: string;
+  raw_symbol: string;
+  position_type: "equity" | "option";
   value: number;
   pnl: number;
 }
