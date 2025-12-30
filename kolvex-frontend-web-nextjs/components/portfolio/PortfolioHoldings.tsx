@@ -705,7 +705,7 @@ export default function PortfolioHoldings({
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
-                        <Badge variant="secondary" className="text-xs">
+                        <Badge variant="default" className="text-xs">
                           {accountPositions} positions
                         </Badge>
                         {optionPositions.length > 0 && (

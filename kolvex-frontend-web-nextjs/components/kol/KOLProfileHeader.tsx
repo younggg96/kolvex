@@ -75,7 +75,7 @@ export default function KOLProfileHeader({
           />
         </div>
       ) : (
-        <div className="relative w-full h-12" />
+        <div className="relative w-full h-16" />
       )}
 
       <div className="px-4 pb-4">
@@ -89,7 +89,7 @@ export default function KOLProfileHeader({
           </Avatar>
 
           <div className="flex gap-2 mb-1">
-            {/* View on X Button */}
+            {/* View on Platform Button */}
             <Button
               variant="outline"
               size="sm"

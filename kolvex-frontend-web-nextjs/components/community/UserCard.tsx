@@ -224,11 +224,11 @@ export function UserCard({
       )}
       {/* Top Holdings */}
       {user.top_positions.length > 0 && (
-        <div className="flex flex-wrap">
+        <div className="flex flex-wrap gap-1">
           {user.top_positions.slice(0, 5).map((pos, i) => (
             <div
               key={i}
-              className="cursor-pointer flex items-center gap-1 px-2.5 py-1 bg-gray-100 dark:bg-white/5 rounded-full group/chip hover:bg-primary/60 dark:hover:bg-primary/50 dark:hover:border-primary transition-colors"
+              className="cursor-pointer flex items-center gap-1 px-3 py-1 bg-gray-100 dark:bg-white/5 rounded-full group/chip hover:bg-primary/60 dark:hover:bg-primary/50 dark:hover:border-primary transition-colors"
               onClick={() => router.push(`/dashboard/stock/${pos.symbol}`)}
             >
               <CompanyLogo symbol={pos.symbol} name={pos.symbol} size="xs" />

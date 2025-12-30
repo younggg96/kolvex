@@ -13,7 +13,6 @@ interface XhsPostFeedListProps {
   posts: XhsPost[];
   formatDate?: (dateString: string) => string;
   formatText?: (text: string) => React.ReactNode;
-  /** 统一使用的头像URL（用于KOL个人资料页面） */
   profileAvatar?: string | null;
 }
 
@@ -24,7 +23,7 @@ export default function XhsPostFeedList({
   profileAvatar,
 }: XhsPostFeedListProps) {
   const [mounted, setMounted] = useState(false);
-  // 跟踪哪些"非股市相关"的帖子被手动展开了
+  // track which "non-stock related" posts have been manually expanded
   const [expandedNonStockPosts, setExpandedNonStockPosts] = useState<
     Set<number>
   >(new Set());
@@ -33,12 +32,12 @@ export default function XhsPostFeedList({
     setMounted(true);
   }, []);
 
-  // 检查帖子是否与股市相关
+  // check if the post is stock related
   const isStockRelated = (post: XhsPost): boolean => {
     return post.ai_is_stock_related === true;
   };
 
-  // 切换非股市相关帖子的展开状态
+  // toggle the expanded state of the non-stock related posts
   const toggleNonStockPost = (postId: number) => {
     setExpandedNonStockPosts((prev) => {
       const newSet = new Set(prev);
@@ -60,13 +59,11 @@ export default function XhsPostFeedList({
     const now = new Date();
     const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
 
-    if (diffInSeconds < 60) return `${diffInSeconds}秒前`;
-    if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}分钟前`;
-    if (diffInSeconds < 86400)
-      return `${Math.floor(diffInSeconds / 3600)}小时前`;
-    if (diffInSeconds < 604800)
-      return `${Math.floor(diffInSeconds / 86400)}天前`;
-    return date.toLocaleDateString("zh-CN");
+    if (diffInSeconds < 60) return `${diffInSeconds}s`;
+    if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m`;
+    if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h`;
+    if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)}d`;
+    return date.toLocaleDateString();
   };
 
   const defaultFormatText = (text: string) => {
@@ -101,7 +98,7 @@ export default function XhsPostFeedList({
   const onFormatDate = formatDate || defaultFormatDate;
   const onFormatText = formatText || defaultFormatText;
 
-  // 渲染折叠的非股市相关帖子提示
+  // render the collapsed non-stock related post hint
   const renderCollapsedNonStockPost = (post: XhsPost) => {
     return (
       <div className="py-1">
@@ -132,7 +129,7 @@ export default function XhsPostFeedList({
         return (
           <div key={post.id}>
             {shouldCollapse ? (
-              // 折叠状态：只显示头部和提示
+              // collapsed state: only show the header and the hint
               <>
                 <XhsPostHeader
                   authorName={post.author_name || ""}
@@ -151,7 +148,7 @@ export default function XhsPostFeedList({
                 {renderCollapsedNonStockPost(post)}
               </>
             ) : (
-              // 正常显示或已展开状态
+              // normal state or expanded state
               <>
                 <XhsPostHeader
                   authorName={post.author_name || ""}
@@ -167,7 +164,7 @@ export default function XhsPostFeedList({
                   onFormatDate={onFormatDate}
                   initialTracked={false}
                 />
-                {/* 如果是展开的非股市相关帖子，显示收起按钮 */}
+                {/* if the post is expanded and non-stock related, show the collapse button */}
                 {!stockRelated && isExpanded && (
                   <div className="py-1">
                     <Button

@@ -293,7 +293,6 @@ export default function KOLProfilePageClient({
           ) : profile ? (
             <div className="mx-auto w-full pb-8">
               {/* Profile Header */}
-              {JSON.stringify(platform)}
               <KOLProfileHeader
                 platform={platform}
                 profile={profile}

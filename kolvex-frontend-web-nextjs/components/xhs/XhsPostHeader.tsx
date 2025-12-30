@@ -24,7 +24,7 @@ export default function XhsPostHeader({
   initialTracked = false,
   onTrackChange,
 }: XhsPostHeaderProps) {
-  const displayName = authorName || authorId || "小红书用户";
+  const displayName = authorName || authorId || "RedNote User";
 
   return (
     <div className="flex items-center gap-3 mb-3">

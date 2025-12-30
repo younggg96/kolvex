@@ -143,7 +143,6 @@ function AppSidebar({ onNavigate }: AppSidebarProps) {
   const { state, toggleSidebar, isInitialized } = useSidebar();
   const [isMounted, setIsMounted] = useState(false);
   const [socialOpen, setSocialOpen] = useState(() => {
-    // 默认展开如果当前在 social 路由下
     return pathname.startsWith("/dashboard/social");
   });
 
@@ -272,14 +271,19 @@ function AppSidebar({ onNavigate }: AppSidebarProps) {
                                           alt={subItem.title}
                                           width={16}
                                           height={16}
-                                          className="size-4"
+                                          className={cn(
+                                            "size-4",
+                                            subItem.title === "X / Twitter"
+                                              ? "dark:invert"
+                                              : ""
+                                          )}
                                         />
                                         <span
                                           className={cn(
                                             "truncate",
                                             subItem.href === pathname
                                               ? "text-primary"
-                                              : "text-gray-600 dark:text-white/50"
+                                              : "text-gray-600 dark:text-white"
                                           )}
                                         >
                                           {subItem.title}

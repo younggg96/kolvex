@@ -1,6 +1,7 @@
 import { Metadata } from "next";
 import KOLProfilePageClient from "@/components/kol/KOLProfilePageClient";
 import type { Platform } from "@/lib/supabase/database.types";
+import { PLATFORM_CONFIG } from "@/lib/platformConfig";
 
 interface PageProps {
   params: Promise<{ username: string }>;
@@ -14,10 +15,13 @@ export async function generateMetadata({
   const { username } = await params;
   const { platform } = await searchParams;
 
-  const platformName = platform === "REDNOTE" ? "RedNote" : "Twitter";
+  const platformName = PLATFORM_CONFIG[platform as Platform].name;
+  const usernameDisplay =
+    platform === "REDNOTE" ? username.slice(0, 8) + "..." : username;
+
   return {
-    title: `@${username} - ${platformName} KOL Profile | Kolvex`,
-    description: `View profile and posts from @${username} on ${platformName}`,
+    title: `@${usernameDisplay} - ${platformName} KOL Profile | Kolvex`,
+    description: `View profile and posts from @${usernameDisplay} on ${platformName}`,
   };
 }
 
