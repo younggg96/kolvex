@@ -76,7 +76,6 @@ export async function GET(request: NextRequest) {
           collected_count: xhsProfile.collected_count || 0,
           avatar_url: xhsProfile.avatar_url,
           banner_url: null,
-          is_active: true,
           is_verified: xhsProfile.is_verified || false,
           verification_type: xhsProfile.verified_type,
           verified_info: xhsProfile.verified_info,
