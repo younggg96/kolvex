@@ -1,7 +1,7 @@
 // Database types for Supabase
 
 export type NotificationMethod = "EMAIL" | "MESSAGE";
-export type Platform = "TWITTER" | "REDDIT" | "YOUTUBE" | "REDNOTE";
+export type Platform = "twitter" | "reddit" | "youtube" | "xiaohongshu";
 export type Theme = "LIGHT" | "DARK" | "SYSTEM";
 export type Membership = "FREE" | "PRO" | "ENTERPRISE";
 

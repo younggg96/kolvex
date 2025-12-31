@@ -6,7 +6,7 @@ const API_BASE_URL =
   process.env.NEXT_PUBLIC_BACKEND_API_URL || "http://localhost:8000";
 const API_PREFIX = "/api/v1";
 
-export type Platform = "TWITTER" | "REDDIT" | "YOUTUBE" | "REDNOTE";
+export type Platform = "twitter" | "reddit" | "youtube" | "xiaohongshu";
 
 export interface TrackedKOL {
   id: string;

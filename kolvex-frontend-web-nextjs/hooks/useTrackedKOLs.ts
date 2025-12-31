@@ -61,7 +61,7 @@ export function useTrackedKOLs(): UseTrackedKOLsReturn {
       setError(null);
 
       // Fetch from API to get enriched data with KOL profiles
-      const response = await fetch("/api/my-tracked-kols", {
+      const response = await fetch("/api/tracking-kols", {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
@@ -119,7 +119,7 @@ export function useTrackedKOLs(): UseTrackedKOLsReturn {
       }
 
       try {
-        const response = await fetch("/api/my-tracked-kols", {
+        const response = await fetch("/api/tracking-kols", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -154,7 +154,7 @@ export function useTrackedKOLs(): UseTrackedKOLsReturn {
       }
 
       try {
-        const url = new URL("/api/my-tracked-kols", window.location.origin);
+        const url = new URL("/api/tracking-kols", window.location.origin);
         url.searchParams.set("kol_id", kolId);
         url.searchParams.set("platform", platform);
 

@@ -1,6 +1,7 @@
 // Types for Trending Stocks components
 
 export interface TopAuthor {
+  platform: string;
   username: string;
   displayName?: string;
   avatarUrl: string;

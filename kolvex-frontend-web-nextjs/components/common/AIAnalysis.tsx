@@ -29,10 +29,20 @@ export default function AIAnalysis({
   }
 
   // Get badge config based on signal action
-  const getSignalConfig = (action?: string | null) => {
+  const getSignalConfig = (action?: string | null | object) => {
     if (!action || action === "null") return null;
 
-    const normalizedAction = action.toLowerCase();
+    // Handle case where action might be an object
+    let actionStr: string;
+    if (typeof action === "object") {
+      actionStr = (action as { action?: string }).action || "";
+    } else {
+      actionStr = action;
+    }
+    
+    if (!actionStr) return null;
+
+    const normalizedAction = actionStr.toLowerCase();
 
     switch (normalizedAction) {
       case "buy":

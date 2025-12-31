@@ -224,9 +224,10 @@ export default function PostList({ className }: { className?: string }) {
 
   const getApiEndpoint = (): string => {
     if (selectedTab === "tracking") {
-      return `/api/kol-subscriptions/posts?platform=TWITTER`;
+      return `/api/kol-subscriptions/posts?platform=twitter`;
     }
-    return "/api/tweets";
+    // 默认只获取 Twitter 平台的帖子
+    return "/api/tweets?platform=twitter";
   };
 
   const fetchPosts = async (forceRefresh: boolean = false) => {

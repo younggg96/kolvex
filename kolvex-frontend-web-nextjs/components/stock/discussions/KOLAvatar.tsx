@@ -47,7 +47,7 @@ export default function KOLAvatar({ kol }: KOLAvatarProps) {
       kolId={kol.username}
       screenName={kol.username}
       profileImageUrl={kol.avatar_url || undefined}
-      platform="TWITTER"
+      platform="twitter"
     >
       {avatarContent}
     </KOLHoverCard>

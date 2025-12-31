@@ -15,9 +15,9 @@ export async function generateMetadata({
   const { username } = await params;
   const { platform } = await searchParams;
 
-  const platformName = PLATFORM_CONFIG[platform as Platform].name;
+  const platformName = PLATFORM_CONFIG[platform as Platform]?.name || "";
   const usernameDisplay =
-    platform === "REDNOTE" ? username.slice(0, 8) + "..." : username;
+    platform === "xiaohongshu" ? username.slice(0, 8) + "..." : username;
 
   return {
     title: `@${usernameDisplay} - ${platformName} KOL Profile | Kolvex`,

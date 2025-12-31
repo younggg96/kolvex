@@ -73,9 +73,14 @@ export async function GET(request: NextRequest) {
 
     // Fetch tweets from backend API with multiple usernames
     const usernamesParam = kolIds.join(",");
-    const backendUrl = `${NEXT_PUBLIC_BACKEND_API_URL}/api/v1/kol-tweets/?page=${page}&page_size=${limit}&usernames=${encodeURIComponent(
+    let backendUrl = `${NEXT_PUBLIC_BACKEND_API_URL}/api/v1/kol-tweets/?page=${page}&page_size=${limit}&usernames=${encodeURIComponent(
       usernamesParam
     )}`;
+
+    // Add platform filter if specified
+    if (platform) {
+      backendUrl += `&platform=${platform}`;
+    }
 
     const response = await fetch(backendUrl, {
       headers: {

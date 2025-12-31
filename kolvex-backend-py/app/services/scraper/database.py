@@ -1,5 +1,6 @@
 """
 Supabase 数据库操作
+支持统一的 kol_profiles 和 kol_tweets 表结构
 """
 
 import os
@@ -18,6 +19,9 @@ except ImportError:
     Client = None
 
 from .config import DEFAULT_TWEET_MAX_AGE_DAYS
+
+# 平台标识
+PLATFORM_TWITTER = "twitter"
 
 
 def get_supabase_client() -> Optional[Client]:
@@ -155,12 +159,18 @@ def insert_tweet(
         media_urls_json = json.dumps(media_urls) if media_urls else None
 
         data = {
+            # === 平台信息 ===
+            "platform": PLATFORM_TWITTER,
+            "platform_post_id": tweet_data.get("tweet_id"),  # Twitter 推文 ID
+            "author_platform_id": tweet_data["username"],  # Twitter 用户名作为平台 ID
+            # === 基础信息 ===
             "username": tweet_data["username"],
             "tweet_text": tweet_data["text"],
             "tweet_hash": tweet_hash,
+            "post_type": "retweet" if tweet_data.get("is_repost") else "tweet",
             "created_at": tweet_data.get("created_at"),
             "permalink": tweet_data.get("permalink"),
-            # 新增字段
+            # 头像和媒体
             "avatar_url": tweet_data.get("avatar_url"),
             "media_urls": media_urls_json,
             "is_repost": tweet_data.get("is_repost", False),
@@ -270,7 +280,7 @@ def _perform_ai_analysis(tweet_text: str) -> Optional[Dict]:
 
 def upsert_kol_profile(client: Client, profile_data: Dict) -> bool:
     """
-    插入或更新 KOL profile 到 Supabase 的 kol_profiles 表
+    插入或更新 KOL profile 到统一的 kol_profiles 表
 
     Args:
         client: Supabase 客户端
@@ -280,9 +290,14 @@ def upsert_kol_profile(client: Client, profile_data: Dict) -> bool:
         bool: 操作成功返回 True
     """
     try:
+        username = profile_data["username"]
+        
         data = {
+            # === 平台信息 ===
+            "platform": PLATFORM_TWITTER,
+            "platform_user_id": username,  # Twitter 用户名作为平台 ID
             # 核心身份信息
-            "username": profile_data["username"],
+            "username": username,
             "rest_id": profile_data.get("rest_id"),
             "display_name": profile_data.get("display_name"),
             # 认证状态
@@ -305,8 +320,25 @@ def upsert_kol_profile(client: Client, profile_data: Dict) -> bool:
             "is_active": True,
             "updated_at": datetime.now(timezone.utc).isoformat(),
         }
-        # 使用 upsert，如果 username 已存在则更新
-        client.table("kol_profiles").upsert(data, on_conflict="username").execute()
+        
+        # 检查是否已存在
+        existing = (
+            client.table("kol_profiles")
+            .select("id")
+            .eq("platform", PLATFORM_TWITTER)
+            .eq("platform_user_id", username)
+            .limit(1)
+            .execute()
+        )
+        
+        if existing.data:
+            # 更新现有记录
+            client.table("kol_profiles").update(data).eq("platform", PLATFORM_TWITTER).eq("platform_user_id", username).execute()
+        else:
+            # 插入新记录
+            data["created_at"] = datetime.now(timezone.utc).isoformat()
+            client.table("kol_profiles").insert(data).execute()
+        
         return True
     except Exception as e:
         print(f"⚠️ 保存 KOL profile 失败: {e}")

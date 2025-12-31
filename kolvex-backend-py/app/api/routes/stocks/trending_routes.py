@@ -25,7 +25,7 @@ async def fetch_all_tweets_with_tickers(supabase) -> list:
         response = (
             supabase.table("kol_tweets")
             .select(
-                "ai_tickers, username, avatar_url, ai_sentiment, ai_sentiment_confidence, "
+                "ai_tickers, username, avatar_url, platform, ai_sentiment, ai_sentiment_confidence, "
                 "like_count, retweet_count, reply_count, created_at"
             )
             .range(offset, offset + batch_size - 1)
@@ -161,6 +161,7 @@ async def get_trending_stocks(
                             "sentiment_sum": 0,
                             "sentiment_count": 0,
                             "avatar_url": row.get("avatar_url"),
+                            "platform": row.get("platform") or "twitter",
                         }
                     author_stat = stats["author_stats"][username]
                     author_stat["tweet_count"] += 1
@@ -228,9 +229,7 @@ async def get_trending_stocks(
             if search_term.startswith("$"):
                 search_term = search_term[1:]
             filtered_stats = {
-                k: v
-                for k, v in filtered_stats.items()
-                if search_term in k.upper()
+                k: v for k, v in filtered_stats.items() if search_term in k.upper()
             }
 
         # 构建结果列表
@@ -272,6 +271,7 @@ async def get_trending_stocks(
                         display_name=profile.get("display_name"),
                         avatar_url=author_data["avatar_url"]
                         or profile.get("avatar_url"),
+                        platform=author_data.get("platform") or "twitter",
                         tweet_count=author_data["tweet_count"],
                         sentiment=author_sentiment,
                     )
@@ -280,7 +280,7 @@ async def get_trending_stocks(
             stocks_list.append(
                 TrendingStock(
                     ticker=ticker,
-                    platform="TWITTER",
+                    platform="twitter",
                     mention_count=stats["mention_count"],
                     sentiment_score=(
                         round(avg_sentiment, 2) if avg_sentiment is not None else None

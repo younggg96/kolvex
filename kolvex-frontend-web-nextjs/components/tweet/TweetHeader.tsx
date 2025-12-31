@@ -24,7 +24,7 @@ export default function TweetHeader({
   initialTracked = false,
   onTrackChange,
   kolId,
-  platform = "TWITTER",
+  platform = "twitter",
 }: TweetHeaderProps) {
   return (
     <div className="flex items-center gap-3 mb-3">

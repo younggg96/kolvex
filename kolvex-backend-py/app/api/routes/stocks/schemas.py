@@ -19,6 +19,7 @@ class TopAuthor(BaseModel):
     username: str
     display_name: Optional[str] = None
     avatar_url: Optional[str] = None
+    platform: str = "twitter"  # twitter, xiaohongshu, reddit, youtube
     tweet_count: int = 0
     sentiment: Optional[str] = None  # bullish, bearish, neutral
 
@@ -28,7 +29,7 @@ class TrendingStock(BaseModel):
 
     ticker: str
     company_name: Optional[str] = None
-    platform: str = "TWITTER"
+    platform: str = "twitter"
     mention_count: int = 0
     sentiment_score: Optional[float] = None  # -100 to 100
     trending_score: Optional[float] = None
@@ -204,4 +205,3 @@ class StockTrackedCheckResponse(BaseModel):
     symbol: str
     is_tracked: bool
     stock_id: Optional[str] = None
-

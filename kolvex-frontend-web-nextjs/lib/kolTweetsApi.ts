@@ -1,7 +1,14 @@
 /**
  * KOL Tweets API
- * 获取 KOL 推文数据
+ * 获取 KOL 推文/帖子数据
+ * 支持多平台统一数据结构 (Twitter, Xiaohongshu, Reddit, YouTube)
  */
+
+// ============================================================
+// 平台类型
+// ============================================================
+
+export type Platform = "twitter" | "xiaohongshu" | "reddit" | "youtube";
 
 // ============================================================
 // 类型定义
@@ -36,25 +43,40 @@ export interface IsStockRelated {
 
 export interface KOLTweet {
   id: number;
+  // === 平台信息 ===
+  platform: Platform;
+  platform_post_id: string | null;
+  // === 作者信息 ===
   username: string;
   display_name: string | null;
   kol_description: string | null;
   avatar_url: string | null;
+  author_platform_id: string | null;
+  // === 内容 ===
+  title: string | null; // 小红书帖子标题
   tweet_text: string;
+  post_type: string; // tweet, retweet, note, video
   created_at: string | null;
   permalink: string | null;
-  // 媒体
+  // === 媒体 ===
+  cover_url: string | null; // 小红书封面图
   media_urls: MediaItem[] | null;
-  // 转发信息
+  video_url: string | null;
+  // === 转发信息 ===
   is_repost: boolean;
   original_author: string | null;
-  // 互动数据
+  // === 互动数据 ===
   like_count: number;
   retweet_count: number;
   reply_count: number;
   bookmark_count: number;
   views_count: number;
-  // 元数据
+  collect_count: number; // 小红书收藏数
+  share_count: number; // 小红书分享数
+  // === 标签 ===
+  tags: string[];
+  search_keyword: string | null;
+  // === 元数据 ===
   scraped_at: string | null;
   category: string | null;
 
@@ -63,8 +85,6 @@ export interface KOLTweet {
   sentiment: SentimentAnalysis | null;
   // 股票代码
   tickers: string[];
-  // AI 标签
-  tags: string[];
   // 投资信号
   trading_signal: TradingSignal | null;
   // 摘要
@@ -85,12 +105,43 @@ export interface KOLTweetsResponse {
 }
 
 export interface KOLProfile {
+  id: number;
+  // === 平台信息 ===
+  platform: Platform;
+  platform_user_id: string | null;
+  // === 基础信息 ===
   username: string;
   display_name: string | null;
   description: string | null;
-  category: string | null;
   avatar_url: string | null;
-  last_scraped_at: string | null;
+  banner_url: string | null;
+  bio: string | null;
+  location: string | null;
+  website: string | null;
+  profile_url: string | null;
+  // === 认证信息 ===
+  is_verified: boolean;
+  verification_type: string | null;
+  verified_info: string | null;
+  // === 互动数据 ===
+  followers_count: number;
+  following_count: number;
+  posts_count: number;
+  likes_count: number;
+  collected_count: number;
+  // === Twitter 特有 ===
+  rest_id: string | null;
+  join_date: string | null;
+  // === 小红书特有 ===
+  red_id: string | null;
+  gender: string | null;
+  tags: string[] | null;
+  category: string | null;
+  // === 时间 ===
+  scraped_at: string | null;
+  created_at: string | null;
+  updated_at: string | null;
+  last_scraped_at: string | null; // 向后兼容
 }
 
 export interface KOLProfilesResponse {
@@ -120,9 +171,13 @@ export interface Category {
 export interface KOLTweetsParams {
   page?: number;
   page_size?: number;
+  platform?: Platform; // twitter, xiaohongshu, reddit, youtube
   category?: string;
   username?: string;
   search?: string;
+  sentiment?: "bullish" | "bearish" | "neutral";
+  stock_related?: boolean;
+  ticker?: string;
 }
 
 // ============================================================
@@ -261,7 +316,7 @@ async function fetchAPI<T>(
 // ============================================================
 
 /**
- * 获取 KOL 推文列表
+ * 获取 KOL 推文/帖子列表（支持多平台）
  */
 export async function getKOLTweets(
   params: KOLTweetsParams = {}
@@ -270,22 +325,45 @@ export async function getKOLTweets(
 
   if (params.page) searchParams.set("page", String(params.page));
   if (params.page_size) searchParams.set("page_size", String(params.page_size));
+  if (params.platform) searchParams.set("platform", params.platform);
   if (params.category) searchParams.set("category", params.category);
   if (params.username) searchParams.set("username", params.username);
   if (params.search) searchParams.set("search", params.search);
+  if (params.sentiment) searchParams.set("sentiment", params.sentiment);
+  if (params.stock_related !== undefined) searchParams.set("stock_related", String(params.stock_related));
+  if (params.ticker) searchParams.set("ticker", params.ticker);
 
   const query = searchParams.toString();
   return fetchAPI<KOLTweetsResponse>(`/kol-tweets${query ? `?${query}` : ""}`);
 }
 
+export interface KOLProfilesParams {
+  platform?: Platform;
+  category?: string;
+  sort_by?: string;
+  sort_order?: "asc" | "desc";
+}
+
 /**
- * 获取 KOL 列表
+ * 获取 KOL 列表（支持多平台）
  */
 export async function getKOLProfiles(
-  category?: string
+  params: KOLProfilesParams | string = {}
 ): Promise<KOLProfilesResponse> {
-  const query = category ? `?category=${category}` : "";
-  return fetchAPI<KOLProfilesResponse>(`/kol-profiles${query}`);
+  // 向后兼容：如果传入字符串，当作 category 处理
+  if (typeof params === "string") {
+    const query = params ? `?category=${params}` : "";
+    return fetchAPI<KOLProfilesResponse>(`/kol-profiles${query}`);
+  }
+  
+  const searchParams = new URLSearchParams();
+  if (params.platform) searchParams.set("platform", params.platform);
+  if (params.category) searchParams.set("category", params.category);
+  if (params.sort_by) searchParams.set("sort_by", params.sort_by);
+  if (params.sort_order) searchParams.set("sort_order", params.sort_order);
+  
+  const query = searchParams.toString();
+  return fetchAPI<KOLProfilesResponse>(`/kol-profiles${query ? `?${query}` : ""}`);
 }
 
 /**
@@ -303,17 +381,21 @@ export async function getCategories(): Promise<{ categories: Category[] }> {
 }
 
 /**
- * 获取特定用户的推文
+ * 获取特定用户的推文/帖子（支持多平台）
  */
 export async function getUserTweets(
   username: string,
   page: number = 1,
-  pageSize: number = 20
+  pageSize: number = 20,
+  platform?: Platform
 ): Promise<KOLTweetsResponse> {
+  const searchParams = new URLSearchParams();
+  searchParams.set("page", String(page));
+  searchParams.set("page_size", String(pageSize));
+  if (platform) searchParams.set("platform", platform);
+  
   return fetchAPI<KOLTweetsResponse>(
-    `/kol-tweets/user/${encodeURIComponent(
-      username
-    )}?page=${page}&page_size=${pageSize}`
+    `/kol-tweets/user/${encodeURIComponent(username)}?${searchParams.toString()}`
   );
 }
 

@@ -46,42 +46,42 @@ const RECOMMENDED_KOLS = [
   {
     id: "elonmusk",
     name: "Elon Musk",
-    platform: "TWITTER" as Platform,
+    platform: "twitter" as Platform,
     avatarUrl:
       "https://pbs.twimg.com/profile_images/1815749056821346304/jS8I28PL_400x400.jpg",
   },
   {
     id: "chamath",
     name: "Chamath Palihapitiya",
-    platform: "TWITTER" as Platform,
+    platform: "twitter" as Platform,
     avatarUrl:
       "https://pbs.twimg.com/profile_images/1321163587679784960/0ZxKlEKB_400x400.jpg",
   },
   {
     id: "cathiewood",
     name: "Cathie Wood",
-    platform: "TWITTER" as Platform,
+    platform: "twitter" as Platform,
     avatarUrl:
       "https://pbs.twimg.com/profile_images/1441868928388685825/H0648g7Y_400x400.jpg",
   },
   {
     id: "naval",
     name: "Naval Ravikant",
-    platform: "TWITTER" as Platform,
+    platform: "twitter" as Platform,
     avatarUrl:
       "https://pbs.twimg.com/profile_images/1417848948168839170/xP5RuZjw_400x400.jpg",
   },
   {
     id: "balajis",
     name: "Balaji Srinivasan",
-    platform: "TWITTER" as Platform,
+    platform: "twitter" as Platform,
     avatarUrl:
       "https://pbs.twimg.com/profile_images/1589981011931873280/xmTPr3M2_400x400.jpg",
   },
   {
     id: "jimcramer",
     name: "Jim Cramer",
-    platform: "TWITTER" as Platform,
+    platform: "twitter" as Platform,
     avatarUrl:
       "https://pbs.twimg.com/profile_images/1488927851287318530/bGVcnK0c_400x400.jpg",
   },

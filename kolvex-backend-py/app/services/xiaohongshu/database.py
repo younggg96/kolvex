@@ -1,5 +1,6 @@
 """
 小红书帖子数据库操作
+统一写入 kol_profiles 和 kol_tweets 表（使用 platform='xiaohongshu'）
 """
 
 import os
@@ -22,6 +23,9 @@ except ImportError:
     Client = None
 
 from .config import DEFAULT_POST_MAX_AGE_DAYS
+
+# 平台标识
+PLATFORM_XHS = "xiaohongshu"
 
 # ============================================================
 # 图片下载和上传相关
@@ -234,7 +238,7 @@ def compute_post_hash(note_id: str, content: str) -> str:
 
 def post_exists(client: Client, post_hash: str) -> bool:
     """
-    检查帖子是否已存在于数据库中
+    检查帖子是否已存在于数据库中（统一表）
 
     Args:
         client: Supabase 客户端
@@ -245,9 +249,9 @@ def post_exists(client: Client, post_hash: str) -> bool:
     """
     try:
         result = (
-            client.table("xhs_posts")
+            client.table("kol_tweets")
             .select("id")
-            .eq("post_hash", post_hash)
+            .eq("tweet_hash", post_hash)
             .limit(1)
             .execute()
         )
@@ -259,7 +263,7 @@ def post_exists(client: Client, post_hash: str) -> bool:
 
 def note_id_exists(client: Client, note_id: str) -> bool:
     """
-    检查笔记 ID 是否已存在
+    检查笔记 ID 是否已存在（统一表）
 
     Args:
         client: Supabase 客户端
@@ -270,9 +274,10 @@ def note_id_exists(client: Client, note_id: str) -> bool:
     """
     try:
         result = (
-            client.table("xhs_posts")
+            client.table("kol_tweets")
             .select("id")
-            .eq("note_id", note_id)
+            .eq("platform", PLATFORM_XHS)
+            .eq("platform_post_id", note_id)
             .limit(1)
             .execute()
         )
@@ -290,7 +295,7 @@ def insert_post(
     upload_images: bool = True,
 ) -> Tuple[bool, Optional[int]]:
     """
-    插入帖子到 Supabase 数据库（如果不存在且不太旧），并进行 AI 分析
+    插入帖子到统一的 kol_tweets 表（如果不存在且不太旧），并进行 AI 分析
 
     Args:
         client: Supabase 客户端
@@ -381,30 +386,33 @@ def insert_post(
                 return None
             return str(value)[:max_len] if value else None
 
+        # 统一表字段映射
         data = {
-            # 基础信息（按数据库字段长度截断）
-            "note_id": safe_str(note_id, 64),
-            "post_hash": post_hash,
+            # === 平台信息 ===
+            "platform": PLATFORM_XHS,
+            "platform_post_id": safe_str(note_id, 255),
+            "tweet_hash": post_hash,
+            # === 作者信息 ===
+            "username": safe_str(post_data.get("author_name"), 255),
+            "author_platform_id": safe_str(post_data.get("author_id"), 255),
+            # === 内容 ===
             "title": post_data.get("title"),
-            "content": content,
-            "author_name": safe_str(post_data.get("author_name"), 255),
-            "author_id": safe_str(post_data.get("author_id"), 64),
-            # 注意：author_avatar 不再保存在帖子中，统一从 xhs_kols 表获取
-            "cover_url": post_data.get("cover_url"),
-            "image_urls": image_urls_json,
-            "video_url": post_data.get("video_url"),
-            "note_type": safe_str(post_data.get("note_type", "normal"), 20),
+            "tweet_text": content,
+            "post_type": safe_str(post_data.get("note_type", "note"), 20),
             "permalink": post_data.get("permalink"),
-            # 互动数据
+            # === 媒体 ===
+            "cover_url": post_data.get("cover_url"),
+            "media_urls": image_urls_json,
+            "video_url": post_data.get("video_url"),
+            # === 互动数据 ===
             "like_count": post_data.get("like_count", 0),
             "collect_count": post_data.get("collect_count", 0),
-            "comment_count": post_data.get("comment_count", 0),
+            "reply_count": post_data.get("comment_count", 0),  # comment_count -> reply_count
             "share_count": post_data.get("share_count", 0),
-            # 标签
+            # === 标签 ===
             "tags": tags_json,
-            # 搜索关键词
             "search_keyword": safe_str(post_data.get("search_keyword"), 100),
-            # 时间
+            # === 时间 ===
             "created_at": post_data.get("created_at"),
             "scraped_at": datetime.now(timezone.utc).isoformat(),
         }
@@ -419,7 +427,7 @@ def insert_post(
             
             data.update(
                 {
-                    # 情感分析（VARCHAR(20)）
+                    # 情感分析
                     "ai_sentiment": safe_str(
                         ai_analysis.get("sentiment", {}).get("sentiment"), 20
                     ),
@@ -432,7 +440,7 @@ def insert_post(
                     # 股票代码和标签 (JSONB)
                     "ai_tickers": ai_analysis.get("tickers", []),
                     "ai_tags": ai_analysis.get("tags", []),
-                    # 摘要和投资信号（VARCHAR(20)）
+                    # 摘要和投资信号
                     "ai_summary": ai_analysis.get("summary"),
                     "ai_trading_signal": safe_str(trading_signal, 20),
                     # 股市相关性
@@ -441,13 +449,14 @@ def insert_post(
                     ),
                     "ai_stock_related_confidence": stock_related_data.get("confidence"),
                     "ai_stock_related_reason": stock_related_data.get("reason"),
-                    # 元数据（VARCHAR(50)）
+                    # 元数据
                     "ai_analyzed_at": ai_analysis.get("analyzed_at"),
                     "ai_model": safe_str(ai_analysis.get("model"), 50),
                 }
             )
 
-        result = client.table("xhs_posts").insert(data).execute()
+        # 写入统一的 kol_tweets 表
+        result = client.table("kol_tweets").insert(data).execute()
         # 获取插入的帖子 ID
         post_id = result.data[0]["id"] if result.data else None
         return True, post_id
@@ -514,20 +523,30 @@ def _perform_ai_analysis(content: str, title: str = "") -> Optional[Dict]:
 
 def get_stats(client: Client) -> Dict:
     """
-    获取数据库统计信息
+    获取数据库统计信息（统一表）
 
     Returns:
         Dict: 包含总数、各关键词数量等统计信息
     """
     try:
         # 总帖子数
-        total_result = client.table("xhs_posts").select("id", count="exact").execute()
+        total_result = (
+            client.table("kol_tweets")
+            .select("id", count="exact")
+            .eq("platform", PLATFORM_XHS)
+            .execute()
+        )
         total = total_result.count or 0
 
         # 按搜索关键词统计
         by_keyword = {}
         try:
-            result = client.table("xhs_posts").select("search_keyword").execute()
+            result = (
+                client.table("kol_tweets")
+                .select("search_keyword")
+                .eq("platform", PLATFORM_XHS)
+                .execute()
+            )
             for row in result.data:
                 keyword = row.get("search_keyword") or "未知"
                 by_keyword[keyword] = by_keyword.get(keyword, 0) + 1
@@ -538,8 +557,9 @@ def get_stats(client: Client) -> Dict:
         stock_related_count = 0
         try:
             result = (
-                client.table("xhs_posts")
+                client.table("kol_tweets")
                 .select("id", count="exact")
+                .eq("platform", PLATFORM_XHS)
                 .eq("ai_is_stock_related", True)
                 .execute()
             )
@@ -566,7 +586,7 @@ def get_recent_posts(
     stock_related_only: bool = False,
 ) -> List[Dict]:
     """
-    获取最近的帖子
+    获取最近的帖子（统一表）
 
     Args:
         client: Supabase 客户端
@@ -578,7 +598,12 @@ def get_recent_posts(
         List[Dict]: 帖子列表
     """
     try:
-        query = client.table("xhs_posts").select("*").order("scraped_at", desc=True)
+        query = (
+            client.table("kol_tweets")
+            .select("*")
+            .eq("platform", PLATFORM_XHS)
+            .order("scraped_at", desc=True)
+        )
 
         if keyword:
             query = query.eq("search_keyword", keyword)
@@ -587,20 +612,58 @@ def get_recent_posts(
             query = query.eq("ai_is_stock_related", True)
 
         result = query.limit(limit).execute()
-        return result.data or []
+        
+        # 转换字段名以保持向后兼容
+        posts = []
+        for post in result.data or []:
+            posts.append({
+                "id": post.get("id"),
+                "note_id": post.get("platform_post_id"),
+                "post_hash": post.get("tweet_hash"),
+                "title": post.get("title"),
+                "content": post.get("tweet_text"),
+                "note_type": post.get("post_type"),
+                "permalink": post.get("permalink"),
+                "author_name": post.get("username"),
+                "author_id": post.get("author_platform_id"),
+                "cover_url": post.get("cover_url"),
+                "image_urls": post.get("media_urls"),
+                "video_url": post.get("video_url"),
+                "like_count": post.get("like_count", 0),
+                "collect_count": post.get("collect_count", 0),
+                "comment_count": post.get("reply_count", 0),
+                "share_count": post.get("share_count", 0),
+                "tags": post.get("tags"),
+                "search_keyword": post.get("search_keyword"),
+                "ai_sentiment": post.get("ai_sentiment"),
+                "ai_sentiment_confidence": post.get("ai_sentiment_confidence"),
+                "ai_sentiment_reasoning": post.get("ai_sentiment_reasoning"),
+                "ai_tickers": post.get("ai_tickers"),
+                "ai_tags": post.get("ai_tags"),
+                "ai_summary": post.get("ai_summary"),
+                "ai_trading_signal": post.get("ai_trading_signal"),
+                "ai_is_stock_related": post.get("ai_is_stock_related"),
+                "ai_stock_related_confidence": post.get("ai_stock_related_confidence"),
+                "ai_stock_related_reason": post.get("ai_stock_related_reason"),
+                "ai_analyzed_at": post.get("ai_analyzed_at"),
+                "ai_model": post.get("ai_model"),
+                "created_at": post.get("created_at"),
+                "scraped_at": post.get("scraped_at"),
+            })
+        return posts
     except Exception as e:
         print(f"⚠️ 获取帖子失败: {e}")
         return []
 
 
 # ============================================================
-# KOL 相关数据库操作
+# KOL 相关数据库操作（统一使用 kol_profiles 表）
 # ============================================================
 
 
 def kol_exists(client: Client, user_id: str) -> bool:
     """
-    检查 KOL 是否已存在于数据库中
+    检查 KOL 是否已存在于数据库中（统一表）
 
     Args:
         client: Supabase 客户端
@@ -611,9 +674,10 @@ def kol_exists(client: Client, user_id: str) -> bool:
     """
     try:
         result = (
-            client.table("xhs_kols")
+            client.table("kol_profiles")
             .select("id")
-            .eq("user_id", user_id)
+            .eq("platform", PLATFORM_XHS)
+            .eq("platform_user_id", user_id)
             .limit(1)
             .execute()
         )
@@ -630,7 +694,7 @@ def upsert_kol(
     source_note_id: str = None,
 ) -> Tuple[bool, Optional[int]]:
     """
-    插入或更新 KOL 信息到数据库
+    插入或更新 KOL 信息到统一的 kol_profiles 表
 
     Args:
         client: Supabase 客户端
@@ -653,37 +717,48 @@ def upsert_kol(
                 return None
             return str(value)[:max_len] if value else None
 
-        # 准备数据
+        # 统一表字段映射
         data = {
-            "user_id": safe_str(user_id, 64),
-            "nickname": safe_str(kol_data.get("nickname"), 255),
-            "red_id": safe_str(kol_data.get("red_id"), 64),
+            # === 平台信息 ===
+            "platform": PLATFORM_XHS,
+            "platform_user_id": safe_str(user_id, 255),
+            # === 基础信息 ===
+            "username": safe_str(kol_data.get("red_id") or user_id, 255),
+            "display_name": safe_str(kol_data.get("nickname"), 255),
             "avatar_url": kol_data.get("avatar_url"),
-            "description": kol_data.get("description"),
-            "location": safe_str(kol_data.get("location"), 100),
-            "gender": safe_str(kol_data.get("gender"), 10),
+            "bio": kol_data.get("description"),
+            "location": safe_str(kol_data.get("location"), 255),
+            "profile_url": kol_data.get("profile_url"),
+            # === 认证信息 ===
             "is_verified": kol_data.get("is_verified", False),
-            "verified_type": safe_str(kol_data.get("verified_type"), 50),
+            "verification_type": safe_str(kol_data.get("verified_type"), 50),
             "verified_info": kol_data.get("verified_info"),
+            # === 互动数据 ===
             "followers_count": kol_data.get("followers_count", 0),
             "following_count": kol_data.get("following_count", 0),
+            "posts_count": kol_data.get("notes_count", 0),
             "likes_count": kol_data.get("likes_count", 0),
-            "notes_count": kol_data.get("notes_count", 0),
             "collected_count": kol_data.get("collected_count", 0),
-            "profile_url": kol_data.get("profile_url"),
+            # === 小红书特有字段 ===
+            "red_id": safe_str(kol_data.get("red_id"), 64),
+            "gender": safe_str(kol_data.get("gender"), 10),
             "tags": json.dumps(kol_data.get("tags", [])) if kol_data.get("tags") else None,
             "category": safe_str(kol_data.get("category"), 100),
             "source_keyword": safe_str(source_keyword, 100),
             "source_note_id": safe_str(source_note_id, 64),
+            # === 状态 ===
+            "is_active": True,
+            "updated_at": datetime.now(timezone.utc).isoformat(),
         }
 
         # 检查是否已存在
         if kol_exists(client, user_id):
             # 更新现有记录
             result = (
-                client.table("xhs_kols")
+                client.table("kol_profiles")
                 .update(data)
-                .eq("user_id", user_id)
+                .eq("platform", PLATFORM_XHS)
+                .eq("platform_user_id", user_id)
                 .execute()
             )
             kol_id = result.data[0]["id"] if result.data else None
@@ -692,7 +767,8 @@ def upsert_kol(
         else:
             # 插入新记录
             data["scraped_at"] = datetime.now(timezone.utc).isoformat()
-            result = client.table("xhs_kols").insert(data).execute()
+            data["created_at"] = datetime.now(timezone.utc).isoformat()
+            result = client.table("kol_profiles").insert(data).execute()
             kol_id = result.data[0]["id"] if result.data else None
             print(f"   ✅ 新增 KOL: {kol_data.get('nickname', user_id)}")
             return True, kol_id
@@ -706,7 +782,7 @@ def upsert_kol(
 
 def get_kol_by_user_id(client: Client, user_id: str) -> Optional[Dict]:
     """
-    根据用户 ID 获取 KOL 信息
+    根据用户 ID 获取 KOL 信息（统一表）
 
     Args:
         client: Supabase 客户端
@@ -717,13 +793,40 @@ def get_kol_by_user_id(client: Client, user_id: str) -> Optional[Dict]:
     """
     try:
         result = (
-            client.table("xhs_kols")
+            client.table("kol_profiles")
             .select("*")
-            .eq("user_id", user_id)
+            .eq("platform", PLATFORM_XHS)
+            .eq("platform_user_id", user_id)
             .limit(1)
             .execute()
         )
-        return result.data[0] if result.data else None
+        if result.data:
+            # 转换字段名以保持向后兼容
+            kol = result.data[0]
+            return {
+                "id": kol.get("id"),
+                "user_id": kol.get("platform_user_id"),
+                "nickname": kol.get("display_name"),
+                "red_id": kol.get("red_id"),
+                "avatar_url": kol.get("avatar_url"),
+                "description": kol.get("bio"),
+                "location": kol.get("location"),
+                "gender": kol.get("gender"),
+                "is_verified": kol.get("is_verified"),
+                "verified_type": kol.get("verification_type"),
+                "verified_info": kol.get("verified_info"),
+                "followers_count": kol.get("followers_count", 0),
+                "following_count": kol.get("following_count", 0),
+                "likes_count": kol.get("likes_count", 0),
+                "notes_count": kol.get("posts_count", 0),
+                "collected_count": kol.get("collected_count", 0),
+                "profile_url": kol.get("profile_url"),
+                "tags": kol.get("tags"),
+                "category": kol.get("category"),
+                "scraped_at": kol.get("scraped_at"),
+                "updated_at": kol.get("updated_at"),
+            }
+        return None
     except Exception as e:
         print(f"⚠️ 获取 KOL 失败: {e}")
         return None
@@ -736,7 +839,7 @@ def get_top_kols(
     min_followers: int = 0,
 ) -> List[Dict]:
     """
-    获取粉丝数最多的 KOL
+    获取粉丝数最多的 KOL（统一表）
 
     Args:
         client: Supabase 客户端
@@ -749,8 +852,9 @@ def get_top_kols(
     """
     try:
         query = (
-            client.table("xhs_kols")
+            client.table("kol_profiles")
             .select("*")
+            .eq("platform", PLATFORM_XHS)
             .gte("followers_count", min_followers)
             .order("followers_count", desc=True)
         )
@@ -759,7 +863,34 @@ def get_top_kols(
             query = query.eq("category", category)
 
         result = query.limit(limit).execute()
-        return result.data or []
+        
+        # 转换字段名以保持向后兼容
+        kols = []
+        for kol in result.data or []:
+            kols.append({
+                "id": kol.get("id"),
+                "user_id": kol.get("platform_user_id"),
+                "nickname": kol.get("display_name"),
+                "red_id": kol.get("red_id"),
+                "avatar_url": kol.get("avatar_url"),
+                "description": kol.get("bio"),
+                "location": kol.get("location"),
+                "gender": kol.get("gender"),
+                "is_verified": kol.get("is_verified"),
+                "verified_type": kol.get("verification_type"),
+                "verified_info": kol.get("verified_info"),
+                "followers_count": kol.get("followers_count", 0),
+                "following_count": kol.get("following_count", 0),
+                "likes_count": kol.get("likes_count", 0),
+                "notes_count": kol.get("posts_count", 0),
+                "collected_count": kol.get("collected_count", 0),
+                "profile_url": kol.get("profile_url"),
+                "tags": kol.get("tags"),
+                "category": kol.get("category"),
+                "scraped_at": kol.get("scraped_at"),
+                "updated_at": kol.get("updated_at"),
+            })
+        return kols
     except Exception as e:
         print(f"⚠️ 获取 KOL 列表失败: {e}")
         return []
@@ -771,7 +902,7 @@ def get_kol_posts(
     limit: int = 20,
 ) -> List[Dict]:
     """
-    获取某个 KOL 的帖子
+    获取某个 KOL 的帖子（统一表）
 
     Args:
         client: Supabase 客户端
@@ -783,14 +914,45 @@ def get_kol_posts(
     """
     try:
         result = (
-            client.table("xhs_posts")
+            client.table("kol_tweets")
             .select("*")
-            .eq("author_id", user_id)
+            .eq("platform", PLATFORM_XHS)
+            .eq("author_platform_id", user_id)
             .order("created_at", desc=True)
             .limit(limit)
             .execute()
         )
-        return result.data or []
+        
+        # 转换字段名以保持向后兼容
+        posts = []
+        for post in result.data or []:
+            posts.append({
+                "id": post.get("id"),
+                "note_id": post.get("platform_post_id"),
+                "post_hash": post.get("tweet_hash"),
+                "title": post.get("title"),
+                "content": post.get("tweet_text"),
+                "note_type": post.get("post_type"),
+                "permalink": post.get("permalink"),
+                "author_name": post.get("username"),
+                "author_id": post.get("author_platform_id"),
+                "cover_url": post.get("cover_url"),
+                "image_urls": post.get("media_urls"),
+                "video_url": post.get("video_url"),
+                "like_count": post.get("like_count", 0),
+                "collect_count": post.get("collect_count", 0),
+                "comment_count": post.get("reply_count", 0),
+                "share_count": post.get("share_count", 0),
+                "tags": post.get("tags"),
+                "search_keyword": post.get("search_keyword"),
+                "ai_sentiment": post.get("ai_sentiment"),
+                "ai_tickers": post.get("ai_tickers"),
+                "ai_summary": post.get("ai_summary"),
+                "ai_is_stock_related": post.get("ai_is_stock_related"),
+                "created_at": post.get("created_at"),
+                "scraped_at": post.get("scraped_at"),
+            })
+        return posts
     except Exception as e:
         print(f"⚠️ 获取 KOL 帖子失败: {e}")
         return []
@@ -798,20 +960,26 @@ def get_kol_posts(
 
 def get_kol_stats(client: Client) -> Dict:
     """
-    获取 KOL 统计信息
+    获取 KOL 统计信息（统一表）
 
     Returns:
         Dict: 统计信息
     """
     try:
         # 总 KOL 数
-        total_result = client.table("xhs_kols").select("id", count="exact").execute()
+        total_result = (
+            client.table("kol_profiles")
+            .select("id", count="exact")
+            .eq("platform", PLATFORM_XHS)
+            .execute()
+        )
         total = total_result.count or 0
 
         # 认证 KOL 数
         verified_result = (
-            client.table("xhs_kols")
+            client.table("kol_profiles")
             .select("id", count="exact")
+            .eq("platform", PLATFORM_XHS)
             .eq("is_verified", True)
             .execute()
         )
@@ -820,7 +988,12 @@ def get_kol_stats(client: Client) -> Dict:
         # 按分类统计
         by_category = {}
         try:
-            result = client.table("xhs_kols").select("category").execute()
+            result = (
+                client.table("kol_profiles")
+                .select("category")
+                .eq("platform", PLATFORM_XHS)
+                .execute()
+            )
             for row in result.data:
                 cat = row.get("category") or "未分类"
                 by_category[cat] = by_category.get(cat, 0) + 1

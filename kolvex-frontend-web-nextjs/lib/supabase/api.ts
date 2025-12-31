@@ -54,4 +54,3 @@ export async function addKOL(params: {
     return { success: false, error: error.message };
   }
 }
-

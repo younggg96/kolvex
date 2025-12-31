@@ -6,17 +6,8 @@ import TweetHeader from "@/components/tweet/TweetHeader";
 import { TwitterContent } from "@/components/tweet/content";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
-import type { Platform } from "@/lib/supabase/database.types";
 import { AlertCircle } from "lucide-react";
-import { cn } from "@/lib/utils";
 import Link from "next/link";
-
-// Helper function to map post platform to database Platform type
-const mapPlatform = (platform: string): Platform | undefined => {
-  // Since we only support TWITTER now, and backend might not return platform field in KOLTweet
-  // We default to TWITTER for now or check if there's a platform field
-  return "TWITTER";
-};
 
 interface PostFeedListProps {
   posts: KOLTweet[];
@@ -167,7 +158,7 @@ export default function PostFeedList({
                   profileImageUrl={post.avatar_url || undefined}
                   onFormatDate={onFormatDate}
                   kolId={post.username}
-                  platform={mapPlatform("x")}
+                  platform={post.platform}
                   initialTracked={false}
                 />
                 {renderCollapsedNonStockPost(post)}
@@ -181,7 +172,7 @@ export default function PostFeedList({
                   profileImageUrl={post.avatar_url || undefined}
                   onFormatDate={onFormatDate}
                   kolId={post.username}
-                  platform={mapPlatform("x")}
+                  platform={post.platform}
                   initialTracked={false}
                 />
                 {/* if the post is expanded and non-stock related, show the collapse button */}

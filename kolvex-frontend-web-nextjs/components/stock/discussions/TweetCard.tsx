@@ -53,7 +53,7 @@ export default function TweetCard({ tweet }: TweetCardProps) {
         profileImageUrl={tweet.avatar_url || undefined}
         onFormatDate={formatDate}
         kolId={tweet.username}
-        platform="TWITTER"
+        platform="twitter"
         initialTracked={false}
       />
       <TwitterContent

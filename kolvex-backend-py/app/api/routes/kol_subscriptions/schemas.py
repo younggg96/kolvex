@@ -7,8 +7,8 @@ from typing import Optional, Literal
 from datetime import datetime
 
 
-# Platform 类型
-Platform = Literal["TWITTER", "REDDIT", "YOUTUBE", "REDNOTE"]
+# Platform 类型 (统一使用小写)
+Platform = Literal["twitter", "reddit", "youtube", "xiaohongshu"]
 
 
 class KOLSubscriptionCreate(BaseModel):

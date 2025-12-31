@@ -3,13 +3,13 @@
  * Centralized configuration for all social media platforms
  */
 
-export type Platform = "TWITTER" | "REDDIT" | "YOUTUBE" | "REDNOTE";
+export type Platform = "twitter" | "reddit" | "youtube" | "xiaohongshu";
 export type PlatformLowercase =
   | "twitter"
   | "x"
   | "reddit"
   | "youtube"
-  | "rednote";
+  | "xiaohongshu";
 
 export interface PlatformConfig {
   id: string;
@@ -24,34 +24,34 @@ export interface PlatformConfig {
  * Platform configuration with uppercase keys (for database/API)
  */
 export const PLATFORM_CONFIG: Record<Platform, PlatformConfig> = {
-  TWITTER: {
-    id: "TWITTER",
+  twitter: {
+    id: "twitter",
     name: "X",
     icon: "/logo/x.svg",
     color: "#1DA1F2",
     colorClass: "text-black dark:text-white",
     url: "https://twitter.com",
   },
-  REDDIT: {
-    id: "REDDIT",
+  reddit: {
+    id: "reddit",
     name: "Reddit",
     icon: "/logo/reddit.svg",
     color: "#FF4500",
     colorClass: "text-orange-500",
     url: "https://reddit.com",
   },
-  YOUTUBE: {
-    id: "YOUTUBE",
+  youtube: {
+    id: "youtube",
     name: "YouTube",
     icon: "/logo/youtube.svg",
     color: "#FF0000",
     colorClass: "text-red-500",
     url: "https://youtube.com",
   },
-  REDNOTE: {
-    id: "REDNOTE",
-    name: "RedNote",
-    icon: "/logo/rednote.svg",
+  xiaohongshu: {
+    id: "xiaohongshu",
+    name: "Xiaohongshu",
+    icon: "/logo/xiaohongshu.svg",
     color: "#FE2C55",
     colorClass: "text-pink-500",
     url: "https://xiaohongshu.com",
@@ -65,11 +65,11 @@ export const PLATFORM_CONFIG_LOWERCASE: Record<
   PlatformLowercase,
   PlatformConfig
 > = {
-  twitter: PLATFORM_CONFIG.TWITTER,
-  x: PLATFORM_CONFIG.TWITTER,
-  reddit: PLATFORM_CONFIG.REDDIT,
-  youtube: PLATFORM_CONFIG.YOUTUBE,
-  rednote: PLATFORM_CONFIG.REDNOTE,
+  twitter: PLATFORM_CONFIG.twitter,
+  x: PLATFORM_CONFIG.twitter,
+  reddit: PLATFORM_CONFIG.reddit,
+  youtube: PLATFORM_CONFIG.youtube,
+  xiaohongshu: PLATFORM_CONFIG.xiaohongshu,
 } as const;
 
 /**
@@ -78,10 +78,10 @@ export const PLATFORM_CONFIG_LOWERCASE: Record<
 export function getPlatformConfig(
   platform: string
 ): PlatformConfig | undefined {
-  const upperKey = platform.toUpperCase() as Platform;
   const lowerKey = platform.toLowerCase() as PlatformLowercase;
-
-  return PLATFORM_CONFIG[upperKey] || PLATFORM_CONFIG_LOWERCASE[lowerKey];
+  return (
+    PLATFORM_CONFIG[lowerKey as Platform] || PLATFORM_CONFIG_LOWERCASE[lowerKey]
+  );
 }
 
 /**
@@ -94,7 +94,7 @@ export const PLATFORM_TAB_OPTIONS = [
     icon: "",
   },
   {
-    value: "x",
+    value: "twitter",
     label: "X",
     iconPath: "/logo/x.svg",
   },
@@ -109,9 +109,9 @@ export const PLATFORM_TAB_OPTIONS = [
     iconPath: "/logo/youtube.svg",
   },
   {
-    value: "rednote",
-    label: "RedNote",
-    iconPath: "/logo/rednote.svg",
+    value: "xiaohongshu",
+    label: "Xiaohongshu",
+    iconPath: "/logo/xiaohongshu.svg",
   },
 ] as const;
 

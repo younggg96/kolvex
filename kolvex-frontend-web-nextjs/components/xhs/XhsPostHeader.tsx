@@ -24,7 +24,7 @@ export default function XhsPostHeader({
   initialTracked = false,
   onTrackChange,
 }: XhsPostHeaderProps) {
-  const displayName = authorName || authorId || "RedNote User";
+  const displayName = authorName || authorId || "Xiaohongshu User";
 
   return (
     <div className="flex items-center gap-3 mb-3">
@@ -32,7 +32,7 @@ export default function XhsPostHeader({
         kolId={authorId}
         screenName={displayName}
         profileImageUrl={authorAvatar || undefined}
-        platform="REDNOTE"
+        platform="xiaohongshu"
         initialTracked={initialTracked}
         onTrackChange={onTrackChange}
       >
@@ -54,7 +54,7 @@ export default function XhsPostHeader({
             kolId={authorId}
             screenName={displayName}
             profileImageUrl={authorAvatar || undefined}
-            platform="REDNOTE"
+            platform="xiaohongshu"
             initialTracked={initialTracked}
             onTrackChange={onTrackChange}
           >
@@ -64,8 +64,8 @@ export default function XhsPostHeader({
           </KOLHoverCard>
           <span className="text-gray-500 dark:text-white/50 font-normal text-xs ml-1 flex items-center gap-1">
             <Image
-              src="/logo/rednote.svg"
-              alt="RedNote"
+              src="/logo/xiaohongshu.svg"
+              alt="Xiaohongshu"
               width={12}
               height={12}
               className="w-3 h-3"

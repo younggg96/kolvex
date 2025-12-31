@@ -1,17 +1,32 @@
 // KOL API types and utilities
+// 支持多平台统一数据结构
 
-export type Platform = "twitter" | "reddit" | "youtube" | "rednote";
+export type Platform = "twitter" | "xiaohongshu" | "reddit" | "youtube";
 
 export interface KOL {
   id: string;
   name: string;
   username: string;
   platform: Platform;
+  platformUserId?: string; // 平台特定用户 ID
   followers: number;
   description?: string;
   avatarUrl?: string;
+  bannerUrl?: string;
+  location?: string;
+  website?: string;
+  profileUrl?: string;
+  isVerified?: boolean;
+  verificationType?: string;
   isTracking: boolean;
   notify?: boolean;
+  // 小红书特有字段
+  redId?: string;
+  gender?: string;
+  likesCount?: number;
+  collectedCount?: number;
+  category?: string;
+  tags?: string[];
 }
 
 export interface CreateKOLInput {
@@ -41,6 +56,12 @@ export const platformConfig: Record<Platform, PlatformConfig> = {
     color: "#1DA1F2",
     colorClass: "text-black dark:text-white",
   },
+  xiaohongshu: {
+    name: "小红书",
+    icon: "/logo/xiaohongshu.svg",
+    color: "#FE2C55",
+    colorClass: "text-pink-500",
+  },
   reddit: {
     name: "Reddit",
     icon: "/logo/reddit.svg",
@@ -52,12 +73,6 @@ export const platformConfig: Record<Platform, PlatformConfig> = {
     icon: "/logo/youtube.svg",
     color: "#FF0000",
     colorClass: "text-red-500",
-  },
-  rednote: {
-    name: "RedNote",
-    icon: "/logo/rednote.svg",
-    color: "#FE2C55",
-    colorClass: "text-pink-500",
   },
 };
 
@@ -78,11 +93,7 @@ export function formatFollowers(count: number): string {
  * Update KOL (placeholder for API call)
  * This function is a placeholder and should be replaced with actual API call
  */
-export async function updateKOL(
-  id: string,
-  data: Partial<KOL>
-): Promise<void> {
+export async function updateKOL(id: string, data: Partial<KOL>): Promise<void> {
   // This is a placeholder - the actual tracking is done through trackKOL/untrackKOL
   console.log("updateKOL called with:", id, data);
 }
-

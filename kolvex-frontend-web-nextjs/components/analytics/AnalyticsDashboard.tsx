@@ -83,6 +83,13 @@ export function AnalyticsDashboard({ className }: AnalyticsDashboardProps) {
 
   useEffect(() => {
     fetchData();
+
+    // 自动刷新：每 5 分钟更新一次数据
+    const interval = setInterval(() => {
+      fetchData();
+    }, 5 * 60 * 1000); // 5 分钟
+
+    return () => clearInterval(interval);
   }, [days]);
 
   if (error) {

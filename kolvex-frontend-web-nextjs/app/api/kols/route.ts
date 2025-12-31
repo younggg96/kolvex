@@ -4,7 +4,7 @@ import { createServerSupabaseClient } from "@/lib/supabase/server";
 export const dynamic = "force-dynamic";
 
 // Platform type matching the database
-export type Platform = "TWITTER" | "REDDIT" | "YOUTUBE" | "REDNOTE";
+export type Platform = "twitter" | "reddit" | "youtube" | "xiaohongshu";
 
 export interface Kol {
   id: string;
@@ -106,8 +106,8 @@ export async function GET(request: NextRequest) {
     let filteredProfiles = profiles;
     if (platform) {
       filteredProfiles = profiles.filter((p: any) => {
-        // Currently only TWITTER is supported from backend
-        return platform === "TWITTER";
+        // Currently only twitter is supported from backend
+        return platform === "twitter";
       });
     }
 
@@ -130,7 +130,7 @@ export async function GET(request: NextRequest) {
 
         return {
           id: profile.id.toString(),
-          platform: "TWITTER" as Platform,
+          platform: "twitter" as Platform,
           kol_id: profile.username,
           username: profile.username,
           display_name: profile.display_name || profile.username,

@@ -163,7 +163,9 @@ export function TrendingStockItem({
                       key={idx}
                       className="flex items-center gap-2 px-2 py-1 rounded-md hover:bg-primary/10 transition-colors cursor-pointer"
                       onClick={() => {
-                        router.push(`/dashboard/kol/${author.username}`);
+                        router.push(
+                          `/dashboard/kol/${author.username}?platform=${author.platform}`
+                        );
                       }}
                     >
                       <Avatar className="w-7 h-7">

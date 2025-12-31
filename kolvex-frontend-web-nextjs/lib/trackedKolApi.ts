@@ -35,7 +35,7 @@ interface TrackedKOLsResponse {
  * Track a KOL (add to subscriptions)
  */
 export async function trackKOL(params: TrackKOLParams): Promise<void> {
-  const response = await fetch("/api/my-tracked-kols", {
+  const response = await fetch("/api/tracking-kols", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -60,7 +60,7 @@ export async function untrackKOL(
   kolId: string,
   platform: Platform
 ): Promise<void> {
-  const url = new URL("/api/my-tracked-kols", window.location.origin);
+  const url = new URL("/api/tracking-kols", window.location.origin);
   url.searchParams.set("kol_id", kolId);
   url.searchParams.set("platform", platform);
 
@@ -82,7 +82,7 @@ export async function isKOLTracked(
   platform: Platform
 ): Promise<boolean> {
   try {
-    const response = await fetch(`/api/my-tracked-kols?platform=${platform}`);
+    const response = await fetch(`/api/tracking-kols?platform=${platform}`);
 
     if (!response.ok) {
       return false;
@@ -103,7 +103,7 @@ export async function isKOLTracked(
 export async function getTrackedKOLs(
   platform?: Platform
 ): Promise<TrackedKOL[]> {
-  const url = new URL("/api/my-tracked-kols", window.location.origin);
+  const url = new URL("/api/tracking-kols", window.location.origin);
   if (platform) {
     url.searchParams.set("platform", platform);
   }
@@ -129,7 +129,7 @@ export async function updateKOLNotification(
   platform: Platform,
   notify: boolean
 ): Promise<void> {
-  const response = await fetch("/api/my-tracked-kols", {
+  const response = await fetch("/api/tracking-kols", {
     method: "PATCH",
     headers: {
       "Content-Type": "application/json",

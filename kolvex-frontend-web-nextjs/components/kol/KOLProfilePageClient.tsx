@@ -170,7 +170,7 @@ export default function KOLProfilePageClient({
       setProfileData(data);
 
       // Handle posts based on platform
-      if (platform === "REDNOTE") {
+      if (platform === "xiaohongshu") {
         setXhsPosts(data.recent_posts || []);
         setHasMore((data.recent_posts?.length || 0) >= PAGE_SIZE);
       } else {
@@ -304,7 +304,7 @@ export default function KOLProfilePageClient({
 
               {/* Posts Feed */}
               <div className="min-h-[200px] p-4">
-                {platform === "REDNOTE" ? (
+                {platform === "xiaohongshu" ? (
                   // Xiaohongshu posts
                   xhsPosts.length === 0 ? (
                     <div className="mt-8">

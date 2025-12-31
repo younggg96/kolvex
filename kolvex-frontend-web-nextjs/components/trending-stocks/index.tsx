@@ -218,6 +218,7 @@ export default function TrendingStocksTable({
                   trendingScore={stock.trending_score ?? undefined}
                   uniqueAuthors={stock.unique_authors_count}
                   topAuthors={stock.top_authors?.map((a) => ({
+                    platform: a.platform,
                     username: a.username,
                     displayName: a.display_name ?? undefined,
                     avatarUrl: a.avatar_url ?? "",

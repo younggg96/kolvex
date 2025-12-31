@@ -1,6 +1,7 @@
 /**
  * 小红书 API
  * 获取小红书帖子数据
+ * 使用统一的 kol_tweets 和 kol_profiles 表
  */
 
 // ============================================================
@@ -9,7 +10,10 @@
 
 export interface XhsPost {
   id: number;
-  note_id: string;
+  // 平台信息
+  platform?: string;
+  platform_post_id?: string;
+  note_id: string; // 向后兼容
   post_hash: string | null;
   title: string | null;
   content: string | null;
@@ -38,7 +42,7 @@ export interface XhsPost {
   ai_tickers: string[];
   ai_tags: string[];
   ai_summary: string | null;
-  ai_trading_signal: string | null;
+  ai_trading_signal: string | { action?: string } | null;
   ai_is_stock_related: boolean;
   ai_stock_related_confidence: number;
   ai_stock_related_reason: string | null;
@@ -115,11 +119,15 @@ async function fetchAPI<T>(
 
 /**
  * 获取小红书帖子列表
+ * 使用统一的 /tweets 端点，通过 platform=xiaohongshu 过滤
  */
 export async function getXhsPosts(
   params: XhsPostsParams = {}
 ): Promise<XhsPostsResponse> {
   const searchParams = new URLSearchParams();
+  
+  // 固定使用 xiaohongshu 平台
+  searchParams.set("platform", "xiaohongshu");
 
   if (params.limit) searchParams.set("limit", String(params.limit));
   if (params.offset) searchParams.set("offset", String(params.offset));
@@ -130,7 +138,18 @@ export async function getXhsPosts(
     searchParams.set("stock_related", String(params.stock_related));
 
   const query = searchParams.toString();
-  return fetchAPI<XhsPostsResponse>(`/xhs-posts${query ? `?${query}` : ""}`);
+  
+  // 调用统一的 tweets 端点
+  const response = await fetchAPI<any>(`/tweets?${query}`);
+  
+  // 转换响应格式以保持兼容性
+  return {
+    posts: response.tweets || [],
+    total: response.total || 0,
+    has_more: response.has_more || false,
+    offset: params.offset || 0,
+    limit: params.limit || 20,
+  };
 }
 
 // ============================================================

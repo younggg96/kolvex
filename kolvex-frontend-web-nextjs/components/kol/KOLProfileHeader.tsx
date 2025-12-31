@@ -54,9 +54,9 @@ export default function KOLProfileHeader({
   isTrackLoading,
   onTrackToggle,
 }: KOLProfileHeaderProps) {
-  // For RedNote, display the first 8 characters of the username and an ellipsis
+  // For xiaohongshu, display the first 8 characters of the username and an ellipsis
   const userDisplayId =
-    platform === "REDNOTE"
+    platform === "xiaohongshu"
       ? profile.username.slice(0, 8) + "..."
       : profile.username;
 
@@ -97,18 +97,23 @@ export default function KOLProfileHeader({
               asChild
             >
               <a
-                href={`${PLATFORM_CONFIG[platform].url}/${profile.username}`}
+                href={`${PLATFORM_CONFIG[platform]?.url}/${profile.username}`}
                 target="_blank"
                 rel="noopener noreferrer"
               >
                 <Image
-                  src={PLATFORM_CONFIG[platform].icon}
-                  alt={PLATFORM_CONFIG[platform].name}
+                  src={PLATFORM_CONFIG[platform]?.icon}
+                  alt={PLATFORM_CONFIG[platform]?.name}
                   width={12}
                   height={12}
+                  className={`w-3 h-3 ${
+                    platform === "twitter" ? "dark:invert" : ""
+                  }`}
                 />
-                <span className="hidden sm:inline text-xs">
-                  View on {PLATFORM_CONFIG[platform].name}
+                <span
+                  className={`hidden sm:inline text-xs ${PLATFORM_CONFIG[platform]?.colorClass}`}
+                >
+                  View on {PLATFORM_CONFIG[platform]?.name}
                 </span>
               </a>
             </Button>

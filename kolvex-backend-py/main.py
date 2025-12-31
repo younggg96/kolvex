@@ -82,6 +82,92 @@ def setup_scheduler():
             replace_existing=True,
         )
 
+        # ============================================================
+        # 任务 3: 每 2 小时抓取 KOL 推文/帖子
+        # ============================================================
+        def scheduled_scrape_kol_tweets():
+            """定时任务：抓取所有 KOL 的最新推文"""
+            from app.services.scraper import BatchKOLScraper, load_cookies, get_supabase_client
+            from app.services.xiaohongshu import XiaohongshuScraper
+            from app.services.xiaohongshu.scraper import load_cookies as load_xhs_cookies
+
+            logger.info("⏰ [SCRAPE] 定时任务触发: 开始抓取 KOL 推文/帖子")
+            
+            try:
+                supabase = get_supabase_client()
+                if not supabase:
+                    logger.warning("❌ [SCRAPE] Supabase 未连接，跳过抓取")
+                    return
+                
+                # 获取活跃的 KOL 列表
+                profiles_result = (
+                    supabase.table("kol_profiles")
+                    .select("username, platform, platform_user_id")
+                    .eq("is_active", True)
+                    .execute()
+                )
+                kol_profiles = profiles_result.data or []
+                
+                if not kol_profiles:
+                    logger.info("📭 [SCRAPE] 没有活跃的 KOL")
+                    return
+                
+                # 按平台分组
+                twitter_kols = []
+                xhs_kols = []
+                
+                for profile in kol_profiles:
+                    plat = profile.get("platform", "twitter")
+                    if plat == "twitter":
+                        twitter_kols.append(profile["username"])
+                    elif plat == "xiaohongshu":
+                        xhs_kols.append({
+                            "username": profile["username"],
+                            "user_id": profile.get("platform_user_id"),
+                        })
+                
+                # 抓取 Twitter
+                if twitter_kols and load_cookies():
+                    logger.info(f"🐦 [SCRAPE] 抓取 Twitter: {len(twitter_kols)} 个 KOL")
+                    try:
+                        scraper = BatchKOLScraper(headless=True, max_posts_per_user=5)
+                        stats = scraper.batch_scrape(usernames=twitter_kols)
+                        logger.info(f"✅ [SCRAPE] Twitter 完成: {stats}")
+                    except Exception as e:
+                        logger.error(f"❌ [SCRAPE] Twitter 抓取失败: {e}")
+                
+                # 抓取小红书
+                if xhs_kols and load_xhs_cookies():
+                    logger.info(f"📕 [SCRAPE] 抓取小红书: {len(xhs_kols)} 个 KOL")
+                    try:
+                        xhs_scraper = XiaohongshuScraper(headless=True)
+                        for kol in xhs_kols[:10]:  # 限制每次最多 10 个
+                            try:
+                                xhs_scraper.scrape_user_posts(
+                                    user_id=kol["user_id"],
+                                    username=kol["username"],
+                                    max_posts=5,
+                                )
+                            except Exception as e:
+                                logger.warning(f"⚠️ [SCRAPE] 小红书 {kol['username']} 失败: {e}")
+                        xhs_scraper.close()
+                        logger.info("✅ [SCRAPE] 小红书完成")
+                    except Exception as e:
+                        logger.error(f"❌ [SCRAPE] 小红书抓取失败: {e}")
+                
+                logger.info("✅ [SCRAPE] 定时抓取任务完成")
+                
+            except Exception as e:
+                logger.error(f"❌ [SCRAPE] 定时任务执行失败: {e}")
+
+        scheduler.add_job(
+            scheduled_scrape_kol_tweets,
+            IntervalTrigger(hours=2),
+            id="scrape_kol_tweets",
+            name="抓取 KOL 推文/帖子",
+            replace_existing=True,
+        )
+
         scheduler.start()
         logger.info("✅ 定时任务调度器已启动")
 
@@ -101,6 +187,11 @@ def setup_scheduler():
             bulk_news_scheduler_status.is_enabled = True
             bulk_news_scheduler_status.next_run_at = bulk_job.next_run_time
             logger.info(f"📅 [BULK] 下次执行时间: {bulk_job.next_run_time}")
+
+        # 更新抓取任务状态
+        scrape_job = scheduler.get_job("scrape_kol_tweets")
+        if scrape_job:
+            logger.info(f"📅 [SCRAPE] 下次执行时间: {scrape_job.next_run_time}")
 
     except ImportError:
         logger.warning("⚠️ APScheduler 未安装，定时任务功能不可用")

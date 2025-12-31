@@ -56,9 +56,9 @@ const socialMediaSubItems = [
     disabled: false,
   },
   {
-    title: "RedNote",
+    title: "Xiaohongshu",
     href: "/dashboard/social/xiaohongshu",
-    iconSrc: "/logo/rednote.svg",
+    iconSrc: "/logo/xiaohongshu.svg",
     disabled: false,
   },
   {

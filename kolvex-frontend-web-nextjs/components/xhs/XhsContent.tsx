@@ -39,14 +39,31 @@ export default function XhsContent({ post, onFormatText }: XhsContentProps) {
     : null;
 
   // 构建 tradingSignal 对象
-  const tradingSignal = post.ai_trading_signal
-    ? {
-        action: post.ai_trading_signal as "buy" | "sell" | "hold" | null,
+  // ai_trading_signal 可能是字符串（旧格式）或对象（新格式 JSONB）
+  const buildTradingSignal = () => {
+    if (!post.ai_trading_signal) return null;
+    
+    // 如果是对象格式 {"action": "buy"}
+    if (typeof post.ai_trading_signal === "object") {
+      const signal = post.ai_trading_signal as { action?: string };
+      return {
+        action: (signal.action || null) as "buy" | "sell" | "hold" | null,
         tickers: post.ai_tickers || [],
         confidence: null,
         reasoning: null,
-      }
-    : null;
+      };
+    }
+    
+    // 如果是字符串格式 "buy"
+    return {
+      action: post.ai_trading_signal as "buy" | "sell" | "hold" | null,
+      tickers: post.ai_tickers || [],
+      confidence: null,
+      reasoning: null,
+    };
+  };
+  
+  const tradingSignal = buildTradingSignal();
 
   return (
     <div className="space-y-2 mb-1">

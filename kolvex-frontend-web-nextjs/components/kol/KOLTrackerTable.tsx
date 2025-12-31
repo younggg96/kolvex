@@ -82,12 +82,12 @@ export default function KOLTrackerTable({
   // Handle add KOL - now uses real tracking API
   const handleAdd = async () => {
     try {
-      // Map platform types for the tracking API
+      // Map platform types for the tracking API (now lowercase)
       const platformMap: { [key: string]: DBPlatform } = {
-        twitter: "TWITTER",
-        reddit: "REDDIT",
-        youtube: "YOUTUBE",
-        rednote: "REDNOTE",
+        twitter: "twitter",
+        reddit: "reddit",
+        youtube: "youtube",
+        xiaohongshu: "xiaohongshu",
       };
 
       await trackKOL({
@@ -122,12 +122,12 @@ export default function KOLTrackerTable({
         throw new Error("KOL not found");
       }
 
-      // Map platform type to database format
+      // Map platform type to database format (now lowercase)
       const platformMap: { [key: string]: DBPlatform } = {
-        twitter: "TWITTER",
-        reddit: "REDDIT",
-        youtube: "YOUTUBE",
-        rednote: "REDNOTE",
+        twitter: "twitter",
+        reddit: "reddit",
+        youtube: "youtube",
+        xiaohongshu: "xiaohongshu",
       };
 
       await untrackKOL(deletingKOLId, platformMap[kol.platform]);
@@ -144,12 +144,12 @@ export default function KOLTrackerTable({
   // Handle toggle tracking - now uses real tracking API
   const handleToggleTracking = async (kol: KOL) => {
     try {
-      // Map platform type to database format
+      // Map platform type to database format (now lowercase)
       const platformMap: { [key: string]: DBPlatform } = {
-        twitter: "TWITTER",
-        reddit: "REDDIT",
-        youtube: "YOUTUBE",
-        rednote: "REDNOTE",
+        twitter: "twitter",
+        reddit: "reddit",
+        youtube: "youtube",
+        xiaohongshu: "xiaohongshu",
       };
 
       // In the tracked tab, toggle means untrack
@@ -283,7 +283,7 @@ export default function KOLTrackerTable({
                 <div className="flex items-start gap-3 mb-2">
                   {/* Avatar and Name - Clickable */}
                   <Link
-                    href={`/dashboard/kol/${kol.username}`}
+                    href={`/dashboard/kol/${kol.username}?platform=${kol.platform}`}
                     className="flex items-center gap-3 flex-1 min-w-0 hover:opacity-80 transition-opacity"
                   >
                     <Avatar className="w-10 h-10 flex-shrink-0 ring-1 ring-gray-200 dark:ring-white/10">
@@ -384,7 +384,7 @@ export default function KOLTrackerTable({
                         username={kol.username}
                         platform={kol.platform}
                         showPlatformBadge={false}
-                        href={`/dashboard/kol/${kol.username}`}
+                        href={`/dashboard/kol/${kol.username}?platform=${kol.platform}`}
                       />
                     </TableCell>
                     {/* Platform */}
@@ -467,7 +467,7 @@ export default function KOLTrackerTable({
                 <SelectContent>
                   <SelectItem value="twitter">X / Twitter</SelectItem>
                   <SelectItem value="reddit">Reddit</SelectItem>
-                  <SelectItem value="rednote">RedNote</SelectItem>
+                  <SelectItem value="xiaohongshu">小红书</SelectItem>
                   <SelectItem value="youtube">YouTube</SelectItem>
                 </SelectContent>
               </Select>

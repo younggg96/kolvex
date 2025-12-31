@@ -37,7 +37,7 @@ async def get_stock_kol_stats(supabase, symbols: list[str]) -> dict:
         response = (
             supabase.table("kol_tweets")
             .select(
-                "ai_tickers, username, avatar_url, ai_sentiment, ai_sentiment_confidence, "
+                "ai_tickers, username, avatar_url, platform, ai_sentiment, ai_sentiment_confidence, "
                 "like_count, retweet_count, reply_count, created_at"
             )
             .range(offset, offset + batch_size - 1)
@@ -101,6 +101,7 @@ async def get_stock_kol_stats(supabase, symbols: list[str]) -> dict:
                         "sentiment_sum": 0,
                         "sentiment_count": 0,
                         "avatar_url": row.get("avatar_url"),
+                        "platform": row.get("platform") or "twitter",
                     }
                 author_stat = stats["author_stats"][username]
                 author_stat["tweet_count"] += 1
@@ -195,6 +196,7 @@ async def get_stock_kol_stats(supabase, symbols: list[str]) -> dict:
                     username=username,
                     display_name=profile.get("display_name"),
                     avatar_url=author_data["avatar_url"] or profile.get("avatar_url"),
+                    platform=author_data.get("platform") or "twitter",
                     tweet_count=author_data["tweet_count"],
                     sentiment=author_sentiment,
                 )

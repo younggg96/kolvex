@@ -1,11 +1,26 @@
 """
 KOL Tweets API Pydantic 模型
 定义请求和响应的数据结构
+支持多平台统一数据结构 (Twitter, Xiaohongshu, Reddit, YouTube)
 """
 
 from pydantic import BaseModel
-from typing import Optional, List
+from typing import Optional, List, Literal
 from datetime import datetime
+from enum import Enum
+
+
+# ============================================================
+# 平台枚举
+# ============================================================
+
+
+class Platform(str, Enum):
+    """支持的平台"""
+    TWITTER = "twitter"
+    XIAOHONGSHU = "xiaohongshu"
+    REDDIT = "reddit"
+    YOUTUBE = "youtube"
 
 
 # ============================================================
@@ -46,32 +61,54 @@ class StockRelatedInfo(BaseModel):
 
 
 # ============================================================
-# 推文模型
+# 推文/帖子模型（统一多平台）
 # ============================================================
 
 
 class KOLTweet(BaseModel):
-    """KOL 推文模型"""
+    """KOL 推文/帖子模型（支持多平台）"""
 
     id: int
+    # === 平台信息 ===
+    platform: str = "twitter"  # twitter, xiaohongshu, reddit, youtube
+    platform_post_id: Optional[str] = None  # 平台特定帖子ID
+    
+    # === 作者信息 ===
     username: str
     display_name: Optional[str] = None
     avatar_url: Optional[str] = None
+    author_platform_id: Optional[str] = None  # 作者平台ID
+    
+    # === 内容 ===
+    title: Optional[str] = None  # 标题（小红书特有）
     tweet_text: str
+    post_type: str = "tweet"  # tweet, retweet, note, video
     created_at: Optional[datetime] = None
     permalink: Optional[str] = None
-    # 媒体
+    
+    # === 媒体 ===
+    cover_url: Optional[str] = None  # 封面图（小红书特有）
     media_urls: Optional[List[MediaItem]] = None
-    # 转发信息
+    video_url: Optional[str] = None
+    
+    # === 转发信息 ===
     is_repost: bool = False
     original_author: Optional[str] = None
-    # 互动数据
+    
+    # === 互动数据 ===
     like_count: int = 0
-    retweet_count: int = 0
-    reply_count: int = 0
-    bookmark_count: int = 0
+    retweet_count: int = 0  # Twitter 转发数
+    reply_count: int = 0  # 评论数
+    bookmark_count: int = 0  # 书签数
     views_count: int = 0
-    # 元数据
+    collect_count: int = 0  # 收藏数（小红书特有）
+    share_count: int = 0  # 分享数（小红书特有）
+    
+    # === 标签和分类 ===
+    tags: List[str] = []
+    search_keyword: Optional[str] = None  # 搜索关键词
+    
+    # === 元数据 ===
     scraped_at: Optional[datetime] = None
 
     # ========== AI 分析字段 ==========
@@ -79,8 +116,6 @@ class KOLTweet(BaseModel):
     sentiment: Optional[SentimentAnalysis] = None
     # 股票代码
     tickers: List[str] = []
-    # AI 标签
-    tags: List[str] = []
     # 投资信号
     trading_signal: Optional[TradingSignal] = None
     # 摘要
@@ -103,29 +138,55 @@ class KOLTweetsResponse(BaseModel):
 
 
 # ============================================================
-# Profile 模型
+# Profile 模型（统一多平台）
 # ============================================================
 
 
 class KOLProfile(BaseModel):
-    """KOL 完整 Profile 模型 - 匹配 kol_profiles 表"""
+    """KOL 完整 Profile 模型 - 支持多平台"""
 
     id: int
+    # === 平台信息 ===
+    platform: str = "twitter"  # twitter, xiaohongshu, reddit, youtube
+    platform_user_id: Optional[str] = None  # 平台特定用户ID
+    
+    # === 基础信息 ===
     username: str
     display_name: Optional[str] = None
+    avatar_url: Optional[str] = None
+    banner_url: Optional[str] = None
+    bio: Optional[str] = None
+    location: Optional[str] = None
+    website: Optional[str] = None
+    profile_url: Optional[str] = None
+    
+    # === 认证信息 ===
+    is_verified: bool = False
+    verification_type: Optional[str] = "None"
+    verified_info: Optional[str] = None
+    
+    # === 互动数据 ===
     followers_count: int = 0
     following_count: int = 0
     posts_count: int = 0
-    avatar_url: Optional[str] = None
-    banner_url: Optional[str] = None
-    is_active: bool = True
-    is_verified: bool = False
-    verification_type: Optional[str] = "None"
+    likes_count: int = 0  # 获赞数（小红书特有）
+    collected_count: int = 0  # 收藏数（小红书特有）
+    
+    # === Twitter 特有字段 ===
     rest_id: Optional[str] = None
     join_date: Optional[str] = None
-    location: Optional[str] = None
-    website: Optional[str] = None
-    bio: Optional[str] = None
+    
+    # === 小红书特有字段 ===
+    red_id: Optional[str] = None  # 小红书号
+    gender: Optional[str] = None
+    tags: Optional[List[str]] = None
+    category: Optional[str] = None
+    source_keyword: Optional[str] = None
+    source_note_id: Optional[str] = None
+    
+    # === 状态和时间 ===
+    is_active: bool = True
+    scraped_at: Optional[datetime] = None
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
 

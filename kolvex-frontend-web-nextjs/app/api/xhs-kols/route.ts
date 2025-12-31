@@ -8,6 +8,8 @@ export const dynamic = "force-dynamic";
 const NEXT_PUBLIC_BACKEND_API_URL =
   process.env.NEXT_PUBLIC_BACKEND_API_URL || "http://localhost:8000";
 
+// 统一使用小写平台名称: xiaohongshu
+
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
@@ -67,11 +69,12 @@ export async function GET(request: NextRequest) {
       } = await supabase.auth.getUser();
 
       if (user) {
+        // 使用小写平台名称查询
         const { data: subscriptions } = await supabase
           .from("kol_subscriptions")
           .select("kol_id")
           .eq("user_id", user.id)
-          .eq("platform", "REDNOTE");
+          .eq("platform", "xiaohongshu");
 
         if (subscriptions) {
           trackedKolIds = new Set(subscriptions.map((s: any) => s.kol_id));
@@ -100,7 +103,7 @@ export async function GET(request: NextRequest) {
 
       return {
         id: kol.id?.toString() || kol.user_id,
-        platform: "REDNOTE" as Platform,
+        platform: "xiaohongshu" as Platform,
         kol_id: kol.user_id,
         username: kol.red_id || kol.user_id,
         display_name: kol.nickname || kol.red_id || kol.user_id,
@@ -177,5 +180,3 @@ export async function GET(request: NextRequest) {
     );
   }
 }
-
-

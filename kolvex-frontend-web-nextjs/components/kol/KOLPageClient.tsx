@@ -29,25 +29,25 @@ const KOL_PLATFORM_OPTIONS: {
   disabled: boolean;
 }[] = [
   {
-    value: "TWITTER",
+    value: "twitter",
     label: "X / Twitter",
     iconPath: "/logo/x.svg",
     disabled: false,
   },
   {
-    value: "REDNOTE",
-    label: "RedNote",
-    iconPath: "/logo/rednote.svg",
+    value: "xiaohongshu",
+    label: "Xiaohongshu",
+    iconPath: "/logo/xiaohongshu.svg",
     disabled: false,
   },
   {
-    value: "REDDIT",
+    value: "reddit",
     label: "Reddit",
     iconPath: "/logo/reddit.svg",
     disabled: true,
   },
   {
-    value: "YOUTUBE",
+    value: "youtube",
     label: "YouTube",
     iconPath: "/logo/youtube.svg",
     disabled: true,
@@ -58,7 +58,7 @@ export default function KOLPageClient() {
   const [activeTab, setActiveTab] = useState<"trackingKOLs" | "ranking">(
     "ranking"
   );
-  const [selectedPlatform, setSelectedPlatform] = useState<Platform>("TWITTER");
+  const [selectedPlatform, setSelectedPlatform] = useState<Platform>("twitter");
 
   // Use the trackingKOLs hook to get real data from the API
   const {
@@ -79,9 +79,9 @@ export default function KOLPageClient() {
   // Get API endpoint based on selected platform
   const getApiEndpoint = useCallback((platform: Platform): string => {
     switch (platform) {
-      case "REDNOTE":
+      case "xiaohongshu":
         return "/api/xhs-kols";
-      case "TWITTER":
+      case "twitter":
         return "/api/kols";
       default:
         return "/api/kols";
@@ -180,14 +180,15 @@ export default function KOLPageClient() {
   // Convert trackingKOLs to KOL format for compatibility with KOLTrackerTable
   const convertedTrackingKOLs = useMemo<KOL[]>(() => {
     return apiTrackingKOLs.map((tracking) => {
-      // Map platform types from database format to KOL API format
+      // Map platform types (handle both old and new format for compatibility)
       const platformMap: {
-        [key: string]: "twitter" | "reddit" | "youtube" | "rednote";
+        [key: string]: "twitter" | "reddit" | "youtube" | "xiaohongshu";
       } = {
-        TWITTER: "twitter",
-        REDDIT: "reddit",
-        YOUTUBE: "youtube",
-        REDNOTE: "rednote",
+        // 新格式（小写）
+        twitter: "twitter",
+        reddit: "reddit",
+        youtube: "youtube",
+        xiaohongshu: "xiaohongshu",
       };
 
       return {
@@ -282,7 +283,7 @@ export default function KOLPageClient() {
                             width={16}
                             height={16}
                             className={
-                              selectedPlatform === "TWITTER"
+                              selectedPlatform === "twitter"
                                 ? "dark:invert"
                                 : ""
                             }
@@ -312,7 +313,7 @@ export default function KOLPageClient() {
                               width={16}
                               height={16}
                               className={
-                                platform.value === "TWITTER"
+                                platform.value === "twitter"
                                   ? "dark:invert"
                                   : ""
                               }

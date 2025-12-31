@@ -89,7 +89,7 @@ export default function KOLHoverCard({
   kolId,
   screenName,
   profileImageUrl,
-  platform = "TWITTER",
+  platform = "twitter",
   initialTracked = false,
   onTrackChange,
 }: KOLHoverCardProps) {
@@ -192,16 +192,13 @@ export default function KOLHoverCard({
 
   const profile = profileData?.profile;
 
-  // For RedNote, display the first 8 characters of the username and an ellipsis
+  // For xiaohongshu, display the first 8 characters of the username and an ellipsis
   const userDisplayId =
-    platform === "REDNOTE"
+    platform === "xiaohongshu"
       ? profile?.username?.slice(0, 8) + "..."
       : profile?.username || "";
   // Build KOL profile URL with platform query param for non-Twitter platforms
-  const kolProfileUrl =
-    platform === "TWITTER"
-      ? `/dashboard/kol/${kolId}`
-      : `/dashboard/kol/${kolId}?platform=${platform}`;
+  const kolProfileUrl = `/dashboard/kol/${kolId}?platform=${platform}`;
 
   return (
     <HoverCard onOpenChange={handleOpenChange}>

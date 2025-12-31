@@ -1,32 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { KOLTweet } from "@/lib/kolTweetsApi";
+import { KOLTweet, KOLProfile as KOLProfileType } from "@/lib/kolTweetsApi";
 import { XhsPost } from "@/lib/xhsApi";
 
 export const dynamic = "force-dynamic";
 
-// KOL Profile from backend API (Twitter)
-export interface KOLProfile {
-  id: number;
-  username: string;
-  display_name: string | null;
-  description: string | null;
-  category: string | null;
-  followers_count: number;
-  following_count: number;
-  posts_count: number;
-  avatar_url: string | null;
-  banner_url: string | null;
-  is_active: boolean;
-  is_verified: boolean;
-  verification_type: string | null;
-  rest_id: string | null;
-  join_date: string | null;
-  location: string | null;
-  website: string | null;
-  bio: string | null;
-  created_at: string | null;
-  updated_at: string | null;
-}
+// Re-export KOLProfile from lib for backwards compatibility
+export type KOLProfile = KOLProfileType;
 
 // KOL Profile Detail response from backend
 export interface KOLProfileDetail {
@@ -46,7 +25,7 @@ export async function GET(request: NextRequest) {
     const kolId = searchParams.get("kolId");
     const includeTweets = searchParams.get("include_tweets") === "true";
     const tweetLimit = searchParams.get("tweet_limit") || "10";
-    const platform = searchParams.get("platform") || "TWITTER";
+    const platform = searchParams.get("platform") || "twitter";
 
     if (!kolId) {
       return NextResponse.json(
@@ -56,8 +35,8 @@ export async function GET(request: NextRequest) {
     }
 
     // Handle different platforms
-    if (platform === "REDNOTE") {
-      // Fetch from Xiaohongshu API
+    if (platform === "xiaohongshu") {
+      // Fetch from Xiaohongshu API (now uses unified kol_profiles table)
       const response = await fetch(
         `${NEXT_PUBLIC_BACKEND_API_URL}/api/v1/xiaohongshu/kols/${kolId}?include_posts=${includeTweets}&post_limit=${tweetLimit}`,
         {
@@ -79,10 +58,13 @@ export async function GET(request: NextRequest) {
       const data = await response.json();
 
       // Transform Xiaohongshu response to match expected format
+      // Backend now returns unified structure with field mapping
       const xhsProfile = data.profile;
       const transformedData: KOLProfileDetail = {
         profile: {
           id: xhsProfile.id || 0,
+          platform: "xiaohongshu",
+          platform_user_id: xhsProfile.user_id,
           username: xhsProfile.user_id,
           display_name: xhsProfile.nickname,
           description: xhsProfile.description,
@@ -90,18 +72,27 @@ export async function GET(request: NextRequest) {
           followers_count: xhsProfile.followers_count || 0,
           following_count: xhsProfile.following_count || 0,
           posts_count: xhsProfile.notes_count || 0,
+          likes_count: xhsProfile.likes_count || 0,
+          collected_count: xhsProfile.collected_count || 0,
           avatar_url: xhsProfile.avatar_url,
           banner_url: null,
           is_active: true,
           is_verified: xhsProfile.is_verified || false,
           verification_type: xhsProfile.verified_type,
+          verified_info: xhsProfile.verified_info,
           rest_id: xhsProfile.user_id,
           join_date: null,
           location: xhsProfile.location,
           website: xhsProfile.profile_url,
+          profile_url: xhsProfile.profile_url,
           bio: xhsProfile.description,
+          red_id: xhsProfile.red_id,
+          gender: xhsProfile.gender,
+          tags: xhsProfile.tags,
+          scraped_at: xhsProfile.scraped_at,
           created_at: xhsProfile.scraped_at,
           updated_at: xhsProfile.updated_at,
+          last_scraped_at: xhsProfile.scraped_at,
         },
         recent_posts: data.recent_posts || [],
       };

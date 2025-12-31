@@ -63,14 +63,15 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams;
     const limit = parseInt(searchParams.get("limit") || "20");
     const offset = parseInt(searchParams.get("offset") || "0");
+    const platform = searchParams.get("platform") || "twitter"; // 默认只获取 Twitter
 
     // Calculate page and page_size for the backend API
     const page = Math.floor(offset / limit) + 1;
     const pageSize = limit;
 
-    // Fetch data from backend API
+    // Fetch data from backend API with platform filter
     const response = await fetch(
-      `${NEXT_PUBLIC_BACKEND_API_URL}/api/v1/kol-tweets/?page=${page}&page_size=${pageSize}`,
+      `${NEXT_PUBLIC_BACKEND_API_URL}/api/v1/kol-tweets/?page=${page}&page_size=${pageSize}&platform=${platform}`,
       {
         headers: {
           accept: "application/json",
