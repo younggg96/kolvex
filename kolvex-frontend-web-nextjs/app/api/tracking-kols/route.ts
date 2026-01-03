@@ -22,7 +22,6 @@ export interface TrackedKOL {
   kol_verified?: boolean;
   kol_bio?: string | null;
   kol_followers_count?: number;
-  kol_category?: string | null;
   kol_influence_score?: number;
   kol_trending_score?: number;
 }

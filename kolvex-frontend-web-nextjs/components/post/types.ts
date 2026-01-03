@@ -1,6 +1,6 @@
 // Common types for all platform content components
 
-import { SentimentAnalysis, TradingSignal } from "@/lib/kolTweetsApi";
+import { SentimentAnalysis, TradingSignal } from "@/lib/kolPostsApi";
 
 export interface BaseContentProps {
   url: string;

@@ -1,5 +1,5 @@
 """
-KOL Tweets API 辅助函数
+KOL Posts API 辅助函数
 支持多平台统一数据结构 (Twitter, Xiaohongshu, Reddit, YouTube)
 """
 
@@ -7,7 +7,7 @@ import json
 from typing import Any
 
 from .schemas import (
-    KOLTweet,
+    KOLPost,
     MediaItem,
     SentimentAnalysis,
     TradingSignal,
@@ -27,23 +27,23 @@ def parse_json_field(value: Any, default: Any = None) -> Any:
     return value
 
 
-def convert_row_to_tweet(row: dict, profile: dict = None) -> KOLTweet:
+def convert_row_to_post(row: dict, profile: dict = None) -> KOLPost:
     """
-    将数据库行转换为 KOLTweet 对象（支持多平台）
+    将数据库行转换为 KOLPost 对象（支持多平台）
 
     Args:
         row: 数据库查询返回的行
         profile: 可选的 profile 信息字典
 
     Returns:
-        KOLTweet 对象
+        KOLPost 对象
     """
     profile = profile or {}
 
     # 解析 media_urls
     media_urls = parse_json_field(row.get("media_urls"))
 
-    # 优先使用推文中的 avatar_url，如果没有则使用 profile 中的
+    # 优先使用帖子中的 avatar_url，如果没有则使用 profile 中的
     avatar_url = row.get("avatar_url") or profile.get("avatar_url")
 
     # 解析 AI 分析字段
@@ -73,7 +73,7 @@ def convert_row_to_tweet(row: dict, profile: dict = None) -> KOLTweet:
             reason=row.get("ai_stock_related_reason"),
         )
 
-    return KOLTweet(
+    return KOLPost(
         id=row["id"],
         # === 平台信息 ===
         platform=row.get("platform", "twitter"),
@@ -85,8 +85,8 @@ def convert_row_to_tweet(row: dict, profile: dict = None) -> KOLTweet:
         author_platform_id=row.get("author_platform_id"),
         # === 内容 ===
         title=row.get("title"),
-        tweet_text=row["tweet_text"],
-        post_type=row.get("post_type", "tweet"),
+        content=row["tweet_text"],  # 数据库字段仍为 tweet_text
+        post_type=row.get("post_type", "post"),
         created_at=row.get("created_at"),
         permalink=row.get("permalink"),
         # === 媒体 ===
@@ -98,7 +98,7 @@ def convert_row_to_tweet(row: dict, profile: dict = None) -> KOLTweet:
         original_author=row.get("original_author"),
         # === 互动数据 ===
         like_count=row.get("like_count", 0) or 0,
-        retweet_count=row.get("retweet_count", 0) or 0,
+        repost_count=row.get("retweet_count", 0) or 0,  # 数据库字段仍为 retweet_count
         reply_count=row.get("reply_count", 0) or 0,
         bookmark_count=row.get("bookmark_count", 0) or 0,
         views_count=row.get("views_count", 0) or 0,
@@ -112,6 +112,7 @@ def convert_row_to_tweet(row: dict, profile: dict = None) -> KOLTweet:
         # AI 分析字段
         sentiment=sentiment,
         tickers=ai_tickers,
+        ai_tags=ai_tags,
         trading_signal=trading_signal,
         summary=row.get("ai_summary"),
         is_stock_related=stock_related,
@@ -120,8 +121,8 @@ def convert_row_to_tweet(row: dict, profile: dict = None) -> KOLTweet:
     )
 
 
-# 推文/帖子查询的标准字段列表（统一多平台）
-TWEET_SELECT_FIELDS = (
+# 帖子查询的标准字段列表（统一多平台）
+POST_SELECT_FIELDS = (
     "id, platform, platform_post_id, "
     "username, author_platform_id, "
     "title, tweet_text, post_type, created_at, permalink, "

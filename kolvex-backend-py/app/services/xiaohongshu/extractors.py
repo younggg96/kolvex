@@ -740,7 +740,7 @@ def merge_note_data(card_data: Dict, detail_data: Dict) -> Dict:
 def extract_kol_profile(page: "Page") -> Dict:
     """
     从KOL个人主页提取资料信息
-    
+
     注意：此函数专门用于提取主页上的 KOL 信息，
     使用精确选择器避免匹配到登录用户的信息。
 
@@ -755,8 +755,8 @@ def extract_kol_profile(page: "Page") -> Dict:
     try:
         # 等待主页内容区域加载（排除侧边栏和导航）
         page.wait_for_selector(
-            "#userPageContainer, .user-page, .user-profile-container, [class*='user-page']", 
-            timeout=10000
+            "#userPageContainer, .user-page, .user-profile-container, [class*='user-page']",
+            timeout=10000,
         )
     except Exception:
         pass
@@ -1027,6 +1027,7 @@ def extract_kol_profile(page: "Page") -> Dict:
     except Exception as e:
         print(f"⚠️ 提取 KOL 资料失败: {e}")
         import traceback
+
         traceback.print_exc()
 
     # 从 URL 提取用户 ID（备用方案）
@@ -1044,9 +1045,11 @@ def extract_kol_profile(page: "Page") -> Dict:
         data["profile_url"] = (
             f"https://www.xiaohongshu.com/user/profile/{data['user_id']}"
         )
-    
+
     # 调试：打印提取到的数据
-    print(f"      📋 提取到 KOL 数据: user_id={data.get('user_id')}, nickname={data.get('nickname')}, followers={data.get('followers_count')}")
+    print(
+        f"      📋 提取到 KOL 数据: user_id={data.get('user_id')}, nickname={data.get('nickname')}, followers={data.get('followers_count')}"
+    )
 
     return data
 

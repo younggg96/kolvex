@@ -699,8 +699,8 @@ def upsert_kol(
     Args:
         client: Supabase 客户端
         kol_data: KOL 数据字典
-        source_keyword: 来源搜索关键词
-        source_note_id: 来源笔记 ID
+        source_keyword: 来源搜索关键词（可选，暂未使用）
+        source_note_id: 来源笔记 ID（可选，暂未使用）
 
     Returns:
         Tuple[bool, Optional[int]]: (成功返回 True, KOL ID)
@@ -732,20 +732,13 @@ def upsert_kol(
             # === 认证信息 ===
             "is_verified": kol_data.get("is_verified", False),
             "verification_type": safe_str(kol_data.get("verified_type"), 50),
-            "verified_info": kol_data.get("verified_info"),
             # === 互动数据 ===
             "followers_count": kol_data.get("followers_count", 0),
             "following_count": kol_data.get("following_count", 0),
-            "posts_count": kol_data.get("notes_count", 0),
             "likes_count": kol_data.get("likes_count", 0),
             "collected_count": kol_data.get("collected_count", 0),
             # === 小红书特有字段 ===
             "red_id": safe_str(kol_data.get("red_id"), 64),
-            "gender": safe_str(kol_data.get("gender"), 10),
-            "tags": json.dumps(kol_data.get("tags", [])) if kol_data.get("tags") else None,
-            "category": safe_str(kol_data.get("category"), 100),
-            "source_keyword": safe_str(source_keyword, 100),
-            "source_note_id": safe_str(source_note_id, 64),
             # === 状态 ===
             "is_active": True,
             "updated_at": datetime.now(timezone.utc).isoformat(),
@@ -766,7 +759,6 @@ def upsert_kol(
             return True, kol_id
         else:
             # 插入新记录
-            data["scraped_at"] = datetime.now(timezone.utc).isoformat()
             data["created_at"] = datetime.now(timezone.utc).isoformat()
             result = client.table("kol_profiles").insert(data).execute()
             kol_id = result.data[0]["id"] if result.data else None
@@ -811,19 +803,13 @@ def get_kol_by_user_id(client: Client, user_id: str) -> Optional[Dict]:
                 "avatar_url": kol.get("avatar_url"),
                 "description": kol.get("bio"),
                 "location": kol.get("location"),
-                "gender": kol.get("gender"),
                 "is_verified": kol.get("is_verified"),
                 "verified_type": kol.get("verification_type"),
-                "verified_info": kol.get("verified_info"),
                 "followers_count": kol.get("followers_count", 0),
                 "following_count": kol.get("following_count", 0),
                 "likes_count": kol.get("likes_count", 0),
-                "notes_count": kol.get("posts_count", 0),
                 "collected_count": kol.get("collected_count", 0),
                 "profile_url": kol.get("profile_url"),
-                "tags": kol.get("tags"),
-                "category": kol.get("category"),
-                "scraped_at": kol.get("scraped_at"),
                 "updated_at": kol.get("updated_at"),
             }
         return None
@@ -835,7 +821,6 @@ def get_kol_by_user_id(client: Client, user_id: str) -> Optional[Dict]:
 def get_top_kols(
     client: Client,
     limit: int = 20,
-    category: str = None,
     min_followers: int = 0,
 ) -> List[Dict]:
     """
@@ -844,7 +829,6 @@ def get_top_kols(
     Args:
         client: Supabase 客户端
         limit: 返回数量限制
-        category: 分类筛选
         min_followers: 最小粉丝数
 
     Returns:
@@ -859,9 +843,6 @@ def get_top_kols(
             .order("followers_count", desc=True)
         )
 
-        if category:
-            query = query.eq("category", category)
-
         result = query.limit(limit).execute()
         
         # 转换字段名以保持向后兼容
@@ -875,19 +856,13 @@ def get_top_kols(
                 "avatar_url": kol.get("avatar_url"),
                 "description": kol.get("bio"),
                 "location": kol.get("location"),
-                "gender": kol.get("gender"),
                 "is_verified": kol.get("is_verified"),
                 "verified_type": kol.get("verification_type"),
-                "verified_info": kol.get("verified_info"),
                 "followers_count": kol.get("followers_count", 0),
                 "following_count": kol.get("following_count", 0),
                 "likes_count": kol.get("likes_count", 0),
-                "notes_count": kol.get("posts_count", 0),
                 "collected_count": kol.get("collected_count", 0),
                 "profile_url": kol.get("profile_url"),
-                "tags": kol.get("tags"),
-                "category": kol.get("category"),
-                "scraped_at": kol.get("scraped_at"),
                 "updated_at": kol.get("updated_at"),
             })
         return kols
@@ -985,29 +960,11 @@ def get_kol_stats(client: Client) -> Dict:
         )
         verified = verified_result.count or 0
 
-        # 按分类统计
-        by_category = {}
-        try:
-            result = (
-                client.table("kol_profiles")
-                .select("category")
-                .eq("platform", PLATFORM_XHS)
-                .execute()
-            )
-            for row in result.data:
-                cat = row.get("category") or "未分类"
-                by_category[cat] = by_category.get(cat, 0) + 1
-        except Exception:
-            pass
-
         return {
             "total": total,
             "verified": verified,
-            "by_category": dict(
-                sorted(by_category.items(), key=lambda x: x[1], reverse=True)
-            ),
         }
     except Exception as e:
         print(f"⚠️ 获取 KOL 统计失败: {e}")
-        return {"total": 0, "verified": 0, "by_category": {}}
+        return {"total": 0, "verified": 0}
 

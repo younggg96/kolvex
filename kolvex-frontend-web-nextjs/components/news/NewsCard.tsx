@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import { NewsArticle } from "@/lib/kolTweetsApi";
+import { NewsArticle } from "@/lib/kolPostsApi";
 import { ExternalLink } from "lucide-react";
 
 interface NewsCardProps {

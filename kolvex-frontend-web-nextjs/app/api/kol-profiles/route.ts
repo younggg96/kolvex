@@ -8,12 +8,9 @@ const API_BASE_URL =
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
-    const category = searchParams.get("category");
-
-    const query = category ? `?category=${category}` : "";
 
     const response = await fetch(
-      `${API_BASE_URL}/api/v1/kol-tweets/profiles${query}`,
+      `${API_BASE_URL}/api/v1/kol-posts/profiles?${searchParams.toString()}`,
       {
         headers: { "Content-Type": "application/json" },
         cache: "no-store",
@@ -34,4 +31,3 @@ export async function GET(request: NextRequest) {
     );
   }
 }
-

@@ -2,7 +2,7 @@
 
 import { Badge } from "@/components/ui/badge";
 import KOLHoverCard from "@/components/kol/KOLHoverCard";
-import { KOLSummary } from "@/lib/kolTweetsApi";
+import { KOLSummary } from "@/lib/kolPostsApi";
 import { proxyImageUrl } from "@/lib/utils";
 
 interface KOLAvatarProps {
@@ -33,7 +33,7 @@ export default function KOLAvatar({ kol }: KOLAvatarProps) {
         )}
         {/* 推文数量 badge */}
         <Badge className="absolute -top-0.5 -right-0.5 z-10 !w-[14px] !h-[14px] rounded-full !p-0 !text-[10px] justify-center bg-primary text-white border-primary/20">
-          {kol.tweet_count}
+          {kol.post_count}
         </Badge>
       </div>
       <span className="text-xs text-muted-foreground truncate max-w-[60px] group-hover:text-primary transition-colors">
@@ -53,4 +53,3 @@ export default function KOLAvatar({ kol }: KOLAvatarProps) {
     </KOLHoverCard>
   );
 }
-

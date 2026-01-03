@@ -467,7 +467,7 @@ export default function KOLTrackerTable({
                 <SelectContent>
                   <SelectItem value="twitter">X / Twitter</SelectItem>
                   <SelectItem value="reddit">Reddit</SelectItem>
-                  <SelectItem value="xiaohongshu">小红书</SelectItem>
+                  <SelectItem value="xiaohongshu">Xiaohongshu</SelectItem>
                   <SelectItem value="youtube">YouTube</SelectItem>
                 </SelectContent>
               </Select>

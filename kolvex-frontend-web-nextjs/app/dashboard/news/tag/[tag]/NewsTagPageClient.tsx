@@ -6,7 +6,7 @@ import SectionCard from "@/components/layout/SectionCard";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { NewsCard } from "@/components/news";
-import { getStockNews, NewsListResponse } from "@/lib/kolTweetsApi";
+import { getStockNews, NewsListResponse } from "@/lib/kolPostsApi";
 import { ChevronDown, AlertCircle, Newspaper, ArrowLeft } from "lucide-react";
 
 interface NewsTagPageClientProps {

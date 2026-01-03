@@ -17,12 +17,10 @@ export async function GET(request: NextRequest) {
     const offset = parseInt(searchParams.get("offset") || "0");
     const sortBy = (searchParams.get("sort_by") || "followers_count") as SortBy;
     const sortDirection = searchParams.get("sort_direction") || "desc";
-    const category = searchParams.get("category");
 
     // Map frontend sort fields to backend fields
     const sortFieldMap: Record<string, string> = {
       influence_score: "followers_count",
-      total_posts_count: "notes_count",
       trending_score: "likes_count",
       followers_count: "followers_count",
     };
@@ -36,10 +34,6 @@ export async function GET(request: NextRequest) {
       sort_by: backendSortField,
       sort_desc: (sortDirection === "desc").toString(),
     });
-
-    if (category) {
-      params.set("category", category);
-    }
 
     // Fetch XHS KOL profiles from backend API
     const backendUrl = `${NEXT_PUBLIC_BACKEND_API_URL}/api/v1/xiaohongshu/kols?${params}`;
@@ -88,15 +82,13 @@ export async function GET(request: NextRequest) {
     // Transform XHS KOL data to match the Kol interface
     const kolsWithScores: Kol[] = xhsKols.map((kol: any) => {
       const followersCount = kol.followers_count || 0;
-      const notesCount = kol.notes_count || 0;
       const likesCount = kol.likes_count || 0;
 
       // Calculate influence score (0-100 scale)
       const followerScore = Math.min(followersCount / 10000000, 1) * 50;
-      const noteScore = Math.min(notesCount / 1000, 1) * 30;
       const verificationBonus = kol.is_verified ? 20 : 0;
       const influenceScore =
-        Math.round((followerScore + noteScore + verificationBonus) * 10) / 10;
+        Math.round((followerScore + verificationBonus) * 10) / 10;
 
       // Calculate trending score based on likes
       const trendingScore = Math.min(likesCount / 1000000, 100);
@@ -111,9 +103,7 @@ export async function GET(request: NextRequest) {
         bio: kol.description,
         followers_count: followersCount,
         verified: kol.is_verified || false,
-        category: kol.category,
         influence_score: influenceScore,
-        total_posts_count: notesCount,
         last_post_at: kol.updated_at,
         trending_score: trendingScore,
         metadata: {
@@ -121,13 +111,9 @@ export async function GET(request: NextRequest) {
           likes_count: likesCount,
           collected_count: kol.collected_count,
           location: kol.location,
-          gender: kol.gender,
           verified_type: kol.verified_type,
-          verified_info: kol.verified_info,
-          tags: kol.tags,
           profile_url: kol.profile_url,
         },
-        created_at: kol.scraped_at,
         updated_at: kol.updated_at,
         user_tracked: trackedKolIds.has(kol.user_id),
       };
@@ -150,10 +136,6 @@ export async function GET(request: NextRequest) {
         case "followers_count":
           aVal = a.followers_count;
           bVal = b.followers_count;
-          break;
-        case "total_posts_count":
-          aVal = a.total_posts_count;
-          bVal = b.total_posts_count;
           break;
         default:
           aVal = a.influence_score;

@@ -103,13 +103,21 @@ def _format_post(post: Dict, author_avatars: Dict[str, str] = None) -> Dict:
     author_id = post.get("author_platform_id") or post.get("author_id")
     author_avatar = author_avatars.get(author_id) if author_id else None
 
+    # 获取 title 和 content
+    title = post.get("title") or ""
+    content = post.get("tweet_text") or post.get("content") or ""
+    
+    # 如果 title 和 content 一样，content 返回为空（避免重复显示）
+    if title.strip() == content.strip():
+        content = ""
+
     return {
         # === 基础信息 ===
         "id": post.get("id"),
         "note_id": post.get("platform_post_id") or post.get("note_id"),
         "post_hash": post.get("tweet_hash") or post.get("post_hash"),
-        "title": post.get("title"),
-        "content": post.get("tweet_text") or post.get("content"),
+        "title": title or None,
+        "content": content or None,
         "note_type": post.get("post_type") or post.get("note_type", "normal"),
         "permalink": post.get("permalink"),
         # === 作者信息 ===

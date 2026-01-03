@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { KOLTweet, KOLProfile as KOLProfileType } from "@/lib/kolTweetsApi";
+import { KOLPost, KOLProfile as KOLProfileType } from "@/lib/kolPostsApi";
 import { XhsPost } from "@/lib/xhsApi";
 
 export const dynamic = "force-dynamic";
@@ -10,8 +10,7 @@ export type KOLProfile = KOLProfileType;
 // KOL Profile Detail response from backend
 export interface KOLProfileDetail {
   profile: KOLProfile;
-  recent_tweets?: KOLTweet[];
-  recent_posts?: XhsPost[];
+  recent_posts?: KOLPost[] | XhsPost[];
 }
 
 // Backend API base URL
@@ -28,10 +27,7 @@ export async function GET(request: NextRequest) {
     const platform = searchParams.get("platform") || "twitter";
 
     if (!kolId) {
-      return NextResponse.json(
-        { error: "kolId is required" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "kolId is required" }, { status: 400 });
     }
 
     // Handle different platforms
@@ -52,7 +48,9 @@ export async function GET(request: NextRequest) {
       }
 
       if (!response.ok) {
-        throw new Error(`Backend API responded with status: ${response.status}`);
+        throw new Error(
+          `Backend API responded with status: ${response.status}`
+        );
       }
 
       const data = await response.json();
@@ -68,17 +66,14 @@ export async function GET(request: NextRequest) {
           username: xhsProfile.user_id,
           display_name: xhsProfile.nickname,
           description: xhsProfile.description,
-          category: xhsProfile.category,
           followers_count: xhsProfile.followers_count || 0,
           following_count: xhsProfile.following_count || 0,
-          posts_count: xhsProfile.notes_count || 0,
           likes_count: xhsProfile.likes_count || 0,
           collected_count: xhsProfile.collected_count || 0,
           avatar_url: xhsProfile.avatar_url,
           banner_url: null,
           is_verified: xhsProfile.is_verified || false,
           verification_type: xhsProfile.verified_type,
-          verified_info: xhsProfile.verified_info,
           rest_id: xhsProfile.user_id,
           join_date: null,
           location: xhsProfile.location,
@@ -86,12 +81,8 @@ export async function GET(request: NextRequest) {
           profile_url: xhsProfile.profile_url,
           bio: xhsProfile.description,
           red_id: xhsProfile.red_id,
-          gender: xhsProfile.gender,
-          tags: xhsProfile.tags,
-          scraped_at: xhsProfile.scraped_at,
-          created_at: xhsProfile.scraped_at,
+          created_at: xhsProfile.updated_at,
           updated_at: xhsProfile.updated_at,
-          last_scraped_at: xhsProfile.scraped_at,
         },
         recent_posts: data.recent_posts || [],
       };
@@ -101,7 +92,7 @@ export async function GET(request: NextRequest) {
 
     // Default: Twitter KOL
     const response = await fetch(
-      `${NEXT_PUBLIC_BACKEND_API_URL}/api/v1/kol-tweets/profile/${kolId}?include_tweets=${includeTweets}&tweet_limit=${tweetLimit}`,
+      `${NEXT_PUBLIC_BACKEND_API_URL}/api/v1/kol-posts/profile/${kolId}?include_posts=${includeTweets}&post_limit=${tweetLimit}`,
       {
         headers: {
           accept: "application/json",

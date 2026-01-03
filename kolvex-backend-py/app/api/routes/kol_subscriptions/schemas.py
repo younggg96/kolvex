@@ -31,7 +31,6 @@ class KOLProfile(BaseModel):
     is_verified: bool = False
     bio: Optional[str] = None
     followers_count: int = 0
-    posts_count: int = 0
 
 
 class KOLSubscriptionResponse(BaseModel):
@@ -50,7 +49,6 @@ class KOLSubscriptionResponse(BaseModel):
     kol_verified: bool = False
     kol_bio: Optional[str] = None
     kol_followers_count: int = 0
-    kol_category: Optional[str] = None
     kol_influence_score: float = 0
     kol_trending_score: float = 0
 

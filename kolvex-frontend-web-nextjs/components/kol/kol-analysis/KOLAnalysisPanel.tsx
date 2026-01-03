@@ -18,7 +18,7 @@ import { StockDetail } from "./StockDetail";
 import { AnalysisSkeleton } from "./AnalysisSkeleton";
 
 export default function KOLAnalysisPanel({
-  tweets,
+  posts,
   isLoading = false,
 }: KOLAnalysisPanelProps) {
   const [selectedStock, setSelectedStock] = useState<string | null>(null);
@@ -27,25 +27,25 @@ export default function KOLAnalysisPanel({
   >({});
   const [isLoadingPrices, setIsLoadingPrices] = useState(false);
 
-  // Extract stock predictions from tweets
+  // Extract stock predictions from posts
   const stockPerformances = useMemo(() => {
     const stockMap = new Map<string, StockPrediction[]>();
 
-    tweets.forEach((tweet) => {
-      if (!tweet.tickers || tweet.tickers.length === 0) return;
-      if (!tweet.sentiment?.value) return;
+    posts.forEach((post) => {
+      if (!post.tickers || post.tickers.length === 0) return;
+      if (!post.sentiment?.value) return;
 
-      tweet.tickers.forEach((ticker) => {
+      post.tickers.forEach((ticker) => {
         const prediction: StockPrediction = {
           ticker: ticker.toUpperCase(),
-          sentiment: tweet.sentiment!.value as
+          sentiment: post.sentiment!.value as
             | "bullish"
             | "bearish"
             | "neutral",
-          tweetId: tweet.id,
-          tweetText: tweet.tweet_text,
-          predictedAt: tweet.created_at || "",
-          confidence: tweet.sentiment?.confidence || null,
+          postId: post.id,
+          postContent: post.content,
+          predictedAt: post.created_at || "",
+          confidence: post.sentiment?.confidence || null,
         };
 
         const existing = stockMap.get(ticker.toUpperCase()) || [];
@@ -85,7 +85,7 @@ export default function KOLAnalysisPanel({
       .sort((a, b) => b.predictions.length - a.predictions.length);
 
     return performances;
-  }, [tweets, stockPrices]);
+  }, [posts, stockPrices]);
 
   // Fetch stock prices
   useEffect(() => {
@@ -229,7 +229,7 @@ export default function KOLAnalysisPanel({
             icon={Zap}
             label="Activity"
             value={stats.totalMentions}
-            subValue="tweets"
+            subValue="posts"
             colorClass="bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400"
           />
         </div>

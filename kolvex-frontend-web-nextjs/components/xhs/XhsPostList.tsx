@@ -14,59 +14,60 @@ import { FilterSheet, DateRange } from "@/components/common/FilterSheet";
 import XhsPostFeedList from "./XhsPostFeedList";
 import { cn } from "@/lib/utils";
 import { POST_TAB_OPTIONS } from "@/lib/platformConfig";
-import { KOLTweet } from "@/lib/kolTweetsApi";
 
 const PostTabOption = [...POST_TAB_OPTIONS];
 
 /**
- * 将统一的 KOLTweet 格式转换为 XhsPost 格式
+ * 将统一的 KOLPost 格式转换为 XhsPost 格式
  * 用于兼容现有的 XhsPostFeedList 组件
  */
-function transformToXhsPosts(tweets: any[]): XhsPost[] {
-  return tweets.map((tweet) => ({
-    id: tweet.id,
-    platform: tweet.platform || "xiaohongshu",
-    platform_post_id: tweet.platform_post_id,
-    note_id: tweet.platform_post_id || tweet.note_id || "",
-    post_hash: tweet.tweet_hash || null,
-    title: tweet.title || null,
-    content: tweet.tweet_text || tweet.content || null,
-    note_type: tweet.post_type || "normal",
-    permalink: tweet.permalink || null,
+function transformToXhsPosts(posts: any[]): XhsPost[] {
+  return posts.map((post) => ({
+    id: post.id,
+    platform: post.platform || "xiaohongshu",
+    platform_post_id: post.platform_post_id,
+    note_id: post.platform_post_id || post.note_id || "",
+    post_hash: post.post_hash || null,
+    title: post.title || null,
+    content: post.content || null,
+    note_type: post.post_type || "normal",
+    permalink: post.permalink || null,
     // 作者信息
-    author_name: tweet.display_name || tweet.username || null,
-    author_id: tweet.author_platform_id || tweet.username || null,
-    author_avatar: tweet.avatar_url || null,
+    author_name: post.display_name || post.username || null,
+    author_id: post.author_platform_id || post.username || null,
+    author_avatar: post.avatar_url || null,
     // 媒体资源
-    cover_url: tweet.cover_url || null,
-    image_urls: Array.isArray(tweet.media_urls)
-      ? tweet.media_urls.map((m: any) => (typeof m === "string" ? m : m.url)).filter(Boolean)
+    cover_url: post.cover_url || null,
+    image_urls: Array.isArray(post.media_urls)
+      ? post.media_urls
+          .map((m: any) => (typeof m === "string" ? m : m.url))
+          .filter(Boolean)
       : [],
-    video_url: tweet.video_url || null,
+    video_url: post.video_url || null,
     // 互动数据
-    like_count: tweet.like_count || 0,
-    collect_count: tweet.collect_count || tweet.bookmark_count || 0,
-    comment_count: tweet.reply_count || 0,
-    share_count: tweet.share_count || tweet.retweet_count || 0,
+    like_count: post.like_count || 0,
+    collect_count: post.collect_count || post.bookmark_count || 0,
+    comment_count: post.reply_count || 0,
+    share_count: post.share_count || post.repost_count || 0,
     // 标签
-    tags: tweet.tags || [],
-    search_keyword: tweet.search_keyword || null,
+    tags: post.tags || [],
+    search_keyword: post.search_keyword || null,
     // AI 分析结果
-    ai_sentiment: tweet.sentiment?.value || null,
-    ai_sentiment_confidence: tweet.sentiment?.confidence || 0,
-    ai_sentiment_reasoning: tweet.sentiment?.reasoning || null,
-    ai_tickers: tweet.tickers || [],
-    ai_tags: tweet.tags || [],
-    ai_summary: tweet.summary || null,
-    ai_trading_signal: tweet.trading_signal?.action || null,
-    ai_is_stock_related: tweet.is_stock_related?.is_related || false,
-    ai_stock_related_confidence: tweet.is_stock_related?.confidence || 0,
-    ai_stock_related_reason: tweet.is_stock_related?.reason || null,
-    ai_analyzed_at: tweet.ai_analyzed_at || null,
-    ai_model: tweet.ai_model || null,
+    ai_sentiment: post.sentiment?.value || null,
+    ai_sentiment_confidence: post.sentiment?.confidence || 0,
+    ai_sentiment_reasoning: post.sentiment?.reasoning || null,
+    ai_tickers: post.tickers || [],
+    ai_tags: post.ai_tags || [],
+    ai_summary: post.summary || null,
+    ai_trading_signal: post.trading_signal?.action || null,
+    ai_is_stock_related: post.is_stock_related?.is_related || false,
+    ai_stock_related_confidence: post.is_stock_related?.confidence || 0,
+    ai_stock_related_reason: post.is_stock_related?.reason || null,
+    ai_analyzed_at: post.ai_analyzed_at || null,
+    ai_model: post.ai_model || null,
     // 时间戳
-    created_at: tweet.created_at || null,
-    scraped_at: tweet.scraped_at || null,
+    created_at: post.created_at || null,
+    scraped_at: post.scraped_at || null,
     updated_at: null,
   }));
 }
@@ -347,8 +348,8 @@ export default function XhsPostList({ className }: { className?: string }) {
       }
 
       const data = await response.json();
-      // 支持两种响应格式：posts (旧) 和 tweets (新统一格式)
-      const fetchedPosts = transformToXhsPosts(data.tweets || data.posts || []);
+      // 使用 posts 响应格式
+      const fetchedPosts = transformToXhsPosts(data.posts || []);
 
       const filteredNewPosts = fetchedPosts.filter(
         (newPost: XhsPost) => !posts.some((post) => post.id === newPost.id)

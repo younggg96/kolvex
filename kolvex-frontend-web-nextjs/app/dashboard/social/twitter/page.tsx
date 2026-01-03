@@ -1,6 +1,6 @@
 import { Metadata } from "next";
 import DashboardLayout from "@/components/layout/DashboardLayout";
-import PostList from "@/components/tweet/PostList";
+import PostList from "@/components/post/PostList";
 
 export const metadata: Metadata = {
   title: "X / Twitter - Social Media - Kolvex",

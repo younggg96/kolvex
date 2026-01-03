@@ -5,7 +5,7 @@ import KOLHoverCard from "@/components/kol/KOLHoverCard";
 import { proxyImageUrl } from "@/lib/utils";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
-interface TweetHeaderProps {
+interface PostHeaderProps {
   screenName: string;
   createdAt: string;
   profileImageUrl?: string;
@@ -14,9 +14,10 @@ interface TweetHeaderProps {
   onTrackChange?: (tracked: boolean) => void;
   kolId?: string;
   platform?: Platform;
+  rightContent?: React.ReactNode;
 }
 
-export default function TweetHeader({
+export default function PostHeader({
   screenName,
   createdAt,
   profileImageUrl,
@@ -25,7 +26,8 @@ export default function TweetHeader({
   onTrackChange,
   kolId,
   platform = "twitter",
-}: TweetHeaderProps) {
+  rightContent,
+}: PostHeaderProps) {
   return (
     <div className="flex items-center gap-3 mb-3">
       <KOLHoverCard
@@ -49,7 +51,7 @@ export default function TweetHeader({
       </KOLHoverCard>
 
       <div className="flex-1 min-w-0">
-        <div className="font-bold text-sm text-gray-900 dark:text-white flex items-center">
+        <div className="font-bold text-sm text-gray-900 dark:text-white flex sm:items-center sm:flex-row flex-col gap-1">
           <KOLHoverCard
             kolId={kolId}
             screenName={screenName}
@@ -60,11 +62,12 @@ export default function TweetHeader({
           >
             <span className="hover:underline cursor-pointer">{screenName}</span>
           </KOLHoverCard>
-          <span className="text-gray-500 dark:text-white/50 font-normal text-xs ml-1">
+          <span className="text-gray-500 dark:text-white/50 font-normal text-xs sm:ml-1">
             @{screenName.toLowerCase()} · {onFormatDate(createdAt)}
           </span>
         </div>
       </div>
+      {rightContent}
     </div>
   );
 }

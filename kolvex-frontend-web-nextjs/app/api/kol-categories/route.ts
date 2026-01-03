@@ -8,7 +8,7 @@ const API_BASE_URL =
 export async function GET() {
   try {
     const response = await fetch(
-      `${API_BASE_URL}/api/v1/kol-tweets/categories`,
+      `${API_BASE_URL}/api/v1/kol-posts/categories`,
       {
         headers: { "Content-Type": "application/json" },
         cache: "no-store",

@@ -7,7 +7,7 @@ const API_BASE_URL =
 
 export async function GET() {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/v1/kol-tweets/stats`, {
+    const response = await fetch(`${API_BASE_URL}/api/v1/kol-posts/stats`, {
       headers: { "Content-Type": "application/json" },
       cache: "no-store",
     });
@@ -21,7 +21,7 @@ export async function GET() {
   } catch (error) {
     console.error("Error fetching KOL stats:", error);
     return NextResponse.json(
-      { error: "Failed to fetch KOL stats", total_tweets: 0, total_kols: 0, categories: [] },
+      { error: "Failed to fetch KOL stats", total_posts: 0, total_kols: 0, categories: [] },
       { status: 500 }
     );
   }

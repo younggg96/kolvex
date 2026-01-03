@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { KOLSummary } from "@/lib/kolTweetsApi";
+import { KOLSummary } from "@/lib/kolPostsApi";
 import KOLAvatar from "./KOLAvatar";
 import ExpandButton from "./ExpandButton";
 
@@ -30,4 +30,3 @@ export default function KOLList({ kols }: KOLListProps) {
     </div>
   );
 }
-

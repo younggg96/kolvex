@@ -282,11 +282,6 @@ export default function KOLHoverCard({
                   )}
                 </Button>
               </div>
-              {profile.category && (
-                <span className="inline-block px-2 py-0.5 text-[10px] font-medium bg-primary/10 text-primary rounded-full">
-                  {profile.category}
-                </span>
-              )}
 
               {/* Bio */}
               {profile.bio && (

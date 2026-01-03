@@ -1,3 +1,8 @@
+/**
+ * KOL Posts API 代理路由
+ * 将请求转发到后端 Python API
+ */
+
 import { NextRequest, NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
@@ -8,16 +13,12 @@ const API_BASE_URL =
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
-    const page = searchParams.get("page") || "1";
-    const pageSize = searchParams.get("page_size") || "20";
-    const username = searchParams.get("username");
-    const search = searchParams.get("search");
-
+    
+    // 转发所有查询参数到后端
     const backendParams = new URLSearchParams();
-    backendParams.set("page", page);
-    backendParams.set("page_size", pageSize);
-    if (username) backendParams.set("username", username);
-    if (search) backendParams.set("search", search);
+    searchParams.forEach((value, key) => {
+      backendParams.set(key, value);
+    });
 
     const response = await fetch(
       `${API_BASE_URL}/api/v1/kol-posts/?${backendParams.toString()}`,
@@ -28,7 +29,11 @@ export async function GET(request: NextRequest) {
     );
 
     if (!response.ok) {
-      throw new Error(`Backend API error: ${response.status}`);
+      const error = await response.json().catch(() => ({}));
+      return NextResponse.json(
+        { error: error.detail || "Backend API error", posts: [], total: 0, has_more: false },
+        { status: response.status }
+      );
     }
 
     const data = await response.json();

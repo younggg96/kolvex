@@ -241,7 +241,6 @@ class BatchKOLScraper:
                     display_name = profile_data.get("display_name", clean_username)
                     followers = profile_data.get("followers_count", 0)
                     following = profile_data.get("following_count", 0)
-                    posts = profile_data.get("posts_count", 0)
                     verified = profile_data.get("verification_type", "None")
 
                     # 认证徽章
@@ -255,7 +254,7 @@ class BatchKOLScraper:
 
                     print(f"   👤 {display_name} {badge}")
                     print(
-                        f"      📊 粉丝: {followers:,} | 关注: {following:,} | 推文: {posts:,}"
+                        f"      📊 粉丝: {followers:,} | 关注: {following:,}"
                     )
 
                     # 额外信息

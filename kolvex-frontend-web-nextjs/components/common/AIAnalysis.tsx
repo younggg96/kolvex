@@ -7,7 +7,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import type { TradingSignal } from "@/lib/kolTweetsApi";
+import type { TradingSignal } from "@/lib/kolPostsApi";
 import { cn } from "@/lib/utils";
 
 interface AIAnalysisProps {
@@ -39,7 +39,7 @@ export default function AIAnalysis({
     } else {
       actionStr = action;
     }
-    
+
     if (!actionStr) return null;
 
     const normalizedAction = actionStr.toLowerCase();

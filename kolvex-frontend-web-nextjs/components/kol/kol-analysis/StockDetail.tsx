@@ -79,7 +79,7 @@ export function StockDetail({ performance }: StockDetailProps) {
         <div className="space-y-2">
           {performance.predictions.slice(0, 3).map((pred) => (
             <div
-              key={pred.tweetId}
+              key={pred.postId}
               className="flex gap-2 p-2.5 rounded-lg bg-white dark:bg-black/20 border border-gray-100 dark:border-white/5"
             >
               <div className="mt-0.5 flex-shrink-0">
@@ -99,9 +99,9 @@ export function StockDetail({ performance }: StockDetailProps) {
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-xs text-gray-700 dark:text-white/80 line-clamp-2 leading-relaxed">
-                  {pred.tweetText.length > 120
-                    ? pred.tweetText.slice(0, 120) + "..."
-                    : pred.tweetText}
+                  {pred.postContent.length > 120
+                    ? pred.postContent.slice(0, 120) + "..."
+                    : pred.postContent}
                 </p>
                 <div className="flex items-center gap-2 mt-1.5">
                   <span className="text-[10px] text-gray-400 dark:text-white/40">

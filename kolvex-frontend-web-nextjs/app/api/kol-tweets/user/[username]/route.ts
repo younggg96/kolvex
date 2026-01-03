@@ -16,7 +16,7 @@ export async function GET(
     const pageSize = searchParams.get("page_size") || "20";
 
     const response = await fetch(
-      `${API_BASE_URL}/api/v1/kol-tweets/user/${encodeURIComponent(username)}?page=${page}&page_size=${pageSize}`,
+      `${API_BASE_URL}/api/v1/kol-posts/user/${encodeURIComponent(username)}?page=${page}&page_size=${pageSize}`,
       {
         headers: { "Content-Type": "application/json" },
         cache: "no-store",
@@ -30,9 +30,9 @@ export async function GET(
     const data = await response.json();
     return NextResponse.json(data);
   } catch (error) {
-    console.error("Error fetching user tweets:", error);
+    console.error("Error fetching user posts:", error);
     return NextResponse.json(
-      { error: "Failed to fetch user tweets", tweets: [], total: 0, has_more: false },
+      { error: "Failed to fetch user posts", posts: [], total: 0, has_more: false },
       { status: 500 }
     );
   }

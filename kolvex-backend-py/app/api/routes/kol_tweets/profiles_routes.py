@@ -12,22 +12,13 @@ from .schemas import (
     KOLProfilesResponse,
     KOLProfileDetail,
 )
-from .utils import convert_row_to_tweet, TWEET_SELECT_FIELDS
+from .utils import convert_row_to_post, POST_SELECT_FIELDS
 
 router = APIRouter()
 
 
 def _convert_row_to_profile(row: dict) -> KOLProfile:
     """将数据库行转换为 KOLProfile 对象"""
-    # 处理 tags 字段（可能是 JSONB）
-    tags = row.get("tags")
-    if isinstance(tags, str):
-        import json
-        try:
-            tags = json.loads(tags)
-        except:
-            tags = []
-    
     return KOLProfile(
         id=row["id"],
         platform=row.get("platform", "twitter"),
@@ -42,22 +33,14 @@ def _convert_row_to_profile(row: dict) -> KOLProfile:
         profile_url=row.get("profile_url"),
         is_verified=row.get("is_verified", False),
         verification_type=row.get("verification_type", "None"),
-        verified_info=row.get("verified_info"),
         followers_count=row.get("followers_count", 0) or 0,
         following_count=row.get("following_count", 0) or 0,
-        posts_count=row.get("posts_count", 0) or 0,
         likes_count=row.get("likes_count", 0) or 0,
         collected_count=row.get("collected_count", 0) or 0,
         rest_id=row.get("rest_id"),
         join_date=row.get("join_date"),
         red_id=row.get("red_id"),
-        gender=row.get("gender"),
-        tags=tags if isinstance(tags, list) else [],
-        category=row.get("category"),
-        source_keyword=row.get("source_keyword"),
-        source_note_id=row.get("source_note_id"),
         is_active=row.get("is_active", True),
-        scraped_at=row.get("scraped_at"),
         created_at=row.get("created_at"),
         updated_at=row.get("updated_at"),
     )
@@ -73,7 +56,7 @@ async def get_kol_profiles(
     获取 KOL 列表（完整 profile 数据，支持多平台）
 
     - **platform**: 平台筛选 (twitter, xiaohongshu, reddit, youtube)
-    - **sort_by**: 排序字段 (followers_count, posts_count, updated_at)
+    - **sort_by**: 排序字段 (followers_count, following_count, likes_count, updated_at)
     - **sort_order**: asc 或 desc
     """
     try:
@@ -82,11 +65,10 @@ async def get_kol_profiles(
         # 直接查询 kol_profiles 表获取所有字段
         query = supabase.table("kol_profiles").select(
             "id, platform, platform_user_id, username, display_name, "
-            "followers_count, following_count, posts_count, likes_count, collected_count, "
-            "avatar_url, banner_url, is_active, is_verified, verification_type, verified_info, "
+            "followers_count, following_count, likes_count, collected_count, "
+            "avatar_url, banner_url, is_active, is_verified, verification_type, "
             "rest_id, join_date, location, website, bio, profile_url, "
-            "red_id, gender, tags, category, source_keyword, source_note_id, "
-            "scraped_at, created_at, updated_at",
+            "red_id, created_at, updated_at",
             count="exact",
         )
 
@@ -98,7 +80,6 @@ async def get_kol_profiles(
         is_desc = sort_order.lower() == "desc"
         if sort_by in [
             "followers_count",
-            "posts_count",
             "following_count",
             "likes_count",
             "updated_at",
@@ -124,16 +105,16 @@ async def get_kol_profiles(
 async def get_kol_profile_detail(
     username: str,
     platform: Optional[str] = Query(None, description="Platform: twitter, xiaohongshu, reddit, youtube"),
-    include_tweets: bool = Query(True, description="Include recent tweets/posts"),
-    tweet_limit: int = Query(10, ge=1, le=50, description="Number of recent tweets/posts"),
+    include_posts: bool = Query(True, description="Include recent posts"),
+    post_limit: int = Query(10, ge=1, le=50, description="Number of recent posts"),
 ):
     """
     获取特定 KOL 的完整 Profile 信息（支持多平台）
 
     - **username**: KOL 用户名/ID
     - **platform**: 平台 (twitter, xiaohongshu, reddit, youtube)
-    - **include_tweets**: 是否包含最近推文/帖子
-    - **tweet_limit**: 返回的最近推文/帖子数量
+    - **include_posts**: 是否包含最近帖子
+    - **post_limit**: 返回的最近帖子数量
     """
     try:
         supabase = get_supabase_service()
@@ -141,11 +122,10 @@ async def get_kol_profile_detail(
         # 查询 profile
         query = supabase.table("kol_profiles").select(
             "id, platform, platform_user_id, username, display_name, "
-            "followers_count, following_count, posts_count, likes_count, collected_count, "
-            "avatar_url, banner_url, is_active, is_verified, verification_type, verified_info, "
+            "followers_count, following_count, likes_count, collected_count, "
+            "avatar_url, banner_url, is_active, is_verified, verification_type, "
             "rest_id, join_date, location, website, bio, profile_url, "
-            "red_id, gender, tags, category, source_keyword, source_note_id, "
-            "scraped_at, created_at, updated_at"
+            "red_id, created_at, updated_at"
         )
         
         # 根据 platform 决定用哪个字段查询
@@ -166,41 +146,41 @@ async def get_kol_profile_detail(
         row = profile_result.data[0]
         profile = _convert_row_to_profile(row)
 
-        # 获取最近推文/帖子（仅当 include_tweets=True 时）
-        recent_tweets = []
-        if include_tweets:
-            tweet_query = (
-                supabase.table("kol_tweets")
-                .select(TWEET_SELECT_FIELDS)
+        # 获取最近帖子（仅当 include_posts=True 时）
+        recent_posts = []
+        if include_posts:
+            post_query = (
+                supabase.table("kol_tweets")  # 数据库表名保持不变
+                .select(POST_SELECT_FIELDS)
             )
             
             # 根据 platform 使用不同的关联字段
             current_platform = profile.platform
             if current_platform == "xiaohongshu":
-                tweet_query = tweet_query.eq("platform", "xiaohongshu").eq("author_platform_id", profile.platform_user_id)
+                post_query = post_query.eq("platform", "xiaohongshu").eq("author_platform_id", profile.platform_user_id)
             else:
-                tweet_query = tweet_query.eq("platform", current_platform).eq("username", username)
+                post_query = post_query.eq("platform", current_platform).eq("username", username)
             
-            tweets_result = (
-                tweet_query
+            posts_result = (
+                post_query
                 .order("created_at", desc=True, nullsfirst=False)
-                .limit(tweet_limit)
+                .limit(post_limit)
                 .execute()
             )
 
-            # 为 convert_row_to_tweet 准备 profile 信息
+            # 为 convert_row_to_post 准备 profile 信息
             profile_info = {
                 "display_name": profile.display_name,
                 "avatar_url": profile.avatar_url,
             }
 
-            recent_tweets = [
-                convert_row_to_tweet(t, profile_info) for t in tweets_result.data
+            recent_posts = [
+                convert_row_to_post(t, profile_info) for t in posts_result.data
             ]
 
         return KOLProfileDetail(
             profile=profile,
-            recent_tweets=recent_tweets,
+            recent_posts=recent_posts,
         )
 
     except HTTPException:

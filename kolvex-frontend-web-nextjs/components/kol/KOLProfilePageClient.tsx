@@ -5,10 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState, ErrorState } from "@/components/common/EmptyState";
 import SectionCard from "@/components/layout/SectionCard";
-import PostFeedList from "@/components/tweet/PostFeedList";
+import PostFeedList from "@/components/post/PostFeedList";
 import XhsPostFeedList from "@/components/xhs/XhsPostFeedList";
 import { KOLProfileDetail } from "@/app/api/kol/route";
-import { KOLTweet } from "@/lib/kolTweetsApi";
+import { KOLPost } from "@/lib/kolPostsApi";
 import { XhsPost } from "@/lib/xhsApi";
 import { trackKOL, untrackKOL, isKOLTracked } from "@/lib/trackedKolApi";
 import { toast } from "sonner";
@@ -34,7 +34,7 @@ function formatDate(dateString: string): string {
   return `${Math.floor(diffInSeconds / 86400)}d`;
 }
 
-function formatTweetText(text: string) {
+function formatPostText(text: string) {
   return text.split(/(\s+)/).map((word, index) => {
     if (word.startsWith("#") || word.startsWith("$")) {
       return (
@@ -135,7 +135,7 @@ export default function KOLProfilePageClient({
   platform,
 }: KOLProfilePageClientProps) {
   const [profileData, setProfileData] = useState<KOLProfileDetail | null>(null);
-  const [tweets, setTweets] = useState<KOLTweet[]>([]);
+  const [posts, setPosts] = useState<KOLPost[]>([]);
   const [xhsPosts, setXhsPosts] = useState<XhsPost[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
@@ -171,11 +171,11 @@ export default function KOLProfilePageClient({
 
       // Handle posts based on platform
       if (platform === "xiaohongshu") {
-        setXhsPosts(data.recent_posts || []);
+        setXhsPosts((data.recent_posts as XhsPost[]) || []);
         setHasMore((data.recent_posts?.length || 0) >= PAGE_SIZE);
       } else {
-        setTweets(data.recent_tweets || []);
-        setHasMore((data.recent_tweets?.length || 0) >= PAGE_SIZE);
+        setPosts((data.recent_posts as KOLPost[]) || []);
+        setHasMore((data.recent_posts?.length || 0) >= PAGE_SIZE);
       }
 
       // Check tracking status
@@ -188,8 +188,8 @@ export default function KOLProfilePageClient({
     }
   }, [username, platform]);
 
-  // Load more tweets
-  const loadMoreTweets = async () => {
+  // Load more posts
+  const loadMorePosts = async () => {
     if (isLoadingMore || !hasMore) return;
 
     setIsLoadingMore(true);
@@ -199,16 +199,16 @@ export default function KOLProfilePageClient({
         `/api/tweets?username=${username}&page=${nextPage}&page_size=${PAGE_SIZE}`
       );
 
-      if (!response.ok) throw new Error("Failed to load more tweets");
+      if (!response.ok) throw new Error("Failed to load more posts");
 
       const data = await response.json();
-      const newTweets = data.tweets || [];
+      const newPosts = data.posts || [];
 
-      setTweets((prev) => [...prev, ...newTweets]);
+      setPosts((prev) => [...prev, ...newPosts]);
       setPage(nextPage);
-      setHasMore(newTweets.length >= PAGE_SIZE);
+      setHasMore(newPosts.length >= PAGE_SIZE);
     } catch (err) {
-      console.error("Failed to load more tweets:", err);
+      console.error("Failed to load more posts:", err);
     } finally {
       setIsLoadingMore(false);
     }
@@ -221,7 +221,7 @@ export default function KOLProfilePageClient({
       (target.scrollTop + target.clientHeight) / target.scrollHeight;
 
     if (scrollPercentage > 0.9 && hasMore && !isLoadingMore) {
-      loadMoreTweets();
+      loadMorePosts();
     }
   };
 
@@ -270,10 +270,10 @@ export default function KOLProfilePageClient({
       headerLeftAction={backButton}
     >
       <div className="h-full flex gap-2 p-2">
-        {/* Left Column - Profile & Tweets */}
+        {/* Left Column - Profile & Posts */}
         <SectionCard
           className={`flex-1 flex flex-col overflow-hidden ${
-            tweets.length > 0 ? "lg:max-w-[calc(100%-320px)]" : ""
+            posts.length > 0 ? "lg:max-w-[calc(100%-320px)]" : ""
           }`}
           contentClassName="p-0"
           scrollable
@@ -340,8 +340,8 @@ export default function KOLProfilePageClient({
                       )}
                     </>
                   )
-                ) : // Twitter tweets
-                tweets.length === 0 ? (
+                ) : // Twitter posts
+                posts.length === 0 ? (
                   <div className="mt-8">
                     <EmptyState
                       title="No posts yet"
@@ -351,9 +351,9 @@ export default function KOLProfilePageClient({
                 ) : (
                   <>
                     <PostFeedList
-                      posts={tweets}
+                      posts={posts}
                       formatDate={formatDate}
-                      formatText={formatTweetText}
+                      formatText={formatPostText}
                     />
 
                     {/* Loading More */}
@@ -367,7 +367,7 @@ export default function KOLProfilePageClient({
                     )}
 
                     {/* End of Feed */}
-                    {!hasMore && tweets.length > 0 && (
+                    {!hasMore && posts.length > 0 && (
                       <div className="py-8 text-center text-xs text-muted-foreground">
                         No more posts to load
                       </div>
@@ -379,8 +379,8 @@ export default function KOLProfilePageClient({
           ) : null}
         </SectionCard>
 
-        {/* Right Column - Analysis Panel (Desktop Only, only show when tweets exist) */}
-        {tweets.length > 0 && (
+        {/* Right Column - Analysis Panel (Desktop Only, only show when posts exist) */}
+        {posts.length > 0 && (
           <div className="hidden lg:flex w-[800px] shrink-0 h-full">
             <SectionCard
               className="flex-1 flex flex-col overflow-hidden"
@@ -391,7 +391,7 @@ export default function KOLProfilePageClient({
                 username={username}
                 displayName={profile?.display_name}
                 avatarUrl={profile?.avatar_url}
-                tweets={tweets}
+                posts={posts}
                 isLoading={isLoading}
               />
             </SectionCard>

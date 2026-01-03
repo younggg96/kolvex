@@ -10,6 +10,7 @@ from .engagement_service import EngagementService
 from .tickers_service import TickersService
 from .dashboard_service import DashboardService
 from .keywords_service import KeywordsService
+from .snapshot_service import AnalyticsSnapshotService
 
 __all__ = [
     "TrendsService",
@@ -19,5 +20,6 @@ __all__ = [
     "TickersService",
     "DashboardService",
     "KeywordsService",
+    "AnalyticsSnapshotService",
 ]
 

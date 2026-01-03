@@ -1,27 +1,26 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { KOLTweet } from "@/lib/kolTweetsApi";
-import TweetHeader from "@/components/tweet/TweetHeader";
-import { TwitterContent } from "@/components/tweet/content";
+import { KOLPost } from "@/lib/kolPostsApi";
+import PostHeader from "@/components/post/PostHeader";
+import PostContent from "@/components/post/PostContent";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, ExternalLink } from "lucide-react";
 import Link from "next/link";
+import SentimentBadge from "../common/SentimentBadge";
+import PostDetailModal from "@/components/post/PostDetailModal";
 
 interface PostFeedListProps {
-  posts: KOLTweet[];
+  posts: KOLPost[];
   formatDate?: (dateString: string) => string;
   formatText?: (text: string) => React.ReactNode;
 }
 
-export default function PostFeedList({
-  posts,
-  formatDate,
-  formatText,
-}: PostFeedListProps) {
+export default function PostFeedList({ posts, formatDate }: PostFeedListProps) {
   const [mounted, setMounted] = useState(false);
-
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedPost, setSelectedPost] = useState<KOLPost | null>(null);
   const [expandedNonStockPosts, setExpandedNonStockPosts] = useState<
     Set<number>
   >(new Set());
@@ -31,7 +30,7 @@ export default function PostFeedList({
   }, []);
 
   // check if the post is stock related
-  const isStockRelated = (post: KOLTweet): boolean => {
+  const isStockRelated = (post: KOLPost): boolean => {
     // if there is no is_stock_related field, default to true for backward compatibility
     if (!post.is_stock_related) return true;
     return post.is_stock_related.is_related === true;
@@ -52,7 +51,6 @@ export default function PostFeedList({
 
   const defaultFormatDate = (dateString: string) => {
     if (!mounted) {
-      // return a static format during SSR to prevent hydration mismatch
       return new Date(dateString).toLocaleDateString();
     }
 
@@ -70,7 +68,6 @@ export default function PostFeedList({
   const defaultFormatText = (text: string) => {
     return text.split(/(\s+)/).map((word, index) => {
       if (word.startsWith("$") && word.length > 1) {
-        // extract ticker symbol (remove $ and any trailing punctuation)
         const ticker = word
           .slice(1)
           .replace(/[.,!?;:'")\]]+$/, "")
@@ -100,16 +97,16 @@ export default function PostFeedList({
   const onFormatDate = formatDate || defaultFormatDate;
   const onFormatText = defaultFormatText;
 
-  const renderPostContent = (post: KOLTweet) => {
+  const renderPostContent = (post: KOLPost) => {
     return (
-      <TwitterContent
-        fullText={post.tweet_text}
+      <PostContent
+        fullText={post.content}
         url={post.permalink || ""}
         id={post.id.toString()}
         mediaUrls={post.media_urls?.map((m) => m.url || "") || []}
         aiSummary={post.summary}
         aiTradingSignal={post.trading_signal}
-        aiTags={post.tags}
+        aiTags={post.ai_tags || []}
         aiModel={post.ai_model}
         aiAnalyzedAt={post.ai_analyzed_at}
         sentiment={post.sentiment}
@@ -119,8 +116,7 @@ export default function PostFeedList({
     );
   };
 
-  // render the collapsed non-stock related post提示
-  const renderCollapsedNonStockPost = (post: KOLTweet) => {
+  const renderCollapsedNonStockPost = (post: KOLPost) => {
     return (
       <div className="py-1">
         <Button
@@ -132,7 +128,7 @@ export default function PostFeedList({
           <div className="flex items-center gap-2">
             <AlertCircle className="w-3 h-3" />
             <span className="text-xs">
-              This tweet is unrelated to stocks. Click to view
+              This post is unrelated to stocks. Click to view
             </span>
           </div>
         </Button>
@@ -150,9 +146,8 @@ export default function PostFeedList({
         return (
           <div key={post.id}>
             {shouldCollapse ? (
-              // collapsed state: only show the header and the hint
               <>
-                <TweetHeader
+                <PostHeader
                   screenName={post.username}
                   createdAt={post.created_at || new Date().toISOString()}
                   profileImageUrl={post.avatar_url || undefined}
@@ -164,9 +159,8 @@ export default function PostFeedList({
                 {renderCollapsedNonStockPost(post)}
               </>
             ) : (
-              // normal state or expanded state
               <>
-                <TweetHeader
+                <PostHeader
                   screenName={post.username}
                   createdAt={post.created_at || new Date().toISOString()}
                   profileImageUrl={post.avatar_url || undefined}
@@ -174,8 +168,24 @@ export default function PostFeedList({
                   kolId={post.username}
                   platform={post.platform}
                   initialTracked={false}
+                  rightContent={
+                    <div className="flex items-center gap-2 my-2">
+                      <SentimentBadge sentiment={post.sentiment} />
+                      <Button
+                        variant="ghost"
+                        size="xs"
+                        onClick={() => {
+                          setSelectedPost(post);
+                          setIsModalOpen(true);
+                        }}
+                        className="text-primary hover:!bg-primary/10 gap-1.5"
+                      >
+                        <ExternalLink className="w-3.5 h-3.5 ml-1" />
+                        <span className="sm:block hidden">Details</span>
+                      </Button>
+                    </div>
+                  }
                 />
-                {/* if the post is expanded and non-stock related, show the collapse button */}
                 {!stockRelated && isExpanded && (
                   <div className="py-1">
                     <Button
@@ -198,6 +208,19 @@ export default function PostFeedList({
           </div>
         );
       })}
+
+      {/* Post Detail Modal */}
+      {selectedPost && (
+        <PostDetailModal
+          isOpen={isModalOpen}
+          onClose={() => {
+            setIsModalOpen(false);
+            setSelectedPost(null);
+          }}
+          postUrl={selectedPost.permalink || ""}
+          postPermalink={selectedPost.permalink || undefined}
+        />
+      )}
     </>
   );
 }

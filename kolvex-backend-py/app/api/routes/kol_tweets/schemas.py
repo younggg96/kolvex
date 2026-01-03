@@ -1,5 +1,5 @@
 """
-KOL Tweets API Pydantic 模型
+KOL Posts API Pydantic 模型
 定义请求和响应的数据结构
 支持多平台统一数据结构 (Twitter, Xiaohongshu, Reddit, YouTube)
 """
@@ -61,12 +61,12 @@ class StockRelatedInfo(BaseModel):
 
 
 # ============================================================
-# 推文/帖子模型（统一多平台）
+# 帖子模型（统一多平台）
 # ============================================================
 
 
-class KOLTweet(BaseModel):
-    """KOL 推文/帖子模型（支持多平台）"""
+class KOLPost(BaseModel):
+    """KOL 帖子模型（支持多平台）"""
 
     id: int
     # === 平台信息 ===
@@ -81,8 +81,8 @@ class KOLTweet(BaseModel):
     
     # === 内容 ===
     title: Optional[str] = None  # 标题（小红书特有）
-    tweet_text: str
-    post_type: str = "tweet"  # tweet, retweet, note, video
+    content: str  # 帖子内容（原 tweet_text）
+    post_type: str = "post"  # post, repost, note, video
     created_at: Optional[datetime] = None
     permalink: Optional[str] = None
     
@@ -97,7 +97,7 @@ class KOLTweet(BaseModel):
     
     # === 互动数据 ===
     like_count: int = 0
-    retweet_count: int = 0  # Twitter 转发数
+    repost_count: int = 0  # 转发数
     reply_count: int = 0  # 评论数
     bookmark_count: int = 0  # 书签数
     views_count: int = 0
@@ -116,6 +116,8 @@ class KOLTweet(BaseModel):
     sentiment: Optional[SentimentAnalysis] = None
     # 股票代码
     tickers: List[str] = []
+    # AI 生成的标签
+    ai_tags: List[str] = []
     # 投资信号
     trading_signal: Optional[TradingSignal] = None
     # 摘要
@@ -127,10 +129,10 @@ class KOLTweet(BaseModel):
     ai_model: Optional[str] = None
 
 
-class KOLTweetsResponse(BaseModel):
-    """KOL 推文列表响应"""
+class KOLPostsResponse(BaseModel):
+    """KOL 帖子列表响应"""
 
-    tweets: List[KOLTweet]
+    posts: List[KOLPost]
     total: int
     page: int
     page_size: int
@@ -163,12 +165,10 @@ class KOLProfile(BaseModel):
     # === 认证信息 ===
     is_verified: bool = False
     verification_type: Optional[str] = "None"
-    verified_info: Optional[str] = None
     
     # === 互动数据 ===
     followers_count: int = 0
     following_count: int = 0
-    posts_count: int = 0
     likes_count: int = 0  # 获赞数（小红书特有）
     collected_count: int = 0  # 收藏数（小红书特有）
     
@@ -178,15 +178,9 @@ class KOLProfile(BaseModel):
     
     # === 小红书特有字段 ===
     red_id: Optional[str] = None  # 小红书号
-    gender: Optional[str] = None
-    tags: Optional[List[str]] = None
-    category: Optional[str] = None
-    source_keyword: Optional[str] = None
-    source_note_id: Optional[str] = None
     
     # === 状态和时间 ===
     is_active: bool = True
-    scraped_at: Optional[datetime] = None
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
 
@@ -202,7 +196,7 @@ class KOLProfileDetail(BaseModel):
     """KOL 详细信息"""
 
     profile: KOLProfile
-    recent_tweets: List[KOLTweet] = []
+    recent_posts: List[KOLPost] = []
 
 
 # ============================================================
@@ -213,7 +207,7 @@ class KOLProfileDetail(BaseModel):
 class StatsResponse(BaseModel):
     """统计响应"""
 
-    total_tweets: int
+    total_posts: int
     total_kols: int
 
 
@@ -230,7 +224,7 @@ class TrendDataPoint(BaseModel):
 
 class TrendSummary(BaseModel):
     """趋势统计摘要"""
-    total_tweets: int
+    total_posts: int
     average_daily: float
     max_daily: int
     min_daily: int
@@ -257,10 +251,10 @@ class KOLRanking(BaseModel):
     avatar_url: Optional[str] = None
     total_views: int
     total_likes: int
-    total_retweets: int
+    total_reposts: int
     total_replies: int
     total_bookmarks: int
-    tweet_count: int
+    post_count: int
     engagement_rate: float
 
 
@@ -286,7 +280,7 @@ class TickerAnalysis(BaseModel):
     mention_count: int
     total_views: int
     total_likes: int
-    total_retweets: int
+    total_reposts: int
     unique_author_count: int
     sentiment_score: float
     sentiment_counts: Optional[SentimentDistribution] = None
@@ -294,13 +288,13 @@ class TickerAnalysis(BaseModel):
 
 class DashboardOverview(BaseModel):
     """仪表盘概览"""
-    total_tweets: int
+    total_posts: int
     total_views: int
     total_engagement: int
     unique_authors: int
-    stock_related_tweets: int
-    avg_views_per_tweet: float
-    avg_engagement_per_tweet: float
+    stock_related_posts: int
+    avg_views_per_post: float
+    avg_engagement_per_post: float
 
 
 class KeywordItem(BaseModel):
@@ -317,10 +311,10 @@ class TagItem(BaseModel):
 
 class SentimentEngagementComparison(BaseModel):
     """情感互动对比"""
-    tweet_count: int
+    post_count: int
     avg_views: float
     avg_likes: float
-    avg_retweets: float
+    avg_reposts: float
     avg_engagement_rate: float
     total_views: int
     total_likes: int

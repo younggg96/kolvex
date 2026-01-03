@@ -19,6 +19,7 @@ from app.services.analytics import (
     TickersService,
     DashboardService,
     KeywordsService,
+    AnalyticsSnapshotService,
 )
 
 router = APIRouter()
@@ -272,4 +273,103 @@ async def get_sentiment_engagement_analysis(
         raise HTTPException(
             status_code=500,
             detail=f"Failed to get sentiment-engagement analysis: {str(e)}",
+        )
+
+
+# ============================================================
+# 9. 分析快照管理 - Analytics Snapshots
+# ============================================================
+
+
+@router.post("/analytics/snapshots/generate")
+async def generate_analytics_snapshot(
+    days: int = Query(7, ge=1, le=30, description="Number of days to analyze"),
+):
+    """
+    📸 生成分析快照
+
+    分析数据库中的数据并保存到 analytics_snapshots 表。
+    这会触发对现有数据的完整分析并持久化结果。
+
+    - **days**: 分析的天数范围（默认7天）
+    """
+    try:
+        service = AnalyticsSnapshotService()
+        data = await service.generate_dashboard_snapshot(days=days)
+        return {"success": True, "data": data}
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, detail=f"Failed to generate snapshot: {str(e)}"
+        )
+
+
+@router.get("/analytics/snapshots")
+async def list_analytics_snapshots(
+    snapshot_type: str = Query("dashboard", description="Snapshot type"),
+    limit: int = Query(10, ge=1, le=50, description="Number of snapshots to return"),
+):
+    """
+    📋 获取历史分析快照列表
+
+    返回历史快照的摘要信息。
+
+    - **snapshot_type**: 快照类型 (dashboard)
+    - **limit**: 返回数量
+    """
+    try:
+        service = AnalyticsSnapshotService()
+        data = await service.list_snapshots(snapshot_type=snapshot_type, limit=limit)
+        return {"success": True, "data": data}
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, detail=f"Failed to list snapshots: {str(e)}"
+        )
+
+
+@router.get("/analytics/snapshots/latest")
+async def get_latest_snapshot(
+    days: int = Query(7, ge=1, le=30, description="Period days"),
+):
+    """
+    📊 获取最新的分析快照
+
+    返回指定周期的最新快照数据，格式与 dashboard API 相同。
+
+    - **days**: 分析周期
+    """
+    try:
+        service = AnalyticsSnapshotService()
+        snapshot = await service.get_latest_snapshot("dashboard", days)
+        if snapshot:
+            formatted = service._format_snapshot_for_dashboard(snapshot)
+            return {"success": True, "data": formatted}
+        else:
+            return {
+                "success": False,
+                "message": f"No snapshot found for {days} days period. Use POST /analytics/snapshots/generate to create one.",
+            }
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, detail=f"Failed to get latest snapshot: {str(e)}"
+        )
+
+
+@router.delete("/analytics/snapshots/cleanup")
+async def cleanup_old_snapshots(
+    keep_count: int = Query(10, ge=1, le=100, description="Number of snapshots to keep"),
+):
+    """
+    🗑️ 清理旧快照
+
+    删除旧的快照，只保留最新的 N 个。
+
+    - **keep_count**: 保留的快照数量
+    """
+    try:
+        service = AnalyticsSnapshotService()
+        data = await service.delete_old_snapshots(keep_count=keep_count)
+        return {"success": True, "data": data}
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, detail=f"Failed to cleanup snapshots: {str(e)}"
         )

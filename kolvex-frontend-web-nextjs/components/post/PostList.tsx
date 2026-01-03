@@ -5,7 +5,7 @@ import { CardSkeleton } from "@/components/common/LoadingSkeleton";
 import { EmptyState, ErrorState } from "@/components/common/EmptyState";
 import SectionCard from "@/components/layout/SectionCard";
 import Image from "next/image";
-import { KOLTweet } from "@/lib/kolTweetsApi";
+import { KOLPost } from "@/lib/kolPostsApi";
 import { SwitchTab } from "@/components/ui/switch-tab";
 import { Button } from "@/components/ui/button";
 import { RotateCcw } from "lucide-react";
@@ -24,7 +24,7 @@ export default function PostList({ className }: { className?: string }) {
   const [timeRange, setTimeRange] = useState<string>("all");
   const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
 
-  const [posts, setPosts] = useState<KOLTweet[]>([]);
+  const [posts, setPosts] = useState<KOLPost[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -286,7 +286,7 @@ export default function PostList({ className }: { className?: string }) {
       const fetchedPosts = data.tweets || data.posts || [];
 
       const filteredNewPosts = fetchedPosts.filter(
-        (newPost: KOLTweet) => !posts.some((post) => post.id === newPost.id)
+        (newPost: KOLPost) => !posts.some((post) => post.id === newPost.id)
       );
 
       setPosts((prev) => [...prev, ...filteredNewPosts]);

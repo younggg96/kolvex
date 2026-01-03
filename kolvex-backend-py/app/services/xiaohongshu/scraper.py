@@ -45,11 +45,9 @@ from .database import (
     kol_exists,
 )
 from .extractors import (
-    extract_note_card,
     extract_note_detail,
     extract_all_note_cards,
     merge_note_data,
-    extract_note_id_from_url,
     extract_kol_profile,
     extract_kol_recent_notes,
     extract_author_id_from_note,
@@ -431,20 +429,27 @@ class XiaohongshuScraper:
                     const html = document.body?.innerText || '';
                     const result = { needLogin: false, reason: '' };
                     
-                    // 检查是否有登录弹窗
+                    // 检查是否有登录弹窗（更全面的选择器）
                     const loginSelectors = [
                         '[class*="login-modal"]',
                         '[class*="login-container"]:not([class*="side"])',
                         '[class*="login-dialog"]',
                         '[class*="login-popup"]',
+                        '.reds-modal-wrapper', // 小红书弹窗容器
+                        '[class*="reds-modal"]',
                     ];
                     
                     for (const selector of loginSelectors) {
                         const el = document.querySelector(selector);
                         if (el && el.offsetParent !== null) {
-                            result.needLogin = true;
-                            result.reason = 'login_popup';
-                            return result;
+                            // 进一步检查弹窗内容是否包含登录相关文本
+                            const modalText = el.innerText || '';
+                            if (modalText.includes('登录') || modalText.includes('扫码') || 
+                                modalText.includes('微信') || modalText.includes('小红书号')) {
+                                result.needLogin = true;
+                                result.reason = 'login_popup';
+                                return result;
+                            }
                         }
                     }
                     
@@ -458,15 +463,23 @@ class XiaohongshuScraper:
                         }
                     }
                     
-                    // 检查登录后查看等提示
+                    // 检查"登录后查看"等提示
                     if (html.includes('登录后查看') || html.includes('请先登录')) {
                         result.needLogin = true;
                         result.reason = 'login_required_text';
                         return result;
                     }
                     
+                    // 新增：检查"登录后查看搜索结果"
+                    if (html.includes('登录后查看搜索结果')) {
+                        result.needLogin = true;
+                        result.reason = 'search_login_required';
+                        return result;
+                    }
+                    
                     // 检查二维码元素 + 没有正常内容
-                    if (document.querySelector('img[src*="qrcode"]')) {
+                    const qrcodeImg = document.querySelector('img[src*="qrcode"], img[src*="qr_code"], canvas');
+                    if (qrcodeImg && qrcodeImg.offsetParent !== null) {
                         const hasNotes = document.querySelector('section.note-item, .note-item');
                         if (!hasNotes) {
                             result.needLogin = true;
@@ -576,13 +589,36 @@ class XiaohongshuScraper:
             random_sleep(3, 5)
 
             # 🔑 检测是否需要登录，如需要则等待用户手动扫码
-            if self._check_login_required(page):
+            login_required_attempts = 0
+            max_login_attempts = 3
+            
+            while self._check_login_required(page) and login_required_attempts < max_login_attempts:
+                login_required_attempts += 1
+                print(f"\n   🔐 检测到登录要求 (尝试 {login_required_attempts}/{max_login_attempts})")
+                
+                # 等待用户登录
                 self._wait_for_manual_login(context, page)
+                
+                # 保存新 cookies
+                new_cookies = context.cookies()
+                save_cookies(new_cookies, self.cookies_file)
+                print("   🍪 已保存新的 cookies")
+                
                 # 登录后刷新页面
+                print("   🔄 刷新搜索页面...")
                 page.goto(
                     search_url, wait_until="domcontentloaded", timeout=PAGE_LOAD_TIMEOUT
                 )
                 random_sleep(2, 3)
+                
+                # 再次检查
+                if not self._check_login_required(page):
+                    print("   ✅ 登录成功，继续爬取")
+                    break
+            
+            if login_required_attempts >= max_login_attempts:
+                print(f"   ❌ 多次登录尝试失败，跳过关键词: {keyword}")
+                return []
 
             # 等待搜索结果加载
             try:
@@ -936,7 +972,14 @@ class XiaohongshuScraper:
             recent_notes = extract_kol_recent_notes(page, limit=max_posts)
 
             if not recent_notes:
-                print(f"      ℹ️ 未找到 KOL 最近帖子")
+                # 截图调试
+                clean_author = (author_name or author_id or "unknown").replace("/", "_")
+                debug_path = f"debug_xhs_{clean_author}.png"
+                try:
+                    page.screenshot(path=debug_path)
+                    print(f"      ⚠️ 未找到 KOL 最近帖子，截图已保存: {debug_path}")
+                except Exception:
+                    print(f"      ℹ️ 未找到 KOL 最近帖子")
                 return 0
 
             print(f"      📋 找到 {len(recent_notes)} 条帖子")
@@ -1082,10 +1125,42 @@ class XiaohongshuScraper:
 
             # 加载 cookies（如果有）
             if cookies:
+                print(f"🍪 正在加载 {len(cookies)} 个 cookies...")
                 context.add_cookies(cookies)
-
-            page = context.new_page()
-            self._add_stealth_scripts(page)
+                
+                # 验证 cookies 是否有效 - 访问首页
+                print("🔍 验证 cookies 有效性...")
+                page = context.new_page()
+                self._add_stealth_scripts(page)
+                
+                try:
+                    page.goto(BASE_URL, wait_until="domcontentloaded", timeout=30000)
+                    random_sleep(2, 3)
+                    
+                    # 检查是否需要登录
+                    if self._check_login_required(page):
+                        print("\n⚠️ Cookies 已失效或需要重新验证！")
+                        print("请运行以下命令重新登录:")
+                        print("   python -m app.services.xiaohongshu --login")
+                        
+                        if self.headless:
+                            raise RuntimeError(
+                                "❌ Cookies 已失效且当前为无头模式！\n"
+                                "请先运行: python -m app.services.xiaohongshu --login"
+                            )
+                        else:
+                            # 非 headless 模式，等待用户登录
+                            self._wait_for_manual_login(context, page)
+                            # 登录后保存新 cookies
+                            new_cookies = context.cookies()
+                            save_cookies(new_cookies, self.cookies_file)
+                    else:
+                        print("✅ Cookies 有效！")
+                except Exception as e:
+                    print(f"⚠️ 验证 cookies 时出错: {e}")
+            else:
+                page = context.new_page()
+                self._add_stealth_scripts(page)
 
             # 保存 context 引用供内部方法使用
             self._current_context = context
@@ -1113,14 +1188,26 @@ class XiaohongshuScraper:
                 print(f"\n❌ 爬取过程出错: {e}")
 
             finally:
-                # 更新 cookies
+                # 更新 cookies（安全关闭）
                 try:
+                    # 尝试保存 cookies
                     new_cookies = context.cookies()
                     save_cookies(new_cookies, self.cookies_file)
-                except Exception:
-                    pass
+                except (KeyboardInterrupt, Exception) as e:
+                    # 在 Ctrl+C 或其他错误时，忽略 cookie 保存错误
+                    if isinstance(e, KeyboardInterrupt):
+                        # 用户中断，不需要打印错误
+                        pass
+                    else:
+                        # 其他错误，可能是浏览器已关闭
+                        pass
 
-                browser.close()
+                # 安全关闭浏览器
+                try:
+                    browser.close()
+                except Exception:
+                    # 浏览器可能已经关闭，忽略错误
+                    pass
 
         # 打印最终统计
         self._print_final_stats()

@@ -1,27 +1,17 @@
 [
   {
-    "name": "acw_tc",
-    "value": "0a00d54217669477921283361e83392a42aa01ebe69eb00175b8f560ad5358",
-    "domain": "www.xiaohongshu.com",
-    "path": "/",
-    "expires": 1766949592.233572,
-    "httpOnly": true,
-    "secure": false,
-    "sameSite": "Lax"
-  },
-  {
     "name": "abRequestId",
-    "value": "26abfec7-0375-57c4-b4dd-3e1a4d0c3c09",
+    "value": "754b883d-b891-5539-a1ba-b628ef68ec0d",
     "domain": ".xiaohongshu.com",
     "path": "/",
-    "expires": 1798483792.233624,
+    "expires": 1799006458.368209,
     "httpOnly": false,
     "secure": false,
     "sameSite": "Lax"
   },
   {
     "name": "webBuild",
-    "value": "5.3.0",
+    "value": "5.4.0",
     "domain": ".xiaohongshu.com",
     "path": "/",
     "expires": -1,
@@ -34,34 +24,74 @@
     "value": "xhs-pc-web",
     "domain": ".xiaohongshu.com",
     "path": "/",
-    "expires": 1798483809,
+    "expires": 1799011471,
     "httpOnly": false,
     "secure": false,
     "sameSite": "Lax"
   },
   {
     "name": "a1",
-    "value": "19b664ba9c88mfcotldfe35wr6h795h6iii114don30000986611",
+    "value": "19b85735deep351k8p3qbecgci3pth00r74ncyrzg50000162844",
     "domain": ".xiaohongshu.com",
     "path": "/",
-    "expires": 1798483793,
+    "expires": 1799006489,
     "httpOnly": false,
     "secure": false,
     "sameSite": "Lax"
   },
   {
     "name": "webId",
-    "value": "adf56cd450a6567d732e283763badd54",
+    "value": "a64f2f0f251f29eb0d30a91321fd79e0",
     "domain": ".xiaohongshu.com",
     "path": "/",
-    "expires": 1798483793,
+    "expires": 1799006489,
     "httpOnly": false,
     "secure": false,
     "sameSite": "Lax"
   },
   {
+    "name": "id_token",
+    "value": "VjEAAB/Hvkp6RL8IrGD7MSfZzgKJ81xGkCvRfPQUKnAuiJmCujcgon1oN72gNLYc1dXh4v/Ud+1Vw0f5ZQVPrzmaDmZVh1aUf1FIDG87oK/jbTDistgXkvSpIhTn9pIkxXb0japZ",
+    "domain": ".xiaohongshu.com",
+    "path": "/",
+    "expires": 1799006511.407028,
+    "httpOnly": true,
+    "secure": true,
+    "sameSite": "Lax"
+  },
+  {
+    "name": "gid",
+    "value": "yjDY2YWSDSFSyjDY2Wq2fWvFddUq2yTYUqAD4ukdSkS3qI28U9x88S888yKJY448i20WSydq",
+    "domain": ".xiaohongshu.com",
+    "path": "/",
+    "expires": 1802035459.661708,
+    "httpOnly": false,
+    "secure": false,
+    "sameSite": "Lax"
+  },
+  {
+    "name": "acw_tc",
+    "value": "0a00de9917674740646553976e7ba7b385a1ed682685b2ece90e133378a72d",
+    "domain": "www.xiaohongshu.com",
+    "path": "/",
+    "expires": 1767475864.742613,
+    "httpOnly": true,
+    "secure": false,
+    "sameSite": "Lax"
+  },
+  {
+    "name": "acw_tc",
+    "value": "0a5087e817674741006445414ef87c6a80df867b1343abae00e7cec436f818",
+    "domain": "edith.xiaohongshu.com",
+    "path": "/",
+    "expires": 1767475900.786724,
+    "httpOnly": true,
+    "secure": false,
+    "sameSite": "Lax"
+  },
+  {
     "name": "unread",
-    "value": "{%22ub%22:%2263fcabdb0000000027013113%22%2C%22ue%22:%2264351b80000000001300668c%22%2C%22uc%22:13}",
+    "value": "{%22ub%22:%226947de45000000001f009100%22%2C%22ue%22:%226938e650000000000d03beed%22%2C%22uc%22:24}",
     "domain": ".xiaohongshu.com",
     "path": "/",
     "expires": -1,
@@ -70,71 +100,41 @@
     "sameSite": "Lax"
   },
   {
-    "name": "websectiga",
-    "value": "2845367ec3848418062e761c09db7caf4e8b79d132ccdd1a4f8e64a11d0cac0d",
+    "name": "web_session",
+    "value": "030037ae6a21eec9e273b6c1212e4ad950d21e",
     "domain": ".xiaohongshu.com",
     "path": "/",
-    "expires": 1767206994,
+    "expires": 1799011194.899618,
+    "httpOnly": true,
+    "secure": true,
+    "sameSite": "Lax"
+  },
+  {
+    "name": "websectiga",
+    "value": "9730ffafd99f2d09dc024760e253af6ab1feb0002827740b95a255ddf7847fc8",
+    "domain": ".xiaohongshu.com",
+    "path": "/",
+    "expires": 1767734651,
     "httpOnly": false,
     "secure": false,
     "sameSite": "Lax"
   },
   {
     "name": "sec_poison_id",
-    "value": "22507eec-30ae-49eb-95e1-d3cb06e736a4",
+    "value": "4ed043cd-41c4-4114-9c9f-22fe0cbd422e",
     "domain": ".xiaohongshu.com",
     "path": "/",
-    "expires": 1766948399,
+    "expires": 1767476056,
     "httpOnly": false,
     "secure": false,
-    "sameSite": "Lax"
-  },
-  {
-    "name": "acw_tc",
-    "value": "0ad6fb1a17669477942496028e42937f35f7066e454d21d05993b31895af3f",
-    "domain": "edith.xiaohongshu.com",
-    "path": "/",
-    "expires": 1766949594.355881,
-    "httpOnly": true,
-    "secure": false,
-    "sameSite": "Lax"
-  },
-  {
-    "name": "gid",
-    "value": "yjDKK4DDWf32yjDKK4D0j34fSYY6iSl91fid3lIq2EFKxyq8Wj2xKy888jYKKyy8jiSj24DJ",
-    "domain": ".xiaohongshu.com",
-    "path": "/",
-    "expires": 1801507797.034939,
-    "httpOnly": false,
-    "secure": false,
-    "sameSite": "Lax"
-  },
-  {
-    "name": "web_session",
-    "value": "040069b1bfe69f56f588b433643b4b3ad34b36",
-    "domain": ".xiaohongshu.com",
-    "path": "/",
-    "expires": 1798483805.668057,
-    "httpOnly": true,
-    "secure": true,
-    "sameSite": "Lax"
-  },
-  {
-    "name": "id_token",
-    "value": "VjEAAIQenFObaYfnKcXQ6NlMCauENVKFlx0Efw9KgbHhAx87l/OQdKdwGipDZCe9rEiIqBXx9SH3+ReAhEHtyz+7oNK6L42tR46EN/fFn05+4Npy/gv6ogzeTgpU+69V5Tf/eRQb",
-    "domain": ".xiaohongshu.com",
-    "path": "/",
-    "expires": 1798483805.668103,
-    "httpOnly": true,
-    "secure": true,
     "sameSite": "Lax"
   },
   {
     "name": "loadts",
-    "value": "1766947809522",
+    "value": "1767475471076",
     "domain": ".xiaohongshu.com",
     "path": "/",
-    "expires": 1798483809,
+    "expires": 1799011471,
     "httpOnly": false,
     "secure": false,
     "sameSite": "Lax"

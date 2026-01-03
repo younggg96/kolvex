@@ -7,7 +7,7 @@ import {
   HoverCardTrigger,
 } from "@/components/ui/hover-card";
 import { cn } from "@/lib/utils";
-import type { SentimentAnalysis } from "@/lib/kolTweetsApi";
+import type { SentimentAnalysis } from "@/lib/kolPostsApi";
 
 interface SentimentBadgeProps {
   sentiment: SentimentAnalysis | null | undefined;
@@ -85,9 +85,11 @@ export default function SentimentBadge({
       )}
     >
       <Icon className={cn("w-3 h-3", config.iconColor)} />
-      <span>{config.label}</span>
+      <span className="sm:block hidden">{config.label}</span>
       {confidencePercent !== null && (
-        <span className="opacity-70">({confidencePercent}%)</span>
+        <span className="opacity-70 sm:block hidden">
+          ({confidencePercent}%)
+        </span>
       )}
     </div>
   );
@@ -126,4 +128,3 @@ export default function SentimentBadge({
     </HoverCard>
   );
 }
-

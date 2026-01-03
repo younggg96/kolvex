@@ -266,7 +266,6 @@ export default function KOLRankingTable({
                             platform={kol.platform}
                             verified={kol.verified}
                             showPlatformBadge={false}
-                            category={kol.category}
                           />
                         </TableCell>
 

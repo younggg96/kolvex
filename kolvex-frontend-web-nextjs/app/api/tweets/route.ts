@@ -7,26 +7,37 @@ export const dynamic = "force-dynamic";
 const NEXT_PUBLIC_BACKEND_API_URL =
   process.env.NEXT_PUBLIC_BACKEND_API_URL || "http://127.0.0.1:8000";
 
-export interface Tweet {
+export interface Post {
   id: number;
+  platform: string;
+  platform_post_id: string;
   username: string;
   display_name: string;
   avatar_url: string;
-  tweet_text: string;
+  author_platform_id: string;
+  title: string;
+  content: string;
+  post_type: string;
   created_at: string;
   permalink: string;
+  cover_url: string;
   media_urls: {
     type: string;
     url: string;
     poster: string;
   }[];
+  video_url: string;
   is_repost: boolean;
   original_author: string;
   like_count: number;
-  retweet_count: number;
+  repost_count: number;
   reply_count: number;
   bookmark_count: number;
   views_count: number;
+  collect_count: number;
+  share_count: number;
+  tags: string[];
+  search_keyword: string;
   scraped_at: string;
   sentiment: {
     value: string;
@@ -34,7 +45,6 @@ export interface Tweet {
     reasoning: string;
   };
   tickers: string[];
-  tags: string[];
   trading_signal: {
     action: string;
     tickers: string[];
@@ -50,8 +60,8 @@ export interface Tweet {
   ai_model: string;
 }
 
-export interface TweetsResponse {
-  tweets: Tweet[];
+export interface PostsResponse {
+  posts: Post[];
   total: number;
   page: number;
   page_size: number;
@@ -71,7 +81,7 @@ export async function GET(request: NextRequest) {
 
     // Fetch data from backend API with platform filter
     const response = await fetch(
-      `${NEXT_PUBLIC_BACKEND_API_URL}/api/v1/kol-tweets/?page=${page}&page_size=${pageSize}&platform=${platform}`,
+      `${NEXT_PUBLIC_BACKEND_API_URL}/api/v1/kol-posts/?page=${page}&page_size=${pageSize}&platform=${platform}`,
       {
         headers: {
           accept: "application/json",
@@ -91,7 +101,7 @@ export async function GET(request: NextRequest) {
     console.error("API Error:", error);
     return NextResponse.json(
       {
-        error: "Failed to fetch tweets data",
+        error: "Failed to fetch posts data",
         details: error instanceof Error ? error.message : "Unknown error",
       },
       { status: 500 }

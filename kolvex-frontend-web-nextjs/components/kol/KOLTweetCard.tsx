@@ -1,30 +1,27 @@
 "use client";
 
 import { useState } from "react";
-import { Heart, Repeat2, MessageCircle, ExternalLink, Copy, Check } from "lucide-react";
 import {
-  KOLTweet,
-  getCategoryInfo,
-  formatNumber,
-  formatTimeAgo,
-} from "@/lib/kolTweetsApi";
+  Heart,
+  Repeat2,
+  MessageCircle,
+  ExternalLink,
+  Copy,
+  Check,
+} from "lucide-react";
+import { KOLPost, formatNumber, formatTimeAgo } from "@/lib/kolPostsApi";
 import { cn, proxyImageUrl } from "@/lib/utils";
 
-interface KOLTweetCardProps {
-  tweet: KOLTweet;
-  showCategory?: boolean;
+interface KOLPostCardProps {
+  post: KOLPost;
 }
 
-export default function KOLTweetCard({
-  tweet,
-  showCategory = true,
-}: KOLTweetCardProps) {
+export default function KOLPostCard({ post }: KOLPostCardProps) {
   const [copied, setCopied] = useState(false);
-  const categoryInfo = getCategoryInfo(tweet.category);
 
   const handleCopy = async () => {
     try {
-      await navigator.clipboard.writeText(tweet.tweet_text);
+      await navigator.clipboard.writeText(post.content);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
@@ -32,9 +29,9 @@ export default function KOLTweetCard({
     }
   };
 
-  const handleOpenTweet = () => {
-    if (tweet.permalink) {
-      window.open(tweet.permalink, "_blank", "noopener,noreferrer");
+  const handleOpenPost = () => {
+    if (post.permalink) {
+      window.open(post.permalink, "_blank", "noopener,noreferrer");
     }
   };
 
@@ -44,27 +41,18 @@ export default function KOLTweetCard({
       <div className="flex items-start gap-3 mb-3">
         {/* Avatar */}
         <div className="relative flex-shrink-0">
-          {tweet.avatar_url ? (
+          {post.avatar_url ? (
             <img
-              src={proxyImageUrl(tweet.avatar_url)}
-              alt={tweet.username}
+              src={proxyImageUrl(post.avatar_url)}
+              alt={post.username}
               className="w-10 h-10 rounded-full object-cover ring-2 ring-border/50"
             />
           ) : (
             <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary/20 to-primary/40 flex items-center justify-center ring-2 ring-border/50">
               <span className="text-sm font-semibold text-primary">
-                {tweet.username.charAt(0).toUpperCase()}
+                {post.username.charAt(0).toUpperCase()}
               </span>
             </div>
-          )}
-          {/* Category badge */}
-          {showCategory && categoryInfo && (
-            <span
-              className="absolute -bottom-1 -right-1 text-xs"
-              title={categoryInfo.name}
-            >
-              {categoryInfo.icon}
-            </span>
           )}
         </div>
 
@@ -72,29 +60,29 @@ export default function KOLTweetCard({
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
             <span className="font-semibold text-foreground truncate">
-              {tweet.display_name || tweet.username}
+              {post.display_name || post.username}
             </span>
             <span className="text-muted-foreground text-sm truncate">
-              @{tweet.username}
+              @{post.username}
             </span>
           </div>
-          {tweet.kol_description && (
+          {post.kol_description && (
             <p className="text-xs text-muted-foreground truncate mt-0.5">
-              {tweet.kol_description}
+              {post.kol_description}
             </p>
           )}
         </div>
 
         {/* Time */}
         <span className="text-xs text-muted-foreground flex-shrink-0">
-          {formatTimeAgo(tweet.scraped_at)}
+          {formatTimeAgo(post.scraped_at)}
         </span>
       </div>
 
-      {/* Tweet Content */}
+      {/* Post Content */}
       <div className="mb-3">
         <p className="text-sm text-foreground/90 whitespace-pre-wrap break-words leading-relaxed">
-          {tweet.tweet_text}
+          {post.content}
         </p>
       </div>
 
@@ -104,15 +92,15 @@ export default function KOLTweetCard({
         <div className="flex items-center gap-4 text-muted-foreground">
           <div className="flex items-center gap-1.5 text-xs">
             <MessageCircle className="w-3.5 h-3.5" />
-            <span>{formatNumber(tweet.reply_count)}</span>
+            <span>{formatNumber(post.reply_count)}</span>
           </div>
           <div className="flex items-center gap-1.5 text-xs">
             <Repeat2 className="w-3.5 h-3.5" />
-            <span>{formatNumber(tweet.retweet_count)}</span>
+            <span>{formatNumber(post.repost_count)}</span>
           </div>
           <div className="flex items-center gap-1.5 text-xs">
             <Heart className="w-3.5 h-3.5" />
-            <span>{formatNumber(tweet.like_count)}</span>
+            <span>{formatNumber(post.like_count)}</span>
           </div>
         </div>
 
@@ -129,11 +117,11 @@ export default function KOLTweetCard({
               <Copy className="w-3.5 h-3.5" />
             )}
           </button>
-          {tweet.permalink && (
+          {post.permalink && (
             <button
-              onClick={handleOpenTweet}
+              onClick={handleOpenPost}
               className="p-1.5 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
-              title="在 X 上查看"
+              title="查看原帖"
             >
               <ExternalLink className="w-3.5 h-3.5" />
             </button>
@@ -145,7 +133,7 @@ export default function KOLTweetCard({
 }
 
 // 骨架屏组件
-export function KOLTweetCardSkeleton() {
+export function KOLPostCardSkeleton() {
   return (
     <div className="rounded-xl border border-border/50 bg-card/50 p-4 animate-pulse">
       <div className="flex items-start gap-3 mb-3">
@@ -169,4 +157,3 @@ export function KOLTweetCardSkeleton() {
     </div>
   );
 }
-

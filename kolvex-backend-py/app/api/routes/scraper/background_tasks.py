@@ -112,7 +112,9 @@ def run_multi_platform_scrape_task(
                 )
                 twitter_stats = scraper.batch_scrape(usernames=twitter_usernames)
                 all_stats["twitter"] = twitter_stats
-                update_task_progress(task_id, "twitter", status="completed", stats=twitter_stats)
+                update_task_progress(
+                    task_id, "twitter", status="completed", stats=twitter_stats
+                )
                 print(f"✅ Twitter 爬取完成: {twitter_stats}")
 
             except Exception as e:
@@ -131,13 +133,17 @@ def run_multi_platform_scrape_task(
             try:
                 xhs_stats = _scrape_xiaohongshu_kols(xhs_kols, max_posts_per_user)
                 all_stats["xiaohongshu"] = xhs_stats
-                update_task_progress(task_id, "xiaohongshu", status="completed", stats=xhs_stats)
+                update_task_progress(
+                    task_id, "xiaohongshu", status="completed", stats=xhs_stats
+                )
                 print(f"✅ 小红书爬取完成: {xhs_stats}")
 
             except Exception as e:
                 error_msg = f"小红书爬取失败: {str(e)}"
                 errors.append(error_msg)
-                update_task_progress(task_id, "xiaohongshu", status="failed", error=str(e))
+                update_task_progress(
+                    task_id, "xiaohongshu", status="failed", error=str(e)
+                )
                 print(f"❌ {error_msg}")
 
         # ========== 其他平台（暂不支持）==========
@@ -211,7 +217,9 @@ def _scrape_xiaohongshu_kols(
     # 加载 cookies
     cookies = load_cookies()
     if not cookies:
-        raise RuntimeError("小红书未登录，请先运行: python -m app.services.xiaohongshu --login")
+        raise RuntimeError(
+            "小红书未登录，请先运行: python -m app.services.xiaohongshu --login"
+        )
 
     supabase = get_supabase_client()
 
@@ -234,12 +242,14 @@ def _scrape_xiaohongshu_kols(
         page = context.new_page()
 
         # 添加反检测脚本
-        page.add_init_script("""
+        page.add_init_script(
+            """
             Object.defineProperty(navigator, 'webdriver', { get: () => undefined });
             Object.defineProperty(navigator, 'plugins', { get: () => [1, 2, 3, 4, 5] });
             Object.defineProperty(navigator, 'languages', { get: () => ['zh-CN', 'zh', 'en-US', 'en'] });
             window.chrome = { runtime: {} };
-        """)
+        """
+        )
 
         try:
             for kol in kols:
@@ -252,16 +262,26 @@ def _scrape_xiaohongshu_kols(
                     continue
 
                 stats["kols_processed"] += 1
-                print(f"\n   👤 [{stats['kols_processed']}/{len(kols)}] 爬取 KOL: {username}")
+                print(
+                    f"\n   👤 [{stats['kols_processed']}/{len(kols)}] 爬取 KOL: {username}"
+                )
 
                 try:
                     # 访问用户主页
-                    profile_url = f"https://www.xiaohongshu.com/user/profile/{platform_user_id}"
-                    page.goto(profile_url, wait_until="domcontentloaded", timeout=PAGE_LOAD_TIMEOUT)
+                    profile_url = (
+                        f"https://www.xiaohongshu.com/user/profile/{platform_user_id}"
+                    )
+                    page.goto(
+                        profile_url,
+                        wait_until="domcontentloaded",
+                        timeout=PAGE_LOAD_TIMEOUT,
+                    )
                     time.sleep(random.uniform(2, 4))
 
                     # 提取最近帖子
-                    recent_notes = extract_kol_recent_notes(page, limit=max_posts_per_user)
+                    recent_notes = extract_kol_recent_notes(
+                        page, limit=max_posts_per_user
+                    )
 
                     if not recent_notes:
                         print(f"      ℹ️ 未找到帖子")
@@ -290,7 +310,9 @@ def _scrape_xiaohongshu_kols(
                             if inserted:
                                 stats["posts_new"] += 1
                                 stats["posts_scraped"] += 1
-                                print(f"      ✅ 新帖子: {note.get('title', '')[:30]}...")
+                                print(
+                                    f"      ✅ 新帖子: {note.get('title', '')[:30]}..."
+                                )
                             else:
                                 stats["posts_duplicate"] += 1
 

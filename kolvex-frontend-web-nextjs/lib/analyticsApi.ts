@@ -1,5 +1,5 @@
 /**
- * KOL 推文数据分析 API
+ * KOL 帖子数据分析 API
  * 提供多维度的数据分析功能
  */
 
@@ -10,10 +10,21 @@
 export interface TrendDataPoint {
   date: string;
   count: number;
+  twitter?: number;
+  xiaohongshu?: number;
+  reddit?: number;
+  youtube?: number;
+}
+
+export interface PlatformBreakdown {
+  twitter: number;
+  xiaohongshu: number;
+  reddit: number;
+  youtube: number;
 }
 
 export interface TrendSummary {
-  total_tweets: number;
+  total_posts: number;
   average_daily: number;
   max_daily: number;
   min_daily: number;
@@ -24,6 +35,7 @@ export interface TrendSummary {
 export interface TrendsData {
   trends: TrendDataPoint[];
   summary: TrendSummary;
+  platform_breakdown?: PlatformBreakdown;
 }
 
 export interface KOLRanking {
@@ -32,10 +44,10 @@ export interface KOLRanking {
   avatar_url: string | null;
   total_views: number;
   total_likes: number;
-  total_retweets: number;
+  total_reposts: number;
   total_replies: number;
   total_bookmarks: number;
-  tweet_count: number;
+  post_count: number;
   engagement_rate: number;
 }
 
@@ -109,7 +121,7 @@ export interface EngagementData {
   statistics: {
     views: EngagementStats;
     likes: EngagementStats;
-    retweets: EngagementStats;
+    reposts: EngagementStats;
     replies: EngagementStats;
     bookmarks: EngagementStats;
   };
@@ -125,7 +137,7 @@ export interface EngagementData {
     average: number;
     median: number;
   };
-  total_tweets: number;
+  total_posts: number;
 }
 
 export interface TickerSentimentCounts {
@@ -140,7 +152,7 @@ export interface TickerAnalysis {
   mention_count: number;
   total_views: number;
   total_likes: number;
-  total_retweets: number;
+  total_reposts: number;
   unique_author_count: number;
   sentiment_score: number;
   sentiment_counts?: TickerSentimentCounts;
@@ -157,13 +169,13 @@ export interface TickersData {
 }
 
 export interface DashboardOverview {
-  total_tweets: number;
+  total_posts: number;
   total_views: number;
   total_engagement: number;
   unique_authors: number;
-  stock_related_tweets: number;
-  avg_views_per_tweet: number;
-  avg_engagement_per_tweet: number;
+  stock_related_posts: number;
+  avg_views_per_post: number;
+  avg_engagement_per_post: number;
 }
 
 export interface DashboardData {
@@ -181,9 +193,58 @@ export interface DashboardData {
     };
     sentiment_score: number;
   };
-  top_tickers: Array<{ ticker: string; count: number }>;
-  top_kols: Array<{ username: string; total_views: number }>;
-  daily_trend: TrendDataPoint[];
+  top_tickers: Array<{
+    ticker: string;
+    count: number;
+    bullish?: number;
+    bearish?: number;
+    neutral?: number;
+  }>;
+  top_kols: Array<{
+    username: string;
+    total_views: number;
+    post_count?: number;
+    total_engagement?: number;
+  }>;
+  daily_trend: Array<{
+    date: string;
+    count: number;
+    views?: number;
+    bullish?: number;
+    bearish?: number;
+    neutral?: number;
+  }>;
+  data_quality?: {
+    analyzed_posts: number;
+    unanalyzed_posts: number;
+    analysis_coverage: number;
+  };
+  _source?: "snapshot" | "realtime";
+  _snapshot_id?: number;
+  _snapshot_created_at?: string;
+}
+
+export interface SnapshotInfo {
+  id: number;
+  snapshot_type: string;
+  period_days: number;
+  start_date: string;
+  end_date: string;
+  total_posts: number;
+  sentiment_score: number;
+  analysis_coverage: number;
+  created_at: string;
+}
+
+export interface GenerateSnapshotResult {
+  success: boolean;
+  message: string;
+  snapshot: DashboardData;
+  stats: {
+    posts_analyzed: number;
+    ai_coverage: string;
+    generated_at: string;
+  };
 }
 
 export interface KeywordItem {
@@ -199,14 +260,14 @@ export interface TagItem {
 export interface KeywordsData {
   keywords: KeywordItem[];
   ai_tags: TagItem[];
-  total_tweets_analyzed: number;
+  total_posts_analyzed: number;
 }
 
 export interface SentimentEngagementComparison {
-  tweet_count: number;
+  post_count: number;
   avg_views: number;
   avg_likes: number;
-  avg_retweets: number;
+  avg_reposts: number;
   avg_engagement_rate: number;
   total_views: number;
   total_likes: number;
@@ -219,7 +280,7 @@ export interface SentimentEngagementData {
     neutral: SentimentEngagementComparison;
   };
   insights: string[];
-  total_tweets: number;
+  total_posts: number;
 }
 
 interface ApiResponse<T> {
@@ -269,9 +330,9 @@ async function fetchAnalyticsAPI<T>(
 // ============================================================
 
 /**
- * 获取推文趋势分析
+ * 获取帖子趋势分析
  */
-export async function getTweetTrends(
+export async function getPostTrends(
   days: number = 30,
   username?: string
 ): Promise<TrendsData> {
@@ -279,6 +340,9 @@ export async function getTweetTrends(
   if (username) params.set("username", username);
   return fetchAnalyticsAPI<TrendsData>(`/trends?${params}`);
 }
+
+// 向后兼容别名
+export const getTweetTrends = getPostTrends;
 
 /**
  * 获取 KOL 影响力排名
@@ -309,7 +373,9 @@ export async function getSentimentAnalysis(
   if (ticker) params.set("ticker", ticker);
   if (includeDaily) params.set("include_daily", "true");
   const query = params.toString();
-  return fetchAnalyticsAPI<SentimentData>(`/sentiment${query ? `?${query}` : ""}`);
+  return fetchAnalyticsAPI<SentimentData>(
+    `/sentiment${query ? `?${query}` : ""}`
+  );
 }
 
 /**
@@ -321,7 +387,9 @@ export async function getEngagementAnalysis(
   const params = new URLSearchParams();
   if (days) params.set("days", String(days));
   const query = params.toString();
-  return fetchAnalyticsAPI<EngagementData>(`/engagement${query ? `?${query}` : ""}`);
+  return fetchAnalyticsAPI<EngagementData>(
+    `/engagement${query ? `?${query}` : ""}`
+  );
 }
 
 /**
@@ -376,6 +444,52 @@ export async function getSentimentEngagementAnalysis(
   const query = params.toString();
   return fetchAnalyticsAPI<SentimentEngagementData>(
     `/sentiment-engagement${query ? `?${query}` : ""}`
+  );
+}
+
+// ============================================================
+// 快照管理 API
+// ============================================================
+
+/**
+ * 获取历史快照列表
+ */
+export async function listAnalyticsSnapshots(
+  snapshotType: string = "dashboard",
+  limit: number = 10
+): Promise<SnapshotInfo[]> {
+  const params = new URLSearchParams({
+    snapshot_type: snapshotType,
+    limit: String(limit),
+  });
+  return fetchAnalyticsAPI<SnapshotInfo[]>(`/snapshots?${params}`);
+}
+
+/**
+ * 获取最新快照
+ */
+export async function getLatestSnapshot(
+  days: number = 7
+): Promise<DashboardData | null> {
+  try {
+    const result = await fetchAnalyticsAPI<DashboardData>(
+      `/snapshots/latest?days=${days}`
+    );
+    return result;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * 清理旧快照
+ */
+export async function cleanupSnapshots(
+  keepCount: number = 10
+): Promise<{ deleted: number; kept: number }> {
+  return fetchAnalyticsAPI<{ deleted: number; kept: number }>(
+    `/snapshots/cleanup?keep_count=${keepCount}`,
+    { method: "DELETE" }
   );
 }
 
@@ -441,4 +555,3 @@ export function formatSentimentScore(score: number): string {
   const sign = score >= 0 ? "+" : "";
   return `${sign}${(score * 100).toFixed(1)}%`;
 }
-

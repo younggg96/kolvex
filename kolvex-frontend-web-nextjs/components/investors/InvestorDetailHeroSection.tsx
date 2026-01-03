@@ -78,3 +78,8 @@ export function InvestorDetailHeroSection({
 
 
 
+
+
+
+
+

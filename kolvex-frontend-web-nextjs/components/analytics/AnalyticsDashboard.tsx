@@ -13,7 +13,6 @@ import { Button } from "@/components/ui/button";
 import { StatsCard } from "./StatsCard";
 import { SentimentTrendChart } from "./SentimentTrendChart";
 import { SentimentChart } from "./SentimentChart";
-import { KOLBubbleChart } from "./KOLBubbleChart";
 import { EngagementHeatmap } from "./EngagementHeatmap";
 import {
   getDashboardSummary,
@@ -26,8 +25,7 @@ import {
   type SentimentData,
   type EngagementData,
 } from "@/lib/analyticsApi";
-import { getKOLTweets, type KOLTweet } from "@/lib/kolTweetsApi";
-import { TickerHeatmap } from "@/components/analytics";
+import { RotateCcw } from "lucide-react";
 
 interface AnalyticsDashboardProps {
   className?: string;
@@ -36,6 +34,7 @@ interface AnalyticsDashboardProps {
 export function AnalyticsDashboard({ className }: AnalyticsDashboardProps) {
   const [days, setDays] = useState(7);
   const [loading, setLoading] = useState(true);
+  const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Data states
@@ -43,7 +42,6 @@ export function AnalyticsDashboard({ className }: AnalyticsDashboardProps) {
   const [trends, setTrends] = useState<TrendsData | null>(null);
   const [sentiment, setSentiment] = useState<SentimentData | null>(null);
   const [engagement, setEngagement] = useState<EngagementData | null>(null);
-  const [tweets, setTweets] = useState<KOLTweet[]>([]);
 
   const fetchData = async () => {
     setLoading(true);
@@ -58,21 +56,15 @@ export function AnalyticsDashboard({ className }: AnalyticsDashboardProps) {
           getSentimentAnalysis(days, undefined, true),
           getEngagementAnalysis(days),
         ]);
+      console.log("dashboardData", dashboardData);
+      console.log("trendsData", trendsData);
+      console.log("sentimentData", sentimentData);
+      console.log("engagementData", engagementData);
 
       setDashboard(dashboardData);
       setTrends(trendsData);
       setSentiment(sentimentData);
       setEngagement(engagementData);
-
-      // Fetch tweets separately (optional, for bubble/treemap charts)
-      // Backend limits page_size to max 100
-      try {
-        const tweetsData = await getKOLTweets({ page_size: 100 });
-        setTweets(tweetsData.tweets || []);
-      } catch (tweetsErr) {
-        console.warn("Failed to fetch tweets for charts:", tweetsErr);
-        setTweets([]);
-      }
     } catch (err) {
       console.error("Failed to fetch analytics:", err);
       setError(err instanceof Error ? err.message : "Failed to load data");
@@ -117,9 +109,11 @@ export function AnalyticsDashboard({ className }: AnalyticsDashboardProps) {
             onClick={fetchData}
             variant="outline"
             size="sm"
-            disabled={loading}
+            disabled={loading || generating}
+            className="gap-1.5"
           >
-            {loading ? "Loading..." : "Refresh"}
+            <RotateCcw className="w-3 h-3" />
+            <span className="hidden sm:inline">Refresh</span>
           </Button>
           <Select
             value={String(days)}
@@ -135,6 +129,34 @@ export function AnalyticsDashboard({ className }: AnalyticsDashboardProps) {
             </SelectContent>
           </Select>
         </div>
+        {/* Data source indicator */}
+        {dashboard && (
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            {dashboard._source === "snapshot" ? (
+              <>
+                <span className="inline-block w-2 h-2 rounded-full bg-green-500" />
+                <span>
+                  From snapshot{" "}
+                  {dashboard._snapshot_created_at &&
+                    `(${new Date(
+                      dashboard._snapshot_created_at
+                    ).toLocaleString()})`}
+                </span>
+              </>
+            ) : (
+              <>
+                <span className="inline-block w-2 h-2 rounded-full bg-yellow-500" />
+                <span>Realtime data</span>
+              </>
+            )}
+            {dashboard.data_quality && (
+              <span className="ml-2">
+                • {dashboard.data_quality.analysis_coverage.toFixed(1)}%
+                analyzed
+              </span>
+            )}
+          </div>
+        )}
       </div>
 
       {loading ? (
@@ -145,8 +167,8 @@ export function AnalyticsDashboard({ className }: AnalyticsDashboardProps) {
           {dashboard && (
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
               <StatsCard
-                title="Total Tweets"
-                value={dashboard.overview.total_tweets.toLocaleString()}
+                title="Total Posts"
+                value={dashboard.overview.total_posts.toLocaleString()}
                 subtitle={`${dashboard.period.start_date} → ${dashboard.period.end_date}`}
               />
               <StatsCard
@@ -159,14 +181,12 @@ export function AnalyticsDashboard({ className }: AnalyticsDashboardProps) {
               <StatsCard
                 title="Engagement"
                 value={formatLargeNumber(dashboard.overview.total_engagement)}
-                subtitle={`${dashboard.overview.avg_engagement_per_tweet.toFixed(
-                  1
-                )} per tweet`}
+                subtitle={`${dashboard.overview.avg_engagement_per_post} per post`}
               />
               <StatsCard
                 title="Active KOLs"
                 value={dashboard.overview.unique_authors.toString()}
-                subtitle={`${dashboard.overview.stock_related_tweets} stock-related`}
+                subtitle={`${dashboard.overview.stock_related_posts} stock-related posts analyzed`}
               />
             </div>
           )}
@@ -177,7 +197,8 @@ export function AnalyticsDashboard({ className }: AnalyticsDashboardProps) {
               trends={trends.trends}
               summary={trends.summary}
               dailySentiment={sentiment?.daily_trends}
-              title="Activity & Sentiment"
+              platformBreakdown={trends.platform_breakdown}
+              title="Activity & Sentiment by Platform"
             />
           )}
 
@@ -188,25 +209,6 @@ export function AnalyticsDashboard({ className }: AnalyticsDashboardProps) {
               <EngagementHeatmap
                 data={engagement.correlation_matrix}
                 title="Correlation"
-              />
-            )}
-          </div>
-
-          {/* KOL Bubble Chart & Ticker Treemap */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {tweets.length > 0 && (
-              <KOLBubbleChart
-                tweets={tweets}
-                title="KOL Influence vs Confidence"
-                height={380}
-              />
-            )}
-            {tweets.length > 0 && (
-              <TickerHeatmap
-                tweets={tweets}
-                title="Ticker Heatmap"
-                height={380}
-                limit={20}
               />
             )}
           </div>
@@ -233,11 +235,6 @@ function LoadingSkeleton() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Skeleton className="h-80 rounded-xl" />
         <Skeleton className="h-80 rounded-xl" />
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Skeleton className="h-96 rounded-xl" />
-        <Skeleton className="h-96 rounded-xl" />
       </div>
     </div>
   );

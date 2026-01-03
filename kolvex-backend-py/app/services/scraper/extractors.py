@@ -15,7 +15,7 @@ def extract_user_profile(page) -> Dict:
     提取字段：
     - 核心身份: username, rest_id, display_name
     - 认证状态: is_verified, verification_type (Blue/Gold/Grey/None)
-    - 影响力指标: followers_count, following_count, posts_count
+    - 影响力指标: followers_count, following_count
     - 时间信息: join_date
     - 外部链接: location, website, bio
     - 视觉素材: avatar_url, banner_url
@@ -37,7 +37,6 @@ def extract_user_profile(page) -> Dict:
         # 影响力指标
         "followers_count": 0,
         "following_count": 0,
-        "posts_count": 0,
         # 时间信息
         "join_date": None,
         # 外部链接与位置
@@ -217,46 +216,7 @@ def extract_user_profile(page) -> Dict:
         except Exception:
             pass
 
-        # ========== 10. 提取推文数 ==========
-        try:
-            posts_div = page.evaluate(
-                """
-                () => {
-                    const h2 = document.querySelector('h2[role="heading"]');
-                    if (h2) {
-                        const sibling = h2.nextElementSibling;
-                        if (sibling && sibling.textContent.toLowerCase().includes('post')) {
-                            return sibling.textContent.trim();
-                        }
-                    }
-                    return null;
-                }
-            """
-            )
-            if posts_div:
-                posts_match = re.search(
-                    r"([\d,.]+[KMB]?)\s*(?:posts?|tweets?)", posts_div, re.IGNORECASE
-                )
-                if posts_match:
-                    profile["posts_count"] = parse_metric(posts_match.group(1))
-
-                header_items = page.query_selector('[data-testid="UserName"]')
-                if header_items:
-                    parent = header_items.evaluate(
-                        "el => el.closest('div[class*=\"r-1habvwh\"]')?.textContent"
-                    )
-                    if parent:
-                        posts_match = re.search(
-                            r"([\d,.]+[KMB]?)\s*(?:posts?|tweets?)",
-                            parent,
-                            re.IGNORECASE,
-                        )
-                        if posts_match:
-                            profile["posts_count"] = parse_metric(posts_match.group(1))
-        except Exception:
-            pass
-
-        # ========== 11. 提取加入日期 ==========
+        # ========== 10. 提取加入日期 ==========
         try:
             join_selectors = [
                 '[data-testid="UserJoinDate"]',

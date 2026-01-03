@@ -306,7 +306,6 @@ def upsert_kol_profile(client: Client, profile_data: Dict) -> bool:
             # 影响力指标
             "followers_count": profile_data.get("followers_count", 0),
             "following_count": profile_data.get("following_count", 0),
-            "posts_count": profile_data.get("posts_count", 0),
             # 时间信息
             "join_date": profile_data.get("join_date"),
             # 外部链接与位置

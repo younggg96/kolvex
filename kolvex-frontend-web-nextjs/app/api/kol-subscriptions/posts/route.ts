@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
 
     if (authError || !user) {
       return NextResponse.json(
-        { error: "Unauthorized", tweets: [], total: 0, has_more: false },
+        { error: "Unauthorized", posts: [], total: 0, has_more: false },
         { status: 401 }
       );
     }
@@ -46,7 +46,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(
         {
           error: "Failed to fetch subscriptions",
-          tweets: [],
+          posts: [],
           total: 0,
           has_more: false,
         },
@@ -57,7 +57,7 @@ export async function GET(request: NextRequest) {
     // If no subscriptions, return empty result
     if (!subscriptions || subscriptions.length === 0) {
       return NextResponse.json({
-        tweets: [],
+        posts: [],
         total: 0,
         page: 1,
         page_size: limit,
@@ -71,9 +71,9 @@ export async function GET(request: NextRequest) {
     // Calculate page for backend API
     const page = Math.floor(offset / limit) + 1;
 
-    // Fetch tweets from backend API with multiple usernames
+    // Fetch posts from backend API with multiple usernames
     const usernamesParam = kolIds.join(",");
-    let backendUrl = `${NEXT_PUBLIC_BACKEND_API_URL}/api/v1/kol-tweets/?page=${page}&page_size=${limit}&usernames=${encodeURIComponent(
+    let backendUrl = `${NEXT_PUBLIC_BACKEND_API_URL}/api/v1/kol-posts/?page=${page}&page_size=${limit}&usernames=${encodeURIComponent(
       usernamesParam
     )}`;
 
@@ -102,7 +102,7 @@ export async function GET(request: NextRequest) {
       {
         error: "Failed to fetch tracked KOL posts",
         details: error instanceof Error ? error.message : "Unknown error",
-        tweets: [],
+        posts: [],
         total: 0,
         has_more: false,
       },

@@ -3,7 +3,7 @@
 import React, { useMemo } from "react";
 import { Treemap, ResponsiveContainer, Tooltip } from "recharts";
 import { cn } from "@/lib/utils";
-import type { KOLTweet } from "@/lib/kolTweetsApi";
+import type { KOLPost } from "@/lib/kolPostsApi";
 
 // ============================================================
 // 1. Types / 类型定义
@@ -49,7 +49,7 @@ interface CustomTooltipProps {
 }
 
 interface TickerHeatmapProps {
-  tweets: KOLTweet[];
+  tweets: KOLPost[];
   title?: string;
   height?: number;
   className?: string;
@@ -60,7 +60,7 @@ interface TickerHeatmapProps {
 // 2. Data Processing / 数据处理逻辑
 // ============================================================
 
-function processData(tweets: KOLTweet[], limit: number): TickerData[] {
+function processData(tweets: KOLPost[], limit: number): TickerData[] {
   const tickerMap = new Map<
     string,
     {
@@ -72,15 +72,15 @@ function processData(tweets: KOLTweet[], limit: number): TickerData[] {
     }
   >();
 
-  tweets.forEach((tweet) => {
+  tweets.forEach((post) => {
     // 兼容处理：ai_tickers 可能是 ["TSLA"] 或者是 [{symbol: "TSLA"}]
-    const rawTickers = tweet.tickers || [];
+    const rawTickers = post.tickers || [];
     const tickersList: string[] = rawTickers.map((t: any) =>
       typeof t === "string" ? t : t?.symbol || t
     );
 
-    const sentimentValue = tweet.sentiment?.value || "neutral";
-    const views = tweet.views_count || 0;
+    const sentimentValue = post.sentiment?.value || "neutral";
+    const views = post.views_count || 0;
 
     tickersList.forEach((ticker) => {
       if (!ticker || typeof ticker !== "string") return;
@@ -173,8 +173,6 @@ const CustomContent = (props: CustomContentProps) => {
         width={width}
         height={height}
         fill={color}
-        // 使用与背景色相同的颜色作为边框，模拟间隙 (Gap) 效果
-        // 如果你的网页背景是纯黑，这里就填 #000000 或 #09090b
         stroke="#09090b"
         strokeWidth={2}
         rx={4} // 圆角

@@ -1,6 +1,6 @@
 /**
- * KOL Tweets API
- * 获取 KOL 推文/帖子数据
+ * KOL Posts API
+ * 获取 KOL 帖子数据
  * 支持多平台统一数据结构 (Twitter, Xiaohongshu, Reddit, YouTube)
  */
 
@@ -41,7 +41,7 @@ export interface IsStockRelated {
   reason: string | null;
 }
 
-export interface KOLTweet {
+export interface KOLPost {
   id: number;
   // === 平台信息 ===
   platform: Platform;
@@ -54,8 +54,8 @@ export interface KOLTweet {
   author_platform_id: string | null;
   // === 内容 ===
   title: string | null; // 小红书帖子标题
-  tweet_text: string;
-  post_type: string; // tweet, retweet, note, video
+  content: string; // 帖子内容
+  post_type: string; // post, repost, note, video
   created_at: string | null;
   permalink: string | null;
   // === 媒体 ===
@@ -67,7 +67,7 @@ export interface KOLTweet {
   original_author: string | null;
   // === 互动数据 ===
   like_count: number;
-  retweet_count: number;
+  repost_count: number; // 转发数
   reply_count: number;
   bookmark_count: number;
   views_count: number;
@@ -78,13 +78,14 @@ export interface KOLTweet {
   search_keyword: string | null;
   // === 元数据 ===
   scraped_at: string | null;
-  category: string | null;
 
   // ========== AI 分析字段 ==========
   // 情感分析
   sentiment: SentimentAnalysis | null;
   // 股票代码
   tickers: string[];
+  // AI 生成的标签
+  ai_tags: string[];
   // 投资信号
   trading_signal: TradingSignal | null;
   // 摘要
@@ -96,8 +97,8 @@ export interface KOLTweet {
   is_stock_related: IsStockRelated | null;
 }
 
-export interface KOLTweetsResponse {
-  tweets: KOLTweet[];
+export interface KOLPostsResponse {
+  posts: KOLPost[];
   total: number;
   page: number;
   page_size: number;
@@ -122,11 +123,9 @@ export interface KOLProfile {
   // === 认证信息 ===
   is_verified: boolean;
   verification_type: string | null;
-  verified_info: string | null;
   // === 互动数据 ===
   followers_count: number;
   following_count: number;
-  posts_count: number;
   likes_count: number;
   collected_count: number;
   // === Twitter 特有 ===
@@ -134,14 +133,9 @@ export interface KOLProfile {
   join_date: string | null;
   // === 小红书特有 ===
   red_id: string | null;
-  gender: string | null;
-  tags: string[] | null;
-  category: string | null;
   // === 时间 ===
-  scraped_at: string | null;
   created_at: string | null;
   updated_at: string | null;
-  last_scraped_at: string | null; // 向后兼容
 }
 
 export interface KOLProfilesResponse {
@@ -156,7 +150,7 @@ export interface CategoryStats {
 }
 
 export interface StatsResponse {
-  total_tweets: number;
+  total_posts: number;
   total_kols: number;
   categories: CategoryStats[];
 }
@@ -168,11 +162,10 @@ export interface Category {
   description: string;
 }
 
-export interface KOLTweetsParams {
+export interface KOLPostsParams {
   page?: number;
   page_size?: number;
   platform?: Platform; // twitter, xiaohongshu, reddit, youtube
-  category?: string;
   username?: string;
   search?: string;
   sentiment?: "bullish" | "bearish" | "neutral";
@@ -190,24 +183,24 @@ export interface KOLSummary {
   avatar_url: string | null;
   followers_count: number;
   is_verified: boolean;
-  tweet_count: number;
+  post_count: number;
   avg_sentiment: number | null;
-  latest_tweet_at: string | null;
+  latest_post_at: string | null;
 }
 
-export interface StockTweet {
+export interface StockPost {
   id: number;
   username: string;
   display_name: string | null;
   avatar_url: string | null;
-  tweet_text: string;
+  content: string;
   created_at: string | null;
   permalink: string | null;
   media_urls: MediaItem[] | null;
   is_repost: boolean;
   original_author: string | null;
   like_count: number;
-  retweet_count: number;
+  repost_count: number;
   reply_count: number;
   bookmark_count: number;
   views_count: number;
@@ -216,16 +209,17 @@ export interface StockTweet {
   tags: string[];
   trading_signal: TradingSignal | null;
   summary: string | null;
+  ai_tags: string[];
   ai_analyzed_at: string | null;
   ai_model: string | null;
 }
 
 export interface StockDiscussionsResponse {
   ticker: string;
-  total_tweets: number;
+  total_posts: number;
   total_kols: number;
   kols: KOLSummary[];
-  tweets: StockTweet[];
+  posts: StockPost[];
   page: number;
   page_size: number;
   has_more: boolean;
@@ -316,25 +310,25 @@ async function fetchAPI<T>(
 // ============================================================
 
 /**
- * 获取 KOL 推文/帖子列表（支持多平台）
+ * 获取 KOL 帖子列表（支持多平台）
  */
-export async function getKOLTweets(
-  params: KOLTweetsParams = {}
-): Promise<KOLTweetsResponse> {
+export async function getKOLPosts(
+  params: KOLPostsParams = {}
+): Promise<KOLPostsResponse> {
   const searchParams = new URLSearchParams();
 
   if (params.page) searchParams.set("page", String(params.page));
   if (params.page_size) searchParams.set("page_size", String(params.page_size));
   if (params.platform) searchParams.set("platform", params.platform);
-  if (params.category) searchParams.set("category", params.category);
   if (params.username) searchParams.set("username", params.username);
   if (params.search) searchParams.set("search", params.search);
   if (params.sentiment) searchParams.set("sentiment", params.sentiment);
-  if (params.stock_related !== undefined) searchParams.set("stock_related", String(params.stock_related));
+  if (params.stock_related !== undefined)
+    searchParams.set("stock_related", String(params.stock_related));
   if (params.ticker) searchParams.set("ticker", params.ticker);
 
   const query = searchParams.toString();
-  return fetchAPI<KOLTweetsResponse>(`/kol-tweets${query ? `?${query}` : ""}`);
+  return fetchAPI<KOLPostsResponse>(`/kol-posts${query ? `?${query}` : ""}`);
 }
 
 export interface KOLProfilesParams {
@@ -355,15 +349,17 @@ export async function getKOLProfiles(
     const query = params ? `?category=${params}` : "";
     return fetchAPI<KOLProfilesResponse>(`/kol-profiles${query}`);
   }
-  
+
   const searchParams = new URLSearchParams();
   if (params.platform) searchParams.set("platform", params.platform);
   if (params.category) searchParams.set("category", params.category);
   if (params.sort_by) searchParams.set("sort_by", params.sort_by);
   if (params.sort_order) searchParams.set("sort_order", params.sort_order);
-  
+
   const query = searchParams.toString();
-  return fetchAPI<KOLProfilesResponse>(`/kol-profiles${query ? `?${query}` : ""}`);
+  return fetchAPI<KOLProfilesResponse>(
+    `/kol-profiles${query ? `?${query}` : ""}`
+  );
 }
 
 /**
@@ -381,21 +377,21 @@ export async function getCategories(): Promise<{ categories: Category[] }> {
 }
 
 /**
- * 获取特定用户的推文/帖子（支持多平台）
+ * 获取特定用户的帖子（支持多平台）
  */
-export async function getUserTweets(
+export async function getUserPosts(
   username: string,
   page: number = 1,
   pageSize: number = 20,
   platform?: Platform
-): Promise<KOLTweetsResponse> {
+): Promise<KOLPostsResponse> {
   const searchParams = new URLSearchParams();
   searchParams.set("page", String(page));
   searchParams.set("page_size", String(pageSize));
   if (platform) searchParams.set("platform", platform);
-  
-  return fetchAPI<KOLTweetsResponse>(
-    `/kol-tweets/user/${encodeURIComponent(username)}?${searchParams.toString()}`
+
+  return fetchAPI<KOLPostsResponse>(
+    `/kol-posts/user/${encodeURIComponent(username)}?${searchParams.toString()}`
   );
 }
 
@@ -438,49 +434,6 @@ export async function getStockNews(
 
   const query = searchParams.toString();
   return fetchAPI<NewsListResponse>(`/news${query ? `?${query}` : ""}`);
-}
-
-// ============================================================
-// 类别配置（静态数据，用于快速渲染）
-// ============================================================
-
-export const CATEGORY_CONFIG: Record<
-  string,
-  { name: string; icon: string; color: string }
-> = {
-  news_flow: {
-    name: "News & Flow",
-    icon: "🚨",
-    color: "text-red-500",
-  },
-  short_macro: {
-    name: "Short & Macro",
-    icon: "📉",
-    color: "text-orange-500",
-  },
-  charts_data: {
-    name: "Charts & Data",
-    icon: "📊",
-    color: "text-blue-500",
-  },
-  institutional: {
-    name: "Institutional",
-    icon: "🐂",
-    color: "text-green-500",
-  },
-  retail_meme: {
-    name: "Retail & Meme",
-    icon: "🦍",
-    color: "text-purple-500",
-  },
-};
-
-/**
- * 获取类别显示信息
- */
-export function getCategoryInfo(category: string | null) {
-  if (!category) return null;
-  return CATEGORY_CONFIG[category] || null;
 }
 
 /**

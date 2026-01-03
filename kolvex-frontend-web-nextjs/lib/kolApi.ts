@@ -57,7 +57,7 @@ export const platformConfig: Record<Platform, PlatformConfig> = {
     colorClass: "text-black dark:text-white",
   },
   xiaohongshu: {
-    name: "小红书",
+    name: "xiaohongshu",
     icon: "/logo/xiaohongshu.svg",
     color: "#FE2C55",
     colorClass: "text-pink-500",

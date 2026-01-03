@@ -20,17 +20,6 @@ def _format_kol(kol: Dict) -> Dict:
     """
     格式化 KOL 数据（从统一 kol_profiles 表读取）
     """
-
-    def parse_jsonb(value):
-        if value is None:
-            return []
-        if isinstance(value, str):
-            try:
-                return json.loads(value)
-            except:
-                return []
-        return value if isinstance(value, list) else []
-
     return {
         "id": kol.get("id"),
         "user_id": kol.get("platform_user_id") or kol.get("user_id"),
@@ -39,19 +28,13 @@ def _format_kol(kol: Dict) -> Dict:
         "avatar_url": kol.get("avatar_url"),
         "description": kol.get("bio") or kol.get("description"),
         "location": kol.get("location"),
-        "gender": kol.get("gender"),
         "is_verified": kol.get("is_verified", False),
         "verified_type": kol.get("verification_type") or kol.get("verified_type"),
-        "verified_info": kol.get("verified_info"),
         "followers_count": kol.get("followers_count", 0),
         "following_count": kol.get("following_count", 0),
         "likes_count": kol.get("likes_count", 0),
-        "notes_count": kol.get("posts_count") or kol.get("notes_count", 0),
         "collected_count": kol.get("collected_count", 0),
         "profile_url": kol.get("profile_url"),
-        "tags": parse_jsonb(kol.get("tags")),
-        "category": kol.get("category"),
-        "scraped_at": kol.get("scraped_at"),
         "updated_at": kol.get("updated_at"),
     }
 
@@ -75,11 +58,19 @@ def _format_post(post: Dict, author_avatar: str = None) -> Dict:
                 return []
         return value if isinstance(value, list) else []
 
+    # 获取 title 和 content
+    title = post.get("title") or ""
+    content = post.get("tweet_text") or post.get("content") or ""
+    
+    # 如果 title 和 content 一样，content 返回为空（避免重复显示）
+    if title.strip() == content.strip():
+        content = ""
+
     return {
         "id": post.get("id"),
         "note_id": post.get("platform_post_id") or post.get("note_id"),
-        "title": post.get("title"),
-        "content": post.get("tweet_text") or post.get("content"),
+        "title": title or None,
+        "content": content or None,
         "note_type": post.get("post_type") or post.get("note_type", "normal"),
         "permalink": post.get("permalink"),
         "author_name": post.get("username") or post.get("author_name"),
@@ -95,6 +86,7 @@ def _format_post(post: Dict, author_avatar: str = None) -> Dict:
         "tags": parse_jsonb(post.get("tags")),
         "ai_sentiment": post.get("ai_sentiment"),
         "ai_tickers": parse_jsonb(post.get("ai_tickers")),
+        "ai_tags": parse_jsonb(post.get("ai_tags")),
         "ai_summary": post.get("ai_summary"),
         "ai_is_stock_related": post.get("ai_is_stock_related", False),
         "created_at": post.get("created_at"),
@@ -106,7 +98,6 @@ def _format_post(post: Dict, author_avatar: str = None) -> Dict:
 def get_xhs_kols(
     limit: int = Query(20, ge=1, le=100, description="返回数量"),
     offset: int = Query(0, ge=0, description="偏移量"),
-    category: Optional[str] = Query(None, description="分类筛选"),
     min_followers: int = Query(0, ge=0, description="最小粉丝数"),
     sort_by: str = Query("followers_count", description="排序字段"),
     sort_desc: bool = Query(True, description="是否降序"),
@@ -125,9 +116,6 @@ def get_xhs_kols(
             .eq("platform", PLATFORM_XHS)
             .gte("followers_count", min_followers)
         )
-
-        if category:
-            query = query.eq("category", category)
 
         query = query.order(sort_by, desc=sort_desc)
         query = query.range(offset, offset + limit - 1)
@@ -202,19 +190,13 @@ def get_xhs_kol_detail(
                     "avatar_url": None,  # 头像统一从 kol_profiles 表获取
                     "description": None,
                     "location": None,
-                    "gender": None,
                     "is_verified": False,
                     "verified_type": None,
-                    "verified_info": None,
                     "followers_count": 0,
                     "following_count": 0,
                     "likes_count": 0,
-                    "notes_count": 0,
                     "collected_count": 0,
                     "profile_url": f"https://www.xiaohongshu.com/user/profile/{user_id}",
-                    "tags": [],
-                    "category": None,
-                    "scraped_at": None,
                     "updated_at": None,
                 }
             else:

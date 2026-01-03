@@ -1,12 +1,12 @@
 // KOL Analysis Types
 
-import { KOLTweet } from "@/lib/kolTweetsApi";
+import { KOLPost } from "@/lib/kolPostsApi";
 
 export interface StockPrediction {
   ticker: string;
   sentiment: "bullish" | "bearish" | "neutral";
-  tweetId: number;
-  tweetText: string;
+  postId: number;
+  postContent: string;
   predictedAt: string;
   confidence: number | null;
 }
@@ -24,7 +24,7 @@ export interface KOLAnalysisPanelProps {
   username: string;
   displayName?: string | null;
   avatarUrl?: string | null;
-  tweets: KOLTweet[];
+  posts: KOLPost[];
   isLoading?: boolean;
 }
 
@@ -37,4 +37,3 @@ export interface AnalysisStats {
   avgConfidence: number;
   bullishRatio: number;
 }
-

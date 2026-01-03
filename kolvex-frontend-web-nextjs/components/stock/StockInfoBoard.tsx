@@ -6,7 +6,7 @@ import {
   getStockNews,
   StockDiscussionsResponse,
   NewsListResponse,
-} from "@/lib/kolTweetsApi";
+} from "@/lib/kolPostsApi";
 import { SwitchTab } from "@/components/ui/switch-tab";
 import SectionCard from "@/components/layout/SectionCard";
 import { MessageSquare, Newspaper } from "lucide-react";
@@ -50,7 +50,7 @@ export default function StockInfoBoard({ ticker }: StockDiscussionsProps) {
         if (append && data) {
           setData({
             ...result,
-            tweets: [...data.tweets, ...result.tweets],
+            posts: [...data.posts, ...result.posts],
           });
         } else {
           setData(result);

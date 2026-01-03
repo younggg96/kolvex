@@ -14,7 +14,6 @@ interface KolInfoProps {
   platform: string;
   verified?: boolean;
   showPlatformBadge?: boolean;
-  category?: string | null;
   href?: string;
 }
 
@@ -25,11 +24,14 @@ export function KolInfo({
   platform,
   verified = false,
   showPlatformBadge = true,
-  category,
   href,
 }: KolInfoProps) {
   const content = (
-    <div className={`flex items-center justify-between w-full gap-2.5 ${href ? "cursor-pointer hover:opacity-80 transition-opacity" : ""}`}>
+    <div
+      className={`flex items-center justify-between w-full gap-2.5 ${
+        href ? "cursor-pointer hover:opacity-80 transition-opacity" : ""
+      }`}
+    >
       <div className="flex items-center gap-2.5">
         <Avatar className="w-9 h-9 flex-shrink-0 ring-1 ring-gray-200 dark:ring-white/10">
           <AvatarImage src={proxyImageUrl(avatarUrl)} alt={name} />
@@ -40,7 +42,11 @@ export function KolInfo({
         <div className="flex flex-row gap-1">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-1">
-              <h3 className={`text-sm font-semibold text-gray-900 dark:text-white truncate ${href ? "hover:underline" : ""}`}>
+              <h3
+                className={`text-sm font-semibold text-gray-900 dark:text-white truncate ${
+                  href ? "hover:underline" : ""
+                }`}
+              >
                 {name}
               </h3>
               {verified && (
@@ -51,11 +57,6 @@ export function KolInfo({
               <p className="text-[10px] text-gray-500 dark:text-white/50 truncate">
                 @{username}
               </p>
-            )}
-            {category && (
-              <span className="inline-block text-[10px] text-gray-500 dark:text-white/40 bg-gray-100 dark:bg-white/5 px-1.5 py-0.5 rounded mt-0.5">
-                {category}
-              </span>
             )}
           </div>
         </div>
@@ -76,4 +77,3 @@ export function KolInfo({
 
   return content;
 }
-

@@ -14,7 +14,7 @@ import {
   CartesianGrid,
 } from "recharts";
 import { cn } from "@/lib/utils";
-import type { KOLTweet } from "@/lib/kolTweetsApi";
+import type { KOLPost } from "@/lib/kolPostsApi";
 
 // ============================================================
 // Types
@@ -30,7 +30,7 @@ interface BubbleDataPoint {
 }
 
 interface KOLBubbleChartProps {
-  tweets: KOLTweet[];
+  tweets: KOLPost[];
   title?: string;
   height?: number;
   className?: string;
@@ -40,7 +40,7 @@ interface KOLBubbleChartProps {
 // Data Processing
 // ============================================================
 
-function processData(tweets: KOLTweet[]): BubbleDataPoint[] {
+function processData(tweets: KOLPost[]): BubbleDataPoint[] {
   const kolMap = new Map<
     string,
     {
@@ -54,11 +54,11 @@ function processData(tweets: KOLTweet[]): BubbleDataPoint[] {
     }
   >();
 
-  tweets.forEach((tweet) => {
-    const sentiment = tweet.sentiment;
+  tweets.forEach((post) => {
+    const sentiment = post.sentiment;
     if (!sentiment?.confidence) return;
 
-    const existing = kolMap.get(tweet.username) || {
+    const existing = kolMap.get(post.username) || {
       views: 0,
       likes: 0,
       retweets: 0,
@@ -68,9 +68,9 @@ function processData(tweets: KOLTweet[]): BubbleDataPoint[] {
       tweetCount: 0,
     };
 
-    existing.views += tweet.views_count || 0;
-    existing.likes += tweet.like_count || 0;
-    existing.retweets += tweet.retweet_count || 0;
+    existing.views += post.views_count || 0;
+    existing.likes += post.like_count || 0;
+    existing.retweets += post.repost_count || 0;
     existing.confidenceSum += sentiment.confidence;
     existing.confidenceCount += 1;
     existing.tweetCount += 1;
@@ -80,7 +80,7 @@ function processData(tweets: KOLTweet[]): BubbleDataPoint[] {
     else if (sentValue === "bearish") existing.sentimentCounts.bearish += 1;
     else existing.sentimentCounts.neutral += 1;
 
-    kolMap.set(tweet.username, existing);
+    kolMap.set(post.username, existing);
   });
 
   const result: BubbleDataPoint[] = [];

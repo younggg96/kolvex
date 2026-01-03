@@ -16,22 +16,15 @@ export interface Kol {
   bio: string | null;
   followers_count: number;
   verified: boolean;
-  category: string | null;
   influence_score: number;
-  total_posts_count: number;
   last_post_at: string | null;
   trending_score: number;
   metadata: any;
-  created_at: string;
   updated_at: string;
   user_tracked?: boolean;
 }
 
-export type SortBy =
-  | "influence_score"
-  | "total_posts_count"
-  | "trending_score"
-  | "followers_count";
+export type SortBy = "influence_score" | "trending_score" | "followers_count";
 
 export interface KolsResponse {
   count: number;
@@ -53,8 +46,7 @@ export async function GET(request: NextRequest) {
 
     // Map frontend sort fields to backend fields
     const sortFieldMap: Record<string, string> = {
-      influence_score: "followers_count", // Use followers_count as proxy for influence
-      total_posts_count: "posts_count",
+      influence_score: "followers_count",
       trending_score: "followers_count",
       followers_count: "followers_count",
     };
@@ -62,7 +54,7 @@ export async function GET(request: NextRequest) {
     const backendSortField = sortFieldMap[sortBy] || "followers_count";
 
     // Fetch KOL profiles from backend API
-    const backendUrl = `${NEXT_PUBLIC_BACKEND_API_URL}/api/v1/kol-tweets/profiles?sort_by=${backendSortField}&sort_order=${sortDirection}`;
+    const backendUrl = `${NEXT_PUBLIC_BACKEND_API_URL}/api/v1/kol-posts/profiles?sort_by=${backendSortField}&sort_order=${sortDirection}`;
 
     const response = await fetch(backendUrl, {
       method: "GET",
@@ -115,15 +107,13 @@ export async function GET(request: NextRequest) {
     const kolsWithScores = filteredProfiles.map(
       (profile: any, index: number) => {
         const followersCount = profile.followers_count || 0;
-        const postsCount = profile.posts_count || 0;
 
         // Calculate influence score (0-100 scale)
         // Based on followers, posts count, and verification status
         const followerScore = Math.min(followersCount / 10000000, 1) * 50; // Max 50 from followers
-        const postScore = Math.min(postsCount / 50000, 1) * 30; // Max 30 from posts
         const verificationBonus = profile.is_verified ? 20 : 0; // Bonus for verification
         const influenceScore =
-          Math.round((followerScore + postScore + verificationBonus) * 10) / 10;
+          Math.round((followerScore + verificationBonus) * 10) / 10;
 
         // Calculate trending score (simplified)
         const trendingScore = Math.round(Math.random() * 50 + 25); // Placeholder - would need real engagement data
@@ -138,9 +128,7 @@ export async function GET(request: NextRequest) {
           bio: profile.bio,
           followers_count: followersCount,
           verified: profile.is_verified || false,
-          category: null, // Could be added later based on bio/content analysis
           influence_score: influenceScore,
-          total_posts_count: postsCount,
           last_post_at: profile.updated_at,
           trending_score: trendingScore,
           metadata: {
@@ -150,7 +138,6 @@ export async function GET(request: NextRequest) {
             join_date: profile.join_date,
             verification_type: profile.verification_type,
           },
-          created_at: profile.created_at,
           updated_at: profile.updated_at,
           user_tracked: trackedKolIds.has(profile.username),
         };
@@ -174,10 +161,6 @@ export async function GET(request: NextRequest) {
         case "followers_count":
           aVal = a.followers_count;
           bVal = b.followers_count;
-          break;
-        case "total_posts_count":
-          aVal = a.total_posts_count;
-          bVal = b.total_posts_count;
           break;
         default:
           aVal = a.influence_score;

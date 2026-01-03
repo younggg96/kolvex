@@ -20,7 +20,9 @@ export function TrendChart({
   if (!data || data.length === 0) {
     return (
       <div className="rounded-xl border border-zinc-200/60 dark:border-zinc-800 bg-card/50 p-6">
-        <p className="text-muted-foreground text-center text-sm">No data available</p>
+        <p className="text-muted-foreground text-center text-sm">
+          No data available
+        </p>
       </div>
     );
   }
@@ -41,7 +43,7 @@ export function TrendChart({
           <div>
             <p className="text-xs text-muted-foreground">Total</p>
             <p className="text-base font-semibold text-foreground">
-              {summary.total_tweets.toLocaleString()}
+              {summary.total_posts.toLocaleString()}
             </p>
           </div>
           <div>
@@ -100,8 +102,13 @@ export function TrendChart({
         {/* Peak indicator */}
         {summary.peak_date && (
           <div className="mt-4 text-xs text-muted-foreground">
-            Peak: <span className="text-foreground font-medium">{summary.peak_date}</span>
-            <span className="ml-1">({summary.max_daily.toLocaleString()} tweets)</span>
+            Peak:{" "}
+            <span className="text-foreground font-medium">
+              {summary.peak_date}
+            </span>
+            <span className="ml-1">
+              ({summary.max_daily.toLocaleString()} tweets)
+            </span>
           </div>
         )}
       </div>

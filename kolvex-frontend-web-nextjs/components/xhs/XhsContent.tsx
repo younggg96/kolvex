@@ -13,9 +13,9 @@ import SentimentBadge from "@/components/common/SentimentBadge";
 import AIAnalysis from "@/components/common/AIAnalysis";
 import ImageGallery from "@/components/common/ImageGallery";
 import VideoPlayer from "@/components/common/VideoPlayer";
-import { Button } from "@/components/ui/button";
 import { XhsPost } from "@/lib/xhsApi";
 import { formatNumber, getXhsPermalink } from "@/lib/xhsApi";
+import Image from "next/image";
 
 interface XhsContentProps {
   post: XhsPost;
@@ -42,7 +42,7 @@ export default function XhsContent({ post, onFormatText }: XhsContentProps) {
   // ai_trading_signal 可能是字符串（旧格式）或对象（新格式 JSONB）
   const buildTradingSignal = () => {
     if (!post.ai_trading_signal) return null;
-    
+
     // 如果是对象格式 {"action": "buy"}
     if (typeof post.ai_trading_signal === "object") {
       const signal = post.ai_trading_signal as { action?: string };
@@ -53,7 +53,7 @@ export default function XhsContent({ post, onFormatText }: XhsContentProps) {
         reasoning: null,
       };
     }
-    
+
     // 如果是字符串格式 "buy"
     return {
       action: post.ai_trading_signal as "buy" | "sell" | "hold" | null,
@@ -62,7 +62,7 @@ export default function XhsContent({ post, onFormatText }: XhsContentProps) {
       reasoning: null,
     };
   };
-  
+
   const tradingSignal = buildTradingSignal();
 
   return (
@@ -74,21 +74,6 @@ export default function XhsContent({ post, onFormatText }: XhsContentProps) {
         )}
         <div className="flex items-center gap-2">
           <SentimentBadge sentiment={sentiment} />
-          <a
-            href={permalink}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center text-primary hover:text-primary/80 transition-colors text-xs font-medium"
-          >
-            <Button
-              variant="ghost"
-              size="xs"
-              className="text-primary hover:!bg-primary/10"
-            >
-              Details
-              <ExternalLink className="w-3.5 h-3.5 ml-1" />
-            </Button>
-          </a>
         </div>
       </div>
 
@@ -99,28 +84,32 @@ export default function XhsContent({ post, onFormatText }: XhsContentProps) {
         </h3>
       )}
 
-      {/* Content Text */}
-      <div className="relative">
-        <div
-          className={`text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap ${
-            !isExpanded ? "line-clamp-4" : ""
-          }`}
-        >
-          {onFormatText(contentText)}
-        </div>
-        {shouldShowMore && (
-          <button
-            onClick={() => setIsExpanded(!isExpanded)}
-            className="text-xs text-primary hover:text-primary/80 font-medium mt-1"
+      {/* Content Text - 只在有内容时显示 */}
+      {contentText && contentText.trim() !== (post.title || "").trim() && (
+        <div className="relative">
+          <div
+            className={`text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap ${
+              !isExpanded ? "line-clamp-4" : ""
+            }`}
           >
-            {isExpanded ? "Show less" : "Show more"}
-          </button>
-        )}
-      </div>
+            {onFormatText(contentText)}
+          </div>
+          {shouldShowMore && (
+            <button
+              onClick={() => setIsExpanded(!isExpanded)}
+              className="text-xs text-primary hover:text-primary/80 font-medium mt-1"
+            >
+              {isExpanded ? "Show less" : "Show more"}
+            </button>
+          )}
+        </div>
+      )}
 
       {/* 图片 */}
-      {post.image_urls && post.image_urls.length > 0 && (
+      {post.image_urls && post.image_urls.length > 0 ? (
         <ImageGallery imageUrls={post.image_urls} />
+      ) : (
+        <ImageGallery imageUrls={post.cover_url ? [post.cover_url] : []} />
       )}
 
       {/* 视频 */}

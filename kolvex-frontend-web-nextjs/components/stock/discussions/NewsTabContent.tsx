@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { NewsListResponse } from "@/lib/kolTweetsApi";
+import { NewsListResponse } from "@/lib/kolPostsApi";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";

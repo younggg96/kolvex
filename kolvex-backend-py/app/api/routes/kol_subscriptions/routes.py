@@ -27,13 +27,11 @@ VALID_PLATFORMS = {"twitter", "reddit", "youtube", "xiaohongshu"}
 def calculate_influence_score(profile: dict) -> float:
     """计算 KOL 影响力分数"""
     followers_count = profile.get("followers_count") or 0
-    posts_count = profile.get("posts_count") or 0
 
-    follower_score = min(followers_count / 10000000, 1) * 50
-    post_score = min(posts_count / 50000, 1) * 30
+    follower_score = min(followers_count / 10000000, 1) * 80
     verification_bonus = 20 if profile.get("is_verified") else 0
 
-    return round((follower_score + post_score + verification_bonus) * 10) / 10
+    return round((follower_score + verification_bonus) * 10) / 10
 
 
 def enrich_subscription_with_profile(
@@ -67,7 +65,6 @@ def enrich_subscription_with_profile(
         kol_verified=profile.get("is_verified", False) if profile else False,
         kol_bio=profile.get("bio") if profile else None,
         kol_followers_count=profile.get("followers_count", 0) if profile else 0,
-        kol_category=None,  # 可以后续扩展
         kol_influence_score=influence_score,
         kol_trending_score=trending_score,
     )
@@ -87,7 +84,7 @@ async def get_kol_profiles_map(supabase, kol_ids: list[str]) -> dict:
             response = (
                 supabase.table("kol_profiles")
                 .select(
-                    "username, display_name, avatar_url, bio, followers_count, posts_count, is_verified"
+                    "username, display_name, avatar_url, bio, followers_count, is_verified"
                 )
                 .in_("username", batch)
                 .execute()
@@ -216,7 +213,7 @@ async def create_tracked_kol(
             profile_response = (
                 supabase.table("kol_profiles")
                 .select(
-                    "username, display_name, avatar_url, bio, followers_count, posts_count, is_verified"
+                    "username, display_name, avatar_url, bio, followers_count, is_verified"
                 )
                 .eq("username", kol_data.kol_id)
                 .single()
@@ -298,7 +295,7 @@ async def update_tracked_kol(
             profile_response = (
                 supabase.table("kol_profiles")
                 .select(
-                    "username, display_name, avatar_url, bio, followers_count, posts_count, is_verified"
+                    "username, display_name, avatar_url, bio, followers_count, is_verified"
                 )
                 .eq("username", kol_id)
                 .single()

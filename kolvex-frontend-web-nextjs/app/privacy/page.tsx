@@ -374,8 +374,9 @@ export default function PrivacyPage() {
             </p>
             <p className="text-gray-700 dark:text-gray-300 mb-4">
               The Service aggregates content from third-party platforms
-              (Twitter, Reddit, YouTube, RedNote). Your interactions with that
-              content may be subject to those platforms&apos; privacy policies.
+              (Twitter, Reddit, YouTube, Xiaohongshu). Your interactions with
+              that content may be subject to those platforms&apos; privacy
+              policies.
             </p>
           </section>
 
