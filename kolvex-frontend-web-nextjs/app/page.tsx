@@ -18,6 +18,38 @@ export const metadata: Metadata = {
       "Track social media KOLs, monitor retail sentiment, and get AI-powered investment analysis",
     type: "website",
   },
+  twitter: {
+    card: "summary",
+    title: "Kolvex - AI-Powered Investment Intelligence",
+    description:
+      "Track social media KOLs, monitor retail sentiment, and get AI-powered investment analysis",
+  },
+  icons: {
+    icon: "/icon.svg",
+  },
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Kolvex AI",
+  },
+  formatDetection: {
+    telephone: false,
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
+  alternates: {
+    canonical: "https://kolvex.app",
+  },
+  category: "finance",
+  creator: "Kolvex",
+  publisher: "Kolvex",
+  authors: {
+    name: "Kolvex",
+  },
+  metadataBase: new URL("https://kolvex.app"),
 };
 
 export default function Home() {

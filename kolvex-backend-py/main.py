@@ -30,6 +30,7 @@ def setup_scheduler():
     try:
         from apscheduler.schedulers.asyncio import AsyncIOScheduler
         from apscheduler.triggers.interval import IntervalTrigger
+        from apscheduler.triggers.cron import CronTrigger
 
         scheduler = AsyncIOScheduler()
 
@@ -168,6 +169,79 @@ def setup_scheduler():
             replace_existing=True,
         )
 
+        # ============================================================
+        # 任务 4: 每天自动同步所有用户的持仓数据
+        # ============================================================
+        async def scheduled_sync_all_holdings():
+            """定时任务：同步所有用户持仓数据"""
+            from app.services.snaptrade.service import SnapTradeService
+            from app.core.supabase import get_supabase_service
+            
+            logger.info("⏰ [HOLDINGS] 定时任务触发: 开始同步所有用户持仓")
+            try:
+                supabase = get_supabase_service()
+                snaptrade_service = SnapTradeService(supabase=supabase)
+                
+                # 获取所有已连接 SnapTrade 的用户
+                result = (
+                    supabase.table("snaptrade_connections")
+                    .select("user_id, snaptrade_user_id, is_connected")
+                    .eq("is_connected", True)
+                    .execute()
+                )
+                
+                if not result.data:
+                    logger.info("📭 [HOLDINGS] 没有已连接的用户需要同步")
+                    return
+                
+                total_users = len(result.data)
+                success_count = 0
+                error_count = 0
+                
+                logger.info(f"📊 [HOLDINGS] 找到 {total_users} 个已连接的用户")
+                
+                # 逐个同步用户的持仓数据
+                for connection in result.data:
+                    user_id = connection["user_id"]
+                    try:
+                        # 先同步账户
+                        await snaptrade_service.sync_accounts(user_id)
+                        # 再同步持仓
+                        positions = await snaptrade_service.sync_positions(user_id)
+                        success_count += 1
+                        logger.info(f"✅ [HOLDINGS] 用户 {user_id[:8]}... 同步成功，共 {len(positions)} 个持仓")
+                    except Exception as e:
+                        error_count += 1
+                        logger.error(f"❌ [HOLDINGS] 用户 {user_id[:8]}... 同步失败: {e}")
+                
+                logger.info(
+                    f"✅ [HOLDINGS] 持仓同步完成 - "
+                    f"总计: {total_users}, 成功: {success_count}, 失败: {error_count}"
+                )
+                
+            except Exception as e:
+                logger.error(f"❌ [HOLDINGS] 定时任务执行失败: {e}")
+
+        # 每天早上 8:00 UTC (美东时间凌晨 3:00/4:00) 同步
+        scheduler.add_job(
+            scheduled_sync_all_holdings,
+            CronTrigger(hour=8, minute=0),
+            id="sync_all_holdings_morning",
+            name="每日早上同步所有用户持仓",
+            replace_existing=True,
+            misfire_grace_time=3600,  # 如果错过执行时间，在1小时内仍然执行
+        )
+        
+        # 每天晚上 20:00 UTC (美东时间下午 3:00/4:00，市场收盘后) 再同步一次
+        scheduler.add_job(
+            scheduled_sync_all_holdings,
+            CronTrigger(hour=20, minute=0),
+            id="sync_all_holdings_evening",
+            name="每日晚上同步所有用户持仓",
+            replace_existing=True,
+            misfire_grace_time=3600,
+        )
+
         scheduler.start()
         logger.info("✅ 定时任务调度器已启动")
 
@@ -192,6 +266,15 @@ def setup_scheduler():
         scrape_job = scheduler.get_job("scrape_kol_tweets")
         if scrape_job:
             logger.info(f"📅 [SCRAPE] 下次执行时间: {scrape_job.next_run_time}")
+        
+        # 更新持仓同步任务状态
+        holdings_morning_job = scheduler.get_job("sync_all_holdings_morning")
+        if holdings_morning_job:
+            logger.info(f"📅 [HOLDINGS] 早上同步下次执行时间: {holdings_morning_job.next_run_time}")
+        
+        holdings_evening_job = scheduler.get_job("sync_all_holdings_evening")
+        if holdings_evening_job:
+            logger.info(f"📅 [HOLDINGS] 晚上同步下次执行时间: {holdings_evening_job.next_run_time}")
 
     except ImportError:
         logger.warning("⚠️ APScheduler 未安装，定时任务功能不可用")

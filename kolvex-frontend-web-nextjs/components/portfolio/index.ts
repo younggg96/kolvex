@@ -6,4 +6,5 @@ export type { PortfolioHeaderActionsProps } from "./PortfolioHeaderActions";
 export { PortfolioHeroSection } from "./PortfolioHeroSection";
 export { PortfolioPageContent } from "./PortfolioPageContent";
 export { PortfolioStatsGrid } from "./PortfolioStatsGrid";
+export { PortfolioAllocation } from "./PortfolioAllocation";
 export { default as PrivacySettingsDialog } from "./PrivacySettingsDialog";

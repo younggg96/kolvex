@@ -22,10 +22,14 @@ import {
   Users,
   ChevronRight,
   Eye,
+  FileSpreadsheet,
+  FileJson,
 } from "lucide-react";
 import type { SnapTradeHoldings } from "@/lib/supabase/database.types";
 import PrivacySettingsDialog from "./PrivacySettingsDialog";
 import { cn } from "@/lib/utils";
+
+export type DownloadFormat = "csv" | "json";
 
 export interface PortfolioHeaderActionsProps {
   syncing: boolean;
@@ -36,6 +40,7 @@ export interface PortfolioHeaderActionsProps {
   copied: boolean;
   onConnect: () => void;
   onDisconnect: () => void;
+  onDownload: (format: DownloadFormat) => void;
   size?: "sm" | "xs";
 }
 
@@ -53,6 +58,7 @@ export function PortfolioHeaderActions({
   copied,
   onConnect,
   onDisconnect,
+  onDownload,
 }: PortfolioHeaderActionsProps) {
   return (
     <div className="flex items-center gap-2">
@@ -127,6 +133,16 @@ export function PortfolioHeaderActions({
           <DropdownMenuItem onClick={onConnect}>
             <Link2 className="mr-2 h-4 w-4" />
             Add Another Broker
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          {/* Download Options */}
+          <DropdownMenuItem onClick={() => onDownload("csv")}>
+            <FileSpreadsheet className="mr-2 h-4 w-4" />
+            Download CSV
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => onDownload("json")}>
+            <FileJson className="mr-2 h-4 w-4" />
+            Download JSON
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem

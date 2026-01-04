@@ -13,6 +13,7 @@ from app.api.routes.kol_subscriptions import router as kol_subscriptions_router
 from app.api.routes.snaptrade import router as snaptrade_router
 from app.api.routes.xiaohongshu import router as xiaohongshu_router
 from app.api.routes.dataroma import router as dataroma_router
+from app.api.routes.scheduler_routes import router as scheduler_router
 
 # Create API router
 api_router = APIRouter()
@@ -33,5 +34,6 @@ api_router.include_router(snaptrade_router)
 api_router.include_router(notifications.router)
 api_router.include_router(xiaohongshu_router)
 api_router.include_router(dataroma_router)
+api_router.include_router(scheduler_router)
 
 __all__ = ["api_router"]
