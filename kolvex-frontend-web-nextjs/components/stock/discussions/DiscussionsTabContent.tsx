@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { StockDiscussionsResponse, StockPost } from "@/lib/kolPostsApi";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
-import { ChevronDown, AlertCircle } from "lucide-react";
+import { ChevronDown, AlertCircle, ExternalLink } from "lucide-react";
 import SentimentBadge from "@/components/common/SentimentBadge";
 import { ErrorState, EmptyState } from "@/components/common/EmptyState";
 import KOLList from "./KOLList";
@@ -12,6 +12,7 @@ import StockDiscussionsSkeleton from "./StockDiscussionsSkeleton";
 import PostHeader from "@/components/post/PostHeader";
 import Link from "next/link";
 import PostContent from "@/components/post/PostContent";
+import PostDetailModal from "@/components/post/PostDetailModal";
 
 interface DiscussionsTabContentProps {
   data: StockDiscussionsResponse | null;
@@ -31,10 +32,34 @@ export default function DiscussionsTabContent({
   onRetry,
 }: DiscussionsTabContentProps) {
   const [mounted, setMounted] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedPost, setSelectedPost] = useState<StockPost | null>(null);
+  const [expandedNonStockPosts, setExpandedNonStockPosts] = useState<
+    Set<number>
+  >(new Set());
 
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  // 检查帖子是否与股票相关
+  const isStockRelated = (post: StockPost): boolean => {
+    // StockPost 没有 is_stock_related 字段，默认为 true
+    return true;
+  };
+
+  // 切换非股票相关帖子的展开状态
+  const toggleNonStockPost = (postId: number) => {
+    setExpandedNonStockPosts((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(postId)) {
+        newSet.delete(postId);
+      } else {
+        newSet.add(postId);
+      }
+      return newSet;
+    });
+  };
 
   const formatDate = (dateString: string) => {
     if (!mounted) {
@@ -99,6 +124,27 @@ export default function DiscussionsTabContent({
       />
     );
   };
+
+  const renderCollapsedNonStockPost = (post: StockPost) => {
+    return (
+      <div className="py-1">
+        <Button
+          variant="ghost"
+          size="xs"
+          onClick={() => toggleNonStockPost(post.id)}
+          className="w-fit h-6 gap-1.5 text-amber-600/80 hover:bg-amber-50 dark:text-amber-500/80 dark:hover:text-amber-400 dark:hover:bg-amber-900/20 font-normal"
+        >
+          <div className="flex items-center gap-2">
+            <AlertCircle className="w-3 h-3" />
+            <span className="text-xs">
+              This post is unrelated to stocks. Click to view
+            </span>
+          </div>
+        </Button>
+      </div>
+    );
+  };
+
   // 加载状态
   if (loading) {
     return <StockDiscussionsSkeleton />;
@@ -169,18 +215,75 @@ export default function DiscussionsTabContent({
           <>
             <div className="space-y-1">
               {data.tweets.map((post, index) => {
+                const stockRelated = isStockRelated(post);
+                const isExpanded = expandedNonStockPosts.has(post.id);
+                const shouldCollapse = !stockRelated && !isExpanded;
+
                 return (
                   <div key={post.id}>
-                    <PostHeader
-                      screenName={post.username}
-                      createdAt={post.created_at || new Date().toISOString()}
-                      profileImageUrl={post.avatar_url || undefined}
-                      onFormatDate={formatDate}
-                      kolId={post.username}
-                      platform="twitter"
-                      initialTracked={false}
-                    />
-                    {renderPostContent(post)}
+                    {shouldCollapse ? (
+                      <>
+                        <PostHeader
+                          screenName={post.username}
+                          createdAt={
+                            post.created_at || new Date().toISOString()
+                          }
+                          profileImageUrl={post.avatar_url || undefined}
+                          onFormatDate={formatDate}
+                          kolId={post.username}
+                          platform="twitter"
+                          initialTracked={false}
+                        />
+                        {renderCollapsedNonStockPost(post)}
+                      </>
+                    ) : (
+                      <>
+                        <PostHeader
+                          screenName={post.username}
+                          createdAt={
+                            post.created_at || new Date().toISOString()
+                          }
+                          profileImageUrl={post.avatar_url || undefined}
+                          onFormatDate={formatDate}
+                          kolId={post.username}
+                          platform="twitter"
+                          initialTracked={false}
+                          rightContent={
+                            <div className="flex items-center gap-2 my-2">
+                              <SentimentBadge sentiment={post.sentiment} />
+                              <Button
+                                variant="ghost"
+                                size="xs"
+                                onClick={() => {
+                                  setSelectedPost(post);
+                                  setIsModalOpen(true);
+                                }}
+                                className="text-primary hover:!bg-primary/10 gap-1.5"
+                              >
+                                <ExternalLink className="w-3.5 h-3.5 ml-1" />
+                                <span className="sm:block hidden">Details</span>
+                              </Button>
+                            </div>
+                          }
+                        />
+                        {!stockRelated && isExpanded && (
+                          <div className="py-1">
+                            <Button
+                              variant="ghost"
+                              size="xs"
+                              onClick={() => toggleNonStockPost(post.id)}
+                              className="w-fit h-6 gap-1.5 text-amber-600/80 hover:bg-amber-50 dark:text-amber-500/80 dark:hover:text-amber-400 dark:hover:bg-amber-900/20 font-normal"
+                            >
+                              <AlertCircle className="w-3 h-3" />
+                              <span className="text-xs">
+                                Unrelated to stocks. Click to hide
+                              </span>
+                            </Button>
+                          </div>
+                        )}
+                        {renderPostContent(post)}
+                      </>
+                    )}
                     {index < data.tweets.length - 1 && (
                       <Separator className="my-2" />
                     )}
@@ -215,6 +318,19 @@ export default function DiscussionsTabContent({
           </>
         )}
       </div>
+
+      {/* Post Detail Modal */}
+      {selectedPost && (
+        <PostDetailModal
+          isOpen={isModalOpen}
+          onClose={() => {
+            setIsModalOpen(false);
+            setSelectedPost(null);
+          }}
+          postUrl={selectedPost.permalink || ""}
+          postPermalink={selectedPost.permalink || undefined}
+        />
+      )}
     </>
   );
 }

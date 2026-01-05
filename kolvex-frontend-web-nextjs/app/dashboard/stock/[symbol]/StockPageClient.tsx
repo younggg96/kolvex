@@ -122,6 +122,7 @@ export default function StockPageClient({
   return (
     <DashboardLayout
       title={`${quote?.name || "Loading..."}`}
+      hasSidebarTrigger={false}
       headerLeftAction={
         <Button
           onClick={() => {

@@ -28,11 +28,11 @@ export default function StockMobileHeader({
               </h1>
               <Button
                 variant="ghost"
-                size="sm"
+                size="icon"
                 onClick={tracking.onToggle}
                 disabled={tracking.isLoading}
                 className={cn(
-                  "h-8 w-8 p-0 rounded-full",
+                  "h-6 w-6 p-0 rounded-full",
                   tracking.isTracked
                     ? "text-amber-500 bg-amber-500/10"
                     : "text-muted-foreground"
@@ -40,7 +40,7 @@ export default function StockMobileHeader({
               >
                 <Star
                   className={cn(
-                    "w-4 h-4",
+                    "w-3 h-3",
                     tracking.isTracked && "fill-current"
                   )}
                 />
@@ -114,4 +114,3 @@ export default function StockMobileHeader({
     </div>
   );
 }
-
