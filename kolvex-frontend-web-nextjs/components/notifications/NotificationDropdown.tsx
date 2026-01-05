@@ -221,7 +221,7 @@ export function NotificationDropdown() {
                         {notification.related_symbol && (
                           <span className="inline-flex items-center gap-0.5 text-[10px] text-primary font-medium">
                             ${notification.related_symbol}
-                            <ExternalLink className="h-2.5 w-2.5" />
+                            <ExternalLink className="h-3.5 w-3.5" />
                           </span>
                         )}
                       </div>

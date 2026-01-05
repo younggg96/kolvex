@@ -180,8 +180,7 @@ export default function PostFeedList({ posts, formatDate }: PostFeedListProps) {
                         }}
                         className="text-primary hover:!bg-primary/10 gap-1.5"
                       >
-                        <ExternalLink className="w-3.5 h-3.5 ml-1" />
-                        <span className="sm:block hidden">Details</span>
+                        <ExternalLink className="w-3.5 h-3.5" />
                       </Button>
                     </div>
                   }

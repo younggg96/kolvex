@@ -1,7 +1,13 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { ExternalLink } from "lucide-react";
 import { useTheme } from "next-themes";
 
@@ -60,7 +66,7 @@ export default function PostDetailModal({
             rel="noopener noreferrer"
             className="inline-flex items-center gap-2 text-sky-400 hover:text-sky-300 transition-colors text-sm font-medium"
           >
-            <ExternalLink className="w-4 h-4" />
+            <ExternalLink className="w-3.5 h-3.5" />
             View on X
           </a>
         </DialogFooter>
@@ -68,4 +74,3 @@ export default function PostDetailModal({
     </Dialog>
   );
 }
-

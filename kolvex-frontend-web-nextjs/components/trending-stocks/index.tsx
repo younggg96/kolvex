@@ -47,7 +47,6 @@ export default function TrendingStocksTable({
     direction: "desc",
   });
   const isFetching = useRef(false);
-  const scrollRef = useRef<HTMLDivElement>(null);
 
   const fetchStocks = useCallback(
     async (

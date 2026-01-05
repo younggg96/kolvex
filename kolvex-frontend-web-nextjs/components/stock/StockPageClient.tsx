@@ -51,20 +51,17 @@ export default function StockPageClient() {
       icon: <TrendingUp className="w-3.5 h-3.5" />,
     },
     {
-      value: "tracked-stocks",
+      value: "tracking-stocks",
       label: "Tracking Stocks",
       icon: <Star className="w-3.5 h-3.5" />,
     },
   ];
 
   return (
-    <DashboardLayout
-      title="Stocks"
-      showHeader={isMobile || isTablet || isLaptop}
-    >
+    <DashboardLayout title="Stocks" headerClassName="lg:hidden">
       <div className="relative flex-1 overflow-y-auto bg-background-light dark:bg-background-dark">
         <div className="absolute inset-0 bg-grid opacity-50 pointer-events-none" />
-        {(isDesktop || isWide) && <StockHeroSection />}
+        <StockHeroSection className="hidden lg:block" />
         {/* Header with Tabs and Add Button */}
         <div className="space-y-3 w-full relative p-4 min-w-0">
           <div className="flex items-center justify-between gap-4 w-full">
@@ -76,7 +73,7 @@ export default function StockPageClient() {
               variant="pills"
               className="!w-fit"
             />
-            {activeTab === "tracked-stocks" && (
+            {activeTab === "tracking-stocks" && (
               <Button onClick={openAddDialog} size="sm" variant="ghost">
                 <Plus className="w-3.5 h-3.5" />
               </Button>

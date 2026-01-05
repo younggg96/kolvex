@@ -350,7 +350,7 @@ export default function KOLHoverCard({
                 >
                   <Link href={kolProfileUrl}>
                     <span>View Profile</span>
-                    <ExternalLink className="h-3 w-3 opacity-50" />
+                    <ExternalLink className="h-3.5 w-3.5" />
                   </Link>
                 </Button>
               </div>

@@ -2,6 +2,7 @@
 
 import { TrendingUp, BarChart3, Bell } from "lucide-react";
 import { HeroSection } from "@/components/ui/hero-section";
+import { cn } from "@/lib/utils";
 
 const stockFeatures = [
   {
@@ -11,13 +12,16 @@ const stockFeatures = [
   },
 ];
 
-export function StockHeroSection() {
+export function StockHeroSection({ className }: { className?: string }) {
   return (
     <HeroSection
       title="Stocks"
       description="Track trending stocks and manage your watchlist"
       features={stockFeatures}
-      className="p-4 border-b border-border-light dark:border-0 shadow-sm"
+      className={cn(
+        "p-4 border-b border-border-light dark:border-0 shadow-sm",
+        className
+      )}
     />
   );
 }

@@ -61,7 +61,7 @@ export default function NewsCard({ article }: NewsCardProps) {
             rel="noopener noreferrer"
             className="p-1 rounded-md hover:bg-muted/50 transition-colors"
           >
-            <ExternalLink className="w-3.5 h-3.5 text-muted-foreground/50 group-hover:text-muted-foreground transition-colors" />
+            <ExternalLink className="w-3.5 h-3.5" />
           </Link>
         </div>
 
