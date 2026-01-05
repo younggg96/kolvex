@@ -1240,6 +1240,97 @@ class XiaohongshuScraper:
                 for kw, count in list(db_stats["by_keyword"].items())[:10]:
                     print(f"  '{kw}': {count}")
 
+    def scrape_user_posts(
+        self, 
+        user_id: str, 
+        username: str = None, 
+        max_posts: int = 5
+    ) -> Dict:
+        """
+        抓取指定用户的帖子
+        
+        Args:
+            user_id: 小红书用户 ID
+            username: 用户昵称（可选，用于日志显示）
+            max_posts: 最多抓取的帖子数量
+            
+        Returns:
+            Dict: 统计信息
+        """
+        display_name = username or user_id
+        print(f"\n📕 开始抓取用户 {display_name} 的帖子...")
+        
+        # 检查 cookies
+        cookies = load_cookies(self.cookies_file)
+        if cookies is None:
+            print("⚠️ 未找到 cookies 文件，请先运行登录模式")
+            return {"success": False, "error": "No cookies found"}
+        
+        saved_count = 0
+        
+        with sync_playwright() as p:
+            browser = p.chromium.launch(
+                headless=self.headless,
+                args=BROWSER_ARGS,
+            )
+            
+            context = browser.new_context(
+                user_agent=random.choice(USER_AGENTS),
+                viewport=BROWSER_VIEWPORT,
+                locale=BROWSER_LOCALE,
+                timezone_id=BROWSER_TIMEZONE,
+            )
+            
+            # 加载 cookies
+            print(f"🍪 正在加载 {len(cookies)} 个 cookies...")
+            context.add_cookies(cookies)
+            
+            page = context.new_page()
+            self._add_stealth_scripts(page)
+            
+            try:
+                # 导航到用户主页
+                user_url = f"{BASE_URL}/user/profile/{user_id}"
+                print(f"🔗 访问用户主页: {user_url}")
+                
+                page.goto(user_url, wait_until="domcontentloaded", timeout=PAGE_LOAD_TIMEOUT)
+                random_sleep(2, 4)
+                
+                # 检查是否需要登录
+                if self._check_login_required(page):
+                    print("⚠️ Cookies 已失效，需要重新登录")
+                    browser.close()
+                    return {"success": False, "error": "Cookies expired"}
+                
+                # 抓取用户帖子
+                saved_count = self._scrape_kol_recent_posts(
+                    context, 
+                    page, 
+                    user_id, 
+                    username,
+                    source_keyword=None,
+                    max_posts=max_posts
+                )
+                
+                print(f"✅ 用户 {display_name} 帖子抓取完成: 新增 {saved_count} 条")
+                
+            except Exception as e:
+                print(f"❌ 抓取用户 {display_name} 失败: {e}")
+                return {"success": False, "error": str(e)}
+            
+            finally:
+                try:
+                    browser.close()
+                except Exception:
+                    pass
+        
+        return {
+            "success": True, 
+            "user_id": user_id,
+            "username": username,
+            "posts_saved": saved_count
+        }
+
     def close(self) -> None:
         """关闭资源（保留接口兼容性）"""
         pass

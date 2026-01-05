@@ -1,32 +1,40 @@
 "use client";
 
 import React, { useMemo, useEffect, useState } from "react";
-import {
-  PieChart,
-  Pie,
-  Cell,
-  ResponsiveContainer,
-  Tooltip,
-  Legend,
-} from "recharts";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import {
   TrendingUp,
   TrendingDown,
-  PieChart as PieChartIcon,
-  MoreHorizontal,
   ChevronDown,
   ChevronUp,
+  ChevronRight,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import type { SnapTradePosition } from "@/lib/supabase/database.types";
 import type { StockOverview } from "@/lib/stockApi";
+import { SectionCard } from "../layout";
+import CompanyLogo from "@/components/ui/company-logo";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 
 // ================== TYPES ==================
 
 interface PortfolioAllocationProps {
   holdings: SnapTradePosition[];
   className?: string;
+  isOwner?: boolean;
+}
+
+interface PositionInfo {
+  symbol: string;
+  displaySymbol: string; // For options: underlying symbol; for stocks: same as symbol
+  securityName?: string;
+  value: number;
+  invested: number;
+  gain: number;
+  gainPercent: number;
+  isOption: boolean;
+  optionType?: "call" | "put";
+  positionDirection?: "long" | "short";
 }
 
 interface SectorData {
@@ -37,53 +45,62 @@ interface SectorData {
   gainPercent: number;
   count: number;
   color: string;
-  positions: {
-    symbol: string;
-    value: number;
-    invested: number;
-    gain: number;
-    gainPercent: number;
-  }[];
+  positions: PositionInfo[];
 }
 
 // ================== COLOR PALETTE ==================
 
 const SECTOR_COLORS: Record<string, string> = {
-  "Information Technology": "#3b82f6", // blue
-  Technology: "#3b82f6",
-  Financials: "#06b6d4", // cyan
-  Financial: "#06b6d4",
-  "Health Care": "#10b981", // emerald
-  Healthcare: "#10b981",
-  "Consumer Discretionary": "#f59e0b", // amber
-  "Consumer Staples": "#84cc16", // lime
-  "Communication Services": "#8b5cf6", // violet
-  Industrials: "#6366f1", // indigo
-  Energy: "#ef4444", // red
-  Utilities: "#14b8a6", // teal
-  "Real Estate": "#f97316", // orange
-  Materials: "#ec4899", // pink
-  Funds: "#a855f7", // purple
-  ETF: "#a855f7",
-  Options: "#22d3ee", // cyan-400
-  Other: "#6b7280", // gray
+  "Information Technology": "#00C805", // Primary Green
+  Technology: "#00C805",
+  Financials: "#3b82f6", // Blue
+  Financial: "#3b82f6",
+  "Health Care": "#f43f5e", // Rose
+  Healthcare: "#f43f5e",
+  "Consumer Discretionary": "#fbbf24", // Amber
+  "Consumer Staples": "#a3e635", // Lime
+  "Communication Services": "#0ea5e9", // Sky Blue
+  Industrials: "#94a3b8", // Slate
+  Energy: "#ef4444", // Red
+  Utilities: "#06b6d4", // Cyan
+  "Real Estate": "#f97316", // Orange
+  Materials: "#14b8a6", // Teal
+  Funds: "#6366f1", // Indigo
+  ETF: "#6366f1",
+  Other: "#64748b", // Slate
 };
 
 const DEFAULT_COLORS = [
-  "#3b82f6",
-  "#a855f7",
-  "#06b6d4",
-  "#10b981",
-  "#8b5cf6",
-  "#f59e0b",
-  "#ef4444",
-  "#ec4899",
-  "#14b8a6",
-  "#6366f1",
+  "#00C805", // Primary
+  "#3b82f6", // Blue
+  "#0ea5e9", // Sky Blue
+  "#f43f5e", // Rose
+  "#fbbf24", // Amber
+  "#06b6d4", // Cyan
+  "#f97316", // Orange
+  "#14b8a6", // Teal
+  "#a3e635", // Lime
+  "#64748b", // Slate
 ];
 
 function getSectorColor(sector: string, index: number): string {
   return SECTOR_COLORS[sector] || DEFAULT_COLORS[index % DEFAULT_COLORS.length];
+}
+
+// ================== OPTION PARSING ==================
+
+/**
+ * Parse option symbol to extract call/put type
+ * Example: "SOFI 270115C00022000" -> { type: "call" }
+ * The format is: SYMBOL YYMMDD[C/P]PRICE
+ */
+function parseOptionSymbol(symbol: string): { type: "call" | "put" } | null {
+  // Match pattern: any chars followed by space, then 6 digits, then C or P
+  const match = symbol.match(/\s\d{6}([CP])/i);
+  if (match) {
+    return { type: match[1].toUpperCase() === "C" ? "call" : "put" };
+  }
+  return null;
 }
 
 // ================== UTILITY FUNCTIONS ==================
@@ -141,7 +158,7 @@ function DonutTooltip({ active, payload }: CustomTooltipProps) {
           <span className="text-muted-foreground">P&L:</span>
           <span
             className={`font-medium ${
-              isPositive ? "text-green-500" : "text-red-500"
+              isPositive ? "text-[#00C805]" : "text-[#ff4444]"
             }`}
           >
             {isPositive ? "+" : ""}
@@ -202,6 +219,7 @@ function renderCustomLabel({
 export function PortfolioAllocation({
   holdings,
   className = "",
+  isOwner = true,
 }: PortfolioAllocationProps) {
   const [sectorMap, setSectorMap] = useState<Map<string, string>>(new Map());
   const [loading, setLoading] = useState(true);
@@ -210,6 +228,22 @@ export function PortfolioAllocation({
   );
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   const [hoveredSector, setHoveredSector] = useState<string | null>(null);
+  const [expandedSectors, setExpandedSectors] = useState<Set<string>>(
+    new Set()
+  );
+
+  // Toggle sector expansion
+  const toggleSector = (sectorName: string) => {
+    setExpandedSectors((prev) => {
+      const next = new Set(prev);
+      if (next.has(sectorName)) {
+        next.delete(sectorName);
+      } else {
+        next.add(sectorName);
+      }
+      return next;
+    });
+  };
 
   // Fetch sector information for all holdings
   useEffect(() => {
@@ -285,14 +319,12 @@ export function PortfolioAllocation({
       const gain = pos.open_pnl ?? marketValue - costBasis;
       const gainPercent = costBasis > 0 ? (gain / costBasis) * 100 : 0;
 
-      // Determine sector
-      let sector: string;
-      if (pos.position_type === "option") {
-        sector = "Options";
-      } else {
-        const symbol = pos.symbol;
-        sector = sectorMap.get(symbol) || "Other";
-      }
+      // Determine sector - options use underlying symbol
+      const symbol =
+        pos.position_type === "option"
+          ? pos.underlying_symbol || pos.symbol
+          : pos.symbol;
+      let sector = sectorMap.get(symbol) || "Other";
 
       // Check if it's an ETF/Fund (simple heuristic)
       if (
@@ -320,12 +352,25 @@ export function PortfolioAllocation({
       sectors[sector].invested += costBasis;
       sectors[sector].gain += gain;
       sectors[sector].count += 1;
+
+      // Parse option info if applicable
+      const isOption = pos.position_type === "option";
+      const optionInfo = isOption ? parseOptionSymbol(pos.symbol) : null;
+      const displaySymbol = isOption
+        ? pos.underlying_symbol || pos.symbol.split(" ")[0]
+        : pos.symbol;
+
       sectors[sector].positions.push({
         symbol: pos.symbol,
+        displaySymbol,
+        securityName: pos.security_name,
         value: marketValue,
         invested: costBasis,
         gain,
         gainPercent,
+        isOption,
+        optionType: optionInfo?.type,
+        positionDirection: pos.units >= 0 ? "long" : "short",
       });
     });
 
@@ -381,86 +426,140 @@ export function PortfolioAllocation({
   }
 
   return (
-    <div className={`${className}`}>
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-sm font-medium flex items-center gap-2">
-            <PieChartIcon className="w-4 h-4 text-primary" />
-            Portfolio Allocation by Sector
-            {loading && (
-              <span className="text-xs font-normal text-muted-foreground ml-2">
-                Loading...
-              </span>
-            )}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <SectionCard
+      title="Portfolio Allocation by Sector"
+      titleSize="md"
+      className={`${className}`}
+    >
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 px-4">
+        {/* Donut Chart with Bar Legend */}
+        {isOwner && (
+          <div className="flex flex-col items-center gap-4 col-span-1">
             {/* Donut Chart */}
-            <div className="flex items-center justify-center col-span-1">
-              <div className="relative w-full max-w-[320px] aspect-square">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={sectorData}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius="55%"
-                      outerRadius="85%"
-                      paddingAngle={2}
-                      dataKey="value"
-                      labelLine={false}
-                      label={renderCustomLabel}
-                      onMouseEnter={(_, index) =>
-                        setHoveredSector(sectorData[index].name)
-                      }
-                      onMouseLeave={() => setHoveredSector(null)}
-                    >
-                      {sectorData.map((entry, index) => (
-                        <Cell
-                          key={`cell-${index}`}
-                          fill={entry.color}
-                          stroke="#1a1d1f"
-                          strokeWidth={2}
-                          style={{
-                            opacity:
-                              hoveredSector === null ||
-                              hoveredSector === entry.name
-                                ? 1
-                                : 0.4,
-                            transition: "opacity 0.2s ease",
-                            cursor: "pointer",
-                          }}
-                        />
-                      ))}
-                    </Pie>
-                    <Tooltip
-                      content={<DonutTooltip />}
-                      wrapperStyle={{ zIndex: 100 }}
-                      position={{ x: 10, y: 10 }}
-                    />
-                  </PieChart>
-                </ResponsiveContainer>
-                {/* Center Text */}
-                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+            <div className="relative w-full aspect-square">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={sectorData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius="55%"
+                    outerRadius="85%"
+                    paddingAngle={2}
+                    dataKey="value"
+                    labelLine={false}
+                    label={renderCustomLabel}
+                    onClick={(_, index) => toggleSector(sectorData[index].name)}
+                    onMouseEnter={(_, index) =>
+                      setHoveredSector(sectorData[index].name)
+                    }
+                    onMouseLeave={() => setHoveredSector(null)}
+                  >
+                    {sectorData.map((entry, index) => (
+                      <Cell
+                        key={`cell-${index}`}
+                        fill={entry.color}
+                        stroke="transparent"
+                        strokeWidth={0}
+                        style={{
+                          opacity:
+                            hoveredSector === null ||
+                            hoveredSector === entry.name
+                              ? 1
+                              : 0.4,
+                          transition: "opacity 0.2s ease",
+                          cursor: "pointer",
+                        }}
+                      />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    content={<DonutTooltip />}
+                    wrapperStyle={{ zIndex: 100 }}
+                    position={{ x: 10, y: 10 }}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+              {/* Center Text */}
+              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                <>
                   <span className="text-xs text-muted-foreground">
                     Total Value
                   </span>
                   <span className="text-xl font-bold text-foreground">
                     {formatCurrency(totalValue)}
                   </span>
-                </div>
+                </>
               </div>
             </div>
+            {/* Bar Legend - Only show for owner */}
+            <div className="flex flex-col gap-1.5 w-full px-4 pb-4">
+              {sectorData.slice(0, 8).map((sector) => {
+                const allocation =
+                  totalValue > 0 ? (sector.value / totalValue) * 100 : 0;
+                const isHovered = hoveredSector === sector.name;
+                const isExpanded = expandedSectors.has(sector.name);
 
-            {/* Sector Table */}
-            <div className="overflow-x-auto col-span-2">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-border-light dark:border-border-dark">
-                    <th className="text-left py-2 px-2 font-medium text-muted-foreground">
-                      Name
-                    </th>
+                return (
+                  <div
+                    key={sector.name}
+                    className={`cursor-pointer transition-all ${
+                      isHovered || isExpanded ? "scale-105" : ""
+                    }`}
+                    onClick={() => toggleSector(sector.name)}
+                    onMouseEnter={() => setHoveredSector(sector.name)}
+                    onMouseLeave={() => setHoveredSector(null)}
+                  >
+                    <div className="flex items-center justify-between mb-0.5">
+                      <span
+                        className={`text-[10px] truncate max-w-[60px] ${
+                          isHovered || isExpanded
+                            ? "text-foreground font-medium"
+                            : "text-muted-foreground"
+                        }`}
+                      >
+                        {sector.name}
+                      </span>
+                      <span className="text-[10px] text-muted-foreground">
+                        {allocation.toFixed(0)}%
+                      </span>
+                    </div>
+                    <div className="h-2 w-full bg-muted/30 rounded-sm overflow-hidden">
+                      <div
+                        className="h-full rounded-sm transition-all"
+                        style={{
+                          width: `${allocation}%`,
+                          backgroundColor: sector.color,
+                          opacity: isHovered || isExpanded ? 1 : 0.8,
+                        }}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+              {sectorData.length > 8 && (
+                <span className="text-[10px] text-muted-foreground text-center">
+                  +{sectorData.length - 8} more
+                </span>
+              )}
+            </div>
+          </div>
+        )}
+        {/* Sector Table */}
+        <div
+          className={cn(
+            "overflow-x-auto",
+            isOwner ? "col-span-2" : "col-span-3 pb-4"
+          )}
+        >
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-border-light dark:border-border-dark">
+                <th className="text-left py-2 px-2 font-medium text-muted-foreground">
+                  Name
+                </th>
+                {isOwner && (
+                  <>
                     <th
                       className="text-right py-2 px-2 font-medium text-muted-foreground cursor-pointer hover:text-foreground transition-colors"
                       onClick={() => handleSort("value")}
@@ -503,95 +602,225 @@ export function PortfolioAllocation({
                           ))}
                       </span>
                     </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {sectorData.map((sector) => {
-                    const isPositive = sector.gain >= 0;
-                    const allocation =
-                      totalValue > 0 ? (sector.value / totalValue) * 100 : 0;
-                    const isHovered = hoveredSector === sector.name;
+                  </>
+                )}
+              </tr>
+            </thead>
+            <tbody>
+              {sectorData.map((sector) => {
+                const isPositive = sector.gain >= 0;
+                const allocation =
+                  totalValue > 0 ? (sector.value / totalValue) * 100 : 0;
+                const isHovered = hoveredSector === sector.name;
+                const isExpanded = expandedSectors.has(sector.name);
 
-                    return (
-                      <tr
-                        key={sector.name}
-                        className={`border-b border-border-light dark:border-border-dark transition-colors ${
-                          isHovered ? "bg-primary/10" : "hover:bg-muted/30"
-                        }`}
-                        onMouseEnter={() => setHoveredSector(sector.name)}
-                        onMouseLeave={() => setHoveredSector(null)}
-                      >
-                        <td className="py-3 px-2">
-                          <div className="flex items-center gap-2">
-                            <div
-                              className="w-8 h-8 rounded-lg flex items-center justify-center"
-                              style={{ backgroundColor: sector.color + "30" }}
-                            >
-                              <div
-                                className="w-4 h-4 rounded"
-                                style={{ backgroundColor: sector.color }}
-                              />
-                            </div>
-                            <div>
-                              <div className="font-medium text-foreground">
-                                {sector.name}
-                              </div>
-                              <div className="text-xs text-muted-foreground">
-                                {sector.count} item
-                                {sector.count !== 1 ? "s" : ""}
-                              </div>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="py-3 px-2 text-right">
-                          <div className="font-semibold text-foreground">
-                            {formatCurrency(sector.value)}
-                          </div>
-                          <div className="text-xs text-muted-foreground">
-                            {formatCurrency(sector.invested)}
-                          </div>
-                        </td>
-                        <td className="py-3 px-2 text-right">
+                return (
+                  <React.Fragment key={sector.name}>
+                    {/* Sector Row */}
+                    <tr
+                      className={`border-b border-border-light dark:border-border-dark transition-colors cursor-pointer ${
+                        isHovered || isExpanded
+                          ? "bg-primary/10"
+                          : "hover:bg-muted/30"
+                      }`}
+                      onClick={() => toggleSector(sector.name)}
+                      onMouseEnter={() => setHoveredSector(sector.name)}
+                      onMouseLeave={() => setHoveredSector(null)}
+                    >
+                      <td className="py-3 px-2">
+                        <div className="flex items-center gap-2">
+                          <ChevronRight
+                            className={`w-4 h-4 text-muted-foreground transition-transform flex-shrink-0 ${
+                              isExpanded ? "rotate-90" : ""
+                            }`}
+                          />
                           <div
-                            className="font-medium"
-                            style={{
-                              color: isPositive ? "#22c55e" : "#ef4444",
-                            }}
+                            className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+                            style={{ backgroundColor: sector.color + "30" }}
                           >
-                            {isPositive ? "" : "-"}
-                            {formatCurrency(Math.abs(sector.gain))}
+                            <div
+                              className="w-4 h-4 rounded"
+                              style={{ backgroundColor: sector.color }}
+                            />
                           </div>
-                          <div className="flex items-center justify-end gap-0.5">
-                            {isPositive ? (
-                              <TrendingUp className="w-3 h-3 text-green-500" />
-                            ) : (
-                              <TrendingDown className="w-3 h-3 text-red-500" />
-                            )}
-                            <span
-                              className="text-xs"
+                          <div>
+                            <div className="font-medium text-foreground">
+                              {sector.name}
+                            </div>
+                            <div className="text-xs text-muted-foreground">
+                              {sector.count} item
+                              {sector.count !== 1 ? "s" : ""}
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+                      {isOwner && (
+                        <>
+                          <td className="py-3 px-2 text-right">
+                            <div className="font-semibold text-foreground">
+                              {formatCurrency(sector.value)}
+                            </div>
+                            <div className="text-xs text-muted-foreground">
+                              {formatCurrency(sector.invested)}
+                            </div>
+                          </td>
+                          <td className="py-3 px-2 text-right">
+                            <div
+                              className="font-medium"
                               style={{
-                                color: isPositive ? "#22c55e" : "#ef4444",
+                                color: isPositive ? "#00C805" : "#ff4444",
                               }}
                             >
-                              {Math.abs(sector.gainPercent).toFixed(2)}%
+                              {isPositive ? "" : "-"}
+                              {formatCurrency(Math.abs(sector.gain))}
+                            </div>
+                            <div className="flex items-center justify-end gap-0.5">
+                              {isPositive ? (
+                                <TrendingUp className="w-3 h-3 text-[#00C805]" />
+                              ) : (
+                                <TrendingDown className="w-3 h-3 text-[#ff4444]" />
+                              )}
+                              <span
+                                className="text-xs"
+                                style={{
+                                  color: isPositive ? "#00C805" : "#ff4444",
+                                }}
+                              >
+                                {Math.abs(sector.gainPercent).toFixed(2)}%
+                              </span>
+                            </div>
+                          </td>
+                          <td className="py-3 px-2 text-right">
+                            <span className="font-semibold text-foreground">
+                              {allocation.toFixed(2)}%
                             </span>
-                          </div>
-                        </td>
-                        <td className="py-3 px-2 text-right">
-                          <span className="font-semibold text-foreground">
-                            {allocation.toFixed(2)}%
-                          </span>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
+                          </td>
+                        </>
+                      )}
+                    </tr>
+
+                    {/* Expanded Position Rows */}
+                    {isExpanded &&
+                      sector.positions.map((pos, posIndex) => {
+                        const posIsPositive = pos.gain >= 0;
+                        const posAllocation =
+                          totalValue > 0 ? (pos.value / totalValue) * 100 : 0;
+
+                        return (
+                          <tr
+                            key={`${sector.name}-${pos.symbol}-${posIndex}`}
+                            className="border-b border-border-light/50 dark:border-border-dark/50 bg-muted/20 dark:bg-muted/10"
+                          >
+                            <td className="py-2 px-2 pl-12">
+                              <div className="flex items-center gap-2">
+                                <CompanyLogo
+                                  symbol={pos.displaySymbol}
+                                  size="xs"
+                                  shape="rounded"
+                                  border="light"
+                                />
+                                <div className="flex flex-col">
+                                  <div className="flex items-center gap-1.5">
+                                    <span className="font-medium text-foreground text-sm">
+                                      {pos.displaySymbol}
+                                    </span>
+                                    {pos.isOption && (
+                                      <>
+                                        <Badge
+                                          size="xs"
+                                          className={cn(
+                                            "border-0",
+                                            pos.optionType === "call"
+                                              ? "bg-primary/20 text-primary"
+                                              : "bg-destructive/20 text-destructive"
+                                          )}
+                                        >
+                                          {pos.optionType === "call"
+                                            ? "CALL"
+                                            : "PUT"}
+                                        </Badge>
+                                        <Badge
+                                          size="xs"
+                                          className={cn(
+                                            "border-0",
+                                            pos.positionDirection === "long"
+                                              ? "bg-blue-500/10 text-blue-500"
+                                              : "bg-orange-500/10 text-orange-500"
+                                          )}
+                                        >
+                                          {pos.positionDirection === "long"
+                                            ? "LONG"
+                                            : "SHORT"}
+                                        </Badge>
+                                      </>
+                                    )}
+                                  </div>
+                                  {pos.securityName && (
+                                    <span className="text-xs text-muted-foreground truncate max-w-[200px]">
+                                      {pos.securityName}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            </td>
+                            {isOwner && (
+                              <>
+                                <td className="py-2 px-2 text-right">
+                                  <div className="font-medium text-foreground text-sm">
+                                    {formatCurrency(pos.value)}
+                                  </div>
+                                  <div className="text-xs text-muted-foreground">
+                                    {formatCurrency(pos.invested)}
+                                  </div>
+                                </td>
+                                <td className="py-2 px-2 text-right">
+                                  <div
+                                    className="font-medium text-sm"
+                                    style={{
+                                      color: posIsPositive
+                                        ? "#00C805"
+                                        : "#ff4444",
+                                    }}
+                                  >
+                                    {posIsPositive ? "" : "-"}
+                                    {formatCurrency(Math.abs(pos.gain))}
+                                  </div>
+                                  <div className="flex items-center justify-end gap-0.5">
+                                    {posIsPositive ? (
+                                      <TrendingUp className="w-3 h-3 text-[#00C805]" />
+                                    ) : (
+                                      <TrendingDown className="w-3 h-3 text-[#ff4444]" />
+                                    )}
+                                    <span
+                                      className="text-xs"
+                                      style={{
+                                        color: posIsPositive
+                                          ? "#00C805"
+                                          : "#ff4444",
+                                      }}
+                                    >
+                                      {Math.abs(pos.gainPercent).toFixed(2)}%
+                                    </span>
+                                  </div>
+                                </td>
+                                <td className="py-2 px-2 text-right">
+                                  <span className="text-sm text-muted-foreground">
+                                    {posAllocation.toFixed(2)}%
+                                  </span>
+                                </td>
+                              </>
+                            )}
+                          </tr>
+                        );
+                      })}
+                  </React.Fragment>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </SectionCard>
   );
 }
 

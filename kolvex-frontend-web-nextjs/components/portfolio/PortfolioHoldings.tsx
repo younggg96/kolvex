@@ -1666,6 +1666,7 @@ export default function PortfolioHoldings({
               holdings={holdings.accounts.flatMap(
                 (account) => account.snaptrade_positions || []
               )}
+              isOwner={isOwner}
             />
           )}
         </>
