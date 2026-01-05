@@ -6,17 +6,8 @@ export function TableHeaderRow() {
       <TableHead className="text-xs font-semibold">Stock</TableHead>
       <TableHead className="text-xs text-right font-semibold">Price</TableHead>
       <TableHead className="text-xs text-right font-semibold">Change</TableHead>
-      <TableHead className="text-xs text-center font-semibold hidden sm:table-cell">
-        Today
-      </TableHead>
-      <TableHead className="text-xs text-center font-semibold hidden md:table-cell">
-        KOLs
-      </TableHead>
-      <TableHead className="text-xs text-center font-semibold w-12">
-        <span className="sr-only">Action</span>
-      </TableHead>
+      <TableHead className="text-xs text-center font-semibold">Today</TableHead>
+      <TableHead className="text-xs text-center font-semibold">KOLs</TableHead>
     </TableRow>
   );
 }
-
-

@@ -1,21 +1,19 @@
 "use client";
 
 import { useMemo, useState, useEffect, useCallback } from "react";
-import { useRouter } from "next/navigation";
 import { TrackedStock, deleteTrackedStock } from "@/lib/trackedStockApi";
 import { Building2 } from "lucide-react";
 import { useMultipleQuotes } from "@/hooks/useStockData";
 import { Table, TableBody, TableHeader } from "@/components/ui/table";
 import { toast } from "sonner";
 import { StockRow } from "@/components/stock/StockRow";
-import { StockRowSkeleton } from "./StockRowSkeleton";
+import { StockRowSkeleton } from "@/components/stock/StockRowSkeleton";
 import { TableHeaderRow } from "./TableHeaderRow";
 import { SectionCard } from "../layout";
 
 const REFRESH_INTERVAL = 15 * 60 * 1000;
 
 export default function TrackingStocksTable() {
-  const router = useRouter();
   const [stocks, setStocks] = useState<TrackedStock[]>([]);
   const [loading, setLoading] = useState(true);
   const [untrackingIds, setUntrackingIds] = useState<Set<string>>(new Set());
@@ -133,7 +131,7 @@ export default function TrackingStocksTable() {
             </TableHeader>
             <TableBody>
               {[...Array(6)].map((_, i) => (
-                <StockRowSkeleton key={i} />
+                <StockRowSkeleton key={i} variant="tracking" />
               ))}
             </TableBody>
           </Table>
@@ -150,7 +148,7 @@ export default function TrackingStocksTable() {
           <Building2 className="w-12 h-12 mx-auto mb-2 opacity-50" />
           <p className="text-sm">No tracking stocks yet</p>
           <p className="text-xs mt-2">Click the add button to start tracking</p>
-        </div>{" "}
+        </div>
       </SectionCard>
     );
   }
@@ -181,7 +179,6 @@ export default function TrackingStocksTable() {
               }))}
               isUntracking={untrackingIds.has(stock.id)}
               onUntrack={(e) => handleUntrack(e, stock.id, stock.symbol)}
-              onClick={() => router.push(`/dashboard/stock/${stock.symbol}`)}
             />
           ))}
         </TableBody>

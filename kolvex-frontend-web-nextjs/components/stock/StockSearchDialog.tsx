@@ -9,8 +9,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Building2, MessageSquare, Star, Loader2, Flame } from "lucide-react";
-import { TrackedStock } from "@/lib/trackedStockApi";
+import { Building2, MessageSquare, Loader2, Flame } from "lucide-react";
+import { TrackedStock, getTrackedStocks } from "@/lib/trackedStockApi";
+import { TrackingStarButton } from "@/components/stock/stock-row";
 
 interface StockSearchDialogProps {
   open: boolean;
@@ -51,9 +52,47 @@ export default function StockSearchDialog({
 }: StockSearchDialogProps) {
   const [popularStocks, setPopularStocks] = useState<StockSearchResult[]>([]);
   const [isLoadingPopular, setIsLoadingPopular] = useState(false);
+  // 用户已追踪的股票（从 API 获取）
+  const [userTrackedStocks, setUserTrackedStocks] =
+    useState<TrackedStock[]>(trackedStocks);
+  const [isLoadingTracked, setIsLoadingTracked] = useState(false);
+
+  // 创建 symbol -> stockId 的映射
+  const trackedStocksMap = new Map<string, string>(
+    userTrackedStocks.map((s) => [s.symbol, s.id])
+  );
 
   // 获取已追踪的股票 symbol 集合
-  const trackedSymbols = new Set(trackedStocks.map((s) => s.symbol));
+  const trackedSymbols = new Set(userTrackedStocks.map((s) => s.symbol));
+
+  // 处理追踪状态变化
+  const handleTrackChange = (
+    symbol: string,
+    tracked: boolean,
+    stockId?: string
+  ) => {
+    if (tracked && stockId) {
+      // 添加到本地状态
+      setUserTrackedStocks((prev) => [
+        ...prev,
+        { id: stockId, symbol, user_id: "" } as TrackedStock,
+      ]);
+    } else if (!tracked) {
+      // 从本地状态移除
+      setUserTrackedStocks((prev) => prev.filter((s) => s.symbol !== symbol));
+    }
+  };
+
+  // 获取用户已追踪的股票
+  useEffect(() => {
+    if (open && userTrackedStocks.length === 0 && !isLoadingTracked) {
+      setIsLoadingTracked(true);
+      getTrackedStocks()
+        .then(setUserTrackedStocks)
+        .catch(console.error)
+        .finally(() => setIsLoadingTracked(false));
+    }
+  }, [open, userTrackedStocks.length, isLoadingTracked]);
 
   // 异步搜索函数 - 使用自动补全端点（更快）
   const asyncSearchFunction = useCallback(
@@ -153,21 +192,16 @@ export default function StockSearchDialog({
         </div>
 
         {/* Track Button */}
-        {isTracked ? (
-          <span className="text-[10px] text-yellow-500 dark:text-yellow-400 font-medium px-2 py-1 bg-yellow-50 dark:bg-yellow-900/20 rounded flex-shrink-0">
-            Tracked
-          </span>
-        ) : (
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              handleSelect(stock);
-            }}
-            className="p-1.5 rounded-lg bg-yellow-500/10 text-yellow-500 hover:bg-yellow-500/20 transition-colors flex-shrink-0"
-          >
-            <Star className="w-4 h-4 text-yellow-500" />
-          </button>
-        )}
+        <TrackingStarButton
+          variant="trending"
+          ticker={stock.symbol}
+          companyName={stock.name}
+          stockId={trackedStocksMap.get(stock.symbol)}
+          isTracked={isTracked}
+          onTrackChange={(tracked, stockId) =>
+            handleTrackChange(stock.symbol, tracked, stockId)
+          }
+        />
       </div>
     );
   };
@@ -181,13 +215,6 @@ export default function StockSearchDialog({
         .finally(() => setIsLoadingPopular(false));
     }
   }, [open, asyncPopularFunction, popularStocks.length]);
-
-  // 处理点击热门股票
-  const handlePopularStockClick = (stock: StockSearchResult) => {
-    if (!trackedSymbols.has(stock.symbol)) {
-      onSelect(stock);
-    }
-  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -235,15 +262,9 @@ export default function StockSearchDialog({
                   const typeInfo = TYPE_LABELS[stock.type || "equity"];
 
                   return (
-                    <button
+                    <div
                       key={stock.id}
-                      onClick={() => handlePopularStockClick(stock)}
-                      disabled={isTracked}
-                      className={`w-full flex items-center gap-2.5 px-6 py-3 transition-colors border-b border-gray-100 dark:border-white/5 last:border-b-0 ${
-                        isTracked
-                          ? "opacity-50 cursor-not-allowed bg-gray-50/50 dark:bg-white/2"
-                          : "hover:bg-gray-50 dark:hover:bg-white/5"
-                      }`}
+                      className="w-full flex items-center gap-2.5 px-6 py-3 transition-colors border-b border-gray-100 dark:border-white/5 last:border-b-0 hover:bg-gray-50 dark:hover:bg-white/5"
                     >
                       {/* Logo */}
                       <CompanyLogo
@@ -283,16 +304,17 @@ export default function StockSearchDialog({
                       </div>
 
                       {/* Track Button / Tracked Badge */}
-                      {isTracked ? (
-                        <span className="text-xs text-yellow-500 dark:text-yellow-400 font-medium px-2 py-1 bg-yellow-50 dark:bg-yellow-900/20 rounded">
-                          Tracked
-                        </span>
-                      ) : (
-                        <div className="p-1.5 rounded-lg bg-yellow-500/10 text-yellow-500 hover:bg-yellow-500/20 transition-colors flex-shrink-0">
-                          <Star className="w-4 h-4 text-yellow-500" />
-                        </div>
-                      )}
-                    </button>
+                      <TrackingStarButton
+                        variant="trending"
+                        ticker={stock.symbol}
+                        companyName={stock.name}
+                        stockId={trackedStocksMap.get(stock.symbol)}
+                        isTracked={isTracked}
+                        onTrackChange={(tracked, stockId) =>
+                          handleTrackChange(stock.symbol, tracked, stockId)
+                        }
+                      />
+                    </div>
                   );
                 })}
               </div>

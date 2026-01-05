@@ -13,10 +13,10 @@ import { SortableHeader } from "@/components/ui/sortable-header";
 import { TrendingStock, SortBy } from "@/app/api/trending-stocks/route";
 import { StockRow } from "@/components/stock/StockRow";
 import {
-  TrendingStockSkeleton,
+  StockRowSkeleton,
   LoadingMoreRow,
   NoMoreDataRow,
-} from "@/components/trending-stocks/TrendingStockSkeleton";
+} from "@/components/stock/StockRowSkeleton";
 import { SectionCard } from "@/components/layout";
 import { ArrowLeft, TrendingUp, TrendingDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -276,7 +276,7 @@ export default function SentimentStocksClient({
           <TableBody>
             {loading && stocks.length === 0 ? (
               Array.from({ length: 10 }).map((_, i) => (
-                <TrendingStockSkeleton key={i} />
+                <StockRowSkeleton key={i} variant="trending" />
               ))
             ) : stocks.length === 0 ? (
               <TableRow>

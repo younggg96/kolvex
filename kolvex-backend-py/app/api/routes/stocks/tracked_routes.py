@@ -278,7 +278,7 @@ async def get_tracked_stocks(
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"获取追踪股票失败: {str(e)}",
+            detail=f"Failed to get tracked stocks: {str(e)}",
         )
 
 
@@ -286,7 +286,7 @@ async def get_tracked_stocks(
     "/tracked",
     response_model=TrackedStockResponse,
     status_code=status.HTTP_201_CREATED,
-    summary="添加追踪股票",
+    summary="Add tracked stock",
 )
 async def create_tracked_stock(
     stock_data: TrackedStockCreate,
@@ -312,7 +312,7 @@ async def create_tracked_stock(
         if existing.data:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="该股票已在追踪列表中",
+                detail="The stock is already in the tracking list",
             )
 
         # 插入新记录
@@ -329,7 +329,7 @@ async def create_tracked_stock(
         if not response.data:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="添加追踪股票失败",
+                detail="Failed to add tracked stock",
             )
 
         row = response.data[0]
@@ -348,14 +348,14 @@ async def create_tracked_stock(
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"添加追踪股票失败: {str(e)}",
+            detail=f"Failed to add tracked stock: {str(e)}",
         )
 
 
 @router.patch(
     "/tracked/{stock_id}",
     response_model=TrackedStockResponse,
-    summary="更新追踪股票设置",
+    summary="Update tracked stock settings",
 )
 async def update_tracked_stock(
     stock_id: str,
@@ -383,7 +383,7 @@ async def update_tracked_stock(
         if not existing.data:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="追踪股票未找到",
+                detail="Tracked stock not found",
             )
 
         # 更新记录
@@ -417,14 +417,14 @@ async def update_tracked_stock(
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"更新追踪股票失败: {str(e)}",
+            detail=f"Failed to update tracked stock: {str(e)}",
         )
 
 
 @router.delete(
     "/tracked/{stock_id}",
     response_model=MessageResponse,
-    summary="删除追踪股票",
+    summary="Delete tracked stock",
 )
 async def delete_tracked_stock(
     stock_id: str,
@@ -450,24 +450,24 @@ async def delete_tracked_stock(
         if not response.data:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="追踪股票未找到",
+                detail="Tracked stock not found",
             )
 
-        return MessageResponse(message="追踪股票已删除", success=True)
+        return MessageResponse(message="Tracked stock deleted", success=True)
 
     except HTTPException:
         raise
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"删除追踪股票失败: {str(e)}",
+            detail=f"Failed to delete tracked stock: {str(e)}",
         )
 
 
 @router.get(
     "/tracked/check/{symbol}",
     response_model=StockTrackedCheckResponse,
-    summary="检查股票是否已追踪",
+    summary="Check if stock is tracked",
 )
 async def check_stock_tracked(
     symbol: str,
@@ -501,5 +501,5 @@ async def check_stock_tracked(
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"检查追踪状态失败: {str(e)}",
+            detail=f"Failed to check tracked status: {str(e)}",
         )
