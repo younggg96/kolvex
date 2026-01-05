@@ -3,7 +3,9 @@
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { NewsArticle } from "@/lib/kolPostsApi";
-import { ExternalLink } from "lucide-react";
+import { Badge, ExternalLink } from "lucide-react";
+import { Button } from "../ui/button";
+import { Tags } from "../common";
 
 interface NewsCardProps {
   article: NewsArticle;
@@ -85,27 +87,22 @@ export default function NewsCard({ article }: NewsCardProps) {
               ? article.tickers
               : article.tickers.slice(0, 6)
             ).map((ticker, index) => (
-              <Link
-                key={index}
-                href={`/dashboard/stock/${ticker}`}
-                onClick={(e) => e.stopPropagation()}
-                className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 transition-colors"
-              >
-                ${ticker}
-              </Link>
+              <Tags key={index} tags={[`$${ticker}`]} />
             ))}
             {article.tickers.length > 6 && (
-              <button
+              <Button
                 onClick={(e) => {
                   e.stopPropagation();
                   setShowAllTickers(!showAllTickers);
                 }}
-                className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium text-muted-foreground/60 hover:text-primary hover:bg-muted/50 transition-colors"
+                variant="ghost"
+                size="xs"
+                className="text-xs"
               >
                 {showAllTickers
                   ? "Show less"
                   : `+${article.tickers.length - 6}`}
-              </button>
+              </Button>
             )}
           </div>
         )}
