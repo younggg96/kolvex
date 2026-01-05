@@ -3,7 +3,7 @@
 import { useState } from "react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import TrendingStocksTable from "@/components/trending-stocks";
-import TrackedStocksTable from "@/components/tracking-stocks/TrackingStocksTable";
+import TrackingStocksTable from "@/components/tracking-stocks/TrackingStocksTable";
 import StockSearchDialog from "@/components/stock/StockSearchDialog";
 import { SwitchTab } from "@/components/ui/switch-tab";
 import { Button } from "@/components/ui/button";
@@ -12,13 +12,11 @@ import { createTrackedStock } from "@/lib/trackedStockApi";
 import { toast } from "sonner";
 import { SearchInput } from "../ui/search-input";
 import { StockHeroSection } from "./StockHeroSection";
-import { useBreakpoints } from "@/hooks/useBreakpoints";
 
 export default function StockPageClient() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("trending");
   const [searchQuery, setSearchQuery] = useState("");
-  const { isMobile, isTablet, isLaptop, isDesktop, isWide } = useBreakpoints();
 
   // Handle stock selection from search dialog
   const handleStockSelect = async (stock: {
@@ -52,7 +50,7 @@ export default function StockPageClient() {
     },
     {
       value: "tracking-stocks",
-      label: "Tracking Stocks",
+      label: "My Tracking",
       icon: <Star className="w-3.5 h-3.5" />,
     },
   ];
@@ -93,7 +91,7 @@ export default function StockPageClient() {
             {activeTab === "trending" ? (
               <TrendingStocksTable searchQuery={searchQuery} />
             ) : (
-              <TrackedStocksTable />
+              <TrackingStocksTable />
             )}
           </div>
         </div>

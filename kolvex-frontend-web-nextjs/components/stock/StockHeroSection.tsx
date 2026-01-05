@@ -16,7 +16,7 @@ export function StockHeroSection({ className }: { className?: string }) {
   return (
     <HeroSection
       title="Stocks"
-      description="Track trending stocks and manage your watchlist"
+      description="Track trending stocks and manage your tracked stocks"
       features={stockFeatures}
       className={cn(
         "p-4 border-b border-border-light dark:border-0 shadow-sm",

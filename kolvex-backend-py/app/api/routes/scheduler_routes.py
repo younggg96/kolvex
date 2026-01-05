@@ -90,3 +90,4 @@ async def get_scheduler_status(
             detail=f"Failed to get scheduler status: {str(e)}",
         )
 
+

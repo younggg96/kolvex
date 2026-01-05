@@ -84,6 +84,39 @@ async def fetch_kol_profiles(supabase, usernames: list) -> dict:
     return profiles_map
 
 
+async def fetch_company_names(supabase, tickers: list) -> dict:
+    """
+    批量获取公司名称
+    从 institutional_holdings 表获取（超级投资者持有的股票信息）
+    """
+    if not tickers:
+        return {}
+
+    company_names = {}
+    batch_size = 100
+
+    for i in range(0, len(tickers), batch_size):
+        batch = tickers[i : i + batch_size]
+        try:
+            # 从 institutional_holdings 表获取公司名称（每个 ticker 只取一条）
+            response = (
+                supabase.table("institutional_holdings")
+                .select("ticker, company_name")
+                .in_("ticker", batch)
+                .not_.is_("company_name", "null")
+                .execute()
+            )
+            for row in response.data:
+                ticker = row.get("ticker")
+                name = row.get("company_name")
+                if ticker and name and ticker not in company_names:
+                    company_names[ticker] = name
+        except Exception as e:
+            print(f"Error fetching company names: {e}")
+
+    return company_names
+
+
 @router.get(
     "/trending", response_model=TrendingStocksResponse, summary="获取趋势股票列表"
 )
@@ -213,6 +246,10 @@ async def get_trending_stocks(
             all_usernames.update(stats["unique_authors"])
         profiles_map = await fetch_kol_profiles(supabase, list(all_usernames))
 
+        # 获取公司名称
+        all_tickers = list(ticker_stats.keys())
+        company_names_map = await fetch_company_names(supabase, all_tickers)
+
         # 过滤最小提及次数 (min_mentions=0 时显示所有 KOL 提到的股票)
         if min_mentions > 0:
             filtered_stats = {
@@ -271,7 +308,7 @@ async def get_trending_stocks(
                         display_name=profile.get("display_name"),
                         avatar_url=author_data["avatar_url"]
                         or profile.get("avatar_url"),
-                        platform=author_data.get("platform") or "twitter",
+                        platform=author_data.get("platform"),
                         tweet_count=author_data["tweet_count"],
                         sentiment=author_sentiment,
                     )
@@ -280,6 +317,7 @@ async def get_trending_stocks(
             stocks_list.append(
                 TrendingStock(
                     ticker=ticker,
+                    company_name=company_names_map.get(ticker),
                     platform="twitter",
                     mention_count=stats["mention_count"],
                     sentiment_score=(

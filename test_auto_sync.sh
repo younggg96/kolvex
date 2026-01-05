@@ -43,3 +43,4 @@ echo "     curl -X POST -H 'Authorization: Bearer YOUR_TOKEN' \\"
 echo "       http://localhost:8000/api/v1/scheduler/sync-holdings/trigger"
 echo ""
 
+

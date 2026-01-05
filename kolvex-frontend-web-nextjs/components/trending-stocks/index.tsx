@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/table";
 import { SortableHeader } from "@/components/ui/sortable-header";
 import { TrendingStock, SortBy } from "@/app/api/trending-stocks/route";
-import { TrendingStockItem } from "./TrendingStockItem";
+import { StockRow } from "@/components/stock/StockRow";
 import {
   TrendingStockSkeleton,
   LoadingMoreRow,
@@ -208,8 +208,9 @@ export default function TrendingStocksTable({
           ) : (
             <>
               {stocks.map((stock, index) => (
-                <TrendingStockItem
+                <StockRow
                   key={`${stock.ticker}-${index}`}
+                  variant="trending"
                   ticker={stock.ticker}
                   companyName={stock.company_name ?? undefined}
                   mentionCount={stock.mention_count}

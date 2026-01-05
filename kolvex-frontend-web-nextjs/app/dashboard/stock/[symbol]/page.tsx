@@ -50,7 +50,7 @@ async function checkStockTrackedServer(symbol: string): Promise<{
     const protocol = process.env.NODE_ENV === "production" ? "https" : "http";
 
     const res = await fetch(
-      `${protocol}://${host}/api/tracked-stocks/check/${encodeURIComponent(
+      `${protocol}://${host}/api/tracking-stocks/check/${encodeURIComponent(
         normalized
       )}`,
       {

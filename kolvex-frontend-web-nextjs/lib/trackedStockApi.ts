@@ -48,7 +48,7 @@ interface CreateTrackedStockParams {
 export async function createTrackedStock(
   params: CreateTrackedStockParams
 ): Promise<TrackedStock> {
-  const response = await fetch("/api/tracked-stocks", {
+  const response = await fetch("/api/tracking-stocks", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -73,7 +73,7 @@ export async function createTrackedStock(
  * Delete a tracked stock from watchlist
  */
 export async function deleteTrackedStock(stockId: string): Promise<void> {
-  const url = new URL("/api/tracked-stocks", window.location.origin);
+  const url = new URL("/api/tracking-stocks", window.location.origin);
   url.searchParams.set("id", stockId);
 
   const response = await fetch(url.toString(), {
@@ -90,7 +90,7 @@ export async function deleteTrackedStock(stockId: string): Promise<void> {
  * Get all tracked stocks for current user
  */
 export async function getTrackedStocks(): Promise<TrackedStock[]> {
-  const response = await fetch("/api/tracked-stocks");
+  const response = await fetch("/api/tracking-stocks");
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({}));
@@ -107,7 +107,7 @@ export async function updateTrackedStock(
   stockId: string,
   updates: { notify?: boolean }
 ): Promise<TrackedStock> {
-  const response = await fetch("/api/tracked-stocks", {
+  const response = await fetch("/api/tracking-stocks", {
     method: "PATCH",
     headers: {
       "Content-Type": "application/json",
@@ -134,11 +134,15 @@ export async function checkStockTracked(
 ): Promise<{ symbol: string; is_tracked: boolean; stock_id: string | null }> {
   try {
     const response = await fetch(
-      `/api/tracked-stocks/check/${encodeURIComponent(symbol.toUpperCase())}`
+      `/api/tracking-stocks/check/${encodeURIComponent(symbol.toUpperCase())}`
     );
 
     if (!response.ok) {
-      return { symbol: symbol.toUpperCase(), is_tracked: false, stock_id: null };
+      return {
+        symbol: symbol.toUpperCase(),
+        is_tracked: false,
+        stock_id: null,
+      };
     }
 
     return response.json();

@@ -7,14 +7,14 @@ import { Building2 } from "lucide-react";
 import { useMultipleQuotes } from "@/hooks/useStockData";
 import { Table, TableBody, TableHeader } from "@/components/ui/table";
 import { toast } from "sonner";
-import { StockRow } from "./StockRow";
+import { StockRow } from "@/components/stock/StockRow";
 import { StockRowSkeleton } from "./StockRowSkeleton";
 import { TableHeaderRow } from "./TableHeaderRow";
 import { SectionCard } from "../layout";
 
 const REFRESH_INTERVAL = 15 * 60 * 1000;
 
-export default function TrackedStocksTable() {
+export default function TrackingStocksTable() {
   const router = useRouter();
   const [stocks, setStocks] = useState<TrackedStock[]>([]);
   const [loading, setLoading] = useState(true);
@@ -27,7 +27,7 @@ export default function TrackedStocksTable() {
   const loadStocks = useCallback(async () => {
     try {
       setLoading(true);
-      const res = await fetch("/api/tracked-stocks");
+      const res = await fetch("/api/tracking-stocks");
       if (!res.ok) throw new Error("Failed to fetch stocks");
       const data = await res.json();
       setStocks(data);
@@ -148,7 +148,7 @@ export default function TrackedStocksTable() {
       <SectionCard padding="none" useSectionHeader={false}>
         <div className="text-center py-8 text-gray-500 dark:text-white/50">
           <Building2 className="w-12 h-12 mx-auto mb-2 opacity-50" />
-          <p className="text-sm">No tracked stocks yet</p>
+          <p className="text-sm">No tracking stocks yet</p>
           <p className="text-xs mt-2">Click the add button to start tracking</p>
         </div>{" "}
       </SectionCard>
@@ -166,13 +166,19 @@ export default function TrackedStocksTable() {
           {enrichedStocks.map((stock) => (
             <StockRow
               key={stock.symbol}
-              symbol={stock.symbol}
+              variant="tracking"
+              ticker={stock.symbol}
               companyName={stock.companyName}
               price={stock.price}
               changePercent={stock.changePercent}
               sparklineData={stock.sparklineData}
-              mentionCount={stock.mention_count}
-              topAuthors={stock.top_authors}
+              topAuthors={stock.top_authors?.map((a) => ({
+                username: a.username,
+                displayName: a.display_name ?? undefined,
+                avatarUrl: a.avatar_url ?? "",
+                tweetCount: a.tweet_count ?? 0,
+                sentiment: a.sentiment,
+              }))}
               isUntracking={untrackingIds.has(stock.id)}
               onUntrack={(e) => handleUntrack(e, stock.id, stock.symbol)}
               onClick={() => router.push(`/dashboard/stock/${stock.symbol}`)}
