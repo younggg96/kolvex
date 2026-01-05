@@ -216,10 +216,10 @@ export interface StockPost {
 
 export interface StockDiscussionsResponse {
   ticker: string;
-  total_posts: number;
+  total_tweets: number;
   total_kols: number;
   kols: KOLSummary[];
-  posts: StockPost[];
+  tweets: StockPost[];
   page: number;
   page_size: number;
   has_more: boolean;

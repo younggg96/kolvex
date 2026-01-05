@@ -140,24 +140,46 @@ export default function StockPageClient({
         {/* Mobile: Stock Header Card */}
         {quote && <StockMobileHeader quote={quote} tracking={trackingState} />}
 
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-2 sm:gap-3">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-0 sm:gap-3">
           {/* Main Chart Area */}
-          <div className="lg:col-span-3 space-y-2 sm:space-y-3">
-            <div className="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-2 sm:p-3 transition-colors duration-300">
-              {/* TradingView Chart */}
-              {mounted && (
+          {mounted ? (
+            <div className="lg:col-span-3 space-y-2 sm:space-y-3">
+              <div className="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-2 sm:p-3 transition-colors duration-300">
+                {/* TradingView Chart */}
                 <div className="w-full h-[280px] sm:h-[350px] md:h-[450px] lg:h-[500px]">
                   <TradingViewChart
                     symbol={symbol}
                     theme={theme === "dark" ? "dark" : "light"}
                   />
                 </div>
-              )}
+              </div>
+              <StockInfoBoard ticker={symbol} />
             </div>
-
-            {/* KOL Discussions Section */}
-            {mounted && <StockInfoBoard ticker={symbol} />}
-          </div>
+          ) : (
+            <div className="lg:col-span-3 space-y-2 sm:space-y-3">
+              {/* Chart Skeleton */}
+              <div className="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-2 sm:p-3 transition-colors duration-300">
+                <div className="w-full h-[280px] sm:h-[350px] md:h-[450px] lg:h-[500px] animate-pulse bg-gray-200 dark:bg-white/10 rounded" />
+              </div>
+              {/* StockInfoBoard Skeleton */}
+              <div className="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-3 sm:p-4 transition-colors duration-300">
+                <div className="animate-pulse space-y-3">
+                  {/* Tabs skeleton */}
+                  <div className="flex gap-2 border-b border-border-light dark:border-border-dark pb-2">
+                    <div className="h-8 bg-gray-200 dark:bg-white/10 rounded w-24" />
+                    <div className="h-8 bg-gray-200 dark:bg-white/10 rounded w-24" />
+                    <div className="h-8 bg-gray-200 dark:bg-white/10 rounded w-24" />
+                  </div>
+                  {/* Content skeleton */}
+                  <div className="space-y-2">
+                    <div className="h-4 bg-gray-200 dark:bg-white/10 rounded w-full" />
+                    <div className="h-4 bg-gray-200 dark:bg-white/10 rounded w-5/6" />
+                    <div className="h-4 bg-gray-200 dark:bg-white/10 rounded w-4/6" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Sidebar - Stock Info */}
           <div className="lg:col-span-1 space-y-2 sm:space-y-3">

@@ -50,7 +50,7 @@ export default function StockInfoBoard({ ticker }: StockDiscussionsProps) {
         if (append && data) {
           setData({
             ...result,
-            posts: [...data.posts, ...result.posts],
+            tweets: [...data.tweets, ...result.tweets],
           });
         } else {
           setData(result);
