@@ -236,3 +236,167 @@ body {
 .animate-grow {
   animation: grow 1s ease-out forwards;
 }
+
+/* Page Transition Animations */
+@keyframes page-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes page-exit {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+}
+
+@keyframes page-scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes content-stagger {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-page-enter {
+  animation: page-enter 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+}
+
+.animate-page-scale-in {
+  animation: page-scale-in 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+}
+
+.animate-content-stagger {
+  animation: content-stagger 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+  animation-fill-mode: both;
+}
+
+/* Staggered animation delays */
+.stagger-1 { animation-delay: 50ms; }
+.stagger-2 { animation-delay: 100ms; }
+.stagger-3 { animation-delay: 150ms; }
+.stagger-4 { animation-delay: 200ms; }
+.stagger-5 { animation-delay: 250ms; }
+
+/* Modal/Dialog animations */
+@keyframes modal-overlay-enter {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes modal-content-enter {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes modal-overlay-exit {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes modal-content-exit {
+  from {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.95) translateY(10px);
+  }
+}
+
+.animate-modal-overlay-enter {
+  animation: modal-overlay-enter 0.2s ease-out forwards;
+}
+
+.animate-modal-content-enter {
+  animation: modal-content-enter 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+.animate-modal-overlay-exit {
+  animation: modal-overlay-exit 0.15s ease-in forwards;
+}
+
+.animate-modal-content-exit {
+  animation: modal-content-exit 0.15s ease-in forwards;
+}
+
+/* Sidebar/Drawer animations */
+@keyframes slide-in-left {
+  from {
+    opacity: 0;
+    transform: translateX(-100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slide-out-left {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(-100%);
+  }
+}
+
+@keyframes slide-in-right {
+  from {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.animate-slide-in-left {
+  animation: slide-in-left 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+}
+
+.animate-slide-in-right {
+  animation: slide-in-right 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+}

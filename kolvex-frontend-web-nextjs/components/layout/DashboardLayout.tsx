@@ -14,6 +14,8 @@ interface DashboardLayoutProps {
   hasSidebarTrigger?: boolean;
   headerLeftAction?: ReactNode;
   headerActions?: ReactNode;
+  /** Disable page transition animation */
+  noTransition?: boolean;
 }
 
 export default function DashboardLayout({
@@ -24,6 +26,7 @@ export default function DashboardLayout({
   hasSidebarTrigger = true,
   headerLeftAction,
   headerActions,
+  noTransition = false,
 }: DashboardLayoutProps) {
   return (
     <SidebarProvider defaultOpen={true}>
@@ -40,7 +43,13 @@ export default function DashboardLayout({
               />
             </div>
           )}
-          <div className="flex flex-col flex-1 overflow-hidden">{children}</div>
+          <div 
+            className={`flex flex-col flex-1 overflow-hidden ${
+              noTransition ? "" : "animate-page-enter"
+            }`}
+          >
+            {children}
+          </div>
         </SidebarInset>
       </div>
     </SidebarProvider>

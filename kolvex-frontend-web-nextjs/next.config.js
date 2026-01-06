@@ -26,6 +26,7 @@ const nextConfig = {
       // Twitter/X
       "pbs.twimg.com",
       "abs.twimg.com",
+      "abs-0.twimg.com",
       // Reddit
       "www.redditstatic.com",
       "i.redd.it",

@@ -25,7 +25,7 @@ export function StatsCard({
     <div
       className={cn(
         "relative overflow-hidden rounded-xl border p-5",
-        "bg-card/50 backdrop-blur-sm",
+        "bg-card-light dark:bg-card-dark/50 backdrop-blur-sm",
         "border-zinc-200/60 dark:border-zinc-800",
         "transition-all duration-200 hover:border-primary/40 dark:hover:border-primary/30",
         className
@@ -52,9 +52,7 @@ export function StatsCard({
               {trend.value >= 0 ? "+" : ""}
               {trend.value}%
             </span>
-            <span className="text-xs text-muted-foreground">
-              {trend.label}
-            </span>
+            <span className="text-xs text-muted-foreground">{trend.label}</span>
           </div>
         )}
       </div>

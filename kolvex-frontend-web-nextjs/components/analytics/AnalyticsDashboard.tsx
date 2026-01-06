@@ -34,7 +34,6 @@ interface AnalyticsDashboardProps {
 export function AnalyticsDashboard({ className }: AnalyticsDashboardProps) {
   const [days, setDays] = useState(7);
   const [loading, setLoading] = useState(true);
-  const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Data states
@@ -109,7 +108,7 @@ export function AnalyticsDashboard({ className }: AnalyticsDashboardProps) {
             onClick={fetchData}
             variant="outline"
             size="sm"
-            disabled={loading || generating}
+            disabled={loading}
             className="gap-1.5"
           >
             <RotateCcw className="w-3 h-3" />

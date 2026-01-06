@@ -1,130 +1,40 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { toast } from "sonner";
-import {
-  RefreshCw,
-  Link2,
-  Check,
-  AlertCircle,
-  Loader2,
-  ArrowUpRight,
-  ArrowDownRight,
-  ShieldCheck,
-  Briefcase,
-  ChevronRight,
-  Lock,
-  Eye,
-  EyeOff,
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import React, { useState, useEffect, useCallback } from "react";
+import { AlertCircle } from "lucide-react";
 import { SwitchTab } from "@/components/ui/switch-tab";
-import { Briefcase as BriefcaseIcon, BarChart3 } from "lucide-react";
+import { EmptyState } from "@/components/common/EmptyState";
+import { calculateTotalValue, calculateTotalPnL } from "@/lib/snaptradeApi";
+
+// Local components
 import { PortfolioSkeleton } from "./PortfolioSkeleton";
 import { PortfolioStatsGrid } from "./PortfolioStatsGrid";
 import { PortfolioAllocation } from "./PortfolioAllocation";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
-import { SortableHeader } from "@/components/ui/sortable-header";
-import { EmptyState } from "@/components/common/EmptyState";
-import CompanyLogo from "@/components/ui/company-logo";
-import { WeightIndicator } from "@/components/ui/weight-indicator";
-import MiniSparkline from "@/components/stock/MiniSparkline";
-
-type EquitySortKey =
-  | "symbol"
-  | "price"
-  | "cost"
-  | "units"
-  | "value"
-  | "pnl"
-  | "weight";
-type OptionSortKey =
-  | "symbol"
-  | "expiration_date"
-  | "strike"
-  | "price"
-  | "units"
-  | "value"
-  | "pnl"
-  | "weight";
-import {
-  getConnectionStatus,
-  getConnectionPortalUrl,
-  syncAccounts,
-  syncPositions,
-  getMyHoldings,
-  getPublicHoldings,
-  togglePublicSharing,
-  disconnectSnapTrade,
-  togglePositionVisibility,
-  calculateTotalValue,
-  calculateTotalPnL,
-  formatCurrency,
-  getShareUrl,
-} from "@/lib/snaptradeApi";
-import type {
-  SnapTradeConnectionStatus,
-  SnapTradeHoldings,
-  SnapTradePosition,
-} from "@/lib/supabase/database.types";
 import { PortfolioHeaderActions } from "./PortfolioHeaderActions";
-import type { PortfolioHeaderActionsProps } from "./PortfolioHeaderActions";
-export type { PortfolioHeaderActionsProps };
+import { NotConnectedState, InitialSyncState } from "./ConnectionStates";
+import { AccountCard } from "./AccountCard";
+import { DisconnectDialog } from "./DisconnectDialog";
 
-interface PortfolioHoldingsProps {
-  userId?: string;
-  isOwner?: boolean;
-  onHeaderActionsReady?: (props: PortfolioHeaderActionsProps | null) => void;
-}
+// Hooks
+import { usePortfolioData } from "./hooks/usePortfolioData";
+import { useEquitySort, useOptionSort } from "./hooks/usePortfolioSort";
+
+// Utils
+import { downloadHoldings } from "./utils/downloadHoldings";
+
+// Types
+import type { PortfolioHoldingsProps } from "./types";
+export type { PortfolioHeaderActionsProps } from "./PortfolioHeaderActions";
 
 export default function PortfolioHoldings({
   userId,
   isOwner = false,
   onHeaderActionsReady,
 }: PortfolioHoldingsProps) {
-  const router = useRouter();
-  const [status, setStatus] = useState<SnapTradeConnectionStatus | null>(null);
-  const [holdings, setHoldings] = useState<SnapTradeHoldings | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [syncing, setSyncing] = useState(false);
-  const [connecting, setConnecting] = useState(false);
   const [disconnectDialogOpen, setDisconnectDialogOpen] = useState(false);
-  const [disconnecting, setDisconnecting] = useState(false);
-  const [copied, setCopied] = useState(false);
   const [expandedAccounts, setExpandedAccounts] = useState<Set<string>>(
     new Set()
   );
-  const [equitySortKey, setEquitySortKey] = useState<EquitySortKey | null>(
-    null
-  );
-  const [equitySortDir, setEquitySortDir] = useState<"asc" | "desc">("desc");
-  const [optionSortKey, setOptionSortKey] = useState<OptionSortKey | null>(
-    null
-  );
-  const [optionSortDir, setOptionSortDir] = useState<"asc" | "desc">("desc");
   const [activeTab, setActiveTab] = useState<"holdings" | "analytics">(
     "holdings"
   );
@@ -132,10 +42,43 @@ export default function PortfolioHoldings({
     Map<string, number[]>
   >(new Map());
 
-  // Load connection status and holdings data
-  useEffect(() => {
-    loadData();
-  }, [userId]);
+  // Custom hooks
+  const {
+    status,
+    holdings,
+    loading,
+    syncing,
+    connecting,
+    disconnecting,
+    copied,
+    handleConnect,
+    handleSync,
+    handleTogglePublic,
+    handleDisconnect,
+    handleCopyShareLink,
+    handleTogglePositionVisibility,
+  } = usePortfolioData({ userId, isOwner });
+
+  const equitySort = useEquitySort();
+  const optionSort = useOptionSort();
+
+  // Handle download
+  const handleDownload = useCallback(
+    (format: "csv" | "json") => {
+      if (holdings) {
+        downloadHoldings(holdings, format);
+      }
+    },
+    [holdings]
+  );
+
+  // Handle disconnect with dialog close
+  const handleDisconnectAndClose = useCallback(async () => {
+    const success = await handleDisconnect();
+    if (success) {
+      setDisconnectDialogOpen(false);
+    }
+  }, [handleDisconnect]);
 
   // Expand accounts with positions by default, collapse empty accounts
   useEffect(() => {
@@ -215,308 +158,12 @@ export default function PortfolioHoldings({
     syncing,
     holdings,
     copied,
+    handleSync,
+    handleTogglePublic,
+    handleCopyShareLink,
+    handleConnect,
+    handleDownload,
   ]);
-
-  const loadData = async () => {
-    setLoading(true);
-    try {
-      if (isOwner) {
-        const [statusData, holdingsData] = await Promise.all([
-          getConnectionStatus(),
-          getMyHoldings(),
-        ]);
-        setStatus(statusData);
-        setHoldings(holdingsData);
-      } else if (userId) {
-        // Load public holdings for other users
-        const publicHoldings = await getPublicHoldings(userId);
-        if (publicHoldings) {
-          // Convert public holdings to SnapTradeHoldings format
-          setHoldings({
-            accounts: publicHoldings.accounts,
-            last_synced_at: publicHoldings.last_synced_at,
-            is_connected: true,
-            is_public: true,
-            total_value: publicHoldings.total_value ?? undefined,
-            privacy_settings: publicHoldings.privacy_settings,
-            hidden_positions_count: publicHoldings.hidden_positions_count,
-          });
-          // Set status as connected for public view
-          setStatus({
-            is_registered: true,
-            is_connected: true,
-            is_public: true,
-            accounts_count: publicHoldings.accounts.length,
-          });
-        }
-      }
-    } catch (error) {
-      console.error("Failed to load data:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleConnect = async () => {
-    setConnecting(true);
-    try {
-      const redirectUri = `${window.location.origin}/dashboard/portfolio?connected=true`;
-      const url = await getConnectionPortalUrl(redirectUri);
-      window.open(url, "_blank", "width=800,height=600");
-      toast.info("Please complete the broker connection in the new window");
-    } catch (error: any) {
-      toast.error(error.message || "Failed to get connection link");
-    } finally {
-      setConnecting(false);
-    }
-  };
-
-  const handleSync = async () => {
-    setSyncing(true);
-    try {
-      await syncAccounts();
-      await syncPositions();
-      await loadData();
-      toast.success("Data synced successfully");
-    } catch (error: any) {
-      toast.error(error.message || "Sync failed");
-    } finally {
-      setSyncing(false);
-    }
-  };
-
-  const handleTogglePublic = async (isPublic: boolean) => {
-    try {
-      await togglePublicSharing(isPublic);
-      setHoldings((prev) => (prev ? { ...prev, is_public: isPublic } : null));
-      toast.success(
-        isPublic ? "Portfolio is now public" : "Portfolio is now private"
-      );
-    } catch (error: any) {
-      toast.error(error.message || "Operation failed");
-    }
-  };
-
-  const handleDisconnect = async () => {
-    setDisconnecting(true);
-    try {
-      await disconnectSnapTrade();
-      setStatus(null);
-      setHoldings(null);
-      setDisconnectDialogOpen(false);
-      toast.success("SnapTrade disconnected");
-    } catch (error: any) {
-      toast.error(error.message || "Failed to disconnect");
-    } finally {
-      setDisconnecting(false);
-    }
-  };
-
-  const handleCopyShareLink = async () => {
-    if (!userId) return;
-    const url = getShareUrl(userId);
-    try {
-      await navigator.clipboard.writeText(url);
-      setCopied(true);
-      toast.success("Link copied");
-      setTimeout(() => setCopied(false), 2000);
-    } catch {
-      toast.error("Copy failed");
-    }
-  };
-
-  const handleDownload = (format: "csv" | "json") => {
-    if (!holdings?.accounts) {
-      toast.error("No holdings data to download");
-      return;
-    }
-
-    // Collect all positions from all accounts
-    const allPositions: Array<{
-      account_name: string;
-      brokerage_name: string;
-      symbol: string;
-      security_name: string;
-      position_type: string;
-      units: number;
-      price: number;
-      market_value: number;
-      average_purchase_price: number | null;
-      open_pnl: number;
-      weight_percent: number;
-      currency: string;
-      // Option specific fields
-      option_type?: string;
-      strike_price?: number;
-      expiration_date?: string;
-      underlying_symbol?: string;
-    }> = [];
-
-    holdings.accounts.forEach((account) => {
-      account.snaptrade_positions?.forEach((pos) => {
-        const units = typeof pos.units === "number" ? pos.units : 0;
-        const price = typeof pos.price === "number" ? pos.price : 0;
-        const multiplier = pos.position_type === "option" ? 100 : 1;
-        const marketValue = price * units * multiplier;
-
-        allPositions.push({
-          account_name: account.account_name || "",
-          brokerage_name: account.brokerage_name || "",
-          symbol: pos.symbol || "",
-          security_name: pos.security_name || "",
-          position_type: pos.position_type || "equity",
-          units: units,
-          price: price,
-          market_value: marketValue,
-          average_purchase_price:
-            typeof pos.average_purchase_price === "number"
-              ? pos.average_purchase_price
-              : null,
-          open_pnl: typeof pos.open_pnl === "number" ? pos.open_pnl : 0,
-          weight_percent:
-            typeof pos.weight_percent === "number" ? pos.weight_percent : 0,
-          currency: pos.currency || "USD",
-          // Option specific fields
-          option_type: pos.option_type,
-          strike_price:
-            typeof pos.strike_price === "number" ? pos.strike_price : undefined,
-          expiration_date: pos.expiration_date,
-          underlying_symbol: pos.underlying_symbol,
-        });
-      });
-    });
-
-    if (allPositions.length === 0) {
-      toast.error("No positions to download");
-      return;
-    }
-
-    const timestamp = new Date().toISOString().split("T")[0];
-    let content: string;
-    let mimeType: string;
-    let filename: string;
-
-    if (format === "csv") {
-      // Generate CSV
-      const headers = [
-        "Account",
-        "Broker",
-        "Symbol",
-        "Security Name",
-        "Type",
-        "Units",
-        "Price",
-        "Market Value",
-        "Avg Cost",
-        "P&L",
-        "Weight %",
-        "Currency",
-        "Option Type",
-        "Strike",
-        "Expiration",
-        "Underlying",
-      ];
-
-      const rows = allPositions.map((pos) => [
-        pos.account_name,
-        pos.brokerage_name,
-        pos.symbol,
-        pos.security_name,
-        pos.position_type,
-        pos.units.toString(),
-        pos.price.toFixed(2),
-        pos.market_value.toFixed(2),
-        pos.average_purchase_price?.toFixed(2) || "",
-        pos.open_pnl.toFixed(2),
-        pos.weight_percent.toFixed(2),
-        pos.currency,
-        pos.option_type || "",
-        pos.strike_price?.toString() || "",
-        pos.expiration_date || "",
-        pos.underlying_symbol || "",
-      ]);
-
-      // Escape CSV values
-      const escapeCSV = (val: string) => {
-        if (val.includes(",") || val.includes('"') || val.includes("\n")) {
-          return `"${val.replace(/"/g, '""')}"`;
-        }
-        return val;
-      };
-
-      content = [
-        headers.map(escapeCSV).join(","),
-        ...rows.map((row) => row.map(escapeCSV).join(",")),
-      ].join("\n");
-
-      mimeType = "text/csv";
-      filename = `holdings_${timestamp}.csv`;
-    } else {
-      // Generate JSON
-      const jsonData = {
-        exported_at: new Date().toISOString(),
-        total_value:
-          typeof holdings.total_value === "number"
-            ? holdings.total_value
-            : null,
-        accounts_count: holdings.accounts.length,
-        positions_count: allPositions.length,
-        positions: allPositions,
-      };
-
-      content = JSON.stringify(jsonData, null, 2);
-      mimeType = "application/json";
-      filename = `holdings_${timestamp}.json`;
-    }
-
-    // Create and trigger download
-    const blob = new Blob([content], { type: mimeType });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = filename;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-
-    toast.success(
-      `Holdings exported as ${format.toUpperCase()} (${
-        allPositions.length
-      } positions)`
-    );
-  };
-
-  const handleTogglePositionVisibility = async (
-    e: React.MouseEvent,
-    positionId: string,
-    currentlyHidden: boolean
-  ) => {
-    e.stopPropagation();
-    try {
-      await togglePositionVisibility(positionId, !currentlyHidden);
-      // Update local state
-      setHoldings((prev) => {
-        if (!prev) return prev;
-        return {
-          ...prev,
-          accounts: prev.accounts.map((account) => ({
-            ...account,
-            snaptrade_positions: account.snaptrade_positions?.map((pos) =>
-              pos.id === positionId
-                ? { ...pos, is_hidden: !currentlyHidden }
-                : pos
-            ),
-          })),
-        };
-      });
-      toast.success(
-        currentlyHidden ? "Position now visible" : "Position hidden from public"
-      );
-    } catch (error: any) {
-      toast.error(error.message || "Failed to update visibility");
-    }
-  };
 
   const toggleAccount = (accountId: string) => {
     setExpandedAccounts((prev) => {
@@ -530,142 +177,9 @@ export default function PortfolioHoldings({
     });
   };
 
-  const handleEquitySort = (key: EquitySortKey) => {
-    if (equitySortKey === key) {
-      // Same key clicked: desc -> asc -> clear
-      if (equitySortDir === "desc") {
-        setEquitySortDir("asc");
-      } else {
-        // Currently asc, third click clears sorting
-        setEquitySortKey(null);
-        setEquitySortDir("desc");
-      }
-    } else {
-      // New key: start with desc
-      setEquitySortKey(key);
-      setEquitySortDir("desc");
-    }
-  };
-
-  const handleOptionSort = (key: OptionSortKey) => {
-    if (optionSortKey === key) {
-      // Same key clicked: desc -> asc -> clear
-      if (optionSortDir === "desc") {
-        setOptionSortDir("asc");
-      } else {
-        // Currently asc, third click clears sorting
-        setOptionSortKey(null);
-        setOptionSortDir("desc");
-      }
-    } else {
-      // New key: start with desc
-      setOptionSortKey(key);
-      setOptionSortDir("desc");
-    }
-  };
-
-  const sortEquityPositions = (positions: SnapTradePosition[]) => {
-    if (!equitySortKey) return positions;
-    return [...positions].sort((a, b) => {
-      let aVal: number | string = 0;
-      let bVal: number | string = 0;
-      switch (equitySortKey) {
-        case "symbol":
-          aVal = a.symbol || "";
-          bVal = b.symbol || "";
-          break;
-        case "price":
-          aVal = a.price || 0;
-          bVal = b.price || 0;
-          break;
-        case "cost":
-          aVal = a.average_purchase_price || 0;
-          bVal = b.average_purchase_price || 0;
-          break;
-        case "units":
-          aVal = a.units || 0;
-          bVal = b.units || 0;
-          break;
-        case "value":
-          aVal = (a.price || 0) * a.units;
-          bVal = (b.price || 0) * b.units;
-          break;
-        case "pnl":
-          aVal = a.open_pnl || 0;
-          bVal = b.open_pnl || 0;
-          break;
-        case "weight":
-          aVal = a.weight_percent || 0;
-          bVal = b.weight_percent || 0;
-          break;
-      }
-      if (typeof aVal === "string" && typeof bVal === "string") {
-        return equitySortDir === "asc"
-          ? aVal.localeCompare(bVal)
-          : bVal.localeCompare(aVal);
-      }
-      return equitySortDir === "asc"
-        ? (aVal as number) - (bVal as number)
-        : (bVal as number) - (aVal as number);
-    });
-  };
-
-  const sortOptionPositions = (positions: SnapTradePosition[]) => {
-    if (!optionSortKey) return positions;
-    return [...positions].sort((a, b) => {
-      let aVal: number | string = 0;
-      let bVal: number | string = 0;
-      switch (optionSortKey) {
-        case "symbol":
-          aVal = a.underlying_symbol || a.symbol || "";
-          bVal = b.underlying_symbol || b.symbol || "";
-          break;
-        case "expiration_date":
-          // Sort by expiration date (earliest first for asc)
-          aVal = a.expiration_date ? new Date(a.expiration_date).getTime() : 0;
-          bVal = b.expiration_date ? new Date(b.expiration_date).getTime() : 0;
-          break;
-        case "strike":
-          aVal = a.strike_price || 0;
-          bVal = b.strike_price || 0;
-          break;
-        case "price":
-          aVal = a.price || 0;
-          bVal = b.price || 0;
-          break;
-        case "units":
-          aVal = a.units || 0;
-          bVal = b.units || 0;
-          break;
-        case "value":
-          aVal = (a.price || 0) * a.units * 100;
-          bVal = (b.price || 0) * b.units * 100;
-          break;
-        case "pnl":
-          const aCost = (a.average_purchase_price || 0) * a.units;
-          const bCost = (b.average_purchase_price || 0) * b.units;
-          aVal = (a.price || 0) * a.units * 100 - aCost;
-          bVal = (b.price || 0) * b.units * 100 - bCost;
-          break;
-        case "weight":
-          aVal = a.weight_percent || 0;
-          bVal = b.weight_percent || 0;
-          break;
-      }
-      if (typeof aVal === "string" && typeof bVal === "string") {
-        return optionSortDir === "asc"
-          ? aVal.localeCompare(bVal)
-          : bVal.localeCompare(aVal);
-      }
-      return optionSortDir === "asc"
-        ? (aVal as number) - (bVal as number)
-        : (bVal as number) - (aVal as number);
-    });
-  };
-
   // Calculate summary data
   // For owner: calculate locally; For public view: use backend values (which may be "***")
-  const publicHoldings = holdings as any; // Cast to access public holdings fields
+  const publicHoldings = holdings as any;
   const totalValue = isOwner
     ? holdings
       ? calculateTotalValue(holdings)
@@ -690,26 +204,6 @@ export default function PortfolioHoldings({
       ) || 0
     : publicHoldings?.positions_count ?? 0;
 
-  // For position-level display, check if values are hidden ("***" from backend or null)
-  const isHiddenValue = (val: any): val is string =>
-    val === "***" || val === null || val === undefined;
-
-  // Helper to format or show hidden value
-  const formatOrHidden = (
-    val: any,
-    formatter: (v: number) => string = (v) => String(v)
-  ) => {
-    if (isHiddenValue(val)) return "***";
-    return formatter(val);
-  };
-
-  // Always show all columns - the backend returns "***" for hidden values
-  const showCost = true;
-  const showShares = true;
-  const showValue = true;
-  const showPnL = true;
-  const showWeight = true;
-
   if (loading) {
     return <PortfolioSkeleton />;
   }
@@ -717,78 +211,13 @@ export default function PortfolioHoldings({
   // State 1: Not registered
   if (!status?.is_registered) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="max-w-md w-full text-center space-y-8 p-8">
-          <div className="mx-auto w-16 h-16 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
-            <Link2 className="w-8 h-8 text-primary" />
-          </div>
-          <div className="space-y-3">
-            <h2 className="text-2xl font-bold">Connect Your Broker</h2>
-            <p className="text-muted-foreground text-sm leading-relaxed">
-              Link your brokerage account to automatically track your positions,
-              monitor performance, and share your portfolio publicly.
-            </p>
-          </div>
-          <Button
-            size="lg"
-            onClick={handleConnect}
-            disabled={connecting}
-            className="w-full gap-2"
-          >
-            {connecting ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <ShieldCheck className="w-4 h-4" />
-            )}
-            {connecting ? "Connecting..." : "Connect Broker"}
-          </Button>
-          <div className="flex justify-center gap-6 text-xs text-muted-foreground">
-            <span className="flex items-center gap-1.5">
-              <Check className="w-3 h-3 text-green-500" /> Secure
-            </span>
-            <span className="flex items-center gap-1.5">
-              <Check className="w-3 h-3 text-green-500" /> Read-only
-            </span>
-            <span className="flex items-center gap-1.5">
-              <Check className="w-3 h-3 text-green-500" /> Encrypted
-            </span>
-          </div>
-        </div>
-      </div>
+      <NotConnectedState onConnect={handleConnect} connecting={connecting} />
     );
   }
 
   // State 2: Registered but not synced
   if (!status?.is_connected) {
-    return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="max-w-md w-full text-center space-y-8 p-8">
-          <div className="mx-auto w-16 h-16 rounded-2xl bg-gradient-to-br from-green-500/20 to-green-500/5 flex items-center justify-center">
-            <Check className="w-8 h-8 text-green-500" />
-          </div>
-          <div className="space-y-3">
-            <h2 className="text-2xl font-bold">Broker Connected!</h2>
-            <p className="text-muted-foreground text-sm leading-relaxed">
-              Great! Your account is linked. Sync now to import your current
-              positions and start tracking.
-            </p>
-          </div>
-          <Button
-            size="lg"
-            onClick={handleSync}
-            disabled={syncing}
-            className="w-full gap-2"
-          >
-            {syncing ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <RefreshCw className="w-4 h-4" />
-            )}
-            {syncing ? "Syncing..." : "Sync Positions"}
-          </Button>
-        </div>
-      </div>
-    );
+    return <InitialSyncState onSync={handleSync} syncing={syncing} />;
   }
 
   return (
@@ -807,6 +236,7 @@ export default function PortfolioHoldings({
           onDownload={handleDownload}
         />
       )}
+
       {/* Stats Grid */}
       <PortfolioStatsGrid
         totalValue={totalValue}
@@ -843,14 +273,8 @@ export default function PortfolioHoldings({
         <>
           <SwitchTab
             options={[
-              {
-                value: "holdings",
-                label: "Holdings",
-              },
-              {
-                value: "analytics",
-                label: "Analytics",
-              },
+              { value: "holdings", label: "Holdings" },
+              { value: "analytics", label: "Analytics" },
             ]}
             value={activeTab}
             onValueChange={(v) => setActiveTab(v as "holdings" | "analytics")}
@@ -862,837 +286,26 @@ export default function PortfolioHoldings({
           {/* Holdings Tab Content */}
           {activeTab === "holdings" && (
             <div className="space-y-2">
-              {holdings?.accounts?.map((account) => {
-                const equityPositions =
-                  account.snaptrade_positions?.filter(
-                    (p) => p.position_type !== "option"
-                  ) || [];
-                const optionPositions =
-                  account.snaptrade_positions?.filter(
-                    (p) => p.position_type === "option"
-                  ) || [];
-                const accountPositions =
-                  account.snaptrade_positions?.length || 0;
-                const isExpanded = expandedAccounts.has(account.id);
-
-                return (
-                  <Collapsible
-                    key={account.id}
-                    open={isExpanded}
-                    onOpenChange={() => toggleAccount(account.id)}
-                  >
-                    <Card className="overflow-hidden">
-                      <CollapsibleTrigger asChild>
-                        <CardHeader className="cursor-pointer select-none hover:bg-primary/10 transition-colors py-3 px-4">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                              <ChevronRight
-                                className={`h-4 w-4 text-muted-foreground transition-transform ${
-                                  isExpanded ? "rotate-90" : ""
-                                }`}
-                              />
-                              <div>
-                                <CardTitle className="text-sm font-semibold">
-                                  {account.account_name || "Brokerage Account"}
-                                </CardTitle>
-                                <p className="text-xs text-muted-foreground font-mono">
-                                  {account.account_number
-                                    ? `•••• ${account.account_number.slice(-4)}`
-                                    : account.id.slice(0, 8)}
-                                </p>
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <Badge variant="default" className="text-xs">
-                                {accountPositions} positions
-                              </Badge>
-                              {optionPositions.length > 0 && (
-                                <Badge
-                                  variant="outline"
-                                  className="text-xs border-primary/30 text-primary"
-                                >
-                                  {optionPositions.length} options
-                                </Badge>
-                              )}
-                            </div>
-                          </div>
-                        </CardHeader>
-                      </CollapsibleTrigger>
-
-                      <CollapsibleContent>
-                        <CardContent className="!p-0 border-t dark:border-border-dark">
-                          {/* Equities */}
-                          {equityPositions.length > 0 && (
-                            <div className="overflow-x-auto">
-                              <Table>
-                                <TableHeader>
-                                  <TableRow>
-                                    <SortableHeader
-                                      label="Symbol"
-                                      sortKey="symbol"
-                                      currentSortKey={equitySortKey}
-                                      sortDirection={equitySortDir}
-                                      onSort={handleEquitySort}
-                                      align="left"
-                                      type="alpha"
-                                      className="w-[25%] pl-4"
-                                    />
-                                    <TableHead className="w-[80px] hidden sm:table-cell">
-                                      <span className="text-xs text-muted-foreground">
-                                        Chart
-                                      </span>
-                                    </TableHead>
-                                    <SortableHeader
-                                      label="Price"
-                                      sortKey="price"
-                                      currentSortKey={equitySortKey}
-                                      sortDirection={equitySortDir}
-                                      onSort={handleEquitySort}
-                                      align="right"
-                                      type="amount"
-                                    />
-                                    {showCost && (
-                                      <SortableHeader
-                                        label="Cost"
-                                        sortKey="cost"
-                                        currentSortKey={equitySortKey}
-                                        sortDirection={equitySortDir}
-                                        onSort={handleEquitySort}
-                                        align="right"
-                                        type="amount"
-                                      />
-                                    )}
-                                    {showShares && (
-                                      <SortableHeader
-                                        label="Shares"
-                                        sortKey="units"
-                                        currentSortKey={equitySortKey}
-                                        sortDirection={equitySortDir}
-                                        onSort={handleEquitySort}
-                                        align="center"
-                                        type="numeric"
-                                      />
-                                    )}
-                                    {showValue && (
-                                      <SortableHeader
-                                        label="Value"
-                                        sortKey="value"
-                                        currentSortKey={equitySortKey}
-                                        sortDirection={equitySortDir}
-                                        onSort={handleEquitySort}
-                                        align="right"
-                                        type="amount"
-                                      />
-                                    )}
-                                    {showPnL && (
-                                      <SortableHeader
-                                        label="P&L"
-                                        sortKey="pnl"
-                                        currentSortKey={equitySortKey}
-                                        sortDirection={equitySortDir}
-                                        onSort={handleEquitySort}
-                                        align="right"
-                                        type="amount"
-                                      />
-                                    )}
-                                    {showWeight && (
-                                      <SortableHeader
-                                        label="Weight"
-                                        sortKey="weight"
-                                        currentSortKey={equitySortKey}
-                                        sortDirection={equitySortDir}
-                                        onSort={handleEquitySort}
-                                        align="right"
-                                        type="numeric"
-                                        className={
-                                          isOwner && holdings?.is_public
-                                            ? ""
-                                            : "pr-4"
-                                        }
-                                      />
-                                    )}
-                                    {isOwner && holdings?.is_public && (
-                                      <TableHead className="w-[50px] pr-4">
-                                        <span className="text-xs text-muted-foreground">
-                                          Public
-                                        </span>
-                                      </TableHead>
-                                    )}
-                                  </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                  {sortEquityPositions(equityPositions).map(
-                                    (pos: SnapTradePosition) => {
-                                      const isHiddenPosition =
-                                        pos.is_hidden || pos.units == null;
-                                      const pnl = pos.open_pnl ?? 0;
-                                      const profit = pnl >= 0;
-
-                                      const isSecretStock =
-                                        isHiddenPosition && !isOwner;
-
-                                      return (
-                                        <TableRow
-                                          key={pos.id}
-                                          className={`${
-                                            isSecretStock
-                                              ? "opacity-70"
-                                              : "cursor-pointer hover:bg-muted/50"
-                                          } transition-colors`}
-                                        >
-                                          <TableCell className="pl-4 py-3">
-                                            <div className="flex items-center gap-2.5">
-                                              {isSecretStock ? (
-                                                <div className="w-8 h-8 rounded-lg bg-muted/80 flex items-center justify-center">
-                                                  <Lock className="w-4 h-4 text-muted-foreground" />
-                                                </div>
-                                              ) : (
-                                                <CompanyLogo
-                                                  symbol={pos.symbol}
-                                                  name={
-                                                    pos.security_name ||
-                                                    pos.symbol
-                                                  }
-                                                  size="sm"
-                                                  shape="rounded"
-                                                  border="light"
-                                                />
-                                              )}
-                                              <div className="min-w-0">
-                                                <div className="font-semibold flex items-center gap-1.5">
-                                                  {isSecretStock ? (
-                                                    <span className="text-muted-foreground">
-                                                      ****
-                                                    </span>
-                                                  ) : (
-                                                    pos.symbol
-                                                  )}
-                                                </div>
-                                                <div
-                                                  className="text-xs text-muted-foreground truncate max-w-[150px]"
-                                                  title={
-                                                    isSecretStock
-                                                      ? ""
-                                                      : pos.security_name || ""
-                                                  }
-                                                >
-                                                  {isSecretStock
-                                                    ? "Locked Stock"
-                                                    : pos.security_name}
-                                                </div>
-                                              </div>
-                                            </div>
-                                          </TableCell>
-                                          <TableCell className="hidden sm:table-cell">
-                                            <div className="flex justify-center">
-                                              {isSecretStock ? (
-                                                <div className="w-20 h-5 bg-muted/50 rounded" />
-                                              ) : (
-                                                <MiniSparkline
-                                                  data={
-                                                    sparklineDataMap.get(
-                                                      pos.symbol
-                                                    ) || []
-                                                  }
-                                                  width={80}
-                                                  height={20}
-                                                  strokeWidth={1.2}
-                                                />
-                                              )}
-                                            </div>
-                                          </TableCell>
-                                          <TableCell className="text-right tabular-nums">
-                                            {isSecretStock ||
-                                            isHiddenValue(pos.price) ? (
-                                              <span className="text-muted-foreground">
-                                                ***
-                                              </span>
-                                            ) : (
-                                              formatCurrency(
-                                                pos.price as number
-                                              )
-                                            )}
-                                          </TableCell>
-                                          {showCost && (
-                                            <TableCell className="text-right tabular-nums text-muted-foreground">
-                                              {isSecretStock ||
-                                              isHiddenValue(
-                                                pos.average_purchase_price
-                                              ) ? (
-                                                <span className="text-muted-foreground">
-                                                  ***
-                                                </span>
-                                              ) : (
-                                                formatCurrency(
-                                                  pos.average_purchase_price as number
-                                                )
-                                              )}
-                                            </TableCell>
-                                          )}
-                                          {showShares && (
-                                            <TableCell className="text-center tabular-nums">
-                                              {isSecretStock ||
-                                              isHiddenValue(pos.units) ? (
-                                                <span className="text-muted-foreground">
-                                                  ***
-                                                </span>
-                                              ) : (
-                                                pos.units
-                                              )}
-                                            </TableCell>
-                                          )}
-                                          {showValue && (
-                                            <TableCell className="text-right tabular-nums font-medium">
-                                              {isSecretStock ||
-                                              isHiddenValue(
-                                                pos.market_value
-                                              ) ? (
-                                                <span className="text-muted-foreground">
-                                                  ***
-                                                </span>
-                                              ) : (
-                                                formatCurrency(
-                                                  pos.market_value as number
-                                                )
-                                              )}
-                                            </TableCell>
-                                          )}
-                                          {showPnL && (
-                                            <TableCell className="text-right">
-                                              {isSecretStock ||
-                                              isHiddenValue(pos.open_pnl) ? (
-                                                <span className="text-muted-foreground">
-                                                  ***
-                                                </span>
-                                              ) : (
-                                                <span
-                                                  className={`inline-flex items-center gap-0.5 tabular-nums font-medium ${
-                                                    profit
-                                                      ? "text-green-600"
-                                                      : "text-red-600"
-                                                  }`}
-                                                >
-                                                  {profit ? (
-                                                    <ArrowUpRight className="w-3 h-3" />
-                                                  ) : (
-                                                    <ArrowDownRight className="w-3 h-3" />
-                                                  )}
-                                                  {formatCurrency(
-                                                    Math.abs(pnl)
-                                                  )}
-                                                </span>
-                                              )}
-                                            </TableCell>
-                                          )}
-                                          {showWeight && (
-                                            <TableCell
-                                              className={`text-right ${
-                                                isOwner && holdings?.is_public
-                                                  ? ""
-                                                  : "pr-4"
-                                              }`}
-                                            >
-                                              {isSecretStock ||
-                                              isHiddenValue(
-                                                pos.weight_percent
-                                              ) ? (
-                                                <span className="text-muted-foreground">
-                                                  ***
-                                                </span>
-                                              ) : (
-                                                <WeightIndicator
-                                                  percent={Math.abs(
-                                                    pos.weight_percent || 0
-                                                  )}
-                                                />
-                                              )}
-                                            </TableCell>
-                                          )}
-                                          {isOwner && holdings?.is_public && (
-                                            <TableCell className="text-center pr-4">
-                                              <button
-                                                onClick={(e) =>
-                                                  handleTogglePositionVisibility(
-                                                    e,
-                                                    pos.id,
-                                                    pos.is_hidden || false
-                                                  )
-                                                }
-                                                className={`p-1.5 rounded-md transition-colors ${
-                                                  pos.is_hidden
-                                                    ? "text-muted-foreground hover:text-foreground hover:bg-muted"
-                                                    : "text-green-600 hover:text-green-700 hover:bg-green-50 dark:hover:bg-green-950"
-                                                }`}
-                                                title={
-                                                  pos.is_hidden
-                                                    ? "Hidden from public - Click to show"
-                                                    : "Visible to public - Click to hide"
-                                                }
-                                              >
-                                                {pos.is_hidden ? (
-                                                  <EyeOff className="w-4 h-4" />
-                                                ) : (
-                                                  <Eye className="w-4 h-4" />
-                                                )}
-                                              </button>
-                                            </TableCell>
-                                          )}
-                                        </TableRow>
-                                      );
-                                    }
-                                  )}
-                                </TableBody>
-                              </Table>
-                            </div>
-                          )}
-
-                          {/* Options */}
-                          {optionPositions.length > 0 && (
-                            <>
-                              <div className="px-4 py-4 bg-primary/5 text-xs font-medium text-primary dark:text-primary-dark flex items-center border-y border-primary/30 dark:border-border-dark">
-                                Options Contracts
-                              </div>
-                              <div className="overflow-x-auto">
-                                <Table>
-                                  <TableHeader>
-                                    <TableRow>
-                                      <SortableHeader
-                                        label="Symbol"
-                                        sortKey="symbol"
-                                        currentSortKey={optionSortKey}
-                                        sortDirection={optionSortDir}
-                                        onSort={handleOptionSort}
-                                        align="left"
-                                        type="alpha"
-                                        className="w-[15%] pl-4"
-                                      />
-                                      <SortableHeader
-                                        label="Expiration"
-                                        sortKey="expiration_date"
-                                        currentSortKey={optionSortKey}
-                                        sortDirection={optionSortDir}
-                                        onSort={handleOptionSort}
-                                        align="center"
-                                        type="amount"
-                                      />
-                                      <TableHead className="w-[80px] hidden sm:table-cell text-center">
-                                        <span className="text-xs text-muted-foreground">
-                                          Chart
-                                        </span>
-                                      </TableHead>
-                                      <SortableHeader
-                                        label="Strike"
-                                        sortKey="strike"
-                                        currentSortKey={optionSortKey}
-                                        sortDirection={optionSortDir}
-                                        onSort={handleOptionSort}
-                                        align="center"
-                                        type="amount"
-                                        className="!w-[240px]"
-                                      />
-                                      <SortableHeader
-                                        label="Price"
-                                        sortKey="price"
-                                        currentSortKey={optionSortKey}
-                                        sortDirection={optionSortDir}
-                                        onSort={handleOptionSort}
-                                        align="center"
-                                        type="amount"
-                                      />
-                                      {showCost && (
-                                        <TableHead className="text-center">
-                                          <span className="text-xs text-muted-foreground">
-                                            Cost
-                                          </span>
-                                        </TableHead>
-                                      )}
-                                      {showShares && (
-                                        <SortableHeader
-                                          label="Contracts"
-                                          sortKey="units"
-                                          currentSortKey={optionSortKey}
-                                          sortDirection={optionSortDir}
-                                          onSort={handleOptionSort}
-                                          align="center"
-                                          type="numeric"
-                                        />
-                                      )}
-                                      {showValue && (
-                                        <SortableHeader
-                                          label="Value"
-                                          sortKey="value"
-                                          currentSortKey={optionSortKey}
-                                          sortDirection={optionSortDir}
-                                          onSort={handleOptionSort}
-                                          align="center"
-                                          type="amount"
-                                        />
-                                      )}
-                                      {showPnL && (
-                                        <SortableHeader
-                                          label="P&L"
-                                          sortKey="pnl"
-                                          currentSortKey={optionSortKey}
-                                          sortDirection={optionSortDir}
-                                          onSort={handleOptionSort}
-                                          align="right"
-                                          type="amount"
-                                        />
-                                      )}
-                                      {showWeight && (
-                                        <SortableHeader
-                                          label="Weight"
-                                          sortKey="weight"
-                                          currentSortKey={optionSortKey}
-                                          sortDirection={optionSortDir}
-                                          onSort={handleOptionSort}
-                                          align="right"
-                                          type="numeric"
-                                          className={
-                                            isOwner && holdings?.is_public
-                                              ? ""
-                                              : "pr-4"
-                                          }
-                                        />
-                                      )}
-                                      {isOwner && holdings?.is_public && (
-                                        <TableHead className="w-[50px] pr-4">
-                                          <span className="text-xs text-muted-foreground">
-                                            Public
-                                          </span>
-                                        </TableHead>
-                                      )}
-                                    </TableRow>
-                                  </TableHeader>
-                                  <TableBody>
-                                    {sortOptionPositions(optionPositions).map(
-                                      (pos: SnapTradePosition) => {
-                                        console.log(
-                                          "pos",
-                                          `${pos.symbol}`,
-                                          pos
-                                        );
-
-                                        const isHiddenPosition =
-                                          pos.is_hidden || pos.units == null;
-
-                                        // 安全获取数值，处理隐藏值 "***" 的情况
-                                        const safeMarketValue = isHiddenValue(
-                                          pos.market_value
-                                        )
-                                          ? null
-                                          : (pos.market_value as number);
-
-                                        const safePrice = isHiddenValue(
-                                          pos.price
-                                        )
-                                          ? 0
-                                          : (pos.price as number);
-
-                                        const safeAvgPrice = isHiddenValue(
-                                          pos.average_purchase_price
-                                        )
-                                          ? 0
-                                          : (pos.average_purchase_price as number);
-
-                                        const value =
-                                          safeMarketValue ?? safePrice;
-
-                                        const cost =
-                                          (safeAvgPrice as number) / 100;
-                                        const pnl =
-                                          (pos.weight_percent ?? 0) < 0
-                                            ? cost - value
-                                            : value - cost;
-                                        const profit = pnl >= 0;
-
-                                        // 是否应该完全隐藏（神秘期权）
-                                        const isSecretOption =
-                                          isHiddenPosition && !isOwner;
-
-                                        return (
-                                          <TableRow
-                                            key={pos.id}
-                                            onClick={() =>
-                                              !isSecretOption &&
-                                              router.push(
-                                                `/dashboard/stock/${
-                                                  pos.underlying_symbol ||
-                                                  pos.symbol
-                                                }`
-                                              )
-                                            }
-                                            className={`${
-                                              isSecretOption
-                                                ? "opacity-70"
-                                                : "cursor-pointer hover:bg-muted/50"
-                                            } transition-colors`}
-                                          >
-                                            <TableCell className="pl-4 py-3">
-                                              <div className="flex items-center gap-2.5">
-                                                {isSecretOption ? (
-                                                  <div className="w-8 h-8 rounded-lg bg-muted/80 flex items-center justify-center">
-                                                    <Lock className="w-4 h-4 text-muted-foreground" />
-                                                  </div>
-                                                ) : (
-                                                  <CompanyLogo
-                                                    symbol={
-                                                      pos.underlying_symbol ||
-                                                      pos.symbol
-                                                    }
-                                                    name={
-                                                      pos.security_name ||
-                                                      pos.underlying_symbol ||
-                                                      pos.symbol
-                                                    }
-                                                    size="sm"
-                                                    shape="rounded"
-                                                    border="light"
-                                                  />
-                                                )}
-                                                <div className="min-w-0">
-                                                  <div className="font-semibold flex items-center gap-1.5">
-                                                    {isSecretOption ? (
-                                                      <span className="text-muted-foreground">
-                                                        ***
-                                                      </span>
-                                                    ) : (
-                                                      pos.underlying_symbol ||
-                                                      pos.symbol
-                                                    )}
-                                                  </div>
-                                                  <div className="text-xs text-muted-foreground truncate max-w-[150px]">
-                                                    {pos.security_name}
-                                                  </div>
-                                                </div>
-                                              </div>
-                                            </TableCell>
-                                            <TableCell className="text-center">
-                                              {isSecretOption ? (
-                                                <span className="text-muted-foreground">
-                                                  ***
-                                                </span>
-                                              ) : (
-                                                <span className="text-[12px] text-muted-foreground">
-                                                  {pos.expiration_date
-                                                    ? pos.expiration_date
-                                                    : "-"}
-                                                </span>
-                                              )}
-                                            </TableCell>
-                                            <TableCell className="hidden sm:table-cell">
-                                              <div className="flex justify-center">
-                                                {isSecretOption ? (
-                                                  <div className="w-20 h-5 bg-muted/50 rounded" />
-                                                ) : (
-                                                  <MiniSparkline
-                                                    data={
-                                                      sparklineDataMap.get(
-                                                        pos.underlying_symbol ||
-                                                          pos.symbol
-                                                      ) || []
-                                                    }
-                                                    width={80}
-                                                    height={20}
-                                                    strokeWidth={1.2}
-                                                  />
-                                                )}
-                                              </div>
-                                            </TableCell>
-                                            <TableCell className="text-center tabular-nums">
-                                              <div className="flex justify-center items-center gap-1">
-                                                {isSecretOption ? (
-                                                  <span className="text-muted-foreground">
-                                                    ***
-                                                  </span>
-                                                ) : pos.strike_price ? (
-                                                  <div className="flex items-center gap-1 text-[14px]">
-                                                    <Badge
-                                                      variant={
-                                                        (pos.weight_percent ??
-                                                          0) < 0
-                                                          ? "destructive"
-                                                          : "default"
-                                                      }
-                                                      className="!text-[12px]"
-                                                    >
-                                                      {(pos.weight_percent ??
-                                                        0) < 0
-                                                        ? "Short"
-                                                        : "Long"}
-                                                    </Badge>
-                                                    {formatCurrency(
-                                                      pos.strike_price,
-                                                      "USD",
-                                                      0,
-                                                      0
-                                                    )}{" "}
-                                                    &nbsp;
-                                                    {pos.option_type || "-"}
-                                                  </div>
-                                                ) : (
-                                                  "-"
-                                                )}
-                                              </div>
-                                            </TableCell>
-                                            <TableCell className="text-center tabular-nums font-medium">
-                                              {isSecretOption ||
-                                              isHiddenValue(pos.price) ? (
-                                                <span className="text-muted-foreground">
-                                                  ***
-                                                </span>
-                                              ) : (
-                                                formatCurrency(safePrice)
-                                              )}
-                                            </TableCell>
-                                            {showCost && (
-                                              <TableCell className="text-center tabular-nums text-muted-foreground">
-                                                {isSecretOption ||
-                                                isHiddenValue(
-                                                  (pos.average_purchase_price as number) /
-                                                    100
-                                                ) ? (
-                                                  <span className="text-muted-foreground">
-                                                    ***
-                                                  </span>
-                                                ) : (
-                                                  formatCurrency(
-                                                    (pos.average_purchase_price as number) /
-                                                      100
-                                                  )
-                                                )}
-                                              </TableCell>
-                                            )}
-                                            {showShares && (
-                                              <TableCell className="text-center tabular-nums">
-                                                {isSecretOption ||
-                                                isHiddenValue(pos.units) ? (
-                                                  <span className="text-muted-foreground">
-                                                    ***
-                                                  </span>
-                                                ) : (
-                                                  pos.units
-                                                )}
-                                              </TableCell>
-                                            )}
-                                            {showValue && (
-                                              <TableCell className="text-center tabular-nums font-medium">
-                                                {isSecretOption ||
-                                                isHiddenValue(
-                                                  pos.market_value
-                                                ) ? (
-                                                  <span className="text-muted-foreground">
-                                                    ***
-                                                  </span>
-                                                ) : (
-                                                  formatCurrency(
-                                                    pos.market_value as number
-                                                  )
-                                                )}
-                                              </TableCell>
-                                            )}
-                                            {showPnL && (
-                                              <TableCell className="text-right">
-                                                {isSecretOption ||
-                                                isHiddenValue(pos.open_pnl) ? (
-                                                  <span className="text-muted-foreground">
-                                                    ***
-                                                  </span>
-                                                ) : (
-                                                  <span
-                                                    className={`inline-flex items-center gap-0.5 tabular-nums font-medium ${
-                                                      profit
-                                                        ? "text-green-600"
-                                                        : "text-red-600"
-                                                    }`}
-                                                  >
-                                                    {profit ? (
-                                                      <ArrowUpRight className="w-3 h-3" />
-                                                    ) : (
-                                                      <ArrowDownRight className="w-3 h-3" />
-                                                    )}
-                                                    {formatCurrency(pnl)}
-                                                  </span>
-                                                )}
-                                              </TableCell>
-                                            )}
-                                            {showWeight && (
-                                              <TableCell
-                                                className={`text-right ${
-                                                  isOwner && holdings?.is_public
-                                                    ? ""
-                                                    : "pr-4"
-                                                }`}
-                                              >
-                                                {isSecretOption ||
-                                                isHiddenValue(
-                                                  pos.weight_percent
-                                                ) ? (
-                                                  <span className="text-muted-foreground">
-                                                    ***
-                                                  </span>
-                                                ) : (
-                                                  <WeightIndicator
-                                                    percent={Math.abs(
-                                                      pos.weight_percent || 0
-                                                    )}
-                                                  />
-                                                )}
-                                              </TableCell>
-                                            )}
-                                            {isOwner && holdings?.is_public && (
-                                              <TableCell className="text-center pr-4">
-                                                <button
-                                                  onClick={(e) =>
-                                                    handleTogglePositionVisibility(
-                                                      e,
-                                                      pos.id,
-                                                      pos.is_hidden || false
-                                                    )
-                                                  }
-                                                  className={`p-1.5 rounded-md transition-colors ${
-                                                    pos.is_hidden
-                                                      ? "text-muted-foreground hover:text-foreground hover:bg-muted"
-                                                      : "text-green-600 hover:text-green-700 hover:bg-green-50 dark:hover:bg-green-950"
-                                                  }`}
-                                                  title={
-                                                    pos.is_hidden
-                                                      ? "Hidden from public - Click to show"
-                                                      : "Visible to public - Click to hide"
-                                                  }
-                                                >
-                                                  {pos.is_hidden ? (
-                                                    <EyeOff className="w-4 h-4" />
-                                                  ) : (
-                                                    <Eye className="w-4 h-4" />
-                                                  )}
-                                                </button>
-                                              </TableCell>
-                                            )}
-                                          </TableRow>
-                                        );
-                                      }
-                                    )}
-                                  </TableBody>
-                                </Table>
-                              </div>
-                            </>
-                          )}
-
-                          {/* Empty */}
-                          {accountPositions === 0 && (
-                            <EmptyState
-                              icon={Briefcase}
-                              title="No Positions"
-                              description="This account has no active positions"
-                            />
-                          )}
-                        </CardContent>
-                      </CollapsibleContent>
-                    </Card>
-                  </Collapsible>
-                );
-              })}
+              {holdings?.accounts?.map((account) => (
+                <AccountCard
+                  key={account.id}
+                  account={account}
+                  isExpanded={expandedAccounts.has(account.id)}
+                  onToggle={() => toggleAccount(account.id)}
+                  isOwner={isOwner}
+                  isPublic={holdings?.is_public || false}
+                  equitySortKey={equitySort.sortKey}
+                  equitySortDir={equitySort.sortDir}
+                  onEquitySort={equitySort.handleSort}
+                  sortEquityPositions={equitySort.sortPositions}
+                  optionSortKey={optionSort.sortKey}
+                  optionSortDir={optionSort.sortDir}
+                  onOptionSort={optionSort.handleSort}
+                  sortOptionPositions={optionSort.sortPositions}
+                  sparklineDataMap={sparklineDataMap}
+                  onToggleVisibility={handleTogglePositionVisibility}
+                />
+              ))}
             </div>
           )}
 
@@ -1722,38 +335,12 @@ export default function PortfolioHoldings({
       )}
 
       {/* Disconnect Dialog */}
-      <Dialog
+      <DisconnectDialog
         open={disconnectDialogOpen}
         onOpenChange={setDisconnectDialogOpen}
-      >
-        <DialogContent className="max-w-sm">
-          <DialogHeader>
-            <DialogTitle>Disconnect Broker?</DialogTitle>
-            <DialogDescription>
-              This will remove the connection and delete all synced data.
-              You&apos;ll need to reconnect to view holdings again.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="gap-2">
-            <Button
-              variant="outline"
-              onClick={() => setDisconnectDialogOpen(false)}
-              disabled={disconnecting}
-            >
-              Cancel
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={handleDisconnect}
-              disabled={disconnecting}
-              className="gap-2"
-            >
-              {disconnecting && <Loader2 className="w-4 h-4 animate-spin" />}
-              Disconnect
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        onDisconnect={handleDisconnectAndClose}
+        disconnecting={disconnecting}
+      />
     </div>
   );
 }

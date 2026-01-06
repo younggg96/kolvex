@@ -43,7 +43,7 @@ export function EngagementHeatmap({
   };
 
   return (
-    <div className="rounded-xl border border-zinc-200/60 dark:border-zinc-800 bg-card/50 overflow-hidden">
+    <div className="rounded-xl border border-zinc-200/60 dark:border-zinc-800 bg-card-light dark:bg-card-dark/50 overflow-hidden">
       {/* Header */}
       <div className="p-5 border-b border-zinc-200/40 dark:border-zinc-800/80">
         <h3 className="text-sm font-semibold text-foreground">{title}</h3>

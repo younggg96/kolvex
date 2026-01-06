@@ -18,6 +18,7 @@ import {
   Share2,
   ChevronRight,
   Building2,
+  BarChart3,
 } from "lucide-react";
 import Image from "next/image";
 import UserMenu from "@/components/user/UserMenu";
@@ -78,8 +79,14 @@ const socialMediaSubItems = [
 const mainNavItems = [
   {
     icon: LayoutDashboard,
-    title: "Home",
+    title: "Chat",
     href: "/dashboard",
+    type: "link",
+  },
+  {
+    icon: BarChart3,
+    title: "Analytics",
+    href: "/dashboard/analytics",
     type: "link",
   },
   { icon: null, title: "Social", href: "/dashboard/social", type: "submenu" },

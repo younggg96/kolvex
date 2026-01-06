@@ -20,8 +20,10 @@ export default function BaseLayout({
       {/* Header */}
       <LandingHeader />
 
-      {/* Main Content */}
-      {children}
+      {/* Main Content with Page Transition */}
+      <div className="animate-page-enter flex-1 flex flex-col">
+        {children}
+      </div>
 
       {/* Footer */}
       {hasFooter && <Footer />}

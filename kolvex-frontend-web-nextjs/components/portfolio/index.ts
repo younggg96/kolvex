@@ -1,3 +1,4 @@
+// Main components
 export { default as PortfolioHoldings } from "./PortfolioHoldings";
 export * from "./PortfolioHoldings";
 export { PortfolioSkeleton } from "./PortfolioSkeleton";
@@ -8,3 +9,20 @@ export { PortfolioPageContent } from "./PortfolioPageContent";
 export { PortfolioStatsGrid } from "./PortfolioStatsGrid";
 export { PortfolioAllocation } from "./PortfolioAllocation";
 export { default as PrivacySettingsDialog } from "./PrivacySettingsDialog";
+
+// Sub-components (extracted from PortfolioHoldings)
+export { NotConnectedState, InitialSyncState } from "./ConnectionStates";
+export { AccountCard } from "./AccountCard";
+export { EquityPositionsTable } from "./EquityPositionsTable";
+export { OptionPositionsTable } from "./OptionPositionsTable";
+export { DisconnectDialog } from "./DisconnectDialog";
+
+// Types
+export * from "./types";
+
+// Hooks
+export { usePortfolioData } from "./hooks/usePortfolioData";
+export { useEquitySort, useOptionSort } from "./hooks/usePortfolioSort";
+
+// Utils
+export { downloadHoldings } from "./utils/downloadHoldings";
