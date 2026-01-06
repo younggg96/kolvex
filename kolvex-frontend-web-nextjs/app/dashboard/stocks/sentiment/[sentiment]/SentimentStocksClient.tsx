@@ -21,6 +21,7 @@ import { SectionCard } from "@/components/layout";
 import { ArrowLeft, TrendingUp, TrendingDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { TrackedStock, getTrackedStocks } from "@/lib/trackedStockApi";
 
 type SentimentType = "bullish" | "bearish";
 
@@ -78,6 +79,37 @@ export default function SentimentStocksClient({
     direction: sentiment === "bearish" ? "asc" : "desc",
   });
   const isFetching = useRef(false);
+
+  // 用户已追踪的股票
+  const [trackedStocks, setTrackedStocks] = useState<TrackedStock[]>([]);
+
+  // 创建 symbol -> stockId 的映射
+  const trackedStocksMap = new Map<string, string>(
+    trackedStocks.map((s) => [s.symbol, s.id])
+  );
+
+  // 获取已追踪的股票 symbol 集合
+  const trackedSymbols = new Set(trackedStocks.map((s) => s.symbol));
+
+  // 处理追踪状态变化
+  const handleTrackChange = useCallback(
+    (symbol: string, tracked: boolean, stockId?: string) => {
+      if (tracked && stockId) {
+        setTrackedStocks((prev) => [
+          ...prev,
+          { id: stockId, symbol, user_id: "" } as TrackedStock,
+        ]);
+      } else if (!tracked) {
+        setTrackedStocks((prev) => prev.filter((s) => s.symbol !== symbol));
+      }
+    },
+    []
+  );
+
+  // 获取用户已追踪的股票列表
+  useEffect(() => {
+    getTrackedStocks().then(setTrackedStocks).catch(console.error);
+  }, []);
 
   const config = sentimentConfig[sentiment];
   const Icon = config.icon;
@@ -311,6 +343,11 @@ export default function SentimentStocksClient({
                       tweetCount: a.tweet_count,
                       sentiment: a.sentiment,
                     }))}
+                    isTracked={trackedSymbols.has(stock.ticker)}
+                    stockId={trackedStocksMap.get(stock.ticker)}
+                    onTrackChange={(tracked, stockId) =>
+                      handleTrackChange(stock.ticker, tracked, stockId)
+                    }
                   />
                 ))}
                 {isLoadingMore && <LoadingMoreRow colSpan={COL_SPAN} />}

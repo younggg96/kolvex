@@ -41,8 +41,10 @@ export interface StockRowProps {
   trendingScore?: number;
   /** 是否已添加到追踪列表 */
   isTracked?: boolean;
+  /** 追踪记录的 ID（用于取消追踪） */
+  stockId?: string;
   /** 追踪/取消追踪后的回调 */
-  onTrackChange?: (tracked: boolean) => void;
+  onTrackChange?: (tracked: boolean, stockId?: string) => void;
 
   // === Tracking 模式字段 ===
   /** 当前价格 */

@@ -63,8 +63,9 @@ type EquitySortKey =
   | "weight";
 type OptionSortKey =
   | "symbol"
-  | "type"
+  | "expiration_date"
   | "strike"
+  | "price"
   | "units"
   | "value"
   | "pnl"
@@ -619,7 +620,7 @@ export default function PortfolioHoldings({
           aVal = a.underlying_symbol || a.symbol || "";
           bVal = b.underlying_symbol || b.symbol || "";
           break;
-        case "type":
+        case "expiration_date":
           // Sort by expiration date (earliest first for asc)
           aVal = a.expiration_date ? new Date(a.expiration_date).getTime() : 0;
           bVal = b.expiration_date ? new Date(b.expiration_date).getTime() : 0;
@@ -627,6 +628,10 @@ export default function PortfolioHoldings({
         case "strike":
           aVal = a.strike_price || 0;
           bVal = b.strike_price || 0;
+          break;
+        case "price":
+          aVal = a.price || 0;
+          bVal = b.price || 0;
           break;
         case "units":
           aVal = a.units || 0;
@@ -1252,7 +1257,7 @@ export default function PortfolioHoldings({
                                   <TableHeader>
                                     <TableRow>
                                       <SortableHeader
-                                        label="Contract"
+                                        label="Symbol"
                                         sortKey="symbol"
                                         currentSortKey={optionSortKey}
                                         sortDirection={optionSortDir}
@@ -1262,15 +1267,15 @@ export default function PortfolioHoldings({
                                         className="w-[15%] pl-4"
                                       />
                                       <SortableHeader
-                                        label="Type"
-                                        sortKey="type"
+                                        label="Expiration"
+                                        sortKey="expiration_date"
                                         currentSortKey={optionSortKey}
                                         sortDirection={optionSortDir}
                                         onSort={handleOptionSort}
                                         align="center"
                                         type="amount"
                                       />
-                                      <TableHead className="w-[80px] hidden sm:table-cell">
+                                      <TableHead className="w-[80px] hidden sm:table-cell text-center">
                                         <span className="text-xs text-muted-foreground">
                                           Chart
                                         </span>
@@ -1278,6 +1283,16 @@ export default function PortfolioHoldings({
                                       <SortableHeader
                                         label="Strike"
                                         sortKey="strike"
+                                        currentSortKey={optionSortKey}
+                                        sortDirection={optionSortDir}
+                                        onSort={handleOptionSort}
+                                        align="center"
+                                        type="amount"
+                                        className="!w-[240px]"
+                                      />
+                                      <SortableHeader
+                                        label="Price"
+                                        sortKey="price"
                                         currentSortKey={optionSortKey}
                                         sortDirection={optionSortDir}
                                         onSort={handleOptionSort}
@@ -1352,7 +1367,12 @@ export default function PortfolioHoldings({
                                   <TableBody>
                                     {sortOptionPositions(optionPositions).map(
                                       (pos: SnapTradePosition) => {
-                                        // 检查是否为隐藏持仓（公开视图中敏感数据为 null）
+                                        console.log(
+                                          "pos",
+                                          `${pos.symbol}`,
+                                          pos
+                                        );
+
                                         const isHiddenPosition =
                                           pos.is_hidden || pos.units == null;
 
@@ -1362,16 +1382,13 @@ export default function PortfolioHoldings({
                                         )
                                           ? null
                                           : (pos.market_value as number);
+
                                         const safePrice = isHiddenValue(
                                           pos.price
                                         )
                                           ? 0
                                           : (pos.price as number);
-                                        const safeUnits = isHiddenValue(
-                                          pos.units
-                                        )
-                                          ? 0
-                                          : (pos.units as number);
+
                                         const safeAvgPrice = isHiddenValue(
                                           pos.average_purchase_price
                                         )
@@ -1379,15 +1396,15 @@ export default function PortfolioHoldings({
                                           : (pos.average_purchase_price as number);
 
                                         const value =
-                                          safeMarketValue ??
-                                          safePrice * safeUnits * 100;
-                                        // Calculate option P&L: current value - cost basis
-                                        // average_purchase_price is the total cost per contract
-                                        const cost = safeAvgPrice * safeUnits;
-                                        const pnl = value - cost;
+                                          safeMarketValue ?? safePrice;
+
+                                        const cost =
+                                          (safeAvgPrice as number) / 100;
+                                        const pnl =
+                                          (pos.weight_percent ?? 0) < 0
+                                            ? cost - value
+                                            : value - cost;
                                         const profit = pnl >= 0;
-                                        const isCall =
-                                          pos.option_type === "call";
 
                                         // 是否应该完全隐藏（神秘期权）
                                         const isSecretOption =
@@ -1444,6 +1461,9 @@ export default function PortfolioHoldings({
                                                       pos.symbol
                                                     )}
                                                   </div>
+                                                  <div className="text-xs text-muted-foreground truncate max-w-[150px]">
+                                                    {pos.security_name}
+                                                  </div>
                                                 </div>
                                               </div>
                                             </TableCell>
@@ -1453,27 +1473,11 @@ export default function PortfolioHoldings({
                                                   ***
                                                 </span>
                                               ) : (
-                                                <div className="flex justify-start items-center gap-1">
-                                                  <Badge
-                                                    variant={
-                                                      isCall
-                                                        ? "default"
-                                                        : "destructive"
-                                                    }
-                                                    className="!text-[10px] !px-1.5 !py-0.5 capitalize"
-                                                  >
-                                                    {(pos.weight_percent ?? 0) <
-                                                      0 && "Sell"}{" "}
-                                                    {pos.option_type || "-"}
-                                                  </Badge>
-                                                  <span className="text-[12px] text-muted-foreground">
-                                                    {pos.expiration_date
-                                                      ? new Date(
-                                                          pos.expiration_date
-                                                        ).toLocaleDateString()
-                                                      : "-"}
-                                                  </span>
-                                                </div>
+                                                <span className="text-[12px] text-muted-foreground">
+                                                  {pos.expiration_date
+                                                    ? pos.expiration_date
+                                                    : "-"}
+                                                </span>
                                               )}
                                             </TableCell>
                                             <TableCell className="hidden sm:table-cell">
@@ -1496,33 +1500,65 @@ export default function PortfolioHoldings({
                                               </div>
                                             </TableCell>
                                             <TableCell className="text-center tabular-nums">
-                                              {isSecretOption ? (
+                                              <div className="flex justify-center items-center gap-1">
+                                                {isSecretOption ? (
+                                                  <span className="text-muted-foreground">
+                                                    ***
+                                                  </span>
+                                                ) : pos.strike_price ? (
+                                                  <div className="flex items-center gap-1 text-[14px]">
+                                                    <Badge
+                                                      variant={
+                                                        (pos.weight_percent ??
+                                                          0) < 0
+                                                          ? "destructive"
+                                                          : "default"
+                                                      }
+                                                      className="!text-[12px]"
+                                                    >
+                                                      {(pos.weight_percent ??
+                                                        0) < 0
+                                                        ? "Short"
+                                                        : "Long"}
+                                                    </Badge>
+                                                    {formatCurrency(
+                                                      pos.strike_price,
+                                                      "USD",
+                                                      0,
+                                                      0
+                                                    )}{" "}
+                                                    &nbsp;
+                                                    {pos.option_type || "-"}
+                                                  </div>
+                                                ) : (
+                                                  "-"
+                                                )}
+                                              </div>
+                                            </TableCell>
+                                            <TableCell className="text-center tabular-nums font-medium">
+                                              {isSecretOption ||
+                                              isHiddenValue(pos.price) ? (
                                                 <span className="text-muted-foreground">
                                                   ***
                                                 </span>
-                                              ) : pos.strike_price ? (
-                                                formatCurrency(
-                                                  pos.strike_price,
-                                                  "USD",
-                                                  0,
-                                                  0
-                                                )
                                               ) : (
-                                                "-"
+                                                formatCurrency(safePrice)
                                               )}
                                             </TableCell>
                                             {showCost && (
                                               <TableCell className="text-center tabular-nums text-muted-foreground">
                                                 {isSecretOption ||
                                                 isHiddenValue(
-                                                  pos.average_purchase_price
+                                                  (pos.average_purchase_price as number) /
+                                                    100
                                                 ) ? (
                                                   <span className="text-muted-foreground">
                                                     ***
                                                   </span>
                                                 ) : (
                                                   formatCurrency(
-                                                    pos.average_purchase_price as number
+                                                    (pos.average_purchase_price as number) /
+                                                      100
                                                   )
                                                 )}
                                               </TableCell>

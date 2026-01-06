@@ -19,6 +19,7 @@ import {
   EmptyRow,
 } from "@/components/stock/StockRowSkeleton";
 import { SectionCard } from "../layout";
+import { TrackedStock, getTrackedStocks } from "@/lib/trackedStockApi";
 
 const PAGE_SIZE = 10;
 const SCROLL_THRESHOLD = 100;
@@ -47,6 +48,37 @@ export default function TrendingStocksTable({
     direction: "desc",
   });
   const isFetching = useRef(false);
+
+  // 用户已追踪的股票
+  const [trackedStocks, setTrackedStocks] = useState<TrackedStock[]>([]);
+
+  // 创建 symbol -> stockId 的映射
+  const trackedStocksMap = new Map<string, string>(
+    trackedStocks.map((s) => [s.symbol, s.id])
+  );
+
+  // 获取已追踪的股票 symbol 集合
+  const trackedSymbols = new Set(trackedStocks.map((s) => s.symbol));
+
+  // 处理追踪状态变化
+  const handleTrackChange = useCallback(
+    (symbol: string, tracked: boolean, stockId?: string) => {
+      if (tracked && stockId) {
+        setTrackedStocks((prev) => [
+          ...prev,
+          { id: stockId, symbol, user_id: "" } as TrackedStock,
+        ]);
+      } else if (!tracked) {
+        setTrackedStocks((prev) => prev.filter((s) => s.symbol !== symbol));
+      }
+    },
+    []
+  );
+
+  // 获取用户已追踪的股票列表
+  useEffect(() => {
+    getTrackedStocks().then(setTrackedStocks).catch(console.error);
+  }, []);
 
   const fetchStocks = useCallback(
     async (
@@ -158,7 +190,7 @@ export default function TrendingStocksTable({
       onScroll={handleScroll}
     >
       <Table>
-        <TableHeader className="sticky top-0 bg-white dark:bg-card-dark z-10">
+        <TableHeader className="sticky top-0 z-10 bg-white dark:bg-card-dark">
           <TableRow className="border-b border-gray-200 dark:border-white/10">
             <TableHead className="text-xs font-semibold text-left w-[140px] min-w-[140px]">
               Stock
@@ -225,6 +257,11 @@ export default function TrendingStocksTable({
                     tweetCount: a.tweet_count,
                     sentiment: a.sentiment,
                   }))}
+                  isTracked={trackedSymbols.has(stock.ticker)}
+                  stockId={trackedStocksMap.get(stock.ticker)}
+                  onTrackChange={(tracked, stockId) =>
+                    handleTrackChange(stock.ticker, tracked, stockId)
+                  }
                 />
               ))}
               {isLoadingMore && <LoadingMoreRow colSpan={COL_SPAN} />}

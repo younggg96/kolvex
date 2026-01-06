@@ -2,14 +2,16 @@
 
 import { useMemo, useState, useEffect, useCallback } from "react";
 import { TrackedStock, deleteTrackedStock } from "@/lib/trackedStockApi";
-import { Building2 } from "lucide-react";
 import { useMultipleQuotes } from "@/hooks/useStockData";
 import { Table, TableBody, TableHeader } from "@/components/ui/table";
 import { toast } from "sonner";
 import { StockRow } from "@/components/stock/StockRow";
-import { StockRowSkeleton } from "@/components/stock/StockRowSkeleton";
+import { EmptyRow } from "@/components/stock/StockRowSkeleton";
+import { TrackingStockSkeleton } from "./TrackingStockSkeleton";
 import { TableHeaderRow } from "./TableHeaderRow";
 import { SectionCard } from "../layout";
+
+const COL_SPAN = 5; // Stock, Price, Change, Sparkline, Top Authors
 
 const REFRESH_INTERVAL = 15 * 60 * 1000;
 
@@ -120,67 +122,54 @@ export default function TrackingStocksTable() {
     }
   };
 
-  // Loading 状态
-  if (loading && stocks.length === 0) {
-    return (
-      <div className="h-full border border-border-light dark:border-border-dark rounded-lg overflow-hidden bg-white dark:bg-card-dark">
-        <div className="h-full overflow-auto">
-          <Table>
-            <TableHeader>
-              <TableHeaderRow />
-            </TableHeader>
-            <TableBody>
-              {[...Array(6)].map((_, i) => (
-                <StockRowSkeleton key={i} variant="tracking" />
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-      </div>
-    );
-  }
-
-  // 空状态
-  if (stocks.length === 0) {
-    return (
-      <SectionCard padding="none" useSectionHeader={false}>
-        <div className="text-center py-8 text-gray-500 dark:text-white/50">
-          <Building2 className="w-12 h-12 mx-auto mb-2 opacity-50" />
-          <p className="text-sm">No tracking stocks yet</p>
-          <p className="text-xs mt-2">Click the add button to start tracking</p>
-        </div>
-      </SectionCard>
-    );
-  }
-
-  // 股票表格
   return (
-    <SectionCard padding="none" useSectionHeader={false}>
+    <SectionCard
+      padding="none"
+      useSectionHeader={false}
+      scrollable
+      contentClassName="h-full max-h-[600px] overflow-y-auto custom-scrollbar"
+    >
       <Table>
-        <TableHeader>
-          <TableHeaderRow />
+        <TableHeader className="sticky top-0 z-10 bg-white dark:bg-card-dark">
+          <TableHeaderRow className="border-b border-gray-200 dark:border-white/10" />
         </TableHeader>
         <TableBody>
-          {enrichedStocks.map((stock) => (
-            <StockRow
-              key={stock.symbol}
-              variant="tracking"
-              ticker={stock.symbol}
-              companyName={stock.companyName}
-              price={stock.price}
-              changePercent={stock.changePercent}
-              sparklineData={stock.sparklineData}
-              topAuthors={stock.top_authors?.map((a) => ({
-                username: a.username,
-                displayName: a.display_name ?? undefined,
-                avatarUrl: a.avatar_url ?? "",
-                tweetCount: a.tweet_count ?? 0,
-                sentiment: a.sentiment,
-              }))}
-              isUntracking={untrackingIds.has(stock.id)}
-              onUntrack={(e) => handleUntrack(e, stock.id, stock.symbol)}
+          {loading && stocks.length === 0 ? (
+            // Loading 状态
+            Array.from({ length: 6 }).map((_, i) => (
+              <TrackingStockSkeleton key={i} />
+            ))
+          ) : stocks.length === 0 ? (
+            // 空状态
+            <EmptyRow
+              colSpan={COL_SPAN}
+              searchQuery=""
+              emptyMessage="No tracking stocks yet"
+              emptySubMessage="Click the + button to start tracking"
             />
-          ))}
+          ) : (
+            // 股票列表
+            enrichedStocks.map((stock) => (
+              <StockRow
+                key={stock.symbol}
+                variant="tracking"
+                ticker={stock.symbol}
+                companyName={stock.companyName}
+                price={stock.price}
+                changePercent={stock.changePercent}
+                sparklineData={stock.sparklineData}
+                topAuthors={stock.top_authors?.map((a) => ({
+                  username: a.username,
+                  displayName: a.display_name ?? undefined,
+                  avatarUrl: a.avatar_url ?? "",
+                  tweetCount: a.tweet_count ?? 0,
+                  sentiment: a.sentiment,
+                }))}
+                isUntracking={untrackingIds.has(stock.id)}
+                onUntrack={(e) => handleUntrack(e, stock.id, stock.symbol)}
+              />
+            ))
+          )}
         </TableBody>
       </Table>
     </SectionCard>

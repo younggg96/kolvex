@@ -728,35 +728,27 @@ export function PortfolioAllocation({
                                       <>
                                         <Badge
                                           size="xs"
-                                          className={cn(
-                                            "border-0",
-                                            pos.optionType === "call"
-                                              ? "bg-primary/20 text-primary"
-                                              : "bg-destructive/20 text-destructive"
-                                          )}
+                                          variant={
+                                            pos.positionDirection === "short"
+                                              ? "destructive"
+                                              : "default"
+                                          }
+                                          className="!text-[11px]"
                                         >
+                                          {pos.positionDirection === "short"
+                                            ? "Short"
+                                            : "Long"}
+                                        </Badge>
+                                        <span className="text-xs text-muted-foreground">
                                           {pos.optionType === "call"
                                             ? "CALL"
                                             : "PUT"}
-                                        </Badge>
-                                        <Badge
-                                          size="xs"
-                                          className={cn(
-                                            "border-0",
-                                            pos.positionDirection === "long"
-                                              ? "bg-blue-500/10 text-blue-500"
-                                              : "bg-orange-500/10 text-orange-500"
-                                          )}
-                                        >
-                                          {pos.positionDirection === "long"
-                                            ? "LONG"
-                                            : "SHORT"}
-                                        </Badge>
+                                        </span>
                                       </>
                                     )}
                                   </div>
                                   {pos.securityName && (
-                                    <span className="text-xs text-muted-foreground truncate max-w-[200px]">
+                                    <span className="text-xs text-muted-foreground truncate w-full">
                                       {pos.securityName}
                                     </span>
                                   )}

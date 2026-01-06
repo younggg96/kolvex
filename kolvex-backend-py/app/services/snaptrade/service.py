@@ -292,13 +292,11 @@ class SnapTradeService:
                         opt_type = option_symbol.get("option_type", "")
                         exp_date = option_symbol.get("expiration_date", "")
                         display_name = f"{underlying_ticker} ${strike} {opt_type}"
-                        if exp_date:
-                            display_name += f" {exp_date}"
 
                         option_data = {
                             "account_id": account["id"],
                             "position_type": "option",
-                            "symbol": option_symbol.get("ticker", display_name),
+                            "symbol": display_name,
                             "symbol_id": symbol_info.get("id"),
                             "security_name": underlying.get("description", ""),
                             "units": option.get("units", 0),
@@ -634,7 +632,6 @@ class SnapTradeService:
                 # 如果持仓被隐藏，将敏感数据设为 "***"
                 if is_hidden:
                     pos["units"] = "***"
-                    pos["price"] = "***"
                     pos["market_value"] = "***"
                     pos["open_pnl"] = "***"
                     pos["weight_percent"] = "***"

@@ -30,6 +30,7 @@ export function StockRow(props: StockRowProps) {
     sentimentScore,
     trendingScore,
     isTracked,
+    stockId,
     onTrackChange,
     // Tracking fields
     price,
@@ -53,6 +54,7 @@ export function StockRow(props: StockRowProps) {
             variant="trending"
             ticker={ticker}
             companyName={companyName}
+            stockId={stockId}
             isTracked={isTracked}
             onTrackChange={onTrackChange}
           />
@@ -85,7 +87,9 @@ export function StockRow(props: StockRowProps) {
             size="sm"
             href={
               getSentimentType(sentimentScore)
-                ? `/dashboard/stocks/sentiment/${getSentimentType(sentimentScore)}`
+                ? `/dashboard/stocks/sentiment/${getSentimentType(
+                    sentimentScore
+                  )}`
                 : undefined
             }
           />
@@ -133,7 +137,7 @@ export function StockRow(props: StockRowProps) {
       </TableCell>
 
       {/* Sparkline */}
-      <TableCell className="hidden sm:table-cell w-[160px]">
+      <TableCell className="w-[160px]">
         <div className="flex justify-center">
           {sparklineData && sparklineData.length > 0 ? (
             <MiniSparkline
@@ -155,4 +159,3 @@ export function StockRow(props: StockRowProps) {
 }
 
 export default StockRow;
-

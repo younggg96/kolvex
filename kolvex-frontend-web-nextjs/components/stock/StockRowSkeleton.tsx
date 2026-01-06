@@ -22,17 +22,15 @@ export function StockRowSkeleton({
     return (
       <TableRow className="border-b border-gray-100 dark:border-white/5">
         {/* Stock Info + Star */}
-        <TableCell className="w-[240px]">
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2.5">
-              <Skeleton className="w-8 h-8 rounded-md" />
-              <div className="space-y-1.5">
-                <Skeleton className="w-12 h-3.5" />
-                <Skeleton className="w-16 h-2.5" />
-              </div>
+        <TableCell className="w-[240px] flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2.5 h-[42.5px]">
+            <Skeleton className="w-[34px] h-[34px] rounded-md" />
+            <div className="space-y-1.5">
+              <Skeleton className="w-12 h-3.5" />
+              <Skeleton className="w-16 h-2.5" />
             </div>
-            <Skeleton className="w-7 h-7 rounded" />
           </div>
+          <Skeleton className="w-7 h-7 rounded" />
         </TableCell>
 
         {/* Mentions */}
@@ -156,17 +154,28 @@ export function NoMoreDataRow({ colSpan }: { colSpan: number }) {
 export function EmptyRow({
   colSpan,
   searchQuery,
+  emptyMessage,
+  emptySubMessage,
 }: {
   colSpan: number;
   searchQuery?: string;
+  emptyMessage?: string;
+  emptySubMessage?: string;
 }) {
+  const message = searchQuery
+    ? "No stocks match your search"
+    : emptyMessage || "No stocks to display";
+
   return (
     <TableRow>
       <TableCell
         colSpan={colSpan}
-        className="text-center py-8 text-sm text-gray-500 dark:text-white/50"
+        className="text-center py-8 text-gray-500 dark:text-white/50"
       >
-        {searchQuery ? "No stocks match your search" : "No stocks to display"}
+        <p className="text-sm">{message}</p>
+        {emptySubMessage && !searchQuery && (
+          <p className="text-xs mt-1 opacity-70">{emptySubMessage}</p>
+        )}
       </TableCell>
     </TableRow>
   );
