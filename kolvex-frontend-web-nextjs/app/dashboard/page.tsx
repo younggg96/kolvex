@@ -18,6 +18,8 @@ import {
   Zap,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { ChipButton } from "@/components/ui/chip-button";
 
 interface QuickAction {
   icon: React.ReactNode;
@@ -63,9 +65,20 @@ const suggestions = [
 export default function Dashboard() {
   const [query, setQuery] = useState("");
   const [isFocused, setIsFocused] = useState(false);
-  const [activeSource, setActiveSource] = useState<SearchSource>("kol");
+  const [activeSources, setActiveSources] = useState<SearchSource[]>(["kol"]);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const router = useRouter();
+
+  const toggleSource = (source: SearchSource) => {
+    setActiveSources((prev) => {
+      if (prev.includes(source)) {
+        // 至少保留一个选中
+        if (prev.length === 1) return prev;
+        return prev.filter((s) => s !== source);
+      }
+      return [...prev, source];
+    });
+  };
 
   // Auto-resize textarea
   useEffect(() => {
@@ -163,34 +176,33 @@ export default function Dashboard() {
                       <SourceToggle
                         icon={<Users className="w-4 h-4" />}
                         label="KOL"
-                        active={activeSource === "kol"}
-                        onClick={() => setActiveSource("kol")}
+                        tooltip="Search KOL insights and opinions"
+                        active={activeSources.includes("kol")}
+                        onClick={() => toggleSource("kol")}
                       />
                       <SourceToggle
                         icon={<Newspaper className="w-4 h-4" />}
                         label="News"
-                        active={activeSource === "news"}
-                        onClick={() => setActiveSource("news")}
+                        tooltip="Search latest market news"
+                        active={activeSources.includes("news")}
+                        onClick={() => toggleSource("news")}
                       />
                       <SourceToggle
                         icon={<Globe className="w-4 h-4" />}
                         label="Web"
-                        active={activeSource === "web"}
-                        onClick={() => setActiveSource("web")}
+                        tooltip="Search the web for more info"
+                        active={activeSources.includes("web")}
+                        onClick={() => toggleSource("web")}
                       />
                     </div>
-                    <button
+                    <Button
                       type="submit"
                       disabled={!query.trim()}
-                      className={cn(
-                        "flex items-center justify-center w-9 h-9 rounded-xl transition-all duration-200",
-                        query.trim()
-                          ? "bg-primary text-white hover:bg-primary/90 shadow-lg shadow-primary/25"
-                          : "bg-gray-200 dark:bg-white/10 text-gray-400 dark:text-white/40 cursor-not-allowed"
-                      )}
+                      variant="icon"
+                      size="icon"
                     >
                       <ArrowRight className="w-4 h-4" />
-                    </button>
+                    </Button>
                   </div>
                 </div>
               </div>
@@ -199,21 +211,20 @@ export default function Dashboard() {
             {/* Quick Suggestions */}
             <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
               {suggestions.map((suggestion, index) => (
-                <button
+                <ChipButton
                   key={index}
                   onClick={() => router.push(suggestion.href)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gray-100 dark:bg-white/5 hover:bg-gray-200 dark:hover:bg-white/10 border border-gray-200 dark:border-white/10 hover:border-primary/30 text-gray-600 dark:text-white/70 hover:text-gray-900 dark:hover:text-white text-xs font-medium transition-all duration-200"
+                  icon={<Zap className="w-3 h-3 text-primary/70" />}
                 >
-                  <Zap className="w-3 h-3 text-primary/70" />
                   {suggestion.text}
-                </button>
+                </ChipButton>
               ))}
             </div>
           </div>
 
           {/* Quick Actions Grid */}
           <div
-            className="w-full max-w-3xl mx-auto animate-fade-in-up"
+            className="w-full max-w-3xl mx-auto animate-fade-in-up mt-20"
             style={{ animationDelay: "200ms" }}
           >
             <div className="grid grid-cols-2 md:grid-cols-4 gap-2">

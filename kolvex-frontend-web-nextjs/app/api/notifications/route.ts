@@ -14,6 +14,7 @@ export async function GET(request: NextRequest) {
     const page = searchParams.get("page") || "1";
     const pageSize = searchParams.get("page_size") || "20";
     const unreadOnly = searchParams.get("unread_only") || "false";
+    const readOnly = searchParams.get("read_only") || "false";
 
     const supabase = await createServerSupabaseClient();
 
@@ -28,7 +29,7 @@ export async function GET(request: NextRequest) {
     }
 
     const response = await fetch(
-      `${NEXT_PUBLIC_BACKEND_API_URL}/api/v1/notifications?page=${page}&page_size=${pageSize}&unread_only=${unreadOnly}`,
+      `${NEXT_PUBLIC_BACKEND_API_URL}/api/v1/notifications?page=${page}&page_size=${pageSize}&unread_only=${unreadOnly}&read_only=${readOnly}`,
       {
         method: "GET",
         headers: {

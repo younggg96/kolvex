@@ -138,28 +138,46 @@ export function ProfileInfoSkeleton() {
   );
 }
 
-// 通知项骨架屏
+// 通知项骨架屏 - 匹配新的卡片式设计
 export function NotificationItemSkeleton() {
   return (
-    <div className="px-4 py-4 animate-pulse border-b border-gray-100 dark:border-white/5 last:border-0">
-      <div className="flex items-start gap-4">
-        {/* Icon Skeleton */}
-        <div className="w-9 h-9 rounded-full bg-gray-200 dark:bg-white/10 flex-shrink-0 mt-0.5"></div>
+    <div className="rounded-xl bg-white dark:bg-card-dark/50 border border-gray-100 dark:border-white/5 animate-pulse">
+      <div className="flex items-start gap-4 p-4 pl-5">
+        {/* Logo/Icon Skeleton - 带叠加小图标 */}
+        <div className="relative flex-shrink-0">
+          <div className="w-10 h-10 rounded-lg bg-gray-200 dark:bg-white/10"></div>
+          {/* 操作类型小图标 */}
+          <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-gray-300 dark:bg-white/15 border-2 border-white dark:border-gray-900"></div>
+        </div>
 
         {/* Content Skeleton */}
         <div className="flex-1 min-w-0 space-y-2">
-          <div className="flex items-center justify-between gap-2">
-            <div className="h-4 bg-gray-300 dark:bg-white/10 rounded w-1/3"></div>
-            <div className="h-3 bg-gray-200 dark:bg-white/5 rounded w-16"></div>
+          {/* 标题行 */}
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <div className="h-4 bg-gray-300 dark:bg-white/10 rounded w-40"></div>
+              <div className="h-4 bg-primary/20 dark:bg-primary/10 rounded-full w-10"></div>
+            </div>
+            <div className="h-3 bg-gray-200 dark:bg-white/5 rounded w-12 flex-shrink-0"></div>
           </div>
-          <div className="space-y-1.5">
+
+          {/* 消息内容 */}
+          <div className="space-y-1">
             <div className="h-3 bg-gray-200 dark:bg-white/5 rounded w-full"></div>
-            <div className="h-3 bg-gray-200 dark:bg-white/5 rounded w-5/6"></div>
+            <div className="h-3 bg-gray-200 dark:bg-white/5 rounded w-4/5"></div>
           </div>
-          <div className="flex items-center gap-2 pt-1">
-            <div className="h-5 bg-gray-200 dark:bg-white/5 rounded-md w-14"></div>
-            <div className="h-5 bg-gray-200 dark:bg-white/5 rounded w-10"></div>
+
+          {/* 标签区域 */}
+          <div className="flex items-center gap-2 pt-0.5">
+            <div className="h-5 bg-primary/10 dark:bg-primary/5 rounded-full w-14"></div>
+            <div className="h-5 bg-gray-100 dark:bg-white/5 rounded-full w-12"></div>
           </div>
+        </div>
+
+        {/* 右侧操作按钮占位 */}
+        <div className="flex flex-col items-center gap-1 opacity-0">
+          <div className="w-8 h-8 rounded-full"></div>
+          <div className="w-8 h-8 rounded-full"></div>
         </div>
       </div>
     </div>

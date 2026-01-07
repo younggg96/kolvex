@@ -1,5 +1,6 @@
 // UI Components Barrel Export
 export { Button } from "./button";
+export { ChipButton } from "./chip-button";
 export { Input } from "./input";
 export { SearchInput } from "./search-input";
 export { Label } from "./label";

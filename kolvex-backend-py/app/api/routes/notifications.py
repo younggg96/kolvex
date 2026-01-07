@@ -58,6 +58,7 @@ async def get_notifications(
     page: int = Query(1, ge=1, description="页码"),
     page_size: int = Query(20, ge=1, le=100, description="每页数量"),
     unread_only: bool = Query(False, description="是否只返回未读通知"),
+    read_only: bool = Query(False, description="是否只返回已读通知"),
     current_user_id: str = Depends(get_current_user_id),
     service: NotificationService = Depends(get_notification_service),
 ):
@@ -71,6 +72,7 @@ async def get_notifications(
         page=page,
         page_size=page_size,
         unread_only=unread_only,
+        read_only=read_only,
     )
     return NotificationListResponse(**result)
 

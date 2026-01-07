@@ -209,6 +209,7 @@ class NotificationService:
         page: int = 1,
         page_size: int = 20,
         unread_only: bool = False,
+        read_only: bool = False,
     ) -> Dict[str, Any]:
         """
         获取用户的通知列表
@@ -218,6 +219,7 @@ class NotificationService:
             page: 页码
             page_size: 每页数量
             unread_only: 是否只返回未读通知
+            read_only: 是否只返回已读通知
 
         Returns:
             通知列表和分页信息
@@ -234,6 +236,8 @@ class NotificationService:
 
             if unread_only:
                 query = query.eq("is_read", False)
+            elif read_only:
+                query = query.eq("is_read", True)
 
             result = query.range(offset, offset + page_size - 1).execute()
 

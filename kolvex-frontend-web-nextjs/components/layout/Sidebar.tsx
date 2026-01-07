@@ -23,6 +23,7 @@ import {
 import Image from "next/image";
 import UserMenu from "@/components/user/UserMenu";
 import { Button } from "@/components/ui/button";
+import { getUnreadCount } from "@/lib/notificationApi";
 import {
   Sidebar as SidebarPrimitive,
   SidebarContent,
@@ -152,6 +153,7 @@ function AppSidebar({ onNavigate }: AppSidebarProps) {
   const [socialOpen, setSocialOpen] = useState(() => {
     return pathname.startsWith("/dashboard/social");
   });
+  const [unreadCount, setUnreadCount] = useState(0);
 
   const { isMobile, isTablet } = useBreakpoints();
   const isActive = (href: string) => {
@@ -168,6 +170,22 @@ function AppSidebar({ onNavigate }: AppSidebarProps) {
 
   useEffect(() => {
     setIsMounted(true);
+  }, []);
+
+  // 获取未读通知数量
+  useEffect(() => {
+    const fetchUnreadCount = async () => {
+      try {
+        const count = await getUnreadCount();
+        setUnreadCount(count);
+      } catch (error) {
+        // 静默处理错误，保持 count 为 0
+      }
+    };
+    fetchUnreadCount();
+    // 每 30 秒刷新一次
+    const interval = setInterval(fetchUnreadCount, 30000);
+    return () => clearInterval(interval);
   }, []);
 
   // 当路由变化时，如果进入 social 页面则展开菜单
@@ -339,8 +357,13 @@ function AppSidebar({ onNavigate }: AppSidebarProps) {
                     onClick={onNavigate}
                   >
                     <Link href={item.href}>
-                      <item.icon />
+                      <item.icon className="size-4" />
                       <span>{item.title}</span>
+                      {item.title === "Notifications" && unreadCount > 0 && (
+                        <span className="flex h-4 min-w-4 rounded-full bg-red-500 items-center justify-center text-[10px] font-medium text-white ml-auto">
+                          {unreadCount > 99 ? "99+" : unreadCount}
+                        </span>
+                      )}
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>

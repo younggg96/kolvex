@@ -40,14 +40,16 @@ async function apiRequest<T>(
  * @param page Page number
  * @param pageSize Number of items per page
  * @param unreadOnly Whether to fetch only unread notifications
+ * @param readOnly Whether to fetch only read notifications
  */
 export async function getNotifications(
   page: number = 1,
   pageSize: number = 20,
-  unreadOnly: boolean = false
+  unreadOnly: boolean = false,
+  readOnly: boolean = false
 ): Promise<NotificationListResponse> {
   return apiRequest<NotificationListResponse>(
-    `?page=${page}&page_size=${pageSize}&unread_only=${unreadOnly}`
+    `?page=${page}&page_size=${pageSize}&unread_only=${unreadOnly}&read_only=${readOnly}`
   );
 }
 
