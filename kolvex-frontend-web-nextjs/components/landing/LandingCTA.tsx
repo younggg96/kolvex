@@ -3,14 +3,11 @@
 import React from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Sparkles, TrendingUp, Zap, Shield } from "lucide-react";
+import { ArrowRight, Sparkles } from "lucide-react";
 
 export default function LandingCTA() {
   return (
     <section className="py-24 relative overflow-hidden">
-      {/* Animated background pattern */}
-      <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/10 -z-10" />
-
       <div className="container px-4 mx-auto relative z-10">
         <div className="max-w-5xl mx-auto relative">
           {/* Floating decorative elements - Enhanced animations */}
@@ -28,7 +25,7 @@ export default function LandingCTA() {
             <div className="absolute top-1/2 left-0 w-64 h-64 bg-primary/10 blur-[80px] -translate-x-1/2" />
 
             {/* Inner decorative patterns */}
-            <div className="absolute inset-0 bg-grid opacity-10" />
+            <div className="absolute inset-0 bg-grid opacity-80" />
 
             <div className="relative z-10">
               {/* Badge */}
@@ -51,22 +48,6 @@ export default function LandingCTA() {
                 Stop guessing. Start knowing. Get AI-powered insights, track
                 influential voices, and make data-driven investment decisions.
               </p>
-
-              {/* Trust indicators */}
-              <div className="flex flex-wrap justify-center gap-6 mb-10 animate-fade-in [animation-delay:400ms]">
-                <div className="flex items-center gap-2 text-foreground/60 text-sm">
-                  <Shield size={16} className="text-primary" />
-                  <span>Bank-level Security</span>
-                </div>
-                <div className="flex items-center gap-2 text-foreground/60 text-sm">
-                  <TrendingUp size={16} className="text-primary" />
-                  <span>Real-time Data</span>
-                </div>
-                <div className="flex items-center gap-2 text-foreground/60 text-sm">
-                  <Zap size={16} className="text-primary" />
-                  <span>Instant Setup</span>
-                </div>
-              </div>
 
               {/* CTA Button */}
               <div className="flex justify-center items-center animate-fade-in [animation-delay:500ms]">

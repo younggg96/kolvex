@@ -14,16 +14,14 @@ export default function BaseLayout({
   return (
     <div className="relative flex min-h-screen w-full flex-col overflow-y-auto bg-background-light dark:bg-background-dark transition-colors duration-300">
       {/* Animated Grid Background */}
-      <div className="absolute inset-0 bg-grid z-0"></div>
+      <div className="absolute inset-0 bg-grid opacity-90 dark:opacity-50 z-0"></div>
       <div className="absolute inset-0 bg-gradient-to-b from-transparent via-background-light/90 dark:via-background-dark/90 to-background-light dark:to-background-dark z-0"></div>
 
       {/* Header */}
       <LandingHeader />
 
       {/* Main Content with Page Transition */}
-      <div className="animate-page-enter flex-1 flex flex-col">
-        {children}
-      </div>
+      <div className="animate-page-enter flex-1 flex flex-col">{children}</div>
 
       {/* Footer */}
       {hasFooter && <Footer />}

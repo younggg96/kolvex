@@ -100,7 +100,7 @@ export default function Dashboard() {
       headerClassName="lg:hidden"
     >
       <div className="relative flex-1 flex flex-col min-h-0 bg-background-light dark:bg-background-dark">
-        <div className="absolute inset-0 bg-grid opacity-60 pointer-events-none" />
+        <div className="absolute inset-0 bg-grid opacity-80 pointer-events-none" />
 
         <div className="relative flex-1 flex flex-col items-center justify-center p-4 md:p-6 overflow-auto">
           {/* Welcome Section */}

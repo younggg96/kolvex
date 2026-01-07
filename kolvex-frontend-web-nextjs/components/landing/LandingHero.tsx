@@ -50,29 +50,6 @@ export default function LandingHero() {
           </div>
         </div>
       </div>
-
-      {/* Decorative elements */}
-      <div className="absolute top-1/2 left-0 -translate-y-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-primary/5 rounded-full blur-3xl -z-10 pointer-events-none" />
-      <div className="absolute top-1/4 right-0 -translate-x-1/4 w-[400px] h-[400px] bg-primary/10 rounded-full blur-3xl -z-10 pointer-events-none" />
-
-      {/* Abstract Stock Pattern */}
-      <div className="absolute bottom-0 left-0 right-0 h-64 -z-10 opacity-20 dark:opacity-10 overflow-hidden pointer-events-none">
-        <svg
-          className="w-full h-full"
-          viewBox="0 0 1200 200"
-          preserveAspectRatio="none"
-        >
-          <path
-            d="M0,150 L50,140 L100,160 L150,130 L200,145 L250,100 L300,120 L350,80 L400,110 L450,70 L500,90 L550,50 L600,85 L650,40 L700,75 L750,30 L800,60 L850,20 L900,55 L950,15 L1000,45 L1050,10 L1100,40 L1150,5 L1200,35"
-            fill="none"
-            stroke="#00C805"
-            strokeWidth="3"
-            strokeDasharray="1200"
-            strokeDashoffset="1200"
-            className="animate-dash"
-          />
-        </svg>
-      </div>
     </section>
   );
 }

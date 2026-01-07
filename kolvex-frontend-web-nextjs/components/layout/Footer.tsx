@@ -46,9 +46,12 @@ export default function Footer() {
             </p>
             <div className="flex items-center gap-3">
               {[
-                { icon: Twitter, href: "#" },
-                { icon: Github, href: "#" },
-                { icon: Linkedin, href: "#" },
+                // { icon: Twitter, href: "#" },
+                { icon: Github, href: "https://github.com/younggg96/kolvex" },
+                {
+                  icon: Linkedin,
+                  href: "https://www.linkedin.com/in/guanggengyang/",
+                },
               ].map((social, i) => (
                 <a
                   key={i}
@@ -70,11 +73,11 @@ export default function Footer() {
               </h4>
             </div>
             <ul className="space-y-4">
-              <li>
+              {/* <li>
                 <Link href="/contact" className={linkClass}>
                   Help Center
                 </Link>
-              </li>
+              </li> */}
               <li>
                 <Link href="/terms" className={linkClass}>
                   Terms of Service
@@ -121,14 +124,14 @@ export default function Footer() {
           </div>
         </div>
 
-        <Separator className="bg-primary/10" />
+        <Separator className="bg-primary/10 dark:bg-primary/30" />
 
         {/* Bottom Section */}
         <div className="pt-8 flex flex-col md:flex-row justify-between items-center gap-6">
           <p className="text-[10px] font-mono uppercase tracking-widest text-foreground/40 font-medium">
             © 2025 Kolvex AI Intelligence. All rights reserved.
           </p>
-          <div className="flex items-center gap-8">
+          {/* <div className="flex items-center gap-8">
             <div className="flex items-center gap-2 text-[10px] font-mono uppercase tracking-widest text-foreground/40 font-medium">
               <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
               Systems Operational
@@ -141,7 +144,7 @@ export default function Footer() {
                 Documentation
               </span>
             </div>
-          </div>
+          </div> */}
         </div>
       </div>
     </footer>

@@ -8,6 +8,7 @@ export { PortfolioHeroSection } from "./PortfolioHeroSection";
 export { PortfolioPageContent } from "./PortfolioPageContent";
 export { PortfolioStatsGrid } from "./PortfolioStatsGrid";
 export { PortfolioAllocation } from "./PortfolioAllocation";
+export * from "./allocation";
 export { default as PrivacySettingsDialog } from "./PrivacySettingsDialog";
 
 // Sub-components (extracted from PortfolioHoldings)
