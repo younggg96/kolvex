@@ -4,7 +4,7 @@ import React from "react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import LogoIcon from "@/components/common/LogoIcon";
-import { Twitter, Github, Linkedin, Send } from "lucide-react";
+import { Github, Linkedin, Send, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
@@ -46,7 +46,7 @@ export default function Footer() {
             </p>
             <div className="flex items-center gap-3">
               {[
-                // { icon: Twitter, href: "#" },
+                { icon: Mail, href: "mailto:support@kolvex.app" },
                 { icon: Github, href: "https://github.com/younggg96/kolvex" },
                 {
                   icon: Linkedin,

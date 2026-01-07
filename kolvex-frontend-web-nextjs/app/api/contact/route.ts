@@ -8,7 +8,7 @@ const resend = new Resend(process.env.NEXT_PUBLIC_RESEND_API_KEY);
 // 只能发送到你注册 Resend 时使用的邮箱地址！
 // 如果想发送到 kolvex.ai@gmail.com，需要在 Resend 验证自己的域名
 const CONTACT_EMAIL =
-  process.env.NEXT_PUBLIC_CONTACT_EMAIL || "yangguanggeng960123@gmail.com";
+  process.env.NEXT_PUBLIC_CONTACT_EMAIL || "support@kolvex.app";
 
 export async function POST(request: NextRequest) {
   try {
@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
 
     // 发送邮件
     const { data, error } = await resend.emails.send({
-      from: "Kolvex Contact <yangguanggeng960123@gmail.com>", // 使用 Resend 测试域名
+      from: "Kolvex Contact <support@kolvex.app>", // 使用 Resend 测试域名
       to: [CONTACT_EMAIL],
       replyTo: email,
       subject: `[Kolvex Contact] New message from ${name}`,

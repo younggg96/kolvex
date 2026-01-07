@@ -311,7 +311,13 @@ export default function TermsPage() {
               If you have any questions about these Terms, please contact us at:
             </p>
             <p className="text-gray-700 dark:text-gray-300">
-              Email: legal@kolvex.ai
+              Email:{" "}
+              <a
+                href="mailto:support@kolvex.app"
+                className="text-primary hover:text-primary/80 transition-colors"
+              >
+                support@kolvex.app
+              </a>
             </p>
           </section>
 

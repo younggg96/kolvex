@@ -36,36 +36,20 @@ export default function ContactPage() {
             </p>
 
             <div className="space-y-6">
-              {/* <div>
+              <div>
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
                   Email Us
                 </h3>
                 <p className="text-gray-600 dark:text-gray-400 mt-2">
                   For support:{" "}
                   <a
-                    href="mailto:support@kolvex.ai"
+                    href="mailto:support@kolvex.app"
                     className="text-primary hover:text-primary/80 transition-colors"
                   >
                     support@kolvex.app
                   </a>
                 </p>
-              </div> */}
-
-              {/* <div>
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                  Social Media
-                </h3>
-                <div className="flex space-x-4">
-                  <a
-                    href="https://twitter.com/kolvex_ai"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-gray-600 dark:text-gray-400 hover:text-primary transition-colors"
-                  >
-                    Twitter / X
-                  </a>
-                </div>
-              </div> */}
+              </div>
             </div>
           </div>
 

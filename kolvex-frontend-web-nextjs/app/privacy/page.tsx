@@ -327,8 +327,14 @@ export default function PrivacyPage() {
               </li>
             </ul>
             <p className="text-gray-700 dark:text-gray-300 mb-4">
-              To exercise these rights, please contact us at privacy@kolvex.ai.
-              We will respond to your request within 30 days.
+              To exercise these rights, please contact us at{" "}
+              <a
+                href="mailto:support@kolvex.app"
+                className="text-primary hover:text-primary/80 transition-colors"
+              >
+                support@kolvex.app
+              </a>
+              . We will respond to your request within 30 days.
             </p>
           </section>
 
@@ -403,7 +409,14 @@ export default function PrivacyPage() {
               </li>
             </ul>
             <p className="text-gray-700 dark:text-gray-300 mb-4">
-              To exercise these rights, contact us at privacy@kolvex.ai.
+              To exercise these rights, contact us at{" "}
+              <a
+                href="mailto:support@kolvex.app"
+                className="text-primary hover:text-primary/80 transition-colors"
+              >
+                support@kolvex.app
+              </a>
+              .
             </p>
           </section>
 
@@ -468,13 +481,13 @@ export default function PrivacyPage() {
             </p>
             <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-6 mb-4">
               <p className="text-gray-700 dark:text-gray-300 mb-2">
-                <strong>Email:</strong> privacy@kolvex.ai
-              </p>
-              <p className="text-gray-700 dark:text-gray-300 mb-2">
-                <strong>Data Protection Officer:</strong> dpo@kolvex.ai
-              </p>
-              <p className="text-gray-700 dark:text-gray-300">
-                <strong>Legal Team:</strong> legal@kolvex.ai
+                <strong>Email:</strong>{" "}
+                <a
+                  href="mailto:support@kolvex.app"
+                  className="text-primary hover:text-primary/80 transition-colors"
+                >
+                  support@kolvex.app
+                </a>
               </p>
             </div>
           </section>

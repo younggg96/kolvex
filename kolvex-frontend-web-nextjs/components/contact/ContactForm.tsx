@@ -4,7 +4,8 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, CheckCircle2, AlertCircle } from "lucide-react";
+import { Loader2 } from "lucide-react";
+import { toast } from "sonner";
 
 export default function ContactForm() {
   const [formData, setFormData] = useState({
@@ -13,10 +14,6 @@ export default function ContactForm() {
     message: "",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitStatus, setSubmitStatus] = useState<{
-    type: "success" | "error" | null;
-    message: string;
-  }>({ type: null, message: "" });
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -28,7 +25,6 @@ export default function ContactForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
-    setSubmitStatus({ type: null, message: "" });
 
     try {
       const response = await fetch("/api/contact", {
@@ -42,22 +38,19 @@ export default function ContactForm() {
       const data = await response.json();
 
       if (response.ok) {
-        setSubmitStatus({
-          type: "success",
-          message: data.message || "Message sent successfully!",
+        toast.success("Message sent successfully!", {
+          description: "We'll get back to you as soon as possible.",
         });
         // 清空表单
         setFormData({ name: "", email: "", message: "" });
       } else {
-        setSubmitStatus({
-          type: "error",
-          message: data.error || "Failed to send message. Please try again.",
+        toast.error("Failed to send message", {
+          description: data.error || "Please try again later.",
         });
       }
     } catch (error) {
-      setSubmitStatus({
-        type: "error",
-        message: "Network error. Please check your connection and try again.",
+      toast.error("Network error", {
+        description: "Please check your connection and try again.",
       });
     } finally {
       setIsSubmitting(false);
@@ -69,23 +62,6 @@ export default function ContactForm() {
       <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
         Send us a message
       </h2>
-
-      {submitStatus.type && (
-        <div
-          className={`mb-4 p-4 rounded-lg flex items-center gap-3 ${
-            submitStatus.type === "success"
-              ? "bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-800"
-              : "bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800"
-          }`}
-        >
-          {submitStatus.type === "success" ? (
-            <CheckCircle2 className="w-5 h-5 flex-shrink-0" />
-          ) : (
-            <AlertCircle className="w-5 h-5 flex-shrink-0" />
-          )}
-          <span className="text-sm">{submitStatus.message}</span>
-        </div>
-      )}
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
@@ -159,4 +135,3 @@ export default function ContactForm() {
     </div>
   );
 }
-
