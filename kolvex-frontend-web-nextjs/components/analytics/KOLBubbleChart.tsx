@@ -185,7 +185,7 @@ export function KOLBubbleChart({
     );
   }
 
-  const sizeRange = [80, 1500];
+  const sizeRange: [number, number] = [80, 1500];
 
   // Green/Red color scheme
   const getSentimentColor = (sentiment: string) => {
