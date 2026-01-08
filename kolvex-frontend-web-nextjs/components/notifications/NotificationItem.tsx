@@ -182,25 +182,6 @@ export function NotificationItem({
                   </Badge>
                 )}
               </div>
-
-              {/* 时间 */}
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <span
-                    className={cn(
-                      "text-[11px] whitespace-nowrap font-medium flex-shrink-0",
-                      !isRead
-                        ? "text-primary/80 dark:text-primary"
-                        : "text-gray-400 dark:text-white/30"
-                    )}
-                  >
-                    {formatNotificationTime(notification.created_at)}
-                  </span>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>{new Date(notification.created_at).toLocaleString()}</p>
-                </TooltipContent>
-              </Tooltip>
             </div>
 
             {/* 消息内容 */}
@@ -254,57 +235,75 @@ export function NotificationItem({
               </Badge>
             </div>
           </div>
-
-          {/* 右侧：操作按钮 */}
-          <div
-            className={cn(
-              "flex flex-col items-center gap-1 transition-all duration-200",
-              "opacity-0 group-hover:opacity-100"
-            )}
-          >
-            {!isRead && (
+          <div className="flex items-center gap-2">
+            <div
+              className={cn(
+                "flex items-center gap-1 transition-all duration-200",
+                "opacity-0 group-hover:opacity-100"
+              )}
+            >
+              {!isRead && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-gray-400 hover:text-primary hover:bg-primary/10 rounded-full"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onMarkAsRead(notification.id);
+                      }}
+                      disabled={isMarkingRead}
+                    >
+                      {isMarkingRead ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Check className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Mark as read</TooltipContent>
+                </Tooltip>
+              )}
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-8 w-8 text-gray-400 hover:text-primary hover:bg-primary/10 rounded-full"
+                    className="h-8 w-8 text-gray-400 hover:text-red-500 hover:bg-red-500/10 rounded-full"
                     onClick={(e) => {
                       e.stopPropagation();
-                      onMarkAsRead(notification.id);
+                      onDelete(notification.id);
                     }}
-                    disabled={isMarkingRead}
+                    disabled={isDeleting}
                   >
-                    {isMarkingRead ? (
+                    {isDeleting ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
                     ) : (
-                      <Check className="h-4 w-4" />
+                      <Trash2 className="h-4 w-4" />
                     )}
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent>Mark as read</TooltipContent>
+                <TooltipContent>Delete</TooltipContent>
               </Tooltip>
-            )}
+            </div>
+            {/* 时间 */}
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 text-gray-400 hover:text-red-500 hover:bg-red-500/10 rounded-full"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onDelete(notification.id);
-                  }}
-                  disabled={isDeleting}
-                >
-                  {isDeleting ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Trash2 className="h-4 w-4" />
+                <span
+                  className={cn(
+                    "text-[11px] whitespace-nowrap font-medium flex-shrink-0",
+                    !isRead
+                      ? "text-primary/80 dark:text-primary"
+                      : "text-gray-400 dark:text-white/30"
                   )}
-                </Button>
+                >
+                  {formatNotificationTime(notification.created_at)}
+                </span>
               </TooltipTrigger>
-              <TooltipContent>Delete</TooltipContent>
+              <TooltipContent>
+                <p>{new Date(notification.created_at).toLocaleString()}</p>
+              </TooltipContent>
             </Tooltip>
           </div>
         </div>

@@ -39,7 +39,6 @@ export default function NotificationsPage() {
     unreadCount,
     loading,
     loadingMore,
-    hasMore,
     markingReadId,
     deletingId,
     activeTab,
@@ -59,7 +58,37 @@ export default function NotificationsPage() {
   }
 
   return (
-    <DashboardLayout title="Notifications" showHeader={false}>
+    <DashboardLayout
+      headerClassName="lg:hidden"
+      title="Notifications"
+      showHeader={true}
+      headerActions={
+        notifications.length > 0 ? (
+          <div className="flex items-center gap-2">
+            {unreadCount > 0 && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-1.5 h-9 text-xs font-medium bg-background/50 backdrop-blur-sm"
+                onClick={handleMarkAllAsRead}
+              >
+                <CheckCheck className="h-4 w-4" />
+                <span className="hidden sm:inline">Mark all read</span>
+              </Button>
+            )}
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5 h-9 text-xs font-medium text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-500/10 bg-background/50 backdrop-blur-sm"
+              onClick={handleDeleteAll}
+            >
+              <Trash2 className="h-4 w-4" />
+              <span className="hidden sm:inline">Delete all</span>
+            </Button>
+          </div>
+        ) : undefined
+      }
+    >
       <div className="relative flex-1 overflow-y-auto bg-background-light dark:bg-background-dark">
         <div className="absolute inset-0 bg-grid opacity-50 pointer-events-none" />
 
@@ -67,6 +96,7 @@ export default function NotificationsPage() {
         <HeroSection
           title="Notifications"
           description="Stay updated with portfolio changes and market signals"
+          className="lg:block hidden"
           features={notificationFeatures}
           actions={
             notifications.length > 0 ? (
