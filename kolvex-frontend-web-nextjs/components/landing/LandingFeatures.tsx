@@ -132,7 +132,7 @@ function FeatureCard({
       }}
     >
       {/* Card Background - Light & Dark modes */}
-      <div className="absolute inset-0 rounded-3xl bg-white dark:bg-white/[0.03] border border-gray-200 dark:border-white/10 group-hover:border-gray-300 dark:group-hover:border-white/20 shadow-sm dark:shadow-none group-hover:shadow-lg dark:group-hover:shadow-none transition-all duration-500" />
+      <div className="absolute inset-0 bg-grid opacity-50 rounded-3xl bg-white dark:bg-white/[0.03] border border-gray-200 dark:border-white/10 group-hover:border-gray-300 dark:group-hover:border-white/20 shadow-sm dark:shadow-none group-hover:shadow-lg dark:group-hover:shadow-none transition-all duration-500" />
 
       {/* Accent Glow - Only visible on hover */}
       <div
@@ -292,20 +292,6 @@ export default function LandingFeatures() {
       id="features"
       className="py-24 lg:py-32 relative overflow-hidden"
     >
-      {/* Background - Light mode gradient */}
-      <div className="absolute inset-0 bg-gradient-to-b from-gray-50/50 via-transparent to-gray-50/50 dark:from-transparent dark:via-primary/[0.02] dark:to-transparent" />
-
-      {/* Spotlight Effect - Only on dark mode */}
-      <div
-        className="absolute w-[600px] h-[600px] rounded-full pointer-events-none transition-all duration-300 ease-out opacity-0 dark:opacity-30"
-        style={{
-          background:
-            "radial-gradient(circle, rgba(0, 200, 5, 0.15) 0%, transparent 70%)",
-          left: mousePos.x - 300,
-          top: mousePos.y - 300,
-        }}
-      />
-
       {/* Grid Pattern */}
       <div
         className="absolute inset-0 opacity-[0.015] dark:opacity-[0.02]"
