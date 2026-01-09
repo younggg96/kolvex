@@ -119,7 +119,7 @@ function StatCard({ stat, index }: { stat: StatItem; index: number }) {
 
       {/* Value */}
       <div className="relative mb-1 md:mb-2">
-        <span className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black text-gray-900 dark:text-white tabular-nums">
+        <span className="text-3xl sm:text-4xl lg:text-6xl font-black text-gray-900 dark:text-white tabular-nums">
           {stat.prefix}
           {formatNumber(count)}
           <span className="text-primary">{stat.suffix}</span>

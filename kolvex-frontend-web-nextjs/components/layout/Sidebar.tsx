@@ -48,6 +48,7 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { cn } from "@/lib/utils";
+import { ChatSidebarContent } from "@/components/chat";
 
 // Social Media 子菜单
 const socialMediaSubItems = [
@@ -156,6 +157,11 @@ function AppSidebar({ onNavigate }: AppSidebarProps) {
   const [unreadCount, setUnreadCount] = useState(0);
 
   const { isMobile, isTablet } = useBreakpoints();
+  
+  // Check if we're on the Chat page
+  const isChatPage = pathname === "/dashboard";
+  const isCollapsed = isMounted && isInitialized && state === "collapsed";
+  
   const isActive = (href: string) => {
     if (href === "/dashboard") {
       return pathname === "/dashboard";
@@ -194,6 +200,21 @@ function AppSidebar({ onNavigate }: AppSidebarProps) {
       setSocialOpen(true);
     }
   }, [pathname]);
+
+  // Handle new chat - dispatch custom event
+  const handleNewChat = () => {
+    window.dispatchEvent(new CustomEvent("kolvex:newChat"));
+  };
+
+  // Handle select conversation - dispatch custom event
+  const handleSelectConversation = (id: string) => {
+    window.dispatchEvent(new CustomEvent("kolvex:selectChat", { detail: { id } }));
+  };
+
+  // Handle delete conversation - dispatch custom event
+  const handleDeleteConversation = (id: string) => {
+    window.dispatchEvent(new CustomEvent("kolvex:deleteChat", { detail: { id } }));
+  };
 
   return (
     <SidebarPrimitive
@@ -235,142 +256,156 @@ function AppSidebar({ onNavigate }: AppSidebarProps) {
       </SidebarHeader>
 
       <SidebarContent>
-        <SidebarContent>
-          {/* Main Navigation */}
-          <SidebarGroup>
-            <SidebarGroupLabel className="sr-only">
-              <span>Kolvex</span>
-            </SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {mainNavItems.map((item) => {
-                  // submenu
-                  if (item.type === "submenu") {
-                    return (
-                      <Collapsible
-                        key={item.title}
-                        open={socialOpen}
-                        onOpenChange={setSocialOpen}
-                        className="group/collapsible"
-                      >
-                        <SidebarMenuItem>
-                          <CollapsibleTrigger asChild>
-                            <SidebarMenuButton isActive={isSocialActive}>
-                              <Share2 />
-                              <span>Social</span>
-                              <ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
-                            </SidebarMenuButton>
-                          </CollapsibleTrigger>
-                          <CollapsibleContent>
-                            <SidebarMenuSub className="pl-3 pt-1">
-                              {socialMediaSubItems.map((subItem) => (
-                                <SidebarMenuSubItem key={subItem.href}>
-                                  {subItem.disabled ? (
-                                    <SidebarMenuSubButton
-                                      isActive={false}
-                                      className="opacity-50 cursor-not-allowed pointer-events-none"
-                                    >
-                                      <Image
-                                        src={subItem.iconSrc}
-                                        alt={subItem.title}
-                                        width={16}
-                                        height={16}
-                                        className="size-4"
-                                      />
-                                      <span>{subItem.title}</span>
-                                      <span className="ml-auto text-[10px] text-muted-foreground">
-                                        Soon
-                                      </span>
-                                    </SidebarMenuSubButton>
-                                  ) : (
-                                    <SidebarMenuSubButton
-                                      asChild
-                                      isActive={pathname === subItem.href}
-                                    >
-                                      <Link
-                                        href={subItem.href}
-                                        onClick={onNavigate}
+        {/* Conditionally render Chat History or Normal Navigation */}
+        {isChatPage ? (
+          // Chat History Mode
+          <ChatSidebarContent
+            onNewChat={handleNewChat}
+            onSelectConversation={handleSelectConversation}
+            onDeleteConversation={handleDeleteConversation}
+            isCollapsed={isCollapsed && !isMobile && !isTablet}
+          />
+        ) : (
+          // Normal Navigation Mode
+          <SidebarContent>
+            {/* Main Navigation */}
+            <SidebarGroup>
+              <SidebarGroupLabel className="sr-only">
+                <span>Kolvex</span>
+              </SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  {mainNavItems.map((item) => {
+                    // submenu
+                    if (item.type === "submenu") {
+                      return (
+                        <Collapsible
+                          key={item.title}
+                          open={socialOpen}
+                          onOpenChange={setSocialOpen}
+                          className="group/collapsible"
+                        >
+                          <SidebarMenuItem>
+                            <CollapsibleTrigger asChild>
+                              <SidebarMenuButton isActive={isSocialActive}>
+                                <Share2 />
+                                <span>Social</span>
+                                <ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                              </SidebarMenuButton>
+                            </CollapsibleTrigger>
+                            <CollapsibleContent>
+                              <SidebarMenuSub className="pl-3 pt-1">
+                                {socialMediaSubItems.map((subItem) => (
+                                  <SidebarMenuSubItem key={subItem.href}>
+                                    {subItem.disabled ? (
+                                      <SidebarMenuSubButton
+                                        isActive={false}
+                                        className="opacity-50 cursor-not-allowed pointer-events-none"
                                       >
                                         <Image
                                           src={subItem.iconSrc}
                                           alt={subItem.title}
                                           width={16}
                                           height={16}
-                                          className={cn(
-                                            "size-4",
-                                            subItem.title === "X / Twitter"
-                                              ? "dark:invert"
-                                              : ""
-                                          )}
+                                          className="size-4"
                                         />
-                                        <span
-                                          className={cn(
-                                            "truncate",
-                                            subItem.href === pathname
-                                              ? "text-primary"
-                                              : "text-gray-600 dark:text-white"
-                                          )}
-                                        >
-                                          {subItem.title}
+                                        <span>{subItem.title}</span>
+                                        <span className="ml-auto text-[10px] text-muted-foreground">
+                                          Soon
                                         </span>
-                                      </Link>
-                                    </SidebarMenuSubButton>
-                                  )}
-                                </SidebarMenuSubItem>
-                              ))}
-                            </SidebarMenuSub>
-                          </CollapsibleContent>
-                        </SidebarMenuItem>
-                      </Collapsible>
+                                      </SidebarMenuSubButton>
+                                    ) : (
+                                      <SidebarMenuSubButton
+                                        asChild
+                                        isActive={pathname === subItem.href}
+                                      >
+                                        <Link
+                                          href={subItem.href}
+                                          onClick={onNavigate}
+                                        >
+                                          <Image
+                                            src={subItem.iconSrc}
+                                            alt={subItem.title}
+                                            width={16}
+                                            height={16}
+                                            className={cn(
+                                              "size-4",
+                                              subItem.title === "X / Twitter"
+                                                ? "dark:invert"
+                                                : ""
+                                            )}
+                                          />
+                                          <span
+                                            className={cn(
+                                              "truncate",
+                                              subItem.href === pathname
+                                                ? "text-primary"
+                                                : "text-gray-600 dark:text-white"
+                                            )}
+                                          >
+                                            {subItem.title}
+                                          </span>
+                                        </Link>
+                                      </SidebarMenuSubButton>
+                                    )}
+                                  </SidebarMenuSubItem>
+                                ))}
+                              </SidebarMenuSub>
+                            </CollapsibleContent>
+                          </SidebarMenuItem>
+                        </Collapsible>
+                      );
+                    }
+                    // link
+                    return (
+                      <SidebarMenuItem key={item.title}>
+                        <SidebarMenuButton
+                          asChild
+                          isActive={isActive(item.href)}
+                          onClick={onNavigate}
+                        >
+                          <Link href={item.href}>
+                            {item.icon && <item.icon />}
+                            <span>{item.title}</span>
+                          </Link>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
                     );
-                  }
-                  // link
-                  return (
-                    <SidebarMenuItem key={item.title}>
-                      <SidebarMenuButton
-                        asChild
-                        isActive={isActive(item.href)}
-                        onClick={onNavigate}
-                      >
-                        <Link href={item.href}>
-                          {item.icon && <item.icon />}
-                          <span>{item.title}</span>
-                        </Link>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  );
-                })}
+                  })}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          </SidebarContent>
+        )}
+
+        {/* Bottom Navigation - Only show when not in chat mode */}
+        {!isChatPage && (
+          <SidebarGroup className="mt-auto">
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {bottomNavItems.map((item) => (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={isActive(item.href)}
+                      onClick={onNavigate}
+                    >
+                      <Link href={item.href}>
+                        <item.icon className="size-4" />
+                        <span>{item.title}</span>
+                        {item.title === "Notifications" && unreadCount > 0 && (
+                          <span className="flex h-4 min-w-4 rounded-full bg-red-500 items-center justify-center text-[10px] font-medium text-white ml-auto">
+                            {unreadCount > 99 ? "99+" : unreadCount}
+                          </span>
+                        )}
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
-        </SidebarContent>
-
-        {/* Bottom Navigation */}
-        <SidebarGroup className="mt-auto">
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {bottomNavItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={isActive(item.href)}
-                    onClick={onNavigate}
-                  >
-                    <Link href={item.href}>
-                      <item.icon className="size-4" />
-                      <span>{item.title}</span>
-                      {item.title === "Notifications" && unreadCount > 0 && (
-                        <span className="flex h-4 min-w-4 rounded-full bg-red-500 items-center justify-center text-[10px] font-medium text-white ml-auto">
-                          {unreadCount > 99 ? "99+" : unreadCount}
-                        </span>
-                      )}
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+        )}
       </SidebarContent>
 
       <SidebarFooter>
