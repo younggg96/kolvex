@@ -91,15 +91,15 @@ body {
   }
 
   .animate-fade-in-up {
-    animation: fade-in-up 0.6s ease-out;
+    animation: fade-in-up 0.6s ease-out forwards;
   }
 
   .animate-fade-in {
-    animation: fade-in 0.3s ease-out;
+    animation: fade-in 0.5s ease-out forwards;
   }
 
   .animate-slide-in {
-    animation: slide-in 0.4s ease-out;
+    animation: slide-in 0.4s ease-out forwards;
   }
 
   .animate-slide-up {
@@ -199,6 +199,10 @@ body {
   }
 }
 
+/* ========================================
+   CORE ANIMATIONS
+   ======================================== */
+
 @keyframes spin {
   from {
     transform: rotate(0deg);
@@ -229,6 +233,12 @@ body {
   }
 }
 
+@keyframes grow-x {
+  from {
+    width: 0;
+  }
+}
+
 .animate-dash {
   animation: dash 3s ease-out forwards;
 }
@@ -237,7 +247,103 @@ body {
   animation: grow 1s ease-out forwards;
 }
 
-/* Page Transition Animations */
+.animate-grow-x {
+  animation: grow-x 1s ease-out forwards;
+}
+
+/* ========================================
+   FLOATING & PARTICLE ANIMATIONS
+   ======================================== */
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    transform: translateY(-30px) scale(1.05);
+  }
+}
+
+@keyframes particle {
+  0% {
+    transform: translateY(0) translateX(0) scale(1);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-100vh) translateX(var(--drift, 20px)) scale(0.5);
+    opacity: 0;
+  }
+}
+
+@keyframes pulse-subtle {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+.animate-float {
+  animation: float 8s ease-in-out infinite;
+}
+
+.animate-particle {
+  animation: particle 15s linear infinite;
+}
+
+.animate-pulse-subtle {
+  animation: pulse-subtle 2s ease-in-out infinite;
+}
+
+/* ========================================
+   GRADIENT ANIMATIONS
+   ======================================== */
+
+@keyframes gradient-x {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+@keyframes gradient-xy {
+  0%, 100% {
+    background-position: 0% 0%;
+  }
+  25% {
+    background-position: 100% 0%;
+  }
+  50% {
+    background-position: 100% 100%;
+  }
+  75% {
+    background-position: 0% 100%;
+  }
+}
+
+.animate-gradient-x {
+  background-size: 200% 200%;
+  animation: gradient-x 4s ease infinite;
+}
+
+.animate-gradient-xy {
+  background-size: 400% 400%;
+  animation: gradient-xy 10s ease infinite;
+}
+
+/* ========================================
+   PAGE TRANSITION ANIMATIONS
+   ======================================== */
+
 @keyframes page-enter {
   from {
     opacity: 0;
@@ -302,7 +408,10 @@ body {
 .stagger-4 { animation-delay: 200ms; }
 .stagger-5 { animation-delay: 250ms; }
 
-/* Modal/Dialog animations */
+/* ========================================
+   MODAL/DIALOG ANIMATIONS
+   ======================================== */
+
 @keyframes modal-overlay-enter {
   from {
     opacity: 0;
@@ -359,7 +468,10 @@ body {
   animation: modal-content-exit 0.15s ease-in forwards;
 }
 
-/* Sidebar/Drawer animations */
+/* ========================================
+   SIDEBAR/DRAWER ANIMATIONS
+   ======================================== */
+
 @keyframes slide-in-left {
   from {
     opacity: 0;
@@ -399,4 +511,89 @@ body {
 
 .animate-slide-in-right {
   animation: slide-in-right 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+}
+
+/* ========================================
+   GLOW EFFECTS
+   ======================================== */
+
+.glow-primary {
+  box-shadow: 0 0 20px rgba(0, 200, 5, 0.3),
+              0 0 40px rgba(0, 200, 5, 0.2),
+              0 0 60px rgba(0, 200, 5, 0.1);
+}
+
+.glow-primary-lg {
+  box-shadow: 0 0 30px rgba(0, 200, 5, 0.4),
+              0 0 60px rgba(0, 200, 5, 0.3),
+              0 0 90px rgba(0, 200, 5, 0.2),
+              0 0 120px rgba(0, 200, 5, 0.1);
+}
+
+.text-glow-primary {
+  text-shadow: 0 0 20px rgba(0, 200, 5, 0.5),
+               0 0 40px rgba(0, 200, 5, 0.3);
+}
+
+/* ========================================
+   3D & PERSPECTIVE UTILITIES
+   ======================================== */
+
+.perspective-1000 {
+  perspective: 1000px;
+}
+
+.rotateX-3 {
+  transform: rotateX(3deg);
+}
+
+.rotateX-0 {
+  transform: rotateX(0deg);
+}
+
+/* ========================================
+   NOISE TEXTURE OVERLAY
+   ======================================== */
+
+.noise-overlay::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  opacity: 0.03;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+}
+
+/* ========================================
+   GLASSMORPHISM UTILITIES
+   ======================================== */
+
+.glass {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.glass-dark {
+  background: rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* ========================================
+   HOVER SCALE UTILITIES
+   ======================================== */
+
+.hover\:scale-102:hover {
+  transform: scale(1.02);
+}
+
+.hover\:scale-103:hover {
+  transform: scale(1.03);
+}
+
+.hover\:scale-105:hover {
+  transform: scale(1.05);
 }

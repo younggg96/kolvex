@@ -1,121 +1,399 @@
 "use client";
 
-import React from "react";
-import {
-  Users,
-  BarChart3,
-  Bell,
-  Zap,
-  Shield,
-  Cpu,
-  LineChart,
-  Target,
-} from "lucide-react";
+import React, { useRef, useEffect, useState, useCallback } from "react";
+import { Users, BarChart3, Bell, Shield, LineChart, Brain } from "lucide-react";
 
-const FEATURES = [
+interface Feature {
+  id: string;
+  title: string;
+  description: string;
+  icon: React.ElementType;
+  accentColor: string;
+  lightAccentBg: string;
+  stats?: { label: string; value: string }[];
+}
+
+const FEATURES: Feature[] = [
   {
+    id: "kol-tracking",
     title: "KOL Tracking",
     description:
-      "Monitor top financial influencers across Twitter, Reddit, and more. See what the smart money is talking about in real-time.",
+      "Monitor 2,500+ influential investors and analysts across Twitter, Reddit, StockTwits in real-time. Never miss a market-moving call.",
     icon: Users,
-    color: "bg-blue-500/10 text-blue-500",
+    accentColor: "#3B82F6",
+    lightAccentBg: "bg-blue-50 dark:bg-blue-500/10",
+    stats: [
+      { label: "KOLs Tracked", value: "2,500+" },
+      { label: "Platforms", value: "15+" },
+      { label: "Updates/Day", value: "50K+" },
+    ],
   },
   {
-    title: "AI Analysis",
+    id: "ai-analysis",
+    title: "AI-Powered Analysis",
     description:
-      "Our proprietary AI models analyze thousands of posts to extract sentiment, identifying bullish and bearish signals before they trend.",
-    icon: Cpu,
-    color: "bg-primary/10 text-primary",
+      "Our proprietary AI models analyze sentiment, extract key signals, and predict market movements with institutional-grade accuracy.",
+    icon: Brain,
+    accentColor: "#00C805",
+    lightAccentBg: "bg-emerald-50 dark:bg-primary/10",
+    stats: [
+      { label: "Accuracy", value: "94%" },
+      { label: "Models", value: "12+" },
+      { label: "Signals/Day", value: "10K+" },
+    ],
   },
   {
-    title: "Sentiment Scoring",
-    description:
-      "Real-time retail sentiment scores for thousands of stocks. Compare social buzz with price action for better decision making.",
-    icon: BarChart3,
-    color: "bg-purple-500/10 text-purple-500",
-  },
-  {
+    id: "alerts",
     title: "Instant Alerts",
     description:
-      "Get notified the moment a tracked KOL hits a mention or when sentiment hits critical levels. Never miss a move.",
+      "Get notified immediately when tracked KOLs mention a stock or when sentiment shifts. Stay ahead of every market move.",
     icon: Bell,
-    color: "bg-orange-500/10 text-orange-500",
+    accentColor: "#F59E0B",
+    lightAccentBg: "bg-amber-50 dark:bg-amber-500/10",
+    stats: [
+      { label: "Latency", value: "<1s" },
+      { label: "Channels", value: "5+" },
+      { label: "Custom Rules", value: "∞" },
+    ],
   },
   {
-    title: "Visual Portfolio",
+    id: "sentiment",
+    title: "Sentiment Scoring",
     description:
-      "Connect your brokerage via SnapTrade to see your actual positions overlaid with social intelligence and AI insights.",
-    icon: LineChart,
-    color: "bg-emerald-500/10 text-emerald-500",
+      "Real-time sentiment scores for 10,000+ stocks aggregated from social media, news, and analyst reports.",
+    icon: BarChart3,
+    accentColor: "#8B5CF6",
+    lightAccentBg: "bg-violet-50 dark:bg-violet-500/10",
+    stats: [
+      { label: "Stocks", value: "10K+" },
+      { label: "Sources", value: "100+" },
+      { label: "Refresh", value: "Real-time" },
+    ],
   },
   {
+    id: "portfolio",
+    title: "Portfolio Integration",
+    description:
+      "Connect your brokerage via SnapTrade to overlay social intelligence on your actual positions.",
+    icon: LineChart,
+    accentColor: "#10B981",
+    lightAccentBg: "bg-teal-50 dark:bg-teal-500/10",
+    stats: [
+      { label: "Brokers", value: "50+" },
+      { label: "Security", value: "Bank-grade" },
+      { label: "Sync", value: "Auto" },
+    ],
+  },
+  {
+    id: "filtering",
     title: "Smart Filtering",
     description:
-      "Filter out the noise. Our system automatically detects bots and spam, focusing only on high-signal content from verified sources.",
+      "AI-powered bot detection and spam filtering ensures you only see high-quality, signal-rich content.",
     icon: Shield,
-    color: "bg-red-500/10 text-red-500",
+    accentColor: "#EF4444",
+    lightAccentBg: "bg-red-50 dark:bg-red-500/10",
+    stats: [
+      { label: "Bot Detection", value: "99.9%" },
+      { label: "Spam Blocked", value: "10M+" },
+      { label: "False Positives", value: "<0.1%" },
+    ],
   },
 ];
 
-export default function LandingFeatures() {
+// Feature Card Component with animation
+function FeatureCard({
+  feature,
+  index,
+  isVisible,
+}: {
+  feature: Feature;
+  index: number;
+  isVisible: boolean;
+}) {
+  const [isAnimated, setIsAnimated] = useState(false);
+
+  useEffect(() => {
+    if (isVisible) {
+      // Stagger animation based on index
+      const timer = setTimeout(() => {
+        setIsAnimated(true);
+      }, index * 100);
+      return () => clearTimeout(timer);
+    }
+  }, [isVisible, index]);
+
   return (
-    <section id="features" className="py-24 relative overflow-hidden">
-      {/* Section Background Glow */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-4xl h-96 bg-primary/10 blur-[120px] pointer-events-none opacity-50" />
+    <div
+      className={`group relative rounded-3xl transition-all duration-700 hover:-translate-y-1 ${
+        isAnimated ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
+      }`}
+      style={{
+        transitionDelay: `${index * 50}ms`,
+      }}
+    >
+      {/* Card Background - Light & Dark modes */}
+      <div className="absolute inset-0 rounded-3xl bg-white dark:bg-white/[0.03] border border-gray-200 dark:border-white/10 group-hover:border-gray-300 dark:group-hover:border-white/20 shadow-sm dark:shadow-none group-hover:shadow-lg dark:group-hover:shadow-none transition-all duration-500" />
+
+      {/* Accent Glow - Only visible on hover */}
+      <div
+        className="absolute -inset-0.5 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-xl"
+        style={{
+          background: `radial-gradient(circle at 50% 50%, ${feature.accentColor}15, transparent 70%)`,
+        }}
+      />
+
+      {/* Corner Accent */}
+      <div
+        className="absolute top-0 right-0 w-32 h-32 rounded-full blur-3xl opacity-0 group-hover:opacity-20 transition-opacity duration-500"
+        style={{ background: feature.accentColor }}
+      />
+
+      {/* Content */}
+      <div className="relative h-full p-6 lg:p-8 flex flex-col">
+        {/* Header */}
+        <div className="flex items-start justify-between mb-5">
+          {/* Icon with pulse animation on load */}
+          <div
+            className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-500 group-hover:scale-110 ${
+              feature.lightAccentBg
+            } ${isAnimated ? "scale-100" : "scale-75"}`}
+            style={{
+              transitionDelay: `${index * 50 + 200}ms`,
+            }}
+          >
+            <feature.icon
+              className={`w-7 h-7 transition-all duration-500 ${
+                isAnimated ? "opacity-100" : "opacity-0"
+              }`}
+              style={{
+                color: feature.accentColor,
+                transitionDelay: `${index * 50 + 300}ms`,
+              }}
+            />
+          </div>
+
+          {/* Feature number with fade */}
+          <span
+            className={`text-4xl font-black text-gray-100 dark:text-white/[0.05] transition-all duration-500 group-hover:text-gray-200 dark:group-hover:text-white/[0.08] ${
+              isAnimated ? "opacity-100" : "opacity-0"
+            }`}
+            style={{ transitionDelay: `${index * 50 + 100}ms` }}
+          >
+            0{index + 1}
+          </span>
+        </div>
+
+        {/* Title with slide-up */}
+        <h3
+          className={`text-xl lg:text-2xl font-bold text-gray-900 dark:text-white mb-3 transition-all duration-500 ${
+            isAnimated ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
+          }`}
+          style={{ transitionDelay: `${index * 50 + 150}ms` }}
+        >
+          {feature.title}
+        </h3>
+
+        {/* Description with slide-up */}
+        <p
+          className={`text-gray-600 dark:text-white/60 text-sm lg:text-base leading-relaxed mb-6 flex-grow transition-all duration-500 ${
+            isAnimated ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
+          }`}
+          style={{ transitionDelay: `${index * 50 + 200}ms` }}
+        >
+          {feature.description}
+        </p>
+
+        {/* Stats Row with staggered animation */}
+        {feature.stats && (
+          <div className="grid grid-cols-3 gap-2 mt-auto">
+            {feature.stats.map((stat, i) => (
+              <div
+                key={i}
+                className={`text-center p-3 rounded-xl bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/5 group-hover:border-gray-200 dark:group-hover:border-white/10 transition-all duration-500 ${
+                  isAnimated
+                    ? "opacity-100 translate-y-0 scale-100"
+                    : "opacity-0 translate-y-4 scale-95"
+                }`}
+                style={{ transitionDelay: `${index * 50 + 250 + i * 50}ms` }}
+              >
+                <div
+                  className="text-base font-bold mb-0.5"
+                  style={{ color: feature.accentColor }}
+                >
+                  {stat.value}
+                </div>
+                <div className="text-gray-500 dark:text-white/40 text-[10px] lg:text-xs tracking-wider">
+                  {stat.label}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+export default function LandingFeatures() {
+  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+  const [isVisible, setIsVisible] = useState(false);
+  const [headerVisible, setHeaderVisible] = useState(false);
+  const sectionRef = useRef<HTMLElement>(null);
+  const headerRef = useRef<HTMLDivElement>(null);
+
+  // Intersection Observer for scroll-triggered animations
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            if (entry.target === headerRef.current) {
+              setHeaderVisible(true);
+            } else if (entry.target === sectionRef.current) {
+              setIsVisible(true);
+            }
+          }
+        });
+      },
+      {
+        threshold: 0.1,
+        rootMargin: "0px 0px -50px 0px",
+      }
+    );
+
+    if (sectionRef.current) observer.observe(sectionRef.current);
+    if (headerRef.current) observer.observe(headerRef.current);
+
+    return () => observer.disconnect();
+  }, []);
+
+  // Mouse tracking for spotlight effect
+  const handleMouseMove = useCallback((e: MouseEvent) => {
+    if (sectionRef.current) {
+      const rect = sectionRef.current.getBoundingClientRect();
+      setMousePos({
+        x: e.clientX - rect.left,
+        y: e.clientY - rect.top,
+      });
+    }
+  }, []);
+
+  useEffect(() => {
+    const section = sectionRef.current;
+    if (section) {
+      section.addEventListener("mousemove", handleMouseMove);
+      return () => section.removeEventListener("mousemove", handleMouseMove);
+    }
+  }, [handleMouseMove]);
+
+  return (
+    <section
+      ref={sectionRef}
+      id="features"
+      className="py-24 lg:py-32 relative overflow-hidden"
+    >
+      {/* Background - Light mode gradient */}
+      <div className="absolute inset-0 bg-gradient-to-b from-gray-50/50 via-transparent to-gray-50/50 dark:from-transparent dark:via-primary/[0.02] dark:to-transparent" />
+
+      {/* Spotlight Effect - Only on dark mode */}
+      <div
+        className="absolute w-[600px] h-[600px] rounded-full pointer-events-none transition-all duration-300 ease-out opacity-0 dark:opacity-30"
+        style={{
+          background:
+            "radial-gradient(circle, rgba(0, 200, 5, 0.15) 0%, transparent 70%)",
+          left: mousePos.x - 300,
+          top: mousePos.y - 300,
+        }}
+      />
+
+      {/* Grid Pattern */}
+      <div
+        className="absolute inset-0 opacity-[0.015] dark:opacity-[0.02]"
+        style={{
+          backgroundImage: `linear-gradient(rgba(0,0,0,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,0.1) 1px, transparent 1px)`,
+          backgroundSize: "60px 60px",
+        }}
+      />
 
       <div className="container px-4 mx-auto relative z-10">
-        <div className="text-center max-w-3xl mx-auto mb-20 animate-fade-in-up">
-          <h2 className="text-3xl md:text-5xl font-black mb-6 text-foreground tracking-tight">
-            Everything you need to{" "}
-            <span className="text-primary relative inline-block">
-              master the markets
-              <span className="absolute -bottom-2 left-0 w-full h-1 bg-primary/30 rounded-full blur-[2px]" />
+        {/* Section Header with animation */}
+        <div
+          ref={headerRef}
+          className="text-center max-w-4xl mx-auto mb-16 lg:mb-20"
+        >
+          {/* Headline */}
+          <h2
+            className={`text-2xl md:text-4xl font-black text-gray-900 dark:text-white mb-6 tracking-tight leading-[1.15] transition-all duration-700 ${
+              headerVisible
+                ? "opacity-100 translate-y-0"
+                : "opacity-0 translate-y-8"
+            }`}
+          >
+            Your unfair advantage in
+            <br />
+            <span className="relative inline-block mt-1">
+              <span className="text-primary">modern markets</span>
+              {/* Underline decoration with draw animation */}
+              <svg
+                className={`absolute -bottom-1 left-0 w-full h-2 transition-opacity duration-500 ${
+                  headerVisible ? "opacity-100" : "opacity-0"
+                }`}
+                viewBox="0 0 300 8"
+                fill="none"
+                preserveAspectRatio="none"
+              >
+                <path
+                  d="M2 5C50 2 100 2 150 4C200 6 250 3 298 5"
+                  stroke="url(#underline-gradient)"
+                  strokeWidth="3"
+                  strokeLinecap="round"
+                  className={headerVisible ? "animate-draw-line" : ""}
+                  style={{
+                    strokeDasharray: 300,
+                    strokeDashoffset: headerVisible ? 0 : 300,
+                    transition: "stroke-dashoffset 1s ease-out 0.3s",
+                  }}
+                />
+                <defs>
+                  <linearGradient
+                    id="underline-gradient"
+                    x1="0%"
+                    y1="0%"
+                    x2="100%"
+                    y2="0%"
+                  >
+                    <stop offset="0%" stopColor="#00C805" stopOpacity="0.2" />
+                    <stop offset="50%" stopColor="#00C805" stopOpacity="0.6" />
+                    <stop offset="100%" stopColor="#00C805" stopOpacity="0.2" />
+                  </linearGradient>
+                </defs>
+              </svg>
             </span>
           </h2>
-          <p className="text-lg text-foreground/70 leading-relaxed">
-            Kolvex provides a comprehensive suite of tools designed for the
-            modern investor who wants to stay ahead of the social media curve.
+
+          {/* Description */}
+          <p
+            className={`text-base lg:text-lg text-gray-600 dark:text-white/50 leading-relaxed max-w-2xl mx-auto transition-all duration-700 delay-200 ${
+              headerVisible
+                ? "opacity-100 translate-y-0"
+                : "opacity-0 translate-y-8"
+            }`}
+          >
+            Kolvex combines cutting-edge AI with comprehensive social data to
+            deliver insights previously available only to institutional
+            investors.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {FEATURES.map((feature, idx) => (
-            <div
-              key={idx}
-              className="group p-8 rounded-2xl bg-white dark:bg-transparent border border-border-light dark:border-primary/20 hover:border-primary/40 transition-all duration-500 hover:-translate-y-2 relative overflow-hidden animate-fade-in-up"
-              style={{ animationDelay: `${idx * 100}ms` }}
-            >
-              {/* Corner Accents - Financial Terminal Style */}
-              <div className="absolute top-0 left-0 w-2 h-2 border-t border-l border-primary/40 opacity-0 group-hover:opacity-100 transition-opacity" />
-              <div className="absolute top-0 right-0 w-2 h-2 border-t border-r border-primary/40 opacity-0 group-hover:opacity-100 transition-opacity" />
-              <div className="absolute bottom-0 left-0 w-2 h-2 border-b border-l border-primary/40 opacity-0 group-hover:opacity-100 transition-opacity" />
-              <div className="absolute bottom-0 right-0 w-2 h-2 border-b border-r border-primary/40 opacity-0 group-hover:opacity-100 transition-opacity" />
-
-              {/* Data Signal Background */}
-              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-primary/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out" />
-
-              {/* Feature Number */}
-              <div className="absolute top-4 right-6 font-mono text-[10px] text-primary/40 group-hover:text-primary transition-colors">
-                0{idx + 1}
-              </div>
-
-              <div
-                className={`w-12 h-12 rounded-xl flex items-center justify-center mb-6 transition-all duration-500 ${feature.color} group-hover:shadow-[0_0_20px_rgba(0,200,5,0.2)]`}
-              >
-                <feature.icon size={24} className="group-hover:animate-pulse" />
-              </div>
-
-              <h3 className="text-xl font-bold mb-4 text-foreground tracking-tight flex items-center gap-2 group-hover:text-primary transition-colors">
-                {feature.title}
-                <div className="w-1 h-1 rounded-full bg-primary opacity-0 group-hover:opacity-100 animate-pulse" />
-              </h3>
-              <p className="text-sm text-foreground/60 leading-relaxed transition-colors group-hover:text-foreground/80">
-                {feature.description}
-              </p>
-
-              {/* Tactical Underline */}
-              <div className="mt-6 w-full h-px bg-gradient-to-r from-primary/20 via-primary/5 to-transparent origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-500" />
-            </div>
+        {/* Features Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6">
+          {FEATURES.map((feature, index) => (
+            <FeatureCard
+              key={feature.id}
+              feature={feature}
+              index={index}
+              isVisible={isVisible}
+            />
           ))}
         </div>
       </div>

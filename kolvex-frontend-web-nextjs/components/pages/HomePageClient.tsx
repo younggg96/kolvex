@@ -4,7 +4,10 @@ import React, { useEffect } from "react";
 import BaseLayout from "@/components/layout/BaseLayout";
 import LandingHero from "@/components/landing/LandingHero";
 import LandingStockTicker from "@/components/landing/LandingStockTicker";
+import LandingStats from "@/components/landing/LandingStats";
 import LandingFeatures from "@/components/landing/LandingFeatures";
+import LandingHowItWorks from "@/components/landing/LandingHowItWorks";
+import LandingTestimonials from "@/components/landing/LandingTestimonials";
 import LandingCTA from "@/components/landing/LandingCTA";
 
 export default function HomePageClient() {
@@ -33,9 +36,25 @@ export default function HomePageClient() {
   return (
     <BaseLayout>
       <div className="flex flex-col w-full">
+        {/* Hero Section - Main attention grabber */}
         <LandingHero />
+
+        {/* Stock Ticker - Social proof & real-time data */}
         <LandingStockTicker />
+
+        {/* Stats Section - Build credibility */}
+        <LandingStats />
+
+        {/* Features Section - Showcase capabilities */}
         <LandingFeatures />
+
+        {/* How It Works - Reduce friction */}
+        <LandingHowItWorks />
+
+        {/* Testimonials - Social proof */}
+        <LandingTestimonials />
+
+        {/* CTA Section - Convert visitors */}
         <LandingCTA />
       </div>
     </BaseLayout>

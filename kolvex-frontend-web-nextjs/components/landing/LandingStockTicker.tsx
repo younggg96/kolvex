@@ -3,6 +3,7 @@
 import React from "react";
 import { TrendingUp, TrendingDown } from "lucide-react";
 import { useMultipleQuotes } from "@/hooks/useStockData";
+import CompanyLogo from "@/components/ui/company-logo";
 
 // Default symbols to display in the ticker
 const TICKER_SYMBOLS = [
@@ -17,6 +18,20 @@ const TICKER_SYMBOLS = [
   "AMD",
   "COIN",
 ];
+
+// Company names mapping for alt text
+const COMPANY_NAMES: Record<string, string> = {
+  TSLA: "Tesla",
+  NVDA: "NVIDIA",
+  AAPL: "Apple",
+  MSFT: "Microsoft",
+  AMZN: "Amazon",
+  GOOGL: "Alphabet",
+  META: "Meta",
+  NFLX: "Netflix",
+  AMD: "AMD",
+  COIN: "Coinbase",
+};
 
 // Fallback static data (shown while loading or on error)
 const FALLBACK_DATA = [
@@ -36,11 +51,10 @@ const FALLBACK_DATA = [
 const REFRESH_INTERVAL = 5 * 60 * 1000;
 
 export default function LandingStockTicker() {
-  const {
-    data: quotes,
-    loading,
-    error,
-  } = useMultipleQuotes(TICKER_SYMBOLS, REFRESH_INTERVAL);
+  const { data: quotes, error } = useMultipleQuotes(
+    TICKER_SYMBOLS,
+    REFRESH_INTERVAL
+  );
 
   // Use real data if available, otherwise fallback
   const stockData =
@@ -68,48 +82,78 @@ export default function LandingStockTicker() {
   };
 
   return (
-    <div className="w-full bg-white dark:bg-card-dark border-y border-gray-100 dark:border-white/5 py-4 overflow-hidden relative group">
+    <div className="w-full relative overflow-hidden py-6">
+      {/* Background gradient */}
+      <div className="absolute inset-0 bg-gradient-to-r from-gray-100/80 via-white to-gray-100/80 dark:from-gray-900/50 dark:via-gray-900/30 dark:to-gray-900/50 backdrop-blur-sm" />
+
+      {/* Decorative top border */}
+      <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
+
       {/* Live indicator */}
       {quotes.length > 0 && !error && (
-        <div className="absolute top-1/2 -translate-y-1/2 left-4 z-20 hidden md:flex items-center gap-1.5 px-2 py-1 rounded-full bg-primary/10 text-primary text-[10px] font-bold">
-          <span className="relative flex h-1.5 w-1.5">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-primary"></span>
+        <div className="absolute top-1/2 -translate-y-1/2 left-6 z-20 hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/60 border border-primary/20 backdrop-blur-sm">
+          <span className="relative flex h-2 w-2">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
           </span>
-          LIVE
+          <span className="text-xs font-bold text-white">LIVE</span>
         </div>
       )}
 
-      <div className="flex animate-ticker hover:[animation-play-state:paused] whitespace-nowrap">
-        {displayStocks.map((stock, idx) => {
-          const isUp = stock.changePercent >= 0;
-          return (
-            <div
-              key={idx}
-              className="inline-flex items-center gap-2 px-8 border-r border-gray-100 dark:border-white/5 last:border-0"
-            >
-              <span className="font-bold text-gray-900 dark:text-white">
-                {stock.symbol}
-              </span>
-              <span className="text-gray-600 dark:text-white/60 font-medium">
-                ${formatPrice(stock.price)}
-              </span>
-              <span
-                className={`flex items-center gap-0.5 text-xs font-bold ${
-                  isUp ? "text-primary" : "text-red-500"
-                }`}
+      {/* Ticker content */}
+      <div className="relative">
+        <div className="flex animate-ticker hover:[animation-play-state:paused] whitespace-nowrap">
+          {displayStocks.map((stock, idx) => {
+            const isUp = stock.changePercent >= 0;
+            return (
+              <div
+                key={idx}
+                className="group inline-flex items-center gap-3 px-5 py-2.5 mx-2 rounded-2xl bg-white/70 dark:bg-white/[0.03] border border-gray-200/50 dark:border-white/5 hover:border-primary/30 hover:bg-white dark:hover:bg-white/[0.06] transition-all duration-300 cursor-pointer shadow-sm hover:shadow-md dark:shadow-none"
               >
-                {isUp ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
-                {formatChange(stock.changePercent)}
-              </span>
-            </div>
-          );
-        })}
+                {/* Company Logo */}
+                <CompanyLogo
+                  symbol={stock.symbol}
+                  name={COMPANY_NAMES[stock.symbol]}
+                  size="sm"
+                  shape="rounded"
+                  border="light"
+                  borderColor="gray"
+                  className="group-hover:scale-105 transition-transform duration-300"
+                />
+
+                {/* Stock symbol */}
+                <span className="font-bold text-gray-900 dark:text-white group-hover:text-primary transition-colors">
+                  {stock.symbol}
+                </span>
+
+                {/* Price */}
+                <span className="text-gray-600 dark:text-white/60 font-medium tabular-nums">
+                  ${formatPrice(stock.price)}
+                </span>
+
+                {/* Change indicator */}
+                <div
+                  className={`flex items-center gap-1 px-2 py-0.5 rounded-lg text-xs font-bold ${
+                    isUp
+                      ? "bg-primary/10 text-primary"
+                      : "bg-red-500/10 text-red-500"
+                  }`}
+                >
+                  {isUp ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
+                  <span>{formatChange(stock.changePercent)}</span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
       </div>
 
       {/* Gradient overlays for smooth fade effect */}
-      <div className="absolute inset-y-0 left-0 w-24 bg-gradient-to-r from-white dark:from-card-dark to-transparent z-10 pointer-events-none" />
-      <div className="absolute inset-y-0 right-0 w-24 bg-gradient-to-l from-white dark:from-card-dark to-transparent z-10 pointer-events-none" />
+      <div className="absolute inset-y-0 left-0 w-32 bg-gradient-to-r from-white dark:from-gray-950 to-transparent z-10 pointer-events-none" />
+      <div className="absolute inset-y-0 right-0 w-32 bg-gradient-to-l from-white dark:from-gray-950 to-transparent z-10 pointer-events-none" />
+
+      {/* Decorative bottom border */}
+      <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
     </div>
   );
 }

@@ -1,166 +1,257 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Sparkles } from "lucide-react";
+import { ArrowRight, Zap, Shield, Clock } from "lucide-react";
 
 export default function LandingCTA() {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const sectionRef = useRef<HTMLElement>(null);
+  const [isVisible, setIsVisible] = useState(false);
+
+  // Intersection observer
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true);
+        }
+      },
+      { threshold: 0.2 }
+    );
+
+    if (sectionRef.current) observer.observe(sectionRef.current);
+
+    return () => observer.disconnect();
+  }, []);
+
+  // Animated background effect
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    let animationId: number;
+    let particles: Array<{
+      x: number;
+      y: number;
+      vx: number;
+      vy: number;
+      size: number;
+      opacity: number;
+    }> = [];
+
+    const resize = () => {
+      canvas.width = canvas.offsetWidth * 2;
+      canvas.height = canvas.offsetHeight * 2;
+      ctx.scale(2, 2);
+    };
+
+    const createParticle = () => ({
+      x: Math.random() * canvas.offsetWidth,
+      y: canvas.offsetHeight + 10,
+      vx: (Math.random() - 0.5) * 0.5,
+      vy: -Math.random() * 1 - 0.5,
+      size: Math.random() * 3 + 1,
+      opacity: Math.random() * 0.5 + 0.2,
+    });
+
+    const animate = () => {
+      ctx.clearRect(0, 0, canvas.offsetWidth, canvas.offsetHeight);
+
+      // Add new particles
+      if (particles.length < 50 && Math.random() > 0.95) {
+        particles.push(createParticle());
+      }
+
+      // Update and draw particles
+      particles = particles.filter((p) => {
+        p.x += p.vx;
+        p.y += p.vy;
+        p.opacity *= 0.995;
+
+        if (p.y < 0 || p.opacity < 0.01) return false;
+
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(0, 200, 5, ${p.opacity})`;
+        ctx.fill();
+
+        return true;
+      });
+
+      animationId = requestAnimationFrame(animate);
+    };
+
+    resize();
+    window.addEventListener("resize", resize);
+    animate();
+
+    return () => {
+      window.removeEventListener("resize", resize);
+      cancelAnimationFrame(animationId);
+    };
+  }, []);
+
   return (
-    <section className="py-24 relative overflow-hidden">
+    <section ref={sectionRef} className="py-32 relative overflow-hidden">
       <div className="container px-4 mx-auto relative z-10">
-        <div className="max-w-5xl mx-auto relative">
-          {/* Floating decorative elements - Enhanced animations */}
-          <div className="absolute -top-12 -left-12 w-28 h-28 border-2 border-primary/30 rounded-2xl animate-float-rotate hidden lg:block" />
-          <div className="absolute -bottom-16 -right-16 w-36 h-36 border-2 border-primary/40 rounded-full animate-float-scale hidden lg:block" />
-          <div className="absolute top-1/3 -left-20 w-20 h-20 bg-primary/15 rounded-xl animate-float-drift hidden lg:block" />
-          <div className="absolute top-1/4 -right-14 w-16 h-16 border border-primary/20 rounded-lg animate-float-spin hidden lg:block" />
-          <div className="absolute bottom-1/4 -left-10 w-12 h-12 bg-primary/10 rounded-full animate-pulse-scale hidden lg:block" />
+        <div className="max-w-5xl mx-auto">
+          {/* Main CTA Card */}
+          <div
+            className={`relative rounded-[3rem] overflow-hidden transition-all duration-1000 ${
+              isVisible
+                ? "opacity-100 translate-y-0 scale-100"
+                : "opacity-0 translate-y-12 scale-95"
+            }`}
+          >
+            {/* Gradient background */}
+            <div className="absolute inset-0 bg-grid bg-background-light dark:bg-background-dark" />
 
-          {/* Main CTA Card - Transparent with Green Accents */}
-          <div className="p-10 md:p-16 rounded-[2.5rem] bg-card-light/50 dark:bg-card-dark/30 backdrop-blur-md text-center relative overflow-hidden shadow-2xl border border-primary/30 animate-fade-in-up">
-            {/* Green accent glow */}
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-40 bg-primary/30 blur-[100px] -translate-y-1/2" />
-            <div className="absolute bottom-0 right-0 w-96 h-96 bg-primary/15 blur-[120px] translate-y-1/2 translate-x-1/4" />
-            <div className="absolute top-1/2 left-0 w-64 h-64 bg-primary/10 blur-[80px] -translate-x-1/2" />
-
-            {/* Inner decorative patterns */}
-            <div className="absolute inset-0 bg-grid opacity-80" />
-
-            <div className="relative z-10">
-              {/* Badge */}
-              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/20 border border-primary/40 text-primary text-xs font-bold mb-8 animate-bounce-subtle">
-                <Sparkles size={14} />
-                JOIN 5,000+ SMART INVESTORS
-              </div>
-
-              {/* Headline with staggered animation */}
-              <h2 className="text-4xl md:text-5xl lg:text-6xl font-black mb-6 leading-tight">
-                <span className="block animate-slide-up text-foreground">
-                  Ready to invest
-                </span>
-                <span className="block animate-slide-up [animation-delay:100ms] text-primary">
-                  with intelligence?
-                </span>
+            {/* Content */}
+            <div className="relative z-10 px-8 py-20 md:px-16 md:py-24 text-center">
+              {/* Headline */}
+              <h2
+                className={`text-2xl md:text-4xl font-black text-gray-900 dark:text-white mb-6 tracking-tight leading-[1.1] transition-all duration-700 ${
+                  isVisible
+                    ? "opacity-100 translate-y-0"
+                    : "opacity-0 translate-y-8"
+                }`}
+                style={{ transitionDelay: "200ms" }}
+              >
+                Ready to invest with
+                <br />
+                <span className="text-primary">AI-powered intelligence?</span>
               </h2>
 
-              <p className="text-lg md:text-xl text-foreground/70 mb-10 max-w-2xl mx-auto leading-relaxed animate-fade-in [animation-delay:300ms]">
-                Stop guessing. Start knowing. Get AI-powered insights, track
-                influential voices, and make data-driven investment decisions.
+              {/* Description */}
+              <p
+                className={`text-base text-gray-600 dark:text-white/70 mb-12 max-w-2xl mx-auto leading-relaxed transition-all duration-700 ${
+                  isVisible
+                    ? "opacity-100 translate-y-0"
+                    : "opacity-0 translate-y-8"
+                }`}
+                style={{ transitionDelay: "300ms" }}
+              >
+                Join thousands of investors who are already using social
+                intelligence to make better trading decisions. Start free, no
+                credit card required.
               </p>
 
-              {/* CTA Button */}
-              <div className="flex justify-center items-center animate-fade-in [animation-delay:500ms]">
-                <Link href="/auth" className="w-full sm:w-auto">
+              {/* CTA Buttons */}
+              <div
+                className={`flex flex-col sm:flex-row gap-4 justify-center items-center mb-12 transition-all duration-700 ${
+                  isVisible
+                    ? "opacity-100 translate-y-0"
+                    : "opacity-0 translate-y-8"
+                }`}
+                style={{ transitionDelay: "400ms" }}
+              >
+                <Link href="/auth">
                   <Button
-                    size="lg"
-                    className="w-full sm:w-auto h-16 px-12 text-lg font-bold bg-primary hover:bg-primary/90 text-white rounded-2xl shadow-xl shadow-primary/30 group transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl hover:shadow-primary/40"
+                    size="md"
+                    className="px-12 font-bold bg-primary hover:bg-primary/90 text-white rounded-2xl shadow-2xl shadow-primary/30 group transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_20px_60px_-15px_rgba(0,200,5,0.5)]"
                   >
-                    Create Your Free Account
-                    <ArrowRight className="ml-2 group-hover:translate-x-1 transition-transform" />
+                    Get Started Free
+                    <ArrowRight
+                      size={20}
+                      className="ml-2 group-hover:translate-x-1 transition-transform"
+                    />
+                  </Button>
+                </Link>
+                <Link href="/contact">
+                  <Button
+                    variant="outline"
+                    size="md"
+                    className="text-gray-600 dark:text-white"
+                  >
+                    Contact Us
                   </Button>
                 </Link>
               </div>
 
-              <p className="mt-6 text-sm text-foreground/40 animate-fade-in [animation-delay:600ms]">
-                No credit card required • Setup in 30 seconds
-              </p>
+              {/* Trust indicators */}
+              <div
+                className={`flex flex-wrap justify-center gap-6 text-gray-600 dark:text-white/50 text-sm transition-all duration-700 ${
+                  isVisible
+                    ? "opacity-100 translate-y-0"
+                    : "opacity-0 translate-y-8"
+                }`}
+                style={{ transitionDelay: "500ms" }}
+              >
+                <div
+                  className={`flex items-center gap-2 transition-all duration-500 ${
+                    isVisible
+                      ? "opacity-100 translate-x-0"
+                      : "opacity-0 -translate-x-4"
+                  }`}
+                  style={{ transitionDelay: "600ms" }}
+                >
+                  <Shield size={16} className="text-primary" />
+                  <span>Bank-level security</span>
+                </div>
+                <div
+                  className={`flex items-center gap-2 transition-all duration-500 ${
+                    isVisible
+                      ? "opacity-100 translate-y-0"
+                      : "opacity-0 translate-y-4"
+                  }`}
+                  style={{ transitionDelay: "700ms" }}
+                >
+                  <Clock size={16} className="text-primary" />
+                  <span>Setup in 30 seconds</span>
+                </div>
+                <div
+                  className={`flex items-center gap-2 transition-all duration-500 ${
+                    isVisible
+                      ? "opacity-100 translate-x-0"
+                      : "opacity-0 translate-x-4"
+                  }`}
+                  style={{ transitionDelay: "800ms" }}
+                >
+                  <Zap size={16} className="text-primary" />
+                  <span>Cancel anytime</span>
+                </div>
+              </div>
             </div>
+
+            {/* Decorative corners with animation */}
+            <div
+              className={`absolute top-6 left-6 w-16 h-16 border-l-2 border-t-2 border-primary/30 rounded-tl-3xl transition-all duration-700 ${
+                isVisible ? "opacity-100 scale-100" : "opacity-0 scale-0"
+              }`}
+              style={{ transitionDelay: "400ms", transformOrigin: "top left" }}
+            />
+            <div
+              className={`absolute top-6 right-6 w-16 h-16 border-r-2 border-t-2 border-primary/30 rounded-tr-3xl transition-all duration-700 ${
+                isVisible ? "opacity-100 scale-100" : "opacity-0 scale-0"
+              }`}
+              style={{ transitionDelay: "500ms", transformOrigin: "top right" }}
+            />
+            <div
+              className={`absolute bottom-6 left-6 w-16 h-16 border-l-2 border-b-2 border-primary/30 rounded-bl-3xl transition-all duration-700 ${
+                isVisible ? "opacity-100 scale-100" : "opacity-0 scale-0"
+              }`}
+              style={{
+                transitionDelay: "600ms",
+                transformOrigin: "bottom left",
+              }}
+            />
+            <div
+              className={`absolute bottom-6 right-6 w-16 h-16 border-r-2 border-b-2 border-primary/30 rounded-br-3xl transition-all duration-700 ${
+                isVisible ? "opacity-100 scale-100" : "opacity-0 scale-0"
+              }`}
+              style={{
+                transitionDelay: "700ms",
+                transformOrigin: "bottom right",
+              }}
+            />
           </div>
         </div>
       </div>
-
-      <style jsx>{`
-        @keyframes float-rotate {
-          0%,
-          100% {
-            transform: translateY(0) rotate(12deg) scale(1);
-          }
-          25% {
-            transform: translateY(-25px) rotate(18deg) scale(1.05);
-          }
-          50% {
-            transform: translateY(-40px) rotate(12deg) scale(1);
-          }
-          75% {
-            transform: translateY(-20px) rotate(6deg) scale(0.95);
-          }
-        }
-        @keyframes float-scale {
-          0%,
-          100% {
-            transform: translateY(0) scale(1);
-          }
-          33% {
-            transform: translateY(-35px) scale(1.1);
-          }
-          66% {
-            transform: translateY(-50px) scale(0.9);
-          }
-        }
-        @keyframes float-drift {
-          0%,
-          100% {
-            transform: translate(0, 0) rotate(-6deg);
-          }
-          25% {
-            transform: translate(15px, -30px) rotate(0deg);
-          }
-          50% {
-            transform: translate(0, -45px) rotate(6deg);
-          }
-          75% {
-            transform: translate(-10px, -20px) rotate(-3deg);
-          }
-        }
-        @keyframes float-spin {
-          0%,
-          100% {
-            transform: translateY(0) rotate(0deg);
-          }
-          50% {
-            transform: translateY(-30px) rotate(180deg);
-          }
-        }
-        @keyframes pulse-scale {
-          0%,
-          100% {
-            transform: scale(1);
-            opacity: 0.5;
-          }
-          50% {
-            transform: scale(1.3);
-            opacity: 1;
-          }
-        }
-        @keyframes bounce-subtle {
-          0%,
-          100% {
-            transform: translateY(0);
-          }
-          50% {
-            transform: translateY(-5px);
-          }
-        }
-        .animate-float-rotate {
-          animation: float-rotate 6s ease-in-out infinite;
-        }
-        .animate-float-scale {
-          animation: float-scale 7s ease-in-out infinite;
-        }
-        .animate-float-drift {
-          animation: float-drift 8s ease-in-out infinite;
-        }
-        .animate-float-spin {
-          animation: float-spin 10s ease-in-out infinite;
-        }
-        .animate-pulse-scale {
-          animation: pulse-scale 3s ease-in-out infinite;
-        }
-        .animate-bounce-subtle {
-          animation: bounce-subtle 2s ease-in-out infinite;
-        }
-      `}</style>
     </section>
   );
 }
