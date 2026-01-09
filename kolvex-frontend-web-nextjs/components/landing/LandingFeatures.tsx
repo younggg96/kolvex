@@ -149,12 +149,12 @@ function FeatureCard({
       />
 
       {/* Content */}
-      <div className="relative h-full p-6 lg:p-8 flex flex-col">
+      <div className="relative h-full p-4 md:p-6 lg:p-8 flex flex-col">
         {/* Header */}
-        <div className="flex items-start justify-between mb-5">
+        <div className="flex items-start justify-between mb-3 md:mb-5">
           {/* Icon with pulse animation on load */}
           <div
-            className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-500 group-hover:scale-110 ${
+            className={`w-10 h-10 md:w-14 md:h-14 rounded-xl md:rounded-2xl flex items-center justify-center transition-all duration-500 group-hover:scale-110 ${
               feature.lightAccentBg
             } ${isAnimated ? "scale-100" : "scale-75"}`}
             style={{
@@ -162,7 +162,7 @@ function FeatureCard({
             }}
           >
             <feature.icon
-              className={`w-7 h-7 transition-all duration-500 ${
+              className={`w-5 h-5 md:w-7 md:h-7 transition-all duration-500 ${
                 isAnimated ? "opacity-100" : "opacity-0"
               }`}
               style={{
@@ -174,7 +174,7 @@ function FeatureCard({
 
           {/* Feature number with fade */}
           <span
-            className={`text-4xl font-black text-gray-100 dark:text-white/[0.05] transition-all duration-500 group-hover:text-gray-200 dark:group-hover:text-white/[0.08] ${
+            className={`text-2xl md:text-4xl font-black text-gray-100 dark:text-white/[0.05] transition-all duration-500 group-hover:text-gray-200 dark:group-hover:text-white/[0.08] ${
               isAnimated ? "opacity-100" : "opacity-0"
             }`}
             style={{ transitionDelay: `${index * 50 + 100}ms` }}
@@ -185,7 +185,7 @@ function FeatureCard({
 
         {/* Title with slide-up */}
         <h3
-          className={`text-xl lg:text-2xl font-bold text-gray-900 dark:text-white mb-3 transition-all duration-500 ${
+          className={`text-lg md:text-xl lg:text-2xl font-bold text-gray-900 dark:text-white mb-2 md:mb-3 transition-all duration-500 ${
             isAnimated ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
           }`}
           style={{ transitionDelay: `${index * 50 + 150}ms` }}
@@ -195,7 +195,7 @@ function FeatureCard({
 
         {/* Description with slide-up */}
         <p
-          className={`text-gray-600 dark:text-white/60 text-sm lg:text-base leading-relaxed mb-6 flex-grow transition-all duration-500 ${
+          className={`text-gray-600 dark:text-white/60 text-xs md:text-sm lg:text-base leading-relaxed mb-4 md:mb-6 flex-grow transition-all duration-500 ${
             isAnimated ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
           }`}
           style={{ transitionDelay: `${index * 50 + 200}ms` }}
@@ -205,11 +205,11 @@ function FeatureCard({
 
         {/* Stats Row with staggered animation */}
         {feature.stats && (
-          <div className="grid grid-cols-3 gap-2 mt-auto">
+          <div className="grid grid-cols-3 gap-1.5 md:gap-2 mt-auto">
             {feature.stats.map((stat, i) => (
               <div
                 key={i}
-                className={`text-center p-3 rounded-xl bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/5 group-hover:border-gray-200 dark:group-hover:border-white/10 transition-all duration-500 ${
+                className={`text-center p-2 md:p-3 rounded-lg md:rounded-xl bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/5 group-hover:border-gray-200 dark:group-hover:border-white/10 transition-all duration-500 ${
                   isAnimated
                     ? "opacity-100 translate-y-0 scale-100"
                     : "opacity-0 translate-y-4 scale-95"
@@ -217,12 +217,12 @@ function FeatureCard({
                 style={{ transitionDelay: `${index * 50 + 250 + i * 50}ms` }}
               >
                 <div
-                  className="text-base font-bold mb-0.5"
+                  className="text-sm md:text-base font-bold mb-0.5"
                   style={{ color: feature.accentColor }}
                 >
                   {stat.value}
                 </div>
-                <div className="text-gray-500 dark:text-white/40 text-[10px] lg:text-xs tracking-wider">
+                <div className="text-gray-500 dark:text-white/40 text-[9px] md:text-[10px] lg:text-xs tracking-wider">
                   {stat.label}
                 </div>
               </div>
@@ -290,7 +290,7 @@ export default function LandingFeatures() {
     <section
       ref={sectionRef}
       id="features"
-      className="py-24 lg:py-32 relative overflow-hidden"
+      className="py-16 md:py-24 lg:py-32 relative overflow-hidden"
     >
       {/* Grid Pattern */}
       <div
@@ -305,11 +305,11 @@ export default function LandingFeatures() {
         {/* Section Header with animation */}
         <div
           ref={headerRef}
-          className="text-center max-w-4xl mx-auto mb-16 lg:mb-20"
+          className="text-center max-w-4xl mx-auto mb-10 md:mb-16 lg:mb-20"
         >
           {/* Headline */}
           <h2
-            className={`text-2xl md:text-4xl font-black text-gray-900 dark:text-white mb-6 tracking-tight leading-[1.15] transition-all duration-700 ${
+            className={`text-xl sm:text-2xl md:text-4xl font-black text-gray-900 dark:text-white mb-4 md:mb-6 tracking-tight leading-[1.15] transition-all duration-700 ${
               headerVisible
                 ? "opacity-100 translate-y-0"
                 : "opacity-0 translate-y-8"
@@ -359,7 +359,7 @@ export default function LandingFeatures() {
 
           {/* Description */}
           <p
-            className={`text-base lg:text-lg text-gray-600 dark:text-white/50 leading-relaxed max-w-2xl mx-auto transition-all duration-700 delay-200 ${
+            className={`text-sm md:text-base lg:text-lg text-gray-600 dark:text-white/50 leading-relaxed max-w-2xl mx-auto transition-all duration-700 delay-200 px-2 ${
               headerVisible
                 ? "opacity-100 translate-y-0"
                 : "opacity-0 translate-y-8"
@@ -372,7 +372,7 @@ export default function LandingFeatures() {
         </div>
 
         {/* Features Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4 lg:gap-6">
           {FEATURES.map((feature, index) => (
             <FeatureCard
               key={feature.id}

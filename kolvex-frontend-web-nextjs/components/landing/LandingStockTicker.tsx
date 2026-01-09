@@ -82,7 +82,7 @@ export default function LandingStockTicker() {
   };
 
   return (
-    <div className="w-full relative overflow-hidden py-6">
+    <div className="w-full relative overflow-hidden py-3 md:py-6">
       {/* Background gradient */}
       <div className="absolute inset-0 bg-gradient-to-r from-gray-100/80 via-white to-gray-100/80 dark:from-gray-900/50 dark:via-gray-900/30 dark:to-gray-900/50 backdrop-blur-sm" />
 
@@ -91,12 +91,14 @@ export default function LandingStockTicker() {
 
       {/* Live indicator */}
       {quotes.length > 0 && !error && (
-        <div className="absolute top-1/2 -translate-y-1/2 left-6 z-20 hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/60 border border-primary/20 backdrop-blur-sm">
-          <span className="relative flex h-2 w-2">
+        <div className="absolute top-1/2 -translate-y-1/2 left-2 md:left-6 z-20 flex items-center gap-1 md:gap-2 px-2 md:px-3 py-1 md:py-1.5 rounded-full bg-primary/60 border border-primary/20 backdrop-blur-sm">
+          <span className="relative flex h-1.5 w-1.5 md:h-2 md:w-2">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
+            <span className="relative inline-flex rounded-full h-1.5 w-1.5 md:h-2 md:w-2 bg-white"></span>
           </span>
-          <span className="text-xs font-bold text-white">LIVE</span>
+          <span className="text-[10px] md:text-xs font-bold text-white">
+            LIVE
+          </span>
         </div>
       )}
 
@@ -108,38 +110,44 @@ export default function LandingStockTicker() {
             return (
               <div
                 key={idx}
-                className="group inline-flex items-center gap-3 px-5 py-2.5 mx-2 rounded-2xl bg-white/70 dark:bg-white/[0.03] border border-gray-200/50 dark:border-white/5 hover:border-primary/30 hover:bg-white dark:hover:bg-white/[0.06] transition-all duration-300 cursor-pointer shadow-sm hover:shadow-md dark:shadow-none"
+                className="group inline-flex items-center gap-1.5 md:gap-3 px-2.5 md:px-5 py-1.5 md:py-2.5 mx-1 md:mx-2 rounded-xl md:rounded-2xl bg-white/70 dark:bg-white/[0.03] border border-gray-200/50 dark:border-white/5 hover:border-primary/30 hover:bg-white dark:hover:bg-white/[0.06] transition-all duration-300 cursor-pointer shadow-sm hover:shadow-md dark:shadow-none"
               >
-                {/* Company Logo */}
-                <CompanyLogo
-                  symbol={stock.symbol}
-                  name={COMPANY_NAMES[stock.symbol]}
-                  size="sm"
-                  shape="rounded"
-                  border="light"
-                  borderColor="gray"
-                  className="group-hover:scale-105 transition-transform duration-300"
-                />
+                {/* Company Logo - hidden on mobile to save space */}
+                <div className="hidden sm:block">
+                  <CompanyLogo
+                    symbol={stock.symbol}
+                    name={COMPANY_NAMES[stock.symbol]}
+                    size="sm"
+                    shape="rounded"
+                    border="light"
+                    borderColor="gray"
+                    className="group-hover:scale-105 transition-transform duration-300"
+                  />
+                </div>
 
                 {/* Stock symbol */}
-                <span className="font-bold text-gray-900 dark:text-white group-hover:text-primary transition-colors">
+                <span className="font-bold text-xs md:text-base text-gray-900 dark:text-white group-hover:text-primary transition-colors">
                   {stock.symbol}
                 </span>
 
                 {/* Price */}
-                <span className="text-gray-600 dark:text-white/60 font-medium tabular-nums">
+                <span className="text-xs md:text-base text-gray-600 dark:text-white/60 font-medium tabular-nums">
                   ${formatPrice(stock.price)}
                 </span>
 
                 {/* Change indicator */}
                 <div
-                  className={`flex items-center gap-1 px-2 py-0.5 rounded-lg text-xs font-bold ${
+                  className={`flex items-center gap-0.5 md:gap-1 px-1.5 md:px-2 py-0.5 rounded-md md:rounded-lg text-[10px] md:text-xs font-bold ${
                     isUp
                       ? "bg-primary/10 text-primary"
                       : "bg-red-500/10 text-red-500"
                   }`}
                 >
-                  {isUp ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
+                  {isUp ? (
+                    <TrendingUp size={10} className="md:w-3 md:h-3" />
+                  ) : (
+                    <TrendingDown size={10} className="md:w-3 md:h-3" />
+                  )}
                   <span>{formatChange(stock.changePercent)}</span>
                 </div>
               </div>
@@ -149,8 +157,8 @@ export default function LandingStockTicker() {
       </div>
 
       {/* Gradient overlays for smooth fade effect */}
-      <div className="absolute inset-y-0 left-0 w-32 bg-gradient-to-r from-white dark:from-gray-950 to-transparent z-10 pointer-events-none" />
-      <div className="absolute inset-y-0 right-0 w-32 bg-gradient-to-l from-white dark:from-gray-950 to-transparent z-10 pointer-events-none" />
+      <div className="absolute inset-y-0 left-0 w-12 md:w-32 bg-gradient-to-r from-white dark:from-gray-950 to-transparent z-10 pointer-events-none" />
+      <div className="absolute inset-y-0 right-0 w-12 md:w-32 bg-gradient-to-l from-white dark:from-gray-950 to-transparent z-10 pointer-events-none" />
 
       {/* Decorative bottom border */}
       <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent" />

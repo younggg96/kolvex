@@ -82,32 +82,32 @@ const Particles = () => {
 // Dashboard preview mockup
 const DashboardPreview = () => {
   return (
-    <div className="relative w-full max-w-4xl mx-auto mt-16 perspective-1000">
+    <div className="relative w-full max-w-4xl mx-auto mt-8 md:mt-16 perspective-1000 px-2 sm:px-0">
       {/* Main dashboard frame */}
       <div className="relative transform rotateX-3 transition-transform duration-700 hover:rotateX-0">
         {/* Glow effect behind */}
-        <div className="absolute -inset-4 bg-gradient-to-r from-primary/20 via-primary/30 to-primary/20 rounded-3xl blur-2xl opacity-20" />
+        <div className="absolute -inset-2 md:-inset-4 bg-gradient-to-r from-primary/20 via-primary/30 to-primary/20 rounded-2xl md:rounded-3xl blur-xl md:blur-2xl opacity-20" />
 
         {/* Dashboard container */}
-        <div className="relative backdrop-blur-xl rounded-2xl border border-gray-200/50 dark:border-white/10 overflow-hidden shadow-2xl shadow-primary/10">
+        <div className="relative backdrop-blur-xl rounded-xl md:rounded-2xl border border-gray-200/50 dark:border-white/10 overflow-hidden shadow-xl md:shadow-2xl shadow-primary/10">
           {/* Browser chrome */}
-          <div className="flex items-center gap-2 px-4 py-3 bg-gray-100/80 dark:bg-black/40 border-b border-gray-200/50 dark:border-white/5">
-            <div className="flex gap-1.5">
-              <div className="w-3 h-3 rounded-full bg-red-400" />
-              <div className="w-3 h-3 rounded-full bg-yellow-400" />
-              <div className="w-3 h-3 rounded-full bg-green-400" />
+          <div className="flex items-center gap-1.5 md:gap-2 px-3 md:px-4 py-2 md:py-3 bg-gray-100/80 dark:bg-black/40 border-b border-gray-200/50 dark:border-white/5">
+            <div className="flex gap-1 md:gap-1.5">
+              <div className="w-2 h-2 md:w-3 md:h-3 rounded-full bg-red-400" />
+              <div className="w-2 h-2 md:w-3 md:h-3 rounded-full bg-yellow-400" />
+              <div className="w-2 h-2 md:w-3 md:h-3 rounded-full bg-green-400" />
             </div>
             <div className="flex-1 flex justify-center">
-              <div className="px-4 py-1 bg-white/50 dark:bg-white/5 rounded-lg text-xs text-gray-500 dark:text-white/40 font-mono">
+              <div className="px-2 md:px-4 py-0.5 md:py-1 bg-white/50 dark:bg-white/5 rounded-md md:rounded-lg text-[10px] md:text-xs text-gray-500 dark:text-white/40 font-mono">
                 kolvex.app/dashboard
               </div>
             </div>
           </div>
 
           {/* Dashboard content */}
-          <div className="p-6 space-y-4">
+          <div className="p-3 md:p-6 space-y-3 md:space-y-4">
             {/* Top metrics row */}
-            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 md:gap-4">
               {[
                 {
                   label: "Portfolio Value",
@@ -136,22 +136,22 @@ const DashboardPreview = () => {
               ].map((metric, i) => (
                 <div
                   key={i}
-                  className="p-4 bg-white/50 dark:bg-white/5 rounded-xl border border-gray-200/50 dark:border-white/5 animate-fade-in"
+                  className="p-2 md:p-4 bg-white/50 dark:bg-white/5 rounded-lg md:rounded-xl border border-gray-200/50 dark:border-white/5 animate-fade-in"
                   style={{ animationDelay: `${0.1 * i + 0.5}s` }}
                 >
-                  <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center justify-between mb-1 md:mb-2">
                     <metric.icon
-                      size={16}
-                      className="text-primary opacity-70"
+                      size={12}
+                      className="text-primary opacity-70 md:w-4 md:h-4"
                     />
-                    <span className="text-xs text-primary font-semibold">
+                    <span className="text-[10px] md:text-xs text-primary font-semibold">
                       {metric.change}
                     </span>
                   </div>
-                  <div className="text-lg font-bold text-gray-900 dark:text-white">
+                  <div className="text-sm md:text-lg font-bold text-gray-900 dark:text-white truncate">
                     {metric.value}
                   </div>
-                  <div className="text-xs text-gray-500 dark:text-white/50">
+                  <div className="text-[10px] md:text-xs text-gray-500 dark:text-white/50 truncate">
                     {metric.label}
                   </div>
                 </div>
@@ -159,11 +159,11 @@ const DashboardPreview = () => {
             </div>
 
             {/* Chart placeholder */}
-            <div className="h-32 bg-gradient-to-r from-primary/5 via-primary/10 to-primary/5 rounded-xl border border-primary/10 flex items-end justify-around px-4 pb-4">
+            <div className="h-20 md:h-32 bg-gradient-to-r from-primary/5 via-primary/10 to-primary/5 rounded-lg md:rounded-xl border border-primary/10 flex items-end justify-around px-2 md:px-4 pb-2 md:pb-4">
               {[40, 65, 45, 80, 55, 90, 70, 85, 60, 75, 95, 80].map((h, i) => (
                 <div
                   key={i}
-                  className="w-4 bg-gradient-to-t from-primary/60 to-primary rounded-t animate-grow"
+                  className="w-2 md:w-4 bg-gradient-to-t from-primary/60 to-primary rounded-t animate-grow"
                   style={{
                     height: `${h}%`,
                     animationDelay: `${0.05 * i + 0.8}s`,
@@ -175,7 +175,7 @@ const DashboardPreview = () => {
         </div>
 
         {/* Reflection effect */}
-        <div className="absolute -bottom-20 left-0 right-0 h-20 bg-gradient-to-b from-white/20 dark:from-white/5 to-transparent blur-sm transform scale-y-[-1] opacity-30" />
+        <div className="absolute -bottom-12 md:-bottom-20 left-0 right-0 h-12 md:h-20 bg-gradient-to-b from-white/20 dark:from-white/5 to-transparent blur-sm transform scale-y-[-1] opacity-30" />
       </div>
     </div>
   );
@@ -190,14 +190,14 @@ const TrustBadges = () => {
   ];
 
   return (
-    <div className="flex flex-wrap justify-center gap-6 mt-12 animate-fade-in-up">
+    <div className="flex flex-wrap justify-center gap-2 md:gap-6 mt-6 md:mt-12 animate-fade-in-up">
       {badges.map((badge, i) => (
         <div
           key={i}
-          className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/50 dark:bg-white/5 border border-gray-200/50 dark:border-white/10 text-sm text-gray-600 dark:text-white/60"
+          className="flex items-center gap-1.5 md:gap-2 px-2.5 md:px-4 py-1.5 md:py-2 rounded-full bg-white/50 dark:bg-white/5 border border-gray-200/50 dark:border-white/10 text-xs md:text-sm text-gray-600 dark:text-white/60"
           style={{ animationDelay: `${0.1 * i + 0.6}s` }}
         >
-          <badge.icon size={14} className="text-primary" />
+          <badge.icon size={12} className="text-primary md:w-3.5 md:h-3.5" />
           <span>{badge.label}</span>
         </div>
       ))}
@@ -227,7 +227,7 @@ export default function LandingHero() {
   return (
     <section
       ref={heroRef}
-      className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden pt-20 pb-32"
+      className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden pt-16 md:pt-20 pb-16 md:pb-32"
     >
       {/* Floating particles */}
       <Particles />
@@ -236,17 +236,17 @@ export default function LandingHero() {
       <div className="container px-4 mx-auto relative z-10">
         <div className="flex flex-col items-center text-center max-w-5xl mx-auto">
           {/* Badge */}
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-bold mb-8 animate-fade-in backdrop-blur-sm">
-            <span className="relative flex h-2 w-2">
+          <div className="inline-flex items-center gap-1.5 md:gap-2 px-3 md:px-4 py-1.5 md:py-2 rounded-full bg-primary/10 border border-primary/20 text-primary text-[10px] md:text-xs font-bold mb-4 md:mb-8 animate-fade-in backdrop-blur-sm">
+            <span className="relative flex h-1.5 w-1.5 md:h-2 md:w-2">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
+              <span className="relative inline-flex rounded-full h-1.5 w-1.5 md:h-2 md:w-2 bg-primary"></span>
             </span>
             Powered by AI
           </div>
 
           {/* Main headline */}
-          <h1 className="text-3xl md:text-4xl lg:text-7xl font-black tracking-tight mb-8 min-h-[1.2em]">
-            <span className="block bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 dark:from-white dark:via-gray-200 dark:to-white bg-clip-text text-transparent pb-2">
+          <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-7xl font-black tracking-tight mb-4 md:mb-8 min-h-[2.4em] md:min-h-[1.2em]">
+            <span className="block bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 dark:from-white dark:via-gray-200 dark:to-white bg-clip-text text-transparent pb-1 md:pb-2">
               Invest Smarter with
             </span>
             <span className="block relative">
@@ -267,7 +267,7 @@ export default function LandingHero() {
           </h1>
 
           {/* Subheadline */}
-          <p className="text-sm md:text-base lg:text-lg text-gray-600 dark:text-gray-400 mb-12 max-w-3xl leading-relaxed animate-fade-in-up">
+          <p className="text-xs sm:text-sm md:text-base lg:text-lg text-gray-600 dark:text-gray-400 mb-6 md:mb-12 max-w-3xl leading-relaxed animate-fade-in-up px-2">
             Track influential voices, decode market sentiment, and discover
             opportunities{" "}
             <span className="text-primary font-semibold">
@@ -277,16 +277,16 @@ export default function LandingHero() {
           </p>
 
           {/* CTA Buttons */}
-          <div className="flex flex-col sm:flex-row gap-4 mb-8 animate-fade-in-up">
-            <Link href="/auth">
+          <div className="flex flex-col sm:flex-row gap-3 md:gap-4 mb-4 md:mb-8 animate-fade-in-up w-full sm:w-auto px-4 sm:px-0">
+            <Link href="/auth" className="w-full sm:w-auto">
               <Button
                 size="md"
-                className="px-10 font-bold bg-primary hover:bg-primary/90 text-white rounded-2xl shadow-xl shadow-primary/25 group transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl hover:shadow-primary/30"
+                className="w-full sm:w-auto px-6 md:px-10 font-bold bg-primary hover:bg-primary/90 text-white rounded-xl md:rounded-2xl shadow-xl shadow-primary/25 group transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl hover:shadow-primary/30"
               >
                 Start Free Trial
                 <ArrowRight
-                  size={18}
-                  className="ml-2 group-hover:translate-x-1 transition-transform"
+                  size={16}
+                  className="ml-2 group-hover:translate-x-1 transition-transform md:w-[18px] md:h-[18px]"
                 />
               </Button>
             </Link>
@@ -301,7 +301,7 @@ export default function LandingHero() {
       </div>
 
       {/* Bottom gradient fade */}
-      <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-white dark:from-gray-950 to-transparent pointer-events-none" />
+      <div className="absolute bottom-0 left-0 right-0 h-16 md:h-32 bg-gradient-to-t from-white dark:from-gray-950 to-transparent pointer-events-none" />
     </section>
   );
 }

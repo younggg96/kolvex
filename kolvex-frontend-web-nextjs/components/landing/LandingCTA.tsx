@@ -97,12 +97,15 @@ export default function LandingCTA() {
   }, []);
 
   return (
-    <section ref={sectionRef} className="py-32 relative overflow-hidden">
+    <section
+      ref={sectionRef}
+      className="py-16 md:py-24 lg:py-32 relative overflow-hidden"
+    >
       <div className="container px-4 mx-auto relative z-10">
         <div className="max-w-5xl mx-auto">
           {/* Main CTA Card */}
           <div
-            className={`relative rounded-[3rem] overflow-hidden transition-all duration-1000 ${
+            className={`relative rounded-2xl md:rounded-[2rem] lg:rounded-[3rem] overflow-hidden transition-all duration-1000 ${
               isVisible
                 ? "opacity-100 translate-y-0 scale-100"
                 : "opacity-0 translate-y-12 scale-95"
@@ -112,10 +115,10 @@ export default function LandingCTA() {
             <div className="absolute inset-0 bg-grid bg-background-light dark:bg-background-dark" />
 
             {/* Content */}
-            <div className="relative z-10 px-8 py-20 md:px-16 md:py-24 text-center">
+            <div className="relative z-10 px-4 py-10 sm:px-6 sm:py-12 md:px-12 md:py-16 lg:px-16 lg:py-24 text-center">
               {/* Headline */}
               <h2
-                className={`text-2xl md:text-4xl font-black text-gray-900 dark:text-white mb-6 tracking-tight leading-[1.1] transition-all duration-700 ${
+                className={`text-xl sm:text-2xl md:text-3xl lg:text-4xl font-black text-gray-900 dark:text-white mb-3 md:mb-6 tracking-tight leading-[1.1] transition-all duration-700 ${
                   isVisible
                     ? "opacity-100 translate-y-0"
                     : "opacity-0 translate-y-8"
@@ -129,7 +132,7 @@ export default function LandingCTA() {
 
               {/* Description */}
               <p
-                className={`text-base text-gray-600 dark:text-white/70 mb-12 max-w-2xl mx-auto leading-relaxed transition-all duration-700 ${
+                className={`text-xs sm:text-sm md:text-base text-gray-600 dark:text-white/70 mb-6 md:mb-12 max-w-2xl mx-auto leading-relaxed transition-all duration-700 px-2 ${
                   isVisible
                     ? "opacity-100 translate-y-0"
                     : "opacity-0 translate-y-8"
@@ -143,30 +146,30 @@ export default function LandingCTA() {
 
               {/* CTA Buttons */}
               <div
-                className={`flex flex-col sm:flex-row gap-4 justify-center items-center mb-12 transition-all duration-700 ${
+                className={`flex flex-col sm:flex-row gap-3 md:gap-4 justify-center items-center mb-6 md:mb-12 transition-all duration-700 w-full px-2 sm:px-0 ${
                   isVisible
                     ? "opacity-100 translate-y-0"
                     : "opacity-0 translate-y-8"
                 }`}
                 style={{ transitionDelay: "400ms" }}
               >
-                <Link href="/auth">
+                <Link href="/auth" className="w-full sm:w-auto">
                   <Button
                     size="md"
-                    className="px-12 font-bold bg-primary hover:bg-primary/90 text-white rounded-2xl shadow-2xl shadow-primary/30 group transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_20px_60px_-15px_rgba(0,200,5,0.5)]"
+                    className="w-full sm:w-auto px-6 md:px-12 font-bold bg-primary hover:bg-primary/90 text-white rounded-xl md:rounded-2xl shadow-xl md:shadow-2xl shadow-primary/30 group transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_20px_60px_-15px_rgba(0,200,5,0.5)]"
                   >
                     Get Started Free
                     <ArrowRight
-                      size={20}
-                      className="ml-2 group-hover:translate-x-1 transition-transform"
+                      size={16}
+                      className="ml-2 group-hover:translate-x-1 transition-transform md:w-5 md:h-5"
                     />
                   </Button>
                 </Link>
-                <Link href="/contact">
+                <Link href="/contact" className="w-full sm:w-auto">
                   <Button
                     variant="outline"
                     size="md"
-                    className="text-gray-600 dark:text-white"
+                    className="w-full sm:w-auto text-gray-600 dark:text-white"
                   >
                     Contact Us
                   </Button>
@@ -175,7 +178,7 @@ export default function LandingCTA() {
 
               {/* Trust indicators */}
               <div
-                className={`flex flex-wrap justify-center gap-6 text-gray-600 dark:text-white/50 text-sm transition-all duration-700 ${
+                className={`flex flex-wrap justify-center gap-3 md:gap-6 text-gray-600 dark:text-white/50 text-xs md:text-sm transition-all duration-700 ${
                   isVisible
                     ? "opacity-100 translate-y-0"
                     : "opacity-0 translate-y-8"
@@ -183,56 +186,56 @@ export default function LandingCTA() {
                 style={{ transitionDelay: "500ms" }}
               >
                 <div
-                  className={`flex items-center gap-2 transition-all duration-500 ${
+                  className={`flex items-center gap-1.5 md:gap-2 transition-all duration-500 ${
                     isVisible
                       ? "opacity-100 translate-x-0"
                       : "opacity-0 -translate-x-4"
                   }`}
                   style={{ transitionDelay: "600ms" }}
                 >
-                  <Shield size={16} className="text-primary" />
+                  <Shield size={14} className="text-primary md:w-4 md:h-4" />
                   <span>Bank-level security</span>
                 </div>
                 <div
-                  className={`flex items-center gap-2 transition-all duration-500 ${
+                  className={`flex items-center gap-1.5 md:gap-2 transition-all duration-500 ${
                     isVisible
                       ? "opacity-100 translate-y-0"
                       : "opacity-0 translate-y-4"
                   }`}
                   style={{ transitionDelay: "700ms" }}
                 >
-                  <Clock size={16} className="text-primary" />
+                  <Clock size={14} className="text-primary md:w-4 md:h-4" />
                   <span>Setup in 30 seconds</span>
                 </div>
                 <div
-                  className={`flex items-center gap-2 transition-all duration-500 ${
+                  className={`flex items-center gap-1.5 md:gap-2 transition-all duration-500 ${
                     isVisible
                       ? "opacity-100 translate-x-0"
                       : "opacity-0 translate-x-4"
                   }`}
                   style={{ transitionDelay: "800ms" }}
                 >
-                  <Zap size={16} className="text-primary" />
+                  <Zap size={14} className="text-primary md:w-4 md:h-4" />
                   <span>Cancel anytime</span>
                 </div>
               </div>
             </div>
 
-            {/* Decorative corners with animation */}
+            {/* Decorative corners with animation - hidden on mobile for cleaner look */}
             <div
-              className={`absolute top-6 left-6 w-16 h-16 border-l-2 border-t-2 border-primary/30 rounded-tl-3xl transition-all duration-700 ${
+              className={`absolute top-3 left-3 md:top-6 md:left-6 w-8 h-8 md:w-16 md:h-16 border-l-2 border-t-2 border-primary/30 rounded-tl-xl md:rounded-tl-3xl transition-all duration-700 hidden sm:block ${
                 isVisible ? "opacity-100 scale-100" : "opacity-0 scale-0"
               }`}
               style={{ transitionDelay: "400ms", transformOrigin: "top left" }}
             />
             <div
-              className={`absolute top-6 right-6 w-16 h-16 border-r-2 border-t-2 border-primary/30 rounded-tr-3xl transition-all duration-700 ${
+              className={`absolute top-3 right-3 md:top-6 md:right-6 w-8 h-8 md:w-16 md:h-16 border-r-2 border-t-2 border-primary/30 rounded-tr-xl md:rounded-tr-3xl transition-all duration-700 hidden sm:block ${
                 isVisible ? "opacity-100 scale-100" : "opacity-0 scale-0"
               }`}
               style={{ transitionDelay: "500ms", transformOrigin: "top right" }}
             />
             <div
-              className={`absolute bottom-6 left-6 w-16 h-16 border-l-2 border-b-2 border-primary/30 rounded-bl-3xl transition-all duration-700 ${
+              className={`absolute bottom-3 left-3 md:bottom-6 md:left-6 w-8 h-8 md:w-16 md:h-16 border-l-2 border-b-2 border-primary/30 rounded-bl-xl md:rounded-bl-3xl transition-all duration-700 hidden sm:block ${
                 isVisible ? "opacity-100 scale-100" : "opacity-0 scale-0"
               }`}
               style={{
@@ -241,7 +244,7 @@ export default function LandingCTA() {
               }}
             />
             <div
-              className={`absolute bottom-6 right-6 w-16 h-16 border-r-2 border-b-2 border-primary/30 rounded-br-3xl transition-all duration-700 ${
+              className={`absolute bottom-3 right-3 md:bottom-6 md:right-6 w-8 h-8 md:w-16 md:h-16 border-r-2 border-b-2 border-primary/30 rounded-br-xl md:rounded-br-3xl transition-all duration-700 hidden sm:block ${
                 isVisible ? "opacity-100 scale-100" : "opacity-0 scale-0"
               }`}
               style={{

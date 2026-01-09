@@ -92,7 +92,9 @@ function StepCard({
   return (
     <div
       className={`relative group cursor-pointer transition-all duration-700 ${
-        isActive ? "scale-105 z-10" : "hover:scale-102"
+        isActive
+          ? "scale-[1.02] md:scale-105 z-10"
+          : "hover:scale-[1.01] md:hover:scale-102"
       } ${
         isAnimated ? "opacity-100 translate-y-0" : "opacity-0 translate-y-12"
       }`}
@@ -120,15 +122,15 @@ function StepCard({
 
       {/* Card */}
       <div
-        className={`relative p-8 rounded-3xl border transition-all duration-500 ${
+        className={`relative p-4 md:p-6 lg:p-8 rounded-2xl md:rounded-3xl border transition-all duration-500 ${
           isActive
-            ? "bg-primary/10 border-primary/40 shadow-2xl shadow-primary/20"
+            ? "bg-primary/10 border-primary/40 shadow-xl md:shadow-2xl shadow-primary/20"
             : "bg-white/60 dark:bg-white/[0.03] border-gray-200/50 dark:border-white/10"
         }`}
       >
         {/* Step number badge */}
         <div
-          className={`absolute -top-4 left-8 w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-all duration-500 ${
+          className={`absolute -top-3 md:-top-4 left-4 md:left-8 w-6 h-6 md:w-8 md:h-8 rounded-full flex items-center justify-center text-xs md:text-sm font-bold transition-all duration-500 ${
             isActive
               ? "bg-primary text-white scale-110"
               : "bg-gray-200 dark:bg-white/10 text-gray-600 dark:text-white/60"
@@ -140,19 +142,19 @@ function StepCard({
 
         {/* Icon */}
         <div
-          className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-6 transition-all duration-500 ${
+          className={`w-10 h-10 md:w-14 lg:w-16 md:h-14 lg:h-16 rounded-xl md:rounded-2xl flex items-center justify-center mb-3 md:mb-6 transition-all duration-500 ${
             isActive
               ? "bg-primary text-white"
               : "bg-primary/10 text-primary group-hover:bg-primary/20"
           } ${isAnimated ? "opacity-100 scale-100" : "opacity-0 scale-75"}`}
           style={{ transitionDelay: `${index * 150 + 100}ms` }}
         >
-          <step.icon size={28} />
+          <step.icon size={20} className="md:w-6 md:h-6 lg:w-7 lg:h-7" />
         </div>
 
         {/* Title */}
         <h3
-          className={`text-xl font-bold text-gray-900 dark:text-white mb-3 transition-all duration-500 ${
+          className={`text-base md:text-lg lg:text-xl font-bold text-gray-900 dark:text-white mb-1.5 md:mb-3 transition-all duration-500 ${
             isAnimated ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
           }`}
           style={{ transitionDelay: `${index * 150 + 150}ms` }}
@@ -162,7 +164,7 @@ function StepCard({
 
         {/* Description */}
         <p
-          className={`text-gray-600 dark:text-gray-400 mb-4 leading-relaxed transition-all duration-500 ${
+          className={`text-xs md:text-sm lg:text-base text-gray-600 dark:text-gray-400 mb-2 md:mb-4 leading-relaxed transition-all duration-500 ${
             isAnimated ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
           }`}
           style={{ transitionDelay: `${index * 150 + 200}ms` }}
@@ -172,16 +174,19 @@ function StepCard({
 
         {/* Details (shown when active) */}
         <div
-          className={`space-y-2 overflow-hidden transition-all duration-500 ${
+          className={`space-y-1.5 md:space-y-2 overflow-hidden transition-all duration-500 ${
             isActive ? "max-h-40 opacity-100" : "max-h-0 opacity-0"
           }`}
         >
           {step.details.map((detail, i) => (
             <div
               key={i}
-              className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400"
+              className="flex items-center gap-1.5 md:gap-2 text-xs md:text-sm text-gray-600 dark:text-gray-400"
             >
-              <CheckCircle2 size={14} className="text-primary flex-shrink-0" />
+              <CheckCircle2
+                size={12}
+                className="text-primary flex-shrink-0 md:w-3.5 md:h-3.5"
+              />
               <span>{detail}</span>
             </div>
           ))}
@@ -189,7 +194,7 @@ function StepCard({
 
         {/* Active indicator dot */}
         <div
-          className={`absolute bottom-4 right-4 w-2 h-2 rounded-full transition-all duration-300 ${
+          className={`absolute bottom-3 right-3 md:bottom-4 md:right-4 w-1.5 h-1.5 md:w-2 md:h-2 rounded-full transition-all duration-300 ${
             isActive
               ? "bg-primary scale-100 animate-pulse"
               : "bg-gray-300 dark:bg-white/20 scale-75"
@@ -245,27 +250,30 @@ export default function LandingHowItWorks() {
   return (
     <section
       ref={sectionRef}
-      className="py-32 relative overflow-hidden bg-gradient-to-b from-transparent via-gray-50/50 dark:via-gray-900/30 to-transparent"
+      className="py-16 md:py-24 lg:py-32 relative overflow-hidden bg-gradient-to-b from-transparent via-gray-50/50 dark:via-gray-900/30 to-transparent"
     >
       {/* Background decorations */}
-      <div className="absolute top-1/2 left-0 w-96 h-96 bg-primary/10 rounded-full blur-[150px] -translate-y-1/2 -translate-x-1/2" />
-      <div className="absolute top-1/2 right-0 w-96 h-96 bg-blue-500/10 rounded-full blur-[150px] -translate-y-1/2 translate-x-1/2" />
+      <div className="absolute top-1/2 left-0 w-48 md:w-96 h-48 md:h-96 bg-primary/10 rounded-full blur-[100px] md:blur-[150px] -translate-y-1/2 -translate-x-1/2" />
+      <div className="absolute top-1/2 right-0 w-48 md:w-96 h-48 md:h-96 bg-blue-500/10 rounded-full blur-[100px] md:blur-[150px] -translate-y-1/2 translate-x-1/2" />
 
       <div className="container px-4 mx-auto relative z-10">
         {/* Section header */}
-        <div ref={headerRef} className="text-center max-w-3xl mx-auto mb-20">
+        <div
+          ref={headerRef}
+          className="text-center max-w-3xl mx-auto mb-10 md:mb-16 lg:mb-20"
+        >
           <div
-            className={`inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-xs font-bold mb-6 transition-all duration-700 ${
+            className={`inline-flex items-center gap-1.5 md:gap-2 px-3 md:px-4 py-1.5 md:py-2 rounded-full bg-primary/10 text-primary text-[10px] md:text-xs font-bold mb-4 md:mb-6 transition-all duration-700 ${
               headerVisible
                 ? "opacity-100 translate-y-0 scale-100"
                 : "opacity-0 translate-y-4 scale-95"
             }`}
           >
-            <span className="w-1.5 h-1.5 rounded-full bg-primary" />
+            <span className="w-1 h-1 md:w-1.5 md:h-1.5 rounded-full bg-primary" />
             HOW IT WORKS
           </div>
           <h2
-            className={`text-2xl md:text-4xl font-black text-gray-900 dark:text-white mb-6 tracking-tight transition-all duration-700 ${
+            className={`text-xl sm:text-2xl md:text-4xl font-black text-gray-900 dark:text-white mb-3 md:mb-6 tracking-tight transition-all duration-700 ${
               headerVisible
                 ? "opacity-100 translate-y-0"
                 : "opacity-0 translate-y-8"
@@ -275,7 +283,7 @@ export default function LandingHowItWorks() {
             Start in <span className="text-primary">4 simple steps</span>
           </h2>
           <p
-            className={`text-lg text-gray-600 dark:text-gray-400 leading-relaxed transition-all duration-700 ${
+            className={`text-sm md:text-lg text-gray-600 dark:text-gray-400 leading-relaxed transition-all duration-700 px-2 ${
               headerVisible
                 ? "opacity-100 translate-y-0"
                 : "opacity-0 translate-y-8"
@@ -289,7 +297,7 @@ export default function LandingHowItWorks() {
 
         {/* Progress indicator */}
         <div
-          className={`flex justify-center gap-2 mb-12 transition-all duration-700 ${
+          className={`flex justify-center gap-1.5 md:gap-2 mb-6 md:mb-12 transition-all duration-700 ${
             headerVisible
               ? "opacity-100 translate-y-0"
               : "opacity-0 translate-y-4"
@@ -300,17 +308,17 @@ export default function LandingHowItWorks() {
             <button
               key={i}
               onClick={() => setActiveStep(i)}
-              className={`h-1.5 rounded-full transition-all duration-300 ${
+              className={`h-1 md:h-1.5 rounded-full transition-all duration-300 ${
                 i === activeStep
-                  ? "w-8 bg-primary"
-                  : "w-1.5 bg-gray-300 dark:bg-white/20 hover:bg-primary/50"
+                  ? "w-6 md:w-8 bg-primary"
+                  : "w-1 md:w-1.5 bg-gray-300 dark:bg-white/20 hover:bg-primary/50"
               }`}
             />
           ))}
         </div>
 
         {/* Steps grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-6">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6 lg:gap-6">
           {STEPS.map((step, index) => (
             <StepCard
               key={index}

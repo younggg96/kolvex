@@ -90,7 +90,7 @@ function TestimonialCard({
 
   return (
     <div
-      className={`flex-shrink-0 w-[400px] p-6 rounded-3xl bg-white/70 dark:bg-white/[0.04] backdrop-blur-sm border border-gray-200/50 dark:border-white/10 transition-all duration-700 hover:border-primary/30 hover:shadow-xl hover:shadow-primary/5 ${
+      className={`flex-shrink-0 w-[280px] sm:w-[320px] md:w-[400px] p-4 md:p-6 rounded-2xl md:rounded-3xl bg-white/70 dark:bg-white/[0.04] backdrop-blur-sm border border-gray-200/50 dark:border-white/10 transition-all duration-700 hover:border-primary/30 hover:shadow-xl hover:shadow-primary/5 ${
         isAnimated
           ? "opacity-100 translate-y-0 scale-100"
           : "opacity-0 translate-y-8 scale-95"
@@ -99,17 +99,17 @@ function TestimonialCard({
     >
       {/* Quote icon */}
       <div
-        className={`mb-4 transition-all duration-500 ${
+        className={`mb-2 md:mb-4 transition-all duration-500 ${
           isAnimated ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-4"
         }`}
         style={{ transitionDelay: `${index * 50 + 100}ms` }}
       >
-        <Quote size={24} className="text-primary/30" />
+        <Quote size={18} className="text-primary/30 md:w-6 md:h-6" />
       </div>
 
       {/* Content */}
       <p
-        className={`text-gray-700 dark:text-gray-300 mb-6 leading-relaxed transition-all duration-500 ${
+        className={`text-xs md:text-sm lg:text-base text-gray-700 dark:text-gray-300 mb-4 md:mb-6 leading-relaxed transition-all duration-500 ${
           isAnimated ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
         }`}
         style={{ transitionDelay: `${index * 50 + 150}ms` }}
@@ -119,20 +119,20 @@ function TestimonialCard({
 
       {/* Footer */}
       <div
-        className={`flex items-center justify-between transition-all duration-500 ${
+        className={`flex items-center justify-between gap-2 transition-all duration-500 ${
           isAnimated ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
         }`}
         style={{ transitionDelay: `${index * 50 + 200}ms` }}
       >
-        <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center text-2xl">
+        <div className="flex items-center gap-2 md:gap-3 min-w-0">
+          <div className="w-8 h-8 md:w-12 md:h-12 rounded-full bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center text-lg md:text-2xl flex-shrink-0">
             {testimonial.avatar}
           </div>
-          <div>
-            <div className="font-bold text-gray-900 dark:text-white">
+          <div className="min-w-0">
+            <div className="font-bold text-sm md:text-base text-gray-900 dark:text-white truncate">
               {testimonial.name}
             </div>
-            <div className="text-sm text-gray-500 dark:text-gray-400">
+            <div className="text-xs md:text-sm text-gray-500 dark:text-gray-400 truncate">
               {testimonial.role}
             </div>
           </div>
@@ -140,7 +140,7 @@ function TestimonialCard({
 
         {/* Returns badge */}
         {testimonial.returns && (
-          <div className="px-3 py-1 rounded-full bg-primary/10 text-primary text-sm font-bold">
+          <div className="px-2 md:px-3 py-0.5 md:py-1 rounded-full bg-primary/10 text-primary text-xs md:text-sm font-bold whitespace-nowrap flex-shrink-0">
             {testimonial.returns}
           </div>
         )}
@@ -148,7 +148,7 @@ function TestimonialCard({
 
       {/* Rating */}
       <div
-        className={`flex gap-0.5 mt-4 transition-all duration-500 ${
+        className={`flex gap-0.5 mt-3 md:mt-4 transition-all duration-500 ${
           isAnimated ? "opacity-100" : "opacity-0"
         }`}
         style={{ transitionDelay: `${index * 50 + 250}ms` }}
@@ -156,8 +156,8 @@ function TestimonialCard({
         {Array.from({ length: testimonial.rating }).map((_, i) => (
           <Star
             key={i}
-            size={14}
-            className="text-yellow-400 fill-yellow-400"
+            size={12}
+            className="text-yellow-400 fill-yellow-400 md:w-3.5 md:h-3.5"
             style={{
               animation: isAnimated
                 ? `star-pop 0.3s ease-out ${i * 50}ms both`
@@ -199,10 +199,10 @@ function TrustIndicator({
       }`}
       style={{ transitionDelay: `${index * 100}ms` }}
     >
-      <div className="text-3xl font-black text-gray-900 dark:text-white">
+      <div className="text-xl sm:text-2xl md:text-3xl font-black text-gray-900 dark:text-white">
         {value}
       </div>
-      <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+      <div className="text-xs md:text-sm text-gray-500 dark:text-gray-400 mt-0.5 md:mt-1">
         {label}
       </div>
     </div>
@@ -276,7 +276,10 @@ export default function LandingTestimonials() {
   };
 
   return (
-    <section ref={sectionRef} className="py-32 relative overflow-hidden">
+    <section
+      ref={sectionRef}
+      className="py-16 md:py-24 lg:py-32 relative overflow-hidden"
+    >
       {/* Background */}
       <div className="absolute inset-0 bg-gradient-to-b from-gray-50/50 dark:from-gray-900/30 via-transparent to-transparent" />
 
@@ -284,21 +287,21 @@ export default function LandingTestimonials() {
         {/* Section header */}
         <div
           ref={headerRef}
-          className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-8 mb-12"
+          className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4 md:gap-8 mb-6 md:mb-12"
         >
           <div>
             <div
-              className={`inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-xs font-bold mb-6 transition-all duration-700 ${
+              className={`inline-flex items-center gap-1.5 md:gap-2 px-3 md:px-4 py-1.5 md:py-2 rounded-full bg-primary/10 text-primary text-[10px] md:text-xs font-bold mb-3 md:mb-6 transition-all duration-700 ${
                 headerVisible
                   ? "opacity-100 translate-y-0 scale-100"
                   : "opacity-0 translate-y-4 scale-95"
               }`}
             >
-              <Star size={12} className="fill-primary" />
+              <Star size={10} className="fill-primary md:w-3 md:h-3" />
               TESTIMONIALS
             </div>
             <h2
-              className={`text-2xl md:text-4xl font-black text-gray-900 dark:text-white tracking-tight mb-4 transition-all duration-700 ${
+              className={`text-xl sm:text-2xl md:text-4xl font-black text-gray-900 dark:text-white tracking-tight mb-2 md:mb-4 transition-all duration-700 ${
                 headerVisible
                   ? "opacity-100 translate-y-0"
                   : "opacity-0 translate-y-8"
@@ -308,7 +311,7 @@ export default function LandingTestimonials() {
               Loved by <span className="text-primary">5,000+ investors</span>
             </h2>
             <p
-              className={`text-lg text-gray-600 dark:text-gray-400 max-w-xl transition-all duration-700 ${
+              className={`text-sm md:text-lg text-gray-600 dark:text-gray-400 max-w-xl transition-all duration-700 ${
                 headerVisible
                   ? "opacity-100 translate-y-0"
                   : "opacity-0 translate-y-8"
@@ -334,26 +337,26 @@ export default function LandingTestimonials() {
               size="icon"
               onClick={() => scroll("left")}
               disabled={!canScrollLeft}
-              className={`rounded-xl flex items-center justify-center transition-all ${
+              className={`w-8 h-8 md:w-10 md:h-10 rounded-lg md:rounded-xl flex items-center justify-center transition-all ${
                 canScrollLeft
                   ? "border-primary/30 bg-primary/10 text-primary hover:bg-primary hover:text-white"
                   : "border-gray-200 dark:border-white/10 text-gray-400 dark:text-white/30 cursor-not-allowed"
               }`}
             >
-              <ChevronLeft size={20} />
+              <ChevronLeft size={16} className="md:w-5 md:h-5" />
             </Button>
             <Button
               variant="outline"
               size="icon"
               onClick={() => scroll("right")}
               disabled={!canScrollRight}
-              className={`rounded-xl flex items-center justify-center transition-all ${
+              className={`w-8 h-8 md:w-10 md:h-10 rounded-lg md:rounded-xl flex items-center justify-center transition-all ${
                 canScrollRight
                   ? "border-primary/30 bg-primary/10 text-primary hover:bg-primary hover:text-white"
                   : "border-gray-200 dark:border-white/10 text-gray-400 dark:text-white/30 cursor-not-allowed"
               }`}
             >
-              <ChevronRight size={20} />
+              <ChevronRight size={16} className="md:w-5 md:h-5" />
             </Button>
           </div>
         </div>
@@ -361,7 +364,7 @@ export default function LandingTestimonials() {
         {/* Testimonials carousel */}
         <div
           ref={scrollRef}
-          className="flex gap-6 overflow-x-auto scrollbar-hide pb-4 -mx-4 px-4"
+          className="flex gap-3 md:gap-6 overflow-x-auto scrollbar-hide pb-4 -mx-4 px-4"
         >
           {TESTIMONIALS.map((testimonial, index) => (
             <TestimonialCard
@@ -376,9 +379,9 @@ export default function LandingTestimonials() {
         {/* Trust indicators */}
         <div
           ref={trustRef}
-          className="mt-16 pt-12 border-t border-gray-200/50 dark:border-white/10"
+          className="mt-8 md:mt-16 pt-6 md:pt-12 border-t border-gray-200/50 dark:border-white/10"
         >
-          <div className="flex flex-wrap justify-center items-center gap-8 lg:gap-16">
+          <div className="grid grid-cols-2 md:flex md:flex-wrap justify-center items-center gap-4 md:gap-8 lg:gap-16">
             <TrustIndicator
               value={
                 <>
@@ -390,7 +393,7 @@ export default function LandingTestimonials() {
               isVisible={trustVisible}
             />
             <div
-              className={`w-px h-12 bg-gray-200 dark:bg-white/10 hidden lg:block transition-all duration-500 ${
+              className={`w-px h-8 md:h-12 bg-gray-200 dark:bg-white/10 hidden md:block transition-all duration-500 ${
                 trustVisible ? "opacity-100 scale-y-100" : "opacity-0 scale-y-0"
               }`}
               style={{ transitionDelay: "100ms" }}
@@ -406,7 +409,7 @@ export default function LandingTestimonials() {
               isVisible={trustVisible}
             />
             <div
-              className={`w-px h-12 bg-gray-200 dark:bg-white/10 hidden lg:block transition-all duration-500 ${
+              className={`w-px h-8 md:h-12 bg-gray-200 dark:bg-white/10 hidden lg:block transition-all duration-500 ${
                 trustVisible ? "opacity-100 scale-y-100" : "opacity-0 scale-y-0"
               }`}
               style={{ transitionDelay: "200ms" }}
@@ -422,7 +425,7 @@ export default function LandingTestimonials() {
               isVisible={trustVisible}
             />
             <div
-              className={`w-px h-12 bg-gray-200 dark:bg-white/10 hidden lg:block transition-all duration-500 ${
+              className={`w-px h-8 md:h-12 bg-gray-200 dark:bg-white/10 hidden lg:block transition-all duration-500 ${
                 trustVisible ? "opacity-100 scale-y-100" : "opacity-0 scale-y-0"
               }`}
               style={{ transitionDelay: "300ms" }}
