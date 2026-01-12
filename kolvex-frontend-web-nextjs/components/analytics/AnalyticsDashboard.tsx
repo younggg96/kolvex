@@ -2,13 +2,6 @@
 
 import React, { useEffect, useState } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { StatsCard } from "./StatsCard";
 import { SentimentTrendChart } from "./SentimentTrendChart";
@@ -25,14 +18,31 @@ import {
   type SentimentData,
   type EngagementData,
 } from "@/lib/analyticsApi";
-import { RotateCcw } from "lucide-react";
 
 interface AnalyticsDashboardProps {
   className?: string;
+  /** Controlled days prop from parent */
+  days?: number;
+  /** Trigger to refresh data */
+  refreshTrigger?: number;
+  /** Callback when loading state changes */
+  onLoadingChange?: (loading: boolean) => void;
+  /** Callback when data source changes */
+  onDataSourceChange?: (
+    source?: "snapshot" | "realtime",
+    createdAt?: string,
+    coverage?: number
+  ) => void;
 }
 
-export function AnalyticsDashboard({ className }: AnalyticsDashboardProps) {
-  const [days, setDays] = useState(7);
+export function AnalyticsDashboard({
+  className,
+  days: propDays,
+  refreshTrigger = 0,
+  onLoadingChange,
+  onDataSourceChange,
+}: AnalyticsDashboardProps) {
+  const days = propDays ?? 7;
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -44,6 +54,7 @@ export function AnalyticsDashboard({ className }: AnalyticsDashboardProps) {
 
   const fetchData = async () => {
     setLoading(true);
+    onLoadingChange?.(true);
     setError(null);
 
     try {
@@ -55,20 +66,24 @@ export function AnalyticsDashboard({ className }: AnalyticsDashboardProps) {
           getSentimentAnalysis(days, undefined, true),
           getEngagementAnalysis(days),
         ]);
-      console.log("dashboardData", dashboardData);
-      console.log("trendsData", trendsData);
-      console.log("sentimentData", sentimentData);
-      console.log("engagementData", engagementData);
 
       setDashboard(dashboardData);
       setTrends(trendsData);
       setSentiment(sentimentData);
       setEngagement(engagementData);
+
+      // Notify parent of data source change
+      onDataSourceChange?.(
+        dashboardData._source,
+        dashboardData._snapshot_created_at,
+        dashboardData.data_quality?.analysis_coverage
+      );
     } catch (err) {
       console.error("Failed to fetch analytics:", err);
       setError(err instanceof Error ? err.message : "Failed to load data");
     } finally {
       setLoading(false);
+      onLoadingChange?.(false);
     }
   };
 
@@ -81,7 +96,8 @@ export function AnalyticsDashboard({ className }: AnalyticsDashboardProps) {
     }, 5 * 60 * 1000); // 5 分钟
 
     return () => clearInterval(interval);
-  }, [days]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [days, refreshTrigger]);
 
   if (error) {
     return (
@@ -101,63 +117,6 @@ export function AnalyticsDashboard({ className }: AnalyticsDashboardProps) {
 
   return (
     <div className={className}>
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-3">
-          <Button
-            onClick={fetchData}
-            variant="outline"
-            size="sm"
-            disabled={loading}
-            className="gap-1.5"
-          >
-            <RotateCcw className="w-3 h-3" />
-            <span className="hidden sm:inline">Refresh</span>
-          </Button>
-          <Select
-            value={String(days)}
-            onValueChange={(v) => setDays(Number(v))}
-          >
-            <SelectTrigger className="w-32 h-9">
-              <SelectValue placeholder="Select range" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="7">7 days</SelectItem>
-              <SelectItem value="14">14 days</SelectItem>
-              <SelectItem value="30">30 days</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        {/* Data source indicator */}
-        {dashboard && (
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            {dashboard._source === "snapshot" ? (
-              <>
-                <span className="inline-block w-2 h-2 rounded-full bg-green-500" />
-                <span>
-                  From snapshot{" "}
-                  {dashboard._snapshot_created_at &&
-                    `(${new Date(
-                      dashboard._snapshot_created_at
-                    ).toLocaleString()})`}
-                </span>
-              </>
-            ) : (
-              <>
-                <span className="inline-block w-2 h-2 rounded-full bg-yellow-500" />
-                <span>Realtime data</span>
-              </>
-            )}
-            {dashboard.data_quality && (
-              <span className="ml-2">
-                • {dashboard.data_quality.analysis_coverage.toFixed(1)}%
-                analyzed
-              </span>
-            )}
-          </div>
-        )}
-      </div>
-
       {loading ? (
         <LoadingSkeleton />
       ) : (

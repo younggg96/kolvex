@@ -8,11 +8,13 @@ import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 interface DashboardLayoutProps {
   children: ReactNode;
   title?: string;
+  showTitle?: boolean;
   showHeader?: boolean;
   /** Tailwind CSS classes for responsive header visibility, e.g. "lg:hidden" */
   headerClassName?: string;
   hasSidebarTrigger?: boolean;
   headerLeftAction?: ReactNode;
+  headerExtra?: ReactNode;
   headerActions?: ReactNode;
   /** Disable page transition animation */
   noTransition?: boolean;
@@ -21,10 +23,12 @@ interface DashboardLayoutProps {
 export default function DashboardLayout({
   children,
   title = "Dashboard",
+  showTitle = true,
   showHeader = true,
   headerClassName,
   hasSidebarTrigger = true,
   headerLeftAction,
+  headerExtra,
   headerActions,
   noTransition = false,
 }: DashboardLayoutProps) {
@@ -36,14 +40,15 @@ export default function DashboardLayout({
           {showHeader && (
             <div className={headerClassName}>
               <Header
-                title={title}
+                title={showTitle ? title : undefined}
                 hasSidebarTrigger={hasSidebarTrigger}
                 leftAction={headerLeftAction}
                 actions={headerActions}
+                extra={headerExtra}
               />
             </div>
           )}
-          <div 
+          <div
             className={`flex flex-col flex-1 overflow-hidden ${
               noTransition ? "" : "animate-page-enter"
             }`}

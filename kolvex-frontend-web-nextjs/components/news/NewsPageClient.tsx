@@ -28,26 +28,27 @@ export default function NewsPageClient({ category }: NewsPageClientProps) {
     },
   ];
 
+  // Header actions
+  const headerActions = (
+    <SwitchTab
+      options={newsTabs}
+      value={activeTab}
+      onValueChange={setActiveTab}
+      variant="pills"
+      size="sm"
+      className="!w-fit"
+    />
+  );
+
   return (
-    <DashboardLayout title="Market News">
+    <DashboardLayout title="Market News" showHeader={true} headerActions={headerActions}>
       <div className="flex-1 p-2 overflow-y-auto">
         <SectionCard
           padding="sm"
           scrollable
           contentClassName="space-y-0 px-4 pb-4"
-          useSectionHeader={true}
-          headerExtra={
-            <SwitchTab
-              options={newsTabs}
-              value={activeTab}
-              onValueChange={setActiveTab}
-              variant="pills"
-              size="md"
-              className="!w-fit"
-            />
-          }
         >
-          <div className="h-[calc(100vh-220px)]">
+          <div className="h-[calc(100vh-160px)]">
             {activeTab === "live" ? (
               <FinancialJuiceNews width="100%" height="100%" />
             ) : (

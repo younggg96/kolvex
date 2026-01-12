@@ -3,6 +3,8 @@
  * 用于显示各种加载状态的骨架屏组件
  */
 
+import { Skeleton } from "@/components/ui/skeleton";
+
 // 市场指数卡片骨架屏
 export function MarketIndexSkeleton() {
   return (
@@ -88,6 +90,48 @@ export function CardSkeleton({ lines = 3, className = "" }: CardSkeletonProps) {
           style={{ width: `${100 - i * 15}%` }}
         ></div>
       ))}
+    </div>
+  );
+}
+
+// 帖子卡片骨架屏 - 用于社交媒体帖子列表
+export function PostSkeleton() {
+  return (
+    <div className="bg-white dark:bg-card-dark opacity-50 rounded-xl p-4 border border-border-light/50 dark:border-border-dark/50">
+      {/* Header: Avatar + Username + Time */}
+      <div className="flex items-start gap-3 mb-3">
+        <Skeleton className="w-10 h-10 rounded-full flex-shrink-0" />
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-1">
+            <Skeleton className="h-4 w-24" />
+            <Skeleton className="h-3 w-16" />
+          </div>
+          <Skeleton className="h-3 w-12" />
+        </div>
+      </div>
+
+      {/* Content Lines */}
+      <div className="space-y-2 mb-4">
+        <Skeleton className="h-4 w-full" />
+        <Skeleton className="h-4 w-[90%]" />
+        <Skeleton className="h-4 w-[75%]" />
+      </div>
+
+      {/* Engagement Stats */}
+      <div className="flex items-center gap-6 pt-2 border-t border-gray-100 dark:border-white/5">
+        <div className="flex items-center gap-1.5">
+          <Skeleton className="w-4 h-4" />
+          <Skeleton className="h-3 w-8" />
+        </div>
+        <div className="flex items-center gap-1.5">
+          <Skeleton className="w-4 h-4" />
+          <Skeleton className="h-3 w-6" />
+        </div>
+        <div className="flex items-center gap-1.5">
+          <Skeleton className="w-4 h-4" />
+          <Skeleton className="h-3 w-10" />
+        </div>
+      </div>
     </div>
   );
 }

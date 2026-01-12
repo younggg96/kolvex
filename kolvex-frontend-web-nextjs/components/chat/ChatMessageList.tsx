@@ -5,6 +5,7 @@ import { ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ChatBubble } from "./ChatBubble";
 import type { ChatMessageListProps } from "./types";
+import { Button } from "../ui/button";
 
 // Modern thinking indicator with subtle pulse
 function ThinkingIndicator() {
@@ -133,24 +134,21 @@ export function ChatMessageList({
 
       {/* Scroll to bottom button */}
       {showScrollButton && (
-        <button
+        <Button
           onClick={scrollToBottom}
+          size="icon"
           className={cn(
-            "fixed bottom-28 left-1/2 -translate-x-1/2 z-20",
-            "w-9 h-9 rounded-full",
+            "absolute bottom-6 left-1/2 -translate-x-1/2 z-20",
+            "w-9 h-9 !rounded-full border border-border-light dark:border-border-dark",
             "bg-card-light dark:bg-card-dark",
-            "border border-border-light dark:border-border-dark",
-            "shadow-lg",
-            "flex items-center justify-center",
             "transition-all duration-200",
             "hover:scale-105 hover:shadow-xl",
-            "hover:border-primary/30",
             "animate-fade-in"
           )}
           aria-label="Scroll to bottom"
         >
           <ChevronDown className="w-4 h-4 text-muted-foreground" />
-        </button>
+        </Button>
       )}
     </div>
   );
