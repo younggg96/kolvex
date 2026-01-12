@@ -1,53 +1,11 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import {
-  MessageSquarePlus,
-  Search,
-  Clock,
-  Trash2,
-  MessagesSquare,
-  ChevronLeft,
-} from "lucide-react";
-import Link from "next/link";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { Trash2, MessagesSquare, Loader2 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import type { ChatHistoryItem } from "./types";
-import { Button } from "../ui/button";
-import { SearchInput } from "../ui/search-input";
-
-// Storage utilities
-const STORAGE_KEY = "kolvex_chat_history";
-
-interface ChatConversation {
-  id: string;
-  title: string;
-  messages: { id: string; role: string; content: string; timestamp?: string }[];
-  createdAt: string;
-  updatedAt: string;
-}
-
-function loadHistoryFromStorage(): ChatHistoryItem[] {
-  if (typeof window === "undefined") return [];
-
-  try {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (!stored) return [];
-
-    const data: ChatConversation[] = JSON.parse(stored);
-    return data
-      .map((conv) => ({
-        id: conv.id,
-        title: conv.title,
-        preview:
-          conv.messages[conv.messages.length - 1]?.content.slice(0, 100) || "",
-        updatedAt: new Date(conv.updatedAt),
-        messageCount: conv.messages.length,
-      }))
-      .sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime());
-  } catch {
-    return [];
-  }
-}
+import * as chatApi from "@/lib/chatApi";
 
 function formatRelativeTime(date: Date): string {
   const now = new Date();
@@ -95,182 +53,173 @@ function groupConversationsByDate(conversations: ChatHistoryItem[]) {
 }
 
 interface ChatSidebarContentProps {
-  currentConversationId?: string | null;
-  onSelectConversation?: (id: string) => void;
-  onNewChat?: () => void;
-  onDeleteConversation?: (id: string) => void;
   isCollapsed?: boolean;
 }
 
 export function ChatSidebarContent({
-  currentConversationId: externalCurrentId,
-  onSelectConversation,
-  onNewChat,
-  onDeleteConversation,
   isCollapsed = false,
 }: ChatSidebarContentProps) {
+  const router = useRouter();
   const [conversations, setConversations] = useState<ChatHistoryItem[]>([]);
-  const [searchQuery, setSearchQuery] = useState("");
   const [currentConversationId, setCurrentConversationId] = useState<
     string | null
-  >(externalCurrentId || null);
+  >(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const initialLoadDone = useRef(false);
 
-  // Load and refresh conversations from localStorage
-  const refreshConversations = useCallback(() => {
-    const loaded = loadHistoryFromStorage();
-    setConversations(loaded);
+  // Load conversations from API
+  const loadConversations = useCallback(async () => {
+    if (typeof window === "undefined") return;
+
+    try {
+      const response = await chatApi.getConversations();
+      const apiConversations: ChatHistoryItem[] = response.conversations.map(
+        (conv) => ({
+          id: conv.id,
+          title: conv.title,
+          preview:
+            conv.messages[conv.messages.length - 1]?.content.slice(0, 100) ||
+            "",
+          updatedAt: new Date(conv.updated_at),
+          messageCount: conv.messages.length,
+        })
+      );
+      setConversations(apiConversations);
+    } catch (err) {
+      console.error("Failed to load conversations:", err);
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
 
   useEffect(() => {
-    refreshConversations();
+    if (initialLoadDone.current) return;
+    initialLoadDone.current = true;
+    loadConversations();
+  }, [loadConversations]);
 
-    // Listen for storage changes (from other tabs or ChatContainer updates)
-    const handleStorage = (e: StorageEvent) => {
-      if (e.key === STORAGE_KEY) {
-        refreshConversations();
-      }
-    };
-
-    // Listen for current chat changes from ChatContainer
+  useEffect(() => {
+    // Listen for current chat changes (from useChatHistory)
     const handleCurrentChatChange = (e: CustomEvent<{ id: string | null }>) => {
       setCurrentConversationId(e.detail.id);
-      refreshConversations();
     };
 
-    window.addEventListener("storage", handleStorage);
+    // Listen for conversation updates (refresh list when new message added)
+    const handleConversationUpdate = () => {
+      loadConversations();
+    };
+
     window.addEventListener(
       "kolvex:currentChatChanged",
       handleCurrentChatChange as EventListener
     );
-
-    // Also poll periodically for same-tab updates
-    const interval = setInterval(refreshConversations, 1000);
+    window.addEventListener(
+      "kolvex:conversationUpdated",
+      handleConversationUpdate
+    );
 
     return () => {
-      window.removeEventListener("storage", handleStorage);
       window.removeEventListener(
         "kolvex:currentChatChanged",
         handleCurrentChatChange as EventListener
       );
-      clearInterval(interval);
+      window.removeEventListener(
+        "kolvex:conversationUpdated",
+        handleConversationUpdate
+      );
     };
-  }, [refreshConversations]);
+  }, [loadConversations]);
 
-  // Sync with external prop if provided
-  useEffect(() => {
-    if (externalCurrentId !== undefined) {
-      setCurrentConversationId(externalCurrentId);
-    }
-  }, [externalCurrentId]);
+  // Handle select conversation
+  const handleSelectConversation = useCallback(
+    (id: string) => {
+      setCurrentConversationId(id);
 
-  const handleDelete = (id: string) => {
-    if (onDeleteConversation) {
-      onDeleteConversation(id);
-    } else {
-      // Direct delete from localStorage
-      try {
-        const stored = localStorage.getItem(STORAGE_KEY);
-        if (stored) {
-          const data = JSON.parse(stored);
-          const filtered = data.filter((c: ChatConversation) => c.id !== id);
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(filtered));
-          refreshConversations();
-        }
-      } catch {
-        // Ignore
-      }
-    }
-  };
-
-  const filteredConversations = conversations.filter(
-    (conv) =>
-      conv.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      conv.preview.toLowerCase().includes(searchQuery.toLowerCase())
+      // Navigate to specific chat page
+      router.push(`/dashboard/chat/${id}`);
+    },
+    [router]
   );
 
-  const grouped = groupConversationsByDate(filteredConversations);
+  // Handle delete conversation
+  const handleDeleteConversation = useCallback(
+    async (id: string) => {
+      try {
+        await chatApi.deleteConversation(id);
 
-  // Collapsed state - just show icon
+        // Update local state immediately
+        setConversations((prev) => prev.filter((c) => c.id !== id));
+
+        if (currentConversationId === id) {
+          setCurrentConversationId(null);
+          // Notify ChatContainer to clear current chat
+          window.dispatchEvent(
+            new CustomEvent("kolvex:deleteChat", {
+              detail: { id },
+            })
+          );
+        }
+      } catch (err) {
+        console.error("Failed to delete conversation:", err);
+      }
+    },
+    [currentConversationId]
+  );
+
+  const grouped = groupConversationsByDate(conversations);
+
+  // Collapsed state - hide content
   if (isCollapsed) {
+    return null;
+  }
+
+  // Show loading state
+  if (isLoading) {
     return (
-      <div className="flex flex-col items-center py-2 gap-2">
-        <button
-          onClick={onNewChat}
-          className="w-8 h-8 rounded-lg bg-primary text-white flex items-center justify-center hover:bg-primary/90 transition-colors"
-          title="New Chat"
-        >
-          <MessageSquarePlus className="w-4 h-4" />
-        </button>
+      <div className="flex flex-col h-full pl-3">
+        <div className="flex items-center justify-center h-32">
+          <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
+        </div>
       </div>
     );
   }
 
+  if (conversations.length === 0) {
+    return null;
+  }
+
   return (
     <div className="flex flex-col h-full">
-      {/* Back to Menu Link */}
-      <div className="flex-shrink-0 border-b border-border-light dark:border-border-dark mb-2 pb-4 px-4">
-        <Link
-          href="/dashboard/analytics"
-          className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
-        >
-          ← Back to Menu
-        </Link>
-      </div>
-      {/* Header */}
-      <div className="flex-shrink-0 px-3 pt-2 pb-3 space-y-3">
-        {/* New Chat Button */}
-        <Button
-          onClick={onNewChat}
-          className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-white font-medium text-xs hover:bg-primary/90 transition-colors shadow-lg shadow-primary/25"
-        >
-          <MessageSquarePlus className="w-4 h-4" />
-          New Chat
-        </Button>
-      </div>
-
       {/* Conversations List */}
-      <div className="flex-1 overflow-y-auto px-2 space-y-3">
-        {filteredConversations.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-32 text-center px-4">
-            <div className="w-10 h-10 rounded-full bg-gray-100 dark:bg-white/5 flex items-center justify-center mb-2">
-              <MessagesSquare className="w-5 h-5 text-gray-400" />
-            </div>
-            <p className="text-xs text-gray-500 dark:text-gray-400">
-              {searchQuery ? "No matches" : "No chats yet"}
-            </p>
-          </div>
-        ) : (
-          <>
-            <ConversationSection
-              title="Today"
-              conversations={grouped.today}
-              currentConversationId={currentConversationId}
-              onSelect={onSelectConversation}
-              onDelete={handleDelete}
-            />
-            <ConversationSection
-              title="Yesterday"
-              conversations={grouped.yesterday}
-              currentConversationId={currentConversationId}
-              onSelect={onSelectConversation}
-              onDelete={handleDelete}
-            />
-            <ConversationSection
-              title="This Week"
-              conversations={grouped.thisWeek}
-              currentConversationId={currentConversationId}
-              onSelect={onSelectConversation}
-              onDelete={handleDelete}
-            />
-            <ConversationSection
-              title="Older"
-              conversations={grouped.older}
-              currentConversationId={currentConversationId}
-              onSelect={onSelectConversation}
-              onDelete={handleDelete}
-            />
-          </>
-        )}
+      <div className="flex-1 overflow-y-auto space-y-1 pl-3">
+        <ConversationSection
+          title="Today"
+          conversations={grouped.today}
+          currentConversationId={currentConversationId}
+          onSelect={handleSelectConversation}
+          onDelete={handleDeleteConversation}
+        />
+        <ConversationSection
+          title="Yesterday"
+          conversations={grouped.yesterday}
+          currentConversationId={currentConversationId}
+          onSelect={handleSelectConversation}
+          onDelete={handleDeleteConversation}
+        />
+        <ConversationSection
+          title="This Week"
+          conversations={grouped.thisWeek}
+          currentConversationId={currentConversationId}
+          onSelect={handleSelectConversation}
+          onDelete={handleDeleteConversation}
+        />
+        <ConversationSection
+          title="Older"
+          conversations={grouped.older}
+          currentConversationId={currentConversationId}
+          onSelect={handleSelectConversation}
+          onDelete={handleDeleteConversation}
+        />
       </div>
     </div>
   );
@@ -280,8 +229,8 @@ interface ConversationSectionProps {
   title: string;
   conversations: ChatHistoryItem[];
   currentConversationId?: string | null;
-  onSelect?: (id: string) => void;
-  onDelete?: (id: string) => void;
+  onSelect: (id: string) => void;
+  onDelete: (id: string) => void;
 }
 
 function ConversationSection({
@@ -294,8 +243,8 @@ function ConversationSection({
   if (conversations.length === 0) return null;
 
   return (
-    <div className="space-y-1">
-      <h3 className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500">
+    <div>
+      <h3 className="px-2 py-1 text-[10px] font-bold tracking-wider text-gray-400 dark:text-gray-500">
         {title}
       </h3>
       {conversations.map((conv) => (
@@ -303,8 +252,8 @@ function ConversationSection({
           key={conv.id}
           conversation={conv}
           isActive={conv.id === currentConversationId}
-          onSelect={() => onSelect?.(conv.id)}
-          onDelete={() => onDelete?.(conv.id)}
+          onSelect={() => onSelect(conv.id)}
+          onDelete={() => onDelete(conv.id)}
         />
       ))}
     </div>

@@ -1,49 +1,52 @@
 "use client";
 
 import { useRef, useEffect, useState, useCallback } from "react";
-import { ChevronDown, Sparkles } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ChatBubble } from "./ChatBubble";
 import type { ChatMessageListProps } from "./types";
 
-// Loading indicator component
+// Modern thinking indicator with subtle pulse
 function ThinkingIndicator() {
   return (
     <div className="flex w-full mb-6 justify-start animate-fade-in">
-      <div className="flex gap-3 max-w-[85%] md:max-w-[75%]">
-        {/* Avatar */}
-        <div className="flex-shrink-0 mt-1">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary to-emerald-600 shadow-lg shadow-primary/25 flex items-center justify-center">
-            <Sparkles className="w-4 h-4 text-white" />
+      <div className="flex gap-4 max-w-[85%] md:max-w-[80%]">
+        {/* AI Avatar */}
+        <div className="flex-shrink-0">
+          <div className="w-8 h-8 rounded-full bg-primary/10 dark:bg-primary/20 flex items-center justify-center ring-2 ring-primary/20">
+            <svg
+              viewBox="0 0 24 24"
+              className="w-4 h-4 text-primary"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <path d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707" />
+              <circle cx="12" cy="12" r="4" />
+            </svg>
           </div>
         </div>
 
         {/* Thinking bubble */}
-        <div className="flex flex-col gap-1 items-start">
-          <div className="flex items-center gap-2 px-1">
-            <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">
-              Kolvex AI
-            </span>
-          </div>
-          
-          <div className="relative px-4 py-3 rounded-2xl rounded-tl-md bg-white dark:bg-card-dark border border-gray-100 dark:border-white/10 shadow-sm">
-            <div className="absolute inset-0 rounded-2xl rounded-tl-md bg-gradient-to-br from-primary/5 to-transparent pointer-events-none" />
-            <div className="relative flex items-center gap-2">
+        <div className="flex flex-col gap-1.5">
+          <span className="text-xs font-medium text-muted-foreground px-0.5">
+            Kolvex
+          </span>
+          <div className="px-4 py-3 rounded-2xl rounded-tl-sm bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark">
+            <div className="flex items-center gap-1.5">
               <div className="flex gap-1">
-                <span
-                  className="w-2 h-2 bg-primary rounded-full animate-bounce"
-                  style={{ animationDelay: "0ms" }}
-                />
-                <span
-                  className="w-2 h-2 bg-primary rounded-full animate-bounce"
-                  style={{ animationDelay: "150ms" }}
-                />
-                <span
-                  className="w-2 h-2 bg-primary rounded-full animate-bounce"
-                  style={{ animationDelay: "300ms" }}
-                />
+                {[0, 1, 2].map((i) => (
+                  <span
+                    key={i}
+                    className="w-1.5 h-1.5 bg-primary/60 rounded-full"
+                    style={{
+                      animation: "pulse 1.4s ease-in-out infinite",
+                      animationDelay: `${i * 0.2}s`,
+                    }}
+                  />
+                ))}
               </div>
-              <span className="text-sm text-gray-500 dark:text-gray-400">
+              <span className="text-sm text-muted-foreground ml-1">
                 Thinking...
               </span>
             </div>
@@ -97,32 +100,32 @@ export function ChatMessageList({
   }
 
   return (
-    <div
-      ref={containerRef}
-      className="relative flex-1 overflow-y-auto"
-    >
-      <div className="max-w-4xl mx-auto px-4 py-6">
+    <div ref={containerRef} className="relative flex-1 overflow-y-auto">
+      <div className="max-w-4xl mx-auto px-4 md:px-6 py-8">
         {/* Messages */}
-        {messages.map((message) => (
-          <ChatBubble
-            key={message.id}
-            role={message.role}
-            content={message.content}
-            timestamp={message.timestamp}
-          />
-        ))}
+        <div className="space-y-6">
+          {messages.map((message, index) => (
+            <ChatBubble
+              key={message.id}
+              role={message.role as "user" | "assistant"}
+              content={message.content}
+              timestamp={message.timestamp}
+              isFirst={index === 0}
+            />
+          ))}
 
-        {/* Streaming response */}
-        {streamingContent && (
-          <ChatBubble
-            role="assistant"
-            content={streamingContent}
-            isStreaming={true}
-          />
-        )}
+          {/* Streaming response */}
+          {streamingContent && (
+            <ChatBubble
+              role="assistant"
+              content={streamingContent}
+              isStreaming={true}
+            />
+          )}
 
-        {/* Loading indicator */}
-        {isLoading && !streamingContent && <ThinkingIndicator />}
+          {/* Loading indicator */}
+          {isLoading && !streamingContent && <ThinkingIndicator />}
+        </div>
 
         {/* Scroll anchor */}
         <div ref={actualEndRef} className="h-4" />
@@ -133,18 +136,20 @@ export function ChatMessageList({
         <button
           onClick={scrollToBottom}
           className={cn(
-            "fixed bottom-32 left-1/2 -translate-x-1/2",
-            "p-2.5 rounded-full",
-            "bg-white dark:bg-card-dark",
-            "border border-gray-200 dark:border-white/10",
-            "shadow-lg hover:shadow-xl",
+            "fixed bottom-28 left-1/2 -translate-x-1/2 z-20",
+            "w-9 h-9 rounded-full",
+            "bg-card-light dark:bg-card-dark",
+            "border border-border-light dark:border-border-dark",
+            "shadow-lg",
+            "flex items-center justify-center",
             "transition-all duration-200",
-            "animate-fade-in",
-            "z-10",
-            "group"
+            "hover:scale-105 hover:shadow-xl",
+            "hover:border-primary/30",
+            "animate-fade-in"
           )}
+          aria-label="Scroll to bottom"
         >
-          <ChevronDown className="w-5 h-5 text-gray-600 dark:text-gray-300 group-hover:text-primary transition-colors" />
+          <ChevronDown className="w-4 h-4 text-muted-foreground" />
         </button>
       )}
     </div>

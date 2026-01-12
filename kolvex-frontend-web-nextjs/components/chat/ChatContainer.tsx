@@ -11,9 +11,13 @@ import type { SearchSource } from "./types";
 
 interface ChatContainerProps {
   className?: string;
+  initialConversationId?: string;
 }
 
-export function ChatContainer({ className }: ChatContainerProps) {
+export function ChatContainer({
+  className,
+  initialConversationId,
+}: ChatContainerProps) {
   const [query, setQuery] = useState("");
   const [isFocused, setIsFocused] = useState(false);
   const [activeSources, setActiveSources] = useState<SearchSource[]>(["kol"]);
@@ -33,6 +37,16 @@ export function ChatContainer({ className }: ChatContainerProps) {
   } = useChatHistory();
 
   const isInChatMode = messages.length > 0 || streamingContent;
+
+  // Load initial conversation if provided via URL
+  useEffect(() => {
+    if (
+      initialConversationId &&
+      currentConversationId !== initialConversationId
+    ) {
+      selectConversation(initialConversationId);
+    }
+  }, [initialConversationId, currentConversationId, selectConversation]);
 
   // Listen for sidebar events
   useEffect(() => {
@@ -91,30 +105,34 @@ export function ChatContainer({ className }: ChatContainerProps) {
     async (messageText: string) => {
       if (!messageText.trim() || isLoading) return;
 
-      // Add user message
-      addMessage({
-        role: "user",
-        content: messageText.trim(),
-      });
-
+      const trimmedMessage = messageText.trim();
       setQuery("");
       setIsLoading(true);
       setStreamingContent("");
 
+      // Build messages array for API (include current messages + new user message)
+      const messagesForApi = [
+        ...messages.map((m) => ({
+          role: m.role,
+          content: m.content,
+        })),
+        { role: "user", content: trimmedMessage },
+      ];
+
       try {
+        // Add user message to history first and wait for it
+        await addMessage({
+          role: "user",
+          content: trimmedMessage,
+        });
+
         const response = await fetch("/api/chat", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            messages: [
-              ...messages,
-              { role: "user", content: messageText.trim() },
-            ].map((m) => ({
-              role: m.role,
-              content: m.content,
-            })),
+            messages: messagesForApi,
             stream: true,
           }),
         });
@@ -139,7 +157,7 @@ export function ChatContainer({ className }: ChatContainerProps) {
               const data = line.slice(6);
               if (data === "[DONE]") {
                 if (accumulatedContent) {
-                  addMessage({
+                  await addMessage({
                     role: "assistant",
                     content: accumulatedContent,
                   });
@@ -161,7 +179,7 @@ export function ChatContainer({ className }: ChatContainerProps) {
         }
       } catch (error) {
         console.error("Chat error:", error);
-        addMessage({
+        await addMessage({
           role: "assistant",
           content:
             "Sorry, I couldn't process your request. Please make sure Ollama is running locally.\n\nStart command: `ollama serve`",
@@ -184,12 +202,6 @@ export function ChatContainer({ className }: ChatContainerProps) {
       e.preventDefault();
       handleSubmit(query);
     }
-  };
-
-  const handleNewChat = () => {
-    startNewChat();
-    setStreamingContent("");
-    setQuery("");
   };
 
   return (

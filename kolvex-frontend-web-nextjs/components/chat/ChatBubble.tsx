@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { Bot, User, Copy, Check, Sparkles } from "lucide-react";
+import { Copy, Check, RotateCcw } from "lucide-react";
 import { useState } from "react";
 import type { ChatBubbleProps } from "./types";
 
@@ -10,6 +10,8 @@ export function ChatBubble({
   content,
   isStreaming,
   timestamp,
+  isFirst,
+  onRetry,
 }: ChatBubbleProps) {
   const [copied, setCopied] = useState(false);
   const isUser = role === "user";
@@ -29,51 +31,66 @@ export function ChatBubble({
     }).format(date);
   };
 
-  return (
-    <div
-      className={cn(
-        "group flex w-full mb-6 animate-fade-in",
-        isUser ? "justify-end" : "justify-start"
-      )}
-    >
-      <div
-        className={cn(
-          "flex gap-3 max-w-[85%] md:max-w-[75%]",
-          isUser ? "flex-row-reverse" : "flex-row"
-        )}
-      >
-        {/* Avatar */}
-        <div className="flex-shrink-0 mt-1">
+  if (isUser) {
+    return (
+      <div className="flex w-full justify-end animate-fade-in">
+        <div className="max-w-[85%] md:max-w-[70%]">
+          <div className="flex items-center justify-end gap-2 mb-1.5 px-0.5">
+            <span className="text-xs font-medium text-muted-foreground">
+              You
+            </span>
+            {timestamp && (
+              <span className="text-[11px] text-muted-foreground/60">
+                {formatTime(timestamp)}
+              </span>
+            )}
+          </div>
           <div
             className={cn(
-              "w-9 h-9 rounded-xl flex items-center justify-center shadow-lg transition-transform duration-200 group-hover:scale-105",
-              isUser
-                ? "bg-gradient-to-br from-gray-700 to-gray-900 dark:from-gray-600 dark:to-gray-800"
-                : "bg-gradient-to-br from-primary to-emerald-600 shadow-primary/25"
+              "px-4 py-3 rounded-2xl rounded-tr-sm",
+              "bg-gray-900 dark:bg-white",
+              "text-white dark:text-gray-900",
+              "shadow-sm"
             )}
           >
-            {isUser ? (
-              <User className="w-4 h-4 text-white" />
-            ) : (
-              <Sparkles className="w-4 h-4 text-white" />
-            )}
+            <p className="text-[15px] leading-relaxed whitespace-pre-wrap">
+              {content}
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Assistant message
+  return (
+    <div className="group flex w-full justify-start animate-fade-in">
+      <div className="flex gap-4 max-w-[85%] md:max-w-[80%]">
+        {/* AI Avatar */}
+        <div className="flex-shrink-0">
+          <div className="w-8 h-8 rounded-full bg-primary/10 dark:bg-primary/20 flex items-center justify-center ring-2 ring-primary/20">
+            <svg
+              viewBox="0 0 24 24"
+              className="w-4 h-4 text-primary"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <path d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707" />
+              <circle cx="12" cy="12" r="4" />
+            </svg>
           </div>
         </div>
 
         {/* Message Content */}
-        <div className={cn("flex flex-col gap-1", isUser ? "items-end" : "items-start")}>
-          {/* Name & Time */}
-          <div
-            className={cn(
-              "flex items-center gap-2 px-1",
-              isUser ? "flex-row-reverse" : "flex-row"
-            )}
-          >
-            <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">
-              {isUser ? "You" : "Kolvex AI"}
+        <div className="flex-1 min-w-0">
+          {/* Header */}
+          <div className="flex items-center gap-2 mb-1.5 px-0.5">
+            <span className="text-xs font-medium text-muted-foreground">
+              Kolvex
             </span>
             {timestamp && (
-              <span className="text-[10px] text-gray-400 dark:text-gray-500">
+              <span className="text-[11px] text-muted-foreground/60">
                 {formatTime(timestamp)}
               </span>
             )}
@@ -82,53 +99,70 @@ export function ChatBubble({
           {/* Bubble */}
           <div
             className={cn(
-              "relative px-4 py-3 rounded-2xl transition-all duration-200",
-              isUser
-                ? "bg-gray-900 dark:bg-white/95 text-white dark:text-gray-900 rounded-tr-md"
-                : "bg-white dark:bg-card-dark border border-gray-100 dark:border-white/10 text-gray-800 dark:text-gray-200 rounded-tl-md shadow-sm"
+              "relative px-4 py-3 rounded-2xl rounded-tl-sm",
+              "bg-card-light dark:bg-card-dark",
+              "border border-border-light dark:border-border-dark",
+              "text-foreground"
             )}
           >
-            {/* Decorative gradient for AI bubble */}
-            {!isUser && (
-              <div className="absolute inset-0 rounded-2xl rounded-tl-md bg-gradient-to-br from-primary/5 to-transparent pointer-events-none" />
-            )}
-
-            <div className="relative">
-              <p className="text-sm leading-relaxed whitespace-pre-wrap">
+            <div className="prose prose-sm dark:prose-invert max-w-none">
+              <p className="text-[15px] leading-relaxed whitespace-pre-wrap m-0">
                 {content}
                 {isStreaming && (
-                  <span className="inline-flex items-center ml-1">
-                    <span className="w-1.5 h-4 bg-primary rounded-sm animate-pulse" />
+                  <span className="inline-flex ml-0.5 align-middle">
+                    <span className="w-[3px] h-[18px] bg-primary rounded-sm animate-pulse" />
                   </span>
                 )}
               </p>
             </div>
+          </div>
 
-            {/* Copy button for AI messages */}
-            {!isUser && !isStreaming && content && (
+          {/* Actions */}
+          {!isStreaming && content && (
+            <div
+              className={cn(
+                "flex items-center gap-1 mt-2 px-0.5",
+                "opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+              )}
+            >
               <button
                 onClick={handleCopy}
                 className={cn(
-                  "absolute -bottom-7 left-0 flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-medium transition-all",
-                  "opacity-0 group-hover:opacity-100",
-                  "text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300",
-                  "hover:bg-gray-100 dark:hover:bg-white/5"
+                  "flex items-center gap-1.5 px-2 py-1 rounded-md",
+                  "text-xs text-muted-foreground",
+                  "hover:text-foreground hover:bg-muted",
+                  "transition-colors duration-150"
                 )}
               >
                 {copied ? (
                   <>
-                    <Check className="w-3 h-3 text-primary" />
+                    <Check className="w-3.5 h-3.5 text-primary" />
                     <span className="text-primary">Copied</span>
                   </>
                 ) : (
                   <>
-                    <Copy className="w-3 h-3" />
+                    <Copy className="w-3.5 h-3.5" />
                     <span>Copy</span>
                   </>
                 )}
               </button>
-            )}
-          </div>
+
+              {onRetry && (
+                <button
+                  onClick={onRetry}
+                  className={cn(
+                    "flex items-center gap-1.5 px-2 py-1 rounded-md",
+                    "text-xs text-muted-foreground",
+                    "hover:text-foreground hover:bg-muted",
+                    "transition-colors duration-150"
+                  )}
+                >
+                  <RotateCcw className="w-3.5 h-3.5" />
+                  <span>Retry</span>
+                </button>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </div>

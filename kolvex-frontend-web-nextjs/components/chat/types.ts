@@ -2,7 +2,7 @@
 
 export interface Message {
   id: string;
-  role: "user" | "assistant";
+  role: "user" | "assistant" | "system";
   content: string;
   timestamp?: Date;
 }
@@ -46,6 +46,8 @@ export interface ChatBubbleProps {
   content: string;
   isStreaming?: boolean;
   timestamp?: Date;
+  isFirst?: boolean;
+  onRetry?: () => void;
 }
 
 export interface ChatMessageListProps {

@@ -1,73 +1,76 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import type { Message, ChatConversation, ChatHistoryItem } from "./types";
-
-const STORAGE_KEY = "kolvex_chat_history";
-const MAX_CONVERSATIONS = 50;
-
-function generateId(): string {
-  return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-}
+import * as chatApi from "@/lib/chatApi";
 
 function generateTitle(firstMessage: string): string {
-  // Truncate and clean up the first message for title
   const title = firstMessage.trim().slice(0, 50);
   return title.length < firstMessage.trim().length ? `${title}...` : title;
 }
 
-function loadFromStorage(): ChatConversation[] {
-  if (typeof window === "undefined") return [];
-  
-  try {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (!stored) return [];
-    
-    const data = JSON.parse(stored);
-    return data.map((conv: ChatConversation) => ({
-      ...conv,
-      createdAt: new Date(conv.createdAt),
-      updatedAt: new Date(conv.updatedAt),
-      messages: conv.messages.map((msg) => ({
-        ...msg,
-        timestamp: msg.timestamp ? new Date(msg.timestamp) : undefined,
-      })),
-    }));
-  } catch {
-    return [];
-  }
-}
-
-function saveToStorage(conversations: ChatConversation[]): void {
-  if (typeof window === "undefined") return;
-  
-  try {
-    // Limit stored conversations
-    const limited = conversations.slice(0, MAX_CONVERSATIONS);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(limited));
-  } catch {
-    // Storage full or unavailable, silently fail
-  }
+// Convert API response to local format
+function convertApiConversation(
+  apiConv: chatApi.ChatConversation
+): ChatConversation {
+  return {
+    id: apiConv.id,
+    title: apiConv.title,
+    messages: apiConv.messages.map((msg) => ({
+      id: msg.id,
+      role: msg.role as "user" | "assistant" | "system",
+      content: msg.content,
+      timestamp: new Date(msg.created_at),
+    })),
+    createdAt: new Date(apiConv.created_at),
+    updatedAt: new Date(apiConv.updated_at),
+  };
 }
 
 export function useChatHistory() {
   const [conversations, setConversations] = useState<ChatConversation[]>([]);
-  const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
+  const [currentConversationId, setCurrentConversationId] = useState<
+    string | null
+  >(null);
   const [isLoaded, setIsLoaded] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const initialLoadDone = useRef(false);
 
-  // Load from storage on mount
+  // Use ref to track current conversation ID to avoid closure issues
+  const currentConversationIdRef = useRef<string | null>(null);
+
+  // Keep ref in sync with state
   useEffect(() => {
-    const loaded = loadFromStorage();
-    setConversations(loaded);
-    setIsLoaded(true);
+    currentConversationIdRef.current = currentConversationId;
+  }, [currentConversationId]);
+
+  // Load conversations from API
+  useEffect(() => {
+    if (initialLoadDone.current) return;
+    initialLoadDone.current = true;
+
+    const loadConversations = async () => {
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        const response = await chatApi.getConversations();
+        const apiConversations = response.conversations.map(
+          convertApiConversation
+        );
+        setConversations(apiConversations);
+      } catch (err) {
+        console.error("Failed to load conversations:", err);
+        setError("Failed to load chat history");
+      } finally {
+        setIsLoading(false);
+        setIsLoaded(true);
+      }
+    };
+
+    loadConversations();
   }, []);
-
-  // Save to storage when conversations change
-  useEffect(() => {
-    if (isLoaded && conversations.length > 0) {
-      saveToStorage(conversations);
-    }
-  }, [conversations, isLoaded]);
 
   // Get current conversation
   const currentConversation = conversations.find(
@@ -87,85 +90,128 @@ export function useChatHistory() {
     }));
 
   // Create new conversation
-  const createConversation = useCallback((): string => {
-    const newConversation: ChatConversation = {
-      id: generateId(),
-      title: "New Chat",
-      messages: [],
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
+  const createConversation = useCallback(async (): Promise<string> => {
+    try {
+      const newConv = await chatApi.createConversation();
+      const converted = convertApiConversation(newConv);
+      setConversations((prev) => [converted, ...prev]);
+      setCurrentConversationId(converted.id);
+      currentConversationIdRef.current = converted.id;
 
-    setConversations((prev) => [newConversation, ...prev]);
-    setCurrentConversationId(newConversation.id);
-    return newConversation.id;
+      // Broadcast change
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(
+          new CustomEvent("kolvex:currentChatChanged", {
+            detail: { id: converted.id },
+          })
+        );
+      }
+
+      return converted.id;
+    } catch (err) {
+      console.error("Failed to create conversation:", err);
+      throw err;
+    }
   }, []);
 
   // Add message to current or new conversation
+  // Use ref to avoid closure issues when multiple addMessage calls happen in sequence
   const addMessage = useCallback(
-    (message: Omit<Message, "id" | "timestamp">): Message => {
-      const newMessage: Message = {
-        ...message,
-        id: generateId(),
-        timestamp: new Date(),
-      };
-
-      setConversations((prev) => {
-        let targetId = currentConversationId;
-        let updated = [...prev];
+    async (message: Omit<Message, "id" | "timestamp">): Promise<Message> => {
+      try {
+        // Use ref to get the latest conversation ID (avoids closure issues)
+        let targetId = currentConversationIdRef.current;
 
         // If no current conversation, create one
         if (!targetId) {
-          const newConv: ChatConversation = {
-            id: generateId(),
-            title:
-              message.role === "user"
-                ? generateTitle(message.content)
-                : "New Chat",
-            messages: [newMessage],
-            createdAt: new Date(),
-            updatedAt: new Date(),
-          };
+          const newConv = await chatApi.createConversation(
+            message.role === "user"
+              ? generateTitle(message.content)
+              : "New Chat"
+          );
           targetId = newConv.id;
+          const converted = convertApiConversation(newConv);
+          setConversations((prev) => [converted, ...prev]);
+
+          // Update both state and ref immediately
           setCurrentConversationId(targetId);
-          // Broadcast new conversation created
+          currentConversationIdRef.current = targetId;
+
           if (typeof window !== "undefined") {
             window.dispatchEvent(
-              new CustomEvent("kolvex:currentChatChanged", { detail: { id: targetId } })
+              new CustomEvent("kolvex:currentChatChanged", {
+                detail: { id: targetId },
+              })
             );
           }
-          return [newConv, ...updated];
         }
 
-        // Update existing conversation
-        updated = prev.map((conv) => {
-          if (conv.id === targetId) {
-            const isFirstUserMessage =
-              conv.messages.length === 0 && message.role === "user";
-            return {
-              ...conv,
-              title: isFirstUserMessage
-                ? generateTitle(message.content)
-                : conv.title,
-              messages: [...conv.messages, newMessage],
-              updatedAt: new Date(),
-            };
-          }
-          return conv;
-        });
+        // Add message to server
+        const newMessage = await chatApi.addMessage(
+          targetId,
+          message.role as "user" | "assistant" | "system",
+          message.content
+        );
 
-        return updated;
-      });
+        const convertedMessage: Message = {
+          id: newMessage.id,
+          role: newMessage.role as "user" | "assistant" | "system",
+          content: newMessage.content,
+          timestamp: new Date(newMessage.created_at),
+        };
 
-      return newMessage;
+        // Update local state
+        setConversations((prev) =>
+          prev.map((conv) => {
+            if (conv.id === targetId) {
+              return {
+                ...conv,
+                messages: [...conv.messages, convertedMessage],
+                updatedAt: new Date(),
+              };
+            }
+            return conv;
+          })
+        );
+
+        // Notify sidebar to refresh
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(new CustomEvent("kolvex:conversationUpdated"));
+        }
+
+        return convertedMessage;
+      } catch (err) {
+        console.error("Failed to add message:", err);
+        throw err;
+      }
     },
-    [currentConversationId]
+    [] // No dependencies needed since we use ref
   );
 
   // Select a conversation
-  const selectConversation = useCallback((id: string) => {
+  const selectConversation = useCallback(async (id: string) => {
     setCurrentConversationId(id);
-    // Broadcast current conversation change
+    currentConversationIdRef.current = id;
+
+    try {
+      // Fetch full conversation with messages
+      const conv = await chatApi.getConversation(id);
+      const converted = convertApiConversation(conv);
+
+      setConversations((prev) => {
+        const exists = prev.some((c) => c.id === id);
+        if (exists) {
+          // Update existing conversation with full messages
+          return prev.map((c) => (c.id === id ? converted : c));
+        } else {
+          // Add new conversation if not in list
+          return [converted, ...prev];
+        }
+      });
+    } catch (err) {
+      console.error("Failed to fetch conversation:", err);
+    }
+
     if (typeof window !== "undefined") {
       window.dispatchEvent(
         new CustomEvent("kolvex:currentChatChanged", { detail: { id } })
@@ -175,19 +221,36 @@ export function useChatHistory() {
 
   // Delete a conversation
   const deleteConversation = useCallback(
-    (id: string) => {
+    async (id: string) => {
+      try {
+        await chatApi.deleteConversation(id);
+      } catch (err) {
+        console.error("Failed to delete conversation:", err);
+      }
+
       setConversations((prev) => prev.filter((c) => c.id !== id));
-      if (currentConversationId === id) {
+
+      if (currentConversationIdRef.current === id) {
         setCurrentConversationId(null);
+        currentConversationIdRef.current = null;
+
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(
+            new CustomEvent("kolvex:currentChatChanged", {
+              detail: { id: null },
+            })
+          );
+        }
       }
     },
-    [currentConversationId]
+    [] // Use ref instead of state dependency
   );
 
   // Start new chat (clear current selection)
   const startNewChat = useCallback(() => {
     setCurrentConversationId(null);
-    // Broadcast current conversation change
+    currentConversationIdRef.current = null;
+
     if (typeof window !== "undefined") {
       window.dispatchEvent(
         new CustomEvent("kolvex:currentChatChanged", { detail: { id: null } })
@@ -196,11 +259,31 @@ export function useChatHistory() {
   }, []);
 
   // Clear all history
-  const clearHistory = useCallback(() => {
+  const clearHistory = useCallback(async () => {
+    try {
+      await chatApi.deleteAllConversations();
+    } catch (err) {
+      console.error("Failed to delete all conversations:", err);
+    }
+
     setConversations([]);
     setCurrentConversationId(null);
-    if (typeof window !== "undefined") {
-      localStorage.removeItem(STORAGE_KEY);
+    currentConversationIdRef.current = null;
+  }, []);
+
+  // Refresh conversations from server
+  const refreshConversations = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      const response = await chatApi.getConversations();
+      const apiConversations = response.conversations.map(
+        convertApiConversation
+      );
+      setConversations(apiConversations);
+    } catch (err) {
+      console.error("Failed to refresh conversations:", err);
+    } finally {
+      setIsLoading(false);
     }
   }, []);
 
@@ -214,11 +297,14 @@ export function useChatHistory() {
     currentConversation,
     messages,
     isLoaded,
+    isLoading,
+    error,
     createConversation,
     addMessage,
     selectConversation,
     deleteConversation,
     startNewChat,
     clearHistory,
+    refreshConversations,
   };
 }
