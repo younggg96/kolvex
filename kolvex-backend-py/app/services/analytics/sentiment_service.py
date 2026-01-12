@@ -125,7 +125,7 @@ class SentimentService(BaseAnalyticsService):
                 "bull_bear_ratio": (
                     round(sentiment_counts["bullish"] / sentiment_counts["bearish"], 2)
                     if sentiment_counts["bearish"] > 0
-                    else float("inf")
+                    else (999.99 if sentiment_counts["bullish"] > 0 else 1.0)
                 ),
             },
         }
