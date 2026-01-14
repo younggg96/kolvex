@@ -5,7 +5,7 @@ export const dynamic = "force-dynamic";
 // Backend API base URL
 // Using 127.0.0.1 instead of localhost to avoid Node.js IPv6 resolution issues
 const NEXT_PUBLIC_BACKEND_API_URL =
-  process.env.NEXT_PUBLIC_BACKEND_API_URL || "http://127.0.0.1:8000";
+  process.env.NEXT_PUBLIC_BACKEND_API_URL || "http://127.0.0.1:8080";
 
 export interface Post {
   id: number;

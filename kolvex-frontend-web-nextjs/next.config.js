@@ -78,7 +78,7 @@ const nextConfig = {
     // 开发环境：允许本地后端 API
     const isDevelopment = process.env.NODE_ENV === "development";
     const localApiUrl =
-      process.env.NEXT_PUBLIC_BACKEND_API_URL || "http://localhost:8000";
+      process.env.NEXT_PUBLIC_BACKEND_API_URL || "http://localhost:8080";
 
     // 统一的 CSP（App/Pages Router 通用）
     // 如果不使用 Vercel Analytics，请把下面的 `va.vercel-scripts.com` 与 `*.vercel-insights.com` 从各指令删掉

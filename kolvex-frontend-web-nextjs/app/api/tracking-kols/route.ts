@@ -3,7 +3,7 @@ import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 // Backend API base URL
 const API_BASE_URL =
-  process.env.NEXT_PUBLIC_BACKEND_API_URL || "http://localhost:8000";
+  process.env.NEXT_PUBLIC_BACKEND_API_URL || "http://localhost:8080";
 const API_PREFIX = "/api/v1";
 
 export type Platform = "twitter" | "reddit" | "youtube" | "xiaohongshu";

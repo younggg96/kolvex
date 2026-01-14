@@ -3,7 +3,7 @@ import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 // Backend API base URL
 const NEXT_PUBLIC_BACKEND_API_URL =
-  process.env.NEXT_PUBLIC_BACKEND_API_URL || "http://localhost:8000";
+  process.env.NEXT_PUBLIC_BACKEND_API_URL || "http://localhost:8080";
 
 type RouteParams = { params: Promise<{ userId: string }> };
 

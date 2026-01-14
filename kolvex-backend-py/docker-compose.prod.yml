@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # PostgreSQL 数据库
   db:
@@ -20,6 +18,24 @@ services:
       - kolvex-network
     restart: always
 
+  # Ollama AI 服务 (本地 LLM)
+  ollama:
+    image: ollama/ollama:latest
+    container_name: kolvex-ollama-prod
+    volumes:
+      - ollama_data:/root/.ollama
+    networks:
+      - kolvex-network
+    restart: always
+    # 如果有 GPU，取消下面的注释
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: all
+    #           capabilities: [gpu]
+
   # FastAPI 后端
   backend:
     build:
@@ -27,20 +43,25 @@ services:
       dockerfile: Dockerfile.prod
     container_name: kolvex-backend-prod
     ports:
-      - "8000:8000"
+      - "8080:8080"
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
       SECRET_KEY: ${SECRET_KEY}
       DEBUG: "False"
       ALLOWED_ORIGINS: ${ALLOWED_ORIGINS}
+      # Ollama AI 配置 - 连接到 ollama 容器
+      OLLAMA_BASE_URL: http://ollama:11434
+      OLLAMA_MODEL: gemma2:2b
     depends_on:
       db:
         condition: service_healthy
+      ollama:
+        condition: service_started
     networks:
       - kolvex-network
     restart: always
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -48,8 +69,8 @@ services:
 
 volumes:
   postgres_data:
+  ollama_data:
 
 networks:
   kolvex-network:
     driver: bridge
-

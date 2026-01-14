@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 const API_BASE_URL =
-  process.env.NEXT_PUBLIC_BACKEND_API_URL || "http://localhost:8000";
+  process.env.NEXT_PUBLIC_BACKEND_API_URL || "http://localhost:8080";
 
 type RouteParams = { params: Promise<{ path: string[] }> };
 

@@ -8,7 +8,7 @@ import {
 } from "@/lib/cache";
 
 const NEXT_PUBLIC_BACKEND_API_URL =
-  process.env.NEXT_PUBLIC_BACKEND_API_URL || "http://127.0.0.1:8000";
+  process.env.NEXT_PUBLIC_BACKEND_API_URL || "http://127.0.0.1:8080";
 
 // Backend API response interface
 interface BackendQuote {
