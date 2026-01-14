@@ -9,21 +9,22 @@
 **Kolvex** 是一个综合性的股票分析平台，整合社交媒体内容、市场数据和关键意见领袖（KOL）追踪功能，为投资者提供实时洞察。
 
 ### 产品定位
+
 - **目标用户**: 个人投资者、金融分析师、投资爱好者
 - **核心价值**: 通过追踪 KOL 观点和情感分析，帮助用户做出更明智的投资决策
 - **支持平台**: Web (响应式) + PWA (移动端)
 
 ### 核心功能模块
 
-| 模块 | 功能描述 |
-|------|----------|
-| 📊 **股票追踪** | 实时股票数据、技术图表、价格提醒 |
-| 👥 **KOL 追踪** | 多平台 KOL 内容聚合、情感分析 |
-| 💼 **投资组合** | 券商账户集成、持仓管理、盈亏统计 |
-| 📰 **财经新闻** | 多平台新闻整合、AI 摘要 |
-| 🏆 **超级投资者** | 追踪知名投资者持仓变动 |
-| 👥 **社区** | 公开投资组合、用户互动 |
-| 🔔 **通知系统** | 实时推送、订阅提醒 |
+| 模块              | 功能描述                         |
+| ----------------- | -------------------------------- |
+| 📊 **股票追踪**   | 实时股票数据、技术图表、价格提醒 |
+| 👥 **KOL 追踪**   | 多平台 KOL 内容聚合、情感分析    |
+| 💼 **投资组合**   | 券商账户集成、持仓管理、盈亏统计 |
+| 📰 **财经新闻**   | 多平台新闻整合、AI 摘要          |
+| 🏆 **超级投资者** | 追踪知名投资者持仓变动           |
+| 👥 **社区**       | 公开投资组合、用户互动           |
+| 🔔 **通知系统**   | 实时推送、订阅提醒               |
 
 ---
 
@@ -32,6 +33,7 @@
 ### 前端技术栈 (Next.js)
 
 #### 核心框架
+
 ```
 Next.js           14.2.3      # React 全栈框架 (App Router)
 React             18.3.1      # UI 库
@@ -39,6 +41,7 @@ TypeScript        5.4.5       # 类型安全
 ```
 
 #### UI 与样式
+
 ```
 TailwindCSS       3.4.3       # 原子化 CSS 框架
 Radix UI          最新        # 无障碍组件库
@@ -63,24 +66,28 @@ clsx              2.1.1       # 类名合并工具
 ```
 
 #### 数据可视化
+
 ```
 Recharts          2.12.7      # React 图表库
 Chart.js          4.5.1       # 通用图表库
 ```
 
 #### 日期与时间
+
 ```
 date-fns          3.6.0       # 日期处理库
 react-day-picker  8.10.1      # 日期选择器
 ```
 
 #### 状态与数据
+
 ```
 @supabase/ssr     0.7.0       # Supabase SSR 支持
 @supabase/supabase-js 2.78.0  # Supabase 客户端
 ```
 
 #### 主题与交互
+
 ```
 next-themes       0.4.6       # 主题切换
 sonner            2.0.7       # Toast 通知
@@ -88,6 +95,7 @@ react-easy-crop   5.5.6       # 图片裁剪
 ```
 
 #### 工具与服务
+
 ```
 resend            6.4.2       # 邮件服务
 @vercel/analytics 1.6.1       # 分析服务
@@ -95,6 +103,7 @@ resend            6.4.2       # 邮件服务
 ```
 
 #### 开发工具
+
 ```
 ESLint            8.57.0      # 代码检查
 PostCSS           8.4.38      # CSS 处理
@@ -107,6 +116,7 @@ Sharp             0.34.4      # 图片处理
 ### 后端技术栈 (Python/FastAPI)
 
 #### 核心框架
+
 ```
 FastAPI           0.115.0     # 高性能异步 Web 框架
 Uvicorn           0.32.0      # ASGI 服务器
@@ -115,6 +125,7 @@ pydantic-settings 2.6.0       # 配置管理
 ```
 
 #### 数据库
+
 ```
 SQLAlchemy        2.0.35      # ORM
 Alembic           1.13.3      # 数据库迁移
@@ -124,6 +135,7 @@ postgrest         0.16.8      # PostgREST 客户端
 ```
 
 #### 认证与安全
+
 ```
 python-jose       3.3.0       # JWT 处理
 passlib           1.7.4       # 密码加密 (bcrypt)
@@ -132,16 +144,19 @@ email-validator   2.2.0       # 邮箱验证
 ```
 
 #### HTTP 与网络
+
 ```
 httpx             0.27.2      # 异步 HTTP 客户端
 ```
 
 #### 定时任务
+
 ```
 APScheduler       3.10.4      # 任务调度
 ```
 
 #### 数据获取
+
 ```
 yfinance          0.2.40+     # Yahoo Finance 股票数据
 Playwright        1.40.0+     # 浏览器自动化爬虫
@@ -150,6 +165,7 @@ lxml              5.0.0+      # XML/HTML 解析器
 ```
 
 #### 第三方集成
+
 ```
 snaptrade-python-sdk 11.0.0+  # SnapTrade 券商 API
 MCP               1.0.0+      # Model Context Protocol
@@ -160,6 +176,7 @@ MCP               1.0.0+      # Model Context Protocol
 ## 🎨 UI 架构与设计系统
 
 ### 设计原则
+
 1. **现代化**: 简洁、专业的金融科技风格
 2. **响应式**: 支持桌面端和移动端
 3. **无障碍**: 基于 Radix UI 的 A11y 支持
@@ -241,53 +258,55 @@ const manrope = Manrope({
 
 #### 布局组件 (`components/layout/`)
 
-| 组件 | 用途 |
-|------|------|
-| `BaseLayout` | 基础页面容器 |
+| 组件              | 用途                   |
+| ----------------- | ---------------------- |
+| `BaseLayout`      | 基础页面容器           |
 | `DashboardLayout` | 仪表板布局（含侧边栏） |
-| `Header` | 顶部导航栏 |
-| `LandingHeader` | 落地页导航 |
-| `Sidebar` | 侧边导航菜单 |
-| `Footer` | 页脚 |
-| `SectionCard` | 卡片式内容区块 |
-| `SectionHeader` | 区块标题 |
+| `Header`          | 顶部导航栏             |
+| `LandingHeader`   | 落地页导航             |
+| `Sidebar`         | 侧边导航菜单           |
+| `Footer`          | 页脚                   |
+| `SectionCard`     | 卡片式内容区块         |
+| `SectionHeader`   | 区块标题               |
 
 #### 股票组件 (`components/stock/`)
 
-| 组件 | 用途 |
-|------|------|
-| `StockCard` | 股票概览卡片 |
-| `StockRow` | 股票列表行 |
-| `StockChart` | 股票走势图 |
-| `TradingViewChart` | TradingView 嵌入图表 |
-| `MiniSparkline` | 迷你走势线 |
-| `StockSearchDialog` | 股票搜索对话框 |
-| `StockInfoBoard` | 股票信息面板 |
-| `StockHeroSection` | 股票详情页头部 |
+| 组件                | 用途                 |
+| ------------------- | -------------------- |
+| `StockCard`         | 股票概览卡片         |
+| `StockRow`          | 股票列表行           |
+| `StockChart`        | 股票走势图           |
+| `TradingViewChart`  | TradingView 嵌入图表 |
+| `MiniSparkline`     | 迷你走势线           |
+| `StockSearchDialog` | 股票搜索对话框       |
+| `StockInfoBoard`    | 股票信息面板         |
+| `StockHeroSection`  | 股票详情页头部       |
 
 **StockCard 示例结构:**
+
 ```tsx
 interface StockCardProps {
-  symbol: string;        // 股票代码
-  name: string;          // 公司名称
-  price: number;         // 当前价格
-  change: number;        // 涨跌额
+  symbol: string; // 股票代码
+  name: string; // 公司名称
+  price: number; // 当前价格
+  change: number; // 涨跌额
   changePercent: number; // 涨跌幅 %
 }
 ```
 
 #### KOL 组件 (`components/kol/`)
 
-| 组件 | 用途 |
-|------|------|
-| `KOLTweetCard` | KOL 帖子卡片 |
-| `KOLTrackerTable` | KOL 追踪表格 |
-| `KOLRankingTable` | KOL 排行榜 |
-| `KOLProfileHeader` | KOL 资料头部 |
-| `KOLHoverCard` | KOL 悬浮预览卡 |
-| `KOLHeroSection` | KOL 页面头部 |
+| 组件               | 用途           |
+| ------------------ | -------------- |
+| `KOLTweetCard`     | KOL 帖子卡片   |
+| `KOLTrackerTable`  | KOL 追踪表格   |
+| `KOLRankingTable`  | KOL 排行榜     |
+| `KOLProfileHeader` | KOL 资料头部   |
+| `KOLHoverCard`     | KOL 悬浮预览卡 |
+| `KOLHeroSection`   | KOL 页面头部   |
 
 **KOLTweetCard 功能:**
+
 - 显示 KOL 头像、用户名、认证标识
 - 帖子内容（支持展开收起）
 - 互动数据（点赞、转发、评论）
@@ -297,49 +316,50 @@ interface StockCardProps {
 
 #### 投资组合组件 (`components/portfolio/`)
 
-| 组件 | 用途 |
-|------|------|
-| `PortfolioHoldings` | 持仓列表 |
-| `EquityPositionsTable` | 股票持仓表格 |
-| `OptionPositionsTable` | 期权持仓表格 |
-| `PortfolioAllocation` | 资产配置饼图 |
-| `PortfolioStatsGrid` | 组合统计数据网格 |
-| `AccountCard` | 券商账户卡片 |
-| `PrivacySettingsDialog` | 隐私设置对话框 |
-| `ConnectionStates` | 连接状态显示 |
+| 组件                    | 用途             |
+| ----------------------- | ---------------- |
+| `PortfolioHoldings`     | 持仓列表         |
+| `EquityPositionsTable`  | 股票持仓表格     |
+| `OptionPositionsTable`  | 期权持仓表格     |
+| `PortfolioAllocation`   | 资产配置饼图     |
+| `PortfolioStatsGrid`    | 组合统计数据网格 |
+| `AccountCard`           | 券商账户卡片     |
+| `PrivacySettingsDialog` | 隐私设置对话框   |
+| `ConnectionStates`      | 连接状态显示     |
 
 #### 分析组件 (`components/analytics/`)
 
-| 组件 | 用途 |
-|------|------|
-| `AnalyticsDashboard` | 分析仪表板 |
-| `SentimentChart` | 情感分布图 |
-| `SentimentTrendChart` | 情感趋势图 |
-| `EngagementHeatmap` | 互动热力图 |
-| `KOLBubbleChart` | KOL 影响力气泡图 |
-| `TickerHeatmap` | 股票热度图 |
-| `TrendChart` | 趋势折线图 |
-| `StatsCard` | 统计数据卡片 |
+| 组件                  | 用途             |
+| --------------------- | ---------------- |
+| `AnalyticsDashboard`  | 分析仪表板       |
+| `SentimentChart`      | 情感分布图       |
+| `SentimentTrendChart` | 情感趋势图       |
+| `EngagementHeatmap`   | 互动热力图       |
+| `KOLBubbleChart`      | KOL 影响力气泡图 |
+| `TickerHeatmap`       | 股票热度图       |
+| `TrendChart`          | 趋势折线图       |
+| `StatsCard`           | 统计数据卡片     |
 
 #### 通用组件 (`components/common/`)
 
-| 组件 | 用途 |
-|------|------|
-| `AIAnalysis` | AI 分析结果展示 |
-| `SentimentBadge` | 情感标签 |
-| `LoadingSpinner` | 加载动画 |
-| `LoadingSkeleton` | 骨架屏 |
-| `EmptyState` | 空状态提示 |
-| `SearchWithAutocomplete` | 自动完成搜索框 |
-| `ImageGallery` | 图片画廊 |
-| `VideoPlayer` | 视频播放器 |
-| `ExpandableText` | 可展开文本 |
-| `TranslateButton` | 翻译按钮 |
-| `Tags` | 标签组 |
+| 组件                     | 用途            |
+| ------------------------ | --------------- |
+| `AIAnalysis`             | AI 分析结果展示 |
+| `SentimentBadge`         | 情感标签        |
+| `LoadingSpinner`         | 加载动画        |
+| `LoadingSkeleton`        | 骨架屏          |
+| `EmptyState`             | 空状态提示      |
+| `SearchWithAutocomplete` | 自动完成搜索框  |
+| `ImageGallery`           | 图片画廊        |
+| `VideoPlayer`            | 视频播放器      |
+| `ExpandableText`         | 可展开文本      |
+| `TranslateButton`        | 翻译按钮        |
+| `Tags`                   | 标签组          |
 
 #### 基础 UI 组件 (`components/ui/`)
 
 基于 Radix UI 封装的无障碍组件：
+
 - `Button` - 按钮
 - `Card` - 卡片
 - `Dialog` - 对话框
@@ -382,6 +402,7 @@ Content-Type: application/json
 ### 通用响应格式
 
 **成功响应:**
+
 ```json
 {
   "data": { ... },
@@ -391,6 +412,7 @@ Content-Type: application/json
 ```
 
 **分页响应:**
+
 ```json
 {
   "items": [...],
@@ -402,6 +424,7 @@ Content-Type: application/json
 ```
 
 **错误响应:**
+
 ```json
 {
   "detail": "Error message",
@@ -414,6 +437,7 @@ Content-Type: application/json
 ### 1. 认证模块 (`/api/auth/`)
 
 #### 用户注册
+
 ```http
 POST /api/auth/register
 Content-Type: application/json
@@ -426,6 +450,7 @@ Content-Type: application/json
 ```
 
 #### 用户登录
+
 ```http
 POST /api/auth/login
 Content-Type: application/json
@@ -448,6 +473,7 @@ Response:
 ```
 
 #### 刷新 Token
+
 ```http
 POST /api/auth/refresh
 Authorization: Bearer <refresh_token>
@@ -458,6 +484,7 @@ Authorization: Bearer <refresh_token>
 ### 2. KOL 帖子模块 (`/api/kol-tweets/`)
 
 #### 获取帖子列表
+
 ```http
 GET /api/kol-tweets/
 ```
@@ -476,6 +503,7 @@ GET /api/kol-tweets/
 | ticker | string | 否 | 股票代码 |
 
 **响应:**
+
 ```json
 {
   "posts": [
@@ -508,6 +536,7 @@ GET /api/kol-tweets/
 ```
 
 #### 获取用户帖子
+
 ```http
 GET /api/kol-tweets/user/{username}?platform=twitter&page=1&page_size=20
 ```
@@ -517,6 +546,7 @@ GET /api/kol-tweets/user/{username}?platform=twitter&page=1&page_size=20
 ### 3. KOL 资料模块 (`/api/kol-tweets/profiles/`)
 
 #### 获取 KOL 列表
+
 ```http
 GET /api/kol-tweets/profiles/
 ```
@@ -531,6 +561,7 @@ GET /api/kol-tweets/profiles/
 | sort_by | string | 排序：followers, tweets, engagement |
 
 **响应:**
+
 ```json
 {
   "profiles": [
@@ -556,6 +587,7 @@ GET /api/kol-tweets/profiles/
 ```
 
 #### 获取单个 KOL 资料
+
 ```http
 GET /api/kol-tweets/profiles/{username}
 ```
@@ -565,11 +597,13 @@ GET /api/kol-tweets/profiles/{username}
 ### 4. 股票模块 (`/api/stocks/`)
 
 #### 搜索股票
+
 ```http
 GET /api/stocks/search?q=apple&limit=10
 ```
 
 **响应:**
+
 ```json
 {
   "results": [
@@ -585,21 +619,23 @@ GET /api/stocks/search?q=apple&limit=10
 ```
 
 #### 获取股票详情
+
 ```http
 GET /api/stocks/tickers/{symbol}
 ```
 
 **响应:**
+
 ```json
 {
   "symbol": "AAPL",
   "name": "Apple Inc.",
-  "price": 185.50,
+  "price": 185.5,
   "change": 2.35,
   "change_percent": 1.28,
-  "open": 183.20,
-  "high": 186.10,
-  "low": 182.80,
+  "open": 183.2,
+  "high": 186.1,
+  "low": 182.8,
   "volume": 45000000,
   "market_cap": 2850000000000,
   "pe_ratio": 28.5,
@@ -611,6 +647,7 @@ GET /api/stocks/tickers/{symbol}
 ```
 
 #### 获取热门股票
+
 ```http
 GET /api/stocks/trending?period=24h&limit=20
 ```
@@ -620,12 +657,14 @@ GET /api/stocks/trending?period=24h&limit=20
 ### 5. 股票追踪模块 (`/api/stocks/tracked/`)
 
 #### 获取追踪的股票
+
 ```http
 GET /api/stocks/tracked
 Authorization: Bearer <token>
 ```
 
 **响应:**
+
 ```json
 {
   "stocks": [
@@ -660,6 +699,7 @@ Authorization: Bearer <token>
 ```
 
 #### 添加追踪股票
+
 ```http
 POST /api/stocks/tracked
 Authorization: Bearer <token>
@@ -674,6 +714,7 @@ Content-Type: application/json
 ```
 
 #### 更新追踪设置
+
 ```http
 PATCH /api/stocks/tracked/{stock_id}
 Authorization: Bearer <token>
@@ -685,12 +726,14 @@ Content-Type: application/json
 ```
 
 #### 删除追踪股票
+
 ```http
 DELETE /api/stocks/tracked/{stock_id}
 Authorization: Bearer <token>
 ```
 
 #### 检查是否追踪
+
 ```http
 GET /api/stocks/tracked/check/{symbol}
 Authorization: Bearer <token>
@@ -708,12 +751,14 @@ Response:
 ### 6. SnapTrade 投资组合模块 (`/api/snaptrade/`)
 
 #### 获取我的持仓
+
 ```http
 GET /api/snaptrade/holdings
 Authorization: Bearer <token>
 ```
 
 **响应:**
+
 ```json
 {
   "accounts": [
@@ -722,8 +767,8 @@ Authorization: Bearer <token>
       "brokerage": "Interactive Brokers",
       "name": "Main Account",
       "number": "U1234567",
-      "cash": 15000.50,
-      "buying_power": 30000.00
+      "cash": 15000.5,
+      "buying_power": 30000.0
     }
   ],
   "positions": [
@@ -732,21 +777,21 @@ Authorization: Bearer <token>
       "symbol": "AAPL",
       "name": "Apple Inc.",
       "quantity": 100,
-      "average_price": 150.00,
-      "current_price": 185.50,
-      "market_value": 18550.00,
-      "unrealized_pnl": 3550.00,
+      "average_price": 150.0,
+      "current_price": 185.5,
+      "market_value": 18550.0,
+      "unrealized_pnl": 3550.0,
       "unrealized_pnl_percent": 23.67,
       "type": "equity",
       "is_hidden": false
     }
   ],
   "summary": {
-    "total_value": 150000.00,
-    "total_cost": 120000.00,
-    "total_pnl": 30000.00,
-    "total_pnl_percent": 25.00,
-    "day_change": 1500.00,
+    "total_value": 150000.0,
+    "total_cost": 120000.0,
+    "total_pnl": 30000.0,
+    "total_pnl_percent": 25.0,
+    "day_change": 1500.0,
     "day_change_percent": 1.01
   },
   "is_public": false,
@@ -755,11 +800,13 @@ Authorization: Bearer <token>
 ```
 
 #### 获取公开投资组合用户
+
 ```http
 GET /api/snaptrade/public-users?limit=20&offset=0&sort_by=pnl_percent&sort_order=desc
 ```
 
 **响应:**
+
 ```json
 {
   "users": [
@@ -768,7 +815,7 @@ GET /api/snaptrade/public-users?limit=20&offset=0&sort_by=pnl_percent&sort_order
       "username": "trader_pro",
       "display_name": "专业交易员",
       "avatar_url": "https://...",
-      "total_value": 500000.00,
+      "total_value": 500000.0,
       "pnl_percent": 45.5,
       "positions_count": 25,
       "last_synced_at": "2025-01-08T09:00:00Z"
@@ -780,11 +827,13 @@ GET /api/snaptrade/public-users?limit=20&offset=0&sort_by=pnl_percent&sort_order
 ```
 
 #### 获取用户公开持仓
+
 ```http
 GET /api/snaptrade/holdings/{user_id}
 ```
 
 #### 切换公开分享
+
 ```http
 POST /api/snaptrade/toggle-public
 Authorization: Bearer <token>
@@ -796,6 +845,7 @@ Content-Type: application/json
 ```
 
 #### 隐藏/显示持仓
+
 ```http
 POST /api/snaptrade/positions/{position_id}/visibility
 Authorization: Bearer <token>
@@ -807,6 +857,7 @@ Content-Type: application/json
 ```
 
 #### 批量隐藏/显示持仓
+
 ```http
 POST /api/snaptrade/positions/visibility/batch
 Authorization: Bearer <token>
@@ -819,12 +870,14 @@ Content-Type: application/json
 ```
 
 #### 获取隐私设置
+
 ```http
 GET /api/snaptrade/privacy-settings
 Authorization: Bearer <token>
 ```
 
 **响应:**
+
 ```json
 {
   "settings": {
@@ -839,6 +892,7 @@ Authorization: Bearer <token>
 ```
 
 #### 更新隐私设置
+
 ```http
 PUT /api/snaptrade/privacy-settings
 Authorization: Bearer <token>
@@ -858,11 +912,13 @@ Content-Type: application/json
 ### 7. 超级投资者模块 (`/api/dataroma/`)
 
 #### 获取投资者列表
+
 ```http
 GET /api/dataroma/investors?page=1&page_size=20
 ```
 
 **响应:**
+
 ```json
 {
   "investors": [
@@ -882,16 +938,19 @@ GET /api/dataroma/investors?page=1&page_size=20
 ```
 
 #### 获取投资者详情
+
 ```http
 GET /api/dataroma/investors/{slug}
 ```
 
 #### 获取投资者持仓
+
 ```http
 GET /api/dataroma/holdings/{investor_id}
 ```
 
 **响应:**
+
 ```json
 {
   "holdings": [
@@ -919,12 +978,14 @@ GET /api/dataroma/holdings/{investor_id}
 ### 8. 通知模块 (`/api/notifications/`)
 
 #### 获取通知列表
+
 ```http
 GET /api/notifications/?page=1&page_size=20&unread_only=false
 Authorization: Bearer <token>
 ```
 
 **响应:**
+
 ```json
 {
   "notifications": [
@@ -948,18 +1009,21 @@ Authorization: Bearer <token>
 ```
 
 #### 标记为已读
+
 ```http
 PATCH /api/notifications/{id}/read
 Authorization: Bearer <token>
 ```
 
 #### 全部标记已读
+
 ```http
 POST /api/notifications/read-all
 Authorization: Bearer <token>
 ```
 
 #### 删除通知
+
 ```http
 DELETE /api/notifications/{id}
 Authorization: Bearer <token>
@@ -970,11 +1034,13 @@ Authorization: Bearer <token>
 ### 9. 新闻模块 (`/api/news/`)
 
 #### 获取新闻列表
+
 ```http
 GET /api/news/?page=1&page_size=20&ticker=AAPL
 ```
 
 **响应:**
+
 ```json
 {
   "articles": [
@@ -1000,16 +1066,19 @@ GET /api/news/?page=1&page_size=20&ticker=AAPL
 ### 10. 小红书模块 (`/api/xiaohongshu/`)
 
 #### 获取小红书 KOL
+
 ```http
 GET /api/xiaohongshu/kols?page=1&page_size=20
 ```
 
 #### 获取小红书帖子
+
 ```http
 GET /api/xiaohongshu/posts?page=1&page_size=20&kol_id=xxx
 ```
 
 **响应:**
+
 ```json
 {
   "posts": [
@@ -1043,6 +1112,7 @@ GET /api/xiaohongshu/posts?page=1&page_size=20&kol_id=xxx
 ### 11. AI 分析模块 (`/api/ai/`)
 
 #### 分析帖子
+
 ```http
 POST /api/ai/analyze-post
 Authorization: Bearer <token>
@@ -1055,6 +1125,7 @@ Content-Type: application/json
 ```
 
 **响应:**
+
 ```json
 {
   "sentiment": "bullish",
@@ -1062,10 +1133,7 @@ Content-Type: application/json
   "is_stock_related": true,
   "tickers": ["NVDA"],
   "summary": "看好 NVIDIA 今年的表现",
-  "key_points": [
-    "对 NVDA 持乐观态度",
-    "预期股价上涨"
-  ]
+  "key_points": ["对 NVDA 持乐观态度", "预期股价上涨"]
 }
 ```
 
@@ -1074,11 +1142,13 @@ Content-Type: application/json
 ### 12. 市场数据模块 (`/api/market-data/`)
 
 #### 获取市场指数
+
 ```http
 GET /api/market-data/indices
 ```
 
 **响应:**
+
 ```json
 {
   "indices": [
@@ -1086,22 +1156,22 @@ GET /api/market-data/indices
       "symbol": "^GSPC",
       "name": "S&P 500",
       "value": 4750.25,
-      "change": 25.50,
+      "change": 25.5,
       "change_percent": 0.54
     },
     {
       "symbol": "^DJI",
       "name": "Dow Jones",
-      "value": 37500.00,
-      "change": 150.00,
-      "change_percent": 0.40
+      "value": 37500.0,
+      "change": 150.0,
+      "change_percent": 0.4
     },
     {
       "symbol": "^IXIC",
       "name": "NASDAQ",
-      "value": 15000.50,
+      "value": 15000.5,
       "change": 75.25,
-      "change_percent": 0.50
+      "change_percent": 0.5
     }
   ],
   "updated_at": "2025-01-08T16:00:00Z"
@@ -1112,19 +1182,19 @@ GET /api/market-data/indices
 
 ## 🔑 关键概念与术语表
 
-| 术语 | 英文 | 说明 |
-|------|------|------|
-| KOL | Key Opinion Leader | 关键意见领袖，指有影响力的投资者/分析师 |
-| 情感分析 | Sentiment Analysis | AI 分析帖子的市场情感倾向 |
-| Bullish | 看涨 | 对市场/股票持乐观态度 |
-| Bearish | 看跌 | 对市场/股票持悲观态度 |
-| Neutral | 中性 | 对市场/股票无明确倾向 |
-| Ticker | 股票代码 | 如 AAPL, NVDA, TSLA |
-| SnapTrade | 券商聚合 | 连接用户真实券商账户的服务 |
-| Dataroma | 持仓数据源 | 追踪超级投资者持仓的数据来源 |
-| PnL | Profit and Loss | 盈亏 |
-| 持仓 | Position/Holdings | 用户持有的股票/期权 |
-| 追踪 | Track/Subscribe | 关注某个 KOL 或股票 |
+| 术语      | 英文               | 说明                                    |
+| --------- | ------------------ | --------------------------------------- |
+| KOL       | Key Opinion Leader | 关键意见领袖，指有影响力的投资者/分析师 |
+| 情感分析  | Sentiment Analysis | AI 分析帖子的市场情感倾向               |
+| Bullish   | 看涨               | 对市场/股票持乐观态度                   |
+| Bearish   | 看跌               | 对市场/股票持悲观态度                   |
+| Neutral   | 中性               | 对市场/股票无明确倾向                   |
+| Ticker    | 股票代码           | 如 AAPL, NVDA, TSLA                     |
+| SnapTrade | 券商聚合           | 连接用户真实券商账户的服务              |
+| Dataroma  | 持仓数据源         | 追踪超级投资者持仓的数据来源            |
+| PnL       | Profit and Loss    | 盈亏                                    |
+| 持仓      | Position/Holdings  | 用户持有的股票/期权                     |
+| 追踪      | Track/Subscribe    | 关注某个 KOL 或股票                     |
 
 ---
 
@@ -1226,6 +1296,7 @@ kolvex/
 ### 本地开发
 
 **前端:**
+
 ```bash
 cd kolvex-frontend-web-nextjs
 npm install
@@ -1235,6 +1306,7 @@ npm run dev
 ```
 
 **后端:**
+
 ```bash
 cd kolvex-backend-py
 python -m venv venv
@@ -1248,11 +1320,13 @@ python main.py
 ### 生产部署
 
 **前端 (Vercel):**
+
 ```bash
 vercel --prod
 ```
 
 **后端 (Docker):**
+
 ```bash
 docker build -t kolvex-backend .
 docker run -p 8000:8000 kolvex-backend
@@ -1267,5 +1341,4 @@ docker run -p 8000:8000 kolvex-backend
 
 ---
 
-*文档最后更新: 2025-01-08*
-
+_文档最后更新: 2025-01-08_

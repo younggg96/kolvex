@@ -3,9 +3,10 @@ SnapTrade 服务层
 处理业务逻辑和数据库操作
 """
 
+import asyncio
 import logging
 import uuid
-from typing import Optional, Dict, Any, List
+from typing import Optional, Dict, Any, List, Set
 from datetime import datetime
 from supabase import Client
 
@@ -17,6 +18,17 @@ from app.services.notification_service import (
 )
 
 logger = logging.getLogger(__name__)
+
+# 用于防止同一用户并发同步的锁
+_sync_locks: Dict[str, asyncio.Lock] = {}
+_syncing_users: Set[str] = set()
+
+
+def _get_user_sync_lock(user_id: str) -> asyncio.Lock:
+    """获取用户的同步锁"""
+    if user_id not in _sync_locks:
+        _sync_locks[user_id] = asyncio.Lock()
+    return _sync_locks[user_id]
 
 
 class SnapTradeService:
@@ -180,12 +192,32 @@ class SnapTradeService:
     async def sync_positions(self, user_id: str) -> List[Dict[str, Any]]:
         """
         同步用户的持仓数据（包括股票和期权）
+        使用锁防止并发同步，使用 upsert 防止重复数据
 
         Args:
             user_id: Supabase 用户 ID
 
         Returns:
             持仓列表
+        """
+        # 检查是否已经在同步中
+        if user_id in _syncing_users:
+            logger.warning(f"用户 {user_id} 正在同步中，跳过此次请求")
+            raise Exception("同步正在进行中，请稍后再试")
+
+        # 获取用户锁
+        lock = _get_user_sync_lock(user_id)
+
+        async with lock:
+            try:
+                _syncing_users.add(user_id)
+                return await self._do_sync_positions(user_id)
+            finally:
+                _syncing_users.discard(user_id)
+
+    async def _do_sync_positions(self, user_id: str) -> List[Dict[str, Any]]:
+        """
+        实际执行持仓同步的内部方法
         """
         connection = await self._get_connection(user_id)
         if not connection:
@@ -224,13 +256,11 @@ class SnapTradeService:
                             "price": pos.get("price", 0),
                         }
 
+        # 跟踪本次同步的所有持仓（用于清理已卖出的持仓）
+        synced_position_keys: Set[str] = set()
+
         for account in accounts.data or []:
             try:
-                # 删除该账户旧的持仓数据
-                self.supabase.table("snaptrade_positions").delete().eq(
-                    "account_id", account["id"]
-                ).execute()
-
                 # 同步股票/ETF 持仓
                 equity_positions = await self.client.get_account_positions(
                     user_id=connection["snaptrade_user_id"],
@@ -240,14 +270,17 @@ class SnapTradeService:
 
                 for position in equity_positions:
                     symbol_info = position.get("symbol", {})
+                    symbol = (
+                        symbol_info.get("symbol", {}).get("symbol")
+                        if isinstance(symbol_info.get("symbol"), dict)
+                        else symbol_info.get("symbol", "Unknown")
+                    )
+                    position_type = "equity"
+
                     position_data = {
                         "account_id": account["id"],
-                        "position_type": "equity",
-                        "symbol": (
-                            symbol_info.get("symbol", {}).get("symbol")
-                            if isinstance(symbol_info.get("symbol"), dict)
-                            else symbol_info.get("symbol", "Unknown")
-                        ),
+                        "position_type": position_type,
+                        "symbol": symbol,
                         "symbol_id": symbol_info.get("id"),
                         "security_name": symbol_info.get("description")
                         or symbol_info.get("symbol", {}).get("description"),
@@ -265,13 +298,21 @@ class SnapTradeService:
                         ),
                     }
 
+                    # 使用 upsert 代替 insert，基于 (account_id, symbol, position_type) 唯一约束
                     result = (
                         self.supabase.table("snaptrade_positions")
-                        .insert(position_data)
+                        .upsert(
+                            position_data,
+                            on_conflict="account_id,symbol,position_type",
+                        )
                         .execute()
                     )
                     if result.data:
                         all_positions.append(result.data[0])
+                        # 记录已同步的持仓
+                        synced_position_keys.add(
+                            f"{account['id']}:{symbol}:{position_type}"
+                        )
 
                 # 同步期权持仓
                 try:
@@ -292,10 +333,11 @@ class SnapTradeService:
                         opt_type = option_symbol.get("option_type", "")
                         exp_date = option_symbol.get("expiration_date", "")
                         display_name = f"{underlying_ticker} ${strike} {opt_type}"
+                        position_type = "option"
 
                         option_data = {
                             "account_id": account["id"],
-                            "position_type": "option",
+                            "position_type": position_type,
                             "symbol": display_name,
                             "symbol_id": symbol_info.get("id"),
                             "security_name": underlying.get("description", ""),
@@ -316,13 +358,20 @@ class SnapTradeService:
                             "underlying_symbol": underlying_ticker,
                         }
 
+                        # 使用 upsert 代替 insert
                         result = (
                             self.supabase.table("snaptrade_positions")
-                            .insert(option_data)
+                            .upsert(
+                                option_data,
+                                on_conflict="account_id,symbol,position_type",
+                            )
                             .execute()
                         )
                         if result.data:
                             all_positions.append(result.data[0])
+                            synced_position_keys.add(
+                                f"{account['id']}:{display_name}:{position_type}"
+                            )
 
                 except Exception as e:
                     logger.warning(f"同步账户 {account['account_id']} 期权失败: {e}")
@@ -330,6 +379,29 @@ class SnapTradeService:
             except Exception as e:
                 logger.error(f"同步账户 {account['account_id']} 持仓失败: {e}")
                 continue
+
+        # 删除已卖出的持仓（不在本次同步中的持仓）
+        for account in accounts.data or []:
+            try:
+                existing_positions = (
+                    self.supabase.table("snaptrade_positions")
+                    .select("id, symbol, position_type")
+                    .eq("account_id", account["id"])
+                    .execute()
+                )
+
+                for pos in existing_positions.data or []:
+                    key = f"{account['id']}:{pos['symbol']}:{pos['position_type']}"
+                    if key not in synced_position_keys:
+                        # 该持仓已不存在于券商，删除
+                        self.supabase.table("snaptrade_positions").delete().eq(
+                            "id", pos["id"]
+                        ).execute()
+                        logger.info(
+                            f"删除已卖出的持仓: {pos['symbol']} ({pos['position_type']})"
+                        )
+            except Exception as e:
+                logger.warning(f"清理已卖出持仓失败: {e}")
 
         # 更新同步时间
         self.supabase.table("snaptrade_connections").update(
