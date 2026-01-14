@@ -29,6 +29,7 @@ export function PortfolioAllocation({
   holdings,
   className = "",
   isOwner = true,
+  cachedSectorMap,
 }: PortfolioAllocationProps) {
   // Sort state
   const [sortKey, setSortKey] = useState<SortKey>("allocation");
@@ -43,10 +44,12 @@ export function PortfolioAllocation({
   );
 
   // Get processed sector data with aggregation (fixes duplicate stocks)
+  // Uses cached data if provided to avoid duplicate fetches
   const { sectorData, totalValue } = useSectorData({
     holdings,
     sortKey,
     sortDir,
+    cachedSectorMap,
   });
 
   // Toggle sector expansion

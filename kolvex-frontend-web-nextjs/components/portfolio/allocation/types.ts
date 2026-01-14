@@ -6,6 +6,8 @@ export interface PortfolioAllocationProps {
   holdings: SnapTradePosition[];
   className?: string;
   isOwner?: boolean;
+  // Optional: use cached sector data from parent (avoids duplicate fetches)
+  cachedSectorMap?: Map<string, string>;
 }
 
 export interface PositionInfo {

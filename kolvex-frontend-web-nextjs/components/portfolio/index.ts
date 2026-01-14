@@ -24,6 +24,11 @@ export * from "./types";
 // Hooks
 export { usePortfolioData } from "./hooks/usePortfolioData";
 export { useEquitySort, useOptionSort } from "./hooks/usePortfolioSort";
+export {
+  StockDataCacheProvider,
+  useStockDataCache,
+  usePortfolioSymbols,
+} from "./hooks/useStockDataCache";
 
 // Utils
 export { downloadHoldings } from "./utils/downloadHoldings";

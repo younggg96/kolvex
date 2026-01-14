@@ -1,8 +1,7 @@
 "use client";
 
-import { useMemo, useEffect, useState } from "react";
+import { useMemo, useEffect, useState, useCallback } from "react";
 import type { SnapTradePosition } from "@/lib/supabase/database.types";
-import type { StockOverview } from "@/lib/stockApi";
 import type {
   SectorData,
   PositionInfo,
@@ -17,47 +16,79 @@ interface UseSectorDataOptions {
   holdings: SnapTradePosition[];
   sortKey: SortKey;
   sortDir: SortDirection;
+  // Optional: use cached sector data from parent (avoids duplicate fetches)
+  cachedSectorMap?: Map<string, string>;
 }
 
 interface UseSectorDataResult {
   sectorData: SectorData[];
   totalValue: number;
   loading: boolean;
+  // Symbols that need sector data
+  requiredSymbols: string[];
 }
 
 export function useSectorData({
   holdings,
   sortKey,
   sortDir,
+  cachedSectorMap,
 }: UseSectorDataOptions): UseSectorDataResult {
-  const [sectorMap, setSectorMap] = useState<Map<string, string>>(new Map());
+  const [localSectorMap, setLocalSectorMap] = useState<Map<string, string>>(
+    new Map()
+  );
   const [loading, setLoading] = useState(true);
 
-  // Fetch sector information for all holdings
+  // Get unique symbols from holdings
+  const requiredSymbols = useMemo(() => {
+    const symbols = new Set<string>();
+    holdings.forEach((pos) => {
+      if (pos.is_hidden) return;
+      const sym = getUnderlyingSymbol(
+        pos.symbol,
+        pos.underlying_symbol,
+        pos.position_type === "option"
+      );
+      if (sym) symbols.add(sym.trim().toUpperCase());
+    });
+    return Array.from(symbols);
+  }, [holdings]);
+
+  // Create a stable key for symbols to prevent infinite loops
+  const symbolsKey = useMemo(
+    () => requiredSymbols.sort().join(","),
+    [requiredSymbols]
+  );
+
+  // Use cached map if provided, otherwise use local map
+  const sectorMap = cachedSectorMap || localSectorMap;
+
+  // Check if we're using parent's cached data
+  const usingParentCache = !!cachedSectorMap;
+
+  // Fetch sectors when holdings change - only if not using parent cache
   useEffect(() => {
-    const fetchSectors = async () => {
+    // If using parent's cached data, skip fetching - parent handles it
+    if (usingParentCache) {
+      setLoading(false);
+      return;
+    }
+
+    if (requiredSymbols.length === 0) {
+      setLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+
+    const fetchData = async () => {
       setLoading(true);
       const newMap = new Map<string, string>();
-
-      // Get unique symbols (excluding options, use underlying for options)
-      // Normalize symbols to uppercase for consistent lookup
-      const symbols = new Set<string>();
-      holdings.forEach((pos) => {
-        if (pos.is_hidden) return;
-        const sym = getUnderlyingSymbol(
-          pos.symbol,
-          pos.underlying_symbol,
-          pos.position_type === "option"
-        );
-        if (sym) symbols.add(sym.trim().toUpperCase());
-      });
-
-      // Fetch overview for each symbol (in parallel, batched)
-      const symbolArray = Array.from(symbols);
       const batchSize = 5;
 
-      for (let i = 0; i < symbolArray.length; i += batchSize) {
-        const batch = symbolArray.slice(i, i + batchSize);
+      for (let i = 0; i < requiredSymbols.length; i += batchSize) {
+        if (cancelled) return;
+        const batch = requiredSymbols.slice(i, i + batchSize);
         await Promise.all(
           batch.map(async (normalizedSymbol) => {
             try {
@@ -65,9 +96,8 @@ export function useSectorData({
                 `/api/stocks?action=overview&symbol=${normalizedSymbol}`
               );
               if (res.ok) {
-                const data: StockOverview = await res.json();
+                const data = await res.json();
                 if (data.company?.sector) {
-                  // Store with normalized key
                   newMap.set(normalizedSymbol, data.company.sector);
                 }
               }
@@ -81,16 +111,20 @@ export function useSectorData({
         );
       }
 
-      setSectorMap(newMap);
-      setLoading(false);
+      if (!cancelled) {
+        setLocalSectorMap(newMap);
+        setLoading(false);
+      }
     };
 
-    if (holdings.length > 0) {
-      fetchSectors();
-    } else {
-      setLoading(false);
-    }
-  }, [holdings]);
+    fetchData();
+
+    return () => {
+      cancelled = true;
+    };
+    // Use symbolsKey for stable dependency
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [symbolsKey, usingParentCache]);
 
   // Process holdings into sector allocation data with aggregation to avoid duplicates
   const sectorData = useMemo(() => {
@@ -263,5 +297,5 @@ export function useSectorData({
     [sectorData]
   );
 
-  return { sectorData, totalValue, loading };
+  return { sectorData, totalValue, loading, requiredSymbols };
 }

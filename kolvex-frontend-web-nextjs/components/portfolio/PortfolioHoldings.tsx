@@ -1,10 +1,12 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
-import { AlertCircle } from "lucide-react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
+import { AlertCircle, RefreshCw, Clock } from "lucide-react";
 import { SwitchTab } from "@/components/ui/switch-tab";
 import { EmptyState } from "@/components/common/EmptyState";
 import { calculateTotalValue, calculateTotalPnL } from "@/lib/snaptradeApi";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 // Local components
 import { PortfolioSkeleton } from "./PortfolioSkeleton";
@@ -18,6 +20,10 @@ import { DisconnectDialog } from "./DisconnectDialog";
 // Hooks
 import { usePortfolioData } from "./hooks/usePortfolioData";
 import { useEquitySort, useOptionSort } from "./hooks/usePortfolioSort";
+import {
+  useStockDataCache,
+  usePortfolioSymbols,
+} from "./hooks/useStockDataCache";
 
 // Utils
 import { downloadHoldings } from "./utils/downloadHoldings";
@@ -41,6 +47,9 @@ export default function PortfolioHoldings({
   const [sparklineDataMap, setSparklineDataMap] = useState<
     Map<string, number[]>
   >(new Map());
+  const [sectorDataMap, setSectorDataMap] = useState<Map<string, string>>(
+    new Map()
+  );
 
   // Custom hooks
   const {
@@ -61,6 +70,17 @@ export default function PortfolioHoldings({
 
   const equitySort = useEquitySort();
   const optionSort = useOptionSort();
+
+  // Stock data cache
+  const {
+    fetchSparklines,
+    fetchSectors,
+    isLoading: stockDataLoading,
+    lastRefreshTime,
+  } = useStockDataCache();
+
+  // Get all unique symbols from holdings
+  const portfolioSymbols = usePortfolioSymbols(holdings?.accounts);
 
   // Handle download
   const handleDownload = useCallback(
@@ -90,47 +110,65 @@ export default function PortfolioHoldings({
     }
   }, [holdings?.accounts]);
 
-  // Fetch intraday chart data for sparklines
+  // Create a stable key for the symbols to detect actual changes
+  const symbolsKey = useMemo(
+    () => portfolioSymbols.sort().join(","),
+    [portfolioSymbols]
+  );
+
+  // Fetch stock data when symbols change (uses cache)
   useEffect(() => {
-    const fetchSparklineData = async () => {
-      if (!holdings?.accounts) return;
+    if (portfolioSymbols.length === 0) return;
 
-      // Get unique symbols from all positions
-      const symbols = new Set<string>();
-      holdings.accounts.forEach((account) => {
-        account.snaptrade_positions?.forEach((pos) => {
-          const symbol =
-            pos.position_type === "option"
-              ? pos.underlying_symbol || pos.symbol
-              : pos.symbol;
-          if (symbol) symbols.add(symbol);
-        });
-      });
+    let cancelled = false;
 
-      const newMap = new Map<string, number[]>();
+    const fetchData = async () => {
+      // Fetch sparklines and sectors in parallel using cache
+      const [sparklines, sectors] = await Promise.all([
+        fetchSparklines(portfolioSymbols, false),
+        fetchSectors(portfolioSymbols, false),
+      ]);
 
-      await Promise.all(
-        Array.from(symbols).map(async (symbol) => {
-          try {
-            const response = await fetch(
-              `/api/stocks?action=chart&symbol=${symbol}&interval=5m`
-            );
-            if (response.ok) {
-              const data = await response.json();
-              const values = data.map((d: { value: number }) => d.value);
-              newMap.set(symbol, values);
-            }
-          } catch (error) {
-            console.error(`Failed to fetch sparkline for ${symbol}:`, error);
-          }
-        })
-      );
-
-      setSparklineDataMap(newMap);
+      if (!cancelled) {
+        setSparklineDataMap(sparklines);
+        setSectorDataMap(sectors);
+      }
     };
 
-    fetchSparklineData();
-  }, [holdings?.accounts]);
+    fetchData();
+
+    return () => {
+      cancelled = true;
+    };
+    // Use symbolsKey instead of portfolioSymbols to prevent re-runs when array reference changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [symbolsKey, fetchSparklines, fetchSectors]);
+
+  // Handle manual refresh
+  const handleRefreshStockData = useCallback(async () => {
+    if (portfolioSymbols.length === 0) return;
+
+    const [sparklines, sectors] = await Promise.all([
+      fetchSparklines(portfolioSymbols, true),
+      fetchSectors(portfolioSymbols, true),
+    ]);
+
+    setSparklineDataMap(sparklines);
+    setSectorDataMap(sectors);
+  }, [portfolioSymbols, fetchSparklines, fetchSectors]);
+
+  // Format last refresh time
+  const formatLastRefresh = useMemo(() => {
+    if (!lastRefreshTime) return null;
+    const now = Date.now();
+    const diffMs = now - lastRefreshTime;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+
+    if (diffMins < 1) return "Just now";
+    if (diffMins < 60) return `${diffMins}m ago`;
+    return `${diffHours}h ago`;
+  }, [lastRefreshTime]);
 
   // Notify parent component of header actions state
   useEffect(() => {
@@ -268,20 +306,47 @@ export default function PortfolioHoldings({
         }
       />
 
-      {/* Tab Navigation */}
+      {/* Tab Navigation with Refresh Button */}
       {holdings?.accounts && holdings.accounts.length > 0 && (
         <>
-          <SwitchTab
-            options={[
-              { value: "holdings", label: "Holdings" },
-              { value: "analytics", label: "Analytics" },
-            ]}
-            value={activeTab}
-            onValueChange={(v) => setActiveTab(v as "holdings" | "analytics")}
-            variant="underline"
-            size="md"
-            className="!w-fit"
-          />
+          <div className="flex items-center justify-between gap-4">
+            <SwitchTab
+              options={[
+                { value: "holdings", label: "Holdings" },
+                { value: "analytics", label: "Analytics" },
+              ]}
+              value={activeTab}
+              onValueChange={(v) => setActiveTab(v as "holdings" | "analytics")}
+              variant="underline"
+              size="md"
+              className="!w-fit"
+            />
+
+            {/* Stock Data Refresh Button */}
+            <div className="flex items-center gap-2">
+              {formatLastRefresh && (
+                <span className="text-xs text-muted-foreground flex items-center gap-1">
+                  <Clock className="w-3 h-3" />
+                  {formatLastRefresh}
+                </span>
+              )}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleRefreshStockData}
+                disabled={stockDataLoading}
+                className="gap-1.5 text-xs h-7 px-2"
+              >
+                <RefreshCw
+                  className={cn(
+                    "w-3.5 h-3.5",
+                    stockDataLoading && "animate-spin"
+                  )}
+                />
+                {stockDataLoading ? "Refreshing..." : "Refresh Prices"}
+              </Button>
+            </div>
+          </div>
 
           {/* Holdings Tab Content */}
           {activeTab === "holdings" && (
@@ -316,6 +381,7 @@ export default function PortfolioHoldings({
                 (account) => account.snaptrade_positions || []
               )}
               isOwner={isOwner}
+              cachedSectorMap={sectorDataMap}
             />
           )}
         </>

@@ -4,6 +4,7 @@ import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import { UserProfileProvider } from "@/components/user/UserProfileProvider";
+import { StockDataCacheProvider } from "@/components/portfolio/hooks/useStockDataCache";
 
 import { Analytics } from "@vercel/analytics/next";
 
@@ -80,8 +81,10 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <UserProfileProvider>
-            {children}
-            <Toaster />
+            <StockDataCacheProvider>
+              {children}
+              <Toaster />
+            </StockDataCacheProvider>
           </UserProfileProvider>
         </ThemeProvider>
         <Analytics />
