@@ -299,7 +299,7 @@ export function ChatInput({
             className={cn(
               "flex-1 bg-transparent resize-none outline-none",
               "text-foreground placeholder:text-muted-foreground/50",
-              "text-[15px] leading-relaxed min-h-[28px] max-h-[120px]",
+              "text-[15px] leading-relaxed min-h-[28px] max-h-[160px]",
               "disabled:opacity-50 disabled:cursor-not-allowed"
             )}
             rows={1}

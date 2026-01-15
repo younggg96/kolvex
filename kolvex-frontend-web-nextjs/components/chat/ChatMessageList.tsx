@@ -60,6 +60,7 @@ function ThinkingIndicator() {
 
 export function ChatMessageList({
   messages,
+  pendingUserMessage,
   streamingContent,
   isLoading = false,
   messagesEndRef,
@@ -96,12 +97,17 @@ export function ChatMessageList({
     return () => container.removeEventListener("scroll", handleScroll);
   }, [messages.length]);
 
-  if (messages.length === 0 && !streamingContent && !isLoading) {
+  if (
+    messages.length === 0 &&
+    !pendingUserMessage &&
+    !streamingContent &&
+    !isLoading
+  ) {
     return null;
   }
 
   return (
-    <div ref={containerRef} className="relative flex-1 overflow-y-auto">
+    <div ref={containerRef} className="relative flex-1 pb-28 overflow-y-auto">
       <div className="max-w-4xl mx-auto px-4 md:px-6 py-8">
         {/* Messages */}
         <div className="space-y-6">
@@ -114,6 +120,15 @@ export function ChatMessageList({
               isFirst={index === 0}
             />
           ))}
+
+          {/* Pending user message (optimistic update) */}
+          {pendingUserMessage && (
+            <ChatBubble
+              role="user"
+              content={pendingUserMessage}
+              isFirst={messages.length === 0}
+            />
+          )}
 
           {/* Streaming response */}
           {streamingContent && (
@@ -137,17 +152,17 @@ export function ChatMessageList({
         <Button
           onClick={scrollToBottom}
           size="icon"
+          variant="default"
           className={cn(
-            "absolute bottom-6 left-1/2 -translate-x-1/2 z-20",
-            "w-9 h-9 !rounded-full border border-border-light dark:border-border-dark",
-            "bg-card-light dark:bg-card-dark",
+            "fixed bottom-40 left-1/2 -translate-x-1/2 z-20",
+            "w-9 h-9 !rounded-full",
             "transition-all duration-200",
             "hover:scale-105 hover:shadow-xl",
             "animate-fade-in"
           )}
           aria-label="Scroll to bottom"
         >
-          <ChevronDown className="w-4 h-4 text-muted-foreground" />
+          <ChevronDown className="w-4 h-4 text-background-light dark:text-background-dark" />
         </Button>
       )}
     </div>

@@ -1,7 +1,7 @@
 "use client";
 
 import DashboardLayout from "@/components/layout/DashboardLayout";
-import { ChatContainer } from "@/components/chat";
+import { ChatWelcomeContainer } from "@/components/chat";
 
 export default function Dashboard() {
   return (
@@ -11,7 +11,7 @@ export default function Dashboard() {
       noTransition={true}
       headerClassName="lg:hidden"
     >
-      <ChatContainer className="flex-1" />
+      <ChatWelcomeContainer className="flex-1" />
     </DashboardLayout>
   );
 }

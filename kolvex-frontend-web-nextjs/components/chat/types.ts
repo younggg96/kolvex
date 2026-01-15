@@ -47,7 +47,7 @@ export interface ChatInputProps {
   value: string;
   onChange: (value: string) => void;
   onSubmit: (e?: React.FormEvent) => void;
-  onKeyDown: (e: React.KeyboardEvent) => void;
+  onKeyDown?: (e: React.KeyboardEvent) => void;
   isLoading?: boolean;
   isFocused?: boolean;
   onFocus?: () => void;
@@ -74,6 +74,7 @@ export interface ChatBubbleProps {
 
 export interface ChatMessageListProps {
   messages: Message[];
+  pendingUserMessage?: string;
   streamingContent?: string;
   isLoading?: boolean;
   messagesEndRef?: React.RefObject<HTMLDivElement>;

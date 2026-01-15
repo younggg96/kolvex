@@ -33,13 +33,6 @@ export function ChatWelcome({
     }
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      handleSubmit();
-    }
-  };
-
   const handleSuggestionClick = (suggestion: (typeof suggestions)[0]) => {
     if (suggestion.isChat) {
       onSubmit(suggestion.text);
@@ -78,7 +71,6 @@ export function ChatWelcome({
           value={query}
           onChange={setQuery}
           onSubmit={handleSubmit}
-          onKeyDown={handleKeyDown}
           isLoading={isLoading}
           isFocused={isFocused}
           onFocus={() => setIsFocused(true)}

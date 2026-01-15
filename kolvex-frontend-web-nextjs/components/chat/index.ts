@@ -5,6 +5,8 @@ export { ChatSidebarContent } from "./ChatSidebarContent";
 export { ChatWelcome } from "./ChatWelcome";
 export { ChatMessageList } from "./ChatMessageList";
 export { ChatContainer } from "./ChatContainer";
+export { ChatWelcomeContainer } from "./ChatWelcomeContainer";
+export { ChatDetailContainer } from "./ChatDetailContainer";
 
 // Hook
 export { useChatHistory } from "./useChatHistory";
