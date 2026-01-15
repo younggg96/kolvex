@@ -2,53 +2,10 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import {
-  Sparkles,
-  TrendingUp,
-  BarChart3,
-  Users,
-  Newspaper,
-  Zap,
-} from "lucide-react";
-import { cn } from "@/lib/utils";
+import { Zap } from "lucide-react";
 import { ChipButton } from "@/components/ui/chip-button";
 import { ChatInput } from "./ChatInput";
-import type { ChatWelcomeProps, SearchSource } from "./types";
-import { Button } from "../ui/button";
-
-interface QuickAction {
-  icon: React.ReactNode;
-  title: string;
-  description: string;
-  href: string;
-}
-
-const quickActions: QuickAction[] = [
-  {
-    icon: <BarChart3 className="w-4 h-4" />,
-    title: "Analytics",
-    description: "Sentiment & trends",
-    href: "/dashboard/analytics",
-  },
-  {
-    icon: <TrendingUp className="w-4 h-4" />,
-    title: "Stocks",
-    description: "Trending stocks",
-    href: "/dashboard/stocks",
-  },
-  {
-    icon: <Users className="w-4 h-4" />,
-    title: "KOLs",
-    description: "Social influencers",
-    href: "/dashboard/social/twitter",
-  },
-  {
-    icon: <Newspaper className="w-4 h-4" />,
-    title: "News",
-    description: "Market news",
-    href: "/dashboard/news",
-  },
-];
+import type { ChatWelcomeProps } from "./types";
 
 const suggestions = [
   { text: "Analyze NVIDIA stock", isChat: true },

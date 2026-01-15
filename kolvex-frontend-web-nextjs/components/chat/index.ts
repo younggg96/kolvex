@@ -1,6 +1,6 @@
 // Chat components
 export { ChatBubble } from "./ChatBubble";
-export { ChatInput, ChatInputCompact } from "./ChatInput";
+export { ChatInput } from "./ChatInput";
 export { ChatSidebarContent } from "./ChatSidebarContent";
 export { ChatWelcome } from "./ChatWelcome";
 export { ChatMessageList } from "./ChatMessageList";
@@ -15,6 +15,8 @@ export type {
   ChatConversation,
   ChatHistoryItem,
   SearchSource,
+  AIModel,
+  AIModelConfig,
   ChatInputProps,
   ChatBubbleProps,
   ChatMessageListProps,

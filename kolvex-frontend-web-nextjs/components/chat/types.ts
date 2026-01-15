@@ -25,6 +25,24 @@ export interface ChatHistoryItem {
 
 export type SearchSource = "kol" | "news" | "web";
 
+export type AIModel =
+  | "gpt-4o"
+  | "gpt-4o-mini"
+  | "claude-3.5-sonnet"
+  | "claude-3.5-haiku"
+  | "gemini-2.0-flash"
+  | "gemini-1.5-pro"
+  | "deepseek-chat"
+  | "deepseek-reasoner";
+
+export interface AIModelConfig {
+  id: AIModel;
+  name: string;
+  provider: "OpenAI" | "Anthropic" | "Google" | "DeepSeek";
+  description?: string;
+  isPro?: boolean;
+}
+
 export interface ChatInputProps {
   value: string;
   onChange: (value: string) => void;
@@ -39,6 +57,10 @@ export interface ChatInputProps {
   onToggleSource?: (source: SearchSource) => void;
   showSourceToggle?: boolean;
   inputRef?: React.RefObject<HTMLTextAreaElement>;
+  // Model selection
+  selectedModel?: AIModel;
+  onSelectModel?: (model: AIModel) => void;
+  showModelSelector?: boolean;
 }
 
 export interface ChatBubbleProps {

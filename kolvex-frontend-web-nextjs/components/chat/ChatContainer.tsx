@@ -1,22 +1,31 @@
 "use client";
 
 import { useState, useRef, useCallback, useEffect } from "react";
-import { RotateCcw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ChatWelcome } from "./ChatWelcome";
 import { ChatMessageList } from "./ChatMessageList";
-import { ChatInputCompact } from "./ChatInput";
+import { ChatInput } from "./ChatInput";
 import { useChatHistory } from "./useChatHistory";
 import type { SearchSource } from "./types";
+import Header from "../layout/Header";
 
 interface ChatContainerProps {
   className?: string;
   initialConversationId?: string;
+  onConversationChange?: (
+    conversation: {
+      id: string;
+      title: string;
+    } | null
+  ) => void;
+  onNewChat?: () => void;
 }
 
 export function ChatContainer({
   className,
   initialConversationId,
+  onConversationChange,
+  onNewChat,
 }: ChatContainerProps) {
   const [query, setQuery] = useState("");
   const [isFocused, setIsFocused] = useState(false);
@@ -29,12 +38,24 @@ export function ChatContainer({
 
   const {
     currentConversationId,
+    currentConversation,
     messages,
     addMessage,
     selectConversation,
     deleteConversation,
     startNewChat,
   } = useChatHistory();
+
+  // Notify parent when conversation changes
+  useEffect(() => {
+    if (onConversationChange) {
+      onConversationChange(
+        currentConversation
+          ? { id: currentConversation.id, title: currentConversation.title }
+          : null
+      );
+    }
+  }, [currentConversation, onConversationChange]);
 
   const isInChatMode = messages.length > 0 || streamingContent;
 
@@ -232,7 +253,7 @@ export function ChatContainer({
               {/* Chat Input */}
               <div className="relative border-t border-gray-200 dark:border-white/10 bg-white/80 dark:bg-background-dark/80 backdrop-blur-xl">
                 <div className="max-w-4xl mx-auto p-4">
-                  <ChatInputCompact
+                  <ChatInput
                     value={query}
                     onChange={setQuery}
                     onSubmit={handleFormSubmit}
@@ -242,6 +263,11 @@ export function ChatContainer({
                     onFocus={() => setIsFocused(true)}
                     onBlur={() => setIsFocused(false)}
                     inputRef={inputRef}
+                    placeholder="Continue the conversation..."
+                    activeSources={activeSources}
+                    onToggleSource={toggleSource}
+                    showSourceToggle={true}
+                    showModelSelector={false}
                   />
                 </div>
               </div>
