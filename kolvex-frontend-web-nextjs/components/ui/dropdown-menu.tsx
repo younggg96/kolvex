@@ -41,6 +41,7 @@ const DropdownMenuItem = React.forwardRef<
       "text-gray-700 dark:text-white/70 hover:bg-gray-100 dark:hover:bg-white/5 hover:text-gray-900 dark:hover:text-white",
       "focus:bg-gray-100 dark:focus:bg-white/5 focus:text-gray-900 dark:focus:text-white",
       "data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
+      "focus:outline-none focus-visible:ring-0 focus-visible:ring-offset-0",
       inset && "pl-8",
       className
     )}

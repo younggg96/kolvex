@@ -4,6 +4,7 @@ import { cn } from "@/lib/utils";
 import { Copy, Check, RotateCcw } from "lucide-react";
 import { useState } from "react";
 import type { ChatBubbleProps } from "./types";
+import { Button } from "../ui/button";
 
 export function ChatBubble({
   role,
@@ -48,8 +49,8 @@ export function ChatBubble({
           <div
             className={cn(
               "px-4 py-3 rounded-2xl rounded-tr-sm",
-              "bg-gray-900 dark:bg-white",
-              "text-white dark:text-gray-900",
+              "bg-gray-900 dark:bg-primary/70",
+              "text-white dark:text-primary-foreground",
               "shadow-sm"
             )}
           >
@@ -125,7 +126,9 @@ export function ChatBubble({
                 "opacity-0 group-hover:opacity-100 transition-opacity duration-200"
               )}
             >
-              <button
+              <Button
+                variant="ghost"
+                size="xs"
                 onClick={handleCopy}
                 className={cn(
                   "flex items-center gap-1.5 px-2 py-1 rounded-md",
@@ -145,21 +148,13 @@ export function ChatBubble({
                     <span>Copy</span>
                   </>
                 )}
-              </button>
+              </Button>
 
               {onRetry && (
-                <button
-                  onClick={onRetry}
-                  className={cn(
-                    "flex items-center gap-1.5 px-2 py-1 rounded-md",
-                    "text-xs text-muted-foreground",
-                    "hover:text-foreground hover:bg-muted",
-                    "transition-colors duration-150"
-                  )}
-                >
+                <Button variant="ghost" size="xs" onClick={onRetry}>
                   <RotateCcw className="w-3.5 h-3.5" />
                   <span>Retry</span>
-                </button>
+                </Button>
               )}
             </div>
           )}

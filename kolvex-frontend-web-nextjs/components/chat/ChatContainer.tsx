@@ -6,7 +6,7 @@ import { ChatWelcome } from "./ChatWelcome";
 import { ChatMessageList } from "./ChatMessageList";
 import { ChatInput } from "./ChatInput";
 import { useChatHistory } from "./useChatHistory";
-import type { SearchSource } from "./types";
+import type { AIModel, SearchSource } from "./types";
 import Header from "../layout/Header";
 
 interface ChatContainerProps {
@@ -32,7 +32,7 @@ export function ChatContainer({
   const [activeSources, setActiveSources] = useState<SearchSource[]>(["kol"]);
   const [isLoading, setIsLoading] = useState(false);
   const [streamingContent, setStreamingContent] = useState("");
-
+  const [selectedModel, setSelectedModel] = useState<AIModel>("gpt-4o-mini");
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -267,7 +267,11 @@ export function ChatContainer({
                     activeSources={activeSources}
                     onToggleSource={toggleSource}
                     showSourceToggle={true}
-                    showModelSelector={false}
+                    showModelSelector={true}
+                    selectedModel={selectedModel}
+                    onSelectModel={(model) => {
+                      setSelectedModel(model);
+                    }}
                   />
                 </div>
               </div>

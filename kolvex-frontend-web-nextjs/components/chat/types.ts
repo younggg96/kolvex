@@ -23,7 +23,7 @@ export interface ChatHistoryItem {
   messageCount: number;
 }
 
-export type SearchSource = "kol" | "news" | "web";
+export type SearchSource = "kol" | "news" | "web" | "portfolio";
 
 export type AIModel =
   | "gpt-4o"
