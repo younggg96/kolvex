@@ -45,6 +45,9 @@ class Settings(BaseSettings):
     ALLOWED_ORIGINS: Union[List[str], str] = (
         "http://localhost:3000,http://localhost:3001"
     )
+    
+    # API Key 配置 (用于 Dify 等外部服务，不过期)
+    DIFY_API_KEY: str = ""
 
     @field_validator("ALLOWED_ORIGINS", mode="before")
     @classmethod

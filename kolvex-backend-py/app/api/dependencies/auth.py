@@ -6,6 +6,60 @@ from fastapi import Depends, HTTPException, status, Header
 from typing import Optional
 from supabase import Client
 from app.core.supabase import get_supabase
+from app.core.config import settings
+
+
+async def verify_api_key(
+    x_api_key: Optional[str] = Header(None, alias="X-API-Key"),
+) -> bool:
+    """
+    验证 API Key (用于 Dify 等外部服务)
+    
+    Args:
+        x_api_key: X-API-Key header
+        
+    Returns:
+        bool: True 如果 API Key 有效
+        
+    Raises:
+        HTTPException: 401 如果 API Key 无效
+    """
+    if not settings.DIFY_API_KEY:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="API Key not configured on server",
+        )
+    
+    if not x_api_key:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="API Key required",
+            headers={"WWW-Authenticate": "API-Key"},
+        )
+    
+    if x_api_key != settings.DIFY_API_KEY:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid API Key",
+            headers={"WWW-Authenticate": "API-Key"},
+        )
+    
+    return True
+
+
+async def get_optional_api_key(
+    x_api_key: Optional[str] = Header(None, alias="X-API-Key"),
+) -> bool:
+    """
+    可选的 API Key 验证
+    
+    Returns:
+        bool: True 如果 API Key 有效，False 如果没有提供
+    """
+    if not x_api_key or not settings.DIFY_API_KEY:
+        return False
+    
+    return x_api_key == settings.DIFY_API_KEY
 
 
 async def get_current_user_id(
