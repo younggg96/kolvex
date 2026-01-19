@@ -12,7 +12,6 @@ from app.schemas.user import (
     ErrorResponse,
     MembershipEnum,
     ThemeEnum,
-    NotificationMethodEnum,
 )
 
 __all__ = [
@@ -26,6 +25,5 @@ __all__ = [
     "ErrorResponse",
     "MembershipEnum",
     "ThemeEnum",
-    "NotificationMethodEnum",
 ]
 
