@@ -158,3 +158,171 @@ async def delete_all_notifications(
     count = await service.delete_all_notifications(current_user_id)
     return MessageResponse(message=f"已删除 {count} 条通知", success=True)
 
+
+# ===== Test Email API =====
+
+class SendEmailRequest(BaseModel):
+    """发送邮件请求"""
+    notification_ids: Optional[list[str]] = None  # 指定通知ID列表，为空则发送所有未读通知
+    send_all_unread: bool = False  # 是否发送所有未读通知
+
+
+class SendEmailResponse(BaseModel):
+    """发送邮件响应"""
+    success: bool
+    message: str
+    emails_sent: int
+    notifications_processed: int
+    errors: list[str] = []
+
+
+@router.post("/test-send-email", response_model=SendEmailResponse, summary="测试发送通知邮件")
+async def test_send_notification_email(
+    request: SendEmailRequest,
+    current_user_id: str = Depends(get_current_user_id),
+    service: NotificationService = Depends(get_notification_service),
+):
+    """
+    测试发送通知邮件
+    
+    此 API 用于测试邮件通知功能，会立即为指定的通知或所有未读通知发送邮件。
+    
+    需要认证：Bearer token
+    
+    请求参数:
+    - notification_ids: 指定要发送邮件的通知ID列表（可选）
+    - send_all_unread: 是否发送所有未读通知的邮件（默认 false）
+    
+    注意：至少需要指定 notification_ids 或将 send_all_unread 设为 true
+    """
+    from app.services.email_service import get_email_service
+    
+    email_service = get_email_service()
+    errors = []
+    emails_sent = 0
+    notifications_processed = 0
+    
+    try:
+        # 获取用户信息
+        user_result = (
+            service.supabase.table("user_profiles")
+            .select("email, username")
+            .eq("id", current_user_id)
+            .single()
+            .execute()
+        )
+        
+        if not user_result.data:
+            return SendEmailResponse(
+                success=False,
+                message="用户信息不存在",
+                emails_sent=0,
+                notifications_processed=0,
+                errors=["User profile not found"]
+            )
+        
+        user_email = user_result.data.get("email")
+        username = user_result.data.get("username") or "there"
+        
+        if not user_email:
+            return SendEmailResponse(
+                success=False,
+                message="用户邮箱不存在",
+                emails_sent=0,
+                notifications_processed=0,
+                errors=["User email not found"]
+            )
+        
+        # 获取通知列表
+        if request.notification_ids:
+            # 获取指定的通知
+            notif_result = (
+                service.supabase.table("notifications")
+                .select("*")
+                .eq("user_id", current_user_id)
+                .in_("id", request.notification_ids)
+                .execute()
+            )
+        elif request.send_all_unread:
+            # 获取所有未读通知
+            notif_result = (
+                service.supabase.table("notifications")
+                .select("*")
+                .eq("user_id", current_user_id)
+                .eq("is_read", False)
+                .order("created_at", desc=True)
+                .limit(50)  # 限制最多50条，避免发送过多邮件
+                .execute()
+            )
+        else:
+            return SendEmailResponse(
+                success=False,
+                message="请指定 notification_ids 或将 send_all_unread 设为 true",
+                emails_sent=0,
+                notifications_processed=0,
+                errors=["Must specify notification_ids or set send_all_unread to true"]
+            )
+        
+        notifications = notif_result.data or []
+        
+        if not notifications:
+            return SendEmailResponse(
+                success=True,
+                message="没有找到需要发送的通知",
+                emails_sent=0,
+                notifications_processed=0
+            )
+        
+        # 为每个通知发送邮件
+        for notif in notifications:
+            notifications_processed += 1
+            try:
+                html_content = email_service.generate_notification_email_html(
+                    username=username,
+                    notification_type=notif.get("type", "SYSTEM"),
+                    title=notif.get("title", "Notification"),
+                    message=notif.get("message", ""),
+                    related_symbol=notif.get("related_symbol"),
+                    related_data=notif.get("related_data"),
+                )
+                
+                text_content = email_service.generate_notification_email_text(
+                    username=username,
+                    notification_type=notif.get("type", "SYSTEM"),
+                    title=notif.get("title", "Notification"),
+                    message=notif.get("message", ""),
+                    related_symbol=notif.get("related_symbol"),
+                )
+                
+                success = await email_service.send_email(
+                    to=user_email,
+                    subject=f"🔔 {notif.get('title', 'Notification')}",
+                    html_content=html_content,
+                    text_content=text_content,
+                )
+                
+                if success:
+                    emails_sent += 1
+                else:
+                    errors.append(f"Failed to send email for notification {notif.get('id')}")
+                    
+            except Exception as e:
+                errors.append(f"Error processing notification {notif.get('id')}: {str(e)}")
+        
+        return SendEmailResponse(
+            success=emails_sent > 0,
+            message=f"成功发送 {emails_sent}/{notifications_processed} 封邮件到 {user_email}",
+            emails_sent=emails_sent,
+            notifications_processed=notifications_processed,
+            errors=errors
+        )
+        
+    except Exception as e:
+        return SendEmailResponse(
+            success=False,
+            message=f"发送邮件失败: {str(e)}",
+            emails_sent=emails_sent,
+            notifications_processed=notifications_processed,
+            errors=[str(e)]
+        )
+
