@@ -32,20 +32,14 @@ DisplayOutput = Literal["headline", "teaser", "body", "abstract", "full"]
 
 def _load_api_key() -> str:
     """
-    从环境变量加载 API 密钥
+    从配置加载 API 密钥
 
     Returns:
         str: API 密钥
-
-    Raises:
-        ValueError: 如果未设置 API 密钥
     """
-    import os
-    from dotenv import load_dotenv
+    from app.core.config import settings
 
-    load_dotenv()
-
-    api_key = os.getenv("BENZINGA_API_KEY", "")
+    api_key = settings.BENZINGA_API_KEY
     if not api_key:
         logger.warning("BENZINGA_API_KEY 未设置，请在 .env 文件中配置")
     return api_key

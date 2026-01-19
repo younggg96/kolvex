@@ -35,13 +35,11 @@ def get_supabase_client() -> Optional[Client]:
         print("⚠️ Supabase 未安装，请运行: pip install supabase")
         return None
 
-    # 从环境变量获取配置
-    from dotenv import load_dotenv
+    # 从统一配置获取
+    from app.core.config import settings
 
-    load_dotenv()
-
-    supabase_url = os.getenv("SUPABASE_URL")
-    supabase_key = os.getenv("SUPABASE_SERVICE_KEY") or os.getenv("SUPABASE_KEY")
+    supabase_url = settings.SUPABASE_URL
+    supabase_key = settings.SUPABASE_SERVICE_KEY or settings.SUPABASE_KEY
 
     if not supabase_url or not supabase_key:
         print(
@@ -291,7 +289,7 @@ def upsert_kol_profile(client: Client, profile_data: Dict) -> bool:
     """
     try:
         username = profile_data["username"]
-        
+
         data = {
             # === 平台信息 ===
             "platform": PLATFORM_TWITTER,
@@ -319,7 +317,7 @@ def upsert_kol_profile(client: Client, profile_data: Dict) -> bool:
             "is_active": True,
             "updated_at": datetime.now(timezone.utc).isoformat(),
         }
-        
+
         # 检查是否已存在
         existing = (
             client.table("kol_profiles")
@@ -329,15 +327,17 @@ def upsert_kol_profile(client: Client, profile_data: Dict) -> bool:
             .limit(1)
             .execute()
         )
-        
+
         if existing.data:
             # 更新现有记录
-            client.table("kol_profiles").update(data).eq("platform", PLATFORM_TWITTER).eq("platform_user_id", username).execute()
+            client.table("kol_profiles").update(data).eq(
+                "platform", PLATFORM_TWITTER
+            ).eq("platform_user_id", username).execute()
         else:
             # 插入新记录
             data["created_at"] = datetime.now(timezone.utc).isoformat()
             client.table("kol_profiles").insert(data).execute()
-        
+
         return True
     except Exception as e:
         print(f"⚠️ 保存 KOL profile 失败: {e}")

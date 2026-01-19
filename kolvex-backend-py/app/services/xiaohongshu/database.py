@@ -156,9 +156,7 @@ def process_and_upload_images(
         print(f"      📥 下载封面图...")
         image_data = download_image(cover_url)
         if image_data:
-            new_url = upload_image_to_storage(
-                client, image_data, note_id, 0, "cover"
-            )
+            new_url = upload_image_to_storage(client, image_data, note_id, 0, "cover")
             if new_url:
                 updated_data["cover_url"] = new_url
                 print(f"      ✅ 封面图已转存")
@@ -204,13 +202,11 @@ def get_supabase_client() -> Optional[Client]:
         print("⚠️ Supabase 未安装，请运行: pip install supabase")
         return None
 
-    # 从环境变量获取配置
-    from dotenv import load_dotenv
+    # 从统一配置获取
+    from app.core.config import settings
 
-    load_dotenv()
-
-    supabase_url = os.getenv("SUPABASE_URL")
-    supabase_key = os.getenv("SUPABASE_SERVICE_KEY") or os.getenv("SUPABASE_KEY")
+    supabase_url = settings.SUPABASE_URL
+    supabase_key = settings.SUPABASE_SERVICE_KEY or settings.SUPABASE_KEY
 
     if not supabase_url or not supabase_key:
         print(
@@ -324,11 +320,11 @@ def insert_post(
         Tuple[bool, Optional[int]]: (插入成功返回 True，帖子 ID 或 None)
     """
     note_id = post_data.get("note_id")
-    
+
     # 检查笔记 ID 是否已存在（快速去重）
     if note_id and note_id_exists(client, note_id):
         return False, None
-    
+
     # 检查帖子时间，如果太旧就跳过
     created_at_str = post_data.get("created_at")
     if created_at_str:
@@ -337,7 +333,9 @@ def insert_post(
             if isinstance(created_at_str, str):
                 if created_at_str.endswith("Z"):
                     created_at_str = created_at_str[:-1] + "+00:00"
-                post_time = datetime.fromisoformat(created_at_str.replace("Z", "+00:00"))
+                post_time = datetime.fromisoformat(
+                    created_at_str.replace("Z", "+00:00")
+                )
             else:
                 post_time = created_at_str
 
@@ -376,7 +374,7 @@ def insert_post(
         # 处理列表字段 - 转换为 JSON
         image_urls = post_data.get("image_urls", [])
         image_urls_json = json.dumps(image_urls) if image_urls else None
-        
+
         tags = post_data.get("tags", [])
         tags_json = json.dumps(tags) if tags else None
 
@@ -407,7 +405,9 @@ def insert_post(
             # === 互动数据 ===
             "like_count": post_data.get("like_count", 0),
             "collect_count": post_data.get("collect_count", 0),
-            "reply_count": post_data.get("comment_count", 0),  # comment_count -> reply_count
+            "reply_count": post_data.get(
+                "comment_count", 0
+            ),  # comment_count -> reply_count
             "share_count": post_data.get("share_count", 0),
             # === 标签 ===
             "tags": tags_json,
@@ -424,7 +424,7 @@ def insert_post(
             # 处理 trading_signal 可能是 dict 的情况
             if isinstance(trading_signal, dict):
                 trading_signal = trading_signal.get("action")
-            
+
             data.update(
                 {
                     # 情感分析
@@ -612,44 +612,48 @@ def get_recent_posts(
             query = query.eq("ai_is_stock_related", True)
 
         result = query.limit(limit).execute()
-        
+
         # 转换字段名以保持向后兼容
         posts = []
         for post in result.data or []:
-            posts.append({
-                "id": post.get("id"),
-                "note_id": post.get("platform_post_id"),
-                "post_hash": post.get("tweet_hash"),
-                "title": post.get("title"),
-                "content": post.get("tweet_text"),
-                "note_type": post.get("post_type"),
-                "permalink": post.get("permalink"),
-                "author_name": post.get("username"),
-                "author_id": post.get("author_platform_id"),
-                "cover_url": post.get("cover_url"),
-                "image_urls": post.get("media_urls"),
-                "video_url": post.get("video_url"),
-                "like_count": post.get("like_count", 0),
-                "collect_count": post.get("collect_count", 0),
-                "comment_count": post.get("reply_count", 0),
-                "share_count": post.get("share_count", 0),
-                "tags": post.get("tags"),
-                "search_keyword": post.get("search_keyword"),
-                "ai_sentiment": post.get("ai_sentiment"),
-                "ai_sentiment_confidence": post.get("ai_sentiment_confidence"),
-                "ai_sentiment_reasoning": post.get("ai_sentiment_reasoning"),
-                "ai_tickers": post.get("ai_tickers"),
-                "ai_tags": post.get("ai_tags"),
-                "ai_summary": post.get("ai_summary"),
-                "ai_trading_signal": post.get("ai_trading_signal"),
-                "ai_is_stock_related": post.get("ai_is_stock_related"),
-                "ai_stock_related_confidence": post.get("ai_stock_related_confidence"),
-                "ai_stock_related_reason": post.get("ai_stock_related_reason"),
-                "ai_analyzed_at": post.get("ai_analyzed_at"),
-                "ai_model": post.get("ai_model"),
-                "created_at": post.get("created_at"),
-                "scraped_at": post.get("scraped_at"),
-            })
+            posts.append(
+                {
+                    "id": post.get("id"),
+                    "note_id": post.get("platform_post_id"),
+                    "post_hash": post.get("tweet_hash"),
+                    "title": post.get("title"),
+                    "content": post.get("tweet_text"),
+                    "note_type": post.get("post_type"),
+                    "permalink": post.get("permalink"),
+                    "author_name": post.get("username"),
+                    "author_id": post.get("author_platform_id"),
+                    "cover_url": post.get("cover_url"),
+                    "image_urls": post.get("media_urls"),
+                    "video_url": post.get("video_url"),
+                    "like_count": post.get("like_count", 0),
+                    "collect_count": post.get("collect_count", 0),
+                    "comment_count": post.get("reply_count", 0),
+                    "share_count": post.get("share_count", 0),
+                    "tags": post.get("tags"),
+                    "search_keyword": post.get("search_keyword"),
+                    "ai_sentiment": post.get("ai_sentiment"),
+                    "ai_sentiment_confidence": post.get("ai_sentiment_confidence"),
+                    "ai_sentiment_reasoning": post.get("ai_sentiment_reasoning"),
+                    "ai_tickers": post.get("ai_tickers"),
+                    "ai_tags": post.get("ai_tags"),
+                    "ai_summary": post.get("ai_summary"),
+                    "ai_trading_signal": post.get("ai_trading_signal"),
+                    "ai_is_stock_related": post.get("ai_is_stock_related"),
+                    "ai_stock_related_confidence": post.get(
+                        "ai_stock_related_confidence"
+                    ),
+                    "ai_stock_related_reason": post.get("ai_stock_related_reason"),
+                    "ai_analyzed_at": post.get("ai_analyzed_at"),
+                    "ai_model": post.get("ai_model"),
+                    "created_at": post.get("created_at"),
+                    "scraped_at": post.get("scraped_at"),
+                }
+            )
         return posts
     except Exception as e:
         print(f"⚠️ 获取帖子失败: {e}")
@@ -844,27 +848,29 @@ def get_top_kols(
         )
 
         result = query.limit(limit).execute()
-        
+
         # 转换字段名以保持向后兼容
         kols = []
         for kol in result.data or []:
-            kols.append({
-                "id": kol.get("id"),
-                "user_id": kol.get("platform_user_id"),
-                "nickname": kol.get("display_name"),
-                "red_id": kol.get("red_id"),
-                "avatar_url": kol.get("avatar_url"),
-                "description": kol.get("bio"),
-                "location": kol.get("location"),
-                "is_verified": kol.get("is_verified"),
-                "verified_type": kol.get("verification_type"),
-                "followers_count": kol.get("followers_count", 0),
-                "following_count": kol.get("following_count", 0),
-                "likes_count": kol.get("likes_count", 0),
-                "collected_count": kol.get("collected_count", 0),
-                "profile_url": kol.get("profile_url"),
-                "updated_at": kol.get("updated_at"),
-            })
+            kols.append(
+                {
+                    "id": kol.get("id"),
+                    "user_id": kol.get("platform_user_id"),
+                    "nickname": kol.get("display_name"),
+                    "red_id": kol.get("red_id"),
+                    "avatar_url": kol.get("avatar_url"),
+                    "description": kol.get("bio"),
+                    "location": kol.get("location"),
+                    "is_verified": kol.get("is_verified"),
+                    "verified_type": kol.get("verification_type"),
+                    "followers_count": kol.get("followers_count", 0),
+                    "following_count": kol.get("following_count", 0),
+                    "likes_count": kol.get("likes_count", 0),
+                    "collected_count": kol.get("collected_count", 0),
+                    "profile_url": kol.get("profile_url"),
+                    "updated_at": kol.get("updated_at"),
+                }
+            )
         return kols
     except Exception as e:
         print(f"⚠️ 获取 KOL 列表失败: {e}")
@@ -897,36 +903,38 @@ def get_kol_posts(
             .limit(limit)
             .execute()
         )
-        
+
         # 转换字段名以保持向后兼容
         posts = []
         for post in result.data or []:
-            posts.append({
-                "id": post.get("id"),
-                "note_id": post.get("platform_post_id"),
-                "post_hash": post.get("tweet_hash"),
-                "title": post.get("title"),
-                "content": post.get("tweet_text"),
-                "note_type": post.get("post_type"),
-                "permalink": post.get("permalink"),
-                "author_name": post.get("username"),
-                "author_id": post.get("author_platform_id"),
-                "cover_url": post.get("cover_url"),
-                "image_urls": post.get("media_urls"),
-                "video_url": post.get("video_url"),
-                "like_count": post.get("like_count", 0),
-                "collect_count": post.get("collect_count", 0),
-                "comment_count": post.get("reply_count", 0),
-                "share_count": post.get("share_count", 0),
-                "tags": post.get("tags"),
-                "search_keyword": post.get("search_keyword"),
-                "ai_sentiment": post.get("ai_sentiment"),
-                "ai_tickers": post.get("ai_tickers"),
-                "ai_summary": post.get("ai_summary"),
-                "ai_is_stock_related": post.get("ai_is_stock_related"),
-                "created_at": post.get("created_at"),
-                "scraped_at": post.get("scraped_at"),
-            })
+            posts.append(
+                {
+                    "id": post.get("id"),
+                    "note_id": post.get("platform_post_id"),
+                    "post_hash": post.get("tweet_hash"),
+                    "title": post.get("title"),
+                    "content": post.get("tweet_text"),
+                    "note_type": post.get("post_type"),
+                    "permalink": post.get("permalink"),
+                    "author_name": post.get("username"),
+                    "author_id": post.get("author_platform_id"),
+                    "cover_url": post.get("cover_url"),
+                    "image_urls": post.get("media_urls"),
+                    "video_url": post.get("video_url"),
+                    "like_count": post.get("like_count", 0),
+                    "collect_count": post.get("collect_count", 0),
+                    "comment_count": post.get("reply_count", 0),
+                    "share_count": post.get("share_count", 0),
+                    "tags": post.get("tags"),
+                    "search_keyword": post.get("search_keyword"),
+                    "ai_sentiment": post.get("ai_sentiment"),
+                    "ai_tickers": post.get("ai_tickers"),
+                    "ai_summary": post.get("ai_summary"),
+                    "ai_is_stock_related": post.get("ai_is_stock_related"),
+                    "created_at": post.get("created_at"),
+                    "scraped_at": post.get("scraped_at"),
+                }
+            )
         return posts
     except Exception as e:
         print(f"⚠️ 获取 KOL 帖子失败: {e}")
@@ -967,4 +975,3 @@ def get_kol_stats(client: Client) -> Dict:
     except Exception as e:
         print(f"⚠️ 获取 KOL 统计失败: {e}")
         return {"total": 0, "verified": 0}
-
