@@ -112,19 +112,19 @@ class NotificationService:
         related_data: Optional[Dict[str, Any]] = None,
     ) -> bool:
         """
-        发送通知邮件
+        Send notification email
 
         Args:
-            to_email: 收件人邮箱
-            username: 用户名
-            notification_type: 通知类型
-            title: 标题
-            message: 消息内容
-            related_symbol: 关联股票代码
-            related_data: 额外数据
+            to_email: Recipient email address
+            username: Username
+            notification_type: Notification type
+            title: Title
+            message: Message content
+            related_symbol: Related stock symbol
+            related_data: Additional data
 
         Returns:
-            是否发送成功
+            Whether the email was sent successfully
         """
         try:
             html_content = self.email_service.generate_notification_email_html(
@@ -135,7 +135,7 @@ class NotificationService:
                 related_symbol=related_symbol,
                 related_data=related_data,
             )
-            
+
             text_content = self.email_service.generate_notification_email_text(
                 username=username or "there",
                 notification_type=notification_type,
@@ -143,15 +143,18 @@ class NotificationService:
                 message=message,
                 related_symbol=related_symbol,
             )
-            
-            return await self.email_service.send_email(
+
+            success, error_msg = await self.email_service.send_email(
                 to=to_email,
                 subject=f"🔔 {title}",
                 html_content=html_content,
                 text_content=text_content,
             )
+            if error_msg:
+                logger.warning(f"Email send warning: {error_msg}")
+            return success
         except Exception as e:
-            logger.error(f"发送通知邮件失败: {e}")
+            logger.error(f"Failed to send notification email: {e}")
             return False
 
     async def create_bulk_notifications(

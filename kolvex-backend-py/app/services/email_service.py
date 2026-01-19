@@ -1,14 +1,18 @@
 """
-邮件服务 - 使用 Resend 发送邮件通知
+Email Service - Send email notifications using Resend
 """
 
 import logging
-from typing import Optional, List, Dict, Any
+import asyncio
+from typing import Optional, List, Dict, Any, Tuple
 import resend
 
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)
+
+# Resend rate limit: 2 emails per second for free plan
+EMAIL_SEND_DELAY = 0.6  # 600ms delay between emails to avoid rate limiting
 
 
 class EmailService:
@@ -18,12 +22,14 @@ class EmailService:
         self.api_key = settings.RESEND_API_KEY
         self.from_address = settings.EMAIL_FROM_ADDRESS
         self.enabled = settings.EMAIL_ENABLED and bool(self.api_key)
-        
+
         if self.enabled:
             resend.api_key = self.api_key
             logger.info("📧 Email service initialized")
         else:
-            logger.warning("📧 Email service is disabled (no API key or disabled in config)")
+            logger.warning(
+                "📧 Email service is disabled (no API key or disabled in config)"
+            )
 
     async def send_email(
         self,
@@ -31,22 +37,24 @@ class EmailService:
         subject: str,
         html_content: str,
         text_content: Optional[str] = None,
-    ) -> bool:
+        with_delay: bool = False,
+    ) -> Tuple[bool, Optional[str]]:
         """
-        发送单封邮件
+        Send a single email
 
         Args:
-            to: 收件人邮箱
-            subject: 邮件主题
-            html_content: HTML 内容
-            text_content: 纯文本内容（可选）
+            to: Recipient email address
+            subject: Email subject
+            html_content: HTML content
+            text_content: Plain text content (optional)
+            with_delay: Whether to add delay after sending (for rate limiting)
 
         Returns:
-            是否发送成功
+            Tuple of (success, error_message)
         """
         if not self.enabled:
             logger.debug(f"Email service disabled, skipping email to {to}")
-            return False
+            return False, "Email service is disabled"
 
         try:
             params: resend.Emails.SendParams = {
@@ -55,17 +63,28 @@ class EmailService:
                 "subject": subject,
                 "html": html_content,
             }
-            
+
             if text_content:
                 params["text"] = text_content
 
             email = resend.Emails.send(params)
             logger.info(f"✅ Email sent successfully to {to}, id: {email.get('id')}")
-            return True
+
+            # Add delay to avoid rate limiting when sending multiple emails
+            if with_delay:
+                await asyncio.sleep(EMAIL_SEND_DELAY)
+
+            return True, None
+
+        except resend.exceptions.ResendError as e:
+            error_msg = f"Resend API error: {str(e)}"
+            logger.error(f"❌ Failed to send email to {to}: {error_msg}")
+            return False, error_msg
 
         except Exception as e:
-            logger.error(f"❌ Failed to send email to {to}: {e}")
-            return False
+            error_msg = str(e)
+            logger.error(f"❌ Failed to send email to {to}: {error_msg}")
+            return False, error_msg
 
     async def send_bulk_emails(
         self,
@@ -104,6 +123,27 @@ class EmailService:
         logger.info(f"📧 Bulk email sent: {success_count}/{len(emails)} successful")
         return success_count
 
+    def _get_notification_icon_svg(self, notification_type: str, color: str) -> str:
+        """
+        获取通知类型对应的 SVG 图标
+
+        Args:
+            notification_type: 通知类型
+            color: 图标颜色
+
+        Returns:
+            SVG HTML 字符串
+        """
+        icons = {
+            "POSITION_BUY": f"""<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="{color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>""",
+            "POSITION_SELL": f"""<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="{color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>""",
+            "POSITION_INCREASE": f"""<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="{color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>""",
+            "POSITION_DECREASE": f"""<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="{color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/><polyline points="17 18 23 18 23 12"/></svg>""",
+            "NEW_FOLLOWER": f"""<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="{color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>""",
+            "SYSTEM": f"""<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="{color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>""",
+        }
+        return icons.get(notification_type, icons["SYSTEM"])
+
     def generate_notification_email_html(
         self,
         username: str,
@@ -127,39 +167,81 @@ class EmailService:
         Returns:
             HTML 内容
         """
-        # 根据通知类型选择图标和颜色
+        # 根据通知类型选择颜色 - 与前端 NotificationItem.tsx 保持一致
         type_config = {
-            "POSITION_BUY": {"icon": "📈", "color": "#22c55e", "label": "New Position"},
-            "POSITION_SELL": {"icon": "📉", "color": "#ef4444", "label": "Position Closed"},
-            "POSITION_INCREASE": {"icon": "⬆️", "color": "#3b82f6", "label": "Position Increased"},
-            "POSITION_DECREASE": {"icon": "⬇️", "color": "#f59e0b", "label": "Position Decreased"},
-            "NEW_FOLLOWER": {"icon": "👤", "color": "#8b5cf6", "label": "New Follower"},
-            "SYSTEM": {"icon": "🔔", "color": "#6b7280", "label": "System"},
+            "POSITION_BUY": {"color": "#10b981", "bg": "#10b98115", "label": "Buy"},
+            "POSITION_SELL": {"color": "#f97316", "bg": "#f9731615", "label": "Sell"},
+            "POSITION_INCREASE": {
+                "color": "#3b82f6",
+                "bg": "#3b82f615",
+                "label": "Add",
+            },
+            "POSITION_DECREASE": {
+                "color": "#f43f5e",
+                "bg": "#f43f5e15",
+                "label": "Reduce",
+            },
+            "NEW_FOLLOWER": {"color": "#a855f7", "bg": "#a855f715", "label": "Follow"},
+            "SYSTEM": {"color": "#00C805", "bg": "#00C80515", "label": "System"},
         }
-        
+
         config = type_config.get(notification_type, type_config["SYSTEM"])
-        
+        icon_svg = self._get_notification_icon_svg(notification_type, config["color"])
+
         # 构建股票信息部分
         stock_info = ""
         if related_symbol:
             stock_info = f"""
-            <div style="background-color: #f3f4f6; border-radius: 8px; padding: 12px; margin-top: 16px;">
-                <div style="font-size: 14px; color: #6b7280;">Stock Symbol</div>
-                <div style="font-size: 20px; font-weight: 600; color: #111827;">{related_symbol}</div>
-            </div>
+            <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-top: 20px;">
+                <tr>
+                    <td style="background: linear-gradient(135deg, #00C80508 0%, #00C80503 100%); border: 1px solid #e5e7eb; border-radius: 12px; padding: 16px;">
+                        <table cellpadding="0" cellspacing="0" border="0" width="100%">
+                            <tr>
+                                <td style="font-size: 12px; color: #64748b; font-weight: 500; letter-spacing: 0.5px; text-transform: uppercase;">Stock Symbol</td>
+                            </tr>
+                            <tr>
+                                <td style="font-size: 24px; font-weight: 700; color: #171717; padding-top: 4px; font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;">${related_symbol}</td>
+                            </tr>
+                        </table>
+                    </td>
+                </tr>
+            </table>
             """
-        
-        # 构建变化详情
+
+        # 构建变化详情 - 使用 table 以确保邮件客户端兼容性
         change_details = ""
         if related_data:
             units_change = related_data.get("units_change")
             price = related_data.get("price")
             if units_change or price:
+                units_cell = ""
+                price_cell = ""
+                if units_change:
+                    units_cell = f"""
+                    <td width="48%" style="background-color: #f7f8fa; border-radius: 10px; padding: 14px; vertical-align: top;">
+                        <table cellpadding="0" cellspacing="0" border="0" width="100%">
+                            <tr><td style="font-size: 11px; color: #64748b; font-weight: 500; letter-spacing: 0.3px; text-transform: uppercase;">Units Changed</td></tr>
+                            <tr><td style="font-size: 18px; font-weight: 600; color: #171717; padding-top: 4px;">{units_change}</td></tr>
+                        </table>
+                    </td>
+                    """
+                if price:
+                    price_cell = f"""
+                    <td width="48%" style="background-color: #f7f8fa; border-radius: 10px; padding: 14px; vertical-align: top;">
+                        <table cellpadding="0" cellspacing="0" border="0" width="100%">
+                            <tr><td style="font-size: 11px; color: #64748b; font-weight: 500; letter-spacing: 0.3px; text-transform: uppercase;">Current Price</td></tr>
+                            <tr><td style="font-size: 18px; font-weight: 600; color: #171717; padding-top: 4px;">${price:.2f}</td></tr>
+                        </table>
+                    </td>
+                    """
                 change_details = f"""
-                <div style="display: flex; gap: 16px; margin-top: 12px;">
-                    {f'<div style="flex: 1; background-color: #f3f4f6; border-radius: 8px; padding: 12px;"><div style="font-size: 12px; color: #6b7280;">Units Changed</div><div style="font-size: 16px; font-weight: 600; color: #111827;">{units_change}</div></div>' if units_change else ''}
-                    {f'<div style="flex: 1; background-color: #f3f4f6; border-radius: 8px; padding: 12px;"><div style="font-size: 12px; color: #6b7280;">Current Price</div><div style="font-size: 16px; font-weight: 600; color: #111827;">${price:.2f}</div></div>' if price else ''}
-                </div>
+                <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-top: 16px;">
+                    <tr>
+                        {units_cell}
+                        <td width="4%"></td>
+                        {price_cell}
+                    </tr>
+                </table>
                 """
 
         html = f"""
@@ -168,53 +250,118 @@ class EmailService:
         <head>
             <meta charset="utf-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <meta http-equiv="X-UA-Compatible" content="IE=edge">
+            <title>Kolvex Notification</title>
+            <!--[if mso]>
+            <style type="text/css">
+                body, table, td {{font-family: Arial, Helvetica, sans-serif !important;}}
+            </style>
+            <![endif]-->
         </head>
-        <body style="margin: 0; padding: 0; background-color: #f9fafb; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
-            <div style="max-width: 600px; margin: 0 auto; padding: 40px 20px;">
-                <!-- Header -->
-                <div style="text-align: center; margin-bottom: 32px;">
-                    <div style="font-size: 24px; font-weight: 700; color: #111827;">Kolvex</div>
-                    <div style="font-size: 14px; color: #6b7280; margin-top: 4px;">Portfolio Tracking & Insights</div>
-                </div>
-                
-                <!-- Main Card -->
-                <div style="background-color: #ffffff; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); padding: 24px;">
-                    <!-- Notification Type Badge -->
-                    <div style="display: inline-block; background-color: {config['color']}20; color: {config['color']}; font-size: 12px; font-weight: 600; padding: 4px 12px; border-radius: 9999px; margin-bottom: 16px;">
-                        {config['icon']} {config['label']}
-                    </div>
-                    
-                    <!-- Title -->
-                    <h1 style="margin: 0 0 8px 0; font-size: 20px; font-weight: 600; color: #111827;">
-                        {title}
-                    </h1>
-                    
-                    <!-- Message -->
-                    <p style="margin: 0; font-size: 16px; color: #4b5563; line-height: 1.5;">
-                        {message}
-                    </p>
-                    
-                    {stock_info}
-                    {change_details}
-                    
-                    <!-- CTA Button -->
-                    <div style="margin-top: 24px;">
-                        <a href="https://kolvex.com/dashboard/notifications" 
-                           style="display: inline-block; background-color: #111827; color: #ffffff; font-size: 14px; font-weight: 500; padding: 12px 24px; border-radius: 8px; text-decoration: none;">
-                            View in Kolvex
-                        </a>
-                    </div>
-                </div>
-                
-                <!-- Footer -->
-                <div style="text-align: center; margin-top: 32px; font-size: 12px; color: #9ca3af;">
-                    <p style="margin: 0;">You're receiving this email because you enabled email notifications for followed users.</p>
-                    <p style="margin: 8px 0 0 0;">
-                        <a href="https://kolvex.com/dashboard/config" style="color: #6b7280; text-decoration: underline;">Manage notification settings</a>
-                    </p>
-                    <p style="margin: 16px 0 0 0;">© 2026 Kolvex. All rights reserved.</p>
-                </div>
-            </div>
+        <body style="margin: 0; padding: 0; background-color: #f7f8fa; font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;">
+            <table cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color: #f7f8fa;">
+                <tr>
+                    <td align="center" style="padding: 48px 20px;">
+                        <table cellpadding="0" cellspacing="0" border="0" width="100%" style="max-width: 520px;">
+                            
+                            <!-- Header with Logo -->
+                            <tr>
+                                <td align="center" style="padding-bottom: 32px;">
+                                    <table cellpadding="0" cellspacing="0" border="0">
+                                        <tr>
+                                            <td style="display: inline-block; width: 32px; height: 32px; background: linear-gradient(135deg, #00C805 0%, #00a004 100%); border-radius: 8px; text-align: center; line-height: 32px; margin-right: 10px; vertical-align: middle;">
+                                                <span style="color: #ffffff; font-size: 16px; font-weight: 700;">K</span>
+                                            </td>
+                                            <td style="padding-left: 10px; vertical-align: middle;">
+                                                <span style="font-size: 22px; font-weight: 700; color: #171717; letter-spacing: -0.5px;">Kolvex</span>
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </td>
+                            </tr>
+                            
+                            <!-- Main Card -->
+                            <tr>
+                                <td style="background-color: #ffffff; border-radius: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.04); overflow: hidden;">
+                                    
+                                    <!-- Top accent line -->
+                                    <table cellpadding="0" cellspacing="0" border="0" width="100%">
+                                        <tr>
+                                            <td style="height: 3px; background: linear-gradient(90deg, {config['color']} 0%, {config['color']}60 100%);"></td>
+                                        </tr>
+                                    </table>
+                                    
+                                    <!-- Card Content -->
+                                    <table cellpadding="0" cellspacing="0" border="0" width="100%" style="padding: 28px 28px 32px 28px;">
+                                        <tr>
+                                            <td>
+                                                <!-- Badge Row -->
+                                                <table cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 20px;">
+                                                    <tr>
+                                                        <td style="background-color: {config['bg']}; border-radius: 8px; padding: 8px 14px;">
+                                                            <table cellpadding="0" cellspacing="0" border="0">
+                                                                <tr>
+                                                                    <td style="vertical-align: middle; padding-right: 8px;">{icon_svg}</td>
+                                                                    <td style="vertical-align: middle; font-size: 13px; font-weight: 600; color: {config['color']}; letter-spacing: 0.3px;">{config['label']}</td>
+                                                                </tr>
+                                                            </table>
+                                                        </td>
+                                                    </tr>
+                                                </table>
+                                                
+                                                <!-- Title -->
+                                                <h1 style="margin: 0 0 10px 0; font-size: 20px; font-weight: 700; color: #171717; line-height: 1.3; letter-spacing: -0.3px;">
+                                                    {title}
+                                                </h1>
+                                                
+                                                <!-- Message -->
+                                                <p style="margin: 0; font-size: 15px; color: #64748b; line-height: 1.6;">
+                                                    {message}
+                                                </p>
+                                                
+                                                {stock_info}
+                                                {change_details}
+                                                
+                                                <!-- CTA Button -->
+                                                <table cellpadding="0" cellspacing="0" border="0" style="margin-top: 28px;">
+                                                    <tr>
+                                                        <td style="background: linear-gradient(135deg, #00C805 0%, #00a004 100%); border-radius: 10px;">
+                                                            <a href="https://kolvex.com/dashboard/notifications" 
+                                                               style="display: inline-block; color: #ffffff; font-size: 14px; font-weight: 600; padding: 14px 28px; text-decoration: none; letter-spacing: 0.2px;">
+                                                                View in Kolvex
+                                                            </a>
+                                                        </td>
+                                                    </tr>
+                                                </table>
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </td>
+                            </tr>
+                            
+                            <!-- Footer -->
+                            <tr>
+                                <td style="padding-top: 32px; text-align: center;">
+                                    <p style="margin: 0; font-size: 13px; color: #9ca3af; line-height: 1.5;">
+                                        You're receiving this email because you enabled email notifications.
+                                    </p>
+                                    <p style="margin: 12px 0 0 0;">
+                                        <a href="https://kolvex.com/dashboard/config" style="font-size: 13px; color: #64748b; text-decoration: underline;">Manage settings</a>
+                                    </p>
+                                    <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-top: 24px; border-top: 1px solid #e5e7eb; padding-top: 20px;">
+                                        <tr>
+                                            <td style="text-align: center; font-size: 12px; color: #9ca3af;">
+                                                © 2026 Kolvex. All rights reserved.
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </td>
+                            </tr>
+                            
+                        </table>
+                    </td>
+                </tr>
+            </table>
         </body>
         </html>
         """
@@ -229,17 +376,17 @@ class EmailService:
         related_symbol: Optional[str] = None,
     ) -> str:
         """
-        生成通知邮件的纯文本内容
+        Generate plain text content for notification email
 
         Args:
-            username: 收件人用户名
-            notification_type: 通知类型
-            title: 通知标题
-            message: 通知消息
-            related_symbol: 相关股票代码
+            username: Recipient username
+            notification_type: Notification type
+            title: Notification title
+            message: Notification message
+            related_symbol: Related stock symbol
 
         Returns:
-            纯文本内容
+            Plain text content
         """
         text = f"""
 Hi {username or 'there'},
@@ -250,13 +397,257 @@ Hi {username or 'there'},
 """
         if related_symbol:
             text += f"\nStock Symbol: {related_symbol}"
-        
+
         text += """
 
 View this notification in Kolvex: https://kolvex.com/dashboard/notifications
 
 ---
 You're receiving this email because you enabled email notifications for followed users.
+Manage your notification settings: https://kolvex.com/dashboard/config
+
+© 2026 Kolvex. All rights reserved.
+"""
+        return text
+
+    def generate_digest_email_html(
+        self,
+        username: str,
+        notifications: List[Dict[str, Any]],
+    ) -> str:
+        """
+        Generate HTML content for digest email containing multiple notifications
+
+        Args:
+            username: Recipient username
+            notifications: List of notification data dictionaries
+
+        Returns:
+            HTML content
+        """
+        type_config = {
+            "POSITION_BUY": {"color": "#10b981", "bg": "#10b98115", "label": "Buy"},
+            "POSITION_SELL": {"color": "#f97316", "bg": "#f9731615", "label": "Sell"},
+            "POSITION_INCREASE": {
+                "color": "#3b82f6",
+                "bg": "#3b82f615",
+                "label": "Add",
+            },
+            "POSITION_DECREASE": {
+                "color": "#f43f5e",
+                "bg": "#f43f5e15",
+                "label": "Reduce",
+            },
+            "NEW_FOLLOWER": {"color": "#a855f7", "bg": "#a855f715", "label": "Follow"},
+            "SYSTEM": {"color": "#00C805", "bg": "#00C80515", "label": "System"},
+        }
+
+        # Build notification items
+        notification_items = ""
+        for notif in notifications:
+            notif_type = notif.get("type", "SYSTEM")
+            config = type_config.get(notif_type, type_config["SYSTEM"])
+            icon_svg = self._get_notification_icon_svg(notif_type, config["color"])
+            title = notif.get("title", "Notification")
+            message = notif.get("message", "")
+            related_symbol = notif.get("related_symbol", "")
+
+            symbol_badge = ""
+            if related_symbol:
+                symbol_badge = f"""
+                <td style="padding-left: 8px;">
+                    <span style="background-color: #f1f5f9; color: #475569; font-size: 12px; font-weight: 600; padding: 4px 8px; border-radius: 6px;">${related_symbol}</span>
+                </td>
+                """
+
+            notification_items += f"""
+            <tr>
+                <td style="padding: 16px 0; border-bottom: 1px solid #f1f5f9;">
+                    <table cellpadding="0" cellspacing="0" border="0" width="100%">
+                        <tr>
+                            <td>
+                                <!-- Badge and Symbol -->
+                                <table cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 8px;">
+                                    <tr>
+                                        <td style="background-color: {config['bg']}; border-radius: 6px; padding: 5px 10px;">
+                                            <table cellpadding="0" cellspacing="0" border="0">
+                                                <tr>
+                                                    <td style="vertical-align: middle; padding-right: 6px;">{icon_svg}</td>
+                                                    <td style="vertical-align: middle; font-size: 12px; font-weight: 600; color: {config['color']};">{config['label']}</td>
+                                                </tr>
+                                            </table>
+                                        </td>
+                                        {symbol_badge}
+                                    </tr>
+                                </table>
+                                <!-- Title -->
+                                <p style="margin: 0 0 4px 0; font-size: 15px; font-weight: 600; color: #171717; line-height: 1.4;">
+                                    {title}
+                                </p>
+                                <!-- Message -->
+                                <p style="margin: 0; font-size: 14px; color: #64748b; line-height: 1.5;">
+                                    {message}
+                                </p>
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+            """
+
+        html = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <meta http-equiv="X-UA-Compatible" content="IE=edge">
+            <title>Kolvex Notifications Digest</title>
+            <!--[if mso]>
+            <style type="text/css">
+                body, table, td {{font-family: Arial, Helvetica, sans-serif !important;}}
+            </style>
+            <![endif]-->
+        </head>
+        <body style="margin: 0; padding: 0; background-color: #f7f8fa; font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; -webkit-font-smoothing: antialiased;">
+            <table cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color: #f7f8fa;">
+                <tr>
+                    <td align="center" style="padding: 48px 20px;">
+                        <table cellpadding="0" cellspacing="0" border="0" width="100%" style="max-width: 560px;">
+                            
+                            <!-- Header with Logo -->
+                            <tr>
+                                <td align="center" style="padding-bottom: 32px;">
+                                    <table cellpadding="0" cellspacing="0" border="0">
+                                        <tr>
+                                            <td style="display: inline-block; width: 32px; height: 32px; background: linear-gradient(135deg, #00C805 0%, #00a004 100%); border-radius: 8px; text-align: center; line-height: 32px; margin-right: 10px; vertical-align: middle;">
+                                                <span style="color: #ffffff; font-size: 16px; font-weight: 700;">K</span>
+                                            </td>
+                                            <td style="padding-left: 10px; vertical-align: middle;">
+                                                <span style="font-size: 22px; font-weight: 700; color: #171717; letter-spacing: -0.5px;">Kolvex</span>
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </td>
+                            </tr>
+                            
+                            <!-- Main Card -->
+                            <tr>
+                                <td style="background-color: #ffffff; border-radius: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.04); overflow: hidden;">
+                                    
+                                    <!-- Top accent line -->
+                                    <table cellpadding="0" cellspacing="0" border="0" width="100%">
+                                        <tr>
+                                            <td style="height: 3px; background: linear-gradient(90deg, #00C805 0%, #3b82f6 50%, #a855f7 100%);"></td>
+                                        </tr>
+                                    </table>
+                                    
+                                    <!-- Card Content -->
+                                    <table cellpadding="0" cellspacing="0" border="0" width="100%" style="padding: 28px;">
+                                        <tr>
+                                            <td>
+                                                <!-- Header -->
+                                                <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-bottom: 20px;">
+                                                    <tr>
+                                                        <td>
+                                                            <h1 style="margin: 0 0 6px 0; font-size: 22px; font-weight: 700; color: #171717; letter-spacing: -0.3px;">
+                                                                Hi {username or 'there'} 👋
+                                                            </h1>
+                                                            <p style="margin: 0; font-size: 15px; color: #64748b;">
+                                                                You have <strong style="color: #171717;">{len(notifications)}</strong> new notifications
+                                                            </p>
+                                                        </td>
+                                                    </tr>
+                                                </table>
+                                                
+                                                <!-- Notifications List -->
+                                                <table cellpadding="0" cellspacing="0" border="0" width="100%">
+                                                    {notification_items}
+                                                </table>
+                                                
+                                                <!-- CTA Button -->
+                                                <table cellpadding="0" cellspacing="0" border="0" style="margin-top: 24px;">
+                                                    <tr>
+                                                        <td style="background: linear-gradient(135deg, #00C805 0%, #00a004 100%); border-radius: 10px;">
+                                                            <a href="https://kolvex.com/dashboard/notifications" 
+                                                               style="display: inline-block; color: #ffffff; font-size: 14px; font-weight: 600; padding: 14px 28px; text-decoration: none; letter-spacing: 0.2px;">
+                                                                View All Notifications
+                                                            </a>
+                                                        </td>
+                                                    </tr>
+                                                </table>
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </td>
+                            </tr>
+                            
+                            <!-- Footer -->
+                            <tr>
+                                <td style="padding-top: 32px; text-align: center;">
+                                    <p style="margin: 0; font-size: 13px; color: #9ca3af; line-height: 1.5;">
+                                        You're receiving this email because you enabled email notifications.
+                                    </p>
+                                    <p style="margin: 12px 0 0 0;">
+                                        <a href="https://kolvex.com/dashboard/config" style="font-size: 13px; color: #64748b; text-decoration: underline;">Manage settings</a>
+                                    </p>
+                                    <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-top: 24px; border-top: 1px solid #e5e7eb; padding-top: 20px;">
+                                        <tr>
+                                            <td style="text-align: center; font-size: 12px; color: #9ca3af;">
+                                                © 2026 Kolvex. All rights reserved.
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </td>
+                            </tr>
+                            
+                        </table>
+                    </td>
+                </tr>
+            </table>
+        </body>
+        </html>
+        """
+        return html
+
+    def generate_digest_email_text(
+        self,
+        username: str,
+        notifications: List[Dict[str, Any]],
+    ) -> str:
+        """
+        Generate plain text content for digest email
+
+        Args:
+            username: Recipient username
+            notifications: List of notification data dictionaries
+
+        Returns:
+            Plain text content
+        """
+        items = []
+        for notif in notifications:
+            title = notif.get("title", "Notification")
+            message = notif.get("message", "")
+            symbol = notif.get("related_symbol", "")
+            symbol_str = f" [{symbol}]" if symbol else ""
+            items.append(f"• {title}{symbol_str}\n  {message}")
+
+        notifications_text = "\n\n".join(items)
+
+        text = f"""
+Hi {username or 'there'},
+
+You have {len(notifications)} new notifications:
+
+{notifications_text}
+
+---
+
+View all notifications: https://kolvex.com/dashboard/notifications
+
+---
+You're receiving this email because you enabled email notifications.
 Manage your notification settings: https://kolvex.com/dashboard/config
 
 © 2026 Kolvex. All rights reserved.

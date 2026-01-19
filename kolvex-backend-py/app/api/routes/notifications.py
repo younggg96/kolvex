@@ -197,6 +197,7 @@ class SendEmailRequest(BaseModel):
         None  # Specific notification IDs, empty to send all unread
     )
     send_all_unread: bool = False  # Whether to send all unread notifications
+    send_as_digest: bool = True  # Send all notifications in ONE email (digest mode)
 
 
 class SendEmailResponse(BaseModel):
@@ -222,14 +223,14 @@ async def test_send_notification_email(
     """
     Test send notification email
 
-    This API is used to test the email notification feature. It will immediately send emails
-    for specified notifications or all unread notifications.
+    This API is used to test the email notification feature.
 
     Requires authentication: Bearer token
 
     Request parameters:
     - notification_ids: List of notification IDs to send emails for (optional)
     - send_all_unread: Whether to send emails for all unread notifications (default: false)
+    - send_as_digest: Send all notifications in ONE digest email (default: true)
 
     Note: Must specify notification_ids or set send_all_unread to true
     """
@@ -289,7 +290,7 @@ async def test_send_notification_email(
                 .eq("user_id", current_user_id)
                 .eq("is_read", False)
                 .order("created_at", desc=True)
-                .limit(50)  # Limit to 50 to avoid sending too many emails
+                .limit(50)  # Limit to 50 to avoid too large email
                 .execute()
             )
         else:
@@ -311,9 +312,56 @@ async def test_send_notification_email(
                 notifications_processed=0,
             )
 
-        # Send email for each notification
+        notifications_processed = len(notifications)
+
+        # ===== DIGEST MODE: Send all notifications in ONE email =====
+        if request.send_as_digest:
+            try:
+                html_content = email_service.generate_digest_email_html(
+                    username=username,
+                    notifications=notifications,
+                )
+                text_content = email_service.generate_digest_email_text(
+                    username=username,
+                    notifications=notifications,
+                )
+
+                success, error_msg = await email_service.send_email(
+                    to=user_email,
+                    subject=f"🔔 You have {len(notifications)} new notifications",
+                    html_content=html_content,
+                    text_content=text_content,
+                )
+
+                if success:
+                    emails_sent = 1
+                    return SendEmailResponse(
+                        success=True,
+                        message=f"Successfully sent digest email with {notifications_processed} notifications to {user_email}",
+                        emails_sent=1,
+                        notifications_processed=notifications_processed,
+                        errors=[],
+                    )
+                else:
+                    return SendEmailResponse(
+                        success=False,
+                        message=f"Failed to send digest email: {error_msg}",
+                        emails_sent=0,
+                        notifications_processed=notifications_processed,
+                        errors=[error_msg or "Unknown error"],
+                    )
+
+            except Exception as e:
+                return SendEmailResponse(
+                    success=False,
+                    message=f"Error sending digest email: {str(e)}",
+                    emails_sent=0,
+                    notifications_processed=notifications_processed,
+                    errors=[str(e)],
+                )
+
+        # ===== INDIVIDUAL MODE: Send separate email for each notification =====
         for notif in notifications:
-            notifications_processed += 1
             try:
                 html_content = email_service.generate_notification_email_html(
                     username=username,
@@ -332,18 +380,20 @@ async def test_send_notification_email(
                     related_symbol=notif.get("related_symbol"),
                 )
 
-                success = await email_service.send_email(
+                # Use with_delay=True to avoid Resend rate limiting
+                success, error_msg = await email_service.send_email(
                     to=user_email,
                     subject=f"🔔 {notif.get('title', 'Notification')}",
                     html_content=html_content,
                     text_content=text_content,
+                    with_delay=True,
                 )
 
                 if success:
                     emails_sent += 1
                 else:
                     errors.append(
-                        f"Failed to send email for notification {notif.get('id')}"
+                        f"Notification {notif.get('id')}: {error_msg or 'Unknown error'}"
                     )
 
             except Exception as e:
