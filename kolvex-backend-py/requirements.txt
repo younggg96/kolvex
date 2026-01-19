@@ -42,3 +42,5 @@ lxml>=5.0.0
 # SnapTrade API
 snaptrade-python-sdk>=11.0.0
 
+# Email Service
+resend>=2.0.0

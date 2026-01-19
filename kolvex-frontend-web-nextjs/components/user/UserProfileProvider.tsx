@@ -19,7 +19,7 @@ export interface UserProfile extends DBUserProfile {}
 export interface UserProfileUpdate extends ProfileUpdate {}
 
 export interface UserNotificationUpdate {
-  notification_method?: "EMAIL" | "MESSAGE";
+  email_notifications_enabled?: boolean;
 }
 
 interface UserProfileContextValue {
@@ -182,4 +182,3 @@ export function useUserProfileContext(): UserProfileContextValue {
   }
   return context;
 }
-

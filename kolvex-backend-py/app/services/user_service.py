@@ -115,6 +115,8 @@ class UserService:
                 "username": profile_data.username,
                 "full_name": profile_data.full_name,
                 "avatar_url": profile_data.avatar_url,
+                # 默认开启邮件通知
+                "email_notifications_enabled": True,
             }
 
             response = (

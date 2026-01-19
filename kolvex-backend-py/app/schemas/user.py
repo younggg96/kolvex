@@ -24,13 +24,6 @@ class ThemeEnum(str, Enum):
     SYSTEM = "SYSTEM"
 
 
-class NotificationMethodEnum(str, Enum):
-    """通知方式枚举"""
-
-    EMAIL = "EMAIL"
-    MESSAGE = "MESSAGE"
-
-
 # ===== 请求 Schemas =====
 
 
@@ -51,8 +44,7 @@ class UserProfileUpdate(BaseModel):
     avatar_url: Optional[str] = None
     phone_e164: Optional[str] = Field(None, max_length=20)
     theme: Optional[ThemeEnum] = None
-    is_subscribe_newsletter: Optional[bool] = None
-    notification_method: Optional[NotificationMethodEnum] = None
+    email_notifications_enabled: Optional[bool] = None
 
     model_config = ConfigDict(use_enum_values=True)
 
@@ -68,8 +60,7 @@ class UserThemeUpdate(BaseModel):
 class UserNotificationUpdate(BaseModel):
     """更新用户通知设置"""
 
-    is_subscribe_newsletter: Optional[bool] = None
-    notification_method: Optional[NotificationMethodEnum] = None
+    email_notifications_enabled: Optional[bool] = None
 
     model_config = ConfigDict(use_enum_values=True)
 
@@ -88,8 +79,7 @@ class UserProfileResponse(BaseModel):
     phone_e164: Optional[str] = None
     membership: MembershipEnum
     theme: Optional[ThemeEnum] = None
-    is_subscribe_newsletter: bool
-    notification_method: Optional[NotificationMethodEnum] = None
+    email_notifications_enabled: bool = True
     created_at: datetime
     updated_at: datetime
 
@@ -106,8 +96,7 @@ class UserProfileResponse(BaseModel):
                 "phone_e164": "+1234567890",
                 "membership": "FREE",
                 "theme": "SYSTEM",
-                "is_subscribe_newsletter": True,
-                "notification_method": "EMAIL",
+                "email_notifications_enabled": True,
                 "created_at": "2024-01-01T00:00:00Z",
                 "updated_at": "2024-01-01T00:00:00Z",
             }

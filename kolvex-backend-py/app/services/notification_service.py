@@ -9,6 +9,7 @@ from enum import Enum
 from supabase import Client
 
 from app.core.supabase import get_supabase_service
+from app.services.email_service import EmailService, get_email_service
 
 logger = logging.getLogger(__name__)
 
@@ -27,8 +28,13 @@ class NotificationType(str, Enum):
 class NotificationService:
     """通知服务类"""
 
-    def __init__(self, supabase: Optional[Client] = None):
+    def __init__(
+        self, 
+        supabase: Optional[Client] = None,
+        email_service: Optional[EmailService] = None,
+    ):
         self.supabase = supabase or get_supabase_service()
+        self.email_service = email_service or get_email_service()
 
     async def create_notification(
         self,
@@ -39,6 +45,9 @@ class NotificationService:
         related_user_id: Optional[str] = None,
         related_symbol: Optional[str] = None,
         related_data: Optional[Dict[str, Any]] = None,
+        send_email: bool = False,
+        user_email: Optional[str] = None,
+        user_username: Optional[str] = None,
     ) -> Optional[Dict[str, Any]]:
         """
         创建单个通知
@@ -51,6 +60,9 @@ class NotificationService:
             related_user_id: 关联用户ID
             related_symbol: 关联股票代码
             related_data: 额外数据
+            send_email: 是否同时发送邮件
+            user_email: 用户邮箱（发送邮件时需要）
+            user_username: 用户名（发送邮件时用于个性化）
 
         Returns:
             创建的通知记录
@@ -71,12 +83,76 @@ class NotificationService:
             )
 
             if result.data:
+                # 如果需要发送邮件且有用户邮箱
+                if send_email and user_email:
+                    await self._send_notification_email(
+                        to_email=user_email,
+                        username=user_username,
+                        notification_type=notification_type.value,
+                        title=title,
+                        message=message,
+                        related_symbol=related_symbol,
+                        related_data=related_data,
+                    )
                 return result.data[0]
             return None
 
         except Exception as e:
             logger.error(f"创建通知失败: {e}")
             return None
+
+    async def _send_notification_email(
+        self,
+        to_email: str,
+        username: Optional[str],
+        notification_type: str,
+        title: str,
+        message: str,
+        related_symbol: Optional[str] = None,
+        related_data: Optional[Dict[str, Any]] = None,
+    ) -> bool:
+        """
+        发送通知邮件
+
+        Args:
+            to_email: 收件人邮箱
+            username: 用户名
+            notification_type: 通知类型
+            title: 标题
+            message: 消息内容
+            related_symbol: 关联股票代码
+            related_data: 额外数据
+
+        Returns:
+            是否发送成功
+        """
+        try:
+            html_content = self.email_service.generate_notification_email_html(
+                username=username or "there",
+                notification_type=notification_type,
+                title=title,
+                message=message,
+                related_symbol=related_symbol,
+                related_data=related_data,
+            )
+            
+            text_content = self.email_service.generate_notification_email_text(
+                username=username or "there",
+                notification_type=notification_type,
+                title=title,
+                message=message,
+                related_symbol=related_symbol,
+            )
+            
+            return await self.email_service.send_email(
+                to=to_email,
+                subject=f"🔔 {title}",
+                html_content=html_content,
+                text_content=text_content,
+            )
+        except Exception as e:
+            logger.error(f"发送通知邮件失败: {e}")
+            return False
 
     async def create_bulk_notifications(
         self, notifications: List[Dict[str, Any]]
@@ -101,6 +177,79 @@ class NotificationService:
         except Exception as e:
             logger.error(f"批量创建通知失败: {e}")
             return 0
+
+    async def _get_followers_with_email_preference(
+        self, user_id: str
+    ) -> List[Dict[str, Any]]:
+        """
+        获取用户的粉丝及其邮件偏好设置
+
+        Args:
+            user_id: 被关注用户的ID
+
+        Returns:
+            粉丝列表，包含 follower_id, email, username, email_notifications_enabled
+        """
+        try:
+            # 查询关注关系并联合查询用户资料
+            result = (
+                self.supabase.table("user_follows")
+                .select(
+                    "follower_id, "
+                    "user_profiles!user_follows_follower_id_fkey("
+                    "id, email, username, email_notifications_enabled"
+                    ")"
+                )
+                .eq("following_id", user_id)
+                .execute()
+            )
+
+            if not result.data:
+                return []
+
+            followers = []
+            for item in result.data:
+                profile = item.get("user_profiles")
+                if profile:
+                    followers.append({
+                        "follower_id": item["follower_id"],
+                        "email": profile.get("email"),
+                        "username": profile.get("username"),
+                        "email_notifications_enabled": profile.get("email_notifications_enabled", True),
+                    })
+                else:
+                    # 如果没有获取到 profile，只保留 follower_id
+                    followers.append({
+                        "follower_id": item["follower_id"],
+                        "email": None,
+                        "username": None,
+                        "email_notifications_enabled": False,
+                    })
+
+            return followers
+
+        except Exception as e:
+            logger.error(f"获取粉丝邮件偏好失败: {e}")
+            # 回退到简单查询
+            try:
+                simple_result = (
+                    self.supabase.table("user_follows")
+                    .select("follower_id")
+                    .eq("following_id", user_id)
+                    .execute()
+                )
+                return [
+                    {
+                        "follower_id": f["follower_id"],
+                        "email": None,
+                        "username": None,
+                        "email_notifications_enabled": False,
+                    }
+                    for f in (simple_result.data or [])
+                ]
+            except Exception as e2:
+                logger.error(f"回退查询也失败: {e2}")
+                return []
 
     async def notify_followers_of_position_changes(
         self,
@@ -128,23 +277,18 @@ class NotificationService:
             return 0
 
         try:
-            # 获取该用户的所有粉丝
-            followers_result = (
-                self.supabase.table("user_follows")
-                .select("follower_id")
-                .eq("following_id", user_id)
-                .execute()
-            )
+            # 获取该用户的所有粉丝及其邮件偏好
+            followers = await self._get_followers_with_email_preference(user_id)
 
-            if not followers_result.data:
+            if not followers:
                 logger.info(f"用户 {user_id} 没有粉丝，跳过通知")
                 return 0
 
-            follower_ids = [f["follower_id"] for f in followers_result.data]
-            logger.info(f"用户 {user_id} 有 {len(follower_ids)} 个粉丝需要通知")
+            logger.info(f"用户 {user_id} 有 {len(followers)} 个粉丝需要通知")
 
             # 为每个粉丝创建通知
             notifications = []
+            email_notifications = []  # 需要发送邮件的通知
             display_name = username or "Someone you follow"
 
             for change in changes:
@@ -172,8 +316,17 @@ class NotificationService:
                 else:
                     continue
 
+                related_data = {
+                    "change_type": change_type,
+                    "units_change": units_change,
+                    "current_units": change.get("current_units"),
+                    "price": change.get("price"),
+                }
+
                 # 为每个粉丝创建通知
-                for follower_id in follower_ids:
+                for follower in followers:
+                    follower_id = follower["follower_id"]
+                    
                     notifications.append(
                         {
                             "user_id": follower_id,
@@ -182,22 +335,48 @@ class NotificationService:
                             "message": message,
                             "related_user_id": user_id,
                             "related_symbol": symbol,
-                            "related_data": {
-                                "change_type": change_type,
-                                "units_change": units_change,
-                                "current_units": change.get("current_units"),
-                                "price": change.get("price"),
-                            },
+                            "related_data": related_data,
                         }
                     )
 
-            # 批量插入通知
-            if notifications:
-                count = await self.create_bulk_notifications(notifications)
-                logger.info(f"成功创建 {count} 条通知")
-                return count
+                    # 如果用户开启了邮件通知，添加到邮件队列
+                    if (
+                        follower.get("email_notifications_enabled", True)
+                        and follower.get("email")
+                    ):
+                        email_notifications.append({
+                            "to": follower["email"],
+                            "subject": f"🔔 {title}",
+                            "html_content": self.email_service.generate_notification_email_html(
+                                username=follower.get("username") or "there",
+                                notification_type=notif_type.value,
+                                title=title,
+                                message=message,
+                                related_symbol=symbol,
+                                related_data=related_data,
+                            ),
+                            "text_content": self.email_service.generate_notification_email_text(
+                                username=follower.get("username") or "there",
+                                notification_type=notif_type.value,
+                                title=title,
+                                message=message,
+                                related_symbol=symbol,
+                            ),
+                        })
 
-            return 0
+            # 批量插入通知
+            notification_count = 0
+            if notifications:
+                notification_count = await self.create_bulk_notifications(notifications)
+                logger.info(f"成功创建 {notification_count} 条通知")
+
+            # 批量发送邮件
+            email_count = 0
+            if email_notifications:
+                email_count = await self.email_service.send_bulk_emails(email_notifications)
+                logger.info(f"成功发送 {email_count} 封邮件通知")
+
+            return notification_count
 
         except Exception as e:
             logger.error(f"通知粉丝持仓变化失败: {e}")

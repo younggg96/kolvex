@@ -176,11 +176,8 @@ function SettingsContent() {
     phone: "",
   });
 
-  // Notification settings state
-  const [notificationSettings, setNotificationSettings] = useState({
-    is_subscribe_newsletter: false,
-    notification_method: "EMAIL" as "EMAIL" | "MESSAGE",
-  });
+  // Notification settings state - simplified to just enabled/disabled
+  const [emailNotificationsEnabled, setEmailNotificationsEnabled] = useState(true);
 
   // Load profile data into form
   useEffect(() => {
@@ -190,10 +187,7 @@ function SettingsContent() {
         email: profile.email || "",
         phone: profile.phone_e164 || "",
       });
-      setNotificationSettings({
-        is_subscribe_newsletter: profile.is_subscribe_newsletter || false,
-        notification_method: profile.notification_method || "EMAIL",
-      });
+      setEmailNotificationsEnabled(profile.email_notifications_enabled ?? true);
     }
   }, [profile]);
 
@@ -474,19 +468,16 @@ function SettingsContent() {
     setIsEditing(false);
   };
 
-  const handleNotificationChange = async (
-    key: keyof typeof notificationSettings,
-    value: boolean | "EMAIL" | "MESSAGE"
-  ) => {
-    const newSettings = { ...notificationSettings, [key]: value };
-    setNotificationSettings(newSettings as typeof notificationSettings);
+  const handleNotificationToggle = async (enabled: boolean) => {
+    const previousValue = emailNotificationsEnabled;
+    setEmailNotificationsEnabled(enabled);
 
     // Update via backend API
     try {
-      const result = await updateNotifications(newSettings);
+      const result = await updateNotifications({ email_notifications_enabled: enabled });
 
       if (result.success) {
-        toast.success("Notification settings updated");
+        toast.success(enabled ? "Email notifications enabled" : "Email notifications disabled");
       } else {
         throw new Error(result.error);
       }
@@ -494,7 +485,7 @@ function SettingsContent() {
       console.error("Notification update error:", error);
       toast.error(error.message || "Failed to update notification settings");
       // Revert on error
-      setNotificationSettings(notificationSettings);
+      setEmailNotificationsEnabled(previousValue);
     }
   };
 
@@ -927,7 +918,7 @@ function SettingsContent() {
                     sectionHeaderSubtitle="Manage how you receive notifications"
                   >
                     <div className="px-4 pb-4 space-y-4 sm:space-y-5">
-                      {/* Newsletter Subscription */}
+                      {/* Email Notifications Toggle */}
                       <div>
                         <h3 className="text-xs font-medium mb-2 text-gray-700 dark:text-white/70">
                           Email Notifications
@@ -936,73 +927,26 @@ function SettingsContent() {
                           <div className="flex items-center justify-between p-2 sm:p-2.5 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/5 rounded-lg hover:bg-gray-100 dark:hover:bg-white/10 transition-colors duration-200">
                             <div className="flex-1 space-y-0.5 pr-2">
                               <Label
-                                htmlFor="newsletter"
+                                htmlFor="email-notifications"
                                 className="text-xs sm:text-sm font-medium text-gray-900 dark:text-white cursor-pointer"
                               >
-                                Subscribe to Newsletter
+                                Enable Email Notifications
                               </Label>
                               <p className="text-[10px] sm:text-xs text-gray-600 dark:text-white/60">
-                                Receive market updates, new features, and more
+                                Receive email notifications when people you follow make portfolio changes
                               </p>
                             </div>
                             <Switch
-                              id="newsletter"
-                              checked={
-                                notificationSettings.is_subscribe_newsletter
-                              }
-                              onCheckedChange={(checked) =>
-                                handleNotificationChange(
-                                  "is_subscribe_newsletter",
-                                  checked
-                                )
-                              }
+                              id="email-notifications"
+                              checked={emailNotificationsEnabled}
+                              onCheckedChange={handleNotificationToggle}
                               className="ml-2 flex-shrink-0"
                             />
                           </div>
                         </div>
-                      </div>
-
-                      {/* Notification Method */}
-                      <div>
-                        <h3 className="text-xs font-medium mb-2 text-gray-700 dark:text-white/70">
-                          Notification Method
-                        </h3>
-                        <div className="space-y-1.5">
-                          <Label className="text-xs font-medium text-gray-700 dark:text-white/70">
-                            Choose your preferred notification method
-                          </Label>
-                          <Select
-                            value={notificationSettings.notification_method}
-                            onValueChange={(value: "EMAIL" | "MESSAGE") =>
-                              handleNotificationChange(
-                                "notification_method",
-                                value
-                              )
-                            }
-                          >
-                            <SelectTrigger className="h-8 sm:h-9 text-xs sm:text-sm">
-                              <SelectValue placeholder="Select notification method" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="EMAIL">
-                                <div className="flex items-center gap-2">
-                                  <Mail className="w-4 h-4" />
-                                  <span>Email</span>
-                                </div>
-                              </SelectItem>
-                              <SelectItem value="MESSAGE">
-                                <div className="flex items-center gap-2">
-                                  <Bell className="w-4 h-4" />
-                                  <span>In-app Message</span>
-                                </div>
-                              </SelectItem>
-                            </SelectContent>
-                          </Select>
-                          <p className="text-[10px] text-gray-500 dark:text-white/40">
-                            You will receive important system notifications via
-                            this method
-                          </p>
-                        </div>
+                        <p className="text-[10px] text-gray-500 dark:text-white/40 mt-2">
+                          When enabled, you will receive email notifications for portfolio updates from users you follow.
+                        </p>
                       </div>
                     </div>
                   </SectionCard>

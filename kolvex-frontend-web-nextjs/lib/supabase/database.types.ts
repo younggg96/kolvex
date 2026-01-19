@@ -1,6 +1,5 @@
 // Database types for Supabase
 
-export type NotificationMethod = "EMAIL" | "MESSAGE";
 export type Platform = "twitter" | "reddit" | "youtube" | "xiaohongshu";
 export type Theme = "LIGHT" | "DARK" | "SYSTEM";
 export type Membership = "FREE" | "PRO" | "ENTERPRISE";
@@ -14,8 +13,7 @@ export interface UserProfile {
   phone_e164?: string;
   membership?: Membership;
   theme?: Theme;
-  is_subscribe_newsletter?: boolean;
-  notification_method?: NotificationMethod;
+  email_notifications_enabled?: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -37,14 +35,13 @@ export interface StockTracking {
 }
 
 export interface NotificationSettings {
-  notification_method?: NotificationMethod;
+  email_notifications_enabled?: boolean;
 }
 
 export interface ProfileUpdate {
   username?: string | null;
   avatar_url?: string;
   phone_e164?: string | null;
-  is_subscribe_newsletter?: boolean;
 }
 
 // SnapTrade 相关类型

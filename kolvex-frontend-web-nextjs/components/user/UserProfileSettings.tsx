@@ -83,13 +83,13 @@ export default function UserProfileSettings() {
     if (!profile) return;
 
     const result = await updateNotifications({
-      is_subscribe_newsletter: !profile.is_subscribe_newsletter,
+      email_notifications_enabled: !profile.email_notifications_enabled,
     });
 
     if (result.success) {
       setMessage({
         type: "success",
-        text: profile.is_subscribe_newsletter ? "已取消订阅" : "已订阅邮件通讯",
+        text: profile.email_notifications_enabled ? "已关闭邮件通知" : "已开启邮件通知",
       });
     } else {
       setMessage({ type: "error", text: result.error || "更新失败" });
@@ -283,31 +283,26 @@ export default function UserProfileSettings() {
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="font-medium">邮件通讯</p>
-              <p className="text-sm text-gray-600">接收产品更新和资讯</p>
+              <p className="font-medium">邮件通知</p>
+              <p className="text-sm text-gray-600">
+                开启后当关注的人有持仓变化时会收到邮件通知
+              </p>
             </div>
 
             <button
               onClick={handleNotificationToggle}
               className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${
-                profile?.is_subscribe_newsletter ? "bg-blue-500" : "bg-gray-300"
+                profile?.email_notifications_enabled ? "bg-blue-500" : "bg-gray-300"
               }`}
             >
               <span
                 className={`inline-block h-4 w-4 transform rounded-full bg-white transition ${
-                  profile?.is_subscribe_newsletter
+                  profile?.email_notifications_enabled
                     ? "translate-x-6"
                     : "translate-x-1"
                 }`}
               />
             </button>
-          </div>
-
-          <div className="border-t pt-4">
-            <p className="text-sm text-gray-600">通知方式</p>
-            <p className="font-medium mt-1">
-              {profile?.notification_method === "EMAIL" ? "邮件" : "站内消息"}
-            </p>
           </div>
         </div>
       </section>

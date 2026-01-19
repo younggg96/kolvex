@@ -1,21 +1,15 @@
 import { useUserProfileContext } from "@/components/user/UserProfileProvider";
-import type {
-  UserProfile,
-  Theme,
-  NotificationMethod,
-} from "@/lib/supabase/database.types";
+import type { UserProfile, Theme } from "@/lib/supabase/database.types";
 
 export interface UserProfileUpdate {
   username?: string;
   full_name?: string;
   avatar_url?: string;
   phone_e164?: string;
-  is_subscribe_newsletter?: boolean;
 }
 
 export interface NotificationUpdate {
-  is_subscribe_newsletter?: boolean;
-  notification_method?: NotificationMethod;
+  email_notifications_enabled?: boolean;
 }
 
 interface ApiResult {
@@ -80,7 +74,7 @@ export function useCurrentUserProfile() {
     settings: NotificationUpdate
   ): Promise<ApiResult> => {
     const success = await contextUpdateNotifications({
-      notification_method: settings.notification_method,
+      email_notifications_enabled: settings.email_notifications_enabled,
     });
     if (success) {
       return { success: true, data: profile || undefined };

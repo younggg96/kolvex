@@ -36,18 +36,23 @@ class Settings(BaseSettings):
 
     # Benzinga API 配置
     BENZINGA_API_KEY: str = ""
-    
+
     # SnapTrade API 配置
     SNAPTRADE_CLIENT_ID: str = ""
     SNAPTRADE_CONSUMER_KEY: str = ""
-    
+
     # CORS 配置
     ALLOWED_ORIGINS: Union[List[str], str] = (
         "http://localhost:3000,http://localhost:3001"
     )
-    
+
     # API Key 配置 (用于 Dify 等外部服务，不过期)
     DIFY_API_KEY: str = ""
+
+    # Email Service (Resend) 配置
+    RESEND_API_KEY: str = "re_UNTp1c6M_NiZAo74CjZoGXL7T1uZ2Jswy"
+    EMAIL_FROM_ADDRESS: str = "Kolvex <support@kolvex.app>"
+    EMAIL_ENABLED: bool = True  # 是否启用邮件通知
 
     @field_validator("ALLOWED_ORIGINS", mode="before")
     @classmethod

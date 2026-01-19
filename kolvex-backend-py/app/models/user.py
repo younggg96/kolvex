@@ -24,12 +24,6 @@ class ThemeEnum(str, enum.Enum):
     SYSTEM = "SYSTEM"
 
 
-class NotificationMethodEnum(str, enum.Enum):
-    """通知方式枚举"""
-    EMAIL = "EMAIL"
-    MESSAGE = "MESSAGE"
-
-
 class UserProfile(Base):
     """用户资料表模型
     
@@ -60,13 +54,8 @@ class UserProfile(Base):
         nullable=True
     )
     
-    # 通知设置
-    is_subscribe_newsletter = Column(Boolean, default=False)
-    notification_method = Column(
-        SQLEnum(NotificationMethodEnum, name="notification_method_enum"),
-        default=NotificationMethodEnum.EMAIL,
-        nullable=True
-    )
+    # 通知设置 - 简化为单一开关
+    email_notifications_enabled = Column(Boolean, default=True)
     
     # 时间戳
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
@@ -74,4 +63,3 @@ class UserProfile(Base):
     
     def __repr__(self):
         return f"<UserProfile(id={self.id}, email={self.email}, username={self.username})>"
-
