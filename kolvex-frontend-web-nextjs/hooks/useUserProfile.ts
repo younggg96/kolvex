@@ -1,16 +1,11 @@
-import { useUserProfileContext } from "@/components/user/UserProfileProvider";
-import type {
-  UserProfile as DBUserProfile,
-  ProfileUpdate,
-} from "@/lib/supabase/database.types";
+import {
+  useUserProfileContext,
+  type UserProfile,
+  type UserProfileUpdate,
+  type UserNotificationUpdate,
+} from "@/components/user/UserProfileProvider";
 
-export interface UserProfile extends DBUserProfile {}
-
-export interface UserProfileUpdate extends ProfileUpdate {}
-
-export interface UserNotificationUpdate {
-  notification_method?: "EMAIL" | "MESSAGE";
-}
+export type { UserProfile, UserProfileUpdate, UserNotificationUpdate };
 
 interface UseUserProfileReturn {
   profile: UserProfile | null;

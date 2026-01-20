@@ -36,12 +36,14 @@ export interface StockTracking {
 
 export interface NotificationSettings {
   email_notifications_enabled?: boolean;
+  notification_method?: NotificationMethod;
 }
 
 export interface ProfileUpdate {
   username?: string | null;
   avatar_url?: string;
   phone_e164?: string | null;
+  is_subscribe_newsletter?: boolean;
 }
 
 // SnapTrade 相关类型
@@ -200,6 +202,8 @@ export interface FollowListResponse {
 }
 
 // Notification 相关类型
+export type NotificationMethod = "EMAIL" | "MESSAGE";
+
 export type NotificationType =
   | "POSITION_BUY"
   | "POSITION_SELL"

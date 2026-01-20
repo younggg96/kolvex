@@ -96,9 +96,9 @@ export function usePortfolioData({ userId, isOwner }: UsePortfolioDataOptions) {
       await syncAccounts();
       await syncPositions();
       await loadData();
-      toast.success("Data synced successfully");
+      toast.success("Data refreshed successfully");
     } catch (error: any) {
-      toast.error(error.message || "Sync failed");
+      toast.error(error.message || "Refresh failed");
     } finally {
       setSyncing(false);
     }

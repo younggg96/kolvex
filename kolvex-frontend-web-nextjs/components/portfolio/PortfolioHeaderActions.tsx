@@ -25,6 +25,7 @@ import {
   FileSpreadsheet,
   FileJson,
 } from "lucide-react";
+import { formatDistanceToNow } from "date-fns";
 import type { SnapTradeHoldings } from "@/lib/supabase/database.types";
 import PrivacySettingsDialog from "./PrivacySettingsDialog";
 import { cn } from "@/lib/utils";
@@ -64,8 +65,8 @@ export function PortfolioHeaderActions({
     <div className="flex items-center gap-2">
       <span className="text-xs text-muted-foreground hidden sm:inline opacity-60">
         {holdings?.last_synced_at
-          ? `Updated ${new Date(holdings.last_synced_at).toLocaleTimeString()}`
-          : "Not synced"}
+          ? `Updated ${formatDistanceToNow(new Date(holdings.last_synced_at), { addSuffix: true })}`
+          : "Not synced yet"}
       </span>
 
       <Button
@@ -77,7 +78,7 @@ export function PortfolioHeaderActions({
       >
         <RefreshCw className={`w-3.5 h-3.5 ${syncing ? "animate-spin" : ""}`} />
         <span className={cn("hidden sm:inline", size === "xs" && "text-xs")}>
-          Sync
+          Refresh
         </span>
       </Button>
 
