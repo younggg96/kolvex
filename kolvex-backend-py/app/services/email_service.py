@@ -188,19 +188,19 @@ class EmailService:
         config = type_config.get(notification_type, type_config["SYSTEM"])
         icon_svg = self._get_notification_icon_svg(notification_type, config["color"])
 
-        # 构建股票信息部分
+        # 构建股票信息部分 - Dark theme style
         stock_info = ""
         if related_symbol:
             stock_info = f"""
-            <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-top: 20px;">
+            <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-top: 16px;">
                 <tr>
-                    <td style="background: linear-gradient(135deg, #00C80508 0%, #00C80503 100%); border: 1px solid #e5e7eb; border-radius: 12px; padding: 16px;">
+                    <td style="background-color: #0a0e0f; border: 1px solid #2a2d2f; border-radius: 10px; padding: 14px;">
                         <table cellpadding="0" cellspacing="0" border="0" width="100%">
                             <tr>
-                                <td style="font-size: 12px; color: #64748b; font-weight: 500; letter-spacing: 0.5px; text-transform: uppercase;">Stock Symbol</td>
+                                <td style="font-size: 11px; color: #6b7280; font-weight: 500; letter-spacing: 0.5px; text-transform: uppercase;">Stock Symbol</td>
                             </tr>
                             <tr>
-                                <td style="font-size: 24px; font-weight: 700; color: #171717; padding-top: 4px; font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;">${related_symbol}</td>
+                                <td style="font-size: 22px; font-weight: 700; color: #00C805; padding-top: 4px; font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;">${related_symbol}</td>
                             </tr>
                         </table>
                     </td>
@@ -208,7 +208,7 @@ class EmailService:
             </table>
             """
 
-        # 构建变化详情 - 使用 table 以确保邮件客户端兼容性
+        # 构建变化详情 - Dark theme style
         change_details = ""
         if related_data:
             units_change = related_data.get("units_change")
@@ -218,24 +218,24 @@ class EmailService:
                 price_cell = ""
                 if units_change:
                     units_cell = f"""
-                    <td width="48%" style="background-color: #f7f8fa; border-radius: 10px; padding: 14px; vertical-align: top;">
+                    <td width="48%" style="background-color: #0a0e0f; border: 1px solid #2a2d2f; border-radius: 8px; padding: 12px; vertical-align: top;">
                         <table cellpadding="0" cellspacing="0" border="0" width="100%">
-                            <tr><td style="font-size: 11px; color: #64748b; font-weight: 500; letter-spacing: 0.3px; text-transform: uppercase;">Units Changed</td></tr>
-                            <tr><td style="font-size: 18px; font-weight: 600; color: #171717; padding-top: 4px;">{units_change}</td></tr>
+                            <tr><td style="font-size: 10px; color: #6b7280; font-weight: 500; letter-spacing: 0.3px; text-transform: uppercase;">Units Changed</td></tr>
+                            <tr><td style="font-size: 16px; font-weight: 600; color: #e5e7eb; padding-top: 4px;">{units_change}</td></tr>
                         </table>
                     </td>
                     """
                 if price:
                     price_cell = f"""
-                    <td width="48%" style="background-color: #f7f8fa; border-radius: 10px; padding: 14px; vertical-align: top;">
+                    <td width="48%" style="background-color: #0a0e0f; border: 1px solid #2a2d2f; border-radius: 8px; padding: 12px; vertical-align: top;">
                         <table cellpadding="0" cellspacing="0" border="0" width="100%">
-                            <tr><td style="font-size: 11px; color: #64748b; font-weight: 500; letter-spacing: 0.3px; text-transform: uppercase;">Current Price</td></tr>
-                            <tr><td style="font-size: 18px; font-weight: 600; color: #171717; padding-top: 4px;">${price:.2f}</td></tr>
+                            <tr><td style="font-size: 10px; color: #6b7280; font-weight: 500; letter-spacing: 0.3px; text-transform: uppercase;">Current Price</td></tr>
+                            <tr><td style="font-size: 16px; font-weight: 600; color: #e5e7eb; padding-top: 4px;">${price:.2f}</td></tr>
                         </table>
                     </td>
                     """
                 change_details = f"""
-                <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-top: 16px;">
+                <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-top: 12px;">
                     <tr>
                         {units_cell}
                         <td width="4%"></td>
@@ -244,9 +244,12 @@ class EmailService:
                 </table>
                 """
 
+        # Kolvex Logo SVG - matches LogoIcon.tsx
+        logo_svg = """<svg xmlns="http://www.w3.org/2000/svg" height="28" viewBox="0 -960 960 960" width="28" fill="#00C805"><path d="M280-160v-90h-80v-460h80v-90h60v90h80v460h-80v90h-60Zm-20-150h100v-340H260v340Zm360 150v-210h-80v-260h80v-170h60v170h80v260h-80v210h-60Zm-20-270h100v-140H600v140Zm-290-50Zm340-20Z"/></svg>"""
+
         html = f"""
         <!DOCTYPE html>
-        <html>
+        <html lang="en">
         <head>
             <meta charset="utf-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -258,22 +261,23 @@ class EmailService:
             </style>
             <![endif]-->
         </head>
-        <body style="margin: 0; padding: 0; background-color: #f7f8fa; font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;">
-            <table cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color: #f7f8fa;">
+        <body style="margin: 0; padding: 0; background-color: #0a0e0f; font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;">
+            <!-- Dark gradient background wrapper -->
+            <table cellpadding="0" cellspacing="0" border="0" width="100%" style="background: linear-gradient(180deg, #0a0e0f 0%, #111518 100%); min-height: 100vh;">
                 <tr>
-                    <td align="center" style="padding: 48px 20px;">
-                        <table cellpadding="0" cellspacing="0" border="0" width="100%" style="max-width: 520px;">
+                    <td align="center" style="padding: 40px 16px 60px 16px;">
+                        <table cellpadding="0" cellspacing="0" border="0" width="100%" style="max-width: 480px;">
                             
                             <!-- Header with Logo -->
                             <tr>
-                                <td align="center" style="padding-bottom: 32px;">
+                                <td align="center" style="padding-bottom: 28px;">
                                     <table cellpadding="0" cellspacing="0" border="0">
                                         <tr>
-                                            <td style="display: inline-block; width: 32px; height: 32px; background: linear-gradient(135deg, #00C805 0%, #00a004 100%); border-radius: 8px; text-align: center; line-height: 32px; margin-right: 10px; vertical-align: middle;">
-                                                <span style="color: #ffffff; font-size: 16px; font-weight: 700;">K</span>
+                                            <td style="vertical-align: middle;">
+                                                {logo_svg}
                                             </td>
-                                            <td style="padding-left: 10px; vertical-align: middle;">
-                                                <span style="font-size: 22px; font-weight: 700; color: #171717; letter-spacing: -0.5px;">Kolvex</span>
+                                            <td style="padding-left: 8px; vertical-align: middle;">
+                                                <span style="font-size: 20px; font-weight: 700; color: #e5e7eb; letter-spacing: -0.5px;">Kolvex</span>
                                             </td>
                                         </tr>
                                     </table>
@@ -282,27 +286,27 @@ class EmailService:
                             
                             <!-- Main Card -->
                             <tr>
-                                <td style="background-color: #ffffff; border-radius: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.04); overflow: hidden;">
+                                <td style="background-color: #1a1d1f; border-radius: 16px; border: 1px solid #2a2d2f; overflow: hidden;">
                                     
-                                    <!-- Top accent line -->
+                                    <!-- Top accent gradient line -->
                                     <table cellpadding="0" cellspacing="0" border="0" width="100%">
                                         <tr>
-                                            <td style="height: 3px; background: linear-gradient(90deg, {config['color']} 0%, {config['color']}60 100%);"></td>
+                                            <td style="height: 2px; background: linear-gradient(90deg, {config['color']} 0%, {config['color']}40 100%);"></td>
                                         </tr>
                                     </table>
                                     
                                     <!-- Card Content -->
-                                    <table cellpadding="0" cellspacing="0" border="0" width="100%" style="padding: 28px 28px 32px 28px;">
+                                    <table cellpadding="0" cellspacing="0" border="0" width="100%" style="padding: 24px;">
                                         <tr>
                                             <td>
                                                 <!-- Badge Row -->
-                                                <table cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 20px;">
+                                                <table cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 16px;">
                                                     <tr>
-                                                        <td style="background-color: {config['bg']}; border-radius: 8px; padding: 8px 14px;">
+                                                        <td style="background-color: {config['bg']}; border-radius: 6px; padding: 6px 12px; border: 1px solid {config['color']}20;">
                                                             <table cellpadding="0" cellspacing="0" border="0">
                                                                 <tr>
-                                                                    <td style="vertical-align: middle; padding-right: 8px;">{icon_svg}</td>
-                                                                    <td style="vertical-align: middle; font-size: 13px; font-weight: 600; color: {config['color']}; letter-spacing: 0.3px;">{config['label']}</td>
+                                                                    <td style="vertical-align: middle; padding-right: 6px;">{icon_svg}</td>
+                                                                    <td style="vertical-align: middle; font-size: 12px; font-weight: 600; color: {config['color']}; letter-spacing: 0.3px; text-transform: uppercase;">{config['label']}</td>
                                                                 </tr>
                                                             </table>
                                                         </td>
@@ -310,12 +314,12 @@ class EmailService:
                                                 </table>
                                                 
                                                 <!-- Title -->
-                                                <h1 style="margin: 0 0 10px 0; font-size: 20px; font-weight: 700; color: #171717; line-height: 1.3; letter-spacing: -0.3px;">
+                                                <h1 style="margin: 0 0 8px 0; font-size: 18px; font-weight: 700; color: #e5e7eb; line-height: 1.4; letter-spacing: -0.3px;">
                                                     {title}
                                                 </h1>
                                                 
                                                 <!-- Message -->
-                                                <p style="margin: 0; font-size: 15px; color: #64748b; line-height: 1.6;">
+                                                <p style="margin: 0; font-size: 14px; color: #9ca3af; line-height: 1.6;">
                                                     {message}
                                                 </p>
                                                 
@@ -323,12 +327,12 @@ class EmailService:
                                                 {change_details}
                                                 
                                                 <!-- CTA Button -->
-                                                <table cellpadding="0" cellspacing="0" border="0" style="margin-top: 28px;">
+                                                <table cellpadding="0" cellspacing="0" border="0" style="margin-top: 24px;">
                                                     <tr>
-                                                        <td style="background: linear-gradient(135deg, #00C805 0%, #00a004 100%); border-radius: 10px;">
-                                                            <a href="https://kolvex.com/dashboard/notifications" 
-                                                               style="display: inline-block; color: #ffffff; font-size: 14px; font-weight: 600; padding: 14px 28px; text-decoration: none; letter-spacing: 0.2px;">
-                                                                View in Kolvex
+                                                        <td style="background-color: #00C805; border-radius: 8px;">
+                                                            <a href="https://kolvex.app/dashboard/notifications" 
+                                                               style="display: inline-block; color: #ffffff; font-size: 13px; font-weight: 600; padding: 12px 24px; text-decoration: none; letter-spacing: 0.2px;">
+                                                                View in Kolvex →
                                                             </a>
                                                         </td>
                                                     </tr>
@@ -341,17 +345,23 @@ class EmailService:
                             
                             <!-- Footer -->
                             <tr>
-                                <td style="padding-top: 32px; text-align: center;">
-                                    <p style="margin: 0; font-size: 13px; color: #9ca3af; line-height: 1.5;">
-                                        You're receiving this email because you enabled email notifications.
+                                <td style="padding-top: 28px; text-align: center;">
+                                    <p style="margin: 0; font-size: 12px; color: #6b7280; line-height: 1.5;">
+                                        You're receiving this because you enabled email notifications.
                                     </p>
-                                    <p style="margin: 12px 0 0 0;">
-                                        <a href="https://kolvex.com/dashboard/config" style="font-size: 13px; color: #64748b; text-decoration: underline;">Manage settings</a>
+                                    <p style="margin: 10px 0 0 0;">
+                                        <a href="https://kolvex.app/dashboard/config" style="font-size: 12px; color: #9ca3af; text-decoration: none; border-bottom: 1px solid #4b5563;">Manage settings</a>
                                     </p>
-                                    <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-top: 24px; border-top: 1px solid #e5e7eb; padding-top: 20px;">
+                                    <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-top: 20px;">
                                         <tr>
-                                            <td style="text-align: center; font-size: 12px; color: #9ca3af;">
-                                                © 2026 Kolvex. All rights reserved.
+                                            <td style="text-align: center;">
+                                                <table cellpadding="0" cellspacing="0" border="0" style="margin: 0 auto;">
+                                                    <tr>
+                                                        <td style="border-top: 1px solid #2a2d2f; padding-top: 16px;">
+                                                            <span style="font-size: 11px; color: #4b5563;">© 2026 Kolvex · All rights reserved</span>
+                                                        </td>
+                                                    </tr>
+                                                </table>
                                             </td>
                                         </tr>
                                     </table>
@@ -456,24 +466,24 @@ Manage your notification settings: https://kolvex.com/dashboard/config
             if related_symbol:
                 symbol_badge = f"""
                 <td style="padding-left: 8px;">
-                    <span style="background-color: #f1f5f9; color: #475569; font-size: 12px; font-weight: 600; padding: 4px 8px; border-radius: 6px;">${related_symbol}</span>
+                    <span style="background-color: #0a0e0f; color: #00C805; font-size: 11px; font-weight: 600; padding: 4px 8px; border-radius: 5px; border: 1px solid #2a2d2f;">${related_symbol}</span>
                 </td>
                 """
 
             notification_items += f"""
             <tr>
-                <td style="padding: 16px 0; border-bottom: 1px solid #f1f5f9;">
+                <td style="padding: 14px 0; border-bottom: 1px solid #2a2d2f;">
                     <table cellpadding="0" cellspacing="0" border="0" width="100%">
                         <tr>
                             <td>
                                 <!-- Badge and Symbol -->
                                 <table cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 8px;">
                                     <tr>
-                                        <td style="background-color: {config['bg']}; border-radius: 6px; padding: 5px 10px;">
+                                        <td style="background-color: {config['bg']}; border-radius: 5px; padding: 4px 8px; border: 1px solid {config['color']}20;">
                                             <table cellpadding="0" cellspacing="0" border="0">
                                                 <tr>
-                                                    <td style="vertical-align: middle; padding-right: 6px;">{icon_svg}</td>
-                                                    <td style="vertical-align: middle; font-size: 12px; font-weight: 600; color: {config['color']};">{config['label']}</td>
+                                                    <td style="vertical-align: middle; padding-right: 5px;">{icon_svg}</td>
+                                                    <td style="vertical-align: middle; font-size: 11px; font-weight: 600; color: {config['color']}; text-transform: uppercase;">{config['label']}</td>
                                                 </tr>
                                             </table>
                                         </td>
@@ -481,11 +491,11 @@ Manage your notification settings: https://kolvex.com/dashboard/config
                                     </tr>
                                 </table>
                                 <!-- Title -->
-                                <p style="margin: 0 0 4px 0; font-size: 15px; font-weight: 600; color: #171717; line-height: 1.4;">
+                                <p style="margin: 0 0 4px 0; font-size: 14px; font-weight: 600; color: #e5e7eb; line-height: 1.4;">
                                     {title}
                                 </p>
                                 <!-- Message -->
-                                <p style="margin: 0; font-size: 14px; color: #64748b; line-height: 1.5;">
+                                <p style="margin: 0; font-size: 13px; color: #9ca3af; line-height: 1.5;">
                                     {message}
                                 </p>
                             </td>
@@ -495,9 +505,12 @@ Manage your notification settings: https://kolvex.com/dashboard/config
             </tr>
             """
 
+        # Kolvex Logo SVG - matches LogoIcon.tsx
+        logo_svg = """<svg xmlns="http://www.w3.org/2000/svg" height="28" viewBox="0 -960 960 960" width="28" fill="#00C805"><path d="M280-160v-90h-80v-460h80v-90h60v90h80v460h-80v90h-60Zm-20-150h100v-340H260v340Zm360 150v-210h-80v-260h80v-170h60v170h80v260h-80v210h-60Zm-20-270h100v-140H600v140Zm-290-50Zm340-20Z"/></svg>"""
+
         html = f"""
         <!DOCTYPE html>
-        <html>
+        <html lang="en">
         <head>
             <meta charset="utf-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -509,22 +522,23 @@ Manage your notification settings: https://kolvex.com/dashboard/config
             </style>
             <![endif]-->
         </head>
-        <body style="margin: 0; padding: 0; background-color: #f7f8fa; font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; -webkit-font-smoothing: antialiased;">
-            <table cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color: #f7f8fa;">
+        <body style="margin: 0; padding: 0; background-color: #0a0e0f; font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; -webkit-font-smoothing: antialiased;">
+            <!-- Dark gradient background wrapper -->
+            <table cellpadding="0" cellspacing="0" border="0" width="100%" style="background: linear-gradient(180deg, #0a0e0f 0%, #111518 100%); min-height: 100vh;">
                 <tr>
-                    <td align="center" style="padding: 48px 20px;">
-                        <table cellpadding="0" cellspacing="0" border="0" width="100%" style="max-width: 560px;">
+                    <td align="center" style="padding: 40px 16px 60px 16px;">
+                        <table cellpadding="0" cellspacing="0" border="0" width="100%" style="max-width: 500px;">
                             
                             <!-- Header with Logo -->
                             <tr>
-                                <td align="center" style="padding-bottom: 32px;">
+                                <td align="center" style="padding-bottom: 28px;">
                                     <table cellpadding="0" cellspacing="0" border="0">
                                         <tr>
-                                            <td style="display: inline-block; width: 32px; height: 32px; background: linear-gradient(135deg, #00C805 0%, #00a004 100%); border-radius: 8px; text-align: center; line-height: 32px; margin-right: 10px; vertical-align: middle;">
-                                                <span style="color: #ffffff; font-size: 16px; font-weight: 700;">K</span>
+                                            <td style="vertical-align: middle;">
+                                                {logo_svg}
                                             </td>
-                                            <td style="padding-left: 10px; vertical-align: middle;">
-                                                <span style="font-size: 22px; font-weight: 700; color: #171717; letter-spacing: -0.5px;">Kolvex</span>
+                                            <td style="padding-left: 8px; vertical-align: middle;">
+                                                <span style="font-size: 20px; font-weight: 700; color: #e5e7eb; letter-spacing: -0.5px;">Kolvex</span>
                                             </td>
                                         </tr>
                                     </table>
@@ -533,28 +547,28 @@ Manage your notification settings: https://kolvex.com/dashboard/config
                             
                             <!-- Main Card -->
                             <tr>
-                                <td style="background-color: #ffffff; border-radius: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.04); overflow: hidden;">
+                                <td style="background-color: #1a1d1f; border-radius: 16px; border: 1px solid #2a2d2f; overflow: hidden;">
                                     
-                                    <!-- Top accent line -->
+                                    <!-- Top accent gradient line -->
                                     <table cellpadding="0" cellspacing="0" border="0" width="100%">
                                         <tr>
-                                            <td style="height: 3px; background: linear-gradient(90deg, #00C805 0%, #3b82f6 50%, #a855f7 100%);"></td>
+                                            <td style="height: 2px; background: linear-gradient(90deg, #00C805 0%, #3b82f6 50%, #a855f7 100%);"></td>
                                         </tr>
                                     </table>
                                     
                                     <!-- Card Content -->
-                                    <table cellpadding="0" cellspacing="0" border="0" width="100%" style="padding: 28px;">
+                                    <table cellpadding="0" cellspacing="0" border="0" width="100%" style="padding: 24px;">
                                         <tr>
                                             <td>
                                                 <!-- Header -->
-                                                <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-bottom: 20px;">
+                                                <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-bottom: 16px;">
                                                     <tr>
                                                         <td>
-                                                            <h1 style="margin: 0 0 6px 0; font-size: 22px; font-weight: 700; color: #171717; letter-spacing: -0.3px;">
+                                                            <h1 style="margin: 0 0 6px 0; font-size: 18px; font-weight: 700; color: #e5e7eb; letter-spacing: -0.3px;">
                                                                 Hi {username or 'there'} 👋
                                                             </h1>
-                                                            <p style="margin: 0; font-size: 15px; color: #64748b;">
-                                                                You have <strong style="color: #171717;">{len(notifications)}</strong> new notifications
+                                                            <p style="margin: 0; font-size: 14px; color: #9ca3af;">
+                                                                You have <strong style="color: #00C805;">{len(notifications)}</strong> new notifications
                                                             </p>
                                                         </td>
                                                     </tr>
@@ -566,12 +580,12 @@ Manage your notification settings: https://kolvex.com/dashboard/config
                                                 </table>
                                                 
                                                 <!-- CTA Button -->
-                                                <table cellpadding="0" cellspacing="0" border="0" style="margin-top: 24px;">
+                                                <table cellpadding="0" cellspacing="0" border="0" style="margin-top: 20px;">
                                                     <tr>
-                                                        <td style="background: linear-gradient(135deg, #00C805 0%, #00a004 100%); border-radius: 10px;">
-                                                            <a href="https://kolvex.com/dashboard/notifications" 
-                                                               style="display: inline-block; color: #ffffff; font-size: 14px; font-weight: 600; padding: 14px 28px; text-decoration: none; letter-spacing: 0.2px;">
-                                                                View All Notifications
+                                                        <td style="background-color: #00C805; border-radius: 8px;">
+                                                            <a href="https://kolvex.app/dashboard/notifications" 
+                                                               style="display: inline-block; color: #ffffff; font-size: 13px; font-weight: 600; padding: 12px 24px; text-decoration: none; letter-spacing: 0.2px;">
+                                                                View All Notifications →
                                                             </a>
                                                         </td>
                                                     </tr>
@@ -584,17 +598,23 @@ Manage your notification settings: https://kolvex.com/dashboard/config
                             
                             <!-- Footer -->
                             <tr>
-                                <td style="padding-top: 32px; text-align: center;">
-                                    <p style="margin: 0; font-size: 13px; color: #9ca3af; line-height: 1.5;">
-                                        You're receiving this email because you enabled email notifications.
+                                <td style="padding-top: 28px; text-align: center;">
+                                    <p style="margin: 0; font-size: 12px; color: #6b7280; line-height: 1.5;">
+                                        You're receiving this because you enabled email notifications.
                                     </p>
-                                    <p style="margin: 12px 0 0 0;">
-                                        <a href="https://kolvex.com/dashboard/config" style="font-size: 13px; color: #64748b; text-decoration: underline;">Manage settings</a>
+                                    <p style="margin: 10px 0 0 0;">
+                                        <a href="https://kolvex.app/dashboard/config" style="font-size: 12px; color: #9ca3af; text-decoration: none; border-bottom: 1px solid #4b5563;">Manage settings</a>
                                     </p>
-                                    <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-top: 24px; border-top: 1px solid #e5e7eb; padding-top: 20px;">
+                                    <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-top: 20px;">
                                         <tr>
-                                            <td style="text-align: center; font-size: 12px; color: #9ca3af;">
-                                                © 2026 Kolvex. All rights reserved.
+                                            <td style="text-align: center;">
+                                                <table cellpadding="0" cellspacing="0" border="0" style="margin: 0 auto;">
+                                                    <tr>
+                                                        <td style="border-top: 1px solid #2a2d2f; padding-top: 16px;">
+                                                            <span style="font-size: 11px; color: #4b5563;">© 2026 Kolvex · All rights reserved</span>
+                                                        </td>
+                                                    </tr>
+                                                </table>
                                             </td>
                                         </tr>
                                     </table>

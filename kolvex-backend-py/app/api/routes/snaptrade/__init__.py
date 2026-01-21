@@ -8,6 +8,7 @@ Module structure:
 - sync_routes.py: Data sync endpoints (sync accounts, sync positions)
 - holdings_routes.py: Holdings endpoints (get holdings, public holdings, toggle public)
 - webhook_routes.py: Webhook endpoints for real-time updates from SnapTrade
+- history_routes.py: Portfolio history endpoints for performance tracking
 """
 
 from fastapi import APIRouter
@@ -16,6 +17,7 @@ from .connection_routes import router as connection_router
 from .sync_routes import router as sync_router
 from .holdings_routes import router as holdings_router
 from .webhook_routes import router as webhook_router
+from .history_routes import router as history_router
 
 # Create main router
 router = APIRouter(prefix="/snaptrade", tags=["SnapTrade"])
@@ -25,6 +27,7 @@ router.include_router(connection_router)
 router.include_router(sync_router)
 router.include_router(holdings_router)
 router.include_router(webhook_router)
+router.include_router(history_router)
 
 __all__ = ["router"]
 
