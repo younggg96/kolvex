@@ -225,6 +225,49 @@ export async function updatePrivacySettings(
   return result.settings;
 }
 
+// ========== Portfolio History ==========
+
+export interface PortfolioHistoryDataPoint {
+  date: string;
+  value: number;
+  pnl: number;
+  pnl_percent: number;
+  positions_count?: number;
+}
+
+export interface PortfolioHistoryResponse {
+  period: string;
+  data: PortfolioHistoryDataPoint[];
+  first_snapshot_date: string | null;
+  has_real_data: boolean;
+  data_points: number;
+}
+
+export interface PortfolioHistoryStatus {
+  has_data: boolean;
+  first_snapshot_date: string | null;
+  latest_snapshot_date: string | null;
+  total_snapshots: number;
+  latest_value: number | null;
+}
+
+/**
+ * Get portfolio performance history
+ * @param period Time period: 1D, 1W, 1M, 3M, YTD, ALL
+ */
+export async function getPortfolioHistory(
+  period: string = "1M"
+): Promise<PortfolioHistoryResponse> {
+  return apiRequest<PortfolioHistoryResponse>(`/history?period=${period}`);
+}
+
+/**
+ * Get portfolio history data status
+ */
+export async function getPortfolioHistoryStatus(): Promise<PortfolioHistoryStatus> {
+  return apiRequest<PortfolioHistoryStatus>("/history/status");
+}
+
 // ========== Helper Functions ==========
 
 /**

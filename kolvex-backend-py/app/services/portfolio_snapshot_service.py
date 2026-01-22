@@ -8,7 +8,7 @@ from datetime import date, datetime, timedelta
 from typing import Optional, List, Dict, Any
 from decimal import Decimal
 
-from app.core.supabase import get_supabase_client
+from app.core.supabase import get_supabase_service
 
 logger = logging.getLogger(__name__)
 
@@ -17,7 +17,7 @@ class PortfolioSnapshotService:
     """Service for managing portfolio snapshots"""
     
     def __init__(self):
-        self.supabase = get_supabase_client()
+        self.supabase = get_supabase_service()
     
     async def record_snapshot(
         self,

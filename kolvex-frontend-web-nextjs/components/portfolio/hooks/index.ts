@@ -5,4 +5,11 @@ export {
   useStockDataCache,
   usePortfolioSymbols,
 } from "./useStockDataCache";
+export { usePortfolioHistory } from "./usePortfolioHistory";
+export type {
+  PerformancePeriod,
+  PerformanceDataPoint,
+  PerformanceSummary,
+  UsePortfolioHistoryResult,
+} from "./usePortfolioHistory";
 

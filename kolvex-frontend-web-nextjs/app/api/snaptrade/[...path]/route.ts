@@ -73,6 +73,8 @@ async function proxyRequest(
  * - /api/snaptrade/holdings -> GET /holdings
  * - /api/snaptrade/holdings/:userId -> GET /holdings/:userId (public, no auth)
  * - /api/snaptrade/public-users -> GET /public-users (public, no auth)
+ * - /api/snaptrade/history -> GET /history (with period query param)
+ * - /api/snaptrade/history/status -> GET /history/status
  */
 export async function GET(request: NextRequest, { params }: RouteParams) {
   const { path } = await params;
@@ -111,6 +113,16 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     case "privacy-settings":
       // /api/snaptrade/privacy-settings - get privacy settings
       return proxyRequest(request, "/privacy-settings", { method: "GET" });
+
+    case "history": {
+      // /api/snaptrade/history -> GET /history
+      // /api/snaptrade/history/status -> GET /history/status
+      if (path[1] === "status") {
+        return proxyRequest(request, "/history/status", { method: "GET" });
+      }
+      const period = searchParams.get("period") || "1M";
+      return proxyRequest(request, `/history?period=${period}`, { method: "GET" });
+    }
 
     default:
       return NextResponse.json({ error: "Not found" }, { status: 404 });

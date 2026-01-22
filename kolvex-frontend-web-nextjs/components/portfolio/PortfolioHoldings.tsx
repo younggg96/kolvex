@@ -13,6 +13,7 @@ import { PortfolioSkeleton } from "./PortfolioSkeleton";
 import { PortfolioStatsGrid } from "./PortfolioStatsGrid";
 import { PortfolioAllocation } from "./PortfolioAllocation";
 import { PortfolioHeaderActions } from "./PortfolioHeaderActions";
+import { PortfolioPerformanceChart } from "./PortfolioPerformanceChart";
 import { NotConnectedState, InitialSyncState } from "./ConnectionStates";
 import { AccountCard } from "./AccountCard";
 import { DisconnectDialog } from "./DisconnectDialog";
@@ -231,15 +232,15 @@ export default function PortfolioHoldings({
   const pnlPercent = isOwner
     ? typeof totalValue === "number" && totalValue > 0
       ? ((totalPnL as number) /
-          ((totalValue as number) - (totalPnL as number))) *
-        100
+        ((totalValue as number) - (totalPnL as number))) *
+      100
       : 0
     : publicHoldings?.pnl_percent ?? 0;
   const totalPositions = isOwner
     ? holdings?.accounts?.reduce(
-        (acc, curr) => acc + (curr.snaptrade_positions?.length || 0),
-        0
-      ) || 0
+      (acc, curr) => acc + (curr.snaptrade_positions?.length || 0),
+      0
+    ) || 0
     : publicHoldings?.positions_count ?? 0;
 
   if (loading) {
@@ -305,6 +306,11 @@ export default function PortfolioHoldings({
           !isOwner ? publicHoldings?.hidden_accounts_count : undefined
         }
       />
+
+      {/* Performance Chart */}
+      {holdings?.accounts && holdings.accounts.length > 0 && (
+        <PortfolioPerformanceChart />
+      )}
 
       {/* Tab Navigation with Refresh Button */}
       {holdings?.accounts && holdings.accounts.length > 0 && (
