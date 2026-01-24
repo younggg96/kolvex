@@ -6,6 +6,7 @@ import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import { UserProfileProvider } from "@/components/user/UserProfileProvider";
 import { StockDataCacheProvider } from "@/components/portfolio/hooks/useStockDataCache";
 
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import { Analytics } from "@vercel/analytics/next";
 
 const manrope = Manrope({
@@ -88,6 +89,7 @@ export default function RootLayout({
           </UserProfileProvider>
         </ThemeProvider>
         <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   );
