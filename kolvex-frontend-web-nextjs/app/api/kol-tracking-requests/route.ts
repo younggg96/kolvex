@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createServerSupabaseClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 
@@ -9,7 +9,7 @@ const API_BASE_URL =
 // GET - Fetch user's tracking requests
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient();
+    const supabase = await createServerSupabaseClient();
     const {
       data: { session },
     } = await supabase.auth.getSession();
@@ -57,7 +57,7 @@ export async function GET(request: NextRequest) {
 // POST - Create a new tracking request
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient();
+    const supabase = await createServerSupabaseClient();
     const {
       data: { session },
     } = await supabase.auth.getSession();
