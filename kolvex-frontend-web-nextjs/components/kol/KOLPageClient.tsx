@@ -19,6 +19,8 @@ import { Star, TrendingUp } from "lucide-react";
 import { useTrackedKOLs } from "@/hooks";
 import { KOLHeroSection } from "./KOLHeroSection";
 import KOLRankingTable from "@/components/kol/KOLRankingTable";
+import { RequestKOLModal } from "./RequestKOLModal";
+import { MyTrackingRequests } from "./MyTrackingRequests";
 import { toast } from "sonner";
 
 // Platform options for KOL selector (no "all" option)
@@ -75,6 +77,7 @@ export default function KOLPageClient() {
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
   const [offset, setOffset] = useState(0);
   const [hasMore, setHasMore] = useState(true);
+  const [requestRefreshTrigger, setRequestRefreshTrigger] = useState(0);
 
   // Get API endpoint based on selected platform
   const getApiEndpoint = useCallback((platform: Platform): string => {
@@ -177,6 +180,11 @@ export default function KOLPageClient() {
     }
   }, [isLoadingMore, hasMore, fetchRankingKols]);
 
+  // Handle request success - refresh the tracking requests list
+  const handleRequestSuccess = useCallback(() => {
+    setRequestRefreshTrigger((prev) => prev + 1);
+  }, []);
+
   // Convert trackingKOLs to KOL format for compatibility with KOLTrackerTable
   const convertedTrackingKOLs = useMemo<KOL[]>(() => {
     return apiTrackingKOLs.map((tracking) => {
@@ -262,7 +270,7 @@ export default function KOLPageClient() {
               </div>
             }
             headerRightExtra={
-              <>
+              <div className="flex items-center gap-2">
                 {activeTab === "ranking" && (
                   <Select
                     value={selectedPlatform}
@@ -330,7 +338,8 @@ export default function KOLPageClient() {
                     </SelectContent>
                   </Select>
                 )}
-              </>
+                <RequestKOLModal onSuccess={handleRequestSuccess} />
+              </div>
             }
           >
             {activeTab === "trackingKOLs" ? (
@@ -353,6 +362,9 @@ export default function KOLPageClient() {
               />
             )}
           </SectionCard>
+
+          {/* User's KOL Tracking Requests */}
+          <MyTrackingRequests refreshTrigger={requestRefreshTrigger} />
         </div>
       </div>
     </DashboardLayout>

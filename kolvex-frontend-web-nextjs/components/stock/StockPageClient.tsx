@@ -7,11 +7,12 @@ import TrackingStocksTable from "@/components/tracking-stocks/TrackingStocksTabl
 import StockSearchDialog from "@/components/stock/StockSearchDialog";
 import { SwitchTab } from "@/components/ui/switch-tab";
 import { Button } from "@/components/ui/button";
-import { Plus, TrendingUp, Star } from "lucide-react";
+import { Plus } from "lucide-react";
 import { createTrackedStock } from "@/lib/trackedStockApi";
 import { toast } from "sonner";
 import { SearchInput } from "../ui/search-input";
 import { StockHeroSection } from "./StockHeroSection";
+import { MarketOverview } from "@/components/market";
 
 export default function StockPageClient() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -46,12 +47,10 @@ export default function StockPageClient() {
     {
       value: "trending",
       label: "Trending",
-      icon: <TrendingUp className="w-3.5 h-3.5" />,
     },
     {
       value: "tracking-stocks",
       label: "My Tracking",
-      icon: <Star className="w-3.5 h-3.5" />,
     },
   ];
 
@@ -75,6 +74,7 @@ export default function StockPageClient() {
         <SearchInput
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
+          size="sm"
           placeholder="Search stocks..."
           containerClassName="w-24 sm:w-36 md:w-48 lg:w-64"
         />
@@ -87,6 +87,8 @@ export default function StockPageClient() {
       <div className="relative flex-1 overflow-y-auto bg-background-light dark:bg-background-dark">
         <div className="absolute inset-0 bg-grid opacity-50 pointer-events-none" />
         <StockHeroSection className="hidden lg:block" />
+        {/* Market Overview */}
+        <MarketOverview />
         {/* Content */}
         <div className="w-full relative p-4 min-w-0">
           <div className="flex-1 overflow-hidden">

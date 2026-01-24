@@ -320,6 +320,139 @@ class SentimentEngagementComparison(BaseModel):
     total_likes: int
 
 
+# ============================================================
+# AI 分析相关模型
+# ============================================================
+
+
+class PostAIAnalysisRequest(BaseModel):
+    """帖子 AI 分析请求（按 ID 列表）"""
+
+    post_ids: List[int]
+    force: bool = False
+
+
+class PostAIAnalysisResponse(BaseModel):
+    """帖子 AI 分析响应"""
+
+    success: bool
+    post_id: Optional[int] = None
+    sentiment: Optional[str] = None
+    sentiment_confidence: Optional[float] = None
+    sentiment_reasoning: Optional[str] = None
+    tickers: Optional[List[str]] = None
+    tags: Optional[List[str]] = None
+    summary: Optional[str] = None
+    trading_signal: Optional[str] = None
+    is_stock_related: bool = False
+    stock_related_confidence: Optional[float] = None
+    stock_related_reason: Optional[str] = None
+    analyzed_at: Optional[str] = None
+    model: Optional[str] = None
+    cached: bool = False  # 是否为缓存结果
+
+
+class BatchPostAnalysisRequest(BaseModel):
+    """批量帖子 AI 分析请求"""
+
+    limit: int = 10
+    force: bool = False
+    only_unanalyzed: bool = True
+    platform: Optional[str] = None
+    username: Optional[str] = None
+
+
+class BatchPostAnalysisResponse(BaseModel):
+    """批量帖子 AI 分析响应"""
+
+    success: bool
+    message: str
+    total: int
+    status: str  # "processing", "completed"
+
+
+class PostAnalysisStatsResponse(BaseModel):
+    """帖子分析统计响应"""
+
+    success: bool
+    total_posts: int
+    analyzed_posts: int
+    unanalyzed_posts: int
+    stock_related_posts: int
+    sentiment_distribution: dict
+    analysis_rate: float
+    platform: Optional[str] = None
+
+
+class TickerCount(BaseModel):
+    """股票代码计数"""
+
+    ticker: str
+    count: int
+
+
+class TopTickersResponse(BaseModel):
+    """热门股票代码响应"""
+
+    success: bool
+    tickers: List[TickerCount]
+    total_unique_tickers: int
+    platform: Optional[str] = None
+
+
+# ============================================================
+# KOL Tracking Request Models
+# ============================================================
+
+
+class TrackingRequestStatus(str, Enum):
+    """追踪请求状态"""
+    PENDING = "pending"
+    APPROVED = "approved"
+    REJECTED = "rejected"
+
+
+class KOLTrackingRequestCreate(BaseModel):
+    """创建 KOL 追踪请求"""
+    platform: str = "twitter"
+    platform_user_id: str  # KOL's username on the platform
+    user_notes: Optional[str] = None  # Optional reason for the request
+
+
+class KOLTrackingRequest(BaseModel):
+    """KOL 追踪请求模型"""
+    id: str
+    user_id: str
+    platform: str
+    platform_user_id: str
+    status: TrackingRequestStatus
+    user_notes: Optional[str] = None
+    admin_notes: Optional[str] = None
+    created_at: datetime
+    updated_at: datetime
+    reviewed_at: Optional[datetime] = None
+    reviewed_by: Optional[str] = None
+
+
+class KOLTrackingRequestsResponse(BaseModel):
+    """KOL 追踪请求列表响应"""
+    requests: List[KOLTrackingRequest]
+    total: int
+
+
+class KOLTrackingRequestReview(BaseModel):
+    """审核 KOL 追踪请求"""
+    status: Literal["approved", "rejected"]
+    admin_notes: Optional[str] = None
+
+
+class KOLTrackingRequestResponse(BaseModel):
+    """单个 KOL 追踪请求响应"""
+    success: bool
+    message: str
+    request: Optional[KOLTrackingRequest] = None
+
+
 
 
 

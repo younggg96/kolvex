@@ -5,9 +5,11 @@
 
 import asyncio
 import re
+import traceback
 from typing import Dict, List, Any
 from datetime import datetime, timezone
 
+import httpx
 import yfinance as yf
 
 from .client import OllamaClient, OllamaClientSync
@@ -90,8 +92,21 @@ Respond with ONLY this JSON object, no other text:
 
             return self._default_basic_analysis_result()
 
+        except httpx.TimeoutException as e:
+            print(f"⚠️ [Sync] Basic analysis failed (Timeout): Ollama request timed out after {self.client.timeout}s")
+            return self._default_basic_analysis_result()
+        except httpx.ConnectError as e:
+            print(f"⚠️ [Sync] Basic analysis failed (Connection Error): Cannot connect to Ollama at {self.client.base_url}")
+            return self._default_basic_analysis_result()
+        except httpx.HTTPStatusError as e:
+            print(f"⚠️ [Sync] Basic analysis failed (HTTP {e.response.status_code}): {e.response.text[:200] if e.response.text else 'No response body'}")
+            return self._default_basic_analysis_result()
         except Exception as e:
-            print(f"⚠️ Basic analysis failed: {e}")
+            error_type = type(e).__name__
+            error_msg = str(e) if str(e) else "No error message"
+            print(f"⚠️ [Sync] Basic analysis failed ({error_type}): {error_msg}")
+            if not str(e):
+                print(f"   Traceback: {traceback.format_exc()[:500]}")
             return self._default_basic_analysis_result()
 
     def _default_basic_analysis_result(self) -> Dict[str, Any]:
@@ -542,8 +557,21 @@ Respond with ONLY this JSON object, no other text:
 
             return self._default_basic_analysis_result()
 
+        except httpx.TimeoutException as e:
+            print(f"⚠️ Basic analysis failed (Timeout): Ollama request timed out after {self.client.timeout}s")
+            return self._default_basic_analysis_result()
+        except httpx.ConnectError as e:
+            print(f"⚠️ Basic analysis failed (Connection Error): Cannot connect to Ollama at {self.client.base_url}")
+            return self._default_basic_analysis_result()
+        except httpx.HTTPStatusError as e:
+            print(f"⚠️ Basic analysis failed (HTTP {e.response.status_code}): {e.response.text[:200] if e.response.text else 'No response body'}")
+            return self._default_basic_analysis_result()
         except Exception as e:
-            print(f"⚠️ Basic analysis failed: {e}")
+            error_type = type(e).__name__
+            error_msg = str(e) if str(e) else "No error message"
+            print(f"⚠️ Basic analysis failed ({error_type}): {error_msg}")
+            if not str(e):
+                print(f"   Traceback: {traceback.format_exc()[:500]}")
             return self._default_basic_analysis_result()
 
     async def full_analysis(self, tweet_text: str) -> Dict[str, Any]:
@@ -620,8 +648,21 @@ Respond with ONLY this JSON object, no other text before or after:
             # 解析失败，返回默认结构
             return self._default_analysis_result()
 
+        except httpx.TimeoutException as e:
+            print(f"⚠️ Full analysis failed (Timeout): Ollama request timed out after {self.client.timeout}s")
+            return self._default_analysis_result()
+        except httpx.ConnectError as e:
+            print(f"⚠️ Full analysis failed (Connection Error): Cannot connect to Ollama at {self.client.base_url}")
+            return self._default_analysis_result()
+        except httpx.HTTPStatusError as e:
+            print(f"⚠️ Full analysis failed (HTTP {e.response.status_code}): {e.response.text[:200] if e.response.text else 'No response body'}")
+            return self._default_analysis_result()
         except Exception as e:
-            print(f"⚠️ Full analysis failed: {e}")
+            error_type = type(e).__name__
+            error_msg = str(e) if str(e) else "No error message"
+            print(f"⚠️ Full analysis failed ({error_type}): {error_msg}")
+            if not str(e):
+                print(f"   Traceback: {traceback.format_exc()[:500]}")
             return self._default_analysis_result()
 
     def _default_basic_analysis_result(self) -> Dict[str, Any]:

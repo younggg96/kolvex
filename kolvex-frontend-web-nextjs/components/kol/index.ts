@@ -7,3 +7,5 @@ export { default as KOLTrackerTable } from "./KOLTrackerTable";
 export { default as KOLPostCard } from "./KOLTweetCard";
 export { default as TopKols } from "./KOLRankingTable";
 export { KOLHeroSection } from "./KOLHeroSection";
+export { RequestKOLModal } from "./RequestKOLModal";
+export { MyTrackingRequests } from "./MyTrackingRequests";

@@ -1,3 +1,5 @@
+version: "3.8"
+
 services:
   # PostgreSQL 数据库
   db:
@@ -19,25 +21,18 @@ services:
     networks:
       - kolvex-network
 
-  # Ollama AI 服务 (本地 LLM)
-  ollama:
-    image: ollama/ollama:latest
-    container_name: kolvex-ollama
-    ports:
-      - "11434:11434"
-    volumes:
-      - ollama_data:/root/.ollama
-    networks:
-      - kolvex-network
-    restart: unless-stopped
-    # 如果有 GPU，取消下面的注释
-    # deploy:
-    #   resources:
-    #     reservations:
-    #       devices:
-    #         - driver: nvidia
-    #           count: all
-    #           capabilities: [gpu]
+  # 注意: Ollama 使用本地安装的版本（有 GPU 加速），不使用 Docker
+  # 如需 Docker 版 Ollama，取消下面的注释
+  # ollama:
+  #   image: ollama/ollama:latest
+  #   container_name: kolvex-ollama
+  #   ports:
+  #     - "11434:11434"
+  #   volumes:
+  #     - ollama_data:/root/.ollama
+  #   networks:
+  #     - kolvex-network
+  #   restart: unless-stopped
 
   # FastAPI 后端
   backend:
@@ -58,23 +53,21 @@ services:
       SUPABASE_SERVICE_KEY: ${SUPABASE_SERVICE_KEY:-}
       # CORS 配置
       ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:3000,http://localhost:3001}
-      # Ollama AI 配置 - 连接到 ollama 容器
-      OLLAMA_BASE_URL: http://ollama:11434
-      OLLAMA_MODEL: gemma2:2b
+      # Ollama AI 配置 - 使用本地 Ollama (通过 host.docker.internal 访问)
+      OLLAMA_BASE_URL: http://host.docker.internal:11434
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-hf.co/QuantFactory/Llama-3-8B-Instruct-Finance-RAG-GGUF:Q4_K_M}
+      OLLAMA_TIMEOUT: ${OLLAMA_TIMEOUT:-120}
     volumes:
       - .:/app
     depends_on:
       db:
         condition: service_healthy
-      ollama:
-        condition: service_started
     networks:
       - kolvex-network
     restart: unless-stopped
 
 volumes:
   postgres_data:
-  ollama_data:
 
 networks:
   kolvex-network:

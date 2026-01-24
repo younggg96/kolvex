@@ -72,6 +72,11 @@ class OllamaClient:
         response.raise_for_status()
 
         data = response.json()
+        
+        # 检查 Ollama 返回的错误（HTTP 200 但 JSON 中包含 error）
+        if "error" in data:
+            raise RuntimeError(f"Ollama error: {data['error']}")
+        
         return data.get("response", "")
 
     async def chat(
@@ -111,6 +116,11 @@ class OllamaClient:
         response.raise_for_status()
 
         data = response.json()
+        
+        # 检查 Ollama 返回的错误
+        if "error" in data:
+            raise RuntimeError(f"Ollama error: {data['error']}")
+        
         return data.get("message", {}).get("content", "")
 
     async def list_models(self) -> List[Dict]:
@@ -165,6 +175,11 @@ class OllamaClientSync:
             response = client.post(url, json=payload)
             response.raise_for_status()
             data = response.json()
+            
+            # 检查 Ollama 返回的错误
+            if "error" in data:
+                raise RuntimeError(f"Ollama error: {data['error']}")
+            
             return data.get("response", "")
 
     def health_check(self) -> bool:
