@@ -1,10 +1,15 @@
 """
 金融新闻 API 路由
-提供 Benzinga 新闻数据的获取和存储功能
+提供多数据源新闻数据的获取和存储功能
+
+数据源：
+1. Benzinga - 金融新闻 API
+2. Yahoo Finance - 股票相关新闻
 
 功能：
 1. 获取单只股票的新闻并保存到数据库
 2. 定时任务：每小时获取所有 KOL 提到过的标的的新闻
+3. 聚合多个数据源的新闻
 """
 
 from fastapi import APIRouter, Query, HTTPException
@@ -16,6 +21,7 @@ import asyncio
 
 from app.core.supabase import get_supabase_service
 from app.services.benzinga import BenzingaClient, NewsArticle
+from app.services.news_aggregator import get_news_aggregator
 
 # 配置日志
 logger = logging.getLogger(__name__)
@@ -77,6 +83,16 @@ class NewsArticleResponse(BaseModel):
     tickers: List[str] = Field(default_factory=list, description="相关股票代码")
     source: str = Field(default="benzinga", description="新闻来源")
     created_at: Optional[datetime] = None
+    # AI 分析字段
+    ai_summary: Optional[str] = Field(default=None, description="AI 生成的摘要")
+    sentiment: Optional[str] = Field(default=None, description="情感: bullish/bearish/neutral")
+    sentiment_confidence: Optional[float] = Field(default=None, description="情感置信度")
+    trading_action: Optional[str] = Field(default=None, description="交易信号: buy/sell/hold")
+    market_impact: Optional[str] = Field(default=None, description="市场影响: high/medium/low")
+    ai_tickers: List[str] = Field(default_factory=list, description="AI 识别的股票代码")
+    ai_tags: List[str] = Field(default_factory=list, description="AI 提取的标签")
+    key_points: List[str] = Field(default_factory=list, description="关键要点")
+    analyzed_at: Optional[str] = Field(default=None, description="分析时间")
 
 
 class NewsListResponse(BaseModel):
@@ -244,6 +260,16 @@ def db_row_to_response(row: dict) -> NewsArticleResponse:
         tickers=row.get("tickers") or [],
         source=row.get("source", "benzinga"),
         created_at=row.get("created_at"),
+        # AI 分析字段
+        ai_summary=row.get("ai_summary"),
+        sentiment=row.get("sentiment"),
+        sentiment_confidence=row.get("sentiment_confidence"),
+        trading_action=row.get("trading_action"),
+        market_impact=row.get("market_impact"),
+        ai_tickers=row.get("ai_tickers") or [],
+        ai_tags=row.get("ai_tags") or [],
+        key_points=row.get("key_points") or [],
+        analyzed_at=row.get("analyzed_at"),
     )
 
 
@@ -341,19 +367,26 @@ async def get_news_list(
     page_size: int = Query(20, ge=1, le=100, description="每页数量"),
     ticker: Optional[str] = Query(None, description="按股票代码筛选"),
     tag: Optional[str] = Query(None, description="按标签筛选"),
+    include_yfinance: bool = Query(True, description="是否包含 Yahoo Finance 新闻"),
 ):
     """
-    获取数据库中的新闻列表
+    获取新闻列表（聚合多个数据源）
 
     - **page**: 页码，从 1 开始
     - **page_size**: 每页数量，默认 20
     - **ticker**: 可选，按股票代码筛选
     - **tag**: 可选，按标签筛选
+    - **include_yfinance**: 是否包含 Yahoo Finance 实时新闻，默认 True
+    
+    当不指定 ticker 时，会自动获取 trending 热门新闻
     """
     try:
         supabase = get_supabase_service()
         offset = (page - 1) * page_size
-
+        
+        all_articles = []
+        
+        # 1. 从数据库获取 Benzinga 新闻
         query = supabase.table("news_articles").select("*", count="exact")
 
         if ticker:
@@ -368,12 +401,68 @@ async def get_news_list(
             .execute()
         )
 
-        articles = [db_row_to_response(row) for row in (result.data or [])]
+        db_articles = [db_row_to_response(row) for row in (result.data or [])]
+        all_articles.extend(db_articles)
+        
+        # 2. 获取 Yahoo Finance 新闻（仅第一页）
+        if include_yfinance and page == 1:
+            try:
+                aggregator = get_news_aggregator()
+                
+                if ticker:
+                    # 指定 ticker 时获取该股票的新闻
+                    yf_articles = await aggregator.get_yfinance_news(ticker.upper(), limit=10)
+                else:
+                    # 未指定 ticker 时获取 trending 新闻
+                    yf_articles = await aggregator.get_trending_news(limit=15)
+                
+                # 转换为响应模型并添加 source 标记
+                for article in yf_articles:
+                    yf_article = NewsArticleResponse(
+                        id=None,
+                        published_at=article.published_at,
+                        title=article.title,
+                        summary=article.summary,
+                        url=article.url,
+                        tags=article.tags,
+                        tickers=article.tickers,
+                        source="yahoo_finance",
+                        created_at=None,
+                    )
+                    all_articles.append(yf_article)
+            except Exception as e:
+                logger.warning(f"获取 Yahoo Finance 新闻失败: {e}")
+        
+        # 3. 去重（基于 URL）
+        seen_urls = set()
+        unique_articles = []
+        for article in all_articles:
+            url_key = article.url.lower().rstrip("/")
+            if url_key not in seen_urls:
+                seen_urls.add(url_key)
+                unique_articles.append(article)
+        
+        # 4. 按时间排序
+        def parse_date(article: NewsArticleResponse) -> datetime:
+            try:
+                return datetime.fromisoformat(article.published_at.replace("Z", "+00:00"))
+            except:
+                return datetime.min.replace(tzinfo=timezone.utc)
+        
+        sorted_articles = sorted(unique_articles, key=parse_date, reverse=True)
+        
+        # 5. 分页处理
+        final_articles = sorted_articles[:page_size]
         total = result.count or 0
-        has_more = offset + len(articles) < total
+        
+        # 如果有 yfinance 数据，total 需要调整
+        if include_yfinance:
+            total = max(total, len(unique_articles))
+        
+        has_more = offset + len(final_articles) < total
 
         return NewsListResponse(
-            articles=articles,
+            articles=final_articles,
             total=total,
             page=page,
             page_size=page_size,
@@ -747,6 +836,24 @@ async def scheduled_fetch_kol_news(
             f"保存 {total_saved} 篇, 耗时 {duration:.2f}s"
         )
 
+        # 🤖 自动进行 AI 分析
+        if total_saved > 0:
+            try:
+                from app.services.news_ai_service import auto_analyze_news_after_scrape
+
+                logger.info("🤖 [KOL] 开始自动 AI 分析新保存的新闻...")
+                analysis_result = await auto_analyze_news_after_scrape(
+                    limit=min(total_saved, 30),  # 最多分析 30 篇
+                    max_concurrent=2,
+                )
+                logger.info(
+                    f"🤖 [KOL] AI 分析完成: "
+                    f"成功 {analysis_result.get('analyzed', 0)}, "
+                    f"失败 {analysis_result.get('failed', 0)}"
+                )
+            except Exception as ai_error:
+                logger.error(f"❌ [KOL] AI 分析失败: {ai_error}")
+
     except Exception as e:
         scheduler_status.is_running = False
         scheduler_status.error_message = str(e)
@@ -810,6 +917,24 @@ async def scheduled_fetch_bulk_news(
             f"✅ 定时任务完成: 获取 {total_fetched} 篇, "
             f"保存 {total_saved} 篇, 耗时 {duration:.2f}s"
         )
+
+        # 🤖 自动进行 AI 分析
+        if total_saved > 0:
+            try:
+                from app.services.news_ai_service import auto_analyze_news_after_scrape
+
+                logger.info("🤖 [BULK] 开始自动 AI 分析新保存的新闻...")
+                analysis_result = await auto_analyze_news_after_scrape(
+                    limit=min(total_saved, 50),  # 最多分析 50 篇
+                    max_concurrent=3,
+                )
+                logger.info(
+                    f"🤖 [BULK] AI 分析完成: "
+                    f"成功 {analysis_result.get('analyzed', 0)}, "
+                    f"失败 {analysis_result.get('failed', 0)}"
+                )
+            except Exception as ai_error:
+                logger.error(f"❌ [BULK] AI 分析失败: {ai_error}")
 
     except Exception as e:
         bulk_news_scheduler_status.is_running = False

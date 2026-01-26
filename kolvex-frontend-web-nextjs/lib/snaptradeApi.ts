@@ -268,6 +268,115 @@ export async function getPortfolioHistoryStatus(): Promise<PortfolioHistoryStatu
   return apiRequest<PortfolioHistoryStatus>("/history/status");
 }
 
+// ========== AI Portfolio Analysis ==========
+
+export interface KeyMetrics {
+  concentration_risk?: string;
+  sector_balance?: string;
+  growth_potential?: string;
+}
+
+export interface OverallAnalysis {
+  summary: string;
+  risk_level: string;
+  diversification_score: number;
+  portfolio_style?: string;
+  strengths: string[];
+  weaknesses: string[];
+  key_metrics?: KeyMetrics;
+}
+
+export interface StockAnalysis {
+  symbol: string;
+  name?: string;
+  current_weight?: number;
+  sentiment: string;
+  analysis?: string;
+  recommendation: string;
+  confidence: number;
+  key_points: string[];
+}
+
+export interface PortfolioSuggestions {
+  rebalancing: string[];
+  risk_management: string[];
+  opportunities: string[];
+  tax_considerations?: string[];
+}
+
+export interface PortfolioAnalysisResponse {
+  overall_analysis: OverallAnalysis;
+  stock_analyses: StockAnalysis[];
+  portfolio_suggestions: PortfolioSuggestions;
+  analyzed_at: string;
+  model: string;
+  positions_analyzed: number;
+}
+
+export interface SingleStockAnalysisResponse {
+  symbol: string;
+  sentiment: string;
+  sentiment_confidence: number;
+  short_term_outlook?: string;
+  long_term_outlook?: string;
+  analysis_summary: string;
+  key_factors: string[];
+  risk_factors: string[];
+  recommendation: string;
+  target_weight?: number;
+  rationale: string;
+  analyzed_at: string;
+  model: string;
+}
+
+export interface AnalysisHealthResponse {
+  status: string;
+  ai_available: boolean;
+  model?: string;
+  error?: string;
+}
+
+/**
+ * Analyze portfolio using AI
+ * @param userContext Optional user-provided context (investment goals, risk tolerance, etc.)
+ */
+export async function analyzePortfolio(
+  userContext?: string
+): Promise<PortfolioAnalysisResponse> {
+  return apiRequest<PortfolioAnalysisResponse>("/analysis", {
+    method: "POST",
+    body: JSON.stringify({ user_context: userContext }),
+  });
+}
+
+/**
+ * Analyze a single stock position using AI
+ * @param symbol Stock ticker symbol
+ * @param positionData Position data
+ * @param includePortfolioContext Whether to include portfolio context
+ */
+export async function analyzeStock(
+  symbol: string,
+  positionData: Record<string, unknown>,
+  includePortfolioContext = true
+): Promise<SingleStockAnalysisResponse> {
+  return apiRequest<SingleStockAnalysisResponse>("/analysis/stock", {
+    method: "POST",
+    body: JSON.stringify({
+      symbol,
+      position_data: positionData,
+      include_portfolio_context: includePortfolioContext,
+    }),
+  });
+}
+
+/**
+ * Check AI analysis service health
+ */
+export async function checkAnalysisHealth(): Promise<AnalysisHealthResponse> {
+  return apiRequest<AnalysisHealthResponse>("/analysis/health");
+}
+
 // ========== Helper Functions ==========
 
 /**

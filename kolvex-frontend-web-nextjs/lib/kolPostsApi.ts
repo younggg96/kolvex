@@ -246,6 +246,16 @@ export interface NewsArticle {
   tickers: string[];
   source: string;
   created_at: string | null;
+  // AI 分析字段
+  ai_summary?: string | null;
+  sentiment?: "bullish" | "bearish" | "neutral" | null;
+  sentiment_confidence?: number | null;
+  trading_action?: "buy" | "sell" | "hold" | null;
+  market_impact?: "high" | "medium" | "low" | "none" | null;
+  ai_tickers?: string[];
+  ai_tags?: string[];
+  key_points?: string[];
+  analyzed_at?: string | null;
 }
 
 export interface NewsListResponse {
@@ -434,6 +444,54 @@ export async function getStockNews(
 
   const query = searchParams.toString();
   return fetchAPI<NewsListResponse>(`/news${query ? `?${query}` : ""}`);
+}
+
+// ============================================================
+// 新闻 AI 分析 API
+// ============================================================
+
+export interface NewsAIAnalysisResponse {
+  success: boolean;
+  article_id: number;
+  ai_summary?: string | null;
+  sentiment?: string | null;
+  sentiment_confidence?: number | null;
+  sentiment_reasoning?: string | null;
+  trading_action?: string | null;
+  trading_confidence?: number | null;
+  ai_tickers?: string[];
+  ai_tags?: string[];
+  key_points?: string[];
+  market_impact?: string | null;
+  impact_confidence?: number | null;
+  analyzed_at?: string | null;
+  ai_model?: string | null;
+  cached?: boolean;
+}
+
+/**
+ * 分析单篇新闻
+ * @param articleId 文章 ID
+ * @param force 是否强制重新分析
+ */
+export async function analyzeNewsArticle(
+  articleId: number,
+  force: boolean = false
+): Promise<NewsAIAnalysisResponse> {
+  return fetchAPI<NewsAIAnalysisResponse>(
+    `/news/ai/analyze/${articleId}?force=${force}`,
+    { method: "POST" }
+  );
+}
+
+/**
+ * 获取新闻 AI 分析结果（不执行分析）
+ * @param articleId 文章 ID
+ */
+export async function getNewsAIAnalysis(
+  articleId: number
+): Promise<NewsAIAnalysisResponse> {
+  return fetchAPI<NewsAIAnalysisResponse>(`/news/ai/${articleId}`);
 }
 
 /**

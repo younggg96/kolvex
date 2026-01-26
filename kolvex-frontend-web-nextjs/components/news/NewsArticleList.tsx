@@ -72,27 +72,40 @@ export default function NewsArticleList({
 
   if (loading && !newsData) {
     return (
-      <div className="space-y-4 py-4">
+      <div className="space-y-2">
         {[...Array(6)].map((_, i) => (
           <div
             key={i}
-            className="flex flex-col gap-2.5 p-3 border border-transparent"
+            className="rounded-xl border border-border/50 dark:border-border-dark/50 bg-card-light dark:bg-card-dark/50 backdrop-blur-sm p-4"
           >
-            <div className="flex items-center justify-between">
+            {/* Header */}
+            <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
-                <Skeleton className="h-4 w-16" />
-                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-5 w-16 rounded" />
+                <Skeleton className="h-3 w-1 rounded-full" />
+                <Skeleton className="h-4 w-20" />
               </div>
-              <Skeleton className="h-6 w-6 rounded-md" />
+              <Skeleton className="h-7 w-7 rounded-md" />
             </div>
-            <div className="space-y-2">
-              <Skeleton className="h-5 w-3/4" />
+
+            {/* Content */}
+            <div className="mb-3 space-y-1.5">
+              <Skeleton className="h-5 w-4/5" />
               <Skeleton className="h-4 w-full" />
-              <Skeleton className="h-4 w-2/3" />
+              <Skeleton className="h-4 w-3/4" />
             </div>
-            <div className="flex gap-2 pt-1">
-              <Skeleton className="h-6 w-12 rounded-md" />
-              <Skeleton className="h-6 w-12 rounded-md" />
+
+            {/* Footer */}
+            <div className="pt-3 border-t border-border/30 dark:border-border-dark/30">
+              <div className="flex flex-wrap gap-1.5 mb-2">
+                <Skeleton className="h-6 w-14 rounded-md" />
+                <Skeleton className="h-6 w-12 rounded-md" />
+                <Skeleton className="h-6 w-16 rounded-md" />
+              </div>
+              <div className="flex gap-3">
+                <Skeleton className="h-4 w-16" />
+                <Skeleton className="h-4 w-12" />
+              </div>
             </div>
           </div>
         ))}
@@ -114,41 +127,34 @@ export default function NewsArticleList({
   }
 
   return (
-    <div className="h-full flex flex-col">
-      <div className="flex-1 overflow-y-auto space-y-1">
-        {newsData.articles.map((article, index) => (
-          <React.Fragment key={article.id || index}>
-            <NewsCard article={article} />
-            {index < newsData.articles.length - 1 && (
-              <Separator className="my-1" />
-            )}
-          </React.Fragment>
-        ))}
+    <div className="flex-1 overflow-y-auto space-y-2">
+      {newsData.articles.map((article, index) => (
+        <NewsCard article={article} key={article.id || index} />
+      ))}
 
-        {/* Load more */}
-        {newsData.has_more && (
-          <div className="mt-4 pb-4">
-            <Button
-              variant="outline"
-              onClick={loadMore}
-              disabled={loadingMore}
-              className="w-full"
-            >
-              {loadingMore ? (
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-                  <span>Loading...</span>
-                </div>
-              ) : (
-                <>
-                  Load More
-                  <ChevronDown className="w-4 h-4 ml-1" />
-                </>
-              )}
-            </Button>
-          </div>
-        )}
-      </div>
+      {/* Load more */}
+      {newsData.has_more && (
+        <div className="mt-4 pb-4">
+          <Button
+            variant="outline"
+            onClick={loadMore}
+            disabled={loadingMore}
+            className="w-full"
+          >
+            {loadingMore ? (
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                <span>Loading...</span>
+              </div>
+            ) : (
+              <>
+                Load More
+                <ChevronDown className="w-4 h-4 ml-1" />
+              </>
+            )}
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

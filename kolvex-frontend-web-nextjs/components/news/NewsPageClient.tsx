@@ -19,12 +19,10 @@ export default function NewsPageClient({ category }: NewsPageClientProps) {
     {
       value: "live",
       label: "Live News",
-      icon: <Zap className="w-3.5 h-3.5" />,
     },
     {
       value: "articles",
       label: "News Articles",
-      icon: <Newspaper className="w-3.5 h-3.5" />,
     },
   ];
 
@@ -42,20 +40,15 @@ export default function NewsPageClient({ category }: NewsPageClientProps) {
 
   return (
     <DashboardLayout title="Market News" showHeader={true} headerActions={headerActions}>
-      <div className="flex-1 p-2 overflow-y-auto">
-        <SectionCard
-          padding="sm"
-          scrollable
-          contentClassName="space-y-0 px-4 pb-4"
-        >
-          <div className="h-[calc(100vh-160px)]">
-            {activeTab === "live" ? (
-              <FinancialJuiceNews width="100%" height="100%" />
-            ) : (
-              <NewsArticleList />
-            )}
-          </div>
-        </SectionCard>
+      <div className="flex-1 overflow-y-auto bg-background-light dark:bg-background-dark">
+        <div className="absolute inset-0 bg-grid opacity-50 pointer-events-none" />
+        <div className="h-[calc(100vh-160px)] p-4 min-w-0">
+          {activeTab === "live" ? (
+            <FinancialJuiceNews width="100%" height="100%" />
+          ) : (
+            <NewsArticleList />
+          )}
+        </div>
       </div>
     </DashboardLayout>
   );

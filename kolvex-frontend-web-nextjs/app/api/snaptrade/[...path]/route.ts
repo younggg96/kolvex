@@ -75,6 +75,7 @@ async function proxyRequest(
  * - /api/snaptrade/public-users -> GET /public-users (public, no auth)
  * - /api/snaptrade/history -> GET /history (with period query param)
  * - /api/snaptrade/history/status -> GET /history/status
+ * - /api/snaptrade/analysis/health -> GET /analysis/health
  */
 export async function GET(request: NextRequest, { params }: RouteParams) {
   const { path } = await params;
@@ -124,6 +125,13 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       return proxyRequest(request, `/history?period=${period}`, { method: "GET" });
     }
 
+    case "analysis":
+      // /api/snaptrade/analysis/health -> GET /analysis/health
+      if (path[1] === "health") {
+        return proxyRequest(request, "/analysis/health", { method: "GET" });
+      }
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+
     default:
       return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
@@ -137,6 +145,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
  * - /api/snaptrade/toggle-public -> POST /toggle-public
  * - /api/snaptrade/positions/:id/visibility -> POST /positions/:id/visibility
  * - /api/snaptrade/positions/visibility/batch -> POST /batch-toggle-position-visibility
+ * - /api/snaptrade/analysis -> POST /analysis (AI portfolio analysis)
+ * - /api/snaptrade/analysis/stock -> POST /analysis/stock (AI single stock analysis)
  */
 export async function POST(request: NextRequest, { params }: RouteParams) {
   const { path } = await params;
@@ -178,6 +188,22 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         // path[1] is position ID
         const positionId = path[1];
         return proxyRequest(request, `/positions/${positionId}/visibility`, {
+          method: "POST",
+          hasBody: true,
+        });
+      }
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+    case "analysis":
+      // /api/snaptrade/analysis -> POST /analysis (full portfolio analysis)
+      // /api/snaptrade/analysis/stock -> POST /analysis/stock (single stock analysis)
+      if (path.length === 1) {
+        return proxyRequest(request, "/analysis", {
+          method: "POST",
+          hasBody: true,
+        });
+      } else if (path[1] === "stock") {
+        return proxyRequest(request, "/analysis/stock", {
           method: "POST",
           hasBody: true,
         });

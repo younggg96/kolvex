@@ -207,7 +207,7 @@ export default function FinancialJuiceNews({
         className="relative w-full h-full"
         style={{ minHeight: height === "100%" ? "600px" : height }}
       >
-        <div className="absolute inset-0 bg-white dark:bg-[#242d38] z-10 rounded-lg p-4 overflow-hidden">
+        <div className="absolute inset-0 bg-background-light dark:bg-background-dark z-10 rounded-lg p-4 overflow-hidden">
           <div className="space-y-4">
             {[...Array(10)].map((_, index) => (
               <div
@@ -262,7 +262,7 @@ export default function FinancialJuiceNews({
       style={{ minHeight: containerHeight }}
     >
       {loading && (
-        <div className="absolute inset-0 bg-white dark:bg-[#242d38] z-10 rounded-lg p-4 overflow-hidden transition-opacity duration-200">
+        <div className="absolute inset-0 bg-background-light dark:bg-background-dark z-10 rounded-lg p-4 overflow-hidden transition-opacity duration-200">
           {/* Skeleton Loading */}
           <div className="space-y-4">
             {[...Array(10)].map((_, index) => (

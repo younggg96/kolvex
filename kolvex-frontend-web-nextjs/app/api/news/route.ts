@@ -14,11 +14,17 @@ export async function GET(request: NextRequest) {
     const pageSize = searchParams.get("page_size");
     const ticker = searchParams.get("ticker");
     const tag = searchParams.get("tag");
+    const includeYfinance = searchParams.get("include_yfinance");
 
     if (page) backendParams.set("page", page);
     if (pageSize) backendParams.set("page_size", pageSize);
     if (ticker) backendParams.set("ticker", ticker.toUpperCase());
     if (tag) backendParams.set("tag", tag);
+    // Default to true if not specified
+    backendParams.set(
+      "include_yfinance",
+      includeYfinance !== "false" ? "true" : "false"
+    );
 
     const query = backendParams.toString();
     const response = await fetch(

@@ -17,6 +17,7 @@ import { PortfolioPerformanceChart } from "./PortfolioPerformanceChart";
 import { NotConnectedState, InitialSyncState } from "./ConnectionStates";
 import { AccountCard } from "./AccountCard";
 import { DisconnectDialog } from "./DisconnectDialog";
+import { PortfolioAIAnalysis } from "./PortfolioAIAnalysis";
 
 // Hooks
 import { usePortfolioData } from "./hooks/usePortfolioData";
@@ -42,7 +43,7 @@ export default function PortfolioHoldings({
   const [expandedAccounts, setExpandedAccounts] = useState<Set<string>>(
     new Set()
   );
-  const [activeTab, setActiveTab] = useState<"holdings" | "analytics">(
+  const [activeTab, setActiveTab] = useState<"holdings" | "analytics" | "ai-insights">(
     "holdings"
   );
   const [sparklineDataMap, setSparklineDataMap] = useState<
@@ -320,9 +321,10 @@ export default function PortfolioHoldings({
               options={[
                 { value: "holdings", label: "Holdings" },
                 { value: "analytics", label: "Analytics" },
+                { value: "ai-insights", label: "AI Insights" },
               ]}
               value={activeTab}
-              onValueChange={(v) => setActiveTab(v as "holdings" | "analytics")}
+              onValueChange={(v) => setActiveTab(v as "holdings" | "analytics" | "ai-insights")}
               variant="underline"
               size="md"
               className="!w-fit"
@@ -389,6 +391,18 @@ export default function PortfolioHoldings({
               isOwner={isOwner}
               cachedSectorMap={sectorDataMap}
             />
+          )}
+
+          {/* AI Insights Tab Content */}
+          {activeTab === "ai-insights" && isOwner && (
+            <PortfolioAIAnalysis />
+          )}
+
+          {/* AI Insights - Non-owner message */}
+          {activeTab === "ai-insights" && !isOwner && (
+            <div className="text-center py-8 text-muted-foreground">
+              <p>AI analysis is only available for your own portfolio.</p>
+            </div>
           )}
         </>
       )}
