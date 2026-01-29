@@ -17,6 +17,7 @@ from app.api.routes.scheduler_routes import router as scheduler_router
 from app.api.routes.chat import router as chat_router
 from app.api.routes.dify_knowledge import router as dify_knowledge_router
 from app.api.routes.news_ai import router as news_ai_router
+from app.api.routes.admin import router as admin_router
 
 # Create API router
 api_router = APIRouter()
@@ -41,5 +42,6 @@ api_router.include_router(dataroma_router)
 api_router.include_router(scheduler_router)
 api_router.include_router(chat_router)
 api_router.include_router(dify_knowledge_router)
+api_router.include_router(admin_router, prefix="/admin", tags=["Admin"])
 
 __all__ = ["api_router"]

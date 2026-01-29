@@ -20,6 +20,7 @@ import {
   Building2,
   BarChart3,
   MessageCircleIcon,
+  ShieldCheck,
 } from "lucide-react";
 import Image from "next/image";
 import UserMenu from "@/components/user/UserMenu";
@@ -50,6 +51,7 @@ import {
 } from "@/components/ui/collapsible";
 import { cn } from "@/lib/utils";
 import { ChatSidebarContent } from "@/components/chat";
+import { useUserProfileContext } from "@/components/user/UserProfileProvider";
 
 // Social Media 子菜单
 const socialMediaSubItems = [
@@ -144,6 +146,12 @@ const bottomNavItems = [
   },
 ];
 
+const adminNavItem = {
+  icon: ShieldCheck,
+  title: "Admin",
+  href: "/dashboard/admin",
+};
+
 interface AppSidebarProps {
   onNavigate?: () => void;
 }
@@ -151,6 +159,7 @@ interface AppSidebarProps {
 function AppSidebar({ onNavigate }: AppSidebarProps) {
   const pathname = usePathname();
   const { state, toggleSidebar, isInitialized } = useSidebar();
+  const { profile } = useUserProfileContext();
   const [isMounted, setIsMounted] = useState(false);
   const [socialOpen, setSocialOpen] = useState(() => {
     return pathname.startsWith("/dashboard/social");
@@ -161,6 +170,9 @@ function AppSidebar({ onNavigate }: AppSidebarProps) {
   const [unreadCount, setUnreadCount] = useState(0);
 
   const { isMobile, isTablet } = useBreakpoints();
+  
+  // Check if user is admin
+  const isAdmin = profile?.is_admin ?? false;
 
   // Check if we're on the Chat page
   const isChatPage = pathname === "/dashboard";
@@ -381,6 +393,21 @@ function AppSidebar({ onNavigate }: AppSidebarProps) {
         <SidebarGroup className="mt-auto">
           <SidebarGroupContent>
             <SidebarMenu>
+              {/* Admin Menu - Only visible to admins */}
+              {isAdmin && (
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={isActive(adminNavItem.href)}
+                    onClick={onNavigate}
+                  >
+                    <Link href={adminNavItem.href}>
+                      <adminNavItem.icon className="size-4" />
+                      <span>{adminNavItem.title}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              )}
               {bottomNavItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton

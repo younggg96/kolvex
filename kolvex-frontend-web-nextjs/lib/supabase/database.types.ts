@@ -14,6 +14,7 @@ export interface UserProfile {
   membership?: Membership;
   theme?: Theme;
   email_notifications_enabled?: boolean;
+  is_admin?: boolean;
   created_at: string;
   updated_at: string;
 }

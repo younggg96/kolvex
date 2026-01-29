@@ -80,6 +80,7 @@ class UserProfileResponse(BaseModel):
     membership: MembershipEnum
     theme: Optional[ThemeEnum] = None
     email_notifications_enabled: bool = True
+    is_admin: bool = False
     created_at: datetime
     updated_at: datetime
 
@@ -97,6 +98,7 @@ class UserProfileResponse(BaseModel):
                 "membership": "FREE",
                 "theme": "SYSTEM",
                 "email_notifications_enabled": True,
+                "is_admin": False,
                 "created_at": "2024-01-01T00:00:00Z",
                 "updated_at": "2024-01-01T00:00:00Z",
             }

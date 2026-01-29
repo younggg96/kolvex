@@ -204,3 +204,46 @@ async def get_current_user_email(
             detail=f"Authentication failed: {str(e)}",
             headers={"WWW-Authenticate": "Bearer"},
         )
+
+
+async def verify_admin(
+    current_user_id: str = Depends(get_current_user_id),
+    supabase: Client = Depends(get_supabase),
+) -> str:
+    """
+    验证当前用户是否为管理员
+
+    Args:
+        current_user_id: 当前用户 ID
+        supabase: Supabase 客户端
+
+    Returns:
+        str: 用户 ID（如果是管理员）
+
+    Raises:
+        HTTPException: 403 如果用户不是管理员
+    """
+    try:
+        response = (
+            supabase.table("user_profiles")
+            .select("is_admin")
+            .eq("id", current_user_id)
+            .single()
+            .execute()
+        )
+
+        if not response.data or not response.data.get("is_admin"):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Admin access required",
+            )
+
+        return current_user_id
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to verify admin status: {str(e)}",
+        )
