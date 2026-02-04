@@ -19,8 +19,15 @@ async def save_analysis_to_db(tweet_id: int, analysis: Dict[str, Any]) -> bool:
 
     Returns:
         bool: 保存成功返回 True
+        
+    注意：如果分析失败，将不会更新数据库，避免将错误数据写入
     """
     try:
+        # 检查是否是分析失败的默认结果
+        if analysis.get("analysis_failed"):
+            print(f"⚠️ AI 分析失败，跳过数据库更新 (tweet_id={tweet_id})")
+            return False
+        
         from app.core.supabase import get_supabase_service
 
         supabase = get_supabase_service()

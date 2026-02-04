@@ -58,8 +58,15 @@ def _update_post_with_analysis(supabase, post_id: int, analysis: Dict) -> bool:
 
     Returns:
         bool: 更新成功返回 True
+
+    注意：如果分析失败，将不会更新数据库，避免将错误数据写入
     """
     try:
+        # 检查是否是分析失败的默认结果
+        if analysis.get("analysis_failed"):
+            print(f"⚠️ AI 分析失败，跳过数据库更新 (post_id={post_id})")
+            return False
+
         sentiment_data = analysis.get("sentiment", {})
         is_stock_data = analysis.get("is_stock_related", {})
         trading_signal = analysis.get("trading_signal", {})
@@ -260,12 +267,14 @@ async def analyze_batch_posts(
     后台任务批量分析多个帖子，返回任务状态。
 
     参数：
-    - limit: 分析数量限制 (默认: 10, 最大: 100)
+    - limit: 分析数量限制 (默认: 10, 最大: 500)
     - force: 是否强制重新分析
     - only_unanalyzed: 是否只分析未分析的帖子 (默认: True)
     - platform: 可选，按平台筛选 (twitter, xiaohongshu)
     - username: 可选，按用户名筛选
     """
+    # 限制最大值为 500
+    limit = min(request.limit, 500)
     supabase = get_supabase_service()
     if not supabase:
         raise HTTPException(status_code=503, detail="数据库服务未连接")
@@ -283,7 +292,7 @@ async def analyze_batch_posts(
         if request.username:
             query = query.eq("username", request.username)
 
-        result = query.limit(request.limit).execute()
+        result = query.limit(limit).execute()
         posts = result.data or []
 
         if not posts:
@@ -435,6 +444,208 @@ def get_top_tickers(
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"获取热门代码失败: {str(e)}")
+
+
+@router.post("/analyze-all", response_model=BatchPostAnalysisResponse)
+async def analyze_all_posts(
+    background_tasks: BackgroundTasks,
+    batch_size: int = Query(100, ge=10, le=500, description="每批次分析数量"),
+    max_posts: int = Query(None, description="最大分析数量（不设置则分析所有）"),
+    platform: Optional[str] = Query(
+        None, description="按平台筛选 (twitter, xiaohongshu)"
+    ),
+    username: Optional[str] = Query(None, description="按用户名筛选"),
+):
+    """
+    🤖 分析所有未分析的帖子（后台任务）
+
+    此功能会在后台批量分析所有未分析的帖子，**无数量限制**。
+
+    参数：
+    - batch_size: 每批次处理数量 (默认: 100, 最大: 500)
+    - max_posts: 最大处理数量（不设置则分析所有）
+    - platform: 可选，按平台筛选 (twitter, xiaohongshu)
+    - username: 可选，按用户名筛选
+    """
+    supabase = get_supabase_service()
+    if not supabase:
+        raise HTTPException(status_code=503, detail="数据库服务未连接")
+
+    try:
+        # 获取未分析帖子总数
+        count_query = (
+            supabase.table("kol_tweets")
+            .select("id", count="exact")
+            .is_("ai_analyzed_at", "null")
+        )
+        if platform:
+            count_query = count_query.eq("platform", platform)
+        if username:
+            count_query = count_query.eq("username", username)
+
+        count_response = count_query.execute()
+        total_unanalyzed = count_response.count or 0
+
+        if total_unanalyzed == 0:
+            return BatchPostAnalysisResponse(
+                success=True,
+                message="没有需要分析的帖子",
+                total=0,
+                status="completed",
+            )
+
+        # 计算要分析的数量
+        posts_to_analyze = (
+            min(total_unanalyzed, max_posts) if max_posts else total_unanalyzed
+        )
+
+        # 启动后台任务
+        background_tasks.add_task(
+            _analyze_all_posts_task,
+            platform=platform,
+            username=username,
+            batch_size=batch_size,
+            max_posts=posts_to_analyze,
+        )
+
+        return BatchPostAnalysisResponse(
+            success=True,
+            message=f"已启动后台分析任务，共 {posts_to_analyze} 个帖子",
+            total=posts_to_analyze,
+            status="processing",
+        )
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"启动分析任务失败: {str(e)}")
+
+
+async def _analyze_all_posts_task(
+    platform: Optional[str],
+    username: Optional[str],
+    batch_size: int,
+    max_posts: int,
+):
+    """
+    后台任务：分析所有帖子
+    """
+    import asyncio
+    from app.services.ai import TweetAnalyzer, OllamaClient
+    from app.core.supabase import get_supabase_service
+
+    supabase = get_supabase_service()
+    total_analyzed = 0
+    total_failed = 0
+
+    print(
+        f"\n🚀 开始分析 {max_posts} 个帖子 (platform: {platform or 'all'}, user: {username or 'all'})"
+    )
+
+    try:
+        async with OllamaClient() as client:
+            analyzer = TweetAnalyzer(client)
+
+            while total_analyzed + total_failed < max_posts:
+                # 获取下一批未分析的帖子
+                query = (
+                    supabase.table("kol_tweets")
+                    .select("id, tweet_text, title, platform")
+                    .is_("ai_analyzed_at", "null")
+                    .order("created_at", desc=True)
+                    .limit(batch_size)
+                )
+                if platform:
+                    query = query.eq("platform", platform)
+                if username:
+                    query = query.eq("username", username)
+
+                response = query.execute()
+                posts = response.data or []
+
+                if not posts:
+                    print(f"📭 没有更多帖子需要分析")
+                    break
+
+                print(f"\n📦 处理批次: {len(posts)} 个帖子 (已完成: {total_analyzed})")
+
+                for post in posts:
+                    if total_analyzed + total_failed >= max_posts:
+                        break
+
+                    try:
+                        content = post.get("tweet_text", "")
+                        title = post.get("title", "")
+                        full_text = f"{title}\n\n{content}" if title else content
+
+                        if not full_text.strip():
+                            continue
+
+                        analysis = await analyzer.full_analysis(full_text)
+
+                        if analysis and not analysis.get("analysis_failed"):
+                            sentiment_data = analysis.get("sentiment", {})
+                            is_stock_data = analysis.get("is_stock_related", {})
+                            trading_signal = analysis.get("trading_signal", {})
+
+                            from datetime import datetime, timezone
+
+                            supabase.table("kol_tweets").update(
+                                {
+                                    "ai_sentiment": sentiment_data.get(
+                                        "sentiment", "neutral"
+                                    ),
+                                    "ai_sentiment_confidence": sentiment_data.get(
+                                        "confidence", 0.0
+                                    ),
+                                    "ai_sentiment_reasoning": sentiment_data.get(
+                                        "reasoning", ""
+                                    ),
+                                    "ai_tickers": analysis.get("tickers", []),
+                                    "ai_tags": analysis.get("tags", []),
+                                    "ai_summary": analysis.get("summary", ""),
+                                    "ai_trading_signal": (
+                                        trading_signal if trading_signal else None
+                                    ),
+                                    "ai_is_stock_related": is_stock_data.get(
+                                        "is_stock_related", False
+                                    ),
+                                    "ai_stock_related_confidence": is_stock_data.get(
+                                        "confidence", 0.0
+                                    ),
+                                    "ai_stock_related_reason": is_stock_data.get(
+                                        "reason", ""
+                                    ),
+                                    "ai_analyzed_at": datetime.now(
+                                        timezone.utc
+                                    ).isoformat(),
+                                    "ai_model": analysis.get("model", "unknown"),
+                                }
+                            ).eq("id", post["id"]).execute()
+
+                            total_analyzed += 1
+
+                            if total_analyzed % 10 == 0:
+                                print(
+                                    f"  📊 进度: {total_analyzed} 已分析, {total_failed} 失败"
+                                )
+                        else:
+                            print(
+                                f"  ⚠️ AI 分析失败 (post_id={post['id']}), 跳过数据库更新"
+                            )
+                            total_failed += 1
+
+                    except Exception as e:
+                        print(f"  ❌ 分析失败 (post_id={post['id']}): {e}")
+                        total_failed += 1
+
+                # 批次间延迟，避免过载
+                await asyncio.sleep(0.5)
+
+    except Exception as e:
+        print(f"❌ 分析任务失败: {e}")
+
+    print(f"\n✅ 分析完成!")
+    print(f"   📊 成功: {total_analyzed}")
+    print(f"   ❌ 失败: {total_failed}")
 
 
 @router.post("/analyze-by-ids", response_model=BatchPostAnalysisResponse)

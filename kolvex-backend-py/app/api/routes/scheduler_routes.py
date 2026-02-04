@@ -5,8 +5,9 @@
 
 from fastapi import APIRouter, Depends, HTTPException
 from starlette import status as http_status
-from typing import Dict, List, Any
+from typing import Dict, List, Any, Optional, Literal
 import logging
+from pydantic import BaseModel, Field
 
 from app.api.dependencies.auth import get_current_user_id
 from app.services.scheduler_service import get_scheduler_service, SchedulerService
@@ -14,6 +15,14 @@ from app.services.scheduler_service import get_scheduler_service, SchedulerServi
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/scheduler", tags=["Scheduler"])
+
+
+class RescheduleRequest(BaseModel):
+    trigger_type: Literal["interval", "cron"]
+    hours: Optional[int] = Field(default=None, ge=1, le=168)
+    hour: Optional[int] = Field(default=None, ge=0, le=23)
+    minute: Optional[int] = Field(default=None, ge=0, le=59)
+    timezone: Optional[str] = None
 
 
 @router.get("/jobs", response_model=List[Dict[str, Any]])
@@ -65,6 +74,33 @@ async def trigger_holdings_sync(
         )
 
 
+@router.post("/portfolio-snapshot/trigger", response_model=Dict[str, Any])
+async def trigger_portfolio_snapshot(
+    current_user_id: str = Depends(get_current_user_id),
+    scheduler: SchedulerService = Depends(get_scheduler_service),
+):
+    """
+    📸 手动触发 Portfolio Snapshot
+    
+    立即为所有用户记录投资组合快照，用于生成盈利曲线
+    注意：这个操作可能需要较长时间
+    """
+    try:
+        logger.info(f"用户 {current_user_id} 手动触发 Portfolio Snapshot")
+        result = await scheduler.record_all_users_snapshots()
+        return {
+            "success": True,
+            "message": f"Snapshot completed for {result.get('success_count', 0)}/{result.get('total_users', 0)} users",
+            "details": result,
+        }
+    except Exception as e:
+        logger.error(f"手动触发 Portfolio Snapshot 失败: {e}")
+        raise HTTPException(
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to trigger snapshot: {str(e)}",
+        )
+
+
 @router.get("/status", response_model=Dict[str, Any])
 async def get_scheduler_status(
     current_user_id: str = Depends(get_current_user_id),
@@ -76,7 +112,15 @@ async def get_scheduler_status(
     返回调度器是否正在运行以及已注册的任务数量
     """
     try:
-        is_running = scheduler.scheduler.running
+        # 尝试从主调度器获取状态
+        is_running = False
+        try:
+            from main import scheduler as main_scheduler
+            if main_scheduler:
+                is_running = main_scheduler.running
+        except ImportError:
+            is_running = scheduler.scheduler.running
+        
         jobs = scheduler.get_jobs_info()
         return {
             "is_running": is_running,
@@ -90,6 +134,78 @@ async def get_scheduler_status(
             detail=f"Failed to get scheduler status: {str(e)}",
         )
 
+
+@router.post("/jobs/{job_id}/pause", response_model=Dict[str, Any])
+async def pause_job(
+    job_id: str,
+    current_user_id: str = Depends(get_current_user_id),
+    scheduler: SchedulerService = Depends(get_scheduler_service),
+):
+    try:
+        job = scheduler.pause_job(job_id)
+        return {"success": True, "job": job}
+    except ValueError as e:
+        raise HTTPException(status_code=http_status.HTTP_404_NOT_FOUND, detail=str(e))
+    except Exception as e:
+        logger.error(f"暂停任务失败: {e}")
+        raise HTTPException(
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to pause job: {str(e)}",
+        )
+
+
+@router.post("/jobs/{job_id}/resume", response_model=Dict[str, Any])
+async def resume_job(
+    job_id: str,
+    current_user_id: str = Depends(get_current_user_id),
+    scheduler: SchedulerService = Depends(get_scheduler_service),
+):
+    try:
+        job = scheduler.resume_job(job_id)
+        return {"success": True, "job": job}
+    except ValueError as e:
+        raise HTTPException(status_code=http_status.HTTP_404_NOT_FOUND, detail=str(e))
+    except Exception as e:
+        logger.error(f"恢复任务失败: {e}")
+        raise HTTPException(
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to resume job: {str(e)}",
+        )
+
+
+@router.post("/jobs/{job_id}/reschedule", response_model=Dict[str, Any])
+async def reschedule_job(
+    job_id: str,
+    payload: RescheduleRequest,
+    current_user_id: str = Depends(get_current_user_id),
+    scheduler: SchedulerService = Depends(get_scheduler_service),
+):
+    try:
+        if payload.trigger_type == "interval":
+            if payload.hours is None:
+                raise HTTPException(status_code=http_status.HTTP_400_BAD_REQUEST, detail="hours required")
+            job = scheduler.reschedule_job(job_id, "interval", hours=payload.hours)
+        else:
+            if payload.hour is None or payload.minute is None:
+                raise HTTPException(status_code=http_status.HTTP_400_BAD_REQUEST, detail="hour/minute required")
+            job = scheduler.reschedule_job(
+                job_id,
+                "cron",
+                hour=payload.hour,
+                minute=payload.minute,
+                timezone=payload.timezone,
+            )
+        return {"success": True, "job": job}
+    except ValueError as e:
+        raise HTTPException(status_code=http_status.HTTP_404_NOT_FOUND, detail=str(e))
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"重设任务失败: {e}")
+        raise HTTPException(
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to reschedule job: {str(e)}",
+        )
 
 
 

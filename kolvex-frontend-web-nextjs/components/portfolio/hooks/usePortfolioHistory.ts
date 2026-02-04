@@ -1,8 +1,5 @@
-import { useState, useCallback } from "react";
-import {
-  getPortfolioHistory,
-  type PortfolioHistoryResponse,
-} from "@/lib/snaptradeApi";
+import { useState, useCallback, useEffect, useRef } from "react";
+import { createClient } from "@/lib/supabase/client";
 
 // ============================================================
 // Types
@@ -40,6 +37,11 @@ export interface UsePortfolioHistoryResult {
   hasRealData: boolean;
   /** Date of first available real snapshot */
   firstSnapshotDate: string | null;
+}
+
+interface UsePortfolioHistoryOptions {
+  /** User ID to fetch history for. If not provided, fetches current user's history */
+  userId?: string;
 }
 
 // ============================================================
@@ -84,53 +86,112 @@ function formatDisplayDate(dateStr: string, period: PerformancePeriod): string {
   }
 }
 
+/**
+ * Calculate the start date based on period
+ */
+function getStartDate(period: PerformancePeriod): Date {
+  const now = new Date();
+  
+  switch (period) {
+    case "1D":
+      return new Date(now.getTime() - 24 * 60 * 60 * 1000);
+    case "1W":
+      return new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    case "1M":
+      return new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
+    case "3M":
+      return new Date(now.getFullYear(), now.getMonth() - 3, now.getDate());
+    case "YTD":
+      return new Date(now.getFullYear(), 0, 1);
+    case "ALL":
+    default:
+      return new Date(2000, 0, 1); // Far past date
+  }
+}
+
+interface SnapshotRow {
+  snapshot_date: string;
+  total_value: number;
+  unrealized_pnl: number | null;
+  unrealized_pnl_percent: number | null;
+  positions_count: number | null;
+}
+
 // ============================================================
 // Hook
 // ============================================================
 
-export function usePortfolioHistory(): UsePortfolioHistoryResult {
-  const [period, setPeriod] = useState<PerformancePeriod>("1M");
+export function usePortfolioHistory(
+  options: UsePortfolioHistoryOptions = {}
+): UsePortfolioHistoryResult {
+  const { userId } = options;
+  
+  const [period, setPeriod] = useState<PerformancePeriod>("1W");
   const [data, setData] = useState<PerformanceDataPoint[]>([]);
   const [summary, setSummary] = useState<PerformanceSummary | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hasRealData, setHasRealData] = useState(false);
   const [firstSnapshotDate, setFirstSnapshotDate] = useState<string | null>(null);
-  const [cache, setCache] = useState<Map<string, PortfolioHistoryResponse>>(new Map());
-
-  // Fetch history data from backend
+  
+  // Cache by period and userId
+  const cacheRef = useRef<Map<string, SnapshotRow[]>>(new Map());
+  
+  // Fetch history data directly from Supabase
   const fetchHistory = useCallback(async () => {
+    if (!userId) {
+      setData([]);
+      setSummary(null);
+      setHasRealData(false);
+      return;
+    }
+    
     setLoading(true);
     setError(null);
 
     try {
+      const cacheKey = `${userId}-${period}`;
+      let snapshots: SnapshotRow[];
+      
       // Check cache first
-      const cached = cache.get(period);
-      let response: PortfolioHistoryResponse;
-
+      const cached = cacheRef.current.get(cacheKey);
+      
       if (cached) {
-        response = cached;
+        snapshots = cached;
       } else {
-        // Fetch from API
-        response = await getPortfolioHistory(period);
+        // Fetch from Supabase
+        const supabase = createClient();
+        const startDate = getStartDate(period);
+        
+        const { data: snapshotData, error: fetchError } = await supabase
+          .from("portfolio_snapshots")
+          .select("snapshot_date, total_value, unrealized_pnl, unrealized_pnl_percent, positions_count")
+          .eq("user_id", userId)
+          .gte("snapshot_date", startDate.toISOString().split("T")[0])
+          .order("snapshot_date", { ascending: true });
+        
+        if (fetchError) {
+          throw new Error(fetchError.message);
+        }
+        
+        snapshots = snapshotData || [];
         
         // Cache the response
-        setCache((prev) => {
-          const newCache = new Map(prev);
-          newCache.set(period, response);
-          return newCache;
-        });
+        cacheRef.current.set(cacheKey, snapshots);
+      }
+      
+      // Get first snapshot date
+      if (!firstSnapshotDate && snapshots.length > 0) {
+        setFirstSnapshotDate(snapshots[0].snapshot_date);
       }
 
-      setFirstSnapshotDate(response.first_snapshot_date);
-
-      if (response.has_real_data && response.data.length > 0) {
-        const dataPoints = response.data.map((d) => ({
-          date: d.date,
-          displayDate: formatDisplayDate(d.date, period),
-          value: d.value,
-          pnl: d.pnl,
-          pnlPercent: d.pnl_percent,
+      if (snapshots.length > 0) {
+        const dataPoints = snapshots.map((s) => ({
+          date: s.snapshot_date,
+          displayDate: formatDisplayDate(s.snapshot_date, period),
+          value: Number(s.total_value) || 0,
+          pnl: Number(s.unrealized_pnl) || 0,
+          pnlPercent: Number(s.unrealized_pnl_percent) || 0,
         }));
 
         const values = dataPoints.map((d) => d.value);
@@ -148,7 +209,7 @@ export function usePortfolioHistory(): UsePortfolioHistoryResult {
         setSummary(summaryData);
         setHasRealData(true);
       } else {
-        // No real data available
+        // No data available
         setData([]);
         setSummary(null);
         setHasRealData(false);
@@ -162,7 +223,12 @@ export function usePortfolioHistory(): UsePortfolioHistoryResult {
     } finally {
       setLoading(false);
     }
-  }, [period, cache]);
+  }, [userId, period, firstSnapshotDate]);
+
+  // Fetch data when userId or period changes
+  useEffect(() => {
+    fetchHistory();
+  }, [fetchHistory]);
 
   // Handle period change
   const handleSetPeriod = useCallback((newPeriod: PerformancePeriod) => {
@@ -171,15 +237,14 @@ export function usePortfolioHistory(): UsePortfolioHistoryResult {
 
   // Refresh data (bypasses cache)
   const refresh = useCallback(async () => {
+    if (!userId) return;
+    
     // Clear cache for current period
-    setCache((prev) => {
-      const newCache = new Map(prev);
-      newCache.delete(period);
-      return newCache;
-    });
+    const cacheKey = `${userId}-${period}`;
+    cacheRef.current.delete(cacheKey);
 
     await fetchHistory();
-  }, [period, fetchHistory]);
+  }, [userId, period, fetchHistory]);
 
   return {
     data,

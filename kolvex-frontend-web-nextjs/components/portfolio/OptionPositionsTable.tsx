@@ -167,19 +167,15 @@ export function OptionPositionsTable({
               return (
                 <TableRow
                   key={pos.id}
-                  onClick={() =>
+                  className={`${isSecretOption ? "opacity-70" : "hover:bg-muted/50"
+                    } transition-colors`}
+                >
+                  <TableCell className="pl-4 py-3 cursor-pointer" onClick={() =>
                     !isSecretOption &&
                     router.push(
                       `/dashboard/stock/${pos.underlying_symbol || pos.symbol}`
                     )
-                  }
-                  className={`${
-                    isSecretOption
-                      ? "opacity-70"
-                      : "cursor-pointer hover:bg-muted/50"
-                  } transition-colors`}
-                >
-                  <TableCell className="pl-4 py-3">
+                  }>
                     <div className="flex items-center gap-2.5">
                       {isSecretOption ? (
                         <div className="w-8 h-8 rounded-lg bg-muted/80 flex items-center justify-center">
@@ -272,7 +268,7 @@ export function OptionPositionsTable({
                   </TableCell>
                   <TableCell className="text-center tabular-nums text-muted-foreground">
                     {isSecretOption ||
-                    isHiddenValue((pos.average_purchase_price as number) / 100) ? (
+                      isHiddenValue((pos.average_purchase_price as number) / 100) ? (
                       <span className="text-muted-foreground">***</span>
                     ) : (
                       formatCurrency((pos.average_purchase_price as number) / 100)
@@ -297,9 +293,8 @@ export function OptionPositionsTable({
                       <span className="text-muted-foreground">***</span>
                     ) : (
                       <span
-                        className={`inline-flex items-center gap-0.5 tabular-nums font-medium ${
-                          profit ? "text-green-600" : "text-red-600"
-                        }`}
+                        className={`inline-flex items-center gap-0.5 tabular-nums font-medium ${profit ? "text-green-600" : "text-red-600"
+                          }`}
                       >
                         {profit ? (
                           <ArrowUpRight className="w-3 h-3" />
@@ -327,11 +322,10 @@ export function OptionPositionsTable({
                         onClick={(e) =>
                           onToggleVisibility(e, pos.id, pos.is_hidden || false)
                         }
-                        className={`p-1.5 rounded-md transition-colors ${
-                          pos.is_hidden
+                        className={`p-1.5 rounded-md transition-colors ${pos.is_hidden
                             ? "text-muted-foreground hover:text-foreground hover:bg-muted"
                             : "text-green-600 hover:text-green-700 hover:bg-green-50 dark:hover:bg-green-950"
-                        }`}
+                          }`}
                         title={
                           pos.is_hidden
                             ? "Hidden from public - Click to show"

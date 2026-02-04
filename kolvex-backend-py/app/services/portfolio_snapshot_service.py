@@ -55,17 +55,23 @@ class PortfolioSnapshotService:
         if total_cost_basis > 0:
             pnl_percent = (unrealized_pnl / total_cost_basis) * 100
         
+        # Get current timestamp for snapshot_time (always update on upsert)
+        current_time = datetime.now().isoformat()
+        
         snapshot_data = {
             "user_id": user_id,
             "snapshot_date": snapshot_date.isoformat(),
-            "total_value": total_value,
-            "total_cost_basis": total_cost_basis,
-            "unrealized_pnl": unrealized_pnl,
-            "unrealized_pnl_percent": pnl_percent,
-            "positions_count": positions_count,
-            "accounts_count": accounts_count,
+            "snapshot_time": current_time,  # Always update timestamp on upsert
+            "total_value": float(total_value),  # Ensure float type
+            "total_cost_basis": float(total_cost_basis),
+            "unrealized_pnl": float(unrealized_pnl),
+            "unrealized_pnl_percent": float(pnl_percent),
+            "positions_count": int(positions_count),
+            "accounts_count": int(accounts_count),
             "positions_snapshot": positions_snapshot or [],
         }
+        
+        logger.info(f"📸 Recording snapshot for user {user_id[:8]}... data: {snapshot_data}")
         
         try:
             # Upsert to handle both insert and update
@@ -74,10 +80,15 @@ class PortfolioSnapshotService:
                 on_conflict="user_id,snapshot_date"
             ).execute()
             
-            logger.info(f"Recorded portfolio snapshot for user {user_id} on {snapshot_date}")
-            return result.data[0] if result.data else snapshot_data
+            if result.data:
+                logger.info(f"✅ Successfully recorded snapshot for user {user_id[:8]} on {snapshot_date}: {result.data[0].get('id', 'N/A')}")
+                return result.data[0]
+            else:
+                logger.warning(f"⚠️ Upsert returned no data for user {user_id[:8]}. Response: {result}")
+                return snapshot_data
         except Exception as e:
-            logger.error(f"Failed to record snapshot for user {user_id}: {e}")
+            logger.error(f"❌ Failed to record snapshot for user {user_id[:8]}: {type(e).__name__}: {e}")
+            # Re-raise to let caller handle
             raise
     
     async def get_snapshots(

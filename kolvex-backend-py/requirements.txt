@@ -44,3 +44,13 @@ snaptrade-python-sdk>=11.0.0
 
 # Email Service
 resend>=2.0.0
+
+# Stock Alerts - Finnhub & WebSocket
+finnhub-python>=2.4.0
+websocket-client>=1.6.0
+
+# WhatsApp Notifications (Twilio)
+twilio>=8.0.0
+
+# Redis Cache
+redis>=5.0.0

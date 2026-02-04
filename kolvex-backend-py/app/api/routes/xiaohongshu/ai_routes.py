@@ -39,8 +39,15 @@ async def _analyze_post_content(content: str, title: str = "") -> Dict:
 def _update_post_with_analysis(supabase, post_id: int, analysis: Dict) -> bool:
     """
     内部函数：将 AI 分析结果更新到数据库
+    
+    注意：如果分析失败，将不会更新数据库，避免将错误数据写入
     """
     try:
+        # 检查是否是分析失败的默认结果
+        if analysis.get("analysis_failed"):
+            print(f"⚠️ AI 分析失败，跳过数据库更新 (post_id={post_id})")
+            return False
+        
         sentiment_data = analysis.get("sentiment", {})
         is_stock_data = analysis.get("is_stock_related", {})
         trading_signal = analysis.get("trading_signal", {})

@@ -309,8 +309,8 @@ export default function PortfolioHoldings({
       />
 
       {/* Performance Chart */}
-      {holdings?.accounts && holdings.accounts.length > 0 && (
-        <PortfolioPerformanceChart />
+      {holdings?.accounts && holdings.accounts.length > 0 && userId && (
+        <PortfolioPerformanceChart userId={userId} isOwner={isOwner} />
       )}
 
       {/* Tab Navigation with Refresh Button */}

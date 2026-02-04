@@ -12,7 +12,9 @@ from app.core.config import settings
 logger = logging.getLogger(__name__)
 
 # Resend rate limit: 2 emails per second for free plan
-EMAIL_SEND_DELAY = 0.6  # 600ms delay between emails to avoid rate limiting
+EMAIL_SEND_DELAY = 0.55  # 550ms delay between emails (slightly more than 1/2 second)
+EMAIL_RETRY_DELAY = 1.5  # Wait longer before retry on rate limit
+EMAIL_MAX_RETRIES = 3  # Maximum retry attempts for rate limited requests
 
 
 class EmailService:
@@ -38,9 +40,10 @@ class EmailService:
         html_content: str,
         text_content: Optional[str] = None,
         with_delay: bool = False,
+        retry_on_rate_limit: bool = True,
     ) -> Tuple[bool, Optional[str]]:
         """
-        Send a single email
+        Send a single email with rate limit retry support
 
         Args:
             to: Recipient email address
@@ -48,6 +51,7 @@ class EmailService:
             html_content: HTML content
             text_content: Plain text content (optional)
             with_delay: Whether to add delay after sending (for rate limiting)
+            retry_on_rate_limit: Whether to retry on rate limit errors
 
         Returns:
             Tuple of (success, error_message)
@@ -56,42 +60,64 @@ class EmailService:
             logger.debug(f"Email service disabled, skipping email to {to}")
             return False, "Email service is disabled"
 
-        try:
-            params: resend.Emails.SendParams = {
-                "from": self.from_address,
-                "to": [to],
-                "subject": subject,
-                "html": html_content,
-            }
+        params: resend.Emails.SendParams = {
+            "from": self.from_address,
+            "to": [to],
+            "subject": subject,
+            "html": html_content,
+        }
 
-            if text_content:
-                params["text"] = text_content
+        if text_content:
+            params["text"] = text_content
 
-            email = resend.Emails.send(params)
-            logger.info(f"✅ Email sent successfully to {to}, id: {email.get('id')}")
+        retries = 0
+        max_retries = EMAIL_MAX_RETRIES if retry_on_rate_limit else 1
 
-            # Add delay to avoid rate limiting when sending multiple emails
-            if with_delay:
-                await asyncio.sleep(EMAIL_SEND_DELAY)
+        while retries < max_retries:
+            try:
+                email = resend.Emails.send(params)
+                logger.info(
+                    f"✅ Email sent successfully to {to}, id: {email.get('id')}"
+                )
 
-            return True, None
+                # Add delay to avoid rate limiting when sending multiple emails
+                if with_delay:
+                    await asyncio.sleep(EMAIL_SEND_DELAY)
 
-        except resend.exceptions.ResendError as e:
-            error_msg = f"Resend API error: {str(e)}"
-            logger.error(f"❌ Failed to send email to {to}: {error_msg}")
-            return False, error_msg
+                return True, None
 
-        except Exception as e:
-            error_msg = str(e)
-            logger.error(f"❌ Failed to send email to {to}: {error_msg}")
-            return False, error_msg
+            except resend.exceptions.ResendError as e:
+                error_str = str(e)
+                is_rate_limit = (
+                    "rate" in error_str.lower() or "too many" in error_str.lower()
+                )
+
+                if is_rate_limit and retry_on_rate_limit and retries < max_retries - 1:
+                    retries += 1
+                    wait_time = EMAIL_RETRY_DELAY * retries  # Exponential backoff
+                    logger.warning(
+                        f"⏳ Rate limited sending to {to}, retry {retries}/{max_retries - 1} after {wait_time}s"
+                    )
+                    await asyncio.sleep(wait_time)
+                    continue
+
+                error_msg = f"Resend API error: {error_str}"
+                logger.error(f"❌ Failed to send email to {to}: {error_msg}")
+                return False, error_msg
+
+            except Exception as e:
+                error_msg = str(e)
+                logger.error(f"❌ Failed to send email to {to}: {error_msg}")
+                return False, error_msg
+
+        return False, "Max retries exceeded"
 
     async def send_bulk_emails(
         self,
         emails: List[Dict[str, Any]],
     ) -> int:
         """
-        批量发送邮件
+        批量发送邮件（带速率限制）
 
         Args:
             emails: 邮件列表，每项包含:
@@ -107,20 +133,33 @@ class EmailService:
             return 0
 
         success_count = 0
-        for email_data in emails:
+        total = len(emails)
+
+        logger.info(f"📧 Starting bulk email send: {total} emails (with rate limiting)")
+
+        for i, email_data in enumerate(emails):
             try:
-                success = await self.send_email(
+                # Add delay BEFORE sending to ensure rate limit compliance
+                # (except for the first email)
+                if i > 0:
+                    await asyncio.sleep(EMAIL_SEND_DELAY)
+
+                success, error = await self.send_email(
                     to=email_data["to"],
                     subject=email_data["subject"],
                     html_content=email_data["html_content"],
                     text_content=email_data.get("text_content"),
+                    with_delay=False,  # We handle delay manually above
+                    retry_on_rate_limit=True,
                 )
                 if success:
                     success_count += 1
             except Exception as e:
-                logger.error(f"Failed to send bulk email: {e}")
+                logger.error(
+                    f"Failed to send bulk email to {email_data.get('to')}: {e}"
+                )
 
-        logger.info(f"📧 Bulk email sent: {success_count}/{len(emails)} successful")
+        logger.info(f"📧 Bulk email completed: {success_count}/{total} successful")
         return success_count
 
     def _get_notification_icon_svg(self, notification_type: str, color: str) -> str:
@@ -167,21 +206,21 @@ class EmailService:
         Returns:
             HTML 内容
         """
-        # 根据通知类型选择颜色 - 与前端 NotificationItem.tsx 保持一致
+        # 根据通知类型选择颜色 - 绿色(正面) / 红色(负面)
         type_config = {
-            "POSITION_BUY": {"color": "#10b981", "bg": "#10b98115", "label": "Buy"},
-            "POSITION_SELL": {"color": "#f97316", "bg": "#f9731615", "label": "Sell"},
+            "POSITION_BUY": {"color": "#00C805", "bg": "#00C80515", "label": "Buy"},
+            "POSITION_SELL": {"color": "#ef4444", "bg": "#ef444415", "label": "Sell"},
             "POSITION_INCREASE": {
-                "color": "#3b82f6",
-                "bg": "#3b82f615",
+                "color": "#00C805",
+                "bg": "#00C80515",
                 "label": "Add",
             },
             "POSITION_DECREASE": {
-                "color": "#f43f5e",
-                "bg": "#f43f5e15",
+                "color": "#ef4444",
+                "bg": "#ef444415",
                 "label": "Reduce",
             },
-            "NEW_FOLLOWER": {"color": "#a855f7", "bg": "#a855f715", "label": "Follow"},
+            "NEW_FOLLOWER": {"color": "#00C805", "bg": "#00C80515", "label": "Follow"},
             "SYSTEM": {"color": "#00C805", "bg": "#00C80515", "label": "System"},
         }
 
@@ -191,6 +230,45 @@ class EmailService:
         # 构建股票信息部分 - Dark theme style
         stock_info = ""
         if related_symbol:
+            # 获取 position_type 和 is_option 信息
+            position_type = ""
+            is_option = False
+            if related_data:
+                position_type = related_data.get("position_type", "")  # LONG / SHORT
+                is_option = related_data.get("is_option", False)
+
+            # 构建标签 badges
+            badges_html = ""
+            if position_type or is_option:
+                badge_items = ""
+                if position_type:
+                    # Long = 绿色, Short = 红色
+                    is_short = position_type.upper() == "SHORT"
+                    badge_color = "#ef4444" if is_short else "#00C805"
+                    badge_bg = "#ef444415" if is_short else "#00C80515"
+                    badge_label = "Short" if is_short else "Long"
+                    badge_items += f"""
+                        <td style="background-color: {badge_bg}; border: 1px solid {badge_color}30; border-radius: 4px; padding: 3px 8px; margin-right: 6px;">
+                            <span style="font-size: 10px; font-weight: 600; color: {badge_color}; text-transform: uppercase; letter-spacing: 0.3px;">{badge_label}</span>
+                        </td>
+                        <td style="width: 6px;"></td>
+                    """
+                if is_option:
+                    badge_items += f"""
+                        <td style="background-color: #a855f715; border: 1px solid #a855f730; border-radius: 4px; padding: 3px 8px;">
+                            <span style="font-size: 10px; font-weight: 600; color: #a855f7; text-transform: uppercase; letter-spacing: 0.3px;">Option</span>
+                        </td>
+                    """
+                badges_html = f"""
+                            <tr>
+                                <td style="padding-top: 8px;">
+                                    <table cellpadding="0" cellspacing="0" border="0">
+                                        <tr>{badge_items}</tr>
+                                    </table>
+                                </td>
+                            </tr>
+                """
+
             stock_info = f"""
             <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-top: 16px;">
                 <tr>
@@ -202,6 +280,7 @@ class EmailService:
                             <tr>
                                 <td style="font-size: 22px; font-weight: 700; color: #00C805; padding-top: 4px; font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;">${related_symbol}</td>
                             </tr>
+                            {badges_html}
                         </table>
                     </td>
                 </tr>
@@ -211,35 +290,17 @@ class EmailService:
         # 构建变化详情 - Dark theme style
         change_details = ""
         if related_data:
-            units_change = related_data.get("units_change")
             price = related_data.get("price")
-            if units_change or price:
-                units_cell = ""
-                price_cell = ""
-                if units_change:
-                    units_cell = f"""
-                    <td width="48%" style="background-color: #0a0e0f; border: 1px solid #2a2d2f; border-radius: 8px; padding: 12px; vertical-align: top;">
-                        <table cellpadding="0" cellspacing="0" border="0" width="100%">
-                            <tr><td style="font-size: 10px; color: #6b7280; font-weight: 500; letter-spacing: 0.3px; text-transform: uppercase;">Units Changed</td></tr>
-                            <tr><td style="font-size: 16px; font-weight: 600; color: #e5e7eb; padding-top: 4px;">{units_change}</td></tr>
-                        </table>
-                    </td>
-                    """
-                if price:
-                    price_cell = f"""
-                    <td width="48%" style="background-color: #0a0e0f; border: 1px solid #2a2d2f; border-radius: 8px; padding: 12px; vertical-align: top;">
-                        <table cellpadding="0" cellspacing="0" border="0" width="100%">
-                            <tr><td style="font-size: 10px; color: #6b7280; font-weight: 500; letter-spacing: 0.3px; text-transform: uppercase;">Current Price</td></tr>
-                            <tr><td style="font-size: 16px; font-weight: 600; color: #e5e7eb; padding-top: 4px;">${price:.2f}</td></tr>
-                        </table>
-                    </td>
-                    """
+            if price:
                 change_details = f"""
                 <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-top: 12px;">
                     <tr>
-                        {units_cell}
-                        <td width="4%"></td>
-                        {price_cell}
+                        <td style="background-color: #0a0e0f; border: 1px solid #2a2d2f; border-radius: 8px; padding: 12px; vertical-align: top;">
+                            <table cellpadding="0" cellspacing="0" border="0" width="100%">
+                                <tr><td style="font-size: 10px; color: #6b7280; font-weight: 500; letter-spacing: 0.3px; text-transform: uppercase;">Current Price</td></tr>
+                                <tr><td style="font-size: 16px; font-weight: 600; color: #e5e7eb; padding-top: 4px;">${price:.2f}</td></tr>
+                            </table>
+                        </td>
                     </tr>
                 </table>
                 """
@@ -436,19 +497,19 @@ Manage your notification settings: https://kolvex.com/dashboard/config
             HTML content
         """
         type_config = {
-            "POSITION_BUY": {"color": "#10b981", "bg": "#10b98115", "label": "Buy"},
-            "POSITION_SELL": {"color": "#f97316", "bg": "#f9731615", "label": "Sell"},
+            "POSITION_BUY": {"color": "#00C805", "bg": "#00C80515", "label": "Buy"},
+            "POSITION_SELL": {"color": "#ef4444", "bg": "#ef444415", "label": "Sell"},
             "POSITION_INCREASE": {
-                "color": "#3b82f6",
-                "bg": "#3b82f615",
+                "color": "#00C805",
+                "bg": "#00C80515",
                 "label": "Add",
             },
             "POSITION_DECREASE": {
-                "color": "#f43f5e",
-                "bg": "#f43f5e15",
+                "color": "#ef4444",
+                "bg": "#ef444415",
                 "label": "Reduce",
             },
-            "NEW_FOLLOWER": {"color": "#a855f7", "bg": "#a855f715", "label": "Follow"},
+            "NEW_FOLLOWER": {"color": "#00C805", "bg": "#00C80515", "label": "Follow"},
             "SYSTEM": {"color": "#00C805", "bg": "#00C80515", "label": "System"},
         }
 
@@ -461,12 +522,35 @@ Manage your notification settings: https://kolvex.com/dashboard/config
             title = notif.get("title", "Notification")
             message = notif.get("message", "")
             related_symbol = notif.get("related_symbol", "")
+            related_data = notif.get("related_data", {}) or {}
+            position_type = related_data.get("position_type", "")
+            is_option = related_data.get("is_option", False)
 
+            # 构建 symbol 和 position/option 标签
             symbol_badge = ""
             if related_symbol:
                 symbol_badge = f"""
                 <td style="padding-left: 8px;">
                     <span style="background-color: #0a0e0f; color: #00C805; font-size: 11px; font-weight: 600; padding: 4px 8px; border-radius: 5px; border: 1px solid #2a2d2f;">${related_symbol}</span>
+                </td>
+                """
+
+            # 构建 Long/Short 和 Option 标签
+            position_badges = ""
+            if position_type:
+                is_short = position_type.upper() == "SHORT"
+                pos_color = "#ef4444" if is_short else "#00C805"
+                pos_bg = "#ef444415" if is_short else "#00C80515"
+                pos_label = "Short" if is_short else "Long"
+                position_badges += f"""
+                <td style="padding-left: 6px;">
+                    <span style="background-color: {pos_bg}; color: {pos_color}; font-size: 10px; font-weight: 600; padding: 3px 6px; border-radius: 4px; border: 1px solid {pos_color}30;">{pos_label}</span>
+                </td>
+                """
+            if is_option:
+                position_badges += f"""
+                <td style="padding-left: 6px;">
+                    <span style="background-color: #a855f715; color: #a855f7; font-size: 10px; font-weight: 600; padding: 3px 6px; border-radius: 4px; border: 1px solid #a855f730;">Option</span>
                 </td>
                 """
 
@@ -476,7 +560,7 @@ Manage your notification settings: https://kolvex.com/dashboard/config
                     <table cellpadding="0" cellspacing="0" border="0" width="100%">
                         <tr>
                             <td>
-                                <!-- Badge and Symbol -->
+                                <!-- Badge, Symbol, and Position Tags -->
                                 <table cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 8px;">
                                     <tr>
                                         <td style="background-color: {config['bg']}; border-radius: 5px; padding: 4px 8px; border: 1px solid {config['color']}20;">
@@ -488,6 +572,7 @@ Manage your notification settings: https://kolvex.com/dashboard/config
                                             </table>
                                         </td>
                                         {symbol_badge}
+                                        {position_badges}
                                     </tr>
                                 </table>
                                 <!-- Title -->
@@ -552,7 +637,7 @@ Manage your notification settings: https://kolvex.com/dashboard/config
                                     <!-- Top accent gradient line -->
                                     <table cellpadding="0" cellspacing="0" border="0" width="100%">
                                         <tr>
-                                            <td style="height: 2px; background: linear-gradient(90deg, #00C805 0%, #3b82f6 50%, #a855f7 100%);"></td>
+                                            <td style="height: 2px; background: linear-gradient(90deg, #00C805 0%, #00C80540 100%);"></td>
                                         </tr>
                                     </table>
                                     

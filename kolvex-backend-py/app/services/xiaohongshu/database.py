@@ -22,7 +22,7 @@ except ImportError:
     SUPABASE_AVAILABLE = False
     Client = None
 
-from .config import DEFAULT_POST_MAX_AGE_DAYS
+from .config import DEFAULT_POST_MAX_AGE_DAYS, ENABLE_AI_ANALYSIS
 
 # 平台标识
 PLATFORM_XHS = "xiaohongshu"
@@ -287,7 +287,7 @@ def insert_post(
     client: Client,
     post_data: Dict,
     max_age_days: int = DEFAULT_POST_MAX_AGE_DAYS,
-    enable_ai_analysis: bool = True,
+    enable_ai_analysis: bool = None,  # None 表示使用配置文件的值
     upload_images: bool = True,
 ) -> Tuple[bool, Optional[int]]:
     """
@@ -366,8 +366,10 @@ def insert_post(
         post_data = process_and_upload_images(client, post_data)
 
     # 进行 AI 分析（在插入前）
+    # 如果 enable_ai_analysis 为 None，使用配置文件的值
+    should_analyze = enable_ai_analysis if enable_ai_analysis is not None else ENABLE_AI_ANALYSIS
     ai_analysis = None
-    if enable_ai_analysis:
+    if should_analyze:
         ai_analysis = _perform_ai_analysis(content, post_data.get("title", ""))
 
     try:
@@ -502,7 +504,7 @@ def _perform_ai_analysis(content: str, title: str = "") -> Optional[Dict]:
         title: 帖子标题
 
     Returns:
-        Optional[Dict]: 分析结果，失败返回 None
+        Optional[Dict]: 分析结果，失败返回 None（避免将错误数据写入数据库）
     """
     analyzer = _get_ai_analyzer()
     if not analyzer:
@@ -512,6 +514,13 @@ def _perform_ai_analysis(content: str, title: str = "") -> Optional[Dict]:
         # 合并标题和内容进行分析
         full_text = f"{title}\n{content}" if title else content
         analysis = analyzer.basic_analysis(full_text)
+        
+        # 检查是否是分析失败的默认结果
+        # 如果分析失败，返回 None 避免将错误的 stock_related=False 写入数据库
+        if analysis.get("analysis_failed"):
+            print(f"   ⚠️ AI 分析失败（将跳过 AI 字段更新）")
+            return None
+        
         sentiment = analysis.get("sentiment", {}).get("sentiment", "neutral")
         tickers = analysis.get("tickers", [])
         print(f"   🤖 AI: {sentiment} | 股票: {tickers if tickers else '无'}")

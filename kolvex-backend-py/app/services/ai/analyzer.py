@@ -110,7 +110,7 @@ Respond with ONLY this JSON object, no other text:
             return self._default_basic_analysis_result()
 
     def _default_basic_analysis_result(self) -> Dict[str, Any]:
-        """返回默认的基础分析结果结构"""
+        """返回默认的基础分析结果结构（分析失败时使用）"""
         return {
             "sentiment": {
                 "sentiment": "neutral",
@@ -128,6 +128,8 @@ Respond with ONLY this JSON object, no other text:
             },
             "analyzed_at": datetime.now(timezone.utc).isoformat(),
             "model": self.client.model,
+            # 标记这是分析失败的默认结果，不应写入数据库
+            "analysis_failed": True,
         }
 
 
@@ -666,7 +668,7 @@ Respond with ONLY this JSON object, no other text before or after:
             return self._default_analysis_result()
 
     def _default_basic_analysis_result(self) -> Dict[str, Any]:
-        """返回默认的基础分析结果结构"""
+        """返回默认的基础分析结果结构（分析失败时使用）"""
         return {
             "sentiment": {
                 "sentiment": "neutral",
@@ -684,10 +686,12 @@ Respond with ONLY this JSON object, no other text before or after:
             },
             "analyzed_at": datetime.now(timezone.utc).isoformat(),
             "model": self.client.model,
+            # 标记这是分析失败的默认结果，不应写入数据库
+            "analysis_failed": True,
         }
 
     def _default_analysis_result(self) -> Dict[str, Any]:
-        """返回默认的完整分析结果结构"""
+        """返回默认的完整分析结果结构（分析失败时使用）"""
         return {
             "sentiment": {
                 "sentiment": "neutral",
@@ -706,4 +710,6 @@ Respond with ONLY this JSON object, no other text before or after:
             "sectors": [],
             "analyzed_at": datetime.now(timezone.utc).isoformat(),
             "model": self.client.model,
+            # 标记这是分析失败的默认结果，不应写入数据库
+            "analysis_failed": True,
         }

@@ -5,7 +5,7 @@
 from fastapi import Depends, HTTPException, status, Header
 from typing import Optional
 from supabase import Client
-from app.core.supabase import get_supabase
+from app.core.supabase import get_supabase, get_supabase_service
 from app.core.config import settings
 
 
@@ -208,7 +208,7 @@ async def get_current_user_email(
 
 async def verify_admin(
     current_user_id: str = Depends(get_current_user_id),
-    supabase: Client = Depends(get_supabase),
+    supabase: Client = Depends(get_supabase_service),
 ) -> str:
     """
     验证当前用户是否为管理员

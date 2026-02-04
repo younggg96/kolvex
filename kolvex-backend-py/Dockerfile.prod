@@ -15,9 +15,11 @@ RUN apt-get update && apt-get install -y \
 # 复制依赖文件
 COPY requirements.txt .
 
-# 安装依赖到本地目录
-RUN pip install --user --no-cache-dir -r requirements.txt && \
-    pip install --user --no-cache-dir playwright
+# 安装依赖到虚拟环境
+RUN python -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+RUN pip install --no-cache-dir -r requirements.txt && \
+    pip install --no-cache-dir playwright
 
 # 运行阶段
 FROM python:3.11-slim
@@ -30,6 +32,7 @@ RUN useradd -m -u 1000 appuser
 # 安装运行时依赖（包括 Playwright 所需的依赖）
 RUN apt-get update && apt-get install -y --no-install-recommends \
     postgresql-client \
+    curl \
     # Playwright 依赖
     libnss3 \
     libnspr4 \
@@ -50,17 +53,20 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libcairo2 \
     && rm -rf /var/lib/apt/lists/*
 
-# 从构建阶段复制依赖
-COPY --from=builder /root/.local /home/appuser/.local
+# 从构建阶段复制虚拟环境
+COPY --from=builder /opt/venv /opt/venv
 
 # 设置环境变量
-ENV PATH=/home/appuser/.local/bin:$PATH \
+ENV PATH="/opt/venv/bin:$PATH" \
     PYTHONUNBUFFERED=1 \
-    PYTHONDONTWRITEBYTECODE=1
+    PYTHONDONTWRITEBYTECODE=1 \
+    PLAYWRIGHT_BROWSERS_PATH=/opt/playwright
 
-# 以 root 身份安装 Playwright 浏览器（需要写入系统目录）
-RUN /home/appuser/.local/bin/playwright install chromium && \
-    /home/appuser/.local/bin/playwright install-deps chromium
+# 以 root 身份安装 Playwright 浏览器
+RUN playwright install chromium && \
+    playwright install-deps chromium && \
+    # 设置权限让 appuser 可以访问
+    chmod -R 755 /opt/playwright
 
 # 复制应用代码
 COPY --chown=appuser:appuser . .
@@ -73,8 +79,7 @@ EXPOSE 8080
 
 # 健康检查
 HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
-    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8080/health')"
+    CMD curl -f http://localhost:8080/health || exit 1
 
 # 生产环境启动命令（不使用 reload）
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080", "--workers", "4"]
-

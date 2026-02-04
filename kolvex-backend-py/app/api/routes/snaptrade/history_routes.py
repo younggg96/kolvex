@@ -25,8 +25,10 @@ router = APIRouter()
 # Schemas
 # ============================================================
 
+
 class SnapshotDataPoint(BaseModel):
     """Portfolio snapshot data point"""
+
     date: str
     value: float
     pnl: float
@@ -36,6 +38,7 @@ class SnapshotDataPoint(BaseModel):
 
 class PortfolioHistoryResponse(BaseModel):
     """Portfolio history response"""
+
     period: str
     data: List[SnapshotDataPoint]
     first_snapshot_date: Optional[str] = None
@@ -45,6 +48,7 @@ class PortfolioHistoryResponse(BaseModel):
 
 class RecordSnapshotRequest(BaseModel):
     """Request to record a snapshot"""
+
     total_value: float
     total_cost_basis: float = 0
     unrealized_pnl: float = 0
@@ -56,6 +60,7 @@ class RecordSnapshotRequest(BaseModel):
 # Routes
 # ============================================================
 
+
 @router.get("/history", response_model=PortfolioHistoryResponse)
 async def get_portfolio_history(
     period: str = Query("1M", description="Period: 1D, 1W, 1M, 3M, YTD, ALL"),
@@ -63,19 +68,19 @@ async def get_portfolio_history(
 ):
     """
     Get portfolio performance history.
-    
+
     Returns historical portfolio value data points for the specified period.
     If no historical data exists, returns an empty array with has_real_data=False.
     """
     try:
         service = get_portfolio_snapshot_service()
-        
+
         # Get snapshots for the period
         snapshots = await service.get_snapshots_by_period(current_user_id, period)
-        
+
         # Get first snapshot date
         first_date = await service.get_first_snapshot_date(current_user_id)
-        
+
         # Convert to response format
         data_points = [
             SnapshotDataPoint(
@@ -87,7 +92,7 @@ async def get_portfolio_history(
             )
             for s in snapshots
         ]
-        
+
         return PortfolioHistoryResponse(
             period=period,
             data=data_points,
@@ -110,13 +115,13 @@ async def record_portfolio_snapshot(
 ):
     """
     Record a portfolio snapshot for today.
-    
+
     This endpoint can be called manually or automatically via webhook/sync.
     If a snapshot already exists for today, it will be updated.
     """
     try:
         service = get_portfolio_snapshot_service()
-        
+
         snapshot = await service.record_snapshot(
             user_id=current_user_id,
             total_value=request.total_value,
@@ -125,7 +130,7 @@ async def record_portfolio_snapshot(
             positions_count=request.positions_count,
             accounts_count=request.accounts_count,
         )
-        
+
         return {
             "success": True,
             "message": "Snapshot recorded successfully",
@@ -145,18 +150,18 @@ async def get_history_status(
 ):
     """
     Get the status of portfolio history data.
-    
+
     Returns information about available historical data.
     """
     try:
         service = get_portfolio_snapshot_service()
-        
+
         first_date = await service.get_first_snapshot_date(current_user_id)
         latest = await service.get_latest_snapshot(current_user_id)
-        
+
         # Count total snapshots
         all_snapshots = await service.get_snapshots(current_user_id)
-        
+
         return {
             "has_data": first_date is not None,
             "first_snapshot_date": first_date.isoformat() if first_date else None,

@@ -432,6 +432,10 @@ class KOLTrackingRequest(BaseModel):
     updated_at: datetime
     reviewed_at: Optional[datetime] = None
     reviewed_by: Optional[str] = None
+    # 用户信息（管理员视图）
+    user_email: Optional[str] = None
+    user_username: Optional[str] = None
+    user_avatar_url: Optional[str] = None
 
 
 class KOLTrackingRequestsResponse(BaseModel):

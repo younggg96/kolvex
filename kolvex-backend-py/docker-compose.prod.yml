@@ -18,6 +18,22 @@ services:
       - kolvex-network
     restart: always
 
+  # Redis 缓存
+  redis:
+    image: redis:7-alpine
+    container_name: kolvex-redis-prod
+    command: redis-server --appendonly yes --maxmemory 512mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - kolvex-network
+    restart: always
+
   # Ollama AI 服务 (本地 LLM)
   ollama:
     image: ollama/ollama:latest
@@ -44,19 +60,45 @@ services:
     container_name: kolvex-backend-prod
     ports:
       - "8080:8080"
+    env_file:
+      - .env
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
       SECRET_KEY: ${SECRET_KEY}
       DEBUG: "False"
       ALLOWED_ORIGINS: ${ALLOWED_ORIGINS}
+      # Supabase 配置
+      SUPABASE_URL: ${SUPABASE_URL}
+      SUPABASE_KEY: ${SUPABASE_KEY}
+      SUPABASE_SERVICE_KEY: ${SUPABASE_SERVICE_KEY:-}
       # Ollama AI 配置 - 连接到 ollama 容器
       OLLAMA_BASE_URL: http://ollama:11434
-      OLLAMA_MODEL: gemma2:2b
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-gemma2:2b}
+      OLLAMA_TIMEOUT: ${OLLAMA_TIMEOUT:-120}
+      # Redis 缓存配置
+      REDIS_URL: redis://redis:6379/0
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      # Finnhub 股票数据 API
+      FINNHUB_API_KEY: ${FINNHUB_API_KEY:-}
+      # OpenAI API (用于 AI 分析)
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      # Twilio (用于 WhatsApp 通知)
+      TWILIO_ACCOUNT_SID: ${TWILIO_ACCOUNT_SID:-}
+      TWILIO_AUTH_TOKEN: ${TWILIO_AUTH_TOKEN:-}
+      TWILIO_WHATSAPP_FROM: ${TWILIO_WHATSAPP_FROM:-}
+      # Benzinga API
+      BENZINGA_API_KEY: ${BENZINGA_API_KEY:-}
+      # Email Service
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      EMAIL_FROM_ADDRESS: ${EMAIL_FROM_ADDRESS:-}
     depends_on:
       db:
         condition: service_healthy
       ollama:
         condition: service_started
+      redis:
+        condition: service_healthy
     networks:
       - kolvex-network
     restart: always
@@ -70,6 +112,7 @@ services:
 volumes:
   postgres_data:
   ollama_data:
+  redis_data:
 
 networks:
   kolvex-network:

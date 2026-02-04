@@ -4,14 +4,16 @@
 """
 
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import List, Dict, Any, Optional
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
+from apscheduler.triggers.interval import IntervalTrigger
 from supabase import Client
 
 from app.core.supabase import get_supabase_service
 from app.services.snaptrade.service import SnapTradeService
+from app.services.portfolio_snapshot_service import get_portfolio_snapshot_service
 
 logger = logging.getLogger(__name__)
 
@@ -27,6 +29,50 @@ class SchedulerService:
         self.supabase = supabase or get_supabase_service()
         self.snaptrade_service = snaptrade_service or SnapTradeService()
         self.scheduler = AsyncIOScheduler()
+
+    def _get_active_scheduler(self):
+        try:
+            from main import scheduler as main_scheduler
+            if main_scheduler:
+                return main_scheduler
+        except ImportError:
+            pass
+        return self.scheduler
+
+    def _serialize_job(self, job) -> Dict[str, Any]:
+        trigger_type = type(job.trigger).__name__
+        trigger_details = str(job.trigger)
+        trigger_config: Dict[str, Any] = {"type": "unknown"}
+
+        if isinstance(job.trigger, IntervalTrigger):
+            interval: timedelta = job.trigger.interval
+            hours = interval.total_seconds() / 3600
+            trigger_config = {
+                "type": "interval",
+                "hours": int(hours) if hours.is_integer() else round(hours, 2),
+            }
+        elif isinstance(job.trigger, CronTrigger):
+            def _get_field(name: str) -> Optional[str]:
+                for field in job.trigger.fields:
+                    if field.name == name:
+                        return str(field)
+                return None
+            trigger_config = {
+                "type": "cron",
+                "hour": _get_field("hour"),
+                "minute": _get_field("minute"),
+                "timezone": str(job.trigger.timezone) if job.trigger.timezone else None,
+            }
+
+        return {
+            "id": job.id,
+            "name": job.name,
+            "next_run_time": job.next_run_time.isoformat() if job.next_run_time else None,
+            "trigger_type": trigger_type,
+            "trigger_details": trigger_details,
+            "trigger_config": trigger_config,
+            "is_paused": job.next_run_time is None,
+        }
         
     def start(self):
         """启动调度器"""
@@ -52,6 +98,18 @@ class SchedulerService:
             CronTrigger(hour=20, minute=0),
             id='afternoon_sync_holdings',
             name='下午同步所有用户持仓',
+            replace_existing=True,
+            misfire_grace_time=3600,
+        )
+        
+        # 📸 每日记录 Portfolio Snapshot - 每天 21:00 (UTC) 执行
+        # 在下午持仓同步后1小时执行，确保数据是最新的
+        # 用于生成用户盈利曲线
+        self.scheduler.add_job(
+            self.record_all_users_snapshots,
+            CronTrigger(hour=21, minute=0),
+            id='daily_portfolio_snapshot',
+            name='每日记录投资组合快照',
             replace_existing=True,
             misfire_grace_time=3600,
         )
@@ -148,6 +206,116 @@ class SchedulerService:
             pass
         except Exception as e:
             logger.error(f"保存同步日志失败: {e}")
+    
+    async def record_all_users_snapshots(self):
+        """
+        📸 为所有已连接用户记录 Portfolio 快照
+        这个方法会被定时任务调用，用于生成盈利曲线
+        """
+        try:
+            logger.info("📸 开始执行每日 Portfolio 快照任务")
+            start_time = datetime.now()
+            
+            snapshot_service = get_portfolio_snapshot_service()
+            
+            # 获取所有已连接 SnapTrade 的用户
+            result = (
+                self.supabase.table("snaptrade_connections")
+                .select("user_id, snaptrade_user_id, is_connected")
+                .eq("is_connected", True)
+                .execute()
+            )
+            
+            if not result.data:
+                logger.info("没有已连接的用户需要记录快照")
+                return {"total_users": 0, "success_count": 0, "error_count": 0}
+            
+            total_users = len(result.data)
+            success_count = 0
+            error_count = 0
+            
+            logger.info(f"找到 {total_users} 个已连接的用户，开始记录快照...")
+            
+            for connection in result.data:
+                user_id = connection["user_id"]
+                try:
+                    # 获取用户最新持仓数据
+                    holdings = await self.snaptrade_service.get_user_holdings(user_id)
+                    
+                    if not holdings or not holdings.get("accounts"):
+                        logger.warning(f"用户 {user_id[:8]}... 没有持仓数据，跳过")
+                        continue
+                    
+                    # 计算总值
+                    total_value = 0.0
+                    total_cost_basis = 0.0
+                    total_pnl = 0.0
+                    positions_count = 0
+                    accounts_count = len(holdings["accounts"])
+                    
+                    for account in holdings["accounts"]:
+                        positions = account.get("snaptrade_positions", [])
+                        for pos in positions:
+                            price = pos.get("price", 0) or 0
+                            units = pos.get("units", 0) or 0
+                            avg_cost = pos.get("average_purchase_price", 0) or 0
+                            position_type = pos.get("position_type", "equity")
+                            
+                            multiplier = 100 if position_type == "option" else 1
+                            position_value = price * units * multiplier
+                            cost_basis = avg_cost * units
+                            
+                            total_value += position_value
+                            total_cost_basis += cost_basis
+                            positions_count += 1
+                            
+                            if position_type == "option":
+                                pnl = position_value - cost_basis
+                            else:
+                                pnl = pos.get("open_pnl") or (position_value - cost_basis)
+                            total_pnl += pnl
+                    
+                    # 记录快照
+                    await snapshot_service.record_snapshot(
+                        user_id=user_id,
+                        total_value=total_value,
+                        total_cost_basis=total_cost_basis,
+                        unrealized_pnl=total_pnl,
+                        positions_count=positions_count,
+                        accounts_count=accounts_count,
+                    )
+                    
+                    success_count += 1
+                    logger.info(f"✅ 用户 {user_id[:8]}... 快照记录成功: ${total_value:.2f}")
+                    
+                except Exception as e:
+                    error_count += 1
+                    logger.error(f"❌ 用户 {user_id[:8]}... 快照记录失败: {e}")
+            
+            # 记录任务完成情况
+            end_time = datetime.now()
+            duration = (end_time - start_time).total_seconds()
+            
+            summary = {
+                "total_users": total_users,
+                "success_count": success_count,
+                "error_count": error_count,
+                "duration_seconds": duration,
+            }
+            
+            logger.info(
+                f"📸 每日 Portfolio 快照任务完成 - "
+                f"总用户: {total_users}, "
+                f"成功: {success_count}, "
+                f"失败: {error_count}, "
+                f"耗时: {duration:.2f}秒"
+            )
+            
+            return summary
+            
+        except Exception as e:
+            logger.error(f"执行每日 Portfolio 快照任务失败: {e}", exc_info=True)
+            raise
             
     async def trigger_sync_now(self) -> Dict[str, Any]:
         """
@@ -159,15 +327,48 @@ class SchedulerService:
         
     def get_jobs_info(self) -> List[Dict[str, Any]]:
         """获取所有定时任务信息"""
-        jobs = []
-        for job in self.scheduler.get_jobs():
-            jobs.append({
-                "id": job.id,
-                "name": job.name,
-                "next_run_time": job.next_run_time.isoformat() if job.next_run_time else None,
-                "trigger": str(job.trigger),
-            })
-        return jobs
+        active_scheduler = self._get_active_scheduler()
+        return [self._serialize_job(job) for job in active_scheduler.get_jobs()]
+
+    def pause_job(self, job_id: str) -> Dict[str, Any]:
+        scheduler = self._get_active_scheduler()
+        job = scheduler.get_job(job_id)
+        if not job:
+            raise ValueError("Job not found")
+        job.pause()
+        return self._serialize_job(job)
+
+    def resume_job(self, job_id: str) -> Dict[str, Any]:
+        scheduler = self._get_active_scheduler()
+        job = scheduler.get_job(job_id)
+        if not job:
+            raise ValueError("Job not found")
+        job.resume()
+        return self._serialize_job(job)
+
+    def reschedule_job(self, job_id: str, trigger_type: str, **kwargs) -> Dict[str, Any]:
+        scheduler = self._get_active_scheduler()
+        job = scheduler.get_job(job_id)
+        if not job:
+            raise ValueError("Job not found")
+
+        if trigger_type == "interval":
+            hours = int(kwargs.get("hours", 0))
+            if hours <= 0:
+                raise ValueError("Interval hours must be > 0")
+            trigger = IntervalTrigger(hours=hours)
+        elif trigger_type == "cron":
+            hour = kwargs.get("hour")
+            minute = kwargs.get("minute")
+            timezone = kwargs.get("timezone") or getattr(job.trigger, "timezone", None)
+            if hour is None or minute is None:
+                raise ValueError("Cron hour and minute are required")
+            trigger = CronTrigger(hour=int(hour), minute=int(minute), timezone=timezone)
+        else:
+            raise ValueError("Unsupported trigger type")
+
+        job.reschedule(trigger=trigger)
+        return self._serialize_job(job)
 
 
 # 全局调度器实例
@@ -194,7 +395,6 @@ def stop_scheduler():
     if _scheduler_instance:
         _scheduler_instance.stop()
         _scheduler_instance = None
-
 
 
 

@@ -2,10 +2,15 @@
 Twitter 爬虫配置常量
 """
 
+import os
 from pathlib import Path
 
 # Cookies 文件路径
 COOKIES_FILE = Path(__file__).parent.parent.parent / "x_cookies.json"
+
+# AI 分析开关（可通过环境变量控制）
+# 设置 ENABLE_AI_ANALYSIS=false 可以在 Ollama 服务不可用时禁用 AI 分析
+ENABLE_AI_ANALYSIS = os.getenv("ENABLE_AI_ANALYSIS", "true").lower() == "true"
 
 # 真实的 User-Agent 列表
 USER_AGENTS = [

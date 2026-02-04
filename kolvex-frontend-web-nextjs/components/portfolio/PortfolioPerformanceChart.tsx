@@ -1,16 +1,16 @@
 "use client";
 
-import React, { useEffect, useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import {
-    AreaChart,
     Area,
     XAxis,
     YAxis,
     Tooltip,
     ResponsiveContainer,
     ReferenceLine,
+    ComposedChart,
 } from "recharts";
-import { TrendingUp, TrendingDown, BarChart3, RefreshCw, Info } from "lucide-react";
+import { TrendingUp, TrendingDown, BarChart3, RefreshCw, Info, DollarSign, Activity, Percent } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatCurrency, formatPercent } from "@/lib/snaptradeApi";
 import { Button } from "@/components/ui/button";
@@ -35,14 +35,19 @@ import {
 interface PortfolioPerformanceChartProps {
     className?: string;
     height?: number;
+    /** User ID to fetch history for */
+    userId?: string;
+    /** Whether the current user is the owner of this portfolio */
+    isOwner?: boolean;
 }
 
+type ChartView = "combined" | "value" | "pnl";
+
 // ============================================================
-// Period Options
+// Period Options (minimum 1W, daily data)
 // ============================================================
 
 const PERIOD_OPTIONS: { value: PerformancePeriod; label: string }[] = [
-    { value: "1D", label: "1D" },
     { value: "1W", label: "1W" },
     { value: "1M", label: "1M" },
     { value: "3M", label: "3M" },
@@ -58,30 +63,75 @@ interface CustomTooltipProps {
     active?: boolean;
     payload?: Array<{
         payload: PerformanceDataPoint;
+        dataKey: string;
     }>;
+    chartView: ChartView;
+    isOwner: boolean;
 }
 
-function CustomTooltip({ active, payload }: CustomTooltipProps) {
+function CustomTooltip({ active, payload, chartView, isOwner }: CustomTooltipProps) {
     if (!active || !payload || !payload[0]) return null;
 
     const data = payload[0].payload;
-    const isPositive = data.pnl >= 0;
+    const isPositive = data.pnlPercent >= 0;
 
     return (
-        <div className="bg-card-dark/95 backdrop-blur-sm border border-white/10 rounded-lg p-3 shadow-xl">
-            <p className="text-xs text-gray-400 mb-1">{data.displayDate}</p>
-            <p className="text-sm font-semibold text-white">
-                {formatCurrency(data.value)}
+        <div className="bg-card-dark/95 backdrop-blur-sm border border-white/10 rounded-lg p-3 shadow-xl min-w-[160px]">
+            <p className="text-xs text-gray-400 mb-2 border-b border-white/10 pb-1.5">
+                {data.displayDate}
             </p>
-            <p
-                className={cn(
-                    "text-xs font-medium",
+
+            {/* Portfolio Value - Only show for owner */}
+            {isOwner && (chartView === "combined" || chartView === "value") && (
+                <div className="flex items-center justify-between gap-4 mb-1.5">
+                    <div className="flex items-center gap-1.5">
+                        <div className="w-2 h-2 rounded-full bg-blue-500" />
+                        <span className="text-xs text-gray-400">Value</span>
+                    </div>
+                    <span className="text-sm font-semibold text-white">
+                        {formatCurrency(data.value)}
+                    </span>
+                </div>
+            )}
+
+            {/* P&L Amount - Only show for owner */}
+            {isOwner && (chartView === "combined" || chartView === "pnl") && (
+                <div className="flex items-center justify-between gap-4 mb-1.5">
+                    <div className="flex items-center gap-1.5">
+                        <div className={cn(
+                            "w-2 h-2 rounded-full",
+                            isPositive ? "bg-emerald-500" : "bg-red-500"
+                        )} />
+                        <span className="text-xs text-gray-400">P&L</span>
+                    </div>
+                    <span className={cn(
+                        "text-sm font-medium",
+                        isPositive ? "text-emerald-400" : "text-red-400"
+                    )}>
+                        {isPositive ? "+" : ""}{formatCurrency(data.pnl)}
+                    </span>
+                </div>
+            )}
+
+            {/* P&L Percent - Show for everyone */}
+            <div className={cn(
+                "flex items-center justify-between gap-4",
+                isOwner && "mt-1.5 pt-1.5 border-t border-white/5"
+            )}>
+                <div className="flex items-center gap-1.5">
+                    <div className={cn(
+                        "w-2 h-2 rounded-full",
+                        isPositive ? "bg-emerald-500" : "bg-red-500"
+                    )} />
+                    <span className="text-xs text-gray-400">Change</span>
+                </div>
+                <span className={cn(
+                    "text-sm font-semibold",
                     isPositive ? "text-emerald-400" : "text-red-400"
-                )}
-            >
-                {isPositive ? "+" : ""}
-                {formatCurrency(data.pnl)} ({formatPercent(data.pnlPercent)})
-            </p>
+                )}>
+                    {formatPercent(data.pnlPercent)}
+                </span>
+            </div>
         </div>
     );
 }
@@ -93,45 +143,116 @@ function CustomTooltip({ active, payload }: CustomTooltipProps) {
 interface SummaryStatsProps {
     summary: PerformanceSummary;
     period: PerformancePeriod;
+    isOwner: boolean;
 }
 
-function SummaryStats({ summary, period }: SummaryStatsProps) {
+function SummaryStats({ summary, period, isOwner }: SummaryStatsProps) {
     const isPositive = summary.totalPnL >= 0;
     const Icon = isPositive ? TrendingUp : TrendingDown;
 
+    const periodLabel = period === "YTD"
+        ? "Year to Date"
+        : period === "ALL"
+            ? "All Time"
+            : `Past ${period.replace("M", " month").replace("W", " week")}`;
+
     return (
-        <div className="flex flex-col gap-1">
+        <div className="flex flex-col gap-2">
+            {/* Current Value - Only show for owner */}
+            {isOwner && (
+                <div className="flex items-center gap-2">
+                    <DollarSign className="w-4 h-4 text-blue-500" />
+                    <span className="text-xl font-bold text-foreground">
+                        {formatCurrency(summary.endValue)}
+                    </span>
+                </div>
+            )}
+
+            {/* P&L Summary */}
             <div className="flex items-center gap-2">
                 <Icon
                     className={cn(
-                        "w-5 h-5",
+                        "w-4 h-4",
                         isPositive ? "text-emerald-500" : "text-red-500"
                     )}
                 />
+                {/* P&L Amount - Only show for owner */}
+                {isOwner && (
+                    <span
+                        className={cn(
+                            "text-lg font-semibold",
+                            isPositive
+                                ? "text-emerald-600 dark:text-emerald-400"
+                                : "text-red-600 dark:text-red-400"
+                        )}
+                    >
+                        {isPositive ? "+" : ""}{formatCurrency(summary.totalPnL)}
+                    </span>
+                )}
+                {/* P&L Percent - Show for everyone */}
                 <span
                     className={cn(
-                        "text-2xl font-bold tracking-tight",
+                        isOwner ? "text-sm font-medium" : "text-xl font-bold",
                         isPositive
                             ? "text-emerald-600 dark:text-emerald-400"
                             : "text-red-600 dark:text-red-400"
                     )}
                 >
-                    {formatPercent(summary.totalPnLPercent)}
-                </span>
-                <span
-                    className={cn(
-                        "text-sm font-medium",
-                        isPositive
-                            ? "text-emerald-600/80 dark:text-emerald-400/80"
-                            : "text-red-600/80 dark:text-red-400/80"
-                    )}
-                >
-                    ({isPositive ? "+" : ""}{formatCurrency(summary.totalPnL)})
+                    {isOwner ? "(" : ""}{formatPercent(summary.totalPnLPercent)}{isOwner ? ")" : ""}
                 </span>
             </div>
+
             <span className="text-xs text-muted-foreground">
-                {period === "1D" ? "Today" : period === "YTD" ? "Year to Date" : `Past ${period.replace("M", " month").replace("W", " week")}`}
+                {periodLabel}
             </span>
+        </div>
+    );
+}
+
+// ============================================================
+// Chart View Toggle
+// ============================================================
+
+interface ChartViewToggleProps {
+    chartView: ChartView;
+    setChartView: (view: ChartView) => void;
+    isOwner: boolean;
+}
+
+function ChartViewToggle({ chartView, setChartView, isOwner }: ChartViewToggleProps) {
+    // For non-owner, only show percent view
+    const views: { value: ChartView; label: string; icon: React.ReactNode }[] = isOwner
+        ? [
+            { value: "combined", label: "Both", icon: <Activity className="w-3 h-3" /> },
+            { value: "value", label: "Value", icon: <DollarSign className="w-3 h-3" /> },
+            { value: "pnl", label: "P&L", icon: <TrendingUp className="w-3 h-3" /> },
+        ]
+        : [
+            { value: "pnl", label: "Performance", icon: <Percent className="w-3 h-3" /> },
+        ];
+
+    // If only one view available, don't show toggle
+    if (views.length === 1) {
+        return null;
+    }
+
+    return (
+        <div className="flex items-center gap-0.5 bg-muted/30 rounded-md p-0.5">
+            {views.map((view) => (
+                <button
+                    key={view.value}
+                    onClick={() => setChartView(view.value)}
+                    className={cn(
+                        "flex items-center gap-1 px-2 py-1 text-xs font-medium rounded transition-all",
+                        chartView === view.value
+                            ? "bg-background shadow-sm text-foreground"
+                            : "text-muted-foreground hover:text-foreground"
+                    )}
+                >
+                    {view.icon}
+                    <span className="hidden sm:inline">{view.label}</span>
+                </button>
+            ))}
         </div>
     );
 }
@@ -165,9 +286,10 @@ function ChartSkeleton({ height }: { height: number }) {
 
 interface EmptyStateProps {
     firstSnapshotDate: string | null;
+    isOwner: boolean;
 }
 
-function EmptyState({ firstSnapshotDate }: EmptyStateProps) {
+function EmptyState({ firstSnapshotDate, isOwner }: EmptyStateProps) {
     return (
         <div className="flex flex-col items-center justify-center h-48 text-center px-4">
             <BarChart3 className="w-10 h-10 text-muted-foreground/40 mb-3" />
@@ -175,9 +297,12 @@ function EmptyState({ firstSnapshotDate }: EmptyStateProps) {
                 No historical data yet
             </p>
             <p className="text-xs text-muted-foreground/70 mt-1 max-w-xs">
-                {firstSnapshotDate
-                    ? `Data recording started on ${new Date(firstSnapshotDate).toLocaleDateString()}. Keep syncing to build your performance history.`
-                    : "Sync your portfolio to start recording performance data. Historical data will accumulate over time."}
+                {isOwner
+                    ? (firstSnapshotDate
+                        ? `Data recording started on ${new Date(firstSnapshotDate).toLocaleDateString()}. Keep syncing to build your performance history.`
+                        : "Sync your portfolio to start recording performance data. Historical data will accumulate over time.")
+                    : "This user doesn't have any historical performance data yet."
+                }
             </p>
         </div>
     );
@@ -189,7 +314,9 @@ function EmptyState({ firstSnapshotDate }: EmptyStateProps) {
 
 export function PortfolioPerformanceChart({
     className,
-    height = 200,
+    height = 300,
+    userId,
+    isOwner = false,
 }: PortfolioPerformanceChartProps) {
     const {
         data,
@@ -201,37 +328,73 @@ export function PortfolioPerformanceChart({
         refresh,
         hasRealData,
         firstSnapshotDate,
-    } = usePortfolioHistory();
+    } = usePortfolioHistory({ userId });
 
-    // Fetch data when period changes
-    useEffect(() => {
-        refresh();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [period]);
+    // For non-owner, default to pnl (percent) view only
+    const [chartView, setChartView] = useState<ChartView>(isOwner ? "combined" : "pnl");
 
-    // Determine chart color based on P&L
-    const chartColor = useMemo(() => {
+    // P&L color based on overall performance
+    const pnlColor = useMemo(() => {
         if (!summary) return { stroke: "#6b7280", fill: "#6b7280" };
         return summary.totalPnL >= 0
             ? { stroke: "#10b981", fill: "#10b981" }
             : { stroke: "#ef4444", fill: "#ef4444" };
     }, [summary]);
 
-    // Y-axis domain with padding
-    const yDomain = useMemo(() => {
+    // Value line color (always blue)
+    const valueColor = { stroke: "#3b82f6", fill: "#3b82f6" };
+
+    // Y-axis domain for value
+    const valueDomain = useMemo(() => {
         if (data.length === 0) return [0, 100];
         const values = data.map((d) => d.value);
         const min = Math.min(...values);
         const max = Math.max(...values);
-        const padding = (max - min) * 0.1 || max * 0.1;
+        const padding = (max - min) * 0.15 || max * 0.1;
         return [Math.max(0, min - padding), max + padding];
     }, [data]);
 
-    // Format Y-axis tick
-    const formatYAxis = (value: number) => {
-        if (value >= 1000000) return `${(value / 1000000).toFixed(1)}M`;
-        if (value >= 1000) return `${(value / 1000).toFixed(0)}K`;
-        return value.toFixed(0);
+    // Y-axis domain for P&L percent (for non-owner)
+    const pnlPercentDomain = useMemo(() => {
+        if (data.length === 0) return [-10, 10];
+        const pnlValues = data.map((d) => d.pnlPercent);
+        const min = Math.min(...pnlValues);
+        const max = Math.max(...pnlValues);
+        const absMax = Math.max(Math.abs(min), Math.abs(max));
+        const padding = absMax * 0.15 || 10;
+        return [min - padding, max + padding];
+    }, [data]);
+
+    // Y-axis domain for P&L amount (for owner)
+    const pnlDomain = useMemo(() => {
+        if (data.length === 0) return [-100, 100];
+        const pnlValues = data.map((d) => d.pnl);
+        const min = Math.min(...pnlValues);
+        const max = Math.max(...pnlValues);
+        const absMax = Math.max(Math.abs(min), Math.abs(max));
+        const padding = absMax * 0.15 || 100;
+        return [min - padding, max + padding];
+    }, [data]);
+
+    // Format Y-axis tick for value
+    const formatValueAxis = (value: number) => {
+        if (value >= 1000000) return `$${(value / 1000000).toFixed(1)}M`;
+        if (value >= 1000) return `$${(value / 1000).toFixed(0)}K`;
+        return `$${value.toFixed(0)}`;
+    };
+
+    // Format Y-axis tick for P&L amount
+    const formatPnlAxis = (value: number) => {
+        const sign = value >= 0 ? "+" : "";
+        if (Math.abs(value) >= 1000000) return `${sign}${(value / 1000000).toFixed(1)}M`;
+        if (Math.abs(value) >= 1000) return `${sign}${(value / 1000).toFixed(0)}K`;
+        return `${sign}${value.toFixed(0)}`;
+    };
+
+    // Format Y-axis tick for P&L percent
+    const formatPnlPercentAxis = (value: number) => {
+        const sign = value >= 0 ? "+" : "";
+        return `${sign}${value.toFixed(1)}%`;
     };
 
     if (loading && data.length === 0) {
@@ -242,6 +405,10 @@ export function PortfolioPerformanceChart({
         );
     }
 
+    // Determine which Y-axis and data to use based on isOwner and chartView
+    const showValueChart = isOwner && (chartView === "combined" || chartView === "value");
+    const showPnlChart = chartView === "combined" || chartView === "pnl";
+
     return (
         <div
             className={cn(
@@ -250,45 +417,53 @@ export function PortfolioPerformanceChart({
             )}
         >
             {/* Header */}
-            <div className="flex items-start justify-between mb-4">
-                <div className="flex-1">
+            <div className="flex items-start justify-between gap-4 mb-4">
+                <div className="flex-1 min-w-0">
                     {summary ? (
-                        <SummaryStats summary={summary} period={period} />
+                        <SummaryStats summary={summary} period={period} isOwner={isOwner} />
                     ) : (
                         <div className="flex flex-col gap-1">
                             <span className="text-lg font-semibold text-foreground">Performance</span>
-                            <span className="text-xs text-muted-foreground">Portfolio value over time</span>
+                            <span className="text-xs text-muted-foreground">
+                                {isOwner ? "Portfolio value & P&L over time" : "Portfolio performance over time"}
+                            </span>
                         </div>
                     )}
                 </div>
 
-                {/* Period Selector */}
-                <div className="flex items-center gap-1">
-                    {PERIOD_OPTIONS.map((opt) => (
-                        <button
-                            key={opt.value}
-                            onClick={() => setPeriod(opt.value)}
+                {/* Controls */}
+                <div className="flex flex-col items-end gap-2">
+                    {/* Period Selector */}
+                    <div className="flex items-center gap-1">
+                        {PERIOD_OPTIONS.map((opt) => (
+                            <button
+                                key={opt.value}
+                                onClick={() => setPeriod(opt.value)}
+                                disabled={loading}
+                                className={cn(
+                                    "px-2.5 py-1 text-xs font-medium rounded-md transition-all",
+                                    period === opt.value
+                                        ? "bg-primary/20 text-primary dark:bg-primary/30 dark:text-primary"
+                                        : "text-muted-foreground hover:text-foreground hover:bg-muted/50",
+                                    loading && "opacity-50 cursor-not-allowed"
+                                )}
+                            >
+                                {opt.label}
+                            </button>
+                        ))}
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 ml-1"
+                            onClick={refresh}
                             disabled={loading}
-                            className={cn(
-                                "px-2.5 py-1 text-xs font-medium rounded-md transition-all",
-                                period === opt.value
-                                    ? "bg-primary/20 text-primary dark:bg-primary/30 dark:text-primary"
-                                    : "text-muted-foreground hover:text-foreground hover:bg-muted/50",
-                                loading && "opacity-50 cursor-not-allowed"
-                            )}
                         >
-                            {opt.label}
-                        </button>
-                    ))}
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-7 w-7 ml-1"
-                        onClick={refresh}
-                        disabled={loading}
-                    >
-                        <RefreshCw className={cn("w-3.5 h-3.5", loading && "animate-spin")} />
-                    </Button>
+                            <RefreshCw className={cn("w-3.5 h-3.5", loading && "animate-spin")} />
+                        </Button>
+                    </div>
+
+                    {/* Chart View Toggle - Only show for owner */}
+                    <ChartViewToggle chartView={chartView} setChartView={setChartView} isOwner={isOwner} />
                 </div>
             </div>
 
@@ -301,7 +476,7 @@ export function PortfolioPerformanceChart({
 
             {/* Empty State - No Data */}
             {!error && !loading && data.length === 0 && (
-                <EmptyState firstSnapshotDate={firstSnapshotDate} />
+                <EmptyState firstSnapshotDate={firstSnapshotDate} isOwner={isOwner} />
             )}
 
             {/* Chart */}
@@ -314,14 +489,25 @@ export function PortfolioPerformanceChart({
                             </div>
                         )}
                         <ResponsiveContainer width="100%" height="100%">
-                            <AreaChart
+                            <ComposedChart
                                 data={data}
-                                margin={{ top: 5, right: 5, left: -10, bottom: 5 }}
+                                margin={{
+                                    top: 10,
+                                    right: isOwner && chartView === "combined" ? 50 : 10,
+                                    left: 0,
+                                    bottom: 5
+                                }}
                             >
                                 <defs>
-                                    <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="0%" stopColor={chartColor.fill} stopOpacity={0.3} />
-                                        <stop offset="100%" stopColor={chartColor.fill} stopOpacity={0} />
+                                    {/* Value gradient (blue) */}
+                                    <linearGradient id="valueGradient" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="0%" stopColor={valueColor.fill} stopOpacity={0.25} />
+                                        <stop offset="100%" stopColor={valueColor.fill} stopOpacity={0} />
+                                    </linearGradient>
+                                    {/* P&L gradient (green/red based on performance) */}
+                                    <linearGradient id="pnlGradient" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="0%" stopColor={pnlColor.fill} stopOpacity={0.2} />
+                                        <stop offset="100%" stopColor={pnlColor.fill} stopOpacity={0} />
                                     </linearGradient>
                                 </defs>
 
@@ -331,41 +517,111 @@ export function PortfolioPerformanceChart({
                                     tickLine={false}
                                     tick={{ fontSize: 10, fill: "#9ca3af" }}
                                     interval="preserveStartEnd"
-                                    minTickGap={50}
+                                    minTickGap={60}
                                 />
 
-                                <YAxis
-                                    domain={yDomain}
-                                    axisLine={false}
-                                    tickLine={false}
-                                    tick={{ fontSize: 10, fill: "#9ca3af" }}
-                                    tickFormatter={formatYAxis}
-                                    width={45}
-                                />
+                                {/* Left Y-axis: Portfolio Value (only for owner, combined & value views) */}
+                                {showValueChart && (
+                                    <YAxis
+                                        yAxisId="value"
+                                        orientation="left"
+                                        domain={valueDomain}
+                                        axisLine={false}
+                                        tickLine={false}
+                                        tick={{ fontSize: 10, fill: "#3b82f6" }}
+                                        tickFormatter={formatValueAxis}
+                                        width={55}
+                                    />
+                                )}
 
-                                <Tooltip content={<CustomTooltip />} />
+                                {/* Y-axis: P&L - different format based on owner */}
+                                {showPnlChart && (
+                                    <YAxis
+                                        yAxisId="pnl"
+                                        orientation={isOwner && chartView === "combined" ? "right" : "left"}
+                                        domain={isOwner ? pnlDomain : pnlPercentDomain}
+                                        axisLine={false}
+                                        tickLine={false}
+                                        tick={{
+                                            fontSize: 10,
+                                            fill: summary && summary.totalPnL >= 0 ? "#10b981" : "#ef4444"
+                                        }}
+                                        tickFormatter={isOwner ? formatPnlAxis : formatPnlPercentAxis}
+                                        width={55}
+                                    />
+                                )}
 
-                                {/* Reference line at start value */}
-                                {summary && (
+                                <Tooltip content={<CustomTooltip chartView={chartView} isOwner={isOwner} />} />
+
+                                {/* Reference line at zero for P&L */}
+                                {showPnlChart && (
                                     <ReferenceLine
-                                        y={summary.startValue}
+                                        yAxisId="pnl"
+                                        y={0}
                                         stroke="#6b7280"
                                         strokeDasharray="3 3"
                                         strokeOpacity={0.5}
                                     />
                                 )}
 
-                                <Area
-                                    type="monotone"
-                                    dataKey="value"
-                                    stroke={chartColor.stroke}
-                                    strokeWidth={2}
-                                    fill="url(#chartGradient)"
-                                    animationDuration={500}
-                                />
-                            </AreaChart>
+                                {/* Reference line at start value (only for owner) */}
+                                {showValueChart && summary && (
+                                    <ReferenceLine
+                                        yAxisId="value"
+                                        y={summary.startValue}
+                                        stroke="#3b82f6"
+                                        strokeDasharray="3 3"
+                                        strokeOpacity={0.3}
+                                    />
+                                )}
+
+                                {/* Portfolio Value Area (only for owner) */}
+                                {showValueChart && (
+                                    <Area
+                                        yAxisId="value"
+                                        type="monotone"
+                                        dataKey="value"
+                                        stroke={valueColor.stroke}
+                                        strokeWidth={2}
+                                        fill="url(#valueGradient)"
+                                        animationDuration={500}
+                                        name="Portfolio Value"
+                                    />
+                                )}
+
+                                {/* P&L Area - use pnlPercent for non-owner, pnl for owner */}
+                                {showPnlChart && (
+                                    <Area
+                                        yAxisId="pnl"
+                                        type="monotone"
+                                        dataKey={isOwner ? "pnl" : "pnlPercent"}
+                                        stroke={pnlColor.stroke}
+                                        strokeWidth={2}
+                                        fill="url(#pnlGradient)"
+                                        animationDuration={500}
+                                        name={isOwner ? "P&L" : "Performance %"}
+                                    />
+                                )}
+                            </ComposedChart>
                         </ResponsiveContainer>
                     </div>
+
+                    {/* Legend - only for owner with combined view */}
+                    {isOwner && chartView === "combined" && (
+                        <div className="flex items-center justify-center gap-6 mt-2">
+                            <div className="flex items-center gap-1.5">
+                                <div className="w-3 h-0.5 bg-blue-500 rounded" />
+                                <span className="text-xs text-muted-foreground">Portfolio Value</span>
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                                <div className={cn(
+                                    "w-3 h-0.5 rounded",
+                                    summary && summary.totalPnL >= 0 ? "bg-emerald-500" : "bg-red-500"
+                                )} />
+                                <span className="text-xs text-muted-foreground">P&L</span>
+                            </div>
+                        </div>
+                    )}
 
                     {/* Data Info */}
                     {hasRealData && firstSnapshotDate && (
@@ -382,8 +638,10 @@ export function PortfolioPerformanceChart({
                                     </TooltipTrigger>
                                     <TooltipContent side="top" className="max-w-xs">
                                         <p className="text-xs">
-                                            This chart shows your actual portfolio performance recorded since {new Date(firstSnapshotDate).toLocaleDateString()}.
-                                            Data is recorded automatically when you sync your portfolio.
+                                            {isOwner
+                                                ? `This chart shows your actual portfolio performance recorded since ${new Date(firstSnapshotDate).toLocaleDateString()}. Data is recorded automatically when you sync your portfolio.`
+                                                : `This chart shows portfolio performance recorded since ${new Date(firstSnapshotDate).toLocaleDateString()}.`
+                                            }
                                         </p>
                                     </TooltipContent>
                                 </UITooltip>

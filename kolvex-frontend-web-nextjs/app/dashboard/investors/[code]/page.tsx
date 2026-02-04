@@ -226,7 +226,7 @@ export default function InvestorDetailPage() {
                         </TableCell>
                         <TableCell className="text-center">
                           {holding.change_type &&
-                          holding.change_type !== "unchanged" ? (
+                            holding.change_type !== "unchanged" ? (
                             <Badge
                               size="xs"
                               className={`text-xs ${getChangeTypeColor(
@@ -257,11 +257,10 @@ export default function InvestorDetailPage() {
                         <TableCell className="text-right">
                           {holding.price_change_percent !== null ? (
                             <span
-                              className={`text-sm ${
-                                holding.price_change_percent >= 0
-                                  ? "text-emerald-500"
-                                  : "text-red-500"
-                              }`}
+                              className={`text-sm ${holding.price_change_percent >= 0
+                                ? "text-emerald-500"
+                                : "text-red-500"
+                                }`}
                             >
                               {holding.price_change_percent >= 0 ? (
                                 <TrendingUp className="h-3 w-3 inline mr-1" />

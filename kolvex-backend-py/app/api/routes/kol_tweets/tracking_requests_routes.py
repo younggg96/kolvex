@@ -3,11 +3,12 @@ KOL Tracking Requests API 路由
 允许用户提交 KOL 追踪请求，管理员审核后自动加入爬虫列表
 """
 
-from fastapi import APIRouter, HTTPException, Query, Header
+from fastapi import APIRouter, HTTPException, Query, Header, Depends
 from typing import Optional
 from datetime import datetime, timezone
 
 from app.core.supabase import get_supabase_service
+from app.api.dependencies.auth import verify_admin
 from .schemas import (
     KOLTrackingRequestCreate,
     KOLTrackingRequest,
@@ -34,6 +35,27 @@ def _convert_row_to_request(row: dict) -> KOLTrackingRequest:
         updated_at=row["updated_at"],
         reviewed_at=row.get("reviewed_at"),
         reviewed_by=row.get("reviewed_by"),
+    )
+
+
+def _convert_row_to_request_with_user(row: dict) -> KOLTrackingRequest:
+    """将数据库行转换为 KOLTrackingRequest 对象（包含用户信息）"""
+    user_info = row.get("user_profiles") or {}
+    return KOLTrackingRequest(
+        id=row["id"],
+        user_id=row["user_id"],
+        platform=row.get("platform", "twitter"),
+        platform_user_id=row["platform_user_id"],
+        status=TrackingRequestStatus(row["status"]),
+        user_notes=row.get("user_notes"),
+        admin_notes=row.get("admin_notes"),
+        created_at=row["created_at"],
+        updated_at=row["updated_at"],
+        reviewed_at=row.get("reviewed_at"),
+        reviewed_by=row.get("reviewed_by"),
+        user_email=user_info.get("email"),
+        user_username=user_info.get("username"),
+        user_avatar_url=user_info.get("avatar_url"),
     )
 
 
@@ -193,7 +215,7 @@ async def get_all_tracking_requests(
     platform: Optional[str] = Query(None, description="Filter by platform"),
     limit: int = Query(50, ge=1, le=100),
     offset: int = Query(0, ge=0),
-    authorization: Optional[str] = Header(None),
+    admin_id: str = Depends(verify_admin),
 ):
     """
     [管理员] 获取所有 KOL 追踪请求
@@ -203,24 +225,7 @@ async def get_all_tracking_requests(
     - **limit**: 每页数量
     - **offset**: 偏移量
     """
-    if not authorization:
-        raise HTTPException(status_code=401, detail="Authorization header required")
-
     try:
-        # 提取 token
-        token = authorization.replace("Bearer ", "")
-
-        # 验证用户
-        from app.core.supabase import get_supabase_client
-
-        supabase_user = get_supabase_client()
-        user_response = supabase_user.auth.get_user(token)
-        if not user_response or not user_response.user:
-            raise HTTPException(status_code=401, detail="Invalid token")
-
-        # TODO: 添加管理员权限检查
-        # user_id = user_response.user.id
-
         # 查询所有请求
         supabase = get_supabase_service()
         query = (
@@ -237,7 +242,25 @@ async def get_all_tracking_requests(
 
         result = query.execute()
 
-        requests = [_convert_row_to_request(row) for row in result.data]
+        # 获取所有用户 ID 并批量查询用户信息
+        user_ids = list(set(row["user_id"] for row in result.data if row.get("user_id")))
+        user_info_map = {}
+        
+        if user_ids:
+            user_profiles_result = (
+                supabase.table("user_profiles")
+                .select("id, email, username, avatar_url")
+                .in_("id", user_ids)
+                .execute()
+            )
+            user_info_map = {profile["id"]: profile for profile in user_profiles_result.data}
+
+        # 合并用户信息到请求数据
+        requests = []
+        for row in result.data:
+            user_info = user_info_map.get(row.get("user_id"), {})
+            row["user_profiles"] = user_info
+            requests.append(_convert_row_to_request_with_user(row))
 
         return KOLTrackingRequestsResponse(
             requests=requests, total=result.count or len(requests)
@@ -255,7 +278,7 @@ async def get_all_tracking_requests(
 async def review_tracking_request(
     request_id: str,
     review_data: KOLTrackingRequestReview,
-    authorization: Optional[str] = Header(None),
+    admin_id: str = Depends(verify_admin),
 ):
     """
     [管理员] 审核 KOL 追踪请求
@@ -264,24 +287,8 @@ async def review_tracking_request(
     - **status**: approved 或 rejected
     - **admin_notes**: 管理员备注（可选）
     """
-    if not authorization:
-        raise HTTPException(status_code=401, detail="Authorization header required")
-
     try:
-        # 提取 token
-        token = authorization.replace("Bearer ", "")
-
-        # 验证用户
-        from app.core.supabase import get_supabase_client
-
-        supabase_user = get_supabase_client()
-        user_response = supabase_user.auth.get_user(token)
-        if not user_response or not user_response.user:
-            raise HTTPException(status_code=401, detail="Invalid token")
-
-        reviewer_id = user_response.user.id
-
-        # TODO: 添加管理员权限检查
+        reviewer_id = admin_id
 
         supabase = get_supabase_service()
 

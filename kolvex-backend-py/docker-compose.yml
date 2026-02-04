@@ -21,6 +21,24 @@ services:
     networks:
       - kolvex-network
 
+  # Redis 缓存
+  redis:
+    image: redis:7-alpine
+    container_name: kolvex-redis
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - kolvex-network
+    restart: unless-stopped
+
   # 注意: Ollama 使用本地安装的版本（有 GPU 加速），不使用 Docker
   # 如需 Docker 版 Ollama，取消下面的注释
   # ollama:
@@ -57,10 +75,24 @@ services:
       OLLAMA_BASE_URL: http://host.docker.internal:11434
       OLLAMA_MODEL: ${OLLAMA_MODEL:-hf.co/QuantFactory/Llama-3-8B-Instruct-Finance-RAG-GGUF:Q4_K_M}
       OLLAMA_TIMEOUT: ${OLLAMA_TIMEOUT:-120}
+      # Finnhub 股票数据 API
+      FINNHUB_API_KEY: ${FINNHUB_API_KEY:-}
+      # OpenAI API (用于 AI 分析)
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      # Twilio (用于 WhatsApp 通知)
+      TWILIO_ACCOUNT_SID: ${TWILIO_ACCOUNT_SID:-}
+      TWILIO_AUTH_TOKEN: ${TWILIO_AUTH_TOKEN:-}
+      TWILIO_WHATSAPP_FROM: ${TWILIO_WHATSAPP_FROM:-}
+      # Redis 缓存配置
+      REDIS_URL: redis://redis:6379/0
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
     volumes:
       - .:/app
     depends_on:
       db:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     networks:
       - kolvex-network
@@ -68,6 +100,7 @@ services:
 
 volumes:
   postgres_data:
+  redis_data:
 
 networks:
   kolvex-network:

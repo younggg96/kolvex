@@ -11,6 +11,7 @@ import logging
 # 导入路由和配置
 from app.api.routes import api_router
 from app.core.config import settings
+from app.core.redis import init_redis, close_redis, get_redis
 
 # 配置日志
 logging.basicConfig(
@@ -170,14 +171,76 @@ def setup_scheduler():
         )
 
         # ============================================================
-        # 任务 4: 每天自动同步所有用户的持仓数据
+        # 任务 4: 每天自动同步所有用户的持仓数据并记录快照
         # ============================================================
+        async def record_user_portfolio_snapshot(user_id: str, snaptrade_service):
+            """为单个用户记录 portfolio 快照"""
+            from app.services.portfolio_snapshot_service import get_portfolio_snapshot_service
+            
+            try:
+                holdings = await snaptrade_service.get_user_holdings(user_id)
+                
+                if not holdings or not holdings.get("accounts"):
+                    logger.warning(f"📭 [SNAPSHOT] 用户 {user_id[:8]}... 没有持仓数据")
+                    return False
+                
+                total_value = 0.0
+                total_cost_basis = 0.0
+                total_pnl = 0.0
+                positions_count = 0
+                accounts_count = len(holdings["accounts"])
+                
+                for account in holdings["accounts"]:
+                    positions = account.get("snaptrade_positions", [])
+                    for pos in positions:
+                        price = pos.get("price", 0) or 0
+                        units = pos.get("units", 0) or 0
+                        avg_cost = pos.get("average_purchase_price", 0) or 0
+                        position_type = pos.get("position_type", "equity")
+                        
+                        # Options multiplier
+                        multiplier = 100 if position_type == "option" else 1
+                        
+                        position_value = price * units * multiplier
+                        cost_basis = avg_cost * units * (1 if position_type == "option" else 1)
+                        
+                        total_value += position_value
+                        total_cost_basis += cost_basis
+                        positions_count += 1
+                        
+                        # Calculate P&L
+                        if position_type == "option":
+                            pnl = position_value - cost_basis
+                        else:
+                            pnl = pos.get("open_pnl") or (position_value - cost_basis)
+                        total_pnl += pnl
+                
+                # Record snapshot
+                snapshot_service = get_portfolio_snapshot_service()
+                await snapshot_service.record_snapshot(
+                    user_id=user_id,
+                    total_value=total_value,
+                    total_cost_basis=total_cost_basis,
+                    unrealized_pnl=total_pnl,
+                    positions_count=positions_count,
+                    accounts_count=accounts_count,
+                )
+                
+                logger.info(
+                    f"📸 [SNAPSHOT] 用户 {user_id[:8]}... 快照记录成功 - "
+                    f"value=${total_value:,.2f}, pnl=${total_pnl:,.2f}"
+                )
+                return True
+            except Exception as e:
+                logger.error(f"❌ [SNAPSHOT] 用户 {user_id[:8]}... 快照记录失败: {e}")
+                return False
+        
         async def scheduled_sync_all_holdings():
-            """定时任务：同步所有用户持仓数据"""
+            """定时任务：同步所有用户持仓数据并记录每日快照"""
             from app.services.snaptrade.service import SnapTradeService
             from app.core.supabase import get_supabase_service
             
-            logger.info("⏰ [HOLDINGS] 定时任务触发: 开始同步所有用户持仓")
+            logger.info("⏰ [HOLDINGS] 定时任务触发: 开始同步所有用户持仓并记录快照")
             try:
                 supabase = get_supabase_service()
                 snaptrade_service = SnapTradeService(supabase=supabase)
@@ -195,8 +258,10 @@ def setup_scheduler():
                     return
                 
                 total_users = len(result.data)
-                success_count = 0
-                error_count = 0
+                sync_success = 0
+                sync_error = 0
+                snapshot_success = 0
+                snapshot_error = 0
                 
                 logger.info(f"📊 [HOLDINGS] 找到 {total_users} 个已连接的用户")
                 
@@ -204,40 +269,66 @@ def setup_scheduler():
                 for connection in result.data:
                     user_id = connection["user_id"]
                     try:
-                        # 先同步账户
+                        # 1. 先同步账户
                         await snaptrade_service.sync_accounts(user_id)
-                        # 再同步持仓
+                        # 2. 再同步持仓
                         positions = await snaptrade_service.sync_positions(user_id)
-                        success_count += 1
+                        sync_success += 1
                         logger.info(f"✅ [HOLDINGS] 用户 {user_id[:8]}... 同步成功，共 {len(positions)} 个持仓")
+                        
+                        # 3. 记录 portfolio 快照（用于盈利曲线）
+                        snapshot_recorded = await record_user_portfolio_snapshot(
+                            user_id, snaptrade_service
+                        )
+                        if snapshot_recorded:
+                            snapshot_success += 1
+                        else:
+                            snapshot_error += 1
+                            
                     except Exception as e:
-                        error_count += 1
+                        sync_error += 1
                         logger.error(f"❌ [HOLDINGS] 用户 {user_id[:8]}... 同步失败: {e}")
                 
                 logger.info(
-                    f"✅ [HOLDINGS] 持仓同步完成 - "
-                    f"总计: {total_users}, 成功: {success_count}, 失败: {error_count}"
+                    f"✅ [HOLDINGS] 每日同步完成 - "
+                    f"用户: {total_users}, 同步成功: {sync_success}, 同步失败: {sync_error}, "
+                    f"快照成功: {snapshot_success}, 快照失败: {snapshot_error}"
                 )
                 
             except Exception as e:
                 logger.error(f"❌ [HOLDINGS] 定时任务执行失败: {e}")
 
-        # 每天早上 8:00 UTC (美东时间凌晨 3:00/4:00) 同步
+        # ============================================================
+        # Portfolio Snapshot 定时任务 (美西时间 PST/PDT)
+        # 使用 America/Los_Angeles 时区，自动处理夏令时
+        # ============================================================
+        
+        # 美西时间早上 6:00 - 开盘前记录快照
         scheduler.add_job(
             scheduled_sync_all_holdings,
-            CronTrigger(hour=8, minute=0),
-            id="sync_all_holdings_morning",
-            name="每日早上同步所有用户持仓",
+            CronTrigger(hour=6, minute=0, timezone="America/Los_Angeles"),
+            id="portfolio_snapshot_morning",
+            name="Portfolio 快照 - 早上 6:00 PST (开盘前)",
             replace_existing=True,
-            misfire_grace_time=3600,  # 如果错过执行时间，在1小时内仍然执行
+            misfire_grace_time=3600,
         )
         
-        # 每天晚上 20:00 UTC (美东时间下午 3:00/4:00，市场收盘后) 再同步一次
+        # 美西时间中午 12:00 - 午间快照
         scheduler.add_job(
             scheduled_sync_all_holdings,
-            CronTrigger(hour=20, minute=0),
-            id="sync_all_holdings_evening",
-            name="每日晚上同步所有用户持仓",
+            CronTrigger(hour=12, minute=0, timezone="America/Los_Angeles"),
+            id="portfolio_snapshot_noon",
+            name="Portfolio 快照 - 中午 12:00 PST",
+            replace_existing=True,
+            misfire_grace_time=3600,
+        )
+        
+        # 美西时间下午 1:30 - 收盘后快照 (主要快照时间点)
+        scheduler.add_job(
+            scheduled_sync_all_holdings,
+            CronTrigger(hour=13, minute=30, timezone="America/Los_Angeles"),
+            id="portfolio_snapshot_afternoon",
+            name="Portfolio 快照 - 下午 1:30 PST (收盘后)",
             replace_existing=True,
             misfire_grace_time=3600,
         )
@@ -298,6 +389,9 @@ async def lifespan(app: FastAPI):
     print(f"📝 API Version: {settings.APP_VERSION}")
     print(f"🌐 CORS Origins: {settings.ALLOWED_ORIGINS}")
 
+    # 初始化 Redis
+    await init_redis()
+
     # 启动定时任务
     setup_scheduler()
 
@@ -305,6 +399,7 @@ async def lifespan(app: FastAPI):
 
     # 关闭时执行
     shutdown_scheduler()
+    await close_redis()
     print("👋 Shutting down Kolvex Backend API...")
 
 
@@ -344,7 +439,14 @@ async def root():
 @app.get("/health")
 async def health_check():
     """健康检查端点 - 用于 Railway 部署"""
-    return {"status": "healthy", "version": settings.APP_VERSION}
+    redis = get_redis()
+    redis_health = await redis.health_check()
+    
+    return {
+        "status": "healthy",
+        "version": settings.APP_VERSION,
+        "redis": redis_health,
+    }
 
 
 # 注册 API 路由
