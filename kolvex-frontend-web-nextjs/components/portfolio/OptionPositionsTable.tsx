@@ -158,7 +158,7 @@ export function OptionPositionsTable({
               const value = safeMarketValue ?? safePrice;
               const cost = (safeAvgPrice as number) / 100;
               const pnl =
-                (pos.weight_percent ?? 0) < 0 ? cost - value : value - cost;
+                (pos.weight_percent ?? 0) < 0 ? cost * 100 - value : value - cost * 100;
               const profit = pnl >= 0;
 
               // Whether to completely hide (secret option)
@@ -235,7 +235,7 @@ export function OptionPositionsTable({
                       )}
                     </div>
                   </TableCell>
-                  <TableCell className="text-center tabular-nums">
+                  <TableCell className="text-center tabular-nums !w-[240px]">
                     <div className="flex justify-center items-center gap-1">
                       {isSecretOption ? (
                         <span className="text-muted-foreground">***</span>
@@ -323,8 +323,8 @@ export function OptionPositionsTable({
                           onToggleVisibility(e, pos.id, pos.is_hidden || false)
                         }
                         className={`p-1.5 rounded-md transition-colors ${pos.is_hidden
-                            ? "text-muted-foreground hover:text-foreground hover:bg-muted"
-                            : "text-green-600 hover:text-green-700 hover:bg-green-50 dark:hover:bg-green-950"
+                          ? "text-muted-foreground hover:text-foreground hover:bg-muted"
+                          : "text-green-600 hover:text-green-700 hover:bg-green-50 dark:hover:bg-green-950"
                           }`}
                         title={
                           pos.is_hidden
