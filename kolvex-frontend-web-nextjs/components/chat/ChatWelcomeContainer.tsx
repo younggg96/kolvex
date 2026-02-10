@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { ChatWelcome } from "./ChatWelcome";
 import { useChatHistory } from "./useChatHistory";
 import { useAvailableProviders } from "@/hooks/useAvailableProviders";
+import { getFirstAvailableModelId } from "./ChatInput";
 import type { AIModel, SearchSource } from "./types";
 
 interface ChatWelcomeContainerProps {
@@ -29,6 +30,12 @@ export function ChatWelcomeContainer({
 
   const { createConversation } = useChatHistory();
   const { availableProviders } = useAvailableProviders();
+
+  // Default to first available model when API keys load
+  useEffect(() => {
+    const first = getFirstAvailableModelId(availableProviders);
+    if (first) setSelectedModel(first);
+  }, [availableProviders]);
 
   const toggleSource = (source: SearchSource) => {
     setActiveSources((prev) => {

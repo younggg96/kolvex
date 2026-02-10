@@ -22,17 +22,6 @@ VALID_PROVIDERS = {
     "grok",
 }
 
-# Map provider -> settings attribute name for server-level keys
-_SERVER_KEY_ATTRS = {
-    "openai": "OPENAI_API_KEY",
-    "anthropic": "ANTHROPIC_API_KEY",
-    "deepseek": "DEEPSEEK_API_KEY",
-    "qwen": "QWEN_API_KEY",
-    "gemini": "GOOGLE_API_KEY",
-    "kimi": "KIMI_API_KEY",
-    "grok": "GROK_API_KEY",
-}
-
 
 class UserApiKeysService:
     """CRUD service for user_api_keys table"""
@@ -165,30 +154,23 @@ class UserApiKeysService:
 
     async def get_available_providers(self, user_id: str) -> list[str]:
         """
-        Get providers that have a usable API key (user-level OR server-level).
+        Get providers for which the user has configured an API key in Settings.
 
-        Returns sorted list of provider names.
+        Only user-configured keys are counted. Used by the frontend to enable
+        model options in the dropdown: only models whose provider has a user
+        key are selectable; others are disabled. If none are set, show
+        "need API key" prompt.
         """
-        from app.core.config import settings
-
-        available = set()
-
-        # 1. Check server-level keys from .env
-        for provider, attr in _SERVER_KEY_ATTRS.items():
-            val = getattr(settings, attr, "")
-            if val and val.strip():
-                available.add(provider)
-
-        # 2. Check user-level keys from DB
         try:
             user_keys = await self.get_keys_dict(user_id)
-            for provider, key in user_keys.items():
-                if key and key.strip():
-                    available.add(provider)
+            available = {
+                provider for provider, key in user_keys.items()
+                if key and key.strip()
+            }
+            return sorted(available)
         except Exception as e:
             logger.warning(f"Failed to load user API keys: {e}")
-
-        return sorted(available)
+            return []
 
 
 # ---------- Helper ----------

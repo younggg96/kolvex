@@ -4,7 +4,7 @@ import { useState, useRef, useCallback, useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { ChatMessageList } from "./ChatMessageList";
-import { ChatInput } from "./ChatInput";
+import { ChatInput, MODEL_CONFIGS } from "./ChatInput";
 import { useChatHistory } from "./useChatHistory";
 import { useAvailableProviders } from "@/hooks/useAvailableProviders";
 import { streamAgentMessage } from "@/lib/chatApi";
@@ -321,10 +321,14 @@ export function ChatDetailContainer({
     });
   };
 
+  // Whether the user has any usable model
+  const isBlocked =
+    availableProviders !== undefined && availableProviders.length === 0;
+
   // ---- Submit user message from input ----
   const handleSubmit = useCallback(
     async (messageText: string) => {
-      if (!messageText.trim() || isLoading) return;
+      if (!messageText.trim() || isLoading || isBlocked) return;
 
       const trimmedMessage = messageText.trim();
       setQuery("");
@@ -366,11 +370,12 @@ export function ChatDetailContainer({
         setActiveTools([]);
       }
     },
-    [conversationId, isLoading, addMessage, processAgentStream, selectedModel, activeSources]
+    [conversationId, isLoading, isBlocked, addMessage, processAgentStream, selectedModel, activeSources]
   );
 
   const handleFormSubmit = (e?: React.FormEvent) => {
     e?.preventDefault();
+    if (isBlocked) return;
     handleSubmit(query);
   };
 
@@ -388,6 +393,7 @@ export function ChatDetailContainer({
           isLoading={isLoading}
           messagesEndRef={messagesEndRef}
           activeTools={activeTools}
+          modelName={MODEL_CONFIGS.find((m) => m.id === selectedModel)?.name}
         />
         {/* Chat Input */}
         <div className="fixed bottom-0 left-0 right-0 border-t border-gray-200 dark:border-white/10 bg-white/80 dark:bg-background-dark/80 backdrop-blur-xl">

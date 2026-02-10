@@ -4,8 +4,18 @@ import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Zap } from "lucide-react";
 import { ChipButton } from "@/components/ui/chip-button";
-import { ChatInput } from "./ChatInput";
+import { ChatInput, MODEL_CONFIGS } from "./ChatInput";
 import type { ChatWelcomeProps } from "./types";
+
+const PROVIDER_NAME_TO_ID: Record<string, string> = {
+  OpenAI: "openai",
+  Anthropic: "anthropic",
+  DeepSeek: "deepseek",
+  Google: "gemini",
+  Qwen: "qwen",
+  Kimi: "kimi",
+  xAI: "grok",
+};
 
 const suggestions = [
   { text: "Analyze NVIDIA stock", isChat: true },
@@ -28,8 +38,20 @@ export function ChatWelcome({
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const router = useRouter();
 
+  // Whether the user has any usable model
+  const hasAnyModel =
+    availableProviders !== undefined &&
+    availableProviders.length > 0 &&
+    MODEL_CONFIGS.some((m) => {
+      const bid = PROVIDER_NAME_TO_ID[m.provider];
+      return bid ? availableProviders.includes(bid) : false;
+    });
+
+  const isBlocked = availableProviders !== undefined && !hasAnyModel;
+
   const handleSubmit = (e?: React.FormEvent) => {
     e?.preventDefault();
+    if (isBlocked) return;
     if (query.trim()) {
       onSubmit(query.trim());
       setQuery("");
@@ -38,6 +60,7 @@ export function ChatWelcome({
 
   const handleSuggestionClick = (suggestion: (typeof suggestions)[0]) => {
     if (suggestion.isChat) {
+      if (isBlocked) return;
       onSubmit(suggestion.text);
     } else if (suggestion.href) {
       router.push(suggestion.href);
@@ -88,12 +111,13 @@ export function ChatWelcome({
           availableProviders={availableProviders}
         />
 
-        {/* Quick Suggestions */}
+        {/* Quick Suggestions — only chat suggestions are blocked when no key */}
         <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
           {suggestions.map((suggestion, index) => (
             <ChipButton
               key={index}
               onClick={() => handleSuggestionClick(suggestion)}
+              disabled={suggestion.isChat && isBlocked}
               icon={<Zap className="w-3 h-3 text-primary/70" />}
             >
               {suggestion.text}

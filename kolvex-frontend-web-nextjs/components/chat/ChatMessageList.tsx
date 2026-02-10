@@ -37,9 +37,11 @@ function getToolIcon(toolName: string) {
 function AgentActivityIndicator({
   tools,
   isThinking,
+  modelName,
 }: {
   tools: ToolStatus[];
   isThinking: boolean;
+  modelName?: string;
 }) {
   if (!isThinking && tools.length === 0) return null;
 
@@ -64,9 +66,16 @@ function AgentActivityIndicator({
 
         {/* Compact status */}
         <div className="flex flex-col gap-1.5 min-w-0">
-          <span className="text-xs font-medium text-muted-foreground px-0.5">
-            Kolvex
-          </span>
+          <div className="flex items-center gap-2 px-0.5">
+            <span className="text-xs font-medium text-muted-foreground">
+              Kolvex
+            </span>
+            {modelName && (
+              <span className="text-[10px] text-muted-foreground/50 font-medium px-1.5 py-0.5 rounded-full bg-muted/50 border border-border-light/50 dark:border-border-dark/50">
+                {modelName}
+              </span>
+            )}
+          </div>
           <div
             className={cn(
               "px-3.5 py-2.5 rounded-2xl rounded-tl-sm",
@@ -135,6 +144,7 @@ export function ChatMessageList({
   isLoading = false,
   messagesEndRef,
   activeTools = [],
+  modelName,
 }: ChatMessageListProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const endRef = useRef<HTMLDivElement>(null);
@@ -216,6 +226,7 @@ export function ChatMessageList({
             <AgentActivityIndicator
               tools={activeTools}
               isThinking={showThinking}
+              modelName={modelName}
             />
           )}
 
@@ -225,6 +236,7 @@ export function ChatMessageList({
               role="assistant"
               content={streamingContent}
               isStreaming={true}
+              modelName={modelName}
             />
           )}
         </div>

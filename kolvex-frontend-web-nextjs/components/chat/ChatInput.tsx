@@ -30,7 +30,7 @@ import type {
 } from "./types";
 
 // Model configurations
-const MODEL_CONFIGS: AIModelConfig[] = [
+export const MODEL_CONFIGS: AIModelConfig[] = [
   // ---- DeepSeek (默认, 性价比高) ----
   {
     id: "deepseek-chat",
@@ -149,6 +149,18 @@ const PROVIDER_NAME_TO_ID: Record<string, string> = {
   xAI: "grok",
 };
 
+/** Get the first available model ID from available provider IDs (for default selection) */
+export function getFirstAvailableModelId(
+  availableProviders: string[] | undefined
+): AIModel | null {
+  if (!availableProviders || availableProviders.length === 0) return null;
+  const first = MODEL_CONFIGS.find((m) => {
+    const id = PROVIDER_NAME_TO_ID[m.provider];
+    return id ? availableProviders.includes(id) : false;
+  });
+  return first ? (first.id as AIModel) : null;
+}
+
 interface SourceChipProps {
   icon: React.ReactNode;
   label: string;
@@ -198,6 +210,16 @@ function ModelSelector({
   const hasAnyAvailable =
     !availableProviders || MODEL_CONFIGS.some((m) => isModelAvailable(m));
 
+  const isCurrentModelAvailable = currentModel
+    ? isModelAvailable(currentModel)
+    : false;
+
+  const triggerLabel = !hasAnyAvailable
+    ? "Add API key"
+    : isCurrentModelAvailable
+      ? currentModel?.name
+      : "Select model";
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -208,14 +230,20 @@ function ModelSelector({
             "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium",
             "focus:outline-none focus-visible:ring-0 focus-visible:ring-offset-0",
             "data-[state=open]:ring-0 data-[state=open]:outline-none",
-            "text-muted-foreground hover:text-foreground hover:bg-muted/50 border !border-transparent"
+            !hasAnyAvailable
+              ? "text-muted-foreground"
+              : "text-foreground/80 hover:text-foreground hover:bg-muted/50 border !border-border-light/50 dark:!border-border-dark/50"
           )}
         >
-          <Sparkles className="w-3.5 h-3.5" />
+          {hasAnyAvailable ? (
+            <Sparkles className="w-3.5 h-3.5 text-primary/70" />
+          ) : (
+            <Lock className="w-3.5 h-3.5 text-muted-foreground" />
+          )}
           <span className="hidden sm:inline text-xs">
-            {currentModel?.name || "Select Model"}
+            {triggerLabel}
           </span>
-          <ChevronDown className="w-3.5 h-3.5" />
+          <ChevronDown className="w-3 h-3 text-muted-foreground" />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent
@@ -223,19 +251,19 @@ function ModelSelector({
         side="top"
         className="w-52 max-h-72 overflow-y-auto"
       >
-        {/* Prompt when no providers available */}
+        {/* Prompt when no API keys configured */}
         {!hasAnyAvailable && (
           <div className="px-3 py-3 text-center">
             <Lock className="w-4 h-4 mx-auto mb-1.5 text-muted-foreground" />
             <p className="text-[11px] text-muted-foreground mb-2">
-              No API keys configured
+              Add an API key in Settings to unlock models
             </p>
             <Link
               href="/dashboard/settings?tab=api-keys"
               className="inline-flex items-center gap-1 text-[11px] text-primary hover:underline font-medium"
             >
               <Settings className="w-3 h-3" />
-              Set up in Settings
+              Settings → API Keys
             </Link>
           </div>
         )}
@@ -416,28 +444,37 @@ export function ChatInput({
     }
   }, [availableProviders, isCurrentModelAvailable, onSelectModel, selectedModel]);
 
+  // Whether chat is completely blocked (no API keys)
+  const isBlocked = availableProviders !== undefined && !hasAnyModel;
+
   // Send is disabled when: empty text, loading, or no available model
-  const isSendDisabled =
-    !value.trim() || isLoading || (availableProviders !== undefined && !hasAnyModel);
+  const isSendDisabled = !value.trim() || isLoading || isBlocked;
+
+  // Block form submit when no API keys
+  const handleFormSubmit = (e?: React.FormEvent) => {
+    e?.preventDefault();
+    if (isBlocked) return;
+    onSubmit(e);
+  };
 
   return (
-    <form onSubmit={onSubmit}>
-      {/* No API keys warning banner */}
+    <form onSubmit={handleFormSubmit}>
+      {/* Need API key prompt when user has not configured any keys */}
       {availableProviders !== undefined && !hasAnyModel && (
         <div className="mb-2 p-3 rounded-xl border border-amber-200 dark:border-amber-500/20 bg-amber-50 dark:bg-amber-500/10">
           <div className="flex items-start gap-2">
             <Lock className="w-4 h-4 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" />
             <div>
               <p className="text-xs font-medium text-amber-800 dark:text-amber-300">
-                No API keys configured
+                API key required
               </p>
               <p className="text-[11px] text-amber-700/80 dark:text-amber-400/70 mt-0.5">
-                You need to add at least one LLM provider API key to start chatting.{" "}
+                Add at least one model API key in Settings to unlock the model dropdown and start chatting.{" "}
                 <Link
                   href="/dashboard/settings?tab=api-keys"
                   className="text-primary hover:underline font-medium"
                 >
-                  Go to Settings →
+                  Settings → API Keys
                 </Link>
               </p>
             </div>
@@ -465,9 +502,13 @@ export function ChatInput({
             onChange={(e) => onChange(e.target.value)}
             onFocus={onFocus}
             onBlur={onBlur}
-            onKeyDown={onKeyDown}
-            placeholder={placeholder}
-            disabled={isLoading}
+            onKeyDown={isBlocked ? undefined : onKeyDown}
+            placeholder={
+              isBlocked
+                ? "Please add an API key in Settings first..."
+                : placeholder
+            }
+            disabled={isLoading || isBlocked}
             className={cn(
               "flex-1 bg-transparent resize-none outline-none",
               "text-foreground placeholder:text-muted-foreground/50",

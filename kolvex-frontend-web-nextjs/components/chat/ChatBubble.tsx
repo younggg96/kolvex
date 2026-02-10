@@ -15,6 +15,7 @@ export function ChatBubble({
   timestamp,
   isFirst,
   onRetry,
+  modelName,
 }: ChatBubbleProps) {
   const [copied, setCopied] = useState(false);
   const isUser = role === "user";
@@ -92,6 +93,11 @@ export function ChatBubble({
             <span className="text-xs font-medium text-muted-foreground">
               Kolvex
             </span>
+            {modelName && (
+              <span className="text-[10px] text-muted-foreground/50 font-medium px-1.5 py-0.5 rounded-full bg-muted/50 border border-border-light/50 dark:border-border-dark/50">
+                {modelName}
+              </span>
+            )}
             {timestamp && (
               <span className="text-[11px] text-muted-foreground/60">
                 {formatTime(timestamp)}

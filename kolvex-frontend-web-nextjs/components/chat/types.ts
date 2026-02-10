@@ -79,6 +79,8 @@ export interface ChatBubbleProps {
   timestamp?: Date;
   isFirst?: boolean;
   onRetry?: () => void;
+  /** Display name of the model that generated this message (assistant only) */
+  modelName?: string;
 }
 
 export interface ChatHistorySidebarProps {
@@ -134,4 +136,6 @@ export interface ChatMessageListProps {
   isLoading?: boolean;
   messagesEndRef?: React.RefObject<HTMLDivElement>;
   activeTools?: ToolStatus[];
+  /** Display name of the currently selected model */
+  modelName?: string;
 }
