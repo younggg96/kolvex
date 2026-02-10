@@ -19,6 +19,9 @@ export function ChatWelcome({
   isLoading = false,
   activeSources,
   onToggleSource,
+  selectedModel,
+  onSelectModel,
+  availableProviders,
 }: ChatWelcomeProps) {
   const [query, setQuery] = useState("");
   const [isFocused, setIsFocused] = useState(false);
@@ -77,7 +80,12 @@ export function ChatWelcome({
           onBlur={() => setIsFocused(false)}
           activeSources={activeSources}
           onToggleSource={onToggleSource}
+          showSourceToggle={true}
+          showModelSelector={!!onSelectModel}
+          selectedModel={selectedModel}
+          onSelectModel={onSelectModel}
           inputRef={inputRef}
+          availableProviders={availableProviders}
         />
 
         {/* Quick Suggestions */}

@@ -75,23 +75,37 @@ services:
       OLLAMA_BASE_URL: http://ollama:11434
       OLLAMA_MODEL: ${OLLAMA_MODEL:-gemma2:2b}
       OLLAMA_TIMEOUT: ${OLLAMA_TIMEOUT:-120}
+      # ===== LangGraph AI Agent 配置 =====
+      LLM_PROVIDER: ${LLM_PROVIDER:-openai}
+      LLM_MODEL: ${LLM_MODEL:-gpt-4o-mini}
+      LLM_TEMPERATURE: ${LLM_TEMPERATURE:-0.7}
+      LLM_FALLBACK_PROVIDER: ${LLM_FALLBACK_PROVIDER:-}
+      LLM_FALLBACK_MODEL: ${LLM_FALLBACK_MODEL:-}
+      # LLM API Keys
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-}
+      QWEN_API_KEY: ${QWEN_API_KEY:-}
+      GOOGLE_API_KEY: ${GOOGLE_API_KEY:-}
+      KIMI_API_KEY: ${KIMI_API_KEY:-}
+      GROK_API_KEY: ${GROK_API_KEY:-}
+      # Web Search
+      TAVILY_API_KEY: ${TAVILY_API_KEY:-}
       # Redis 缓存配置
       REDIS_URL: redis://redis:6379/0
       REDIS_HOST: redis
       REDIS_PORT: 6379
       # Finnhub 股票数据 API
       FINNHUB_API_KEY: ${FINNHUB_API_KEY:-}
-      # OpenAI API (用于 AI 分析)
-      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
-      # Twilio (用于 WhatsApp 通知)
-      TWILIO_ACCOUNT_SID: ${TWILIO_ACCOUNT_SID:-}
-      TWILIO_AUTH_TOKEN: ${TWILIO_AUTH_TOKEN:-}
-      TWILIO_WHATSAPP_FROM: ${TWILIO_WHATSAPP_FROM:-}
-      # Benzinga API
+      # Benzinga 新闻 API
       BENZINGA_API_KEY: ${BENZINGA_API_KEY:-}
       # Email Service
       RESEND_API_KEY: ${RESEND_API_KEY:-}
       EMAIL_FROM_ADDRESS: ${EMAIL_FROM_ADDRESS:-}
+      # Twilio (用于 WhatsApp 通知)
+      TWILIO_ACCOUNT_SID: ${TWILIO_ACCOUNT_SID:-}
+      TWILIO_AUTH_TOKEN: ${TWILIO_AUTH_TOKEN:-}
+      TWILIO_WHATSAPP_FROM: ${TWILIO_WHATSAPP_FROM:-}
     depends_on:
       db:
         condition: service_healthy

@@ -19,6 +19,7 @@ from app.api.routes.dify_knowledge import router as dify_knowledge_router
 from app.api.routes.news_ai import router as news_ai_router
 from app.api.routes.admin import router as admin_router
 from app.api.routes.stock_alerts import router as stock_alerts_router
+from app.api.routes.user_api_keys import router as user_api_keys_router
 
 # Create API router
 api_router = APIRouter()
@@ -45,5 +46,6 @@ api_router.include_router(chat_router)
 api_router.include_router(dify_knowledge_router)
 api_router.include_router(admin_router, prefix="/admin", tags=["Admin"])
 api_router.include_router(stock_alerts_router)
+api_router.include_router(user_api_keys_router)
 
 __all__ = ["api_router"]

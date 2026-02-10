@@ -30,6 +30,12 @@ import {
   ZoomOut,
   RotateCcw,
   Maximize2,
+  Key,
+  Eye,
+  EyeOff,
+  ExternalLink,
+  Trash2,
+  Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
 import DashboardLayout from "@/components/layout/DashboardLayout";
@@ -65,9 +71,17 @@ import {
   updateUserNotifications,
   type UserProfileUpdate,
 } from "@/lib/api/userApi";
+import {
+  getUserApiKeys,
+  upsertUserApiKey,
+  deleteUserApiKey,
+  PROVIDER_INFO,
+  type UserApiKey,
+} from "@/lib/api/userApiKeysApi";
 
 const settingsTabs = [
   { value: "account", icon: User, label: "Account" },
+  { value: "api-keys", icon: Key, label: "API Keys" },
   { value: "billing", icon: CreditCard, label: "Billing" },
   { value: "notifications", icon: Bell, label: "Notifications" },
   { value: "preferences", icon: Settings, label: "Preferences" },
@@ -178,6 +192,65 @@ function SettingsContent() {
 
   // Notification settings state - simplified to just enabled/disabled
   const [emailNotificationsEnabled, setEmailNotificationsEnabled] = useState(true);
+
+  // API Keys state
+  const [apiKeys, setApiKeys] = useState<UserApiKey[]>([]);
+  const [supportedProviders, setSupportedProviders] = useState<string[]>([]);
+  const [apiKeysLoading, setApiKeysLoading] = useState(false);
+  const [apiKeySaving, setApiKeySaving] = useState<string | null>(null); // provider being saved
+  const [apiKeyDeleting, setApiKeyDeleting] = useState<string | null>(null);
+  const [apiKeyInputs, setApiKeyInputs] = useState<Record<string, string>>({});
+  const [apiKeyVisible, setApiKeyVisible] = useState<Record<string, boolean>>({});
+
+  const loadApiKeys = useCallback(async () => {
+    setApiKeysLoading(true);
+    try {
+      const data = await getUserApiKeys();
+      setApiKeys(data.keys);
+      setSupportedProviders(data.supported_providers);
+    } catch (error: any) {
+      console.error("Failed to load API keys:", error);
+    } finally {
+      setApiKeysLoading(false);
+    }
+  }, []);
+
+  // Load API keys when switching to the tab
+  useEffect(() => {
+    if (activeTab === "api-keys") {
+      loadApiKeys();
+    }
+  }, [activeTab, loadApiKeys]);
+
+  const handleSaveApiKey = async (provider: string) => {
+    const key = apiKeyInputs[provider]?.trim();
+    if (!key) return;
+
+    setApiKeySaving(provider);
+    try {
+      await upsertUserApiKey(provider, key);
+      toast.success(`${PROVIDER_INFO[provider]?.name || provider} API key saved`);
+      setApiKeyInputs((prev) => ({ ...prev, [provider]: "" }));
+      await loadApiKeys();
+    } catch (error: any) {
+      toast.error(error.message || "Failed to save API key");
+    } finally {
+      setApiKeySaving(null);
+    }
+  };
+
+  const handleDeleteApiKey = async (provider: string) => {
+    setApiKeyDeleting(provider);
+    try {
+      await deleteUserApiKey(provider);
+      toast.success(`${PROVIDER_INFO[provider]?.name || provider} API key removed`);
+      await loadApiKeys();
+    } catch (error: any) {
+      toast.error(error.message || "Failed to delete API key");
+    } finally {
+      setApiKeyDeleting(null);
+    }
+  };
 
   // Load profile data into form
   useEffect(() => {
@@ -696,32 +769,28 @@ function SettingsContent() {
                                     onDragOver={handleDragOver}
                                     onDragLeave={handleDragLeave}
                                     onDrop={handleDrop}
-                                    className={`flex flex-col items-center justify-center w-full h-48 sm:h-64 border-2 border-dashed rounded-xl cursor-pointer transition-all duration-200 ${
-                                      isDragging
+                                    className={`flex flex-col items-center justify-center w-full h-48 sm:h-64 border-2 border-dashed rounded-xl cursor-pointer transition-all duration-200 ${isDragging
                                         ? "border-primary bg-primary/10 dark:bg-primary/20 scale-[1.02]"
                                         : "border-gray-300 dark:border-white/10 bg-gray-50 dark:bg-white/5 hover:bg-gray-100 dark:hover:bg-white/10"
-                                    }`}
+                                      }`}
                                   >
                                     <div className="flex flex-col items-center justify-center pt-4 pb-5 sm:pt-5 sm:pb-6 px-4">
                                       <div
-                                        className={`mb-3 sm:mb-4 transition-transform duration-200 ${
-                                          isDragging ? "scale-110" : ""
-                                        }`}
+                                        className={`mb-3 sm:mb-4 transition-transform duration-200 ${isDragging ? "scale-110" : ""
+                                          }`}
                                       >
                                         <ImageIcon
-                                          className={`w-10 h-10 sm:w-12 sm:h-12 ${
-                                            isDragging
+                                          className={`w-10 h-10 sm:w-12 sm:h-12 ${isDragging
                                               ? "text-primary"
                                               : "text-gray-400 dark:text-white/40"
-                                          }`}
+                                            }`}
                                         />
                                       </div>
                                       <p
-                                        className={`mb-2 text-xs sm:text-sm text-center ${
-                                          isDragging
+                                        className={`mb-2 text-xs sm:text-sm text-center ${isDragging
                                             ? "text-primary font-medium"
                                             : "text-gray-600 dark:text-white/60"
-                                        }`}
+                                          }`}
                                       >
                                         {isDragging ? (
                                           "Drop image here"
@@ -887,6 +956,162 @@ function SettingsContent() {
                   </SectionCard>
                 </TabsContent>
 
+                {/* API Keys Tab */}
+                <TabsContent value="api-keys" className="mt-0">
+                  <SectionCard
+                    title="API Keys"
+                    useSectionHeader
+                    sectionHeaderIcon={Key}
+                    sectionHeaderSubtitle="Use your own API keys for LLM providers. Your keys take priority over the default server keys."
+                  >
+                    <div className="px-4 pb-4 space-y-3">
+                      {apiKeysLoading ? (
+                        <div className="flex items-center justify-center py-8">
+                          <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+                          <span className="ml-2 text-sm text-muted-foreground">Loading...</span>
+                        </div>
+                      ) : (
+                        <>
+                          {/* Info banner */}
+                          <div className="p-3 rounded-lg bg-primary/10 dark:bg-primary/20 border border-primary/20 dark:border-primary/30">
+                            <p className="text-xs text-primary dark:text-primary-foreground">
+                              Your API keys are stored securely and encrypted at rest. They are only used when you send messages —
+                              if a key is set for a provider, it will be used instead of the default server key.
+                            </p>
+                          </div>
+
+                          {/* Provider list */}
+                          <div className="space-y-3">
+                            {(supportedProviders.length > 0
+                              ? supportedProviders
+                              : Object.keys(PROVIDER_INFO)
+                            ).map((provider) => {
+                              const info = PROVIDER_INFO[provider];
+                              const existingKey = apiKeys.find(
+                                (k) => k.provider === provider
+                              );
+                              const isSaving = apiKeySaving === provider;
+                              const isDeleting = apiKeyDeleting === provider;
+                              const inputValue = apiKeyInputs[provider] || "";
+                              const isVisible = apiKeyVisible[provider] || false;
+
+                              if (!info) return null;
+
+                              return (
+                                <div
+                                  key={provider}
+                                  className="p-3 sm:p-4 rounded-lg border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/[0.02] hover:bg-gray-100 dark:hover:bg-white/[0.04] transition-colors"
+                                >
+                                  {/* Provider header */}
+                                  <div className="flex items-center justify-between mb-2">
+                                    <div>
+                                      <div className="flex items-center gap-2">
+                                        <h4 className="text-sm font-medium text-gray-900 dark:text-white">
+                                          {info.name}
+                                        </h4>
+                                        {existingKey && (
+                                          <span className="px-1.5 py-0.5 text-[10px] font-medium rounded bg-green-100 dark:bg-green-500/20 text-green-700 dark:text-green-400">
+                                            Configured
+                                          </span>
+                                        )}
+                                      </div>
+                                      <p className="text-[11px] text-gray-500 dark:text-white/50 mt-0.5">
+                                        {info.description}
+                                      </p>
+                                    </div>
+                                    <a
+                                      href={info.docsUrl}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="text-xs text-primary hover:text-primary/80 flex items-center gap-1 flex-shrink-0"
+                                    >
+                                      Get Key
+                                      <ExternalLink className="w-3 h-3" />
+                                    </a>
+                                  </div>
+
+                                  {/* Existing key display */}
+                                  {existingKey && (
+                                    <div className="flex items-center gap-2 mb-2">
+                                      <code className="flex-1 text-xs px-2.5 py-1.5 rounded bg-gray-200 dark:bg-white/10 text-gray-600 dark:text-white/60 font-mono truncate">
+                                        {existingKey.api_key_masked}
+                                      </code>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => handleDeleteApiKey(provider)}
+                                        disabled={isDeleting}
+                                        className="h-7 w-7 p-0 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 flex-shrink-0"
+                                      >
+                                        {isDeleting ? (
+                                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                        ) : (
+                                          <Trash2 className="w-3.5 h-3.5" />
+                                        )}
+                                      </Button>
+                                    </div>
+                                  )}
+
+                                  {/* Input for new / replacement key */}
+                                  <div className="flex items-center gap-2">
+                                    <div className="relative flex-1">
+                                      <Input
+                                        type={isVisible ? "text" : "password"}
+                                        placeholder={existingKey ? "Replace with new key..." : info.placeholder}
+                                        value={inputValue}
+                                        onChange={(e) =>
+                                          setApiKeyInputs((prev) => ({
+                                            ...prev,
+                                            [provider]: e.target.value,
+                                          }))
+                                        }
+                                        onKeyDown={(e) => {
+                                          if (e.key === "Enter" && inputValue.trim()) {
+                                            handleSaveApiKey(provider);
+                                          }
+                                        }}
+                                        className="h-8 text-xs pr-8 font-mono"
+                                      />
+                                      <button
+                                        type="button"
+                                        onClick={() =>
+                                          setApiKeyVisible((prev) => ({
+                                            ...prev,
+                                            [provider]: !prev[provider],
+                                          }))
+                                        }
+                                        className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-white/60"
+                                      >
+                                        {isVisible ? (
+                                          <EyeOff className="w-3.5 h-3.5" />
+                                        ) : (
+                                          <Eye className="w-3.5 h-3.5" />
+                                        )}
+                                      </button>
+                                    </div>
+                                    <Button
+                                      size="sm"
+                                      onClick={() => handleSaveApiKey(provider)}
+                                      disabled={!inputValue.trim() || isSaving}
+                                      className="h-8 text-xs px-3 flex-shrink-0"
+                                    >
+                                      {isSaving ? (
+                                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                      ) : (
+                                        "Save"
+                                      )}
+                                    </Button>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  </SectionCard>
+                </TabsContent>
+
                 {/* Billing Tab */}
                 <TabsContent value="billing" className="mt-0">
                   <SectionCard
@@ -1014,28 +1239,25 @@ function SettingsContent() {
                                 <button
                                   key={mode.value}
                                   onClick={() => handleThemeChange(mode.value)}
-                                  className={`w-[100px] flex flex-col items-center gap-1.5 sm:gap-2 p-2 sm:p-3 rounded-lg border-2 transition-all duration-200 ${
-                                    isActive
+                                  className={`w-[100px] flex flex-col items-center gap-1.5 sm:gap-2 p-2 sm:p-3 rounded-lg border-2 transition-all duration-200 ${isActive
                                       ? "border-primary bg-primary/5 dark:bg-primary/10"
                                       : "border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 hover:border-gray-300 dark:hover:border-white/20 hover:bg-gray-100 dark:hover:bg-white/10"
-                                  }`}
+                                    }`}
                                 >
                                   <div
-                                    className={`w-8 h-8 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center transition-colors ${
-                                      isActive
+                                    className={`w-8 h-8 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center transition-colors ${isActive
                                         ? "bg-primary text-white"
                                         : "dark:bg-card-dark text-gray-600 dark:text-white/70"
-                                    }`}
+                                      }`}
                                   >
                                     <Icon className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
                                   </div>
                                   <div className="text-center">
                                     <p
-                                      className={`font-medium text-[10px] sm:text-xs ${
-                                        isActive
+                                      className={`font-medium text-[10px] sm:text-xs ${isActive
                                           ? "text-primary"
                                           : "text-gray-900 dark:text-white"
-                                      }`}
+                                        }`}
                                     >
                                       {mode.label}
                                     </p>

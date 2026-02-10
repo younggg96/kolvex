@@ -10,7 +10,10 @@ import {
   Sparkles,
   Check,
   Briefcase,
+  Lock,
+  Settings,
 } from "lucide-react";
+import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -28,6 +31,21 @@ import type {
 
 // Model configurations
 const MODEL_CONFIGS: AIModelConfig[] = [
+  // ---- DeepSeek (默认, 性价比高) ----
+  {
+    id: "deepseek-chat",
+    name: "DeepSeek Chat",
+    provider: "DeepSeek",
+    description: "Cost effective, default",
+  },
+  {
+    id: "deepseek-reasoner",
+    name: "DeepSeek R1",
+    provider: "DeepSeek",
+    description: "Advanced reasoning",
+    isPro: true,
+  },
+  // ---- OpenAI ----
   {
     id: "gpt-4o",
     name: "GPT-4o",
@@ -41,46 +59,95 @@ const MODEL_CONFIGS: AIModelConfig[] = [
     provider: "OpenAI",
     description: "Fast and efficient",
   },
+  // ---- Anthropic (Claude 4.x) ----
   {
-    id: "claude-3.5-sonnet",
-    name: "Claude 3.5 Sonnet",
+    id: "claude-opus-4-6",
+    name: "Claude Opus 4.6",
     provider: "Anthropic",
-    description: "Best for analysis",
+    description: "Most intelligent model",
     isPro: true,
   },
   {
-    id: "claude-3.5-haiku",
-    name: "Claude 3.5 Haiku",
+    id: "claude-sonnet-4-5",
+    name: "Claude Sonnet 4.5",
     provider: "Anthropic",
-    description: "Fast responses",
+    description: "Speed & intelligence balance",
+    isPro: true,
+  },
+  {
+    id: "claude-haiku-4-5",
+    name: "Claude Haiku 4.5",
+    provider: "Anthropic",
+    description: "Fastest Claude model",
+  },
+  // ---- Google Gemini ----
+  {
+    id: "gemini-2.5-pro",
+    name: "Gemini 2.5 Pro",
+    provider: "Google",
+    description: "Most capable Google model",
+    isPro: true,
   },
   {
     id: "gemini-2.0-flash",
     name: "Gemini 2.0 Flash",
     provider: "Google",
-    description: "Latest Google model",
+    description: "Fast and latest",
   },
+  // ---- Qwen ----
   {
-    id: "gemini-1.5-pro",
-    name: "Gemini 1.5 Pro",
-    provider: "Google",
-    description: "Long context window",
+    id: "qwen-max",
+    name: "Qwen Max",
+    provider: "Qwen",
+    description: "Alibaba's most powerful",
     isPro: true,
   },
   {
-    id: "deepseek-chat",
-    name: "DeepSeek Chat",
-    provider: "DeepSeek",
-    description: "Cost effective",
+    id: "qwen-plus",
+    name: "Qwen Plus",
+    provider: "Qwen",
+    description: "Balanced performance",
+  },
+  // ---- Kimi (Moonshot) ----
+  {
+    id: "moonshot-v1-128k",
+    name: "Kimi 128K",
+    provider: "Kimi",
+    description: "Ultra-long context",
+    isPro: true,
   },
   {
-    id: "deepseek-reasoner",
-    name: "DeepSeek R1",
-    provider: "DeepSeek",
-    description: "Advanced reasoning",
+    id: "moonshot-v1-8k",
+    name: "Kimi 8K",
+    provider: "Kimi",
+    description: "Fast Kimi model",
+  },
+  // ---- Grok (xAI) ----
+  {
+    id: "grok-3",
+    name: "Grok 3",
+    provider: "xAI",
+    description: "xAI flagship model",
     isPro: true,
+  },
+  {
+    id: "grok-3-fast",
+    name: "Grok 3 Fast",
+    provider: "xAI",
+    description: "Fast Grok model",
   },
 ];
+
+// Map frontend display provider name → backend provider ID
+const PROVIDER_NAME_TO_ID: Record<string, string> = {
+  OpenAI: "openai",
+  Anthropic: "anthropic",
+  DeepSeek: "deepseek",
+  Google: "gemini",
+  Qwen: "qwen",
+  Kimi: "kimi",
+  xAI: "grok",
+};
 
 interface SourceChipProps {
   icon: React.ReactNode;
@@ -113,11 +180,23 @@ function SourceChip({ icon, label, active, onClick }: SourceChipProps) {
 function ModelSelector({
   selectedModel,
   onSelectModel,
+  availableProviders,
 }: {
   selectedModel: AIModel;
   onSelectModel: (model: AIModel) => void;
+  availableProviders?: string[];
 }) {
   const currentModel = MODEL_CONFIGS.find((m) => m.id === selectedModel);
+
+  // Check if a model's provider is available
+  const isModelAvailable = (model: AIModelConfig): boolean => {
+    if (!availableProviders) return true; // Still loading → show all as enabled
+    const backendId = PROVIDER_NAME_TO_ID[model.provider];
+    return backendId ? availableProviders.includes(backendId) : false;
+  };
+
+  const hasAnyAvailable =
+    !availableProviders || MODEL_CONFIGS.some((m) => isModelAvailable(m));
 
   return (
     <DropdownMenu>
@@ -142,40 +221,69 @@ function ModelSelector({
       <DropdownMenuContent
         align="start"
         side="top"
-        className="w-44 max-h-64 overflow-y-auto"
+        className="w-52 max-h-72 overflow-y-auto"
       >
-        {MODEL_CONFIGS.map((model) => (
-          <DropdownMenuItem
-            key={model.id}
-            onClick={() => onSelectModel(model.id)}
-            className={cn(
-              "flex items-center gap-2 cursor-pointer",
-              selectedModel === model.id && "bg-accent"
-            )}
-          >
-            <Check
+        {/* Prompt when no providers available */}
+        {!hasAnyAvailable && (
+          <div className="px-3 py-3 text-center">
+            <Lock className="w-4 h-4 mx-auto mb-1.5 text-muted-foreground" />
+            <p className="text-[11px] text-muted-foreground mb-2">
+              No API keys configured
+            </p>
+            <Link
+              href="/dashboard/settings?tab=api-keys"
+              className="inline-flex items-center gap-1 text-[11px] text-primary hover:underline font-medium"
+            >
+              <Settings className="w-3 h-3" />
+              Set up in Settings
+            </Link>
+          </div>
+        )}
+
+        {MODEL_CONFIGS.map((model) => {
+          const available = isModelAvailable(model);
+
+          return (
+            <DropdownMenuItem
+              key={model.id}
+              onClick={() => available && onSelectModel(model.id)}
+              disabled={!available}
               className={cn(
-                "w-3 h-3 flex-shrink-0 text-primary",
-                selectedModel === model.id ? "opacity-100" : "opacity-0"
-              )}
-            />
-            <span
-              className={cn(
-                "text-xs",
-                selectedModel === model.id
-                  ? "text-primary"
-                  : "text-muted-foreground"
+                "flex items-center gap-2",
+                available ? "cursor-pointer" : "cursor-not-allowed opacity-40",
+                selectedModel === model.id && available && "bg-accent"
               )}
             >
-              {model.name}
-            </span>
-            {model.isPro && (
-              <span className="ml-auto px-1 py-0.5 text-[9px] font-medium rounded bg-amber-500/10 text-amber-600 dark:text-amber-400">
-                Pro
+              {available ? (
+                <Check
+                  className={cn(
+                    "w-3 h-3 flex-shrink-0 text-primary",
+                    selectedModel === model.id ? "opacity-100" : "opacity-0"
+                  )}
+                />
+              ) : (
+                <Lock className="w-3 h-3 flex-shrink-0 text-muted-foreground/50" />
+              )}
+              <span
+                className={cn(
+                  "text-xs flex-1",
+                  !available
+                    ? "text-muted-foreground/50"
+                    : selectedModel === model.id
+                      ? "text-primary"
+                      : "text-muted-foreground"
+                )}
+              >
+                {model.name}
               </span>
-            )}
-          </DropdownMenuItem>
-        ))}
+              {model.isPro && available && (
+                <span className="ml-auto px-1 py-0.5 text-[9px] font-medium rounded bg-amber-500/10 text-amber-600 dark:text-amber-400">
+                  Pro
+                </span>
+              )}
+            </DropdownMenuItem>
+          );
+        })}
       </DropdownMenuContent>
     </DropdownMenu>
   );
@@ -222,9 +330,10 @@ export function ChatInput({
   onToggleSource,
   showSourceToggle = true,
   inputRef: externalRef,
-  selectedModel = "gpt-4o-mini",
+  selectedModel = "deepseek-chat",
   onSelectModel,
   showModelSelector = true,
+  availableProviders,
 }: ChatInputProps) {
   const internalRef = useRef<HTMLTextAreaElement>(null);
   const inputRef = externalRef || internalRef;
@@ -271,8 +380,71 @@ export function ChatInput({
     (showSourceToggle && onToggleSource) ||
     (showModelSelector && onSelectModel);
 
+  // Check if current model's provider is available
+  const isCurrentModelAvailable = (() => {
+    if (!availableProviders) return true; // still loading
+    const currentConfig = MODEL_CONFIGS.find((m) => m.id === selectedModel);
+    if (!currentConfig) return false;
+    const backendId = PROVIDER_NAME_TO_ID[currentConfig.provider];
+    return backendId ? availableProviders.includes(backendId) : false;
+  })();
+
+  const hasAnyModel =
+    !availableProviders ||
+    availableProviders.length === 0
+      ? false
+      : MODEL_CONFIGS.some((m) => {
+          const bid = PROVIDER_NAME_TO_ID[m.provider];
+          return bid ? availableProviders.includes(bid) : false;
+        });
+
+  // Auto-select first available model if current is unavailable
+  useEffect(() => {
+    if (
+      availableProviders &&
+      availableProviders.length > 0 &&
+      !isCurrentModelAvailable &&
+      onSelectModel
+    ) {
+      const firstAvailable = MODEL_CONFIGS.find((m) => {
+        const bid = PROVIDER_NAME_TO_ID[m.provider];
+        return bid ? availableProviders.includes(bid) : false;
+      });
+      if (firstAvailable) {
+        onSelectModel(firstAvailable.id);
+      }
+    }
+  }, [availableProviders, isCurrentModelAvailable, onSelectModel, selectedModel]);
+
+  // Send is disabled when: empty text, loading, or no available model
+  const isSendDisabled =
+    !value.trim() || isLoading || (availableProviders !== undefined && !hasAnyModel);
+
   return (
     <form onSubmit={onSubmit}>
+      {/* No API keys warning banner */}
+      {availableProviders !== undefined && !hasAnyModel && (
+        <div className="mb-2 p-3 rounded-xl border border-amber-200 dark:border-amber-500/20 bg-amber-50 dark:bg-amber-500/10">
+          <div className="flex items-start gap-2">
+            <Lock className="w-4 h-4 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" />
+            <div>
+              <p className="text-xs font-medium text-amber-800 dark:text-amber-300">
+                No API keys configured
+              </p>
+              <p className="text-[11px] text-amber-700/80 dark:text-amber-400/70 mt-0.5">
+                You need to add at least one LLM provider API key to start chatting.{" "}
+                <Link
+                  href="/dashboard/settings?tab=api-keys"
+                  className="text-primary hover:underline font-medium"
+                >
+                  Go to Settings →
+                </Link>
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Main Container */}
       <div
         className={cn(
@@ -306,7 +478,7 @@ export function ChatInput({
           />
 
           {/* Send Button - inline when no footer */}
-          {!hasFooter && <SendButton disabled={!value.trim() || isLoading} />}
+          {!hasFooter && <SendButton disabled={isSendDisabled} />}
         </div>
 
         {/* Footer - show when source toggle or model selector is enabled */}
@@ -348,12 +520,13 @@ export function ChatInput({
                 <ModelSelector
                   selectedModel={selectedModel}
                   onSelectModel={onSelectModel}
+                  availableProviders={availableProviders}
                 />
               )}
             </div>
 
             {/* Send Button */}
-            <SendButton disabled={!value.trim() || isLoading} />
+            <SendButton disabled={isSendDisabled} />
           </div>
         )}
       </div>

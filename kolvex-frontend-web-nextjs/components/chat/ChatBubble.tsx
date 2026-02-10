@@ -3,6 +3,8 @@
 import { cn } from "@/lib/utils";
 import { Copy, Check, RotateCcw } from "lucide-react";
 import { useState } from "react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import type { ChatBubbleProps } from "./types";
 import { Button } from "../ui/button";
 
@@ -106,15 +108,29 @@ export function ChatBubble({
               "text-foreground"
             )}
           >
-            <div className="prose prose-sm dark:prose-invert max-w-none">
-              <p className="text-[15px] leading-relaxed whitespace-pre-wrap m-0">
+            <div
+              className={cn(
+                "prose prose-sm dark:prose-invert max-w-none",
+                "prose-headings:mt-4 prose-headings:mb-2 prose-headings:font-semibold",
+                "prose-h2:text-base prose-h3:text-sm",
+                "prose-p:my-1.5 prose-p:leading-relaxed prose-p:text-[14px]",
+                "prose-ul:my-1.5 prose-ul:pl-4 prose-li:my-0.5 prose-li:text-[14px]",
+                "prose-ol:my-1.5 prose-ol:pl-4",
+                "prose-strong:text-foreground prose-strong:font-semibold",
+                "prose-code:text-xs prose-code:bg-muted prose-code:px-1 prose-code:py-0.5 prose-code:rounded",
+                "prose-pre:bg-muted prose-pre:rounded-lg prose-pre:text-xs",
+                "prose-table:text-xs prose-th:px-2 prose-th:py-1 prose-td:px-2 prose-td:py-1",
+                "[&>*:first-child]:mt-0 [&>*:last-child]:mb-0"
+              )}
+            >
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>
                 {content}
-                {isStreaming && (
-                  <span className="inline-flex ml-0.5 align-middle">
-                    <span className="w-[3px] h-[18px] bg-primary rounded-sm animate-pulse" />
-                  </span>
-                )}
-              </p>
+              </ReactMarkdown>
+              {isStreaming && (
+                <span className="inline-flex ml-0.5 align-middle">
+                  <span className="w-[3px] h-[18px] bg-primary rounded-sm animate-pulse" />
+                </span>
+              )}
             </div>
           </div>
 

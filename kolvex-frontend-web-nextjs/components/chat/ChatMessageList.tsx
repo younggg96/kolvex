@@ -1,16 +1,50 @@
 "use client";
 
 import { useRef, useEffect, useState, useCallback } from "react";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, Search, BarChart3, Newspaper, Users, Briefcase, BookOpen, CheckCircle2, Loader2, Globe } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ChatBubble } from "./ChatBubble";
-import type { ChatMessageListProps } from "./types";
+import type { ChatMessageListProps, ToolStatus } from "./types";
 import { Button } from "../ui/button";
 
-// Modern thinking indicator with subtle pulse
-function ThinkingIndicator() {
+// Tool category icons
+function getToolIcon(toolName: string) {
+  if (toolName.includes("stock") || toolName.includes("quote") || toolName.includes("financials") || toolName.includes("history") || toolName.includes("company") || toolName.includes("analyst")) {
+    return <BarChart3 className="w-3 h-3" />;
+  }
+  if (toolName.includes("news") || toolName.includes("trending")) {
+    return <Newspaper className="w-3 h-3" />;
+  }
+  if (toolName.includes("kol") || toolName.includes("sentiment")) {
+    return <Users className="w-3 h-3" />;
+  }
+  if (toolName.includes("portfolio")) {
+    return <Briefcase className="w-3 h-3" />;
+  }
+  if (toolName.includes("knowledge") || toolName.includes("superinvestor")) {
+    return <BookOpen className="w-3 h-3" />;
+  }
+  if (toolName.includes("web_search")) {
+    return <Globe className="w-3 h-3" />;
+  }
+  return <Search className="w-3 h-3" />;
+}
+
+/**
+ * Compact agent activity indicator — shows thinking + tool calls in a
+ * single inline block below the user's message, above the AI response.
+ */
+function AgentActivityIndicator({
+  tools,
+  isThinking,
+}: {
+  tools: ToolStatus[];
+  isThinking: boolean;
+}) {
+  if (!isThinking && tools.length === 0) return null;
+
   return (
-    <div className="flex w-full mb-6 justify-start animate-fade-in">
+    <div className="flex w-full justify-start animate-fade-in">
       <div className="flex gap-4 max-w-[85%] md:max-w-[80%]">
         {/* AI Avatar */}
         <div className="flex-shrink-0">
@@ -28,28 +62,64 @@ function ThinkingIndicator() {
           </div>
         </div>
 
-        {/* Thinking bubble */}
-        <div className="flex flex-col gap-1.5">
+        {/* Compact status */}
+        <div className="flex flex-col gap-1.5 min-w-0">
           <span className="text-xs font-medium text-muted-foreground px-0.5">
             Kolvex
           </span>
-          <div className="px-4 py-3 rounded-2xl rounded-tl-sm bg-card-light dark:bg-card-dark border border-border-light dark:border-border-dark">
-            <div className="flex items-center gap-1.5">
-              <div className="flex gap-1">
-                {[0, 1, 2].map((i) => (
+          <div
+            className={cn(
+              "px-3.5 py-2.5 rounded-2xl rounded-tl-sm",
+              "bg-card-light dark:bg-card-dark",
+              "border border-border-light dark:border-border-dark"
+            )}
+          >
+            <div className="flex flex-col gap-1.5">
+              {/* Tool items */}
+              {tools.map((tool) => (
+                <div
+                  key={tool.name}
+                  className="flex items-center gap-2 text-xs"
+                >
+                  {tool.status === "running" ? (
+                    <Loader2 className="w-3 h-3 text-primary animate-spin flex-shrink-0" />
+                  ) : (
+                    <CheckCircle2 className="w-3 h-3 text-emerald-500 flex-shrink-0" />
+                  )}
                   <span
-                    key={i}
-                    className="w-1.5 h-1.5 bg-primary/60 rounded-full"
-                    style={{
-                      animation: "pulse 1.4s ease-in-out infinite",
-                      animationDelay: `${i * 0.2}s`,
-                    }}
-                  />
-                ))}
-              </div>
-              <span className="text-sm text-muted-foreground ml-1">
-                Thinking...
-              </span>
+                    className={cn(
+                      "flex items-center gap-1.5",
+                      tool.status === "done"
+                        ? "text-muted-foreground line-through"
+                        : "text-foreground"
+                    )}
+                  >
+                    {getToolIcon(tool.name)}
+                    {tool.label}
+                  </span>
+                </div>
+              ))}
+
+              {/* Thinking dots — shown when loading but no tools active, or after all tools done */}
+              {isThinking && (
+                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <div className="flex gap-0.5">
+                    {[0, 1, 2].map((i) => (
+                      <span
+                        key={i}
+                        className="w-1 h-1 bg-primary/60 rounded-full"
+                        style={{
+                          animation: "pulse 1.4s ease-in-out infinite",
+                          animationDelay: `${i * 0.2}s`,
+                        }}
+                      />
+                    ))}
+                  </div>
+                  <span className="ml-0.5">
+                    {tools.length > 0 ? "Generating response..." : "Thinking..."}
+                  </span>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -64,6 +134,7 @@ export function ChatMessageList({
   streamingContent,
   isLoading = false,
   messagesEndRef,
+  activeTools = [],
 }: ChatMessageListProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const endRef = useRef<HTMLDivElement>(null);
@@ -75,12 +146,18 @@ export function ChatMessageList({
     actualEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [actualEndRef]);
 
-  // Auto-scroll on new messages
+  // Auto-scroll when anything changes
   useEffect(() => {
-    if (messages.length > 0 || streamingContent) {
+    if (
+      messages.length > 0 ||
+      streamingContent ||
+      pendingUserMessage ||
+      isLoading ||
+      activeTools.length > 0
+    ) {
       scrollToBottom();
     }
-  }, [messages, streamingContent, scrollToBottom]);
+  }, [messages, streamingContent, pendingUserMessage, isLoading, activeTools, scrollToBottom]);
 
   // Check if we should show scroll button
   useEffect(() => {
@@ -101,10 +178,14 @@ export function ChatMessageList({
     messages.length === 0 &&
     !pendingUserMessage &&
     !streamingContent &&
-    !isLoading
+    !isLoading &&
+    activeTools.length === 0
   ) {
     return null;
   }
+
+  // Determine if the agent is still "thinking" (loading but no streaming content yet)
+  const showThinking = isLoading && !streamingContent;
 
   return (
     <div ref={containerRef} className="relative flex-1 pb-28 overflow-y-auto">
@@ -121,12 +202,20 @@ export function ChatMessageList({
             />
           ))}
 
-          {/* Pending user message (optimistic update) */}
+          {/* Pending user message (optimistic update — always visible) */}
           {pendingUserMessage && (
             <ChatBubble
               role="user"
               content={pendingUserMessage}
               isFirst={messages.length === 0}
+            />
+          )}
+
+          {/* Agent activity: tools + thinking indicator (compact, single block) */}
+          {(activeTools.length > 0 || showThinking) && (
+            <AgentActivityIndicator
+              tools={activeTools}
+              isThinking={showThinking}
             />
           )}
 
@@ -138,9 +227,6 @@ export function ChatMessageList({
               isStreaming={true}
             />
           )}
-
-          {/* Loading indicator */}
-          {isLoading && !streamingContent && <ThinkingIndicator />}
         </div>
 
         {/* Scroll anchor */}

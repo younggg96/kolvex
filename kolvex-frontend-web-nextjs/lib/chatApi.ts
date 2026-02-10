@@ -164,3 +164,90 @@ export async function addMessage(
     }
   );
 }
+
+// ===== Agent-Powered Operations =====
+
+export interface AgentMessageResponse {
+  message: ChatMessage;
+  response: ChatMessage;
+}
+
+/**
+ * SSE event types from the LangGraph agent stream
+ */
+export interface AgentStreamEvent {
+  type: "token" | "tool_start" | "tool_end" | "done" | "error";
+  content?: string;
+  tool?: string;
+  message_id?: string;
+}
+
+/**
+ * Options for agent requests
+ */
+export interface AgentRequestOptions {
+  /** Model ID (e.g. "gpt-4o-mini", "deepseek-chat") */
+  model?: string;
+  /** Active data sources: "kol", "news", "web", "portfolio" */
+  sources?: string[];
+}
+
+/**
+ * Send a message and get AI Agent response (synchronous)
+ * Uses the LangGraph agent backend
+ * @param conversationId Conversation ID
+ * @param content Message content
+ * @param options Model and source options
+ */
+export async function sendAgentMessage(
+  conversationId: string,
+  content: string,
+  options?: AgentRequestOptions
+): Promise<AgentMessageResponse> {
+  return apiRequest<AgentMessageResponse>(
+    `/conversations/${conversationId}/send`,
+    {
+      method: "POST",
+      body: JSON.stringify({
+        content,
+        model: options?.model || undefined,
+        sources: options?.sources || undefined,
+      }),
+    }
+  );
+}
+
+/**
+ * Send a message and stream AI Agent response (SSE)
+ * Returns the raw Response for SSE processing
+ * @param conversationId Conversation ID
+ * @param content Message content
+ * @param options Model and source options
+ */
+export async function streamAgentMessage(
+  conversationId: string,
+  content: string,
+  options?: AgentRequestOptions
+): Promise<Response> {
+  const response = await fetch(
+    `${API_PREFIX}/conversations/${conversationId}/stream`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        content,
+        model: options?.model || undefined,
+        sources: options?.sources || undefined,
+      }),
+    }
+  );
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}));
+    throw new Error(error.error || `Stream request failed: ${response.status}`);
+  }
+
+  return response;
+}

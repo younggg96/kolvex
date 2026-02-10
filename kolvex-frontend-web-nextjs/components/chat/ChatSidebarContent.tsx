@@ -148,22 +148,25 @@ export function ChatSidebarContent({
         await chatApi.deleteConversation(id);
 
         // Update local state immediately
-        setConversations((prev) => prev.filter((c) => c.id !== id));
+        const remaining = conversations.filter((c) => c.id !== id);
+        setConversations(remaining);
 
         if (currentConversationId === id) {
           setCurrentConversationId(null);
-          // Notify ChatContainer to clear current chat
-          window.dispatchEvent(
-            new CustomEvent("kolvex:deleteChat", {
-              detail: { id },
-            })
-          );
+
+          // Navigate: if there are other conversations, go to the most recent one;
+          // otherwise go to new chat page
+          if (remaining.length > 0) {
+            router.push(`/dashboard/chat/${remaining[0].id}`);
+          } else {
+            router.push("/dashboard/chat");
+          }
         }
       } catch (err) {
         console.error("Failed to delete conversation:", err);
       }
     },
-    [currentConversationId]
+    [currentConversationId, conversations, router]
   );
 
   const grouped = groupConversationsByDate(conversations);

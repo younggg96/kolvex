@@ -208,14 +208,18 @@ export function useChatHistory() {
           return [converted, ...prev];
         }
       });
+
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(
+          new CustomEvent("kolvex:currentChatChanged", { detail: { id } })
+        );
+      }
     } catch (err) {
       console.error("Failed to fetch conversation:", err);
-    }
-
-    if (typeof window !== "undefined") {
-      window.dispatchEvent(
-        new CustomEvent("kolvex:currentChatChanged", { detail: { id } })
-      );
+      // Reset state and re-throw so callers can handle (e.g. redirect)
+      setCurrentConversationId(null);
+      currentConversationIdRef.current = null;
+      throw err;
     }
   }, []);
 

@@ -88,6 +88,23 @@ class Settings(BaseSettings):
     TWILIO_AUTH_TOKEN: str = os.getenv("TWILIO_AUTH_TOKEN", "")
     TWILIO_WHATSAPP_FROM: str = os.getenv("TWILIO_WHATSAPP_FROM", "")
 
+    # ==================== LangGraph AI Agent 配置 ====================
+    # 支持: openai | anthropic | ollama | deepseek | qwen | gemini | kimi | grok
+    LLM_PROVIDER: str = os.getenv("LLM_PROVIDER", "openai")
+    LLM_MODEL: str = os.getenv("LLM_MODEL", "gpt-4o-mini")
+    LLM_TEMPERATURE: float = float(os.getenv("LLM_TEMPERATURE", "0.7"))
+    LLM_FALLBACK_PROVIDER: str = os.getenv("LLM_FALLBACK_PROVIDER", "")
+    LLM_FALLBACK_MODEL: str = os.getenv("LLM_FALLBACK_MODEL", "")
+    ANTHROPIC_API_KEY: str = os.getenv("ANTHROPIC_API_KEY", "")
+    DEEPSEEK_API_KEY: str = os.getenv("DEEPSEEK_API_KEY", "")
+    QWEN_API_KEY: str = os.getenv("QWEN_API_KEY", "")  # 阿里云 DashScope API Key
+    GOOGLE_API_KEY: str = os.getenv("GOOGLE_API_KEY", "")  # Google Gemini API Key
+    KIMI_API_KEY: str = os.getenv("KIMI_API_KEY", "")  # Moonshot/Kimi API Key
+    GROK_API_KEY: str = os.getenv("GROK_API_KEY", "")  # xAI Grok API Key
+
+    # ==================== 网络搜索工具配置 ====================
+    TAVILY_API_KEY: str = os.getenv("TAVILY_API_KEY", "")
+
     # ==================== Redis 缓存配置 ====================
     REDIS_URL: str = os.getenv("REDIS_URL", "redis://localhost:6379/0")
     REDIS_HOST: str = os.getenv("REDIS_HOST", "localhost")

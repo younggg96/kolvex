@@ -24,7 +24,10 @@ export type {
   ChatMessageListProps,
   ChatHistorySidebarProps,
   ChatWelcomeProps,
+  ToolStatus,
 } from "./types";
+
+export { TOOL_LABELS } from "./types";
 
 // Legacy export for backward compatibility
 export { ChatBubble as ChatMessage } from "./ChatBubble";

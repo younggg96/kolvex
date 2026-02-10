@@ -38,7 +38,8 @@ RUN apt-get update && apt-get install -y \
 COPY requirements.txt .
 
 # 安装 Python 依赖
-RUN pip install --upgrade pip && \
+RUN pip install --upgrade pip setuptools wheel && \
+    pip install pyyaml --no-build-isolation && \
     pip install -r requirements.txt
 
 # 安装 Playwright 并下载 Chromium

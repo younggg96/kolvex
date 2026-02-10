@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { ChatWelcome } from "./ChatWelcome";
 import { useChatHistory } from "./useChatHistory";
+import { useAvailableProviders } from "@/hooks/useAvailableProviders";
 import type { AIModel, SearchSource } from "./types";
 
 interface ChatWelcomeContainerProps {
@@ -22,34 +23,12 @@ export function ChatWelcomeContainer({
   onConversationChange,
 }: ChatWelcomeContainerProps) {
   const router = useRouter();
-  const [activeSources, setActiveSources] = useState<SearchSource[]>(["kol"]);
+  const [activeSources, setActiveSources] = useState<SearchSource[]>(["kol", "news", "web", "portfolio"]);
   const [isLoading, setIsLoading] = useState(false);
-  const [selectedModel, setSelectedModel] = useState<AIModel>("gpt-4o-mini");
-  const pendingNavigationRef = useRef(false);
+  const [selectedModel, setSelectedModel] = useState<AIModel>("deepseek-chat");
 
-  const { addMessage } = useChatHistory();
-
-  // Listen for new conversation creation and navigate
-  useEffect(() => {
-    const handleChatChanged = (e: CustomEvent<{ id: string | null }>) => {
-      if (pendingNavigationRef.current && e.detail.id) {
-        pendingNavigationRef.current = false;
-        router.push(`/dashboard/chat/${e.detail.id}`);
-      }
-    };
-
-    window.addEventListener(
-      "kolvex:currentChatChanged",
-      handleChatChanged as EventListener
-    );
-
-    return () => {
-      window.removeEventListener(
-        "kolvex:currentChatChanged",
-        handleChatChanged as EventListener
-      );
-    };
-  }, [router]);
+  const { createConversation } = useChatHistory();
+  const { availableProviders } = useAvailableProviders();
 
   const toggleSource = (source: SearchSource) => {
     setActiveSources((prev) => {
@@ -67,23 +46,33 @@ export function ChatWelcomeContainer({
 
       const trimmedMessage = messageText.trim();
       setIsLoading(true);
-      pendingNavigationRef.current = true;
 
       try {
-        // Add user message - this will create a new conversation
-        // and trigger kolvex:currentChatChanged event
-        await addMessage({
-          role: "user",
-          content: trimmedMessage,
-        });
+        // Create a new conversation
+        const conversationId = await createConversation();
+
+        // Persist sources & model to localStorage for this conversation
+        try {
+          localStorage.setItem(`kolvex:sources:${conversationId}`, JSON.stringify(activeSources));
+          localStorage.setItem(`kolvex:model:${conversationId}`, selectedModel);
+        } catch {}
+
+        // Navigate to chat detail page with the first message + sources as query params
+        // The ChatDetailContainer will pick this up and send it to the agent
+        const params = new URLSearchParams();
+        params.set("firstMessage", trimmedMessage);
+        params.set("sources", activeSources.join(","));
+        params.set("model", selectedModel);
+        router.push(
+          `/dashboard/chat/${conversationId}?${params.toString()}`
+        );
       } catch (error) {
         console.error("Failed to start chat:", error);
-        pendingNavigationRef.current = false;
       } finally {
         setIsLoading(false);
       }
     },
-    [isLoading, addMessage]
+    [isLoading, createConversation, router, activeSources, selectedModel]
   );
 
   return (
@@ -99,6 +88,9 @@ export function ChatWelcomeContainer({
             isLoading={isLoading}
             activeSources={activeSources}
             onToggleSource={toggleSource}
+            selectedModel={selectedModel}
+            onSelectModel={setSelectedModel}
+            availableProviders={availableProviders}
           />
         </div>
       </div>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { MessageSquarePlus } from "lucide-react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { ChatDetailContainer } from "@/components/chat";
@@ -10,7 +10,11 @@ import { Button } from "@/components/ui/button";
 export default function ChatPage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const conversationId = params.id as string;
+  const firstMessage = searchParams.get("firstMessage") || undefined;
+  const initialSources = searchParams.get("sources") || undefined;
+  const initialModel = searchParams.get("model") || undefined;
   const [conversationTitle, setConversationTitle] = useState<string>("Chat");
 
   const handleConversationChange = useCallback(
@@ -46,6 +50,9 @@ export default function ChatPage() {
       <ChatDetailContainer
         className="flex-1"
         conversationId={conversationId}
+        firstMessage={firstMessage}
+        initialSources={initialSources}
+        initialModel={initialModel}
         onConversationChange={handleConversationChange}
       />
     </DashboardLayout>
