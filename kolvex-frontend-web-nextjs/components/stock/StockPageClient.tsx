@@ -13,8 +13,10 @@ import { toast } from "sonner";
 import { SearchInput } from "../ui/search-input";
 import { StockHeroSection } from "./StockHeroSection";
 import { MarketOverview } from "@/components/market";
+import { useTranslation } from "@/lib/i18n";
 
 export default function StockPageClient() {
+  const { t } = useTranslation();
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("trending");
   const [searchQuery, setSearchQuery] = useState("");
@@ -31,10 +33,10 @@ export default function StockPageClient() {
         companyName: stock.name,
         logo: stock.logo,
       });
-      toast.success("Stock added successfully");
+      toast.success(t("stocks.stockAdded"));
       setIsAddDialogOpen(false);
     } catch (error) {
-      toast.error("Failed to add stock");
+      toast.error(t("stocks.addFailed"));
       console.error(error);
     }
   };
@@ -46,11 +48,11 @@ export default function StockPageClient() {
   const tabOptions = [
     {
       value: "trending",
-      label: "Trending",
+      label: t("stocks.tabs.trending"),
     },
     {
       value: "tracking-stocks",
-      label: "My Tracking",
+      label: t("stocks.tabs.myTracking"),
     },
   ];
 
@@ -75,7 +77,7 @@ export default function StockPageClient() {
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           size="sm"
-          placeholder="Search stocks..."
+          placeholder={t("stocks.searchPlaceholder")}
           containerClassName="w-24 sm:w-36 md:w-48 lg:w-64"
         />
       )}
@@ -83,7 +85,7 @@ export default function StockPageClient() {
   );
 
   return (
-    <DashboardLayout title="Stocks" showHeader={true} headerActions={headerActions}>
+    <DashboardLayout title={t("stocks.title")} showHeader={true} headerActions={headerActions}>
       <div className="relative flex-1 overflow-y-auto bg-background-light dark:bg-background-dark">
         <div className="absolute inset-0 bg-grid opacity-50 pointer-events-none" />
         <StockHeroSection className="hidden lg:block" />

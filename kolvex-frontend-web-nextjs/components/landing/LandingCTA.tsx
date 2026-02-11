@@ -4,8 +4,10 @@ import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Zap, Shield, Clock } from "lucide-react";
+import { useTranslation } from "@/lib/i18n";
 
 export default function LandingCTA() {
+  const { t } = useTranslation();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const sectionRef = useRef<HTMLElement>(null);
   const [isVisible, setIsVisible] = useState(false);
@@ -125,9 +127,9 @@ export default function LandingCTA() {
                 }`}
                 style={{ transitionDelay: "200ms" }}
               >
-                Ready to invest with
+                {t("landing.cta.title")}
                 <br />
-                <span className="text-primary">AI-powered intelligence?</span>
+                <span className="text-primary">{t("landing.cta.titleHighlight")}</span>
               </h2>
 
               {/* Description */}
@@ -139,9 +141,7 @@ export default function LandingCTA() {
                 }`}
                 style={{ transitionDelay: "300ms" }}
               >
-                Join thousands of investors who are already using social
-                intelligence to make better trading decisions. Start free, no
-                credit card required.
+                {t("landing.cta.subtitle")}
               </p>
 
               {/* CTA Buttons */}
@@ -158,7 +158,7 @@ export default function LandingCTA() {
                     size="md"
                     className="w-full sm:w-auto px-6 md:px-12 font-bold bg-primary hover:bg-primary/90 text-white rounded-xl md:rounded-2xl shadow-xl md:shadow-2xl shadow-primary/30 group transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_20px_60px_-15px_rgba(0,200,5,0.5)]"
                   >
-                    Get Started Free
+                    {t("landing.cta.getStarted")}
                     <ArrowRight
                       size={16}
                       className="ml-2 group-hover:translate-x-1 transition-transform md:w-5 md:h-5"
@@ -171,7 +171,7 @@ export default function LandingCTA() {
                     size="md"
                     className="w-full sm:w-auto text-gray-600 dark:text-white"
                   >
-                    Contact Us
+                    {t("landing.cta.contactUs")}
                   </Button>
                 </Link>
               </div>
@@ -194,7 +194,7 @@ export default function LandingCTA() {
                   style={{ transitionDelay: "600ms" }}
                 >
                   <Shield size={14} className="text-primary md:w-4 md:h-4" />
-                  <span>Bank-level security</span>
+                  <span>{t("landing.cta.trust.security")}</span>
                 </div>
                 <div
                   className={`flex items-center gap-1.5 md:gap-2 transition-all duration-500 ${
@@ -205,7 +205,7 @@ export default function LandingCTA() {
                   style={{ transitionDelay: "700ms" }}
                 >
                   <Clock size={14} className="text-primary md:w-4 md:h-4" />
-                  <span>Setup in 30 seconds</span>
+                  <span>{t("landing.cta.trust.setup")}</span>
                 </div>
                 <div
                   className={`flex items-center gap-1.5 md:gap-2 transition-all duration-500 ${
@@ -216,7 +216,7 @@ export default function LandingCTA() {
                   style={{ transitionDelay: "800ms" }}
                 >
                   <Zap size={14} className="text-primary md:w-4 md:h-4" />
-                  <span>Cancel anytime</span>
+                  <span>{t("landing.cta.trust.cancel")}</span>
                 </div>
               </div>
             </div>

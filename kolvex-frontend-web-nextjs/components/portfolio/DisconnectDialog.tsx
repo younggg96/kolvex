@@ -11,6 +11,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { useTranslation } from "@/lib/i18n";
 import type { DisconnectDialogProps } from "./types";
 
 export function DisconnectDialog({
@@ -19,14 +20,15 @@ export function DisconnectDialog({
   onDisconnect,
   disconnecting,
 }: DisconnectDialogProps) {
+  const { t } = useTranslation();
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-sm">
         <DialogHeader>
-          <DialogTitle>Disconnect Broker?</DialogTitle>
+          <DialogTitle>{t("portfolio.disconnectDialog.title")}</DialogTitle>
           <DialogDescription>
-            This will remove the connection and delete all synced data.
-            You&apos;ll need to reconnect to view holdings again.
+            {t("portfolio.disconnectDialog.description")}
           </DialogDescription>
         </DialogHeader>
         <DialogFooter className="gap-2">
@@ -35,7 +37,7 @@ export function DisconnectDialog({
             onClick={() => onOpenChange(false)}
             disabled={disconnecting}
           >
-            Cancel
+            {t("common.cancel")}
           </Button>
           <Button
             variant="destructive"
@@ -44,11 +46,10 @@ export function DisconnectDialog({
             className="gap-2"
           >
             {disconnecting && <Loader2 className="w-4 h-4 animate-spin" />}
-            Disconnect
+            {t("portfolio.disconnectDialog.disconnect")}
           </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
   );
 }
-

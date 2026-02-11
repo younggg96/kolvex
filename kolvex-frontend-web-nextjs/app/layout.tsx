@@ -3,6 +3,7 @@ import { Manrope } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
+import { LanguageProvider } from "@/lib/i18n";
 import { UserProfileProvider } from "@/components/user/UserProfileProvider";
 import { StockDataCacheProvider } from "@/components/portfolio/hooks/useStockDataCache";
 
@@ -81,12 +82,14 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <UserProfileProvider>
-            <StockDataCacheProvider>
-              {children}
-              <Toaster />
-            </StockDataCacheProvider>
-          </UserProfileProvider>
+          <LanguageProvider>
+            <UserProfileProvider>
+              <StockDataCacheProvider>
+                {children}
+                <Toaster />
+              </StockDataCacheProvider>
+            </UserProfileProvider>
+          </LanguageProvider>
         </ThemeProvider>
         <Analytics />
         <SpeedInsights />

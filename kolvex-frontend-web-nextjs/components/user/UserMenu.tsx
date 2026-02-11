@@ -12,6 +12,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useAuth, useUserProfile } from "@/hooks";
+import { useTranslation } from "@/lib/i18n";
 
 interface UserMenuProps {
   isCollapsed?: boolean;
@@ -19,6 +20,7 @@ interface UserMenuProps {
 
 export default function UserMenu({ isCollapsed = false }: UserMenuProps) {
   const router = useRouter();
+  const { t } = useTranslation();
   const { user, signOut } = useAuth();
   const { profile } = useUserProfile();
 
@@ -106,21 +108,21 @@ export default function UserMenu({ isCollapsed = false }: UserMenuProps) {
           onClick={() => router.push("/dashboard/settings?tab=account")}
         >
           <User className="w-3 h-3" />
-          <span>Account</span>
+          <span>{t("userMenu.account")}</span>
         </DropdownMenuItem>
 
         <DropdownMenuItem
           onClick={() => router.push("/dashboard/settings?tab=billing")}
         >
           <CreditCard className="w-3 h-3" />
-          <span>Billing</span>
+          <span>{t("userMenu.billing")}</span>
         </DropdownMenuItem>
 
         <DropdownMenuItem
           onClick={() => router.push("/dashboard/settings?tab=notifications")}
         >
           <Bell className="w-3 h-3" />
-          <span>Notifications</span>
+          <span>{t("userMenu.notifications")}</span>
         </DropdownMenuItem>
 
         <DropdownMenuSeparator />
@@ -130,7 +132,7 @@ export default function UserMenu({ isCollapsed = false }: UserMenuProps) {
           className="text-red-600 dark:text-red-400 focus:text-red-600 dark:focus:text-red-400"
         >
           <LogOut className="w-3 h-3" />
-          <span>Log out</span>
+          <span>{t("userMenu.logOut")}</span>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

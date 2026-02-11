@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
+import { useTranslation } from "@/lib/i18n";
 import { StatsCard } from "./StatsCard";
 import { SentimentTrendChart } from "./SentimentTrendChart";
 import { SentimentChart } from "./SentimentChart";
@@ -42,6 +43,7 @@ export function AnalyticsDashboard({
   onLoadingChange,
   onDataSourceChange,
 }: AnalyticsDashboardProps) {
+  const { t } = useTranslation();
   const days = propDays ?? 7;
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -80,7 +82,7 @@ export function AnalyticsDashboard({
       );
     } catch (err) {
       console.error("Failed to fetch analytics:", err);
-      setError(err instanceof Error ? err.message : "Failed to load data");
+      setError(err instanceof Error ? err.message : t("analytics.failedToLoadData"));
     } finally {
       setLoading(false);
       onLoadingChange?.(false);
@@ -104,11 +106,11 @@ export function AnalyticsDashboard({
       <div className="flex flex-col items-center justify-center p-12 gap-4">
         <div className="text-center">
           <p className="text-base font-medium text-foreground mb-1">
-            Failed to Load
+            {t("analytics.failedToLoad")}
           </p>
           <p className="text-sm text-muted-foreground mb-4">{error}</p>
           <Button onClick={fetchData} variant="outline" size="sm">
-            Try Again
+            {t("analytics.tryAgain")}
           </Button>
         </div>
       </div>
@@ -125,26 +127,30 @@ export function AnalyticsDashboard({
           {dashboard && (
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
               <StatsCard
-                title="Total Posts"
+                title={t("analytics.totalPosts")}
                 value={dashboard.overview.total_posts.toLocaleString()}
                 subtitle={`${dashboard.period.start_date} → ${dashboard.period.end_date}`}
               />
               <StatsCard
-                title="Total Views"
+                title={t("analytics.totalViews")}
                 value={formatLargeNumber(dashboard.overview.total_views)}
-                subtitle={`${formatLargeNumber(
-                  Math.round(dashboard.overview.total_views / days)
-                )} daily avg`}
+                subtitle={t("analytics.dailyAvg", {
+                  value: formatLargeNumber(Math.round(dashboard.overview.total_views / days)),
+                })}
               />
               <StatsCard
-                title="Engagement"
+                title={t("analytics.engagement")}
                 value={formatLargeNumber(dashboard.overview.total_engagement)}
-                subtitle={`${dashboard.overview.avg_engagement_per_post} per post`}
+                subtitle={t("analytics.perPost", {
+                  value: String(dashboard.overview.avg_engagement_per_post),
+                })}
               />
               <StatsCard
-                title="Active KOLs"
+                title={t("analytics.activeKOLs")}
                 value={dashboard.overview.unique_authors.toString()}
-                subtitle={`${dashboard.overview.stock_related_posts} stock-related posts analyzed`}
+                subtitle={t("analytics.stockRelatedAnalyzed", {
+                  count: String(dashboard.overview.stock_related_posts),
+                })}
               />
             </div>
           )}
@@ -156,17 +162,17 @@ export function AnalyticsDashboard({
               summary={trends.summary}
               dailySentiment={sentiment?.daily_trends}
               platformBreakdown={trends.platform_breakdown}
-              title="Activity & Sentiment by Platform"
+              title={t("analytics.activitySentimentByPlatform")}
             />
           )}
 
           {/* Sentiment & Engagement */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {sentiment && <SentimentChart data={sentiment} title="Sentiment" />}
+            {sentiment && <SentimentChart data={sentiment} title={t("analytics.sentiment")} />}
             {engagement && engagement.correlation_matrix && (
               <EngagementHeatmap
                 data={engagement.correlation_matrix}
-                title="Correlation"
+                title={t("analytics.correlation")}
               />
             )}
           </div>

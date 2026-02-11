@@ -60,10 +60,10 @@ export default function LandingStockTicker() {
   const stockData =
     quotes.length > 0
       ? quotes.map((q) => ({
-          symbol: q.symbol,
-          price: q.price,
-          changePercent: q.changePercent,
-        }))
+        symbol: q.symbol,
+        price: q.price,
+        changePercent: q.changePercent,
+      }))
       : FALLBACK_DATA;
 
   // Duplicate for seamless loop
@@ -84,7 +84,7 @@ export default function LandingStockTicker() {
   return (
     <div className="w-full relative overflow-hidden py-3 md:py-6">
       {/* Background gradient */}
-      <div className="absolute inset-0 bg-gradient-to-r from-gray-100/80 via-white to-gray-100/80 dark:from-gray-900/50 dark:via-gray-900/30 dark:to-gray-900/50 backdrop-blur-sm" />
+      <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-white to-primary/10 dark:from-primary/10 dark:via-primary/5 dark:to-primary/10 backdrop-blur-sm" />
 
       {/* Decorative top border */}
       <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
@@ -137,11 +137,10 @@ export default function LandingStockTicker() {
 
                 {/* Change indicator */}
                 <div
-                  className={`flex items-center gap-0.5 md:gap-1 px-1.5 md:px-2 py-0.5 rounded-md md:rounded-lg text-[10px] md:text-xs font-bold ${
-                    isUp
-                      ? "bg-primary/10 text-primary"
-                      : "bg-red-500/10 text-red-500"
-                  }`}
+                  className={`flex items-center gap-0.5 md:gap-1 px-1.5 md:px-2 py-0.5 rounded-md md:rounded-lg text-[10px] md:text-xs font-bold ${isUp
+                    ? "bg-primary/10 text-primary"
+                    : "bg-red-500/10 text-red-500"
+                    }`}
                 >
                   {isUp ? (
                     <TrendingUp size={10} className="md:w-3 md:h-3" />

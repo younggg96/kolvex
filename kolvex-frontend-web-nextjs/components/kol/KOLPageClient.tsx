@@ -22,6 +22,7 @@ import KOLRankingTable from "@/components/kol/KOLRankingTable";
 import { RequestKOLModal } from "./RequestKOLModal";
 import { MyTrackingRequests } from "./MyTrackingRequests";
 import { toast } from "sonner";
+import { useTranslation } from "@/lib/i18n";
 
 // Platform options for KOL selector (no "all" option)
 const KOL_PLATFORM_OPTIONS: {
@@ -57,6 +58,7 @@ const KOL_PLATFORM_OPTIONS: {
 ];
 
 export default function KOLPageClient() {
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<"trackingKOLs" | "ranking">(
     "ranking"
   );
@@ -127,7 +129,7 @@ export default function KOLPageClient() {
         setOffset(currentOffset + newKols.length);
       } catch (error) {
         console.error("Error fetching kols:", error);
-        toast.error("Failed to load KOLs");
+        toast.error(t("kol.failedToLoadKols"));
       } finally {
         setIsLoadingRanking(false);
         setIsLoadingMore(false);
@@ -221,27 +223,27 @@ export default function KOLPageClient() {
     }
   }, [activeTab, refreshTrackingKOLs]);
 
-  // Tab options - use useMemo to avoid recreating on every render
+  // Tab options
   const tabOptions = useMemo(
     () => [
       {
         value: "ranking",
-        label: "Top Ranking",
+        label: t("kol.tabs.topRanking"),
         icon: <TrendingUp className="w-3.5 h-3.5" />,
       },
       {
         value: "trackingKOLs",
-        label: "Tracking KOLs",
+        label: t("kol.tabs.trackingKols"),
         icon: <Star className="w-3.5 h-3.5" />,
       },
     ],
-    []
+    [t]
   );
 
   return (
     <DashboardLayout
       title={
-        activeTab === "trackingKOLs" ? "Tracking KOLs" : "Top Ranking KOLs"
+        activeTab === "trackingKOLs" ? t("kol.headerTitle.tracking") : t("kol.headerTitle.ranking")
       }
       headerClassName="lg:hidden"
     >
@@ -329,7 +331,7 @@ export default function KOLPageClient() {
                             <span>{platform.label}</span>
                             {platform.disabled && (
                               <span className="text-[10px] text-gray-400 ml-1">
-                                (Coming Soon)
+                                {t("kol.comingSoon")}
                               </span>
                             )}
                           </div>

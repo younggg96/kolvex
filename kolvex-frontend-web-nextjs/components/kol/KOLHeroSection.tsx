@@ -1,26 +1,29 @@
 "use client";
 
-import { Users, TrendingUp, Bell } from "lucide-react";
+import { Users, Bell } from "lucide-react";
 import { HeroSection } from "@/components/ui/hero-section";
-
-const kolFeatures = [
-  {
-    icon: Users,
-    label: "Track Top KOLs",
-    iconClassName: "w-3.5 h-3.5 text-blue-600 dark:text-blue-400",
-  },
-  {
-    icon: Bell,
-    label: "Get Notified",
-    iconClassName: "w-3.5 h-3.5 text-orange-600 dark:text-orange-400",
-  },
-];
+import { useTranslation } from "@/lib/i18n";
 
 export function KOLHeroSection() {
+  const { t } = useTranslation();
+
+  const kolFeatures = [
+    {
+      icon: Users,
+      label: t("kol.hero.trackTopKols"),
+      iconClassName: "w-3.5 h-3.5 text-blue-600 dark:text-blue-400",
+    },
+    {
+      icon: Bell,
+      label: t("kol.hero.getNotified"),
+      iconClassName: "w-3.5 h-3.5 text-orange-600 dark:text-orange-400",
+    },
+  ];
+
   return (
     <HeroSection
-      title="KOL Tracker"
-      description="Follow influential market leaders and stay updated on their insights"
+      title={t("kol.hero.title")}
+      description={t("kol.hero.description")}
       features={kolFeatures}
     />
   );

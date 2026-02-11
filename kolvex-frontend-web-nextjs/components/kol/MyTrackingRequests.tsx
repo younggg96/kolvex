@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useTranslation } from "@/lib/i18n";
 import {
   Clock,
   CheckCircle2,
@@ -35,6 +36,7 @@ interface MyTrackingRequestsProps {
 export function MyTrackingRequests({
   refreshTrigger,
 }: MyTrackingRequestsProps) {
+  const { t } = useTranslation();
   const [requests, setRequests] = useState<TrackingRequest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -73,15 +75,15 @@ export function MyTrackingRequests({
       );
 
       if (response.ok) {
-        toast.success("Request cancelled successfully");
+        toast.success(t("kol.myRequests.cancelSuccess"));
         setRequests((prev) => prev.filter((r) => r.id !== requestId));
       } else {
         const data = await response.json();
-        throw new Error(data.error || "Failed to cancel request");
+        throw new Error(data.error || t("kol.myRequests.cancelFailed"));
       }
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Failed to cancel request"
+        error instanceof Error ? error.message : t("kol.myRequests.cancelFailed")
       );
     } finally {
       setDeletingId(null);
@@ -145,11 +147,11 @@ export function MyTrackingRequests({
       >
         <div className="flex items-center gap-2">
           <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-            My KOL Requests
+            {t("kol.myRequests.title")}
           </span>
           {pendingCount > 0 && (
             <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400">
-              {pendingCount} pending
+              {t("kol.myRequests.pending", { count: String(pendingCount) })}
             </span>
           )}
         </div>
@@ -198,13 +200,13 @@ export function MyTrackingRequests({
                   </span>
                 </div>
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                  Submitted {formatDate(request.created_at)}
+                  {t("kol.myRequests.submitted", { date: formatDate(request.created_at) })}
                   {request.reviewed_at &&
-                    ` · Reviewed ${formatDate(request.reviewed_at)}`}
+                    ` · ${t("kol.myRequests.reviewed", { date: formatDate(request.reviewed_at) })}`}
                 </p>
                 {request.admin_notes && (
                   <p className="text-xs text-gray-600 dark:text-gray-400 mt-1 italic">
-                    Admin: {request.admin_notes}
+                    {t("kol.myRequests.admin")} {request.admin_notes}
                   </p>
                 )}
               </div>

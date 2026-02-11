@@ -12,6 +12,7 @@ import {
 import { EmptyState } from "@/components/common/EmptyState";
 import { EquityPositionsTable } from "./EquityPositionsTable";
 import { OptionPositionsTable } from "./OptionPositionsTable";
+import { useTranslation } from "@/lib/i18n";
 import type {
   SnapTradePosition,
   EquitySortKey,
@@ -72,6 +73,7 @@ export function AccountCard({
   sparklineDataMap,
   onToggleVisibility,
 }: AccountCardProps) {
+  const { t } = useTranslation();
   const equityPositions =
     account.snaptrade_positions?.filter((p) => p.position_type !== "option") ||
     [];
@@ -94,7 +96,7 @@ export function AccountCard({
                 />
                 <div>
                   <CardTitle className="text-sm font-semibold">
-                    {account.account_name || "Brokerage Account"}
+                    {account.account_name || t("portfolio.holdings.brokerageAccount")}
                   </CardTitle>
                   <p className="text-xs text-muted-foreground font-mono">
                     {account.account_number
@@ -105,14 +107,14 @@ export function AccountCard({
               </div>
               <div className="flex items-center gap-2">
                 <Badge variant="default" className="text-xs">
-                  {accountPositions} positions
+                  {t("portfolio.holdings.positions", { count: String(accountPositions) })}
                 </Badge>
                 {optionPositions.length > 0 && (
                   <Badge
                     variant="outline"
                     className="text-xs border-primary/30 text-primary"
                   >
-                    {optionPositions.length} options
+                    {t("portfolio.holdings.options", { count: String(optionPositions.length) })}
                   </Badge>
                 )}
               </div>
@@ -154,8 +156,8 @@ export function AccountCard({
             {accountPositions === 0 && (
               <EmptyState
                 icon={Briefcase}
-                title="No Positions"
-                description="This account has no active positions"
+                title={t("portfolio.holdings.noPositions")}
+                description={t("portfolio.holdings.noPositionsDesc")}
               />
             )}
           </CardContent>

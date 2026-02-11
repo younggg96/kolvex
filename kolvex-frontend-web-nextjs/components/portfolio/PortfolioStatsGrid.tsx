@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { StatCard } from "@/components/common";
 import { formatCurrency, formatPercent } from "@/lib/snaptradeApi";
+import { useTranslation } from "@/lib/i18n";
 
 interface PortfolioStatsGridProps {
   totalValue: number | string; // "***" if hidden
@@ -33,6 +34,8 @@ export function PortfolioStatsGrid({
   hiddenPositionsCount = 0,
   hiddenAccountsCount = 0,
 }: PortfolioStatsGridProps) {
+  const { t } = useTranslation();
+
   // Get numeric values for styling (default to 0 if hidden)
   const numericPnL = isHidden(totalPnL) ? 0 : totalPnL;
   const numericPnlPercent = isHidden(pnlPercent) ? 0 : pnlPercent;
@@ -49,34 +52,34 @@ export function PortfolioStatsGrid({
     <span
       className={numericPnlPercent >= 0 ? "text-green-600" : "text-red-600"}
     >
-      {formatPercent(numericPnlPercent)} all time
+      {formatPercent(numericPnlPercent)} {t("portfolio.stats.allTime")}
     </span>
   );
 
   // Positions subtitle for hidden count
   const positionsSubtitle = hiddenPositionsCount > 0 && (
     <span className="flex items-center gap-1">
-      <EyeOff className="h-3 w-3" />+{hiddenPositionsCount} hidden
+      <EyeOff className="h-3 w-3" />+{hiddenPositionsCount} {t("portfolio.stats.hidden")}
     </span>
   );
 
   // Accounts subtitle for hidden count
   const accountsSubtitle = hiddenAccountsCount > 0 && (
     <span className="flex items-center gap-1">
-      <EyeOff className="h-3 w-3" />+{hiddenAccountsCount} hidden
+      <EyeOff className="h-3 w-3" />+{hiddenAccountsCount} {t("portfolio.stats.hidden")}
     </span>
   );
 
   return (
     <div className="grid gap-2 grid-cols-2 lg:grid-cols-4">
       <StatCard
-        label="Total Value"
+        label={t("portfolio.stats.totalValue")}
         value={isHidden(totalValue) ? totalValue : formatCurrency(totalValue)}
         icon={Wallet}
       />
 
       <StatCard
-        label="Unrealized P&L"
+        label={t("portfolio.stats.unrealizedPnl")}
         value={
           isHidden(totalPnL)
             ? totalPnL
@@ -88,14 +91,14 @@ export function PortfolioStatsGrid({
       />
 
       <StatCard
-        label="Positions"
+        label={t("portfolio.stats.positions")}
         value={totalPositions}
         icon={BarChart3}
         subtitle={positionsSubtitle}
       />
 
       <StatCard
-        label="Accounts"
+        label={t("portfolio.stats.accounts")}
         value={accountsCount}
         icon={Briefcase}
         subtitle={accountsSubtitle}

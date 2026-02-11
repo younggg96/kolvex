@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useCallback } from "react";
+import { useTranslation } from "@/lib/i18n";
 import {
     Sparkles,
     TrendingUp,
@@ -41,6 +42,8 @@ import {
 // ============================================================
 // Types
 // ============================================================
+
+type TFunction = (key: string, params?: Record<string, string>) => string;
 
 interface PortfolioAIAnalysisProps {
     className?: string;
@@ -111,17 +114,19 @@ function RecommendationBadge({ recommendation }: { recommendation: string }) {
     );
 }
 
-function RiskMeter({ level }: { level: string }) {
+function RiskMeter({ level, t }: { level: string; t: TFunction }) {
     const config = RISK_CONFIG[level as keyof typeof RISK_CONFIG] || RISK_CONFIG.medium;
+    const labelKey = level === "low" ? "portfolio.ai.lowRisk" : level === "high" ? "portfolio.ai.highRisk" : "portfolio.ai.mediumRisk";
+    const label = t(labelKey);
 
     return (
         <div className="space-y-2">
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <Gauge className="w-4 h-4" />
-                    <span>Risk Level</span>
+                    <span>{t("portfolio.ai.riskLevel")}</span>
                 </div>
-                <span className={cn("text-sm font-semibold", config.textColor)}>{config.label}</span>
+                <span className={cn("text-sm font-semibold", config.textColor)}>{label}</span>
             </div>
             <div className="h-2 bg-gray-200 dark:bg-white/10 rounded-full overflow-hidden">
                 <div
@@ -133,7 +138,7 @@ function RiskMeter({ level }: { level: string }) {
     );
 }
 
-function DiversificationGauge({ score }: { score: number }) {
+function DiversificationGauge({ score, t }: { score: number; t: TFunction }) {
     const getColor = (s: number) => {
         if (s >= 70) return { ring: "text-green-500", text: "text-green-600 dark:text-green-400" };
         if (s >= 40) return { ring: "text-amber-500", text: "text-amber-600 dark:text-amber-400" };
@@ -142,6 +147,7 @@ function DiversificationGauge({ score }: { score: number }) {
     const colors = getColor(score);
     const circumference = 2 * Math.PI * 40;
     const strokeDashoffset = circumference - (score / 100) * circumference;
+    const statusLabel = score >= 70 ? t("portfolio.ai.wellDiversified") : score >= 40 ? t("portfolio.ai.moderate") : t("portfolio.ai.concentrated");
 
     return (
         <div className="flex items-center gap-4">
@@ -176,10 +182,10 @@ function DiversificationGauge({ score }: { score: number }) {
             <div>
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <PieChart className="w-4 h-4" />
-                    <span>Diversification</span>
+                    <span>{t("portfolio.ai.diversification")}</span>
                 </div>
                 <p className={cn("text-sm font-semibold", colors.text)}>
-                    {score >= 70 ? "Well Diversified" : score >= 40 ? "Moderate" : "Concentrated"}
+                    {statusLabel}
                 </p>
             </div>
         </div>
@@ -202,7 +208,7 @@ function MetricCard({ icon: Icon, label, children }: { icon: React.ElementType; 
 // Stock Analysis Accordion Item
 // ============================================================
 
-function StockAnalysisItem({ stock }: { stock: StockAnalysis }) {
+function StockAnalysisItem({ stock, t }: { stock: StockAnalysis; t: TFunction }) {
     return (
         <AccordionItem value={stock.symbol} className="border border-gray-200 dark:border-white/10 rounded-lg mb-2 overflow-hidden">
             <AccordionTrigger className="px-4 py-3 hover:no-underline hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
@@ -234,7 +240,7 @@ function StockAnalysisItem({ stock }: { stock: StockAnalysis }) {
                     {/* Key Points */}
                     {stock.key_points && stock.key_points.length > 0 && (
                         <div>
-                            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">Key Points</p>
+                            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">{t("portfolio.ai.keyPoints")}</p>
                             <ul className="space-y-1.5">
                                 {stock.key_points.map((point, idx) => (
                                     <li key={idx} className="flex items-start gap-2 text-sm">
@@ -250,12 +256,12 @@ function StockAnalysisItem({ stock }: { stock: StockAnalysis }) {
                     <div className="flex items-center gap-4 pt-2 border-t border-gray-200 dark:border-white/10">
                         {stock.current_weight !== undefined && stock.current_weight !== null && (
                             <div className="text-xs">
-                                <span className="text-muted-foreground">Weight: </span>
+                                <span className="text-muted-foreground">{t("portfolio.ai.weight")} </span>
                                 <span className="font-semibold">{stock.current_weight.toFixed(1)}%</span>
                             </div>
                         )}
                         <div className="text-xs">
-                            <span className="text-muted-foreground">Confidence: </span>
+                            <span className="text-muted-foreground">{t("portfolio.ai.confidence")} </span>
                             <span className="font-semibold">{(stock.confidence * 100).toFixed(0)}%</span>
                         </div>
                     </div>
@@ -269,7 +275,7 @@ function StockAnalysisItem({ stock }: { stock: StockAnalysis }) {
 // Overall Analysis Section
 // ============================================================
 
-function OverallAnalysisSection({ analysis }: { analysis: OverallAnalysis }) {
+function OverallAnalysisSection({ analysis, t }: { analysis: OverallAnalysis; t: TFunction }) {
     return (
         <div className="space-y-4">
             {/* Summary Card */}
@@ -279,18 +285,18 @@ function OverallAnalysisSection({ analysis }: { analysis: OverallAnalysis }) {
 
             {/* Metrics Grid - Bento Style */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <MetricCard icon={Gauge} label="Risk Assessment">
-                    <RiskMeter level={analysis.risk_level} />
+                <MetricCard icon={Gauge} label={t("portfolio.ai.riskAssessment")}>
+                    <RiskMeter level={analysis.risk_level} t={t} />
                 </MetricCard>
-                <MetricCard icon={PieChart} label="Portfolio Health">
-                    <DiversificationGauge score={analysis.diversification_score} />
+                <MetricCard icon={PieChart} label={t("portfolio.ai.portfolioHealth")}>
+                    <DiversificationGauge score={analysis.diversification_score} t={t} />
                 </MetricCard>
             </div>
 
             {/* Portfolio Style */}
             {analysis.portfolio_style && (
                 <div className="flex items-center gap-2 px-4 py-3 rounded-lg bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10">
-                    <span className="text-sm text-muted-foreground">Portfolio Style:</span>
+                    <span className="text-sm text-muted-foreground">{t("portfolio.ai.portfolioStyle")}</span>
                     <span className="text-sm font-semibold capitalize">{analysis.portfolio_style}</span>
                 </div>
             )}
@@ -301,7 +307,7 @@ function OverallAnalysisSection({ analysis }: { analysis: OverallAnalysis }) {
                     <div className="p-4 rounded-lg border border-green-200 dark:border-green-500/20 bg-green-50/50 dark:bg-green-500/5">
                         <div className="flex items-center gap-2 mb-3">
                             <CheckCircle2 className="w-4 h-4 text-green-600 dark:text-green-400" />
-                            <span className="text-sm font-semibold text-green-700 dark:text-green-400">Strengths</span>
+                            <span className="text-sm font-semibold text-green-700 dark:text-green-400">{t("portfolio.ai.strengths")}</span>
                         </div>
                         <ul className="space-y-1.5">
                             {analysis.strengths.map((item, idx) => (
@@ -318,7 +324,7 @@ function OverallAnalysisSection({ analysis }: { analysis: OverallAnalysis }) {
                     <div className="p-4 rounded-lg border border-amber-200 dark:border-amber-500/20 bg-amber-50/50 dark:bg-amber-500/5">
                         <div className="flex items-center gap-2 mb-3">
                             <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400" />
-                            <span className="text-sm font-semibold text-amber-700 dark:text-amber-400">Areas to Improve</span>
+                            <span className="text-sm font-semibold text-amber-700 dark:text-amber-400">{t("portfolio.ai.areasToImprove")}</span>
                         </div>
                         <ul className="space-y-1.5">
                             {analysis.weaknesses.map((item, idx) => (
@@ -340,13 +346,13 @@ function OverallAnalysisSection({ analysis }: { analysis: OverallAnalysis }) {
 // ============================================================
 
 const SUGGESTION_SECTIONS = [
-    { key: "rebalancing", title: "Rebalancing", icon: Target, color: "text-blue-500 dark:text-blue-400", bg: "bg-blue-500/10" },
-    { key: "risk_management", title: "Risk Management", icon: Shield, color: "text-purple-500 dark:text-purple-400", bg: "bg-purple-500/10" },
-    { key: "opportunities", title: "Opportunities", icon: Lightbulb, color: "text-amber-500 dark:text-amber-400", bg: "bg-amber-500/10" },
-    { key: "tax_considerations", title: "Tax Tips", icon: Info, color: "text-teal-500 dark:text-teal-400", bg: "bg-teal-500/10" },
+    { key: "rebalancing", titleKey: "portfolio.ai.rebalancing", icon: Target, color: "text-gery-500 dark:text-blue-400", bg: "bg-blue-500/10" },
+    { key: "risk_management", titleKey: "portfolio.ai.riskManagement", icon: Shield, color: "text-purple-500 dark:text-purple-400", bg: "bg-purple-500/10" },
+    { key: "opportunities", titleKey: "portfolio.ai.opportunities", icon: Lightbulb, color: "text-amber-500 dark:text-amber-400", bg: "bg-amber-500/10" },
+    { key: "tax_considerations", titleKey: "portfolio.ai.taxTips", icon: Info, color: "text-teal-500 dark:text-teal-400", bg: "bg-teal-500/10" },
 ] as const;
 
-function SuggestionsSection({ suggestions }: { suggestions: PortfolioAnalysisResponse["portfolio_suggestions"] }) {
+function SuggestionsSection({ suggestions, t }: { suggestions: PortfolioAnalysisResponse["portfolio_suggestions"]; t: TFunction }) {
     if (!suggestions) return null;
 
     const activeSections = SUGGESTION_SECTIONS.filter((s) => {
@@ -371,7 +377,7 @@ function SuggestionsSection({ suggestions }: { suggestions: PortfolioAnalysisRes
                             <div className={cn("p-1.5 rounded-md", section.bg)}>
                                 <Icon className={cn("w-4 h-4", section.color)} />
                             </div>
-                            <span className="font-semibold text-sm">{section.title}</span>
+                            <span className="font-semibold text-sm">{t(section.titleKey)}</span>
                         </div>
                         <ul className="space-y-1.5 pl-2">
                             {items.map((item, idx) => (
@@ -413,16 +419,16 @@ function AnalysisLoadingState() {
 // Empty State
 // ============================================================
 
-function EmptyAnalysisState({ onAnalyze, loading }: { onAnalyze: () => void; loading: boolean }) {
+function EmptyAnalysisState({ onAnalyze, loading, t }: { onAnalyze: () => void; loading: boolean; t: TFunction }) {
     return (
         <div className="text-center py-10">
-            <h3 className="text-lg font-semibold mb-2">AI-Powered Portfolio Analysis</h3>
+            <h3 className="text-lg font-semibold mb-2">{t("portfolio.ai.emptyTitle")}</h3>
             <p className="text-sm text-muted-foreground max-w-sm mx-auto mb-6">
-                Get personalized insights, risk assessment, and actionable recommendations powered by financial AI.
+                {t("portfolio.ai.emptyDescription")}
             </p>
             <Button onClick={onAnalyze} disabled={loading} size="sm" className="gap-2">
                 <Zap className="w-4 h-4" />
-                {loading ? "Analyzing..." : "Start Analysis"}
+                {loading ? t("portfolio.ai.analyzing") : t("portfolio.ai.startAnalysis")}
             </Button>
         </div>
     );
@@ -432,17 +438,17 @@ function EmptyAnalysisState({ onAnalyze, loading }: { onAnalyze: () => void; loa
 // Error State
 // ============================================================
 
-function ErrorState({ error, onRetry }: { error: string; onRetry: () => void }) {
+function ErrorState({ error, onRetry, t }: { error: string; onRetry: () => void; t: TFunction }) {
     return (
         <div className="text-center py-10">
             <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-red-500/10 flex items-center justify-center">
                 <AlertTriangle className="w-7 h-7 text-red-500" />
             </div>
-            <h3 className="font-semibold mb-1">Analysis Failed</h3>
+            <h3 className="font-semibold mb-1">{t("portfolio.ai.analysisFailed")}</h3>
             <p className="text-sm text-muted-foreground mb-4 max-w-sm mx-auto">{error}</p>
             <Button variant="outline" onClick={onRetry} className="gap-2">
                 <RefreshCw className="w-4 h-4" />
-                Try Again
+                {t("portfolio.ai.tryAgain")}
             </Button>
         </div>
     );
@@ -453,6 +459,7 @@ function ErrorState({ error, onRetry }: { error: string; onRetry: () => void }) 
 // ============================================================
 
 export function PortfolioAIAnalysis({ className }: PortfolioAIAnalysisProps) {
+    const { t } = useTranslation();
     const [analysis, setAnalysis] = useState<PortfolioAnalysisResponse | null>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -484,7 +491,7 @@ export function PortfolioAIAnalysis({ className }: PortfolioAIAnalysisProps) {
             <CardHeader className="pb-4">
                 <div className="flex items-center justify-between">
                     <div>
-                        <CardTitle className="text-lg">AI Portfolio Analysis</CardTitle>
+                        <CardTitle className="text-lg">{t("portfolio.ai.title")}</CardTitle>
                     </div>
                     {analysis && (
                         <Button
@@ -495,7 +502,7 @@ export function PortfolioAIAnalysis({ className }: PortfolioAIAnalysisProps) {
                             className="gap-2"
                         >
                             <RefreshCw className={cn("w-4 h-4", loading && "animate-spin")} />
-                            {loading ? "Analyzing..." : "Refresh"}
+                            {loading ? t("portfolio.ai.analyzing") : t("portfolio.ai.refresh")}
                         </Button>
                     )}
                 </div>
@@ -504,14 +511,14 @@ export function PortfolioAIAnalysis({ className }: PortfolioAIAnalysisProps) {
             <CardContent>
                 {/* Initial Empty State */}
                 {!analysis && !loading && !error && (
-                    <EmptyAnalysisState onAnalyze={handleAnalyze} loading={loading} />
+                    <EmptyAnalysisState onAnalyze={handleAnalyze} loading={loading} t={t} />
                 )}
 
                 {/* Loading State */}
                 {loading && !analysis && <AnalysisLoadingState />}
 
                 {/* Error State */}
-                {error && !loading && <ErrorState error={error} onRetry={handleAnalyze} />}
+                {error && !loading && <ErrorState error={error} onRetry={handleAnalyze} t={t} />}
 
                 {/* Analysis Results */}
                 {analysis && !loading && (
@@ -519,23 +526,23 @@ export function PortfolioAIAnalysis({ className }: PortfolioAIAnalysisProps) {
                         {/* Overall Analysis */}
                         <section>
                             <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
-                                Portfolio Overview
+                                {t("portfolio.ai.portfolioOverview")}
                             </h3>
-                            <OverallAnalysisSection analysis={analysis.overall_analysis} />
+                            <OverallAnalysisSection analysis={analysis.overall_analysis} t={t} />
                         </section>
 
                         {/* Stock Analysis */}
                         {analysis.stock_analyses && analysis.stock_analyses.length > 0 && (
                             <section>
                                 <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
-                                    Stock Analysis
+                                    {t("portfolio.ai.stockAnalysis")}
                                     <Badge variant="default" className="ml-1">
                                         {analysis.stock_analyses.length}
                                     </Badge>
                                 </h3>
                                 <Accordion type="multiple" defaultValue={analysis.stock_analyses.slice(0, 2).map(s => s.symbol)}>
                                     {displayedStocks.map((stock) => (
-                                        <StockAnalysisItem key={stock.symbol} stock={stock} />
+                                        <StockAnalysisItem key={stock.symbol} stock={stock} t={t} />
                                     ))}
                                 </Accordion>
                                 {hasMoreStocks && (
@@ -546,7 +553,7 @@ export function PortfolioAIAnalysis({ className }: PortfolioAIAnalysisProps) {
                                         onClick={() => setShowAllStocks(!showAllStocks)}
                                     >
                                         <ChevronDown className={cn("w-4 h-4 mr-1 transition-transform", showAllStocks && "rotate-180")} />
-                                        {showAllStocks ? "Show Less" : `Show ${hiddenCount} More`}
+                                        {showAllStocks ? t("portfolio.ai.showLess") : t("portfolio.ai.showMore", { count: String(hiddenCount) })}
                                     </Button>
                                 )}
                             </section>
@@ -555,21 +562,21 @@ export function PortfolioAIAnalysis({ className }: PortfolioAIAnalysisProps) {
                         {/* Suggestions */}
                         <section>
                             <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
-                                Recommendations
+                                {t("portfolio.ai.recommendations")}
                             </h3>
-                            <SuggestionsSection suggestions={analysis.portfolio_suggestions} />
+                            <SuggestionsSection suggestions={analysis.portfolio_suggestions} t={t} />
                         </section>
 
                         {/* Footer */}
                         <footer className="pt-4 border-t border-gray-200 dark:border-white/10">
                             <div className="flex items-center justify-between text-xs text-muted-foreground">
                                 <span>
-                                    {analysis.positions_analyzed} positions analyzed • Model: {analysis.model}
+                                    {t("portfolio.ai.positionsAnalyzed", { count: String(analysis.positions_analyzed) })} • Model: {analysis.model}
                                 </span>
                                 <span>{new Date(analysis.analyzed_at).toLocaleString()}</span>
                             </div>
                             <p className="text-[10px] text-muted-foreground/60 mt-2 leading-relaxed">
-                                Disclaimer: AI analysis is for informational purposes only. Not financial advice. Consult a qualified advisor.
+                                {t("portfolio.ai.disclaimer")}
                             </p>
                         </footer>
                     </div>

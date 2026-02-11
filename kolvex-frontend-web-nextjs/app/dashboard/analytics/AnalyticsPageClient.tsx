@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import { useTranslation } from "@/lib/i18n";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { AnalyticsDashboard } from "@/components/analytics";
 import { Button } from "@/components/ui/button";
@@ -14,6 +15,7 @@ import {
 import { RotateCcw } from "lucide-react";
 
 export default function AnalyticsPageClient() {
+  const { t } = useTranslation();
   const [days, setDays] = useState(7);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
@@ -56,12 +58,12 @@ export default function AnalyticsPageClient() {
       </Button>
       <Select value={String(days)} onValueChange={(v) => setDays(Number(v))}>
         <SelectTrigger className="w-24 sm:w-28 h-8 text-xs sm:text-sm">
-          <SelectValue placeholder="Select range" />
+          <SelectValue placeholder={t("analytics.selectRange")} />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="7">7 days</SelectItem>
-          <SelectItem value="14">14 days</SelectItem>
-          <SelectItem value="30">30 days</SelectItem>
+          <SelectItem value="7">{t("analytics.days", { count: "7" })}</SelectItem>
+          <SelectItem value="14">{t("analytics.days", { count: "14" })}</SelectItem>
+          <SelectItem value="30">{t("analytics.days", { count: "30" })}</SelectItem>
         </SelectContent>
       </Select>
       {/* Data source indicator - hidden on mobile */}
@@ -75,11 +77,11 @@ export default function AnalyticsPageClient() {
             }`}
           />
           <span className="hidden lg:inline">
-            {dataSource.source === "snapshot" ? "Snapshot" : "Realtime"}
+            {dataSource.source === "snapshot" ? t("analytics.snapshot") : t("analytics.realtime")}
           </span>
           {dataSource.coverage !== undefined && (
             <span className="hidden xl:inline">
-              • {dataSource.coverage.toFixed(1)}% analyzed
+              • {t("analytics.analyzed", { percent: dataSource.coverage.toFixed(1) })}
             </span>
           )}
         </div>
@@ -89,7 +91,7 @@ export default function AnalyticsPageClient() {
 
   return (
     <DashboardLayout
-      title="Analytics"
+      title={t("analytics.title")}
       showHeader={true}
       headerActions={headerActions}
     >

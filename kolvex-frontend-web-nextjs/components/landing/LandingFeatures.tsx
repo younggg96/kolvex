@@ -2,100 +2,88 @@
 
 import React, { useRef, useEffect, useState, useCallback } from "react";
 import { Users, BarChart3, Bell, Shield, LineChart, Brain } from "lucide-react";
+import { useTranslation } from "@/lib/i18n";
 
 interface Feature {
   id: string;
-  title: string;
-  description: string;
+  translationKey: string;
   icon: React.ElementType;
   accentColor: string;
   lightAccentBg: string;
-  stats?: { label: string; value: string }[];
+  stats?: { labelKey: string; value: string }[];
 }
 
 const FEATURES: Feature[] = [
   {
     id: "kol-tracking",
-    title: "KOL Tracking",
-    description:
-      "Monitor 2,500+ influential investors and analysts across Twitter, Reddit, StockTwits in real-time. Never miss a market-moving call.",
+    translationKey: "kolTracking",
     icon: Users,
     accentColor: "#3B82F6",
     lightAccentBg: "bg-blue-50 dark:bg-blue-500/10",
     stats: [
-      { label: "KOLs Tracked", value: "2,500+" },
-      { label: "Platforms", value: "15+" },
-      { label: "Updates/Day", value: "50K+" },
+      { labelKey: "kolsTracked", value: "2,500+" },
+      { labelKey: "platforms", value: "15+" },
+      { labelKey: "updatesDay", value: "50K+" },
     ],
   },
   {
     id: "ai-analysis",
-    title: "AI-Powered Analysis",
-    description:
-      "Our proprietary AI models analyze sentiment, extract key signals, and predict market movements with institutional-grade accuracy.",
+    translationKey: "aiAnalysis",
     icon: Brain,
     accentColor: "#00C805",
     lightAccentBg: "bg-emerald-50 dark:bg-primary/10",
     stats: [
-      { label: "Accuracy", value: "94%" },
-      { label: "Models", value: "12+" },
-      { label: "Signals/Day", value: "10K+" },
+      { labelKey: "accuracy", value: "94%" },
+      { labelKey: "models", value: "12+" },
+      { labelKey: "signalsDay", value: "10K+" },
     ],
   },
   {
     id: "alerts",
-    title: "Instant Alerts",
-    description:
-      "Get notified immediately when tracked KOLs mention a stock or when sentiment shifts. Stay ahead of every market move.",
+    translationKey: "alerts",
     icon: Bell,
     accentColor: "#F59E0B",
     lightAccentBg: "bg-amber-50 dark:bg-amber-500/10",
     stats: [
-      { label: "Latency", value: "<1s" },
-      { label: "Channels", value: "5+" },
-      { label: "Custom Rules", value: "∞" },
+      { labelKey: "latency", value: "<1s" },
+      { labelKey: "channels", value: "5+" },
+      { labelKey: "customRules", value: "∞" },
     ],
   },
   {
     id: "sentiment",
-    title: "Sentiment Scoring",
-    description:
-      "Real-time sentiment scores for 10,000+ stocks aggregated from social media, news, and analyst reports.",
+    translationKey: "sentiment",
     icon: BarChart3,
     accentColor: "#8B5CF6",
     lightAccentBg: "bg-violet-50 dark:bg-violet-500/10",
     stats: [
-      { label: "Stocks", value: "10K+" },
-      { label: "Sources", value: "100+" },
-      { label: "Refresh", value: "Real-time" },
+      { labelKey: "stocks", value: "10K+" },
+      { labelKey: "sources", value: "100+" },
+      { labelKey: "refresh", value: "Real-time" },
     ],
   },
   {
     id: "portfolio",
-    title: "Portfolio Integration",
-    description:
-      "Connect your brokerage via SnapTrade to overlay social intelligence on your actual positions.",
+    translationKey: "portfolio",
     icon: LineChart,
     accentColor: "#10B981",
     lightAccentBg: "bg-teal-50 dark:bg-teal-500/10",
     stats: [
-      { label: "Brokers", value: "50+" },
-      { label: "Security", value: "Bank-grade" },
-      { label: "Sync", value: "Auto" },
+      { labelKey: "brokers", value: "50+" },
+      { labelKey: "security", value: "Bank-grade" },
+      { labelKey: "sync", value: "Auto" },
     ],
   },
   {
     id: "filtering",
-    title: "Smart Filtering",
-    description:
-      "AI-powered bot detection and spam filtering ensures you only see high-quality, signal-rich content.",
+    translationKey: "filtering",
     icon: Shield,
     accentColor: "#EF4444",
     lightAccentBg: "bg-red-50 dark:bg-red-500/10",
     stats: [
-      { label: "Bot Detection", value: "99.9%" },
-      { label: "Spam Blocked", value: "10M+" },
-      { label: "False Positives", value: "<0.1%" },
+      { labelKey: "botDetection", value: "99.9%" },
+      { labelKey: "spamBlocked", value: "10M+" },
+      { labelKey: "falsePositives", value: "<0.1%" },
     ],
   },
 ];
@@ -110,6 +98,7 @@ function FeatureCard({
   index: number;
   isVisible: boolean;
 }) {
+  const { t } = useTranslation();
   const [isAnimated, setIsAnimated] = useState(false);
 
   useEffect(() => {
@@ -124,9 +113,8 @@ function FeatureCard({
 
   return (
     <div
-      className={`group relative rounded-3xl transition-all duration-700 hover:-translate-y-1 ${
-        isAnimated ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
-      }`}
+      className={`group relative rounded-3xl transition-all duration-700 hover:-translate-y-1 ${isAnimated ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
+        }`}
       style={{
         transitionDelay: `${index * 50}ms`,
       }}
@@ -154,17 +142,15 @@ function FeatureCard({
         <div className="flex items-start justify-between mb-3 md:mb-5">
           {/* Icon with pulse animation on load */}
           <div
-            className={`w-10 h-10 md:w-14 md:h-14 rounded-xl md:rounded-2xl flex items-center justify-center transition-all duration-500 group-hover:scale-110 ${
-              feature.lightAccentBg
-            } ${isAnimated ? "scale-100" : "scale-75"}`}
+            className={`w-10 h-10 md:w-14 md:h-14 rounded-xl md:rounded-2xl flex items-center justify-center transition-all duration-500 group-hover:scale-110 ${feature.lightAccentBg
+              } ${isAnimated ? "scale-100" : "scale-75"}`}
             style={{
               transitionDelay: `${index * 50 + 200}ms`,
             }}
           >
             <feature.icon
-              className={`w-5 h-5 md:w-7 md:h-7 transition-all duration-500 ${
-                isAnimated ? "opacity-100" : "opacity-0"
-              }`}
+              className={`w-5 h-5 md:w-7 md:h-7 transition-all duration-500 ${isAnimated ? "opacity-100" : "opacity-0"
+                }`}
               style={{
                 color: feature.accentColor,
                 transitionDelay: `${index * 50 + 300}ms`,
@@ -174,9 +160,8 @@ function FeatureCard({
 
           {/* Feature number with fade */}
           <span
-            className={`text-2xl md:text-4xl font-black text-gray-100 dark:text-white/[0.05] transition-all duration-500 group-hover:text-gray-200 dark:group-hover:text-white/[0.08] ${
-              isAnimated ? "opacity-100" : "opacity-0"
-            }`}
+            className={`text-2xl md:text-4xl font-black text-black dark:text-white/[0.05] transition-all duration-500 group-hover:text-gray-200 dark:group-hover:text-white/[0.08] ${isAnimated ? "opacity-100" : "opacity-0"
+              }`}
             style={{ transitionDelay: `${index * 50 + 100}ms` }}
           >
             0{index + 1}
@@ -185,22 +170,20 @@ function FeatureCard({
 
         {/* Title with slide-up */}
         <h3
-          className={`text-lg md:text-xl lg:text-2xl font-bold text-gray-900 dark:text-white mb-2 md:mb-3 transition-all duration-500 ${
-            isAnimated ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
-          }`}
+          className={`text-lg md:text-xl lg:text-2xl font-bold text-gray-900 dark:text-white mb-2 md:mb-3 transition-all duration-500 ${isAnimated ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
+            }`}
           style={{ transitionDelay: `${index * 50 + 150}ms` }}
         >
-          {feature.title}
+          {t(`landing.features.${feature.translationKey}.title`)}
         </h3>
 
         {/* Description with slide-up */}
         <p
-          className={`text-gray-600 dark:text-white/60 text-xs md:text-sm lg:text-base leading-relaxed mb-4 md:mb-6 flex-grow transition-all duration-500 ${
-            isAnimated ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
-          }`}
+          className={`text-gray-600 dark:text-white/60 text-xs md:text-sm lg:text-base leading-relaxed mb-4 md:mb-6 flex-grow transition-all duration-500 ${isAnimated ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
+            }`}
           style={{ transitionDelay: `${index * 50 + 200}ms` }}
         >
-          {feature.description}
+          {t(`landing.features.${feature.translationKey}.description`)}
         </p>
 
         {/* Stats Row with staggered animation */}
@@ -209,11 +192,10 @@ function FeatureCard({
             {feature.stats.map((stat, i) => (
               <div
                 key={i}
-                className={`text-center p-2 md:p-3 rounded-lg md:rounded-xl bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/5 group-hover:border-gray-200 dark:group-hover:border-white/10 transition-all duration-500 ${
-                  isAnimated
-                    ? "opacity-100 translate-y-0 scale-100"
-                    : "opacity-0 translate-y-4 scale-95"
-                }`}
+                className={`text-center p-2 md:p-3 rounded-lg md:rounded-xl bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/5 group-hover:border-gray-200 dark:group-hover:border-white/10 transition-all duration-500 ${isAnimated
+                  ? "opacity-100 translate-y-0 scale-100"
+                  : "opacity-0 translate-y-4 scale-95"
+                  }`}
                 style={{ transitionDelay: `${index * 50 + 250 + i * 50}ms` }}
               >
                 <div
@@ -223,7 +205,7 @@ function FeatureCard({
                   {stat.value}
                 </div>
                 <div className="text-gray-500 dark:text-white/40 text-[9px] md:text-[10px] lg:text-xs tracking-wider">
-                  {stat.label}
+                  {t(`landing.features.${feature.translationKey}.stats.${stat.labelKey}`)}
                 </div>
               </div>
             ))}
@@ -240,6 +222,8 @@ export default function LandingFeatures() {
   const [headerVisible, setHeaderVisible] = useState(false);
   const sectionRef = useRef<HTMLElement>(null);
   const headerRef = useRef<HTMLDivElement>(null);
+
+  const { t } = useTranslation();
 
   // Intersection Observer for scroll-triggered animations
   useEffect(() => {
@@ -309,21 +293,19 @@ export default function LandingFeatures() {
         >
           {/* Headline */}
           <h2
-            className={`text-xl sm:text-2xl md:text-4xl font-black text-gray-900 dark:text-white mb-4 md:mb-6 tracking-tight leading-[1.15] transition-all duration-700 ${
-              headerVisible
-                ? "opacity-100 translate-y-0"
-                : "opacity-0 translate-y-8"
-            }`}
+            className={`text-xl sm:text-2xl md:text-4xl font-black text-gray-900 dark:text-white mb-4 md:mb-6 tracking-tight leading-[1.15] transition-all duration-700 ${headerVisible
+              ? "opacity-100 translate-y-0"
+              : "opacity-0 translate-y-8"
+              }`}
           >
-            Your unfair advantage in
+            {t("landing.features.title")}
             <br />
             <span className="relative inline-block mt-1">
-              <span className="text-primary">modern markets</span>
+              <span className="text-primary">{t("landing.features.titleHighlight")}</span>
               {/* Underline decoration with draw animation */}
               <svg
-                className={`absolute -bottom-1 left-0 w-full h-2 transition-opacity duration-500 ${
-                  headerVisible ? "opacity-100" : "opacity-0"
-                }`}
+                className={`absolute -bottom-1 left-0 w-full h-2 transition-opacity duration-500 ${headerVisible ? "opacity-100" : "opacity-0"
+                  }`}
                 viewBox="0 0 300 8"
                 fill="none"
                 preserveAspectRatio="none"
@@ -359,15 +341,12 @@ export default function LandingFeatures() {
 
           {/* Description */}
           <p
-            className={`text-sm md:text-base lg:text-lg text-gray-600 dark:text-white/50 leading-relaxed max-w-2xl mx-auto transition-all duration-700 delay-200 px-2 ${
-              headerVisible
-                ? "opacity-100 translate-y-0"
-                : "opacity-0 translate-y-8"
-            }`}
+            className={`text-sm md:text-base lg:text-lg text-gray-600 dark:text-white/50 leading-relaxed max-w-2xl mx-auto transition-all duration-700 delay-200 px-2 ${headerVisible
+              ? "opacity-100 translate-y-0"
+              : "opacity-0 translate-y-8"
+              }`}
           >
-            Kolvex combines cutting-edge AI with comprehensive social data to
-            deliver insights previously available only to institutional
-            investors.
+            {t("landing.features.subtitle")}
           </p>
         </div>
 

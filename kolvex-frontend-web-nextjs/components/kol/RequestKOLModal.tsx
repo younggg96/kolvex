@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
+import { useTranslation } from "@/lib/i18n";
 import {
   Dialog,
   DialogContent,
@@ -22,6 +23,7 @@ interface RequestKOLModalProps {
 }
 
 export function RequestKOLModal({ onSuccess }: RequestKOLModalProps) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [username, setUsername] = useState("");
   const [notes, setNotes] = useState("");
@@ -32,7 +34,7 @@ export function RequestKOLModal({ onSuccess }: RequestKOLModalProps) {
 
     const cleanUsername = username.trim().replace(/^@/, "");
     if (!cleanUsername) {
-      toast.error("Please enter a valid username");
+      toast.error(t("kol.request.enterValidUsername"));
       return;
     }
 
@@ -54,11 +56,11 @@ export function RequestKOLModal({ onSuccess }: RequestKOLModalProps) {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || "Failed to submit request");
+        throw new Error(data.error || t("kol.request.failedToSubmit"));
       }
 
-      toast.success(`Request submitted for @${cleanUsername}`, {
-        description: "Your request will be reviewed by our team.",
+      toast.success(t("kol.request.requestSubmitted", { username: cleanUsername }), {
+        description: t("kol.request.requestSubmittedDesc"),
       });
 
       setUsername("");
@@ -67,7 +69,7 @@ export function RequestKOLModal({ onSuccess }: RequestKOLModalProps) {
       onSuccess?.();
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Failed to submit request"
+        error instanceof Error ? error.message : t("kol.request.failedToSubmit")
       );
     } finally {
       setIsSubmitting(false);
@@ -79,7 +81,7 @@ export function RequestKOLModal({ onSuccess }: RequestKOLModalProps) {
       <DialogTrigger asChild>
         <Button variant="outline" size="sm" className="gap-2">
           <UserPlus className="w-4 h-4" />
-          Request KOL
+          {t("kol.request.button")}
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
@@ -92,11 +94,10 @@ export function RequestKOLModal({ onSuccess }: RequestKOLModalProps) {
               height={20}
               className="dark:invert"
             />
-            Request New KOL
+            {t("kol.request.title")}
           </DialogTitle>
           <DialogDescription>
-            Submit a request to track a KOL on X (Twitter). Our team will review
-            and approve valid requests.
+            {t("kol.request.description")}
           </DialogDescription>
         </DialogHeader>
 
@@ -106,13 +107,13 @@ export function RequestKOLModal({ onSuccess }: RequestKOLModalProps) {
               htmlFor="username"
               className="text-sm font-medium text-gray-700 dark:text-gray-300"
             >
-              X Username <span className="text-red-500">*</span>
+              {t("kol.request.username")} <span className="text-red-500">*</span>
             </label>
             <div className="relative">
               <AtSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
               <Input
                 id="username"
-                placeholder="elonmusk"
+                placeholder={t("kol.request.usernamePlaceholder")}
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 className="pl-9"
@@ -121,7 +122,7 @@ export function RequestKOLModal({ onSuccess }: RequestKOLModalProps) {
               />
             </div>
             <p className="text-xs text-gray-500 dark:text-gray-400">
-              Enter the username without the @ symbol
+              {t("kol.request.usernameHint")}
             </p>
           </div>
 
@@ -130,11 +131,11 @@ export function RequestKOLModal({ onSuccess }: RequestKOLModalProps) {
               htmlFor="notes"
               className="text-sm font-medium text-gray-700 dark:text-gray-300"
             >
-              Notes (Optional)
+              {t("kol.request.notes")}
             </label>
             <Textarea
               id="notes"
-              placeholder="Why do you want to track this KOL? (e.g., Financial expert, Stock analyst...)"
+              placeholder={t("kol.request.notesPlaceholder")}
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               className="resize-none"
@@ -144,10 +145,9 @@ export function RequestKOLModal({ onSuccess }: RequestKOLModalProps) {
           </div>
 
           <div className="flex items-start gap-2 p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
-            <Info className="w-4 h-4 text-blue-500 mt-0.5 flex-shrink-0" />
+            <Info className="w-4 h-4 text-gery-500 mt-0.5 flex-shrink-0" />
             <p className="text-xs text-blue-700 dark:text-blue-300">
-              Requests are typically reviewed within 24-48 hours. Approved KOLs
-              will be automatically added to the tracking system.
+              {t("kol.request.infoText")}
             </p>
           </div>
         </form>
@@ -159,7 +159,7 @@ export function RequestKOLModal({ onSuccess }: RequestKOLModalProps) {
             onClick={() => setOpen(false)}
             disabled={isSubmitting}
           >
-            Cancel
+            {t("common.cancel")}
           </Button>
           <Button
             type="submit"
@@ -169,10 +169,10 @@ export function RequestKOLModal({ onSuccess }: RequestKOLModalProps) {
             {isSubmitting ? (
               <>
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Submitting...
+                {t("kol.request.submitting")}
               </>
             ) : (
-              "Submit Request"
+              t("kol.request.submitRequest")
             )}
           </Button>
         </DialogFooter>

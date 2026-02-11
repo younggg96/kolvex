@@ -248,7 +248,7 @@ export default function KOLHoverCard({
                       {profile.display_name || screenName}
                     </h4>
                     {profile.is_verified && (
-                      <BadgeCheck className="h-4 w-4 text-blue-500 flex-shrink-0" />
+                      <BadgeCheck className="h-4 w-4 text-gery-500 flex-shrink-0" />
                     )}
                   </div>
                   <p className="text-xs text-muted-foreground">
@@ -261,11 +261,10 @@ export default function KOLHoverCard({
                   size="xs"
                   onClick={handleTrackToggle}
                   disabled={isTrackLoading}
-                  className={`flex-shrink-0 ${
-                    isTracking
+                  className={`flex-shrink-0 ${isTracking
                       ? "bg-primary hover:bg-primary/90 text-white"
                       : "border-gray-300 dark:border-white/20 hover:bg-gray-100 dark:hover:bg-white/10"
-                  }`}
+                    }`}
                 >
                   {isTrackLoading ? (
                     <Loader2 className="w-3.5 h-3.5 animate-spin" />

@@ -22,6 +22,7 @@ import CompanyLogo from "@/components/ui/company-logo";
 import { WeightIndicator } from "@/components/ui/weight-indicator";
 import MiniSparkline from "@/components/stock/MiniSparkline";
 import { formatCurrency } from "@/lib/snaptradeApi";
+import { useTranslation } from "@/lib/i18n";
 import type { EquityPositionsTableProps, SnapTradePosition } from "./types";
 
 // Helper to check if a value is hidden
@@ -40,6 +41,7 @@ export function EquityPositionsTable({
   onToggleVisibility,
 }: EquityPositionsTableProps) {
   const router = useRouter();
+  const { t } = useTranslation();
 
   if (positions.length === 0) return null;
 
@@ -49,7 +51,7 @@ export function EquityPositionsTable({
         <TableHeader>
           <TableRow>
             <SortableHeader
-              label="Symbol"
+              label={t("portfolio.table.symbol")}
               sortKey="symbol"
               currentSortKey={sortKey}
               sortDirection={sortDir}
@@ -59,10 +61,10 @@ export function EquityPositionsTable({
               className="w-[25%] pl-4"
             />
             <TableHead className="w-[80px] hidden sm:table-cell">
-              <span className="text-xs text-muted-foreground">Chart</span>
+              <span className="text-xs text-muted-foreground">{t("portfolio.table.chart")}</span>
             </TableHead>
             <SortableHeader
-              label="Price"
+              label={t("portfolio.table.price")}
               sortKey="price"
               currentSortKey={sortKey}
               sortDirection={sortDir}
@@ -71,7 +73,7 @@ export function EquityPositionsTable({
               type="amount"
             />
             <SortableHeader
-              label="Cost"
+              label={t("portfolio.table.cost")}
               sortKey="cost"
               currentSortKey={sortKey}
               sortDirection={sortDir}
@@ -80,7 +82,7 @@ export function EquityPositionsTable({
               type="amount"
             />
             <SortableHeader
-              label="Shares"
+              label={t("portfolio.table.shares")}
               sortKey="units"
               currentSortKey={sortKey}
               sortDirection={sortDir}
@@ -89,7 +91,7 @@ export function EquityPositionsTable({
               type="numeric"
             />
             <SortableHeader
-              label="Value"
+              label={t("portfolio.table.value")}
               sortKey="value"
               currentSortKey={sortKey}
               sortDirection={sortDir}
@@ -98,7 +100,7 @@ export function EquityPositionsTable({
               type="amount"
             />
             <SortableHeader
-              label="Total P&L"
+              label={t("portfolio.table.totalPnl")}
               sortKey="pnl"
               currentSortKey={sortKey}
               sortDirection={sortDir}
@@ -107,7 +109,7 @@ export function EquityPositionsTable({
               type="amount"
             />
             <SortableHeader
-              label="P&L/Share"
+              label={t("portfolio.table.pnlPerShare")}
               sortKey="pnl_per_share"
               currentSortKey={sortKey}
               sortDirection={sortDir}
@@ -116,7 +118,7 @@ export function EquityPositionsTable({
               type="amount"
             />
             <SortableHeader
-              label="Weight"
+              label={t("portfolio.table.weight")}
               sortKey="weight"
               currentSortKey={sortKey}
               sortDirection={sortDir}
@@ -127,7 +129,7 @@ export function EquityPositionsTable({
             />
             {isOwner && isPublic && (
               <TableHead className="w-[50px] pr-4">
-                <span className="text-xs text-muted-foreground">Public</span>
+                <span className="text-xs text-muted-foreground">{t("portfolio.table.public")}</span>
               </TableHead>
             )}
           </TableRow>
@@ -183,7 +185,7 @@ export function EquityPositionsTable({
                         className="text-xs text-muted-foreground truncate max-w-[150px]"
                         title={isSecretStock ? "" : pos.security_name || ""}
                       >
-                        {isSecretStock ? "Locked Stock" : pos.security_name}
+                        {isSecretStock ? t("portfolio.table.lockedStock") : pos.security_name}
                       </div>
                     </div>
                   </div>
@@ -285,8 +287,8 @@ export function EquityPositionsTable({
                         }`}
                       title={
                         pos.is_hidden
-                          ? "Hidden from public - Click to show"
-                          : "Visible to public - Click to hide"
+                          ? t("portfolio.table.hiddenFromPublic")
+                          : t("portfolio.table.visibleToPublic")
                       }
                     >
                       {pos.is_hidden ? (

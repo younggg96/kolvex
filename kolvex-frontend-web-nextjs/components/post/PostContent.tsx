@@ -20,7 +20,7 @@ import { Button } from "@/components/ui/button";
 export default function PostContent({
   url,
   fullText,
-  mediaUrls,
+  mediaItems,
   aiSummary,
   aiTradingSignal,
   aiTags,
@@ -70,8 +70,8 @@ export default function PostContent({
         <div className="text-sm">{onFormatText(content)}</div>
 
         {/* Media Images/Videos */}
-        {mediaUrls && mediaUrls.length > 0 && (
-          <PostMedia mediaUrls={mediaUrls} />
+        {mediaItems && mediaItems.length > 0 && (
+          <PostMedia mediaItems={mediaItems} />
         )}
 
         {/* AI Analysis (Summary & Trading Signal) */}

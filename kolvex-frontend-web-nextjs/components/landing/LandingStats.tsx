@@ -2,44 +2,45 @@
 
 import React, { useEffect, useState, useRef } from "react";
 import { TrendingUp, Users, Zap, Globe } from "lucide-react";
+import { useTranslation } from "@/lib/i18n";
 
 interface StatItem {
-  label: string;
+  labelKey: string;
   value: number;
   suffix: string;
   prefix?: string;
   icon: React.ElementType;
-  description: string;
+  descriptionKey: string;
 }
 
 const STATS: StatItem[] = [
   {
-    label: "KOLs Tracked",
+    labelKey: "landing.stats.kolsTracked",
     value: 2500,
     suffix: "+",
     icon: Users,
-    description: "Influential voices monitored",
+    descriptionKey: "landing.stats.kolsTrackedDesc",
   },
   {
-    label: "AI Signals Daily",
+    labelKey: "landing.stats.aiSignals",
     value: 50000,
     suffix: "+",
     icon: Zap,
-    description: "Real-time market insights",
+    descriptionKey: "landing.stats.aiSignalsDesc",
   },
   {
-    label: "Accuracy Rate",
+    labelKey: "landing.stats.accuracy",
     value: 94,
     suffix: "%",
     icon: TrendingUp,
-    description: "Sentiment prediction accuracy",
+    descriptionKey: "landing.stats.accuracyDesc",
   },
   {
-    label: "Data Sources",
+    labelKey: "landing.stats.dataSources",
     value: 15,
     suffix: "+",
     icon: Globe,
-    description: "Platforms & exchanges",
+    descriptionKey: "landing.stats.dataSourcesDesc",
   },
 ];
 
@@ -88,6 +89,7 @@ function useCountUp(end: number, duration: number = 2000, start: number = 0) {
 }
 
 function StatCard({ stat, index }: { stat: StatItem; index: number }) {
+  const { t } = useTranslation();
   const { count, ref, isVisible } = useCountUp(stat.value);
 
   const formatNumber = (num: number) => {
@@ -100,9 +102,8 @@ function StatCard({ stat, index }: { stat: StatItem; index: number }) {
   return (
     <div
       ref={ref}
-      className={`group relative p-4 md:p-6 lg:p-8 rounded-2xl md:rounded-3xl bg-white/60 dark:bg-white/[0.03] backdrop-blur-sm border border-gray-200/50 dark:border-white/10 transition-all duration-500 hover:border-primary/30 hover:shadow-xl hover:shadow-primary/5 ${
-        isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
-      }`}
+      className={`group relative p-4 md:p-6 lg:p-8 rounded-2xl md:rounded-3xl bg-white/60 dark:bg-white/[0.03] backdrop-blur-sm border border-gray-200/50 dark:border-white/10 transition-all duration-500 hover:border-primary/30 hover:shadow-xl hover:shadow-primary/5 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
+        }`}
       style={{ transitionDelay: `${index * 100}ms` }}
     >
       {/* Hover glow effect */}
@@ -119,7 +120,7 @@ function StatCard({ stat, index }: { stat: StatItem; index: number }) {
 
       {/* Value */}
       <div className="relative mb-1 md:mb-2">
-        <span className="text-3xl sm:text-4xl lg:text-6xl font-black text-gray-900 dark:text-white tabular-nums">
+        <span className="text-2xl sm:text-3xl lg:text-4xl font-black text-gray-900 dark:text-white tabular-nums">
           {stat.prefix}
           {formatNumber(count)}
           <span className="text-primary">{stat.suffix}</span>
@@ -128,12 +129,12 @@ function StatCard({ stat, index }: { stat: StatItem; index: number }) {
 
       {/* Label */}
       <h3 className="text-base md:text-lg font-bold text-gray-900 dark:text-white mb-0.5 md:mb-1">
-        {stat.label}
+        {t(stat.labelKey)}
       </h3>
 
       {/* Description */}
       <p className="text-xs md:text-sm text-gray-500 dark:text-white/50">
-        {stat.description}
+        {t(stat.descriptionKey)}
       </p>
 
       {/* Bottom accent line */}
@@ -143,6 +144,7 @@ function StatCard({ stat, index }: { stat: StatItem; index: number }) {
 }
 
 export default function LandingStats() {
+  const { t } = useTranslation();
   return (
     <section className="py-12 md:py-24 relative overflow-hidden">
       {/* Background elements */}
@@ -153,12 +155,10 @@ export default function LandingStats() {
         {/* Section header */}
         <div className="text-center my-8 md:my-16">
           <h2 className="text-xl sm:text-2xl md:text-4xl font-black text-gray-900 dark:text-white mb-2 md:mb-4 tracking-tight">
-            Trusted by <span className="text-primary">thousands</span> of
-            investors
+            {t("landing.stats.title")}
           </h2>
           <p className="text-sm md:text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto px-2">
-            Our platform processes millions of data points daily to deliver
-            actionable insights.
+            {t("landing.stats.subtitle")}
           </p>
         </div>
 

@@ -84,7 +84,7 @@ export default function StockCompanyProfile({
                     href={company.website}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-xs font-medium text-blue-500 hover:text-blue-600 truncate max-w-[60%]"
+                    className="text-xs font-medium text-gery-500 hover:text-blue-600 truncate max-w-[60%]"
                   >
                     {company.website.replace(/^https?:\/\//, "")}
                   </a>

@@ -1,0 +1,803 @@
+{
+  "common": {
+    "save": "保存",
+    "cancel": "取消",
+    "edit": "编辑",
+    "delete": "删除",
+    "confirm": "确认",
+    "loading": "加载中...",
+    "saving": "保存中...",
+    "uploading": "上传中...",
+    "success": "成功",
+    "error": "错误",
+    "reset": "重置",
+    "close": "关闭",
+    "back": "返回",
+    "next": "下一步",
+    "search": "搜索",
+    "noData": "暂无数据",
+    "comingSoon": "即将推出",
+    "soon": "即将",
+    "configured": "已配置",
+    "currentPlan": "当前方案",
+    "upgrade": "升级",
+    "downgrade": "降级",
+    "loadMore": "加载更多",
+    "endOfList": "已到达列表底部",
+    "manage": "管理",
+    "test": "测试",
+    "add": "添加",
+    "verified": "已验证",
+    "notVerified": "未验证",
+    "noDataAvailable": "暂无数据"
+  },
+  "sidebar": {
+    "chat": "AI 对话",
+    "analytics": "数据分析",
+    "social": "社交媒体",
+    "stocks": "股票",
+    "superinvestors": "超级投资者",
+    "news": "新闻",
+    "kolTracker": "KOL 追踪",
+    "portfolio": "投资组合",
+    "community": "社区",
+    "notifications": "通知",
+    "settings": "设置",
+    "admin": "管理员",
+    "toggleSidebar": "切换侧边栏"
+  },
+  "userMenu": {
+    "account": "账户",
+    "billing": "订阅",
+    "notifications": "通知",
+    "logOut": "退出登录"
+  },
+  "auth": {
+    "welcomeBack": "欢迎回来",
+    "createAccount": "创建账户",
+    "loginSubtitle": "登录以访问您的投资仪表盘",
+    "signupSubtitle": "加入我们，开始追踪您的投资",
+    "completingSignIn": "正在完成登录...",
+    "email": "邮箱",
+    "password": "密码",
+    "name": "姓名",
+    "signIn": "登录",
+    "signUp": "注册",
+    "signingIn": "登录中...",
+    "signingUp": "注册中...",
+    "continueWithGoogle": "使用 Google 登录",
+    "noAccount": "还没有账户？",
+    "haveAccount": "已有账户？",
+    "forgotPassword": "忘记密码？",
+    "fillAllFields": "请填写所有必填项",
+    "enterName": "请输入您的姓名",
+    "loginSuccess": "登录成功！正在跳转...",
+    "accountCreated": "账户已创建！请查收邮件验证您的账户。",
+    "googleSignInFailed": "Google 登录失败",
+    "authError": "认证错误，请重试。",
+    "emailVerifyExpired": "邮箱验证链接已过期，请重新请求。",
+    "emailVerifyFailed": "邮箱验证失败，请重试。",
+    "profileCreationFailed": "创建用户资料失败，请联系客服。",
+    "signInFailed": "登录失败，请重试。",
+    "signInSuccess": "登录成功！",
+    "signInError": "登录过程中出现错误，请重试。"
+  },
+  "landing": {
+    "hero": {
+      "badge": "AI 驱动",
+      "headline": "更智能地投资",
+      "phrases": ["社交智能", "AI 驱动分析", "实时信号", "聪明资金追踪"],
+      "subheadline": "追踪意见领袖，解码市场情绪，在趋势形成之前发现机会。加入数千名借助 AI 获得优势的投资者。",
+      "startFreeTrial": "免费开始",
+      "trustBadges": {
+        "security": "银行级安全",
+        "realTime": "实时数据",
+        "investors": "5,000+ 投资者"
+      },
+      "preview": {
+        "portfolioValue": "投资组合价值",
+        "kolsTracked": "追踪 KOL 数",
+        "aiSignals": "AI 信号",
+        "sentimentScore": "情绪评分"
+      }
+    },
+    "stats": {
+      "title": "深受数千名投资者信赖",
+      "subtitle": "我们的平台每日处理数百万数据点，提供可操作的洞察。",
+      "kolsTracked": "追踪 KOL 数",
+      "kolsTrackedDesc": "监控意见领袖",
+      "aiSignals": "每日 AI 信号",
+      "aiSignalsDesc": "实时市场洞察",
+      "accuracy": "准确率",
+      "accuracyDesc": "情绪预测准确度",
+      "dataSources": "数据来源",
+      "dataSourcesDesc": "平台和交易所"
+    },
+    "features": {
+      "title": "您在",
+      "titleHighlight": "现代市场中的独特优势",
+      "subtitle": "Kolvex 将前沿 AI 与全面的社交数据相结合，提供以前只有机构投资者才能获得的洞察。",
+      "kolTracking": {
+        "title": "KOL 追踪",
+        "description": "实时监控 Twitter、Reddit、StockTwits 上 2,500+ 有影响力的投资者和分析师。不错过任何市场关键信息。",
+        "stats": {
+          "kolsTracked": "追踪 KOL 数",
+          "platforms": "平台数",
+          "updatesDay": "日更新量"
+        }
+      },
+      "aiAnalysis": {
+        "title": "AI 智能分析",
+        "description": "我们的专有 AI 模型分析情绪、提取关键信号，并以机构级准确度预测市场走势。",
+        "stats": {
+          "accuracy": "准确率",
+          "models": "模型数",
+          "signalsDay": "日信号量"
+        }
+      },
+      "alerts": {
+        "title": "即时提醒",
+        "description": "当被追踪的 KOL 提及某只股票或情绪发生变化时，立即收到通知。始终领先市场一步。",
+        "stats": {
+          "latency": "延迟",
+          "channels": "通道",
+          "customRules": "自定义规则"
+        }
+      },
+      "sentiment": {
+        "title": "情绪评分",
+        "description": "来自社交媒体、新闻和分析师报告的 10,000+ 只股票的实时情绪评分。",
+        "stats": { "stocks": "股票数", "sources": "来源", "refresh": "刷新" }
+      },
+      "portfolio": {
+        "title": "投资组合集成",
+        "description": "通过 SnapTrade 连接您的券商，将社交智能叠加到您的实际持仓上。",
+        "stats": { "brokers": "券商数", "security": "安全性", "sync": "同步" }
+      },
+      "filtering": {
+        "title": "智能过滤",
+        "description": "AI 驱动的机器人检测和垃圾信息过滤，确保您只看到高质量的信号内容。",
+        "stats": {
+          "botDetection": "机器人检测",
+          "spamBlocked": "垃圾信息拦截",
+          "falsePositives": "误报率"
+        }
+      }
+    },
+    "howItWorks": {
+      "badge": "使用流程",
+      "title": "4 个简单步骤即可开始",
+      "subtitle": "从注册到获得第一个 AI 洞察不到 2 分钟。无需复杂设置，无学习成本。",
+      "steps": [
+        {
+          "title": "创建账户",
+          "description": "通过邮箱或社交账号几秒钟内完成注册。无需信用卡。",
+          "details": ["永久免费版可用", "连接社交账号", "30 秒完成设置"]
+        },
+        {
+          "title": "选择 KOL",
+          "description": "从 2,500+ 位有影响力的投资者和分析师中选择追踪对象。",
+          "details": ["精选专家列表", "自定义关注列表", "多平台覆盖"]
+        },
+        {
+          "title": "获取 AI 洞察",
+          "description": "我们的 AI 分析帖子、提取情绪、识别信号。",
+          "details": ["实时处理", "94% 准确率", "可操作的提醒"]
+        },
+        {
+          "title": "做出更好的决策",
+          "description": "利用社交智能精准把握买入和卖出时机。",
+          "details": ["数据驱动交易", "减少情绪偏差", "稳定收益"]
+        }
+      ]
+    },
+    "testimonials": {
+      "badge": "用户评价",
+      "title": "深受 5,000+ 投资者喜爱",
+      "subtitle": "看看我们的用户对 Kolvex 的使用体验怎么说。",
+      "trust": {
+        "averageRating": "平均评分",
+        "activeUsers": "活跃用户",
+        "portfolioTracked": "追踪资产",
+        "wouldRecommend": "推荐意愿"
+      }
+    },
+    "cta": {
+      "title": "准备好使用",
+      "titleHighlight": "AI 驱动的智能投资了吗？",
+      "subtitle": "加入数千名已在使用社交智能做出更好交易决策的投资者。免费开始，无需信用卡。",
+      "getStarted": "免费开始",
+      "contactUs": "联系我们",
+      "trust": {
+        "security": "银行级安全",
+        "setup": "30 秒完成设置",
+        "cancel": "随时取消"
+      }
+    }
+  },
+  "chat": {
+    "title": "与 Kolvex 对话",
+    "badge": "AI 驱动洞察",
+    "heading": "您想<highlight>探索</highlight>什么？",
+    "description": "询问股票、市场趋势，或浏览我们 AI 驱动的精选洞察",
+    "suggestions": {
+      "analyzeNvidia": "分析英伟达股票",
+      "explainTrends": "解释市场趋势",
+      "trendingStocks": "热门趋势股票",
+      "latestNews": "最新新闻"
+    },
+    "input": {
+      "apiKeyRequired": "需要 API 密钥",
+      "apiKeyRequiredDesc": "请在设置中添加至少一个模型 API 密钥，以解锁模型选择并开始对话。",
+      "settingsApiKeys": "设置 → API 密钥",
+      "addApiKeyPlaceholder": "请先在设置中添加 API 密钥...",
+      "addApiKey": "添加 API 密钥",
+      "selectModel": "选择模型",
+      "sources": {
+        "kol": "KOL",
+        "news": "新闻",
+        "web": "网页",
+        "portfolio": "投资组合"
+      }
+    }
+  },
+  "analytics": {
+    "title": "数据分析",
+    "selectRange": "选择范围",
+    "days": "{count} 天",
+    "snapshot": "快照",
+    "realtime": "实时",
+    "analyzed": "{percent}% 已分析",
+    "failedToLoad": "加载失败",
+    "failedToLoadData": "加载数据失败",
+    "tryAgain": "重试",
+    "totalPosts": "总帖子数",
+    "totalViews": "总浏览量",
+    "dailyAvg": "{value} 日均",
+    "engagement": "互动量",
+    "perPost": "每帖 {value}",
+    "activeKOLs": "活跃 KOL",
+    "stockRelatedAnalyzed": "{count} 条股票相关帖子已分析",
+    "activitySentimentByPlatform": "按平台活跃度与情绪",
+    "sentiment": "情绪分析",
+    "correlation": "相关性"
+  },
+  "alerts": {
+    "title": "股票提醒",
+    "tabs": {
+      "rules": "提醒规则",
+      "channels": "通知渠道",
+      "history": "提醒历史"
+    },
+    "stats": {
+      "activeRules": "活跃规则",
+      "alertsCount": "提醒 (30天)",
+      "avgPerDay": "日均",
+      "topStock": "热门股票"
+    },
+    "rules": {
+      "title": "提醒规则",
+      "subtitle": "为您关注的股票配置价格提醒",
+      "addRule": "添加规则",
+      "noRules": "未配置提醒规则",
+      "noRulesHint": "添加规则开始监控股票价格",
+      "createTitle": "创建提醒规则",
+      "createDescription": "为股票代码设置价格提醒",
+      "stockSymbol": "股票代码",
+      "stockSymbolPlaceholder": "例如：AAPL、TSLA",
+      "dailyChange": "日变动 %",
+      "spikeChange": "异动 %",
+      "marketSessions": "交易时段",
+      "preMarket": "盘前",
+      "regular": "盘中",
+      "afterHours": "盘后",
+      "aiAnalysis": "AI 分析",
+      "cooldown": "冷却时间 (分钟)",
+      "createRule": "创建规则",
+      "ruleCreated": "已为 {symbol} 创建提醒规则",
+      "enterSymbol": "请输入股票代码",
+      "createFailed": "创建提醒规则失败",
+      "enabledAlerts": "已启用 {symbol} 的提醒",
+      "disabledAlerts": "已禁用 {symbol} 的提醒",
+      "toggleFailed": "切换提醒规则失败",
+      "deletedRule": "已删除 {symbol} 的提醒规则",
+      "deleteFailed": "删除提醒规则失败"
+    },
+    "channels": {
+      "title": "通知渠道",
+      "subtitle": "配置接收提醒通知的渠道",
+      "addChannel": "添加渠道",
+      "noChannels": "未配置通知渠道",
+      "noChannelsHint": "添加 Discord、Telegram 或其他渠道",
+      "createTitle": "添加通知渠道",
+      "createDescription": "为提醒配置新的通知渠道",
+      "channelType": "渠道类型",
+      "webhookUrl": "Webhook 地址",
+      "botToken": "Bot Token",
+      "chatId": "Chat ID",
+      "phoneNumber": "手机号码",
+      "addChannelBtn": "添加渠道",
+      "channelAdded": "{channel} 渠道已添加",
+      "channelCreateFailed": "创建渠道失败",
+      "testSent": "测试消息发送成功！",
+      "testFailed": "测试失败：{message}",
+      "testSendFailed": "发送测试消息失败",
+      "channelDeleted": "已删除 {channel} 渠道",
+      "channelDeleteFailed": "删除渠道失败"
+    },
+    "history": {
+      "title": "提醒历史",
+      "subtitle": "最近触发的价格提醒",
+      "noAlerts": "尚未触发提醒",
+      "noAlertsHint": "提醒触发后将显示在此处"
+    }
+  },
+  "notifications": {
+    "title": "通知",
+    "description": "了解投资组合变动和市场信号的最新动态",
+    "features": {
+      "realTimeAlerts": "实时提醒",
+      "portfolioUpdates": "投资组合更新",
+      "signalHistory": "信号历史"
+    },
+    "markAllRead": "全部标为已读",
+    "deleteAll": "全部删除"
+  },
+  "portfolio": {
+    "title": "我的持仓",
+    "loadingTitle": "加载投资组合中...",
+    "brokerConnected": "券商连接成功！点击\"同步数据\"获取您的持仓。",
+    "connectionFailed": "连接失败：{error}",
+    "hero": {
+      "title": "我的持仓",
+      "description": "追踪和分享您的投资持仓",
+      "secureConnection": "安全连接",
+      "realTimeTracking": "实时追踪",
+      "optionalSharing": "可选分享"
+    },
+    "actions": {
+      "refresh": "刷新",
+      "settings": "设置",
+      "community": "社区",
+      "view": "查看",
+      "notSyncedYet": "尚未同步",
+      "publicProfile": "公开档案",
+      "copyShareLink": "复制分享链接",
+      "privacySettings": "隐私设置",
+      "addAnotherBroker": "添加其他券商",
+      "downloadCsv": "下载 CSV",
+      "downloadJson": "下载 JSON",
+      "disconnect": "断开连接"
+    },
+    "connect": {
+      "title": "连接您的券商",
+      "description": "连接您的券商账户，自动追踪持仓、监控表现，并可公开分享您的投资组合。",
+      "connecting": "连接中...",
+      "connectBroker": "连接券商",
+      "secure": "安全",
+      "readOnly": "只读",
+      "encrypted": "加密",
+      "connectedTitle": "券商已连接！",
+      "connectedDescription": "很好！您的账户已链接。立即同步以导入当前持仓并开始追踪。",
+      "syncing": "同步中...",
+      "syncPositions": "同步持仓"
+    },
+    "allocation": {
+      "title": "按行业分配投资组合"
+    },
+    "stats": {
+      "totalValue": "总价值",
+      "unrealizedPnl": "未实现盈亏",
+      "allTime": "累计",
+      "positions": "持仓",
+      "accounts": "账户",
+      "hidden": "已隐藏"
+    },
+    "tabs": {
+      "holdings": "持仓",
+      "analytics": "分析",
+      "aiInsights": "AI 洞察"
+    },
+    "holdings": {
+      "refreshing": "刷新中...",
+      "refreshPrices": "刷新价格",
+      "brokerageAccount": "券商账户",
+      "positions": "{count} 个持仓",
+      "options": "{count} 个期权",
+      "noPositions": "暂无持仓",
+      "noPositionsDesc": "此账户暂无活跃持仓",
+      "noAccountData": "暂无账户数据",
+      "noAccountDataDesc": "同步以从已连接的券商获取最新持仓",
+      "syncNow": "立即同步",
+      "aiOnlyOwner": "AI 分析仅适用于您自己的投资组合。"
+    },
+    "disconnectDialog": {
+      "title": "断开券商连接？",
+      "description": "这将删除连接和所有已同步的数据。您需要重新连接才能再次查看持仓。",
+      "disconnect": "断开连接"
+    },
+    "table": {
+      "symbol": "代码",
+      "chart": "走势",
+      "price": "价格",
+      "cost": "成本",
+      "shares": "股数",
+      "value": "市值",
+      "totalPnl": "总盈亏",
+      "pnlPerShare": "每股盈亏",
+      "weight": "仓位",
+      "public": "公开",
+      "lockedStock": "已锁定",
+      "hiddenFromPublic": "已对公众隐藏 - 点击显示",
+      "visibleToPublic": "对公众可见 - 点击隐藏",
+      "optionsContracts": "期权合约",
+      "expiration": "到期日",
+      "strike": "行权价",
+      "contracts": "合约数",
+      "short": "做空",
+      "long": "做多"
+    },
+    "privacy": {
+      "title": "隐私设置",
+      "description": "控制您公开档案中显示的信息。",
+      "button": "隐私",
+      "portfolioSummary": "投资组合摘要",
+      "positionDetails": "持仓详情",
+      "accounts": "账户",
+      "noAccounts": "未连接账户",
+      "hiddenFieldsNote": "隐藏的字段显示为\"***\"，隐藏的账户不会展示",
+      "totalValue": "总价值",
+      "totalPnl": "总盈亏",
+      "pnlPercent": "盈亏 %",
+      "positionsLabel": "持仓",
+      "sharesLabel": "股数",
+      "valueLabel": "市值",
+      "positionPnl": "总盈亏",
+      "positionPnlPerShare": "每股盈亏",
+      "weightLabel": "仓位",
+      "costLabel": "成本",
+      "showAll": "全部显示",
+      "hideAll": "全部隐藏"
+    },
+    "performance": {
+      "title": "表现",
+      "valueAndPnl": "投资组合价值与盈亏走势",
+      "performanceOverTime": "投资组合表现走势",
+      "yearToDate": "年初至今",
+      "allTime": "全部时间",
+      "pastPeriod": "过去 {period}",
+      "noDataYet": "暂无历史数据",
+      "ownerNoData": "同步您的投资组合以开始记录表现数据。历史数据将随时间积累。",
+      "ownerNoDataStarted": "数据记录始于 {date}。继续同步以建立您的表现历史。",
+      "publicNoData": "该用户暂无历史表现数据。",
+      "dataSince": "数据始于 {date}",
+      "ownerDataTooltip": "此图表显示您自 {date} 以来记录的实际投资组合表现。数据在您同步投资组合时自动记录。",
+      "publicDataTooltip": "此图表显示自 {date} 以来记录的投资组合表现。",
+      "both": "综合",
+      "pnl": "盈亏",
+      "portfolioValue": "组合价值",
+      "change": "变化",
+      "performanceLabel": "表现"
+    },
+    "allocation": {
+      "title": "按板块分配"
+    },
+    "ai": {
+      "title": "AI 投资组合分析",
+      "analyzing": "分析中...",
+      "refresh": "刷新",
+      "emptyTitle": "AI 投资组合分析",
+      "emptyDescription": "获取由金融 AI 驱动的个性化洞察、风险评估和可操作建议。",
+      "startAnalysis": "开始分析",
+      "analysisFailed": "分析失败",
+      "tryAgain": "重试",
+      "portfolioOverview": "组合概览",
+      "stockAnalysis": "个股分析",
+      "recommendations": "建议",
+      "positionsAnalyzed": "已分析 {count} 个持仓",
+      "disclaimer": "免责声明：AI 分析仅供参考，不构成投资建议。请咨询专业顾问。",
+      "riskLevel": "风险等级",
+      "diversification": "分散度",
+      "wellDiversified": "分散良好",
+      "moderate": "适中",
+      "concentrated": "集中",
+      "portfolioStyle": "投资风格：",
+      "strengths": "优势",
+      "areasToImprove": "待改进",
+      "showMore": "显示更多 {count} 项",
+      "showLess": "收起",
+      "keyPoints": "关键要点",
+      "weight": "仓位：",
+      "confidence": "置信度：",
+      "rebalancing": "再平衡",
+      "riskManagement": "风险管理",
+      "opportunities": "机会",
+      "taxTips": "税务建议",
+      "lowRisk": "低风险",
+      "mediumRisk": "中风险",
+      "highRisk": "高风险",
+      "riskAssessment": "风险评估",
+      "portfolioHealth": "组合健康度"
+    }
+  },
+  "community": {
+    "title": "社区投资组合",
+    "description": "发现并学习分享投资组合的投资者",
+    "publicPortfolios": "{count} 个公开投资组合",
+    "transparentTracking": "透明且实时追踪",
+    "managePortfolio": "管理投资组合",
+    "tabs": {
+      "all": "全部",
+      "following": "关注"
+    },
+    "sort": {
+      "recentlyUpdated": "最近更新",
+      "topPerformers": "表现最佳",
+      "worstPerformers": "表现最差"
+    },
+    "following": "{count} 个关注",
+    "ofTotal": "{current} / {total}",
+    "emptyAll": {
+      "title": "暂无公开投资组合",
+      "description": "成为第一个与社区分享投资组合的人！在投资组合设置中启用公开分享。"
+    },
+    "emptyFollowing": {
+      "title": "暂无关注的投资组合",
+      "description": "您还没有关注任何拥有公开投资组合的用户。在\"全部\"标签中发现投资者并关注他们！"
+    }
+  },
+  "investors": {
+    "title": "超级投资者",
+    "loadFailed": "加载投资者数据失败",
+    "hero": {
+      "title": "超级投资者",
+      "description": "追踪顶级机构投资者的 13F 持仓报告",
+      "syncData": "同步数据"
+    },
+    "stats": {
+      "investors": "投资者",
+      "holdings": "持仓",
+      "popularStocks": "热门股票",
+      "latestQuarter": "最新季度"
+    },
+    "investorsList": "投资者与持仓",
+    "searchPlaceholder": "搜索投资者...",
+    "noInvestors": "未找到投资者",
+    "popularHoldings": "热门持仓",
+    "holders": "{count} 位持有者",
+    "stocks": "{count} 只股票",
+    "syncing": "同步中...",
+    "failedToLoadData": "加载数据失败",
+    "syncFailed": "同步失败"
+  },
+  "kol": {
+    "title": "KOL 追踪",
+    "hero": {
+      "title": "KOL 追踪",
+      "description": "关注有影响力的市场领袖，及时获取他们的洞察",
+      "trackTopKols": "追踪顶级 KOL",
+      "getNotified": "获取通知"
+    },
+    "tabs": {
+      "topRanking": "排行榜",
+      "trackingKols": "追踪中"
+    },
+    "headerTitle": {
+      "tracking": "追踪中的 KOL",
+      "ranking": "KOL 排行榜"
+    },
+    "comingSoon": "（即将推出）",
+    "failedToLoadKols": "加载 KOL 失败",
+    "ranking": {
+      "rank": "排名",
+      "kol": "KOL",
+      "platform": "平台",
+      "influence": "影响力",
+      "trending": "热度",
+      "followers": "粉丝",
+      "lastPost": "最近发帖",
+      "action": "操作",
+      "noKolsFound": "未找到 KOL",
+      "noKolsFoundDesc": "未找到 KOL，请稍后再试。",
+      "loadingMore": "加载更多 KOL...",
+      "noMoreKols": "没有更多 KOL 了",
+      "loading": "加载中",
+      "tracking": "追踪中",
+      "track": "追踪",
+      "untracked": "已取消追踪 {name}",
+      "nowTracking": "已开始追踪 {name}",
+      "failedToUpdateTracking": "更新追踪状态失败"
+    },
+    "tracker": {
+      "kol": "KOL",
+      "platform": "平台",
+      "followers": "粉丝",
+      "description": "简介",
+      "actions": "操作",
+      "noTrackedKols": "暂无追踪的 KOL。点击\"追踪新 KOL\"按钮开始追踪。",
+      "noMatchingKols": "没有匹配的 KOL。",
+      "stopTracking": "停止追踪",
+      "removeFromTracking": "移除追踪",
+      "followers_suffix": "粉丝",
+      "addDialog": {
+        "title": "追踪新 KOL",
+        "description": "从数据库中添加 KOL 到您的追踪列表。您可以在排行榜中找到 KOL ID。",
+        "kolId": "KOL ID",
+        "kolIdPlaceholder": "输入数据库中的 KOL ID",
+        "kolIdHint": "在排行榜中找到 KOL 并使用其 ID",
+        "platform": "平台",
+        "track": "追踪"
+      },
+      "deleteDialog": {
+        "title": "移除 KOL 追踪",
+        "description": "确定要停止追踪此 KOL 吗？您可以稍后重新添加追踪。",
+        "remove": "移除"
+      },
+      "toast": {
+        "added": "KOL 已成功添加到追踪列表",
+        "addFailed": "添加 KOL 失败",
+        "removed": "KOL 已从追踪列表移除",
+        "removeFailed": "移除 KOL 失败",
+        "stoppedTracking": "已停止追踪 KOL",
+        "updateFailed": "更新追踪状态失败"
+      }
+    },
+    "request": {
+      "button": "请求追踪 KOL",
+      "title": "请求追踪新 KOL",
+      "description": "提交请求以追踪 X (Twitter) 上的 KOL。我们的团队将审核并批准有效请求。",
+      "username": "X 用户名",
+      "usernamePlaceholder": "elonmusk",
+      "usernameHint": "输入不带 @ 符号的用户名",
+      "notes": "备注（可选）",
+      "notesPlaceholder": "为什么要追踪此 KOL？（例如：金融专家、股票分析师...）",
+      "infoText": "请求通常在 24-48 小时内审核。批准的 KOL 将自动添加到追踪系统。",
+      "submitting": "提交中...",
+      "submitRequest": "提交请求",
+      "enterValidUsername": "请输入有效的用户名",
+      "requestSubmitted": "已提交 @{username} 的追踪请求",
+      "requestSubmittedDesc": "您的请求将由我们的团队审核。",
+      "failedToSubmit": "提交请求失败"
+    },
+    "myRequests": {
+      "title": "我的 KOL 请求",
+      "pending": "{count} 个待审核",
+      "submitted": "提交于 {date}",
+      "reviewed": "审核于 {date}",
+      "admin": "管理员：",
+      "cancelSuccess": "请求已取消",
+      "cancelFailed": "取消请求失败"
+    }
+  },
+  "stocks": {
+    "title": "股票",
+    "hero": {
+      "title": "股票",
+      "description": "追踪热门股票并管理您的自选股",
+      "trackMarketTrends": "追踪市场趋势"
+    },
+    "tabs": {
+      "trending": "热门趋势",
+      "myTracking": "我的追踪"
+    },
+    "searchPlaceholder": "搜索股票...",
+    "addStock": "添加",
+    "stockAdded": "股票添加成功",
+    "addFailed": "添加股票失败"
+  },
+  "settings": {
+    "title": "设置",
+    "tabs": {
+      "account": "账户",
+      "apiKeys": "API 密钥",
+      "billing": "订阅",
+      "notifications": "通知",
+      "preferences": "偏好设置"
+    },
+    "account": {
+      "title": "账户信息",
+      "viewDetails": "查看您的账户详情",
+      "updateDetails": "更新您的账户详情",
+      "emailAddress": "邮箱地址",
+      "fullName": "姓名",
+      "enterFullName": "请输入您的姓名",
+      "phoneNumber": "手机号码",
+      "phoneFormat": "格式：+[国家代码][号码]（例如：+8613800138000）",
+      "phoneFormatError": "手机号格式无效，请使用 E.164 格式：+[国家代码][号码]（例如：+8613800138000）",
+      "saveChanges": "保存更改",
+      "profileUpdated": "个人资料已更新",
+      "failedToUpdate": "更新个人资料失败",
+      "uploadAvatar": "上传头像",
+      "avatarDescription": "选择一张图片作为您的个人头像。",
+      "avatarCropDescription": "拖动调整位置，滚动缩放。图片将被裁剪为正方形。",
+      "changeImage": "更换图片",
+      "upload": "上传",
+      "fileSizeError": "文件大小不能超过 2MB",
+      "fileTypeError": "请选择图片文件",
+      "avatarUpdated": "头像已更新",
+      "failedToUpload": "上传头像失败",
+      "clickToUpload": "点击上传",
+      "orDragAndDrop": "或拖放文件",
+      "dropImageHere": "将图片拖放到此处",
+      "imageFormats": "PNG、JPG 或 GIF（最大 2MB）"
+    },
+    "apiKeys": {
+      "title": "API 密钥",
+      "subtitle": "使用您自己的 API 密钥连接 LLM 提供商。您的密钥将优先于默认服务器密钥。",
+      "infoBanner": "您的 API 密钥已安全存储并加密保存。仅在您发送消息时使用——如果设置了某个提供商的密钥，将使用它替代默认服务器密钥。",
+      "getKey": "获取密钥",
+      "replaceKey": "替换为新密钥...",
+      "keySaved": "{provider} API 密钥已保存",
+      "keyRemoved": "{provider} API 密钥已移除",
+      "failedToSave": "保存 API 密钥失败",
+      "failedToDelete": "删除 API 密钥失败"
+    },
+    "billing": {
+      "title": "选择您的方案",
+      "subtitle": "选择最适合您投资需求的方案",
+      "plans": {
+        "free": {
+          "name": "免费版",
+          "features": {
+            "basicData": "基础市场数据",
+            "watchlist5": "5 个自选股",
+            "dailyNews": "每日市场新闻",
+            "realTimeData": "实时数据",
+            "aiAnalysis": "AI 分析"
+          }
+        },
+        "pro": {
+          "name": "专业版",
+          "popular": "热门",
+          "features": {
+            "realTimeData": "实时市场数据",
+            "unlimitedWatchlist": "无限自选股",
+            "aiAnalysis": "AI 智能分析",
+            "advancedCharts": "高级图表",
+            "prioritySupport": "优先支持"
+          }
+        },
+        "enterprise": {
+          "name": "企业版",
+          "features": {
+            "everythingInPro": "包含专业版所有功能",
+            "customAI": "自定义 AI 模型",
+            "apiAccess": "API 接口",
+            "teamCollaboration": "团队协作",
+            "dedicatedSupport": "7×24 专属支持"
+          }
+        }
+      }
+    },
+    "notifications": {
+      "title": "通知",
+      "subtitle": "管理您接收通知的方式",
+      "emailNotifications": "邮件通知",
+      "enableEmail": "启用邮件通知",
+      "emailDescription": "当您关注的用户进行投资组合变更时，接收邮件通知",
+      "emailHint": "启用后，您将收到关注用户的投资组合更新邮件通知。",
+      "enabled": "邮件通知已启用",
+      "disabled": "邮件通知已关闭",
+      "failedToUpdate": "更新通知设置失败"
+    },
+    "preferences": {
+      "title": "显示偏好",
+      "subtitle": "自定义您的使用体验",
+      "language": "语言",
+      "selectLanguage": "选择语言",
+      "languageChanged": "语言已切换为{language}",
+      "theme": "主题",
+      "themeLight": "浅色",
+      "themeDark": "深色",
+      "themeSystem": "跟随系统",
+      "themeLightDesc": "浅色主题",
+      "themeDarkDesc": "深色主题",
+      "themeSystemDesc": "跟随系统设置",
+      "failedToUpdateTheme": "更新主题失败"
+    }
+  },
+  "languages": {
+    "en": "English",
+    "zh": "中文"
+  }
+}

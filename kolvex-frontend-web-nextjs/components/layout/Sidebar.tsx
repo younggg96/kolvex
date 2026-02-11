@@ -40,7 +40,6 @@ import {
   SidebarMenuSub,
   SidebarMenuSubItem,
   SidebarMenuSubButton,
-  SidebarProvider,
   useSidebar,
 } from "@/components/ui/sidebar";
 import { useBreakpoints } from "@/hooks";
@@ -52,8 +51,9 @@ import {
 import { cn } from "@/lib/utils";
 import { ChatSidebarContent } from "@/components/chat";
 import { useUserProfileContext } from "@/components/user/UserProfileProvider";
+import { useTranslation } from "@/lib/i18n";
 
-// Social Media 子菜单
+// Social Media sub-items (titles are brand names — not translated)
 const socialMediaSubItems = [
   {
     title: "X / Twitter",
@@ -81,74 +81,74 @@ const socialMediaSubItems = [
   },
 ];
 
-const mainNavItems = [
+const mainNavItemDefs = [
   {
     icon: LayoutDashboard,
-    title: "Chat",
+    titleKey: "sidebar.chat",
     href: "/dashboard",
     type: "chat-submenu",
   },
   {
     icon: BarChart3,
-    title: "Analytics",
+    titleKey: "sidebar.analytics",
     href: "/dashboard/analytics",
     type: "link",
   },
-  { icon: null, title: "Social", href: "/dashboard/social", type: "submenu" },
+  { icon: null, titleKey: "sidebar.social", href: "/dashboard/social", type: "submenu" },
   {
     icon: TrendingUp,
-    title: "Stocks",
+    titleKey: "sidebar.stocks",
     href: "/dashboard/stocks",
     type: "link",
   },
   {
     icon: Building2,
-    title: "Superinvestors",
+    titleKey: "sidebar.superinvestors",
     href: "/dashboard/investors",
     type: "link",
   },
   {
     icon: Newspaper,
-    title: "News",
+    titleKey: "sidebar.news",
     href: "/dashboard/news",
     type: "link",
   },
   {
     icon: Users,
-    title: "KOL Tracker",
+    titleKey: "sidebar.kolTracker",
     href: "/dashboard/kol",
     type: "link",
   },
   {
     icon: Briefcase,
-    title: "Portfolio",
+    titleKey: "sidebar.portfolio",
     href: "/dashboard/portfolio",
     type: "link",
   },
   {
     icon: Globe,
-    title: "Community",
+    titleKey: "sidebar.community",
     href: "/community",
     type: "link",
   },
 ];
 
-const bottomNavItems = [
+const bottomNavItemDefs = [
   {
     icon: Bell,
-    title: "Notifications",
+    titleKey: "sidebar.notifications",
     href: "/dashboard/notifications",
   },
   {
     icon: Settings,
-    title: "Settings",
+    titleKey: "sidebar.settings",
     href: "/dashboard/settings",
   },
 ];
 
-const adminNavItem = {
+const adminNavItemDef = {
   icon: ShieldCheck,
-  title: "Admin",
+  titleKey: "sidebar.admin",
   href: "/dashboard/admin",
 };
 
@@ -160,6 +160,18 @@ function AppSidebar({ onNavigate }: AppSidebarProps) {
   const pathname = usePathname();
   const { state, toggleSidebar, isInitialized } = useSidebar();
   const { profile } = useUserProfileContext();
+  const { t } = useTranslation();
+
+  // Resolve translated nav items
+  const mainNavItems = mainNavItemDefs.map((item) => ({
+    ...item,
+    title: t(item.titleKey),
+  }));
+  const bottomNavItems = bottomNavItemDefs.map((item) => ({
+    ...item,
+    title: t(item.titleKey),
+  }));
+  const adminNavItem = { ...adminNavItemDef, title: t(adminNavItemDef.titleKey) };
   const [isMounted, setIsMounted] = useState(false);
   const [socialOpen, setSocialOpen] = useState(() => {
     return pathname.startsWith("/dashboard/social");
@@ -170,7 +182,7 @@ function AppSidebar({ onNavigate }: AppSidebarProps) {
   const [unreadCount, setUnreadCount] = useState(0);
 
   const { isMobile, isTablet } = useBreakpoints();
-  
+
   // Check if user is admin
   const isAdmin = profile?.is_admin ?? false;
 
@@ -257,7 +269,7 @@ function AppSidebar({ onNavigate }: AppSidebarProps) {
                 <PanelLeft className="h-4 w-4" />
               )}
             </span>
-            <span className="sr-only">Toggle Sidebar</span>
+            <span className="sr-only">{t("sidebar.toggleSidebar")}</span>
           </Button>
         </div>
       </SidebarHeader>
@@ -282,7 +294,7 @@ function AppSidebar({ onNavigate }: AppSidebarProps) {
                       >
                         <Link href="/dashboard">
                           <MessageCircleIcon className="size-4" />
-                          <span>Chat</span>
+                          <span>{t("sidebar.chat")}</span>
                         </Link>
                       </SidebarMenuButton>
                       <ChatSidebarContent isCollapsed={isCollapsed} />
@@ -302,7 +314,7 @@ function AppSidebar({ onNavigate }: AppSidebarProps) {
                         <CollapsibleTrigger asChild>
                           <SidebarMenuButton isActive={isSocialActive}>
                             <Share2 />
-                            <span>Social</span>
+                            <span>{t('sidebar.social')}</span>
                             <ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
                           </SidebarMenuButton>
                         </CollapsibleTrigger>
@@ -324,7 +336,7 @@ function AppSidebar({ onNavigate }: AppSidebarProps) {
                                     />
                                     <span>{subItem.title}</span>
                                     <span className="ml-auto text-[10px] text-muted-foreground">
-                                      Soon
+                                      {t("common.soon")}
                                     </span>
                                   </SidebarMenuSubButton>
                                 ) : (
@@ -444,19 +456,6 @@ function AppSidebar({ onNavigate }: AppSidebarProps) {
         />
       </SidebarFooter>
     </SidebarPrimitive>
-  );
-}
-
-interface SidebarWrapperProps {
-  children: React.ReactNode;
-}
-
-export function SidebarWrapper({ children }: SidebarWrapperProps) {
-  return (
-    <SidebarProvider defaultOpen={true}>
-      <AppSidebar />
-      {children}
-    </SidebarProvider>
   );
 }
 

@@ -1,36 +1,38 @@
 "use client";
 
 import ImageGallery from "@/components/common/ImageGallery";
-import VideoPlayer from "@/components/common/VideoPlayer";
+import { MediaItem } from "@/lib/kolPostsApi";
 
-interface TweetMediaProps {
-  mediaUrls: string[];
+interface PostMediaProps {
+  mediaItems: MediaItem[];
 }
 
-export default function TweetMedia({ mediaUrls }: TweetMediaProps) {
-  if (mediaUrls.length === 0) return null;
+/**
+ * PostMedia - Renders media items (photos, videos, gifs) from a post.
+ *
+ * For videos without a direct playable URL, we display the poster/thumbnail
+ * as an image in the gallery. Clicking opens the same details modal as photos.
+ */
+export default function PostMedia({ mediaItems }: PostMediaProps) {
+  if (mediaItems.length === 0) return null;
 
-  // 分离图片和视频
-  const imageUrls = mediaUrls.filter(
-    (url) => !url.includes(".mp4") && !url.includes(".webm")
-  );
-  const videoUrls = mediaUrls.filter(
-    (url) => url.includes(".mp4") || url.includes(".webm")
-  );
+  // Extract displayable image URLs from all media items:
+  // - photo/card: use `url`
+  // - video/gif: use `poster` only (video file URLs like .mp4 cannot be rendered by next/image)
+  const displayUrls = mediaItems
+    .map((item) => {
+      if (item.type === "video" || item.type === "gif") {
+        return item.poster || null;
+      }
+      return item.url;
+    })
+    .filter((url): url is string => !!url);
+
+  if (displayUrls.length === 0) return null;
 
   return (
     <div className="space-y-2 mb-3">
-      {/* 图片 */}
-      {imageUrls.length > 0 && <ImageGallery imageUrls={imageUrls} />}
-
-      {/* 视频 */}
-      {videoUrls.length > 0 && (
-        <div className="flex flex-wrap gap-1.5">
-          {videoUrls.map((url, index) => (
-            <VideoPlayer key={index} videoUrl={url} />
-          ))}
-        </div>
-      )}
+      <ImageGallery imageUrls={displayUrls} />
     </div>
   );
 }

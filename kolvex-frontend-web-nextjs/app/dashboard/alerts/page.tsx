@@ -64,11 +64,12 @@ import {
   type AlertStats,
   type NotificationChannelType,
 } from "@/lib/stockAlertApi";
+import { useTranslation } from "@/lib/i18n";
 
 const alertsTabs = [
-  { value: "rules", icon: Bell, label: "Alert Rules" },
-  { value: "channels", icon: MessageSquare, label: "Notification Channels" },
-  { value: "history", icon: History, label: "Alert History" },
+  { value: "rules", icon: Bell, labelKey: "alerts.tabs.rules" },
+  { value: "channels", icon: MessageSquare, labelKey: "alerts.tabs.channels" },
+  { value: "history", icon: History, labelKey: "alerts.tabs.history" },
 ];
 
 const channelIcons: Record<NotificationChannelType, any> = {
@@ -88,6 +89,7 @@ const channelLabels: Record<NotificationChannelType, string> = {
 };
 
 export default function AlertsPage() {
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState("rules");
   const [isLoading, setIsLoading] = useState(true);
 
@@ -173,7 +175,7 @@ export default function AlertsPage() {
   // Handlers
   const handleCreateRule = async () => {
     if (!newRule.symbol.trim()) {
-      toast.error("Please enter a stock symbol");
+      toast.error(t("alerts.rules.enterSymbol"));
       return;
     }
 
@@ -190,7 +192,7 @@ export default function AlertsPage() {
         cooldown_minutes: newRule.cooldown_minutes,
       });
 
-      toast.success(`Alert rule created for ${newRule.symbol.toUpperCase()}`);
+      toast.success(t("alerts.rules.ruleCreated", { symbol: newRule.symbol.toUpperCase() }));
       setShowCreateRule(false);
       setNewRule({
         symbol: "",
@@ -205,7 +207,7 @@ export default function AlertsPage() {
       });
       loadRules();
     } catch (error: any) {
-      toast.error(error.message || "Failed to create alert rule");
+      toast.error(error.message || t("alerts.rules.createFailed"));
     }
   };
 
@@ -214,29 +216,29 @@ export default function AlertsPage() {
       await toggleAlertRule(rule.id);
       toast.success(
         rule.is_active
-          ? `Disabled alerts for ${rule.symbol}`
-          : `Enabled alerts for ${rule.symbol}`
+          ? t("alerts.rules.disabledAlerts", { symbol: rule.symbol })
+          : t("alerts.rules.enabledAlerts", { symbol: rule.symbol })
       );
       loadRules();
     } catch (error) {
-      toast.error("Failed to toggle alert rule");
+      toast.error(t("alerts.rules.toggleFailed"));
     }
   };
 
   const handleDeleteRule = async (rule: AlertRule) => {
     try {
       await deleteAlertRule(rule.id);
-      toast.success(`Deleted alert rule for ${rule.symbol}`);
+      toast.success(t("alerts.rules.deletedRule", { symbol: rule.symbol }));
       loadRules();
     } catch (error) {
-      toast.error("Failed to delete alert rule");
+      toast.error(t("alerts.rules.deleteFailed"));
     }
   };
 
   const handleCreateChannel = async () => {
     try {
       await createNotificationChannel(newChannel);
-      toast.success(`${channelLabels[newChannel.channel_type]} channel added`);
+      toast.success(t("alerts.channels.channelAdded", { channel: channelLabels[newChannel.channel_type] }));
       setShowCreateChannel(false);
       setNewChannel({
         channel_type: "discord",
@@ -248,7 +250,7 @@ export default function AlertsPage() {
       });
       loadChannels();
     } catch (error: any) {
-      toast.error(error.message || "Failed to create channel");
+      toast.error(error.message || t("alerts.channels.channelCreateFailed"));
     }
   };
 
@@ -256,59 +258,59 @@ export default function AlertsPage() {
     try {
       const result = await testNotificationChannel(channel.id);
       if (result.success) {
-        toast.success("Test message sent successfully!");
+        toast.success(t("alerts.channels.testSent"));
         loadChannels();
       } else {
-        toast.error("Test failed: " + result.message);
+        toast.error(t("alerts.channels.testFailed", { message: result.message }));
       }
     } catch (error) {
-      toast.error("Failed to send test message");
+      toast.error(t("alerts.channels.testSendFailed"));
     }
   };
 
   const handleDeleteChannel = async (channel: NotificationChannel) => {
     try {
       await deleteNotificationChannel(channel.id);
-      toast.success(`Deleted ${channelLabels[channel.channel_type as NotificationChannelType]} channel`);
+      toast.success(t("alerts.channels.channelDeleted", { channel: channelLabels[channel.channel_type as NotificationChannelType] }));
       loadChannels();
     } catch (error) {
-      toast.error("Failed to delete channel");
+      toast.error(t("alerts.channels.channelDeleteFailed"));
     }
   };
 
   const tabOptions = alertsTabs.map((tab) => ({
     value: tab.value,
-    label: tab.label,
+    label: t(tab.labelKey),
     icon: <tab.icon className="w-4 h-4" />,
   }));
 
   return (
-    <DashboardLayout title="Stock Alerts">
+    <DashboardLayout title={t("alerts.title")}>
       <div className="flex-1 overflow-y-auto">
         <div className="p-2 min-w-0">
           {/* Stats Overview */}
           {stats && (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
               <div className="bg-white dark:bg-card-dark rounded-lg border border-gray-200 dark:border-white/10 p-3">
-                <div className="text-xs text-gray-500 dark:text-white/50">Active Rules</div>
+                <div className="text-xs text-gray-500 dark:text-white/50">{t("alerts.stats.activeRules")}</div>
                 <div className="text-2xl font-bold text-gray-900 dark:text-white">
                   {stats.active_rules}
                 </div>
               </div>
               <div className="bg-white dark:bg-card-dark rounded-lg border border-gray-200 dark:border-white/10 p-3">
-                <div className="text-xs text-gray-500 dark:text-white/50">Alerts (30d)</div>
+                <div className="text-xs text-gray-500 dark:text-white/50">{t("alerts.stats.alertsCount")}</div>
                 <div className="text-2xl font-bold text-gray-900 dark:text-white">
                   {stats.total_alerts}
                 </div>
               </div>
               <div className="bg-white dark:bg-card-dark rounded-lg border border-gray-200 dark:border-white/10 p-3">
-                <div className="text-xs text-gray-500 dark:text-white/50">Avg/Day</div>
+                <div className="text-xs text-gray-500 dark:text-white/50">{t("alerts.stats.avgPerDay")}</div>
                 <div className="text-2xl font-bold text-gray-900 dark:text-white">
                   {stats.avg_alerts_per_day}
                 </div>
               </div>
               <div className="bg-white dark:bg-card-dark rounded-lg border border-gray-200 dark:border-white/10 p-3">
-                <div className="text-xs text-gray-500 dark:text-white/50">Top Stock</div>
+                <div className="text-xs text-gray-500 dark:text-white/50">{t("alerts.stats.topStock")}</div>
                 <div className="text-2xl font-bold text-primary">
                   {stats.top_symbols[0]?.symbol || "-"}
                 </div>
@@ -331,10 +333,10 @@ export default function AlertsPage() {
                 {/* Alert Rules Tab */}
                 <TabsContent value="rules" className="mt-0">
                   <SectionCard
-                    title="Alert Rules"
+                    title={t("alerts.rules.title")}
                     useSectionHeader
                     sectionHeaderIcon={Bell}
-                    sectionHeaderSubtitle="Configure price alerts for your watched stocks"
+                    sectionHeaderSubtitle={t("alerts.rules.subtitle")}
                     sectionHeaderAction={
                       <Button
                         size="sm"
@@ -342,7 +344,7 @@ export default function AlertsPage() {
                         className="gap-1.5 h-8 text-xs"
                       >
                         <Plus className="w-3 h-3" />
-                        Add Rule
+                        {t("alerts.rules.addRule")}
                       </Button>
                     }
                   >
@@ -354,9 +356,9 @@ export default function AlertsPage() {
                       ) : rules.length === 0 ? (
                         <div className="text-center py-8 text-gray-500 dark:text-white/50">
                           <Bell className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                          <p className="text-sm">No alert rules configured</p>
+                          <p className="text-sm">{t("alerts.rules.noRules")}</p>
                           <p className="text-xs mt-1">
-                            Add a rule to start monitoring stock prices
+                            {t("alerts.rules.noRulesHint")}
                           </p>
                         </div>
                       ) : (
@@ -432,17 +434,17 @@ export default function AlertsPage() {
                               <div className="flex gap-2 mt-2">
                                 {rule.premarket_enabled && (
                                   <Badge variant="secondary" className="text-[10px]">
-                                    Pre-market
+                                    {t("alerts.rules.preMarket")}
                                   </Badge>
                                 )}
                                 {rule.regular_hours_enabled && (
                                   <Badge variant="secondary" className="text-[10px]">
-                                    Regular
+                                    {t("alerts.rules.regular")}
                                   </Badge>
                                 )}
                                 {rule.afterhours_enabled && (
                                   <Badge variant="secondary" className="text-[10px]">
-                                    After-hours
+                                    {t("alerts.rules.afterHours")}
                                   </Badge>
                                 )}
                               </div>
@@ -457,10 +459,10 @@ export default function AlertsPage() {
                 {/* Notification Channels Tab */}
                 <TabsContent value="channels" className="mt-0">
                   <SectionCard
-                    title="Notification Channels"
+                    title={t("alerts.channels.title")}
                     useSectionHeader
                     sectionHeaderIcon={MessageSquare}
-                    sectionHeaderSubtitle="Configure where you receive alert notifications"
+                    sectionHeaderSubtitle={t("alerts.channels.subtitle")}
                     sectionHeaderAction={
                       <Button
                         size="sm"
@@ -468,7 +470,7 @@ export default function AlertsPage() {
                         className="gap-1.5 h-8 text-xs"
                       >
                         <Plus className="w-3 h-3" />
-                        Add Channel
+                        {t("alerts.channels.addChannel")}
                       </Button>
                     }
                   >
@@ -476,9 +478,9 @@ export default function AlertsPage() {
                       {channels.length === 0 ? (
                         <div className="text-center py-8 text-gray-500 dark:text-white/50">
                           <MessageSquare className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                          <p className="text-sm">No notification channels configured</p>
+                          <p className="text-sm">{t("alerts.channels.noChannels")}</p>
                           <p className="text-xs mt-1">
-                            Add Discord, Telegram, or other channels
+                            {t("alerts.channels.noChannelsHint")}
                           </p>
                         </div>
                       ) : (
@@ -505,12 +507,12 @@ export default function AlertsPage() {
                                         {channel.is_verified ? (
                                           <span className="text-green-500 flex items-center gap-1">
                                             <CheckCircle2 className="w-3 h-3" />
-                                            Verified
+                                            {t("common.verified")}
                                           </span>
                                         ) : (
                                           <span className="text-amber-500 flex items-center gap-1">
                                             <AlertTriangle className="w-3 h-3" />
-                                            Not verified
+                                            {t("common.notVerified")}
                                           </span>
                                         )}
                                       </div>
@@ -524,7 +526,7 @@ export default function AlertsPage() {
                                       className="h-7 text-xs gap-1"
                                     >
                                       <TestTube className="w-3 h-3" />
-                                      Test
+                                      {t("common.test")}
                                     </Button>
                                     <Button
                                       variant="ghost"
@@ -548,18 +550,18 @@ export default function AlertsPage() {
                 {/* Alert History Tab */}
                 <TabsContent value="history" className="mt-0">
                   <SectionCard
-                    title="Alert History"
+                    title={t("alerts.history.title")}
                     useSectionHeader
                     sectionHeaderIcon={History}
-                    sectionHeaderSubtitle="Recent price alerts that were triggered"
+                    sectionHeaderSubtitle={t("alerts.history.subtitle")}
                   >
                     <div className="px-4 pb-4">
                       {history.length === 0 ? (
                         <div className="text-center py-8 text-gray-500 dark:text-white/50">
                           <History className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                          <p className="text-sm">No alerts triggered yet</p>
+                          <p className="text-sm">{t("alerts.history.noAlerts")}</p>
                           <p className="text-xs mt-1">
-                            Alerts will appear here when triggered
+                            {t("alerts.history.noAlertsHint")}
                           </p>
                         </div>
                       ) : (
@@ -652,16 +654,16 @@ export default function AlertsPage() {
           <Dialog open={showCreateRule} onOpenChange={setShowCreateRule}>
             <DialogContent className="max-w-md">
               <DialogHeader>
-                <DialogTitle>Create Alert Rule</DialogTitle>
+                <DialogTitle>{t("alerts.rules.createTitle")}</DialogTitle>
                 <DialogDescription>
-                  Set up price alerts for a stock symbol
+                  {t("alerts.rules.createDescription")}
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label>Stock Symbol</Label>
+                  <Label>{t("alerts.rules.stockSymbol")}</Label>
                   <Input
-                    placeholder="e.g., AAPL, TSLA"
+                    placeholder={t("alerts.rules.stockSymbolPlaceholder")}
                     value={newRule.symbol}
                     onChange={(e) =>
                       setNewRule({ ...newRule, symbol: e.target.value.toUpperCase() })
@@ -670,7 +672,7 @@ export default function AlertsPage() {
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-2">
-                    <Label className="text-xs">Daily Change %</Label>
+                    <Label className="text-xs">{t("alerts.rules.dailyChange")}</Label>
                     <Input
                       type="number"
                       value={newRule.daily_change_threshold}
@@ -683,7 +685,7 @@ export default function AlertsPage() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-xs">Spike Change %</Label>
+                    <Label className="text-xs">{t("alerts.rules.spikeChange")}</Label>
                     <Input
                       type="number"
                       value={newRule.spike_change_threshold}
@@ -697,7 +699,7 @@ export default function AlertsPage() {
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-xs">Market Sessions</Label>
+                  <Label className="text-xs">{t("alerts.rules.marketSessions")}</Label>
                   <div className="flex gap-2">
                     <label className="flex items-center gap-1.5 text-xs">
                       <Switch
@@ -706,7 +708,7 @@ export default function AlertsPage() {
                           setNewRule({ ...newRule, premarket_enabled: checked })
                         }
                       />
-                      Pre-market
+                      {t("alerts.rules.preMarket")}
                     </label>
                     <label className="flex items-center gap-1.5 text-xs">
                       <Switch
@@ -715,7 +717,7 @@ export default function AlertsPage() {
                           setNewRule({ ...newRule, regular_hours_enabled: checked })
                         }
                       />
-                      Regular
+                      {t("alerts.rules.regular")}
                     </label>
                     <label className="flex items-center gap-1.5 text-xs">
                       <Switch
@@ -724,12 +726,12 @@ export default function AlertsPage() {
                           setNewRule({ ...newRule, afterhours_enabled: checked })
                         }
                       />
-                      After-hours
+                      {t("alerts.rules.afterHours")}
                     </label>
                   </div>
                 </div>
                 <div className="flex items-center justify-between">
-                  <Label className="text-xs">AI Analysis</Label>
+                  <Label className="text-xs">{t("alerts.rules.aiAnalysis")}</Label>
                   <Switch
                     checked={newRule.ai_analysis_enabled}
                     onCheckedChange={(checked) =>
@@ -740,9 +742,9 @@ export default function AlertsPage() {
               </div>
               <DialogFooter>
                 <Button variant="outline" onClick={() => setShowCreateRule(false)}>
-                  Cancel
+                  {t("common.cancel")}
                 </Button>
-                <Button onClick={handleCreateRule}>Create Rule</Button>
+                <Button onClick={handleCreateRule}>{t("alerts.rules.createRule")}</Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
@@ -751,14 +753,14 @@ export default function AlertsPage() {
           <Dialog open={showCreateChannel} onOpenChange={setShowCreateChannel}>
             <DialogContent className="max-w-md">
               <DialogHeader>
-                <DialogTitle>Add Notification Channel</DialogTitle>
+                <DialogTitle>{t("alerts.channels.createTitle")}</DialogTitle>
                 <DialogDescription>
-                  Configure a new notification channel for alerts
+                  {t("alerts.channels.createDescription")}
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label>Channel Type</Label>
+                  <Label>{t("alerts.channels.channelType")}</Label>
                   <Select
                     value={newChannel.channel_type}
                     onValueChange={(value) =>
@@ -782,7 +784,7 @@ export default function AlertsPage() {
 
                 {newChannel.channel_type === "discord" && (
                   <div className="space-y-2">
-                    <Label>Webhook URL</Label>
+                    <Label>{t("alerts.channels.webhookUrl")}</Label>
                     <Input
                       placeholder="https://discord.com/api/webhooks/..."
                       value={newChannel.discord_webhook_url}
@@ -799,7 +801,7 @@ export default function AlertsPage() {
                 {newChannel.channel_type === "telegram" && (
                   <>
                     <div className="space-y-2">
-                      <Label>Bot Token</Label>
+                      <Label>{t("alerts.channels.botToken")}</Label>
                       <Input
                         placeholder="123456789:ABC..."
                         value={newChannel.telegram_bot_token}
@@ -812,7 +814,7 @@ export default function AlertsPage() {
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label>Chat ID</Label>
+                      <Label>{t("alerts.channels.chatId")}</Label>
                       <Input
                         placeholder="123456789"
                         value={newChannel.telegram_chat_id}
@@ -829,7 +831,7 @@ export default function AlertsPage() {
 
                 {newChannel.channel_type === "wechat" && (
                   <div className="space-y-2">
-                    <Label>Webhook URL</Label>
+                    <Label>{t("alerts.channels.webhookUrl")}</Label>
                     <Input
                       placeholder="https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=..."
                       value={newChannel.wechat_webhook_url}
@@ -845,7 +847,7 @@ export default function AlertsPage() {
 
                 {newChannel.channel_type === "whatsapp" && (
                   <div className="space-y-2">
-                    <Label>Phone Number</Label>
+                    <Label>{t("alerts.channels.phoneNumber")}</Label>
                     <Input
                       placeholder="+14155552671"
                       value={newChannel.whatsapp_phone_number}
@@ -861,9 +863,9 @@ export default function AlertsPage() {
               </div>
               <DialogFooter>
                 <Button variant="outline" onClick={() => setShowCreateChannel(false)}>
-                  Cancel
+                  {t("common.cancel")}
                 </Button>
-                <Button onClick={handleCreateChannel}>Add Channel</Button>
+                <Button onClick={handleCreateChannel}>{t("alerts.channels.addChannelBtn")}</Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>

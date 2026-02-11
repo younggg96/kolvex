@@ -42,6 +42,8 @@ import DashboardLayout from "@/components/layout/DashboardLayout";
 import SectionCard from "@/components/layout/SectionCard";
 import PricingCard from "@/components/common/PricingCard";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useTranslation, SUPPORTED_LOCALES } from "@/lib/i18n";
+import type { Locale } from "@/lib/i18n";
 import { SwitchTab } from "@/components/ui/switch-tab";
 import {
   Select,
@@ -79,70 +81,70 @@ import {
   type UserApiKey,
 } from "@/lib/api/userApiKeysApi";
 
-const settingsTabs = [
-  { value: "account", icon: User, label: "Account" },
-  { value: "api-keys", icon: Key, label: "API Keys" },
-  { value: "billing", icon: CreditCard, label: "Billing" },
-  { value: "notifications", icon: Bell, label: "Notifications" },
-  { value: "preferences", icon: Settings, label: "Preferences" },
+const settingsTabDefs = [
+  { value: "account", icon: User, labelKey: "settings.tabs.account" },
+  { value: "api-keys", icon: Key, labelKey: "settings.tabs.apiKeys" },
+  { value: "billing", icon: CreditCard, labelKey: "settings.tabs.billing" },
+  { value: "notifications", icon: Bell, labelKey: "settings.tabs.notifications" },
+  { value: "preferences", icon: Settings, labelKey: "settings.tabs.preferences" },
 ];
 
-const getPricingPlans = (currentMembership: string) => [
+const getPricingPlans = (currentMembership: string, t: (key: string) => string) => [
   {
-    name: "Free",
+    name: t("settings.billing.plans.free.name"),
     price: 0,
     features: [
-      { text: "Basic market data", included: true },
-      { text: "5 watchlist stocks", included: true },
-      { text: "Daily market news", included: true },
-      { text: "Real-time data", included: false },
-      { text: "AI analysis", included: false },
+      { text: t("settings.billing.plans.free.features.basicData"), included: true },
+      { text: t("settings.billing.plans.free.features.watchlist5"), included: true },
+      { text: t("settings.billing.plans.free.features.dailyNews"), included: true },
+      { text: t("settings.billing.plans.free.features.realTimeData"), included: false },
+      { text: t("settings.billing.plans.free.features.aiAnalysis"), included: false },
     ],
-    buttonText: currentMembership === "FREE" ? "Current Plan" : "Downgrade",
+    buttonText: currentMembership === "FREE" ? t("common.currentPlan") : t("common.downgrade"),
     buttonVariant: "outline" as const,
     buttonDisabled: currentMembership === "FREE",
     badge:
       currentMembership === "FREE"
-        ? { icon: Sparkles, text: "Current Plan" }
+        ? { icon: Sparkles, text: t("common.currentPlan") }
         : undefined,
     highlight: currentMembership === "FREE",
   },
   {
-    name: "Pro",
+    name: t("settings.billing.plans.pro.name"),
     price: 29,
     features: [
-      { text: "Real-time market data", included: true, highlighted: true },
-      { text: "Unlimited watchlist", included: true, highlighted: true },
-      { text: "AI-powered analysis", included: true, highlighted: true },
-      { text: "Advanced charts", included: true, highlighted: true },
-      { text: "Priority support", included: true, highlighted: true },
+      { text: t("settings.billing.plans.pro.features.realTimeData"), included: true, highlighted: true },
+      { text: t("settings.billing.plans.pro.features.unlimitedWatchlist"), included: true, highlighted: true },
+      { text: t("settings.billing.plans.pro.features.aiAnalysis"), included: true, highlighted: true },
+      { text: t("settings.billing.plans.pro.features.advancedCharts"), included: true, highlighted: true },
+      { text: t("settings.billing.plans.pro.features.prioritySupport"), included: true, highlighted: true },
     ],
-    buttonText: currentMembership === "PRO" ? "Current Plan" : "Upgrade",
+    buttonText: currentMembership === "PRO" ? t("common.currentPlan") : t("common.upgrade"),
     buttonVariant: "default" as const,
     buttonDisabled: currentMembership === "PRO",
     badge:
       currentMembership === "PRO"
-        ? { icon: Sparkles, text: "Current Plan" }
+        ? { icon: Sparkles, text: t("common.currentPlan") }
         : undefined,
     highlight: currentMembership === "PRO",
-    popularLabel: "POPULAR",
+    popularLabel: t("settings.billing.plans.pro.popular"),
   },
   {
-    name: "Enterprise",
+    name: t("settings.billing.plans.enterprise.name"),
     price: 99,
     features: [
-      { text: "Everything in Pro", included: true },
-      { text: "Custom AI models", included: true },
-      { text: "API access", included: true },
-      { text: "Team collaboration", included: true },
-      { text: "24/7 dedicated support", included: true },
+      { text: t("settings.billing.plans.enterprise.features.everythingInPro"), included: true },
+      { text: t("settings.billing.plans.enterprise.features.customAI"), included: true },
+      { text: t("settings.billing.plans.enterprise.features.apiAccess"), included: true },
+      { text: t("settings.billing.plans.enterprise.features.teamCollaboration"), included: true },
+      { text: t("settings.billing.plans.enterprise.features.dedicatedSupport"), included: true },
     ],
-    buttonText: currentMembership === "ENTERPRISE" ? "Current Plan" : "Upgrade",
+    buttonText: currentMembership === "ENTERPRISE" ? t("common.currentPlan") : t("common.upgrade"),
     buttonVariant: "default" as const,
     buttonDisabled: currentMembership === "ENTERPRISE",
     badge:
       currentMembership === "ENTERPRISE"
-        ? { icon: Sparkles, text: "Current Plan" }
+        ? { icon: Sparkles, text: t("common.currentPlan") }
         : undefined,
     highlight: currentMembership === "ENTERPRISE",
   },
@@ -153,6 +155,7 @@ function SettingsContent() {
   const searchParams = useSearchParams();
   const { theme, setTheme } = useTheme();
   const { user, isLoading: authLoading } = useAuth();
+  const { t, locale, setLocale } = useTranslation();
   const {
     profile,
     loading: profileLoading,
@@ -229,11 +232,11 @@ function SettingsContent() {
     setApiKeySaving(provider);
     try {
       await upsertUserApiKey(provider, key);
-      toast.success(`${PROVIDER_INFO[provider]?.name || provider} API key saved`);
+      toast.success(t("settings.apiKeys.keySaved", { provider: PROVIDER_INFO[provider]?.name || provider }));
       setApiKeyInputs((prev) => ({ ...prev, [provider]: "" }));
       await loadApiKeys();
     } catch (error: any) {
-      toast.error(error.message || "Failed to save API key");
+      toast.error(error.message || t("settings.apiKeys.failedToSave"));
     } finally {
       setApiKeySaving(null);
     }
@@ -243,10 +246,10 @@ function SettingsContent() {
     setApiKeyDeleting(provider);
     try {
       await deleteUserApiKey(provider);
-      toast.success(`${PROVIDER_INFO[provider]?.name || provider} API key removed`);
+      toast.success(t("settings.apiKeys.keyRemoved", { provider: PROVIDER_INFO[provider]?.name || provider }));
       await loadApiKeys();
     } catch (error: any) {
-      toast.error(error.message || "Failed to delete API key");
+      toast.error(error.message || t("settings.apiKeys.failedToDelete"));
     } finally {
       setApiKeyDeleting(null);
     }
@@ -288,18 +291,18 @@ function SettingsContent() {
       const result = await updateProfileTheme(themeValue);
 
       if (!result.success) {
-        toast.error("Failed to update theme");
+        toast.error(t("settings.preferences.failedToUpdateTheme"));
       }
     }
   };
 
   const processFile = (file: File) => {
     if (file.size > 2 * 1024 * 1024) {
-      toast.error("File size must be less than 2MB");
+      toast.error(t("settings.account.fileSizeError"));
       return;
     }
     if (!file.type.startsWith("image/")) {
-      toast.error("Please select an image file");
+      toast.error(t("settings.account.fileTypeError"));
       return;
     }
 
@@ -471,14 +474,14 @@ function SettingsContent() {
       setUploadProgress(100);
 
       if (result.success) {
-        toast.success("Avatar updated successfully");
+        toast.success(t("settings.account.avatarUpdated"));
         handleAvatarDialogClose(false);
       } else {
         throw new Error(result.error);
       }
     } catch (error: any) {
       console.error("Upload error:", error);
-      toast.error(error.message || "Failed to upload avatar");
+      toast.error(error.message || t("settings.account.failedToUpload"));
     } finally {
       setIsUploading(false);
       setUploadProgress(0);
@@ -491,9 +494,7 @@ function SettingsContent() {
     if (formData.phone && formData.phone.trim() !== "") {
       const phoneRegex = /^\+[1-9]\d{1,14}$/;
       if (!phoneRegex.test(formData.phone)) {
-        toast.error(
-          "Invalid phone format. Use E.164 format: +[country code][number] (e.g., +14155552671)"
-        );
+        toast.error(t("settings.account.phoneFormatError"));
         return;
       }
     }
@@ -511,7 +512,7 @@ function SettingsContent() {
       const result = await updateProfile(updates);
 
       if (result.success) {
-        toast.success("Profile updated successfully");
+        toast.success(t("settings.account.profileUpdated"));
         setIsEditing(false);
       } else {
         throw new Error(result.error);
@@ -519,11 +520,9 @@ function SettingsContent() {
     } catch (error: any) {
       console.error("Save error:", error);
       if (error.message?.includes("chk_phone_format")) {
-        toast.error(
-          "Invalid phone format. Use E.164 format: +[country code][number]"
-        );
+        toast.error(t("settings.account.phoneFormatError"));
       } else {
-        toast.error(error.message || "Failed to update profile");
+        toast.error(error.message || t("settings.account.failedToUpdate"));
       }
     } finally {
       setIsSaving(false);
@@ -550,26 +549,32 @@ function SettingsContent() {
       const result = await updateNotifications({ email_notifications_enabled: enabled });
 
       if (result.success) {
-        toast.success(enabled ? "Email notifications enabled" : "Email notifications disabled");
+        toast.success(enabled ? t("settings.notifications.enabled") : t("settings.notifications.disabled"));
       } else {
         throw new Error(result.error);
       }
     } catch (error: any) {
       console.error("Notification update error:", error);
-      toast.error(error.message || "Failed to update notification settings");
+      toast.error(error.message || t("settings.notifications.failedToUpdate"));
       // Revert on error
       setEmailNotificationsEnabled(previousValue);
     }
   };
 
-  const tabOptions = settingsTabs.map((tab) => ({
+  const handleLanguageChange = (newLocale: string) => {
+    setLocale(newLocale as Locale);
+    const langName = SUPPORTED_LOCALES.find((l) => l.value === newLocale)?.nativeLabel || newLocale;
+    toast.success(t("settings.preferences.languageChanged", { language: langName }));
+  };
+
+  const tabOptions = settingsTabDefs.map((tab) => ({
     value: tab.value,
-    label: tab.label,
+    label: t(tab.labelKey),
     icon: <tab.icon className="w-4 h-4" />,
   }));
 
   return (
-    <DashboardLayout title="Settings">
+    <DashboardLayout title={t("settings.title")}>
       <div className="flex-1 overflow-y-auto">
         <div className="p-2 min-w-0">
           {/* Settings Tabs */}
@@ -589,13 +594,13 @@ function SettingsContent() {
                 {/* Account Info Tab */}
                 <TabsContent value="account" className="mt-0">
                   <SectionCard
-                    title="Account Information"
+                    title={t("settings.account.title")}
                     useSectionHeader
                     sectionHeaderIcon={User}
                     sectionHeaderSubtitle={
                       isEditing
-                        ? "Update your account details"
-                        : "View your account details"
+                        ? t("settings.account.updateDetails")
+                        : t("settings.account.viewDetails")
                     }
                     sectionHeaderAction={
                       !isEditing && !profileLoading ? (
@@ -606,7 +611,7 @@ function SettingsContent() {
                           className="gap-1.5 h-8 text-xs"
                         >
                           <Edit className="w-3 h-3" />
-                          Edit
+                          {t("common.edit")}
                         </Button>
                       ) : undefined
                     }
@@ -679,12 +684,12 @@ function SettingsContent() {
                           <DialogContent className="w-[calc(100%-2rem)] max-w-lg mx-auto max-h-[90vh] overflow-y-auto">
                             <DialogHeader>
                               <DialogTitle className="text-base sm:text-lg">
-                                Upload Avatar
+                                {t("settings.account.uploadAvatar")}
                               </DialogTitle>
                               <DialogDescription className="text-xs sm:text-sm">
                                 {previewUrl
-                                  ? "Drag to reposition, scroll to zoom. Image will be cropped to a square."
-                                  : "Choose an image file to upload as your profile picture."}
+                                  ? t("settings.account.avatarCropDescription")
+                                  : t("settings.account.avatarDescription")}
                               </DialogDescription>
                             </DialogHeader>
                             <div>
@@ -736,7 +741,7 @@ function SettingsContent() {
                                       className="gap-1.5 h-8 text-xs"
                                     >
                                       <RotateCcw className="w-3 h-3" />
-                                      Reset
+                                      {t("common.reset")}
                                     </Button>
                                     <label
                                       htmlFor="avatar-upload-change"
@@ -749,7 +754,7 @@ function SettingsContent() {
                                         className="gap-1.5 h-8 text-xs pointer-events-none"
                                       >
                                         <ImageIcon className="w-3 h-3" />
-                                        Change Image
+                                        {t("settings.account.changeImage")}
                                       </Button>
                                       <input
                                         id="avatar-upload-change"
@@ -793,18 +798,18 @@ function SettingsContent() {
                                           }`}
                                       >
                                         {isDragging ? (
-                                          "Drop image here"
+                                          t("settings.account.dropImageHere")
                                         ) : (
                                           <>
                                             <span className="font-semibold">
-                                              Click to upload
+                                              {t("settings.account.clickToUpload")}
                                             </span>{" "}
-                                            or drag and drop
+                                            {t("settings.account.orDragAndDrop")}
                                           </>
                                         )}
                                       </p>
                                       <p className="text-[10px] sm:text-xs text-gray-500 dark:text-white/40">
-                                        PNG, JPG or GIF (MAX. 2MB)
+                                        {t("settings.account.imageFormats")}
                                       </p>
                                     </div>
                                     <input
@@ -822,7 +827,7 @@ function SettingsContent() {
                               {isUploading && (
                                 <div className="space-y-2">
                                   <div className="flex items-center justify-between text-xs text-gray-600 dark:text-white/60">
-                                    <span>Uploading...</span>
+                                    <span>{t("common.uploading")}</span>
                                     <span>{uploadProgress}%</span>
                                   </div>
                                   <div className="w-full h-2 bg-gray-200 dark:bg-white/10 rounded-full overflow-hidden">
@@ -843,7 +848,7 @@ function SettingsContent() {
                                 disabled={isUploading}
                                 className="w-full sm:w-auto h-8 text-xs"
                               >
-                                Cancel
+                                {t("common.cancel")}
                               </Button>
                               <Button
                                 type="button"
@@ -853,7 +858,7 @@ function SettingsContent() {
                                 className="gap-1.5 w-full sm:w-auto h-8 text-xs"
                               >
                                 <Upload className="w-3 h-3" />
-                                {isUploading ? "Uploading..." : "Upload"}
+                                {isUploading ? t("common.uploading") : t("settings.account.upload")}
                               </Button>
                             </DialogFooter>
                           </DialogContent>
@@ -863,7 +868,7 @@ function SettingsContent() {
                         <div className="space-y-1.5">
                           <Label className="text-xs font-medium text-gray-700 dark:text-white/70 flex items-center gap-1.5">
                             <Mail className="w-3 h-3" />
-                            Email Address
+                            {t("settings.account.emailAddress")}
                           </Label>
                           <p className="text-xs sm:text-sm text-gray-900 dark:text-white py-1.5 sm:py-2 px-2.5 sm:px-3 bg-gray-50 dark:bg-white/5 rounded-lg border border-gray-200 dark:border-white/10 break-all">
                             {formData.email}
@@ -874,7 +879,7 @@ function SettingsContent() {
                         <div className="space-y-1.5">
                           <Label className="text-xs font-medium text-gray-700 dark:text-white/70 flex items-center gap-1.5">
                             <UserCircle className="w-3 h-3" />
-                            Full Name
+                            {t("settings.account.fullName")}
                           </Label>
                           {isEditing ? (
                             <Input
@@ -887,7 +892,7 @@ function SettingsContent() {
                                   full_name: e.target.value,
                                 })
                               }
-                              placeholder="Enter your full name"
+                              placeholder={t("settings.account.enterFullName")}
                               className="h-8 sm:h-9 text-xs sm:text-sm"
                             />
                           ) : (
@@ -900,7 +905,7 @@ function SettingsContent() {
                         <div className="space-y-1.5">
                           <Label className="text-xs font-medium text-gray-700 dark:text-white/70 flex items-center gap-1.5">
                             <Phone className="w-3 h-3" />
-                            Phone Number
+                            {t("settings.account.phoneNumber")}
                           </Label>
                           {isEditing ? (
                             <div className="space-y-1">
@@ -918,8 +923,7 @@ function SettingsContent() {
                                 className="h-8 sm:h-9 text-xs sm:text-sm"
                               />
                               <p className="text-[10px] text-gray-500 dark:text-white/40">
-                                Format: +[country code][number] (e.g.,
-                                +14155552671)
+                                {t("settings.account.phoneFormat")}
                               </p>
                             </div>
                           ) : (
@@ -938,7 +942,7 @@ function SettingsContent() {
                               onClick={handleCancelEdit}
                               className="w-full sm:w-auto h-8 text-xs"
                             >
-                              Cancel
+                              {t("common.cancel")}
                             </Button>
                             <Button
                               size="sm"
@@ -947,7 +951,7 @@ function SettingsContent() {
                               disabled={isSaving}
                             >
                               <Check className="w-3 h-3" />
-                              {isSaving ? "Saving..." : "Save Changes"}
+                              {isSaving ? t("common.saving") : t("settings.account.saveChanges")}
                             </Button>
                           </div>
                         )}
@@ -959,24 +963,23 @@ function SettingsContent() {
                 {/* API Keys Tab */}
                 <TabsContent value="api-keys" className="mt-0">
                   <SectionCard
-                    title="API Keys"
+                    title={t("settings.apiKeys.title")}
                     useSectionHeader
                     sectionHeaderIcon={Key}
-                    sectionHeaderSubtitle="Use your own API keys for LLM providers. Your keys take priority over the default server keys."
+                    sectionHeaderSubtitle={t("settings.apiKeys.subtitle")}
                   >
                     <div className="px-4 pb-4 space-y-3">
                       {apiKeysLoading ? (
                         <div className="flex items-center justify-center py-8">
                           <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
-                          <span className="ml-2 text-sm text-muted-foreground">Loading...</span>
+                          <span className="ml-2 text-sm text-muted-foreground">{t("common.loading")}</span>
                         </div>
                       ) : (
                         <>
                           {/* Info banner */}
                           <div className="p-3 rounded-lg bg-primary/10 dark:bg-primary/20 border border-primary/20 dark:border-primary/30">
                             <p className="text-xs text-primary dark:text-primary-foreground">
-                              Your API keys are stored securely and encrypted at rest. They are only used when you send messages —
-                              if a key is set for a provider, it will be used instead of the default server key.
+                              {t("settings.apiKeys.infoBanner")}
                             </p>
                           </div>
 
@@ -1011,7 +1014,7 @@ function SettingsContent() {
                                         </h4>
                                         {existingKey && (
                                           <span className="px-1.5 py-0.5 text-[10px] font-medium rounded bg-green-100 dark:bg-green-500/20 text-green-700 dark:text-green-400">
-                                            Configured
+                                            {t("common.configured")}
                                           </span>
                                         )}
                                       </div>
@@ -1025,7 +1028,7 @@ function SettingsContent() {
                                       rel="noopener noreferrer"
                                       className="text-xs text-primary hover:text-primary/80 flex items-center gap-1 flex-shrink-0"
                                     >
-                                      Get Key
+                                      {t("settings.apiKeys.getKey")}
                                       <ExternalLink className="w-3 h-3" />
                                     </a>
                                   </div>
@@ -1057,7 +1060,7 @@ function SettingsContent() {
                                     <div className="relative flex-1">
                                       <Input
                                         type={isVisible ? "text" : "password"}
-                                        placeholder={existingKey ? "Replace with new key..." : info.placeholder}
+                                        placeholder={existingKey ? t("settings.apiKeys.replaceKey") : info.placeholder}
                                         value={inputValue}
                                         onChange={(e) =>
                                           setApiKeyInputs((prev) => ({
@@ -1098,7 +1101,7 @@ function SettingsContent() {
                                       {isSaving ? (
                                         <Loader2 className="w-3.5 h-3.5 animate-spin" />
                                       ) : (
-                                        "Save"
+                                        t("common.save")
                                       )}
                                     </Button>
                                   </div>
@@ -1115,14 +1118,14 @@ function SettingsContent() {
                 {/* Billing Tab */}
                 <TabsContent value="billing" className="mt-0">
                   <SectionCard
-                    title="Choose Your Plan"
+                    title={t("settings.billing.title")}
                     useSectionHeader
                     sectionHeaderIcon={CreditCard}
-                    sectionHeaderSubtitle="Select the perfect plan for your investment needs"
+                    sectionHeaderSubtitle={t("settings.billing.subtitle")}
                   >
                     {/* Pricing Cards */}
                     <div className="px-4 sm:px-6 mt-0 sm:mt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 md:gap-6 mb-4 sm:mb-6">
-                      {getPricingPlans(profile?.membership || "FREE").map(
+                      {getPricingPlans(profile?.membership || "FREE", t).map(
                         (plan) => (
                           <PricingCard key={plan.name} {...plan} />
                         )
@@ -1137,16 +1140,16 @@ function SettingsContent() {
                   className="mt-0 space-y-4 sm:space-y-6"
                 >
                   <SectionCard
-                    title="Notifications"
+                    title={t("settings.notifications.title")}
                     useSectionHeader
                     sectionHeaderIcon={Bell}
-                    sectionHeaderSubtitle="Manage how you receive notifications"
+                    sectionHeaderSubtitle={t("settings.notifications.subtitle")}
                   >
                     <div className="px-4 pb-4 space-y-4 sm:space-y-5">
                       {/* Email Notifications Toggle */}
                       <div>
                         <h3 className="text-xs font-medium mb-2 text-gray-700 dark:text-white/70">
-                          Email Notifications
+                          {t("settings.notifications.emailNotifications")}
                         </h3>
                         <div className="space-y-2">
                           <div className="flex items-center justify-between p-2 sm:p-2.5 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/5 rounded-lg hover:bg-gray-100 dark:hover:bg-white/10 transition-colors duration-200">
@@ -1155,10 +1158,10 @@ function SettingsContent() {
                                 htmlFor="email-notifications"
                                 className="text-xs sm:text-sm font-medium text-gray-900 dark:text-white cursor-pointer"
                               >
-                                Enable Email Notifications
+                                {t("settings.notifications.enableEmail")}
                               </Label>
                               <p className="text-[10px] sm:text-xs text-gray-600 dark:text-white/60">
-                                Receive email notifications when people you follow make portfolio changes
+                                {t("settings.notifications.emailDescription")}
                               </p>
                             </div>
                             <Switch
@@ -1170,7 +1173,7 @@ function SettingsContent() {
                           </div>
                         </div>
                         <p className="text-[10px] text-gray-500 dark:text-white/40 mt-2">
-                          When enabled, you will receive email notifications for portfolio updates from users you follow.
+                          {t("settings.notifications.emailHint")}
                         </p>
                       </div>
                     </div>
@@ -1183,33 +1186,34 @@ function SettingsContent() {
                   className="mt-0 space-y-4 sm:space-y-6"
                 >
                   <SectionCard
-                    title="Display Preferences"
+                    title={t("settings.preferences.title")}
                     useSectionHeader
                     sectionHeaderIcon={Settings}
-                    sectionHeaderSubtitle="Customize your experience"
+                    sectionHeaderSubtitle={t("settings.preferences.subtitle")}
                   >
                     <div className="px-4 pb-4 space-y-3 sm:space-y-4">
                       {/* Language */}
                       <div className="space-y-2">
                         <Label className="text-xs font-medium text-gray-700 dark:text-white/70">
-                          Language
+                          {t("settings.preferences.language")}
                         </Label>
-                        <Select defaultValue="english">
+                        <Select value={locale} onValueChange={handleLanguageChange}>
                           <SelectTrigger className="h-8 sm:h-9 text-xs sm:text-sm w-full sm:w-[400px]">
-                            <SelectValue placeholder="Select language" />
+                            <SelectValue placeholder={t("settings.preferences.selectLanguage")} />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="english">English</SelectItem>
-                            <SelectItem value="zh-cn">Chinese</SelectItem>
-                            <SelectItem value="spanish">Spanish</SelectItem>
-                            <SelectItem value="french">French</SelectItem>
+                            {SUPPORTED_LOCALES.map((lang) => (
+                              <SelectItem key={lang.value} value={lang.value}>
+                                {lang.nativeLabel} ({lang.label})
+                              </SelectItem>
+                            ))}
                           </SelectContent>
                         </Select>
                       </div>
                       {/* Theme Selection */}
                       <div className="space-y-2">
                         <Label className="text-xs font-medium text-gray-700 dark:text-white/70 flex items-center gap-1.5">
-                          Theme
+                          {t("settings.preferences.theme")}
                         </Label>
                         {mounted && (
                           <div className="flex flex-wrap gap-2">
@@ -1217,20 +1221,20 @@ function SettingsContent() {
                               {
                                 value: "light",
                                 icon: Sun,
-                                label: "Light",
-                                description: "Light theme",
+                                label: t("settings.preferences.themeLight"),
+                                description: t("settings.preferences.themeLightDesc"),
                               },
                               {
                                 value: "dark",
                                 icon: Moon,
-                                label: "Dark",
-                                description: "Dark theme",
+                                label: t("settings.preferences.themeDark"),
+                                description: t("settings.preferences.themeDarkDesc"),
                               },
                               {
                                 value: "system",
                                 icon: Monitor,
-                                label: "System",
-                                description: "Follow system",
+                                label: t("settings.preferences.themeSystem"),
+                                description: t("settings.preferences.themeSystemDesc"),
                               },
                             ].map((mode) => {
                               const Icon = mode.icon;

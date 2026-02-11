@@ -7,6 +7,7 @@ import { EmptyState } from "@/components/common/EmptyState";
 import { calculateTotalValue, calculateTotalPnL } from "@/lib/snaptradeApi";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "@/lib/i18n";
 
 // Local components
 import { PortfolioSkeleton } from "./PortfolioSkeleton";
@@ -39,6 +40,7 @@ export default function PortfolioHoldings({
   isOwner = false,
   onHeaderActionsReady,
 }: PortfolioHoldingsProps) {
+  const { t, locale } = useTranslation();
   const [disconnectDialogOpen, setDisconnectDialogOpen] = useState(false);
   const [expandedAccounts, setExpandedAccounts] = useState<Set<string>>(
     new Set()
@@ -167,9 +169,9 @@ export default function PortfolioHoldings({
     const diffMins = Math.floor(diffMs / 60000);
     const diffHours = Math.floor(diffMs / 3600000);
 
-    if (diffMins < 1) return "Just now";
-    if (diffMins < 60) return `${diffMins}m ago`;
-    return `${diffHours}h ago`;
+    if (diffMins < 1) return locale === "zh" ? "刚刚" : "Just now";
+    if (diffMins < 60) return `${diffMins}m`;
+    return `${diffHours}h`;
   }, [lastRefreshTime]);
 
   // Notify parent component of header actions state
@@ -319,9 +321,9 @@ export default function PortfolioHoldings({
           <div className="flex items-center justify-between gap-4">
             <SwitchTab
               options={[
-                { value: "holdings", label: "Holdings" },
-                { value: "analytics", label: "Analytics" },
-                { value: "ai-insights", label: "AI Insights" },
+                { value: "holdings", label: t("portfolio.tabs.holdings") },
+                { value: "analytics", label: t("portfolio.tabs.analytics") },
+                { value: "ai-insights", label: t("portfolio.tabs.aiInsights") },
               ]}
               value={activeTab}
               onValueChange={(v) => setActiveTab(v as "holdings" | "analytics" | "ai-insights")}
@@ -351,7 +353,7 @@ export default function PortfolioHoldings({
                     stockDataLoading && "animate-spin"
                   )}
                 />
-                {stockDataLoading ? "Refreshing..." : "Refresh Prices"}
+                {stockDataLoading ? t("portfolio.holdings.refreshing") : t("portfolio.holdings.refreshPrices")}
               </Button>
             </div>
           </div>
@@ -402,7 +404,7 @@ export default function PortfolioHoldings({
           {/* AI Insights - Non-owner message */}
           {activeTab === "ai-insights" && !isOwner && (
             <div className="text-center py-8 text-muted-foreground">
-              <p>AI analysis is only available for your own portfolio.</p>
+              <p>{t("portfolio.holdings.aiOnlyOwner")}</p>
             </div>
           )}
         </>
@@ -412,10 +414,10 @@ export default function PortfolioHoldings({
       {(!holdings?.accounts || holdings.accounts.length === 0) && (
         <EmptyState
           icon={AlertCircle}
-          title="No Account Data"
-          description="Sync to fetch your latest positions from your connected broker"
+          title={t("portfolio.holdings.noAccountData")}
+          description={t("portfolio.holdings.noAccountDataDesc")}
           action={{
-            label: syncing ? "Syncing..." : "Sync Now",
+            label: syncing ? t("portfolio.connect.syncing") : t("portfolio.holdings.syncNow"),
             onClick: handleSync,
           }}
         />

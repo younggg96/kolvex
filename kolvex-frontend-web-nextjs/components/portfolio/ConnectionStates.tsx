@@ -9,6 +9,7 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useTranslation } from "@/lib/i18n";
 import type { ConnectionStateProps, InitialSyncStateProps } from "./types";
 
 /**
@@ -18,6 +19,8 @@ export function NotConnectedState({
   onConnect,
   connecting,
 }: ConnectionStateProps) {
+  const { t } = useTranslation();
+
   return (
     <div className="flex items-center justify-center min-h-[60vh]">
       <div className="max-w-md w-full text-center space-y-8 p-8">
@@ -25,10 +28,9 @@ export function NotConnectedState({
           <Link2 className="w-8 h-8 text-primary" />
         </div>
         <div className="space-y-3">
-          <h2 className="text-2xl font-bold">Connect Your Broker</h2>
+          <h2 className="text-2xl font-bold">{t("portfolio.connect.title")}</h2>
           <p className="text-muted-foreground text-sm leading-relaxed">
-            Link your brokerage account to automatically track your positions,
-            monitor performance, and share your portfolio publicly.
+            {t("portfolio.connect.description")}
           </p>
         </div>
         <Button
@@ -42,17 +44,17 @@ export function NotConnectedState({
           ) : (
             <ShieldCheck className="w-4 h-4" />
           )}
-          {connecting ? "Connecting..." : "Connect Broker"}
+          {connecting ? t("portfolio.connect.connecting") : t("portfolio.connect.connectBroker")}
         </Button>
         <div className="flex justify-center gap-6 text-xs text-muted-foreground">
           <span className="flex items-center gap-1.5">
-            <Check className="w-3 h-3 text-green-500" /> Secure
+            <Check className="w-3 h-3 text-green-500" /> {t("portfolio.connect.secure")}
           </span>
           <span className="flex items-center gap-1.5">
-            <Check className="w-3 h-3 text-green-500" /> Read-only
+            <Check className="w-3 h-3 text-green-500" /> {t("portfolio.connect.readOnly")}
           </span>
           <span className="flex items-center gap-1.5">
-            <Check className="w-3 h-3 text-green-500" /> Encrypted
+            <Check className="w-3 h-3 text-green-500" /> {t("portfolio.connect.encrypted")}
           </span>
         </div>
       </div>
@@ -64,6 +66,8 @@ export function NotConnectedState({
  * State when broker is connected but data hasn't been synced yet
  */
 export function InitialSyncState({ onSync, syncing }: InitialSyncStateProps) {
+  const { t } = useTranslation();
+
   return (
     <div className="flex items-center justify-center min-h-[60vh]">
       <div className="max-w-md w-full text-center space-y-8 p-8">
@@ -71,10 +75,9 @@ export function InitialSyncState({ onSync, syncing }: InitialSyncStateProps) {
           <Check className="w-8 h-8 text-green-500" />
         </div>
         <div className="space-y-3">
-          <h2 className="text-2xl font-bold">Broker Connected!</h2>
+          <h2 className="text-2xl font-bold">{t("portfolio.connect.connectedTitle")}</h2>
           <p className="text-muted-foreground text-sm leading-relaxed">
-            Great! Your account is linked. Sync now to import your current
-            positions and start tracking.
+            {t("portfolio.connect.connectedDescription")}
           </p>
         </div>
         <Button
@@ -88,10 +91,9 @@ export function InitialSyncState({ onSync, syncing }: InitialSyncStateProps) {
           ) : (
             <RefreshCw className="w-4 h-4" />
           )}
-          {syncing ? "Syncing..." : "Sync Positions"}
+          {syncing ? t("portfolio.connect.syncing") : t("portfolio.connect.syncPositions")}
         </Button>
       </div>
     </div>
   );
 }
-

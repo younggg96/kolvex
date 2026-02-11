@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
+import { useTranslation } from "@/lib/i18n";
 import {
   Loader2,
   Eye,
@@ -39,23 +40,23 @@ type BooleanSettingKey = Exclude<keyof PrivacySettings, "hidden_accounts">;
 
 interface PrivacySettingItem {
   key: BooleanSettingKey;
-  label: string;
+  labelKey: string;
   category: "summary" | "position";
 }
 
 const PRIVACY_SETTINGS: PrivacySettingItem[] = [
   // Summary settings
-  { key: "show_total_value", label: "Total Value", category: "summary" },
-  { key: "show_total_pnl", label: "Total P&L", category: "summary" },
-  { key: "show_pnl_percent", label: "P&L %", category: "summary" },
-  { key: "show_positions_count", label: "Positions", category: "summary" },
+  { key: "show_total_value", labelKey: "portfolio.privacy.totalValue", category: "summary" },
+  { key: "show_total_pnl", labelKey: "portfolio.privacy.totalPnl", category: "summary" },
+  { key: "show_pnl_percent", labelKey: "portfolio.privacy.pnlPercent", category: "summary" },
+  { key: "show_positions_count", labelKey: "portfolio.privacy.positionsLabel", category: "summary" },
   // Position settings
-  { key: "show_shares", label: "Shares", category: "position" },
-  { key: "show_position_value", label: "Value", category: "position" },
-  { key: "show_position_pnl", label: "Total P&L", category: "position" },
-  { key: "show_position_pnl_per_share", label: "P&L/Share", category: "position" },
-  { key: "show_position_weight", label: "Weight", category: "position" },
-  { key: "show_position_cost", label: "Cost", category: "position" },
+  { key: "show_shares", labelKey: "portfolio.privacy.sharesLabel", category: "position" },
+  { key: "show_position_value", labelKey: "portfolio.privacy.valueLabel", category: "position" },
+  { key: "show_position_pnl", labelKey: "portfolio.privacy.positionPnl", category: "position" },
+  { key: "show_position_pnl_per_share", labelKey: "portfolio.privacy.positionPnlPerShare", category: "position" },
+  { key: "show_position_weight", labelKey: "portfolio.privacy.weightLabel", category: "position" },
+  { key: "show_position_cost", labelKey: "portfolio.privacy.costLabel", category: "position" },
 ];
 
 interface PrivacySettingsDialogProps {
@@ -65,6 +66,7 @@ interface PrivacySettingsDialogProps {
 export default function PrivacySettingsDialog({
   trigger,
 }: PrivacySettingsDialogProps) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -235,7 +237,7 @@ export default function PrivacySettingsDialog({
               isVisible ? "text-foreground" : "text-muted-foreground"
             }`}
           >
-            {item.label}
+            {t(item.labelKey)}
           </span>
         </div>
         <Switch
@@ -266,10 +268,10 @@ export default function PrivacySettingsDialog({
                 isHidden ? "text-muted-foreground" : "text-foreground"
               }`}
             >
-              {account.account_name || "Brokerage Account"}
+              {account.account_name || t("portfolio.holdings.brokerageAccount")}
             </span>
             <p className="text-[10px] text-muted-foreground">
-              {positionsCount} positions
+              {t("portfolio.holdings.positions", { count: String(positionsCount) })}
             </p>
           </div>
         </div>
@@ -327,12 +329,12 @@ export default function PrivacySettingsDialog({
                   {allVisible ? (
                     <>
                       <EyeOff className="w-3 h-3 mr-1" />
-                      Hide All
+                      {t("portfolio.privacy.hideAll")}
                     </>
                   ) : (
                     <>
                       <Eye className="w-3 h-3 mr-1" />
-                      Show All
+                      {t("portfolio.privacy.showAll")}
                     </>
                   )}
                 </Button>
@@ -365,7 +367,7 @@ export default function PrivacySettingsDialog({
           <CollapsibleTrigger className="w-full">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <span className="text-sm font-medium">Accounts</span>
+                <span className="text-sm font-medium">{t("portfolio.privacy.accounts")}</span>
                 <span className="text-xs text-muted-foreground">
                   {visibleAccountsCount}/{accounts.length}
                 </span>
@@ -384,12 +386,12 @@ export default function PrivacySettingsDialog({
                   {allVisible ? (
                     <>
                       <EyeOff className="w-3 h-3 mr-1" />
-                      Hide All
+                      {t("portfolio.privacy.hideAll")}
                     </>
                   ) : (
                     <>
                       <Eye className="w-3 h-3 mr-1" />
-                      Show All
+                      {t("portfolio.privacy.showAll")}
                     </>
                   )}
                 </Button>
@@ -408,7 +410,7 @@ export default function PrivacySettingsDialog({
               ))}
               {accounts.length === 0 && (
                 <p className="text-xs text-muted-foreground text-center py-4">
-                  No accounts connected
+                  {t("portfolio.privacy.noAccounts")}
                 </p>
               )}
             </div>
@@ -424,15 +426,15 @@ export default function PrivacySettingsDialog({
         {trigger || (
           <Button variant="outline" size="sm" className="gap-2">
             <Shield className="w-4 h-4" />
-            Privacy
+            {t("portfolio.privacy.button")}
           </Button>
         )}
       </DialogTrigger>
       <DialogContent className="max-w-lg">
         <DialogHeader className="!border-0">
-          <DialogTitle>Privacy Settings</DialogTitle>
+          <DialogTitle>{t("portfolio.privacy.title")}</DialogTitle>
           <DialogDescription>
-            Control what information is visible in your public profile.
+            {t("portfolio.privacy.description")}
           </DialogDescription>
         </DialogHeader>
 
@@ -443,7 +445,7 @@ export default function PrivacySettingsDialog({
         ) : settings ? (
           <div className="space-y-4 max-h-[60vh] overflow-y-auto">
             <CategorySection
-              title="Portfolio Summary"
+              title={t("portfolio.privacy.portfolioSummary")}
               items={summarySettings}
               isOpen={summaryOpen}
               onOpenChange={setSummaryOpen}
@@ -452,7 +454,7 @@ export default function PrivacySettingsDialog({
             />
 
             <CategorySection
-              title="Position Details"
+              title={t("portfolio.privacy.positionDetails")}
               items={positionSettings}
               isOpen={positionOpen}
               onOpenChange={setPositionOpen}
@@ -463,7 +465,7 @@ export default function PrivacySettingsDialog({
             <AccountsSection />
 
             <p className="text-xs text-muted-foreground text-center pt-2">
-              Hidden fields show &quot;***&quot; and hidden accounts are not displayed
+              {t("portfolio.privacy.hiddenFieldsNote")}
             </p>
           </div>
         ) : null}

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { useTranslation } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import { SectionCard } from "../layout";
 import {
@@ -31,6 +32,8 @@ export function PortfolioAllocation({
   isOwner = true,
   cachedSectorMap,
 }: PortfolioAllocationProps) {
+  const { t } = useTranslation();
+
   // Sort state
   const [sortKey, setSortKey] = useState<SortKey>("allocation");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
@@ -82,7 +85,7 @@ export function PortfolioAllocation({
 
   return (
     <SectionCard
-      title="Portfolio Allocation by Sector"
+      title={t("portfolio.allocation.title")}
       titleSize="md"
       className={className}
     >

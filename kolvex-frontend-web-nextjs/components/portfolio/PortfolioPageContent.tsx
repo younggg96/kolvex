@@ -11,11 +11,13 @@ import { PortfolioHeroSection } from "./PortfolioHeroSection";
 import { PortfolioSkeleton } from "./PortfolioSkeleton";
 import { useAuth } from "@/hooks";
 import { PortfolioHeaderActions } from "./PortfolioHeaderActions";
+import { useTranslation } from "@/lib/i18n";
 
 export function PortfolioPageContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const { user, isLoading } = useAuth();
+  const { t } = useTranslation();
   const [headerActionsProps, setHeaderActionsProps] =
     useState<PortfolioHeaderActionsProps | null>(null);
 
@@ -25,15 +27,13 @@ export function PortfolioPageContent() {
     const error = searchParams.get("error");
 
     if (connected === "true") {
-      toast.success(
-        "Broker connected successfully! Click 'Sync Data' to fetch your holdings."
-      );
+      toast.success(t("portfolio.brokerConnected"));
       router.replace("/dashboard/portfolio");
     } else if (error) {
-      toast.error(`Connection failed: ${error}`);
+      toast.error(t("portfolio.connectionFailed", { error: error || "" }));
       router.replace("/dashboard/portfolio");
     }
-  }, [searchParams, router]);
+  }, [searchParams, router, t]);
 
   useEffect(() => {
     handleConnectionCallback();
@@ -42,7 +42,7 @@ export function PortfolioPageContent() {
   // Show loading while auth is loading
   if (isLoading) {
     return (
-      <DashboardLayout headerClassName="lg:hidden" title="Loading Portfolio...">
+      <DashboardLayout headerClassName="lg:hidden" title={t("portfolio.loadingTitle")}>
         <div className="relative min-w-0 space-y-3">
           {/* Hero Skeleton */}
           <PortfolioHeroSection className="lg:block hidden" />
@@ -55,7 +55,7 @@ export function PortfolioPageContent() {
 
   return (
     <DashboardLayout
-      title="My Holdings"
+      title={t("portfolio.title")}
       headerClassName="lg:hidden"
       headerActions={
         headerActionsProps ? (

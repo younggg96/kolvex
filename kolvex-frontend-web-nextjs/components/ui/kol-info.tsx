@@ -28,9 +28,8 @@ export function KolInfo({
 }: KolInfoProps) {
   const content = (
     <div
-      className={`flex items-center justify-between w-full gap-2.5 ${
-        href ? "cursor-pointer hover:opacity-80 transition-opacity" : ""
-      }`}
+      className={`flex items-center justify-between w-full gap-2.5 ${href ? "cursor-pointer hover:opacity-80 transition-opacity" : ""
+        }`}
     >
       <div className="flex items-center gap-2.5">
         <Avatar className="w-9 h-9 flex-shrink-0 ring-1 ring-gray-200 dark:ring-white/10">
@@ -43,14 +42,13 @@ export function KolInfo({
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-1">
               <h3
-                className={`text-sm font-semibold text-gray-900 dark:text-white truncate ${
-                  href ? "hover:underline" : ""
-                }`}
+                className={`text-sm font-semibold text-gray-900 dark:text-white truncate ${href ? "hover:underline" : ""
+                  }`}
               >
                 {name}
               </h3>
               {verified && (
-                <CheckCircle className="w-3 h-3 text-blue-500 flex-shrink-0" />
+                <CheckCircle className="w-3 h-3 text-gery-500 flex-shrink-0" />
               )}
             </div>
             {username && (

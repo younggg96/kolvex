@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -198,6 +199,7 @@ function ModelSelector({
   onSelectModel: (model: AIModel) => void;
   availableProviders?: string[];
 }) {
+  const { t } = useTranslation();
   const currentModel = MODEL_CONFIGS.find((m) => m.id === selectedModel);
 
   // Check if a model's provider is available
@@ -215,10 +217,10 @@ function ModelSelector({
     : false;
 
   const triggerLabel = !hasAnyAvailable
-    ? "Add API key"
+    ? t("chat.input.addApiKey")
     : isCurrentModelAvailable
       ? currentModel?.name
-      : "Select model";
+      : t("chat.input.selectModel");
 
   return (
     <DropdownMenu>
@@ -256,14 +258,14 @@ function ModelSelector({
           <div className="px-3 py-3 text-center">
             <Lock className="w-4 h-4 mx-auto mb-1.5 text-muted-foreground" />
             <p className="text-[11px] text-muted-foreground mb-2">
-              Add an API key in Settings to unlock models
+              {t("chat.input.apiKeyRequiredDesc")}
             </p>
             <Link
               href="/dashboard/settings?tab=api-keys"
               className="inline-flex items-center gap-1 text-[11px] text-primary hover:underline font-medium"
             >
               <Settings className="w-3 h-3" />
-              Settings → API Keys
+              {t("chat.input.settingsApiKeys")}
             </Link>
           </div>
         )}
@@ -363,6 +365,7 @@ export function ChatInput({
   showModelSelector = true,
   availableProviders,
 }: ChatInputProps) {
+  const { t } = useTranslation();
   const internalRef = useRef<HTMLTextAreaElement>(null);
   const inputRef = externalRef || internalRef;
 
@@ -385,22 +388,22 @@ export function ChatInput({
     {
       source: "kol",
       icon: <Users className="w-3.5 h-3.5" />,
-      label: "KOL",
+      label: t("chat.input.sources.kol"),
     },
     {
       source: "news",
       icon: <Newspaper className="w-3.5 h-3.5" />,
-      label: "News",
+      label: t("chat.input.sources.news"),
     },
     {
       source: "web",
       icon: <Globe className="w-3.5 h-3.5" />,
-      label: "Web",
+      label: t("chat.input.sources.web"),
     },
     {
       source: "portfolio",
       icon: <Briefcase className="w-3.5 h-3.5" />,
-      label: "Portfolio",
+      label: t("chat.input.sources.portfolio"),
     },
   ];
 
@@ -466,15 +469,15 @@ export function ChatInput({
             <Lock className="w-4 h-4 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" />
             <div>
               <p className="text-xs font-medium text-amber-800 dark:text-amber-300">
-                API key required
+                {t("chat.input.apiKeyRequired")}
               </p>
               <p className="text-[11px] text-amber-700/80 dark:text-amber-400/70 mt-0.5">
-                Add at least one model API key in Settings to unlock the model dropdown and start chatting.{" "}
+                {t("chat.input.apiKeyRequiredDesc")}{" "}
                 <Link
                   href="/dashboard/settings?tab=api-keys"
                   className="text-primary hover:underline font-medium"
                 >
-                  Settings → API Keys
+                  {t("chat.input.settingsApiKeys")}
                 </Link>
               </p>
             </div>
@@ -505,7 +508,7 @@ export function ChatInput({
             onKeyDown={isBlocked ? undefined : onKeyDown}
             placeholder={
               isBlocked
-                ? "Please add an API key in Settings first..."
+                ? t("chat.input.addApiKeyPlaceholder")
                 : placeholder
             }
             disabled={isLoading || isBlocked}

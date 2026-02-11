@@ -35,27 +35,28 @@ import {
 } from "@/lib/snaptradeApi";
 import { getFollowing } from "@/lib/followApi";
 import { useAuth } from "@/hooks/useAuth";
+import { useTranslation } from "@/lib/i18n";
 import type { PublicUserSummary } from "@/lib/supabase/database.types";
 
 type SortOption = {
   value: PublicUsersSortBy;
   order: SortOrder;
-  label: string;
+  labelKey: string;
   icon: typeof Clock;
 };
 
 const SORT_OPTIONS: SortOption[] = [
-  { value: "updated", order: "desc", label: "Recently Updated", icon: Clock },
+  { value: "updated", order: "desc", labelKey: "community.sort.recentlyUpdated", icon: Clock },
   {
     value: "pnl_percent",
     order: "desc",
-    label: "Top Performers",
+    labelKey: "community.sort.topPerformers",
     icon: TrendingUp,
   },
   {
     value: "pnl_percent",
     order: "asc",
-    label: "Worst Performers",
+    labelKey: "community.sort.worstPerformers",
     icon: TrendingUp,
   },
 ];
@@ -64,6 +65,7 @@ type TabValue = "all" | "following";
 
 export default function CommunityPage() {
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<TabValue>("all");
   const [users, setUsers] = useState<PublicUserSummary[]>([]);
   const [followingIds, setFollowingIds] = useState<Set<string>>(new Set());
@@ -79,17 +81,17 @@ export default function CommunityPage() {
     () => [
       {
         value: "all",
-        label: "All",
+        label: t("community.tabs.all"),
         icon: <Globe className="w-3.5 h-3.5" />,
       },
       {
         value: "following",
-        label: "Following",
+        label: t("community.tabs.following"),
         icon: <UserCheck className="w-3.5 h-3.5" />,
         disabled: !isAuthenticated,
       },
     ],
-    [isAuthenticated]
+    [isAuthenticated, t]
   );
 
   // Fetch following IDs when authenticated
@@ -206,7 +208,7 @@ export default function CommunityPage() {
   return (
     <DashboardLayout
       headerClassName="lg:hidden"
-      title="Community Portfolios"
+      title={t("community.title")}
       headerActions={
         <Link href="/dashboard/portfolio">
           <Button
@@ -215,7 +217,7 @@ export default function CommunityPage() {
             className="gap-2 whitespace-nowrap"
           >
             <Briefcase className="w-3.5 h-3.5" />
-            Manage
+            {t("common.manage")}
           </Button>
         </Link>
       }
@@ -223,18 +225,18 @@ export default function CommunityPage() {
       <div className="relative flex-1 overflow-y-auto bg-background-light dark:bg-background-dark h-full">
         <div className="absolute inset-0 bg-grid opacity-50 pointer-events-none" />
         <HeroSection
-          title="Community Portfolios"
-          description="Discover and learn from investors who share their portfolios"
+          title={t("community.title")}
+          description={t("community.description")}
           className="lg:block hidden"
           features={[
             {
               icon: Sparkles,
-              label: `${total} Public Portfolios`,
+              label: t("community.publicPortfolios", { count: String(total) }),
               iconClassName: "w-3.5 h-3.5 text-primary",
             },
             {
               icon: Eye,
-              label: "Transparent & Real-time Tracking",
+              label: t("community.transparentTracking"),
               iconClassName: "w-3.5 h-3.5 text-blue-600 dark:text-blue-400",
             },
           ]}
@@ -246,7 +248,7 @@ export default function CommunityPage() {
                 className="gap-2 whitespace-nowrap"
               >
                 <Briefcase className="w-3.5 h-3.5" />
-                Manage Portfolio
+                {t("community.managePortfolio")}
               </Button>
             </Link>
           }
@@ -266,14 +268,14 @@ export default function CommunityPage() {
               {!loading && displayedUsers.length > 0 && (
                 <p className="text-sm text-muted-foreground whitespace-nowrap">
                   {activeTab === "following"
-                    ? `${displayedTotal} following`
-                    : `${displayedUsers.length} of ${total}`}
+                    ? t("community.followingCount", { count: String(displayedTotal) })
+                    : t("community.ofTotal", { current: String(displayedUsers.length), total: String(total) })}
                 </p>
               )}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" size="sm" className="gap-2">
-                    {sortOption.label}
+                    {t(sortOption.labelKey)}
                     <ChevronDown className="w-3.5 h-3.5" />
                   </Button>
                 </DropdownMenuTrigger>
@@ -290,7 +292,7 @@ export default function CommunityPage() {
                       }`}
                     >
                       <option.icon className="w-4 h-4" />
-                      {option.label}
+                      {t(option.labelKey)}
                     </DropdownMenuItem>
                   ))}
                 </DropdownMenuContent>
@@ -314,13 +316,13 @@ export default function CommunityPage() {
                 icon={activeTab === "following" ? UserCheck : Users}
                 title={
                   activeTab === "following"
-                    ? "No Following Portfolios"
-                    : "No Public Portfolios Yet"
+                    ? t("community.emptyFollowing.title")
+                    : t("community.emptyAll.title")
                 }
                 description={
                   activeTab === "following"
-                    ? "You haven't followed anyone with a public portfolio yet. Discover investors in the All tab and follow them!"
-                    : "Be the first to share your portfolio with the community! Enable public sharing in your portfolio settings."
+                    ? t("community.emptyFollowing.description")
+                    : t("community.emptyAll.description")
                 }
               />
             </SectionCard>
@@ -353,11 +355,11 @@ export default function CommunityPage() {
                     {loadingMore ? (
                       <>
                         <Loader2 className="w-4 h-4 animate-spin" />
-                        Loading...
+                        {t("common.loading")}
                       </>
                     ) : (
                       <>
-                        Load More
+                        {t("common.loadMore")}
                         <ChevronRight className="w-4 h-4" />
                       </>
                     )}
@@ -370,7 +372,7 @@ export default function CommunityPage() {
                 activeTab === "following") &&
                 displayedUsers.length > 0 && (
                   <div className="text-center py-4 text-sm text-gray-400 dark:text-white/40">
-                    You&apos;ve reached the end of the list
+                    {t("common.endOfList")}
                   </div>
                 )}
             </>

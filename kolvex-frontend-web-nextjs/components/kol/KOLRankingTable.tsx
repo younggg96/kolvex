@@ -14,6 +14,7 @@ import {
 import { EmptyState } from "@/components/common/EmptyState";
 import { Kol, SortBy } from "@/app/api/kols/route";
 import { trackKOL, untrackKOL } from "@/lib/trackedKolApi";
+import { useTranslation } from "@/lib/i18n";
 import { toast } from "sonner";
 import { Loader2, Star } from "lucide-react";
 import { PLATFORM_CONFIG } from "@/lib/platformConfig";
@@ -83,6 +84,7 @@ export default function KOLRankingTable({
   onLoadMore,
   onUpdate,
 }: KOLRankingTableProps) {
+  const { t } = useTranslation();
   const [trackingStates, setTrackingStates] = useState<Record<string, boolean>>(
     () => {
       const states: Record<string, boolean> = {};
@@ -113,7 +115,7 @@ export default function KOLRankingTable({
       if (isTracked) {
         await untrackKOL(kol.kol_id, kol.platform);
         setTrackingStates((prev) => ({ ...prev, [kol.kol_id]: false }));
-        toast.success(`Untracked ${kol.display_name}`);
+        toast.success(t("kol.ranking.untracked", { name: kol.display_name }));
       } else {
         await trackKOL({
           kol_id: kol.kol_id,
@@ -121,12 +123,12 @@ export default function KOLRankingTable({
           notify: true,
         });
         setTrackingStates((prev) => ({ ...prev, [kol.kol_id]: true }));
-        toast.success(`Now tracking ${kol.display_name}`);
+        toast.success(t("kol.ranking.nowTracking", { name: kol.display_name }));
       }
       onUpdate();
     } catch (error: any) {
       console.error("Error toggling track status:", error);
-      toast.error(error.message || "Failed to update tracking status");
+      toast.error(error.message || t("kol.ranking.failedToUpdateTracking"));
     } finally {
       setLoadingStates((prev) => ({ ...prev, [kol.kol_id]: false }));
     }
@@ -174,8 +176,8 @@ export default function KOLRankingTable({
       {/* Empty State */}
       {!loading && kols.length === 0 && (
         <EmptyState
-          title="No KOLs found"
-          description={"No KOLs found. Try again later."}
+          title={t("kol.ranking.noKolsFound")}
+          description={t("kol.ranking.noKolsFoundDesc")}
         />
       )}
 
@@ -190,16 +192,16 @@ export default function KOLRankingTable({
               <TableHeader>
                 <TableRow>
                   <TableHead className="text-xs text-center w-12 font-semibold whitespace-nowrap">
-                    Rank
+                    {t("kol.ranking.rank")}
                   </TableHead>
                   <TableHead className="text-xs text-left font-semibold whitespace-nowrap min-w-[180px]">
-                    KOL
+                    {t("kol.ranking.kol")}
                   </TableHead>
                   <TableHead className="text-xs text-center font-semibold whitespace-nowrap">
-                    Platform
+                    {t("kol.ranking.platform")}
                   </TableHead>
                   <SortableHeader
-                    label="Influence"
+                    label={t("kol.ranking.influence")}
                     sortKey="influence_score"
                     currentSortKey={sortBy}
                     sortDirection={sortDirection}
@@ -207,7 +209,7 @@ export default function KOLRankingTable({
                     type="numeric"
                   />
                   <SortableHeader
-                    label="Trending"
+                    label={t("kol.ranking.trending")}
                     sortKey="trending_score"
                     currentSortKey={sortBy}
                     sortDirection={sortDirection}
@@ -215,7 +217,7 @@ export default function KOLRankingTable({
                     type="numeric"
                   />
                   <SortableHeader
-                    label="Followers"
+                    label={t("kol.ranking.followers")}
                     sortKey="followers_count"
                     currentSortKey={sortBy}
                     sortDirection={sortDirection}
@@ -223,10 +225,10 @@ export default function KOLRankingTable({
                     type="amount"
                   />
                   <TableHead className="text-xs text-center font-semibold whitespace-nowrap">
-                    Last Post
+                    {t("kol.ranking.lastPost")}
                   </TableHead>
                   <TableHead className="text-xs text-center font-semibold whitespace-nowrap">
-                    Action
+                    {t("kol.ranking.action")}
                   </TableHead>
                 </TableRow>
               </TableHeader>
@@ -314,17 +316,17 @@ export default function KOLRankingTable({
                             {loadingStates[kol.kol_id] ? (
                               <>
                                 <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
-                                Loading
+                                {t("kol.ranking.loading")}
                               </>
                             ) : trackingStates[kol.kol_id] ? (
                               <>
                                 <Star className="w-3.5 h-3.5 mr-1.5 fill-yellow-500" />
-                                Tracking
+                                {t("kol.ranking.tracking")}
                               </>
                             ) : (
                               <>
                                 <Star className="w-3.5 h-3.5 mr-1.5 text-yellow-500" />
-                                Track
+                                {t("kol.ranking.track")}
                               </>
                             )}
                           </Button>
@@ -338,7 +340,7 @@ export default function KOLRankingTable({
                         <TableCell colSpan={8} className="text-center py-6">
                           <div className="inline-flex items-center gap-2 text-sm text-gray-500 dark:text-white/50">
                             <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
-                            <span>Loading more KOLs...</span>
+                            <span>{t("kol.ranking.loadingMore")}</span>
                           </div>
                         </TableCell>
                       </TableRow>
@@ -351,7 +353,7 @@ export default function KOLRankingTable({
                           colSpan={8}
                           className="text-center py-6 text-sm text-gray-400 dark:text-white/40 font-medium"
                         >
-                          No more KOLs to load
+                          {t("kol.ranking.noMoreKols")}
                         </TableCell>
                       </TableRow>
                     )}

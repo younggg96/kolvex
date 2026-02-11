@@ -11,28 +11,30 @@ import {
   useNotifications,
 } from "@/components/notifications";
 import { useAuth } from "@/hooks/useAuth";
-
-const notificationFeatures = [
-  {
-    icon: Zap,
-    label: "Real-time Alerts",
-    iconClassName: "w-3.5 h-3.5 text-amber-500",
-  },
-  {
-    icon: Activity,
-    label: "Portfolio Updates",
-    iconClassName: "w-3.5 h-3.5 text-primary",
-  },
-  {
-    icon: History,
-    label: "Signal History",
-    iconClassName: "w-3.5 h-3.5 text-blue-500",
-  },
-];
+import { useTranslation } from "@/lib/i18n";
 
 export default function NotificationsPage() {
   const router = useRouter();
   const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const { t } = useTranslation();
+
+  const notificationFeatures = [
+    {
+      icon: Zap,
+      label: t("notifications.features.realTimeAlerts"),
+      iconClassName: "w-3.5 h-3.5 text-amber-500",
+    },
+    {
+      icon: Activity,
+      label: t("notifications.features.portfolioUpdates"),
+      iconClassName: "w-3.5 h-3.5 text-primary",
+    },
+    {
+      icon: History,
+      label: t("notifications.features.signalHistory"),
+      iconClassName: "w-3.5 h-3.5 text-gery-500",
+    },
+  ];
 
   const {
     notifications,
@@ -60,7 +62,7 @@ export default function NotificationsPage() {
   return (
     <DashboardLayout
       headerClassName="lg:hidden"
-      title="Notifications"
+      title={t("notifications.title")}
       showHeader={true}
       headerActions={
         notifications.length > 0 ? (
@@ -73,7 +75,7 @@ export default function NotificationsPage() {
                 onClick={handleMarkAllAsRead}
               >
                 <CheckCheck className="h-4 w-4" />
-                <span className="hidden sm:inline">Mark all read</span>
+                <span className="hidden sm:inline">{t("notifications.markAllRead")}</span>
               </Button>
             )}
             <Button
@@ -83,7 +85,7 @@ export default function NotificationsPage() {
               onClick={handleDeleteAll}
             >
               <Trash2 className="h-4 w-4" />
-              <span className="hidden sm:inline">Delete all</span>
+              <span className="hidden sm:inline">{t("notifications.deleteAll")}</span>
             </Button>
           </div>
         ) : undefined
@@ -94,8 +96,8 @@ export default function NotificationsPage() {
 
         {/* Hero Section */}
         <HeroSection
-          title="Notifications"
-          description="Stay updated with portfolio changes and market signals"
+          title={t("notifications.title")}
+          description={t("notifications.description")}
           className="lg:block hidden"
           features={notificationFeatures}
           actions={
@@ -109,7 +111,7 @@ export default function NotificationsPage() {
                     onClick={handleMarkAllAsRead}
                   >
                     <CheckCheck className="h-4 w-4" />
-                    <span className="hidden sm:inline">Mark all read</span>
+                    <span className="hidden sm:inline">{t("notifications.markAllRead")}</span>
                   </Button>
                 )}
                 <Button
@@ -119,7 +121,7 @@ export default function NotificationsPage() {
                   onClick={handleDeleteAll}
                 >
                   <Trash2 className="h-4 w-4" />
-                  <span className="hidden sm:inline">Delete all</span>
+                  <span className="hidden sm:inline">{t("notifications.deleteAll")}</span>
                 </Button>
               </div>
             ) : undefined

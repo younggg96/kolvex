@@ -38,6 +38,7 @@ import { Trash2, Star } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { PlatformBadge } from "@/components/ui/platform-badge";
+import { useTranslation } from "@/lib/i18n";
 
 interface KOLTrackerTableProps {
   kols: KOL[];
@@ -50,6 +51,7 @@ export default function KOLTrackerTable({
   onUpdate,
   loading = false,
 }: KOLTrackerTableProps) {
+  const { t } = useTranslation();
   const { isMobile } = useBreakpoints();
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -95,12 +97,12 @@ export default function KOLTrackerTable({
         platform: platformMap[formData.platform],
         notify: true,
       });
-      toast.success("KOL added to tracking list successfully");
+      toast.success(t("kol.tracker.toast.added"));
       setIsAddDialogOpen(false);
       resetForm();
       onUpdate();
     } catch (error) {
-      toast.error("Failed to add KOL");
+      toast.error(t("kol.tracker.toast.addFailed"));
       console.error(error);
     }
   };
@@ -131,12 +133,12 @@ export default function KOLTrackerTable({
       };
 
       await untrackKOL(deletingKOLId, platformMap[kol.platform]);
-      toast.success("KOL removed from tracking list successfully");
+      toast.success(t("kol.tracker.toast.removed"));
       setIsDeleteDialogOpen(false);
       setDeletingKOLId(null);
       onUpdate();
     } catch (error) {
-      toast.error("Failed to remove KOL");
+      toast.error(t("kol.tracker.toast.removeFailed"));
       console.error(error);
     }
   };
@@ -154,10 +156,10 @@ export default function KOLTrackerTable({
 
       // In the tracked tab, toggle means untrack
       await untrackKOL(kol.id, platformMap[kol.platform]);
-      toast.success("Stopped tracking KOL");
+      toast.success(t("kol.tracker.toast.stoppedTracking"));
       onUpdate();
     } catch (error) {
-      toast.error("Failed to update tracking status");
+      toast.error(t("kol.tracker.toast.updateFailed"));
       console.error(error);
     }
   };
@@ -237,15 +239,15 @@ export default function KOLTrackerTable({
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="text-xs">KOL</TableHead>
-                  <TableHead className="text-xs">Platform</TableHead>
+                  <TableHead className="text-xs">{t("kol.tracker.kol")}</TableHead>
+                  <TableHead className="text-xs">{t("kol.tracker.platform")}</TableHead>
                   <TableHead className="text-xs text-center">
-                    Followers
+                    {t("kol.tracker.followers")}
                   </TableHead>
                   <TableHead className="text-xs hidden lg:table-cell">
-                    Description
+                    {t("kol.tracker.description")}
                   </TableHead>
-                  <TableHead className="text-xs text-right">Actions</TableHead>
+                  <TableHead className="text-xs text-right">{t("kol.tracker.actions")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -269,8 +271,8 @@ export default function KOLTrackerTable({
             <div className="text-center py-8 border border-border-light dark:border-border-dark rounded-lg">
               <p className="text-xs text-gray-500 dark:text-white/50">
                 {kols.length === 0
-                  ? "No tracked KOLs yet. Click 'Track New KOL' button to start tracking."
-                  : "No KOLs match your search criteria."}
+                  ? t("kol.tracker.noTrackedKols")
+                  : t("kol.tracker.noMatchingKols")}
               </p>
             </div>
           ) : (
@@ -313,7 +315,7 @@ export default function KOLTrackerTable({
                       size="xs"
                       onClick={() => handleToggleTracking(kol)}
                       className="text-yellow-600 hover:text-yellow-700 hover:bg-yellow-50 dark:hover:bg-yellow-950/20 h-7 w-7 p-0"
-                      title="Stop tracking"
+                      title={t("kol.tracker.stopTracking")}
                     >
                       <Star className="w-3.5 h-3.5 fill-yellow-500" />
                     </Button>
@@ -322,7 +324,7 @@ export default function KOLTrackerTable({
                       size="xs"
                       onClick={() => openDeleteDialog(kol.id)}
                       className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/20 h-7 w-7 p-0"
-                      title="Remove from tracking"
+                      title={t("kol.tracker.removeFromTracking")}
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </Button>
@@ -333,7 +335,7 @@ export default function KOLTrackerTable({
                 <div className="flex items-center justify-between mb-2">
                   <PlatformBadge platform={kol.platform} size="sm" />
                   <span className="text-xs font-medium text-gray-900 dark:text-white">
-                    {formatFollowers(kol.followers)} followers
+                    {formatFollowers(kol.followers)} {t("kol.tracker.followers_suffix")}
                   </span>
                 </div>
 
@@ -353,13 +355,13 @@ export default function KOLTrackerTable({
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="text-xs">KOL</TableHead>
-                <TableHead className="text-xs text-center">Platform</TableHead>
-                <TableHead className="text-xs text-center">Followers</TableHead>
+                <TableHead className="text-xs">{t("kol.tracker.kol")}</TableHead>
+                <TableHead className="text-xs text-center">{t("kol.tracker.platform")}</TableHead>
+                <TableHead className="text-xs text-center">{t("kol.tracker.followers")}</TableHead>
                 <TableHead className="text-xs hidden lg:table-cell">
-                  Description
+                  {t("kol.tracker.description")}
                 </TableHead>
-                <TableHead className="text-xs text-right">Actions</TableHead>
+                <TableHead className="text-xs text-right">{t("kol.tracker.actions")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -409,7 +411,7 @@ export default function KOLTrackerTable({
                           size="xs"
                           onClick={() => openDeleteDialog(kol.id)}
                           className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/20"
-                          title="Remove from tracking"
+                          title={t("kol.tracker.removeFromTracking")}
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </Button>
@@ -427,16 +429,15 @@ export default function KOLTrackerTable({
       <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Track New KOL</DialogTitle>
+            <DialogTitle>{t("kol.tracker.addDialog.title")}</DialogTitle>
             <DialogDescription>
-              Add a KOL from our database to your tracking list. You can find
-              KOL IDs from the Top Ranking tab.
+              {t("kol.tracker.addDialog.description")}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3 py-3">
             <div className="space-y-1.5">
               <Label htmlFor="username" className="text-xs">
-                KOL ID *
+                {t("kol.tracker.addDialog.kolId")} *
               </Label>
               <Input
                 id="username"
@@ -444,16 +445,16 @@ export default function KOLTrackerTable({
                 onChange={(e) =>
                   setFormData({ ...formData, username: e.target.value })
                 }
-                placeholder="Enter KOL ID from database"
+                placeholder={t("kol.tracker.addDialog.kolIdPlaceholder")}
                 className="h-8 text-xs"
               />
               <p className="text-xs text-gray-500 dark:text-white/50">
-                Find KOLs in the Top Ranking tab and use their ID
+                {t("kol.tracker.addDialog.kolIdHint")}
               </p>
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="platform" className="text-xs">
-                Platform *
+                {t("kol.tracker.addDialog.platform")} *
               </Label>
               <Select
                 value={formData.platform}
@@ -480,7 +481,7 @@ export default function KOLTrackerTable({
               onClick={() => setIsAddDialogOpen(false)}
               className="h-8 text-xs"
             >
-              Cancel
+              {t("common.cancel")}
             </Button>
             <Button
               onClick={handleAdd}
@@ -488,7 +489,7 @@ export default function KOLTrackerTable({
               className="h-8 text-xs"
               disabled={!formData.username.trim()}
             >
-              Track
+              {t("kol.tracker.addDialog.track")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -498,10 +499,9 @@ export default function KOLTrackerTable({
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Remove KOL from Tracking</DialogTitle>
+            <DialogTitle>{t("kol.tracker.deleteDialog.title")}</DialogTitle>
             <DialogDescription>
-              Are you sure you want to stop tracking this KOL? You can add them
-              back to your tracking list later.
+              {t("kol.tracker.deleteDialog.description")}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="gap-2">
@@ -511,14 +511,14 @@ export default function KOLTrackerTable({
               onClick={() => setIsDeleteDialogOpen(false)}
               className="h-8 text-xs"
             >
-              Cancel
+              {t("common.cancel")}
             </Button>
             <Button
               onClick={handleDelete}
               size="sm"
               className="h-8 text-xs bg-red-600 hover:bg-red-700 text-white"
             >
-              Remove
+              {t("kol.tracker.deleteDialog.remove")}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -9,6 +9,7 @@ import {
   ArrowRight,
   CheckCircle2,
 } from "lucide-react";
+import { useTranslation } from "@/lib/i18n";
 
 interface Step {
   number: number;
@@ -78,6 +79,7 @@ function StepCard({
   onActivate: () => void;
   isVisible: boolean;
 }) {
+  const { t } = useTranslation();
   const [isAnimated, setIsAnimated] = useState(false);
 
   useEffect(() => {
@@ -159,7 +161,7 @@ function StepCard({
           }`}
           style={{ transitionDelay: `${index * 150 + 150}ms` }}
         >
-          {step.title}
+          {t(`landing.howItWorks.steps.${index}.title`)}
         </h3>
 
         {/* Description */}
@@ -169,7 +171,7 @@ function StepCard({
           }`}
           style={{ transitionDelay: `${index * 150 + 200}ms` }}
         >
-          {step.description}
+          {t(`landing.howItWorks.steps.${index}.description`)}
         </p>
 
         {/* Details (shown when active) */}
@@ -178,7 +180,7 @@ function StepCard({
             isActive ? "max-h-40 opacity-100" : "max-h-0 opacity-0"
           }`}
         >
-          {step.details.map((detail, i) => (
+          {step.details.map((_, i) => (
             <div
               key={i}
               className="flex items-center gap-1.5 md:gap-2 text-xs md:text-sm text-gray-600 dark:text-gray-400"
@@ -187,7 +189,7 @@ function StepCard({
                 size={12}
                 className="text-primary flex-shrink-0 md:w-3.5 md:h-3.5"
               />
-              <span>{detail}</span>
+              <span>{t(`landing.howItWorks.steps.${index}.details.${i}`)}</span>
             </div>
           ))}
         </div>
@@ -206,6 +208,7 @@ function StepCard({
 }
 
 export default function LandingHowItWorks() {
+  const { t } = useTranslation();
   const [activeStep, setActiveStep] = useState(0);
   const sectionRef = useRef<HTMLElement>(null);
   const headerRef = useRef<HTMLDivElement>(null);
@@ -270,7 +273,7 @@ export default function LandingHowItWorks() {
             }`}
           >
             <span className="w-1 h-1 md:w-1.5 md:h-1.5 rounded-full bg-primary" />
-            HOW IT WORKS
+            {t("landing.howItWorks.badge")}
           </div>
           <h2
             className={`text-xl sm:text-2xl md:text-4xl font-black text-gray-900 dark:text-white mb-3 md:mb-6 tracking-tight transition-all duration-700 ${
@@ -280,7 +283,7 @@ export default function LandingHowItWorks() {
             }`}
             style={{ transitionDelay: "100ms" }}
           >
-            Start in <span className="text-primary">4 simple steps</span>
+            {t("landing.howItWorks.title")}
           </h2>
           <p
             className={`text-sm md:text-lg text-gray-600 dark:text-gray-400 leading-relaxed transition-all duration-700 px-2 ${
@@ -290,8 +293,7 @@ export default function LandingHowItWorks() {
             }`}
             style={{ transitionDelay: "200ms" }}
           >
-            From signup to your first AI-powered insight in under 2 minutes. No
-            complex setup, no learning curve.
+            {t("landing.howItWorks.subtitle")}
           </p>
         </div>
 

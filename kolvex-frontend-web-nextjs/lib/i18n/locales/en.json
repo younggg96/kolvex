@@ -1,0 +1,787 @@
+{
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "edit": "Edit",
+    "delete": "Delete",
+    "confirm": "Confirm",
+    "loading": "Loading...",
+    "saving": "Saving...",
+    "uploading": "Uploading...",
+    "success": "Success",
+    "error": "Error",
+    "reset": "Reset",
+    "close": "Close",
+    "back": "Back",
+    "next": "Next",
+    "search": "Search",
+    "noData": "No data",
+    "comingSoon": "Coming Soon",
+    "soon": "Soon",
+    "configured": "Configured",
+    "currentPlan": "Current Plan",
+    "upgrade": "Upgrade",
+    "downgrade": "Downgrade",
+    "loadMore": "Load More",
+    "endOfList": "You've reached the end of the list",
+    "manage": "Manage",
+    "test": "Test",
+    "add": "Add",
+    "verified": "Verified",
+    "notVerified": "Not verified",
+    "noDataAvailable": "No data available"
+  },
+  "sidebar": {
+    "chat": "Chat",
+    "analytics": "Analytics",
+    "social": "Social",
+    "stocks": "Stocks",
+    "superinvestors": "Superinvestors",
+    "news": "News",
+    "kolTracker": "KOL Tracker",
+    "portfolio": "Portfolio",
+    "community": "Community",
+    "notifications": "Notifications",
+    "settings": "Settings",
+    "admin": "Admin",
+    "toggleSidebar": "Toggle Sidebar"
+  },
+  "userMenu": {
+    "account": "Account",
+    "billing": "Billing",
+    "notifications": "Notifications",
+    "logOut": "Log out"
+  },
+  "auth": {
+    "welcomeBack": "Welcome Back",
+    "createAccount": "Create Account",
+    "loginSubtitle": "Login to access your investment dashboard",
+    "signupSubtitle": "Join us to start tracking your investments",
+    "completingSignIn": "Completing sign in...",
+    "email": "Email",
+    "password": "Password",
+    "name": "Name",
+    "signIn": "Sign In",
+    "signUp": "Sign Up",
+    "signingIn": "Signing In...",
+    "signingUp": "Signing Up...",
+    "continueWithGoogle": "Continue with Google",
+    "noAccount": "Don't have an account?",
+    "haveAccount": "Already have an account?",
+    "forgotPassword": "Forgot password?",
+    "fillAllFields": "Please fill in all required fields",
+    "enterName": "Please enter your name",
+    "loginSuccess": "Login successful! Redirecting...",
+    "accountCreated": "Account created! Please check your email to verify your account.",
+    "googleSignInFailed": "Failed to initiate Google sign in",
+    "authError": "An authentication error occurred. Please try again.",
+    "emailVerifyExpired": "Email verification link has expired. Please request a new one.",
+    "emailVerifyFailed": "Email verification failed. Please try again.",
+    "profileCreationFailed": "Failed to create user profile. Please contact support.",
+    "signInFailed": "Failed to complete sign in. Please try again.",
+    "signInSuccess": "Successfully signed in!",
+    "signInError": "An error occurred during sign in. Please try again."
+  },
+  "landing": {
+    "hero": {
+      "badge": "Powered by AI",
+      "headline": "Invest Smarter with",
+      "phrases": ["Social Intelligence", "AI-Powered Analysis", "Real-Time Signals", "Smart Money Tracking"],
+      "subheadline": "Track influential voices, decode market sentiment, and discover opportunities before they trend. Join thousands of investors gaining an edge with AI.",
+      "startFreeTrial": "Start Free Trial",
+      "trustBadges": {
+        "security": "Bank-Level Security",
+        "realTime": "Real-Time Data",
+        "investors": "5,000+ Investors"
+      },
+      "preview": {
+        "portfolioValue": "Portfolio Value",
+        "kolsTracked": "KOLs Tracked",
+        "aiSignals": "AI Signals",
+        "sentimentScore": "Sentiment Score"
+      }
+    },
+    "stats": {
+      "title": "Trusted by thousands of investors",
+      "subtitle": "Our platform processes millions of data points daily to deliver actionable insights.",
+      "kolsTracked": "KOLs Tracked",
+      "kolsTrackedDesc": "Influential voices monitored",
+      "aiSignals": "AI Signals Daily",
+      "aiSignalsDesc": "Real-time market insights",
+      "accuracy": "Accuracy Rate",
+      "accuracyDesc": "Sentiment prediction accuracy",
+      "dataSources": "Data Sources",
+      "dataSourcesDesc": "Platforms & exchanges"
+    },
+    "features": {
+      "title": "Your unfair advantage in",
+      "titleHighlight": "modern markets",
+      "subtitle": "Kolvex combines cutting-edge AI with comprehensive social data to deliver insights previously available only to institutional investors.",
+      "kolTracking": {
+        "title": "KOL Tracking",
+        "description": "Monitor 2,500+ influential investors and analysts across Twitter, Reddit, StockTwits in real-time. Never miss a market-moving call.",
+        "stats": { "kolsTracked": "KOLs Tracked", "platforms": "Platforms", "updatesDay": "Updates/Day" }
+      },
+      "aiAnalysis": {
+        "title": "AI-Powered Analysis",
+        "description": "Our proprietary AI models analyze sentiment, extract key signals, and predict market movements with institutional-grade accuracy.",
+        "stats": { "accuracy": "Accuracy", "models": "Models", "signalsDay": "Signals/Day" }
+      },
+      "alerts": {
+        "title": "Instant Alerts",
+        "description": "Get notified immediately when tracked KOLs mention a stock or when sentiment shifts. Stay ahead of every market move.",
+        "stats": { "latency": "Latency", "channels": "Channels", "customRules": "Custom Rules" }
+      },
+      "sentiment": {
+        "title": "Sentiment Scoring",
+        "description": "Real-time sentiment scores for 10,000+ stocks aggregated from social media, news, and analyst reports.",
+        "stats": { "stocks": "Stocks", "sources": "Sources", "refresh": "Refresh" }
+      },
+      "portfolio": {
+        "title": "Portfolio Integration",
+        "description": "Connect your brokerage via SnapTrade to overlay social intelligence on your actual positions.",
+        "stats": { "brokers": "Brokers", "security": "Security", "sync": "Sync" }
+      },
+      "filtering": {
+        "title": "Smart Filtering",
+        "description": "AI-powered bot detection and spam filtering ensures you only see high-quality, signal-rich content.",
+        "stats": { "botDetection": "Bot Detection", "spamBlocked": "Spam Blocked", "falsePositives": "False Positives" }
+      }
+    },
+    "howItWorks": {
+      "badge": "HOW IT WORKS",
+      "title": "Start in 4 simple steps",
+      "subtitle": "From signup to your first AI-powered insight in under 2 minutes. No complex setup, no learning curve.",
+      "steps": [
+        {
+          "title": "Create Your Account",
+          "description": "Sign up in seconds with email or social login. No credit card required.",
+          "details": ["Free forever tier available", "Connect social accounts", "Set up in 30 seconds"]
+        },
+        {
+          "title": "Select Your KOLs",
+          "description": "Choose from 2,500+ influential investors and analysts to track.",
+          "details": ["Curated expert lists", "Custom watchlists", "Multi-platform coverage"]
+        },
+        {
+          "title": "Get AI Insights",
+          "description": "Our AI analyzes posts, extracts sentiment, and identifies signals.",
+          "details": ["Real-time processing", "94% accuracy rate", "Actionable alerts"]
+        },
+        {
+          "title": "Make Better Decisions",
+          "description": "Use social intelligence to time your entries and exits perfectly.",
+          "details": ["Data-driven trades", "Reduced emotional bias", "Consistent returns"]
+        }
+      ]
+    },
+    "testimonials": {
+      "badge": "TESTIMONIALS",
+      "title": "Loved by 5,000+ investors",
+      "subtitle": "See what our community is saying about their experience with Kolvex.",
+      "trust": {
+        "averageRating": "Average Rating",
+        "activeUsers": "Active Users",
+        "portfolioTracked": "Portfolio Tracked",
+        "wouldRecommend": "Would Recommend"
+      }
+    },
+    "cta": {
+      "title": "Ready to invest with",
+      "titleHighlight": "AI-powered intelligence?",
+      "subtitle": "Join thousands of investors who are already using social intelligence to make better trading decisions. Start free, no credit card required.",
+      "getStarted": "Get Started Free",
+      "contactUs": "Contact Us",
+      "trust": {
+        "security": "Bank-level security",
+        "setup": "Setup in 30 seconds",
+        "cancel": "Cancel anytime"
+      }
+    }
+  },
+  "chat": {
+    "title": "Chat with Kolvex",
+    "badge": "AI-Powered Insights",
+    "heading": "What would you like to <highlight>explore</highlight>?",
+    "description": "Ask about stocks, market trends, or browse our curated insights powered by AI",
+    "suggestions": {
+      "analyzeNvidia": "Analyze NVIDIA stock",
+      "explainTrends": "Explain market trends",
+      "trendingStocks": "Top trending stocks",
+      "latestNews": "Latest news"
+    },
+    "input": {
+      "apiKeyRequired": "API key required",
+      "apiKeyRequiredDesc": "Add at least one model API key in Settings to unlock the model dropdown and start chatting.",
+      "settingsApiKeys": "Settings → API Keys",
+      "addApiKeyPlaceholder": "Please add an API key in Settings first...",
+      "addApiKey": "Add API key",
+      "selectModel": "Select model",
+      "sources": {
+        "kol": "KOL",
+        "news": "News",
+        "web": "Web",
+        "portfolio": "Portfolio"
+      }
+    }
+  },
+  "analytics": {
+    "title": "Analytics",
+    "selectRange": "Select range",
+    "days": "{count} days",
+    "snapshot": "Snapshot",
+    "realtime": "Realtime",
+    "analyzed": "{percent}% analyzed",
+    "failedToLoad": "Failed to Load",
+    "failedToLoadData": "Failed to load data",
+    "tryAgain": "Try Again",
+    "totalPosts": "Total Posts",
+    "totalViews": "Total Views",
+    "dailyAvg": "{value} daily avg",
+    "engagement": "Engagement",
+    "perPost": "{value} per post",
+    "activeKOLs": "Active KOLs",
+    "stockRelatedAnalyzed": "{count} stock-related posts analyzed",
+    "activitySentimentByPlatform": "Activity & Sentiment by Platform",
+    "sentiment": "Sentiment",
+    "correlation": "Correlation"
+  },
+  "alerts": {
+    "title": "Stock Alerts",
+    "tabs": {
+      "rules": "Alert Rules",
+      "channels": "Notification Channels",
+      "history": "Alert History"
+    },
+    "stats": {
+      "activeRules": "Active Rules",
+      "alertsCount": "Alerts (30d)",
+      "avgPerDay": "Avg/Day",
+      "topStock": "Top Stock"
+    },
+    "rules": {
+      "title": "Alert Rules",
+      "subtitle": "Configure price alerts for your watched stocks",
+      "addRule": "Add Rule",
+      "noRules": "No alert rules configured",
+      "noRulesHint": "Add a rule to start monitoring stock prices",
+      "createTitle": "Create Alert Rule",
+      "createDescription": "Set up price alerts for a stock symbol",
+      "stockSymbol": "Stock Symbol",
+      "stockSymbolPlaceholder": "e.g., AAPL, TSLA",
+      "dailyChange": "Daily Change %",
+      "spikeChange": "Spike Change %",
+      "marketSessions": "Market Sessions",
+      "preMarket": "Pre-market",
+      "regular": "Regular",
+      "afterHours": "After-hours",
+      "aiAnalysis": "AI Analysis",
+      "cooldown": "Cooldown (min)",
+      "createRule": "Create Rule",
+      "ruleCreated": "Alert rule created for {symbol}",
+      "enterSymbol": "Please enter a stock symbol",
+      "createFailed": "Failed to create alert rule",
+      "enabledAlerts": "Enabled alerts for {symbol}",
+      "disabledAlerts": "Disabled alerts for {symbol}",
+      "toggleFailed": "Failed to toggle alert rule",
+      "deletedRule": "Deleted alert rule for {symbol}",
+      "deleteFailed": "Failed to delete alert rule"
+    },
+    "channels": {
+      "title": "Notification Channels",
+      "subtitle": "Configure where you receive alert notifications",
+      "addChannel": "Add Channel",
+      "noChannels": "No notification channels configured",
+      "noChannelsHint": "Add Discord, Telegram, or other channels",
+      "createTitle": "Add Notification Channel",
+      "createDescription": "Configure a new notification channel for alerts",
+      "channelType": "Channel Type",
+      "webhookUrl": "Webhook URL",
+      "botToken": "Bot Token",
+      "chatId": "Chat ID",
+      "phoneNumber": "Phone Number",
+      "addChannelBtn": "Add Channel",
+      "channelAdded": "{channel} channel added",
+      "channelCreateFailed": "Failed to create channel",
+      "testSent": "Test message sent successfully!",
+      "testFailed": "Test failed: {message}",
+      "testSendFailed": "Failed to send test message",
+      "channelDeleted": "Deleted {channel} channel",
+      "channelDeleteFailed": "Failed to delete channel"
+    },
+    "history": {
+      "title": "Alert History",
+      "subtitle": "Recent price alerts that were triggered",
+      "noAlerts": "No alerts triggered yet",
+      "noAlertsHint": "Alerts will appear here when triggered"
+    }
+  },
+  "notifications": {
+    "title": "Notifications",
+    "description": "Stay updated with portfolio changes and market signals",
+    "features": {
+      "realTimeAlerts": "Real-time Alerts",
+      "portfolioUpdates": "Portfolio Updates",
+      "signalHistory": "Signal History"
+    },
+    "markAllRead": "Mark all read",
+    "deleteAll": "Delete all"
+  },
+  "portfolio": {
+    "title": "My Holdings",
+    "loadingTitle": "Loading Portfolio...",
+    "brokerConnected": "Broker connected successfully! Click 'Sync Data' to fetch your holdings.",
+    "connectionFailed": "Connection failed: {error}",
+    "hero": {
+      "title": "My Holdings",
+      "description": "Track and share your investment holdings",
+      "secureConnection": "Secure Connection",
+      "realTimeTracking": "Real-time Tracking",
+      "optionalSharing": "Optional Sharing"
+    },
+    "actions": {
+      "refresh": "Refresh",
+      "settings": "Settings",
+      "community": "Community",
+      "view": "View",
+      "notSyncedYet": "Not synced yet",
+      "publicProfile": "Public Profile",
+      "copyShareLink": "Copy Share Link",
+      "privacySettings": "Privacy Settings",
+      "addAnotherBroker": "Add Another Broker",
+      "downloadCsv": "Download CSV",
+      "downloadJson": "Download JSON",
+      "disconnect": "Disconnect"
+    },
+    "connect": {
+      "title": "Connect Your Broker",
+      "description": "Link your brokerage account to automatically track your positions, monitor performance, and share your portfolio publicly.",
+      "connecting": "Connecting...",
+      "connectBroker": "Connect Broker",
+      "secure": "Secure",
+      "readOnly": "Read-only",
+      "encrypted": "Encrypted",
+      "connectedTitle": "Broker Connected!",
+      "connectedDescription": "Great! Your account is linked. Sync now to import your current positions and start tracking.",
+      "syncing": "Syncing...",
+      "syncPositions": "Sync Positions"
+    },
+    "allocation": {
+      "title": "Portfolio Allocation by Sector"
+    },
+    "stats": {
+      "totalValue": "Total Value",
+      "unrealizedPnl": "Unrealized P&L",
+      "allTime": "all time",
+      "positions": "Positions",
+      "accounts": "Accounts",
+      "hidden": "hidden"
+    },
+    "tabs": {
+      "holdings": "Holdings",
+      "analytics": "Analytics",
+      "aiInsights": "AI Insights"
+    },
+    "holdings": {
+      "refreshing": "Refreshing...",
+      "refreshPrices": "Refresh Prices",
+      "brokerageAccount": "Brokerage Account",
+      "positions": "{count} positions",
+      "options": "{count} options",
+      "noPositions": "No Positions",
+      "noPositionsDesc": "This account has no active positions",
+      "noAccountData": "No Account Data",
+      "noAccountDataDesc": "Sync to fetch your latest positions from your connected broker",
+      "syncNow": "Sync Now",
+      "aiOnlyOwner": "AI analysis is only available for your own portfolio."
+    },
+    "disconnectDialog": {
+      "title": "Disconnect Broker?",
+      "description": "This will remove the connection and delete all synced data. You'll need to reconnect to view holdings again.",
+      "disconnect": "Disconnect"
+    },
+    "table": {
+      "symbol": "Symbol",
+      "chart": "Chart",
+      "price": "Price",
+      "cost": "Cost",
+      "shares": "Shares",
+      "value": "Value",
+      "totalPnl": "Total P&L",
+      "pnlPerShare": "P&L/Share",
+      "weight": "Weight",
+      "public": "Public",
+      "lockedStock": "Locked Stock",
+      "hiddenFromPublic": "Hidden from public - Click to show",
+      "visibleToPublic": "Visible to public - Click to hide",
+      "optionsContracts": "Options Contracts",
+      "expiration": "Expiration",
+      "strike": "Strike",
+      "contracts": "Contracts",
+      "short": "Short",
+      "long": "Long"
+    },
+    "privacy": {
+      "title": "Privacy Settings",
+      "description": "Control what information is visible in your public profile.",
+      "button": "Privacy",
+      "portfolioSummary": "Portfolio Summary",
+      "positionDetails": "Position Details",
+      "accounts": "Accounts",
+      "noAccounts": "No accounts connected",
+      "hiddenFieldsNote": "Hidden fields show \"***\" and hidden accounts are not displayed",
+      "totalValue": "Total Value",
+      "totalPnl": "Total P&L",
+      "pnlPercent": "P&L %",
+      "positionsLabel": "Positions",
+      "sharesLabel": "Shares",
+      "valueLabel": "Value",
+      "positionPnl": "Total P&L",
+      "positionPnlPerShare": "P&L/Share",
+      "weightLabel": "Weight",
+      "costLabel": "Cost",
+      "showAll": "Show All",
+      "hideAll": "Hide All"
+    },
+    "performance": {
+      "title": "Performance",
+      "valueAndPnl": "Portfolio value & P&L over time",
+      "performanceOverTime": "Portfolio performance over time",
+      "yearToDate": "Year to Date",
+      "allTime": "All Time",
+      "pastPeriod": "Past {period}",
+      "noDataYet": "No historical data yet",
+      "ownerNoData": "Sync your portfolio to start recording performance data. Historical data will accumulate over time.",
+      "ownerNoDataStarted": "Data recording started on {date}. Keep syncing to build your performance history.",
+      "publicNoData": "This user doesn't have any historical performance data yet.",
+      "dataSince": "Data since {date}",
+      "ownerDataTooltip": "This chart shows your actual portfolio performance recorded since {date}. Data is recorded automatically when you sync your portfolio.",
+      "publicDataTooltip": "This chart shows portfolio performance recorded since {date}.",
+      "both": "Both",
+      "pnl": "P&L",
+      "portfolioValue": "Portfolio Value",
+      "change": "Change",
+      "performanceLabel": "Performance"
+    },
+    "allocation": {
+      "title": "Portfolio Allocation by Sector"
+    },
+    "ai": {
+      "title": "AI Portfolio Analysis",
+      "analyzing": "Analyzing...",
+      "refresh": "Refresh",
+      "emptyTitle": "AI-Powered Portfolio Analysis",
+      "emptyDescription": "Get personalized insights, risk assessment, and actionable recommendations powered by financial AI.",
+      "startAnalysis": "Start Analysis",
+      "analysisFailed": "Analysis Failed",
+      "tryAgain": "Try Again",
+      "portfolioOverview": "Portfolio Overview",
+      "stockAnalysis": "Stock Analysis",
+      "recommendations": "Recommendations",
+      "positionsAnalyzed": "{count} positions analyzed",
+      "disclaimer": "Disclaimer: AI analysis is for informational purposes only. Not financial advice. Consult a qualified advisor.",
+      "riskLevel": "Risk Level",
+      "diversification": "Diversification",
+      "wellDiversified": "Well Diversified",
+      "moderate": "Moderate",
+      "concentrated": "Concentrated",
+      "portfolioStyle": "Portfolio Style:",
+      "strengths": "Strengths",
+      "areasToImprove": "Areas to Improve",
+      "showMore": "Show {count} More",
+      "showLess": "Show Less",
+      "keyPoints": "Key Points",
+      "weight": "Weight:",
+      "confidence": "Confidence:",
+      "rebalancing": "Rebalancing",
+      "riskManagement": "Risk Management",
+      "opportunities": "Opportunities",
+      "taxTips": "Tax Tips",
+      "lowRisk": "Low Risk",
+      "mediumRisk": "Medium Risk",
+      "highRisk": "High Risk",
+      "riskAssessment": "Risk Assessment",
+      "portfolioHealth": "Portfolio Health"
+    }
+  },
+  "community": {
+    "title": "Community Portfolios",
+    "description": "Discover and learn from investors who share their portfolios",
+    "publicPortfolios": "{count} Public Portfolios",
+    "transparentTracking": "Transparent & Real-time Tracking",
+    "managePortfolio": "Manage Portfolio",
+    "tabs": {
+      "all": "All",
+      "following": "Following"
+    },
+    "sort": {
+      "recentlyUpdated": "Recently Updated",
+      "topPerformers": "Top Performers",
+      "worstPerformers": "Worst Performers"
+    },
+    "following": "{count} following",
+    "ofTotal": "{current} of {total}",
+    "emptyAll": {
+      "title": "No Public Portfolios Yet",
+      "description": "Be the first to share your portfolio with the community! Enable public sharing in your portfolio settings."
+    },
+    "emptyFollowing": {
+      "title": "No Following Portfolios",
+      "description": "You haven't followed anyone with a public portfolio yet. Discover investors in the All tab and follow them!"
+    }
+  },
+  "investors": {
+    "title": "Superinvestors",
+    "loadFailed": "Failed to load investors",
+    "hero": {
+      "title": "Superinvestors",
+      "description": "Track 13F filings from top institutional investors",
+      "syncData": "Sync Data"
+    },
+    "stats": {
+      "investors": "Investors",
+      "holdings": "Holdings",
+      "popularStocks": "Popular Stocks",
+      "latestQuarter": "Latest Quarter"
+    },
+    "investorsList": "Investors and Holdings",
+    "searchPlaceholder": "Search investors...",
+    "noInvestors": "No investors found",
+    "popularHoldings": "Popular Holdings",
+    "holders": "{count} holders",
+    "stocks": "{count} stocks",
+    "syncing": "Syncing...",
+    "failedToLoadData": "Failed to load data",
+    "syncFailed": "Sync failed"
+  },
+  "kol": {
+    "title": "KOL Tracker",
+    "hero": {
+      "title": "KOL Tracker",
+      "description": "Follow influential market leaders and stay updated on their insights",
+      "trackTopKols": "Track Top KOLs",
+      "getNotified": "Get Notified"
+    },
+    "tabs": {
+      "topRanking": "Top Ranking",
+      "trackingKols": "Tracking KOLs"
+    },
+    "headerTitle": {
+      "tracking": "Tracking KOLs",
+      "ranking": "Top Ranking KOLs"
+    },
+    "comingSoon": "(Coming Soon)",
+    "failedToLoadKols": "Failed to load KOLs",
+    "ranking": {
+      "rank": "Rank",
+      "kol": "KOL",
+      "platform": "Platform",
+      "influence": "Influence",
+      "trending": "Trending",
+      "followers": "Followers",
+      "lastPost": "Last Post",
+      "action": "Action",
+      "noKolsFound": "No KOLs found",
+      "noKolsFoundDesc": "No KOLs found. Try again later.",
+      "loadingMore": "Loading more KOLs...",
+      "noMoreKols": "No more KOLs to load",
+      "loading": "Loading",
+      "tracking": "Tracking",
+      "track": "Track",
+      "untracked": "Untracked {name}",
+      "nowTracking": "Now tracking {name}",
+      "failedToUpdateTracking": "Failed to update tracking status"
+    },
+    "tracker": {
+      "kol": "KOL",
+      "platform": "Platform",
+      "followers": "Followers",
+      "description": "Description",
+      "actions": "Actions",
+      "noTrackedKols": "No tracked KOLs yet. Click 'Track New KOL' button to start tracking.",
+      "noMatchingKols": "No KOLs match your search criteria.",
+      "stopTracking": "Stop tracking",
+      "removeFromTracking": "Remove from tracking",
+      "followers_suffix": "followers",
+      "addDialog": {
+        "title": "Track New KOL",
+        "description": "Add a KOL from our database to your tracking list. You can find KOL IDs from the Top Ranking tab.",
+        "kolId": "KOL ID",
+        "kolIdPlaceholder": "Enter KOL ID from database",
+        "kolIdHint": "Find KOLs in the Top Ranking tab and use their ID",
+        "platform": "Platform",
+        "track": "Track"
+      },
+      "deleteDialog": {
+        "title": "Remove KOL from Tracking",
+        "description": "Are you sure you want to stop tracking this KOL? You can add them back to your tracking list later.",
+        "remove": "Remove"
+      },
+      "toast": {
+        "added": "KOL added to tracking list successfully",
+        "addFailed": "Failed to add KOL",
+        "removed": "KOL removed from tracking list successfully",
+        "removeFailed": "Failed to remove KOL",
+        "stoppedTracking": "Stopped tracking KOL",
+        "updateFailed": "Failed to update tracking status"
+      }
+    },
+    "request": {
+      "button": "Request KOL",
+      "title": "Request New KOL",
+      "description": "Submit a request to track a KOL on X (Twitter). Our team will review and approve valid requests.",
+      "username": "X Username",
+      "usernamePlaceholder": "elonmusk",
+      "usernameHint": "Enter the username without the @ symbol",
+      "notes": "Notes (Optional)",
+      "notesPlaceholder": "Why do you want to track this KOL? (e.g., Financial expert, Stock analyst...)",
+      "infoText": "Requests are typically reviewed within 24-48 hours. Approved KOLs will be automatically added to the tracking system.",
+      "submitting": "Submitting...",
+      "submitRequest": "Submit Request",
+      "enterValidUsername": "Please enter a valid username",
+      "requestSubmitted": "Request submitted for @{username}",
+      "requestSubmittedDesc": "Your request will be reviewed by our team.",
+      "failedToSubmit": "Failed to submit request"
+    },
+    "myRequests": {
+      "title": "My KOL Requests",
+      "pending": "{count} pending",
+      "submitted": "Submitted {date}",
+      "reviewed": "Reviewed {date}",
+      "admin": "Admin:",
+      "cancelSuccess": "Request cancelled successfully",
+      "cancelFailed": "Failed to cancel request"
+    }
+  },
+  "stocks": {
+    "title": "Stocks",
+    "hero": {
+      "title": "Stocks",
+      "description": "Track trending stocks and manage your tracked stocks",
+      "trackMarketTrends": "Track Market Trends"
+    },
+    "tabs": {
+      "trending": "Trending",
+      "myTracking": "My Tracking"
+    },
+    "searchPlaceholder": "Search stocks...",
+    "addStock": "Add",
+    "stockAdded": "Stock added successfully",
+    "addFailed": "Failed to add stock"
+  },
+  "settings": {
+    "title": "Settings",
+    "tabs": {
+      "account": "Account",
+      "apiKeys": "API Keys",
+      "billing": "Billing",
+      "notifications": "Notifications",
+      "preferences": "Preferences"
+    },
+    "account": {
+      "title": "Account Information",
+      "viewDetails": "View your account details",
+      "updateDetails": "Update your account details",
+      "emailAddress": "Email Address",
+      "fullName": "Full Name",
+      "enterFullName": "Enter your full name",
+      "phoneNumber": "Phone Number",
+      "phoneFormat": "Format: +[country code][number] (e.g., +14155552671)",
+      "phoneFormatError": "Invalid phone format. Use E.164 format: +[country code][number] (e.g., +14155552671)",
+      "saveChanges": "Save Changes",
+      "profileUpdated": "Profile updated successfully",
+      "failedToUpdate": "Failed to update profile",
+      "uploadAvatar": "Upload Avatar",
+      "avatarDescription": "Choose an image file to upload as your profile picture.",
+      "avatarCropDescription": "Drag to reposition, scroll to zoom. Image will be cropped to a square.",
+      "changeImage": "Change Image",
+      "upload": "Upload",
+      "fileSizeError": "File size must be less than 2MB",
+      "fileTypeError": "Please select an image file",
+      "avatarUpdated": "Avatar updated successfully",
+      "failedToUpload": "Failed to upload avatar",
+      "clickToUpload": "Click to upload",
+      "orDragAndDrop": "or drag and drop",
+      "dropImageHere": "Drop image here",
+      "imageFormats": "PNG, JPG or GIF (MAX. 2MB)"
+    },
+    "apiKeys": {
+      "title": "API Keys",
+      "subtitle": "Use your own API keys for LLM providers. Your keys take priority over the default server keys.",
+      "infoBanner": "Your API keys are stored securely and encrypted at rest. They are only used when you send messages — if a key is set for a provider, it will be used instead of the default server key.",
+      "getKey": "Get Key",
+      "replaceKey": "Replace with new key...",
+      "keySaved": "{provider} API key saved",
+      "keyRemoved": "{provider} API key removed",
+      "failedToSave": "Failed to save API key",
+      "failedToDelete": "Failed to delete API key"
+    },
+    "billing": {
+      "title": "Choose Your Plan",
+      "subtitle": "Select the perfect plan for your investment needs",
+      "plans": {
+        "free": {
+          "name": "Free",
+          "features": {
+            "basicData": "Basic market data",
+            "watchlist5": "5 watchlist stocks",
+            "dailyNews": "Daily market news",
+            "realTimeData": "Real-time data",
+            "aiAnalysis": "AI analysis"
+          }
+        },
+        "pro": {
+          "name": "Pro",
+          "popular": "POPULAR",
+          "features": {
+            "realTimeData": "Real-time market data",
+            "unlimitedWatchlist": "Unlimited watchlist",
+            "aiAnalysis": "AI-powered analysis",
+            "advancedCharts": "Advanced charts",
+            "prioritySupport": "Priority support"
+          }
+        },
+        "enterprise": {
+          "name": "Enterprise",
+          "features": {
+            "everythingInPro": "Everything in Pro",
+            "customAI": "Custom AI models",
+            "apiAccess": "API access",
+            "teamCollaboration": "Team collaboration",
+            "dedicatedSupport": "24/7 dedicated support"
+          }
+        }
+      }
+    },
+    "notifications": {
+      "title": "Notifications",
+      "subtitle": "Manage how you receive notifications",
+      "emailNotifications": "Email Notifications",
+      "enableEmail": "Enable Email Notifications",
+      "emailDescription": "Receive email notifications when people you follow make portfolio changes",
+      "emailHint": "When enabled, you will receive email notifications for portfolio updates from users you follow.",
+      "enabled": "Email notifications enabled",
+      "disabled": "Email notifications disabled",
+      "failedToUpdate": "Failed to update notification settings"
+    },
+    "preferences": {
+      "title": "Display Preferences",
+      "subtitle": "Customize your experience",
+      "language": "Language",
+      "selectLanguage": "Select language",
+      "languageChanged": "Language changed to {language}",
+      "theme": "Theme",
+      "themeLight": "Light",
+      "themeDark": "Dark",
+      "themeSystem": "System",
+      "themeLightDesc": "Light theme",
+      "themeDarkDesc": "Dark theme",
+      "themeSystemDesc": "Follow system",
+      "failedToUpdateTheme": "Failed to update theme"
+    }
+  },
+  "languages": {
+    "en": "English",
+    "zh": "中文"
+  }
+}

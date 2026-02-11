@@ -23,6 +23,7 @@ import CompanyLogo from "@/components/ui/company-logo";
 import { WeightIndicator } from "@/components/ui/weight-indicator";
 import MiniSparkline from "@/components/stock/MiniSparkline";
 import { formatCurrency } from "@/lib/snaptradeApi";
+import { useTranslation } from "@/lib/i18n";
 import type { OptionPositionsTableProps, SnapTradePosition } from "./types";
 
 // Helper to check if a value is hidden
@@ -41,20 +42,21 @@ export function OptionPositionsTable({
   onToggleVisibility,
 }: OptionPositionsTableProps) {
   const router = useRouter();
+  const { t } = useTranslation();
 
   if (positions.length === 0) return null;
 
   return (
     <>
       <div className="px-4 py-4 bg-primary/5 text-xs font-medium text-primary dark:text-primary-dark flex items-center border-y border-primary/30 dark:border-border-dark">
-        Options Contracts
+        {t("portfolio.table.optionsContracts")}
       </div>
       <div className="overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
               <SortableHeader
-                label="Symbol"
+                label={t("portfolio.table.symbol")}
                 sortKey="symbol"
                 currentSortKey={sortKey}
                 sortDirection={sortDir}
@@ -64,7 +66,7 @@ export function OptionPositionsTable({
                 className="w-[15%] pl-4"
               />
               <SortableHeader
-                label="Expiration"
+                label={t("portfolio.table.expiration")}
                 sortKey="expiration_date"
                 currentSortKey={sortKey}
                 sortDirection={sortDir}
@@ -73,10 +75,10 @@ export function OptionPositionsTable({
                 type="amount"
               />
               <TableHead className="w-[80px] hidden sm:table-cell text-center">
-                <span className="text-xs text-muted-foreground">Chart</span>
+                <span className="text-xs text-muted-foreground">{t("portfolio.table.chart")}</span>
               </TableHead>
               <SortableHeader
-                label="Strike"
+                label={t("portfolio.table.strike")}
                 sortKey="strike"
                 currentSortKey={sortKey}
                 sortDirection={sortDir}
@@ -86,7 +88,7 @@ export function OptionPositionsTable({
                 className="!w-[240px]"
               />
               <SortableHeader
-                label="Price"
+                label={t("portfolio.table.price")}
                 sortKey="price"
                 currentSortKey={sortKey}
                 sortDirection={sortDir}
@@ -95,10 +97,10 @@ export function OptionPositionsTable({
                 type="amount"
               />
               <TableHead className="text-center">
-                <span className="text-xs text-muted-foreground">Cost</span>
+                <span className="text-xs text-muted-foreground">{t("portfolio.table.cost")}</span>
               </TableHead>
               <SortableHeader
-                label="Contracts"
+                label={t("portfolio.table.contracts")}
                 sortKey="units"
                 currentSortKey={sortKey}
                 sortDirection={sortDir}
@@ -107,7 +109,7 @@ export function OptionPositionsTable({
                 type="numeric"
               />
               <SortableHeader
-                label="Value"
+                label={t("portfolio.table.value")}
                 sortKey="value"
                 currentSortKey={sortKey}
                 sortDirection={sortDir}
@@ -116,7 +118,7 @@ export function OptionPositionsTable({
                 type="amount"
               />
               <SortableHeader
-                label="Total P&L"
+                label={t("portfolio.table.totalPnl")}
                 sortKey="pnl"
                 currentSortKey={sortKey}
                 sortDirection={sortDir}
@@ -125,7 +127,7 @@ export function OptionPositionsTable({
                 type="amount"
               />
               <SortableHeader
-                label="P&L/Share"
+                label={t("portfolio.table.pnlPerShare")}
                 sortKey="pnl_per_share"
                 currentSortKey={sortKey}
                 sortDirection={sortDir}
@@ -134,7 +136,7 @@ export function OptionPositionsTable({
                 type="amount"
               />
               <SortableHeader
-                label="Weight"
+                label={t("portfolio.table.weight")}
                 sortKey="weight"
                 currentSortKey={sortKey}
                 sortDirection={sortDir}
@@ -145,7 +147,7 @@ export function OptionPositionsTable({
               />
               {isOwner && isPublic && (
                 <TableHead className="w-[50px] pr-4">
-                  <span className="text-xs text-muted-foreground">Public</span>
+                  <span className="text-xs text-muted-foreground">{t("portfolio.table.public")}</span>
                 </TableHead>
               )}
             </TableRow>
@@ -274,7 +276,7 @@ export function OptionPositionsTable({
                             }
                             className="!text-[12px]"
                           >
-                            {(pos.weight_percent ?? 0) < 0 ? "Short" : "Long"}
+                            {(pos.weight_percent ?? 0) < 0 ? t("portfolio.table.short") : t("portfolio.table.long")}
                           </Badge>
                           {formatCurrency(pos.strike_price, "USD", 0, 0)} &nbsp;
                           {pos.option_type || "-"}
@@ -370,8 +372,8 @@ export function OptionPositionsTable({
                           }`}
                         title={
                           pos.is_hidden
-                            ? "Hidden from public - Click to show"
-                            : "Visible to public - Click to hide"
+                            ? t("portfolio.table.hiddenFromPublic")
+                            : t("portfolio.table.visibleToPublic")
                         }
                       >
                         {pos.is_hidden ? (

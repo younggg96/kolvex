@@ -106,9 +106,8 @@ export default function KOLProfileHeader({
                   alt={PLATFORM_CONFIG[platform]?.name}
                   width={12}
                   height={12}
-                  className={`w-3 h-3 ${
-                    platform === "twitter" ? "dark:invert" : ""
-                  }`}
+                  className={`w-3 h-3 ${platform === "twitter" ? "dark:invert" : ""
+                    }`}
                 />
                 <span
                   className={`hidden sm:inline text-xs ${PLATFORM_CONFIG[platform]?.colorClass}`}
@@ -122,11 +121,10 @@ export default function KOLProfileHeader({
             <Button
               variant={isTracking ? "default" : "outline"}
               size="sm"
-              className={`rounded-full h-8 px-4 min-w-[90px] ${
-                isTracking
+              className={`rounded-full h-8 px-4 min-w-[90px] ${isTracking
                   ? "bg-yellow-500 text-white hover:bg-yellow-600"
                   : "border-yellow-500 text-yellow-500 hover:bg-yellow-500/10"
-              }`}
+                }`}
               onClick={onTrackToggle}
               disabled={isTrackLoading}
             >
@@ -154,7 +152,7 @@ export default function KOLProfileHeader({
               {profile.display_name || username}
             </h2>
             {profile.is_verified && (
-              <BadgeCheck className="h-5 w-5 text-blue-500" />
+              <BadgeCheck className="h-5 w-5 text-gery-500" />
             )}
           </div>
           <div className="text-muted-foreground">@{userDisplayId}</div>

@@ -1940,7 +1940,7 @@ export default function AdminPageClient() {
                     <div className="mt-1 flex items-center gap-1">
                       <span className="font-mono text-[11px] opacity-60">{runningAiTask.task_id}</span>
                       {isPollingTask && (
-                        <span className="text-blue-500 animate-pulse">● Polling</span>
+                        <span className="text-gery-500 animate-pulse">● Polling</span>
                       )}
                     </div>
                   </div>

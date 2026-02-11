@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
 import Image from "next/image";
+import { useTranslation } from "@/lib/i18n";
 
 type AuthMode = "login" | "signup";
 
@@ -23,6 +24,7 @@ interface AuthFormProps {
 }
 
 export default function AuthForm({ mode, onModeChange }: AuthFormProps) {
+  const { t } = useTranslation();
   const router = useRouter();
   const searchParams = useSearchParams();
   const [email, setEmail] = useState("");
@@ -40,13 +42,13 @@ export default function AuthForm({ mode, onModeChange }: AuthFormProps) {
 
     // Basic validation
     if (!email || !password) {
-      toast.error("Please fill in all required fields");
+      toast.error(t("auth.fillAllFields"));
       setIsLoading(false);
       return;
     }
 
     if (mode === "signup" && !name) {
-      toast.error("Please enter your name");
+      toast.error(t("auth.enterName"));
       setIsLoading(false);
       return;
     }
@@ -57,7 +59,7 @@ export default function AuthForm({ mode, onModeChange }: AuthFormProps) {
       const result = await signIn({ email, password });
 
       if (result.success) {
-        toast.success("Login successful! Redirecting...");
+        toast.success(t("auth.loginSuccess"));
         setTimeout(() => {
           router.push(redirectTo);
         }, 1000);
@@ -70,9 +72,7 @@ export default function AuthForm({ mode, onModeChange }: AuthFormProps) {
       const result = await signUp({ email, password, name });
 
       if (result.success) {
-        toast.success(
-          "Account created! Please check your email to verify your account."
-        );
+        toast.success(t("auth.accountCreated"));
         setIsLoading(false);
       } else {
         toast.error(getErrorMessage(result.error));
@@ -93,7 +93,7 @@ export default function AuthForm({ mode, onModeChange }: AuthFormProps) {
       // If successful, the user will be redirected to Google's OAuth page
       // No need to reset loading state as the page will redirect
     } catch (error: any) {
-      toast.error("Failed to initiate Google sign in");
+      toast.error(t("auth.googleSignInFailed"));
       setIsGoogleLoading(false);
     }
   };

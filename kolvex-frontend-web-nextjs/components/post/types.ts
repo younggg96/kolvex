@@ -1,11 +1,11 @@
 // Common types for all platform content components
 
-import { SentimentAnalysis, TradingSignal } from "@/lib/kolPostsApi";
+import { MediaItem, SentimentAnalysis, TradingSignal } from "@/lib/kolPostsApi";
 
 export interface BaseContentProps {
   url: string;
   id: string;
-  mediaUrls: string[];
+  mediaItems: MediaItem[];
   aiSummary?: string | null;
   aiTradingSignal?: TradingSignal | null;
   aiTags?: string[];

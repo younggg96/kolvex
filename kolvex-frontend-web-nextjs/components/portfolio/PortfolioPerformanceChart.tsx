@@ -12,6 +12,7 @@ import {
 } from "recharts";
 import { TrendingUp, TrendingDown, BarChart3, RefreshCw, Info, DollarSign, Activity, Percent } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "@/lib/i18n";
 import { formatCurrency, formatPercent } from "@/lib/snaptradeApi";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -67,9 +68,10 @@ interface CustomTooltipProps {
     }>;
     chartView: ChartView;
     isOwner: boolean;
+    t: (key: string, params?: Record<string, string>) => string;
 }
 
-function CustomTooltip({ active, payload, chartView, isOwner }: CustomTooltipProps) {
+function CustomTooltip({ active, payload, chartView, isOwner, t }: CustomTooltipProps) {
     if (!active || !payload || !payload[0]) return null;
 
     const data = payload[0].payload;
@@ -86,7 +88,7 @@ function CustomTooltip({ active, payload, chartView, isOwner }: CustomTooltipPro
                 <div className="flex items-center justify-between gap-4 mb-1.5">
                     <div className="flex items-center gap-1.5">
                         <div className="w-2 h-2 rounded-full bg-blue-500" />
-                        <span className="text-xs text-gray-400">Value</span>
+                        <span className="text-xs text-gray-400">{t("portfolio.table.value")}</span>
                     </div>
                     <span className="text-sm font-semibold text-white">
                         {formatCurrency(data.value)}
@@ -102,7 +104,7 @@ function CustomTooltip({ active, payload, chartView, isOwner }: CustomTooltipPro
                             "w-2 h-2 rounded-full",
                             isPositive ? "bg-emerald-500" : "bg-red-500"
                         )} />
-                        <span className="text-xs text-gray-400">P&L</span>
+                        <span className="text-xs text-gray-400">{t("portfolio.performance.pnl")}</span>
                     </div>
                     <span className={cn(
                         "text-sm font-medium",
@@ -123,7 +125,7 @@ function CustomTooltip({ active, payload, chartView, isOwner }: CustomTooltipPro
                         "w-2 h-2 rounded-full",
                         isPositive ? "bg-emerald-500" : "bg-red-500"
                     )} />
-                    <span className="text-xs text-gray-400">Change</span>
+                    <span className="text-xs text-gray-400">{t("portfolio.performance.change")}</span>
                 </div>
                 <span className={cn(
                     "text-sm font-semibold",
@@ -144,28 +146,28 @@ interface SummaryStatsProps {
     summary: PerformanceSummary;
     period: PerformancePeriod;
     isOwner: boolean;
+    t: (key: string, params?: Record<string, string>) => string;
 }
 
-function SummaryStats({ summary, period, isOwner }: SummaryStatsProps) {
+function SummaryStats({ summary, period, isOwner, t }: SummaryStatsProps) {
     const isPositive = summary.totalPnL >= 0;
     const Icon = isPositive ? TrendingUp : TrendingDown;
 
     const periodLabel = period === "YTD"
-        ? "Year to Date"
+        ? t("portfolio.performance.yearToDate")
         : period === "ALL"
-            ? "All Time"
-            : `Past ${period.replace("M", " month").replace("W", " week")}`;
+            ? t("portfolio.performance.allTime")
+            : t("portfolio.performance.pastPeriod", {
+                period: period === "1W" ? "1 week" : period === "1M" ? "1 month" : "3 months",
+            });
 
     return (
         <div className="flex flex-col gap-2">
             {/* Current Value - Only show for owner */}
             {isOwner && (
-                <div className="flex items-center gap-2">
-                    <DollarSign className="w-4 h-4 text-blue-500" />
-                    <span className="text-xl font-bold text-foreground">
-                        {formatCurrency(summary.endValue)}
-                    </span>
-                </div>
+                <span className="text-xl font-bold text-foreground">
+                    {formatCurrency(summary.endValue)}
+                </span>
             )}
 
             {/* P&L Summary */}
@@ -217,18 +219,19 @@ interface ChartViewToggleProps {
     chartView: ChartView;
     setChartView: (view: ChartView) => void;
     isOwner: boolean;
+    t: (key: string, params?: Record<string, string>) => string;
 }
 
-function ChartViewToggle({ chartView, setChartView, isOwner }: ChartViewToggleProps) {
+function ChartViewToggle({ chartView, setChartView, isOwner, t }: ChartViewToggleProps) {
     // For non-owner, only show percent view
     const views: { value: ChartView; label: string; icon: React.ReactNode }[] = isOwner
         ? [
-            { value: "combined", label: "Both", icon: <Activity className="w-3 h-3" /> },
-            { value: "value", label: "Value", icon: <DollarSign className="w-3 h-3" /> },
-            { value: "pnl", label: "P&L", icon: <TrendingUp className="w-3 h-3" /> },
+            { value: "combined", label: t("portfolio.performance.both"), icon: <Activity className="w-3 h-3" /> },
+            { value: "value", label: t("portfolio.table.value"), icon: <DollarSign className="w-3 h-3" /> },
+            { value: "pnl", label: t("portfolio.performance.pnl"), icon: <TrendingUp className="w-3 h-3" /> },
         ]
         : [
-            { value: "pnl", label: "Performance", icon: <Percent className="w-3 h-3" /> },
+            { value: "pnl", label: t("portfolio.performance.performanceLabel"), icon: <Percent className="w-3 h-3" /> },
         ];
 
     // If only one view available, don't show toggle
@@ -287,21 +290,22 @@ function ChartSkeleton({ height }: { height: number }) {
 interface EmptyStateProps {
     firstSnapshotDate: string | null;
     isOwner: boolean;
+    t: (key: string, params?: Record<string, string>) => string;
 }
 
-function EmptyState({ firstSnapshotDate, isOwner }: EmptyStateProps) {
+function EmptyState({ firstSnapshotDate, isOwner, t }: EmptyStateProps) {
     return (
         <div className="flex flex-col items-center justify-center h-48 text-center px-4">
             <BarChart3 className="w-10 h-10 text-muted-foreground/40 mb-3" />
             <p className="text-sm font-medium text-muted-foreground">
-                No historical data yet
+                {t("portfolio.performance.noDataYet")}
             </p>
             <p className="text-xs text-muted-foreground/70 mt-1 max-w-xs">
                 {isOwner
                     ? (firstSnapshotDate
-                        ? `Data recording started on ${new Date(firstSnapshotDate).toLocaleDateString()}. Keep syncing to build your performance history.`
-                        : "Sync your portfolio to start recording performance data. Historical data will accumulate over time.")
-                    : "This user doesn't have any historical performance data yet."
+                        ? t("portfolio.performance.ownerNoDataStarted", { date: new Date(firstSnapshotDate).toLocaleDateString() })
+                        : t("portfolio.performance.ownerNoData"))
+                    : t("portfolio.performance.publicNoData")
                 }
             </p>
         </div>
@@ -318,6 +322,7 @@ export function PortfolioPerformanceChart({
     userId,
     isOwner = false,
 }: PortfolioPerformanceChartProps) {
+    const { t } = useTranslation();
     const {
         data,
         summary,
@@ -341,7 +346,6 @@ export function PortfolioPerformanceChart({
             : { stroke: "#ef4444", fill: "#ef4444" };
     }, [summary]);
 
-    // Value line color (always blue)
     const valueColor = { stroke: "#3b82f6", fill: "#3b82f6" };
 
     // Y-axis domain for value
@@ -420,12 +424,12 @@ export function PortfolioPerformanceChart({
             <div className="flex items-start justify-between gap-4 mb-4">
                 <div className="flex-1 min-w-0">
                     {summary ? (
-                        <SummaryStats summary={summary} period={period} isOwner={isOwner} />
+                        <SummaryStats summary={summary} period={period} isOwner={isOwner} t={t} />
                     ) : (
                         <div className="flex flex-col gap-1">
-                            <span className="text-lg font-semibold text-foreground">Performance</span>
+                            <span className="text-lg font-semibold text-foreground">{t("portfolio.performance.title")}</span>
                             <span className="text-xs text-muted-foreground">
-                                {isOwner ? "Portfolio value & P&L over time" : "Portfolio performance over time"}
+                                {isOwner ? t("portfolio.performance.valueAndPnl") : t("portfolio.performance.performanceOverTime")}
                             </span>
                         </div>
                     )}
@@ -463,7 +467,7 @@ export function PortfolioPerformanceChart({
                     </div>
 
                     {/* Chart View Toggle - Only show for owner */}
-                    <ChartViewToggle chartView={chartView} setChartView={setChartView} isOwner={isOwner} />
+                    <ChartViewToggle chartView={chartView} setChartView={setChartView} isOwner={isOwner} t={t} />
                 </div>
             </div>
 
@@ -476,7 +480,7 @@ export function PortfolioPerformanceChart({
 
             {/* Empty State - No Data */}
             {!error && !loading && data.length === 0 && (
-                <EmptyState firstSnapshotDate={firstSnapshotDate} isOwner={isOwner} />
+                <EmptyState firstSnapshotDate={firstSnapshotDate} isOwner={isOwner} t={t} />
             )}
 
             {/* Chart */}
@@ -551,7 +555,7 @@ export function PortfolioPerformanceChart({
                                     />
                                 )}
 
-                                <Tooltip content={<CustomTooltip chartView={chartView} isOwner={isOwner} />} />
+                                <Tooltip content={<CustomTooltip chartView={chartView} isOwner={isOwner} t={t} />} />
 
                                 {/* Reference line at zero for P&L */}
                                 {showPnlChart && (
@@ -585,7 +589,7 @@ export function PortfolioPerformanceChart({
                                         strokeWidth={2}
                                         fill="url(#valueGradient)"
                                         animationDuration={500}
-                                        name="Portfolio Value"
+                                        name={t("portfolio.performance.portfolioValue")}
                                     />
                                 )}
 
@@ -599,7 +603,7 @@ export function PortfolioPerformanceChart({
                                         strokeWidth={2}
                                         fill="url(#pnlGradient)"
                                         animationDuration={500}
-                                        name={isOwner ? "P&L" : "Performance %"}
+                                        name={isOwner ? t("portfolio.performance.pnl") : t("portfolio.performance.performanceLabel")}
                                     />
                                 )}
                             </ComposedChart>
@@ -611,14 +615,14 @@ export function PortfolioPerformanceChart({
                         <div className="flex items-center justify-center gap-6 mt-2">
                             <div className="flex items-center gap-1.5">
                                 <div className="w-3 h-0.5 bg-blue-500 rounded" />
-                                <span className="text-xs text-muted-foreground">Portfolio Value</span>
+                                <span className="text-xs text-muted-foreground">{t("portfolio.performance.portfolioValue")}</span>
                             </div>
                             <div className="flex items-center gap-1.5">
                                 <div className={cn(
                                     "w-3 h-0.5 rounded",
                                     summary && summary.totalPnL >= 0 ? "bg-emerald-500" : "bg-red-500"
                                 )} />
-                                <span className="text-xs text-muted-foreground">P&L</span>
+                                <span className="text-xs text-muted-foreground">{t("portfolio.performance.pnl")}</span>
                             </div>
                         </div>
                     )}
@@ -632,15 +636,15 @@ export function PortfolioPerformanceChart({
                                         <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground/70 cursor-help">
                                             <Info className="w-3 h-3" />
                                             <span>
-                                                Data since {new Date(firstSnapshotDate).toLocaleDateString()}
+                                                {t("portfolio.performance.dataSince", { date: new Date(firstSnapshotDate).toLocaleDateString() })}
                                             </span>
                                         </div>
                                     </TooltipTrigger>
                                     <TooltipContent side="top" className="max-w-xs">
                                         <p className="text-xs">
                                             {isOwner
-                                                ? `This chart shows your actual portfolio performance recorded since ${new Date(firstSnapshotDate).toLocaleDateString()}. Data is recorded automatically when you sync your portfolio.`
-                                                : `This chart shows portfolio performance recorded since ${new Date(firstSnapshotDate).toLocaleDateString()}.`
+                                                ? t("portfolio.performance.ownerDataTooltip", { date: new Date(firstSnapshotDate).toLocaleDateString() })
+                                                : t("portfolio.performance.publicDataTooltip", { date: new Date(firstSnapshotDate).toLocaleDateString() })
                                             }
                                         </p>
                                     </TooltipContent>

@@ -103,7 +103,7 @@ export default function PostFeedList({ posts, formatDate }: PostFeedListProps) {
         fullText={post.content}
         url={post.permalink || ""}
         id={post.id.toString()}
-        mediaUrls={post.media_urls?.map((m) => m.url || "") || []}
+        mediaItems={post.media_urls || []}
         aiSummary={post.summary}
         aiTradingSignal={post.trading_signal}
         aiTags={post.ai_tags || []}

@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ErrorState } from "@/components/common/EmptyState";
 import { InvestorsHeroSection, StatCard } from "@/components/investors";
+import { useTranslation } from "@/lib/i18n";
 import {
   getInvestors,
   getPopularStocks,
@@ -23,6 +24,7 @@ import {
 } from "@/lib/dataromaApi";
 
 export default function InvestorsPage() {
+  const { t } = useTranslation();
   const [investors, setInvestors] = useState<SuperInvestor[]>([]);
   const [popularStocks, setPopularStocks] = useState<PopularStock[]>([]);
   const [syncStatus, setSyncStatus] = useState<SyncStatus | null>(null);
@@ -48,7 +50,7 @@ export default function InvestorsPage() {
       setPopularStocks(popularRes);
       setSyncStatus(statusRes);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load data");
+      setError(err instanceof Error ? err.message : t("investors.failedToLoadData"));
     } finally {
       setLoading(false);
     }
@@ -69,7 +71,7 @@ export default function InvestorsPage() {
       }, 2000);
     } catch (err) {
       setSyncing(false);
-      setError(err instanceof Error ? err.message : "Sync failed");
+      setError(err instanceof Error ? err.message : t("investors.syncFailed"));
     }
   }
 
@@ -81,11 +83,11 @@ export default function InvestorsPage() {
 
   if (error) {
     return (
-      <DashboardLayout title="Superinvestors" headerClassName="lg:hidden">
+      <DashboardLayout title={t("investors.title")} headerClassName="lg:hidden">
         <div className="relative flex-1 overflow-y-auto bg-background-light dark:bg-background-dark">
           <div className="p-4">
             <ErrorState
-              title="Failed to load investors"
+              title={t("investors.loadFailed")}
               message={error}
               retry={loadData}
             />
@@ -96,7 +98,7 @@ export default function InvestorsPage() {
   }
 
   return (
-    <DashboardLayout title="Superinvestors" headerClassName="lg:hidden">
+    <DashboardLayout title={t("investors.title")} headerClassName="lg:hidden">
       <div className="relative flex-1 overflow-y-auto bg-background-light dark:bg-background-dark">
         <div className="absolute inset-0 bg-grid opacity-50 pointer-events-none" />
 
@@ -112,11 +114,11 @@ export default function InvestorsPage() {
           {/* Stats */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
             <StatCard
-              label="Investors"
+              label={t("investors.stats.investors")}
               value={loading ? null : investors.length}
             />
             <StatCard
-              label="Holdings"
+              label={t("investors.stats.holdings")}
               value={
                 loading
                   ? null
@@ -125,13 +127,13 @@ export default function InvestorsPage() {
             />
             <div className="hidden lg:block">
               <StatCard
-                label="Popular Stocks"
+                label={t("investors.stats.popularStocks")}
                 value={loading ? null : popularStocks.length}
               />
             </div>
             <div className="hidden lg:block">
               <StatCard
-                label="Latest Quarter"
+                label={t("investors.stats.latestQuarter")}
                 value={
                   loading ? null : syncStatus?.database.latest_quarter || "-"
                 }
@@ -143,7 +145,7 @@ export default function InvestorsPage() {
             {/* Investors List */}
             <div className="lg:col-span-2">
               <SectionCard
-                title="Investors and Holdings"
+                title={t("investors.investorsList")}
                 useSectionHeader
                 padding="sm"
                 contentClassName="px-3 pb-3"
@@ -151,7 +153,7 @@ export default function InvestorsPage() {
                   <div className="relative w-full sm:w-64">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
-                      placeholder="Search investors..."
+                      placeholder={t("investors.searchPlaceholder")}
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       className="pl-9 h-9"
@@ -180,7 +182,7 @@ export default function InvestorsPage() {
                             </h3>
                             <div className="flex items-center gap-2 sm:gap-3 mt-0.5 sm:mt-1 text-[11px] sm:text-xs text-muted-foreground">
                               {investor.stock_count && (
-                                <span>{investor.stock_count} stocks</span>
+                                <span>{t("investors.stocks", { count: String(investor.stock_count) })}</span>
                               )}
                               {investor.portfolio_value && (
                                 <span>
@@ -199,7 +201,7 @@ export default function InvestorsPage() {
                     ))}
                     {filteredInvestors.length === 0 && (
                       <div className="text-center py-8 text-muted-foreground text-sm">
-                        No investors found
+                        {t("investors.noInvestors")}
                       </div>
                     )}
                   </div>
@@ -210,7 +212,7 @@ export default function InvestorsPage() {
             {/* Popular Stocks */}
             <div className="space-y-4">
               <SectionCard
-                title="Popular Holdings"
+                title={t("investors.popularHoldings")}
                 useSectionHeader
                 padding="sm"
                 contentClassName="px-3 pb-3"
@@ -243,7 +245,7 @@ export default function InvestorsPage() {
                                 {stock.ticker}
                               </span>
                               <Badge size="xs">
-                                {stock.holder_count} holders
+                                {t("investors.holders", { count: String(stock.holder_count) })}
                               </Badge>
                             </div>
                             <p className="text-[11px] sm:text-xs text-muted-foreground truncate">
@@ -260,7 +262,7 @@ export default function InvestorsPage() {
                     ))}
                     {popularStocks.length === 0 && (
                       <div className="text-center py-8 text-muted-foreground text-sm">
-                        No data available
+                        {t("common.noDataAvailable")}
                       </div>
                     )}
                   </div>
@@ -273,7 +275,7 @@ export default function InvestorsPage() {
                   <div className="flex items-center gap-3">
                     <RefreshCw className="h-5 w-5 animate-spin text-primary" />
                     <div>
-                      <p className="font-medium text-sm">Syncing...</p>
+                      <p className="font-medium text-sm">{t("investors.syncing")}</p>
                       {syncStatus.all.progress && (
                         <p className="text-xs text-muted-foreground">
                           {syncStatus.all.progress.stage}:{" "}

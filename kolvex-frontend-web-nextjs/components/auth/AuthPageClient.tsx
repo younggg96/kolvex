@@ -6,10 +6,12 @@ import { toast } from "sonner";
 import AuthForm from "@/components/auth/AuthForm";
 import AuthLayout from "@/components/auth/AuthLayout";
 import { createClient } from "@/lib/supabase/client";
+import { useTranslation } from "@/lib/i18n";
 
 type AuthMode = "login" | "signup";
 
 export default function AuthPageClient() {
+  const { t } = useTranslation();
   const [mode, setMode] = useState<AuthMode>("login");
   const [isProcessingOAuth, setIsProcessingOAuth] = useState(false);
   const router = useRouter();
@@ -54,14 +56,14 @@ export default function AuthPageClient() {
 
           if (sessionError) {
             console.error("OAuth session error:", sessionError);
-            toast.error("Failed to complete sign in. Please try again.");
+            toast.error(t("auth.signInFailed"));
             setIsProcessingOAuth(false);
             window.history.replaceState(null, "", window.location.pathname);
             return;
           }
 
           if (data.session) {
-            toast.success("Successfully signed in!");
+            toast.success(t("auth.signInSuccess"));
 
             // Get the stored redirect URL from cookie or default to dashboard
             const redirectTo = document.cookie
@@ -74,13 +76,13 @@ export default function AuthPageClient() {
               ? decodeURIComponent(redirectTo)
               : "/dashboard";
           } else {
-            toast.error("Failed to complete sign in. Please try again.");
+            toast.error(t("auth.signInFailed"));
             setIsProcessingOAuth(false);
             window.history.replaceState(null, "", window.location.pathname);
           }
         } catch (err) {
           console.error("OAuth callback error:", err);
-          toast.error("An error occurred during sign in. Please try again.");
+          toast.error(t("auth.signInError"));
           setIsProcessingOAuth(false);
           window.history.replaceState(null, "", window.location.pathname);
         }
@@ -97,7 +99,7 @@ export default function AuthPageClient() {
       if (hashErrorDescription) {
         toast.error(decodeURIComponent(hashErrorDescription));
       } else {
-        toast.error("An authentication error occurred. Please try again.");
+        toast.error(t("auth.authError"));
       }
       window.history.replaceState(null, "", window.location.pathname);
     }
@@ -111,17 +113,15 @@ export default function AuthPageClient() {
 
     if (error || errorCode) {
       if (errorCode === "otp_expired" || error === "access_denied") {
-        toast.error(
-          "Email verification link has expired. Please request a new one."
-        );
+        toast.error(t("auth.emailVerifyExpired"));
       } else if (error === "verification_failed") {
-        toast.error("Email verification failed. Please try again.");
+        toast.error(t("auth.emailVerifyFailed"));
       } else if (error === "profile_creation_failed") {
-        toast.error("Failed to create user profile. Please contact support.");
+        toast.error(t("auth.profileCreationFailed"));
       } else if (errorDescription) {
         toast.error(decodeURIComponent(errorDescription));
       } else {
-        toast.error("An authentication error occurred. Please try again.");
+        toast.error(t("auth.authError"));
       }
 
       router.replace("/auth");
@@ -134,17 +134,17 @@ export default function AuthPageClient() {
       <div className="flex min-h-screen items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-4">
           <div className="h-10 w-10 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-          <p className="text-muted-foreground text-lg">Completing sign in...</p>
+          <p className="text-muted-foreground text-lg">{t("auth.completingSignIn")}</p>
         </div>
       </div>
     );
   }
 
-  const title = mode === "login" ? "Welcome Back" : "Create Account";
+  const title = mode === "login" ? t("auth.welcomeBack") : t("auth.createAccount");
   const subtitle =
     mode === "login"
-      ? "Login to access your investment dashboard"
-      : "Join us to start tracking your investments";
+      ? t("auth.loginSubtitle")
+      : t("auth.signupSubtitle");
 
   return (
     <AuthLayout title={title} subtitle={subtitle}>

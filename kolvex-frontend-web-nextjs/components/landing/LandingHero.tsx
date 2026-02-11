@@ -14,6 +14,7 @@ import {
   Shield,
   Sparkles,
 } from "lucide-react";
+import { useTranslation } from "@/lib/i18n";
 
 // Floating orb component for background
 const FloatingOrb = ({
@@ -81,6 +82,7 @@ const Particles = () => {
 
 // Dashboard preview mockup
 const DashboardPreview = () => {
+  const { t } = useTranslation();
   return (
     <div className="relative w-full max-w-4xl mx-auto mt-8 md:mt-16 perspective-1000 px-2 sm:px-0">
       {/* Main dashboard frame */}
@@ -110,25 +112,25 @@ const DashboardPreview = () => {
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 md:gap-4">
               {[
                 {
-                  label: "Portfolio Value",
+                  label: t("landing.hero.preview.portfolioValue"),
                   value: "$1,274,320",
                   change: "+12.4%",
                   icon: TrendingUp,
                 },
                 {
-                  label: "KOLs Tracked",
+                  label: t("landing.hero.preview.kolsTracked"),
                   value: "247",
                   change: "+18",
                   icon: Users,
                 },
                 {
-                  label: "AI Signals",
+                  label: t("landing.hero.preview.aiSignals"),
                   value: "1,842",
                   change: "Active",
                   icon: Zap,
                 },
                 {
-                  label: "Sentiment Score",
+                  label: t("landing.hero.preview.sentimentScore"),
                   value: "78.5",
                   change: "Bullish",
                   icon: BarChart3,
@@ -183,10 +185,11 @@ const DashboardPreview = () => {
 
 // Trust badges
 const TrustBadges = () => {
+  const { t } = useTranslation();
   const badges = [
-    { icon: Shield, label: "Bank-Level Security" },
-    { icon: Zap, label: "Real-Time Data" },
-    { icon: Users, label: "5,000+ Investors" },
+    { icon: Shield, label: t("landing.hero.trustBadges.security") },
+    { icon: Zap, label: t("landing.hero.trustBadges.realTime") },
+    { icon: Users, label: t("landing.hero.trustBadges.investors") },
   ];
 
   return (
@@ -206,6 +209,7 @@ const TrustBadges = () => {
 };
 
 export default function LandingHero() {
+  const { t } = useTranslation();
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
   const heroRef = useRef<HTMLElement>(null);
 
@@ -241,13 +245,13 @@ export default function LandingHero() {
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
               <span className="relative inline-flex rounded-full h-1.5 w-1.5 md:h-2 md:w-2 bg-primary"></span>
             </span>
-            Powered by AI
+            {t("landing.hero.badge")}
           </div>
 
           {/* Main headline */}
           <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-7xl font-black tracking-tight mb-4 md:mb-8 min-h-[2.4em] md:min-h-[1.2em]">
             <span className="block bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 dark:from-white dark:via-gray-200 dark:to-white bg-clip-text text-transparent pb-1 md:pb-2">
-              Invest Smarter with
+              {t("landing.hero.headline")}
             </span>
             <span className="block relative">
               <span className="text-primary animate-gradient-x">
@@ -268,12 +272,7 @@ export default function LandingHero() {
 
           {/* Subheadline */}
           <p className="text-xs sm:text-sm md:text-base lg:text-lg text-gray-600 dark:text-gray-400 mb-6 md:mb-12 max-w-3xl leading-relaxed animate-fade-in-up px-2">
-            Track influential voices, decode market sentiment, and discover
-            opportunities{" "}
-            <span className="text-primary font-semibold">
-              before they trend
-            </span>
-            . Join thousands of investors gaining an edge with AI.
+            {t("landing.hero.subheadline")}
           </p>
 
           {/* CTA Buttons */}
@@ -283,7 +282,7 @@ export default function LandingHero() {
                 size="md"
                 className="w-full sm:w-auto px-6 md:px-10 font-bold bg-primary hover:bg-primary/90 text-white rounded-xl md:rounded-2xl shadow-xl shadow-primary/25 group transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl hover:shadow-primary/30"
               >
-                Start Free Trial
+                {t("landing.hero.startFreeTrial")}
                 <ArrowRight
                   size={16}
                   className="ml-2 group-hover:translate-x-1 transition-transform md:w-[18px] md:h-[18px]"

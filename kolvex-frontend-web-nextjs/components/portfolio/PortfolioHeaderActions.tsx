@@ -29,6 +29,7 @@ import { formatDistanceToNow } from "date-fns";
 import type { SnapTradeHoldings } from "@/lib/supabase/database.types";
 import PrivacySettingsDialog from "./PrivacySettingsDialog";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "@/lib/i18n";
 
 export type DownloadFormat = "csv" | "json";
 
@@ -61,12 +62,14 @@ export function PortfolioHeaderActions({
   onDisconnect,
   onDownload,
 }: PortfolioHeaderActionsProps) {
+  const { t } = useTranslation();
+
   return (
     <div className="flex items-center gap-2">
       <span className="text-xs text-muted-foreground hidden sm:inline opacity-60">
         {holdings?.last_synced_at
           ? `Updated ${formatDistanceToNow(new Date(holdings.last_synced_at), { addSuffix: true })}`
-          : "Not synced yet"}
+          : t("portfolio.actions.notSyncedYet")}
       </span>
 
       <Button
@@ -78,7 +81,7 @@ export function PortfolioHeaderActions({
       >
         <RefreshCw className={`w-3.5 h-3.5 ${syncing ? "animate-spin" : ""}`} />
         <span className={cn("hidden sm:inline", size === "xs" && "text-xs")}>
-          Refresh
+          {t("portfolio.actions.refresh")}
         </span>
       </Button>
 
@@ -89,7 +92,7 @@ export function PortfolioHeaderActions({
             <span
               className={cn("hidden sm:inline", size === "xs" && "text-xs")}
             >
-              Settings
+              {t("portfolio.actions.settings")}
             </span>
           </Button>
         </DropdownMenuTrigger>
@@ -102,7 +105,7 @@ export function PortfolioHeaderActions({
                 ) : (
                   <Lock className="h-4 w-4" />
                 )}
-                <span>Public Profile</span>
+                <span>{t("portfolio.actions.publicProfile")}</span>
               </div>
               <Switch
                 checked={holdings?.is_public || false}
@@ -119,13 +122,13 @@ export function PortfolioHeaderActions({
                 ) : (
                   <Copy className="mr-2 h-4 w-4" />
                 )}
-                Copy Share Link
+                {t("portfolio.actions.copyShareLink")}
               </DropdownMenuItem>
               <PrivacySettingsDialog
                 trigger={
                   <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
                     <Eye className="mr-2 h-4 w-4" />
-                    Privacy Settings
+                    {t("portfolio.actions.privacySettings")}
                   </DropdownMenuItem>
                 }
               />
@@ -133,17 +136,17 @@ export function PortfolioHeaderActions({
           )}
           <DropdownMenuItem onClick={onConnect}>
             <Link2 className="mr-2 h-4 w-4" />
-            Add Another Broker
+            {t("portfolio.actions.addAnotherBroker")}
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           {/* Download Options */}
           <DropdownMenuItem onClick={() => onDownload("csv")}>
             <FileSpreadsheet className="mr-2 h-4 w-4" />
-            Download CSV
+            {t("portfolio.actions.downloadCsv")}
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => onDownload("json")}>
             <FileJson className="mr-2 h-4 w-4" />
-            Download JSON
+            {t("portfolio.actions.downloadJson")}
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem
@@ -151,7 +154,7 @@ export function PortfolioHeaderActions({
             onClick={onDisconnect}
           >
             <LogOut className="mr-2 h-4 w-4" />
-            Disconnect
+            {t("portfolio.actions.disconnect")}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -160,7 +163,7 @@ export function PortfolioHeaderActions({
         <Button variant="outline" size={size} className="gap-1.5 group">
           <Users className="w-3.5 h-3.5" />
           <span className={cn("hidden sm:inline", size === "xs" && "text-xs")}>
-            {size === "xs" ? "View" : "Community"}
+            {size === "xs" ? t("portfolio.actions.view") : t("portfolio.actions.community")}
           </span>
           <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
         </Button>

@@ -6,39 +6,42 @@ import {
   PortfolioHeaderActions,
   PortfolioHeaderActionsProps,
 } from "./PortfolioHeaderActions";
+import { useTranslation } from "@/lib/i18n";
 
 interface PortfolioHeroSectionProps {
   headerActionsProps?: PortfolioHeaderActionsProps;
   className?: string;
 }
 
-const portfolioFeatures = [
-  {
-    icon: Shield,
-    label: "Secure Connection",
-    iconClassName: "w-3.5 h-3.5 text-green-600 dark:text-green-400",
-  },
-  {
-    icon: TrendingUp,
-    label: "Real-time Tracking",
-    iconClassName: "w-3.5 h-3.5 text-primary",
-  },
-  {
-    icon: Share2,
-    label: "Optional Sharing",
-    iconClassName: "w-3.5 h-3.5 text-blue-600 dark:text-blue-400",
-  },
-];
-
 export function PortfolioHeroSection({
   headerActionsProps,
   className,
 }: PortfolioHeroSectionProps) {
+  const { t } = useTranslation();
+
+  const portfolioFeatures = [
+    {
+      icon: Shield,
+      label: t("portfolio.hero.secureConnection"),
+      iconClassName: "w-3.5 h-3.5 text-green-600 dark:text-green-400",
+    },
+    {
+      icon: TrendingUp,
+      label: t("portfolio.hero.realTimeTracking"),
+      iconClassName: "w-3.5 h-3.5 text-primary",
+    },
+    {
+      icon: Share2,
+      label: t("portfolio.hero.optionalSharing"),
+      iconClassName: "w-3.5 h-3.5 text-blue-600 dark:text-blue-400",
+    },
+  ];
+
   return (
     <HeroSection
       className={className}
-      title="My Holdings"
-      description="Track and share your investment holdings"
+      title={t("portfolio.hero.title")}
+      description={t("portfolio.hero.description")}
       actions={
         headerActionsProps ? (
           <PortfolioHeaderActions {...headerActionsProps} />

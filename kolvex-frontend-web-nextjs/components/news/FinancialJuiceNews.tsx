@@ -247,7 +247,7 @@ export default function FinancialJuiceNews({
               widgetInitializedRef.current = false;
               initializingRef.current = false;
             }}
-            className="mt-2 text-xs text-blue-500 hover:text-blue-600 dark:text-blue-400"
+            className="mt-2 text-xs text-gery-500 hover:text-blue-600 dark:text-blue-400"
           >
             Retry
           </button>

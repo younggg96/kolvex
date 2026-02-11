@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Zap } from "lucide-react";
 import { ChipButton } from "@/components/ui/chip-button";
 import { ChatInput, MODEL_CONFIGS } from "./ChatInput";
+import { useTranslation } from "@/lib/i18n";
 import type { ChatWelcomeProps } from "./types";
 
 const PROVIDER_NAME_TO_ID: Record<string, string> = {
@@ -17,11 +18,11 @@ const PROVIDER_NAME_TO_ID: Record<string, string> = {
   xAI: "grok",
 };
 
-const suggestions = [
-  { text: "Analyze NVIDIA stock", isChat: true },
-  { text: "Explain market trends", isChat: true },
-  { text: "Top trending stocks", href: "/dashboard/stocks", isChat: false },
-  { text: "Latest news", href: "/dashboard/news", isChat: false },
+const suggestionKeys = [
+  { key: "chat.suggestions.analyzeNvidia", isChat: true },
+  { key: "chat.suggestions.explainTrends", isChat: true },
+  { key: "chat.suggestions.trendingStocks", href: "/dashboard/stocks", isChat: false },
+  { key: "chat.suggestions.latestNews", href: "/dashboard/news", isChat: false },
 ];
 
 export function ChatWelcome({
@@ -33,10 +34,17 @@ export function ChatWelcome({
   onSelectModel,
   availableProviders,
 }: ChatWelcomeProps) {
+  const { t } = useTranslation();
   const [query, setQuery] = useState("");
   const [isFocused, setIsFocused] = useState(false);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const router = useRouter();
+
+  const suggestions = suggestionKeys.map((s) => ({
+    text: t(s.key),
+    isChat: s.isChat,
+    ...(s.href ? { href: s.href } : {}),
+  }));
 
   // Whether the user has any usable model
   const hasAnyModel =
@@ -73,18 +81,24 @@ export function ChatWelcome({
       <div className="w-full max-w-2xl mx-auto text-center mb-8 animate-fade-in">
         {/* Badge */}
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-gradient-to-r from-primary/10 to-emerald-500/10 border border-primary/20 text-primary text-xs font-bold mb-6">
-          AI-Powered Insights
+          {t("chat.badge")}
         </div>
 
         {/* Heading */}
         <h1 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-3 tracking-tight">
-          What would you like to <span className="text-primary">explore</span>?
+          {(() => {
+            const raw = t("chat.heading");
+            const parts = raw.split(/<highlight>|<\/highlight>/);
+            if (parts.length === 3) {
+              return <>{parts[0]}<span className="text-primary">{parts[1]}</span>{parts[2]}</>;
+            }
+            return raw;
+          })()}
         </h1>
 
         {/* Description */}
         <p className="text-gray-600 dark:text-white/60 text-sm max-w-xl mx-auto">
-          Ask about stocks, market trends, or browse our curated insights
-          powered by AI
+          {t("chat.description")}
         </p>
       </div>
 

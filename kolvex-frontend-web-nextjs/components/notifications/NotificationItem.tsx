@@ -51,7 +51,7 @@ const notificationConfig: Record<
   },
   POSITION_INCREASE: {
     icon: TrendingUp,
-    iconColor: "text-blue-500",
+    iconColor: "text-gery-500",
     bgColor: "bg-blue-500/10",
     label: "Add",
   },
@@ -120,7 +120,7 @@ export function NotificationItem({
             ? "bg-gradient-to-r from-primary/[0.03] to-transparent border-primary/20 dark:border-primary/30 shadow-sm"
             : "bg-transparent border-transparent hover:bg-gray-50/50 dark:hover:bg-white/[0.02]"
         )}
-        // onClick={() => onClick(notification)}
+      // onClick={() => onClick(notification)}
       >
         {/* 未读指示器 - 左侧渐变条 */}
         {!isRead && (

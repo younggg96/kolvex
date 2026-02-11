@@ -3,6 +3,7 @@
 import { RefreshCw } from "lucide-react";
 import { HeroSection } from "@/components/ui/hero-section";
 import { Button } from "@/components/ui/button";
+import { useTranslation } from "@/lib/i18n";
 
 interface InvestorsHeroSectionProps {
   className?: string;
@@ -15,11 +16,13 @@ export function InvestorsHeroSection({
   syncing = false,
   onSync,
 }: InvestorsHeroSectionProps) {
+  const { t } = useTranslation();
+
   return (
     <HeroSection
       className={className}
-      title="Superinvestors"
-      description="Track 13F filings from top institutional investors"
+      title={t("investors.hero.title")}
+      description={t("investors.hero.description")}
       actions={
         onSync && (
           <Button
@@ -31,27 +34,10 @@ export function InvestorsHeroSection({
             <RefreshCw
               className={`h-4 w-4 mr-2 ${syncing ? "animate-spin" : ""}`}
             />
-            {syncing ? "Syncing..." : "Sync Data"}
+            {syncing ? t("investors.syncing") : t("investors.hero.syncData")}
           </Button>
         )
       }
     />
   );
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
