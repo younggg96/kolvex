@@ -52,7 +52,8 @@ const PRIVACY_SETTINGS: PrivacySettingItem[] = [
   // Position settings
   { key: "show_shares", label: "Shares", category: "position" },
   { key: "show_position_value", label: "Value", category: "position" },
-  { key: "show_position_pnl", label: "P&L", category: "position" },
+  { key: "show_position_pnl", label: "Total P&L", category: "position" },
+  { key: "show_position_pnl_per_share", label: "P&L/Share", category: "position" },
   { key: "show_position_weight", label: "Weight", category: "position" },
   { key: "show_position_cost", label: "Cost", category: "position" },
 ];

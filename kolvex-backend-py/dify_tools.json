@@ -9899,7 +9899,19 @@
               }
             ],
             "title": "Show Position Pnl",
-            "description": "Show P&L per position"
+            "description": "Show total P&L per position"
+          },
+          "show_position_pnl_per_share": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Show Position Pnl Per Share",
+            "description": "Show P&L per share per position"
           },
           "show_position_weight": {
             "anyOf": [

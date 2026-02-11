@@ -56,6 +56,10 @@ export function useEquitySort() {
             aVal = a.open_pnl || 0;
             bVal = b.open_pnl || 0;
             break;
+          case "pnl_per_share":
+            aVal = (a.price || 0) - (a.average_purchase_price || 0);
+            bVal = (b.price || 0) - (b.average_purchase_price || 0);
+            break;
           case "weight":
             aVal = a.weight_percent || 0;
             bVal = b.weight_percent || 0;
@@ -138,6 +142,11 @@ export function useOptionSort() {
             const bCost = (b.average_purchase_price || 0) * b.units;
             aVal = (a.price || 0) * a.units * 100 - aCost;
             bVal = (b.price || 0) * b.units * 100 - bCost;
+            break;
+          case "pnl_per_share":
+            // Per-share P&L for options: price - (average_purchase_price / 100)
+            aVal = (a.price || 0) - ((a.average_purchase_price || 0) / 100);
+            bVal = (b.price || 0) - ((b.average_purchase_price || 0) / 100);
             break;
           case "weight":
             aVal = a.weight_percent || 0;

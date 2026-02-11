@@ -142,6 +142,7 @@ export interface PrivacySettings {
   show_shares: boolean;
   show_position_value: boolean;
   show_position_pnl: boolean;
+  show_position_pnl_per_share: boolean;
   show_position_weight: boolean;
   show_position_cost: boolean;
   hidden_accounts: string[]; // Account IDs to hide

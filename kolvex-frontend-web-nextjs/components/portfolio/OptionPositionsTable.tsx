@@ -33,6 +33,7 @@ export function OptionPositionsTable({
   positions,
   isOwner,
   isPublic,
+  privacySettings,
   sortKey,
   sortDir,
   onSort,
@@ -115,8 +116,17 @@ export function OptionPositionsTable({
                 type="amount"
               />
               <SortableHeader
-                label="P&L"
+                label="Total P&L"
                 sortKey="pnl"
+                currentSortKey={sortKey}
+                sortDirection={sortDir}
+                onSort={onSort}
+                align="right"
+                type="amount"
+              />
+              <SortableHeader
+                label="P&L/Share"
+                sortKey="pnl_per_share"
                 currentSortKey={sortKey}
                 sortDirection={sortDir}
                 onSort={onSort}
@@ -157,9 +167,24 @@ export function OptionPositionsTable({
 
               const value = safeMarketValue ?? safePrice;
               const cost = (safeAvgPrice as number) / 100;
-              const pnl =
-                (pos.weight_percent ?? 0) < 0 ? cost * 100 - value : value - cost * 100;
+              const isShort = (pos.weight_percent ?? 0) < 0;
+              const costBasis = Math.abs(cost * 100);
+              const currentValue = Math.abs(value);
+              // Short: profit when option loses value (premium received - current cost to close)
+              // Long: profit when option gains value (current value - cost paid)
+              const pnl = isShort
+                ? costBasis - currentValue
+                : currentValue - costBasis;
               const profit = pnl >= 0;
+
+              // P&L per share: option price - cost per share
+              // cost = average_purchase_price / 100 (per-share cost)
+              const pnlPerShare = isShort
+                ? Math.abs(cost) - Math.abs(safePrice)
+                : Math.abs(safePrice) - Math.abs(cost);
+              const pnlPerShareProfit = pnlPerShare >= 0;
+              // Privacy: per-share PnL visibility (owner always sees, public checks setting)
+              const showPnlPerShare = isOwner || privacySettings?.show_position_pnl_per_share !== false;
 
               // Whether to completely hide (secret option)
               const isSecretOption = isHiddenPosition && !isOwner;
@@ -302,6 +327,23 @@ export function OptionPositionsTable({
                           <ArrowDownRight className="w-3 h-3" />
                         )}
                         {formatCurrency(pnl)}
+                      </span>
+                    )}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {isSecretOption || !showPnlPerShare || isHiddenValue(pos.price) || isHiddenValue(pos.average_purchase_price) ? (
+                      <span className="text-muted-foreground">***</span>
+                    ) : (
+                      <span
+                        className={`inline-flex items-center gap-0.5 tabular-nums font-medium ${pnlPerShareProfit ? "text-green-600" : "text-red-600"
+                          }`}
+                      >
+                        {pnlPerShareProfit ? (
+                          <ArrowUpRight className="w-3 h-3" />
+                        ) : (
+                          <ArrowDownRight className="w-3 h-3" />
+                        )}
+                        {formatCurrency(Math.abs(pnlPerShare))}
                       </span>
                     )}
                   </TableCell>

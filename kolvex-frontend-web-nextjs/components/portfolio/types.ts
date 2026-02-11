@@ -2,6 +2,7 @@ import type {
   SnapTradeConnectionStatus,
   SnapTradeHoldings,
   SnapTradePosition,
+  PrivacySettings,
 } from "@/lib/supabase/database.types";
 
 // Re-export PortfolioHeaderActionsProps from its source
@@ -15,6 +16,7 @@ export type EquitySortKey =
   | "units"
   | "value"
   | "pnl"
+  | "pnl_per_share"
   | "weight";
 
 export type OptionSortKey =
@@ -25,6 +27,7 @@ export type OptionSortKey =
   | "units"
   | "value"
   | "pnl"
+  | "pnl_per_share"
   | "weight";
 
 // Import for use in this file
@@ -51,6 +54,7 @@ export interface EquityPositionsTableProps {
   positions: SnapTradePosition[];
   isOwner: boolean;
   isPublic: boolean;
+  privacySettings?: PrivacySettings;
   sortKey: EquitySortKey | null;
   sortDir: "asc" | "desc";
   onSort: (key: EquitySortKey) => void;
@@ -66,6 +70,7 @@ export interface OptionPositionsTableProps {
   positions: SnapTradePosition[];
   isOwner: boolean;
   isPublic: boolean;
+  privacySettings?: PrivacySettings;
   sortKey: OptionSortKey | null;
   sortDir: "asc" | "desc";
   onSort: (key: OptionSortKey) => void;

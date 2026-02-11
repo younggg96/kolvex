@@ -32,6 +32,7 @@ export function EquityPositionsTable({
   positions,
   isOwner,
   isPublic,
+  privacySettings,
   sortKey,
   sortDir,
   onSort,
@@ -97,8 +98,17 @@ export function EquityPositionsTable({
               type="amount"
             />
             <SortableHeader
-              label="P&L"
+              label="Total P&L"
               sortKey="pnl"
+              currentSortKey={sortKey}
+              sortDirection={sortDir}
+              onSort={onSort}
+              align="right"
+              type="amount"
+            />
+            <SortableHeader
+              label="P&L/Share"
+              sortKey="pnl_per_share"
               currentSortKey={sortKey}
               sortDirection={sortDir}
               onSort={onSort}
@@ -127,6 +137,13 @@ export function EquityPositionsTable({
             const isHiddenPosition = pos.is_hidden || pos.units == null;
             const pnl = pos.open_pnl ?? 0;
             const profit = pnl >= 0;
+            // P&L per share = current price - average purchase price
+            const safePrice = isHiddenValue(pos.price) ? 0 : (pos.price as number);
+            const safeAvgPrice = isHiddenValue(pos.average_purchase_price) ? 0 : (pos.average_purchase_price as number);
+            const pnlPerShare = safePrice - safeAvgPrice;
+            const pnlPerShareProfit = pnlPerShare >= 0;
+            // Privacy: per-share PnL visibility (owner always sees, public checks setting)
+            const showPnlPerShare = isOwner || privacySettings?.show_position_pnl_per_share !== false;
             const isSecretStock = isHiddenPosition && !isOwner;
 
             return (
@@ -227,6 +244,23 @@ export function EquityPositionsTable({
                         <ArrowDownRight className="w-3 h-3" />
                       )}
                       {formatCurrency(Math.abs(pnl))}
+                    </span>
+                  )}
+                </TableCell>
+                <TableCell className="text-right">
+                  {isSecretStock || !showPnlPerShare || isHiddenValue(pos.price) || isHiddenValue(pos.average_purchase_price) ? (
+                    <span className="text-muted-foreground">***</span>
+                  ) : (
+                    <span
+                      className={`inline-flex items-center gap-0.5 tabular-nums font-medium ${pnlPerShareProfit ? "text-green-600" : "text-red-600"
+                        }`}
+                    >
+                      {pnlPerShareProfit ? (
+                        <ArrowUpRight className="w-3 h-3" />
+                      ) : (
+                        <ArrowDownRight className="w-3 h-3" />
+                      )}
+                      {formatCurrency(Math.abs(pnlPerShare))}
                     </span>
                   )}
                 </TableCell>

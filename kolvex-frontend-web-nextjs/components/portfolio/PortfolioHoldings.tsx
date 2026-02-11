@@ -367,6 +367,7 @@ export default function PortfolioHoldings({
                   onToggle={() => toggleAccount(account.id)}
                   isOwner={isOwner}
                   isPublic={holdings?.is_public || false}
+                  privacySettings={holdings?.privacy_settings}
                   equitySortKey={equitySort.sortKey}
                   equitySortDir={equitySort.sortDir}
                   onEquitySort={equitySort.handleSort}

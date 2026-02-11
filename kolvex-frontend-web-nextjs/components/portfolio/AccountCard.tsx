@@ -17,6 +17,7 @@ import type {
   EquitySortKey,
   OptionSortKey,
 } from "./types";
+import type { PrivacySettings } from "@/lib/supabase/database.types";
 
 interface SnapTradeAccount {
   id: string;
@@ -32,6 +33,7 @@ interface AccountCardProps {
   onToggle: () => void;
   isOwner: boolean;
   isPublic: boolean;
+  privacySettings?: PrivacySettings;
   // Equity sorting
   equitySortKey: EquitySortKey | null;
   equitySortDir: "asc" | "desc";
@@ -58,6 +60,7 @@ export function AccountCard({
   onToggle,
   isOwner,
   isPublic,
+  privacySettings,
   equitySortKey,
   equitySortDir,
   onEquitySort,
@@ -124,6 +127,7 @@ export function AccountCard({
               positions={sortEquityPositions(equityPositions)}
               isOwner={isOwner}
               isPublic={isPublic}
+              privacySettings={privacySettings}
               sortKey={equitySortKey}
               sortDir={equitySortDir}
               onSort={onEquitySort}
@@ -137,6 +141,7 @@ export function AccountCard({
                 positions={sortOptionPositions(optionPositions)}
                 isOwner={isOwner}
                 isPublic={isPublic}
+                privacySettings={privacySettings}
                 sortKey={optionSortKey}
                 sortDir={optionSortDir}
                 onSort={onOptionSort}
