@@ -55,7 +55,6 @@ const PRIVACY_SETTINGS: PrivacySettingItem[] = [
   { key: "show_position_value", labelKey: "portfolio.privacy.valueLabel", category: "position" },
   { key: "show_position_pnl", labelKey: "portfolio.privacy.positionPnl", category: "position" },
   { key: "show_position_pnl_per_share", labelKey: "portfolio.privacy.positionPnlPerShare", category: "position" },
-  { key: "show_position_weight", labelKey: "portfolio.privacy.weightLabel", category: "position" },
   { key: "show_position_cost", labelKey: "portfolio.privacy.costLabel", category: "position" },
 ];
 
@@ -228,14 +227,12 @@ export default function PrivacySettingsDialog({
       <div className="flex items-center justify-between py-2 px-3 rounded-md hover:bg-muted/40 transition-colors group">
         <div className="flex items-center gap-2.5">
           <div
-            className={`w-1.5 h-1.5 rounded-full transition-colors ${
-              isVisible ? "bg-primary" : "bg-muted-foreground/30"
-            }`}
+            className={`w-1.5 h-1.5 rounded-full transition-colors ${isVisible ? "bg-primary" : "bg-muted-foreground/30"
+              }`}
           />
           <span
-            className={`text-xs transition-colors ${
-              isVisible ? "text-foreground" : "text-muted-foreground"
-            }`}
+            className={`text-xs transition-colors ${isVisible ? "text-foreground" : "text-muted-foreground"
+              }`}
           >
             {t(item.labelKey)}
           </span>
@@ -258,15 +255,13 @@ export default function PrivacySettingsDialog({
       <div className="flex items-center justify-between py-2 px-3 rounded-md hover:bg-muted/40 transition-colors group">
         <div className="flex items-center gap-2.5">
           <Building2
-            className={`w-4 h-4 transition-colors ${
-              isHidden ? "text-muted-foreground/30" : "text-primary"
-            }`}
+            className={`w-4 h-4 transition-colors ${isHidden ? "text-muted-foreground/30" : "text-primary"
+              }`}
           />
           <div>
             <span
-              className={`text-xs transition-colors ${
-                isHidden ? "text-muted-foreground" : "text-foreground"
-              }`}
+              className={`text-xs transition-colors ${isHidden ? "text-muted-foreground" : "text-foreground"
+                }`}
             >
               {account.account_name || t("portfolio.holdings.brokerageAccount")}
             </span>
@@ -339,9 +334,8 @@ export default function PrivacySettingsDialog({
                   )}
                 </Button>
                 <ChevronDown
-                  className={`w-4 h-4 text-muted-foreground transition-transform ${
-                    isOpen ? "rotate-180" : ""
-                  }`}
+                  className={`w-4 h-4 text-muted-foreground transition-transform ${isOpen ? "rotate-180" : ""
+                    }`}
                 />
               </div>
             </div>
@@ -396,9 +390,8 @@ export default function PrivacySettingsDialog({
                   )}
                 </Button>
                 <ChevronDown
-                  className={`w-4 h-4 text-muted-foreground transition-transform ${
-                    accountsOpen ? "rotate-180" : ""
-                  }`}
+                  className={`w-4 h-4 text-muted-foreground transition-transform ${accountsOpen ? "rotate-180" : ""
+                    }`}
                 />
               </div>
             </div>

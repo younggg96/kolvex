@@ -52,7 +52,7 @@ export function OptionPositionsTable({
         {t("portfolio.table.optionsContracts")}
       </div>
       <div className="overflow-x-auto">
-        <Table>
+        <Table className="min-w-[1100px]">
           <TableHeader>
             <TableRow>
               <SortableHeader
@@ -63,7 +63,7 @@ export function OptionPositionsTable({
                 onSort={onSort}
                 align="left"
                 type="alpha"
-                className="w-[15%] pl-4"
+                className="w-[180px] min-w-[180px] pl-4"
               />
               <SortableHeader
                 label={t("portfolio.table.expiration")}
@@ -73,9 +73,10 @@ export function OptionPositionsTable({
                 onSort={onSort}
                 align="center"
                 type="amount"
+                className="w-[90px] min-w-[90px]"
               />
-              <TableHead className="w-[80px] hidden sm:table-cell text-center">
-                <span className="text-xs text-muted-foreground">{t("portfolio.table.chart")}</span>
+              <TableHead className="w-[80px] min-w-[80px] hidden sm:table-cell text-center">
+                <span className="text-xs text-muted-foreground whitespace-nowrap">{t("portfolio.table.chart")}</span>
               </TableHead>
               <SortableHeader
                 label={t("portfolio.table.strike")}
@@ -85,7 +86,7 @@ export function OptionPositionsTable({
                 onSort={onSort}
                 align="center"
                 type="amount"
-                className="!w-[240px]"
+                className="w-[160px] min-w-[160px]"
               />
               <SortableHeader
                 label={t("portfolio.table.price")}
@@ -95,9 +96,10 @@ export function OptionPositionsTable({
                 onSort={onSort}
                 align="center"
                 type="amount"
+                className="w-[80px] min-w-[80px]"
               />
-              <TableHead className="text-center">
-                <span className="text-xs text-muted-foreground">{t("portfolio.table.cost")}</span>
+              <TableHead className="text-center w-[80px] min-w-[80px]">
+                <span className="text-xs text-muted-foreground whitespace-nowrap">{t("portfolio.table.cost")}</span>
               </TableHead>
               <SortableHeader
                 label={t("portfolio.table.contracts")}
@@ -107,6 +109,7 @@ export function OptionPositionsTable({
                 onSort={onSort}
                 align="center"
                 type="numeric"
+                className="w-[80px] min-w-[80px]"
               />
               <SortableHeader
                 label={t("portfolio.table.value")}
@@ -116,6 +119,7 @@ export function OptionPositionsTable({
                 onSort={onSort}
                 align="center"
                 type="amount"
+                className="w-[80px] min-w-[80px]"
               />
               <SortableHeader
                 label={t("portfolio.table.totalPnl")}
@@ -125,6 +129,7 @@ export function OptionPositionsTable({
                 onSort={onSort}
                 align="right"
                 type="amount"
+                className="w-[90px] min-w-[90px]"
               />
               <SortableHeader
                 label={t("portfolio.table.pnlPerShare")}
@@ -134,6 +139,7 @@ export function OptionPositionsTable({
                 onSort={onSort}
                 align="right"
                 type="amount"
+                className="w-[90px] min-w-[90px]"
               />
               <SortableHeader
                 label={t("portfolio.table.weight")}
@@ -143,11 +149,11 @@ export function OptionPositionsTable({
                 onSort={onSort}
                 align="right"
                 type="numeric"
-                className={isOwner && isPublic ? "" : "pr-4"}
+                className={`w-[70px] min-w-[70px] ${isOwner && isPublic ? "" : "pr-4"}`}
               />
               {isOwner && isPublic && (
-                <TableHead className="w-[50px] pr-4">
-                  <span className="text-xs text-muted-foreground">{t("portfolio.table.public")}</span>
+                <TableHead className="w-[50px] min-w-[50px] pr-4">
+                  <span className="text-xs text-muted-foreground whitespace-nowrap">{t("portfolio.table.public")}</span>
                 </TableHead>
               )}
             </TableRow>
@@ -172,12 +178,14 @@ export function OptionPositionsTable({
               const isShort = (pos.weight_percent ?? 0) < 0;
               const costBasis = Math.abs(cost * 100);
               const currentValue = Math.abs(value);
+              const units = Math.abs(pos.units);
               // Short: profit when option loses value (premium received - current cost to close)
               // Long: profit when option gains value (current value - cost paid)
-              const pnl = isShort
+              const calPnl = isShort
                 ? costBasis - currentValue
                 : currentValue - costBasis;
-              const profit = pnl >= 0;
+              const profit = calPnl >= 0;
+              const pnl = Math.abs(calPnl) * units;
 
               // P&L per share: option price - cost per share
               // cost = average_purchase_price / 100 (per-share cost)
@@ -262,8 +270,8 @@ export function OptionPositionsTable({
                       )}
                     </div>
                   </TableCell>
-                  <TableCell className="text-center tabular-nums !w-[240px]">
-                    <div className="flex justify-center items-center gap-1">
+                  <TableCell className="text-center tabular-nums w-[160px] min-w-[160px]">
+                    <div className="flex justify-center items-center gap-1 whitespace-nowrap">
                       {isSecretOption ? (
                         <span className="text-muted-foreground">***</span>
                       ) : pos.strike_price ? (
@@ -274,11 +282,11 @@ export function OptionPositionsTable({
                                 ? "destructive"
                                 : "default"
                             }
-                            className="!text-[12px]"
+                            className="!text-[12px] shrink-0"
                           >
                             {(pos.weight_percent ?? 0) < 0 ? t("portfolio.table.short") : t("portfolio.table.long")}
                           </Badge>
-                          {formatCurrency(pos.strike_price, "USD", 0, 0)} &nbsp;
+                          {formatCurrency(pos.strike_price, "USD", 0, 0)}{" "}
                           {pos.option_type || "-"}
                         </div>
                       ) : (
@@ -316,7 +324,7 @@ export function OptionPositionsTable({
                     )}
                   </TableCell>
                   <TableCell className="text-right">
-                    {isSecretOption || isHiddenValue(pos.open_pnl) ? (
+                    {isSecretOption || isHiddenValue(pos.open_pnl || !privacySettings?.show_shares) ? (
                       <span className="text-muted-foreground">***</span>
                     ) : (
                       <span
