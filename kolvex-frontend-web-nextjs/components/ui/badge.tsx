@@ -22,6 +22,7 @@ const badgeVariants = cva(
         sm: "px-2 py-0.5 text-xs",
         md: "px-2.5 py-0.5 text-sm",
         lg: "px-3 py-1 text-sm",
+        xxs: "px-1.5 py-px text-[10px]",
       },
     },
     defaultVariants: {
@@ -33,8 +34,8 @@ const badgeVariants = cva(
 
 export interface BadgeProps
   extends React.HTMLAttributes<HTMLDivElement>,
-    VariantProps<typeof badgeVariants> {
-  size?: "default" | "xs" | "sm" | "md" | "lg";
+  VariantProps<typeof badgeVariants> {
+  size?: "default" | "xs" | "sm" | "md" | "lg" | "xxs";
 }
 
 function Badge({ className, variant, size, ...props }: BadgeProps) {

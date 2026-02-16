@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/table";
 import { SortableHeader } from "@/components/ui/sortable-header";
 import CompanyLogo from "@/components/ui/company-logo";
+import { Badge } from "@/components/ui/badge";
 import { WeightIndicator } from "@/components/ui/weight-indicator";
 import MiniSparkline from "@/components/stock/MiniSparkline";
 import { formatCurrency } from "@/lib/snaptradeApi";
@@ -139,10 +140,11 @@ export function EquityPositionsTable({
             const isHiddenPosition = pos.is_hidden || pos.units == null;
             const pnl = pos.open_pnl ?? 0;
             const profit = pnl >= 0;
+            const isShort = !isHiddenValue(pos.units) && (pos.units as number) < 0;
             // P&L per share = current price - average purchase price
             const safePrice = isHiddenValue(pos.price) ? 0 : (pos.price as number);
             const safeAvgPrice = isHiddenValue(pos.average_purchase_price) ? 0 : (pos.average_purchase_price as number);
-            const pnlPerShare = safePrice - safeAvgPrice;
+            const pnlPerShare = isShort ? safeAvgPrice - safePrice : safePrice - safeAvgPrice;
             const pnlPerShareProfit = pnlPerShare >= 0;
             // Privacy: per-share PnL visibility (owner always sees, public checks setting)
             const showPnlPerShare = isOwner || privacySettings?.show_position_pnl_per_share !== false;
@@ -178,7 +180,9 @@ export function EquityPositionsTable({
                         {isSecretStock ? (
                           <span className="text-muted-foreground">****</span>
                         ) : (
-                          pos.symbol
+                          <span>
+                            {pos.symbol}
+                          </span>
                         )}
                       </div>
                       <div
@@ -219,11 +223,18 @@ export function EquityPositionsTable({
                   )}
                 </TableCell>
                 <TableCell className="text-center tabular-nums">
-                  {isSecretStock || isHiddenValue(pos.units) ? (
-                    <span className="text-muted-foreground">***</span>
-                  ) : (
-                    pos.units
-                  )}
+                  <div className="inline-flex items-center justify-center gap-1">
+                    {isShort && (
+                      <Badge variant="destructive" size="xxs" className="!text-[10px]">
+                        {t("portfolio.table.short")}
+                      </Badge>
+                    )}
+                    {isSecretStock || isHiddenValue(pos.units) ? (
+                      <span className="text-muted-foreground">***</span>
+                    ) : (
+                      <span className="tabular-nums">{Math.abs(pos.units)}</span>
+                    )}
+                  </div>
                 </TableCell>
                 <TableCell className="text-right tabular-nums font-medium">
                   {isSecretStock || isHiddenValue(pos.market_value) ? (
