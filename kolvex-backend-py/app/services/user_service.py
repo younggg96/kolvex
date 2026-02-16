@@ -9,6 +9,7 @@ from app.schemas.user import (
     UserProfileUpdate,
     UserProfileResponse,
     UserThemeUpdate,
+    UserLocaleUpdate,
     UserNotificationUpdate,
     UserFollowResponse,
     FollowStatusResponse,
@@ -222,6 +223,43 @@ class UserService:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"update user theme error: {str(e)}",
+            )
+
+    async def update_user_locale(
+        self, user_id: str, locale_update: UserLocaleUpdate
+    ) -> UserProfileResponse:
+        """
+        更新用户语言偏好
+
+        Args:
+            user_id: 用户 ID
+            locale_update: 语言更新数据
+
+        Returns:
+            UserProfileResponse: 更新后的用户资料
+        """
+        try:
+            response = (
+                self.supabase.table("user_profiles")
+                .update({"locale": locale_update.locale})
+                .eq("id", user_id)
+                .execute()
+            )
+
+            if not response.data:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="user profile not found",
+                )
+
+            return UserProfileResponse(**response.data[0])
+
+        except HTTPException:
+            raise
+        except Exception as e:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"update user locale error: {str(e)}",
             )
 
     async def update_user_notification(

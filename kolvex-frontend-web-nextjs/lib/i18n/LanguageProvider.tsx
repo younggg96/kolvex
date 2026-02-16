@@ -23,6 +23,7 @@ export interface LanguageContextValue {
 // ── Constants ──────────────────────────────────────────────────
 const STORAGE_KEY = "kolvex-locale";
 const DEFAULT_LOCALE: Locale = "en";
+const VALID_LOCALES: Locale[] = ["en", "zh"];
 
 const translations: Record<Locale, Record<string, unknown>> = {
   en,
@@ -35,6 +36,27 @@ export const SUPPORTED_LOCALES: { value: Locale; label: string; nativeLabel: str
 ];
 
 // ── Helpers ────────────────────────────────────────────────────
+
+/**
+ * Detect browser/system language and map it to a supported locale.
+ * Returns DEFAULT_LOCALE if no supported language is detected.
+ */
+function detectBrowserLocale(): Locale {
+  if (typeof navigator === "undefined") return DEFAULT_LOCALE;
+
+  const languages = navigator.languages?.length
+    ? navigator.languages
+    : [navigator.language];
+
+  for (const lang of languages) {
+    const code = lang.toLowerCase().split("-")[0];
+    if (VALID_LOCALES.includes(code as Locale)) {
+      return code as Locale;
+    }
+  }
+
+  return DEFAULT_LOCALE;
+}
 
 /**
  * Resolve a dot-separated key path from a nested object.
@@ -73,15 +95,21 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
   const [locale, setLocaleState] = useState<Locale>(DEFAULT_LOCALE);
   const [mounted, setMounted] = useState(false);
 
-  // Restore from localStorage on mount
+  // Restore from localStorage on mount, fallback to browser language
   useEffect(() => {
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored && (stored === "en" || stored === "zh")) {
+      if (stored && VALID_LOCALES.includes(stored as Locale)) {
         setLocaleState(stored as Locale);
+      } else {
+        // No stored preference — use browser/system language
+        const browserLocale = detectBrowserLocale();
+        setLocaleState(browserLocale);
+        localStorage.setItem(STORAGE_KEY, browserLocale);
       }
     } catch {
       // localStorage unavailable (SSR or permission denied)
+      setLocaleState(detectBrowserLocale());
     }
     setMounted(true);
   }, []);

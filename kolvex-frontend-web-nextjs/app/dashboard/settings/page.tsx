@@ -161,6 +161,7 @@ function SettingsContent() {
     loading: profileLoading,
     updateProfile,
     updateTheme: updateProfileTheme,
+    updateLocale: updateProfileLocale,
     updateNotifications,
     refetch: refreshProfile,
   } = useCurrentUserProfile();
@@ -561,10 +562,18 @@ function SettingsContent() {
     }
   };
 
-  const handleLanguageChange = (newLocale: string) => {
+  const handleLanguageChange = async (newLocale: string) => {
     setLocale(newLocale as Locale);
     const langName = SUPPORTED_LOCALES.find((l) => l.value === newLocale)?.nativeLabel || newLocale;
     toast.success(t("settings.preferences.languageChanged", { language: langName }));
+
+    // Persist to Supabase if user is authenticated
+    if (profile) {
+      const result = await updateProfileLocale(newLocale as "en" | "zh");
+      if (!result.success) {
+        console.error("Failed to save locale to server:", result.error);
+      }
+    }
   };
 
   const tabOptions = settingsTabDefs.map((tab) => ({

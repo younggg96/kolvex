@@ -1,5 +1,5 @@
 import { useUserProfileContext } from "@/components/user/UserProfileProvider";
-import type { UserProfile, Theme } from "@/lib/supabase/database.types";
+import type { UserProfile, Theme, UserLocale } from "@/lib/supabase/database.types";
 
 export interface UserProfileUpdate {
   username?: string;
@@ -70,6 +70,33 @@ export function useCurrentUserProfile() {
     }
   };
 
+  const updateLocale = async (locale: UserLocale): Promise<ApiResult> => {
+    try {
+      const response = await fetch("/api/users/me/locale", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ locale }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || "Failed to update locale");
+      }
+
+      const data = await response.json();
+      await refresh();
+      return { success: true, data };
+    } catch (err) {
+      console.error("Error updating locale:", err);
+      return {
+        success: false,
+        error: err instanceof Error ? err.message : "An error occurred",
+      };
+    }
+  };
+
   const updateNotifications = async (
     settings: NotificationUpdate
   ): Promise<ApiResult> => {
@@ -89,6 +116,7 @@ export function useCurrentUserProfile() {
     refetch: refresh,
     updateProfile,
     updateTheme,
+    updateLocale,
     updateNotifications,
   };
 }

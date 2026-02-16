@@ -24,6 +24,13 @@ class ThemeEnum(str, Enum):
     SYSTEM = "SYSTEM"
 
 
+class LocaleEnum(str, Enum):
+    """语言枚举"""
+
+    EN = "en"
+    ZH = "zh"
+
+
 # ===== 请求 Schemas =====
 
 
@@ -57,6 +64,14 @@ class UserThemeUpdate(BaseModel):
     model_config = ConfigDict(use_enum_values=True)
 
 
+class UserLocaleUpdate(BaseModel):
+    """更新用户语言偏好"""
+
+    locale: LocaleEnum
+
+    model_config = ConfigDict(use_enum_values=True)
+
+
 class UserNotificationUpdate(BaseModel):
     """更新用户通知设置"""
 
@@ -79,6 +94,7 @@ class UserProfileResponse(BaseModel):
     phone_e164: Optional[str] = None
     membership: MembershipEnum
     theme: Optional[ThemeEnum] = None
+    locale: Optional[str] = None
     email_notifications_enabled: bool = True
     is_admin: bool = False
     created_at: datetime
@@ -97,6 +113,7 @@ class UserProfileResponse(BaseModel):
                 "phone_e164": "+1234567890",
                 "membership": "FREE",
                 "theme": "SYSTEM",
+                "locale": "en",
                 "email_notifications_enabled": True,
                 "is_admin": False,
                 "created_at": "2024-01-01T00:00:00Z",

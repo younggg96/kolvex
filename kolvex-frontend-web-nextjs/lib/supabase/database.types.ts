@@ -3,6 +3,7 @@
 export type Platform = "twitter" | "reddit" | "youtube" | "xiaohongshu";
 export type Theme = "LIGHT" | "DARK" | "SYSTEM";
 export type Membership = "FREE" | "PRO" | "ENTERPRISE";
+export type UserLocale = "en" | "zh";
 
 export interface UserProfile {
   id: string;
@@ -13,6 +14,7 @@ export interface UserProfile {
   phone_e164?: string;
   membership?: Membership;
   theme?: Theme;
+  locale?: UserLocale;
   email_notifications_enabled?: boolean;
   is_admin?: boolean;
   created_at: string;

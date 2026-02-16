@@ -348,6 +348,7 @@ export interface UserProfile {
   avatar_url: string | null;
   bio: string | null;
   theme: 'LIGHT' | 'DARK' | 'SYSTEM';
+  locale?: 'en' | 'zh';
   notification_settings: {
     email: boolean;
     push: boolean;

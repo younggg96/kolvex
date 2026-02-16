@@ -9,6 +9,8 @@ import {
   ReactNode,
 } from "react";
 import { useAuth } from "@/hooks/useAuth";
+import { useTranslation } from "@/lib/i18n";
+import type { Locale } from "@/lib/i18n";
 import type {
   UserProfile as DBUserProfile,
   ProfileUpdate,
@@ -39,6 +41,7 @@ interface UserProfileProviderProps {
 
 export function UserProfileProvider({ children }: UserProfileProviderProps) {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const { setLocale } = useTranslation();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -148,6 +151,13 @@ export function UserProfileProvider({ children }: UserProfileProviderProps) {
       fetchProfile();
     }
   }, [authLoading, hasFetched, fetchProfile]);
+
+  // Sync locale from user profile to LanguageProvider
+  useEffect(() => {
+    if (profile?.locale) {
+      setLocale(profile.locale as Locale);
+    }
+  }, [profile?.locale, setLocale]);
 
   // 当用户登出时重置状态
   useEffect(() => {

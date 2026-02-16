@@ -13,6 +13,7 @@ from app.schemas.user import (
     UserProfileUpdate,
     UserProfileResponse,
     UserThemeUpdate,
+    UserLocaleUpdate,
     UserNotificationUpdate,
     MessageResponse,
     UserFollowResponse,
@@ -76,6 +77,20 @@ async def update_current_user_theme(
     需要认证：Bearer token
     """
     return await user_service.update_user_theme(current_user_id, theme_update)
+
+
+@router.patch("/me/locale", response_model=UserProfileResponse, summary="更新语言偏好")
+async def update_current_user_locale(
+    locale_update: UserLocaleUpdate,
+    current_user_id: str = Depends(get_current_user_id),
+    user_service: UserService = Depends(get_user_service),
+):
+    """
+    更新当前用户的语言偏好
+
+    需要认证：Bearer token
+    """
+    return await user_service.update_user_locale(current_user_id, locale_update)
 
 
 @router.patch("/me/notifications", response_model=UserProfileResponse, summary="更新通知设置")

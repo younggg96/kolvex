@@ -24,6 +24,12 @@ class ThemeEnum(str, enum.Enum):
     SYSTEM = "SYSTEM"
 
 
+class LocaleEnum(str, enum.Enum):
+    """语言枚举"""
+    EN = "en"
+    ZH = "zh"
+
+
 class UserProfile(Base):
     """用户资料表模型
     
@@ -53,6 +59,9 @@ class UserProfile(Base):
         default=ThemeEnum.SYSTEM,
         nullable=True
     )
+    
+    # 语言偏好
+    locale = Column(String, nullable=True, default=None)
     
     # 通知设置 - 简化为单一开关
     email_notifications_enabled = Column(Boolean, default=True)
