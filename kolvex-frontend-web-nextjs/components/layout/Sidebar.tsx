@@ -21,6 +21,7 @@ import {
   BarChart3,
   MessageCircleIcon,
   ShieldCheck,
+  Activity,
 } from "lucide-react";
 import Image from "next/image";
 import UserMenu from "@/components/user/UserMenu";
@@ -99,6 +100,12 @@ const mainNavItemDefs = [
     icon: TrendingUp,
     titleKey: "sidebar.stocks",
     href: "/dashboard/stocks",
+    type: "link",
+  },
+  {
+    icon: Activity,
+    titleKey: "sidebar.optionsFlow",
+    href: "/dashboard/options-flow",
     type: "link",
   },
   {

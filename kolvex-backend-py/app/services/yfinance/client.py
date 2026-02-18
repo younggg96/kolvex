@@ -3,11 +3,52 @@ YFinance 客户端服务
 封装 yfinance 库的各种功能
 """
 
+import math
+
 import yfinance as yf
 from typing import Optional, Dict, Any, List
 from datetime import datetime, timedelta
 from functools import lru_cache
 import json
+
+
+def _safe_float(value, default: float = 0.0) -> float:
+    """Convert a value to float, handling NaN/Inf/None from pandas."""
+    if value is None:
+        return default
+    try:
+        f = float(value)
+        return default if math.isnan(f) or math.isinf(f) else round(f, 6)
+    except (ValueError, TypeError):
+        return default
+
+
+def _safe_int(value, default: int = 0) -> int:
+    """Convert a value to int, handling NaN/Inf/None from pandas."""
+    if value is None:
+        return default
+    try:
+        f = float(value)
+        return default if math.isnan(f) or math.isinf(f) else int(f)
+    except (ValueError, TypeError):
+        return default
+
+
+def _parse_option_row(row) -> Dict[str, Any]:
+    """Parse a single options row from a pandas DataFrame with NaN safety."""
+    return {
+        "contract_symbol": row.get("contractSymbol") or "",
+        "strike": _safe_float(row.get("strike")),
+        "last_price": _safe_float(row.get("lastPrice")),
+        "bid": _safe_float(row.get("bid")),
+        "ask": _safe_float(row.get("ask")),
+        "change": _safe_float(row.get("change")),
+        "percent_change": _safe_float(row.get("percentChange")),
+        "volume": _safe_int(row.get("volume")),
+        "open_interest": _safe_int(row.get("openInterest")),
+        "implied_volatility": _safe_float(row.get("impliedVolatility")),
+        "in_the_money": bool(row.get("inTheMoney", False)),
+    }
 
 
 class YFinanceService:
@@ -353,39 +394,13 @@ class YFinanceService:
 
         calls = []
         if not opt.calls.empty:
-            calls_df = opt.calls.head(20)  # 限制数量
-            for _, row in calls_df.iterrows():
-                calls.append({
-                    "contract_symbol": row.get("contractSymbol"),
-                    "strike": row.get("strike"),
-                    "last_price": row.get("lastPrice"),
-                    "bid": row.get("bid"),
-                    "ask": row.get("ask"),
-                    "change": row.get("change"),
-                    "percent_change": row.get("percentChange"),
-                    "volume": row.get("volume"),
-                    "open_interest": row.get("openInterest"),
-                    "implied_volatility": row.get("impliedVolatility"),
-                    "in_the_money": row.get("inTheMoney"),
-                })
+            for _, row in opt.calls.head(20).iterrows():
+                calls.append(_parse_option_row(row))
 
         puts = []
         if not opt.puts.empty:
-            puts_df = opt.puts.head(20)
-            for _, row in puts_df.iterrows():
-                puts.append({
-                    "contract_symbol": row.get("contractSymbol"),
-                    "strike": row.get("strike"),
-                    "last_price": row.get("lastPrice"),
-                    "bid": row.get("bid"),
-                    "ask": row.get("ask"),
-                    "change": row.get("change"),
-                    "percent_change": row.get("percentChange"),
-                    "volume": row.get("volume"),
-                    "open_interest": row.get("openInterest"),
-                    "implied_volatility": row.get("impliedVolatility"),
-                    "in_the_money": row.get("inTheMoney"),
-                })
+            for _, row in opt.puts.head(20).iterrows():
+                puts.append(_parse_option_row(row))
 
         return {
             "symbol": symbol.upper(),
@@ -415,36 +430,12 @@ class YFinanceService:
         calls = []
         if not opt.calls.empty:
             for _, row in opt.calls.iterrows():
-                calls.append({
-                    "contract_symbol": row.get("contractSymbol"),
-                    "strike": row.get("strike"),
-                    "last_price": row.get("lastPrice"),
-                    "bid": row.get("bid"),
-                    "ask": row.get("ask"),
-                    "change": row.get("change"),
-                    "percent_change": row.get("percentChange"),
-                    "volume": row.get("volume"),
-                    "open_interest": row.get("openInterest"),
-                    "implied_volatility": row.get("impliedVolatility"),
-                    "in_the_money": row.get("inTheMoney"),
-                })
+                calls.append(_parse_option_row(row))
 
         puts = []
         if not opt.puts.empty:
             for _, row in opt.puts.iterrows():
-                puts.append({
-                    "contract_symbol": row.get("contractSymbol"),
-                    "strike": row.get("strike"),
-                    "last_price": row.get("lastPrice"),
-                    "bid": row.get("bid"),
-                    "ask": row.get("ask"),
-                    "change": row.get("change"),
-                    "percent_change": row.get("percentChange"),
-                    "volume": row.get("volume"),
-                    "open_interest": row.get("openInterest"),
-                    "implied_volatility": row.get("impliedVolatility"),
-                    "in_the_money": row.get("inTheMoney"),
-                })
+                puts.append(_parse_option_row(row))
 
         return {
             "symbol": symbol.upper(),

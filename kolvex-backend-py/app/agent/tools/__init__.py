@@ -33,6 +33,10 @@ from app.agent.tools.search_tools import (
 from app.agent.tools.web_tools import (
     web_search,
 )
+from app.agent.tools.options_flow_tools import (
+    scan_unusual_options,
+    get_options_chain_summary,
+)
 
 # 所有可用工具列表
 ALL_TOOLS = [
@@ -53,6 +57,9 @@ ALL_TOOLS = [
     # Search tools
     search_knowledge_base,
     get_superinvestor_holdings,
+    # Options flow tools
+    scan_unusual_options,
+    get_options_chain_summary,
     # Web search
     web_search,
 ]
@@ -70,6 +77,8 @@ FINANCIAL_TOOLS = [
     get_user_portfolio,
     search_knowledge_base,
     get_superinvestor_holdings,
+    scan_unusual_options,
+    get_options_chain_summary,
     web_search,
 ]
 
@@ -84,6 +93,8 @@ RESEARCH_TOOLS = [
     analyze_kol_sentiment,
     search_knowledge_base,
     get_superinvestor_holdings,
+    scan_unusual_options,
+    get_options_chain_summary,
     web_search,
 ]
 
@@ -91,6 +102,7 @@ ALERT_TOOLS = [
     get_stock_quote,
     search_stock_news,
     get_kol_latest_tweets,
+    scan_unusual_options,
     web_search,
 ]
 
@@ -122,6 +134,8 @@ def get_tools_for_sources(
         get_stock_history,
         search_knowledge_base,
         get_superinvestor_holdings,
+        scan_unusual_options,
+        get_options_chain_summary,
     ]
 
     # 为当前用户创建绑定了 user_id 的 portfolio 工具

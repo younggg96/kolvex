@@ -333,6 +333,43 @@ def setup_scheduler():
             misfire_grace_time=3600,
         )
 
+        # ============================================================
+        # 任务 5: 盘中每 30 分钟扫描期权异动
+        # 美东时间 9:30-16:00 → 美西时间 6:30-13:00
+        # ============================================================
+        def scheduled_options_flow_scan():
+            """定时任务：扫描期权异动"""
+            from app.services.options_flow.service import get_options_flow_service
+
+            logger.info("⏰ [OPTIONS] 定时任务触发: 开始扫描期权异动")
+            try:
+                service = get_options_flow_service()
+                results = service.scan_multiple(max_expirations=3)
+                if results:
+                    saved = service.save_results(results)
+                    logger.info(
+                        f"✅ [OPTIONS] 扫描完成 - 发现 {len(results)} 条异动, "
+                        f"已保存 {saved} 条"
+                    )
+                else:
+                    logger.info("📭 [OPTIONS] 本轮扫描未发现异动")
+            except Exception as e:
+                logger.error(f"❌ [OPTIONS] 定时任务执行失败: {e}")
+
+        scheduler.add_job(
+            scheduled_options_flow_scan,
+            CronTrigger(
+                day_of_week="mon-fri",
+                hour="6-13",
+                minute="0,30",
+                timezone="America/Los_Angeles",
+            ),
+            id="options_flow_scan",
+            name="期权异动扫描 - 盘中每30分钟",
+            replace_existing=True,
+            misfire_grace_time=1800,
+        )
+
         scheduler.start()
         logger.info("✅ 定时任务调度器已启动")
 
@@ -366,6 +403,10 @@ def setup_scheduler():
         holdings_evening_job = scheduler.get_job("sync_all_holdings_evening")
         if holdings_evening_job:
             logger.info(f"📅 [HOLDINGS] 晚上同步下次执行时间: {holdings_evening_job.next_run_time}")
+
+        options_flow_job = scheduler.get_job("options_flow_scan")
+        if options_flow_job:
+            logger.info(f"📅 [OPTIONS] 期权异动扫描下次执行时间: {options_flow_job.next_run_time}")
 
     except ImportError:
         logger.warning("⚠️ APScheduler 未安装，定时任务功能不可用")
