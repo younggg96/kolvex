@@ -394,12 +394,12 @@ class YFinanceService:
 
         calls = []
         if not opt.calls.empty:
-            for _, row in opt.calls.head(20).iterrows():
+            for _, row in opt.calls.iterrows():
                 calls.append(_parse_option_row(row))
 
         puts = []
         if not opt.puts.empty:
-            for _, row in opt.puts.head(20).iterrows():
+            for _, row in opt.puts.iterrows():
                 puts.append(_parse_option_row(row))
 
         return {
