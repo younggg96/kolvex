@@ -40,7 +40,6 @@ export default function NewsArticleList({
           page: pageNum,
           page_size: pageSize,
           ticker: ticker,
-          tag: tag,
         });
 
         if (append && newsData) {
