@@ -310,8 +310,6 @@ export default function NewsCard({ article }: NewsCardProps) {
               </span>
             </>
           )}
-
-          <span className="text-[10px] text-muted-foreground/50">·</span>
           <span className="text-[11px] text-muted-foreground flex-shrink-0">
             {formatNewsDate(article.published_at)}
           </span>

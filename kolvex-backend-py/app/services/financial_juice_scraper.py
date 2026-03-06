@@ -262,6 +262,12 @@ class FinancialJuiceHomeScraper:
         t = re.sub(r"\d{1,2}:\d{2}\s*(AM|PM|am|pm)?\s*(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)?\s*\d{0,2}\.?", "", title)
         return re.sub(r"[^a-z0-9]", "", t.lower())
 
+    _JUNK_PATTERNS = re.compile(
+        r"join us|go real[- ]?time|don'?t like ads|go pro|subscribe now|sign up|"
+        r"free trial|premium access|upgrade your|limited time offer|need to know market risk",
+        re.IGNORECASE,
+    )
+
     def _add_article(
         self,
         title: str,
@@ -270,6 +276,8 @@ class FinancialJuiceHomeScraper:
         pub_time: str,
         tickers: List[str],
     ):
+        if self._JUNK_PATTERNS.search(title):
+            return
         norm = self._normalize_title(title)
         if norm and norm in self.seen_titles:
             return

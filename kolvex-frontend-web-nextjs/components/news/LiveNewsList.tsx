@@ -11,6 +11,9 @@ import { EmptyState, ErrorState } from "../common";
 /** Live news sources: FinancialJuice (crawled) + Yahoo Finance */
 const LIVE_NEWS_SOURCES = "financial_juice,yahoo_finance";
 
+const JUNK_RE =
+  /join us|go real-?time|don'?t like ads|go pro|subscribe now|sign up|free trial|premium access|upgrade your|need to know market risk/i;
+
 function normalizeTitle(t: string): string {
   const stripped = t
     .replace(/\d{1,2}:\d{2}\s*(?:AM|PM|am|pm)?\s*(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)?\s*\d{0,2}\.?/g, "")
@@ -94,6 +97,7 @@ export default function LiveNewsList({
     if (!newsData) return [];
     const seen = new Set<string>();
     return newsData.articles.filter((a) => {
+      if (JUNK_RE.test(a.title) || JUNK_RE.test(a.summary)) return false;
       const key = normalizeTitle(a.title);
       if (key && seen.has(key)) return false;
       if (key) seen.add(key);
