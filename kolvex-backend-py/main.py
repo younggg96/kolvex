@@ -85,6 +85,50 @@ def setup_scheduler():
         )
 
         # ============================================================
+        # 任务 2b: 每 30 分钟爬取 FinancialJuice 新闻
+        # ============================================================
+        async def scheduled_financial_juice_fetch():
+            """定时任务：Playwright 爬取 FinancialJuice 并触发 AI 分析"""
+            import asyncio
+            from app.services.financial_juice_scraper import scrape_financial_juice_news
+            from app.api.routes.news import save_articles_to_db
+            from app.services.news_ai_service import auto_analyze_news_after_scrape
+
+            logger.info("⏰ [FJ] 定时任务触发: 开始爬取 FinancialJuice 新闻")
+            try:
+                loop = asyncio.get_event_loop()
+                articles = await loop.run_in_executor(
+                    None,
+                    lambda: scrape_financial_juice_news(headless=True),
+                )
+
+                total_saved = 0
+                if articles:
+                    total_saved = await save_articles_to_db(
+                        articles, source="financial_juice"
+                    )
+
+                if total_saved > 0:
+                    await auto_analyze_news_after_scrape(
+                        limit=min(20, total_saved),
+                        max_concurrent=3,
+                    )
+
+                logger.info(
+                    f"✅ [FJ] 完成: 获取 {len(articles)} 条, 保存 {total_saved} 条"
+                )
+            except Exception as e:
+                logger.error(f"❌ [FJ] 定时任务执行失败: {e}")
+
+        scheduler.add_job(
+            scheduled_financial_juice_fetch,
+            IntervalTrigger(minutes=30),
+            id="fetch_financial_juice",
+            name="爬取 FinancialJuice 新闻",
+            replace_existing=True,
+        )
+
+        # ============================================================
         # 任务 3: 每 2 小时抓取 KOL 推文/帖子
         # ============================================================
         def scheduled_scrape_kol_tweets():

@@ -9,6 +9,7 @@ import {
   Calendar,
   LinkIcon,
   Zap,
+  Sparkles,
 } from "lucide-react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import SectionCard from "@/components/layout/SectionCard";
@@ -19,6 +20,8 @@ import { SwitchTab } from "@/components/ui/switch-tab";
 import {
   OptionsChainTable,
   UnusualActivityTable,
+  OptionsAIAssistant,
+  OptionsAIHistory,
 } from "@/components/options-flow";
 import {
   getOptionsOverview,
@@ -269,6 +272,11 @@ export default function OptionsFlowSymbolPage() {
                   label: `${t("optionsFlow.tabUnusual")}${unusualData.length > 0 ? ` (${unusualData.length})` : ""}`,
                   icon: <Zap className="h-3.5 w-3.5" />,
                 },
+                {
+                  value: "ai",
+                  label: t("optionsFlow.ai.title"),
+                  icon: <Sparkles className="h-3.5 w-3.5" />,
+                },
               ]}
               size="md"
               variant="pills"
@@ -289,6 +297,12 @@ export default function OptionsFlowSymbolPage() {
             {/* Unusual Activity Tab */}
             <TabsContent value="unusual" className="mt-3">
               <UnusualActivityTable data={unusualData} loading={scanning} useCollapsile={false} />
+            </TabsContent>
+
+            {/* AI Assistant Tab */}
+            <TabsContent value="ai" className="mt-3 space-y-4">
+              <OptionsAIAssistant data={unusualData} symbol={symbol} />
+              <OptionsAIHistory symbol={symbol} />
             </TabsContent>
           </Tabs>
         </div>

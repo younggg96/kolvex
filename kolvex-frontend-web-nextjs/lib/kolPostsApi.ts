@@ -242,7 +242,6 @@ export interface NewsArticle {
   title: string;
   summary: string;
   url: string;
-  tags: string[];
   tickers: string[];
   source: string;
   created_at: string | null;
@@ -252,9 +251,8 @@ export interface NewsArticle {
   sentiment_confidence?: number | null;
   trading_action?: "buy" | "sell" | "hold" | null;
   market_impact?: "high" | "medium" | "low" | "none" | null;
-  ai_tickers?: string[];
-  ai_tags?: string[];
   key_points?: string[];
+  us_market_relevance?: "high" | "medium" | "low" | "none" | null;
   analyzed_at?: string | null;
 }
 
@@ -267,10 +265,10 @@ export interface NewsListResponse {
 }
 
 export interface NewsParams {
+  source?: string;
   page?: number;
   page_size?: number;
   ticker?: string;
-  tag?: string;
 }
 
 // ============================================================
@@ -292,7 +290,7 @@ function getApiBaseUrl(): string {
 
 async function fetchAPI<T>(
   endpoint: string,
-  options: RequestInit = {}
+  options: RequestInit = {},
 ): Promise<T> {
   const baseUrl = getApiBaseUrl();
   const url = `${baseUrl}/api${endpoint}`;
@@ -308,7 +306,7 @@ async function fetchAPI<T>(
   if (!response.ok) {
     const error = await response.json().catch(() => ({}));
     throw new Error(
-      error.detail || error.error || `API error: ${response.status}`
+      error.detail || error.error || `API error: ${response.status}`,
     );
   }
 
@@ -323,7 +321,7 @@ async function fetchAPI<T>(
  * 获取 KOL 帖子列表（支持多平台）
  */
 export async function getKOLPosts(
-  params: KOLPostsParams = {}
+  params: KOLPostsParams = {},
 ): Promise<KOLPostsResponse> {
   const searchParams = new URLSearchParams();
 
@@ -352,7 +350,7 @@ export interface KOLProfilesParams {
  * 获取 KOL 列表（支持多平台）
  */
 export async function getKOLProfiles(
-  params: KOLProfilesParams | string = {}
+  params: KOLProfilesParams | string = {},
 ): Promise<KOLProfilesResponse> {
   // 向后兼容：如果传入字符串，当作 category 处理
   if (typeof params === "string") {
@@ -368,7 +366,7 @@ export async function getKOLProfiles(
 
   const query = searchParams.toString();
   return fetchAPI<KOLProfilesResponse>(
-    `/kol-profiles${query ? `?${query}` : ""}`
+    `/kol-profiles${query ? `?${query}` : ""}`,
   );
 }
 
@@ -393,7 +391,7 @@ export async function getUserPosts(
   username: string,
   page: number = 1,
   pageSize: number = 20,
-  platform?: Platform
+  platform?: Platform,
 ): Promise<KOLPostsResponse> {
   const searchParams = new URLSearchParams();
   searchParams.set("page", String(page));
@@ -401,7 +399,7 @@ export async function getUserPosts(
   if (platform) searchParams.set("platform", platform);
 
   return fetchAPI<KOLPostsResponse>(
-    `/kol-posts/user/${encodeURIComponent(username)}?${searchParams.toString()}`
+    `/kol-posts/user/${encodeURIComponent(username)}?${searchParams.toString()}`,
   );
 }
 
@@ -412,7 +410,7 @@ export async function getUserPosts(
  */
 export async function getStockDiscussions(
   ticker: string,
-  params: StockDiscussionsParams = {}
+  params: StockDiscussionsParams = {},
 ): Promise<StockDiscussionsResponse> {
   const searchParams = new URLSearchParams();
 
@@ -424,7 +422,7 @@ export async function getStockDiscussions(
 
   const query = searchParams.toString();
   return fetchAPI<StockDiscussionsResponse>(
-    `/stocks/${ticker.toUpperCase()}/discussions${query ? `?${query}` : ""}`
+    `/stocks/${ticker.toUpperCase()}/discussions${query ? `?${query}` : ""}`,
   );
 }
 
@@ -433,14 +431,14 @@ export async function getStockDiscussions(
  * @param params 查询参数
  */
 export async function getStockNews(
-  params: NewsParams = {}
+  params: NewsParams = {},
 ): Promise<NewsListResponse> {
   const searchParams = new URLSearchParams();
 
   if (params.page) searchParams.set("page", String(params.page));
   if (params.page_size) searchParams.set("page_size", String(params.page_size));
   if (params.ticker) searchParams.set("ticker", params.ticker.toUpperCase());
-  if (params.tag) searchParams.set("tag", params.tag);
+  if (params.source) searchParams.set("source", params.source);
 
   const query = searchParams.toString();
   return fetchAPI<NewsListResponse>(`/news${query ? `?${query}` : ""}`);
@@ -459,8 +457,6 @@ export interface NewsAIAnalysisResponse {
   sentiment_reasoning?: string | null;
   trading_action?: string | null;
   trading_confidence?: number | null;
-  ai_tickers?: string[];
-  ai_tags?: string[];
   key_points?: string[];
   market_impact?: string | null;
   impact_confidence?: number | null;
@@ -476,11 +472,11 @@ export interface NewsAIAnalysisResponse {
  */
 export async function analyzeNewsArticle(
   articleId: number,
-  force: boolean = false
+  force: boolean = false,
 ): Promise<NewsAIAnalysisResponse> {
   return fetchAPI<NewsAIAnalysisResponse>(
     `/news/ai/analyze/${articleId}?force=${force}`,
-    { method: "POST" }
+    { method: "POST" },
   );
 }
 
@@ -489,7 +485,7 @@ export async function analyzeNewsArticle(
  * @param articleId 文章 ID
  */
 export async function getNewsAIAnalysis(
-  articleId: number
+  articleId: number,
 ): Promise<NewsAIAnalysisResponse> {
   return fetchAPI<NewsAIAnalysisResponse>(`/news/ai/${articleId}`);
 }

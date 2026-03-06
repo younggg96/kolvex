@@ -13,17 +13,17 @@ export async function GET(request: NextRequest) {
     const page = searchParams.get("page");
     const pageSize = searchParams.get("page_size");
     const ticker = searchParams.get("ticker");
-    const tag = searchParams.get("tag");
+    const source = searchParams.get("source");
     const includeYfinance = searchParams.get("include_yfinance");
 
     if (page) backendParams.set("page", page);
     if (pageSize) backendParams.set("page_size", pageSize);
     if (ticker) backendParams.set("ticker", ticker.toUpperCase());
-    if (tag) backendParams.set("tag", tag);
+    if (source) backendParams.set("source", source);
     // Default to true if not specified
     backendParams.set(
       "include_yfinance",
-      includeYfinance !== "false" ? "true" : "false"
+      includeYfinance !== "false" ? "true" : "false",
     );
 
     const query = backendParams.toString();
@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
       {
         headers: { "Content-Type": "application/json" },
         cache: "no-store",
-      }
+      },
     );
 
     if (!response.ok) {
@@ -50,7 +50,7 @@ export async function GET(request: NextRequest) {
         total: 0,
         has_more: false,
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

@@ -263,3 +263,100 @@ export async function getOptionsChain(
 
   return response.json();
 }
+
+// ==================== Options AI Analysis API ====================
+
+import type {
+  OptionsAIRequest,
+  OptionsAIAnalysisRecord,
+  OptionsAIHistoryResponse,
+} from "./optionsAiTypes";
+
+export interface OllamaModelInfo {
+  name: string;
+  modified_at?: string;
+  size?: number;
+  digest?: string;
+  details?: { format?: string; family?: string; parameter_size?: string };
+}
+
+export interface OptionsAIModelsResponse {
+  models: OllamaModelInfo[];
+}
+
+/**
+ * Fetch available Ollama models for Options AI (same pattern as Chat's availableProviders)
+ */
+export async function getOptionsAIModels(): Promise<OptionsAIModelsResponse> {
+  const response = await fetch("/api/options-flow/ai/models", {
+    cache: "no-store",
+  });
+
+  if (!response.ok) {
+    const body = await response.json().catch(() => ({ error: "Request failed" }));
+    throw new Error(body.error || `HTTP ${response.status}`);
+  }
+
+  return response.json();
+}
+
+/**
+ * Run AI analysis on options flow data (auth required)
+ */
+export async function analyzeOptionsAI(
+  request: OptionsAIRequest
+): Promise<OptionsAIAnalysisRecord> {
+  const response = await fetch("/api/options-flow/ai", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(request),
+  });
+
+  if (!response.ok) {
+    const body = await response.json().catch(() => ({ error: "Request failed" }));
+    throw new Error(body.error || body.detail || `HTTP ${response.status}`);
+  }
+
+  return response.json();
+}
+
+/**
+ * Get paginated AI analysis history (public)
+ */
+export async function getOptionsAIHistory(params?: {
+  symbol?: string;
+  user_id?: string;
+  limit?: number;
+  offset?: number;
+}): Promise<OptionsAIHistoryResponse> {
+  const searchParams = new URLSearchParams();
+  if (params?.symbol) searchParams.append("symbol", params.symbol);
+  if (params?.user_id) searchParams.append("user_id", params.user_id);
+  if (params?.limit) searchParams.append("limit", String(params.limit));
+  if (params?.offset) searchParams.append("offset", String(params.offset));
+
+  const response = await fetch(
+    `/api/options-flow/ai/history?${searchParams.toString()}`
+  );
+
+  if (!response.ok) {
+    throw new Error("Failed to fetch AI analysis history");
+  }
+
+  return response.json();
+}
+
+/**
+ * Get a single AI analysis by ID (public)
+ */
+export async function getOptionsAIAnalysis(
+  id: string
+): Promise<OptionsAIAnalysisRecord> {
+  const response = await fetch(`/api/options-flow/ai/history/${id}`);
+
+  if (!response.ok) {
+    throw new Error("Failed to fetch AI analysis");
+  }
+
+  return response.json();
+}

@@ -155,6 +155,7 @@ MIT License - see [LICENSE](LICENSE) file for details
 
 ## 🧾 Progress Log
 
+- **2025-02-22**: Replaced FinancialJuice widget with direct crawler. Added `financial_juice_scraper` (Playwright), webhook `POST /api/v1/news/webhook/fetch-financial-juice`, scheduled job (every 30 min), and `LiveNewsList` component. RSS webhook retained as fallback.
 - **2025-12-12**: Refactored `TrackingStocksTable` row components into dedicated files under `kolvex-frontend-web-nextjs/components/tracking-stocks/`. Also converted stock detail page to SSR (server `page.tsx` + client interaction boundary).
 
 ---

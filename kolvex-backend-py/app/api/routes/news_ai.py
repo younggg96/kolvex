@@ -35,11 +35,10 @@ class NewsAIAnalysisResponse(BaseModel):
     sentiment_reasoning: Optional[str] = None
     trading_action: Optional[str] = None
     trading_confidence: Optional[float] = None
-    ai_tickers: List[str] = Field(default_factory=list)
-    ai_tags: List[str] = Field(default_factory=list)
     key_points: List[str] = Field(default_factory=list)
     market_impact: Optional[str] = None
     impact_confidence: Optional[float] = None
+    us_market_relevance: Optional[str] = None
     analyzed_at: Optional[str] = None
     ai_model: Optional[str] = None
     cached: bool = False
@@ -103,11 +102,10 @@ def _update_article_with_analysis(supabase, article_id: int, analysis: NewsAIAna
             "sentiment_reasoning": analysis.sentiment_reasoning,
             "trading_action": analysis.trading_action,
             "trading_confidence": analysis.trading_confidence,
-            "ai_tickers": analysis.ai_tickers,
-            "ai_tags": analysis.ai_tags,
             "key_points": analysis.key_points,
             "market_impact": analysis.market_impact,
             "impact_confidence": analysis.impact_confidence,
+            "us_market_relevance": analysis.us_market_relevance,
             "analyzed_at": analysis.analyzed_at or datetime.now(timezone.utc).isoformat(),
             "ai_model": analysis.ai_model,
             "analysis_version": analysis.analysis_version,
@@ -171,11 +169,10 @@ async def analyze_single_article(
                 sentiment_reasoning=article.get("sentiment_reasoning"),
                 trading_action=article.get("trading_action"),
                 trading_confidence=article.get("trading_confidence"),
-                ai_tickers=article.get("ai_tickers") or [],
-                ai_tags=article.get("ai_tags") or [],
                 key_points=article.get("key_points") or [],
                 market_impact=article.get("market_impact"),
                 impact_confidence=article.get("impact_confidence"),
+                us_market_relevance=article.get("us_market_relevance"),
                 analyzed_at=article.get("analyzed_at"),
                 ai_model=article.get("ai_model"),
                 cached=True,
@@ -203,11 +200,10 @@ async def analyze_single_article(
             sentiment_reasoning=analysis.sentiment_reasoning,
             trading_action=analysis.trading_action,
             trading_confidence=analysis.trading_confidence,
-            ai_tickers=analysis.ai_tickers,
-            ai_tags=analysis.ai_tags,
             key_points=analysis.key_points,
             market_impact=analysis.market_impact,
             impact_confidence=analysis.impact_confidence,
+            us_market_relevance=analysis.us_market_relevance,
             analyzed_at=analysis.analyzed_at,
             ai_model=analysis.ai_model,
             cached=False,
@@ -583,11 +579,10 @@ async def get_article_analysis(article_id: int):
             sentiment_reasoning=article.get("sentiment_reasoning"),
             trading_action=article.get("trading_action"),
             trading_confidence=article.get("trading_confidence"),
-            ai_tickers=article.get("ai_tickers") or [],
-            ai_tags=article.get("ai_tags") or [],
             key_points=article.get("key_points") or [],
             market_impact=article.get("market_impact"),
             impact_confidence=article.get("impact_confidence"),
+            us_market_relevance=article.get("us_market_relevance"),
             analyzed_at=article.get("analyzed_at"),
             ai_model=article.get("ai_model"),
             cached=True,

@@ -27,6 +27,8 @@ const nextConfig = {
       "pbs.twimg.com",
       "abs.twimg.com",
       "abs-0.twimg.com",
+      // Twitter/X Periscope (Live streaming thumbnails)
+      "prod-fastly-us-east-1.video.pscp.tv",
       // Reddit
       "www.redditstatic.com",
       "i.redd.it",
@@ -62,6 +64,13 @@ const nextConfig = {
         hostname: "**.supabase.co",
         port: "",
         pathname: "/storage/v1/object/public/**",
+      },
+      // Twitter/X Periscope live streaming thumbnails
+      {
+        protocol: "https",
+        hostname: "**.video.pscp.tv",
+        port: "",
+        pathname: "/**",
       },
     ],
     dangerouslyAllowSVG: true,

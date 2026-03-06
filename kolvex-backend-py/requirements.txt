@@ -38,6 +38,7 @@ yfinance>=0.2.40
 # 网页解析
 beautifulsoup4>=4.12.0
 lxml>=5.0.0
+feedparser>=6.0.0
 
 # SnapTrade API
 snaptrade-python-sdk>=11.0.0

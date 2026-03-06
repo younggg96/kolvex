@@ -140,7 +140,7 @@ export const MODEL_CONFIGS: AIModelConfig[] = [
 ];
 
 // Map frontend display provider name → backend provider ID
-const PROVIDER_NAME_TO_ID: Record<string, string> = {
+export const PROVIDER_NAME_TO_ID: Record<string, string> = {
   OpenAI: "openai",
   Anthropic: "anthropic",
   DeepSeek: "deepseek",

@@ -41,13 +41,14 @@ class NewsAIAnalysis(BaseModel):
     trading_confidence: Optional[float] = Field(default=None, ge=0.0, le=1.0)
 
     # 信息提取
-    ai_tags: List[str] = Field(default_factory=list, description="AI 提取的标签")
-    ai_tickers: List[str] = Field(default_factory=list, description="AI 识别的股票代码")
     key_points: List[str] = Field(default_factory=list, description="关键要点")
 
     # 市场影响
     market_impact: Optional[str] = Field(default=None, description="市场影响: high/medium/low/none")
     impact_confidence: Optional[float] = Field(default=None, ge=0.0, le=1.0)
+
+    # 美股相关性
+    us_market_relevance: str = Field(default="medium", description="与美股的相关性: high/medium/low/none")
 
     # 元数据
     analyzed_at: str = Field(default="", description="分析时间 ISO 格式")
@@ -110,11 +111,10 @@ Respond with ONLY this JSON object, no other text:
   "sentiment_reasoning": "Brief reason for sentiment",
   "trading_action": "buy/sell/hold/null",
   "trading_confidence": 0.0-1.0,
-  "ai_tickers": ["SYMBOL1", "SYMBOL2"],
-  "ai_tags": ["earnings", "merger", "tech"],
   "key_points": ["point1", "point2", "point3"],
   "market_impact": "high/medium/low/none",
-  "impact_confidence": 0.0-1.0
+  "impact_confidence": 0.0-1.0,
+  "us_market_relevance": "high/medium/low/none (how relevant is this to US stock market)"
 }}"""
 
         try:
@@ -134,11 +134,10 @@ Respond with ONLY this JSON object, no other text:
                     sentiment_reasoning=result.get("sentiment_reasoning", ""),
                     trading_action=result.get("trading_action"),
                     trading_confidence=result.get("trading_confidence"),
-                    ai_tickers=result.get("ai_tickers", []),
-                    ai_tags=result.get("ai_tags", []),
                     key_points=result.get("key_points", [])[:5],
                     market_impact=result.get("market_impact"),
                     impact_confidence=result.get("impact_confidence"),
+                    us_market_relevance=result.get("us_market_relevance", "medium"),
                     analyzed_at=datetime.now(timezone.utc).isoformat(),
                     ai_model=self.client.model,
                     analysis_version=self.ANALYSIS_VERSION,
@@ -308,11 +307,10 @@ Respond with ONLY this JSON object, no other text:
   "sentiment_reasoning": "Brief reason for sentiment",
   "trading_action": "buy/sell/hold/null",
   "trading_confidence": 0.0-1.0,
-  "ai_tickers": ["SYMBOL1", "SYMBOL2"],
-  "ai_tags": ["earnings", "merger", "tech"],
   "key_points": ["point1", "point2", "point3"],
   "market_impact": "high/medium/low/none",
-  "impact_confidence": 0.0-1.0
+  "impact_confidence": 0.0-1.0,
+  "us_market_relevance": "high/medium/low/none (how relevant is this to US stock market)"
 }}"""
 
         try:
@@ -332,11 +330,10 @@ Respond with ONLY this JSON object, no other text:
                     sentiment_reasoning=result.get("sentiment_reasoning", ""),
                     trading_action=result.get("trading_action"),
                     trading_confidence=result.get("trading_confidence"),
-                    ai_tickers=result.get("ai_tickers", []),
-                    ai_tags=result.get("ai_tags", []),
                     key_points=result.get("key_points", [])[:5],
                     market_impact=result.get("market_impact"),
                     impact_confidence=result.get("impact_confidence"),
+                    us_market_relevance=result.get("us_market_relevance", "medium"),
                     analyzed_at=datetime.now(timezone.utc).isoformat(),
                     ai_model=self.client.model,
                     analysis_version=self.ANALYSIS_VERSION,

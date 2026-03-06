@@ -18,11 +18,31 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { ChevronRight, TrendingUp, ExternalLink } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  ChevronRight,
+  TrendingUp,
+  ExternalLink,
+  Download,
+  MoreHorizontal,
+} from "lucide-react";
+import { ShareDropdown } from "@/components/ui/share-dropdown";
 import CompanyLogo from "@/components/ui/company-logo";
 import { useTranslation } from "@/lib/i18n";
 import type { UnusualActivityItem } from "@/lib/optionsFlowApi";
 import { cn } from "@/lib/utils";
+
+function getOrigin() {
+  if (typeof window !== "undefined") return window.location.origin;
+  return "";
+}
 
 interface UnusualActivityTableProps {
   data: UnusualActivityItem[];
@@ -60,6 +80,38 @@ const SIGNAL_I18N_KEYS: Record<string, string> = {
   whale_trade: "optionsFlow.signalWhale",
 };
 
+function downloadJson(data: unknown, filename: string) {
+  const blob = new Blob([JSON.stringify(data, null, 2)], {
+    type: "application/json",
+  });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+const ANALYSIS_PLATFORMS = [
+  {
+    name: "TradingView",
+    getUrl: (symbol: string) =>
+      `https://www.tradingview.com/symbols/${symbol}/`,
+  },
+  {
+    name: "Yahoo Finance",
+    getUrl: (symbol: string) =>
+      `https://finance.yahoo.com/quote/${symbol}/options/`,
+  },
+  {
+    name: "Barchart",
+    getUrl: (symbol: string) =>
+      `https://www.barchart.com/stocks/quotes/${symbol}/options`,
+  },
+];
+
 function StrengthBars({ strength }: { strength: number }) {
   return (
     <div className="flex items-center gap-[3px]">
@@ -76,6 +128,59 @@ function StrengthBars({ strength }: { strength: number }) {
   );
 }
 
+function GroupActions({ group }: { group: SymbolGroup }) {
+  const handleDownload = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    downloadJson(group.items, `${group.symbol}_options_flow.json`);
+  };
+
+  const shareLink = `${getOrigin()}/dashboard/options-flow/${group.symbol}`;
+  const shareText = `${group.symbol} unusual options activity: ${group.items.length} signals, ${formatCurrency(group.totalPremium)} total premium (${group.callCount}C / ${group.putCount}P)`;
+
+  return (
+    <div className="flex items-center gap-0.5" onClick={(e) => e.stopPropagation()}>
+      <ShareDropdown
+        shareLink={shareLink}
+        shareText={shareText}
+        emailSubject={`${group.symbol} Options Flow Alert`}
+        variant="ghost"
+        size="icon"
+        showLabel={false}
+        className="h-7 w-7"
+      />
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0">
+            <MoreHorizontal className="h-3.5 w-3.5" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-48">
+          <DropdownMenuItem onClick={handleDownload}>
+            <Download className="h-4 w-4" />
+            Download JSON
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          {ANALYSIS_PLATFORMS.map((platform) => (
+            <DropdownMenuItem
+              key={platform.name}
+              onClick={() => {
+                window.open(
+                  platform.getUrl(group.symbol),
+                  "_blank",
+                  "noopener,noreferrer"
+                );
+              }}
+            >
+              <ExternalLink className="h-4 w-4" />
+              {platform.name}
+            </DropdownMenuItem>
+          ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>
+  );
+}
+
 function SymbolGroupCard({ group, useCollapsile = true }: { group: SymbolGroup, useCollapsile?: boolean }) {
   const [open, setOpen] = useState(false);
   const { t } = useTranslation();
@@ -83,7 +188,7 @@ function SymbolGroupCard({ group, useCollapsile = true }: { group: SymbolGroup, 
   if (!useCollapsile) {
     return (
       <Card className="overflow-hidden">
-        <div className="flex items-center justify-between px-4 py-3 cursor-pointer select-none hover:bg-muted/50 transition-colors">
+        <div className="flex items-center justify-between px-4 py-3 select-none hover:bg-muted/50 transition-colors">
           <div className="flex items-center gap-3">
             <CompanyLogo
               symbol={group.symbol}
@@ -122,13 +227,7 @@ function SymbolGroupCard({ group, useCollapsile = true }: { group: SymbolGroup, 
             <span className="text-xs font-medium font-mono min-w-[70px] text-right">
               {formatCurrency(group.totalPremium)}
             </span>
-            <Link
-              href={`/dashboard/options-flow/${group.symbol}`}
-              onClick={(e) => e.stopPropagation()}
-              className="text-muted-foreground hover:text-primary transition-colors"
-            >
-              <ExternalLink className="h-3.5 w-3.5" />
-            </Link>
+            <GroupActions group={group} />
           </div>
         </div>
         <CardContent className="!p-0 border-t dark:border-border-dark">
@@ -136,7 +235,7 @@ function SymbolGroupCard({ group, useCollapsile = true }: { group: SymbolGroup, 
             <Table className="min-w-[900px]">
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-[40px] text-center text-[11px]">Signal</TableHead>
+                  <TableHead className="w-[40px] text-left text-[11px]">Signal</TableHead>
                   <TableHead className="w-[50px] text-center text-[11px]">Type</TableHead>
                   <TableHead className="w-[80px] text-right text-[11px]">Strike</TableHead>
                   <TableHead className="w-[90px] text-center text-[11px]">Exp</TableHead>
@@ -261,6 +360,7 @@ function SymbolGroupCard({ group, useCollapsile = true }: { group: SymbolGroup, 
               <span className="text-xs font-medium font-mono min-w-[70px] text-right">
                 {formatCurrency(group.totalPremium)}
               </span>
+              <GroupActions group={group} />
               <Link
                 href={`/dashboard/options-flow/${group.symbol}`}
                 onClick={(e) => e.stopPropagation()}
@@ -278,7 +378,7 @@ function SymbolGroupCard({ group, useCollapsile = true }: { group: SymbolGroup, 
               <Table className="min-w-[900px]">
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-[40px] text-center text-[11px]">Signal</TableHead>
+                    <TableHead className="w-[40px] text-left text-[11px]">Signal</TableHead>
                     <TableHead className="w-[50px] text-center text-[11px]">Type</TableHead>
                     <TableHead className="w-[80px] text-right text-[11px]">Strike</TableHead>
                     <TableHead className="w-[90px] text-center text-[11px]">Exp</TableHead>

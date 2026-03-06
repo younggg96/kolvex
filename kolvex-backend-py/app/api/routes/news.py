@@ -12,7 +12,7 @@
 3. 聚合多个数据源的新闻
 """
 
-from fastapi import APIRouter, Query, HTTPException
+from fastapi import APIRouter, Query, HTTPException, BackgroundTasks
 from typing import Optional, List
 from pydantic import BaseModel, Field
 from datetime import datetime, date, timedelta, timezone
@@ -79,19 +79,25 @@ class NewsArticleResponse(BaseModel):
     title: str = Field(..., description="文章标题")
     summary: str = Field(..., description="文章摘要")
     url: str = Field(..., description="文章 URL")
-    tags: List[str] = Field(default_factory=list, description="标签列表")
     tickers: List[str] = Field(default_factory=list, description="相关股票代码")
     source: str = Field(default="benzinga", description="新闻来源")
     created_at: Optional[datetime] = None
     # AI 分析字段
     ai_summary: Optional[str] = Field(default=None, description="AI 生成的摘要")
-    sentiment: Optional[str] = Field(default=None, description="情感: bullish/bearish/neutral")
-    sentiment_confidence: Optional[float] = Field(default=None, description="情感置信度")
-    trading_action: Optional[str] = Field(default=None, description="交易信号: buy/sell/hold")
-    market_impact: Optional[str] = Field(default=None, description="市场影响: high/medium/low")
-    ai_tickers: List[str] = Field(default_factory=list, description="AI 识别的股票代码")
-    ai_tags: List[str] = Field(default_factory=list, description="AI 提取的标签")
+    sentiment: Optional[str] = Field(
+        default=None, description="情感: bullish/bearish/neutral"
+    )
+    sentiment_confidence: Optional[float] = Field(
+        default=None, description="情感置信度"
+    )
+    trading_action: Optional[str] = Field(
+        default=None, description="交易信号: buy/sell/hold"
+    )
+    market_impact: Optional[str] = Field(
+        default=None, description="市场影响: high/medium/low"
+    )
     key_points: List[str] = Field(default_factory=list, description="关键要点")
+    us_market_relevance: Optional[str] = Field(default=None, description="美股相关性: high/medium/low/none")
     analyzed_at: Optional[str] = Field(default=None, description="分析时间")
 
 
@@ -183,12 +189,16 @@ class SchedulerControlResponse(BaseModel):
 # ============================================================
 
 
-async def save_articles_to_db(articles: List[NewsArticle]) -> int:
+async def save_articles_to_db(
+    articles: List[NewsArticle],
+    source: str = "benzinga",
+) -> int:
     """
     将新闻文章保存到数据库
 
     Args:
         articles: 新闻文章列表
+        source: 新闻来源标识，默认 benzinga
 
     Returns:
         int: 成功保存的文章数量
@@ -211,13 +221,12 @@ async def save_articles_to_db(articles: List[NewsArticle]) -> int:
                 "title": article.title,
                 "summary": article.summary,
                 "url": article.url,
-                "tags": article.tags,
                 "tickers": [
                     t.upper()
                     for t in (article.tickers or [])
                     if isinstance(t, str) and t
                 ],
-                "source": "benzinga",
+                "source": source,
             }
         )
 
@@ -256,7 +265,6 @@ def db_row_to_response(row: dict) -> NewsArticleResponse:
         title=row.get("title", ""),
         summary=str(row.get("summary") or ""),
         url=row.get("url", ""),
-        tags=row.get("tags") or [],
         tickers=row.get("tickers") or [],
         source=row.get("source", "benzinga"),
         created_at=row.get("created_at"),
@@ -266,9 +274,8 @@ def db_row_to_response(row: dict) -> NewsArticleResponse:
         sentiment_confidence=row.get("sentiment_confidence"),
         trading_action=row.get("trading_action"),
         market_impact=row.get("market_impact"),
-        ai_tickers=row.get("ai_tickers") or [],
-        ai_tags=row.get("ai_tags") or [],
         key_points=row.get("key_points") or [],
+        us_market_relevance=row.get("us_market_relevance"),
         analyzed_at=row.get("analyzed_at"),
     )
 
@@ -366,8 +373,12 @@ async def get_news_list(
     page: int = Query(1, ge=1, description="页码"),
     page_size: int = Query(20, ge=1, le=100, description="每页数量"),
     ticker: Optional[str] = Query(None, description="按股票代码筛选"),
-    tag: Optional[str] = Query(None, description="按标签筛选"),
+    source: Optional[str] = Query(
+        None,
+        description="按来源筛选，逗号分隔多个，如 rss_feed,yahoo_finance",
+    ),
     include_yfinance: bool = Query(True, description="是否包含 Yahoo Finance 新闻"),
+    tag: Optional[str] = Query(None, description="(deprecated) 已弃用", include_in_schema=False),
 ):
     """
     获取新闻列表（聚合多个数据源）
@@ -375,25 +386,26 @@ async def get_news_list(
     - **page**: 页码，从 1 开始
     - **page_size**: 每页数量，默认 20
     - **ticker**: 可选，按股票代码筛选
-    - **tag**: 可选，按标签筛选
     - **include_yfinance**: 是否包含 Yahoo Finance 实时新闻，默认 True
-    
+
     当不指定 ticker 时，会自动获取 trending 热门新闻
     """
     try:
         supabase = get_supabase_service()
         offset = (page - 1) * page_size
-        
+
         all_articles = []
-        
-        # 1. 从数据库获取 Benzinga 新闻
+
+        # 1. 从数据库获取新闻
         query = supabase.table("news_articles").select("*", count="exact")
 
         if ticker:
             query = query.contains("tickers", [ticker.upper()])
-        
-        if tag:
-            query = query.contains("tags", [tag])
+
+        if source:
+            sources = [s.strip() for s in source.split(",") if s.strip()]
+            if sources:
+                query = query.in_("source", sources)
 
         result = (
             query.order("published_at", desc=True)
@@ -403,19 +415,27 @@ async def get_news_list(
 
         db_articles = [db_row_to_response(row) for row in (result.data or [])]
         all_articles.extend(db_articles)
-        
-        # 2. 获取 Yahoo Finance 新闻（仅第一页）
-        if include_yfinance and page == 1:
+
+        # 2. 获取 Yahoo Finance 新闻（仅第一页，且无 source 筛选或 source 包含 yahoo_finance）
+        sources_list = [s.strip() for s in (source or "").split(",") if s.strip()]
+        include_yf = (
+            include_yfinance
+            and page == 1
+            and (not sources_list or "yahoo_finance" in sources_list)
+        )
+        if include_yf:
             try:
                 aggregator = get_news_aggregator()
-                
+
                 if ticker:
                     # 指定 ticker 时获取该股票的新闻
-                    yf_articles = await aggregator.get_yfinance_news(ticker.upper(), limit=10)
+                    yf_articles = await aggregator.get_yfinance_news(
+                        ticker.upper(), limit=10
+                    )
                 else:
                     # 未指定 ticker 时获取 trending 新闻
                     yf_articles = await aggregator.get_trending_news(limit=15)
-                
+
                 # 转换为响应模型并添加 source 标记
                 for article in yf_articles:
                     yf_article = NewsArticleResponse(
@@ -424,7 +444,6 @@ async def get_news_list(
                         title=article.title,
                         summary=article.summary,
                         url=article.url,
-                        tags=article.tags,
                         tickers=article.tickers,
                         source="yahoo_finance",
                         created_at=None,
@@ -432,33 +451,52 @@ async def get_news_list(
                     all_articles.append(yf_article)
             except Exception as e:
                 logger.warning(f"获取 Yahoo Finance 新闻失败: {e}")
-        
-        # 3. 去重（基于 URL）
-        seen_urls = set()
+
+        # 3. 去重（基于 URL + 标题）
+        import re as _re
+
+        def _norm_title(t: str) -> str:
+            stripped = _re.sub(
+                r"\d{1,2}:\d{2}\s*(?:AM|PM|am|pm)?\s*(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)?\s*\d{0,2}\.?",
+                "", t,
+            )
+            stripped = _re.sub(r"\d{1,2}\s+(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+\d{2,4}", "", stripped, flags=_re.IGNORECASE)
+            return _re.sub(r"[^a-z0-9]", "", stripped.lower())
+
+        seen_urls: set = set()
+        seen_titles: set = set()
         unique_articles = []
         for article in all_articles:
             url_key = article.url.lower().rstrip("/")
-            if url_key not in seen_urls:
-                seen_urls.add(url_key)
-                unique_articles.append(article)
-        
+            if url_key in seen_urls:
+                continue
+            title_key = _norm_title(article.title)
+            if title_key and title_key in seen_titles:
+                continue
+            seen_urls.add(url_key)
+            if title_key:
+                seen_titles.add(title_key)
+            unique_articles.append(article)
+
         # 4. 按时间排序
         def parse_date(article: NewsArticleResponse) -> datetime:
             try:
-                return datetime.fromisoformat(article.published_at.replace("Z", "+00:00"))
+                return datetime.fromisoformat(
+                    article.published_at.replace("Z", "+00:00")
+                )
             except:
                 return datetime.min.replace(tzinfo=timezone.utc)
-        
+
         sorted_articles = sorted(unique_articles, key=parse_date, reverse=True)
-        
+
         # 5. 分页处理
         final_articles = sorted_articles[:page_size]
         total = result.count or 0
-        
+
         # 如果有 yfinance 数据，total 需要调整
         if include_yfinance:
             total = max(total, len(unique_articles))
-        
+
         has_more = offset + len(final_articles) < total
 
         return NewsListResponse(
@@ -513,6 +551,108 @@ async def fetch_ticker_news(
     except Exception as e:
         logger.error(f"获取 {ticker} 新闻失败: {e}")
         raise HTTPException(status_code=500, detail=f"获取新闻失败: {str(e)}")
+
+
+@router.post(
+    "/webhook/fetch-financial-juice",
+    summary="FinancialJuice 爬虫 Webhook（供定时任务调用）",
+)
+async def webhook_fetch_financial_juice(
+    background_tasks: BackgroundTasks,
+    run_ai_analysis: bool = Query(True, description="是否在爬取后触发 AI 分析"),
+    headless: bool = Query(True, description="Playwright 无头模式"),
+):
+    """
+    使用 Playwright 直接爬取 FinancialJuice 新闻并存入数据库，可选触发 AI 分析。
+
+    供 cron/webhook 定时调用。
+    建议每 15-30 分钟调用一次。
+    """
+    import asyncio
+    from app.services.financial_juice_scraper import scrape_financial_juice_news
+
+    try:
+        loop = asyncio.get_event_loop()
+        articles = await loop.run_in_executor(
+            None,
+            lambda: scrape_financial_juice_news(headless=headless),
+        )
+
+        total_fetched = len(articles)
+        total_saved = 0
+        if articles:
+            total_saved = await save_articles_to_db(articles, source="financial_juice")
+
+        if run_ai_analysis and total_saved > 0:
+            from app.services.news_ai_service import auto_analyze_news_after_scrape
+
+            background_tasks.add_task(
+                auto_analyze_news_after_scrape,
+                min(20, total_saved),
+                3,
+            )
+
+        return {
+            "success": True,
+            "message": "FinancialJuice scrape completed",
+            "articles_fetched": total_fetched,
+            "articles_saved": total_saved,
+            "ai_analysis_scheduled": run_ai_analysis and total_saved > 0,
+        }
+    except Exception as e:
+        logger.exception(f"FinancialJuice webhook failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post(
+    "/webhook/fetch-rss",
+    summary="RSS 金融新闻爬取 Webhook（备用）",
+)
+async def webhook_fetch_rss_news(
+    background_tasks: BackgroundTasks,
+    run_ai_analysis: bool = Query(True, description="是否在爬取后触发 AI 分析"),
+):
+    """
+    从 RSS 源爬取金融新闻并存入数据库（备用方案）。
+    主方案请使用 /webhook/fetch-financial-juice。
+    """
+    from app.services.financial_news_rss import (
+        RSS_FEEDS,
+        fetch_rss_feed,
+    )
+
+    try:
+        total_fetched = 0
+        total_saved = 0
+
+        for feed in RSS_FEEDS:
+            articles = fetch_rss_feed(feed)
+            if articles:
+                saved = await save_articles_to_db(
+                    articles, source=feed.get("source", "rss_feed")
+                )
+                total_fetched += len(articles)
+                total_saved += saved
+
+        if run_ai_analysis and total_saved > 0:
+            from app.services.news_ai_service import auto_analyze_news_after_scrape
+
+            background_tasks.add_task(
+                auto_analyze_news_after_scrape,
+                min(20, total_saved),
+                3,
+            )
+
+        return {
+            "success": True,
+            "message": "RSS news fetch completed",
+            "articles_fetched": total_fetched,
+            "articles_saved": total_saved,
+            "ai_analysis_scheduled": run_ai_analysis and total_saved > 0,
+        }
+    except Exception as e:
+        logger.exception(f"RSS fetch webhook failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.get("/kol-tickers", summary="获取所有被 KOL 讨论过的股票代码")

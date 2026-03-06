@@ -73,22 +73,41 @@ class YFinanceService:
         ticker = self.get_ticker(symbol)
         info = ticker.info
 
+        current_price = info.get("currentPrice") or info.get("regularMarketPrice")
+        previous_close = info.get("previousClose") or info.get("regularMarketPreviousClose")
+
+        if not current_price or not previous_close:
+            try:
+                fi = ticker.fast_info
+                current_price = current_price or getattr(fi, "last_price", None) or getattr(fi, "lastPrice", None)
+                previous_close = previous_close or getattr(fi, "previous_close", None) or getattr(fi, "previousClose", None)
+            except Exception:
+                pass
+
+        change = info.get("regularMarketChange")
+        change_percent = info.get("regularMarketChangePercent")
+
+        if change is None and current_price and previous_close:
+            change = round(current_price - previous_close, 4)
+        if change_percent is None and current_price and previous_close and previous_close != 0:
+            change_percent = round(((current_price - previous_close) / previous_close) * 100, 4)
+
         return {
             "symbol": symbol.upper(),
             "name": info.get("shortName") or info.get("longName"),
             "exchange": info.get("exchange"),
             "currency": info.get("currency"),
             # 价格信息
-            "current_price": info.get("currentPrice") or info.get("regularMarketPrice"),
-            "previous_close": info.get("previousClose") or info.get("regularMarketPreviousClose"),
+            "current_price": current_price,
+            "previous_close": previous_close,
             "open": info.get("open") or info.get("regularMarketOpen"),
             "day_high": info.get("dayHigh") or info.get("regularMarketDayHigh"),
             "day_low": info.get("dayLow") or info.get("regularMarketDayLow"),
             "fifty_two_week_high": info.get("fiftyTwoWeekHigh"),
             "fifty_two_week_low": info.get("fiftyTwoWeekLow"),
             # 涨跌
-            "change": info.get("regularMarketChange"),
-            "change_percent": info.get("regularMarketChangePercent"),
+            "change": change,
+            "change_percent": change_percent,
             # 成交量
             "volume": info.get("volume") or info.get("regularMarketVolume"),
             "avg_volume": info.get("averageVolume"),

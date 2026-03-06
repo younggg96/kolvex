@@ -31,6 +31,7 @@ import {
 import {
   UnusualActivityTable,
   OptionsFlowStatsCards,
+  OptionsAIAssistant,
 } from "@/components/options-flow";
 import {
   getUnusualActivity,
@@ -204,6 +205,9 @@ export default function OptionsFlowPage() {
               <Activity className="h-3.5 w-3.5" />
             </Button>
           </div>
+
+          {/* AI Trading Assistant */}
+          <OptionsAIAssistant data={filteredData} />
 
           {/* Toolbar */}
           <div className="flex items-center justify-between">

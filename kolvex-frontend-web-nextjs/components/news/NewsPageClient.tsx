@@ -2,11 +2,9 @@
 
 import React, { useState } from "react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
-import SectionCard from "@/components/layout/SectionCard";
-import FinancialJuiceNews from "@/components/news/FinancialJuiceNews";
+import LiveNewsList from "@/components/news/LiveNewsList";
 import NewsArticleList from "@/components/news/NewsArticleList";
 import { SwitchTab } from "@/components/ui/switch-tab";
-import { Newspaper, Zap } from "lucide-react";
 
 interface NewsPageClientProps {
   category: string;
@@ -44,7 +42,7 @@ export default function NewsPageClient({ category }: NewsPageClientProps) {
         <div className="absolute inset-0 bg-grid opacity-50 pointer-events-none" />
         <div className="h-[calc(100vh-160px)] p-4 min-w-0">
           {activeTab === "live" ? (
-            <FinancialJuiceNews width="100%" height="100%" />
+            <LiveNewsList pageSize={30} autoRefreshMinutes={5} />
           ) : (
             <NewsArticleList />
           )}
