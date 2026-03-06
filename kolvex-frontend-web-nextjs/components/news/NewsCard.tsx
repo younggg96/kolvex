@@ -345,15 +345,6 @@ export default function NewsCard({ article }: NewsCardProps) {
               className={`w-3 h-3 ${isTranslating ? "animate-pulse" : ""}`}
             />
           </div>
-
-          <Link
-            href={article.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
-          >
-            <ExternalLink className="w-3 h-3" />
-          </Link>
         </div>
       </div>
 
