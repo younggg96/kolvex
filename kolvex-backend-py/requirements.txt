@@ -67,3 +67,15 @@ langsmith==0.6.9
 
 # Web Search (Tavily)
 tavily-python==0.7.21
+
+# TradingAgents dependencies (package itself installed at container startup)
+stockstats>=0.6.5
+rank-bm25>=0.2.2
+pandas>=2.3.0
+langchain-experimental>=0.3.4
+langchain-google-genai>=2.1.5
+pytz>=2025.2
+backtrader>=1.9.78.123
+parsel>=1.10.0
+rich>=14.0.0
+tqdm>=4.67.1

@@ -91,15 +91,27 @@ const IMPACT_CLASS: Record<string, string> = {
   low: "text-green-500",
 };
 
+const GET_URL_SAFE_LIMIT = 1500;
+
 async function translateText(
   text: string,
   targetLang: string
 ): Promise<string> {
   if (!text || !text.trim()) return text;
   const tl = targetLang === "zh" ? "zh-CN" : "en";
-  const response = await fetch(
-    `/api/translate?tl=${encodeURIComponent(tl)}&q=${encodeURIComponent(text)}`
-  );
+
+  const usePost = text.length > GET_URL_SAFE_LIMIT;
+
+  const response = usePost
+    ? await fetch("/api/translate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ q: text, tl }),
+      })
+    : await fetch(
+        `/api/translate?tl=${encodeURIComponent(tl)}&q=${encodeURIComponent(text)}`
+      );
+
   if (!response.ok) throw new Error("Translation request failed");
   const data = await response.json();
   return data.translated;

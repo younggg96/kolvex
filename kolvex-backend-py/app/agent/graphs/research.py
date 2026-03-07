@@ -51,6 +51,12 @@ Produce a structured report with:
 - Risk Factors
 - Conclusion with Bull/Bear Case
 
+**Step 7 (Optional): TradingAgents Multi-Agent Analysis**
+- If the user specifically asks for a trading decision, buy/sell recommendation, or multi-agent analysis,
+  use the `run_trading_analysis` tool to run a full multi-agent analysis (market analyst, social analyst,
+  news analyst, fundamentals analyst, bull/bear researchers, trader, and risk managers).
+- This tool takes a few minutes to run as it orchestrates multiple AI agents.
+
 Be thorough and use ALL available tools. A good research report should call 5-8 tools minimum.
 If the user asks in Chinese, write the report in Chinese. If in English, write in English.
 """

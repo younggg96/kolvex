@@ -13,7 +13,7 @@ from langgraph.prebuilt import create_react_agent
 from app.agent.state import AgentState
 from app.agent.llm import get_llm, get_fast_llm, resolve_model_id
 from app.agent.config import SYSTEM_PROMPT, MAX_TOOL_ITERATIONS
-from app.agent.tools import FINANCIAL_TOOLS, RESEARCH_TOOLS, ALERT_TOOLS, get_tools_for_sources
+from app.agent.tools import FINANCIAL_TOOLS, RESEARCH_TOOLS, ALERT_TOOLS, get_tools_for_sources, set_user_api_keys_for_tool
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +33,7 @@ ROUTER_SYSTEM_PROMPT = """You are a routing agent. Based on the user's message, 
 
 Choose ONE of:
 - "financial": For general financial questions, stock lookups, price checks, portfolio queries, news inquiries, KOL analysis, or any stock-related question.
-- "research": For in-depth research requests like "analyze NVDA", "give me a research report on TSLA", "deep dive into AAPL", or any request asking for comprehensive multi-factor analysis.
+- "research": For in-depth research requests like "analyze NVDA", "give me a research report on TSLA", "deep dive into AAPL", "run trading analysis on MSFT", "should I buy/sell NVDA", "bull vs bear case for AAPL", or any request asking for comprehensive multi-factor analysis or trading decisions.
 - "alert": For monitoring, alert, and notification related questions like "set alert for AAPL at $200", "notify me when...", "monitor this stock".
 
 If unclear, default to "financial".
@@ -137,6 +137,10 @@ async def run_agent(
     # 解析模型
     provider, model = resolve_model_id(model_id)
 
+    # Cache user API keys for trading analysis tool
+    if user_id and user_api_keys:
+        set_user_api_keys_for_tool(user_id, user_api_keys)
+
     # 1. 先分类意图
     agent_type = await _classify_intent(messages, user_api_keys=user_api_keys)
 
@@ -191,6 +195,10 @@ async def stream_agent(
     """
     # 解析模型
     provider, model = resolve_model_id(model_id)
+
+    # Cache user API keys for trading analysis tool
+    if user_id and user_api_keys:
+        set_user_api_keys_for_tool(user_id, user_api_keys)
 
     # 1. 先分类意图
     agent_type = await _classify_intent(messages, user_api_keys=user_api_keys)

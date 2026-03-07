@@ -37,6 +37,10 @@ from app.agent.tools.options_flow_tools import (
     scan_unusual_options,
     get_options_chain_summary,
 )
+from app.agent.tools.trading_analysis_tools import (
+    run_trading_analysis,
+    set_user_api_keys_for_tool,
+)
 
 # 所有可用工具列表
 ALL_TOOLS = [
@@ -96,6 +100,7 @@ RESEARCH_TOOLS = [
     scan_unusual_options,
     get_options_chain_summary,
     web_search,
+    run_trading_analysis,
 ]
 
 ALERT_TOOLS = [
@@ -178,4 +183,6 @@ __all__ = [
     "ALERT_TOOLS",
     "get_tools_for_sources",
     "create_portfolio_tool_for_user",
+    "run_trading_analysis",
+    "set_user_api_keys_for_tool",
 ]

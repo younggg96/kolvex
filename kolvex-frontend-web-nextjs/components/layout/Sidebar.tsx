@@ -109,6 +109,12 @@ const mainNavItemDefs = [
     type: "link",
   },
   {
+    icon: ShieldCheck,
+    titleKey: "sidebar.tradingAnalysis",
+    href: "/dashboard/trading-analysis",
+    type: "link",
+  },
+  {
     icon: Building2,
     titleKey: "sidebar.superinvestors",
     href: "/dashboard/investors",

@@ -37,6 +37,7 @@
     "social": "Social",
     "stocks": "Stocks",
     "optionsFlow": "Options Flow",
+    "tradingAnalysis": "Deep Analysis",
     "superinvestors": "Superinvestors",
     "news": "News",
     "kolTracker": "KOL Tracker",
@@ -87,7 +88,12 @@
     "hero": {
       "badge": "Powered by AI",
       "headline": "Invest Smarter with",
-      "phrases": ["Social Intelligence", "AI-Powered Analysis", "Real-Time Signals", "Smart Money Tracking"],
+      "phrases": [
+        "Social Intelligence",
+        "AI-Powered Analysis",
+        "Real-Time Signals",
+        "Smart Money Tracking"
+      ],
       "subheadline": "Track influential voices, decode market sentiment, and discover opportunities before they trend. Join thousands of investors gaining an edge with AI.",
       "startFreeTrial": "Start Free Trial",
       "trustBadges": {
@@ -121,32 +127,56 @@
       "kolTracking": {
         "title": "KOL Tracking",
         "description": "Monitor 2,500+ influential investors and analysts across Twitter, Reddit, StockTwits in real-time. Never miss a market-moving call.",
-        "stats": { "kolsTracked": "KOLs Tracked", "platforms": "Platforms", "updatesDay": "Updates/Day" }
+        "stats": {
+          "kolsTracked": "KOLs Tracked",
+          "platforms": "Platforms",
+          "updatesDay": "Updates/Day"
+        }
       },
       "aiAnalysis": {
         "title": "AI-Powered Analysis",
         "description": "Our proprietary AI models analyze sentiment, extract key signals, and predict market movements with institutional-grade accuracy.",
-        "stats": { "accuracy": "Accuracy", "models": "Models", "signalsDay": "Signals/Day" }
+        "stats": {
+          "accuracy": "Accuracy",
+          "models": "Models",
+          "signalsDay": "Signals/Day"
+        }
       },
       "alerts": {
         "title": "Instant Alerts",
         "description": "Get notified immediately when tracked KOLs mention a stock or when sentiment shifts. Stay ahead of every market move.",
-        "stats": { "latency": "Latency", "channels": "Channels", "customRules": "Custom Rules" }
+        "stats": {
+          "latency": "Latency",
+          "channels": "Channels",
+          "customRules": "Custom Rules"
+        }
       },
       "sentiment": {
         "title": "Sentiment Scoring",
         "description": "Real-time sentiment scores for 10,000+ stocks aggregated from social media, news, and analyst reports.",
-        "stats": { "stocks": "Stocks", "sources": "Sources", "refresh": "Refresh" }
+        "stats": {
+          "stocks": "Stocks",
+          "sources": "Sources",
+          "refresh": "Refresh"
+        }
       },
       "portfolio": {
         "title": "Portfolio Integration",
         "description": "Connect your brokerage via SnapTrade to overlay social intelligence on your actual positions.",
-        "stats": { "brokers": "Brokers", "security": "Security", "sync": "Sync" }
+        "stats": {
+          "brokers": "Brokers",
+          "security": "Security",
+          "sync": "Sync"
+        }
       },
       "filtering": {
         "title": "Smart Filtering",
         "description": "AI-powered bot detection and spam filtering ensures you only see high-quality, signal-rich content.",
-        "stats": { "botDetection": "Bot Detection", "spamBlocked": "Spam Blocked", "falsePositives": "False Positives" }
+        "stats": {
+          "botDetection": "Bot Detection",
+          "spamBlocked": "Spam Blocked",
+          "falsePositives": "False Positives"
+        }
       }
     },
     "howItWorks": {
@@ -157,22 +187,38 @@
         {
           "title": "Create Your Account",
           "description": "Sign up in seconds with email or social login. No credit card required.",
-          "details": ["Free forever tier available", "Connect social accounts", "Set up in 30 seconds"]
+          "details": [
+            "Free forever tier available",
+            "Connect social accounts",
+            "Set up in 30 seconds"
+          ]
         },
         {
           "title": "Select Your KOLs",
           "description": "Choose from 2,500+ influential investors and analysts to track.",
-          "details": ["Curated expert lists", "Custom watchlists", "Multi-platform coverage"]
+          "details": [
+            "Curated expert lists",
+            "Custom watchlists",
+            "Multi-platform coverage"
+          ]
         },
         {
           "title": "Get AI Insights",
           "description": "Our AI analyzes posts, extracts sentiment, and identifies signals.",
-          "details": ["Real-time processing", "94% accuracy rate", "Actionable alerts"]
+          "details": [
+            "Real-time processing",
+            "94% accuracy rate",
+            "Actionable alerts"
+          ]
         },
         {
           "title": "Make Better Decisions",
           "description": "Use social intelligence to time your entries and exits perfectly.",
-          "details": ["Data-driven trades", "Reduced emotional bias", "Consistent returns"]
+          "details": [
+            "Data-driven trades",
+            "Reduced emotional bias",
+            "Consistent returns"
+          ]
         }
       ]
     },
@@ -885,6 +931,127 @@
       "modelDefault": "Default",
       "ollamaNotAvailable": "Ollama not available",
       "ollamaNotAvailableDesc": "Ollama service is not running. Start Ollama locally to use AI analysis."
+    }
+  },
+  "tradingAnalysis": {
+    "title": "Deep Analysis",
+    "heroDescription": "Multi-agent AI analysis — analysts, researchers, and risk managers collaborate to produce BUY/SELL/HOLD decisions",
+    "heroFeatures": {
+      "multiAgent": "Multi-Agent",
+      "debate": "Bull vs Bear Debate",
+      "risk": "Risk Management"
+    },
+    "newAnalysis": "New Analysis",
+    "tickerSymbol": "Ticker Symbol",
+    "tickerPlaceholder": "e.g. NVDA, AAPL",
+    "analysisDate": "Analysis Date",
+    "debateRounds": "Debate Rounds",
+    "roundCount": "{count} Round",
+    "roundsCount": "{count} Rounds",
+    "deepThinkModel": "Deep Think Model",
+    "quickThinkModel": "Quick Think Model",
+    "selectModel": "Select model",
+    "selectProvider": "Select provider",
+    "analysts": "Analysts",
+    "analystMarket": "Market",
+    "analystSocial": "Social",
+    "analystNews": "News",
+    "analystFundamentals": "Fundamentals",
+    "startAnalysis": "Start Analysis",
+    "starting": "Starting...",
+    "llmProvider": "LLM Provider",
+    "addApiKey": "Add API Key",
+    "needApiKey": "Need API Key",
+    "available": "Available",
+    "noApiKeyHint": "Configure at least one LLM API key to run analyses.",
+    "selectProviderFirst": "Select a provider first",
+    "noApiKeyForProvider": "No API key for this provider",
+    "history": "Analysis History",
+    "refresh": "Refresh",
+    "noHistory": "No analyses yet. Start your first analysis above.",
+    "statusRunning": "Running",
+    "statusPending": "Pending",
+    "analysisStarted": "Analysis started for {ticker}",
+    "enterTicker": "Please enter a ticker symbol",
+    "configureApiKey": "Please configure an API key in Settings first",
+    "selectAnalyst": "Please select at least one analyst",
+    "deleted": "Analysis deleted",
+    "deleteFailed": "Failed to delete",
+    "startFailed": "Failed to start analysis",
+    "pageTitle": "{ticker} Analysis",
+    "backToList": "Back",
+    "notFound": "Analysis not found",
+    "statusAnalyzing": "Analyzing...",
+    "statusFailed": "Failed",
+    "statusCompleted": "Completed",
+    "tradeDate": "Trade Date",
+    "duration": "Duration",
+    "durationSeconds": "{seconds}s",
+    "stages": {
+      "initializing": "Init",
+      "analysts": "Analysts",
+      "debate": "Debate",
+      "trader": "Trader",
+      "risk": "Risk",
+      "completed": "Done"
+    },
+    "stageDesc": {
+      "initializing": "Setting up analysis environment",
+      "analysts": "Running market, news & sentiment analysis",
+      "debate": "Bull vs Bear debate in progress",
+      "trader": "Generating trading recommendation",
+      "risk": "Risk assessment & final review",
+      "completed": "Analysis complete"
+    },
+    "analysisInProgress": "Analysis in Progress",
+    "stage": "Stage",
+    "decision": {
+      "buy": "BUY",
+      "sell": "SELL",
+      "hold": "HOLD"
+    },
+    "tabs": {
+      "market": "Market Analysis",
+      "sentiment": "Social Sentiment",
+      "news": "News Analysis",
+      "fundamentals": "Fundamentals"
+    },
+    "sections": {
+      "investmentPlan": "Investment Plan",
+      "investmentDebate": "Investment Debate (Bull vs Bear)",
+      "traderPlan": "Trader's Plan",
+      "riskDebate": "Risk Management Debate",
+      "finalSignal": "Final Trade Decision"
+    },
+    "debate": {
+      "bullResearcher": "Bull Researcher",
+      "bearResearcher": "Bear Researcher",
+      "aggressiveAnalyst": "Aggressive Analyst",
+      "conservativeAnalyst": "Conservative Analyst",
+      "judgeDecision": "Judge Decision"
+    },
+    "publish": "Publish",
+    "publishedLabel": "Published",
+    "published": "Analysis published successfully",
+    "unpublished": "Analysis unpublished",
+    "publishFailed": "Failed to update publish status",
+    "explore": {
+      "title": "Explore Analyses",
+      "description": "Browse published multi-agent AI analyses shared by the community",
+      "featureCommunity": "Community Shared",
+      "featureInsights": "Expert Insights",
+      "featureAI": "AI-Powered",
+      "published": "Published Analyses",
+      "noPublished": "No published analyses yet. Be the first to share!",
+      "noResultsForTicker": "No published analyses found for {ticker}",
+      "searchPlaceholder": "Filter by ticker...",
+      "backToExplore": "Back to Explore"
+    },
+    "translate": "Translate",
+    "showOriginal": "Original",
+    "translating": "Translating...",
+    "error": {
+      "loadFailed": "Failed to load analysis"
     }
   },
   "news": {
