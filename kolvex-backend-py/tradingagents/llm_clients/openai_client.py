@@ -6,6 +6,9 @@ from langchain_openai import ChatOpenAI
 from .base_client import BaseLLMClient
 from .validators import validate_model
 
+DEFAULT_TIMEOUT = 120
+DEFAULT_MAX_RETRIES = 3
+
 PROVIDER_CONFIGS: dict[str, dict[str, Any]] = {
     "deepseek": {
         "base_url": "https://api.deepseek.com/v1",
@@ -88,6 +91,9 @@ class OpenAIClient(BaseLLMClient):
             env_val = os.environ.get(provider_cfg["env_key"])
             if env_val:
                 llm_kwargs["api_key"] = env_val
+
+        llm_kwargs.setdefault("timeout", DEFAULT_TIMEOUT)
+        llm_kwargs.setdefault("max_retries", DEFAULT_MAX_RETRIES)
 
         for key in ("timeout", "max_retries", "reasoning_effort", "callbacks"):
             if key in self.kwargs:

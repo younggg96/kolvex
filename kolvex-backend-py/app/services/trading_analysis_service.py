@@ -12,6 +12,7 @@ Manages the lifecycle of TradingAgents multi-agent analyses:
 import asyncio
 import json
 import logging
+import threading
 import time
 import uuid
 from concurrent.futures import ThreadPoolExecutor
@@ -485,6 +486,7 @@ class TradingAnalysisService:
         """Wrapper to run the sync graph and persist results."""
         provider = config.get("llm_provider", "openai")
         timeout = PROVIDER_TIMEOUTS.get(provider, DEFAULT_GRAPH_TIMEOUT)
+        watchdog_timeout = timeout + 120  # extra buffer beyond graph timeout
         logger.info(
             f"[TradingAnalysis] Background thread started: {analysis_id} "
             f"ticker={ticker} date={trade_date} analysts={analysts} "
@@ -492,6 +494,19 @@ class TradingAnalysisService:
         )
         start_time = time.time()
         progress_key = _progress_key(analysis_id)
+        completed = threading.Event()
+
+        def _watchdog():
+            if not completed.is_set():
+                elapsed = time.time() - start_time
+                msg = f"Watchdog: analysis hung after {elapsed:.0f}s (limit {watchdog_timeout}s)"
+                logger.error(f"[TradingAnalysis] {analysis_id}: {msg}")
+                self._mark_failed(analysis_id, f"[Timeout] {msg}", elapsed)
+                self._push_failure_progress(progress_key, "Timeout", msg)
+
+        watchdog_timer = threading.Timer(watchdog_timeout, _watchdog)
+        watchdog_timer.daemon = True
+        watchdog_timer.start()
 
         try:
             result = _run_graph_sync(
@@ -504,6 +519,7 @@ class TradingAnalysisService:
                 timeout_seconds=timeout,
             )
 
+            completed.set()
             duration = time.time() - start_time
             update = {
                 "status": "completed",
@@ -526,6 +542,7 @@ class TradingAnalysisService:
             logger.info(f"Analysis {analysis_id} completed: {result['final_decision']} in {duration:.1f}s")
 
         except BaseException as e:
+            completed.set()
             duration = time.time() - start_time
             error_type = type(e).__name__
             logger.error(
@@ -535,6 +552,8 @@ class TradingAnalysisService:
 
             self._mark_failed(analysis_id, f"[{error_type}] {e}", duration)
             self._push_failure_progress(progress_key, error_type, str(e))
+        finally:
+            watchdog_timer.cancel()
 
     @staticmethod
     def _mark_failed(analysis_id: str, error_msg: str, duration: float):
