@@ -5,6 +5,13 @@
 
 // ==================== Types ====================
 
+export interface AnalysisAuthor {
+  id: string;
+  username?: string | null;
+  full_name?: string | null;
+  avatar_url?: string | null;
+}
+
 export interface TradingAnalysis {
   id: string;
   user_id?: string;
@@ -31,6 +38,7 @@ export interface TradingAnalysis {
   published_at?: string | null;
   created_at: string;
   completed_at?: string | null;
+  author?: AnalysisAuthor | null;
 }
 
 export interface InvestmentDebate {

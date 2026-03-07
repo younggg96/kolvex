@@ -45,6 +45,7 @@ import { ReportCard } from "@/components/trading-analysis/report-card";
 import { DebateCard } from "@/components/trading-analysis/debate-card";
 import { DetailSkeleton } from "@/components/trading-analysis/skeletons";
 import { ProgressLog } from "@/components/trading-analysis/progress-log";
+import CompanyLogo from "@/components/ui/company-logo";
 
 const STAGES = [
   { key: "initializing", icon: Bot },
@@ -311,6 +312,7 @@ export default function TradingAnalysisDetailPage() {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 animate-fade-in-up">
             <div>
               <div className="flex items-center gap-3">
+                <CompanyLogo symbol={analysis.ticker} size="lg" />
                 <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
                   {analysis.ticker}
                 </h1>

@@ -51,6 +51,7 @@ const nextConfig = {
       "static2.finnhub.io",
       // Financial Modeling Prep (Company Logos)
       "financialmodelingprep.com",
+      "images.financialmodelingprep.com",
       // Clearbit (Alternative Logo Source)
       "logo.clearbit.com",
       // Wikimedia Commons (S&P 500 Company Logos)

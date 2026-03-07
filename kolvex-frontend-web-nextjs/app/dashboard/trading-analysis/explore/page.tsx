@@ -14,6 +14,7 @@ import {
   Bot,
   Search,
   ArrowLeft,
+  User,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/lib/i18n";
@@ -22,10 +23,12 @@ import { HeroSection } from "@/components/ui/hero-section";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import {
   getPublishedAnalyses,
   type TradingAnalysis,
 } from "@/lib/tradingAnalysisApi";
+import CompanyLogo from "@/components/ui/company-logo";
 
 function DecisionBadge({
   decision,
@@ -244,15 +247,18 @@ export default function ExploreAnalysesPage() {
                       )}
                     >
                       <div className="flex items-start justify-between mb-3">
-                        <div className="min-w-0">
-                          <span className="text-lg font-bold text-gray-900 dark:text-white">
-                            {item.ticker}
-                          </span>
-                          <div className="flex items-center gap-2 mt-1 flex-wrap">
-                            <DecisionBadge
-                              decision={item.final_decision}
-                              t={t}
-                            />
+                        <div className="flex items-center gap-3 min-w-0">
+                          <CompanyLogo symbol={item.ticker} size="md" />
+                          <div className="min-w-0">
+                            <span className="text-lg font-bold text-gray-900 dark:text-white">
+                              {item.ticker}
+                            </span>
+                            <div className="flex items-center gap-2 mt-1 flex-wrap">
+                              <DecisionBadge
+                                decision={item.final_decision}
+                                t={t}
+                              />
+                            </div>
                           </div>
                         </div>
                         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-gray-100 text-gray-600 dark:bg-white/5 dark:text-gray-400">
@@ -261,25 +267,42 @@ export default function ExploreAnalysesPage() {
                         </span>
                       </div>
 
-                      <div className="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
-                        <span className="flex items-center gap-1">
-                          <Calendar className="w-3 h-3" />
-                          {item.trade_date}
-                        </span>
-                        {item.duration_seconds && (
+                      <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+                        <div className="flex items-center gap-3">
                           <span className="flex items-center gap-1">
-                            <Clock className="w-3 h-3" />
-                            {t("tradingAnalysis.durationSeconds", {
-                              seconds: String(
-                                Math.round(item.duration_seconds)
-                              ),
-                            })}
+                            <Calendar className="w-3 h-3" />
+                            {item.trade_date}
                           </span>
-                        )}
-                        {item.llm_provider && (
-                          <span className="capitalize px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-[10px]">
-                            {item.llm_provider}
-                          </span>
+                          {item.duration_seconds && (
+                            <span className="flex items-center gap-1">
+                              <Clock className="w-3 h-3" />
+                              {t("tradingAnalysis.durationSeconds", {
+                                seconds: String(
+                                  Math.round(item.duration_seconds)
+                                ),
+                              })}
+                            </span>
+                          )}
+                          {item.llm_provider && (
+                            <span className="capitalize px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-[10px]">
+                              {item.llm_provider}
+                            </span>
+                          )}
+                        </div>
+                        {item.author && (
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            <Avatar className="w-4 h-4">
+                              {item.author.avatar_url && (
+                                <AvatarImage src={item.author.avatar_url} alt="" />
+                              )}
+                              <AvatarFallback className="text-[8px] bg-gray-200 dark:bg-gray-700">
+                                <User className="w-2.5 h-2.5" />
+                              </AvatarFallback>
+                            </Avatar>
+                            <span className="text-[10px] text-gray-400 dark:text-gray-500 truncate max-w-[80px]">
+                              {item.author.full_name || item.author.username || "User"}
+                            </span>
+                          </div>
                         )}
                       </div>
                     </div>

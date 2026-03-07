@@ -63,6 +63,7 @@ import {
 import type { AIModelConfig } from "@/components/chat/types";
 import { DecisionBadge, StatusBadge } from "@/components/trading-analysis/badges";
 import { HistorySkeleton } from "@/components/trading-analysis/skeletons";
+import CompanyLogo from "@/components/ui/company-logo";
 
 // ==================== Helpers ====================
 
@@ -574,22 +575,25 @@ export default function TradingAnalysisPage() {
                         )}
                       >
                         <div className="flex items-start justify-between mb-3">
-                          <div className="min-w-0">
-                            <span className="text-lg font-bold text-gray-900 dark:text-white">
-                              {item.ticker}
-                            </span>
-                            <div className="flex items-center gap-2 mt-1 flex-wrap">
-                              <StatusBadge status={item.status} t={t} />
-                              <DecisionBadge
-                                decision={item.final_decision}
-                                t={t}
-                              />
-                              {item.is_published && (
+                          <div className="flex items-center gap-3 min-w-0">
+                            <CompanyLogo symbol={item.ticker} size="md" />
+                            <div className="min-w-0">
+                              <span className="text-lg font-bold text-gray-900 dark:text-white">
+                                {item.ticker}
+                              </span>
+                              <div className="flex items-center gap-2 mt-1 flex-wrap">
+                                <StatusBadge status={item.status} t={t} />
+                                <DecisionBadge
+                                  decision={item.final_decision}
+                                  t={t}
+                                />
+                                {item.is_published && (
                                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-gray-100 text-gray-600 dark:bg-white/5 dark:text-gray-400">
                                   <Globe className="w-2.5 h-2.5" />
                                   {t("tradingAnalysis.publishedLabel")}
                                 </span>
                               )}
+                              </div>
                             </div>
                           </div>
                           <Tooltip>

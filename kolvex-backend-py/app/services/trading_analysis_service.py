@@ -617,9 +617,12 @@ class TradingAnalysisService:
         total = count_result.count or 0
 
         result = query.range(offset, offset + limit - 1).execute()
+        items = result.data or []
+
+        self._attach_authors(items)
 
         return {
-            "items": result.data or [],
+            "items": items,
             "total": total,
             "limit": limit,
             "offset": offset,
@@ -636,10 +639,38 @@ class TradingAnalysisService:
                 .maybe_single()
                 .execute()
             )
-            return result.data if result else None
+            record = result.data if result else None
+            if record:
+                self._attach_authors([record])
+            return record
         except Exception as e:
             logger.warning(f"get_published_analysis({analysis_id}) failed: {e}")
             return None
+
+    def _attach_authors(self, items: list[dict[str, Any]]) -> None:
+        """Enrich a list of analysis dicts with author profile info."""
+        user_ids = list({item["user_id"] for item in items if item.get("user_id")})
+        if not user_ids:
+            return
+        try:
+            profiles_result = (
+                self._supabase.table("user_profiles")
+                .select("id, username, full_name, avatar_url")
+                .in_("id", user_ids)
+                .execute()
+            )
+            profiles_map = {p["id"]: p for p in (profiles_result.data or [])}
+            for item in items:
+                profile = profiles_map.get(item.get("user_id"))
+                if profile:
+                    item["author"] = {
+                        "id": profile["id"],
+                        "username": profile.get("username"),
+                        "full_name": profile.get("full_name"),
+                        "avatar_url": profile.get("avatar_url"),
+                    }
+        except Exception as e:
+            logger.warning(f"_attach_authors failed: {e}")
 
     async def get_analysis_status(self, analysis_id: str) -> Optional[dict[str, Any]]:
         """Get analysis status without user_id check (service-level)."""

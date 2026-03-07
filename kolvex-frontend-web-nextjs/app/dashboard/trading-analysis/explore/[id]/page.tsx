@@ -16,12 +16,14 @@ import {
   CheckCircle2,
   XCircle,
   Globe,
+  User,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/lib/i18n";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import {
   getPublishedAnalysis,
   type TradingAnalysis,
@@ -30,6 +32,7 @@ import { DecisionBadgeLarge } from "@/components/trading-analysis/badges";
 import { ReportCard } from "@/components/trading-analysis/report-card";
 import { DebateCard } from "@/components/trading-analysis/debate-card";
 import { DetailSkeleton } from "@/components/trading-analysis/skeletons";
+import CompanyLogo from "@/components/ui/company-logo";
 
 export default function PublishedAnalysisDetailPage() {
   const params = useParams();
@@ -150,6 +153,7 @@ export default function PublishedAnalysisDetailPage() {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 animate-fade-in-up">
             <div>
               <div className="flex items-center gap-3">
+                <CompanyLogo symbol={analysis.ticker} size="lg" />
                 <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
                   {analysis.ticker}
                 </h1>
@@ -159,6 +163,21 @@ export default function PublishedAnalysisDetailPage() {
                 </span>
               </div>
               <div className="flex items-center gap-3 mt-1.5 text-sm text-gray-500 dark:text-gray-400">
+                {analysis.author && (
+                  <span className="flex items-center gap-1.5">
+                    <Avatar className="w-5 h-5">
+                      {analysis.author.avatar_url && (
+                        <AvatarImage src={analysis.author.avatar_url} alt="" />
+                      )}
+                      <AvatarFallback className="text-[9px] bg-gray-200 dark:bg-gray-700">
+                        <User className="w-3 h-3" />
+                      </AvatarFallback>
+                    </Avatar>
+                    <span className="text-xs font-medium text-gray-600 dark:text-gray-300">
+                      {analysis.author.full_name || analysis.author.username || "User"}
+                    </span>
+                  </span>
+                )}
                 <span className="flex items-center gap-1">
                   <Calendar className="w-3.5 h-3.5" />
                   {analysis.trade_date}
