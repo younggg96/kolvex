@@ -3,6 +3,7 @@ TradingAnalysis Service
 
 Manages the lifecycle of TradingAgents multi-agent analyses:
 - Create analysis records
+- Build TradingAgents config from Kolvex parameters
 - Execute analysis in background threads
 - Track progress via Redis
 - Persist results to Supabase
@@ -17,10 +18,101 @@ from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 from typing import Any, AsyncGenerator, Optional
 
+from app.agent.config import (
+    OPENAI_API_KEY,
+    ANTHROPIC_API_KEY,
+    DEEPSEEK_API_KEY,
+    QWEN_API_KEY,
+    GOOGLE_API_KEY,
+    KIMI_API_KEY,
+    GROK_API_KEY,
+)
 from app.core.redis import get_redis
 from app.core.supabase import get_supabase_service
 
 logger = logging.getLogger(__name__)
+
+# ---------------------------------------------------------------------------
+# TradingAgents availability check
+# ---------------------------------------------------------------------------
+TRADINGAGENTS_AVAILABLE = False
+try:
+    import tradingagents  # noqa: F401
+    TRADINGAGENTS_AVAILABLE = True
+except ImportError:
+    logger.warning("tradingagents package not found — Trading Analysis feature disabled")
+
+# ---------------------------------------------------------------------------
+# API-key resolution: user-provided key takes priority over server fallback
+# ---------------------------------------------------------------------------
+_SERVER_KEY_FALLBACKS: dict[str, str | None] = {
+    "openai": OPENAI_API_KEY,
+    "anthropic": ANTHROPIC_API_KEY,
+    "deepseek": DEEPSEEK_API_KEY,
+    "qwen": QWEN_API_KEY,
+    "gemini": GOOGLE_API_KEY,
+    "kimi": KIMI_API_KEY,
+    "grok": GROK_API_KEY,
+}
+
+
+def _resolve_api_key(
+    provider: str,
+    user_api_keys: Optional[dict[str, str]] = None,
+) -> Optional[str]:
+    if user_api_keys and provider in user_api_keys:
+        return user_api_keys[provider]
+    return _SERVER_KEY_FALLBACKS.get(provider)
+
+
+def build_ta_config(
+    provider: str = "openai",
+    deep_think_model: str = "gpt-4o",
+    quick_think_model: str = "gpt-4o-mini",
+    max_debate_rounds: int = 1,
+    max_risk_discuss_rounds: int = 1,
+    user_api_keys: Optional[dict[str, str]] = None,
+) -> dict[str, Any]:
+    """Build a TradingAgents config dict from Kolvex parameters.
+
+    Provider names (openai, anthropic, gemini, deepseek, qwen, kimi, grok)
+    are passed through directly — the vendored LLM clients handle them.
+    """
+    from tradingagents.default_config import DEFAULT_CONFIG
+
+    api_key = _resolve_api_key(provider, user_api_keys)
+    logger.info(
+        f"build_ta_config: provider={provider}, "
+        f"key_source={'user' if user_api_keys and provider in user_api_keys else 'server'}, "
+        f"key_tail=****{api_key[-4:] if api_key else 'None'}"
+    )
+
+    config = DEFAULT_CONFIG.copy()
+    config.update({
+        "llm_provider": provider,
+        "deep_think_llm": deep_think_model,
+        "quick_think_llm": quick_think_model,
+        "api_key": api_key,
+        "max_debate_rounds": max_debate_rounds,
+        "max_risk_discuss_rounds": max_risk_discuss_rounds,
+    })
+    return config
+
+
+def create_trading_graph(
+    config: dict[str, Any],
+    selected_analysts: Optional[list[str]] = None,
+    callbacks: Optional[list] = None,
+):
+    """Create a TradingAgentsGraph with the given config."""
+    from tradingagents.graph.trading_graph import TradingAgentsGraph
+
+    return TradingAgentsGraph(
+        selected_analysts=selected_analysts or ["market", "social", "news", "fundamentals"],
+        debug=False,
+        config=config,
+        callbacks=callbacks,
+    )
 
 TABLE = "trading_analyses"
 PROGRESS_TTL = 3600
@@ -164,7 +256,6 @@ def _progress_key(analysis_id: str) -> str:
 def _run_graph_sync(
     config: dict[str, Any],
     selected_analysts: list[str],
-    user_api_keys: Optional[dict[str, str]],
     ticker: str,
     trade_date: str,
     analysis_id: str,
@@ -194,92 +285,88 @@ def _run_graph_sync(
             except Exception as e:
                 logger.debug(f"Progress push failed: {e}")
 
-    logger.info(f"[TradingAnalysis] {analysis_id}: importing adapter...")
-    from app.trading_agents.adapter import create_trading_graph, _inject_env_keys
-
     push_progress({"stage": "initializing", "message": "Creating analysis graph..."})
 
-    kolvex_provider = config.get("_kolvex_provider", config.get("llm_provider", "openai"))
-    logger.info(f"[TradingAnalysis] {analysis_id}: creating graph (provider={kolvex_provider})...")
+    provider = config.get("llm_provider", "openai")
+    logger.info(f"[TradingAnalysis] {analysis_id}: creating graph (provider={provider})...")
 
-    with _inject_env_keys(kolvex_provider, user_api_keys):
-        graph = create_trading_graph(
-            config=config,
-            selected_analysts=selected_analysts,
-        )
+    graph = create_trading_graph(
+        config=config,
+        selected_analysts=selected_analysts,
+    )
 
-        push_progress({"stage": "analysts", "message": "Starting analyst agents..."})
-        logger.info(f"[TradingAnalysis] {analysis_id}: starting stream({ticker}, {trade_date})...")
+    push_progress({"stage": "analysts", "message": "Starting analyst agents..."})
+    logger.info(f"[TradingAnalysis] {analysis_id}: starting stream({ticker}, {trade_date})...")
 
-        init_state = graph.propagator.create_initial_state(ticker, trade_date)
-        stream_config = {"recursion_limit": 100}
-        start_t = time.time()
+    init_state = graph.propagator.create_initial_state(ticker, trade_date)
+    stream_config = {"recursion_limit": 100}
+    start_t = time.time()
 
-        accumulated_state: dict[str, Any] = dict(init_state)
-        node_counts: dict[str, int] = {}
-        last_pushed_node: str | None = None
+    accumulated_state: dict[str, Any] = dict(init_state)
+    node_counts: dict[str, int] = {}
+    last_pushed_node: str | None = None
 
-        for chunk in graph.graph.stream(
-            init_state,
-            config=stream_config,
-            stream_mode="updates",
-        ):
-            for node_name, node_output in chunk.items():
-                elapsed = time.time() - start_t
-                node_counts[node_name] = node_counts.get(node_name, 0) + 1
-                count = node_counts[node_name]
+    for chunk in graph.graph.stream(
+        init_state,
+        config=stream_config,
+        stream_mode="updates",
+    ):
+        for node_name, node_output in chunk.items():
+            elapsed = time.time() - start_t
+            node_counts[node_name] = node_counts.get(node_name, 0) + 1
+            count = node_counts[node_name]
 
-                stage, base_message = NODE_STAGE_MAP.get(
-                    node_name, ("running", f"Running {node_name}...")
+            stage, base_message = NODE_STAGE_MAP.get(
+                node_name, ("running", f"Running {node_name}...")
+            )
+
+            is_tool_node = node_name.startswith("tools_")
+            skip_push = is_tool_node and last_pushed_node == node_name
+
+            if not skip_push:
+                if is_tool_node:
+                    parent = node_name.replace("tools_", "").capitalize()
+                    message = f"{parent} Analyst: tool call #{count}"
+                elif count > 1:
+                    message = f"{base_message} (call {count})"
+                else:
+                    message = base_message
+
+                logger.info(
+                    f"[TradingAnalysis] {analysis_id}: "
+                    f"{node_name} #{count} ({elapsed:.0f}s)"
                 )
+                progress_event: dict[str, Any] = {
+                    "stage": stage,
+                    "message": message,
+                    "node": node_name,
+                    "elapsed": round(elapsed),
+                }
+                try:
+                    detail = _extract_node_detail(node_name, node_output)
+                    if detail:
+                        progress_event.update(detail)
+                except Exception:
+                    pass
+                push_progress(progress_event)
+                last_pushed_node = node_name
 
-                is_tool_node = node_name.startswith("tools_")
-                skip_push = is_tool_node and last_pushed_node == node_name
+            if isinstance(node_output, dict):
+                accumulated_state.update(node_output)
 
-                if not skip_push:
-                    if is_tool_node:
-                        parent = node_name.replace("tools_", "").capitalize()
-                        message = f"{parent} Analyst: tool call #{count}"
-                    elif count > 1:
-                        message = f"{base_message} (call {count})"
-                    else:
-                        message = base_message
+        if time.time() - start_t > timeout_seconds:
+            raise TimeoutError(
+                f"Analysis timed out after {timeout_seconds}s"
+            )
 
-                    logger.info(
-                        f"[TradingAnalysis] {analysis_id}: "
-                        f"{node_name} #{count} ({elapsed:.0f}s)"
-                    )
-                    progress_event: dict[str, Any] = {
-                        "stage": stage,
-                        "message": message,
-                        "node": node_name,
-                        "elapsed": round(elapsed),
-                    }
-                    try:
-                        detail = _extract_node_detail(node_name, node_output)
-                        if detail:
-                            progress_event.update(detail)
-                    except Exception:
-                        pass
-                    push_progress(progress_event)
-                    last_pushed_node = node_name
-
-                if isinstance(node_output, dict):
-                    accumulated_state.update(node_output)
-
-            if time.time() - start_t > timeout_seconds:
-                raise TimeoutError(
-                    f"Analysis timed out after {timeout_seconds}s"
-                )
-
-        decision = graph.process_signal(
-            accumulated_state.get("final_trade_decision", "")
-        )
-        total_elapsed = time.time() - start_t
-        logger.info(
-            f"[TradingAnalysis] {analysis_id}: stream done in {total_elapsed:.1f}s, "
-            f"decision={decision}"
-        )
+    decision = graph.process_signal(
+        accumulated_state.get("final_trade_decision", "")
+    )
+    total_elapsed = time.time() - start_t
+    logger.info(
+        f"[TradingAnalysis] {analysis_id}: stream done in {total_elapsed:.1f}s, "
+        f"decision={decision}"
+    )
 
     push_progress({
         "stage": "completed",
@@ -366,16 +453,14 @@ class TradingAnalysisService:
         result = self._supabase.table(TABLE).insert(row).execute()
         record = result.data[0] if result.data else row
 
-        from app.trading_agents.adapter import build_ta_config
-
         config = build_ta_config(
             provider=provider,
             deep_think_model=deep_think_model,
             quick_think_model=quick_think_model,
             max_debate_rounds=max_debate_rounds,
             max_risk_discuss_rounds=max_risk_discuss_rounds,
+            user_api_keys=user_api_keys,
         )
-        config["_kolvex_provider"] = provider
 
         asyncio.get_event_loop().run_in_executor(
             _executor,
@@ -383,7 +468,6 @@ class TradingAnalysisService:
             analysis_id,
             config,
             analysts,
-            user_api_keys,
             ticker.upper(),
             trade_date,
         )
@@ -395,12 +479,11 @@ class TradingAnalysisService:
         analysis_id: str,
         config: dict,
         analysts: list[str],
-        user_api_keys: Optional[dict[str, str]],
         ticker: str,
         trade_date: str,
     ):
         """Wrapper to run the sync graph and persist results."""
-        provider = config.get("_kolvex_provider", "openai")
+        provider = config.get("llm_provider", "openai")
         timeout = PROVIDER_TIMEOUTS.get(provider, DEFAULT_GRAPH_TIMEOUT)
         logger.info(
             f"[TradingAnalysis] Background thread started: {analysis_id} "
@@ -414,7 +497,6 @@ class TradingAnalysisService:
             result = _run_graph_sync(
                 config=config,
                 selected_analysts=analysts,
-                user_api_keys=user_api_keys,
                 ticker=ticker,
                 trade_date=trade_date,
                 analysis_id=analysis_id,

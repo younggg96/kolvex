@@ -21,7 +21,10 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
 from app.api.dependencies.auth import get_current_user_id
-from app.services.trading_analysis_service import get_trading_analysis_service
+from app.services.trading_analysis_service import (
+    TRADINGAGENTS_AVAILABLE,
+    get_trading_analysis_service,
+)
 from app.services.user_api_keys_service import (
     UserApiKeysService,
     get_user_api_keys_service,
@@ -64,6 +67,11 @@ async def start_analysis(
     api_keys_service: UserApiKeysService = Depends(get_user_api_keys_service),
 ):
     """Start a new TradingAgents multi-agent analysis."""
+    if not TRADINGAGENTS_AVAILABLE:
+        raise HTTPException(
+            status_code=503,
+            detail="Trading Analysis is temporarily unavailable (tradingagents package not installed)",
+        )
     service = get_trading_analysis_service()
 
     user_api_keys = await api_keys_service.get_keys_dict(current_user_id)

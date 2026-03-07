@@ -45,14 +45,16 @@ def run_trading_analysis(
         A comprehensive analysis summary including the final BUY/SELL/HOLD decision
         and key findings from each analysis stage.
     """
-    from app.trading_agents import TRADINGAGENTS_AVAILABLE
+    from app.services.trading_analysis_service import (
+        TRADINGAGENTS_AVAILABLE,
+        build_ta_config,
+        create_trading_graph,
+    )
     if not TRADINGAGENTS_AVAILABLE:
         return (
             "Trading Analysis is currently unavailable — the tradingagents package "
             "is not installed in this environment."
         )
-
-    from app.trading_agents.adapter import build_ta_config, create_trading_graph, _inject_env_keys
 
     if not trade_date:
         trade_date = date.today().strftime("%Y-%m-%d")
@@ -60,25 +62,25 @@ def run_trading_analysis(
     ticker = ticker.upper().strip()
 
     try:
+        user_keys = None
+        for uid, keys in _user_api_keys_store.items():
+            user_keys = keys
+            break
+
         config = build_ta_config(
             provider=provider,
             deep_think_model="gpt-4o-mini",
             quick_think_model="gpt-4o-mini",
             max_debate_rounds=1,
             max_risk_discuss_rounds=1,
+            user_api_keys=user_keys,
         )
 
-        user_keys = None
-        for uid, keys in _user_api_keys_store.items():
-            user_keys = keys
-            break
-
-        with _inject_env_keys(provider, user_keys):
-            graph = create_trading_graph(
-                config=config,
-                selected_analysts=["market", "news", "fundamentals"],
-            )
-            final_state, decision = graph.propagate(ticker, trade_date)
+        graph = create_trading_graph(
+            config=config,
+            selected_analysts=["market", "news", "fundamentals"],
+        )
+        final_state, decision = graph.propagate(ticker, trade_date)
 
         sections = []
         sections.append(f"## Trading Analysis: {ticker} ({trade_date})")

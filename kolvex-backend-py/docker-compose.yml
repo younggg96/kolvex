@@ -54,9 +54,7 @@ services:
   backend:
     build: .
     container_name: kolvex-backend
-    command: >
-      bash -c "pip install -e /TradingAgents --no-deps -q 2>/dev/null;
-      uvicorn main:app --host 0.0.0.0 --port 8080 --reload"
+    command: uvicorn main:app --host 0.0.0.0 --port 8080 --reload
     ports:
       - "8080:8080"
     env_file:
@@ -108,7 +106,6 @@ services:
       REDIS_PORT: 6379
     volumes:
       - .:/app
-      - ../TradingAgents:/TradingAgents
     depends_on:
       db:
         condition: service_healthy

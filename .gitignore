@@ -25,3 +25,4 @@ logs/
 
 .cursor/
 kolvex-backend-py/*.png
+kolvex-backend-py/tradingagents/dataflows/data_cache/*.csv
