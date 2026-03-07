@@ -22,7 +22,7 @@ import { cn } from "@/lib/utils";
 import { useTranslation } from "@/lib/i18n";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { SwitchTab } from "@/components/ui/switch-tab";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import {
   getPublishedAnalysis,
@@ -42,6 +42,7 @@ export default function PublishedAnalysisDetailPage() {
 
   const [analysis, setAnalysis] = useState<TradingAnalysis | null>(null);
   const [loading, setLoading] = useState(true);
+  const [activeReportTab, setActiveReportTab] = useState("market");
 
   const loadAnalysis = useCallback(async () => {
     try {
@@ -57,6 +58,19 @@ export default function PublishedAnalysisDetailPage() {
   useEffect(() => {
     loadAnalysis();
   }, [loadAnalysis]);
+
+  useEffect(() => {
+    if (analysis?.status === "completed") {
+      const tabs = [
+        analysis.market_report ? "market" : null,
+        analysis.sentiment_report ? "sentiment" : null,
+        analysis.news_report ? "news" : null,
+        analysis.fundamentals_report ? "fundamentals" : null,
+      ];
+      const first = tabs.find(Boolean) || "market";
+      setActiveReportTab(first);
+    }
+  }, [analysis]);
 
   if (loading) {
     return (
@@ -123,9 +137,6 @@ export default function PublishedAnalysisDetailPage() {
     },
   ];
 
-  const firstAvailableTab =
-    reportTabs.find((tab) => !!tab.content)?.key || "market";
-
   return (
     <DashboardLayout
       title={t("tradingAnalysis.pageTitle", { ticker: analysis.ticker })}
@@ -157,12 +168,16 @@ export default function PublishedAnalysisDetailPage() {
                 <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
                   {analysis.ticker}
                 </h1>
+                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary dark:bg-primary/20">
+                  <CheckCircle2 className="w-3 h-3" />
+                  {t("tradingAnalysis.statusCompleted")}
+                </span>
                 <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600 dark:bg-white/5 dark:text-gray-400">
                   <Globe className="w-3 h-3" />
                   {t("tradingAnalysis.publishedLabel")}
                 </span>
               </div>
-              <div className="flex items-center gap-3 mt-1.5 text-sm text-gray-500 dark:text-gray-400">
+              <div className="flex items-center gap-3 mt-3 text-sm text-gray-500 dark:text-gray-400">
                 {analysis.author && (
                   <span className="flex items-center gap-1.5">
                     <Avatar className="w-5 h-5">
@@ -198,50 +213,40 @@ export default function PublishedAnalysisDetailPage() {
               </div>
             </div>
 
-            <DecisionBadgeLarge decision={analysis.final_decision} t={t} />
+            <div className="flex items-center gap-3">
+              <DecisionBadgeLarge decision={analysis.final_decision} t={t} />
+            </div>
           </div>
 
           {/* Reports */}
-          <div className="animate-fade-in-up stagger-1">
-            <Tabs defaultValue={firstAvailableTab} className="w-full">
-              <TabsList className="rounded-lg gap-0.5 p-1">
-                {reportTabs.map((tab) => {
-                  const Icon = tab.icon;
-                  const hasContent = !!tab.content;
-                  return (
-                    <TabsTrigger
-                      key={tab.key}
-                      value={tab.key}
-                      disabled={!hasContent}
-                      className={cn(
-                        "flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium flex-1 justify-center transition-all duration-200",
-                        "data-[state=active]:bg-white dark:data-[state=active]:bg-gray-700 data-[state=active]:text-gray-900 dark:data-[state=active]:text-white data-[state=active]:shadow-sm",
-                        !hasContent &&
-                        "text-gray-300 dark:text-gray-600 cursor-not-allowed"
-                      )}
-                    >
-                      <Icon className="w-3.5 h-3.5" />
-                      <span className="hidden sm:inline">{tab.title}</span>
-                    </TabsTrigger>
-                  );
-                })}
-              </TabsList>
+          {reportTabs.map((tab) =>
+            tab.key === activeReportTab ? (
+              <div key={tab.key} className="animate-fade-in-up stagger-1">
+                <ReportCard
+                  title={tab.title}
+                  icon={tab.icon}
+                  content={tab.content}
+                  locale={locale}
+                  t={t}
+                  headerExtra={
+                    <SwitchTab
+                      options={reportTabs.map((rt) => ({
+                        value: rt.key,
+                        label: rt.title,
+                        icon: <rt.icon className="w-3.5 h-3.5" />,
+                        disabled: !rt.content,
+                      }))}
+                      value={activeReportTab}
+                      onValueChange={setActiveReportTab}
+                      className="!w-fit"
+                      size="sm"
+                    />
+                  }
+                />
+              </div>
+            ) : null
+          )}
 
-              {reportTabs.map((tab) => (
-                <TabsContent key={tab.key} value={tab.key} className="mt-3">
-                  <ReportCard
-                    title={tab.title}
-                    icon={tab.icon}
-                    content={tab.content}
-                    locale={locale}
-                    t={t}
-                  />
-                </TabsContent>
-              ))}
-            </Tabs>
-          </div>
-
-          {/* Investment Plan */}
           <div className="animate-fade-in-up stagger-2">
             <ReportCard
               title={t("tradingAnalysis.sections.investmentPlan")}
@@ -252,7 +257,6 @@ export default function PublishedAnalysisDetailPage() {
             />
           </div>
 
-          {/* Investment Debate */}
           <div className="animate-fade-in-up stagger-3">
             <DebateCard
               title={t("tradingAnalysis.sections.investmentDebate")}
@@ -268,7 +272,6 @@ export default function PublishedAnalysisDetailPage() {
             />
           </div>
 
-          {/* Trader Plan */}
           <div className="animate-fade-in-up stagger-4">
             <ReportCard
               title={t("tradingAnalysis.sections.traderPlan")}
@@ -279,7 +282,6 @@ export default function PublishedAnalysisDetailPage() {
             />
           </div>
 
-          {/* Risk Debate */}
           <div className="animate-fade-in-up stagger-5">
             <DebateCard
               title={t("tradingAnalysis.sections.riskDebate")}
@@ -295,7 +297,6 @@ export default function PublishedAnalysisDetailPage() {
             />
           </div>
 
-          {/* Full Signal */}
           <div className="animate-fade-in-up stagger-5">
             <ReportCard
               title={t("tradingAnalysis.sections.finalSignal")}
