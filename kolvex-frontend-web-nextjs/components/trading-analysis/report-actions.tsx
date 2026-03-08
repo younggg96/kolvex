@@ -11,10 +11,14 @@ import {
 } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import type { TradingAnalysis } from "@/lib/tradingAnalysisApi";
+import type {
+  TradingAnalysis,
+  InvestmentDebate,
+  RiskDebate,
+} from "@/lib/tradingAnalysisApi";
 
 function debateToMarkdown(
-  debate: Record<string, string> | null | undefined,
+  debate: InvestmentDebate | RiskDebate | null | undefined,
   bullLabel: string,
   bearLabel: string,
   judgeLabel: string
@@ -73,7 +77,7 @@ export function buildFullReport(
   if (analysis.investment_debate) {
     sections.push(
       `## ${labels.investmentDebate}\n\n${debateToMarkdown(
-        analysis.investment_debate as Record<string, string>,
+        analysis.investment_debate,
         labels.bullResearcher,
         labels.bearResearcher,
         labels.judgeDecision
@@ -92,7 +96,7 @@ export function buildFullReport(
   if (analysis.risk_debate) {
     sections.push(
       `## ${labels.riskDebate}\n\n${debateToMarkdown(
-        analysis.risk_debate as Record<string, string>,
+        analysis.risk_debate,
         labels.aggressiveAnalyst,
         labels.conservativeAnalyst,
         labels.judgeDecision
