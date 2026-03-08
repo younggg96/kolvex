@@ -33,6 +33,8 @@ export interface TradingAnalysis {
   final_decision?: string | null;
   full_signal?: string | null;
   error_message?: string | null;
+  progress_stage?: string | null;
+  progress_message?: string | null;
   duration_seconds?: number | null;
   is_published?: boolean;
   published_at?: string | null;

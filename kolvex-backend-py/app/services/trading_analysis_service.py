@@ -266,6 +266,9 @@ def _run_graph_sync(
     """
     Run TradingAgentsGraph via graph.stream(stream_mode='updates')
     to emit per-node progress events to Redis for SSE consumption.
+
+    When Redis is unavailable (e.g. on Railway), falls back to writing
+    progress_stage / progress_message to the DB so the frontend can poll it.
     """
     import redis as sync_redis
     from app.core.config import settings
@@ -280,14 +283,29 @@ def _run_graph_sync(
         logger.warning(f"[TradingAnalysis] {analysis_id}: sync Redis unavailable: {e}")
         rc = None
 
+    _last_db_stage: list[str | None] = [None]
+
     def push_progress(event: dict):
         if rc:
             try:
                 full_key = f"{settings.REDIS_KEY_PREFIX}{redis_progress_key}"
                 rc.rpush(full_key, json.dumps(event, default=str))
                 rc.expire(full_key, PROGRESS_TTL)
+                return
             except Exception as e:
                 logger.warning(f"[TradingAnalysis] {analysis_id}: progress push failed: {e}")
+
+        stage = event.get("stage")
+        if stage and stage != _last_db_stage[0]:
+            _last_db_stage[0] = stage
+            try:
+                supabase = get_supabase_service()
+                supabase.table(TABLE).update({
+                    "progress_stage": stage,
+                    "progress_message": event.get("message", ""),
+                }).eq("id", analysis_id).execute()
+            except Exception as e:
+                logger.warning(f"[TradingAnalysis] {analysis_id}: DB progress update failed: {e}")
 
     push_progress({"stage": "initializing", "message": "Creating analysis graph..."})
 
@@ -554,6 +572,8 @@ class TradingAnalysisService:
             duration = time.time() - start_time
             update = {
                 "status": "completed",
+                "progress_stage": "completed",
+                "progress_message": None,
                 "market_report": result["market_report"],
                 "sentiment_report": result["sentiment_report"],
                 "news_report": result["news_report"],
@@ -592,6 +612,8 @@ class TradingAnalysisService:
             supabase = get_supabase_service()
             supabase.table(TABLE).update({
                 "status": "failed",
+                "progress_stage": "failed",
+                "progress_message": None,
                 "error_message": error_msg[:2000],
                 "duration_seconds": round(duration, 2),
                 "completed_at": datetime.utcnow().isoformat(),
@@ -809,7 +831,7 @@ class TradingAnalysisService:
         try:
             result = (
                 self._supabase.table(TABLE)
-                .select("id, status, final_decision, error_message")
+                .select("id, status, final_decision, error_message, progress_stage, progress_message")
                 .eq("id", analysis_id)
                 .maybe_single()
                 .execute()
@@ -824,6 +846,9 @@ class TradingAnalysisService:
     ) -> AsyncGenerator[dict, None]:
         """Yield progress events from Redis for SSE streaming.
 
+        When Redis is unavailable, falls back to polling the DB for
+        progress_stage changes and emitting synthetic SSE events.
+
         Args:
             analysis_id: The analysis ID to stream progress for.
             max_duration: Maximum stream duration in seconds (default 35 min,
@@ -835,6 +860,7 @@ class TradingAnalysisService:
         start = time.time()
         iteration = 0
         ever_received_events = False
+        last_db_stage: str | None = None
 
         logger.info(
             f"[StreamProgress] Starting stream for {analysis_id}, "
@@ -852,7 +878,11 @@ class TradingAnalysisService:
                         yield {"stage": "info", "message": str(raw)}
                 cursor += len(events)
 
-            if iteration % 3 == 0:
+            should_check_db = (
+                iteration % 3 == 0 if redis.is_connected else True
+            )
+
+            if should_check_db:
                 record = await self.get_analysis_status(analysis_id)
                 if record is None:
                     logger.warning(f"[StreamProgress] {analysis_id}: record not found")
@@ -875,6 +905,14 @@ class TradingAnalysisService:
                     }
                     return
 
+                db_stage = record.get("progress_stage")
+                if db_stage and db_stage != last_db_stage and not ever_received_events:
+                    last_db_stage = db_stage
+                    yield {
+                        "stage": db_stage,
+                        "message": record.get("progress_message", ""),
+                    }
+
             elapsed = time.time() - start
             if not ever_received_events and elapsed > 30 and iteration % 3 == 0:
                 logger.warning(
@@ -883,7 +921,7 @@ class TradingAnalysisService:
                 )
 
             iteration += 1
-            await asyncio.sleep(5)
+            await asyncio.sleep(3 if not redis.is_connected else 5)
 
         yield {
             "stage": "done",

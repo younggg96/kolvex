@@ -68,10 +68,8 @@ class RedisService:
         try:
             # 构建连接 URL
             if settings.REDIS_URL and settings.REDIS_URL != "redis://localhost:6379/0":
-                # 使用完整的 URL 配置（优先）
                 redis_url = settings.REDIS_URL
             else:
-                # 使用单独的配置项构建 URL
                 password_part = (
                     f":{settings.REDIS_PASSWORD}@" if settings.REDIS_PASSWORD else ""
                 )
@@ -81,19 +79,16 @@ class RedisService:
             self._pool = ConnectionPool.from_url(
                 redis_url,
                 max_connections=settings.REDIS_MAX_CONNECTIONS,
-                decode_responses=True,  # 自动解码为字符串
+                decode_responses=True,
             )
 
-            # 创建客户端
             self._client = redis.Redis(connection_pool=self._pool)
 
-            # 测试连接
             await self._client.ping()
 
             self._initialized = True
-            logger.info(
-                f"✅ Redis 连接成功: {settings.REDIS_HOST}:{settings.REDIS_PORT}"
-            )
+            safe_url = redis_url.split("@")[-1] if "@" in redis_url else redis_url
+            logger.info(f"✅ Redis 连接成功: {safe_url}")
 
         except Exception as e:
             logger.warning(f"⚠️ Redis 连接失败，缓存功能将不可用: {e}")

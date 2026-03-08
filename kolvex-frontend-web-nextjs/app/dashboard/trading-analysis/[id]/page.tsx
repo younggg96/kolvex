@@ -78,8 +78,17 @@ export default function TradingAnalysisDetailPage() {
     try {
       const data = await getAnalysis(analysisId);
       setAnalysis(data);
-      if (data.status === "completed") setCurrentStage("completed");
-      if (data.status === "failed") setCurrentStage("failed");
+      if (data.status === "completed") {
+        setCurrentStage("completed");
+      } else if (data.status === "failed") {
+        setCurrentStage("failed");
+      } else if (data.status === "running" && data.progress_stage) {
+        setCurrentStage((prev) => {
+          const prevIdx = STAGE_ORDER.indexOf(prev);
+          const nextIdx = STAGE_ORDER.indexOf(data.progress_stage!);
+          return nextIdx > prevIdx ? data.progress_stage! : prev;
+        });
+      }
       return data;
     } catch (e) {
       console.error("Failed to load analysis:", e);
