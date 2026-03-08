@@ -45,6 +45,7 @@ import { ReportCard } from "@/components/trading-analysis/report-card";
 import { DebateCard } from "@/components/trading-analysis/debate-card";
 import { DetailSkeleton } from "@/components/trading-analysis/skeletons";
 import { ProgressLog } from "@/components/trading-analysis/progress-log";
+import { FullReportActions } from "@/components/trading-analysis/report-actions";
 import CompanyLogo from "@/components/ui/company-logo";
 
 const STAGES = [
@@ -364,6 +365,7 @@ export default function TradingAnalysisDetailPage() {
 
             {isCompleted && (
               <div className="flex items-center gap-3">
+                <FullReportActions analysis={analysis} t={t} />
                 <DecisionBadgeLarge decision={analysis.final_decision} t={t} />
               </div>
             )}
@@ -546,16 +548,6 @@ export default function TradingAnalysisDetailPage() {
               )}
 
               <div className="animate-fade-in-up stagger-2">
-                <ReportCard
-                  title={t("tradingAnalysis.sections.investmentPlan")}
-                  icon={DollarSign}
-                  content={analysis.investment_plan}
-                  locale={locale}
-                  t={t}
-                />
-              </div>
-
-              <div className="animate-fade-in-up stagger-3">
                 <DebateCard
                   title={t("tradingAnalysis.sections.investmentDebate")}
                   icon={Swords}
@@ -565,6 +557,16 @@ export default function TradingAnalysisDetailPage() {
                   bullLabel={t("tradingAnalysis.debate.bullResearcher")}
                   bearLabel={t("tradingAnalysis.debate.bearResearcher")}
                   judgeLabel={t("tradingAnalysis.debate.judgeDecision")}
+                  locale={locale}
+                  t={t}
+                />
+              </div>
+
+              <div className="animate-fade-in-up stagger-3">
+                <ReportCard
+                  title={t("tradingAnalysis.sections.investmentPlan")}
+                  icon={DollarSign}
+                  content={analysis.investment_plan}
                   locale={locale}
                   t={t}
                 />

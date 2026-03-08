@@ -32,6 +32,7 @@ import { DecisionBadgeLarge } from "@/components/trading-analysis/badges";
 import { ReportCard } from "@/components/trading-analysis/report-card";
 import { DebateCard } from "@/components/trading-analysis/debate-card";
 import { DetailSkeleton } from "@/components/trading-analysis/skeletons";
+import { FullReportActions } from "@/components/trading-analysis/report-actions";
 import CompanyLogo from "@/components/ui/company-logo";
 
 export default function PublishedAnalysisDetailPage() {
@@ -155,6 +156,9 @@ export default function PublishedAnalysisDetailPage() {
           </span>
         </Button>
       }
+      headerActions={
+        <FullReportActions analysis={analysis} t={t} />
+      }
     >
       <div className="relative flex-1 overflow-y-auto bg-background-light dark:bg-background-dark">
         <div className="absolute inset-0 bg-grid opacity-50 pointer-events-none" />
@@ -213,9 +217,7 @@ export default function PublishedAnalysisDetailPage() {
               </div>
             </div>
 
-            <div className="flex items-center gap-3">
-              <DecisionBadgeLarge decision={analysis.final_decision} t={t} />
-            </div>
+            <DecisionBadgeLarge decision={analysis.final_decision} t={t} />
           </div>
 
           {/* Reports */}

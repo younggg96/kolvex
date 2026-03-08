@@ -1028,13 +1028,20 @@
       "bearResearcher": "Bear Researcher",
       "aggressiveAnalyst": "Aggressive Analyst",
       "conservativeAnalyst": "Conservative Analyst",
-      "judgeDecision": "Judge Decision"
+      "judgeDecision": "Judge Decision",
+      "copyAll": "Copy All",
+      "copied": "Copied",
+      "download": "Download",
+      "share": "Share"
     },
     "publish": "Publish",
     "publishedLabel": "Published",
     "published": "Analysis published successfully",
     "unpublished": "Analysis unpublished",
     "publishFailed": "Failed to update publish status",
+    "downloadFullReport": "Download Full Report",
+    "shareAnalysis": "Share Analysis",
+    "fullReportCopied": "Full report copied to clipboard",
     "explore": {
       "title": "Explore Analyses",
       "description": "Browse published multi-agent AI analyses shared by the community",

@@ -999,13 +999,20 @@
       "bearResearcher": "空头研究员",
       "aggressiveAnalyst": "激进分析师",
       "conservativeAnalyst": "保守分析师",
-      "judgeDecision": "裁判裁定"
+      "judgeDecision": "裁判裁定",
+      "copyAll": "复制全部",
+      "copied": "已复制",
+      "download": "下载",
+      "share": "分享"
     },
     "publish": "发布",
     "publishedLabel": "已发布",
     "published": "分析已成功发布",
     "unpublished": "分析已取消发布",
     "publishFailed": "更新发布状态失败",
+    "downloadFullReport": "下载完整报告",
+    "shareAnalysis": "分享分析",
+    "fullReportCopied": "完整报告已复制到剪贴板",
     "explore": {
       "title": "探索分析",
       "description": "浏览社区分享的多智能体 AI 交易分析",
