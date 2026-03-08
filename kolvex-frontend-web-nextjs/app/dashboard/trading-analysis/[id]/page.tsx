@@ -285,29 +285,33 @@ export default function TradingAnalysisDetailPage() {
         </Button>
       }
       headerActions={
-        <Button
-          variant={analysis.is_published ? "default" : "outline"}
-          size="xs"
-          onClick={handlePublishToggle}
-          disabled={publishing}
-          className={cn(
-            "gap-1.5 transition-all",
-            analysis.is_published
-              ? "bg-primary hover:bg-primary/90 text-white"
-              : ""
-          )}
-        >
-          {publishing ? (
-            <Loader2 className="w-3.5 h-3.5 animate-spin" />
-          ) : analysis.is_published ? (
-            <Globe className="w-3.5 h-3.5" />
-          ) : (
-            <Lock className="w-3.5 h-3.5" />
-          )}
-          {analysis.is_published
-            ? t("tradingAnalysis.publishedLabel")
-            : t("tradingAnalysis.publish")}
-        </Button>
+        <>
+          <Button
+            variant={analysis.is_published ? "default" : "outline"}
+            size="xs"
+            onClick={handlePublishToggle}
+            disabled={publishing}
+            className={cn(
+              "gap-1.5 transition-all",
+              analysis.is_published
+                ? "bg-primary hover:bg-primary/90 text-white"
+                : ""
+            )}
+          >
+            {publishing ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            ) : analysis.is_published ? (
+              <Globe className="w-3.5 h-3.5" />
+            ) : (
+              <Lock className="w-3.5 h-3.5" />
+            )}
+            {analysis.is_published
+              ? t("tradingAnalysis.publishedLabel")
+              : t("tradingAnalysis.publish")}
+          </Button>
+
+          {isCompleted && <FullReportActions analysis={analysis} t={t} />}
+        </>
       }
     >
       <div className="relative flex-1 overflow-y-auto bg-background-light dark:bg-background-dark">
@@ -369,10 +373,7 @@ export default function TradingAnalysisDetailPage() {
             </div>
 
             {isCompleted && (
-              <div className="flex items-center gap-3">
-                <FullReportActions analysis={analysis} t={t} />
-                <DecisionBadgeLarge decision={analysis.final_decision} t={t} />
-              </div>
+              <DecisionBadgeLarge decision={analysis.final_decision} t={t} />
             )}
           </div>
 

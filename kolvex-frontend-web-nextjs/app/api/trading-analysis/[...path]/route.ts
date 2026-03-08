@@ -15,9 +15,11 @@ const BACKEND_API_URL =
 
 function buildUrl(path: string[], searchParams: string): string {
   const pathString = path.join("/");
-  return `${BACKEND_API_URL}/api/v1/trading-analysis/${pathString}${
+  const url = `${BACKEND_API_URL}/api/v1/trading-analysis/${pathString}${
     searchParams ? `?${searchParams}` : ""
   }`;
+  console.log(`[TradingAnalysis Proxy] ${pathString} -> ${url}`);
+  return url;
 }
 
 async function getAuthHeader(): Promise<string | null> {
@@ -161,6 +163,8 @@ export async function POST(
       // No body
     }
 
+    console.log(`[TradingAnalysis Proxy] POST ${url}`);
+
     const response = await fetch(url, {
       method: "POST",
       headers: {
@@ -179,6 +183,7 @@ export async function POST(
       } catch {
         errorDetail = errorBody || errorDetail;
       }
+      console.error(`[TradingAnalysis Proxy] POST ${url} -> ${response.status}: ${errorDetail}`);
       return NextResponse.json(
         { error: errorDetail },
         { status: response.status }
@@ -186,6 +191,7 @@ export async function POST(
     }
 
     const data = await response.json();
+    console.log(`[TradingAnalysis Proxy] POST ${url} -> 200, id=${data?.id}`);
     return NextResponse.json(data);
   } catch (error) {
     console.error("Trading Analysis API POST error:", error);

@@ -442,6 +442,11 @@ class TradingAnalysisService:
         analysts = selected_analysts or ["market", "social", "news", "fundamentals"]
         analysis_id = str(uuid.uuid4())
 
+        logger.info(
+            f"[TradingAnalysis] start_analysis: {analysis_id} "
+            f"ticker={ticker} provider={provider} user={user_id[:8]}..."
+        )
+
         row = {
             "id": analysis_id,
             "user_id": user_id,
@@ -466,7 +471,8 @@ class TradingAnalysisService:
             user_api_keys=user_api_keys,
         )
 
-        asyncio.get_event_loop().run_in_executor(
+        loop = asyncio.get_running_loop()
+        loop.run_in_executor(
             _executor,
             self._run_in_thread,
             analysis_id,
@@ -476,7 +482,29 @@ class TradingAnalysisService:
             trade_date,
         )
 
+        logger.info(f"[TradingAnalysis] {analysis_id}: background thread submitted")
         return record
+
+    def cleanup_stale_analyses(self) -> int:
+        """Mark any 'running' analyses as failed on startup (orphaned from previous server)."""
+        try:
+            result = (
+                self._supabase.table(TABLE)
+                .update({
+                    "status": "failed",
+                    "error_message": "Analysis interrupted by server restart",
+                    "completed_at": datetime.utcnow().isoformat(),
+                })
+                .eq("status", "running")
+                .execute()
+            )
+            count = len(result.data) if result.data else 0
+            if count > 0:
+                logger.warning(f"[TradingAnalysis] Cleaned up {count} stale 'running' analyses on startup")
+            return count
+        except Exception as e:
+            logger.error(f"[TradingAnalysis] Failed to cleanup stale analyses: {e}")
+            return 0
 
     def _run_in_thread(
         self,

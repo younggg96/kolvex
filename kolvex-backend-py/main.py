@@ -477,6 +477,10 @@ async def lifespan(app: FastAPI):
     # 初始化 Redis
     await init_redis()
 
+    # 清理上次残留的 running 状态分析
+    from app.services.trading_analysis_service import get_trading_analysis_service
+    get_trading_analysis_service().cleanup_stale_analyses()
+
     # 启动定时任务
     setup_scheduler()
 
