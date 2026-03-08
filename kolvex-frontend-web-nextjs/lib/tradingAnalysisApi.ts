@@ -201,16 +201,43 @@ export function streamAnalysisProgress(
   const eventSource = new EventSource(url);
   let errorCount = 0;
   let receivedAnyData = false;
+  let closed = false;
+
+  const DATA_TIMEOUT_MS = 30_000;
+  let dataTimer: ReturnType<typeof setTimeout> | null = null;
+
+  const resetDataTimer = () => {
+    if (dataTimer) clearTimeout(dataTimer);
+    if (closed) return;
+    dataTimer = setTimeout(() => {
+      if (!closed && !receivedAnyData) {
+        console.warn("SSE: no data events received within timeout, closing");
+        cleanup();
+        onError?.(new Error("SSE data timeout"));
+      }
+    }, DATA_TIMEOUT_MS);
+  };
+
+  const cleanup = () => {
+    if (closed) return;
+    closed = true;
+    if (dataTimer) clearTimeout(dataTimer);
+    eventSource.close();
+  };
+
+  resetDataTimer();
 
   eventSource.onmessage = (event) => {
     errorCount = 0;
     receivedAnyData = true;
+    if (dataTimer) clearTimeout(dataTimer);
+    dataTimer = null;
     try {
       const data: ProgressEvent = JSON.parse(event.data);
       onEvent(data);
 
       if (data.stage === "done") {
-        eventSource.close();
+        cleanup();
         onDone?.();
       }
     } catch (e) {
@@ -220,16 +247,14 @@ export function streamAnalysisProgress(
 
   eventSource.onerror = () => {
     errorCount++;
-    // EventSource auto-reconnects on transient errors.
-    // Only give up after repeated failures with no data received in between.
     if (errorCount > 3 || (errorCount > 1 && !receivedAnyData)) {
       console.error(
         `SSE stream closed after ${errorCount} consecutive errors`
       );
-      eventSource.close();
+      cleanup();
       onError?.(new Error("SSE connection lost"));
     }
   };
 
-  return () => eventSource.close();
+  return cleanup;
 }

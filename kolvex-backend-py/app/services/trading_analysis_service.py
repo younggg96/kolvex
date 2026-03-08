@@ -274,8 +274,11 @@ def _run_graph_sync(
     try:
         redis_url = settings.REDIS_URL or f"redis://{settings.REDIS_HOST}:{settings.REDIS_PORT}/{settings.REDIS_DB}"
         rc = sync_redis.from_url(redis_url, decode_responses=True)
-    except Exception:
-        logger.warning("Could not connect sync Redis for progress tracking")
+        rc.ping()
+        logger.info(f"[TradingAnalysis] {analysis_id}: sync Redis connected ({redis_url})")
+    except Exception as e:
+        logger.warning(f"[TradingAnalysis] {analysis_id}: sync Redis unavailable: {e}")
+        rc = None
 
     def push_progress(event: dict):
         if rc:
@@ -284,7 +287,7 @@ def _run_graph_sync(
                 rc.rpush(full_key, json.dumps(event, default=str))
                 rc.expire(full_key, PROGRESS_TTL)
             except Exception as e:
-                logger.debug(f"Progress push failed: {e}")
+                logger.warning(f"[TradingAnalysis] {analysis_id}: progress push failed: {e}")
 
     push_progress({"stage": "initializing", "message": "Creating analysis graph..."})
 
@@ -803,10 +806,17 @@ class TradingAnalysisService:
         cursor = 0
         start = time.time()
         iteration = 0
+        ever_received_events = False
+
+        logger.info(
+            f"[StreamProgress] Starting stream for {analysis_id}, "
+            f"redis_connected={redis.is_connected}, key={key}"
+        )
 
         while (time.time() - start) < max_duration:
             events = await redis.lrange(key, cursor, -1)
             if events:
+                ever_received_events = True
                 for raw in events:
                     try:
                         yield json.loads(raw) if isinstance(raw, str) else raw
@@ -817,6 +827,7 @@ class TradingAnalysisService:
             if iteration % 3 == 0:
                 record = await self.get_analysis_status(analysis_id)
                 if record is None:
+                    logger.warning(f"[StreamProgress] {analysis_id}: record not found")
                     yield {
                         "stage": "done",
                         "status": "failed",
@@ -824,6 +835,10 @@ class TradingAnalysisService:
                     }
                     return
                 if record.get("status") in ("completed", "failed"):
+                    logger.info(
+                        f"[StreamProgress] {analysis_id}: "
+                        f"status={record['status']}, decision={record.get('final_decision')}"
+                    )
                     yield {
                         "stage": "done",
                         "status": record["status"],
@@ -831,6 +846,13 @@ class TradingAnalysisService:
                         "error_message": record.get("error_message"),
                     }
                     return
+
+            elapsed = time.time() - start
+            if not ever_received_events and elapsed > 30 and iteration % 3 == 0:
+                logger.warning(
+                    f"[StreamProgress] {analysis_id}: no Redis events after "
+                    f"{elapsed:.0f}s (redis_connected={redis.is_connected})"
+                )
 
             iteration += 1
             await asyncio.sleep(5)

@@ -126,7 +126,7 @@ export default function TradingAnalysisDetailPage() {
         if (data && data.status === "running") {
           startPolling();
         }
-      }, 10_000);
+      }, 5_000);
     };
 
     const connectSSE = () => {
@@ -144,9 +144,14 @@ export default function TradingAnalysisDetailPage() {
               return nextIdx > prevIdx ? event.stage : prev;
             });
           }
+          if (event.stage === "done") {
+            if (event.status === "completed") setCurrentStage("completed");
+            if (event.status === "failed") setCurrentStage("failed");
+          }
         },
         () => {
           if (cancelled) return;
+          console.log("SSE error/timeout, falling back to polling");
           loadAnalysis().then((data) => {
             if (!cancelled && data?.status === "running") {
               startPolling();
