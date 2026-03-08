@@ -16,11 +16,13 @@ import json
 import logging
 from typing import Any, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, Header, HTTPException, Query
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
+from supabase import Client
 
 from app.api.dependencies.auth import get_current_user_id
+from app.core.supabase import get_supabase
 from app.services.trading_analysis_service import (
     TRADINGAGENTS_AVAILABLE,
     get_trading_analysis_service,
@@ -153,10 +155,38 @@ async def get_analysis(
 @router.get("/{analysis_id}/stream")
 async def stream_progress(
     analysis_id: str,
-    current_user_id: str = Depends(get_current_user_id),
+    token: Optional[str] = Query(None, description="Bearer token for direct browser SSE connections"),
+    authorization: Optional[str] = Header(None),
+    supabase: Client = Depends(get_supabase),
 ):
-    """SSE stream of analysis progress events with keepalive."""
+    """SSE stream of analysis progress events with keepalive.
+
+    Supports auth via Authorization header (proxy) or ?token= query param
+    (direct browser EventSource, which cannot set custom headers).
+    """
     import asyncio as _asyncio
+
+    auth_token = token
+    if not auth_token and authorization:
+        try:
+            scheme, value = authorization.split()
+            if scheme.lower() == "bearer":
+                auth_token = value
+        except ValueError:
+            pass
+
+    if not auth_token:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
+    try:
+        user_response = supabase.auth.get_user(auth_token)
+        if not user_response or not user_response.user:
+            raise HTTPException(status_code=401, detail="Invalid token")
+        current_user_id = user_response.user.id
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=401, detail=f"Authentication failed: {e}")
 
     service = get_trading_analysis_service()
 

@@ -47,6 +47,7 @@ import { DetailSkeleton } from "@/components/trading-analysis/skeletons";
 import { ProgressLog } from "@/components/trading-analysis/progress-log";
 import { FullReportActions } from "@/components/trading-analysis/report-actions";
 import CompanyLogo from "@/components/ui/company-logo";
+import { createClient } from "@/lib/supabase/client";
 
 const STAGES = [
   { key: "initializing", icon: Bot },
@@ -129,9 +130,20 @@ export default function TradingAnalysisDetailPage() {
       }, 5_000);
     };
 
-    const connectSSE = () => {
+    const connectSSE = async () => {
       if (cancelled) return;
       cleanupRef.current?.();
+
+      let accessToken: string | undefined;
+      try {
+        const supabase = createClient();
+        const { data: { session } } = await supabase.auth.getSession();
+        accessToken = session?.access_token;
+      } catch {
+        /* fall through — will use proxy */
+      }
+
+      if (cancelled) return;
       const cleanup = streamAnalysisProgress(
         analysisId,
         (event) => {
@@ -160,7 +172,8 @@ export default function TradingAnalysisDetailPage() {
         },
         () => {
           if (!cancelled) loadAnalysis();
-        }
+        },
+        accessToken
       );
       cleanupRef.current = cleanup;
     };

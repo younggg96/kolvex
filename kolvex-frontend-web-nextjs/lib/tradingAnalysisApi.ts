@@ -191,13 +191,31 @@ export async function getPublishedAnalysis(
   return apiRequest<TradingAnalysis>(`/published/${id}`);
 }
 
+/**
+ * Connect to SSE stream for real-time analysis progress.
+ *
+ * In production, EventSource connects directly to the backend (bypassing
+ * the Vercel serverless proxy which buffers SSE responses). Auth is passed
+ * via ?token= query param since EventSource cannot set custom headers.
+ *
+ * @param accessToken Supabase access_token for direct backend connection
+ */
 export function streamAnalysisProgress(
   id: string,
   onEvent: (event: ProgressEvent) => void,
   onError?: (error: Error) => void,
-  onDone?: () => void
+  onDone?: () => void,
+  accessToken?: string
 ): () => void {
-  const url = `${API_PREFIX}/${id}/stream`;
+  const backendUrl = process.env.NEXT_PUBLIC_BACKEND_API_URL;
+  let url: string;
+
+  if (accessToken && backendUrl) {
+    url = `${backendUrl}/api/v1/trading-analysis/${id}/stream?token=${encodeURIComponent(accessToken)}`;
+  } else {
+    url = `${API_PREFIX}/${id}/stream`;
+  }
+
   const eventSource = new EventSource(url);
   let errorCount = 0;
   let receivedAnyData = false;
