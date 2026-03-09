@@ -291,7 +291,6 @@ def _run_graph_sync(
                 full_key = f"{settings.REDIS_KEY_PREFIX}{redis_progress_key}"
                 rc.rpush(full_key, json.dumps(event, default=str))
                 rc.expire(full_key, PROGRESS_TTL)
-                return
             except Exception as e:
                 logger.warning(f"[TradingAnalysis] {analysis_id}: progress push failed: {e}")
 

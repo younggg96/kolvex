@@ -218,12 +218,16 @@ export function streamAnalysisProgress(
     url = `${API_PREFIX}/${id}/stream`;
   }
 
-  console.log(`[SSE] connecting: direct=${!!(accessToken && backendUrl)}, url=${url.replace(/token=[^&]+/, "token=***")}`);
+  const isDirect = !!(accessToken && backendUrl);
+  const proxyUrl = `${API_PREFIX}/${id}/stream`;
 
-  const eventSource = new EventSource(url);
+  console.log(`[SSE] connecting: direct=${isDirect}, url=${url.replace(/token=[^&]+/, "token=***")}`);
+
+  let currentSource: EventSource | null = null;
   let errorCount = 0;
   let receivedAnyData = false;
   let closed = false;
+  let retriedWithProxy = false;
 
   const DATA_TIMEOUT_MS = 30_000;
   let dataTimer: ReturnType<typeof setTimeout> | null = null;
@@ -233,7 +237,7 @@ export function streamAnalysisProgress(
     if (closed) return;
     dataTimer = setTimeout(() => {
       if (!closed && !receivedAnyData) {
-        console.warn("SSE: no data events received within timeout, closing");
+        console.warn("[SSE] no data within timeout, closing");
         cleanup();
         onError?.(new Error("SSE data timeout"));
       }
@@ -244,44 +248,58 @@ export function streamAnalysisProgress(
     if (closed) return;
     closed = true;
     if (dataTimer) clearTimeout(dataTimer);
-    eventSource.close();
+    currentSource?.close();
   };
 
-  resetDataTimer();
+  const attachHandlers = (es: EventSource) => {
+    es.onopen = () => console.log("[SSE] connection opened");
 
-  eventSource.onmessage = (event) => {
-    errorCount = 0;
-    receivedAnyData = true;
-    if (dataTimer) clearTimeout(dataTimer);
-    dataTimer = null;
-    try {
-      const data: ProgressEvent = JSON.parse(event.data);
-      onEvent(data);
-
-      if (data.stage === "done") {
-        cleanup();
-        onDone?.();
+    es.onmessage = (event) => {
+      errorCount = 0;
+      receivedAnyData = true;
+      if (dataTimer) clearTimeout(dataTimer);
+      dataTimer = null;
+      try {
+        const data: ProgressEvent = JSON.parse(event.data);
+        onEvent(data);
+        if (data.stage === "done") {
+          cleanup();
+          onDone?.();
+        }
+      } catch (e) {
+        console.error("[SSE] parse error:", e);
       }
-    } catch (e) {
-      console.error("Failed to parse SSE event:", e);
-    }
+    };
+
+    es.onerror = () => {
+      errorCount++;
+      console.warn(
+        `[SSE] error #${errorCount}, readyState=${es.readyState}, ` +
+        `receivedData=${receivedAnyData}, retriedProxy=${retriedWithProxy}`
+      );
+
+      if (es.readyState === EventSource.CLOSED && isDirect && !retriedWithProxy && !receivedAnyData) {
+        console.log("[SSE] direct failed, retrying via proxy...");
+        retriedWithProxy = true;
+        es.close();
+        errorCount = 0;
+        const proxySrc = new EventSource(proxyUrl);
+        currentSource = proxySrc;
+        attachHandlers(proxySrc);
+        return;
+      }
+
+      if (errorCount > 3 || (errorCount > 1 && !receivedAnyData)) {
+        console.error(`[SSE] giving up after ${errorCount} errors`);
+        cleanup();
+        onError?.(new Error("SSE connection lost"));
+      }
+    };
   };
 
-  eventSource.onopen = () => {
-    console.log("[SSE] connection opened");
-  };
-
-  eventSource.onerror = (e) => {
-    errorCount++;
-    console.warn(
-      `[SSE] error #${errorCount}, readyState=${eventSource.readyState}, receivedData=${receivedAnyData}`
-    );
-    if (errorCount > 3 || (errorCount > 1 && !receivedAnyData)) {
-      console.error(`[SSE] giving up after ${errorCount} errors`);
-      cleanup();
-      onError?.(new Error("SSE connection lost"));
-    }
-  };
+  currentSource = new EventSource(url);
+  attachHandlers(currentSource);
+  resetDataTimer();
 
   return cleanup;
 }
