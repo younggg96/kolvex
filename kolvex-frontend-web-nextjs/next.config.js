@@ -155,6 +155,7 @@ const nextConfig = {
         https://*.vercel-insights.com
         https://*.financialjuice.com
         https://feed.financialjuice.com
+        https://*.up.railway.app
         ${isDevelopment ? localApiUrl : ""}
       ;
 
