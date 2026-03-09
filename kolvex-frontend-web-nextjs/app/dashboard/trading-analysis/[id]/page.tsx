@@ -148,8 +148,9 @@ export default function TradingAnalysisDetailPage() {
         const supabase = createClient();
         const { data: { session } } = await supabase.auth.getSession();
         accessToken = session?.access_token;
-      } catch {
-        /* fall through — will use proxy */
+        console.log(`[SSE] token obtained: ${!!accessToken}, backend: ${process.env.NEXT_PUBLIC_BACKEND_API_URL?.slice(0, 30)}`);
+      } catch (e) {
+        console.warn("[SSE] failed to get token, using proxy:", e);
       }
 
       if (cancelled) return;

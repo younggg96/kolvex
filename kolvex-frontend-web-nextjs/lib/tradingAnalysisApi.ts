@@ -218,6 +218,8 @@ export function streamAnalysisProgress(
     url = `${API_PREFIX}/${id}/stream`;
   }
 
+  console.log(`[SSE] connecting: direct=${!!(accessToken && backendUrl)}, url=${url.replace(/token=[^&]+/, "token=***")}`);
+
   const eventSource = new EventSource(url);
   let errorCount = 0;
   let receivedAnyData = false;
@@ -265,12 +267,17 @@ export function streamAnalysisProgress(
     }
   };
 
-  eventSource.onerror = () => {
+  eventSource.onopen = () => {
+    console.log("[SSE] connection opened");
+  };
+
+  eventSource.onerror = (e) => {
     errorCount++;
+    console.warn(
+      `[SSE] error #${errorCount}, readyState=${eventSource.readyState}, receivedData=${receivedAnyData}`
+    );
     if (errorCount > 3 || (errorCount > 1 && !receivedAnyData)) {
-      console.error(
-        `SSE stream closed after ${errorCount} consecutive errors`
-      );
+      console.error(`[SSE] giving up after ${errorCount} errors`);
       cleanup();
       onError?.(new Error("SSE connection lost"));
     }
