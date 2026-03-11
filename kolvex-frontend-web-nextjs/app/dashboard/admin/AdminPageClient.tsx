@@ -62,7 +62,20 @@ import {
   Power,
   PowerOff,
   Settings,
+  Crown,
+  Plus,
+  Pencil,
+  Trash2,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 
 // User Avatar with error handling - uses Next.js Image for caching
@@ -248,6 +261,40 @@ interface AITask {
   last_update: string;
 }
 
+interface AdminKOL {
+  id: number;
+  platform: string;
+  platform_user_id?: string;
+  username: string;
+  display_name?: string;
+  avatar_url?: string;
+  banner_url?: string;
+  bio?: string;
+  location?: string;
+  website?: string;
+  profile_url?: string;
+  is_verified: boolean;
+  verification_type?: string;
+  followers_count: number;
+  following_count: number;
+  likes_count: number;
+  collected_count: number;
+  rest_id?: string;
+  red_id?: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+  posts_count?: number;
+  subscribers_count?: number;
+}
+
+interface AdminKOLsData {
+  kols: AdminKOL[];
+  total: number;
+  page: number;
+  page_size: number;
+}
+
 interface ScheduledJob {
   id: string;
   name: string;
@@ -283,6 +330,7 @@ interface ScheduledJobConfig {
 
 const adminTabs = [
   { value: "overview", icon: LayoutDashboard, label: "Overview" },
+  { value: "kols", icon: Crown, label: "KOLs" },
   { value: "scheduler", icon: CalendarClock, label: "Scheduler" },
   { value: "actions", icon: Zap, label: "Actions" },
   { value: "kol-requests", icon: UserPlus, label: "KOL Requests" },
@@ -765,6 +813,30 @@ export default function AdminPageClient() {
   const [database, setDatabase] = useState<DatabaseStats | null>(null);
   const [kolRequests, setKolRequests] = useState<KOLRequestsData | null>(null);
 
+  // KOL management state
+  const [adminKols, setAdminKols] = useState<AdminKOLsData | null>(null);
+  const [isLoadingKols, setIsLoadingKols] = useState(true);
+  const [kolSearch, setKolSearch] = useState("");
+  const [kolPlatformFilter, setKolPlatformFilter] = useState("all");
+  const [kolActiveFilter, setKolActiveFilter] = useState("all");
+  const [kolPage, setKolPage] = useState(1);
+  const [showKolDialog, setShowKolDialog] = useState(false);
+  const [editingKol, setEditingKol] = useState<AdminKOL | null>(null);
+  const [kolFormData, setKolFormData] = useState<Record<string, any>>({
+    platform: "twitter",
+    username: "",
+    display_name: "",
+    bio: "",
+    avatar_url: "",
+    profile_url: "",
+    is_active: true,
+  });
+  const [isSavingKol, setIsSavingKol] = useState(false);
+  const [deletingKolId, setDeletingKolId] = useState<number | null>(null);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [deleteWithPosts, setDeleteWithPosts] = useState(false);
+  const [togglingKolIds, setTogglingKolIds] = useState<Set<number>>(new Set());
+
   const [isLoadingOverview, setIsLoadingOverview] = useState(true);
   const [isLoadingScrapers, setIsLoadingScrapers] = useState(true);
   const [isLoadingTasks, setIsLoadingTasks] = useState(true);
@@ -941,6 +1013,126 @@ export default function AdminPageClient() {
     }
   }, []);
 
+  const fetchKols = useCallback(
+    async (
+      page = 1,
+      search?: string,
+      platform?: string,
+      isActive?: string
+    ) => {
+      setIsLoadingKols(true);
+      try {
+        const params = new URLSearchParams();
+        params.set("page", String(page));
+        params.set("page_size", "20");
+        if (search) params.set("search", search);
+        if (platform && platform !== "all") params.set("platform", platform);
+        if (isActive && isActive !== "all")
+          params.set("is_active", isActive === "active" ? "true" : "false");
+
+        const response = await fetch(`/api/admin/kols?${params.toString()}`);
+        if (!response.ok) throw new Error("Failed to fetch KOLs");
+        const data = await response.json();
+        setAdminKols(data);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setIsLoadingKols(false);
+      }
+    },
+    []
+  );
+
+  const saveKol = useCallback(
+    async (data: Record<string, any>, kolId?: number) => {
+      setIsSavingKol(true);
+      try {
+        const isEdit = kolId !== undefined;
+        const url = isEdit ? `/api/admin/kols/${kolId}` : "/api/admin/kols";
+        const method = isEdit ? "PUT" : "POST";
+
+        const response = await fetch(url, {
+          method,
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(data),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.error || "Failed to save KOL");
+        }
+
+        setShowKolDialog(false);
+        setEditingKol(null);
+        fetchKols(kolPage, kolSearch, kolPlatformFilter, kolActiveFilter);
+        return true;
+      } catch (err) {
+        alert(err instanceof Error ? err.message : "Failed to save KOL");
+        return false;
+      } finally {
+        setIsSavingKol(false);
+      }
+    },
+    [fetchKols, kolPage, kolSearch, kolPlatformFilter, kolActiveFilter]
+  );
+
+  const deleteKol = useCallback(
+    async (kolId: number, withPosts: boolean) => {
+      try {
+        const params = withPosts ? "?delete_posts=true" : "";
+        const response = await fetch(`/api/admin/kols/${kolId}${params}`, {
+          method: "DELETE",
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.error || "Failed to delete KOL");
+        }
+
+        setShowDeleteDialog(false);
+        setDeletingKolId(null);
+        fetchKols(kolPage, kolSearch, kolPlatformFilter, kolActiveFilter);
+      } catch (err) {
+        alert(err instanceof Error ? err.message : "Failed to delete KOL");
+      }
+    },
+    [fetchKols, kolPage, kolSearch, kolPlatformFilter, kolActiveFilter]
+  );
+
+  const toggleKolActive = useCallback(
+    async (kolId: number, isActive: boolean) => {
+      setTogglingKolIds((prev) => new Set(prev).add(kolId));
+      try {
+        const response = await fetch(`/api/admin/kols/${kolId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ is_active: isActive }),
+        });
+
+        if (!response.ok) throw new Error("Failed to toggle KOL status");
+
+        setAdminKols((prev) => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            kols: prev.kols.map((k) =>
+              k.id === kolId ? { ...k, is_active: isActive } : k
+            ),
+          };
+        });
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setTogglingKolIds((prev) => {
+          const next = new Set(prev);
+          next.delete(kolId);
+          return next;
+        });
+      }
+    },
+    []
+  );
+
   const fetchRunningTask = useCallback(async () => {
     try {
       const response = await fetch("/api/admin/ai-tasks/current");
@@ -1017,6 +1209,7 @@ export default function AdminPageClient() {
     fetchKolRequests(kolRequestsFilter);
     fetchAiStats();
     fetchScheduler();
+    fetchKols(kolPage, kolSearch, kolPlatformFilter, kolActiveFilter);
   }, [
     fetchOverview,
     fetchScrapers,
@@ -1024,6 +1217,11 @@ export default function AdminPageClient() {
     fetchUsers,
     fetchDatabase,
     fetchKolRequests,
+    fetchKols,
+    kolPage,
+    kolSearch,
+    kolPlatformFilter,
+    kolActiveFilter,
     fetchAiStats,
     fetchScheduler,
     currentPage,
@@ -1167,8 +1365,9 @@ export default function AdminPageClient() {
       fetchAiStats();
       fetchRunningTask();
       fetchScheduler();
+      fetchKols();
     }
-  }, [profile, fetchOverview, fetchScrapers, fetchTasks, fetchUsers, fetchDatabase, fetchKolRequests, fetchAiStats, fetchRunningTask, fetchScheduler]);
+  }, [profile, fetchOverview, fetchScrapers, fetchTasks, fetchUsers, fetchDatabase, fetchKolRequests, fetchAiStats, fetchRunningTask, fetchScheduler, fetchKols]);
 
   useEffect(() => {
     if (!schedulerData) return;
@@ -1223,6 +1422,17 @@ export default function AdminPageClient() {
     return () => clearTimeout(timer);
   }, [searchQuery, fetchUsers, profile]);
 
+  // Search KOLs with debounce
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (profile?.is_admin) {
+        fetchKols(1, kolSearch, kolPlatformFilter, kolActiveFilter);
+        setKolPage(1);
+      }
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [kolSearch, kolPlatformFilter, kolActiveFilter, fetchKols, profile]);
+
   const isLoading =
     isLoadingOverview ||
     isLoadingScrapers ||
@@ -1230,7 +1440,8 @@ export default function AdminPageClient() {
     isLoadingUsers ||
     isLoadingDatabase ||
     isLoadingKolRequests ||
-    isLoadingScheduler;
+    isLoadingScheduler ||
+    isLoadingKols;
 
   const tabOptions = adminTabs.map((tab) => ({
     value: tab.value,
@@ -1366,6 +1577,584 @@ export default function AdminPageClient() {
                   </SectionCard>
                 </>
               ) : null}
+            </TabsContent>
+
+            {/* KOLs Management Tab */}
+            <TabsContent value="kols" className="mt-4 space-y-4">
+              {/* Toolbar */}
+              <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                <div className="relative flex-1 max-w-sm">
+                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
+                  <Input
+                    placeholder="Search username or display name..."
+                    value={kolSearch}
+                    onChange={(e) => setKolSearch(e.target.value)}
+                    className="pl-8 h-8 text-xs"
+                  />
+                </div>
+                <Select
+                  value={kolPlatformFilter}
+                  onValueChange={setKolPlatformFilter}
+                >
+                  <SelectTrigger className="h-8 w-auto min-w-[120px] text-xs">
+                    <SelectValue placeholder="Platform" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Platforms</SelectItem>
+                    <SelectItem value="twitter">Twitter</SelectItem>
+                    <SelectItem value="xiaohongshu">Xiaohongshu</SelectItem>
+                    <SelectItem value="reddit">Reddit</SelectItem>
+                    <SelectItem value="youtube">YouTube</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Select
+                  value={kolActiveFilter}
+                  onValueChange={setKolActiveFilter}
+                >
+                  <SelectTrigger className="h-8 w-auto min-w-[100px] text-xs">
+                    <SelectValue placeholder="Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Status</SelectItem>
+                    <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="inactive">Inactive</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Button
+                  size="sm"
+                  className="h-8 gap-1.5"
+                  onClick={() => {
+                    setEditingKol(null);
+                    setKolFormData({
+                      platform: "twitter",
+                      username: "",
+                      display_name: "",
+                      bio: "",
+                      avatar_url: "",
+                      profile_url: "",
+                      is_active: true,
+                    });
+                    setShowKolDialog(true);
+                  }}
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  <span className="text-xs">Add KOL</span>
+                </Button>
+              </div>
+
+              {/* Stats Bar */}
+              {adminKols && (
+                <div className="flex items-center gap-4 text-xs text-gray-500 dark:text-gray-400">
+                  <span>
+                    Total: <strong className="text-gray-900 dark:text-white">{adminKols.total}</strong>
+                  </span>
+                  <span>
+                    Page {adminKols.page} of{" "}
+                    {Math.ceil(adminKols.total / adminKols.page_size)}
+                  </span>
+                </div>
+              )}
+
+              {/* KOL Table */}
+              {isLoadingKols ? (
+                <div className="flex justify-center py-12">
+                  <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                </div>
+              ) : adminKols && adminKols.kols.length > 0 ? (
+                <div className="bg-white dark:bg-card-dark border border-border-light dark:border-border-dark rounded-lg overflow-hidden">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="text-xs w-[200px]">KOL</TableHead>
+                        <TableHead className="text-xs">Platform</TableHead>
+                        <TableHead className="text-xs text-right">Followers</TableHead>
+                        <TableHead className="text-xs text-right">Posts</TableHead>
+                        <TableHead className="text-xs text-right">Subs</TableHead>
+                        <TableHead className="text-xs text-center">Active</TableHead>
+                        <TableHead className="text-xs text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {adminKols.kols.map((kol) => (
+                        <TableRow key={kol.id}>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <UserAvatar
+                                src={kol.avatar_url}
+                                fallback={
+                                  kol.username?.charAt(0).toUpperCase() || "?"
+                                }
+                              />
+                              <div className="min-w-0">
+                                <p className="text-xs font-medium text-gray-900 dark:text-white truncate">
+                                  {kol.display_name || kol.username}
+                                </p>
+                                <p className="text-[11px] text-gray-500 dark:text-gray-400 truncate">
+                                  @{kol.username}
+                                </p>
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Badge
+                              variant="outline"
+                              className={cn(
+                                "text-[10px] px-1.5 py-0",
+                                kol.platform === "twitter" &&
+                                  "border-blue-300 text-blue-600 dark:border-blue-600 dark:text-blue-400",
+                                kol.platform === "xiaohongshu" &&
+                                  "border-red-300 text-red-600 dark:border-red-600 dark:text-red-400",
+                                kol.platform === "reddit" &&
+                                  "border-orange-300 text-orange-600 dark:border-orange-600 dark:text-orange-400",
+                                kol.platform === "youtube" &&
+                                  "border-red-300 text-red-600 dark:border-red-600 dark:text-red-400"
+                              )}
+                            >
+                              {kol.platform}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-right text-xs">
+                            {(kol.followers_count || 0).toLocaleString()}
+                          </TableCell>
+                          <TableCell className="text-right text-xs">
+                            {(kol.posts_count || 0).toLocaleString()}
+                          </TableCell>
+                          <TableCell className="text-right text-xs">
+                            {(kol.subscribers_count || 0).toLocaleString()}
+                          </TableCell>
+                          <TableCell className="text-center">
+                            <Switch
+                              checked={kol.is_active}
+                              onCheckedChange={(checked) =>
+                                toggleKolActive(kol.id, checked)
+                              }
+                              disabled={togglingKolIds.has(kol.id)}
+                            />
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex items-center justify-end gap-1">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7"
+                                onClick={() => {
+                                  setEditingKol(kol);
+                                  setKolFormData({
+                                    platform: kol.platform,
+                                    username: kol.username,
+                                    display_name: kol.display_name || "",
+                                    bio: kol.bio || "",
+                                    avatar_url: kol.avatar_url || "",
+                                    profile_url: kol.profile_url || "",
+                                    platform_user_id:
+                                      kol.platform_user_id || "",
+                                    is_verified: kol.is_verified,
+                                    followers_count: kol.followers_count || 0,
+                                    following_count: kol.following_count || 0,
+                                    location: kol.location || "",
+                                    website: kol.website || "",
+                                    is_active: kol.is_active,
+                                  });
+                                  setShowKolDialog(true);
+                                }}
+                                title="Edit"
+                              >
+                                <Pencil className="h-3.5 w-3.5" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10"
+                                onClick={() => {
+                                  setDeletingKolId(kol.id);
+                                  setDeleteWithPosts(false);
+                                  setShowDeleteDialog(true);
+                                }}
+                                title="Delete"
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+
+                  {/* Pagination */}
+                  {adminKols.total > adminKols.page_size && (
+                    <div className="flex items-center justify-between px-4 py-3 border-t border-border-light dark:border-border-dark">
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        Showing{" "}
+                        {(adminKols.page - 1) * adminKols.page_size + 1}-
+                        {Math.min(
+                          adminKols.page * adminKols.page_size,
+                          adminKols.total
+                        )}{" "}
+                        of {adminKols.total}
+                      </p>
+                      <div className="flex items-center gap-1">
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          className="h-7 w-7"
+                          disabled={kolPage <= 1}
+                          onClick={() => {
+                            const newPage = kolPage - 1;
+                            setKolPage(newPage);
+                            fetchKols(
+                              newPage,
+                              kolSearch,
+                              kolPlatformFilter,
+                              kolActiveFilter
+                            );
+                          }}
+                        >
+                          <ChevronLeft className="h-3.5 w-3.5" />
+                        </Button>
+                        <span className="text-xs px-2">
+                          {kolPage} / {Math.ceil(adminKols.total / adminKols.page_size)}
+                        </span>
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          className="h-7 w-7"
+                          disabled={
+                            kolPage >=
+                            Math.ceil(adminKols.total / adminKols.page_size)
+                          }
+                          onClick={() => {
+                            const newPage = kolPage + 1;
+                            setKolPage(newPage);
+                            fetchKols(
+                              newPage,
+                              kolSearch,
+                              kolPlatformFilter,
+                              kolActiveFilter
+                            );
+                          }}
+                        >
+                          <ChevronRight className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="text-center py-12 text-sm text-gray-500 dark:text-gray-400">
+                  No KOLs found
+                </div>
+              )}
+
+              {/* Create/Edit KOL Dialog */}
+              <Dialog open={showKolDialog} onOpenChange={setShowKolDialog}>
+                <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle className="text-base">
+                      {editingKol ? "Edit KOL" : "Add New KOL"}
+                    </DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-3 py-2">
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="text-xs text-gray-500 dark:text-gray-400 mb-1 block">
+                          Platform *
+                        </label>
+                        <Select
+                          value={kolFormData.platform}
+                          onValueChange={(v) =>
+                            setKolFormData((p) => ({ ...p, platform: v }))
+                          }
+                          disabled={!!editingKol}
+                        >
+                          <SelectTrigger className="h-8 text-xs">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="twitter">Twitter</SelectItem>
+                            <SelectItem value="xiaohongshu">Xiaohongshu</SelectItem>
+                            <SelectItem value="reddit">Reddit</SelectItem>
+                            <SelectItem value="youtube">YouTube</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <label className="text-xs text-gray-500 dark:text-gray-400 mb-1 block">
+                          Username *
+                        </label>
+                        <Input
+                          value={kolFormData.username}
+                          onChange={(e) =>
+                            setKolFormData((p) => ({
+                              ...p,
+                              username: e.target.value,
+                            }))
+                          }
+                          placeholder="e.g. elonmusk"
+                          className="h-8 text-xs"
+                          disabled={!!editingKol}
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-xs text-gray-500 dark:text-gray-400 mb-1 block">
+                        Display Name
+                      </label>
+                      <Input
+                        value={kolFormData.display_name}
+                        onChange={(e) =>
+                          setKolFormData((p) => ({
+                            ...p,
+                            display_name: e.target.value,
+                          }))
+                        }
+                        placeholder="Display name"
+                        className="h-8 text-xs"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs text-gray-500 dark:text-gray-400 mb-1 block">
+                        Bio
+                      </label>
+                      <Input
+                        value={kolFormData.bio}
+                        onChange={(e) =>
+                          setKolFormData((p) => ({ ...p, bio: e.target.value }))
+                        }
+                        placeholder="KOL bio"
+                        className="h-8 text-xs"
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="text-xs text-gray-500 dark:text-gray-400 mb-1 block">
+                          Avatar URL
+                        </label>
+                        <Input
+                          value={kolFormData.avatar_url}
+                          onChange={(e) =>
+                            setKolFormData((p) => ({
+                              ...p,
+                              avatar_url: e.target.value,
+                            }))
+                          }
+                          placeholder="https://..."
+                          className="h-8 text-xs"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs text-gray-500 dark:text-gray-400 mb-1 block">
+                          Profile URL
+                        </label>
+                        <Input
+                          value={kolFormData.profile_url}
+                          onChange={(e) =>
+                            setKolFormData((p) => ({
+                              ...p,
+                              profile_url: e.target.value,
+                            }))
+                          }
+                          placeholder="https://..."
+                          className="h-8 text-xs"
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="text-xs text-gray-500 dark:text-gray-400 mb-1 block">
+                          Platform User ID
+                        </label>
+                        <Input
+                          value={kolFormData.platform_user_id || ""}
+                          onChange={(e) =>
+                            setKolFormData((p) => ({
+                              ...p,
+                              platform_user_id: e.target.value,
+                            }))
+                          }
+                          placeholder="Platform specific ID"
+                          className="h-8 text-xs"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs text-gray-500 dark:text-gray-400 mb-1 block">
+                          Location
+                        </label>
+                        <Input
+                          value={kolFormData.location || ""}
+                          onChange={(e) =>
+                            setKolFormData((p) => ({
+                              ...p,
+                              location: e.target.value,
+                            }))
+                          }
+                          placeholder="Location"
+                          className="h-8 text-xs"
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="text-xs text-gray-500 dark:text-gray-400 mb-1 block">
+                          Followers
+                        </label>
+                        <Input
+                          type="number"
+                          value={kolFormData.followers_count || 0}
+                          onChange={(e) =>
+                            setKolFormData((p) => ({
+                              ...p,
+                              followers_count: parseInt(e.target.value) || 0,
+                            }))
+                          }
+                          className="h-8 text-xs"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs text-gray-500 dark:text-gray-400 mb-1 block">
+                          Following
+                        </label>
+                        <Input
+                          type="number"
+                          value={kolFormData.following_count || 0}
+                          onChange={(e) =>
+                            setKolFormData((p) => ({
+                              ...p,
+                              following_count: parseInt(e.target.value) || 0,
+                            }))
+                          }
+                          className="h-8 text-xs"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-xs text-gray-500 dark:text-gray-400 mb-1 block">
+                        Website
+                      </label>
+                      <Input
+                        value={kolFormData.website || ""}
+                        onChange={(e) =>
+                          setKolFormData((p) => ({
+                            ...p,
+                            website: e.target.value,
+                          }))
+                        }
+                        placeholder="https://..."
+                        className="h-8 text-xs"
+                      />
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-2">
+                        <Switch
+                          checked={kolFormData.is_active !== false}
+                          onCheckedChange={(checked) =>
+                            setKolFormData((p) => ({
+                              ...p,
+                              is_active: checked,
+                            }))
+                          }
+                        />
+                        <label className="text-xs text-gray-700 dark:text-gray-300">
+                          Active
+                        </label>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Switch
+                          checked={kolFormData.is_verified === true}
+                          onCheckedChange={(checked) =>
+                            setKolFormData((p) => ({
+                              ...p,
+                              is_verified: checked,
+                            }))
+                          }
+                        />
+                        <label className="text-xs text-gray-700 dark:text-gray-300">
+                          Verified
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+                  <DialogFooter>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowKolDialog(false)}
+                      className="h-8 text-xs"
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      size="sm"
+                      className="h-8 text-xs gap-1.5"
+                      disabled={
+                        isSavingKol ||
+                        !kolFormData.username?.trim() ||
+                        !kolFormData.platform
+                      }
+                      onClick={() => saveKol(kolFormData, editingKol?.id)}
+                    >
+                      {isSavingKol && (
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                      )}
+                      {editingKol ? "Save Changes" : "Create KOL"}
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+
+              {/* Delete Confirmation Dialog */}
+              <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+                <DialogContent className="max-w-sm">
+                  <DialogHeader>
+                    <DialogTitle className="text-base text-red-600 dark:text-red-400">
+                      Delete KOL
+                    </DialogTitle>
+                  </DialogHeader>
+                  <div className="py-2 space-y-3">
+                    <p className="text-sm text-gray-600 dark:text-gray-300">
+                      Are you sure you want to delete this KOL? This action
+                      cannot be undone.
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <Switch
+                        checked={deleteWithPosts}
+                        onCheckedChange={setDeleteWithPosts}
+                      />
+                      <label className="text-xs text-gray-600 dark:text-gray-400">
+                        Also delete all posts from this KOL
+                      </label>
+                    </div>
+                    {deleteWithPosts && (
+                      <p className="text-[11px] text-red-500 dark:text-red-400">
+                        Warning: This will permanently delete all posts
+                        associated with this KOL.
+                      </p>
+                    )}
+                  </div>
+                  <DialogFooter>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowDeleteDialog(false)}
+                      className="h-8 text-xs"
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      className="h-8 text-xs"
+                      onClick={() => {
+                        if (deletingKolId !== null) {
+                          deleteKol(deletingKolId, deleteWithPosts);
+                        }
+                      }}
+                    >
+                      Delete
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
             </TabsContent>
 
             {/* Scheduler Tab */}

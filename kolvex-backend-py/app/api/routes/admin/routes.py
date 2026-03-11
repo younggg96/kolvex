@@ -1572,3 +1572,390 @@ async def cancel_running_ai_task(
         ),
         "task_id": task_id,
     }
+
+
+# ============================================================
+# KOL 管理 (CRUD)
+# ============================================================
+
+
+@router.get("/kols", response_model=Dict[str, Any])
+async def list_kols(
+    page: int = Query(1, ge=1, description="页码"),
+    page_size: int = Query(20, ge=1, le=100, description="每页数量"),
+    search: Optional[str] = Query(None, description="搜索关键词（用户名或昵称）"),
+    platform: Optional[str] = Query(None, description="平台筛选: twitter, xiaohongshu"),
+    is_active: Optional[bool] = Query(None, description="是否活跃"),
+    admin_id: str = Depends(verify_admin),
+    supabase: Client = Depends(get_supabase_service),
+):
+    """
+    获取 KOL 列表（管理员 CRUD）
+
+    支持分页、搜索、按平台/活跃状态筛选
+    """
+    try:
+        offset = (page - 1) * page_size
+
+        query = supabase.table("kol_profiles").select("*", count="exact")
+
+        if search:
+            query = query.or_(
+                f"username.ilike.%{search}%,display_name.ilike.%{search}%"
+            )
+        if platform:
+            query = query.eq("platform", platform)
+        if is_active is not None:
+            query = query.eq("is_active", is_active)
+
+        response = (
+            query.order("created_at", desc=True)
+            .range(offset, offset + page_size - 1)
+            .execute()
+        )
+
+        # Fetch post counts per KOL
+        kols = response.data or []
+        for kol in kols:
+            try:
+                count_resp = (
+                    supabase.table("kol_tweets")
+                    .select("id", count="exact")
+                    .eq("username", kol.get("username", ""))
+                    .eq("platform", kol.get("platform", "twitter"))
+                    .execute()
+                )
+                kol["posts_count"] = count_resp.count or 0
+            except Exception:
+                kol["posts_count"] = 0
+
+            try:
+                sub_resp = (
+                    supabase.table("kol_subscriptions")
+                    .select("id", count="exact")
+                    .eq("kol_username", kol.get("username", ""))
+                    .eq("platform", kol.get("platform", "twitter"))
+                    .execute()
+                )
+                kol["subscribers_count"] = sub_resp.count or 0
+            except Exception:
+                kol["subscribers_count"] = 0
+
+        return {
+            "kols": kols,
+            "total": response.count or 0,
+            "page": page,
+            "page_size": page_size,
+        }
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to list KOLs: {str(e)}",
+        )
+
+
+@router.get("/kols/{kol_id}", response_model=Dict[str, Any])
+async def get_kol_detail(
+    kol_id: int,
+    admin_id: str = Depends(verify_admin),
+    supabase: Client = Depends(get_supabase_service),
+):
+    """
+    获取单个 KOL 详情
+    """
+    try:
+        response = (
+            supabase.table("kol_profiles")
+            .select("*")
+            .eq("id", kol_id)
+            .single()
+            .execute()
+        )
+
+        if not response.data:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"KOL not found: {kol_id}",
+            )
+
+        kol = response.data
+
+        # Fetch recent posts
+        posts_resp = (
+            supabase.table("kol_tweets")
+            .select("*")
+            .eq("username", kol.get("username", ""))
+            .eq("platform", kol.get("platform", "twitter"))
+            .order("created_at", desc=True)
+            .limit(10)
+            .execute()
+        )
+
+        return {
+            "kol": kol,
+            "recent_posts": posts_resp.data or [],
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to get KOL: {str(e)}",
+        )
+
+
+@router.post("/kols", response_model=Dict[str, Any])
+async def create_kol(
+    kol_data: Dict[str, Any],
+    admin_id: str = Depends(verify_admin),
+    supabase: Client = Depends(get_supabase_service),
+):
+    """
+    创建新 KOL
+
+    必填字段: platform, username
+    可选字段: display_name, avatar_url, bio, location, website, profile_url,
+             is_verified, followers_count, following_count, platform_user_id,
+             rest_id, red_id, banner_url
+    """
+    required_fields = ["platform", "username"]
+    for field in required_fields:
+        if field not in kol_data:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Missing required field: {field}",
+            )
+
+    allowed_platforms = ["twitter", "xiaohongshu", "reddit", "youtube"]
+    if kol_data["platform"] not in allowed_platforms:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid platform. Must be one of: {', '.join(allowed_platforms)}",
+        )
+
+    try:
+        # Check for duplicate
+        existing = (
+            supabase.table("kol_profiles")
+            .select("id")
+            .eq("platform", kol_data["platform"])
+            .eq("username", kol_data["username"])
+            .execute()
+        )
+
+        if existing.data:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f"KOL already exists: {kol_data['username']} on {kol_data['platform']}",
+            )
+
+        allowed_fields = {
+            "platform", "username", "display_name", "avatar_url", "banner_url",
+            "bio", "location", "website", "profile_url", "platform_user_id",
+            "is_verified", "verification_type", "followers_count", "following_count",
+            "likes_count", "collected_count", "rest_id", "red_id", "is_active",
+        }
+        insert_data = {k: v for k, v in kol_data.items() if k in allowed_fields}
+        insert_data.setdefault("is_active", True)
+        insert_data["created_at"] = datetime.now(timezone.utc).isoformat()
+        insert_data["updated_at"] = datetime.now(timezone.utc).isoformat()
+
+        response = supabase.table("kol_profiles").insert(insert_data).execute()
+
+        if not response.data:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to create KOL",
+            )
+
+        return {
+            "success": True,
+            "message": f"KOL created: {kol_data['username']}",
+            "kol": response.data[0],
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to create KOL: {str(e)}",
+        )
+
+
+@router.put("/kols/{kol_id}", response_model=Dict[str, Any])
+async def update_kol(
+    kol_id: int,
+    kol_data: Dict[str, Any],
+    admin_id: str = Depends(verify_admin),
+    supabase: Client = Depends(get_supabase_service),
+):
+    """
+    更新 KOL 信息
+    """
+    try:
+        existing = (
+            supabase.table("kol_profiles")
+            .select("id")
+            .eq("id", kol_id)
+            .execute()
+        )
+
+        if not existing.data:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"KOL not found: {kol_id}",
+            )
+
+        allowed_fields = {
+            "username", "display_name", "avatar_url", "banner_url", "bio",
+            "location", "website", "profile_url", "platform_user_id",
+            "is_verified", "verification_type", "followers_count", "following_count",
+            "likes_count", "collected_count", "rest_id", "red_id", "is_active",
+        }
+        update_data = {k: v for k, v in kol_data.items() if k in allowed_fields}
+
+        if not update_data:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="No valid fields to update",
+            )
+
+        update_data["updated_at"] = datetime.now(timezone.utc).isoformat()
+
+        response = (
+            supabase.table("kol_profiles")
+            .update(update_data)
+            .eq("id", kol_id)
+            .execute()
+        )
+
+        if not response.data:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to update KOL",
+            )
+
+        return {
+            "success": True,
+            "message": "KOL updated successfully",
+            "kol": response.data[0],
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to update KOL: {str(e)}",
+        )
+
+
+@router.delete("/kols/{kol_id}", response_model=Dict[str, Any])
+async def delete_kol(
+    kol_id: int,
+    delete_posts: bool = Query(False, description="是否同时删除该 KOL 的所有帖子"),
+    admin_id: str = Depends(verify_admin),
+    supabase: Client = Depends(get_supabase_service),
+):
+    """
+    删除 KOL
+
+    可选择同时删除该 KOL 的所有帖子
+    """
+    try:
+        existing = (
+            supabase.table("kol_profiles")
+            .select("id, username, platform")
+            .eq("id", kol_id)
+            .single()
+            .execute()
+        )
+
+        if not existing.data:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"KOL not found: {kol_id}",
+            )
+
+        kol = existing.data
+        deleted_posts_count = 0
+
+        if delete_posts:
+            posts_resp = (
+                supabase.table("kol_tweets")
+                .delete()
+                .eq("username", kol["username"])
+                .eq("platform", kol["platform"])
+                .execute()
+            )
+            deleted_posts_count = len(posts_resp.data) if posts_resp.data else 0
+
+        # Delete subscriptions
+        try:
+            supabase.table("kol_subscriptions").delete().eq(
+                "kol_username", kol["username"]
+            ).eq("platform", kol["platform"]).execute()
+        except Exception:
+            pass
+
+        # Delete the KOL profile
+        supabase.table("kol_profiles").delete().eq("id", kol_id).execute()
+
+        return {
+            "success": True,
+            "message": f"KOL deleted: {kol['username']}",
+            "deleted_posts_count": deleted_posts_count,
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to delete KOL: {str(e)}",
+        )
+
+
+@router.patch("/kols/{kol_id}/toggle-active", response_model=Dict[str, Any])
+async def toggle_kol_active(
+    kol_id: int,
+    is_active: bool = Query(..., description="是否激活"),
+    admin_id: str = Depends(verify_admin),
+    supabase: Client = Depends(get_supabase_service),
+):
+    """
+    切换 KOL 的活跃状态
+    """
+    try:
+        response = (
+            supabase.table("kol_profiles")
+            .update({
+                "is_active": is_active,
+                "updated_at": datetime.now(timezone.utc).isoformat(),
+            })
+            .eq("id", kol_id)
+            .execute()
+        )
+
+        if not response.data:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"KOL not found: {kol_id}",
+            )
+
+        return {
+            "success": True,
+            "kol_id": kol_id,
+            "is_active": is_active,
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to toggle KOL active status: {str(e)}",
+        )
