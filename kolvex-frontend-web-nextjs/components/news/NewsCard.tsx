@@ -104,13 +104,13 @@ async function translateText(
 
   const response = usePost
     ? await fetch("/api/translate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ q: text, tl }),
-      })
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ q: text, tl }),
+    })
     : await fetch(
-        `/api/translate?tl=${encodeURIComponent(tl)}&q=${encodeURIComponent(text)}`
-      );
+      `/api/translate?tl=${encodeURIComponent(tl)}&q=${encodeURIComponent(text)}`
+    );
 
   if (!response.ok) throw new Error("Translation request failed");
   const data = await response.json();
@@ -269,7 +269,13 @@ export default function NewsCard({ article }: NewsCardProps) {
   const sourceConfig = getSourceConfig(article.source);
   const sentimentKey = getSentimentKey(article.sentiment);
   const impactKey = article.market_impact?.toLowerCase() ?? null;
-  const hasAIAnalysis = !!article.analyzed_at;
+  const hasAIAnalysis =
+    !!article.analyzed_at &&
+    article.sentiment_confidence !== 0 &&
+    !!article.trading_action &&
+    (!!article.ai_summary ||
+      (!!article.key_points && article.key_points.length > 0) ||
+      !!sentimentKey);
   const isHighRelevance =
     article.us_market_relevance === "high" ||
     (hasAIAnalysis && article.market_impact?.toLowerCase() === "high");
@@ -307,7 +313,7 @@ export default function NewsCard({ article }: NewsCardProps) {
       className={`group relative rounded-lg border backdrop-blur-sm px-3 py-2.5 transition-all duration-200 ${isHighRelevance
         ? "border-primary/40 bg-primary/[0.03] dark:bg-primary/[0.06] ring-1 ring-primary/20 hover:border-primary/60"
         : isLowRelevance
-          ? "border-border/30 dark:border-border-dark/30 bg-card-light/50 dark:bg-card-dark/30 opacity-60 hover:opacity-100"
+          ? "border-border/30 dark:border-border-dark/30 bg-card-light/50 dark:bg-card-dark/30"
           : "border-border/50 dark:border-border-dark/50 bg-card-light dark:bg-card-dark/50 hover:border-border"
         } hover:bg-card/80`}
     >
