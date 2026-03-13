@@ -79,15 +79,15 @@ export function ReportCard({
     <TooltipProvider>
       <div
         className={cn(
-          "bg-white dark:bg-card-dark border border-border-light dark:border-border-dark rounded-lg overflow-hidden transition-all duration-300 hover:border-primary/30 dark:hover:border-primary/20",
+          "bg-card border border-border rounded-lg overflow-hidden transition-all duration-300 hover:border-primary/30 dark:hover:border-primary/20",
           className
         )}
       >
-        <div className="flex items-center gap-2 px-4 py-3 border-b border-border-light dark:border-border-dark bg-gray-50/50 dark:bg-white/[0.02]">
+        <div className="flex items-center gap-2 px-4 py-3 border-b border-border bg-gray-50/50 dark:bg-white/[0.02]">
           <div className="w-6 h-6 rounded-md bg-primary/10 dark:bg-primary/20 flex items-center justify-center shrink-0">
             <Icon className="w-3.5 h-3.5 text-primary" />
           </div>
-          <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
+          <h3 className="text-sm font-semibold text-foreground">
             {title}
           </h3>
           {headerExtra && (

@@ -84,7 +84,7 @@ export default function InvestorsPage() {
   if (error) {
     return (
       <DashboardLayout title={t("investors.title")} headerClassName="lg:hidden">
-        <div className="relative flex-1 overflow-y-auto bg-background-light dark:bg-background-dark">
+        <div className="relative flex-1 overflow-y-auto bg-background">
           <div className="p-4">
             <ErrorState
               title={t("investors.loadFailed")}
@@ -99,7 +99,7 @@ export default function InvestorsPage() {
 
   return (
     <DashboardLayout title={t("investors.title")} headerClassName="lg:hidden">
-      <div className="relative flex-1 overflow-y-auto bg-background-light dark:bg-background-dark">
+      <div className="relative flex-1 overflow-y-auto bg-background">
         <div className="absolute inset-0 bg-grid opacity-50 pointer-events-none" />
 
         {/* Hero Section - Desktop Only */}
@@ -175,7 +175,7 @@ export default function InvestorsPage() {
                         href={`/dashboard/investors/${investor.code}`}
                         className="block"
                       >
-                        <div className="flex items-center justify-between p-2.5 sm:p-3 rounded-lg border border-border-light dark:border-border-dark hover:bg-muted/50 active:bg-muted/70 transition-colors">
+                        <div className="flex items-center justify-between p-2.5 sm:p-3 rounded-lg border border-border hover:bg-muted/50 active:bg-muted/70 transition-colors">
                           <div className="flex-1 min-w-0">
                             <h3 className="font-semibold text-xs sm:text-sm truncate w-[280px] sm:w-[600px] lg:w-[360px]">
                               {investor.name}
@@ -231,7 +231,7 @@ export default function InvestorsPage() {
                         href={`/dashboard/stock/${stock.ticker}`}
                         className="block"
                       >
-                        <div className="flex items-center gap-2.5 sm:gap-3 p-2.5 sm:p-3 rounded-lg border border-border-light dark:border-border-dark hover:bg-muted/50 active:bg-muted/70 transition-colors">
+                        <div className="flex items-center gap-2.5 sm:gap-3 p-2.5 sm:p-3 rounded-lg border border-border hover:bg-muted/50 active:bg-muted/70 transition-colors">
                           <CompanyLogo
                             symbol={stock.ticker}
                             name={stock.company_name || undefined}

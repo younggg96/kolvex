@@ -414,6 +414,48 @@ def setup_scheduler():
             misfire_grace_time=1800,
         )
 
+        # ============================================================
+        # 任务: 每日预热 Stock Screener 缓存 (美东 6:00)
+        # ============================================================
+        async def scheduled_screener_cache_warm():
+            """Pre-warm S&P 500 financial data into Redis for the stock screener."""
+            import json as _json
+            from app.services.stock_screener.screener_service import StockScreenerService
+
+            logger.info("⏰ [SCREENER] 开始预热 S&P 500 数据缓存")
+            try:
+                import importlib.resources
+                import pathlib
+
+                sp500_path = pathlib.Path(__file__).parent / "sp500_symbols.json"
+                if sp500_path.exists():
+                    symbols = _json.loads(sp500_path.read_text())
+                else:
+                    from app.services.stock_screener.screener_service import _yf
+                    import yfinance as yf
+                    tickers = yf.Tickers("^GSPC")
+                    symbols = [
+                        "AAPL", "MSFT", "AMZN", "NVDA", "GOOGL", "META", "TSLA",
+                        "BRK-B", "UNH", "XOM", "JNJ", "JPM", "V", "PG", "MA",
+                        "HD", "CVX", "MRK", "ABBV", "LLY", "PEP", "KO", "AVGO",
+                        "COST", "MCD", "WMT", "CSCO", "TMO", "ACN", "ABT",
+                        "CRM", "DHR", "NKE", "TXN", "NEE", "PM", "UNP", "MS",
+                        "RTX", "HON", "LOW", "ORCL", "INTC", "AMD", "QCOM",
+                        "IBM", "GE", "CAT", "BA", "DIS",
+                    ]
+                count = await StockScreenerService.warm_cache(symbols)
+                logger.info(f"✅ [SCREENER] 缓存预热完成: {count} stocks")
+            except Exception as e:
+                logger.error(f"❌ [SCREENER] 缓存预热失败: {e}")
+
+        scheduler.add_job(
+            scheduled_screener_cache_warm,
+            CronTrigger(hour=6, minute=0, timezone="America/New_York"),
+            id="screener_cache_warm",
+            name="Stock Screener 缓存预热",
+            replace_existing=True,
+        )
+
         scheduler.start()
         logger.info("✅ 定时任务调度器已启动")
 
@@ -451,6 +493,10 @@ def setup_scheduler():
         options_flow_job = scheduler.get_job("options_flow_scan")
         if options_flow_job:
             logger.info(f"📅 [OPTIONS] 期权异动扫描下次执行时间: {options_flow_job.next_run_time}")
+
+        screener_job = scheduler.get_job("screener_cache_warm")
+        if screener_job:
+            logger.info(f"📅 [SCREENER] Stock Screener 缓存预热下次执行时间: {screener_job.next_run_time}")
 
     except ImportError:
         logger.warning("⚠️ APScheduler 未安装，定时任务功能不可用")

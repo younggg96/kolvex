@@ -36,6 +36,7 @@
     "analytics": "数据分析",
     "social": "社交媒体",
     "stocks": "股票",
+    "stockScreener": "AI 选股器",
     "optionsFlow": "期权异动",
     "tradingAnalysis": "深度分析",
     "superinvestors": "超级投资者",
@@ -1060,5 +1061,28 @@
   "languages": {
     "en": "English",
     "zh": "中文"
+  },
+  "stockScreener": {
+    "title": "AI 选股器",
+    "description": "结合量化筛选与 AI 智能分析，发现投资机会",
+    "strategies": "策略模板",
+    "customFilters": "自定义筛选",
+    "filters": "筛选",
+    "apply": "应用筛选",
+    "reset": "重置",
+    "sector": "行业",
+    "results": "结果",
+    "stocksFound": "共 {count} 只股票",
+    "noResults": "没有匹配的股票",
+    "selectStrategy": "选择一个策略或设置筛选条件开始",
+    "aiAnalyze": "AI 分析",
+    "aiAnalyzing": "AI 正在分析...",
+    "aiInsights": "AI 智能洞察",
+    "aiScore": "AI 评分",
+    "page": "页",
+    "fundamental": "基本面",
+    "valuation": "估值",
+    "growth": "成长性",
+    "risk": "风险"
   }
 }

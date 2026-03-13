@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 
 export default function ContactPage() {
   return (
-    <div className="min-h-screen bg-background-light dark:bg-background-dark relative overflow-hidden transition-colors duration-300 flex flex-col">
+    <div className="min-h-screen bg-background relative overflow-hidden transition-colors duration-300 flex flex-col">
       {/* Background Pattern */}
       <div className="absolute inset-0 bg-grid z-0 opacity-50"></div>
       {/* <div className="absolute inset-0 bg-gradient-to-b from-transparent via-background-light/90 dark:via-background-dark/90 to-background-light dark:to-background-dark z-0"></div> */}
@@ -19,7 +19,7 @@ export default function ContactPage() {
         <div className="mb-8">
           <Link
             href="/"
-            className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
+            className="text-sm text-muted-foreground hover:text-foreground transition-colors"
           >
             ← Back to Home
           </Link>
@@ -27,20 +27,20 @@ export default function ContactPage() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
           <div>
-            <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white mb-6">
+            <h1 className="text-3xl sm:text-4xl font-bold text-foreground mb-6">
               Contact Us
             </h1>
-            <p className="text-gray-600 dark:text-gray-400 mb-8 text-lg">
+            <p className="text-muted-foreground mb-8 text-lg">
               Have questions, suggestions, or need support? We&apos;re here to
               help. Reach out to us through any of the following channels.
             </p>
 
             <div className="space-y-6">
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                <h3 className="text-lg font-semibold text-foreground mb-2">
                   Email Us
                 </h3>
-                <p className="text-gray-600 dark:text-gray-400 mt-2">
+                <p className="text-muted-foreground mt-2">
                   For support:{" "}
                   <a
                     href="mailto:support@kolvex.app"

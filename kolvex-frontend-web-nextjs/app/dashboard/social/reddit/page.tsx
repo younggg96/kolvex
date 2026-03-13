@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 export default function RedditPage() {
   return (
     <DashboardLayout title="Reddit" showHeader={true}>
-      <div className="relative flex-1 flex flex-col min-h-0 bg-background-light dark:bg-background-dark">
+      <div className="relative flex-1 flex flex-col min-h-0 bg-background">
         <div className="absolute inset-0 bg-grid opacity-50 pointer-events-none" />
         <div className="relative flex-1 p-4 md:p-6 overflow-auto">
           <Card className="border-dashed">

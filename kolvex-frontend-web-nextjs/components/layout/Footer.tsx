@@ -20,9 +20,7 @@ export default function Footer() {
     "text-foreground/60 hover:text-primary transition-all flex items-center gap-1 group/link text-sm";
 
   return (
-    <footer className="relative z-10 w-full bg-background-light dark:bg-background-dark pt-20 pb-10 px-4 sm:px-6 md:px-8">
-      {/* Background Decorative Glow */}
-      <div className="absolute bottom-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
+    <footer className="relative z-10 w-full bg-background pt-20 pb-10 px-4 sm:px-6 md:px-8 border-t border-border">
 
       <div className="container mx-auto">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-12 mb-16">
@@ -66,12 +64,9 @@ export default function Footer() {
 
           {/* Resources Column */}
           <div className="space-y-6">
-            <div className="flex items-center gap-2">
-              <div className="w-1 h-4 bg-primary rounded-full" />
-              <h4 className="text-foreground font-bold text-sm tracking-tight uppercase">
-                Resources
-              </h4>
-            </div>
+            <h4 className="text-foreground font-bold text-sm tracking-tight uppercase">
+              Resources
+            </h4>
             <ul className="space-y-4">
               {/* <li>
                 <Link href="/contact" className={linkClass}>
@@ -98,12 +93,9 @@ export default function Footer() {
 
           {/* Newsletter Column */}
           <div className="space-y-6">
-            <div className="flex items-center gap-2">
-              <div className="w-1 h-4 bg-primary rounded-full" />
-              <h4 className="text-foreground font-bold text-sm tracking-tight uppercase">
-                Newsletter
-              </h4>
-            </div>
+            <h4 className="text-foreground font-bold text-sm tracking-tight uppercase">
+              Newsletter
+            </h4>
             <p className="text-sm text-foreground/60">
               Get the latest social intelligence and market trends in your
               inbox.
@@ -116,7 +108,7 @@ export default function Footer() {
               />
               <Button
                 size="icon"
-                className="rounded-xl bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/20 h-11 w-11 flex-shrink-0"
+                className="rounded-xl h-11 w-11 flex-shrink-0"
               >
                 <Send size={16} />
               </Button>
@@ -124,7 +116,7 @@ export default function Footer() {
           </div>
         </div>
 
-        <Separator className="bg-primary/10 dark:bg-primary/30" />
+        <Separator className="bg-border" />
 
         {/* Bottom Section */}
         <div className="pt-8 flex flex-col md:flex-row justify-between items-center gap-6">

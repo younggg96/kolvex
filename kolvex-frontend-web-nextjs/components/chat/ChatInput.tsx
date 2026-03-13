@@ -234,7 +234,7 @@ function ModelSelector({
             "data-[state=open]:ring-0 data-[state=open]:outline-none",
             !hasAnyAvailable
               ? "text-muted-foreground"
-              : "text-foreground/80 hover:text-foreground hover:bg-muted/50 border !border-border-light/50 dark:!border-border-dark/50"
+              : "text-foreground/80 hover:text-foreground hover:bg-muted/50 border !border-border/50"
           )}
         >
           {hasAnyAvailable ? (
@@ -489,10 +489,10 @@ export function ChatInput({
       <div
         className={cn(
           "relative flex flex-col rounded-2xl border overflow-hidden transition-all duration-200",
-          "bg-white dark:bg-card-dark/80 backdrop-blur-sm",
+          "bg-card/80 backdrop-blur-sm",
           isFocused
             ? "border-primary/20 ring-1 ring-primary/10 shadow-lg shadow-black/5 dark:shadow-black/20"
-            : "border-border-light dark:border-border-dark"
+            : "border-border"
         )}
       >
         {/* Input Area */}
@@ -530,7 +530,7 @@ export function ChatInput({
           <div
             className={cn(
               "flex items-center justify-between gap-2 px-4 py-2.5",
-              "border-t border-border-light/50 dark:border-border-dark/50",
+              "border-t border-border/50",
               "bg-muted/30 dark:bg-white/[0.02]"
             )}
           >
@@ -556,7 +556,7 @@ export function ChatInput({
                 onToggleSource &&
                 showModelSelector &&
                 onSelectModel && (
-                  <div className="w-px h-4 bg-border-light dark:bg-border-dark mx-1" />
+                  <div className="w-px h-4 bg-border mx-1" />
                 )}
 
               {/* Model Selector */}

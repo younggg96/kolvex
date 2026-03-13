@@ -95,7 +95,7 @@ export default function NewsArticleList({
         {[...Array(6)].map((_, i) => (
           <div
             key={i}
-            className="rounded-xl border border-border/50 dark:border-border-dark/50 bg-card-light dark:bg-card-dark/50 backdrop-blur-sm p-4"
+            className="rounded-xl border border-border/50 bg-card/50 backdrop-blur-sm p-4"
           >
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
@@ -110,7 +110,7 @@ export default function NewsArticleList({
               <Skeleton className="h-4 w-full" />
               <Skeleton className="h-4 w-3/4" />
             </div>
-            <div className="pt-3 border-t border-border/30 dark:border-border-dark/30">
+            <div className="pt-3 border-t border-border/30">
               <div className="flex flex-wrap gap-1.5 mb-2">
                 <Skeleton className="h-6 w-14 rounded-md" />
                 <Skeleton className="h-6 w-12 rounded-md" />

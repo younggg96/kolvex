@@ -203,16 +203,16 @@ export function DebateCard({
     <TooltipProvider>
       <div
         className={cn(
-          "bg-white dark:bg-card-dark border border-border-light dark:border-border-dark rounded-lg overflow-hidden transition-all duration-300 hover:border-primary/30 dark:hover:border-primary/20",
+          "bg-card border border-border rounded-lg overflow-hidden transition-all duration-300 hover:border-primary/30 dark:hover:border-primary/20",
           className
         )}
       >
         {/* Header */}
-        <div className="flex items-center gap-2 px-4 py-3 border-b border-border-light dark:border-border-dark bg-gray-50/50 dark:bg-white/[0.02]">
+        <div className="flex items-center gap-2 px-4 py-3 border-b border-border bg-gray-50/50 dark:bg-white/[0.02]">
           <div className="w-6 h-6 rounded-md bg-primary/10 dark:bg-primary/20 flex items-center justify-center">
             <Icon className="w-3.5 h-3.5 text-primary" />
           </div>
-          <h3 className="text-sm font-semibold text-gray-900 dark:text-white flex-1">
+          <h3 className="text-sm font-semibold text-foreground flex-1">
             {title}
           </h3>
           <div className="flex items-center gap-0.5">
@@ -293,21 +293,21 @@ export function DebateCard({
 
               {hasBull && hasBear && (
                 <div className="hidden md:flex flex-col items-center justify-center py-4">
-                  <div className="w-px flex-1 bg-border-light dark:bg-border-dark" />
-                  <div className="my-2 w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-800 border border-border-light dark:border-border-dark flex items-center justify-center">
+                  <div className="w-px flex-1 bg-border" />
+                  <div className="my-2 w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-800 border border-border flex items-center justify-center">
                     <Swords className="w-3.5 h-3.5 text-gray-500 dark:text-gray-400" />
                   </div>
-                  <div className="w-px flex-1 bg-border-light dark:bg-border-dark" />
+                  <div className="w-px flex-1 bg-border" />
                 </div>
               )}
 
               {hasBull && hasBear && (
                 <div className="flex md:hidden items-center gap-2 py-1">
-                  <div className="flex-1 h-px bg-border-light dark:bg-border-dark" />
-                  <div className="w-7 h-7 rounded-full bg-gray-100 dark:bg-gray-800 border border-border-light dark:border-border-dark flex items-center justify-center">
+                  <div className="flex-1 h-px bg-border" />
+                  <div className="w-7 h-7 rounded-full bg-gray-100 dark:bg-gray-800 border border-border flex items-center justify-center">
                     <Swords className="w-3 h-3 text-gray-500 dark:text-gray-400" />
                   </div>
-                  <div className="flex-1 h-px bg-border-light dark:bg-border-dark" />
+                  <div className="flex-1 h-px bg-border" />
                 </div>
               )}
 
@@ -325,14 +325,14 @@ export function DebateCard({
 
         {/* Judge Verdict */}
         {hasJudge && (
-          <div className="border-t border-border-light dark:border-border-dark">
+          <div className="border-t border-border">
             <div className="bg-gray-50/50 dark:bg-white/[0.02] px-4 py-4">
               <div className="flex items-center gap-2 mb-3">
                 <ShieldCheck className="w-3.5 h-3.5 text-gray-500 dark:text-gray-400 shrink-0" />
                 <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">
                   {judgeLabel}
                 </span>
-                <div className="flex-1 h-px bg-border-light dark:bg-border-dark" />
+                <div className="flex-1 h-px bg-border" />
               </div>
               <div
                 className={cn(

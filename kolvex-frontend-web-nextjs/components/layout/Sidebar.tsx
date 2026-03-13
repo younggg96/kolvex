@@ -22,6 +22,7 @@ import {
   MessageCircleIcon,
   ShieldCheck,
   Activity,
+  SlidersHorizontal,
 } from "lucide-react";
 import Image from "next/image";
 import UserMenu from "@/components/user/UserMenu";
@@ -100,6 +101,12 @@ const mainNavItemDefs = [
     icon: TrendingUp,
     titleKey: "sidebar.stocks",
     href: "/dashboard/stocks",
+    type: "link",
+  },
+  {
+    icon: SlidersHorizontal,
+    titleKey: "sidebar.stockScreener",
+    href: "/dashboard/stock-screener",
     type: "link",
   },
   {
@@ -252,7 +259,7 @@ function AppSidebar({ onNavigate }: AppSidebarProps) {
     <SidebarPrimitive
       variant="sidebar"
       collapsible="icon"
-      className="border-r border-border-light dark:border-border-dark"
+      className="border-r border-border"
     >
       <SidebarHeader>
         <div className="flex items-center justify-between gap-2 group-data-[collapsible=icon]:flex-col group-data-[collapsible=icon]:items-center">
@@ -444,7 +451,7 @@ function AppSidebar({ onNavigate }: AppSidebarProps) {
                       <item.icon className="size-4" />
                       <span>{item.title}</span>
                       {item.title === "Notifications" && unreadCount > 0 && (
-                        <span className="flex h-4 min-w-4 rounded-full bg-red-500 items-center justify-center text-[10px] font-medium text-white ml-auto">
+                        <span className="flex h-4 min-w-4 rounded-full bg-destructive items-center justify-center text-[10px] font-medium text-destructive-foreground ml-auto tabular-nums">
                           {unreadCount > 99 ? "99+" : unreadCount}
                         </span>
                       )}

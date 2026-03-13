@@ -67,7 +67,7 @@ const SENTIMENT_CONFIG = {
     neutral: {
         icon: MinusCircle,
         label: "Neutral",
-        className: "bg-gray-100 dark:bg-white/5 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-white/10",
+        className: "bg-muted text-gray-600 dark:text-gray-400 border-border",
     },
 } as const;
 
@@ -128,7 +128,7 @@ function RiskMeter({ level, t }: { level: string; t: TFunction }) {
                 </div>
                 <span className={cn("text-sm font-semibold", config.textColor)}>{label}</span>
             </div>
-            <div className="h-2 bg-gray-200 dark:bg-white/10 rounded-full overflow-hidden">
+            <div className="h-2 bg-muted rounded-full overflow-hidden">
                 <div
                     className={cn("h-full rounded-full transition-all duration-700 ease-out", config.color)}
                     style={{ width: config.width }}
@@ -194,7 +194,7 @@ function DiversificationGauge({ score, t }: { score: number; t: TFunction }) {
 
 function MetricCard({ icon: Icon, label, children }: { icon: React.ElementType; label: string; children: React.ReactNode }) {
     return (
-        <div className="p-4 rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-card-dark">
+        <div className="p-4 rounded-lg border border-border bg-card">
             <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3">
                 <Icon className="w-4 h-4" />
                 <span>{label}</span>
@@ -210,8 +210,8 @@ function MetricCard({ icon: Icon, label, children }: { icon: React.ElementType; 
 
 function StockAnalysisItem({ stock, t }: { stock: StockAnalysis; t: TFunction }) {
     return (
-        <AccordionItem value={stock.symbol} className="border border-gray-200 dark:border-white/10 rounded-lg mb-2 overflow-hidden">
-            <AccordionTrigger className="px-4 py-3 hover:no-underline hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
+        <AccordionItem value={stock.symbol} className="border border-border rounded-lg mb-2 overflow-hidden">
+            <AccordionTrigger className="px-4 py-3 hover:no-underline hover:bg-muted transition-colors">
                 <div className="flex items-center gap-3 flex-1">
                     <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center shrink-0">
                         <span className="text-sm font-bold text-primary">
@@ -253,7 +253,7 @@ function StockAnalysisItem({ stock, t }: { stock: StockAnalysis; t: TFunction })
                     )}
 
                     {/* Metrics */}
-                    <div className="flex items-center gap-4 pt-2 border-t border-gray-200 dark:border-white/10">
+                    <div className="flex items-center gap-4 pt-2 border-t border-border">
                         {stock.current_weight !== undefined && stock.current_weight !== null && (
                             <div className="text-xs">
                                 <span className="text-muted-foreground">{t("portfolio.ai.weight")} </span>
@@ -295,7 +295,7 @@ function OverallAnalysisSection({ analysis, t }: { analysis: OverallAnalysis; t:
 
             {/* Portfolio Style */}
             {analysis.portfolio_style && (
-                <div className="flex items-center gap-2 px-4 py-3 rounded-lg bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10">
+                <div className="flex items-center gap-2 px-4 py-3 rounded-lg bg-muted border border-border">
                     <span className="text-sm text-muted-foreground">{t("portfolio.ai.portfolioStyle")}</span>
                     <span className="text-sm font-semibold capitalize">{analysis.portfolio_style}</span>
                 </div>
@@ -371,7 +371,7 @@ function SuggestionsSection({ suggestions, t }: { suggestions: PortfolioAnalysis
                 return (
                     <div
                         key={section.key}
-                        className="p-4 rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-card-dark"
+                        className="p-4 rounded-lg border border-border bg-card"
                     >
                         <div className="flex items-center gap-2 mb-3">
                             <div className={cn("p-1.5 rounded-md", section.bg)}>
@@ -568,7 +568,7 @@ export function PortfolioAIAnalysis({ className }: PortfolioAIAnalysisProps) {
                         </section>
 
                         {/* Footer */}
-                        <footer className="pt-4 border-t border-gray-200 dark:border-white/10">
+                        <footer className="pt-4 border-t border-border">
                             <div className="flex items-center justify-between text-xs text-muted-foreground">
                                 <span>
                                     {t("portfolio.ai.positionsAnalyzed", { count: String(analysis.positions_analyzed) })} • Model: {analysis.model}

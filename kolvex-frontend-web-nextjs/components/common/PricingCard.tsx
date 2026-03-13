@@ -37,11 +37,11 @@ export default function PricingCard({
 }: PricingCardProps) {
   const cardClasses = highlight
     ? "relative flex flex-col p-3 sm:p-4 md:p-5 bg-gradient-to-br from-primary/5 via-primary/[0.02] to-transparent dark:from-primary/10 dark:via-primary/5 dark:to-transparent border-2 border-primary rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 md:scale-105 mt-4 sm:mt-0"
-    : "group relative flex flex-col p-3 sm:p-4 md:p-5 bg-white dark:bg-card-dark border-2 border-gray-200 dark:border-white/10 rounded-xl hover:border-gray-300 dark:hover:border-white/20 hover:shadow-xl transition-all duration-300";
+    : "group relative flex flex-col p-3 sm:p-4 md:p-5 bg-card border-2 border-border rounded-xl hover:border-gray-300 dark:hover:border-white/20 hover:shadow-xl transition-all duration-300";
 
   const priceClasses = highlight
     ? "text-2xl sm:text-3xl font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent"
-    : "text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white";
+    : "text-2xl sm:text-3xl font-bold text-foreground";
 
   const featureIconBg = highlight
     ? "bg-primary/20 dark:bg-primary/30"
@@ -61,7 +61,7 @@ export default function PricingCard({
       {/* Header */}
       <div className="mb-3 sm:mb-4 md:mb-5">
         <div className="flex items-center gap-1 sm:gap-1.5">
-          <h3 className="text-sm sm:text-base md:text-lg font-bold text-gray-900 dark:text-white mb-1 sm:mb-1.5 flex flex-wrap items-center gap-1 sm:gap-1.5">
+          <h3 className="text-sm sm:text-base md:text-lg font-bold text-foreground mb-1 sm:mb-1.5 flex flex-wrap items-center gap-1 sm:gap-1.5">
             {name}
           </h3>
           {popularLabel && (
@@ -85,7 +85,7 @@ export default function PricingCard({
             key={index}
             className={`flex items-start gap-1.5 sm:gap-2 text-[11px] sm:text-xs ${
               feature.included
-                ? "text-gray-700 dark:text-white/70"
+                ? "text-foreground/70"
                 : "text-gray-400 dark:text-white/30"
             }`}
           >

@@ -191,7 +191,7 @@ function HistoryCard({
                   className={cn(
                     "py-2.5 px-3 text-center",
                     idx > 0 &&
-                      "border-l border-border-light dark:border-border-dark"
+                      "border-l border-border"
                   )}
                 >
                   <p className="text-[10px] text-muted-foreground">

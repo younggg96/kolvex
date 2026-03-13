@@ -76,7 +76,7 @@ export function FollowButton({
       onClick={handleClick}
       disabled={isLoading}
       className={cn(
-        "flex items-center gap-1 transition-colors border-border-light dark:border-border-dark",
+        "flex items-center gap-1 transition-colors border-border",
         isFollowing
           ? "text-primary border-primary/50 hover:bg-red-50 hover:text-red-600 hover:border-red-300 dark:hover:bg-red-500/10 dark:hover:text-red-400 dark:hover:border-red-500/50"
           : "text-gray-400 dark:text-white/40 group-hover:text-primary group-hover:border-primary dark:group-hover:border-primary/60 group-hover:!bg-primary/10",

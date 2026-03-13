@@ -61,7 +61,7 @@ export function SentimentChart({
   };
 
   return (
-    <div className="rounded-xl border border-zinc-200/60 dark:border-zinc-800 bg-card-light dark:bg-card-dark/50 overflow-hidden">
+    <div className="rounded-xl border border-zinc-200/60 dark:border-zinc-800 bg-card overflow-hidden">
       {/* Header */}
       <div className="flex items-center justify-between p-5 border-b border-zinc-200/40 dark:border-zinc-800/80">
         <div>

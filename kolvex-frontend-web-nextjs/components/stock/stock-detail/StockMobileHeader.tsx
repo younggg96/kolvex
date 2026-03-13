@@ -19,11 +19,11 @@ export default function StockMobileHeader({
 
   return (
     <div className="lg:hidden mb-3">
-      <div className="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-4 transition-colors duration-300">
+      <div className="bg-card rounded-xl border border-border p-4 transition-colors duration-300">
         <div className="flex items-start justify-between">
           <div className="flex-1">
             <div className="flex items-center gap-2">
-              <h1 className="text-xl font-bold text-gray-900 dark:text-white">
+              <h1 className="text-xl font-bold text-foreground">
                 {quote.symbol}
               </h1>
               <Button
@@ -46,12 +46,12 @@ export default function StockMobileHeader({
                 />
               </Button>
             </div>
-            <p className="text-sm text-gray-500 dark:text-white/60 mt-0.5 line-clamp-1">
+            <p className="text-sm text-muted-foreground mt-0.5 line-clamp-1">
               {quote.name}
             </p>
           </div>
           <div className="text-right">
-            <p className="text-2xl font-bold text-gray-900 dark:text-white">
+            <p className="text-2xl font-bold text-foreground">
               ${quote.current_price?.toFixed(2)}
             </p>
             <div
@@ -76,17 +76,17 @@ export default function StockMobileHeader({
         </div>
 
         {/* Mobile Quick Stats */}
-        <div className="grid grid-cols-4 gap-3 mt-4 pt-4 border-t border-gray-100 dark:border-white/5">
+        <div className="grid grid-cols-4 gap-3 mt-4 pt-4 border-t border-border">
           <div className="text-center">
-            <p className="text-[10px] text-gray-500 dark:text-white/50 uppercase tracking-wide">
+            <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
               Open
             </p>
-            <p className="text-sm font-semibold text-gray-900 dark:text-white mt-0.5">
+            <p className="text-sm font-semibold text-foreground mt-0.5">
               ${quote.open?.toFixed(2) || "N/A"}
             </p>
           </div>
           <div className="text-center">
-            <p className="text-[10px] text-gray-500 dark:text-white/50 uppercase tracking-wide">
+            <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
               High
             </p>
             <p className="text-sm font-semibold text-green-600 dark:text-green-400 mt-0.5">
@@ -94,7 +94,7 @@ export default function StockMobileHeader({
             </p>
           </div>
           <div className="text-center">
-            <p className="text-[10px] text-gray-500 dark:text-white/50 uppercase tracking-wide">
+            <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
               Low
             </p>
             <p className="text-sm font-semibold text-red-600 dark:text-red-400 mt-0.5">
@@ -102,10 +102,10 @@ export default function StockMobileHeader({
             </p>
           </div>
           <div className="text-center">
-            <p className="text-[10px] text-gray-500 dark:text-white/50 uppercase tracking-wide">
+            <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
               Vol
             </p>
-            <p className="text-sm font-semibold text-gray-900 dark:text-white mt-0.5">
+            <p className="text-sm font-semibold text-foreground mt-0.5">
               {quote.volume ? formatVolume(quote.volume) : "N/A"}
             </p>
           </div>

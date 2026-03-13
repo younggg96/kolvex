@@ -139,7 +139,7 @@ export function MyTrackingRequests({
   const pendingCount = requests.filter((r) => r.status === "pending").length;
 
   return (
-    <div className="border border-border-light dark:border-border-dark rounded-lg overflow-hidden">
+    <div className="border border-border rounded-lg overflow-hidden">
       {/* Header - Collapsible */}
       <button
         onClick={() => setIsExpanded(!isExpanded)}
@@ -177,7 +177,7 @@ export function MyTrackingRequests({
 
       {/* Content */}
       {isExpanded && (
-        <div className="divide-y divide-border-light dark:divide-border-dark">
+        <div className="divide-y divide-border">
           {requests.map((request) => (
             <div
               key={request.id}
@@ -185,7 +185,7 @@ export function MyTrackingRequests({
             >
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
-                  <span className="font-mono text-sm font-medium text-gray-900 dark:text-white">
+                  <span className="font-mono text-sm font-medium text-foreground">
                     @{request.platform_user_id}
                   </span>
                   <span

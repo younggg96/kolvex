@@ -117,7 +117,7 @@ export function PublicPortfolioPageClient({
         />
       }
     >
-      <div className="relative flex-1 overflow-y-auto bg-background-light dark:bg-background-dark">
+      <div className="relative flex-1 overflow-y-auto bg-background">
         <div className="absolute inset-0 bg-grid opacity-50 pointer-events-none" />
         <div className="relative p-4 min-w-0 space-y-3">
           {/* User Profile Header */}

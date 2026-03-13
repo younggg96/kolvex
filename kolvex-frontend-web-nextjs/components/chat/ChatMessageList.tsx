@@ -71,7 +71,7 @@ function AgentActivityIndicator({
               Kolvex
             </span>
             {modelName && (
-              <span className="text-[10px] text-muted-foreground/50 font-medium px-1.5 py-0.5 rounded-full bg-muted/50 border border-border-light/50 dark:border-border-dark/50">
+              <span className="text-[10px] text-muted-foreground/50 font-medium px-1.5 py-0.5 rounded-full bg-muted/50 border border-border/50">
                 {modelName}
               </span>
             )}
@@ -79,8 +79,8 @@ function AgentActivityIndicator({
           <div
             className={cn(
               "px-3.5 py-2.5 rounded-2xl rounded-tl-sm",
-              "bg-card-light dark:bg-card-dark",
-              "border border-border-light dark:border-border-dark"
+              "bg-card",
+              "border border-border"
             )}
           >
             <div className="flex flex-col gap-1.5">
@@ -260,7 +260,7 @@ export function ChatMessageList({
           )}
           aria-label="Scroll to bottom"
         >
-          <ChevronDown className="w-4 h-4 text-background-light dark:text-background-dark" />
+          <ChevronDown className="w-4 h-4 text-background" />
         </Button>
       )}
     </div>

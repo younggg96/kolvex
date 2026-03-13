@@ -112,7 +112,7 @@ export default function LiveNewsList({
         {[...Array(8)].map((_, i) => (
           <div
             key={i}
-            className="rounded-lg border border-border/50 dark:border-border-dark/50 bg-card-light dark:bg-card-dark/50 backdrop-blur-sm px-3 py-2.5"
+            className="rounded-lg border border-border/60 bg-card/60 px-3 py-2.5"
           >
             <div className="flex items-center justify-between mb-1.5">
               <div className="flex items-center gap-1.5">
@@ -125,7 +125,7 @@ export default function LiveNewsList({
               <Skeleton className="h-4 w-full" />
               <Skeleton className="h-4 w-3/4" />
             </div>
-            <div className="pt-2 border-t border-border/30 dark:border-border-dark/30">
+            <div className="pt-2 border-t border-border/30">
               <div className="flex flex-wrap gap-1">
                 <Skeleton className="h-5 w-12 rounded" />
                 <Skeleton className="h-5 w-10 rounded" />

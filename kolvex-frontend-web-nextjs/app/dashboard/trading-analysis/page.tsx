@@ -253,7 +253,7 @@ export default function TradingAnalysisPage() {
         </>
       }
     >
-      <div className="relative flex-1 overflow-y-auto bg-background-light dark:bg-background-dark">
+      <div className="relative flex-1 overflow-y-auto bg-background">
         <div className="absolute inset-0 bg-grid opacity-50 pointer-events-none" />
 
         <div className="relative">
@@ -290,7 +290,7 @@ export default function TradingAnalysisPage() {
                 <div className="space-y-5 py-2">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-1.5">
-                      <label className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                      <label className="text-xs font-medium text-muted-foreground">
                         {t("tradingAnalysis.tickerSymbol")}
                       </label>
                       <Input
@@ -302,7 +302,7 @@ export default function TradingAnalysisPage() {
                       />
                     </div>
                     <div className="space-y-1.5">
-                      <label className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                      <label className="text-xs font-medium text-muted-foreground">
                         {t("tradingAnalysis.analysisDate")}
                       </label>
                       <Input
@@ -315,11 +315,11 @@ export default function TradingAnalysisPage() {
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-1.5">
-                      <label className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                      <label className="text-xs font-medium text-muted-foreground">
                         {t("tradingAnalysis.llmProvider")}
                       </label>
                       {providersLoading ? (
-                        <div className="flex items-center h-10 px-4 text-sm text-muted-foreground border border-gray-300 dark:border-white/10 bg-gray-50 dark:bg-white/5 rounded-lg">
+                        <div className="flex items-center h-10 px-4 text-sm text-muted-foreground border border-border bg-muted rounded-lg">
                           <Loader2 className="w-3.5 h-3.5 mr-2 animate-spin" />
                           {t("common.loading")}
                         </div>
@@ -382,7 +382,7 @@ export default function TradingAnalysisPage() {
                       )}
                     </div>
                     <div className="space-y-1.5">
-                      <label className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                      <label className="text-xs font-medium text-muted-foreground">
                         {t("tradingAnalysis.debateRounds")}
                       </label>
                       <Select
@@ -410,7 +410,7 @@ export default function TradingAnalysisPage() {
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-1.5">
-                      <label className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                      <label className="text-xs font-medium text-muted-foreground">
                         {t("tradingAnalysis.deepThinkModel")}
                       </label>
                       <Select
@@ -444,7 +444,7 @@ export default function TradingAnalysisPage() {
                       </Select>
                     </div>
                     <div className="space-y-1.5">
-                      <label className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                      <label className="text-xs font-medium text-muted-foreground">
                         {t("tradingAnalysis.quickThinkModel")}
                       </label>
                       <Select
@@ -480,7 +480,7 @@ export default function TradingAnalysisPage() {
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                    <label className="text-xs font-medium text-muted-foreground">
                       {t("tradingAnalysis.analysts")}
                     </label>
                     <div className="flex flex-wrap gap-2">
@@ -494,7 +494,7 @@ export default function TradingAnalysisPage() {
                               "px-3.5 py-1.5 rounded-full text-xs font-medium border transition-all duration-200",
                               isActive
                                 ? "bg-primary/10 text-primary border-primary/30 dark:bg-primary/20 dark:border-primary/40 shadow-sm"
-                                : "bg-gray-50 text-gray-600 border-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"
+                                : "bg-muted text-muted-foreground border-border hover:border-border"
                             )}
                           >
                             {analystLabels[id]}
@@ -537,7 +537,7 @@ export default function TradingAnalysisPage() {
                 <div className="w-7 h-7 rounded-lg bg-primary/10 dark:bg-primary/20 flex items-center justify-center">
                   <Activity className="w-3.5 h-3.5 text-primary" />
                 </div>
-                <h2 className="text-sm font-semibold text-gray-900 dark:text-white">
+                <h2 className="text-sm font-semibold text-foreground">
                   {t("tradingAnalysis.history")}
                   {total > 0 && (
                     <span className="ml-1.5 text-xs font-normal text-gray-400">
@@ -550,9 +550,9 @@ export default function TradingAnalysisPage() {
               {loading ? (
                 <HistorySkeleton />
               ) : history.length === 0 ? (
-                <div className="bg-white dark:bg-card-dark border border-border-light dark:border-border-dark rounded-lg text-center py-16">
-                  <Bot className="w-10 h-10 mx-auto mb-3 text-gray-300 dark:text-gray-600" />
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                <div className="bg-card border border-border rounded-lg text-center py-16">
+                  <Bot className="w-10 h-10 mx-auto mb-3 text-muted-foreground/40" />
+                  <p className="text-sm text-muted-foreground">
                     {t("tradingAnalysis.noHistory")}
                   </p>
                 </div>
@@ -568,7 +568,7 @@ export default function TradingAnalysisPage() {
                           )
                         }
                         className={cn(
-                          "group bg-white dark:bg-card-dark border border-border-light dark:border-border-dark rounded-lg p-4 cursor-pointer",
+                          "group bg-card border border-border rounded-lg p-4 cursor-pointer",
                           "hover:border-primary/30 dark:hover:border-primary/20 transition-all duration-200 hover:shadow-sm",
                           "animate-fade-in-up",
                           idx < 6 && `stagger-${Math.min(idx + 1, 5)}`
@@ -578,7 +578,7 @@ export default function TradingAnalysisPage() {
                           <div className="flex items-center gap-3 min-w-0">
                             <CompanyLogo symbol={item.ticker} size="md" />
                             <div className="min-w-0">
-                              <span className="text-lg font-bold text-gray-900 dark:text-white">
+                              <span className="text-lg font-bold text-foreground">
                                 {item.ticker}
                               </span>
                               <div className="flex items-center gap-2 mt-1 flex-wrap">
@@ -588,7 +588,7 @@ export default function TradingAnalysisPage() {
                                   t={t}
                                 />
                                 {item.is_published && (
-                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-gray-100 text-gray-600 dark:bg-white/5 dark:text-gray-400">
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-muted text-muted-foreground">
                                   <Globe className="w-2.5 h-2.5" />
                                   {t("tradingAnalysis.publishedLabel")}
                                 </span>
@@ -616,7 +616,7 @@ export default function TradingAnalysisPage() {
                           </Tooltip>
                         </div>
 
-                        <div className="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
+                        <div className="flex items-center gap-3 text-xs text-muted-foreground">
                           <span className="flex items-center gap-1">
                             <Calendar className="w-3 h-3" />
                             {item.trade_date}
@@ -632,7 +632,7 @@ export default function TradingAnalysisPage() {
                             </span>
                           )}
                           {item.llm_provider && (
-                            <span className="capitalize px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-[10px]">
+                            <span className="capitalize px-1.5 py-0.5 rounded bg-muted text-[10px]">
                               {item.llm_provider}
                             </span>
                           )}

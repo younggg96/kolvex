@@ -76,7 +76,7 @@ export default function PublishedAnalysisDetailPage() {
   if (loading) {
     return (
       <DashboardLayout title={t("tradingAnalysis.explore.title")}>
-        <div className="relative flex-1 overflow-y-auto bg-background-light dark:bg-background-dark">
+        <div className="relative flex-1 overflow-y-auto bg-background">
           <div className="absolute inset-0 bg-grid opacity-50 pointer-events-none" />
           <div className="relative">
             <DetailSkeleton />
@@ -89,11 +89,11 @@ export default function PublishedAnalysisDetailPage() {
   if (!analysis) {
     return (
       <DashboardLayout title={t("tradingAnalysis.explore.title")}>
-        <div className="relative flex-1 overflow-y-auto bg-background-light dark:bg-background-dark">
+        <div className="relative flex-1 overflow-y-auto bg-background">
           <div className="absolute inset-0 bg-grid opacity-50 pointer-events-none" />
           <div className="flex flex-col items-center justify-center flex-1 min-h-[400px] gap-4">
-            <XCircle className="w-12 h-12 text-gray-300 dark:text-gray-600" />
-            <p className="text-gray-500 dark:text-gray-400">
+            <XCircle className="w-12 h-12 text-muted-foreground/40" />
+            <p className="text-muted-foreground">
               {t("tradingAnalysis.notFound")}
             </p>
             <Button
@@ -160,7 +160,7 @@ export default function PublishedAnalysisDetailPage() {
         <FullReportActions analysis={analysis} t={t} />
       }
     >
-      <div className="relative flex-1 overflow-y-auto bg-background-light dark:bg-background-dark">
+      <div className="relative flex-1 overflow-y-auto bg-background">
         <div className="absolute inset-0 bg-grid opacity-50 pointer-events-none" />
 
         <div className="relative p-4 space-y-6 mx-auto">
@@ -169,30 +169,30 @@ export default function PublishedAnalysisDetailPage() {
             <div>
               <div className="flex items-center gap-3">
                 <CompanyLogo symbol={analysis.ticker} size="lg" />
-                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+                <h1 className="text-2xl font-bold text-foreground">
                   {analysis.ticker}
                 </h1>
                 <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary dark:bg-primary/20">
                   <CheckCircle2 className="w-3 h-3" />
                   {t("tradingAnalysis.statusCompleted")}
                 </span>
-                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600 dark:bg-white/5 dark:text-gray-400">
+                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-muted text-muted-foreground">
                   <Globe className="w-3 h-3" />
                   {t("tradingAnalysis.publishedLabel")}
                 </span>
               </div>
-              <div className="flex items-center gap-3 mt-3 text-sm text-gray-500 dark:text-gray-400">
+              <div className="flex items-center gap-3 mt-3 text-sm text-muted-foreground">
                 {analysis.author && (
                   <span className="flex items-center gap-1.5">
                     <Avatar className="w-5 h-5">
                       {analysis.author.avatar_url && (
                         <AvatarImage src={analysis.author.avatar_url} alt="" />
                       )}
-                      <AvatarFallback className="text-[9px] bg-gray-200 dark:bg-gray-700">
+                      <AvatarFallback className="text-[9px] bg-muted">
                         <User className="w-3 h-3" />
                       </AvatarFallback>
                     </Avatar>
-                    <span className="text-xs font-medium text-gray-600 dark:text-gray-300">
+                    <span className="text-xs font-medium text-muted-foreground">
                       {analysis.author.full_name || analysis.author.username || "User"}
                     </span>
                   </span>
@@ -210,7 +210,7 @@ export default function PublishedAnalysisDetailPage() {
                   </span>
                 )}
                 {analysis.llm_provider && (
-                  <span className="capitalize px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-xs">
+                  <span className="capitalize px-1.5 py-0.5 rounded bg-muted text-xs">
                     {analysis.llm_provider}
                   </span>
                 )}

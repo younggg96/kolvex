@@ -102,7 +102,7 @@ export function UserCard({
   };
 
   return (
-    <div className="group bg-white dark:bg-card-dark border border-border-light dark:border-border-dark rounded-lg p-4 hover:shadow-lg hover:shadow-primary/5 hover:border-primary/30 dark:hover:border-primary/30 transition-all duration-300">
+    <div className="group bg-card border border-border rounded-lg p-4 hover:shadow-lg hover:shadow-primary/5 hover:border-primary/30 dark:hover:border-primary/30 transition-all duration-300">
       {/* Header */}
       <div className="flex items-start justify-between mb-4 gap-2">
         <div
@@ -121,7 +121,7 @@ export function UserCard({
             {/* <RankBadge rank={rank} /> */}
           </div>
           <div>
-            <h3 className="font-semibold text-gray-900 dark:text-white group-hover:text-primary transition-colors text-sm line-clamp-1">
+            <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors text-sm line-clamp-1">
               {displayName}
             </h3>
             <div className="flex items-center gap-1 text-[10px] text-gray-400 dark:text-white/40">
@@ -152,11 +152,11 @@ export function UserCard({
       {(user.total_value !== null || user.total_pnl !== null) && (
         <div className="grid grid-cols-2 gap-3 mb-4">
           {user.total_value !== null && (
-            <div className="bg-gray-50 dark:bg-white/5 rounded-lg p-3">
+            <div className="bg-muted rounded-lg p-3">
               <p className="text-[10px] text-gray-500 dark:text-white/50 uppercase tracking-wider mb-1 font-medium">
                 Portfolio Value
               </p>
-              <p className="text-lg font-bold text-gray-900 dark:text-white tabular-nums">
+              <p className="text-lg font-bold text-foreground tabular-nums">
                 {formatCurrency(user.total_value)}
               </p>
             </div>
@@ -168,7 +168,7 @@ export function UserCard({
                   ? isProfit
                     ? "bg-green-50 dark:bg-green-500/10"
                     : "bg-red-50 dark:bg-red-500/10"
-                  : "bg-gray-50 dark:bg-white/5"
+                  : "bg-muted"
               }`}
             >
               <p className="text-[10px] text-gray-500 dark:text-white/50 uppercase tracking-wider mb-1 font-medium">

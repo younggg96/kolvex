@@ -17,7 +17,7 @@ const DropdownMenuContent = React.forwardRef<
       ref={ref}
       sideOffset={sideOffset}
       className={cn(
-        "z-50 min-w-[12rem] overflow-hidden rounded-lg border border-gray-200 dark:border-border-dark bg-white dark:bg-card-dark p-1 shadow-lg",
+        "z-50 min-w-[12rem] overflow-hidden rounded-lg border border-border bg-card p-1 shadow-lg",
         "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
         "data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2",
         className
@@ -38,8 +38,8 @@ const DropdownMenuItem = React.forwardRef<
     ref={ref}
     className={cn(
       "relative flex cursor-pointer select-none items-center gap-2 rounded-md px-2 py-2 text-xs transition-colors",
-      "text-gray-700 dark:text-white/70 hover:bg-gray-100 dark:hover:bg-white/5 hover:text-gray-900 dark:hover:text-white",
-      "focus:bg-gray-100 dark:focus:bg-white/5 focus:text-gray-900 dark:focus:text-white",
+      "text-foreground/70 hover:bg-muted hover:text-foreground",
+      "focus:bg-muted focus:text-foreground",
       "data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
       "focus:outline-none focus-visible:ring-0 focus-visible:ring-offset-0",
       inset && "pl-8",
@@ -56,7 +56,7 @@ const DropdownMenuSeparator = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <DropdownMenuPrimitive.Separator
     ref={ref}
-    className={cn("h-px bg-gray-200 dark:bg-border-dark/50 my-1", className)}
+    className={cn("h-px bg-border/50 my-1", className)}
     {...props}
   />
 ));
@@ -71,7 +71,7 @@ const DropdownMenuLabel = React.forwardRef<
   <DropdownMenuPrimitive.Label
     ref={ref}
     className={cn(
-      "px-2 py-1.5 text-sm font-semibold text-gray-900 dark:text-white",
+      "px-2 py-1.5 text-sm font-semibold text-foreground",
       inset && "pl-8",
       className
     )}

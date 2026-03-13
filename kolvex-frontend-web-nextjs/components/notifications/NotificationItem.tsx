@@ -115,10 +115,10 @@ export function NotificationItem({
       <div
         className={cn(
           "group relative rounded-xl transition-all duration-200",
-          "bg-white dark:bg-card-dark/50",
+          "bg-card/50",
           !isRead
             ? "bg-gradient-to-r from-primary/[0.03] to-transparent border-primary/20 dark:border-primary/30 shadow-sm"
-            : "bg-transparent border-transparent hover:bg-gray-50/50 dark:hover:bg-white/[0.02]"
+            : "bg-transparent border-transparent hover:bg-muted/50"
         )}
       // onClick={() => onClick(notification)}
       >
@@ -142,7 +142,7 @@ export function NotificationItem({
                 {/* 操作类型小图标 */}
                 <div
                   className={cn(
-                    "absolute -bottom-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center border-2 border-white dark:border-gray-900 bg-card-light dark:bg-card-dark",
+                    "absolute -bottom-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center border-2 border-white dark:border-gray-900 bg-card",
                     config.bgColor
                   )}
                 >
@@ -165,8 +165,8 @@ export function NotificationItem({
                   className={cn(
                     "text-sm leading-snug",
                     !isRead
-                      ? "font-semibold text-gray-900 dark:text-white"
-                      : "font-medium text-gray-500 dark:text-white/50"
+                      ? "font-semibold text-foreground"
+                      : "font-medium text-muted-foreground"
                   )}
                 >
                   {notification.title}
@@ -189,7 +189,7 @@ export function NotificationItem({
               className={cn(
                 "text-xs leading-relaxed",
                 !isRead
-                  ? "text-gray-600 dark:text-white/70"
+                  ? "text-muted-foreground"
                   : "text-gray-400 dark:text-white/40"
               )}
             >
@@ -207,7 +207,7 @@ export function NotificationItem({
                     "gap-1 font-bold tracking-wide cursor-pointer",
                     !isRead
                       ? "border-primary/30 text-primary bg-primary/5 hover:bg-primary/10"
-                      : "border-gray-200 dark:border-white/10 text-gray-500 dark:text-white/50"
+                      : "border-border text-muted-foreground"
                   )}
                   onClick={() =>
                     notification.related_symbol &&

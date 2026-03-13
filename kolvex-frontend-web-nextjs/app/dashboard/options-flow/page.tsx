@@ -148,7 +148,7 @@ export default function OptionsFlowPage() {
       title={t("optionsFlow.title")}
       headerClassName="lg:hidden"
     >
-      <div className="relative flex-1 overflow-y-auto bg-background-light dark:bg-background-dark">
+      <div className="relative flex-1 overflow-y-auto bg-background">
         <div className="absolute inset-0 bg-grid opacity-50 pointer-events-none" />
 
         {/* Hero Section - Desktop Only */}
@@ -242,7 +242,7 @@ export default function OptionsFlowPage() {
 
           {/* Expanded Filters */}
           {showFilters && (
-            <div className="flex flex-wrap items-center gap-3 p-3 rounded-lg border border-border-light dark:border-border-dark bg-muted/30">
+            <div className="flex flex-wrap items-center gap-3 p-3 rounded-lg border border-border bg-muted/30">
               <div className="flex items-center gap-2">
                 <span className="text-xs text-muted-foreground whitespace-nowrap">
                   {t("optionsFlow.filterSymbol")}

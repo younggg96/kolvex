@@ -190,8 +190,8 @@ export default function TrendingStocksTable({
       onScroll={handleScroll}
     >
       <Table>
-        <TableHeader className="sticky top-0 z-10 bg-white dark:bg-card-dark">
-          <TableRow className="border-b border-gray-200 dark:border-white/10">
+        <TableHeader className="sticky top-0 z-10 bg-card">
+          <TableRow className="border-b border-border">
             <TableHead className="text-xs font-semibold text-left w-[140px] min-w-[140px]">
               Stock
             </TableHead>

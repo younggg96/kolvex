@@ -19,13 +19,13 @@ export default function Header({
   extra,
 }: HeaderProps) {
   return (
-    <header className="flex justify-between items-center px-4 lg:px-6 py-3 lg:py-4 h-[48px] lg:h-[56px] bg-white dark:bg-background-dark border-b border-border-light dark:border-border-dark">
+    <header className="flex justify-between items-center px-4 lg:px-6 py-3 lg:py-4 h-[48px] lg:h-[56px] bg-card border-b border-border">
       <div className="flex items-center gap-3 lg:gap-4">
         {/* Mobile menu button */}
         {hasSidebarTrigger && <SidebarTrigger className="lg:hidden" />}
         {leftAction}
         {title && (
-          <h1 className="text-[16px] lg:text-[18px] font-semibold text-gray-900 dark:text-white">
+          <h1 className="text-[16px] lg:text-[18px] font-semibold text-foreground">
             {title}
           </h1>
         )}

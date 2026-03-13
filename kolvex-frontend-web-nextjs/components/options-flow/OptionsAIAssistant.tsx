@@ -176,7 +176,7 @@ function CompactResultCard({
                   key={s.label}
                   className={cn(
                     "py-2.5 px-3 text-center",
-                    idx > 0 && "border-l border-border-light dark:border-border-dark"
+                    idx > 0 && "border-l border-border"
                   )}
                 >
                   <p className="text-[10px] text-muted-foreground">{s.label}</p>
@@ -484,7 +484,7 @@ export function OptionsAIAssistant({
                   "data-[state=open]:ring-0 data-[state=open]:outline-none",
                   !hasAnyModel
                     ? "text-muted-foreground"
-                    : "text-foreground/80 hover:text-foreground hover:bg-muted/50 border !border-border-light/50 dark:!border-border-dark/50"
+                    : "text-foreground/80 hover:text-foreground hover:bg-muted/50 border !border-border/50"
                 )}
               >
                 {hasAnyModel ? (

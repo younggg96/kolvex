@@ -36,6 +36,7 @@
     "analytics": "Analytics",
     "social": "Social",
     "stocks": "Stocks",
+    "stockScreener": "AI Screener",
     "optionsFlow": "Options Flow",
     "tradingAnalysis": "Deep Analysis",
     "superinvestors": "Superinvestors",
@@ -1089,5 +1090,28 @@
   "languages": {
     "en": "English",
     "zh": "中文"
+  },
+  "stockScreener": {
+    "title": "AI Stock Screener",
+    "description": "Combine quantitative screening with AI analysis to discover investment opportunities",
+    "strategies": "Strategy Templates",
+    "customFilters": "Custom Filters",
+    "filters": "Filters",
+    "apply": "Apply Filters",
+    "reset": "Reset",
+    "sector": "Sector",
+    "results": "Results",
+    "stocksFound": "{count} stocks found",
+    "noResults": "No matching stocks",
+    "selectStrategy": "Select a strategy or set filters to begin",
+    "aiAnalyze": "AI Analyze",
+    "aiAnalyzing": "AI is analyzing...",
+    "aiInsights": "AI Insights",
+    "aiScore": "AI Score",
+    "page": "Page",
+    "fundamental": "Fundamental",
+    "valuation": "Valuation",
+    "growth": "Growth",
+    "risk": "Risk"
   }
 }

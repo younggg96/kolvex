@@ -19,13 +19,13 @@ export default function MarketIndex({
   const isPositive = change >= 0;
 
   return (
-    <div className="bg-white dark:bg-card-dark p-3 rounded-lg border border-border-light dark:border-border-dark transition-all duration-200 hover:shadow-md hover:scale-[1.02] dark:hover:bg-card-dark/90 cursor-pointer">
+    <div className="bg-card p-3 rounded-lg border border-border transition-all duration-200 hover:shadow-md hover:scale-[1.02] hover:bg-card/90 cursor-pointer">
       <div className="flex items-start justify-between gap-3 mb-3">
         <div className="flex-1 min-w-0">
-          <h3 className="text-gray-500 dark:text-gray-400 text-[10px] font-semibold tracking-wider uppercase mb-1">
+          <h3 className="text-muted-foreground text-[10px] font-semibold tracking-wider uppercase mb-1">
             {name}
           </h3>
-          <p className="text-gray-900 dark:text-white text-lg font-bold truncate">
+          <p className="text-foreground text-lg font-bold truncate">
             {value}
           </p>
         </div>

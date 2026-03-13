@@ -402,7 +402,7 @@ export function SentimentTrendChart({
   return (
     <div
       className={cn(
-        "rounded-xl border border-zinc-200/60 dark:border-zinc-800 bg-card-light dark:bg-card-dark/50 overflow-hidden",
+        "rounded-xl border border-zinc-200/60 dark:border-zinc-800 bg-card overflow-hidden",
         className
       )}
     >

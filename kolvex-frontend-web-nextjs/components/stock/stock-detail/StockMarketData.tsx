@@ -21,7 +21,7 @@ export default function StockMarketData({
 
   if (error) {
     return (
-      <div className="hidden lg:block bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-3 sm:p-4 transition-colors duration-300">
+      <div className="hidden lg:block bg-card rounded-xl border border-border p-3 sm:p-4 transition-colors duration-300">
         <div className="text-center text-red-500 text-sm py-4">
           <p>Failed to load stock data</p>
           <p className="text-xs mt-1 text-red-400">{error}</p>
@@ -31,16 +31,16 @@ export default function StockMarketData({
   }
 
   return (
-    <div className="hidden lg:block bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-3 sm:p-4 transition-colors duration-300">
+    <div className="hidden lg:block bg-card rounded-xl border border-border p-3 sm:p-4 transition-colors duration-300">
       <div className="space-y-4">
         {/* Main Price Info */}
         <div>
           <div className="flex justify-between items-start">
             <div>
-              <h2 className="text-lg font-bold text-gray-900 dark:text-white">
+              <h2 className="text-lg font-bold text-foreground">
                 {quote.symbol}
               </h2>
-              <p className="text-xs text-gray-500 dark:text-white/60">
+              <p className="text-xs text-muted-foreground">
                 {quote.name}
               </p>
             </div>
@@ -68,7 +68,7 @@ export default function StockMarketData({
             </Button>
           </div>
           <div className="flex items-baseline gap-2 mt-2">
-            <span className="text-2xl font-bold text-gray-900 dark:text-white">
+            <span className="text-2xl font-bold text-foreground">
               ${quote.current_price?.toFixed(2)}
             </span>
             <span
@@ -86,80 +86,80 @@ export default function StockMarketData({
         {/* Key Statistics Grid */}
         <div className="grid grid-cols-2 gap-x-4 gap-y-3">
           <div>
-            <p className="text-[11px] text-gray-500 dark:text-white/50 mb-0.5">
+            <p className="text-[11px] text-muted-foreground mb-0.5">
               Open
             </p>
-            <p className="text-sm font-semibold text-gray-900 dark:text-white">
+            <p className="text-sm font-semibold text-foreground">
               {quote.open ? `$${quote.open.toFixed(2)}` : "N/A"}
             </p>
           </div>
           <div>
-            <p className="text-[11px] text-gray-500 dark:text-white/50 mb-0.5">
+            <p className="text-[11px] text-muted-foreground mb-0.5">
               Prev Close
             </p>
-            <p className="text-sm font-semibold text-gray-900 dark:text-white">
+            <p className="text-sm font-semibold text-foreground">
               {quote.previous_close
                 ? `$${quote.previous_close.toFixed(2)}`
                 : "N/A"}
             </p>
           </div>
           <div>
-            <p className="text-[11px] text-gray-500 dark:text-white/50 mb-0.5">
+            <p className="text-[11px] text-muted-foreground mb-0.5">
               High
             </p>
-            <p className="text-sm font-semibold text-gray-900 dark:text-white">
+            <p className="text-sm font-semibold text-foreground">
               {quote.day_high ? `$${quote.day_high.toFixed(2)}` : "N/A"}
             </p>
           </div>
           <div>
-            <p className="text-[11px] text-gray-500 dark:text-white/50 mb-0.5">
+            <p className="text-[11px] text-muted-foreground mb-0.5">
               Low
             </p>
-            <p className="text-sm font-semibold text-gray-900 dark:text-white">
+            <p className="text-sm font-semibold text-foreground">
               {quote.day_low ? `$${quote.day_low.toFixed(2)}` : "N/A"}
             </p>
           </div>
           <div>
-            <p className="text-[11px] text-gray-500 dark:text-white/50 mb-0.5">
+            <p className="text-[11px] text-muted-foreground mb-0.5">
               52W High
             </p>
-            <p className="text-sm font-semibold text-gray-900 dark:text-white">
+            <p className="text-sm font-semibold text-foreground">
               {quote.fifty_two_week_high
                 ? `$${quote.fifty_two_week_high.toFixed(2)}`
                 : "N/A"}
             </p>
           </div>
           <div>
-            <p className="text-[11px] text-gray-500 dark:text-white/50 mb-0.5">
+            <p className="text-[11px] text-muted-foreground mb-0.5">
               52W Low
             </p>
-            <p className="text-sm font-semibold text-gray-900 dark:text-white">
+            <p className="text-sm font-semibold text-foreground">
               {quote.fifty_two_week_low
                 ? `$${quote.fifty_two_week_low.toFixed(2)}`
                 : "N/A"}
             </p>
           </div>
           <div>
-            <p className="text-[11px] text-gray-500 dark:text-white/50 mb-0.5">
+            <p className="text-[11px] text-muted-foreground mb-0.5">
               Volume
             </p>
-            <p className="text-sm font-semibold text-gray-900 dark:text-white">
+            <p className="text-sm font-semibold text-foreground">
               {quote.volume ? formatVolume(quote.volume) : "N/A"}
             </p>
           </div>
           <div>
-            <p className="text-[11px] text-gray-500 dark:text-white/50 mb-0.5">
+            <p className="text-[11px] text-muted-foreground mb-0.5">
               Avg Volume
             </p>
-            <p className="text-sm font-semibold text-gray-900 dark:text-white">
+            <p className="text-sm font-semibold text-foreground">
               {quote.avg_volume ? formatVolume(quote.avg_volume) : "N/A"}
             </p>
           </div>
           <div className="col-span-2">
-            <p className="text-[11px] text-gray-500 dark:text-white/50 mb-0.5">
+            <p className="text-[11px] text-muted-foreground mb-0.5">
               Market Cap
             </p>
-            <p className="text-sm font-semibold text-gray-900 dark:text-white">
+            <p className="text-sm font-semibold text-foreground">
               {quote.market_cap ? formatMarketCap(quote.market_cap) : "N/A"}
             </p>
           </div>

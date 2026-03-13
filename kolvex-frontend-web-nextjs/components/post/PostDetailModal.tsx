@@ -39,13 +39,13 @@ export default function PostDetailModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-[600px] w-[95vw] h-fit max-h-[90vh] overflow-hidden !p-0 bg-white dark:bg-card-dark rounded-2xl">
-        <DialogHeader className="px-6 pt-6 pb-4 border-b border-gray-200 dark:border-gray-700">
-          <DialogTitle className="text-gray-900 dark:text-white">
+      <DialogContent className="max-w-[600px] w-[95vw] h-fit max-h-[90vh] overflow-hidden !p-0 bg-card rounded-2xl">
+        <DialogHeader className="px-6 pt-6 pb-4 border-b border-border">
+          <DialogTitle className="text-foreground">
             Post Details
           </DialogTitle>
         </DialogHeader>
-        <div className="overflow-y-auto p-2 h-fit max-h-[calc(90vh-80px)] bg-white dark:bg-card-dark rounded-2xl">
+        <div className="overflow-y-auto p-2 h-fit max-h-[calc(90vh-80px)] bg-card rounded-2xl">
           {mounted && postUrl && (
             <iframe
               key={theme}
@@ -59,7 +59,7 @@ export default function PostDetailModal({
             />
           )}
         </div>
-        <DialogFooter className="px-6 pt-4 pb-4 border-t border-gray-200 dark:border-gray-700">
+        <DialogFooter className="px-6 pt-4 pb-4 border-t border-border">
           <a
             href={postPermalink || postUrl}
             target="_blank"

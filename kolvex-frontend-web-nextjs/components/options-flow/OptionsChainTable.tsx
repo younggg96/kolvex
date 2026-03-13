@@ -164,7 +164,7 @@ function ChainCard({
           </div>
         </CollapsibleTrigger>
         <CollapsibleContent>
-          <CardContent className="!p-0 border-t dark:border-border-dark">
+          <CardContent className="!p-0 border-t border-border">
             <div className="overflow-x-auto">
               <Table className="min-w-[700px]">
                 <TableHeader>{TABLE_HEADERS}</TableHeader>

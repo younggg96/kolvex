@@ -63,7 +63,7 @@ export function PortfolioPageContent() {
         ) : undefined
       }
     >
-      <div className="relative flex-1 overflow-y-auto bg-background-light dark:bg-background-dark">
+      <div className="relative flex-1 overflow-y-auto bg-background">
         <div className="absolute inset-0 bg-grid opacity-50 pointer-events-none" />
         {/* Hero Section */}
         <PortfolioHeroSection

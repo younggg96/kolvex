@@ -16,30 +16,65 @@ html {
   }
 
   @media (max-width: 480px) {
-    font-size: 14px;
+    font-size: 15px;
   }
 }
 
+/* ========================================
+   DESIGN TOKENS — Tinted Neutrals
+   Warm-tinted grays with a hint of brand hue
+   for subconscious cohesion (Impeccable: color)
+   ======================================== */
+
 :root {
-  --background: #f7f8fa;
-  --foreground: #171717;
-  --muted: #f1f5f9;
-  --muted-foreground: #64748b;
+  --background: 247 248 250;
+  --foreground: 23 23 23;
+  --muted: 241 245 249;
+  --muted-foreground: 100 116 139;
+  --card: 255 255 255;
+  --card-foreground: 23 23 23;
+  --border: 229 231 235;
+  --secondary: 241 245 249;
+  --secondary-foreground: 15 23 42;
+  --destructive: 239 68 68;
+  --destructive-foreground: 255 255 255;
+  --primary-foreground: 255 255 255;
+
+  --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
+  --ease-out-quint: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-quart: cubic-bezier(0.5, 0, 0.75, 0);
 }
 
 .dark {
-  --background: #0a0e0f;
-  --foreground: #e5e7eb;
-  --muted: #1e2124;
-  --muted-foreground: #9ca3af;
+  --background: 10 14 15;
+  --foreground: 229 231 235;
+  --muted: 30 33 36;
+  --muted-foreground: 156 163 175;
+  --card: 26 29 31;
+  --card-foreground: 229 231 235;
+  --border: 42 45 47;
+  --secondary: 30 33 36;
+  --secondary-foreground: 229 231 235;
+  --destructive: 239 68 68;
+  --destructive-foreground: 255 255 255;
+  --primary-foreground: 255 255 255;
 }
 
 body {
-  color: var(--foreground);
-  background: var(--background);
+  color: rgb(var(--foreground));
+  background: rgb(var(--background));
+  font-kerning: normal;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  transition: background-color 0.3s ease, color 0.3s ease;
+  transition:
+    background-color 0.3s var(--ease-out-quart),
+    color 0.3s var(--ease-out-quart);
+}
+
+/* Tabular numbers for data alignment */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
 }
 
 @layer utilities {
@@ -91,19 +126,19 @@ body {
   }
 
   .animate-fade-in-up {
-    animation: fade-in-up 0.6s ease-out forwards;
+    animation: fade-in-up 0.6s var(--ease-out-quart) forwards;
   }
 
   .animate-fade-in {
-    animation: fade-in 0.5s ease-out forwards;
+    animation: fade-in 0.5s var(--ease-out-quart) forwards;
   }
 
   .animate-slide-in {
-    animation: slide-in 0.4s ease-out forwards;
+    animation: slide-in 0.4s var(--ease-out-quart) forwards;
   }
 
   .animate-slide-up {
-    animation: slide-up 0.4s ease-out;
+    animation: slide-up 0.4s var(--ease-out-quart);
   }
 
   /* Delay utilities for animations */
@@ -118,36 +153,35 @@ body {
   .glow-border::before {
     content: "";
     position: absolute;
-    top: -2px;
-    left: -2px;
-    right: -2px;
-    bottom: -2px;
+    top: -1px;
+    left: -1px;
+    right: -1px;
+    bottom: -1px;
     border-radius: 9999px;
-    background: conic-gradient(
-      from 180deg at 50% 50%,
-      #00c805,
-      #001a02,
-      #00c805
-    );
+    background: var(--foreground);
     z-index: -1;
-    animation: spin 3s linear infinite;
     opacity: 0;
-    transition: opacity 0.3s ease-in-out;
+    transition: opacity 0.2s var(--ease-out-quart);
   }
 
   .glow-border:focus-within::before {
-    opacity: 0.6;
+    opacity: 0.12;
   }
 
   .bg-grid {
-    background-image: linear-gradient(
+    background-image:
+      linear-gradient(
         to right,
-        rgba(0, 200, 5, 0.1) 1px,
+        rgb(var(--foreground) / 0.06) 1px,
         transparent 1px
       ),
-      linear-gradient(to bottom, rgba(0, 200, 5, 0.1) 1px, transparent 1px);
+      linear-gradient(
+        to bottom,
+        rgb(var(--foreground) / 0.06) 1px,
+        transparent 1px
+      );
     background-size: 40px 40px;
-    animation: bg-pan 15s linear infinite;
+    animation: bg-pan 20s linear infinite;
   }
 
   /* Hide scrollbar but keep functionality */
@@ -229,26 +263,38 @@ body {
 
 @keyframes grow {
   from {
-    height: 0;
+    transform: scaleY(0);
+    transform-origin: bottom;
+  }
+  to {
+    transform: scaleY(1);
+    transform-origin: bottom;
   }
 }
 
 @keyframes grow-x {
   from {
-    width: 0;
+    transform: scaleX(0);
+    transform-origin: left;
+  }
+  to {
+    transform: scaleX(1);
+    transform-origin: left;
   }
 }
 
 .animate-dash {
-  animation: dash 3s ease-out forwards;
+  animation: dash 3s var(--ease-out-quart) forwards;
 }
 
 .animate-grow {
-  animation: grow 1s ease-out forwards;
+  transform-origin: bottom;
+  animation: grow 0.8s var(--ease-out-quart) forwards;
 }
 
 .animate-grow-x {
-  animation: grow-x 1s ease-out forwards;
+  transform-origin: left;
+  animation: grow-x 0.8s var(--ease-out-quart) forwards;
 }
 
 /* ========================================
@@ -256,7 +302,8 @@ body {
    ======================================== */
 
 @keyframes float {
-  0%, 100% {
+  0%,
+  100% {
     transform: translateY(0) scale(1);
   }
   50% {
@@ -282,7 +329,8 @@ body {
 }
 
 @keyframes pulse-subtle {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 1;
   }
   50% {
@@ -303,8 +351,13 @@ body {
 }
 
 @keyframes blink-cursor {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0; }
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
 }
 
 .animate-blink-cursor {
@@ -348,11 +401,11 @@ body {
 .animate-progress-stripes {
   background-image: linear-gradient(
     45deg,
-    rgba(255,255,255,0.15) 25%,
+    rgba(255, 255, 255, 0.15) 25%,
     transparent 25%,
     transparent 50%,
-    rgba(255,255,255,0.15) 50%,
-    rgba(255,255,255,0.15) 75%,
+    rgba(255, 255, 255, 0.15) 50%,
+    rgba(255, 255, 255, 0.15) 75%,
     transparent 75%,
     transparent
   );
@@ -365,7 +418,8 @@ body {
    ======================================== */
 
 @keyframes gradient-x {
-  0%, 100% {
+  0%,
+  100% {
     background-position: 0% 50%;
   }
   50% {
@@ -374,7 +428,8 @@ body {
 }
 
 @keyframes gradient-xy {
-  0%, 100% {
+  0%,
+  100% {
     background-position: 0% 0%;
   }
   25% {
@@ -447,24 +502,34 @@ body {
 }
 
 .animate-page-enter {
-  animation: page-enter 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+  animation: page-enter 0.3s var(--ease-out-quart) forwards;
 }
 
 .animate-page-scale-in {
-  animation: page-scale-in 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+  animation: page-scale-in 0.25s var(--ease-out-quart) forwards;
 }
 
 .animate-content-stagger {
-  animation: content-stagger 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+  animation: content-stagger 0.4s var(--ease-out-quart) forwards;
   animation-fill-mode: both;
 }
 
 /* Staggered animation delays */
-.stagger-1 { animation-delay: 50ms; }
-.stagger-2 { animation-delay: 100ms; }
-.stagger-3 { animation-delay: 150ms; }
-.stagger-4 { animation-delay: 200ms; }
-.stagger-5 { animation-delay: 250ms; }
+.stagger-1 {
+  animation-delay: 50ms;
+}
+.stagger-2 {
+  animation-delay: 100ms;
+}
+.stagger-3 {
+  animation-delay: 150ms;
+}
+.stagger-4 {
+  animation-delay: 200ms;
+}
+.stagger-5 {
+  animation-delay: 250ms;
+}
 
 /* ========================================
    MODAL/DIALOG ANIMATIONS
@@ -511,19 +576,19 @@ body {
 }
 
 .animate-modal-overlay-enter {
-  animation: modal-overlay-enter 0.2s ease-out forwards;
+  animation: modal-overlay-enter 0.2s var(--ease-out-quart) forwards;
 }
 
 .animate-modal-content-enter {
-  animation: modal-content-enter 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  animation: modal-content-enter 0.25s var(--ease-out-quart) forwards;
 }
 
 .animate-modal-overlay-exit {
-  animation: modal-overlay-exit 0.15s ease-in forwards;
+  animation: modal-overlay-exit 0.15s var(--ease-in-quart) forwards;
 }
 
 .animate-modal-content-exit {
-  animation: modal-content-exit 0.15s ease-in forwards;
+  animation: modal-content-exit 0.15s var(--ease-in-quart) forwards;
 }
 
 /* ========================================
@@ -564,33 +629,31 @@ body {
 }
 
 .animate-slide-in-left {
-  animation: slide-in-left 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+  animation: slide-in-left 0.3s var(--ease-out-quart) forwards;
 }
 
 .animate-slide-in-right {
-  animation: slide-in-right 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+  animation: slide-in-right 0.3s var(--ease-out-quart) forwards;
 }
 
 /* ========================================
-   GLOW EFFECTS
+   ELEVATION SHADOWS (subtle, purposeful)
    ======================================== */
 
 .glow-primary {
-  box-shadow: 0 0 20px rgba(0, 200, 5, 0.3),
-              0 0 40px rgba(0, 200, 5, 0.2),
-              0 0 60px rgba(0, 200, 5, 0.1);
+  box-shadow:
+    0 1px 3px rgba(0, 200, 5, 0.08),
+    0 4px 12px rgba(0, 200, 5, 0.06);
 }
 
 .glow-primary-lg {
-  box-shadow: 0 0 30px rgba(0, 200, 5, 0.4),
-              0 0 60px rgba(0, 200, 5, 0.3),
-              0 0 90px rgba(0, 200, 5, 0.2),
-              0 0 120px rgba(0, 200, 5, 0.1);
+  box-shadow:
+    0 2px 6px rgba(0, 200, 5, 0.1),
+    0 8px 24px rgba(0, 200, 5, 0.08);
 }
 
 .text-glow-primary {
-  text-shadow: 0 0 20px rgba(0, 200, 5, 0.5),
-               0 0 40px rgba(0, 200, 5, 0.3);
+  /* Intentionally empty — gradient text is an anti-pattern */
 }
 
 /* ========================================
@@ -623,21 +686,21 @@ body {
 }
 
 /* ========================================
-   GLASSMORPHISM UTILITIES
+   SURFACE UTILITIES (purposeful, not decorative)
    ======================================== */
 
 .glass {
-  background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgb(var(--card) / 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgb(var(--border) / 0.3);
 }
 
 .glass-dark {
-  background: rgba(0, 0, 0, 0.2);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  background: rgb(var(--card) / 0.9);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgb(var(--border) / 0.3);
 }
 
 /* ========================================
@@ -654,4 +717,34 @@ body {
 
 .hover\:scale-105:hover {
   transform: scale(1.05);
+}
+
+/* ========================================
+   REDUCED MOTION — Accessibility
+   prefers-reduced-motion affects ~35% of
+   adults over 40. This is NOT optional.
+   ======================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ========================================
+   FOCUS VISIBLE — Keyboard accessibility
+   ======================================== */
+
+:focus-visible {
+  outline: 2px solid #00c805;
+  outline-offset: 2px;
+}
+
+:focus:not(:focus-visible) {
+  outline: none;
 }

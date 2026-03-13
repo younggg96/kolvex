@@ -119,7 +119,7 @@ export default function CompanyLogo({
   return (
     <div
       className={cn(
-        "flex items-center justify-center flex-shrink-0 overflow-hidden relative transition-all bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark",
+        "flex items-center justify-center flex-shrink-0 overflow-hidden relative transition-all bg-background border border-border",
         "p-1", // 保持内边距，让 logo 有呼吸感
         containerSize,
         // 如果出错使用柔和的灰色背景，否则使用传入的背景（默认白色）

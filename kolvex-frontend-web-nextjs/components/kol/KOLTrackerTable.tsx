@@ -203,7 +203,7 @@ export default function KOLTrackerTable({
   );
 
   const KOLCardSkeleton = () => (
-    <div className="border border-border-light dark:border-border-dark rounded-lg p-3 bg-card-light dark:bg-card-dark animate-pulse">
+    <div className="border border-border rounded-lg p-3 bg-card animate-pulse">
       <div className="flex items-start gap-3 mb-2">
         <div className="w-10 h-10 rounded-full bg-gray-300 dark:bg-white/10 flex-shrink-0"></div>
         <div className="flex-1 min-w-0">
@@ -235,7 +235,7 @@ export default function KOLTrackerTable({
             ))}
           </div>
         ) : (
-          <div className="border border-border-light dark:border-border-dark rounded-lg overflow-hidden">
+          <div className="border border-border rounded-lg overflow-hidden">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -268,8 +268,8 @@ export default function KOLTrackerTable({
       {isMobile ? (
         <div className="space-y-2">
           {kols.length === 0 ? (
-            <div className="text-center py-8 border border-border-light dark:border-border-dark rounded-lg">
-              <p className="text-xs text-gray-500 dark:text-white/50">
+            <div className="text-center py-8 border border-border rounded-lg">
+              <p className="text-xs text-muted-foreground">
                 {kols.length === 0
                   ? t("kol.tracker.noTrackedKols")
                   : t("kol.tracker.noMatchingKols")}
@@ -279,7 +279,7 @@ export default function KOLTrackerTable({
             kols.map((kol) => (
               <div
                 key={kol.id}
-                className="border border-border-light dark:border-border-dark rounded-lg p-3 bg-card-light dark:bg-card-dark"
+                className="border border-border rounded-lg p-3 bg-card"
               >
                 {/* Header with Avatar, Name and Actions */}
                 <div className="flex items-start gap-3 mb-2">
@@ -293,18 +293,18 @@ export default function KOLTrackerTable({
                         src={proxyImageUrl(kol.avatarUrl)}
                         alt={kol.name}
                       />
-                      <AvatarFallback className="text-xs font-bold bg-gray-200 dark:bg-white/10 text-gray-600 dark:text-white/60">
+                      <AvatarFallback className="text-xs font-bold bg-gray-200 dark:bg-white/10 text-muted-foreground">
                         {kol.name.substring(0, 2).toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
 
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-1">
-                        <h3 className="text-sm font-semibold text-gray-900 dark:text-white truncate hover:underline">
+                        <h3 className="text-sm font-semibold text-foreground truncate hover:underline">
                           {kol.name}
                         </h3>
                       </div>
-                      <p className="text-xs text-gray-600 dark:text-white/60 truncate">
+                      <p className="text-xs text-muted-foreground truncate">
                         {kol.username}
                       </p>
                     </div>
@@ -334,14 +334,14 @@ export default function KOLTrackerTable({
                 {/* Platform and Followers */}
                 <div className="flex items-center justify-between mb-2">
                   <PlatformBadge platform={kol.platform} size="sm" />
-                  <span className="text-xs font-medium text-gray-900 dark:text-white">
+                  <span className="text-xs font-medium text-foreground">
                     {formatFollowers(kol.followers)} {t("kol.tracker.followers_suffix")}
                   </span>
                 </div>
 
                 {/* Description */}
                 {kol.description && (
-                  <p className="text-xs text-gray-600 dark:text-white/60 line-clamp-2">
+                  <p className="text-xs text-muted-foreground line-clamp-2">
                     {kol.description}
                   </p>
                 )}
@@ -351,7 +351,7 @@ export default function KOLTrackerTable({
         </div>
       ) : (
         /* Desktop Table View */
-        <div className="border border-border-light dark:border-border-dark rounded-lg overflow-auto">
+        <div className="border border-border rounded-lg overflow-auto">
           <Table>
             <TableHeader>
               <TableRow>
@@ -368,7 +368,7 @@ export default function KOLTrackerTable({
               {kols.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={5} className="text-center py-8">
-                    <p className="text-xs text-gray-500 dark:text-white/50">
+                    <p className="text-xs text-muted-foreground">
                       {kols.length === 0
                         ? "No tracked KOLs yet. Click 'Track New KOL' button to start tracking."
                         : "No KOLs match your search criteria."}
@@ -448,7 +448,7 @@ export default function KOLTrackerTable({
                 placeholder={t("kol.tracker.addDialog.kolIdPlaceholder")}
                 className="h-8 text-xs"
               />
-              <p className="text-xs text-gray-500 dark:text-white/50">
+              <p className="text-xs text-muted-foreground">
                 {t("kol.tracker.addDialog.kolIdHint")}
               </p>
             </div>

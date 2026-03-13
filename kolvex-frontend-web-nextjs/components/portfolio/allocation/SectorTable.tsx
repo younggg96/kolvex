@@ -34,7 +34,7 @@ export function SectorTable({
   return (
     <Table>
       <TableHeader>
-        <TableRow className="border-b border-border-light dark:border-border-dark hover:bg-transparent">
+        <TableRow className="border-b border-border hover:bg-transparent">
           <TableHead className="text-left py-2 px-2">Name</TableHead>
           {isOwner && (
             <>
@@ -175,7 +175,7 @@ export function SectorTable({
                   return (
                     <TableRow
                       key={`${sector.name}-${aggPos.displaySymbol}-${posIndex}`}
-                      className="border-b border-border-light/50 dark:border-border-dark/50 bg-muted/20 dark:bg-muted/10 hover:bg-muted/30"
+                      className="border-b border-border/50 bg-muted/20 dark:bg-muted/10 hover:bg-muted/30"
                     >
                       <TableCell className="py-2 px-2 pl-12">
                         <div className="flex items-center gap-2">

@@ -403,7 +403,7 @@ export function PortfolioPerformanceChart({
 
     if (loading && data.length === 0) {
         return (
-            <div className={cn("rounded-xl bg-card-light dark:bg-card-dark border border-border-light dark:border-primary/10 p-4", className)}>
+            <div className={cn("rounded-xl bg-card border border-border p-4", className)}>
                 <ChartSkeleton height={height} />
             </div>
         );
@@ -416,7 +416,7 @@ export function PortfolioPerformanceChart({
     return (
         <div
             className={cn(
-                "rounded-xl bg-card-light dark:bg-card-dark border border-border-light dark:border-primary/10 p-4",
+                "rounded-xl bg-card border border-border p-4",
                 className
             )}
         >
@@ -629,7 +629,7 @@ export function PortfolioPerformanceChart({
 
                     {/* Data Info */}
                     {hasRealData && firstSnapshotDate && (
-                        <div className="mt-3 pt-3 border-t border-border-light dark:border-white/5">
+                        <div className="mt-3 pt-3 border-t border-border">
                             <TooltipProvider>
                                 <UITooltip>
                                     <TooltipTrigger asChild>

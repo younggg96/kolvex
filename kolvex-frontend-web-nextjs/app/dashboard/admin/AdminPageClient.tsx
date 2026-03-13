@@ -90,8 +90,8 @@ const UserAvatar = memo(function UserAvatar({
 
   if (!src || hasError) {
     return (
-      <div className="h-7 w-7 rounded-full bg-gray-100 dark:bg-white/10 flex items-center justify-center flex-shrink-0">
-        <span className="text-xs font-medium text-gray-600 dark:text-gray-400">
+      <div className="h-7 w-7 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
+        <span className="text-xs font-medium text-muted-foreground">
           {fallback}
         </span>
       </div>
@@ -576,16 +576,16 @@ function ActionCard({
   const hasParams = config.params && config.params.length > 0;
 
   return (
-    <div className="bg-white dark:bg-card-dark border border-border-light dark:border-border-dark rounded-lg p-2.5">
+    <div className="bg-card border border-border rounded-lg p-2.5">
       <div className="flex items-center gap-2">
-        <div className="w-7 h-7 rounded-md bg-gray-100 dark:bg-white/10 flex items-center justify-center flex-shrink-0">
-          <Icon className="h-3.5 w-3.5 text-gray-600 dark:text-gray-400" />
+        <div className="w-7 h-7 rounded-md bg-muted flex items-center justify-center flex-shrink-0">
+          <Icon className="h-3.5 w-3.5 text-muted-foreground" />
         </div>
         <div className="flex-1 min-w-0">
-          <h4 className="text-xs font-medium text-gray-900 dark:text-white">
+          <h4 className="text-xs font-medium text-foreground">
             {config.name}
           </h4>
-          <p className="text-[11px] text-gray-500 dark:text-gray-400 truncate">
+          <p className="text-[11px] text-muted-foreground truncate">
             {config.description}
           </p>
         </div>
@@ -606,11 +606,11 @@ function ActionCard({
 
       {/* Parameters */}
       {hasParams && (
-        <div className="mt-2 pt-2 border-t border-border-light dark:border-border-dark">
+        <div className="mt-2 pt-2 border-t border-border">
           <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
             {config.params!.map((param) => (
               <div key={param.key} className="flex items-center gap-1">
-                <label className="text-[11px] text-gray-500 dark:text-gray-400 whitespace-nowrap">
+                <label className="text-[11px] text-muted-foreground whitespace-nowrap">
                   {param.label}
                 </label>
                 {param.type === "number" && (
@@ -691,21 +691,21 @@ function StatsCard({
   icon: React.ElementType;
 }) {
   return (
-    <div className="bg-white dark:bg-card-dark border border-border-light dark:border-border-dark rounded-lg p-3">
+    <div className="bg-card border border-border rounded-lg p-3">
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-xs text-gray-500 dark:text-gray-400">{title}</p>
-          <p className="text-xl font-bold text-gray-900 dark:text-white mt-1">
+          <p className="text-xs text-muted-foreground">{title}</p>
+          <p className="text-xl font-bold text-foreground mt-1">
             {typeof value === "number" ? value.toLocaleString() : value}
           </p>
           {subtitle && (
-            <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-1">
+            <p className="text-[11px] text-muted-foreground mt-1">
               {subtitle}
             </p>
           )}
         </div>
-        <div className="w-9 h-9 rounded-lg bg-gray-100 dark:bg-white/10 flex items-center justify-center">
-          <Icon className="h-4 w-4 text-gray-600 dark:text-gray-400" />
+        <div className="w-9 h-9 rounded-lg bg-muted flex items-center justify-center">
+          <Icon className="h-4 w-4 text-muted-foreground" />
         </div>
       </div>
     </div>
@@ -746,11 +746,11 @@ function ScraperStatusCard({
   const StatusIcon = config.icon;
 
   return (
-    <div className="bg-white dark:bg-card-dark border border-border-light dark:border-border-dark rounded-lg overflow-hidden">
+    <div className="bg-card border border-border rounded-lg overflow-hidden">
       {/* Header */}
-      <div className="p-3 border-b border-border-light dark:border-border-dark">
+      <div className="p-3 border-b border-border">
         <div className="flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-gray-900 dark:text-white">{name}</h3>
+          <h3 className="text-sm font-semibold text-foreground">{name}</h3>
           <div className={cn("flex items-center gap-1.5 text-xs", config.color)}>
             <StatusIcon className="h-3.5 w-3.5" />
             <span>{config.label}</span>
@@ -760,15 +760,15 @@ function ScraperStatusCard({
 
       {/* Stats */}
       {stats.length > 0 && (
-        <div className="grid grid-cols-2 divide-x divide-border-light dark:divide-border-dark border-b border-border-light dark:border-border-dark">
+        <div className="grid grid-cols-2 divide-x divide-border border-b border-border">
           {stats.map((stat, index) => (
             <div key={index} className="p-2 text-center">
-              <p className="text-lg font-bold text-gray-900 dark:text-white">
+              <p className="text-lg font-bold text-foreground">
                 {typeof stat.value === "number"
                   ? stat.value.toLocaleString()
                   : stat.value}
               </p>
-              <p className="text-[11px] text-gray-500 dark:text-gray-400">
+              <p className="text-[11px] text-muted-foreground">
                 {stat.label}
               </p>
             </div>
@@ -780,10 +780,10 @@ function ScraperStatusCard({
       <div className="p-3 space-y-1.5">
         {details.map((detail, index) => (
           <div key={index} className="flex items-center justify-between text-xs">
-            <span className="text-gray-500 dark:text-gray-400">
+            <span className="text-muted-foreground">
               {detail.label}
             </span>
-            <span className="text-gray-900 dark:text-white">
+            <span className="text-foreground">
               {typeof detail.value === "boolean" ? (
                 detail.value ? (
                   <CheckCircle2 className="h-3.5 w-3.5 text-green-600 dark:text-green-500" />
@@ -1467,10 +1467,10 @@ export default function AdminPageClient() {
         <div className="flex h-full items-center justify-center">
           <div className="text-center">
             <Shield className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+            <h2 className="text-lg font-semibold text-foreground mb-2">
               Access Denied
             </h2>
-            <p className="text-sm text-gray-500 dark:text-gray-400">
+            <p className="text-sm text-muted-foreground">
               You don&apos;t have permission to access this page.
             </p>
           </div>
@@ -1547,29 +1547,29 @@ export default function AdminPageClient() {
 
                   <SectionCard title="Platform Data" titleSize="sm">
                     <div className="grid gap-3 md:grid-cols-2 px-3 pb-3">
-                      <div className="flex items-center justify-between p-2.5 bg-gray-50 dark:bg-white/5 rounded-lg">
+                      <div className="flex items-center justify-between p-2.5 bg-muted rounded-lg">
                         <div>
-                          <p className="text-xs text-gray-500 dark:text-gray-400">
+                          <p className="text-xs text-muted-foreground">
                             Twitter KOLs
                           </p>
-                          <p className="text-base font-semibold text-gray-900 dark:text-white">
+                          <p className="text-base font-semibold text-foreground">
                             {overview.twitter.total_kols}
                           </p>
                         </div>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                        <p className="text-xs text-muted-foreground">
                           {overview.twitter.total_tweets.toLocaleString()} tweets
                         </p>
                       </div>
-                      <div className="flex items-center justify-between p-2.5 bg-gray-50 dark:bg-white/5 rounded-lg">
+                      <div className="flex items-center justify-between p-2.5 bg-muted rounded-lg">
                         <div>
-                          <p className="text-xs text-gray-500 dark:text-gray-400">
+                          <p className="text-xs text-muted-foreground">
                             Xiaohongshu Posts
                           </p>
-                          <p className="text-base font-semibold text-gray-900 dark:text-white">
+                          <p className="text-base font-semibold text-foreground">
                             {overview.xiaohongshu.total_posts}
                           </p>
                         </div>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                        <p className="text-xs text-muted-foreground">
                           {overview.xiaohongshu.stock_related_posts} stock related
                         </p>
                       </div>
@@ -1644,9 +1644,9 @@ export default function AdminPageClient() {
 
               {/* Stats Bar */}
               {adminKols && (
-                <div className="flex items-center gap-4 text-xs text-gray-500 dark:text-gray-400">
+                <div className="flex items-center gap-4 text-xs text-muted-foreground">
                   <span>
-                    Total: <strong className="text-gray-900 dark:text-white">{adminKols.total}</strong>
+                    Total: <strong className="text-foreground">{adminKols.total}</strong>
                   </span>
                   <span>
                     Page {adminKols.page} of{" "}
@@ -1661,7 +1661,7 @@ export default function AdminPageClient() {
                   <Loader2 className="h-6 w-6 animate-spin text-primary" />
                 </div>
               ) : adminKols && adminKols.kols.length > 0 ? (
-                <div className="bg-white dark:bg-card-dark border border-border-light dark:border-border-dark rounded-lg overflow-hidden">
+                <div className="bg-card border border-border rounded-lg overflow-hidden">
                   <Table>
                     <TableHeader>
                       <TableRow>
@@ -1686,10 +1686,10 @@ export default function AdminPageClient() {
                                 }
                               />
                               <div className="min-w-0">
-                                <p className="text-xs font-medium text-gray-900 dark:text-white truncate">
+                                <p className="text-xs font-medium text-foreground truncate">
                                   {kol.display_name || kol.username}
                                 </p>
-                                <p className="text-[11px] text-gray-500 dark:text-gray-400 truncate">
+                                <p className="text-[11px] text-muted-foreground truncate">
                                   @{kol.username}
                                 </p>
                               </div>
@@ -1783,8 +1783,8 @@ export default function AdminPageClient() {
 
                   {/* Pagination */}
                   {adminKols.total > adminKols.page_size && (
-                    <div className="flex items-center justify-between px-4 py-3 border-t border-border-light dark:border-border-dark">
-                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                    <div className="flex items-center justify-between px-4 py-3 border-t border-border">
+                      <p className="text-xs text-muted-foreground">
                         Showing{" "}
                         {(adminKols.page - 1) * adminKols.page_size + 1}-
                         {Math.min(
@@ -1841,7 +1841,7 @@ export default function AdminPageClient() {
                   )}
                 </div>
               ) : (
-                <div className="text-center py-12 text-sm text-gray-500 dark:text-gray-400">
+                <div className="text-center py-12 text-sm text-muted-foreground">
                   No KOLs found
                 </div>
               )}
@@ -1857,7 +1857,7 @@ export default function AdminPageClient() {
                   <div className="space-y-3 py-2">
                     <div className="grid grid-cols-2 gap-3">
                       <div>
-                        <label className="text-xs text-gray-500 dark:text-gray-400 mb-1 block">
+                        <label className="text-xs text-muted-foreground mb-1 block">
                           Platform *
                         </label>
                         <Select
@@ -1879,7 +1879,7 @@ export default function AdminPageClient() {
                         </Select>
                       </div>
                       <div>
-                        <label className="text-xs text-gray-500 dark:text-gray-400 mb-1 block">
+                        <label className="text-xs text-muted-foreground mb-1 block">
                           Username *
                         </label>
                         <Input
@@ -1897,7 +1897,7 @@ export default function AdminPageClient() {
                       </div>
                     </div>
                     <div>
-                      <label className="text-xs text-gray-500 dark:text-gray-400 mb-1 block">
+                      <label className="text-xs text-muted-foreground mb-1 block">
                         Display Name
                       </label>
                       <Input
@@ -1913,7 +1913,7 @@ export default function AdminPageClient() {
                       />
                     </div>
                     <div>
-                      <label className="text-xs text-gray-500 dark:text-gray-400 mb-1 block">
+                      <label className="text-xs text-muted-foreground mb-1 block">
                         Bio
                       </label>
                       <Input
@@ -1927,7 +1927,7 @@ export default function AdminPageClient() {
                     </div>
                     <div className="grid grid-cols-2 gap-3">
                       <div>
-                        <label className="text-xs text-gray-500 dark:text-gray-400 mb-1 block">
+                        <label className="text-xs text-muted-foreground mb-1 block">
                           Avatar URL
                         </label>
                         <Input
@@ -1943,7 +1943,7 @@ export default function AdminPageClient() {
                         />
                       </div>
                       <div>
-                        <label className="text-xs text-gray-500 dark:text-gray-400 mb-1 block">
+                        <label className="text-xs text-muted-foreground mb-1 block">
                           Profile URL
                         </label>
                         <Input
@@ -1961,7 +1961,7 @@ export default function AdminPageClient() {
                     </div>
                     <div className="grid grid-cols-2 gap-3">
                       <div>
-                        <label className="text-xs text-gray-500 dark:text-gray-400 mb-1 block">
+                        <label className="text-xs text-muted-foreground mb-1 block">
                           Platform User ID
                         </label>
                         <Input
@@ -1977,7 +1977,7 @@ export default function AdminPageClient() {
                         />
                       </div>
                       <div>
-                        <label className="text-xs text-gray-500 dark:text-gray-400 mb-1 block">
+                        <label className="text-xs text-muted-foreground mb-1 block">
                           Location
                         </label>
                         <Input
@@ -1995,7 +1995,7 @@ export default function AdminPageClient() {
                     </div>
                     <div className="grid grid-cols-2 gap-3">
                       <div>
-                        <label className="text-xs text-gray-500 dark:text-gray-400 mb-1 block">
+                        <label className="text-xs text-muted-foreground mb-1 block">
                           Followers
                         </label>
                         <Input
@@ -2011,7 +2011,7 @@ export default function AdminPageClient() {
                         />
                       </div>
                       <div>
-                        <label className="text-xs text-gray-500 dark:text-gray-400 mb-1 block">
+                        <label className="text-xs text-muted-foreground mb-1 block">
                           Following
                         </label>
                         <Input
@@ -2028,7 +2028,7 @@ export default function AdminPageClient() {
                       </div>
                     </div>
                     <div>
-                      <label className="text-xs text-gray-500 dark:text-gray-400 mb-1 block">
+                      <label className="text-xs text-muted-foreground mb-1 block">
                         Website
                       </label>
                       <Input
@@ -2054,7 +2054,7 @@ export default function AdminPageClient() {
                             }))
                           }
                         />
-                        <label className="text-xs text-gray-700 dark:text-gray-300">
+                        <label className="text-xs text-muted-foreground">
                           Active
                         </label>
                       </div>
@@ -2068,7 +2068,7 @@ export default function AdminPageClient() {
                             }))
                           }
                         />
-                        <label className="text-xs text-gray-700 dark:text-gray-300">
+                        <label className="text-xs text-muted-foreground">
                           Verified
                         </label>
                       </div>
@@ -2111,7 +2111,7 @@ export default function AdminPageClient() {
                     </DialogTitle>
                   </DialogHeader>
                   <div className="py-2 space-y-3">
-                    <p className="text-sm text-gray-600 dark:text-gray-300">
+                    <p className="text-sm text-muted-foreground">
                       Are you sure you want to delete this KOL? This action
                       cannot be undone.
                     </p>
@@ -2120,7 +2120,7 @@ export default function AdminPageClient() {
                         checked={deleteWithPosts}
                         onCheckedChange={setDeleteWithPosts}
                       />
-                      <label className="text-xs text-gray-600 dark:text-gray-400">
+                      <label className="text-xs text-muted-foreground">
                         Also delete all posts from this KOL
                       </label>
                     </div>
@@ -2166,7 +2166,7 @@ export default function AdminPageClient() {
               ) : (
                 <>
                   {/* Scheduler Status Header */}
-                  <div className="bg-white dark:bg-card-dark border border-border-light dark:border-border-dark rounded-lg p-2.5">
+                  <div className="bg-card border border-border rounded-lg p-2.5">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         <div className={cn(
@@ -2182,10 +2182,10 @@ export default function AdminPageClient() {
                           )}
                         </div>
                         <div>
-                          <h3 className="text-xs font-semibold text-gray-900 dark:text-white">
+                          <h3 className="text-xs font-semibold text-foreground">
                             Task Scheduler
                           </h3>
-                          <p className="text-[11px] text-gray-500 dark:text-gray-400">
+                          <p className="text-[11px] text-muted-foreground">
                             {schedulerData?.is_running ? (
                               <span className="flex items-center gap-1.5">
                                 <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
@@ -2222,7 +2222,7 @@ export default function AdminPageClient() {
 
                     return (
                       <div key={category}>
-                        <h3 className="text-[10px] font-medium text-gray-500 dark:text-gray-400 mb-2 flex items-center gap-1.5 uppercase tracking-wide">
+                        <h3 className="text-[10px] font-medium text-muted-foreground mb-2 flex items-center gap-1.5 uppercase tracking-wide">
                           <CategoryIcon className="h-3 w-3" />
                           {label}
                         </h3>
@@ -2238,14 +2238,14 @@ export default function AdminPageClient() {
                             return (
                               <div
                                 key={jobConfig.id}
-                                className="bg-white dark:bg-card-dark border border-border-light dark:border-border-dark rounded-lg p-2.5"
+                                className="bg-card border border-border rounded-lg p-2.5"
                               >
                                 <div className="flex items-start gap-3">
                                   <div className={cn(
                                     "w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0",
                                     isJobActive
                                       ? "bg-blue-100 dark:bg-blue-500/20"
-                                      : "bg-gray-100 dark:bg-white/10"
+                                      : "bg-muted"
                                   )}>
                                     <Icon className={cn(
                                       "h-3.5 w-3.5",
@@ -2256,7 +2256,7 @@ export default function AdminPageClient() {
                                   </div>
                                   <div className="flex-1 min-w-0">
                                     <div className="flex items-center gap-2">
-                                      <h4 className="text-xs font-medium text-gray-900 dark:text-white">
+                                      <h4 className="text-xs font-medium text-foreground">
                                         {jobConfig.name}
                                       </h4>
                                       {isJobActive ? (
@@ -2269,16 +2269,16 @@ export default function AdminPageClient() {
                                         </Badge>
                                       )}
                                     </div>
-                                    <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">
+                                    <p className="text-[11px] text-muted-foreground mt-0.5">
                                       {jobConfig.description}
                                     </p>
                                     <div className="flex items-center gap-3 mt-2">
-                                      <div className="flex items-center gap-1.5 text-[10px] text-gray-500 dark:text-gray-400">
+                                      <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
                                         <Timer className="h-3 w-3" />
                                         <span>{jobConfig.frequency}</span>
                                       </div>
                                       {nextRun && (
-                                        <div className="flex items-center gap-1.5 text-[10px] text-gray-500 dark:text-gray-400">
+                                        <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
                                           <Clock className="h-3 w-3" />
                                           <span>
                                             Next: {nextRun.toLocaleString()}
@@ -2307,12 +2307,12 @@ export default function AdminPageClient() {
 
                                 {/* Trigger details */}
                                 {liveJob && (
-                                  <div className="mt-2 pt-2 border-t border-border-light dark:border-border-dark space-y-2">
+                                  <div className="mt-2 pt-2 border-t border-border space-y-2">
                                     <div className="flex items-center justify-between text-[10px]">
-                                      <span className="text-gray-500 dark:text-gray-400">
+                                      <span className="text-muted-foreground">
                                         Trigger: {liveJob.trigger_type}
                                       </span>
-                                      <code className="text-[10px] bg-gray-100 dark:bg-white/10 px-1.5 py-0.5 rounded font-mono text-gray-600 dark:text-gray-400">
+                                      <code className="text-[10px] bg-muted px-1.5 py-0.5 rounded font-mono text-muted-foreground">
                                         {liveJob.trigger_details}
                                       </code>
                                     </div>
@@ -2335,7 +2335,7 @@ export default function AdminPageClient() {
 
                                       {liveJob.trigger_config?.type === "interval" && (
                                         <>
-                                          <div className="flex items-center gap-1 text-[10px] text-gray-500 dark:text-gray-400">
+                                          <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
                                             <span>Every</span>
                                             <Input
                                               type="number"
@@ -2377,7 +2377,7 @@ export default function AdminPageClient() {
 
                                       {liveJob.trigger_config?.type === "cron" && (
                                         <>
-                                          <div className="flex items-center gap-1 text-[10px] text-gray-500 dark:text-gray-400">
+                                          <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
                                             <span>At</span>
                                             <Input
                                               type="number"
@@ -2500,14 +2500,14 @@ export default function AdminPageClient() {
                   })}
 
                   {/* All Jobs Table */}
-                  <div className="bg-white dark:bg-card-dark border border-border-light dark:border-border-dark rounded-lg overflow-hidden">
-                    <div className="px-3 py-2 border-b border-border-light dark:border-border-dark">
+                  <div className="bg-card border border-border rounded-lg overflow-hidden">
+                    <div className="px-3 py-2 border-b border-border">
                       <div className="flex items-center gap-2">
                         <Settings2 className="h-3.5 w-3.5 text-gray-500" />
-                        <span className="text-xs font-medium text-gray-900 dark:text-white">
+                        <span className="text-xs font-medium text-foreground">
                           All Registered Jobs
                         </span>
-                        <span className="text-[11px] text-gray-500 dark:text-gray-400">
+                        <span className="text-[11px] text-muted-foreground">
                           ({schedulerData?.jobs_count || 0})
                         </span>
                       </div>
@@ -2526,18 +2526,18 @@ export default function AdminPageClient() {
                         <TableBody>
                           {schedulerData.jobs.map((job) => (
                             <TableRow key={job.id}>
-                              <TableCell className="font-mono text-[10px] text-gray-600 dark:text-gray-400">
+                              <TableCell className="font-mono text-[10px] text-muted-foreground">
                                 {job.id}
                               </TableCell>
-                              <TableCell className="text-xs font-medium text-gray-900 dark:text-white">
+                              <TableCell className="text-xs font-medium text-foreground">
                                 {job.name}
                               </TableCell>
                               <TableCell>
-                                <code className="text-[10px] bg-gray-100 dark:bg-white/10 px-1.5 py-0.5 rounded font-mono text-gray-600 dark:text-gray-400">
+                                <code className="text-[10px] bg-muted px-1.5 py-0.5 rounded font-mono text-muted-foreground">
                                   {job.trigger_details}
                                 </code>
                               </TableCell>
-                              <TableCell className="text-[11px] text-gray-600 dark:text-gray-400">
+                              <TableCell className="text-[11px] text-muted-foreground">
                                 {job.next_run_time
                                   ? new Date(job.next_run_time).toLocaleString()
                                   : "—"
@@ -2561,7 +2561,7 @@ export default function AdminPageClient() {
                         </TableBody>
                       </Table>
                     ) : (
-                      <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                      <div className="text-center py-8 text-muted-foreground">
                         No scheduled jobs found
                       </div>
                     )}
@@ -2574,7 +2574,7 @@ export default function AdminPageClient() {
             <TabsContent value="actions" className="mt-4 space-y-4">
               {/* Scraper Actions */}
               <div>
-                <h3 className="text-[11px] font-medium text-gray-500 dark:text-gray-400 mb-2 flex items-center gap-1.5 uppercase tracking-wide">
+                <h3 className="text-[11px] font-medium text-muted-foreground mb-2 flex items-center gap-1.5 uppercase tracking-wide">
                   <Bot className="h-3.5 w-3.5" />
                   Data Collection
                 </h3>
@@ -2595,9 +2595,9 @@ export default function AdminPageClient() {
 
               {/* AI Analysis Stats */}
               {aiStats && (
-                <div className="bg-white dark:bg-card-dark border border-border-light dark:border-border-dark rounded-lg p-3 mb-3">
+                <div className="bg-card border border-border rounded-lg p-3 mb-3">
                   <div className="flex items-center justify-between mb-2.5">
-                    <h3 className="text-xs font-medium text-gray-900 dark:text-white flex items-center gap-2">
+                    <h3 className="text-xs font-medium text-foreground flex items-center gap-2">
                       <Brain className="h-3.5 w-3.5 text-primary" />
                       AI Analysis Status
                     </h3>
@@ -2612,33 +2612,33 @@ export default function AdminPageClient() {
                     </Button>
                   </div>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                    <div className="text-center p-2.5 bg-gray-50 dark:bg-white/5 rounded-lg">
-                      <p className="text-xl font-bold text-gray-900 dark:text-white">
+                    <div className="text-center p-2.5 bg-muted rounded-lg">
+                      <p className="text-xl font-bold text-foreground">
                         {aiStats.total_posts.toLocaleString()}
                       </p>
-                      <p className="text-[11px] text-gray-500 dark:text-gray-400">Total Posts</p>
+                      <p className="text-[11px] text-muted-foreground">Total Posts</p>
                     </div>
                     <div className="text-center p-2.5 bg-green-50 dark:bg-green-500/10 rounded-lg">
                       <p className="text-xl font-bold text-green-600 dark:text-green-400">
                         {aiStats.analyzed_posts.toLocaleString()}
                       </p>
-                      <p className="text-[11px] text-gray-500 dark:text-gray-400">Analyzed</p>
+                      <p className="text-[11px] text-muted-foreground">Analyzed</p>
                     </div>
                     <div className="text-center p-2.5 bg-yellow-50 dark:bg-yellow-500/10 rounded-lg">
                       <p className="text-xl font-bold text-yellow-600 dark:text-yellow-400">
                         {aiStats.unanalyzed_posts.toLocaleString()}
                       </p>
-                      <p className="text-[11px] text-gray-500 dark:text-gray-400">Unanalyzed</p>
+                      <p className="text-[11px] text-muted-foreground">Unanalyzed</p>
                     </div>
                     <div className="text-center p-2.5 bg-blue-50 dark:bg-blue-500/10 rounded-lg">
                       <p className="text-xl font-bold text-blue-600 dark:text-blue-400">
                         {aiStats.analysis_rate}%
                       </p>
-                      <p className="text-[11px] text-gray-500 dark:text-gray-400">Coverage</p>
+                      <p className="text-[11px] text-muted-foreground">Coverage</p>
                     </div>
                   </div>
-                  <div className="mt-2.5 pt-2.5 border-t border-border-light dark:border-border-dark">
-                    <div className="flex items-center justify-between text-[11px] text-gray-500 dark:text-gray-400">
+                  <div className="mt-2.5 pt-2.5 border-t border-border">
+                    <div className="flex items-center justify-between text-[11px] text-muted-foreground">
                       <span>Sentiment Distribution:</span>
                       <div className="flex items-center gap-3">
                         <span className="text-green-600 dark:text-green-400">
@@ -2647,12 +2647,12 @@ export default function AdminPageClient() {
                         <span className="text-red-600 dark:text-red-400">
                           🐻 Bearish: {aiStats.sentiment_distribution.bearish}
                         </span>
-                        <span className="text-gray-600 dark:text-gray-400">
+                        <span className="text-muted-foreground">
                           ⚪ Neutral: {aiStats.sentiment_distribution.neutral}
                         </span>
                       </div>
                     </div>
-                    <div className="mt-1 text-[11px] text-gray-500 dark:text-gray-400">
+                    <div className="mt-1 text-[11px] text-muted-foreground">
                       Stock related posts: {aiStats.stock_related_posts.toLocaleString()}
                     </div>
                   </div>
@@ -2680,11 +2680,11 @@ export default function AdminPageClient() {
 
                   {/* Progress Bar */}
                   <div className="mb-2.5">
-                    <div className="flex items-center justify-between text-[11px] text-gray-600 dark:text-gray-400 mb-1">
+                    <div className="flex items-center justify-between text-[11px] text-muted-foreground mb-1">
                       <span>Progress</span>
                       <span>{runningAiTask.progress_percent}%</span>
                     </div>
-                    <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                    <div className="h-2 bg-muted rounded-full overflow-hidden">
                       <div
                         className="h-full bg-blue-500 transition-all duration-300 ease-out"
                         style={{ width: `${runningAiTask.progress_percent}%` }}
@@ -2694,34 +2694,34 @@ export default function AdminPageClient() {
 
                   {/* Stats Grid */}
                   <div className="grid grid-cols-4 gap-2.5 text-center">
-                    <div className="p-2 bg-white/50 dark:bg-white/5 rounded">
-                      <p className="text-base font-bold text-gray-900 dark:text-white">
+                    <div className="p-2 bg-muted/50 rounded">
+                      <p className="text-base font-bold text-foreground">
                         {runningAiTask.analyzed_count}
                       </p>
-                      <p className="text-[11px] text-gray-500 dark:text-gray-400">Analyzed</p>
+                      <p className="text-[11px] text-muted-foreground">Analyzed</p>
                     </div>
-                    <div className="p-2 bg-white/50 dark:bg-white/5 rounded">
+                    <div className="p-2 bg-muted/50 rounded">
                       <p className="text-base font-bold text-red-600 dark:text-red-400">
                         {runningAiTask.failed_count}
                       </p>
-                      <p className="text-[11px] text-gray-500 dark:text-gray-400">Failed</p>
+                      <p className="text-[11px] text-muted-foreground">Failed</p>
                     </div>
-                    <div className="p-2 bg-white/50 dark:bg-white/5 rounded">
-                      <p className="text-base font-bold text-gray-600 dark:text-gray-400">
+                    <div className="p-2 bg-muted/50 rounded">
+                      <p className="text-base font-bold text-muted-foreground">
                         {runningAiTask.skipped_count}
                       </p>
-                      <p className="text-[11px] text-gray-500 dark:text-gray-400">Skipped</p>
+                      <p className="text-[11px] text-muted-foreground">Skipped</p>
                     </div>
-                    <div className="p-2 bg-white/50 dark:bg-white/5 rounded">
-                      <p className="text-base font-bold text-gray-900 dark:text-white">
+                    <div className="p-2 bg-muted/50 rounded">
+                      <p className="text-base font-bold text-foreground">
                         {runningAiTask.total_posts}
                       </p>
-                      <p className="text-[11px] text-gray-500 dark:text-gray-400">Total</p>
+                      <p className="text-[11px] text-muted-foreground">Total</p>
                     </div>
                   </div>
 
                   {/* Task Details */}
-                  <div className="mt-2.5 pt-2.5 border-t border-blue-200 dark:border-blue-800/50 text-[11px] text-gray-600 dark:text-gray-400">
+                  <div className="mt-2.5 pt-2.5 border-t border-blue-200 dark:border-blue-800/50 text-[11px] text-muted-foreground">
                     <div className="flex items-center justify-between">
                       <span>Platform: {runningAiTask.platform}</span>
                       <span>Batch: {runningAiTask.current_batch} (size: {runningAiTask.batch_size})</span>
@@ -2738,7 +2738,7 @@ export default function AdminPageClient() {
 
               {/* Analysis Actions */}
               <div>
-                <h3 className="text-[11px] font-medium text-gray-500 dark:text-gray-400 mb-2 flex items-center gap-1.5 uppercase tracking-wide">
+                <h3 className="text-[11px] font-medium text-muted-foreground mb-2 flex items-center gap-1.5 uppercase tracking-wide">
                   <Brain className="h-3.5 w-3.5" />
                   AI Analysis
                 </h3>
@@ -2759,7 +2759,7 @@ export default function AdminPageClient() {
 
               {/* Sync Actions */}
               <div>
-                <h3 className="text-[11px] font-medium text-gray-500 dark:text-gray-400 mb-2 flex items-center gap-1.5 uppercase tracking-wide">
+                <h3 className="text-[11px] font-medium text-muted-foreground mb-2 flex items-center gap-1.5 uppercase tracking-wide">
                   <RefreshCw className="h-3.5 w-3.5" />
                   Data Sync
                 </h3>
@@ -2815,7 +2815,7 @@ export default function AdminPageClient() {
                   <span className="text-xs">Refresh</span>
                 </Button>
                 {kolRequests && (
-                  <span className="text-xs text-gray-500 dark:text-gray-400 ml-auto">
+                  <span className="text-xs text-muted-foreground ml-auto">
                     {kolRequests.total} request{kolRequests.total !== 1 ? "s" : ""}
                   </span>
                 )}
@@ -2826,7 +2826,7 @@ export default function AdminPageClient() {
                   <Loader2 className="h-6 w-6 animate-spin text-primary" />
                 </div>
               ) : kolRequests && kolRequests.requests.length > 0 ? (
-                <div className="bg-white dark:bg-card-dark border border-border-light dark:border-border-dark rounded-lg overflow-hidden">
+                <div className="bg-card border border-border rounded-lg overflow-hidden">
                   <Table>
                     <TableHeader>
                       <TableRow>
@@ -2843,14 +2843,14 @@ export default function AdminPageClient() {
                         <TableRow key={request.id}>
                           <TableCell>
                             <div className="flex items-center gap-2">
-                              <div className="w-7 h-7 rounded-full bg-gray-100 dark:bg-white/10 flex items-center justify-center flex-shrink-0">
+                              <div className="w-7 h-7 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
                                 <AtSign className="h-3.5 w-3.5 text-gray-500" />
                               </div>
                               <div>
-                                <p className="text-sm font-medium text-gray-900 dark:text-white">
+                                <p className="text-sm font-medium text-foreground">
                                   @{request.platform_user_id}
                                 </p>
-                                <p className="text-[11px] text-gray-500 dark:text-gray-400 capitalize">
+                                <p className="text-[11px] text-muted-foreground capitalize">
                                   {request.platform}
                                 </p>
                               </div>
@@ -2858,7 +2858,7 @@ export default function AdminPageClient() {
                                 href={`https://x.com/${request.platform_user_id}`}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                                className="text-muted-foreground hover:text-foreground"
                               >
                                 <ExternalLink className="h-3 w-3" />
                               </a>
@@ -2873,17 +2873,17 @@ export default function AdminPageClient() {
                                 }
                               />
                               <div>
-                                <p className="text-xs text-gray-900 dark:text-white">
+                                <p className="text-xs text-foreground">
                                   {request.user_username || "Unknown"}
                                 </p>
-                                <p className="text-[11px] text-gray-500 dark:text-gray-400">
+                                <p className="text-[11px] text-muted-foreground">
                                   {request.user_email}
                                 </p>
                               </div>
                             </div>
                           </TableCell>
                           <TableCell>
-                            <p className="text-xs text-gray-600 dark:text-gray-400 max-w-[200px] truncate">
+                            <p className="text-xs text-muted-foreground max-w-[200px] truncate">
                               {request.user_notes || "—"}
                             </p>
                           </TableCell>
@@ -2914,7 +2914,7 @@ export default function AdminPageClient() {
                               {request.status}
                             </Badge>
                           </TableCell>
-                          <TableCell className="text-gray-500 dark:text-gray-400 text-xs">
+                          <TableCell className="text-muted-foreground text-xs">
                             {new Date(request.created_at).toLocaleDateString()}
                           </TableCell>
                           <TableCell className="text-right">
@@ -2967,8 +2967,8 @@ export default function AdminPageClient() {
                 </div>
               ) : (
                 <div className="text-center py-12">
-                  <UserPlus className="h-10 w-10 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
-                  <p className="text-gray-500 dark:text-gray-400">
+                  <UserPlus className="h-10 w-10 text-muted-foreground/40 mx-auto mb-3" />
+                  <p className="text-muted-foreground">
                     No KOL tracking requests found
                   </p>
                 </div>
@@ -3031,12 +3031,12 @@ export default function AdminPageClient() {
               ) : null}
 
               {/* Recent Tasks */}
-              <div className="bg-white dark:bg-card-dark border border-border-light dark:border-border-dark rounded-lg overflow-hidden">
-                <div className="px-3 py-2.5 border-b border-border-light dark:border-border-dark">
+              <div className="bg-card border border-border rounded-lg overflow-hidden">
+                <div className="px-3 py-2.5 border-b border-border">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <Clock className="h-4 w-4 text-gray-500" />
-                      <span className="text-sm font-medium text-gray-900 dark:text-white">
+                      <span className="text-sm font-medium text-foreground">
                         Recent Tasks
                       </span>
                     </div>
@@ -3110,10 +3110,10 @@ export default function AdminPageClient() {
                               </span>
                             </div>
                           </TableCell>
-                          <TableCell className="text-xs text-gray-500 dark:text-gray-400">
+                          <TableCell className="text-xs text-muted-foreground">
                             {task.duration_human || "—"}
                           </TableCell>
-                          <TableCell className="text-xs text-gray-500 dark:text-gray-400">
+                          <TableCell className="text-xs text-muted-foreground">
                             {new Date(task.created_at).toLocaleString()}
                           </TableCell>
                         </TableRow>
@@ -3121,7 +3121,7 @@ export default function AdminPageClient() {
                     </TableBody>
                   </Table>
                 ) : (
-                  <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                  <div className="text-center py-8 text-muted-foreground">
                     No recent tasks
                   </div>
                 )}
@@ -3141,7 +3141,7 @@ export default function AdminPageClient() {
                   />
                 </div>
                 {users && (
-                  <span className="text-xs text-gray-500 dark:text-gray-400">
+                  <span className="text-xs text-muted-foreground">
                     {users.total} users
                   </span>
                 )}
@@ -3153,7 +3153,7 @@ export default function AdminPageClient() {
                 </div>
               ) : users && users.users.length > 0 ? (
                 <>
-                  <div className="bg-white dark:bg-card-dark border border-border-light dark:border-border-dark rounded-lg overflow-hidden">
+                  <div className="bg-card border border-border rounded-lg overflow-hidden">
                     <Table>
                       <TableHeader>
                         <TableRow>
@@ -3173,12 +3173,12 @@ export default function AdminPageClient() {
                                   src={user.avatar_url}
                                   fallback={(user.username || user.email)?.[0]?.toUpperCase() || "?"}
                                 />
-                                <span className="text-sm font-medium text-gray-900 dark:text-white">
+                                <span className="text-sm font-medium text-foreground">
                                   {user.username || user.full_name || "—"}
                                 </span>
                               </div>
                             </TableCell>
-                            <TableCell className="text-xs text-gray-600 dark:text-gray-400">
+                            <TableCell className="text-xs text-muted-foreground">
                               {user.email}
                             </TableCell>
                             <TableCell>
@@ -3193,12 +3193,12 @@ export default function AdminPageClient() {
                                   <span>Admin</span>
                                 </Badge>
                               ) : (
-                                <span className="text-xs text-gray-500 dark:text-gray-400">
+                                <span className="text-xs text-muted-foreground">
                                   User
                                 </span>
                               )}
                             </TableCell>
-                            <TableCell className="text-xs text-gray-500 dark:text-gray-400">
+                            <TableCell className="text-xs text-muted-foreground">
                               {new Date(user.created_at).toLocaleDateString()}
                             </TableCell>
                           </TableRow>
@@ -3222,7 +3222,7 @@ export default function AdminPageClient() {
                       >
                         <span className="text-xs">Previous</span>
                       </Button>
-                      <span className="text-xs text-gray-500 dark:text-gray-400 px-2">
+                      <span className="text-xs text-muted-foreground px-2">
                         {currentPage} / {Math.ceil(users.total / users.page_size)}
                       </span>
                       <Button
@@ -3244,8 +3244,8 @@ export default function AdminPageClient() {
                 </>
               ) : (
                 <div className="text-center py-12">
-                  <Users className="h-10 w-10 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
-                  <p className="text-gray-500 dark:text-gray-400">No users found</p>
+                  <Users className="h-10 w-10 text-muted-foreground/40 mx-auto mb-3" />
+                  <p className="text-muted-foreground">No users found</p>
                 </div>
               )}
             </TabsContent>
@@ -3257,14 +3257,14 @@ export default function AdminPageClient() {
                   <Loader2 className="h-6 w-6 animate-spin text-primary" />
                 </div>
               ) : database ? (
-                <div className="bg-white dark:bg-card-dark border border-border-light dark:border-border-dark rounded-lg overflow-hidden">
-                  <div className="px-3 py-2.5 border-b border-border-light dark:border-border-dark">
+                <div className="bg-card border border-border rounded-lg overflow-hidden">
+                  <div className="px-3 py-2.5 border-b border-border">
                     <div className="flex items-center gap-2">
                       <Database className="h-4 w-4 text-gray-500" />
-                      <span className="text-sm font-medium text-gray-900 dark:text-white">
+                      <span className="text-sm font-medium text-foreground">
                         Database Tables
                       </span>
-                      <span className="text-xs text-gray-500 dark:text-gray-400">
+                      <span className="text-xs text-muted-foreground">
                         ({Object.keys(database.tables).length})
                       </span>
                     </div>

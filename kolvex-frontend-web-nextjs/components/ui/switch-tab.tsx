@@ -57,25 +57,25 @@ export const SwitchTab = React.memo(function SwitchTab({
   const variantConfig = {
     pills: {
       container:
-        "bg-card-light dark:bg-card-dark rounded-lg w-full border border-border-light dark:border-primary/10",
+        "bg-card rounded-lg w-full border border-border",
       indicator: "bg-primary/20 dark:bg-primary/80 rounded-md",
-      active: "text-primary dark:text-white",
+      active: "text-primary dark:text-primary-foreground",
       inactive:
-        "text-gray-500 dark:text-white/60 hover:text-gray-800 dark:hover:text-white/80",
+        "text-muted-foreground hover:text-foreground/80",
     },
     tabs: {
-      container: "bg-transparent border-b border-gray-200 dark:border-gray-700",
-      indicator: "bg-primary/40 dark:bg-primary/40 rounded-t-md",
-      active: "text-primary dark:text-primary",
+      container: "bg-transparent border-b border-border",
+      indicator: "bg-primary/40 rounded-t-md",
+      active: "text-primary",
       inactive:
-        "text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200",
+        "text-muted-foreground hover:text-foreground/80",
     },
     underline: {
       container: "bg-transparent",
       indicator: "bg-primary h-0.5 bottom-0 rounded-full",
-      active: "text-primary dark:text-primary font-semibold",
+      active: "text-primary font-semibold",
       inactive:
-        "text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200",
+        "text-muted-foreground hover:text-foreground/80",
     },
   };
 

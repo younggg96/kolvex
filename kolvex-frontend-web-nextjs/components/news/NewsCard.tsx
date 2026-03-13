@@ -310,12 +310,12 @@ export default function NewsCard({ article }: NewsCardProps) {
 
   return (
     <div
-      className={`group relative rounded-lg border backdrop-blur-sm px-3 py-2.5 transition-all duration-200 ${isHighRelevance
-        ? "border-primary/40 bg-primary/[0.03] dark:bg-primary/[0.06] ring-1 ring-primary/20 hover:border-primary/60"
+      className={`group relative rounded-lg border px-3 py-2.5 transition-all duration-200 [transition-timing-function:cubic-bezier(0.25,1,0.5,1)] ${isHighRelevance
+        ? "border-primary/30 bg-primary/[0.03] dark:bg-primary/[0.05] hover:border-primary/50"
         : isLowRelevance
-          ? "border-border/30 dark:border-border-dark/30 bg-card-light/50 dark:bg-card-dark/30"
-          : "border-border/50 dark:border-border-dark/50 bg-card-light dark:bg-card-dark/50 hover:border-border"
-        } hover:bg-card/80`}
+          ? "border-border/40 bg-card/50"
+          : "border-border/60 bg-card/60 hover:border-border"
+        }`}
     >
       {/* Header + Content inline */}
       <div className="flex items-start justify-between gap-2 mb-1.5">
@@ -376,7 +376,7 @@ export default function NewsCard({ article }: NewsCardProps) {
         <Accordion type="single" collapsible className="w-full mb-1.5">
           <AccordionItem
             value="ai-analysis"
-            className="border rounded bg-muted/30 border-border/30 dark:border-border-dark/30"
+            className="border rounded bg-muted/30 border-border/30"
           >
             <AccordionTrigger className="px-2.5 py-1.5 hover:no-underline">
               <div className="flex items-center gap-1.5">
@@ -440,7 +440,7 @@ export default function NewsCard({ article }: NewsCardProps) {
                 )}
 
                 {(sentimentLabel || impactLabel || article.trading_action) && (
-                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 pt-1.5 border-t border-border/20 dark:border-border-dark/20">
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 pt-1.5 border-t border-border/20">
                     {sentimentLabel && sentimentClass && SentimentIcon && (
                       <div className="flex items-center gap-1">
                         <span className="text-[10px] text-muted-foreground font-medium">

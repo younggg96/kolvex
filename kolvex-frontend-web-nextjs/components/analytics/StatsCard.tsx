@@ -25,7 +25,7 @@ export function StatsCard({
     <div
       className={cn(
         "relative overflow-hidden rounded-xl border p-5",
-        "bg-card-light dark:bg-card-dark/50 backdrop-blur-sm",
+        "bg-card backdrop-blur-sm",
         "border-zinc-200/60 dark:border-zinc-800",
         "transition-all duration-200 hover:border-primary/40 dark:hover:border-primary/30",
         className

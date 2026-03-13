@@ -222,7 +222,7 @@ export default function CommunityPage() {
         </Link>
       }
     >
-      <div className="relative flex-1 overflow-y-auto bg-background-light dark:bg-background-dark h-full">
+      <div className="relative flex-1 overflow-y-auto bg-background h-full">
         <div className="absolute inset-0 bg-grid opacity-50 pointer-events-none" />
         <HeroSection
           title={t("community.title")}
@@ -371,7 +371,7 @@ export default function CommunityPage() {
               {((activeTab === "all" && !hasMore) ||
                 activeTab === "following") &&
                 displayedUsers.length > 0 && (
-                  <div className="text-center py-4 text-sm text-gray-400 dark:text-white/40">
+                  <div className="text-center py-4 text-sm text-muted-foreground">
                     {t("common.endOfList")}
                   </div>
                 )}

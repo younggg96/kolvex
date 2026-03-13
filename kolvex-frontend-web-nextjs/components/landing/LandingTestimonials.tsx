@@ -91,9 +91,9 @@ function TestimonialCard({
 
   return (
     <div
-      className={`flex-shrink-0 w-[280px] sm:w-[320px] md:w-[400px] p-4 md:p-6 rounded-2xl md:rounded-3xl bg-white/70 dark:bg-white/[0.04] backdrop-blur-sm border border-black-200/50 dark:border-white/10 transition-all duration-700 hover:border-primary/30 hover:shadow-xl hover:shadow-primary/5 ${isAnimated
-        ? "opacity-100 translate-y-0 scale-100"
-        : "opacity-0 translate-y-8 scale-95"
+      className={`flex-shrink-0 w-[280px] sm:w-[320px] md:w-[400px] p-4 md:p-6 rounded-2xl bg-card border border-border transition-all duration-500 [transition-timing-function:cubic-bezier(0.25,1,0.5,1)] hover:border-primary/25 ${isAnimated
+        ? "opacity-100 translate-y-0"
+        : "opacity-0 translate-y-6"
         }`}
       style={{ transitionDelay: `${index * 50}ms` }}
     >
@@ -277,7 +277,7 @@ export default function LandingTestimonials() {
       className="py-16 md:py-24 lg:py-32 relative overflow-hidden"
     >
       {/* Background */}
-      <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-primary/10 dark:from-black/10 dark:via-transparent dark:to-black/10 backdrop-blur-sm" />
+      <div className="absolute inset-0 bg-muted/20" />
 
       <div className="container px-4 mx-auto relative z-10">
         {/* Section header */}
@@ -296,7 +296,7 @@ export default function LandingTestimonials() {
               {t("landing.testimonials.badge")}
             </div>
             <h2
-              className={`text-xl sm:text-2xl md:text-4xl font-black text-black-900 dark:text-white tracking-tight mb-2 md:mb-4 transition-all duration-700 ${headerVisible
+              className={`text-xl sm:text-2xl md:text-4xl font-extrabold text-foreground tracking-tight mb-2 md:mb-4 transition-all duration-700 ${headerVisible
                 ? "opacity-100 translate-y-0"
                 : "opacity-0 translate-y-8"
                 }`}
@@ -305,7 +305,7 @@ export default function LandingTestimonials() {
               {t("landing.testimonials.title")}
             </h2>
             <p
-              className={`text-sm md:text-lg text-black-600 dark:text-black-400 max-w-xl transition-all duration-700 ${headerVisible
+              className={`text-sm md:text-lg text-muted-foreground max-w-xl transition-all duration-700 ${headerVisible
                 ? "opacity-100 translate-y-0"
                 : "opacity-0 translate-y-8"
                 }`}
@@ -368,7 +368,7 @@ export default function LandingTestimonials() {
         {/* Trust indicators */}
         <div
           ref={trustRef}
-          className="mt-8 md:mt-16 pt-6 md:pt-12 border-t border-black-200/50 dark:border-white/10"
+          className="mt-8 md:mt-16 pt-6 md:pt-12 border-t border-border"
         >
           <div className="grid grid-cols-2 md:flex md:flex-wrap justify-center items-center gap-4 md:gap-8 lg:gap-16">
             <TrustIndicator
@@ -430,15 +430,11 @@ export default function LandingTestimonials() {
         </div>
       </div>
 
-      {/* Star pop animation */}
       <style jsx>{`
         @keyframes star-pop {
           0% {
             transform: scale(0);
             opacity: 0;
-          }
-          50% {
-            transform: scale(1.3);
           }
           100% {
             transform: scale(1);

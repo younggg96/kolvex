@@ -84,7 +84,7 @@ export function ChatWelcomeContainer({
 
   return (
     <div className={cn("flex h-full", className)}>
-      <div className="flex-1 flex flex-col min-w-0 relative bg-background-light dark:bg-background-dark">
+      <div className="flex-1 flex flex-col min-w-0 relative bg-background">
         {/* Background Grid */}
         <div className="absolute inset-0 bg-grid opacity-50 pointer-events-none" />
 

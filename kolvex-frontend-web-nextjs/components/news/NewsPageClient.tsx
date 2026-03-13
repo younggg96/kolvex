@@ -38,7 +38,7 @@ export default function NewsPageClient({ category }: NewsPageClientProps) {
 
   return (
     <DashboardLayout title="Market News" showHeader={true} headerActions={headerActions}>
-      <div className="flex-1 overflow-y-auto bg-background-light dark:bg-background-dark">
+      <div className="flex-1 overflow-y-auto bg-background">
         <div className="absolute inset-0 bg-grid opacity-50 pointer-events-none" />
         <div className="h-[calc(100vh-160px)] p-4 min-w-0">
           {activeTab === "live" ? (

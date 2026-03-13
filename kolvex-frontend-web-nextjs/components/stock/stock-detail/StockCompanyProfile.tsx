@@ -21,7 +21,7 @@ export default function StockCompanyProfile({
   const [isExpanded, setIsExpanded] = useState(false);
 
   return (
-    <div className="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark overflow-hidden">
+    <div className="bg-card rounded-xl border border-border overflow-hidden">
       <Accordion
         type="single"
         collapsible
@@ -29,8 +29,8 @@ export default function StockCompanyProfile({
         className="w-full"
       >
         <AccordionItem value="company-profile" className="!border-b-0">
-          <AccordionTrigger className="px-4 py-3 hover:no-underline hover:bg-gray-50 dark:hover:bg-white/5">
-            <span className="text-sm font-semibold text-gray-900 dark:text-white">
+          <AccordionTrigger className="px-4 py-3 hover:no-underline hover:bg-muted">
+            <span className="text-sm font-semibold text-foreground">
               Company Profile
             </span>
           </AccordionTrigger>
@@ -58,25 +58,25 @@ export default function StockCompanyProfile({
             </div>
 
             {/* Key Info */}
-            <div className="space-y-3 pt-3 border-t border-gray-100 dark:border-white/5">
+            <div className="space-y-3 pt-3 border-t border-border">
               <div className="flex xl:flex-row lg:flex-col flex-row xl:items-center lg:items-start items-center justify-between">
-                <span className="text-xs text-gray-500 dark:text-gray-400">
+                <span className="text-xs text-muted-foreground">
                   Sector
                 </span>
-                <span className="text-xs font-medium text-gray-900 dark:text-white">
+                <span className="text-xs font-medium text-foreground">
                   {company.sector}
                 </span>
               </div>
               <div className="flex xl:flex-row lg:flex-col flex-row xl:items-center lg:items-start items-center justify-between">
-                <span className="text-xs text-gray-500 dark:text-gray-400">
+                <span className="text-xs text-muted-foreground">
                   Industry
                 </span>
-                <span className="text-xs font-medium text-gray-900 dark:text-white xl:text-right lg:text-left text-left max-w-[60%]">
+                <span className="text-xs font-medium text-foreground xl:text-right lg:text-left text-left max-w-[60%]">
                   {company.industry}
                 </span>
               </div>
               <div className="flex xl:flex-row lg:flex-col flex-row xl:items-center lg:items-start items-center justify-between">
-                <span className="text-xs text-gray-500 dark:text-gray-400">
+                <span className="text-xs text-muted-foreground">
                   Website
                 </span>
                 {company.website ? (
@@ -93,10 +93,10 @@ export default function StockCompanyProfile({
                 )}
               </div>
               <div className="flex xl:flex-row lg:flex-col flex-row xl:items-center lg:items-start items-center justify-between">
-                <span className="text-xs text-gray-500 dark:text-gray-400">
+                <span className="text-xs text-muted-foreground">
                   Employees
                 </span>
-                <span className="text-xs font-medium text-gray-900 dark:text-white">
+                <span className="text-xs font-medium text-foreground">
                   {company.employees?.toLocaleString() || "N/A"}
                 </span>
               </div>

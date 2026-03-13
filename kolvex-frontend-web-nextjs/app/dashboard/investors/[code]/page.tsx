@@ -82,7 +82,7 @@ export default function InvestorDetailPage() {
         headerClassName="lg:hidden"
         headerLeftAction={backButton}
       >
-        <div className="relative flex-1 overflow-y-auto bg-background-light dark:bg-background-dark">
+        <div className="relative flex-1 overflow-y-auto bg-background">
           <div className="p-4">
             <ErrorState
               title="Failed to load investor"
@@ -112,7 +112,7 @@ export default function InvestorDetailPage() {
       headerClassName="lg:hidden"
       headerLeftAction={backButton}
     >
-      <div className="relative flex-1 overflow-y-auto bg-background-light dark:bg-background-dark">
+      <div className="relative flex-1 overflow-y-auto bg-background">
         <div className="absolute inset-0 bg-grid opacity-50 pointer-events-none" />
 
         {/* Hero Section - Desktop Only */}
@@ -167,7 +167,7 @@ export default function InvestorDetailPage() {
                 <Table className="min-w-[800px]">
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="w-[70px] pl-3 sticky left-0 bg-card-light dark:bg-card-dark z-10">
+                      <TableHead className="w-[70px] pl-3 sticky left-0 bg-card z-10">
                         Stock
                       </TableHead>
                       <TableHead className="min-w-[120px]">Company</TableHead>
@@ -197,7 +197,7 @@ export default function InvestorDetailPage() {
                   <TableBody>
                     {holdings.map((holding) => (
                       <TableRow key={holding.id}>
-                        <TableCell className="pl-3 sticky left-0 bg-card-light dark:bg-card-dark z-10">
+                        <TableCell className="pl-3 sticky left-0 bg-card z-10">
                           <Link
                             href={`/dashboard/stock/${holding.ticker}`}
                             className="font-semibold text-sm hover:text-primary transition-colors"

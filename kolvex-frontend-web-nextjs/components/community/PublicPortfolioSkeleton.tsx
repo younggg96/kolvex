@@ -7,11 +7,11 @@ import { PortfolioSkeleton } from "../portfolio/PortfolioSkeleton";
 export function PublicPortfolioSkeleton() {
   return (
     <DashboardLayout hasSidebarTrigger={false} title="Loading Portfolio...">
-      <div className="relative flex-1 overflow-y-auto bg-background-light dark:bg-background-dark">
+      <div className="relative flex-1 overflow-y-auto bg-background">
         <div className="absolute inset-0 bg-grid opacity-50 pointer-events-none" />
         <div className="relative p-4 min-w-0 space-y-3">
           {/* Profile Header Skeleton */}
-          <div className="rounded-lg border border-border-light dark:border-border-dark bg-card-light dark:bg-card-dark p-4">
+          <div className="rounded-lg border border-border bg-card p-4">
             <div className="flex items-start justify-between">
               <div className="flex items-center gap-4">
                 <Skeleton className="w-12 h-12 rounded-full" />

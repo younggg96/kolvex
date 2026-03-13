@@ -8,7 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 // 市场指数卡片骨架屏
 export function MarketIndexSkeleton() {
   return (
-    <div className="bg-white dark:bg-card-dark p-4 rounded-lg border border-border-light dark:border-border-dark animate-pulse transition-colors duration-300">
+    <div className="bg-card p-4 rounded-lg border border-border animate-pulse transition-colors duration-300">
       <div className="h-3 bg-gray-300 dark:bg-white/10 rounded w-20 mb-2"></div>
       <div className="h-6 bg-gray-300 dark:bg-white/10 rounded w-24 mb-2"></div>
       <div className="h-4 bg-gray-300 dark:bg-white/10 rounded w-16"></div>
@@ -38,7 +38,7 @@ export function WatchlistItemSkeleton() {
 // 图表加载骨架屏
 export function ChartSkeleton() {
   return (
-    <div className="bg-white dark:bg-card-dark p-4 rounded-lg border border-border-light dark:border-border-dark transition-colors duration-300">
+    <div className="bg-card p-4 rounded-lg border border-border transition-colors duration-300">
       <div className="flex justify-between items-center mb-4 animate-pulse">
         <div>
           <div className="h-5 bg-gray-300 dark:bg-white/10 rounded w-16 mb-1"></div>
@@ -81,7 +81,7 @@ interface CardSkeletonProps {
 export function CardSkeleton({ lines = 3, className = "" }: CardSkeletonProps) {
   return (
     <div
-      className={`bg-white dark:bg-card-dark p-4 rounded-lg border border-border-light dark:border-border-dark animate-pulse transition-colors duration-300 ${className}`}
+      className={`bg-card p-4 rounded-lg border border-border animate-pulse transition-colors duration-300 ${className}`}
     >
       {Array.from({ length: lines }).map((_, i) => (
         <div
@@ -97,7 +97,7 @@ export function CardSkeleton({ lines = 3, className = "" }: CardSkeletonProps) {
 // 帖子卡片骨架屏 - 用于社交媒体帖子列表
 export function PostSkeleton() {
   return (
-    <div className="bg-white dark:bg-card-dark opacity-50 rounded-xl p-4 border border-border-light/50 dark:border-border-dark/50">
+    <div className="bg-card opacity-50 rounded-xl p-4 border border-border/50">
       {/* Header: Avatar + Username + Time */}
       <div className="flex items-start gap-3 mb-3">
         <Skeleton className="w-10 h-10 rounded-full flex-shrink-0" />
@@ -164,19 +164,19 @@ export function ProfileInfoSkeleton() {
       {/* Email Skeleton */}
       <div className="space-y-1.5">
         <div className="h-3 bg-gray-300 dark:bg-white/10 rounded w-24 mb-2"></div>
-        <div className="h-9 bg-gray-200 dark:bg-white/5 rounded-lg border border-gray-200 dark:border-white/10"></div>
+        <div className="h-9 bg-gray-200 dark:bg-white/5 rounded-lg border border-border"></div>
       </div>
 
       {/* Full Name Skeleton */}
       <div className="space-y-1.5">
         <div className="h-3 bg-gray-300 dark:bg-white/10 rounded w-24 mb-2"></div>
-        <div className="h-9 bg-gray-200 dark:bg-white/5 rounded-lg border border-gray-200 dark:border-white/10"></div>
+        <div className="h-9 bg-gray-200 dark:bg-white/5 rounded-lg border border-border"></div>
       </div>
 
       {/* Phone Skeleton */}
       <div className="space-y-1.5">
         <div className="h-3 bg-gray-300 dark:bg-white/10 rounded w-28 mb-2"></div>
-        <div className="h-9 bg-gray-200 dark:bg-white/5 rounded-lg border border-gray-200 dark:border-white/10"></div>
+        <div className="h-9 bg-gray-200 dark:bg-white/5 rounded-lg border border-border"></div>
       </div>
     </div>
   );
@@ -185,7 +185,7 @@ export function ProfileInfoSkeleton() {
 // 通知项骨架屏 - 匹配新的卡片式设计
 export function NotificationItemSkeleton() {
   return (
-    <div className="rounded-xl bg-white dark:bg-card-dark/50 border border-gray-100 dark:border-white/5 animate-pulse">
+    <div className="rounded-xl bg-card/50 border border-gray-100 dark:border-white/5 animate-pulse">
       <div className="flex items-start gap-4 p-4 pl-5">
         {/* Logo/Icon Skeleton - 带叠加小图标 */}
         <div className="relative flex-shrink-0">

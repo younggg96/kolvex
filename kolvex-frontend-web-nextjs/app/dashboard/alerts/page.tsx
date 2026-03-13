@@ -291,26 +291,26 @@ export default function AlertsPage() {
           {/* Stats Overview */}
           {stats && (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-              <div className="bg-white dark:bg-card-dark rounded-lg border border-gray-200 dark:border-white/10 p-3">
-                <div className="text-xs text-gray-500 dark:text-white/50">{t("alerts.stats.activeRules")}</div>
-                <div className="text-2xl font-bold text-gray-900 dark:text-white">
+              <div className="bg-card rounded-lg border border-border p-3">
+                <div className="text-xs text-muted-foreground">{t("alerts.stats.activeRules")}</div>
+                <div className="text-2xl font-bold text-foreground">
                   {stats.active_rules}
                 </div>
               </div>
-              <div className="bg-white dark:bg-card-dark rounded-lg border border-gray-200 dark:border-white/10 p-3">
-                <div className="text-xs text-gray-500 dark:text-white/50">{t("alerts.stats.alertsCount")}</div>
-                <div className="text-2xl font-bold text-gray-900 dark:text-white">
+              <div className="bg-card rounded-lg border border-border p-3">
+                <div className="text-xs text-muted-foreground">{t("alerts.stats.alertsCount")}</div>
+                <div className="text-2xl font-bold text-foreground">
                   {stats.total_alerts}
                 </div>
               </div>
-              <div className="bg-white dark:bg-card-dark rounded-lg border border-gray-200 dark:border-white/10 p-3">
-                <div className="text-xs text-gray-500 dark:text-white/50">{t("alerts.stats.avgPerDay")}</div>
-                <div className="text-2xl font-bold text-gray-900 dark:text-white">
+              <div className="bg-card rounded-lg border border-border p-3">
+                <div className="text-xs text-muted-foreground">{t("alerts.stats.avgPerDay")}</div>
+                <div className="text-2xl font-bold text-foreground">
                   {stats.avg_alerts_per_day}
                 </div>
               </div>
-              <div className="bg-white dark:bg-card-dark rounded-lg border border-gray-200 dark:border-white/10 p-3">
-                <div className="text-xs text-gray-500 dark:text-white/50">{t("alerts.stats.topStock")}</div>
+              <div className="bg-card rounded-lg border border-border p-3">
+                <div className="text-xs text-muted-foreground">{t("alerts.stats.topStock")}</div>
                 <div className="text-2xl font-bold text-primary">
                   {stats.top_symbols[0]?.symbol || "-"}
                 </div>
@@ -326,7 +326,7 @@ export default function AlertsPage() {
                 options={tabOptions}
                 size="md"
                 variant="pills"
-                className="!w-fit border border-gray-200 dark:border-white/10 rounded-lg"
+                className="!w-fit border border-border rounded-lg"
               />
 
               <div className="flex-1 min-w-0">
@@ -354,7 +354,7 @@ export default function AlertsPage() {
                           <Loader2 className="w-6 h-6 animate-spin text-primary" />
                         </div>
                       ) : rules.length === 0 ? (
-                        <div className="text-center py-8 text-gray-500 dark:text-white/50">
+                        <div className="text-center py-8 text-muted-foreground">
                           <Bell className="w-12 h-12 mx-auto mb-3 opacity-50" />
                           <p className="text-sm">{t("alerts.rules.noRules")}</p>
                           <p className="text-xs mt-1">
@@ -367,8 +367,8 @@ export default function AlertsPage() {
                             <div
                               key={rule.id}
                               className={`p-3 rounded-lg border ${rule.is_active
-                                ? "bg-white dark:bg-card-dark border-gray-200 dark:border-white/10"
-                                : "bg-gray-50 dark:bg-white/5 border-gray-200 dark:border-white/5 opacity-60"
+                                ? "bg-card border-border"
+                                : "bg-muted border-border opacity-60"
                                 }`}
                             >
                               <div className="flex items-center justify-between">
@@ -379,10 +379,10 @@ export default function AlertsPage() {
                                     </span>
                                   </div>
                                   <div>
-                                    <div className="font-medium text-gray-900 dark:text-white">
+                                    <div className="font-medium text-foreground">
                                       {rule.symbol}
                                     </div>
-                                    <div className="text-xs text-gray-500 dark:text-white/50">
+                                    <div className="text-xs text-muted-foreground">
                                       ±{rule.daily_change_threshold}% daily, ±
                                       {rule.spike_change_threshold}% spike
                                     </div>
@@ -400,10 +400,10 @@ export default function AlertsPage() {
                                       return (
                                         <div
                                           key={ch}
-                                          className="w-5 h-5 rounded bg-gray-100 dark:bg-white/10 flex items-center justify-center"
+                                          className="w-5 h-5 rounded bg-muted flex items-center justify-center"
                                           title={channelLabels[ch as NotificationChannelType]}
                                         >
-                                          <Icon className="w-3 h-3 text-gray-600 dark:text-white/60" />
+                                          <Icon className="w-3 h-3 text-muted-foreground" />
                                         </div>
                                       );
                                     })}
@@ -476,7 +476,7 @@ export default function AlertsPage() {
                   >
                     <div className="px-4 pb-4">
                       {channels.length === 0 ? (
-                        <div className="text-center py-8 text-gray-500 dark:text-white/50">
+                        <div className="text-center py-8 text-muted-foreground">
                           <MessageSquare className="w-12 h-12 mx-auto mb-3 opacity-50" />
                           <p className="text-sm">{t("alerts.channels.noChannels")}</p>
                           <p className="text-xs mt-1">
@@ -492,7 +492,7 @@ export default function AlertsPage() {
                             return (
                               <div
                                 key={channel.id}
-                                className="p-3 rounded-lg bg-white dark:bg-card-dark border border-gray-200 dark:border-white/10"
+                                className="p-3 rounded-lg bg-card border border-border"
                               >
                                 <div className="flex items-center justify-between">
                                   <div className="flex items-center gap-3">
@@ -500,10 +500,10 @@ export default function AlertsPage() {
                                       <Icon className="w-5 h-5 text-primary" />
                                     </div>
                                     <div>
-                                      <div className="font-medium text-gray-900 dark:text-white">
+                                      <div className="font-medium text-foreground">
                                         {channelLabels[channel.channel_type as NotificationChannelType]}
                                       </div>
-                                      <div className="text-xs text-gray-500 dark:text-white/50">
+                                      <div className="text-xs text-muted-foreground">
                                         {channel.is_verified ? (
                                           <span className="text-green-500 flex items-center gap-1">
                                             <CheckCircle2 className="w-3 h-3" />
@@ -557,7 +557,7 @@ export default function AlertsPage() {
                   >
                     <div className="px-4 pb-4">
                       {history.length === 0 ? (
-                        <div className="text-center py-8 text-gray-500 dark:text-white/50">
+                        <div className="text-center py-8 text-muted-foreground">
                           <History className="w-12 h-12 mx-auto mb-3 opacity-50" />
                           <p className="text-sm">{t("alerts.history.noAlerts")}</p>
                           <p className="text-xs mt-1">
@@ -569,7 +569,7 @@ export default function AlertsPage() {
                           {history.map((alert) => (
                             <div
                               key={alert.id}
-                              className="p-3 rounded-lg bg-white dark:bg-card-dark border border-gray-200 dark:border-white/10"
+                              className="p-3 rounded-lg bg-card border border-border"
                             >
                               <div className="flex items-start justify-between">
                                 <div className="flex items-start gap-3">
@@ -586,7 +586,7 @@ export default function AlertsPage() {
                                     )}
                                   </div>
                                   <div>
-                                    <div className="font-medium text-gray-900 dark:text-white">
+                                    <div className="font-medium text-foreground">
                                       {alert.symbol}{" "}
                                       <span
                                         className={
@@ -599,12 +599,12 @@ export default function AlertsPage() {
                                         {alert.change_percent.toFixed(2)}%
                                       </span>
                                     </div>
-                                    <div className="text-xs text-gray-500 dark:text-white/50">
+                                    <div className="text-xs text-muted-foreground">
                                       ${alert.triggered_price.toFixed(2)} •{" "}
                                       {new Date(alert.triggered_at).toLocaleString()}
                                     </div>
                                     {alert.ai_summary && (
-                                      <p className="text-xs mt-1 text-gray-600 dark:text-white/60">
+                                      <p className="text-xs mt-1 text-muted-foreground">
                                         {alert.ai_summary}
                                       </p>
                                     )}

@@ -218,7 +218,7 @@ export default function SearchWithAutocomplete<T extends SearchItem>({
       {showDropdown && (displayList.length > 0 || isLoading) && (
         <div
           className={cn(
-            "absolute top-full left-0 right-0 mt-1 bg-white dark:bg-card-dark border border-gray-200 dark:border-white/10 rounded-lg shadow-lg max-h-[300px] overflow-y-auto z-50",
+            "absolute top-full left-0 right-0 mt-1 bg-card border border-border rounded-lg shadow-lg max-h-[300px] overflow-y-auto z-50",
             dropdownClassName
           )}
         >

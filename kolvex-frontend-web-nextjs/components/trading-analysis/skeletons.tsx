@@ -6,7 +6,7 @@ export function HistorySkeleton() {
       {Array.from({ length: 6 }).map((_, i) => (
         <div
           key={i}
-          className="bg-white dark:bg-card-dark border border-border-light dark:border-border-dark rounded-lg p-4 space-y-3"
+          className="bg-card border border-border rounded-lg p-4 space-y-3"
         >
           <div className="flex items-start justify-between">
             <div className="space-y-2">

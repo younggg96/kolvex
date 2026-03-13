@@ -70,7 +70,7 @@ export default function SectionCard({
 
   return (
     <div
-      className={`bg-white dark:bg-card-dark border border-border-light dark:border-border-dark rounded-lg transition-colors duration-300 flex flex-col ${
+      className={`bg-card border border-border rounded-lg transition-colors duration-300 flex flex-col ${
         scrollable ? "overflow-hidden" : ""
       } ${className}`}
     >
@@ -89,11 +89,11 @@ export default function SectionCard({
                   })()}
                 </div>
                 <div>
-                  <h3 className="text-sm sm:text-base font-semibold text-gray-900 dark:text-white">
+                  <h3 className="text-sm sm:text-base font-semibold text-foreground">
                     {title}
                   </h3>
                   {sectionHeaderSubtitle && (
-                    <p className="text-[11px] sm:text-xs text-gray-600 dark:text-white/60">
+                    <p className="text-[11px] sm:text-xs text-muted-foreground">
                       {sectionHeaderSubtitle}
                     </p>
                   )}
@@ -108,7 +108,7 @@ export default function SectionCard({
           <div
             className={`flex items-center justify-between ${headerClassName} ${
               headerBorder
-                ? `border-b border-border-light dark:border-border-dark ${headerBottomClasses.withBorder}`
+                ? `border-b border-border ${headerBottomClasses.withBorder}`
                 : headerBottomClasses.withoutBorder
             } ${headerPaddingClasses[padding]}`}
           >
@@ -116,7 +116,7 @@ export default function SectionCard({
               {icon && icon}
               {title && (
                 <h2
-                  className={`${titleSizeClasses[titleSize]} font-bold text-gray-900 dark:text-white`}
+                  className={`${titleSizeClasses[titleSize]} font-bold text-foreground`}
                 >
                   {title}
                 </h2>

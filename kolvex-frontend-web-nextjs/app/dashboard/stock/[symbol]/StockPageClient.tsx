@@ -145,7 +145,7 @@ export default function StockPageClient({
           {/* Main Chart Area */}
           {mounted ? (
             <div className="lg:col-span-3 space-y-2 sm:space-y-3">
-              <div className="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-2 sm:p-3 transition-colors duration-300">
+              <div className="bg-card rounded-xl border border-border p-2 sm:p-3 transition-colors duration-300">
                 {/* TradingView Chart */}
                 <div className="w-full h-[280px] sm:h-[350px] md:h-[450px] lg:h-[500px]">
                   <TradingViewChart
@@ -159,23 +159,23 @@ export default function StockPageClient({
           ) : (
             <div className="lg:col-span-3 space-y-2 sm:space-y-3">
               {/* Chart Skeleton */}
-              <div className="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-2 sm:p-3 transition-colors duration-300">
-                <div className="w-full h-[280px] sm:h-[350px] md:h-[450px] lg:h-[500px] animate-pulse bg-gray-200 dark:bg-white/10 rounded" />
+              <div className="bg-card rounded-xl border border-border p-2 sm:p-3 transition-colors duration-300">
+                <div className="w-full h-[280px] sm:h-[350px] md:h-[450px] lg:h-[500px] animate-pulse bg-muted rounded" />
               </div>
               {/* StockInfoBoard Skeleton */}
-              <div className="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-3 sm:p-4 transition-colors duration-300">
+              <div className="bg-card rounded-xl border border-border p-3 sm:p-4 transition-colors duration-300">
                 <div className="animate-pulse space-y-3">
                   {/* Tabs skeleton */}
-                  <div className="flex gap-2 border-b border-border-light dark:border-border-dark pb-2">
-                    <div className="h-8 bg-gray-200 dark:bg-white/10 rounded w-24" />
-                    <div className="h-8 bg-gray-200 dark:bg-white/10 rounded w-24" />
-                    <div className="h-8 bg-gray-200 dark:bg-white/10 rounded w-24" />
+                  <div className="flex gap-2 border-b border-border pb-2">
+                    <div className="h-8 bg-muted rounded w-24" />
+                    <div className="h-8 bg-muted rounded w-24" />
+                    <div className="h-8 bg-muted rounded w-24" />
                   </div>
                   {/* Content skeleton */}
                   <div className="space-y-2">
-                    <div className="h-4 bg-gray-200 dark:bg-white/10 rounded w-full" />
-                    <div className="h-4 bg-gray-200 dark:bg-white/10 rounded w-5/6" />
-                    <div className="h-4 bg-gray-200 dark:bg-white/10 rounded w-4/6" />
+                    <div className="h-4 bg-muted rounded w-full" />
+                    <div className="h-4 bg-muted rounded w-5/6" />
+                    <div className="h-4 bg-muted rounded w-4/6" />
                   </div>
                 </div>
               </div>
@@ -199,7 +199,7 @@ export default function StockPageClient({
 
                 {/* Error state when no quote */}
                 {!quote && error && (
-                  <div className="hidden lg:block bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-3 sm:p-4 transition-colors duration-300">
+                  <div className="hidden lg:block bg-card rounded-xl border border-border p-3 sm:p-4 transition-colors duration-300">
                     <div className="text-center text-red-500 text-sm py-4">
                       <p>Failed to load stock data</p>
                       <p className="text-xs mt-1 text-red-400">{error}</p>

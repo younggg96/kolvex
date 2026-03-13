@@ -136,7 +136,7 @@ export default function XiaohongshuPageClient() {
       headerExtra={headerExtra}
       headerActions={headerActions}
     >
-      <div className="relative flex-1 flex flex-col min-h-0 bg-background-light dark:bg-background-dark overflow-hidden">
+      <div className="relative flex-1 flex flex-col min-h-0 bg-background overflow-hidden">
         {/* Fixed background that stays in place while content scrolls */}
         <div className="absolute inset-0 bg-grid opacity-60 pointer-events-none z-0" />
 

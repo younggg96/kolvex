@@ -130,8 +130,8 @@ export default function TrackingStocksTable() {
       contentClassName="h-full max-h-[600px] overflow-y-auto custom-scrollbar"
     >
       <Table>
-        <TableHeader className="sticky top-0 z-10 bg-white dark:bg-card-dark">
-          <TableHeaderRow className="border-b border-gray-200 dark:border-white/10" />
+        <TableHeader className="sticky top-0 z-10 bg-card">
+          <TableHeaderRow className="border-b border-border" />
         </TableHeader>
         <TableBody>
           {loading && stocks.length === 0 ? (

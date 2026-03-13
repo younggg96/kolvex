@@ -58,8 +58,8 @@ export default function ContactForm() {
   };
 
   return (
-    <div className="bg-card-light dark:bg-card-dark p-6 rounded-2xl border border-border-light dark:border-border-dark shadow-sm">
-      <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+    <div className="bg-card p-6 rounded-2xl border border-border shadow-sm">
+      <h2 className="text-xl font-semibold text-foreground mb-4">
         Send us a message
       </h2>
 
@@ -78,7 +78,7 @@ export default function ContactForm() {
             placeholder="Your name"
             required
             disabled={isSubmitting}
-            className="bg-background-light dark:bg-background-dark border-border-light dark:border-border-dark"
+            className="bg-background border-border"
           />
         </div>
         <div>
@@ -96,7 +96,7 @@ export default function ContactForm() {
             placeholder="you@example.com"
             required
             disabled={isSubmitting}
-            className="bg-background-light dark:bg-background-dark border-border-light dark:border-border-dark"
+            className="bg-background border-border"
           />
         </div>
         <div>
@@ -114,7 +114,7 @@ export default function ContactForm() {
             rows={4}
             required
             disabled={isSubmitting}
-            className="bg-background-light dark:bg-background-dark resize-none border-border-light dark:border-border-dark"
+            className="bg-background resize-none border-border"
           />
         </div>
         <Button

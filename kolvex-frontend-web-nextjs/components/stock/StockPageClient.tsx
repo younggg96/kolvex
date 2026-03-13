@@ -86,7 +86,7 @@ export default function StockPageClient() {
 
   return (
     <DashboardLayout title={t("stocks.title")} showHeader={true} headerActions={headerActions}>
-      <div className="relative flex-1 overflow-y-auto bg-background-light dark:bg-background-dark">
+      <div className="relative flex-1 overflow-y-auto bg-background">
         <div className="absolute inset-0 bg-grid opacity-50 pointer-events-none" />
         <StockHeroSection className="hidden lg:block" />
         {/* Market Overview */}

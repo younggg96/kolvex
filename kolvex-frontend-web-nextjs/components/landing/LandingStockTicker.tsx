@@ -82,21 +82,17 @@ export default function LandingStockTicker() {
   };
 
   return (
-    <div className="w-full relative overflow-hidden py-3 md:py-6">
-      {/* Background gradient */}
-      <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-white to-primary/10 dark:from-primary/10 dark:via-primary/5 dark:to-primary/10 backdrop-blur-sm" />
-
-      {/* Decorative top border */}
-      <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
+    <div className="w-full relative overflow-hidden py-3 md:py-6 border-y border-border">
+      <div className="absolute inset-0 bg-muted/30" />
 
       {/* Live indicator */}
       {quotes.length > 0 && !error && (
-        <div className="absolute top-1/2 -translate-y-1/2 left-2 md:left-6 z-20 flex items-center gap-1 md:gap-2 px-2 md:px-3 py-1 md:py-1.5 rounded-full bg-primary/60 border border-primary/20 backdrop-blur-sm">
+        <div className="absolute top-1/2 -translate-y-1/2 left-2 md:left-6 z-20 flex items-center gap-1 md:gap-2 px-2 md:px-3 py-1 md:py-1.5 rounded-full bg-primary border border-primary/30">
           <span className="relative flex h-1.5 w-1.5 md:h-2 md:w-2">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-1.5 w-1.5 md:h-2 md:w-2 bg-white"></span>
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary-foreground opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-1.5 w-1.5 md:h-2 md:w-2 bg-primary-foreground"></span>
           </span>
-          <span className="text-[10px] md:text-xs font-bold text-white">
+          <span className="text-[10px] md:text-xs font-bold text-primary-foreground">
             LIVE
           </span>
         </div>
@@ -110,7 +106,7 @@ export default function LandingStockTicker() {
             return (
               <div
                 key={idx}
-                className="group inline-flex items-center gap-1.5 md:gap-3 px-2.5 md:px-5 py-1.5 md:py-2.5 mx-1 md:mx-2 rounded-xl md:rounded-2xl bg-white/70 dark:bg-white/[0.03] border border-gray-200/50 dark:border-white/5 hover:border-primary/30 hover:bg-white dark:hover:bg-white/[0.06] transition-all duration-300 cursor-pointer shadow-sm hover:shadow-md dark:shadow-none"
+                className="group inline-flex items-center gap-1.5 md:gap-3 px-2.5 md:px-5 py-1.5 md:py-2.5 mx-1 md:mx-2 rounded-xl bg-card border border-border hover:border-primary/30 transition-all duration-200 [transition-timing-function:cubic-bezier(0.25,1,0.5,1)] cursor-pointer"
               >
                 {/* Company Logo - hidden on mobile to save space */}
                 <div className="hidden sm:block">
@@ -126,12 +122,12 @@ export default function LandingStockTicker() {
                 </div>
 
                 {/* Stock symbol */}
-                <span className="font-bold text-xs md:text-base text-gray-900 dark:text-white group-hover:text-primary transition-colors">
+                <span className="font-bold text-xs md:text-base text-foreground group-hover:text-primary transition-colors duration-200">
                   {stock.symbol}
                 </span>
 
                 {/* Price */}
-                <span className="text-xs md:text-base text-gray-600 dark:text-white/60 font-medium tabular-nums">
+                <span className="text-xs md:text-base text-muted-foreground font-medium tabular-nums">
                   ${formatPrice(stock.price)}
                 </span>
 
@@ -155,12 +151,9 @@ export default function LandingStockTicker() {
         </div>
       </div>
 
-      {/* Gradient overlays for smooth fade effect */}
-      <div className="absolute inset-y-0 left-0 w-12 md:w-32 bg-gradient-to-r from-white dark:from-gray-950 to-transparent z-10 pointer-events-none" />
-      <div className="absolute inset-y-0 right-0 w-12 md:w-32 bg-gradient-to-l from-white dark:from-gray-950 to-transparent z-10 pointer-events-none" />
-
-      {/* Decorative bottom border */}
-      <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
+      {/* Gradient overlays for smooth fade */}
+      <div className="absolute inset-y-0 left-0 w-12 md:w-32 bg-gradient-to-r from-background to-transparent z-10 pointer-events-none" />
+      <div className="absolute inset-y-0 right-0 w-12 md:w-32 bg-gradient-to-l from-background to-transparent z-10 pointer-events-none" />
     </div>
   );
 }

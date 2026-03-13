@@ -76,7 +76,7 @@ function ExploreSkeleton() {
       {Array.from({ length: 6 }).map((_, i) => (
         <div
           key={i}
-          className="bg-white dark:bg-card-dark border border-border-light dark:border-border-dark rounded-lg p-4 space-y-3"
+          className="bg-card border border-border rounded-lg p-4 space-y-3"
         >
           <div className="flex items-start justify-between">
             <div className="space-y-2">
@@ -149,7 +149,7 @@ export default function ExploreAnalysesPage() {
         </Button>
       }
     >
-      <div className="relative flex-1 overflow-y-auto bg-background-light dark:bg-background-dark">
+      <div className="relative flex-1 overflow-y-auto bg-background">
         <div className="absolute inset-0 bg-grid opacity-50 pointer-events-none" />
 
         <div className="relative">
@@ -206,7 +206,7 @@ export default function ExploreAnalysesPage() {
                 <div className="w-7 h-7 rounded-lg bg-primary/10 dark:bg-primary/20 flex items-center justify-center">
                   <Globe className="w-3.5 h-3.5 text-primary" />
                 </div>
-                <h2 className="text-sm font-semibold text-gray-900 dark:text-white">
+                <h2 className="text-sm font-semibold text-foreground">
                   {t("tradingAnalysis.explore.published")}
                   {total > 0 && (
                     <span className="ml-1.5 text-xs font-normal text-gray-400">
@@ -219,9 +219,9 @@ export default function ExploreAnalysesPage() {
               {loading ? (
                 <ExploreSkeleton />
               ) : analyses.length === 0 ? (
-                <div className="bg-white dark:bg-card-dark border border-border-light dark:border-border-dark rounded-lg text-center py-16">
-                  <Globe className="w-10 h-10 mx-auto mb-3 text-gray-300 dark:text-gray-600" />
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                <div className="bg-card border border-border rounded-lg text-center py-16">
+                  <Globe className="w-10 h-10 mx-auto mb-3 text-muted-foreground/40" />
+                  <p className="text-sm text-muted-foreground">
                     {appliedTicker
                       ? t("tradingAnalysis.explore.noResultsForTicker", {
                           ticker: appliedTicker,
@@ -240,7 +240,7 @@ export default function ExploreAnalysesPage() {
                         )
                       }
                       className={cn(
-                        "group bg-white dark:bg-card-dark border border-border-light dark:border-border-dark rounded-lg p-4 cursor-pointer",
+                        "group bg-card border border-border rounded-lg p-4 cursor-pointer",
                         "hover:border-primary/30 dark:hover:border-primary/20 transition-all duration-200 hover:shadow-sm",
                         "animate-fade-in-up",
                         idx < 6 && `stagger-${Math.min(idx + 1, 5)}`
@@ -250,7 +250,7 @@ export default function ExploreAnalysesPage() {
                         <div className="flex items-center gap-3 min-w-0">
                           <CompanyLogo symbol={item.ticker} size="md" />
                           <div className="min-w-0">
-                            <span className="text-lg font-bold text-gray-900 dark:text-white">
+                            <span className="text-lg font-bold text-foreground">
                               {item.ticker}
                             </span>
                             <div className="flex items-center gap-2 mt-1 flex-wrap">
@@ -261,13 +261,13 @@ export default function ExploreAnalysesPage() {
                             </div>
                           </div>
                         </div>
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-gray-100 text-gray-600 dark:bg-white/5 dark:text-gray-400">
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-muted text-muted-foreground">
                           <Globe className="w-2.5 h-2.5" />
                           {t("tradingAnalysis.publishedLabel")}
                         </span>
                       </div>
 
-                      <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+                      <div className="flex items-center justify-between text-xs text-muted-foreground">
                         <div className="flex items-center gap-3">
                           <span className="flex items-center gap-1">
                             <Calendar className="w-3 h-3" />
@@ -284,7 +284,7 @@ export default function ExploreAnalysesPage() {
                             </span>
                           )}
                           {item.llm_provider && (
-                            <span className="capitalize px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-[10px]">
+                            <span className="capitalize px-1.5 py-0.5 rounded bg-muted text-[10px]">
                               {item.llm_provider}
                             </span>
                           )}
@@ -295,11 +295,11 @@ export default function ExploreAnalysesPage() {
                               {item.author.avatar_url && (
                                 <AvatarImage src={item.author.avatar_url} alt="" />
                               )}
-                              <AvatarFallback className="text-[8px] bg-gray-200 dark:bg-gray-700">
+                              <AvatarFallback className="text-[8px] bg-muted">
                                 <User className="w-2.5 h-2.5" />
                               </AvatarFallback>
                             </Avatar>
-                            <span className="text-[10px] text-gray-400 dark:text-gray-500 truncate max-w-[80px]">
+                            <span className="text-[10px] text-muted-foreground truncate max-w-[80px]">
                               {item.author.full_name || item.author.username || "User"}
                             </span>
                           </div>

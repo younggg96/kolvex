@@ -24,16 +24,16 @@ export function HeroSection({
 }: HeroSectionProps) {
   return (
     <div
-      className={`relative overflow-hidden ${className} bg-card-light dark:bg-transparent p-4 border-b border-border-light dark:border-0 shadow-sm`}
+      className={`relative overflow-hidden ${className} bg-card p-4 border-b border-border shadow-sm`}
     >
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <div>
-            <h1 className="text-xl font-bold text-gray-900 dark:text-white">
+            <h1 className="text-xl font-bold text-foreground">
               {title}
             </h1>
             {description && (
-              <p className="text-sm text-gray-600 dark:text-white/60">
+              <p className="text-sm text-muted-foreground">
                 {description}
               </p>
             )}
@@ -51,10 +51,10 @@ export function HeroSection({
             return (
               <div
                 key={index}
-                className="flex items-center gap-1.5 px-3 py-1.5 border border-border-light dark:border-border-dark rounded-full"
+                className="flex items-center gap-1.5 px-3 py-1.5 border border-border rounded-full"
               >
                 <Icon className={feature.iconClassName || "w-3.5 h-3.5"} />
-                <span className="text-xs font-medium text-gray-700 dark:text-white/70">
+                <span className="text-xs font-medium text-muted-foreground">
                   {feature.label}
                 </span>
               </div>

@@ -15,7 +15,7 @@ interface AppShellProps {
 export default function AppShell({ children }: AppShellProps) {
   return (
     <SidebarProvider defaultOpen={true}>
-      <div className="flex h-screen w-full bg-background-light dark:bg-background-dark text-gray-900 dark:text-white font-display transition-colors duration-300 overflow-hidden">
+      <div className="flex h-screen w-full bg-background text-foreground font-display transition-colors duration-300 overflow-hidden" style={{ transitionTimingFunction: "cubic-bezier(0.25, 1, 0.5, 1)" }}>
         <AppSidebar />
         <SidebarInset className="flex flex-col min-w-0 overflow-hidden">
           {children}

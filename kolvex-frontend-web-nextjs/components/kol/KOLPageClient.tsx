@@ -247,7 +247,7 @@ export default function KOLPageClient() {
       }
       headerClassName="lg:hidden"
     >
-      <div className="relative flex-1 overflow-y-auto bg-background-light dark:bg-background-dark h-full">
+      <div className="relative flex-1 overflow-y-auto bg-background h-full">
         <div className="absolute inset-0 bg-grid opacity-50 pointer-events-none" />
         <div className="hidden lg:block">
           <KOLHeroSection />
