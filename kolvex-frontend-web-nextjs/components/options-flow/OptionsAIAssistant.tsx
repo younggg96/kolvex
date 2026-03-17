@@ -231,8 +231,8 @@ function CompactResultCard({
                   )}
                   {rm?.position_size_suggestion &&
                     !isPlaceholderDescription(rm.position_size_suggestion) && (
-                    <p className="text-[11px] text-primary/70">{rm.position_size_suggestion}</p>
-                  )}
+                      <p className="text-[11px] text-primary/70">{rm.position_size_suggestion}</p>
+                    )}
                 </div>
               </>
             )}
@@ -453,20 +453,20 @@ export function OptionsAIAssistant({
           </div>
 
           <Button
-          size="xs"
-          onClick={handleAnalyze}
-          disabled={loading || !hasData || !model || !hasAnyModel}
-          className="h-8 gap-1.5 text-xs shrink-0"
-        >
-          {loading ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          ) : (
-            <Sparkles className="h-3.5 w-3.5" />
-          )}
-          {loading
-            ? t("optionsFlow.ai.analyzing")
-            : t("optionsFlow.ai.analyze")}
-        </Button>
+            size="xs"
+            onClick={handleAnalyze}
+            disabled={loading || !hasData || !model || !hasAnyModel}
+            className="h-8 gap-1.5 text-xs shrink-0"
+          >
+            {loading ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Sparkles className="h-3.5 w-3.5" />
+            )}
+            {loading
+              ? t("optionsFlow.ai.analyzing")
+              : t("optionsFlow.ai.analyze")}
+          </Button>
         </div>
 
         <div className="flex items-center gap-2">
@@ -484,7 +484,7 @@ export function OptionsAIAssistant({
                   "data-[state=open]:ring-0 data-[state=open]:outline-none",
                   !hasAnyModel
                     ? "text-muted-foreground"
-                    : "text-foreground/80 hover:text-foreground hover:bg-muted/50 border !border-border/50"
+                    : "text-foreground/80 hover:text-foreground hover:bg-muted/50"
                 )}
               >
                 {hasAnyModel ? (
