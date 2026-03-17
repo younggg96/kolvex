@@ -79,7 +79,7 @@ const socialMediaSubItems = [
     title: "YouTube",
     href: "/dashboard/social/youtube",
     iconSrc: "/logo/youtube.svg",
-    disabled: true,
+    disabled: false,
   },
 ];
 

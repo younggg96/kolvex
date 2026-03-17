@@ -187,7 +187,7 @@ def setup_scheduler():
                     logger.info(f"📕 [SCRAPE] 抓取小红书: {len(xhs_kols)} 个 KOL")
                     try:
                         xhs_scraper = XiaohongshuScraper(headless=True)
-                        for kol in xhs_kols[:10]:  # 限制每次最多 10 个
+                        for kol in xhs_kols[:10]:
                             try:
                                 xhs_scraper.scrape_user_posts(
                                     user_id=kol["user_id"],
@@ -206,12 +206,81 @@ def setup_scheduler():
             except Exception as e:
                 logger.error(f"❌ [SCRAPE] 定时任务执行失败: {e}")
 
+        # YouTube-specific scraper (runs on its own schedule)
+        def scheduled_scrape_youtube():
+            """定时任务：抓取 YouTube KOL 最新视频"""
+            from app.services.youtube import YouTubeScraper
+            from app.services.youtube.database import get_supabase_client as get_yt_supabase
+
+            logger.info("⏰ [YOUTUBE] 定时任务触发: 开始抓取 YouTube KOL 视频")
+            try:
+                supabase = get_yt_supabase()
+                if not supabase:
+                    logger.warning("❌ [YOUTUBE] Supabase 未连接，跳过")
+                    return
+
+                # Fetch active YouTube KOLs from DB
+                profiles_result = (
+                    supabase.table("kol_profiles")
+                    .select("username, platform, platform_user_id, display_name")
+                    .eq("is_active", True)
+                    .eq("platform", "youtube")
+                    .execute()
+                )
+                yt_kols = profiles_result.data or []
+
+                if not yt_kols:
+                    logger.info("📭 [YOUTUBE] 没有活跃的 YouTube KOL，尝试 seed 默认列表")
+                    YouTubeScraper.seed_default_kols()
+                    # Re-fetch after seeding
+                    profiles_result = (
+                        supabase.table("kol_profiles")
+                        .select("username, platform, platform_user_id, display_name")
+                        .eq("is_active", True)
+                        .eq("platform", "youtube")
+                        .execute()
+                    )
+                    yt_kols = profiles_result.data or []
+
+                if not yt_kols:
+                    logger.info("📭 [YOUTUBE] 仍然没有 YouTube KOL，跳过")
+                    return
+
+                kol_list = [
+                    {
+                        "channel_id": p["platform_user_id"],
+                        "handle": p.get("username", ""),
+                        "display_name": p.get("display_name", ""),
+                    }
+                    for p in yt_kols
+                ]
+
+                logger.info(f"▶️ [YOUTUBE] 抓取 {len(kol_list)} 个 YouTube KOL")
+                scraper = YouTubeScraper(max_videos=5)
+                stats = scraper.batch_scrape(kols=kol_list)
+                logger.info(f"✅ [YOUTUBE] 完成: {stats}")
+
+            except Exception as e:
+                logger.error(f"❌ [YOUTUBE] 定时任务执行失败: {e}")
+
         scheduler.add_job(
             scheduled_scrape_kol_tweets,
             IntervalTrigger(hours=2),
             id="scrape_kol_tweets",
             name="抓取 KOL 推文/帖子",
             replace_existing=True,
+        )
+
+        # ============================================================
+        # 任务 3b: 每日 2 次抓取 YouTube KOL 视频 (8:00 / 20:00 UTC)
+        # ============================================================
+        scheduler.add_job(
+            scheduled_scrape_youtube,
+            CronTrigger(hour="8,20", minute=0),
+            id="scrape_youtube_kols",
+            name="抓取 YouTube KOL 视频",
+            replace_existing=True,
+            misfire_grace_time=3600,
         )
 
         # ============================================================
@@ -497,6 +566,10 @@ def setup_scheduler():
         screener_job = scheduler.get_job("screener_cache_warm")
         if screener_job:
             logger.info(f"📅 [SCREENER] Stock Screener 缓存预热下次执行时间: {screener_job.next_run_time}")
+
+        youtube_job = scheduler.get_job("scrape_youtube_kols")
+        if youtube_job:
+            logger.info(f"📅 [YOUTUBE] YouTube KOL 抓取下次执行时间: {youtube_job.next_run_time}")
 
     except ImportError:
         logger.warning("⚠️ APScheduler 未安装，定时任务功能不可用")

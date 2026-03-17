@@ -337,6 +337,63 @@ async def trigger_xhs_scrape(
         }
 
 
+@router.post("/actions/scrape-youtube", response_model=Dict[str, Any])
+async def trigger_youtube_scrape(
+    max_videos: int = Query(5, description="每个频道最多爬取的视频数"),
+    admin_id: str = Depends(verify_admin),
+):
+    """
+    触发 YouTube KOL 视频爬取任务
+    """
+    try:
+        from app.services.youtube import YouTubeScraper
+        from app.services.youtube.database import get_supabase_client as get_yt_supabase
+
+        supabase_yt = get_yt_supabase()
+        if not supabase_yt:
+            return {"success": False, "message": "Supabase unavailable"}
+
+        profiles_result = (
+            supabase_yt.table("kol_profiles")
+            .select("username, platform_user_id, display_name")
+            .eq("is_active", True)
+            .eq("platform", "youtube")
+            .execute()
+        )
+        yt_kols = profiles_result.data or []
+
+        if not yt_kols:
+            YouTubeScraper.seed_default_kols()
+            profiles_result = (
+                supabase_yt.table("kol_profiles")
+                .select("username, platform_user_id, display_name")
+                .eq("is_active", True)
+                .eq("platform", "youtube")
+                .execute()
+            )
+            yt_kols = profiles_result.data or []
+
+        kol_list = [
+            {
+                "channel_id": p["platform_user_id"],
+                "handle": p.get("username", ""),
+                "display_name": p.get("display_name", ""),
+            }
+            for p in yt_kols
+        ]
+
+        scraper = YouTubeScraper(max_videos=max_videos)
+        stats = scraper.batch_scrape(kols=kol_list)
+
+        return {
+            "success": True,
+            "message": "YouTube scraping completed",
+            "stats": stats,
+        }
+    except Exception as e:
+        return {"success": False, "message": str(e)}
+
+
 @router.post("/actions/analyze-news", response_model=Dict[str, Any])
 async def trigger_news_analysis(
     limit: int = Query(50, description="分析的新闻数量限制"),
