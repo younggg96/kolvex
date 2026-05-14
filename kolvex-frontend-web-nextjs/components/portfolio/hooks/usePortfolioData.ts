@@ -42,6 +42,8 @@ export function usePortfolioData({ userId, isOwner }: UsePortfolioDataOptions) {
   const [robinhoodWashSaleRisks, setRobinhoodWashSaleRisks] = useState<
     Awaited<ReturnType<typeof getRobinhoodOrders>>["wash_sale_risk_symbols"]
   >([]);
+  const [robinhoodOrderStatusFilter, setRobinhoodOrderStatusFilter] =
+    useState("filled");
   const [loadingRobinhoodOrders, setLoadingRobinhoodOrders] = useState(false);
   const [holdings, setHoldings] = useState<SnapTradeHoldings | null>(null);
   const [loading, setLoading] = useState(true);
@@ -58,7 +60,9 @@ export function usePortfolioData({ userId, isOwner }: UsePortfolioDataOptions) {
       try {
         const result = await getRobinhoodOrders(
           robinhoodOrdersPageSize,
-          reset ? 0 : offsetOverride
+          reset ? 0 : offsetOverride,
+          undefined,
+          robinhoodOrderStatusFilter
         );
         setRobinhoodOrders((prev) =>
           reset ? result.orders : [...prev, ...result.orders]
@@ -72,12 +76,39 @@ export function usePortfolioData({ userId, isOwner }: UsePortfolioDataOptions) {
         setLoadingRobinhoodOrders(false);
       }
     },
-    []
+    [robinhoodOrderStatusFilter]
   );
 
   const handleLoadMoreRobinhoodOrders = useCallback(async () => {
     await loadRobinhoodOrders(false, robinhoodOrders.length);
   }, [loadRobinhoodOrders, robinhoodOrders.length]);
+
+  const handleRobinhoodOrderStatusFilterChange = useCallback(
+    async (statusFilter: string) => {
+      setRobinhoodOrderStatusFilter(statusFilter);
+      setRobinhoodOrders([]);
+      setRobinhoodOrdersTotal(0);
+      setRobinhoodOrdersHasMore(false);
+      setLoadingRobinhoodOrders(true);
+      try {
+        const result = await getRobinhoodOrders(
+          robinhoodOrdersPageSize,
+          0,
+          undefined,
+          statusFilter
+        );
+        setRobinhoodOrders(result.orders);
+        setRobinhoodOrdersTotal(result.total);
+        setRobinhoodOrdersHasMore(result.has_more);
+        setRobinhoodWashSaleRisks(result.wash_sale_risk_symbols || []);
+      } catch (error) {
+        console.warn("Failed to change Robinhood order status filter:", error);
+      } finally {
+        setLoadingRobinhoodOrders(false);
+      }
+    },
+    []
+  );
 
   // Load connection status and holdings data
   const loadData = useCallback(async () => {
@@ -360,6 +391,7 @@ export function usePortfolioData({ userId, isOwner }: UsePortfolioDataOptions) {
     robinhoodOrdersTotal,
     robinhoodOrdersHasMore,
     robinhoodWashSaleRisks,
+    robinhoodOrderStatusFilter,
     loadingRobinhoodOrders,
     loading,
     syncing,
@@ -373,6 +405,7 @@ export function usePortfolioData({ userId, isOwner }: UsePortfolioDataOptions) {
     handleResetRobinhoodAuth,
     loadRobinhoodOrders,
     handleLoadMoreRobinhoodOrders,
+    handleRobinhoodOrderStatusFilterChange,
     handleSync,
     handleTogglePublic,
     handleDisconnect,

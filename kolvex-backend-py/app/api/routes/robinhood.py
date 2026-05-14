@@ -249,6 +249,7 @@ async def get_robinhood_orders(
     limit: int = Query(default=100, ge=1, le=500),
     offset: int = Query(default=0, ge=0),
     symbol: Optional[str] = Query(default=None),
+    status_filter: str = Query(default="filled", alias="status"),
     current_user_id: str = Depends(get_current_user_id),
     service: RobinhoodService = Depends(get_robinhood_service),
 ):
@@ -259,6 +260,7 @@ async def get_robinhood_orders(
                 limit=limit,
                 offset=offset,
                 symbol=symbol,
+                status_filter=status_filter,
             )
         )
     except RobinhoodStorageNotReady as e:

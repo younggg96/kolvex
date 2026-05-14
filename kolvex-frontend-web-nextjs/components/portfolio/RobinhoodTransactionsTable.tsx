@@ -42,6 +42,8 @@ interface RobinhoodTransactionsTableProps {
   hasMore: boolean;
   loading: boolean;
   washSaleRisks: RobinhoodWashSaleRiskSymbol[];
+  statusFilter: string;
+  onStatusFilterChange: (statusFilter: string) => Promise<void>;
   onLoadMore: () => Promise<void>;
 }
 
@@ -74,6 +76,8 @@ export function RobinhoodTransactionsTable({
   hasMore,
   loading,
   washSaleRisks,
+  statusFilter,
+  onStatusFilterChange,
   onLoadMore,
 }: RobinhoodTransactionsTableProps) {
   const { t } = useTranslation();
@@ -113,7 +117,12 @@ export function RobinhoodTransactionsTable({
       let offset = 0;
       const limit = 500;
       while (true) {
-        const page = await getRobinhoodOrders(limit, offset);
+        const page = await getRobinhoodOrders(
+          limit,
+          offset,
+          undefined,
+          statusFilter
+        );
         allOrders.push(...page.orders);
         if (!page.has_more) break;
         offset += limit;
@@ -128,7 +137,6 @@ export function RobinhoodTransactionsTable({
         "total_amount",
         "realized_pnl",
         "realized_pnl_percent",
-        "wash_sale_flag",
         "state",
         "fees",
         "order_id",
@@ -222,6 +230,17 @@ export function RobinhoodTransactionsTable({
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <select
+            value={statusFilter}
+            onChange={(event) => onStatusFilterChange(event.target.value)}
+            className="h-8 rounded-md border border-border bg-background px-2 text-xs"
+          >
+            <option value="filled">{t("portfolio.transactions.statusFilled")}</option>
+            <option value="cancelled">
+              {t("portfolio.transactions.statusCancelled")}
+            </option>
+            <option value="all">{t("portfolio.transactions.statusAll")}</option>
+          </select>
+          <select
             value={selectedModel}
             onChange={(event) => setSelectedModel(event.target.value)}
             disabled={!providersLoaded || availableModels.length === 0}
@@ -299,7 +318,6 @@ export function RobinhoodTransactionsTable({
                 <TableHead className="text-right">
                   {t("portfolio.transactions.pnl")}
                 </TableHead>
-                <TableHead>{t("portfolio.transactions.washSale")}</TableHead>
                 <TableHead className="pr-4 text-right">
                   {t("portfolio.transactions.fees")}
                 </TableHead>
@@ -367,18 +385,6 @@ export function RobinhoodTransactionsTable({
                           ? ` (${order.realized_pnl_percent.toFixed(2)}%)`
                           : ""
                       }`}
-                </TableCell>
-                <TableCell>
-                  {order.wash_sale_flag ? (
-                    <Badge
-                      variant="outline"
-                      className="border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-300"
-                    >
-                      {t("portfolio.transactions.washSaleRisk")}
-                    </Badge>
-                  ) : (
-                    <span className="text-muted-foreground">-</span>
-                  )}
                 </TableCell>
                 <TableCell className="pr-4 text-right tabular-nums text-muted-foreground">
                   {formatCurrency(order.fees || 0)}

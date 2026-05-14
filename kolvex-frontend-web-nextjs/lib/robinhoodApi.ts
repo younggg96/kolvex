@@ -140,11 +140,13 @@ export async function getRobinhoodStatus(): Promise<RobinhoodStatus> {
 export async function getRobinhoodOrders(
   limit = 100,
   offset = 0,
-  symbol?: string
+  symbol?: string,
+  status = "filled"
 ): Promise<RobinhoodOrdersResponse> {
   const params = new URLSearchParams({
     limit: String(limit),
     offset: String(offset),
+    status,
   });
   if (symbol) params.set("symbol", symbol);
   return apiRequest<RobinhoodOrdersResponse>(

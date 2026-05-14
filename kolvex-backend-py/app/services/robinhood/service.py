@@ -79,6 +79,16 @@ def _safe_str(value: object, default: str = "") -> str:
     return str(value)
 
 
+def _order_state_matches(order_state: object, status_filter: str) -> bool:
+    state = _safe_str(order_state).lower()
+    target = status_filter.lower()
+    aliases = {
+        "cancelled": {"cancelled", "canceled"},
+        "canceled": {"cancelled", "canceled"},
+    }
+    return state in aliases.get(target, {target})
+
+
 def _parse_robinhood_timestamp(value: str | None) -> str | None:
     if not value:
         return None
@@ -1127,6 +1137,7 @@ class RobinhoodService:
         limit: int = 100,
         offset: int = 0,
         symbol: str | None = None,
+        status_filter: str = "filled",
     ) -> Dict[str, Any]:
         """Return synced Robinhood stock orders for the current user."""
 
@@ -1154,6 +1165,12 @@ class RobinhoodService:
             all_query = all_query.eq("ticker", symbol.upper())
         all_result = all_query.execute()
         enriched_orders = self._enrich_orders(all_result.data or [])
+        if status_filter and status_filter.lower() != "all":
+            enriched_orders = [
+                order
+                for order in enriched_orders
+                if _order_state_matches(order.get("state"), status_filter)
+            ]
         total = len(enriched_orders)
         page = list(reversed(enriched_orders))[offset : offset + limit]
 
