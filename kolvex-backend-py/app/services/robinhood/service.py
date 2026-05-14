@@ -1311,42 +1311,88 @@ class RobinhoodService:
         return synced_positions
 
     async def _sync_orders(self, user_id: str) -> int:
-        orders_data = await asyncio.to_thread(r.get_all_stock_orders)
-        count = 0
-        for raw_order in orders_data or []:
+        try:
+            orders_data = await asyncio.to_thread(r.get_all_stock_orders)
+        except Exception as error:
+            logger.exception(
+                "Robinhood order list fetch failed for user %s: %s",
+                user_id,
+                error,
+            )
+            return 0
+
+        if not orders_data:
+            logger.info("Robinhood returned no orders for user %s", user_id)
+            return 0
+
+        symbol_cache: Dict[str, str] = {}
+        synced = 0
+        skipped = 0
+        failed = 0
+
+        for raw_order in orders_data:
             order_id = raw_order.get("id")
             instrument_url = raw_order.get("instrument")
             if not order_id or not instrument_url:
+                skipped += 1
                 continue
 
-            ticker = await asyncio.to_thread(r.get_symbol_by_url, instrument_url)
-            quantity = _safe_float(
-                raw_order.get("cumulative_quantity") or raw_order.get("quantity")
-            )
-            average_price = _safe_float(raw_order.get("average_price"))
+            try:
+                ticker = symbol_cache.get(instrument_url)
+                if ticker is None:
+                    ticker = await asyncio.to_thread(
+                        r.get_symbol_by_url, instrument_url
+                    )
+                    if ticker:
+                        symbol_cache[instrument_url] = ticker
 
-            order = {
-                "user_id": user_id,
-                "order_id": order_id,
-                "ticker": ticker or "UNKNOWN",
-                "side": _safe_str(raw_order.get("side")),
-                "order_type": _safe_str(raw_order.get("type")),
-                "quantity": quantity,
-                "average_price": average_price if average_price > 0 else None,
-                "total_amount": quantity * average_price,
-                "state": _safe_str(raw_order.get("state")),
-                "created_time": _parse_robinhood_timestamp(raw_order.get("created_at")),
-                "executed_time": _parse_robinhood_timestamp(
-                    raw_order.get("last_transaction_at")
-                ),
-                "fees": _safe_float(raw_order.get("fees")),
-                "raw_order": raw_order,
-            }
-            self.supabase.table("robinhood_stock_orders").upsert(
-                order, on_conflict="user_id,order_id"
-            ).execute()
-            count += 1
-        return count
+                quantity = _safe_float(
+                    raw_order.get("cumulative_quantity")
+                    or raw_order.get("quantity")
+                )
+                average_price = _safe_float(raw_order.get("average_price"))
+
+                order = {
+                    "user_id": user_id,
+                    "order_id": order_id,
+                    "ticker": ticker or "UNKNOWN",
+                    "side": _safe_str(raw_order.get("side")),
+                    "order_type": _safe_str(raw_order.get("type")),
+                    "quantity": quantity,
+                    "average_price": average_price if average_price > 0 else None,
+                    "total_amount": quantity * average_price,
+                    "state": _safe_str(raw_order.get("state")),
+                    "created_time": _parse_robinhood_timestamp(
+                        raw_order.get("created_at")
+                    ),
+                    "executed_time": _parse_robinhood_timestamp(
+                        raw_order.get("last_transaction_at")
+                    ),
+                    "fees": _safe_float(raw_order.get("fees")),
+                    "raw_order": raw_order,
+                }
+                self.supabase.table("robinhood_stock_orders").upsert(
+                    order, on_conflict="user_id,order_id"
+                ).execute()
+                synced += 1
+            except Exception as order_error:
+                failed += 1
+                logger.warning(
+                    "Failed to upsert Robinhood order %s for user %s: %s",
+                    order_id,
+                    user_id,
+                    order_error,
+                )
+
+        logger.info(
+            "Robinhood orders sync for user %s: synced=%d skipped=%d failed=%d total=%d",
+            user_id,
+            synced,
+            skipped,
+            failed,
+            len(orders_data),
+        )
+        return synced
 
     async def _record_snapshot(
         self,

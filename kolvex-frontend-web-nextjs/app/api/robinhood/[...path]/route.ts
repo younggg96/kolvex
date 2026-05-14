@@ -44,10 +44,14 @@ async function proxyRequest(
       fetchOptions.body = await request.text();
     }
 
-    const response = await fetch(
-      `${API_BASE_URL}/api/v1/robinhood${path}`,
-      fetchOptions
-    );
+    // Forward the original query string (e.g. ?limit=100&offset=0) to the
+    // backend - without this the orders endpoint always uses the defaults.
+    const upstreamUrl = new URL(`${API_BASE_URL}/api/v1/robinhood${path}`);
+    request.nextUrl.searchParams.forEach((value, key) => {
+      upstreamUrl.searchParams.append(key, value);
+    });
+
+    const response = await fetch(upstreamUrl.toString(), fetchOptions);
     const data = await response.json();
 
     if (!response.ok) {
@@ -74,6 +78,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       return proxyRequest(request, "/status", { method: "GET" });
     case "profile":
       return proxyRequest(request, "/profile", { method: "GET" });
+    case "orders":
+      return proxyRequest(request, "/orders", { method: "GET" });
     default:
       return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
@@ -90,6 +96,8 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       });
     case "sync":
       return proxyRequest(request, "/sync", { method: "POST" });
+    case "reset-auth":
+      return proxyRequest(request, "/reset-auth", { method: "POST" });
     default:
       return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
