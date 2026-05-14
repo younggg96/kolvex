@@ -285,6 +285,19 @@ export function usePortfolioData({ userId, isOwner }: UsePortfolioDataOptions) {
     }
   }, [loadData, robinhoodStatus?.is_connected]);
 
+  const handleSyncRobinhoodTransactions = useCallback(async () => {
+    setSyncing(true);
+    try {
+      await syncRobinhood();
+      await loadData();
+      toast.success("Robinhood transactions synced");
+    } catch (error: any) {
+      toast.error(error.message || "Robinhood sync failed");
+    } finally {
+      setSyncing(false);
+    }
+  }, [loadData]);
+
   const handleResetRobinhoodAuth = useCallback(async () => {
     setResettingRobinhoodAuth(true);
     try {
@@ -406,6 +419,7 @@ export function usePortfolioData({ userId, isOwner }: UsePortfolioDataOptions) {
     loadRobinhoodOrders,
     handleLoadMoreRobinhoodOrders,
     handleRobinhoodOrderStatusFilterChange,
+    handleSyncRobinhoodTransactions,
     handleSync,
     handleTogglePublic,
     handleDisconnect,

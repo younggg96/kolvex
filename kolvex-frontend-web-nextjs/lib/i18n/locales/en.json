@@ -459,6 +459,8 @@
       "statusFilled": "Filled",
       "statusCancelled": "Cancelled",
       "statusAll": "All statuses",
+      "syncRobinhood": "Sync Robinhood",
+      "syncing": "Syncing...",
       "loadMore": "Load more",
       "exportCsv": "Export CSV",
       "analyze": "AI analyze",

@@ -430,6 +430,8 @@
       "statusFilled": "已成交",
       "statusCancelled": "已取消",
       "statusAll": "全部状态",
+      "syncRobinhood": "同步 Robinhood",
+      "syncing": "同步中...",
       "loadMore": "加载更多",
       "exportCsv": "导出 CSV",
       "analyze": "AI 分析",

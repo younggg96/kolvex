@@ -9,6 +9,7 @@ import {
   Download,
   Loader2,
   ReceiptText,
+  RefreshCw,
   ShieldAlert,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -45,6 +46,8 @@ interface RobinhoodTransactionsTableProps {
   statusFilter: string;
   onStatusFilterChange: (statusFilter: string) => Promise<void>;
   onLoadMore: () => Promise<void>;
+  onSync: () => Promise<void>;
+  syncing: boolean;
 }
 
 function formatShares(value?: number | null) {
@@ -79,6 +82,8 @@ export function RobinhoodTransactionsTable({
   statusFilter,
   onStatusFilterChange,
   onLoadMore,
+  onSync,
+  syncing,
 }: RobinhoodTransactionsTableProps) {
   const { t } = useTranslation();
   const [availableProviders, setAvailableProviders] = useState<string[]>([]);
@@ -232,6 +237,7 @@ export function RobinhoodTransactionsTable({
           <select
             value={statusFilter}
             onChange={(event) => onStatusFilterChange(event.target.value)}
+            disabled={syncing || loading}
             className="h-8 rounded-md border border-border bg-background px-2 text-xs"
           >
             <option value="filled">{t("portfolio.transactions.statusFilled")}</option>
@@ -252,6 +258,22 @@ export function RobinhoodTransactionsTable({
               </option>
             ))}
           </select>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onSync}
+            disabled={syncing}
+            className="gap-2"
+          >
+            {syncing ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <RefreshCw className="h-4 w-4" />
+            )}
+            {syncing
+              ? t("portfolio.transactions.syncing")
+              : t("portfolio.transactions.syncRobinhood")}
+          </Button>
           <Button
             variant="outline"
             size="sm"

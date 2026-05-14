@@ -77,6 +77,7 @@ export default function PortfolioHoldings({
     handleResetRobinhoodAuth,
     handleLoadMoreRobinhoodOrders,
     handleRobinhoodOrderStatusFilterChange,
+    handleSyncRobinhoodTransactions,
     handleSync,
     handleTogglePublic,
     handleDisconnect,
@@ -425,6 +426,8 @@ export default function PortfolioHoldings({
               statusFilter={robinhoodOrderStatusFilter}
               onStatusFilterChange={handleRobinhoodOrderStatusFilterChange}
               onLoadMore={handleLoadMoreRobinhoodOrders}
+              onSync={handleSyncRobinhoodTransactions}
+              syncing={syncing}
             />
           )}
 
