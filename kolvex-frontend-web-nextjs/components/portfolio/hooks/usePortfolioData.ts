@@ -17,6 +17,7 @@ import {
   disconnectRobinhood,
   getRobinhoodOrders,
   getRobinhoodStatus,
+  resetRobinhoodAuth,
   syncRobinhood,
   type RobinhoodOrder,
   type RobinhoodStatus,
@@ -40,6 +41,7 @@ export function usePortfolioData({ userId, isOwner }: UsePortfolioDataOptions) {
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
   const [connecting, setConnecting] = useState(false);
+  const [resettingRobinhoodAuth, setResettingRobinhoodAuth] = useState(false);
   const [disconnecting, setDisconnecting] = useState(false);
   const [copied, setCopied] = useState(false);
 
@@ -220,6 +222,19 @@ export function usePortfolioData({ userId, isOwner }: UsePortfolioDataOptions) {
     }
   }, [loadData, robinhoodStatus?.is_connected]);
 
+  const handleResetRobinhoodAuth = useCallback(async () => {
+    setResettingRobinhoodAuth(true);
+    try {
+      await resetRobinhoodAuth();
+      setRobinhoodStatus(null);
+      toast.success("Robinhood login state reset. Click Connect Robinhood again.");
+    } catch (error: any) {
+      toast.error(error?.message || "Failed to reset Robinhood login state");
+    } finally {
+      setResettingRobinhoodAuth(false);
+    }
+  }, []);
+
   const handleTogglePublic = useCallback(async (isPublic: boolean) => {
     try {
       await togglePublicSharing(isPublic);
@@ -310,11 +325,13 @@ export function usePortfolioData({ userId, isOwner }: UsePortfolioDataOptions) {
     loading,
     syncing,
     connecting,
+    resettingRobinhoodAuth,
     disconnecting,
     copied,
     loadData,
     handleConnect,
     handleConnectRobinhood,
+    handleResetRobinhoodAuth,
     handleSync,
     handleTogglePublic,
     handleDisconnect,

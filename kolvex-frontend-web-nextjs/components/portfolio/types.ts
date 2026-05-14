@@ -48,7 +48,9 @@ export interface ConnectionStateProps {
     totp_secret?: string;
     challenge_code?: string;
   }) => Promise<void>;
+  onResetRobinhoodAuth: () => Promise<void>;
   connecting: boolean;
+  resettingRobinhoodAuth: boolean;
 }
 
 export interface InitialSyncStateProps {

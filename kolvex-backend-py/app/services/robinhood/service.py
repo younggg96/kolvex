@@ -46,6 +46,15 @@ class RobinhoodLoginApprovalRequired(Exception):
     """Raised when Robinhood requires mobile/app approval before login can continue."""
 
 
+class RobinhoodSessionExpired(Exception):
+    """Raised when the cached Robinhood session is missing/expired and we can't refresh.
+
+    The caller should surface this to the API as a 401-style response so the
+    user knows to reconnect (re-enter their credentials), rather than crashing
+    the worker.
+    """
+
+
 def _get_user_lock(user_id: str) -> asyncio.Lock:
     if user_id not in _sync_locks:
         _sync_locks[user_id] = asyncio.Lock()
@@ -107,6 +116,45 @@ class RobinhoodService:
     def _device_token_path(self) -> Path:
         return self._tokens_dir() / "kolvex_robinhood_device_tokens.json"
 
+    def _write_local_device_token(self, user_id: str, device_token: str) -> None:
+        token_path = self._device_token_path()
+        key = self._session_name(user_id)
+        tokens: Dict[str, str] = {}
+
+        if token_path.exists():
+            try:
+                tokens = json.loads(token_path.read_text())
+            except json.JSONDecodeError:
+                tokens = {}
+
+        tokens[key] = device_token
+        token_path.write_text(json.dumps(tokens))
+
+    def _remove_local_device_token(self, user_id: str) -> None:
+        token_path = self._device_token_path()
+        key = self._session_name(user_id)
+        if not token_path.exists():
+            return
+        try:
+            tokens = json.loads(token_path.read_text())
+        except json.JSONDecodeError:
+            tokens = {}
+        if key in tokens:
+            tokens.pop(key, None)
+            token_path.write_text(json.dumps(tokens))
+
+    def _create_device_token(self, user_id: str) -> str:
+        device_token = generate_device_token()
+        try:
+            self._write_local_device_token(user_id, device_token)
+        except OSError as error:
+            logger.warning(
+                "Could not write local Robinhood device token for user %s: %s",
+                user_id,
+                error,
+            )
+        return device_token
+
     def _get_device_token(self, user_id: str) -> str:
         token_path = self._device_token_path()
         key = self._session_name(user_id)
@@ -137,7 +185,10 @@ class RobinhoodService:
             if existing.data and existing.data[0].get("device_token"):
                 return existing.data[0]["device_token"]
 
-            device_token = self._get_device_token(user_id)
+            # Supabase is the durable source of truth. If the row was deleted
+            # after a denied mobile approval, don't resurrect the old local
+            # device token that Robinhood may already have rejected.
+            device_token = self._create_device_token(user_id)
             self.supabase.table("robinhood_connections").upsert(
                 {
                     "user_id": user_id,
@@ -209,7 +260,87 @@ class RobinhoodService:
         )
 
     def _login_from_cache(self, user_id: str) -> None:
-        r.login(store_session=True, pickle_name=self._session_name(user_id))
+        """Restore an authenticated Robinhood session from the per-user pickle.
+
+        Unlike :func:`robin_stocks.robinhood.authentication.login`, this method
+        NEVER falls back to interactive ``input()`` prompts. If the cached
+        session can't be restored or refreshed, it raises
+        :class:`RobinhoodSessionExpired` so the API can return a clear
+        "please reconnect" response instead of crashing with
+        ``EOF when reading a line`` on a headless server.
+        """
+
+        tokens = self._load_session_tokens(user_id)
+        if not tokens or not tokens.get("access_token"):
+            raise RobinhoodSessionExpired(
+                "Robinhood session not found. Please connect Robinhood again."
+            )
+
+        access_token = tokens["access_token"]
+        token_type = tokens.get("token_type") or "Bearer"
+        refresh_token = tokens.get("refresh_token")
+        device_token = tokens.get("device_token")
+
+        set_login_state(True)
+        update_session("Authorization", f"{token_type} {access_token}")
+
+        try:
+            response = request_get(
+                positions_url(),
+                "pagination",
+                {"nonzero": "true"},
+                jsonify_data=False,
+            )
+            response.raise_for_status()
+            return
+        except Exception as validation_error:
+            logger.info(
+                "Robinhood cached session invalid for user %s, attempting refresh: %s",
+                user_id,
+                validation_error,
+            )
+            set_login_state(False)
+            update_session("Authorization", None)
+
+        if not refresh_token or not device_token:
+            raise RobinhoodSessionExpired(
+                "Robinhood session expired and cannot be refreshed. Please connect Robinhood again."
+            )
+
+        try:
+            refresh_payload = {
+                "client_id": "c82SH0WZOsabOXGP2sxqcj34FxkvfnWRZBKlBjFS",
+                "expires_in": 86400,
+                "grant_type": "refresh_token",
+                "refresh_token": refresh_token,
+                "scope": "internal",
+                "device_token": device_token,
+            }
+            refreshed = request_post(login_url(), refresh_payload)
+        except Exception as error:
+            raise RobinhoodSessionExpired(
+                "Robinhood session refresh failed. Please connect Robinhood again."
+            ) from error
+
+        if not isinstance(refreshed, dict) or not refreshed.get("access_token"):
+            raise RobinhoodSessionExpired(
+                "Robinhood session refresh was rejected. Please connect Robinhood again."
+            )
+
+        new_access_token = refreshed["access_token"]
+        new_token_type = refreshed.get("token_type") or token_type
+        new_refresh_token = refreshed.get("refresh_token") or refresh_token
+
+        update_session("Authorization", f"{new_token_type} {new_access_token}")
+        set_login_state(True)
+
+        self._save_session_tokens(
+            user_id,
+            token_type=new_token_type,
+            access_token=new_access_token,
+            refresh_token=new_refresh_token,
+            device_token=device_token,
+        )
 
     def _start_device_approval_workflow(
         self,
@@ -385,6 +516,173 @@ class RobinhoodService:
                 pass
         return machine_id
 
+    # ---- OAuth token persistence (Supabase primary, pickle cache) -----------
+    #
+    # Railway/Docker filesystems are ephemeral so the per-user pickle file at
+    # ~/.tokens/ disappears on every redeploy. To survive that we mirror tokens
+    # into Supabase: the DB row is the source of truth, the pickle is just an
+    # in-process cache that avoids a Supabase round-trip on each /sync call.
+    # All DB reads/writes are tolerant to the columns not yet existing so the
+    # service keeps working before the migration is applied.
+
+    def _save_session_tokens(
+        self,
+        user_id: str,
+        *,
+        token_type: str,
+        access_token: str,
+        refresh_token: str,
+        device_token: str,
+    ) -> None:
+        pickle_path = self._pickle_path(user_id)
+        pickle_payload = {
+            "token_type": token_type,
+            "access_token": access_token,
+            "refresh_token": refresh_token,
+            "device_token": device_token,
+        }
+        try:
+            with pickle_path.open("wb") as f:
+                pickle.dump(pickle_payload, f)
+        except OSError as error:
+            logger.warning(
+                "Could not write Robinhood pickle for user %s: %s",
+                user_id,
+                error,
+            )
+
+        try:
+            self.supabase.table("robinhood_connections").update(
+                {
+                    "access_token": access_token,
+                    "refresh_token": refresh_token,
+                    "token_type": token_type,
+                    "device_token": device_token,
+                    "access_token_saved_at": datetime.utcnow().isoformat(),
+                }
+            ).eq("user_id", user_id).execute()
+        except Exception as error:
+            # Migration not applied yet -> silently fall back to pickle-only
+            # so existing deployments keep working.
+            logger.warning(
+                "Could not persist Robinhood OAuth tokens to Supabase for user %s: %s",
+                user_id,
+                error,
+            )
+
+    def _load_session_tokens(self, user_id: str) -> Optional[Dict[str, Any]]:
+        """Return ``{access_token, refresh_token, token_type, device_token}`` or None.
+
+        Reads Supabase first (durable across redeploys); falls back to the
+        per-user pickle for legacy installs / when the migration isn't applied.
+        """
+
+        try:
+            result = (
+                self.supabase.table("robinhood_connections")
+                .select("access_token, refresh_token, token_type, device_token")
+                .eq("user_id", user_id)
+                .execute()
+            )
+        except Exception as error:
+            logger.debug(
+                "Could not read Robinhood OAuth tokens from Supabase for user %s: %s",
+                user_id,
+                error,
+            )
+            result = None
+
+        if result and result.data:
+            row = result.data[0]
+            access_token = row.get("access_token")
+            if access_token:
+                return {
+                    "access_token": access_token,
+                    "refresh_token": row.get("refresh_token"),
+                    "token_type": row.get("token_type") or "Bearer",
+                    "device_token": row.get("device_token"),
+                }
+
+        pickle_path = self._pickle_path(user_id)
+        if not pickle_path.exists():
+            return None
+        try:
+            with pickle_path.open("rb") as f:
+                data = pickle.load(f)
+        except (pickle.UnpicklingError, EOFError, OSError, KeyError) as error:
+            logger.warning(
+                "Could not read Robinhood pickle for user %s: %s",
+                user_id,
+                error,
+            )
+            return None
+        if not isinstance(data, dict) or not data.get("access_token"):
+            return None
+        return {
+            "access_token": data["access_token"],
+            "refresh_token": data.get("refresh_token"),
+            "token_type": data.get("token_type") or "Bearer",
+            "device_token": data.get("device_token"),
+        }
+
+    def _clear_session_tokens(self, user_id: str) -> None:
+        try:
+            self.supabase.table("robinhood_connections").update(
+                {
+                    "access_token": None,
+                    "refresh_token": None,
+                    "token_type": None,
+                    "access_token_saved_at": None,
+                }
+            ).eq("user_id", user_id).execute()
+        except Exception as error:
+            logger.debug(
+                "Could not clear Robinhood OAuth tokens for user %s: %s",
+                user_id,
+                error,
+            )
+
+        pickle_path = self._pickle_path(user_id)
+        if pickle_path.exists():
+            try:
+                pickle_path.unlink()
+            except OSError as error:
+                logger.warning(
+                    "Could not remove Robinhood pickle for user %s: %s",
+                    user_id,
+                    error,
+                )
+
+    def reset_login_state(self, user_id: str) -> None:
+        """Clear denied/stale Robinhood auth state and force a fresh approval."""
+
+        self._clear_session_tokens(user_id)
+        self._remove_local_device_token(user_id)
+        set_login_state(False)
+        update_session("Authorization", None)
+        update_session("X-ROBINHOOD-CHALLENGE-RESPONSE-ID", None)
+
+        try:
+            self.supabase.table("robinhood_connections").update(
+                {
+                    "device_token": None,
+                    "pending_challenge_id": None,
+                    "pending_machine_id": None,
+                    "pending_workflow_started_at": None,
+                    "is_connected": False,
+                }
+            ).eq("user_id", user_id).execute()
+        except Exception as error:
+            logger.info(
+                "Could not reset Robinhood DB auth state for user %s; local state was cleared: %s",
+                user_id,
+                error,
+            )
+
+    async def reset_auth(self, user_id: str) -> bool:
+        await asyncio.to_thread(self.reset_login_state, user_id)
+        return True
+
     def _get_active_sheriff_challenge(self, inquiry_url: str) -> Optional[Dict[str, Any]]:
         inquiry = request_get(inquiry_url, "regular")
         if not isinstance(inquiry, dict):
@@ -433,7 +731,6 @@ class RobinhoodService:
     ) -> Dict[str, Any]:
         """Login without interactive prompts and reuse device_token across retries."""
 
-        pickle_path = self._pickle_path(user_id)
         payload = {
             "client_id": "c82SH0WZOsabOXGP2sxqcj34FxkvfnWRZBKlBjFS",
             "expires_in": expires_in,
@@ -447,16 +744,15 @@ class RobinhoodService:
         if mfa_code:
             payload["mfa_code"] = mfa_code
 
-        if pickle_path.exists():
+        cached_tokens = self._load_session_tokens(user_id)
+        if cached_tokens and cached_tokens.get("access_token"):
             try:
-                with pickle_path.open("rb") as f:
-                    pickle_data = pickle.load(f)
-                access_token = pickle_data["access_token"]
-                token_type = pickle_data["token_type"]
-                refresh_token = pickle_data["refresh_token"]
-                payload["device_token"] = pickle_data.get("device_token") or payload[
-                    "device_token"
-                ]
+                access_token = cached_tokens["access_token"]
+                token_type = cached_tokens.get("token_type") or "Bearer"
+                refresh_token = cached_tokens.get("refresh_token")
+                payload["device_token"] = (
+                    cached_tokens.get("device_token") or payload["device_token"]
+                )
                 set_login_state(True)
                 update_session("Authorization", f"{token_type} {access_token}")
                 response = request_get(
@@ -471,7 +767,7 @@ class RobinhoodService:
                     "token_type": token_type,
                     "expires_in": expires_in,
                     "scope": "internal",
-                    "detail": f"logged in using authentication in {pickle_path.name}",
+                    "detail": "logged in using cached Robinhood OAuth tokens.",
                     "backup_code": None,
                     "refresh_token": refresh_token,
                 }
@@ -502,16 +798,13 @@ class RobinhoodService:
                 data["detail"] = (
                     "logged in after Robinhood device approval (resumed workflow)."
                 )
-                with pickle_path.open("wb") as f:
-                    pickle.dump(
-                        {
-                            "token_type": data["token_type"],
-                            "access_token": data["access_token"],
-                            "refresh_token": data["refresh_token"],
-                            "device_token": payload["device_token"],
-                        },
-                        f,
-                    )
+                self._save_session_tokens(
+                    user_id,
+                    token_type=data["token_type"],
+                    access_token=data["access_token"],
+                    refresh_token=data["refresh_token"],
+                    device_token=payload["device_token"],
+                )
                 return data
             # Otherwise fall through to normal handling (verification_workflow
             # might have rotated, fresh challenge appeared, etc.)
@@ -542,6 +835,8 @@ class RobinhoodService:
                 "X-ROBINHOOD-CHALLENGE-RESPONSE-ID",
                 pending_challenge_id,
             )
+        else:
+            update_session("X-ROBINHOOD-CHALLENGE-RESPONSE-ID", None)
 
         data = request_post(login_url(), payload)
         if not data:
@@ -624,16 +919,13 @@ class RobinhoodService:
         set_login_state(True)
         data["detail"] = "logged in with brand new authentication code."
 
-        with pickle_path.open("wb") as f:
-            pickle.dump(
-                {
-                    "token_type": data["token_type"],
-                    "access_token": data["access_token"],
-                    "refresh_token": data["refresh_token"],
-                    "device_token": payload["device_token"],
-                },
-                f,
-            )
+        self._save_session_tokens(
+            user_id,
+            token_type=data["token_type"],
+            access_token=data["access_token"],
+            refresh_token=data["refresh_token"],
+            device_token=payload["device_token"],
+        )
 
         return data
 
@@ -690,7 +982,23 @@ class RobinhoodService:
         if not connection:
             raise Exception("Robinhood is not connected")
 
-        await asyncio.to_thread(self._login_from_cache, user_id)
+        try:
+            await asyncio.to_thread(self._login_from_cache, user_id)
+        except RobinhoodSessionExpired:
+            # Mark the connection disconnected so /status tells the UI to
+            # prompt the user to reconnect, then propagate to the route
+            # handler which turns it into a clean 401.
+            try:
+                self.supabase.table("robinhood_connections").update(
+                    {"is_connected": False}
+                ).eq("user_id", user_id).execute()
+            except Exception as flag_error:
+                logger.warning(
+                    "Could not clear is_connected flag for user %s: %s",
+                    user_id,
+                    flag_error,
+                )
+            raise
 
         if profile is None:
             profile = await self._fetch_profile()
@@ -846,6 +1154,9 @@ class RobinhoodService:
         self.supabase.table("robinhood_stock_orders").delete().eq(
             "user_id", user_id
         ).execute()
+        # Clear cached OAuth tokens (DB row + pickle file) before deleting the
+        # connection row so we don't leave a stale pickle on the filesystem.
+        self.reset_login_state(user_id)
         self.supabase.table("robinhood_connections").delete().eq(
             "user_id", user_id
         ).execute()

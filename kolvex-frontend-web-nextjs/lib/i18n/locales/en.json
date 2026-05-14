@@ -415,6 +415,8 @@
       "robinhoodTotp": "TOTP secret (optional)",
       "robinhoodChallengeCode": "Robinhood verification code (if sent)",
       "connectRobinhood": "Connect Robinhood",
+      "resetRobinhoodAuth": "Reset Robinhood login state",
+      "resettingRobinhood": "Resetting Robinhood...",
       "secure": "Secure",
       "readOnly": "Read-only",
       "encrypted": "Encrypted",

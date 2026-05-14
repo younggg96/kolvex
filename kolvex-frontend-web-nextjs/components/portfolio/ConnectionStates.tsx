@@ -21,7 +21,9 @@ import type { ConnectionStateProps, InitialSyncStateProps } from "./types";
 export function NotConnectedState({
   onConnect,
   onConnectRobinhood,
+  onResetRobinhoodAuth,
   connecting,
+  resettingRobinhoodAuth,
 }: ConnectionStateProps) {
   const { t } = useTranslation();
   const [username, setUsername] = useState("");
@@ -133,7 +135,7 @@ export function NotConnectedState({
             <Button
               type="submit"
               size="lg"
-              disabled={connecting || !canConnectRobinhood}
+              disabled={connecting || resettingRobinhoodAuth || !canConnectRobinhood}
               className="w-full gap-2"
             >
               {connecting ? (
@@ -142,6 +144,23 @@ export function NotConnectedState({
                 <KeyRound className="w-4 h-4" />
               )}
               {connecting ? t("portfolio.connect.connecting") : t("portfolio.connect.connectRobinhood")}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={onResetRobinhoodAuth}
+              disabled={connecting || resettingRobinhoodAuth}
+              className="w-full gap-2"
+            >
+              {resettingRobinhoodAuth ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <RefreshCw className="w-4 h-4" />
+              )}
+              {resettingRobinhoodAuth
+                ? t("portfolio.connect.resettingRobinhood")
+                : t("portfolio.connect.resetRobinhoodAuth")}
             </Button>
           </form>
         </div>

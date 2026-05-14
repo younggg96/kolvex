@@ -386,6 +386,8 @@
       "robinhoodTotp": "TOTP secret（可选）",
       "robinhoodChallengeCode": "Robinhood 验证码（如收到）",
       "connectRobinhood": "连接 Robinhood",
+      "resetRobinhoodAuth": "重置 Robinhood 登录状态",
+      "resettingRobinhood": "正在重置 Robinhood...",
       "secure": "安全",
       "readOnly": "只读",
       "encrypted": "加密",

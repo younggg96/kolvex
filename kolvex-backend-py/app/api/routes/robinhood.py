@@ -10,6 +10,7 @@ from starlette import status as http_status
 from app.api.dependencies.auth import get_current_user_id
 from app.services.robinhood.service import (
     RobinhoodLoginApprovalRequired,
+    RobinhoodSessionExpired,
     RobinhoodStorageNotReady,
     RobinhoodService,
     get_robinhood_service,
@@ -179,6 +180,12 @@ async def sync_robinhood(
             message=f"Successfully synced {len(positions)} Robinhood positions",
             success=True,
         )
+    except RobinhoodSessionExpired as e:
+        logger.info("Robinhood session expired for user %s", current_user_id)
+        raise HTTPException(
+            status_code=http_status.HTTP_401_UNAUTHORIZED,
+            detail=str(e),
+        )
     except Exception as e:
         logger.exception("Failed to sync Robinhood")
         raise HTTPException(
@@ -223,6 +230,25 @@ async def get_robinhood_orders(
         raise HTTPException(
             status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to get Robinhood orders: {str(e)}",
+        )
+
+
+@router.post("/reset-auth", response_model=RobinhoodMessageResponse)
+async def reset_robinhood_auth(
+    current_user_id: str = Depends(get_current_user_id),
+    service: RobinhoodService = Depends(get_robinhood_service),
+):
+    try:
+        await service.reset_auth(current_user_id)
+        return RobinhoodMessageResponse(
+            message="Robinhood auth state reset. Connect again to trigger a fresh approval.",
+            success=True,
+        )
+    except Exception as e:
+        logger.exception("Failed to reset Robinhood auth state")
+        raise HTTPException(
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to reset Robinhood auth state: {str(e)}",
         )
 
 

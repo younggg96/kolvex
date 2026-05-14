@@ -90,6 +90,15 @@ export async function syncRobinhood(): Promise<{
   });
 }
 
+export async function resetRobinhoodAuth(): Promise<{
+  message: string;
+  success: boolean;
+}> {
+  return apiRequest<{ message: string; success: boolean }>("/reset-auth", {
+    method: "POST",
+  });
+}
+
 export async function getRobinhoodStatus(): Promise<RobinhoodStatus> {
   try {
     return await apiRequest<RobinhoodStatus>("/status");

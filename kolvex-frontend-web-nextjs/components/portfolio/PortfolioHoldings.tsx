@@ -64,10 +64,12 @@ export default function PortfolioHoldings({
     loading,
     syncing,
     connecting,
+    resettingRobinhoodAuth,
     disconnecting,
     copied,
     handleConnect,
     handleConnectRobinhood,
+    handleResetRobinhoodAuth,
     handleSync,
     handleTogglePublic,
     handleDisconnect,
@@ -270,7 +272,9 @@ export default function PortfolioHoldings({
       <NotConnectedState
         onConnect={handleConnect}
         onConnectRobinhood={handleConnectRobinhood}
+        onResetRobinhoodAuth={handleResetRobinhoodAuth}
         connecting={connecting}
+        resettingRobinhoodAuth={resettingRobinhoodAuth}
       />
     );
   }
