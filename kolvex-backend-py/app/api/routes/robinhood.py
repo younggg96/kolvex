@@ -27,6 +27,10 @@ class RobinhoodConnectRequest(BaseModel):
         None,
         description="Optional TOTP secret from an authenticator app, not a 6-digit code",
     )
+    challenge_code: Optional[str] = Field(
+        None,
+        description="Optional Robinhood SMS/email challenge code",
+    )
 
 
 class RobinhoodMessageResponse(BaseModel):
@@ -78,6 +82,7 @@ async def connect_robinhood(
             username=request.username,
             password=request.password,
             totp_secret=request.totp_secret,
+            challenge_code=request.challenge_code,
         )
         status = await service.get_status(current_user_id)
         return RobinhoodConnectResponse(

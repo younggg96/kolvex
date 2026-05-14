@@ -11,6 +11,7 @@ CREATE TABLE IF NOT EXISTS robinhood_connections (
     username VARCHAR(255) NOT NULL,
     session_pickle_name VARCHAR(255) NOT NULL,
     device_token VARCHAR(255),
+    pending_challenge_id VARCHAR(255),
     is_connected BOOLEAN DEFAULT FALSE,
     last_synced_at TIMESTAMPTZ,
     account_number VARCHAR(255),
@@ -26,6 +27,9 @@ CREATE TABLE IF NOT EXISTS robinhood_connections (
 
 ALTER TABLE robinhood_connections
 ADD COLUMN IF NOT EXISTS device_token VARCHAR(255);
+
+ALTER TABLE robinhood_connections
+ADD COLUMN IF NOT EXISTS pending_challenge_id VARCHAR(255);
 
 CREATE TABLE IF NOT EXISTS robinhood_stock_orders (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

@@ -46,6 +46,7 @@ export interface ConnectionStateProps {
     username: string;
     password: string;
     totp_secret?: string;
+    challenge_code?: string;
   }) => Promise<void>;
   connecting: boolean;
 }

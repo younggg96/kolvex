@@ -106,6 +106,7 @@ export function usePortfolioData({ userId, isOwner }: UsePortfolioDataOptions) {
       username: string;
       password: string;
       totp_secret?: string;
+      challenge_code?: string;
     }) => {
       setConnecting(true);
       try {

@@ -13,7 +13,7 @@ from typing import Any, Dict, List, Optional, Set
 
 import pyotp
 import robin_stocks.robinhood as r
-from robin_stocks.robinhood.authentication import generate_device_token
+from robin_stocks.robinhood.authentication import generate_device_token, respond_to_challenge
 from robin_stocks.robinhood.helper import request_get, request_post, set_login_state, update_session
 from robin_stocks.robinhood.urls import login_url, positions_url
 from supabase import Client
@@ -149,12 +149,43 @@ class RobinhoodService:
             )
             return self._get_device_token(user_id)
 
+    def _get_pending_challenge_id(self, user_id: str) -> str | None:
+        try:
+            existing = (
+                self.supabase.table("robinhood_connections")
+                .select("pending_challenge_id")
+                .eq("user_id", user_id)
+                .execute()
+            )
+            if existing.data:
+                return existing.data[0].get("pending_challenge_id")
+        except Exception as error:
+            logger.warning(
+                "Could not read Robinhood pending challenge for user %s: %s",
+                user_id,
+                error,
+            )
+        return None
+
+    def _set_pending_challenge_id(self, user_id: str, challenge_id: str | None) -> None:
+        try:
+            self.supabase.table("robinhood_connections").update(
+                {"pending_challenge_id": challenge_id}
+            ).eq("user_id", user_id).execute()
+        except Exception as error:
+            logger.warning(
+                "Could not persist Robinhood pending challenge for user %s: %s",
+                user_id,
+                error,
+            )
+
     def _login(
         self,
         user_id: str,
         username: str,
         password: str,
         totp_secret: str | None = None,
+        challenge_code: str | None = None,
     ) -> Dict[str, Any]:
         mfa_code = pyotp.TOTP(totp_secret).now() if totp_secret else None
         return self._login_with_stable_device_token(
@@ -162,6 +193,7 @@ class RobinhoodService:
             username=username,
             password=password,
             mfa_code=mfa_code,
+            challenge_code=challenge_code,
         )
 
     def _login_from_cache(self, user_id: str) -> None:
@@ -173,6 +205,7 @@ class RobinhoodService:
         username: str,
         password: str,
         mfa_code: str | None = None,
+        challenge_code: str | None = None,
         expires_in: int = 86400,
     ) -> Dict[str, Any]:
         """Login without interactive prompts and reuse device_token across retries."""
@@ -223,6 +256,33 @@ class RobinhoodService:
                 set_login_state(False)
                 update_session("Authorization", None)
 
+        pending_challenge_id = self._get_pending_challenge_id(user_id)
+        if pending_challenge_id:
+            if challenge_code:
+                challenge_response = respond_to_challenge(
+                    pending_challenge_id,
+                    challenge_code,
+                )
+                logger.info(
+                    "Robinhood challenge response for user %s: keys=%s remaining_attempts=%s",
+                    user_id,
+                    sorted(challenge_response.keys()) if challenge_response else [],
+                    (challenge_response or {})
+                    .get("challenge", {})
+                    .get("remaining_attempts"),
+                )
+                if challenge_response and "challenge" in challenge_response:
+                    remaining = challenge_response["challenge"].get(
+                        "remaining_attempts"
+                    )
+                    raise RobinhoodLoginApprovalRequired(
+                        f"Robinhood verification code was not accepted. {remaining} attempts remaining."
+                    )
+            update_session(
+                "X-ROBINHOOD-CHALLENGE-RESPONSE-ID",
+                pending_challenge_id,
+            )
+
         data = request_post(login_url(), payload)
         if not data:
             raise Exception("Robinhood login failed: empty response from API")
@@ -242,8 +302,11 @@ class RobinhoodService:
             )
 
         if "challenge" in data:
+            challenge_id = data["challenge"].get("id")
+            if challenge_id:
+                self._set_pending_challenge_id(user_id, challenge_id)
             raise RobinhoodLoginApprovalRequired(
-                "Robinhood sent a login challenge. Approve it on your phone, then click Connect Robinhood again."
+                "Robinhood sent a login challenge. Approve it on your phone, then click Connect Robinhood again. If Robinhood sent a code, enter it in the verification code field."
             )
 
         detail = str(data.get("detail") or data.get("error") or "")
@@ -261,6 +324,8 @@ class RobinhoodService:
                     "Robinhood is waiting for device approval. Tap \"Yes, it's me\" in the Robinhood app, then click Connect Robinhood again."
                 )
             raise Exception(detail or f"Robinhood login failed: {data}")
+
+        self._set_pending_challenge_id(user_id, None)
 
         token = f"{data['token_type']} {data['access_token']}"
         update_session("Authorization", token)
@@ -286,11 +351,19 @@ class RobinhoodService:
         username: str,
         password: str,
         totp_secret: str | None = None,
+        challenge_code: str | None = None,
     ) -> Dict[str, Any]:
         """Login once, cache the token, sync profile/holdings/orders, and return status."""
 
         async with _get_user_lock(user_id):
-            await asyncio.to_thread(self._login, user_id, username, password, totp_secret)
+            await asyncio.to_thread(
+                self._login,
+                user_id,
+                username,
+                password,
+                totp_secret,
+                challenge_code,
+            )
             profile = await self._fetch_profile()
             connection = await self._upsert_robinhood_connection(
                 user_id=user_id,
@@ -489,6 +562,7 @@ class RobinhoodService:
             "username": username,
             "session_pickle_name": self._session_name(user_id),
             "device_token": self._get_or_create_device_token(user_id, username),
+            "pending_challenge_id": None,
             "is_connected": True,
             "last_synced_at": datetime.utcnow().isoformat(),
             "profile": profile,

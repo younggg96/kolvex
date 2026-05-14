@@ -413,6 +413,7 @@
       "robinhoodUsername": "Robinhood email or username",
       "robinhoodPassword": "Robinhood password",
       "robinhoodTotp": "TOTP secret (optional)",
+      "robinhoodChallengeCode": "Robinhood verification code (if sent)",
       "connectRobinhood": "Connect Robinhood",
       "secure": "Secure",
       "readOnly": "Read-only",

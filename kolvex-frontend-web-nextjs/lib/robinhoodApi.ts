@@ -29,6 +29,7 @@ export interface RobinhoodConnectRequest {
   username: string;
   password: string;
   totp_secret?: string;
+  challenge_code?: string;
 }
 
 export interface RobinhoodStatus {

@@ -384,6 +384,7 @@
       "robinhoodUsername": "Robinhood 邮箱或用户名",
       "robinhoodPassword": "Robinhood 密码",
       "robinhoodTotp": "TOTP secret（可选）",
+      "robinhoodChallengeCode": "Robinhood 验证码（如收到）",
       "connectRobinhood": "连接 Robinhood",
       "secure": "安全",
       "readOnly": "只读",

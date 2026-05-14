@@ -27,6 +27,7 @@ export function NotConnectedState({
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [totpSecret, setTotpSecret] = useState("");
+  const [challengeCode, setChallengeCode] = useState("");
 
   const canConnectRobinhood = username.trim().length > 0 && password.length > 0;
 
@@ -37,6 +38,7 @@ export function NotConnectedState({
       username: username.trim(),
       password,
       totp_secret: totpSecret.trim() || undefined,
+      challenge_code: challengeCode.trim() || undefined,
     });
   };
 
@@ -117,6 +119,14 @@ export function NotConnectedState({
                 onChange={(event) => setTotpSecret(event.target.value)}
                 autoComplete="one-time-code"
                 placeholder={t("portfolio.connect.robinhoodTotp")}
+                disabled={connecting}
+              />
+              <Input
+                value={challengeCode}
+                onChange={(event) => setChallengeCode(event.target.value)}
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                placeholder={t("portfolio.connect.robinhoodChallengeCode")}
                 disabled={connecting}
               />
             </div>

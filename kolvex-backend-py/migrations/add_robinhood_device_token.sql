@@ -3,3 +3,6 @@
 
 ALTER TABLE robinhood_connections
 ADD COLUMN IF NOT EXISTS device_token VARCHAR(255);
+
+ALTER TABLE robinhood_connections
+ADD COLUMN IF NOT EXISTS pending_challenge_id VARCHAR(255);
