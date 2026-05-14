@@ -407,8 +407,22 @@
     },
     "tabs": {
       "holdings": "持仓",
+      "transactions": "交易记录",
       "analytics": "分析",
       "aiInsights": "AI 洞察"
+    },
+    "transactions": {
+      "emptyTitle": "暂无已同步交易记录",
+      "emptyDescription": "Robinhood 连接成功后执行同步，即可导入订单历史。",
+      "date": "日期",
+      "side": "方向",
+      "symbol": "代码",
+      "type": "类型",
+      "quantity": "数量",
+      "averagePrice": "均价",
+      "amount": "金额",
+      "status": "状态",
+      "fees": "费用"
     },
     "holdings": {
       "refreshing": "刷新中...",

@@ -798,6 +798,37 @@ class RobinhoodService:
             "profile": connection.get("profile") or {},
         }
 
+    async def get_orders(
+        self,
+        user_id: str,
+        limit: int = 100,
+        offset: int = 0,
+    ) -> Dict[str, Any]:
+        """Return synced Robinhood stock orders for the current user."""
+
+        connection = await self._get_robinhood_connection(user_id)
+        if not connection:
+            return {"orders": [], "total": 0, "limit": limit, "offset": offset}
+
+        query = (
+            self.supabase.table("robinhood_stock_orders")
+            .select(
+                "id, order_id, ticker, side, order_type, quantity, average_price, "
+                "total_amount, state, created_time, executed_time, fees, raw_order",
+                count="exact",
+            )
+            .eq("user_id", user_id)
+            .order("created_time", desc=True)
+            .range(offset, offset + limit - 1)
+        )
+        result = query.execute()
+        return {
+            "orders": result.data or [],
+            "total": result.count or 0,
+            "limit": limit,
+            "offset": offset,
+        }
+
     async def disconnect(self, user_id: str) -> bool:
         portfolio_connection = (
             self.supabase.table("snaptrade_connections")

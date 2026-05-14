@@ -49,6 +49,29 @@ export interface RobinhoodConnectResponse extends RobinhoodStatus {
   message?: string | null;
 }
 
+export interface RobinhoodOrder {
+  id: string;
+  order_id: string;
+  ticker: string;
+  side?: string | null;
+  order_type?: string | null;
+  quantity?: number | null;
+  average_price?: number | null;
+  total_amount?: number | null;
+  state?: string | null;
+  created_time?: string | null;
+  executed_time?: string | null;
+  fees?: number | null;
+  raw_order?: Record<string, unknown> | null;
+}
+
+export interface RobinhoodOrdersResponse {
+  orders: RobinhoodOrder[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
 export async function connectRobinhood(
   payload: RobinhoodConnectRequest
 ): Promise<RobinhoodConnectResponse> {
@@ -80,6 +103,15 @@ export async function getRobinhoodStatus(): Promise<RobinhoodStatus> {
       orders_count: 0,
     };
   }
+}
+
+export async function getRobinhoodOrders(
+  limit = 100,
+  offset = 0
+): Promise<RobinhoodOrdersResponse> {
+  return apiRequest<RobinhoodOrdersResponse>(
+    `/orders?limit=${limit}&offset=${offset}`
+  );
 }
 
 export async function disconnectRobinhood(): Promise<{

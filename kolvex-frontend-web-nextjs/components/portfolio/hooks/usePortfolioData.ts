@@ -15,8 +15,10 @@ import {
 import {
   connectRobinhood as connectRobinhoodBroker,
   disconnectRobinhood,
+  getRobinhoodOrders,
   getRobinhoodStatus,
   syncRobinhood,
+  type RobinhoodOrder,
   type RobinhoodStatus,
 } from "@/lib/robinhoodApi";
 import type {
@@ -33,6 +35,7 @@ export function usePortfolioData({ userId, isOwner }: UsePortfolioDataOptions) {
   const [status, setStatus] = useState<SnapTradeConnectionStatus | null>(null);
   const [robinhoodStatus, setRobinhoodStatus] =
     useState<RobinhoodStatus | null>(null);
+  const [robinhoodOrders, setRobinhoodOrders] = useState<RobinhoodOrder[]>([]);
   const [holdings, setHoldings] = useState<SnapTradeHoldings | null>(null);
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
@@ -45,14 +48,17 @@ export function usePortfolioData({ userId, isOwner }: UsePortfolioDataOptions) {
     setLoading(true);
     try {
       if (isOwner) {
-        const [statusData, holdingsData, robinhoodData] = await Promise.all([
-          getConnectionStatus(),
-          getMyHoldings(),
-          getRobinhoodStatus().catch(() => null),
-        ]);
+        const [statusData, holdingsData, robinhoodData, robinhoodOrdersData] =
+          await Promise.all([
+            getConnectionStatus(),
+            getMyHoldings(),
+            getRobinhoodStatus().catch(() => null),
+            getRobinhoodOrders(250).catch(() => null),
+          ]);
         setStatus(statusData);
         setHoldings(holdingsData);
         setRobinhoodStatus(robinhoodData);
+        setRobinhoodOrders(robinhoodOrdersData?.orders || []);
       } else if (userId) {
         // Load public holdings for other users
         const publicHoldings = await getPublicHoldings(userId);
@@ -237,6 +243,7 @@ export function usePortfolioData({ userId, isOwner }: UsePortfolioDataOptions) {
       setStatus(null);
       setRobinhoodStatus(null);
       setHoldings(null);
+      setRobinhoodOrders([]);
       toast.success("Broker disconnected");
       return true;
     } catch (error: any) {
@@ -299,6 +306,7 @@ export function usePortfolioData({ userId, isOwner }: UsePortfolioDataOptions) {
   return {
     status,
     holdings,
+    robinhoodOrders,
     loading,
     syncing,
     connecting,

@@ -19,6 +19,7 @@ import { NotConnectedState, InitialSyncState } from "./ConnectionStates";
 import { AccountCard } from "./AccountCard";
 import { DisconnectDialog } from "./DisconnectDialog";
 import { PortfolioAIAnalysis } from "./PortfolioAIAnalysis";
+import { RobinhoodTransactionsTable } from "./RobinhoodTransactionsTable";
 
 // Hooks
 import { usePortfolioData } from "./hooks/usePortfolioData";
@@ -45,9 +46,9 @@ export default function PortfolioHoldings({
   const [expandedAccounts, setExpandedAccounts] = useState<Set<string>>(
     new Set()
   );
-  const [activeTab, setActiveTab] = useState<"holdings" | "analytics" | "ai-insights">(
-    "holdings"
-  );
+  const [activeTab, setActiveTab] = useState<
+    "holdings" | "transactions" | "analytics" | "ai-insights"
+  >("holdings");
   const [sparklineDataMap, setSparklineDataMap] = useState<
     Map<string, number[]>
   >(new Map());
@@ -59,6 +60,7 @@ export default function PortfolioHoldings({
   const {
     status,
     holdings,
+    robinhoodOrders,
     loading,
     syncing,
     connecting,
@@ -86,6 +88,17 @@ export default function PortfolioHoldings({
 
   // Get all unique symbols from holdings
   const portfolioSymbols = usePortfolioSymbols(holdings?.accounts);
+  const tabOptions = useMemo(
+    () => [
+      { value: "holdings", label: t("portfolio.tabs.holdings") },
+      ...(isOwner
+        ? [{ value: "transactions", label: t("portfolio.tabs.transactions") }]
+        : []),
+      { value: "analytics", label: t("portfolio.tabs.analytics") },
+      { value: "ai-insights", label: t("portfolio.tabs.aiInsights") },
+    ],
+    [isOwner, t]
+  );
 
   // Handle download
   const handleDownload = useCallback(
@@ -325,13 +338,13 @@ export default function PortfolioHoldings({
         <>
           <div className="flex items-center justify-between gap-4">
             <SwitchTab
-              options={[
-                { value: "holdings", label: t("portfolio.tabs.holdings") },
-                { value: "analytics", label: t("portfolio.tabs.analytics") },
-                { value: "ai-insights", label: t("portfolio.tabs.aiInsights") },
-              ]}
+              options={tabOptions}
               value={activeTab}
-              onValueChange={(v) => setActiveTab(v as "holdings" | "analytics" | "ai-insights")}
+              onValueChange={(v) =>
+                setActiveTab(
+                  v as "holdings" | "transactions" | "analytics" | "ai-insights"
+                )
+              }
               variant="underline"
               size="md"
               className="!w-fit"
@@ -388,6 +401,11 @@ export default function PortfolioHoldings({
                 />
               ))}
             </div>
+          )}
+
+          {/* Transactions Tab Content */}
+          {activeTab === "transactions" && isOwner && (
+            <RobinhoodTransactionsTable orders={robinhoodOrders} />
           )}
 
           {/* Analytics Tab Content */}

@@ -436,8 +436,22 @@
     },
     "tabs": {
       "holdings": "Holdings",
+      "transactions": "Transactions",
       "analytics": "Analytics",
       "aiInsights": "AI Insights"
+    },
+    "transactions": {
+      "emptyTitle": "No synced transactions",
+      "emptyDescription": "Run a sync after Robinhood is connected to import your order history.",
+      "date": "Date",
+      "side": "Side",
+      "symbol": "Symbol",
+      "type": "Type",
+      "quantity": "Quantity",
+      "averagePrice": "Avg price",
+      "amount": "Amount",
+      "status": "Status",
+      "fees": "Fees"
     },
     "holdings": {
       "refreshing": "Refreshing...",

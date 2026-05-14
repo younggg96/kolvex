@@ -3,7 +3,7 @@
 import logging
 from typing import Any, Dict, Optional
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
 from starlette import status as http_status
 
@@ -53,6 +53,29 @@ class RobinhoodConnectResponse(RobinhoodStatusResponse):
     positions_synced: int = 0
     approval_required: bool = False
     message: Optional[str] = None
+
+
+class RobinhoodOrderResponse(BaseModel):
+    id: str
+    order_id: str
+    ticker: str
+    side: Optional[str] = None
+    order_type: Optional[str] = None
+    quantity: Optional[float] = None
+    average_price: Optional[float] = None
+    total_amount: Optional[float] = None
+    state: Optional[str] = None
+    created_time: Optional[str] = None
+    executed_time: Optional[str] = None
+    fees: Optional[float] = None
+    raw_order: Optional[Dict[str, Any]] = None
+
+
+class RobinhoodOrdersResponse(BaseModel):
+    orders: list[RobinhoodOrderResponse]
+    total: int
+    limit: int
+    offset: int
 
 
 @router.get("/status", response_model=RobinhoodStatusResponse)
@@ -176,6 +199,30 @@ async def get_robinhood_profile(
         raise HTTPException(
             status_code=http_status.HTTP_404_NOT_FOUND,
             detail=f"Failed to get Robinhood profile: {str(e)}",
+        )
+
+
+@router.get("/orders", response_model=RobinhoodOrdersResponse)
+async def get_robinhood_orders(
+    limit: int = Query(default=100, ge=1, le=500),
+    offset: int = Query(default=0, ge=0),
+    current_user_id: str = Depends(get_current_user_id),
+    service: RobinhoodService = Depends(get_robinhood_service),
+):
+    try:
+        return RobinhoodOrdersResponse(
+            **await service.get_orders(current_user_id, limit=limit, offset=offset)
+        )
+    except RobinhoodStorageNotReady as e:
+        raise HTTPException(
+            status_code=http_status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=str(e),
+        )
+    except Exception as e:
+        logger.exception("Failed to get Robinhood orders")
+        raise HTTPException(
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to get Robinhood orders: {str(e)}",
         )
 
 
