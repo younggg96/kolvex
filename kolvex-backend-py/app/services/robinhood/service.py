@@ -26,8 +26,9 @@ ROBINHOOD_INQUIRY_URL_TEMPLATE = (
 ROBINHOOD_PROMPT_STATUS_URL_TEMPLATE = (
     "https://api.robinhood.com/push/{challenge_id}/get_prompts_status/"
 )
-ROBINHOOD_DEFAULT_APPROVAL_TIMEOUT_SECONDS = 110
+ROBINHOOD_DEFAULT_APPROVAL_TIMEOUT_SECONDS = 25
 ROBINHOOD_APPROVAL_POLL_INTERVAL_SECONDS = 2.0
+ROBINHOOD_PENDING_WORKFLOW_TTL_SECONDS = 5 * 60
 
 from app.core.supabase import get_supabase_service
 from app.services.portfolio_snapshot_service import get_portfolio_snapshot_service
@@ -210,30 +211,16 @@ class RobinhoodService:
     def _login_from_cache(self, user_id: str) -> None:
         r.login(store_session=True, pickle_name=self._session_name(user_id))
 
-    def _run_device_approval_workflow(
+    def _start_device_approval_workflow(
         self,
         user_id: str,
         workflow_id: str,
         device_token: str,
-        timeout_seconds: int = ROBINHOOD_DEFAULT_APPROVAL_TIMEOUT_SECONDS,
-        poll_interval: float = ROBINHOOD_APPROVAL_POLL_INTERVAL_SECONDS,
-    ) -> None:
-        """Drive Robinhood's pathfinder device-approval workflow to completion.
+    ) -> str:
+        """Kick off Robinhood's pathfinder workflow and return the machine_id.
 
-        Robinhood (since 2024) returns ``verification_workflow`` instead of the
-        legacy ``challenge`` when a new device tries to log in. The mobile push
-        ("Yes, it's me" prompt) is only generated AFTER we explicitly start the
-        workflow, and the login endpoint will keep refusing to issue an access
-        token until we finish it. The flow is:
-
-            1. POST ``/pathfinder/user_machine/`` with the workflow id to obtain
-               a ``machine_id`` (this also triggers the push notification).
-            2. GET ``/pathfinder/inquiries/{machine_id}/user_view/`` to discover
-               the active ``sheriff_challenge`` (push prompt id).
-            3. Poll ``/push/{prompt_id}/get_prompts_status/`` until the user
-               taps "Yes, it's me" (``challenge_status == 'validated'``).
-            4. POST the inquiry user_view with ``status: continue`` so that the
-               next login POST returns ``access_token``.
+        This also persists the machine_id so subsequent /connect calls can
+        resume the SAME mobile push instead of generating a new one.
         """
 
         machine_response = request_post(
@@ -245,7 +232,7 @@ class RobinhoodService:
             },
             json=True,
         )
-        if not machine_response or "id" not in machine_response:
+        if not isinstance(machine_response, dict) or "id" not in machine_response:
             logger.warning(
                 "Robinhood user_machine response was unexpected for user %s: %s",
                 user_id,
@@ -255,18 +242,38 @@ class RobinhoodService:
                 "Robinhood device-approval workflow could not be started. Try again."
             )
         machine_id = machine_response["id"]
+        self._save_pending_machine_id(user_id, machine_id)
         logger.info(
             "Robinhood device-approval workflow started for user %s: machine_id=%s",
             user_id,
             machine_id,
         )
+        return machine_id
+
+    def _drive_device_approval_workflow(
+        self,
+        user_id: str,
+        machine_id: str,
+        timeout_seconds: int = ROBINHOOD_DEFAULT_APPROVAL_TIMEOUT_SECONDS,
+        poll_interval: float = ROBINHOOD_APPROVAL_POLL_INTERVAL_SECONDS,
+    ) -> None:
+        """Poll a previously started workflow until it's approved, then advance it.
+
+        Raises :class:`RobinhoodLoginApprovalRequired` when the user hasn't tapped
+        "Yes, it's me" yet so the caller can return ``approval_required`` to the
+        client. Pending state is preserved on timeout so the next /connect call
+        can resume from the SAME mobile push without re-triggering one.
+        """
 
         inquiry_url = ROBINHOOD_INQUIRY_URL_TEMPLATE.format(machine_id=machine_id)
 
         challenge = self._get_active_sheriff_challenge(inquiry_url)
         if not challenge or not challenge.get("id"):
+            # Inquiry expired or returned nothing - drop the stale state so we
+            # start a fresh workflow on the next /connect.
+            self._clear_pending_workflow_state(user_id)
             raise RobinhoodLoginApprovalRequired(
-                "Robinhood device-approval workflow did not return a challenge."
+                "Robinhood device-approval session expired. Click Connect Robinhood again to retry."
             )
         challenge_id = challenge["id"]
         challenge_type = challenge.get("type")
@@ -288,8 +295,9 @@ class RobinhoodService:
             timeout_seconds=timeout_seconds,
             poll_interval=poll_interval,
         ):
+            # Keep pending state - subsequent /connect call will resume this push.
             raise RobinhoodLoginApprovalRequired(
-                'Robinhood is still waiting for device approval. Open the Robinhood app, tap "Yes, it\'s me", then click Connect Robinhood again.'
+                'Robinhood is still waiting for device approval. Tap "Yes, it\'s me" in the Robinhood app - we\'ll pick up where we left off when you click Connect Robinhood again.'
             )
 
         # Advance the workflow so the next /oauth2/token call gets an access_token.
@@ -302,6 +310,80 @@ class RobinhoodService:
             "Robinhood device-approval workflow completed for user %s",
             user_id,
         )
+
+    # ---- Pending workflow state (Supabase-backed, with graceful fallback) ----
+
+    def _save_pending_machine_id(self, user_id: str, machine_id: str) -> None:
+        try:
+            self.supabase.table("robinhood_connections").update(
+                {
+                    "pending_machine_id": machine_id,
+                    "pending_workflow_started_at": datetime.utcnow().isoformat(),
+                }
+            ).eq("user_id", user_id).execute()
+        except Exception as error:
+            # Tolerate missing columns (migration not applied) - we'll just lose
+            # resume capability and fall back to single-shot polling.
+            logger.warning(
+                "Could not persist Robinhood pending workflow state for user %s: %s",
+                user_id,
+                error,
+            )
+
+    def _clear_pending_workflow_state(self, user_id: str) -> None:
+        try:
+            self.supabase.table("robinhood_connections").update(
+                {
+                    "pending_machine_id": None,
+                    "pending_workflow_started_at": None,
+                }
+            ).eq("user_id", user_id).execute()
+        except Exception as error:
+            logger.warning(
+                "Could not clear Robinhood pending workflow state for user %s: %s",
+                user_id,
+                error,
+            )
+
+    def _get_pending_machine_id(self, user_id: str) -> Optional[str]:
+        """Return the machine_id of an in-progress workflow, if still fresh."""
+        try:
+            result = (
+                self.supabase.table("robinhood_connections")
+                .select("pending_machine_id, pending_workflow_started_at")
+                .eq("user_id", user_id)
+                .execute()
+            )
+        except Exception as error:
+            # Columns might not exist yet (migration pending). That's fine -
+            # we just always start a fresh workflow.
+            logger.debug(
+                "Could not read Robinhood pending workflow state for user %s: %s",
+                user_id,
+                error,
+            )
+            return None
+
+        if not result.data:
+            return None
+        row = result.data[0]
+        machine_id = row.get("pending_machine_id")
+        started_at = row.get("pending_workflow_started_at")
+        if not machine_id:
+            return None
+        if started_at:
+            try:
+                started_dt = datetime.fromisoformat(
+                    started_at.replace("Z", "+00:00")
+                )
+                age_seconds = (
+                    datetime.now(started_dt.tzinfo) - started_dt
+                ).total_seconds()
+                if age_seconds > ROBINHOOD_PENDING_WORKFLOW_TTL_SECONDS:
+                    return None
+            except (TypeError, ValueError):
+                pass
+        return machine_id
 
     def _get_active_sheriff_challenge(self, inquiry_url: str) -> Optional[Dict[str, Any]]:
         inquiry = request_get(inquiry_url, "regular")
@@ -397,6 +479,43 @@ class RobinhoodService:
                 set_login_state(False)
                 update_session("Authorization", None)
 
+        # If we already started a verification workflow on a previous /connect
+        # call and the user has now tapped "Yes, it's me", advance the workflow
+        # in place. We only re-POST to /oauth2/token after that succeeds.
+        pending_machine_id = self._get_pending_machine_id(user_id)
+        if pending_machine_id:
+            try:
+                self._drive_device_approval_workflow(
+                    user_id=user_id,
+                    machine_id=pending_machine_id,
+                )
+            except RobinhoodLoginApprovalRequired:
+                # User hasn't approved yet - keep state, surface to caller.
+                raise
+            self._clear_pending_workflow_state(user_id)
+            data = request_post(login_url(), payload)
+            if data and "access_token" in data:
+                self._set_pending_challenge_id(user_id, None)
+                token = f"{data['token_type']} {data['access_token']}"
+                update_session("Authorization", token)
+                set_login_state(True)
+                data["detail"] = (
+                    "logged in after Robinhood device approval (resumed workflow)."
+                )
+                with pickle_path.open("wb") as f:
+                    pickle.dump(
+                        {
+                            "token_type": data["token_type"],
+                            "access_token": data["access_token"],
+                            "refresh_token": data["refresh_token"],
+                            "device_token": payload["device_token"],
+                        },
+                        f,
+                    )
+                return data
+            # Otherwise fall through to normal handling (verification_workflow
+            # might have rotated, fresh challenge appeared, etc.)
+
         pending_challenge_id = self._get_pending_challenge_id(user_id)
         if pending_challenge_id:
             if challenge_code:
@@ -444,16 +563,24 @@ class RobinhoodService:
             )
 
         # Modern (2024+) Robinhood flow: device approval is delivered via a
-        # `verification_workflow`. We must run that workflow ourselves before
-        # the login endpoint will return an access token.
+        # `verification_workflow`. We start the pathfinder workflow (which
+        # triggers a "Yes, it's me" mobile push), block briefly to wait for
+        # the user, then re-POST /oauth2/token. If the user doesn't tap in
+        # time we persist the workflow id so the next /connect call resumes
+        # the same push instead of generating another one.
         verification_workflow = data.get("verification_workflow") or {}
         workflow_id = verification_workflow.get("id")
         if workflow_id:
-            self._run_device_approval_workflow(
+            machine_id = self._start_device_approval_workflow(
                 user_id=user_id,
                 workflow_id=workflow_id,
                 device_token=payload["device_token"],
             )
+            self._drive_device_approval_workflow(
+                user_id=user_id,
+                machine_id=machine_id,
+            )
+            self._clear_pending_workflow_state(user_id)
             data = request_post(login_url(), payload)
             if not data:
                 raise Exception(

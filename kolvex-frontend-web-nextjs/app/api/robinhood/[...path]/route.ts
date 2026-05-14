@@ -4,6 +4,14 @@ import { createServerSupabaseClient } from "@/lib/supabase/server";
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_BACKEND_API_URL || "http://localhost:8080";
 
+// /connect blocks on the Robinhood device-approval workflow (waiting for the
+// user to tap "Yes, it's me"). Default Vercel maxDuration on the Hobby plan
+// is 10s, which is below our backend's 25s polling window. Bumping to 60s
+// guarantees the backend response can reach the browser.
+export const runtime = "nodejs";
+export const maxDuration = 60;
+export const dynamic = "force-dynamic";
+
 type RouteParams = { params: Promise<{ path: string[] }> };
 
 async function proxyRequest(

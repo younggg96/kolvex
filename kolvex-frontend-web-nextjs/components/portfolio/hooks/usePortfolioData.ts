@@ -109,26 +109,86 @@ export function usePortfolioData({ userId, isOwner }: UsePortfolioDataOptions) {
       challenge_code?: string;
     }) => {
       setConnecting(true);
+
+      // Total wall-clock cap on the auto-resume polling (Robinhood's
+      // verification workflow itself expires after ~5 min anyway).
+      const maxTotalMs = 3 * 60 * 1000;
+      const startedAt = Date.now();
+
+      const showApprovalToast = (message?: string | null) => {
+        toast.info(
+          message ||
+            "Tap \"Yes, it's me\" on the Robinhood app — we'll detect it automatically.",
+          { id: "robinhood-approval", duration: 4000 }
+        );
+      };
+
       try {
-        const result = await connectRobinhoodBroker(credentials);
-        if (result.setup_required) {
-          toast.error(
-            result.message ||
-              "Robinhood database setup is missing. Apply the Supabase migration and try again."
-          );
+        while (true) {
+          let result: Awaited<ReturnType<typeof connectRobinhoodBroker>> | null =
+            null;
+          let connectError: unknown = null;
+          try {
+            result = await connectRobinhoodBroker(credentials);
+          } catch (error) {
+            connectError = error;
+          }
+
+          // /connect can fail mid-flight (Vercel/network timeout while the
+          // backend is still polling Robinhood). The backend keeps running
+          // and may have actually finished the sync, so always re-check
+          // /status before declaring failure.
+          if (!result) {
+            try {
+              const status = await getRobinhoodStatus();
+              if (status.is_connected) {
+                await loadData();
+                toast.success("Robinhood connected and synced", {
+                  id: "robinhood-approval",
+                });
+                return;
+              }
+            } catch {
+              // ignore - fall through to error handling below
+            }
+            throw connectError;
+          }
+
+          if (result.setup_required) {
+            toast.error(
+              result.message ||
+                "Robinhood database setup is missing. Apply the Supabase migration and try again.",
+              { id: "robinhood-approval" }
+            );
+            return;
+          }
+
+          if (result.approval_required) {
+            showApprovalToast(result.message);
+            if (Date.now() - startedAt >= maxTotalMs) {
+              toast.error(
+                "Still waiting on Robinhood device approval. Tap \"Yes, it's me\" and click Connect Robinhood again.",
+                { id: "robinhood-approval" }
+              );
+              return;
+            }
+            // Resume the same workflow on the next loop iteration. The backend
+            // will reuse the existing push (no new mobile notification) and
+            // poll for ~25s before returning.
+            await new Promise((resolve) => setTimeout(resolve, 1500));
+            continue;
+          }
+
+          await loadData();
+          toast.success("Robinhood connected and synced", {
+            id: "robinhood-approval",
+          });
           return;
         }
-        if (result.approval_required) {
-          toast.info(
-            result.message ||
-              "Approve the Robinhood login on your phone, then click Connect Robinhood again."
-          );
-          return;
-        }
-        await loadData();
-        toast.success("Robinhood connected and synced");
       } catch (error: any) {
-        toast.error(error.message || "Failed to connect Robinhood");
+        toast.error(error?.message || "Failed to connect Robinhood", {
+          id: "robinhood-approval",
+        });
       } finally {
         setConnecting(false);
       }
