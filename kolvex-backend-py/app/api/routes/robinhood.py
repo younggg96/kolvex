@@ -15,6 +15,10 @@ from app.services.robinhood.service import (
     RobinhoodService,
     get_robinhood_service,
 )
+from app.services.user_api_keys_service import (
+    UserApiKeysService,
+    get_user_api_keys_service,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -70,6 +74,19 @@ class RobinhoodOrderResponse(BaseModel):
     executed_time: Optional[str] = None
     fees: Optional[float] = None
     raw_order: Optional[Dict[str, Any]] = None
+    cost_basis: Optional[float] = None
+    realized_pnl: Optional[float] = None
+    realized_pnl_percent: Optional[float] = None
+    wash_sale_flag: bool = False
+    wash_sale_reason: Optional[str] = None
+
+
+class RobinhoodWashSaleRiskSymbol(BaseModel):
+    ticker: str
+    last_loss_sale_at: str
+    risk_expires_at: str
+    days_remaining: int
+    loss_amount: float
 
 
 class RobinhoodOrdersResponse(BaseModel):
@@ -77,6 +94,24 @@ class RobinhoodOrdersResponse(BaseModel):
     total: int
     limit: int
     offset: int
+    has_more: bool = False
+    wash_sale_risk_symbols: list[RobinhoodWashSaleRiskSymbol] = Field(
+        default_factory=list
+    )
+
+
+class RobinhoodAnalyzeOrdersRequest(BaseModel):
+    provider: str = Field(default="openai")
+    model: str = Field(default="gpt-4o-mini")
+    limit: int = Field(default=200, ge=10, le=500)
+
+
+class RobinhoodAnalyzeOrdersResponse(BaseModel):
+    analysis: str
+    provider: str
+    model: str
+    orders_analyzed: int
+    generated_at: str
 
 
 @router.get("/status", response_model=RobinhoodStatusResponse)
@@ -213,12 +248,18 @@ async def get_robinhood_profile(
 async def get_robinhood_orders(
     limit: int = Query(default=100, ge=1, le=500),
     offset: int = Query(default=0, ge=0),
+    symbol: Optional[str] = Query(default=None),
     current_user_id: str = Depends(get_current_user_id),
     service: RobinhoodService = Depends(get_robinhood_service),
 ):
     try:
         return RobinhoodOrdersResponse(
-            **await service.get_orders(current_user_id, limit=limit, offset=offset)
+            **await service.get_orders(
+                current_user_id,
+                limit=limit,
+                offset=offset,
+                symbol=symbol,
+            )
         )
     except RobinhoodStorageNotReady as e:
         raise HTTPException(
@@ -230,6 +271,57 @@ async def get_robinhood_orders(
         raise HTTPException(
             status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to get Robinhood orders: {str(e)}",
+        )
+
+
+@router.get("/wash-sale-risk")
+async def get_robinhood_wash_sale_risk(
+    current_user_id: str = Depends(get_current_user_id),
+    service: RobinhoodService = Depends(get_robinhood_service),
+):
+    try:
+        return await service.get_wash_sale_risk(current_user_id)
+    except Exception as e:
+        logger.exception("Failed to get Robinhood wash sale risk")
+        raise HTTPException(
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to get Robinhood wash sale risk: {str(e)}",
+        )
+
+
+@router.post("/orders/analyze", response_model=RobinhoodAnalyzeOrdersResponse)
+async def analyze_robinhood_orders(
+    request: RobinhoodAnalyzeOrdersRequest,
+    current_user_id: str = Depends(get_current_user_id),
+    service: RobinhoodService = Depends(get_robinhood_service),
+    api_keys_service: UserApiKeysService = Depends(get_user_api_keys_service),
+):
+    try:
+        user_api_keys = await api_keys_service.get_keys_dict(current_user_id)
+        if request.provider not in user_api_keys:
+            raise HTTPException(
+                status_code=http_status.HTTP_400_BAD_REQUEST,
+                detail=(
+                    f"Missing user API key for provider '{request.provider}'. "
+                    "Add it in Settings before running AI trade analysis."
+                ),
+            )
+        return RobinhoodAnalyzeOrdersResponse(
+            **await service.analyze_orders(
+                user_id=current_user_id,
+                provider=request.provider,
+                model=request.model,
+                user_api_keys=user_api_keys,
+                limit=request.limit,
+            )
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception("Failed to analyze Robinhood orders")
+        raise HTTPException(
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to analyze Robinhood orders: {str(e)}",
         )
 
 

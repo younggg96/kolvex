@@ -80,6 +80,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       return proxyRequest(request, "/profile", { method: "GET" });
     case "orders":
       return proxyRequest(request, "/orders", { method: "GET" });
+    case "wash-sale-risk":
+      return proxyRequest(request, "/wash-sale-risk", { method: "GET" });
     default:
       return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
@@ -96,6 +98,14 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       });
     case "sync":
       return proxyRequest(request, "/sync", { method: "POST" });
+    case "orders":
+      if (path[1] === "analyze") {
+        return proxyRequest(request, "/orders/analyze", {
+          method: "POST",
+          hasBody: true,
+        });
+      }
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
     case "reset-auth":
       return proxyRequest(request, "/reset-auth", { method: "POST" });
     default:

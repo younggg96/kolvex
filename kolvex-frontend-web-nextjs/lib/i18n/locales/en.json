@@ -453,7 +453,15 @@
       "averagePrice": "Avg price",
       "amount": "Amount",
       "status": "Status",
-      "fees": "Fees"
+      "fees": "Fees",
+      "pnl": "P&L",
+      "washSale": "Wash sale",
+      "washSaleRisk": "Wash risk",
+      "washRiskTitle": "Buying these symbols now may trigger wash sale treatment",
+      "loadMore": "Load more",
+      "exportCsv": "Export CSV",
+      "analyze": "AI analyze",
+      "aiAnalysis": "AI trade analysis"
     },
     "holdings": {
       "refreshing": "Refreshing...",

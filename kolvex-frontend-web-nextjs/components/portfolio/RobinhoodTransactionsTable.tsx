@@ -1,8 +1,18 @@
 "use client";
 
-import React from "react";
-import { ArrowDownRight, ArrowUpRight, ReceiptText } from "lucide-react";
+import React, { useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
+import {
+  ArrowDownRight,
+  ArrowUpRight,
+  Brain,
+  Download,
+  Loader2,
+  ReceiptText,
+  ShieldAlert,
+} from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Table,
   TableBody,
@@ -13,10 +23,26 @@ import {
 } from "@/components/ui/table";
 import { formatCurrency } from "@/lib/snaptradeApi";
 import { useTranslation } from "@/lib/i18n";
-import type { RobinhoodOrder } from "@/lib/robinhoodApi";
+import {
+  analyzeRobinhoodOrders,
+  getRobinhoodOrders,
+  type RobinhoodOrder,
+  type RobinhoodWashSaleRiskSymbol,
+} from "@/lib/robinhoodApi";
+import { getAvailableProviders } from "@/lib/api/userApiKeysApi";
+import {
+  MODEL_CONFIGS,
+  PROVIDER_NAME_TO_ID,
+  getFirstAvailableModelId,
+} from "@/components/chat/ChatInput";
 
 interface RobinhoodTransactionsTableProps {
   orders: RobinhoodOrder[];
+  total: number;
+  hasMore: boolean;
+  loading: boolean;
+  washSaleRisks: RobinhoodWashSaleRiskSymbol[];
+  onLoadMore: () => Promise<void>;
 }
 
 function formatShares(value?: number | null) {
@@ -44,8 +70,117 @@ function normalizeLabel(value?: string | null) {
 
 export function RobinhoodTransactionsTable({
   orders,
+  total,
+  hasMore,
+  loading,
+  washSaleRisks,
+  onLoadMore,
 }: RobinhoodTransactionsTableProps) {
   const { t } = useTranslation();
+  const [availableProviders, setAvailableProviders] = useState<string[]>([]);
+  const [providersLoaded, setProvidersLoaded] = useState(false);
+  const [selectedModel, setSelectedModel] = useState("gpt-4o-mini");
+  const [analyzing, setAnalyzing] = useState(false);
+  const [analysis, setAnalysis] = useState<string | null>(null);
+  const provider = useMemo(() => {
+    const config = MODEL_CONFIGS.find((model) => model.id === selectedModel);
+    return config ? PROVIDER_NAME_TO_ID[config.provider] : "openai";
+  }, [selectedModel]);
+
+  useEffect(() => {
+    getAvailableProviders()
+      .then((result) => {
+        setAvailableProviders(result.available_providers);
+        const firstModel = getFirstAvailableModelId(result.available_providers);
+        if (firstModel) setSelectedModel(firstModel);
+      })
+      .catch(() => setAvailableProviders([]))
+      .finally(() => setProvidersLoaded(true));
+  }, []);
+
+  const availableModels = useMemo(
+    () =>
+      MODEL_CONFIGS.filter((model) => {
+        const providerId = PROVIDER_NAME_TO_ID[model.provider];
+        return availableProviders.includes(providerId);
+      }),
+    [availableProviders]
+  );
+
+  const handleExportCsv = async () => {
+    try {
+      const allOrders: RobinhoodOrder[] = [];
+      let offset = 0;
+      const limit = 500;
+      while (true) {
+        const page = await getRobinhoodOrders(limit, offset);
+        allOrders.push(...page.orders);
+        if (!page.has_more) break;
+        offset += limit;
+      }
+      const headers = [
+        "date",
+        "side",
+        "ticker",
+        "order_type",
+        "quantity",
+        "average_price",
+        "total_amount",
+        "realized_pnl",
+        "realized_pnl_percent",
+        "wash_sale_flag",
+        "state",
+        "fees",
+        "order_id",
+      ];
+      const csv = [
+        headers.join(","),
+        ...allOrders.map((order) =>
+          headers
+            .map((key) => {
+              const value =
+                key === "date"
+                  ? order.executed_time || order.created_time || ""
+                  : (order as any)[key] ?? "";
+              return `"${String(value).replace(/"/g, '""')}"`;
+            })
+            .join(",")
+        ),
+      ].join("\n");
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `robinhood-transactions-${new Date()
+        .toISOString()
+        .slice(0, 10)}.csv`;
+      link.click();
+      URL.revokeObjectURL(url);
+    } catch (error: any) {
+      toast.error(error?.message || "Failed to export Robinhood transactions");
+    }
+  };
+
+  const handleAnalyze = async () => {
+    if (providersLoaded && availableModels.length === 0) {
+      toast.error("Add an AI API key in Settings before analyzing trades");
+      return;
+    }
+    setAnalyzing(true);
+    try {
+      const result = await analyzeRobinhoodOrders({
+        provider,
+        model: selectedModel,
+        limit: 300,
+      });
+      setAnalysis(result.analysis);
+      toast.success("AI trade analysis complete");
+    } catch (error: any) {
+      toast.error(error?.message || "Failed to analyze trades");
+    } finally {
+      setAnalyzing(false);
+    }
+  };
 
   if (orders.length === 0) {
     return (
@@ -64,8 +199,85 @@ export function RobinhoodTransactionsTable({
   }
 
   return (
-    <div className="overflow-x-auto rounded-lg border border-border bg-card">
-      <Table>
+    <div className="space-y-3">
+      {washSaleRisks.length > 0 && (
+        <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-3">
+          <div className="flex items-center gap-2 text-sm font-semibold text-amber-700 dark:text-amber-300">
+            <ShieldAlert className="h-4 w-4" />
+            {t("portfolio.transactions.washRiskTitle")}
+          </div>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {washSaleRisks.map((risk) => (
+              <Badge key={risk.ticker} variant="outline">
+                {risk.ticker} · {risk.days_remaining}d
+              </Badge>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div className="text-xs text-muted-foreground">
+          {orders.length} / {total} {t("portfolio.tabs.transactions")}
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <select
+            value={selectedModel}
+            onChange={(event) => setSelectedModel(event.target.value)}
+            disabled={!providersLoaded || availableModels.length === 0}
+            className="h-8 rounded-md border border-border bg-background px-2 text-xs"
+          >
+            {availableModels.map((model) => (
+              <option key={model.id} value={model.id}>
+                {model.name}
+              </option>
+            ))}
+          </select>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleAnalyze}
+            disabled={
+              analyzing ||
+              orders.length === 0 ||
+              !providersLoaded ||
+              availableModels.length === 0
+            }
+            className="gap-2"
+          >
+            {analyzing ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Brain className="h-4 w-4" />
+            )}
+            {t("portfolio.transactions.analyze")}
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleExportCsv}
+            className="gap-2"
+          >
+            <Download className="h-4 w-4" />
+            {t("portfolio.transactions.exportCsv")}
+          </Button>
+        </div>
+      </div>
+
+      {analysis && (
+        <div className="rounded-lg border border-border bg-card p-4">
+          <div className="mb-2 flex items-center gap-2 text-sm font-semibold">
+            <Brain className="h-4 w-4 text-primary" />
+            {t("portfolio.transactions.aiAnalysis")}
+          </div>
+          <div className="whitespace-pre-wrap text-sm leading-relaxed text-muted-foreground">
+            {analysis}
+          </div>
+        </div>
+      )}
+
+      <div className="overflow-x-auto rounded-lg border border-border bg-card">
+        <Table>
         <TableHeader>
           <TableRow>
             <TableHead className="pl-4">
@@ -83,10 +295,14 @@ export function RobinhoodTransactionsTable({
             <TableHead className="text-right">
               {t("portfolio.transactions.amount")}
             </TableHead>
-            <TableHead>{t("portfolio.transactions.status")}</TableHead>
-            <TableHead className="pr-4 text-right">
-              {t("portfolio.transactions.fees")}
-            </TableHead>
+                <TableHead>{t("portfolio.transactions.status")}</TableHead>
+                <TableHead className="text-right">
+                  {t("portfolio.transactions.pnl")}
+                </TableHead>
+                <TableHead>{t("portfolio.transactions.washSale")}</TableHead>
+                <TableHead className="pr-4 text-right">
+                  {t("portfolio.transactions.fees")}
+                </TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -134,6 +350,36 @@ export function RobinhoodTransactionsTable({
                     {normalizeLabel(order.state)}
                   </Badge>
                 </TableCell>
+                <TableCell
+                  className={
+                    order.realized_pnl === null || order.realized_pnl === undefined
+                      ? "text-right text-muted-foreground"
+                      : order.realized_pnl >= 0
+                        ? "text-right font-medium text-green-600 dark:text-green-400"
+                        : "text-right font-medium text-red-600 dark:text-red-400"
+                  }
+                >
+                  {order.realized_pnl === null || order.realized_pnl === undefined
+                    ? "-"
+                    : `${formatCurrency(order.realized_pnl)}${
+                        order.realized_pnl_percent !== null &&
+                        order.realized_pnl_percent !== undefined
+                          ? ` (${order.realized_pnl_percent.toFixed(2)}%)`
+                          : ""
+                      }`}
+                </TableCell>
+                <TableCell>
+                  {order.wash_sale_flag ? (
+                    <Badge
+                      variant="outline"
+                      className="border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-300"
+                    >
+                      {t("portfolio.transactions.washSaleRisk")}
+                    </Badge>
+                  ) : (
+                    <span className="text-muted-foreground">-</span>
+                  )}
+                </TableCell>
                 <TableCell className="pr-4 text-right tabular-nums text-muted-foreground">
                   {formatCurrency(order.fees || 0)}
                 </TableCell>
@@ -141,8 +387,22 @@ export function RobinhoodTransactionsTable({
             );
           })}
         </TableBody>
-      </Table>
+        </Table>
+      </div>
+      {hasMore && (
+        <div className="flex justify-center">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onLoadMore}
+            disabled={loading}
+            className="gap-2"
+          >
+            {loading && <Loader2 className="h-4 w-4 animate-spin" />}
+            {t("portfolio.transactions.loadMore")}
+          </Button>
+        </div>
+      )}
     </div>
   );
 }
-

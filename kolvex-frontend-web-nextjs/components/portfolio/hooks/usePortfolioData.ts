@@ -37,6 +37,12 @@ export function usePortfolioData({ userId, isOwner }: UsePortfolioDataOptions) {
   const [robinhoodStatus, setRobinhoodStatus] =
     useState<RobinhoodStatus | null>(null);
   const [robinhoodOrders, setRobinhoodOrders] = useState<RobinhoodOrder[]>([]);
+  const [robinhoodOrdersTotal, setRobinhoodOrdersTotal] = useState(0);
+  const [robinhoodOrdersHasMore, setRobinhoodOrdersHasMore] = useState(false);
+  const [robinhoodWashSaleRisks, setRobinhoodWashSaleRisks] = useState<
+    Awaited<ReturnType<typeof getRobinhoodOrders>>["wash_sale_risk_symbols"]
+  >([]);
+  const [loadingRobinhoodOrders, setLoadingRobinhoodOrders] = useState(false);
   const [holdings, setHoldings] = useState<SnapTradeHoldings | null>(null);
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
@@ -44,23 +50,49 @@ export function usePortfolioData({ userId, isOwner }: UsePortfolioDataOptions) {
   const [resettingRobinhoodAuth, setResettingRobinhoodAuth] = useState(false);
   const [disconnecting, setDisconnecting] = useState(false);
   const [copied, setCopied] = useState(false);
+  const robinhoodOrdersPageSize = 100;
+
+  const loadRobinhoodOrders = useCallback(
+    async (reset = false, offsetOverride = 0) => {
+      setLoadingRobinhoodOrders(true);
+      try {
+        const result = await getRobinhoodOrders(
+          robinhoodOrdersPageSize,
+          reset ? 0 : offsetOverride
+        );
+        setRobinhoodOrders((prev) =>
+          reset ? result.orders : [...prev, ...result.orders]
+        );
+        setRobinhoodOrdersTotal(result.total);
+        setRobinhoodOrdersHasMore(result.has_more);
+        setRobinhoodWashSaleRisks(result.wash_sale_risk_symbols || []);
+      } catch (error) {
+        console.warn("Failed to load Robinhood orders:", error);
+      } finally {
+        setLoadingRobinhoodOrders(false);
+      }
+    },
+    []
+  );
+
+  const handleLoadMoreRobinhoodOrders = useCallback(async () => {
+    await loadRobinhoodOrders(false, robinhoodOrders.length);
+  }, [loadRobinhoodOrders, robinhoodOrders.length]);
 
   // Load connection status and holdings data
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
       if (isOwner) {
-        const [statusData, holdingsData, robinhoodData, robinhoodOrdersData] =
-          await Promise.all([
+        const [statusData, holdingsData, robinhoodData] = await Promise.all([
             getConnectionStatus(),
             getMyHoldings(),
             getRobinhoodStatus().catch(() => null),
-            getRobinhoodOrders(250).catch(() => null),
           ]);
         setStatus(statusData);
         setHoldings(holdingsData);
         setRobinhoodStatus(robinhoodData);
-        setRobinhoodOrders(robinhoodOrdersData?.orders || []);
+        await loadRobinhoodOrders(true, 0);
       } else if (userId) {
         // Load public holdings for other users
         const publicHoldings = await getPublicHoldings(userId);
@@ -89,7 +121,7 @@ export function usePortfolioData({ userId, isOwner }: UsePortfolioDataOptions) {
     } finally {
       setLoading(false);
     }
-  }, [isOwner, userId]);
+  }, [isOwner, userId, loadRobinhoodOrders]);
 
   useEffect(() => {
     loadData();
@@ -259,6 +291,9 @@ export function usePortfolioData({ userId, isOwner }: UsePortfolioDataOptions) {
       setRobinhoodStatus(null);
       setHoldings(null);
       setRobinhoodOrders([]);
+      setRobinhoodOrdersTotal(0);
+      setRobinhoodOrdersHasMore(false);
+      setRobinhoodWashSaleRisks([]);
       toast.success("Broker disconnected");
       return true;
     } catch (error: any) {
@@ -322,6 +357,10 @@ export function usePortfolioData({ userId, isOwner }: UsePortfolioDataOptions) {
     status,
     holdings,
     robinhoodOrders,
+    robinhoodOrdersTotal,
+    robinhoodOrdersHasMore,
+    robinhoodWashSaleRisks,
+    loadingRobinhoodOrders,
     loading,
     syncing,
     connecting,
@@ -332,6 +371,8 @@ export function usePortfolioData({ userId, isOwner }: UsePortfolioDataOptions) {
     handleConnect,
     handleConnectRobinhood,
     handleResetRobinhoodAuth,
+    loadRobinhoodOrders,
+    handleLoadMoreRobinhoodOrders,
     handleSync,
     handleTogglePublic,
     handleDisconnect,

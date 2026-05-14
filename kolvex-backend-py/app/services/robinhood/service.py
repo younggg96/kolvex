@@ -8,10 +8,12 @@ import logging
 import os
 import pickle
 import time
-from datetime import date, datetime
+from collections import defaultdict, deque
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set
 
+from langchain_core.messages import HumanMessage, SystemMessage
 import pyotp
 import robin_stocks.robinhood as r
 from robin_stocks.robinhood.authentication import generate_device_token, respond_to_challenge
@@ -31,6 +33,7 @@ ROBINHOOD_APPROVAL_POLL_INTERVAL_SECONDS = 2.0
 ROBINHOOD_PENDING_WORKFLOW_TTL_SECONDS = 5 * 60
 
 from app.core.supabase import get_supabase_service
+from app.agent.llm import get_llm
 from app.services.portfolio_snapshot_service import get_portfolio_snapshot_service
 
 logger = logging.getLogger(__name__)
@@ -78,6 +81,18 @@ def _safe_str(value: object, default: str = "") -> str:
 
 def _parse_robinhood_timestamp(value: str | None) -> str | None:
     if not value:
+        return None
+
+
+def _parse_order_datetime(value: str | None) -> datetime | None:
+    if not value:
+        return None
+    try:
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+        if parsed.tzinfo is None:
+            parsed = parsed.replace(tzinfo=timezone.utc)
+        return parsed
+    except (TypeError, ValueError):
         return None
     try:
         return datetime.fromisoformat(value.replace("Z", "+00:00")).isoformat()
@@ -1111,31 +1126,272 @@ class RobinhoodService:
         user_id: str,
         limit: int = 100,
         offset: int = 0,
+        symbol: str | None = None,
     ) -> Dict[str, Any]:
         """Return synced Robinhood stock orders for the current user."""
 
         connection = await self._get_robinhood_connection(user_id)
         if not connection:
-            return {"orders": [], "total": 0, "limit": limit, "offset": offset}
+            return {
+                "orders": [],
+                "total": 0,
+                "limit": limit,
+                "offset": offset,
+                "has_more": False,
+                "wash_sale_risk_symbols": [],
+            }
 
-        query = (
+        all_query = (
             self.supabase.table("robinhood_stock_orders")
             .select(
                 "id, order_id, ticker, side, order_type, quantity, average_price, "
                 "total_amount, state, created_time, executed_time, fees, raw_order",
-                count="exact",
             )
             .eq("user_id", user_id)
-            .order("created_time", desc=True)
-            .range(offset, offset + limit - 1)
+            .order("created_time", desc=False)
         )
-        result = query.execute()
+        if symbol:
+            all_query = all_query.eq("ticker", symbol.upper())
+        all_result = all_query.execute()
+        enriched_orders = self._enrich_orders(all_result.data or [])
+        total = len(enriched_orders)
+        page = list(reversed(enriched_orders))[offset : offset + limit]
+
         return {
-            "orders": result.data or [],
-            "total": result.count or 0,
+            "orders": page,
+            "total": total,
             "limit": limit,
             "offset": offset,
+            "has_more": offset + limit < total,
+            "wash_sale_risk_symbols": self._current_wash_sale_risk_symbols(
+                enriched_orders
+            ),
         }
+
+    async def get_wash_sale_risk(self, user_id: str) -> Dict[str, Any]:
+        connection = await self._get_robinhood_connection(user_id)
+        if not connection:
+            return {"symbols": [], "generated_at": datetime.utcnow().isoformat()}
+
+        result = (
+            self.supabase.table("robinhood_stock_orders")
+            .select(
+                "id, order_id, ticker, side, order_type, quantity, average_price, "
+                "total_amount, state, created_time, executed_time, fees, raw_order"
+            )
+            .eq("user_id", user_id)
+            .order("created_time", desc=False)
+            .execute()
+        )
+        enriched = self._enrich_orders(result.data or [])
+        return {
+            "symbols": self._current_wash_sale_risk_symbols(enriched),
+            "generated_at": datetime.utcnow().isoformat(),
+        }
+
+    async def analyze_orders(
+        self,
+        user_id: str,
+        provider: str,
+        model: str,
+        user_api_keys: dict[str, str] | None = None,
+        limit: int = 200,
+    ) -> Dict[str, Any]:
+        orders_payload = await self.get_orders(user_id, limit=limit, offset=0)
+        orders = orders_payload["orders"]
+        if not orders:
+            raise Exception("No Robinhood orders available to analyze")
+
+        compact_orders = [
+            {
+                "date": order.get("executed_time") or order.get("created_time"),
+                "ticker": order.get("ticker"),
+                "side": order.get("side"),
+                "quantity": order.get("quantity"),
+                "average_price": order.get("average_price"),
+                "total_amount": order.get("total_amount"),
+                "realized_pnl": order.get("realized_pnl"),
+                "wash_sale_flag": order.get("wash_sale_flag"),
+                "state": order.get("state"),
+            }
+            for order in orders[:limit]
+        ]
+        summary = self._orders_summary(orders)
+        risk_symbols = orders_payload.get("wash_sale_risk_symbols", [])
+
+        llm = get_llm(
+            provider=provider,
+            model=model,
+            temperature=0.2,
+            user_api_keys=user_api_keys,
+        )
+        messages = [
+            SystemMessage(
+                content=(
+                    "You are a disciplined trading journal coach. Analyze the user's "
+                    "Robinhood order history. Be specific, practical, and concise. "
+                    "Do not give personalized tax advice; flag wash sale risk as "
+                    "informational only and recommend consulting a tax professional."
+                )
+            ),
+            HumanMessage(
+                content=(
+                    "Analyze these trades. Return markdown with sections: "
+                    "Summary, Best Trades, Worst Trades, Behavioral Patterns, "
+                    "Risk Controls, Wash Sale Notes, Next Actions.\n\n"
+                    f"Summary: {json.dumps(summary, default=str)}\n"
+                    f"Current wash-sale-risk symbols: {json.dumps(risk_symbols, default=str)}\n"
+                    f"Orders: {json.dumps(compact_orders, default=str)}"
+                )
+            ),
+        ]
+        response = await asyncio.to_thread(llm.invoke, messages)
+        content = getattr(response, "content", str(response))
+        return {
+            "analysis": content,
+            "provider": provider,
+            "model": model,
+            "orders_analyzed": len(compact_orders),
+            "generated_at": datetime.utcnow().isoformat(),
+        }
+
+    def _orders_summary(self, orders: List[Dict[str, Any]]) -> Dict[str, Any]:
+        realized = [
+            _safe_float(order.get("realized_pnl"))
+            for order in orders
+            if order.get("realized_pnl") is not None
+        ]
+        return {
+            "orders_count": len(orders),
+            "realized_pnl": round(sum(realized), 2),
+            "winning_sells": len([pnl for pnl in realized if pnl > 0]),
+            "losing_sells": len([pnl for pnl in realized if pnl < 0]),
+            "wash_sale_flags": len(
+                [order for order in orders if order.get("wash_sale_flag")]
+            ),
+        }
+
+    def _enrich_orders(self, rows: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        rows = sorted(
+            rows,
+            key=lambda row: (
+                _parse_order_datetime(row.get("executed_time") or row.get("created_time"))
+                or datetime.min.replace(tzinfo=timezone.utc)
+            ),
+        )
+        lots: dict[str, deque[dict[str, float]]] = defaultdict(deque)
+        enriched: List[Dict[str, Any]] = []
+        buys_by_symbol: dict[str, List[datetime]] = defaultdict(list)
+        loss_sales_by_symbol: dict[str, List[dict[str, Any]]] = defaultdict(list)
+
+        for row in rows:
+            order = dict(row)
+            ticker = _safe_str(order.get("ticker")).upper()
+            side = _safe_str(order.get("side")).lower()
+            state = _safe_str(order.get("state")).lower()
+            quantity = _safe_float(order.get("quantity"))
+            price = _safe_float(order.get("average_price"))
+            order_dt = _parse_order_datetime(
+                order.get("executed_time") or order.get("created_time")
+            )
+
+            order["realized_pnl"] = None
+            order["realized_pnl_percent"] = None
+            order["wash_sale_flag"] = False
+            order["wash_sale_reason"] = None
+
+            if state != "filled" or not ticker or not order_dt or quantity <= 0 or price <= 0:
+                enriched.append(order)
+                continue
+
+            if side == "buy":
+                lots[ticker].append({"quantity": quantity, "price": price})
+                buys_by_symbol[ticker].append(order_dt)
+            elif side == "sell":
+                remaining = quantity
+                cost_basis = 0.0
+                while remaining > 0 and lots[ticker]:
+                    lot = lots[ticker][0]
+                    matched = min(remaining, lot["quantity"])
+                    cost_basis += matched * lot["price"]
+                    lot["quantity"] -= matched
+                    remaining -= matched
+                    if lot["quantity"] <= 1e-9:
+                        lots[ticker].popleft()
+                if remaining > 0:
+                    cost_basis += remaining * price
+                proceeds = quantity * price
+                realized_pnl = proceeds - cost_basis
+                order["cost_basis"] = round(cost_basis, 4)
+                order["realized_pnl"] = round(realized_pnl, 4)
+                order["realized_pnl_percent"] = (
+                    round((realized_pnl / cost_basis) * 100, 2)
+                    if cost_basis > 0
+                    else None
+                )
+                if realized_pnl < 0:
+                    loss_sales_by_symbol[ticker].append(
+                        {
+                            "date": order_dt,
+                            "loss_amount": abs(realized_pnl),
+                            "order_id": order.get("order_id"),
+                        }
+                    )
+            enriched.append(order)
+
+        for order in enriched:
+            ticker = _safe_str(order.get("ticker")).upper()
+            side = _safe_str(order.get("side")).lower()
+            order_dt = _parse_order_datetime(
+                order.get("executed_time") or order.get("created_time")
+            )
+            if side == "sell" and _safe_float(order.get("realized_pnl")) < 0 and order_dt:
+                replacement_buys = [
+                    buy_dt
+                    for buy_dt in buys_by_symbol.get(ticker, [])
+                    if abs((buy_dt - order_dt).days) <= 30
+                ]
+                if replacement_buys:
+                    order["wash_sale_flag"] = True
+                    order["wash_sale_reason"] = (
+                        "Loss sale with replacement buy within +/-30 days"
+                    )
+
+        return enriched
+
+    def _current_wash_sale_risk_symbols(
+        self,
+        enriched_orders: List[Dict[str, Any]],
+    ) -> List[Dict[str, Any]]:
+        now = datetime.now(timezone.utc)
+        risks: dict[str, Dict[str, Any]] = {}
+        for order in enriched_orders:
+            if _safe_str(order.get("side")).lower() != "sell":
+                continue
+            realized_pnl = order.get("realized_pnl")
+            if realized_pnl is None or _safe_float(realized_pnl) >= 0:
+                continue
+            order_dt = _parse_order_datetime(
+                order.get("executed_time") or order.get("created_time")
+            )
+            if not order_dt:
+                continue
+            days_since = (now - order_dt).days
+            if 0 <= days_since <= 30:
+                ticker = _safe_str(order.get("ticker")).upper()
+                expires_at = order_dt + timedelta(days=31)
+                current = risks.get(ticker)
+                if not current or expires_at > _parse_order_datetime(
+                    current.get("risk_expires_at")
+                ):
+                    risks[ticker] = {
+                        "ticker": ticker,
+                        "last_loss_sale_at": order_dt.isoformat(),
+                        "risk_expires_at": expires_at.isoformat(),
+                        "days_remaining": max(0, 31 - days_since),
+                        "loss_amount": abs(_safe_float(realized_pnl)),
+                    }
+        return sorted(risks.values(), key=lambda item: item["ticker"])
 
     async def disconnect(self, user_id: str) -> bool:
         portfolio_connection = (

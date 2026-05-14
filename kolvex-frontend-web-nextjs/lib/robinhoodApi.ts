@@ -63,6 +63,19 @@ export interface RobinhoodOrder {
   executed_time?: string | null;
   fees?: number | null;
   raw_order?: Record<string, unknown> | null;
+  cost_basis?: number | null;
+  realized_pnl?: number | null;
+  realized_pnl_percent?: number | null;
+  wash_sale_flag?: boolean;
+  wash_sale_reason?: string | null;
+}
+
+export interface RobinhoodWashSaleRiskSymbol {
+  ticker: string;
+  last_loss_sale_at: string;
+  risk_expires_at: string;
+  days_remaining: number;
+  loss_amount: number;
 }
 
 export interface RobinhoodOrdersResponse {
@@ -70,6 +83,16 @@ export interface RobinhoodOrdersResponse {
   total: number;
   limit: number;
   offset: number;
+  has_more: boolean;
+  wash_sale_risk_symbols: RobinhoodWashSaleRiskSymbol[];
+}
+
+export interface RobinhoodOrdersAnalysisResponse {
+  analysis: string;
+  provider: string;
+  model: string;
+  orders_analyzed: number;
+  generated_at: string;
 }
 
 export async function connectRobinhood(
@@ -116,11 +139,37 @@ export async function getRobinhoodStatus(): Promise<RobinhoodStatus> {
 
 export async function getRobinhoodOrders(
   limit = 100,
-  offset = 0
+  offset = 0,
+  symbol?: string
 ): Promise<RobinhoodOrdersResponse> {
+  const params = new URLSearchParams({
+    limit: String(limit),
+    offset: String(offset),
+  });
+  if (symbol) params.set("symbol", symbol);
   return apiRequest<RobinhoodOrdersResponse>(
-    `/orders?limit=${limit}&offset=${offset}`
+    `/orders?${params.toString()}`
   );
+}
+
+export async function getRobinhoodWashSaleRisk(): Promise<{
+  symbols: RobinhoodWashSaleRiskSymbol[];
+  generated_at: string;
+}> {
+  return apiRequest<{ symbols: RobinhoodWashSaleRiskSymbol[]; generated_at: string }>(
+    "/wash-sale-risk"
+  );
+}
+
+export async function analyzeRobinhoodOrders(payload: {
+  provider: string;
+  model: string;
+  limit?: number;
+}): Promise<RobinhoodOrdersAnalysisResponse> {
+  return apiRequest<RobinhoodOrdersAnalysisResponse>("/orders/analyze", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
 }
 
 export async function disconnectRobinhood(): Promise<{

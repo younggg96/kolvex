@@ -61,6 +61,10 @@ export default function PortfolioHoldings({
     status,
     holdings,
     robinhoodOrders,
+    robinhoodOrdersTotal,
+    robinhoodOrdersHasMore,
+    robinhoodWashSaleRisks,
+    loadingRobinhoodOrders,
     loading,
     syncing,
     connecting,
@@ -70,6 +74,7 @@ export default function PortfolioHoldings({
     handleConnect,
     handleConnectRobinhood,
     handleResetRobinhoodAuth,
+    handleLoadMoreRobinhoodOrders,
     handleSync,
     handleTogglePublic,
     handleDisconnect,
@@ -409,7 +414,14 @@ export default function PortfolioHoldings({
 
           {/* Transactions Tab Content */}
           {activeTab === "transactions" && isOwner && (
-            <RobinhoodTransactionsTable orders={robinhoodOrders} />
+            <RobinhoodTransactionsTable
+              orders={robinhoodOrders}
+              total={robinhoodOrdersTotal}
+              hasMore={robinhoodOrdersHasMore}
+              loading={loadingRobinhoodOrders}
+              washSaleRisks={robinhoodWashSaleRisks}
+              onLoadMore={handleLoadMoreRobinhoodOrders}
+            />
           )}
 
           {/* Analytics Tab Content */}
