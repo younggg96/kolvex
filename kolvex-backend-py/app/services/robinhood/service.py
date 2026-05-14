@@ -1213,9 +1213,32 @@ class RobinhoodService:
         model: str,
         user_api_keys: dict[str, str] | None = None,
         limit: int = 200,
+        order_ids: list[str] | None = None,
+        language: str = "zh",
     ) -> Dict[str, Any]:
-        orders_payload = await self.get_orders(user_id, limit=limit, offset=0)
-        orders = orders_payload["orders"]
+        if order_ids:
+            result = (
+                self.supabase.table("robinhood_stock_orders")
+                .select(
+                    "id, order_id, ticker, side, order_type, quantity, average_price, "
+                    "total_amount, state, created_time, executed_time, fees, raw_order"
+                )
+                .eq("user_id", user_id)
+                .order("created_time", desc=False)
+                .execute()
+            )
+            enriched_history = self._enrich_orders(result.data or [])
+            selected = set(order_ids)
+            orders = [
+                order
+                for order in enriched_history
+                if order.get("order_id") in selected or order.get("id") in selected
+            ]
+            risk_symbols = self._current_wash_sale_risk_symbols(enriched_history)
+        else:
+            orders_payload = await self.get_orders(user_id, limit=limit, offset=0)
+            orders = orders_payload["orders"]
+            risk_symbols = orders_payload.get("wash_sale_risk_symbols", [])
         if not orders:
             raise Exception("No Robinhood orders available to analyze")
 
@@ -1234,7 +1257,6 @@ class RobinhoodService:
             for order in orders[:limit]
         ]
         summary = self._orders_summary(orders)
-        risk_symbols = orders_payload.get("wash_sale_risk_symbols", [])
 
         llm = get_llm(
             provider=provider,
@@ -1248,14 +1270,16 @@ class RobinhoodService:
                     "You are a disciplined trading journal coach. Analyze the user's "
                     "Robinhood order history. Be specific, practical, and concise. "
                     "Do not give personalized tax advice; flag wash sale risk as "
-                    "informational only and recommend consulting a tax professional."
+                    "informational only and recommend consulting a tax professional. "
+                    "Return well-structured GitHub-flavored Markdown."
                 )
             ),
             HumanMessage(
                 content=(
                     "Analyze these trades. Return markdown with sections: "
                     "Summary, Best Trades, Worst Trades, Behavioral Patterns, "
-                    "Risk Controls, Wash Sale Notes, Next Actions.\n\n"
+                    "Risk Controls, Wash Sale Notes, Next Actions. "
+                    f"Write the entire analysis in {'Chinese' if language == 'zh' else 'English'}.\n\n"
                     f"Summary: {json.dumps(summary, default=str)}\n"
                     f"Current wash-sale-risk symbols: {json.dumps(risk_symbols, default=str)}\n"
                     f"Orders: {json.dumps(compact_orders, default=str)}"

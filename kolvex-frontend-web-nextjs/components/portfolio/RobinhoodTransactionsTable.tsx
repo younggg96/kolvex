@@ -6,7 +6,10 @@ import {
   ArrowDownRight,
   ArrowUpRight,
   Brain,
+  CheckSquare,
   Download,
+  FileText,
+  Languages,
   Loader2,
   ReceiptText,
   RefreshCw,
@@ -24,6 +27,7 @@ import {
 } from "@/components/ui/table";
 import { formatCurrency } from "@/lib/snaptradeApi";
 import { useTranslation } from "@/lib/i18n";
+import { MarkdownBody } from "@/components/trading-analysis/markdown";
 import {
   analyzeRobinhoodOrders,
   getRobinhoodOrders,
@@ -91,6 +95,10 @@ export function RobinhoodTransactionsTable({
   const [selectedModel, setSelectedModel] = useState("gpt-4o-mini");
   const [analyzing, setAnalyzing] = useState(false);
   const [analysis, setAnalysis] = useState<string | null>(null);
+  const [analysisLanguage, setAnalysisLanguage] = useState<"zh" | "en">("zh");
+  const [selectedOrderIds, setSelectedOrderIds] = useState<Set<string>>(
+    new Set()
+  );
   const provider = useMemo(() => {
     const config = MODEL_CONFIGS.find((model) => model.id === selectedModel);
     return config ? PROVIDER_NAME_TO_ID[config.provider] : "openai";
@@ -115,6 +123,79 @@ export function RobinhoodTransactionsTable({
       }),
     [availableProviders]
   );
+  const selectedOrders = useMemo(
+    () => orders.filter((order) => selectedOrderIds.has(order.order_id)),
+    [orders, selectedOrderIds]
+  );
+  const selectedCount = selectedOrderIds.size;
+
+  const toggleOrder = (orderId: string) => {
+    setSelectedOrderIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(orderId)) {
+        next.delete(orderId);
+      } else {
+        next.add(orderId);
+      }
+      return next;
+    });
+  };
+
+  const toggleCurrentPage = () => {
+    setSelectedOrderIds((prev) => {
+      const next = new Set(prev);
+      const allSelected = orders.every((order) => next.has(order.order_id));
+      orders.forEach((order) => {
+        if (allSelected) {
+          next.delete(order.order_id);
+        } else {
+          next.add(order.order_id);
+        }
+      });
+      return next;
+    });
+  };
+
+  const buildCsv = (rows: RobinhoodOrder[]) => {
+    const headers = [
+      "date",
+      "side",
+      "ticker",
+      "order_type",
+      "quantity",
+      "average_price",
+      "total_amount",
+      "realized_pnl",
+      "realized_pnl_percent",
+      "state",
+      "fees",
+      "order_id",
+    ];
+    return [
+      headers.join(","),
+      ...rows.map((order) =>
+        headers
+          .map((key) => {
+            const value =
+              key === "date"
+                ? order.executed_time || order.created_time || ""
+                : (order as any)[key] ?? "";
+            return `"${String(value).replace(/"/g, '""')}"`;
+          })
+          .join(",")
+      ),
+    ].join("\n");
+  };
+
+  const downloadText = (content: string, filename: string, type: string) => {
+    const blob = new Blob([content], { type });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
 
   const handleExportCsv = async () => {
     try {
@@ -132,43 +213,12 @@ export function RobinhoodTransactionsTable({
         if (!page.has_more) break;
         offset += limit;
       }
-      const headers = [
-        "date",
-        "side",
-        "ticker",
-        "order_type",
-        "quantity",
-        "average_price",
-        "total_amount",
-        "realized_pnl",
-        "realized_pnl_percent",
-        "state",
-        "fees",
-        "order_id",
-      ];
-      const csv = [
-        headers.join(","),
-        ...allOrders.map((order) =>
-          headers
-            .map((key) => {
-              const value =
-                key === "date"
-                  ? order.executed_time || order.created_time || ""
-                  : (order as any)[key] ?? "";
-              return `"${String(value).replace(/"/g, '""')}"`;
-            })
-            .join(",")
-        ),
-      ].join("\n");
-      const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `robinhood-transactions-${new Date()
-        .toISOString()
-        .slice(0, 10)}.csv`;
-      link.click();
-      URL.revokeObjectURL(url);
+      const rows = selectedOrders.length > 0 ? selectedOrders : allOrders;
+      downloadText(
+        buildCsv(rows),
+        `robinhood-transactions-${new Date().toISOString().slice(0, 10)}.csv`,
+        "text/csv;charset=utf-8"
+      );
     } catch (error: any) {
       toast.error(error?.message || "Failed to export Robinhood transactions");
     }
@@ -185,6 +235,8 @@ export function RobinhoodTransactionsTable({
         provider,
         model: selectedModel,
         limit: 300,
+        order_ids: selectedOrders.map((order) => order.order_id),
+        language: analysisLanguage,
       });
       setAnalysis(result.analysis);
       toast.success("AI trade analysis complete");
@@ -193,6 +245,15 @@ export function RobinhoodTransactionsTable({
     } finally {
       setAnalyzing(false);
     }
+  };
+
+  const handleDownloadAnalysis = () => {
+    if (!analysis) return;
+    downloadText(
+      analysis,
+      `robinhood-trade-analysis-${new Date().toISOString().slice(0, 10)}.md`,
+      "text/markdown;charset=utf-8"
+    );
   };
 
   if (orders.length === 0) {
@@ -232,8 +293,23 @@ export function RobinhoodTransactionsTable({
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div className="text-xs text-muted-foreground">
           {orders.length} / {total} {t("portfolio.tabs.transactions")}
+          {selectedCount > 0 && (
+            <span className="ml-2">
+              · {selectedCount} {t("portfolio.transactions.selected")}
+            </span>
+          )}
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={toggleCurrentPage}
+            disabled={orders.length === 0}
+            className="gap-2"
+          >
+            <CheckSquare className="h-4 w-4" />
+            {t("portfolio.transactions.selectPage")}
+          </Button>
           <select
             value={statusFilter}
             onChange={(event) => onStatusFilterChange(event.target.value)}
@@ -257,6 +333,16 @@ export function RobinhoodTransactionsTable({
                 {model.name}
               </option>
             ))}
+          </select>
+          <select
+            value={analysisLanguage}
+            onChange={(event) =>
+              setAnalysisLanguage(event.target.value as "zh" | "en")
+            }
+            className="h-8 rounded-md border border-border bg-background px-2 text-xs"
+          >
+            <option value="zh">{t("portfolio.transactions.languageZh")}</option>
+            <option value="en">{t("portfolio.transactions.languageEn")}</option>
           </select>
           <Button
             variant="outline"
@@ -293,6 +379,29 @@ export function RobinhoodTransactionsTable({
             )}
             {t("portfolio.transactions.analyze")}
           </Button>
+          {analysis && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleAnalyze}
+              disabled={analyzing}
+              className="gap-2"
+            >
+              <Languages className="h-4 w-4" />
+              {t("portfolio.transactions.translate")}
+            </Button>
+          )}
+          {analysis && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleDownloadAnalysis}
+              className="gap-2"
+            >
+              <FileText className="h-4 w-4" />
+              {t("portfolio.transactions.downloadAnalysis")}
+            </Button>
+          )}
           <Button
             variant="outline"
             size="sm"
@@ -311,9 +420,7 @@ export function RobinhoodTransactionsTable({
             <Brain className="h-4 w-4 text-primary" />
             {t("portfolio.transactions.aiAnalysis")}
           </div>
-          <div className="whitespace-pre-wrap text-sm leading-relaxed text-muted-foreground">
-            {analysis}
-          </div>
+          <MarkdownBody content={analysis} />
         </div>
       )}
 
@@ -321,6 +428,17 @@ export function RobinhoodTransactionsTable({
         <Table>
         <TableHeader>
           <TableRow>
+            <TableHead className="w-10 pl-4">
+              <input
+                type="checkbox"
+                checked={
+                  orders.length > 0 &&
+                  orders.every((order) => selectedOrderIds.has(order.order_id))
+                }
+                onChange={toggleCurrentPage}
+                aria-label={t("portfolio.transactions.selectPage")}
+              />
+            </TableHead>
             <TableHead className="pl-4">
               {t("portfolio.transactions.date")}
             </TableHead>
@@ -350,6 +468,14 @@ export function RobinhoodTransactionsTable({
             const isBuy = order.side?.toLowerCase() === "buy";
             return (
               <TableRow key={order.order_id}>
+                <TableCell className="pl-4">
+                  <input
+                    type="checkbox"
+                    checked={selectedOrderIds.has(order.order_id)}
+                    onChange={() => toggleOrder(order.order_id)}
+                    aria-label={`${t("portfolio.transactions.select")} ${order.ticker}`}
+                  />
+                </TableCell>
                 <TableCell className="whitespace-nowrap pl-4 text-xs text-muted-foreground">
                   {formatOrderDate(order.executed_time || order.created_time)}
                 </TableCell>

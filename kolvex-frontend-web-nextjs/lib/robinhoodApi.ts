@@ -167,6 +167,8 @@ export async function analyzeRobinhoodOrders(payload: {
   provider: string;
   model: string;
   limit?: number;
+  order_ids?: string[];
+  language?: "zh" | "en";
 }): Promise<RobinhoodOrdersAnalysisResponse> {
   return apiRequest<RobinhoodOrdersAnalysisResponse>("/orders/analyze", {
     method: "POST",

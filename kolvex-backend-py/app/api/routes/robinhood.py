@@ -104,6 +104,8 @@ class RobinhoodAnalyzeOrdersRequest(BaseModel):
     provider: str = Field(default="openai")
     model: str = Field(default="gpt-4o-mini")
     limit: int = Field(default=200, ge=10, le=500)
+    order_ids: list[str] = Field(default_factory=list)
+    language: str = Field(default="zh", pattern="^(zh|en)$")
 
 
 class RobinhoodAnalyzeOrdersResponse(BaseModel):
@@ -315,6 +317,8 @@ async def analyze_robinhood_orders(
                 model=request.model,
                 user_api_keys=user_api_keys,
                 limit=request.limit,
+                order_ids=request.order_ids or None,
+                language=request.language,
             )
         )
     except HTTPException:
