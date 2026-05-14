@@ -3,11 +3,14 @@
 -- Passwords are intentionally not stored; robin_stocks caches OAuth tokens
 -- on the backend host using the per-user session_pickle_name.
 
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
 CREATE TABLE IF NOT EXISTS robinhood_connections (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
     username VARCHAR(255) NOT NULL,
     session_pickle_name VARCHAR(255) NOT NULL,
+    device_token VARCHAR(255),
     is_connected BOOLEAN DEFAULT FALSE,
     last_synced_at TIMESTAMPTZ,
     account_number VARCHAR(255),
@@ -20,6 +23,9 @@ CREATE TABLE IF NOT EXISTS robinhood_connections (
     updated_at TIMESTAMPTZ DEFAULT NOW(),
     CONSTRAINT unique_robinhood_user UNIQUE (user_id)
 );
+
+ALTER TABLE robinhood_connections
+ADD COLUMN IF NOT EXISTS device_token VARCHAR(255);
 
 CREATE TABLE IF NOT EXISTS robinhood_stock_orders (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -73,22 +79,27 @@ CREATE TRIGGER update_robinhood_stock_orders_updated_at
 ALTER TABLE robinhood_connections ENABLE ROW LEVEL SECURITY;
 ALTER TABLE robinhood_stock_orders ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users can view own robinhood connection" ON robinhood_connections;
 CREATE POLICY "Users can view own robinhood connection"
 ON robinhood_connections FOR SELECT
 USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can delete own robinhood connection" ON robinhood_connections;
 CREATE POLICY "Users can delete own robinhood connection"
 ON robinhood_connections FOR DELETE
 USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can view own robinhood orders" ON robinhood_stock_orders;
 CREATE POLICY "Users can view own robinhood orders"
 ON robinhood_stock_orders FOR SELECT
 USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Service role can manage robinhood connections" ON robinhood_connections;
 CREATE POLICY "Service role can manage robinhood connections"
 ON robinhood_connections FOR ALL
 USING (auth.role() = 'service_role');
 
+DROP POLICY IF EXISTS "Service role can manage robinhood orders" ON robinhood_stock_orders;
 CREATE POLICY "Service role can manage robinhood orders"
 ON robinhood_stock_orders FOR ALL
 USING (auth.role() = 'service_role');

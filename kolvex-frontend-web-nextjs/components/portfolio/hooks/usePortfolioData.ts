@@ -110,6 +110,13 @@ export function usePortfolioData({ userId, isOwner }: UsePortfolioDataOptions) {
       setConnecting(true);
       try {
         const result = await connectRobinhoodBroker(credentials);
+        if (result.setup_required) {
+          toast.error(
+            result.message ||
+              "Robinhood database setup is missing. Apply the Supabase migration and try again."
+          );
+          return;
+        }
         if (result.approval_required) {
           toast.info(
             result.message ||

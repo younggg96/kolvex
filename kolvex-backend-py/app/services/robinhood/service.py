@@ -112,6 +112,43 @@ class RobinhoodService:
 
         return tokens[key]
 
+    def _get_or_create_device_token(self, user_id: str, username: str) -> str:
+        """Persist the Robinhood device token in Supabase so app approval survives redeploys."""
+
+        try:
+            existing = (
+                self.supabase.table("robinhood_connections")
+                .select("device_token")
+                .eq("user_id", user_id)
+                .execute()
+            )
+            if existing.data and existing.data[0].get("device_token"):
+                return existing.data[0]["device_token"]
+
+            device_token = self._get_device_token(user_id)
+            self.supabase.table("robinhood_connections").upsert(
+                {
+                    "user_id": user_id,
+                    "username": username,
+                    "session_pickle_name": self._session_name(user_id),
+                    "device_token": device_token,
+                    "is_connected": False,
+                },
+                on_conflict="user_id",
+            ).execute()
+            return device_token
+        except Exception as error:
+            if _is_missing_robinhood_table_error(error):
+                raise RobinhoodStorageNotReady(
+                    "Robinhood database migration has not been applied."
+                ) from error
+            logger.warning(
+                "Falling back to local Robinhood device token for user %s: %s",
+                user_id,
+                error,
+            )
+            return self._get_device_token(user_id)
+
     def _login(
         self,
         user_id: str,
@@ -149,7 +186,7 @@ class RobinhoodService:
             "scope": "internal",
             "username": username,
             "challenge_type": "sms",
-            "device_token": self._get_device_token(user_id),
+            "device_token": self._get_or_create_device_token(user_id, username),
         }
         if mfa_code:
             payload["mfa_code"] = mfa_code
@@ -189,6 +226,15 @@ class RobinhoodService:
         data = request_post(login_url(), payload)
         if not data:
             raise Exception("Robinhood login failed: empty response from API")
+
+        logger.info(
+            "Robinhood login response for user %s: keys=%s detail=%s mfa_required=%s challenge=%s",
+            user_id,
+            sorted(data.keys()),
+            data.get("detail") or data.get("error"),
+            data.get("mfa_required"),
+            bool(data.get("challenge")),
+        )
 
         if data.get("mfa_required") and not mfa_code:
             raise RobinhoodLoginApprovalRequired(
@@ -442,6 +488,7 @@ class RobinhoodService:
             "user_id": user_id,
             "username": username,
             "session_pickle_name": self._session_name(user_id),
+            "device_token": self._get_or_create_device_token(user_id, username),
             "is_connected": True,
             "last_synced_at": datetime.utcnow().isoformat(),
             "profile": profile,

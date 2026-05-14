@@ -59,7 +59,7 @@ async def get_robinhood_status(
     try:
         return RobinhoodStatusResponse(**await service.get_status(current_user_id))
     except Exception as e:
-        logger.error("Failed to get Robinhood status: %s", e)
+        logger.exception("Failed to get Robinhood status")
         raise HTTPException(
             status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to get Robinhood status: {str(e)}",
@@ -133,7 +133,7 @@ async def connect_robinhood(
                 approval_required=True,
                 message='Robinhood is waiting for device approval. Tap "Yes, it\'s me" in the Robinhood app, then click Connect Robinhood again.',
             )
-        logger.error("Failed to connect Robinhood: %s", e)
+        logger.exception("Failed to connect Robinhood")
         raise HTTPException(
             status_code=http_status.HTTP_400_BAD_REQUEST,
             detail=f"Failed to connect Robinhood: {str(e)}",
@@ -152,7 +152,7 @@ async def sync_robinhood(
             success=True,
         )
     except Exception as e:
-        logger.error("Failed to sync Robinhood: %s", e)
+        logger.exception("Failed to sync Robinhood")
         raise HTTPException(
             status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to sync Robinhood: {str(e)}",
@@ -167,7 +167,7 @@ async def get_robinhood_profile(
     try:
         return await service.get_profile(current_user_id)
     except Exception as e:
-        logger.error("Failed to get Robinhood profile: %s", e)
+        logger.exception("Failed to get Robinhood profile")
         raise HTTPException(
             status_code=http_status.HTTP_404_NOT_FOUND,
             detail=f"Failed to get Robinhood profile: {str(e)}",
@@ -186,7 +186,7 @@ async def disconnect_robinhood(
             success=True,
         )
     except Exception as e:
-        logger.error("Failed to disconnect Robinhood: %s", e)
+        logger.exception("Failed to disconnect Robinhood")
         raise HTTPException(
             status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to disconnect Robinhood: {str(e)}",
