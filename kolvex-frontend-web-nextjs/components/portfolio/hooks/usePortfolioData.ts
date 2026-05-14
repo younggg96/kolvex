@@ -12,6 +12,13 @@ import {
   togglePositionVisibility,
   getShareUrl,
 } from "@/lib/snaptradeApi";
+import {
+  connectRobinhood as connectRobinhoodBroker,
+  disconnectRobinhood,
+  getRobinhoodStatus,
+  syncRobinhood,
+  type RobinhoodStatus,
+} from "@/lib/robinhoodApi";
 import type {
   SnapTradeConnectionStatus,
   SnapTradeHoldings,
@@ -24,6 +31,8 @@ interface UsePortfolioDataOptions {
 
 export function usePortfolioData({ userId, isOwner }: UsePortfolioDataOptions) {
   const [status, setStatus] = useState<SnapTradeConnectionStatus | null>(null);
+  const [robinhoodStatus, setRobinhoodStatus] =
+    useState<RobinhoodStatus | null>(null);
   const [holdings, setHoldings] = useState<SnapTradeHoldings | null>(null);
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
@@ -36,12 +45,14 @@ export function usePortfolioData({ userId, isOwner }: UsePortfolioDataOptions) {
     setLoading(true);
     try {
       if (isOwner) {
-        const [statusData, holdingsData] = await Promise.all([
+        const [statusData, holdingsData, robinhoodData] = await Promise.all([
           getConnectionStatus(),
           getMyHoldings(),
+          getRobinhoodStatus().catch(() => null),
         ]);
         setStatus(statusData);
         setHoldings(holdingsData);
+        setRobinhoodStatus(robinhoodData);
       } else if (userId) {
         // Load public holdings for other users
         const publicHoldings = await getPublicHoldings(userId);
@@ -90,11 +101,35 @@ export function usePortfolioData({ userId, isOwner }: UsePortfolioDataOptions) {
     }
   }, []);
 
+  const handleConnectRobinhood = useCallback(
+    async (credentials: {
+      username: string;
+      password: string;
+      totp_secret?: string;
+    }) => {
+      setConnecting(true);
+      try {
+        await connectRobinhoodBroker(credentials);
+        await loadData();
+        toast.success("Robinhood connected and synced");
+      } catch (error: any) {
+        toast.error(error.message || "Failed to connect Robinhood");
+      } finally {
+        setConnecting(false);
+      }
+    },
+    [loadData]
+  );
+
   const handleSync = useCallback(async () => {
     setSyncing(true);
     try {
-      await syncAccounts();
-      await syncPositions();
+      if (robinhoodStatus?.is_connected) {
+        await syncRobinhood();
+      } else {
+        await syncAccounts();
+        await syncPositions();
+      }
       await loadData();
       toast.success("Data refreshed successfully");
     } catch (error: any) {
@@ -102,7 +137,7 @@ export function usePortfolioData({ userId, isOwner }: UsePortfolioDataOptions) {
     } finally {
       setSyncing(false);
     }
-  }, [loadData]);
+  }, [loadData, robinhoodStatus?.is_connected]);
 
   const handleTogglePublic = useCallback(async (isPublic: boolean) => {
     try {
@@ -119,10 +154,15 @@ export function usePortfolioData({ userId, isOwner }: UsePortfolioDataOptions) {
   const handleDisconnect = useCallback(async () => {
     setDisconnecting(true);
     try {
-      await disconnectSnapTrade();
+      if (robinhoodStatus?.is_connected) {
+        await disconnectRobinhood();
+      } else {
+        await disconnectSnapTrade();
+      }
       setStatus(null);
+      setRobinhoodStatus(null);
       setHoldings(null);
-      toast.success("SnapTrade disconnected");
+      toast.success("Broker disconnected");
       return true;
     } catch (error: any) {
       toast.error(error.message || "Failed to disconnect");
@@ -130,7 +170,7 @@ export function usePortfolioData({ userId, isOwner }: UsePortfolioDataOptions) {
     } finally {
       setDisconnecting(false);
     }
-  }, []);
+  }, [robinhoodStatus?.is_connected]);
 
   const handleCopyShareLink = useCallback(async () => {
     if (!userId) return;
@@ -191,6 +231,7 @@ export function usePortfolioData({ userId, isOwner }: UsePortfolioDataOptions) {
     copied,
     loadData,
     handleConnect,
+    handleConnectRobinhood,
     handleSync,
     handleTogglePublic,
     handleDisconnect,
@@ -198,4 +239,3 @@ export function usePortfolioData({ userId, isOwner }: UsePortfolioDataOptions) {
     handleTogglePositionVisibility,
   };
 }
-

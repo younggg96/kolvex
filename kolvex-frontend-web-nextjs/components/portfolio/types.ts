@@ -42,6 +42,11 @@ export interface PortfolioHoldingsProps {
 
 export interface ConnectionStateProps {
   onConnect: () => Promise<void>;
+  onConnectRobinhood: (credentials: {
+    username: string;
+    password: string;
+    totp_secret?: string;
+  }) => Promise<void>;
   connecting: boolean;
 }
 
@@ -91,4 +96,3 @@ export interface DisconnectDialogProps {
 
 // Re-export database types for convenience
 export type { SnapTradeConnectionStatus, SnapTradeHoldings, SnapTradePosition };
-

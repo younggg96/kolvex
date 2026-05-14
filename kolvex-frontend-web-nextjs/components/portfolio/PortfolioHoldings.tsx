@@ -65,6 +65,7 @@ export default function PortfolioHoldings({
     disconnecting,
     copied,
     handleConnect,
+    handleConnectRobinhood,
     handleSync,
     handleTogglePublic,
     handleDisconnect,
@@ -172,7 +173,7 @@ export default function PortfolioHoldings({
     if (diffMins < 1) return locale === "zh" ? "刚刚" : "Just now";
     if (diffMins < 60) return `${diffMins}m`;
     return `${diffHours}h`;
-  }, [lastRefreshTime]);
+  }, [lastRefreshTime, locale]);
 
   // Notify parent component of header actions state
   useEffect(() => {
@@ -253,7 +254,11 @@ export default function PortfolioHoldings({
   // State 1: Not registered
   if (!status?.is_registered) {
     return (
-      <NotConnectedState onConnect={handleConnect} connecting={connecting} />
+      <NotConnectedState
+        onConnect={handleConnect}
+        onConnectRobinhood={handleConnectRobinhood}
+        connecting={connecting}
+      />
     );
   }
 
