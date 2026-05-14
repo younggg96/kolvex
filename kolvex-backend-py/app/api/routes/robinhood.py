@@ -136,7 +136,7 @@ async def connect_robinhood(
                 success=False,
                 positions_synced=0,
                 approval_required=True,
-                message='Robinhood is waiting for device approval. Tap "Yes, it\'s me" in the Robinhood app, then click Connect Robinhood again.',
+                message='Robinhood is waiting for device approval. Open the Robinhood app and tap "Yes, it\'s me" on the most recent push, then click Connect Robinhood again.',
             )
         logger.exception("Failed to connect Robinhood")
         raise HTTPException(

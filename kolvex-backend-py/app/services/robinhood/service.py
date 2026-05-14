@@ -7,6 +7,7 @@ import json
 import logging
 import os
 import pickle
+import time
 from datetime import date, datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set
@@ -17,6 +18,16 @@ from robin_stocks.robinhood.authentication import generate_device_token, respond
 from robin_stocks.robinhood.helper import request_get, request_post, set_login_state, update_session
 from robin_stocks.robinhood.urls import login_url, positions_url
 from supabase import Client
+
+ROBINHOOD_USER_MACHINE_URL = "https://api.robinhood.com/pathfinder/user_machine/"
+ROBINHOOD_INQUIRY_URL_TEMPLATE = (
+    "https://api.robinhood.com/pathfinder/inquiries/{machine_id}/user_view/"
+)
+ROBINHOOD_PROMPT_STATUS_URL_TEMPLATE = (
+    "https://api.robinhood.com/push/{challenge_id}/get_prompts_status/"
+)
+ROBINHOOD_DEFAULT_APPROVAL_TIMEOUT_SECONDS = 110
+ROBINHOOD_APPROVAL_POLL_INTERVAL_SECONDS = 2.0
 
 from app.core.supabase import get_supabase_service
 from app.services.portfolio_snapshot_service import get_portfolio_snapshot_service
@@ -199,6 +210,136 @@ class RobinhoodService:
     def _login_from_cache(self, user_id: str) -> None:
         r.login(store_session=True, pickle_name=self._session_name(user_id))
 
+    def _run_device_approval_workflow(
+        self,
+        user_id: str,
+        workflow_id: str,
+        device_token: str,
+        timeout_seconds: int = ROBINHOOD_DEFAULT_APPROVAL_TIMEOUT_SECONDS,
+        poll_interval: float = ROBINHOOD_APPROVAL_POLL_INTERVAL_SECONDS,
+    ) -> None:
+        """Drive Robinhood's pathfinder device-approval workflow to completion.
+
+        Robinhood (since 2024) returns ``verification_workflow`` instead of the
+        legacy ``challenge`` when a new device tries to log in. The mobile push
+        ("Yes, it's me" prompt) is only generated AFTER we explicitly start the
+        workflow, and the login endpoint will keep refusing to issue an access
+        token until we finish it. The flow is:
+
+            1. POST ``/pathfinder/user_machine/`` with the workflow id to obtain
+               a ``machine_id`` (this also triggers the push notification).
+            2. GET ``/pathfinder/inquiries/{machine_id}/user_view/`` to discover
+               the active ``sheriff_challenge`` (push prompt id).
+            3. Poll ``/push/{prompt_id}/get_prompts_status/`` until the user
+               taps "Yes, it's me" (``challenge_status == 'validated'``).
+            4. POST the inquiry user_view with ``status: continue`` so that the
+               next login POST returns ``access_token``.
+        """
+
+        machine_response = request_post(
+            ROBINHOOD_USER_MACHINE_URL,
+            {
+                "device_id": device_token,
+                "flow": "suv",
+                "input": {"workflow_id": workflow_id},
+            },
+            json=True,
+        )
+        if not machine_response or "id" not in machine_response:
+            logger.warning(
+                "Robinhood user_machine response was unexpected for user %s: %s",
+                user_id,
+                machine_response,
+            )
+            raise RobinhoodLoginApprovalRequired(
+                "Robinhood device-approval workflow could not be started. Try again."
+            )
+        machine_id = machine_response["id"]
+        logger.info(
+            "Robinhood device-approval workflow started for user %s: machine_id=%s",
+            user_id,
+            machine_id,
+        )
+
+        inquiry_url = ROBINHOOD_INQUIRY_URL_TEMPLATE.format(machine_id=machine_id)
+
+        challenge = self._get_active_sheriff_challenge(inquiry_url)
+        if not challenge or not challenge.get("id"):
+            raise RobinhoodLoginApprovalRequired(
+                "Robinhood device-approval workflow did not return a challenge."
+            )
+        challenge_id = challenge["id"]
+        challenge_type = challenge.get("type")
+        logger.info(
+            "Robinhood device-approval challenge for user %s: id=%s type=%s",
+            user_id,
+            challenge_id,
+            challenge_type,
+        )
+
+        if challenge_type != "prompt":
+            self._set_pending_challenge_id(user_id, challenge_id)
+            raise RobinhoodLoginApprovalRequired(
+                f"Robinhood requires {challenge_type or 'manual'} verification. Approve it in the Robinhood app, then click Connect Robinhood again."
+            )
+
+        if not self._wait_for_prompt_approval(
+            challenge_id=challenge_id,
+            timeout_seconds=timeout_seconds,
+            poll_interval=poll_interval,
+        ):
+            raise RobinhoodLoginApprovalRequired(
+                'Robinhood is still waiting for device approval. Open the Robinhood app, tap "Yes, it\'s me", then click Connect Robinhood again.'
+            )
+
+        # Advance the workflow so the next /oauth2/token call gets an access_token.
+        request_post(
+            inquiry_url,
+            {"sequence": 0, "user_input": {"status": "continue"}},
+            json=True,
+        )
+        logger.info(
+            "Robinhood device-approval workflow completed for user %s",
+            user_id,
+        )
+
+    def _get_active_sheriff_challenge(self, inquiry_url: str) -> Optional[Dict[str, Any]]:
+        inquiry = request_get(inquiry_url, "regular")
+        if not isinstance(inquiry, dict):
+            return None
+        challenge = (
+            (inquiry.get("type_context") or {}).get("context", {}).get("sheriff_challenge")
+        )
+        if isinstance(challenge, dict) and challenge.get("id"):
+            return challenge
+        return None
+
+    def _wait_for_prompt_approval(
+        self,
+        challenge_id: str,
+        timeout_seconds: int,
+        poll_interval: float,
+    ) -> bool:
+        prompt_status_url = ROBINHOOD_PROMPT_STATUS_URL_TEMPLATE.format(
+            challenge_id=challenge_id
+        )
+        deadline = time.monotonic() + timeout_seconds
+        while time.monotonic() < deadline:
+            status_response = request_get(prompt_status_url, "regular")
+            challenge_status = (
+                (status_response or {}).get("challenge_status")
+                if isinstance(status_response, dict)
+                else None
+            )
+            if challenge_status == "validated":
+                return True
+            if challenge_status in ("failed", "denied", "rejected"):
+                raise RobinhoodLoginApprovalRequired(
+                    "Robinhood device approval was denied. Try connecting again."
+                )
+            time.sleep(poll_interval)
+        return False
+
     def _login_with_stable_device_token(
         self,
         user_id: str,
@@ -288,17 +429,41 @@ class RobinhoodService:
             raise Exception("Robinhood login failed: empty response from API")
 
         logger.info(
-            "Robinhood login response for user %s: keys=%s detail=%s mfa_required=%s challenge=%s",
+            "Robinhood login response for user %s: keys=%s detail=%s mfa_required=%s challenge=%s workflow=%s",
             user_id,
             sorted(data.keys()),
             data.get("detail") or data.get("error"),
             data.get("mfa_required"),
             bool(data.get("challenge")),
+            bool(data.get("verification_workflow")),
         )
 
         if data.get("mfa_required") and not mfa_code:
             raise RobinhoodLoginApprovalRequired(
                 "Robinhood MFA is required. Add the TOTP secret and try again."
+            )
+
+        # Modern (2024+) Robinhood flow: device approval is delivered via a
+        # `verification_workflow`. We must run that workflow ourselves before
+        # the login endpoint will return an access token.
+        verification_workflow = data.get("verification_workflow") or {}
+        workflow_id = verification_workflow.get("id")
+        if workflow_id:
+            self._run_device_approval_workflow(
+                user_id=user_id,
+                workflow_id=workflow_id,
+                device_token=payload["device_token"],
+            )
+            data = request_post(login_url(), payload)
+            if not data:
+                raise Exception(
+                    "Robinhood login failed after device approval: empty response from API"
+                )
+            logger.info(
+                "Robinhood post-approval login response for user %s: keys=%s detail=%s",
+                user_id,
+                sorted(data.keys()),
+                data.get("detail") or data.get("error"),
             )
 
         if "challenge" in data:
@@ -321,7 +486,7 @@ class RobinhoodService:
             ]
             if any(marker in detail.lower() for marker in approval_markers):
                 raise RobinhoodLoginApprovalRequired(
-                    "Robinhood is waiting for device approval. Tap \"Yes, it's me\" in the Robinhood app, then click Connect Robinhood again."
+                    "Robinhood is waiting for device approval. Open the Robinhood app and tap \"Yes, it's me\" within ~2 minutes, then click Connect Robinhood again."
                 )
             raise Exception(detail or f"Robinhood login failed: {data}")
 
