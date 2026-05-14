@@ -37,6 +37,8 @@ export interface RobinhoodStatus {
   profile?: Record<string, unknown> | null;
   positions_count: number;
   orders_count: number;
+  setup_required?: boolean;
+  message?: string | null;
 }
 
 export interface RobinhoodConnectResponse extends RobinhoodStatus {
@@ -65,7 +67,18 @@ export async function syncRobinhood(): Promise<{
 }
 
 export async function getRobinhoodStatus(): Promise<RobinhoodStatus> {
-  return apiRequest<RobinhoodStatus>("/status");
+  try {
+    return await apiRequest<RobinhoodStatus>("/status");
+  } catch (error) {
+    console.warn("Robinhood status unavailable:", error);
+    return {
+      is_connected: false,
+      last_synced_at: null,
+      profile: null,
+      positions_count: 0,
+      orders_count: 0,
+    };
+  }
 }
 
 export async function disconnectRobinhood(): Promise<{

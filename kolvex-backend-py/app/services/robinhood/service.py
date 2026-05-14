@@ -26,6 +26,14 @@ logger = logging.getLogger(__name__)
 _sync_locks: Dict[str, asyncio.Lock] = {}
 
 
+class RobinhoodStorageNotReady(Exception):
+    """Raised when the Robinhood Supabase migration has not been applied."""
+
+
+class RobinhoodLoginApprovalRequired(Exception):
+    """Raised when Robinhood requires mobile/app approval before login can continue."""
+
+
 def _get_user_lock(user_id: str) -> asyncio.Lock:
     if user_id not in _sync_locks:
         _sync_locks[user_id] = asyncio.Lock()
@@ -54,6 +62,16 @@ def _parse_robinhood_timestamp(value: str | None) -> str | None:
         return datetime.fromisoformat(value.replace("Z", "+00:00")).isoformat()
     except ValueError:
         return None
+
+
+def _is_missing_robinhood_table_error(error: Exception) -> bool:
+    message = str(error).lower()
+    return (
+        "robinhood_connections" in message
+        or "robinhood_stock_orders" in message
+        or "could not find the table" in message
+        or ("relation" in message and "does not exist" in message)
+    )
 
 
 class RobinhoodService:
@@ -305,7 +323,20 @@ class RobinhoodService:
         return positions
 
     async def get_status(self, user_id: str) -> Dict[str, Any]:
-        connection = await self._get_robinhood_connection(user_id)
+        try:
+            connection = await self._get_robinhood_connection(user_id)
+        except RobinhoodStorageNotReady as error:
+            logger.warning("Robinhood storage is not ready: %s", error)
+            return {
+                "is_connected": False,
+                "last_synced_at": None,
+                "profile": None,
+                "positions_count": 0,
+                "orders_count": 0,
+                "setup_required": True,
+                "message": str(error),
+            }
+
         if not connection:
             return {
                 "is_connected": False,
@@ -605,12 +636,19 @@ class RobinhoodService:
         )
 
     async def _get_robinhood_connection(self, user_id: str) -> Optional[Dict[str, Any]]:
-        result = (
-            self.supabase.table("robinhood_connections")
-            .select("*")
-            .eq("user_id", user_id)
-            .execute()
-        )
+        try:
+            result = (
+                self.supabase.table("robinhood_connections")
+                .select("*")
+                .eq("user_id", user_id)
+                .execute()
+            )
+        except Exception as error:
+            if _is_missing_robinhood_table_error(error):
+                raise RobinhoodStorageNotReady(
+                    "Robinhood database migration has not been applied."
+                ) from error
+            raise
         return result.data[0] if result.data else None
 
     async def _get_portfolio_account(self, user_id: str) -> Optional[Dict[str, Any]]:
@@ -635,7 +673,3 @@ class RobinhoodService:
 
 def get_robinhood_service() -> RobinhoodService:
     return RobinhoodService()
-
-
-class RobinhoodLoginApprovalRequired(Exception):
-    """Raised when Robinhood requires mobile/app approval before login can continue."""

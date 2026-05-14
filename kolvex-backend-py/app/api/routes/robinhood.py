@@ -10,6 +10,7 @@ from starlette import status as http_status
 from app.api.dependencies.auth import get_current_user_id
 from app.services.robinhood.service import (
     RobinhoodLoginApprovalRequired,
+    RobinhoodStorageNotReady,
     RobinhoodService,
     get_robinhood_service,
 )
@@ -39,6 +40,8 @@ class RobinhoodStatusResponse(BaseModel):
     profile: Optional[Dict[str, Any]] = None
     positions_count: int = 0
     orders_count: int = 0
+    setup_required: bool = False
+    message: Optional[str] = None
 
 
 class RobinhoodConnectResponse(RobinhoodStatusResponse):
@@ -94,7 +97,42 @@ async def connect_robinhood(
             approval_required=True,
             message=str(e),
         )
+    except RobinhoodStorageNotReady as e:
+        return RobinhoodConnectResponse(
+            is_connected=False,
+            last_synced_at=None,
+            profile=None,
+            positions_count=0,
+            orders_count=0,
+            setup_required=True,
+            success=False,
+            positions_synced=0,
+            approval_required=False,
+            message=str(e),
+        )
     except Exception as e:
+        message = str(e)
+        approval_markers = [
+            "approve",
+            "confirm",
+            "device",
+            "challenge",
+            "login request",
+            "verification",
+            "suspicious",
+        ]
+        if any(marker in message.lower() for marker in approval_markers):
+            return RobinhoodConnectResponse(
+                is_connected=False,
+                last_synced_at=None,
+                profile=None,
+                positions_count=0,
+                orders_count=0,
+                success=False,
+                positions_synced=0,
+                approval_required=True,
+                message='Robinhood is waiting for device approval. Tap "Yes, it\'s me" in the Robinhood app, then click Connect Robinhood again.',
+            )
         logger.error("Failed to connect Robinhood: %s", e)
         raise HTTPException(
             status_code=http_status.HTTP_400_BAD_REQUEST,
