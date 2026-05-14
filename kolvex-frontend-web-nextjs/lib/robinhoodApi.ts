@@ -42,6 +42,8 @@ export interface RobinhoodStatus {
 export interface RobinhoodConnectResponse extends RobinhoodStatus {
   success: boolean;
   positions_synced: number;
+  approval_required?: boolean;
+  message?: string | null;
 }
 
 export async function connectRobinhood(

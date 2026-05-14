@@ -3,12 +3,19 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import logging
+import os
+import pickle
 from datetime import date, datetime
+from pathlib import Path
 from typing import Any, Dict, List, Optional, Set
 
 import pyotp
 import robin_stocks.robinhood as r
+from robin_stocks.robinhood.authentication import generate_device_token
+from robin_stocks.robinhood.helper import request_get, request_post, set_login_state, update_session
+from robin_stocks.robinhood.urls import login_url, positions_url
 from supabase import Client
 
 from app.core.supabase import get_supabase_service
@@ -59,24 +66,155 @@ class RobinhoodService:
         safe_user_id = "".join(ch for ch in user_id if ch.isalnum() or ch in "-_")
         return f"kolvex_robinhood_{safe_user_id}"
 
+    def _tokens_dir(self) -> Path:
+        data_dir = Path(os.path.expanduser("~")) / ".tokens"
+        data_dir.mkdir(parents=True, exist_ok=True)
+        return data_dir
+
+    def _pickle_path(self, user_id: str) -> Path:
+        return self._tokens_dir() / f"robinhood{self._session_name(user_id)}.pickle"
+
+    def _device_token_path(self) -> Path:
+        return self._tokens_dir() / "kolvex_robinhood_device_tokens.json"
+
+    def _get_device_token(self, user_id: str) -> str:
+        token_path = self._device_token_path()
+        key = self._session_name(user_id)
+        tokens: Dict[str, str] = {}
+
+        if token_path.exists():
+            try:
+                tokens = json.loads(token_path.read_text())
+            except json.JSONDecodeError:
+                tokens = {}
+
+        if key not in tokens:
+            tokens[key] = generate_device_token()
+            token_path.write_text(json.dumps(tokens))
+
+        return tokens[key]
+
     def _login(
         self,
         user_id: str,
         username: str,
         password: str,
         totp_secret: str | None = None,
-    ) -> None:
+    ) -> Dict[str, Any]:
         mfa_code = pyotp.TOTP(totp_secret).now() if totp_secret else None
-        r.login(
-            username,
-            password,
+        return self._login_with_stable_device_token(
+            user_id=user_id,
+            username=username,
+            password=password,
             mfa_code=mfa_code,
-            store_session=True,
-            pickle_name=self._session_name(user_id),
         )
 
     def _login_from_cache(self, user_id: str) -> None:
         r.login(store_session=True, pickle_name=self._session_name(user_id))
+
+    def _login_with_stable_device_token(
+        self,
+        user_id: str,
+        username: str,
+        password: str,
+        mfa_code: str | None = None,
+        expires_in: int = 86400,
+    ) -> Dict[str, Any]:
+        """Login without interactive prompts and reuse device_token across retries."""
+
+        pickle_path = self._pickle_path(user_id)
+        payload = {
+            "client_id": "c82SH0WZOsabOXGP2sxqcj34FxkvfnWRZBKlBjFS",
+            "expires_in": expires_in,
+            "grant_type": "password",
+            "password": password,
+            "scope": "internal",
+            "username": username,
+            "challenge_type": "sms",
+            "device_token": self._get_device_token(user_id),
+        }
+        if mfa_code:
+            payload["mfa_code"] = mfa_code
+
+        if pickle_path.exists():
+            try:
+                with pickle_path.open("rb") as f:
+                    pickle_data = pickle.load(f)
+                access_token = pickle_data["access_token"]
+                token_type = pickle_data["token_type"]
+                refresh_token = pickle_data["refresh_token"]
+                payload["device_token"] = pickle_data.get("device_token") or payload[
+                    "device_token"
+                ]
+                set_login_state(True)
+                update_session("Authorization", f"{token_type} {access_token}")
+                response = request_get(
+                    positions_url(),
+                    "pagination",
+                    {"nonzero": "true"},
+                    jsonify_data=False,
+                )
+                response.raise_for_status()
+                return {
+                    "access_token": access_token,
+                    "token_type": token_type,
+                    "expires_in": expires_in,
+                    "scope": "internal",
+                    "detail": f"logged in using authentication in {pickle_path.name}",
+                    "backup_code": None,
+                    "refresh_token": refresh_token,
+                }
+            except Exception:
+                set_login_state(False)
+                update_session("Authorization", None)
+
+        data = request_post(login_url(), payload)
+        if not data:
+            raise Exception("Robinhood login failed: empty response from API")
+
+        if data.get("mfa_required") and not mfa_code:
+            raise RobinhoodLoginApprovalRequired(
+                "Robinhood MFA is required. Add the TOTP secret and try again."
+            )
+
+        if "challenge" in data:
+            raise RobinhoodLoginApprovalRequired(
+                "Robinhood sent a login challenge. Approve it on your phone, then click Connect Robinhood again."
+            )
+
+        detail = str(data.get("detail") or data.get("error") or "")
+        if "access_token" not in data:
+            approval_markers = [
+                "approve",
+                "confirm",
+                "device",
+                "challenge",
+                "login request",
+                "verification",
+            ]
+            if any(marker in detail.lower() for marker in approval_markers):
+                raise RobinhoodLoginApprovalRequired(
+                    "Robinhood is waiting for device approval. Tap \"Yes, it's me\" in the Robinhood app, then click Connect Robinhood again."
+                )
+            raise Exception(detail or f"Robinhood login failed: {data}")
+
+        token = f"{data['token_type']} {data['access_token']}"
+        update_session("Authorization", token)
+        set_login_state(True)
+        data["detail"] = "logged in with brand new authentication code."
+
+        with pickle_path.open("wb") as f:
+            pickle.dump(
+                {
+                    "token_type": data["token_type"],
+                    "access_token": data["access_token"],
+                    "refresh_token": data["refresh_token"],
+                    "device_token": payload["device_token"],
+                },
+                f,
+            )
+
+        return data
 
     async def connect(
         self,
@@ -497,3 +635,7 @@ class RobinhoodService:
 
 def get_robinhood_service() -> RobinhoodService:
     return RobinhoodService()
+
+
+class RobinhoodLoginApprovalRequired(Exception):
+    """Raised when Robinhood requires mobile/app approval before login can continue."""

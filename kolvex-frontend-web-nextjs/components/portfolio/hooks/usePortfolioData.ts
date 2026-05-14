@@ -109,7 +109,14 @@ export function usePortfolioData({ userId, isOwner }: UsePortfolioDataOptions) {
     }) => {
       setConnecting(true);
       try {
-        await connectRobinhoodBroker(credentials);
+        const result = await connectRobinhoodBroker(credentials);
+        if (result.approval_required) {
+          toast.info(
+            result.message ||
+              "Approve the Robinhood login on your phone, then click Connect Robinhood again."
+          );
+          return;
+        }
         await loadData();
         toast.success("Robinhood connected and synced");
       } catch (error: any) {

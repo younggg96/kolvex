@@ -8,7 +8,11 @@ from pydantic import BaseModel, Field
 from starlette import status as http_status
 
 from app.api.dependencies.auth import get_current_user_id
-from app.services.robinhood.service import RobinhoodService, get_robinhood_service
+from app.services.robinhood.service import (
+    RobinhoodLoginApprovalRequired,
+    RobinhoodService,
+    get_robinhood_service,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -40,6 +44,8 @@ class RobinhoodStatusResponse(BaseModel):
 class RobinhoodConnectResponse(RobinhoodStatusResponse):
     success: bool = True
     positions_synced: int = 0
+    approval_required: bool = False
+    message: Optional[str] = None
 
 
 @router.get("/status", response_model=RobinhoodStatusResponse)
@@ -75,6 +81,18 @@ async def connect_robinhood(
             **status,
             success=True,
             positions_synced=result.get("positions_synced", 0),
+        )
+    except RobinhoodLoginApprovalRequired as e:
+        return RobinhoodConnectResponse(
+            is_connected=False,
+            last_synced_at=None,
+            profile=None,
+            positions_count=0,
+            orders_count=0,
+            success=False,
+            positions_synced=0,
+            approval_required=True,
+            message=str(e),
         )
     except Exception as e:
         logger.error("Failed to connect Robinhood: %s", e)
