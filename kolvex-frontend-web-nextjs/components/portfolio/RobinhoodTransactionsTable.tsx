@@ -35,6 +35,7 @@ import {
   type RobinhoodWashSaleRiskSymbol,
 } from "@/lib/robinhoodApi";
 import { getAvailableProviders } from "@/lib/api/userApiKeysApi";
+import { cn } from "@/lib/utils";
 import {
   MODEL_CONFIGS,
   PROVIDER_NAME_TO_ID,
@@ -63,7 +64,9 @@ function formatShares(value?: number | null) {
 
 function formatOrderDate(value?: string | null) {
   if (!value) return "-";
-  return new Date(value).toLocaleString(undefined, {
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return "-";
+  return d.toLocaleString(undefined, {
     month: "short",
     day: "numeric",
     year: "numeric",
@@ -76,6 +79,14 @@ function normalizeLabel(value?: string | null) {
   if (!value) return "-";
   return value.replace(/_/g, " ");
 }
+
+/** Buttons stay fixed width; selects use min/max width so closed-state proportions stay natural */
+const TRANSACTION_TOOLBAR_BTN =
+  "h-9 w-48 shrink-0 gap-2 overflow-hidden px-3 text-xs disabled:opacity-50";
+const TRANSACTION_TOOLBAR_SELECT = cn(
+  "h-9 min-w-[11rem] max-w-[min(22rem,calc(100vw-3rem))] shrink px-3 py-0 text-xs disabled:opacity-50",
+  "rounded-lg border border-border bg-background text-left outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+);
 
 export function RobinhoodTransactionsTable({
   orders,
@@ -305,16 +316,18 @@ export function RobinhoodTransactionsTable({
             size="sm"
             onClick={toggleCurrentPage}
             disabled={orders.length === 0}
-            className="gap-2"
+            className={TRANSACTION_TOOLBAR_BTN}
           >
-            <CheckSquare className="h-4 w-4" />
-            {t("portfolio.transactions.selectPage")}
+            <CheckSquare className="h-4 w-4 shrink-0" />
+            <span className="min-w-0 flex-1 truncate text-center">
+              {t("portfolio.transactions.selectPage")}
+            </span>
           </Button>
           <select
             value={statusFilter}
             onChange={(event) => onStatusFilterChange(event.target.value)}
             disabled={syncing || loading}
-            className="h-8 rounded-md border border-border bg-background px-2 text-xs"
+            className={TRANSACTION_TOOLBAR_SELECT}
           >
             <option value="filled">{t("portfolio.transactions.statusFilled")}</option>
             <option value="cancelled">
@@ -326,7 +339,7 @@ export function RobinhoodTransactionsTable({
             value={selectedModel}
             onChange={(event) => setSelectedModel(event.target.value)}
             disabled={!providersLoaded || availableModels.length === 0}
-            className="h-8 rounded-md border border-border bg-background px-2 text-xs"
+            className={TRANSACTION_TOOLBAR_SELECT}
           >
             {availableModels.map((model) => (
               <option key={model.id} value={model.id}>
@@ -339,7 +352,7 @@ export function RobinhoodTransactionsTable({
             onChange={(event) =>
               setAnalysisLanguage(event.target.value as "zh" | "en")
             }
-            className="h-8 rounded-md border border-border bg-background px-2 text-xs"
+            className={TRANSACTION_TOOLBAR_SELECT}
           >
             <option value="zh">{t("portfolio.transactions.languageZh")}</option>
             <option value="en">{t("portfolio.transactions.languageEn")}</option>
@@ -349,16 +362,18 @@ export function RobinhoodTransactionsTable({
             size="sm"
             onClick={onSync}
             disabled={syncing}
-            className="gap-2"
+            className={TRANSACTION_TOOLBAR_BTN}
           >
             {syncing ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
+              <Loader2 className="h-4 w-4 shrink-0 animate-spin" />
             ) : (
-              <RefreshCw className="h-4 w-4" />
+              <RefreshCw className="h-4 w-4 shrink-0" />
             )}
-            {syncing
-              ? t("portfolio.transactions.syncing")
-              : t("portfolio.transactions.syncRobinhood")}
+            <span className="min-w-0 flex-1 truncate text-center">
+              {syncing
+                ? t("portfolio.transactions.syncing")
+                : t("portfolio.transactions.syncRobinhood")}
+            </span>
           </Button>
           <Button
             variant="outline"
@@ -370,14 +385,16 @@ export function RobinhoodTransactionsTable({
               !providersLoaded ||
               availableModels.length === 0
             }
-            className="gap-2"
+            className={TRANSACTION_TOOLBAR_BTN}
           >
             {analyzing ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
+              <Loader2 className="h-4 w-4 shrink-0 animate-spin" />
             ) : (
-              <Brain className="h-4 w-4" />
+              <Brain className="h-4 w-4 shrink-0" />
             )}
-            {t("portfolio.transactions.analyze")}
+            <span className="min-w-0 flex-1 truncate text-center">
+              {t("portfolio.transactions.analyze")}
+            </span>
           </Button>
           {analysis && (
             <Button
@@ -385,10 +402,12 @@ export function RobinhoodTransactionsTable({
               size="sm"
               onClick={handleAnalyze}
               disabled={analyzing}
-              className="gap-2"
+              className={TRANSACTION_TOOLBAR_BTN}
             >
-              <Languages className="h-4 w-4" />
-              {t("portfolio.transactions.translate")}
+              <Languages className="h-4 w-4 shrink-0" />
+              <span className="min-w-0 flex-1 truncate text-center">
+                {t("portfolio.transactions.translate")}
+              </span>
             </Button>
           )}
           {analysis && (
@@ -396,20 +415,24 @@ export function RobinhoodTransactionsTable({
               variant="outline"
               size="sm"
               onClick={handleDownloadAnalysis}
-              className="gap-2"
+              className={TRANSACTION_TOOLBAR_BTN}
             >
-              <FileText className="h-4 w-4" />
-              {t("portfolio.transactions.downloadAnalysis")}
+              <FileText className="h-4 w-4 shrink-0" />
+              <span className="min-w-0 flex-1 truncate text-center">
+                {t("portfolio.transactions.downloadAnalysis")}
+              </span>
             </Button>
           )}
           <Button
             variant="outline"
             size="sm"
             onClick={handleExportCsv}
-            className="gap-2"
+            className={TRANSACTION_TOOLBAR_BTN}
           >
-            <Download className="h-4 w-4" />
-            {t("portfolio.transactions.exportCsv")}
+            <Download className="h-4 w-4 shrink-0" />
+            <span className="min-w-0 flex-1 truncate text-center">
+              {t("portfolio.transactions.exportCsv")}
+            </span>
           </Button>
         </div>
       </div>

@@ -90,23 +90,50 @@ def _order_state_matches(order_state: object, status_filter: str) -> bool:
 
 
 def _parse_robinhood_timestamp(value: str | None) -> str | None:
-    if not value:
+    """Parse Robinhood API timestamps into naive UTC ISO strings for Postgres."""
+    if value is None or value == "":
+        return None
+    if not isinstance(value, str):
+        value = str(value)
+    normalized = value.replace("Z", "+00:00")
+    try:
+        parsed = datetime.fromisoformat(normalized)
+    except ValueError:
+        try:
+            parsed = datetime.strptime(value, "%Y-%m-%dT%H:%M:%S.%fZ").replace(
+                tzinfo=timezone.utc
+            )
+        except ValueError:
+            try:
+                parsed = datetime.strptime(value, "%Y-%m-%dT%H:%M:%SZ").replace(
+                    tzinfo=timezone.utc
+                )
+            except ValueError:
+                return None
+    except TypeError:
         return None
 
+    if parsed.tzinfo is not None:
+        parsed = parsed.astimezone(timezone.utc).replace(tzinfo=None)
+    return parsed.isoformat(timespec="microseconds")
 
-def _parse_order_datetime(value: str | None) -> datetime | None:
-    if not value:
+
+def _parse_order_datetime(value: str | datetime | None) -> datetime | None:
+    if value is None or value == "":
         return None
+    if isinstance(value, datetime):
+        parsed = value
+        if parsed.tzinfo is None:
+            return parsed.replace(tzinfo=timezone.utc)
+        return parsed.astimezone(timezone.utc)
+    if not isinstance(value, str):
+        value = str(value)
     try:
         parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
         if parsed.tzinfo is None:
             parsed = parsed.replace(tzinfo=timezone.utc)
         return parsed
     except (TypeError, ValueError):
-        return None
-    try:
-        return datetime.fromisoformat(value.replace("Z", "+00:00")).isoformat()
-    except ValueError:
         return None
 
 
