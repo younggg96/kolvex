@@ -1310,6 +1310,43 @@ class RobinhoodService:
             "profile": connection.get("profile") or {},
         }
 
+    # Supabase / PostgREST applies a default ``max-rows`` cap of 1000 to any
+    # SELECT that doesn't explicitly request a range. We compute PnL/wash-sale
+    # by walking the user's full order history in chronological order, so we
+    # MUST page through until we've actually fetched everything. Otherwise the
+    # caller silently sees only the oldest 1000 orders and "newer" orders
+    # disappear from the UI even though they're in the table.
+    _ORDERS_PAGE_SIZE = 1000
+
+    def _fetch_all_user_orders(
+        self,
+        user_id: str,
+        symbol: str | None = None,
+    ) -> List[Dict[str, Any]]:
+        all_rows: List[Dict[str, Any]] = []
+        offset = 0
+        page_size = self._ORDERS_PAGE_SIZE
+        while True:
+            query = (
+                self.supabase.table("robinhood_stock_orders")
+                .select(
+                    "id, order_id, ticker, side, order_type, quantity, average_price, "
+                    "total_amount, state, created_time, executed_time, fees, raw_order"
+                )
+                .eq("user_id", user_id)
+                .order("created_time", desc=False)
+                .range(offset, offset + page_size - 1)
+            )
+            if symbol:
+                query = query.eq("ticker", symbol.upper())
+            result = query.execute()
+            rows = result.data or []
+            all_rows.extend(rows)
+            if len(rows) < page_size:
+                break
+            offset += page_size
+        return all_rows
+
     async def get_orders(
         self,
         user_id: str,
@@ -1331,19 +1368,8 @@ class RobinhoodService:
                 "wash_sale_risk_symbols": [],
             }
 
-        all_query = (
-            self.supabase.table("robinhood_stock_orders")
-            .select(
-                "id, order_id, ticker, side, order_type, quantity, average_price, "
-                "total_amount, state, created_time, executed_time, fees, raw_order",
-            )
-            .eq("user_id", user_id)
-            .order("created_time", desc=False)
-        )
-        if symbol:
-            all_query = all_query.eq("ticker", symbol.upper())
-        all_result = all_query.execute()
-        enriched_orders = self._enrich_orders(all_result.data or [])
+        all_rows = self._fetch_all_user_orders(user_id, symbol=symbol)
+        enriched_orders = self._enrich_orders(all_rows)
         if status_filter and status_filter.lower() != "all":
             enriched_orders = [
                 order
@@ -1369,17 +1395,8 @@ class RobinhoodService:
         if not connection:
             return {"symbols": [], "generated_at": datetime.utcnow().isoformat()}
 
-        result = (
-            self.supabase.table("robinhood_stock_orders")
-            .select(
-                "id, order_id, ticker, side, order_type, quantity, average_price, "
-                "total_amount, state, created_time, executed_time, fees, raw_order"
-            )
-            .eq("user_id", user_id)
-            .order("created_time", desc=False)
-            .execute()
-        )
-        enriched = self._enrich_orders(result.data or [])
+        all_rows = self._fetch_all_user_orders(user_id)
+        enriched = self._enrich_orders(all_rows)
         return {
             "symbols": self._current_wash_sale_risk_symbols(enriched),
             "generated_at": datetime.utcnow().isoformat(),
@@ -1396,17 +1413,8 @@ class RobinhoodService:
         language: str = "zh",
     ) -> Dict[str, Any]:
         if order_ids:
-            result = (
-                self.supabase.table("robinhood_stock_orders")
-                .select(
-                    "id, order_id, ticker, side, order_type, quantity, average_price, "
-                    "total_amount, state, created_time, executed_time, fees, raw_order"
-                )
-                .eq("user_id", user_id)
-                .order("created_time", desc=False)
-                .execute()
-            )
-            enriched_history = self._enrich_orders(result.data or [])
+            all_rows = self._fetch_all_user_orders(user_id)
+            enriched_history = self._enrich_orders(all_rows)
             selected = set(order_ids)
             orders = [
                 order
