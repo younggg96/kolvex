@@ -1635,6 +1635,24 @@ class RobinhoodService:
         return synced_positions
 
     async def _sync_orders(self, user_id: str) -> int:
+        """Incremental + batched Robinhood order sync.
+
+        Robinhood `/orders/` returns newest first across many paginated pages.
+        Doing a per-order Supabase upsert (plus an instrument→ticker lookup)
+        for every page on every sync easily blows past the 60s API gateway
+        cap once an account accumulates several hundred orders, which then
+        looks like "the latest trades aren't coming through" because the
+        request times out before the first batch finishes writing.
+
+        To keep syncs fast and idempotent we:
+          1. Pull every existing order_id + state from Supabase up front.
+          2. Skip Robinhood rows that already exist in a terminal state and
+             whose state hasn't changed -- the row in our table is already
+             correct, no upsert / no instrument lookup needed.
+          3. Resolve unique instrument URLs via Robinhood **once each**.
+          4. Batch-upsert the changed/new rows 100 at a time.
+        """
+
         try:
             orders_data = await asyncio.to_thread(r.get_all_stock_orders)
         except Exception as error:
@@ -1649,11 +1667,44 @@ class RobinhoodService:
             logger.info("Robinhood returned no orders for user %s", user_id)
             return 0
 
-        symbol_cache: Dict[str, str] = {}
-        synced = 0
-        skipped = 0
-        failed = 0
+        # --- Existing orders snapshot ------------------------------------
+        existing_states: Dict[str, str] = {}
+        existing_tickers: Dict[str, str] = {}
+        existing_has_time: Set[str] = set()
+        try:
+            existing_rows = (
+                self.supabase.table("robinhood_stock_orders")
+                .select("order_id, state, ticker, created_time, executed_time")
+                .eq("user_id", user_id)
+                .execute()
+            )
+            for row in existing_rows.data or []:
+                order_id_value = row.get("order_id")
+                if not order_id_value:
+                    continue
+                existing_states[order_id_value] = _safe_str(
+                    row.get("state")
+                ).lower()
+                existing_tickers[order_id_value] = _safe_str(row.get("ticker"))
+                if row.get("created_time") or row.get("executed_time"):
+                    existing_has_time.add(order_id_value)
+        except Exception as snapshot_error:
+            logger.warning(
+                "Could not load existing Robinhood orders for user %s, "
+                "falling back to full upsert: %s",
+                user_id,
+                snapshot_error,
+            )
 
+        terminal_states = {"filled", "cancelled", "canceled", "rejected", "failed"}
+        symbol_cache: Dict[str, str] = {}
+        rows_to_upsert: List[Dict[str, Any]] = []
+        unchanged = 0
+        skipped = 0
+        instrument_lookups_needed: Set[str] = set()
+
+        # --- First pass: figure out what actually changed -----------------
+        candidate_orders: List[Dict[str, Any]] = []
         for raw_order in orders_data:
             order_id = raw_order.get("id")
             instrument_url = raw_order.get("instrument")
@@ -1661,57 +1712,112 @@ class RobinhoodService:
                 skipped += 1
                 continue
 
-            try:
-                ticker = symbol_cache.get(instrument_url)
-                if ticker is None:
-                    ticker = await asyncio.to_thread(
-                        r.get_symbol_by_url, instrument_url
-                    )
-                    if ticker:
-                        symbol_cache[instrument_url] = ticker
+            new_state = _safe_str(raw_order.get("state")).lower()
+            prev_state = existing_states.get(order_id)
+            already_has_time = order_id in existing_has_time
+            if (
+                prev_state is not None
+                and prev_state == new_state
+                and prev_state in terminal_states
+                and already_has_time
+            ):
+                # Row is already terminal in our table, Robinhood agrees,
+                # and timestamps are present. Cache the ticker so we don't
+                # have to hit the instrument endpoint again this sync.
+                cached_ticker = existing_tickers.get(order_id)
+                if cached_ticker and cached_ticker != "UNKNOWN":
+                    symbol_cache[instrument_url] = cached_ticker
+                unchanged += 1
+                continue
 
+            candidate_orders.append(raw_order)
+            if instrument_url not in symbol_cache:
+                instrument_lookups_needed.add(instrument_url)
+
+        # --- Resolve instrument URLs once each ---------------------------
+        for instrument_url in instrument_lookups_needed:
+            try:
+                ticker = await asyncio.to_thread(
+                    r.get_symbol_by_url, instrument_url
+                )
+                if ticker:
+                    symbol_cache[instrument_url] = ticker
+            except Exception as lookup_error:
+                logger.warning(
+                    "Robinhood symbol lookup failed for %s: %s",
+                    instrument_url,
+                    lookup_error,
+                )
+
+        # --- Build rows --------------------------------------------------
+        failed = 0
+        for raw_order in candidate_orders:
+            order_id = raw_order.get("id")
+            instrument_url = raw_order.get("instrument")
+            try:
                 quantity = _safe_float(
                     raw_order.get("cumulative_quantity")
                     or raw_order.get("quantity")
                 )
                 average_price = _safe_float(raw_order.get("average_price"))
 
-                order = {
-                    "user_id": user_id,
-                    "order_id": order_id,
-                    "ticker": ticker or "UNKNOWN",
-                    "side": _safe_str(raw_order.get("side")),
-                    "order_type": _safe_str(raw_order.get("type")),
-                    "quantity": quantity,
-                    "average_price": average_price if average_price > 0 else None,
-                    "total_amount": quantity * average_price,
-                    "state": _safe_str(raw_order.get("state")),
-                    "created_time": _parse_robinhood_timestamp(
-                        raw_order.get("created_at")
-                    ),
-                    "executed_time": _parse_robinhood_timestamp(
-                        raw_order.get("last_transaction_at")
-                    ),
-                    "fees": _safe_float(raw_order.get("fees")),
-                    "raw_order": raw_order,
-                }
-                self.supabase.table("robinhood_stock_orders").upsert(
-                    order, on_conflict="user_id,order_id"
-                ).execute()
-                synced += 1
-            except Exception as order_error:
+                rows_to_upsert.append(
+                    {
+                        "user_id": user_id,
+                        "order_id": order_id,
+                        "ticker": symbol_cache.get(instrument_url) or "UNKNOWN",
+                        "side": _safe_str(raw_order.get("side")),
+                        "order_type": _safe_str(raw_order.get("type")),
+                        "quantity": quantity,
+                        "average_price": (
+                            average_price if average_price > 0 else None
+                        ),
+                        "total_amount": quantity * average_price,
+                        "state": _safe_str(raw_order.get("state")),
+                        "created_time": _parse_robinhood_timestamp(
+                            raw_order.get("created_at")
+                        ),
+                        "executed_time": _parse_robinhood_timestamp(
+                            raw_order.get("last_transaction_at")
+                        ),
+                        "fees": _safe_float(raw_order.get("fees")),
+                        "raw_order": raw_order,
+                    }
+                )
+            except Exception as build_error:
                 failed += 1
                 logger.warning(
-                    "Failed to upsert Robinhood order %s for user %s: %s",
+                    "Failed to build Robinhood order payload %s for user %s: %s",
                     order_id,
                     user_id,
-                    order_error,
+                    build_error,
+                )
+
+        # --- Batched upsert ----------------------------------------------
+        synced = 0
+        batch_size = 100
+        for i in range(0, len(rows_to_upsert), batch_size):
+            batch = rows_to_upsert[i : i + batch_size]
+            try:
+                self.supabase.table("robinhood_stock_orders").upsert(
+                    batch, on_conflict="user_id,order_id"
+                ).execute()
+                synced += len(batch)
+            except Exception as batch_error:
+                failed += len(batch)
+                logger.warning(
+                    "Robinhood batch upsert failed (%d rows) for user %s: %s",
+                    len(batch),
+                    user_id,
+                    batch_error,
                 )
 
         logger.info(
-            "Robinhood orders sync for user %s: synced=%d skipped=%d failed=%d total=%d",
+            "Robinhood orders sync for user %s: synced=%d unchanged=%d "
+            "skipped=%d failed=%d total=%d",
             user_id,
             synced,
+            unchanged,
             skipped,
             failed,
             len(orders_data),

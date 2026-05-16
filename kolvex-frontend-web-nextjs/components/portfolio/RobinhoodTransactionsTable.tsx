@@ -17,6 +17,14 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -80,12 +88,12 @@ function normalizeLabel(value?: string | null) {
   return value.replace(/_/g, " ");
 }
 
-/** Buttons stay fixed width; selects use min/max width so closed-state proportions stay natural */
+/** Buttons stay fixed width; Select triggers match toolbar density */
 const TRANSACTION_TOOLBAR_BTN =
   "h-9 w-48 shrink-0 gap-2 overflow-hidden px-3 text-xs disabled:opacity-50";
-const TRANSACTION_TOOLBAR_SELECT = cn(
-  "h-9 min-w-[11rem] max-w-[min(22rem,calc(100vw-3rem))] shrink px-3 py-0 text-xs disabled:opacity-50",
-  "rounded-lg border border-border bg-background text-left outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+const TRANSACTION_TOOLBAR_SELECT_TRIGGER = cn(
+  "h-9 min-w-[11rem] max-w-[min(22rem,calc(100vw-3rem))] shrink px-3 text-xs",
+  "bg-background"
 );
 
 export function RobinhoodTransactionsTable({
@@ -139,6 +147,17 @@ export function RobinhoodTransactionsTable({
     [orders, selectedOrderIds]
   );
   const selectedCount = selectedOrderIds.size;
+
+  const headerSelectAllState = useMemo((): boolean | "indeterminate" => {
+    if (orders.length === 0) return false;
+    let onPage = 0;
+    for (const order of orders) {
+      if (selectedOrderIds.has(order.order_id)) onPage += 1;
+    }
+    if (onPage === 0) return false;
+    if (onPage === orders.length) return true;
+    return "indeterminate";
+  }, [orders, selectedOrderIds]);
 
   const toggleOrder = (orderId: string) => {
     setSelectedOrderIds((prev) => {
@@ -323,40 +342,78 @@ export function RobinhoodTransactionsTable({
               {t("portfolio.transactions.selectPage")}
             </span>
           </Button>
-          <select
+          <Select
             value={statusFilter}
-            onChange={(event) => onStatusFilterChange(event.target.value)}
+            onValueChange={(value) => {
+              void onStatusFilterChange(value);
+            }}
             disabled={syncing || loading}
-            className={TRANSACTION_TOOLBAR_SELECT}
           >
-            <option value="filled">{t("portfolio.transactions.statusFilled")}</option>
-            <option value="cancelled">
-              {t("portfolio.transactions.statusCancelled")}
-            </option>
-            <option value="all">{t("portfolio.transactions.statusAll")}</option>
-          </select>
-          <select
-            value={selectedModel}
-            onChange={(event) => setSelectedModel(event.target.value)}
-            disabled={!providersLoaded || availableModels.length === 0}
-            className={TRANSACTION_TOOLBAR_SELECT}
-          >
-            {availableModels.map((model) => (
-              <option key={model.id} value={model.id}>
-                {model.name}
-              </option>
-            ))}
-          </select>
-          <select
+            <SelectTrigger className={TRANSACTION_TOOLBAR_SELECT_TRIGGER}>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="filled">
+                {t("portfolio.transactions.statusFilled")}
+              </SelectItem>
+              <SelectItem value="cancelled">
+                {t("portfolio.transactions.statusCancelled")}
+              </SelectItem>
+              <SelectItem value="all">
+                {t("portfolio.transactions.statusAll")}
+              </SelectItem>
+            </SelectContent>
+          </Select>
+          {availableModels.length > 0 ? (
+            <Select
+              value={selectedModel}
+              onValueChange={setSelectedModel}
+              disabled={!providersLoaded}
+            >
+              <SelectTrigger className={TRANSACTION_TOOLBAR_SELECT_TRIGGER}>
+                <SelectValue placeholder="Model" />
+              </SelectTrigger>
+              <SelectContent>
+                {availableModels.map((model) => (
+                  <SelectItem key={model.id} value={model.id}>
+                    {model.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          ) : (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled
+              className={TRANSACTION_TOOLBAR_BTN}
+            >
+              <span className="min-w-0 flex-1 truncate text-center text-xs">
+                {providersLoaded
+                  ? t("portfolio.transactions.noAiModel")
+                  : t("common.loading")}
+              </span>
+            </Button>
+          )}
+          <Select
             value={analysisLanguage}
-            onChange={(event) =>
-              setAnalysisLanguage(event.target.value as "zh" | "en")
+            onValueChange={(v) =>
+              setAnalysisLanguage(v as "zh" | "en")
             }
-            className={TRANSACTION_TOOLBAR_SELECT}
           >
-            <option value="zh">{t("portfolio.transactions.languageZh")}</option>
-            <option value="en">{t("portfolio.transactions.languageEn")}</option>
-          </select>
+            <SelectTrigger className={TRANSACTION_TOOLBAR_SELECT_TRIGGER}>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="zh">
+                {t("portfolio.transactions.languageZh")}
+              </SelectItem>
+              <SelectItem value="en">
+                {t("portfolio.transactions.languageEn")}
+              </SelectItem>
+            </SelectContent>
+          </Select>
           <Button
             variant="outline"
             size="sm"
@@ -452,13 +509,9 @@ export function RobinhoodTransactionsTable({
         <TableHeader>
           <TableRow>
             <TableHead className="w-10 pl-4">
-              <input
-                type="checkbox"
-                checked={
-                  orders.length > 0 &&
-                  orders.every((order) => selectedOrderIds.has(order.order_id))
-                }
-                onChange={toggleCurrentPage}
+              <Checkbox
+                checked={headerSelectAllState}
+                onCheckedChange={() => toggleCurrentPage()}
                 aria-label={t("portfolio.transactions.selectPage")}
               />
             </TableHead>
@@ -492,10 +545,9 @@ export function RobinhoodTransactionsTable({
             return (
               <TableRow key={order.order_id}>
                 <TableCell className="pl-4">
-                  <input
-                    type="checkbox"
+                  <Checkbox
                     checked={selectedOrderIds.has(order.order_id)}
-                    onChange={() => toggleOrder(order.order_id)}
+                    onCheckedChange={() => toggleOrder(order.order_id)}
                     aria-label={`${t("portfolio.transactions.select")} ${order.ticker}`}
                   />
                 </TableCell>

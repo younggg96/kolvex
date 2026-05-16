@@ -442,7 +442,8 @@
       "loadMore": "加载更多",
       "exportCsv": "导出 CSV",
       "analyze": "AI 分析",
-      "aiAnalysis": "AI 交易复盘"
+      "aiAnalysis": "AI 交易复盘",
+      "noAiModel": "请在设置中添加 AI API 密钥"
     },
     "holdings": {
       "refreshing": "刷新中...",

@@ -471,7 +471,8 @@
       "loadMore": "Load more",
       "exportCsv": "Export CSV",
       "analyze": "AI analyze",
-      "aiAnalysis": "AI trade analysis"
+      "aiAnalysis": "AI trade analysis",
+      "noAiModel": "Add API key in Settings"
     },
     "holdings": {
       "refreshing": "Refreshing...",
