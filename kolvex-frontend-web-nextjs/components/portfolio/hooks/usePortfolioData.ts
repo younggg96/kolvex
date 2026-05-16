@@ -19,6 +19,7 @@ import {
   getRobinhoodStatus,
   resetRobinhoodAuth,
   syncRobinhood,
+  waitForRobinhoodSync,
   type RobinhoodOrder,
   type RobinhoodStatus,
 } from "@/lib/robinhoodApi";
@@ -194,6 +195,28 @@ export function usePortfolioData({ userId, isOwner }: UsePortfolioDataOptions) {
         );
       };
 
+      const finishConnectedSync = async () => {
+        toast.info("Syncing your Robinhood positions and orders...", {
+          id: "robinhood-approval",
+          duration: 4000,
+        });
+        try {
+          await waitForRobinhoodSync();
+        } catch (syncError: any) {
+          toast.error(
+            syncError?.message ||
+              "Robinhood is connected but the background sync failed. Try again later.",
+            { id: "robinhood-approval" }
+          );
+          await loadData();
+          return;
+        }
+        await loadData();
+        toast.success("Robinhood connected and synced", {
+          id: "robinhood-approval",
+        });
+      };
+
       try {
         while (true) {
           let result: Awaited<ReturnType<typeof connectRobinhoodBroker>> | null =
@@ -213,10 +236,7 @@ export function usePortfolioData({ userId, isOwner }: UsePortfolioDataOptions) {
             try {
               const status = await getRobinhoodStatus();
               if (status.is_connected) {
-                await loadData();
-                toast.success("Robinhood connected and synced", {
-                  id: "robinhood-approval",
-                });
+                await finishConnectedSync();
                 return;
               }
             } catch {
@@ -250,10 +270,9 @@ export function usePortfolioData({ userId, isOwner }: UsePortfolioDataOptions) {
             continue;
           }
 
-          await loadData();
-          toast.success("Robinhood connected and synced", {
-            id: "robinhood-approval",
-          });
+          // Login + token persistence succeeded. The actual data fetch is
+          // running in the background to dodge the Vercel proxy timeout.
+          await finishConnectedSync();
           return;
         }
       } catch (error: any) {
@@ -271,7 +290,10 @@ export function usePortfolioData({ userId, isOwner }: UsePortfolioDataOptions) {
     setSyncing(true);
     try {
       if (robinhoodStatus?.is_connected) {
+        // /sync schedules a background task and returns immediately; we then
+        // poll /status until it finishes so the UI stays in "Syncing..." mode.
         await syncRobinhood();
+        await waitForRobinhoodSync();
       } else {
         await syncAccounts();
         await syncPositions();
@@ -289,6 +311,7 @@ export function usePortfolioData({ userId, isOwner }: UsePortfolioDataOptions) {
     setSyncing(true);
     try {
       await syncRobinhood();
+      await waitForRobinhoodSync();
       await loadData();
       toast.success("Robinhood transactions synced");
     } catch (error: any) {

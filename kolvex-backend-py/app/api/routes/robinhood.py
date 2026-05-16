@@ -51,6 +51,11 @@ class RobinhoodStatusResponse(BaseModel):
     orders_count: int = 0
     setup_required: bool = False
     message: Optional[str] = None
+    # Background-sync progress, surfaced so the client can poll /status while
+    # /connect or /sync run their heavy work asynchronously.
+    is_syncing: bool = False
+    sync_started_at: Optional[str] = None
+    last_sync_error: Optional[str] = None
 
 
 class RobinhoodConnectResponse(RobinhoodStatusResponse):
@@ -58,6 +63,17 @@ class RobinhoodConnectResponse(RobinhoodStatusResponse):
     positions_synced: int = 0
     approval_required: bool = False
     message: Optional[str] = None
+
+
+class RobinhoodSyncResponse(BaseModel):
+    """Returned by POST /sync. The actual sync runs in the background; the
+    client should poll /status until ``is_syncing`` becomes false."""
+
+    success: bool = True
+    is_syncing: bool = True
+    already_running: bool = False
+    sync_started_at: Optional[str] = None
+    message: str = "Robinhood sync scheduled in the background"
 
 
 class RobinhoodOrderResponse(BaseModel):
@@ -206,16 +222,36 @@ async def connect_robinhood(
         )
 
 
-@router.post("/sync", response_model=RobinhoodMessageResponse)
+@router.post(
+    "/sync",
+    response_model=RobinhoodSyncResponse,
+    status_code=http_status.HTTP_202_ACCEPTED,
+)
 async def sync_robinhood(
     current_user_id: str = Depends(get_current_user_id),
     service: RobinhoodService = Depends(get_robinhood_service),
 ):
+    """Schedule a Robinhood sync in the background and return immediately.
+
+    Robinhood sync (positions + holdings + 800+ orders) routinely takes longer
+    than Vercel's 60s edge-proxy timeout, so we never block the HTTP request
+    on it. The client should poll ``GET /status`` until ``is_syncing`` flips
+    back to false (typically 30-90s).
+    """
+
     try:
-        positions = await service.sync(current_user_id)
-        return RobinhoodMessageResponse(
-            message=f"Successfully synced {len(positions)} Robinhood positions",
+        scheduled = service.schedule_background_sync(current_user_id)
+        status_payload = await service.get_status(current_user_id)
+        return RobinhoodSyncResponse(
             success=True,
+            is_syncing=status_payload.get("is_syncing", scheduled),
+            already_running=not scheduled,
+            sync_started_at=status_payload.get("sync_started_at"),
+            message=(
+                "Robinhood sync scheduled"
+                if scheduled
+                else "Sync already in progress"
+            ),
         )
     except RobinhoodSessionExpired as e:
         logger.info("Robinhood session expired for user %s", current_user_id)
@@ -224,10 +260,10 @@ async def sync_robinhood(
             detail=str(e),
         )
     except Exception as e:
-        logger.exception("Failed to sync Robinhood")
+        logger.exception("Failed to schedule Robinhood sync")
         raise HTTPException(
             status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to sync Robinhood: {str(e)}",
+            detail=f"Failed to schedule Robinhood sync: {str(e)}",
         )
 
 

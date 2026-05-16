@@ -40,6 +40,15 @@ logger = logging.getLogger(__name__)
 
 _sync_locks: Dict[str, asyncio.Lock] = {}
 
+# Tracks the currently-running background sync per user so we don't kick off
+# duplicates when the frontend polls or double-clicks. Cleared in the task's
+# finally block.
+_background_sync_tasks: Dict[str, asyncio.Task] = {}
+
+# Auto-expire `is_syncing` flags older than this so a crashed worker can't
+# leave the row stuck "syncing" forever.
+ROBINHOOD_SYNC_STALE_AFTER_SECONDS = 15 * 60
+
 
 class RobinhoodStorageNotReady(Exception):
     """Raised when the Robinhood Supabase migration has not been applied."""
@@ -989,7 +998,12 @@ class RobinhoodService:
         totp_secret: str | None = None,
         challenge_code: str | None = None,
     ) -> Dict[str, Any]:
-        """Login once, cache the token, sync profile/holdings/orders, and return status."""
+        """Login + persist tokens, then schedule the heavy sync in the background.
+
+        Returns immediately so the API request finishes well within the Vercel
+        edge-proxy timeout. The frontend should poll ``GET /status`` to see
+        when the background sync's ``is_syncing`` flag flips back to false.
+        """
 
         async with _get_user_lock(user_id):
             await asyncio.to_thread(
@@ -1006,24 +1020,108 @@ class RobinhoodService:
                 username=username,
                 profile=profile,
             )
-            positions = await self._sync_unlocked(user_id, profile=profile)
-            return {
-                "success": True,
-                "is_connected": True,
-                "last_synced_at": connection.get("last_synced_at"),
-                "profile": profile,
-                "positions_synced": len(positions),
-            }
+
+        scheduled = self.schedule_background_sync(user_id, profile=profile)
+        return {
+            "success": True,
+            "is_connected": True,
+            "is_syncing": scheduled,
+            "last_synced_at": connection.get("last_synced_at"),
+            "profile": profile,
+            "positions_synced": 0,
+        }
 
     async def sync(
         self,
         user_id: str,
         profile: Optional[Dict[str, Any]] = None,
     ) -> List[Dict[str, Any]]:
-        """Sync Robinhood account summary, positions, orders, and daily snapshot."""
+        """Synchronous full sync. Internal use only - HTTP handlers should
+        prefer :meth:`schedule_background_sync` to avoid client-side timeouts."""
 
         async with _get_user_lock(user_id):
             return await self._sync_unlocked(user_id, profile=profile)
+
+    def schedule_background_sync(
+        self,
+        user_id: str,
+        profile: Optional[Dict[str, Any]] = None,
+    ) -> bool:
+        """Start ``_sync_unlocked`` in a background task if one isn't already
+        running for this user. Returns True if a new task was scheduled,
+        False if a sync was already in progress (caller should treat that as
+        success - the existing task will finish soon)."""
+
+        existing = _background_sync_tasks.get(user_id)
+        if existing and not existing.done():
+            return False
+
+        # Mark the row as syncing right away so /status reflects state even
+        # before the task gets its first chance to run.
+        self._set_sync_state(user_id, is_syncing=True, error=None)
+
+        loop = asyncio.get_event_loop()
+        task = loop.create_task(self._run_background_sync(user_id, profile))
+        _background_sync_tasks[user_id] = task
+        return True
+
+    async def _run_background_sync(
+        self,
+        user_id: str,
+        profile: Optional[Dict[str, Any]],
+    ) -> None:
+        """Coroutine entry point for the background sync task. Holds the
+        per-user lock so simultaneous /connect + /sync don't double-fetch."""
+
+        try:
+            async with _get_user_lock(user_id):
+                await self._sync_unlocked(user_id, profile=profile)
+            self._set_sync_state(user_id, is_syncing=False, error=None)
+        except RobinhoodSessionExpired as error:
+            logger.info(
+                "Background Robinhood sync hit expired session for user %s",
+                user_id,
+            )
+            self._set_sync_state(user_id, is_syncing=False, error=str(error))
+        except Exception as error:
+            logger.exception(
+                "Background Robinhood sync failed for user %s", user_id
+            )
+            self._set_sync_state(
+                user_id, is_syncing=False, error=str(error)[:500]
+            )
+        finally:
+            _background_sync_tasks.pop(user_id, None)
+
+    def _set_sync_state(
+        self,
+        user_id: str,
+        *,
+        is_syncing: bool,
+        error: Optional[str],
+    ) -> None:
+        """Persist the in-progress sync flag. Tolerant of the migration not
+        having been applied yet - we just lose progress visibility in that
+        case, the sync itself still works."""
+
+        update: Dict[str, Any] = {"is_syncing": is_syncing}
+        if is_syncing:
+            update["sync_started_at"] = datetime.utcnow().isoformat()
+        if error is not None:
+            update["last_sync_error"] = error
+        elif not is_syncing:
+            # Successful completion clears the error column.
+            update["last_sync_error"] = None
+        try:
+            self.supabase.table("robinhood_connections").update(update).eq(
+                "user_id", user_id
+            ).execute()
+        except Exception as db_error:
+            logger.debug(
+                "Could not persist Robinhood sync state for user %s: %s",
+                user_id,
+                db_error,
+            )
 
     async def _sync_unlocked(
         self,
@@ -1106,6 +1204,9 @@ class RobinhoodService:
                 "orders_count": 0,
                 "setup_required": True,
                 "message": str(error),
+                "is_syncing": False,
+                "sync_started_at": None,
+                "last_sync_error": None,
             }
 
         if not connection:
@@ -1115,6 +1216,9 @@ class RobinhoodService:
                 "profile": None,
                 "positions_count": 0,
                 "orders_count": 0,
+                "is_syncing": False,
+                "sync_started_at": None,
+                "last_sync_error": None,
             }
 
         account = await self._get_portfolio_account(user_id)
@@ -1135,13 +1239,61 @@ class RobinhoodService:
             .execute()
         )
 
+        is_syncing, sync_started_at = self._derive_sync_state(user_id, connection)
+
         return {
             "is_connected": connection.get("is_connected", False),
             "last_synced_at": connection.get("last_synced_at"),
             "profile": connection.get("profile"),
             "positions_count": positions_count,
             "orders_count": orders.count or 0,
+            "is_syncing": is_syncing,
+            "sync_started_at": sync_started_at,
+            "last_sync_error": connection.get("last_sync_error"),
         }
+
+    def _derive_sync_state(
+        self,
+        user_id: str,
+        connection: Dict[str, Any],
+    ) -> tuple[bool, Optional[str]]:
+        """Combine in-process + DB state to decide if a sync is still running.
+
+        Auto-clears stale ``is_syncing`` flags older than
+        :data:`ROBINHOOD_SYNC_STALE_AFTER_SECONDS` so a worker crash can't
+        leave the row stuck "syncing" forever from the user's perspective.
+        """
+
+        in_memory_task = _background_sync_tasks.get(user_id)
+        if in_memory_task and not in_memory_task.done():
+            return True, connection.get("sync_started_at") or datetime.utcnow().isoformat()
+
+        db_is_syncing = bool(connection.get("is_syncing"))
+        sync_started_at = connection.get("sync_started_at")
+        if not db_is_syncing:
+            return False, sync_started_at
+
+        # DB says syncing but we don't have a live task - check if it's stale.
+        if sync_started_at:
+            try:
+                started_dt = datetime.fromisoformat(
+                    sync_started_at.replace("Z", "+00:00")
+                )
+                age_seconds = (
+                    datetime.now(started_dt.tzinfo) - started_dt
+                ).total_seconds()
+                if age_seconds > ROBINHOOD_SYNC_STALE_AFTER_SECONDS:
+                    self._set_sync_state(
+                        user_id,
+                        is_syncing=False,
+                        error=connection.get("last_sync_error")
+                        or "Background sync did not finish (worker restart?). Try syncing again.",
+                    )
+                    return False, sync_started_at
+            except (TypeError, ValueError):
+                pass
+
+        return True, sync_started_at
 
     async def get_profile(self, user_id: str) -> Dict[str, Any]:
         connection = await self._get_robinhood_connection(user_id)

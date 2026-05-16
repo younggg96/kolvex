@@ -40,6 +40,9 @@ export interface RobinhoodStatus {
   orders_count: number;
   setup_required?: boolean;
   message?: string | null;
+  is_syncing?: boolean;
+  sync_started_at?: string | null;
+  last_sync_error?: string | null;
 }
 
 export interface RobinhoodConnectResponse extends RobinhoodStatus {
@@ -47,6 +50,14 @@ export interface RobinhoodConnectResponse extends RobinhoodStatus {
   positions_synced: number;
   approval_required?: boolean;
   message?: string | null;
+}
+
+export interface RobinhoodSyncResponse {
+  success: boolean;
+  is_syncing: boolean;
+  already_running: boolean;
+  sync_started_at?: string | null;
+  message: string;
 }
 
 export interface RobinhoodOrder {
@@ -104,13 +115,55 @@ export async function connectRobinhood(
   });
 }
 
-export async function syncRobinhood(): Promise<{
-  message: string;
-  success: boolean;
-}> {
-  return apiRequest<{ message: string; success: boolean }>("/sync", {
+export async function syncRobinhood(): Promise<RobinhoodSyncResponse> {
+  return apiRequest<RobinhoodSyncResponse>("/sync", {
     method: "POST",
   });
+}
+
+/**
+ * Polls /status until the background sync finishes, then resolves with the
+ * final status. Throws if the sync ends with `last_sync_error`.
+ *
+ * Used after `/connect` and `/sync` since both now schedule the heavy work
+ * in the background to avoid Vercel's 60s edge-proxy timeout.
+ */
+export async function waitForRobinhoodSync(options?: {
+  /** How long to keep polling before giving up (default: 5 min). */
+  timeoutMs?: number;
+  /** Delay between polls (default: 2.5s). */
+  intervalMs?: number;
+  /** Called on every successful poll so the UI can show progress. */
+  onProgress?: (status: RobinhoodStatus) => void;
+}): Promise<RobinhoodStatus> {
+  const timeoutMs = options?.timeoutMs ?? 5 * 60 * 1000;
+  const intervalMs = options?.intervalMs ?? 2500;
+  const onProgress = options?.onProgress;
+  const deadline = Date.now() + timeoutMs;
+
+  // First read once immediately so we don't sleep before the first update.
+  let status = await getRobinhoodStatus();
+  onProgress?.(status);
+
+  while (status.is_syncing && Date.now() < deadline) {
+    await new Promise((resolve) => setTimeout(resolve, intervalMs));
+    try {
+      status = await getRobinhoodStatus();
+      onProgress?.(status);
+    } catch (error) {
+      console.warn("Polling Robinhood status failed:", error);
+    }
+  }
+
+  if (status.last_sync_error) {
+    throw new Error(status.last_sync_error);
+  }
+  if (status.is_syncing) {
+    throw new Error(
+      "Robinhood sync is taking longer than expected. Check back in a minute."
+    );
+  }
+  return status;
 }
 
 export async function resetRobinhoodAuth(): Promise<{
