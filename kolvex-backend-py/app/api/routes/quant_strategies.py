@@ -8,6 +8,7 @@ from starlette import status as http_status
 
 from app.api.dependencies.auth import get_current_user_id
 from app.services.quant_strategy_service import (
+    QuantStrategyStorageNotReady,
     QuantStrategyService,
     get_quant_strategy_service,
 )
@@ -55,7 +56,10 @@ async def list_strategies(
     user_id: str = Depends(get_current_user_id),
     service: QuantStrategyService = Depends(get_quant_strategy_service),
 ):
-    return {"strategies": await service.list_strategies(user_id)}
+    try:
+        return {"strategies": await service.list_strategies(user_id)}
+    except QuantStrategyStorageNotReady as error:
+        raise HTTPException(status_code=503, detail=str(error))
 
 
 @router.post("", status_code=http_status.HTTP_201_CREATED)
@@ -99,7 +103,10 @@ async def list_assignments(
     user_id: str = Depends(get_current_user_id),
     service: QuantStrategyService = Depends(get_quant_strategy_service),
 ):
-    return {"assignments": await service.list_assignments(user_id)}
+    try:
+        return {"assignments": await service.list_assignments(user_id)}
+    except QuantStrategyStorageNotReady as error:
+        raise HTTPException(status_code=503, detail=str(error))
 
 
 @router.put("/assignments/{symbol}")

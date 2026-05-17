@@ -1368,8 +1368,9 @@ class RobinhoodService:
                 "wash_sale_risk_symbols": [],
             }
 
+        avg_cost_map = self._get_avg_cost_map(user_id)
         all_rows = self._fetch_all_user_orders(user_id, symbol=symbol)
-        enriched_orders = self._enrich_orders(all_rows)
+        enriched_orders = self._enrich_orders(all_rows, avg_cost_map)
         if status_filter and status_filter.lower() != "all":
             enriched_orders = [
                 order
@@ -1395,8 +1396,9 @@ class RobinhoodService:
         if not connection:
             return {"symbols": [], "generated_at": datetime.utcnow().isoformat()}
 
+        avg_cost_map = self._get_avg_cost_map(user_id)
         all_rows = self._fetch_all_user_orders(user_id)
-        enriched = self._enrich_orders(all_rows)
+        enriched = self._enrich_orders(all_rows, avg_cost_map)
         return {
             "symbols": self._current_wash_sale_risk_symbols(enriched),
             "generated_at": datetime.utcnow().isoformat(),
@@ -1412,9 +1414,10 @@ class RobinhoodService:
         order_ids: list[str] | None = None,
         language: str = "zh",
     ) -> Dict[str, Any]:
+        avg_cost_map = self._get_avg_cost_map(user_id)
         if order_ids:
             all_rows = self._fetch_all_user_orders(user_id)
-            enriched_history = self._enrich_orders(all_rows)
+            enriched_history = self._enrich_orders(all_rows, avg_cost_map)
             selected = set(order_ids)
             orders = [
                 order
@@ -1499,7 +1502,50 @@ class RobinhoodService:
             ),
         }
 
-    def _enrich_orders(self, rows: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    def _get_avg_cost_map(self, user_id: str) -> Dict[str, float]:
+        """Return {TICKER: average_purchase_price} from synced positions.
+
+        Robinhood's ``average_buy_price`` reflects the true weighted average
+        cost across all tax lots for a holding, so using it as the cost basis
+        for sell P&L is more accurate than replaying orders with FIFO — the
+        user may have sold specific lots via the Robinhood UI.
+        """
+        try:
+            result = (
+                self.supabase.table("snaptrade_positions")
+                .select("symbol, average_purchase_price")
+                .execute()
+            )
+            return {
+                _safe_str(row.get("symbol")).upper(): _safe_float(
+                    row.get("average_purchase_price")
+                )
+                for row in (result.data or [])
+                if row.get("symbol") and _safe_float(row.get("average_purchase_price")) > 0
+            }
+        except Exception as err:
+            logger.warning("Could not load avg cost map: %s", err)
+            return {}
+
+    def _enrich_orders(
+        self,
+        rows: List[Dict[str, Any]],
+        avg_cost_map: Dict[str, float] | None = None,
+    ) -> List[Dict[str, Any]]:
+        """Attach realized P&L and wash-sale flags to order rows.
+
+        Cost basis strategy (in priority order):
+          1. **Robinhood average cost** – if ``avg_cost_map`` contains the
+             ticker we use ``average_buy_price × quantity`` as cost basis.
+             This matches what the user sees in the Robinhood app and
+             respects specific-lot / tax-lot selling.
+          2. **FIFO fallback** – if no average cost is available (e.g. the
+             position has been fully closed) we replay buy lots in
+             chronological order.
+        """
+        if avg_cost_map is None:
+            avg_cost_map = {}
+
         rows = sorted(
             rows,
             key=lambda row: (
@@ -1510,7 +1556,6 @@ class RobinhoodService:
         lots: dict[str, deque[dict[str, float]]] = defaultdict(deque)
         enriched: List[Dict[str, Any]] = []
         buys_by_symbol: dict[str, List[datetime]] = defaultdict(list)
-        loss_sales_by_symbol: dict[str, List[dict[str, Any]]] = defaultdict(list)
 
         for row in rows:
             order = dict(row)
@@ -1536,18 +1581,25 @@ class RobinhoodService:
                 lots[ticker].append({"quantity": quantity, "price": price})
                 buys_by_symbol[ticker].append(order_dt)
             elif side == "sell":
-                remaining = quantity
-                cost_basis = 0.0
-                while remaining > 0 and lots[ticker]:
-                    lot = lots[ticker][0]
-                    matched = min(remaining, lot["quantity"])
-                    cost_basis += matched * lot["price"]
-                    lot["quantity"] -= matched
-                    remaining -= matched
-                    if lot["quantity"] <= 1e-9:
-                        lots[ticker].popleft()
-                if remaining > 0:
-                    cost_basis += remaining * price
+                avg_cost = avg_cost_map.get(ticker, 0.0)
+                if avg_cost > 0:
+                    # Use Robinhood's own average cost (reflects tax-lot selection)
+                    cost_basis = quantity * avg_cost
+                else:
+                    # Fallback: FIFO lot matching
+                    remaining = quantity
+                    cost_basis = 0.0
+                    while remaining > 0 and lots[ticker]:
+                        lot = lots[ticker][0]
+                        matched = min(remaining, lot["quantity"])
+                        cost_basis += matched * lot["price"]
+                        lot["quantity"] -= matched
+                        remaining -= matched
+                        if lot["quantity"] <= 1e-9:
+                            lots[ticker].popleft()
+                    if remaining > 0:
+                        cost_basis += remaining * price
+
                 proceeds = quantity * price
                 realized_pnl = proceeds - cost_basis
                 order["cost_basis"] = round(cost_basis, 4)
@@ -1557,16 +1609,9 @@ class RobinhoodService:
                     if cost_basis > 0
                     else None
                 )
-                if realized_pnl < 0:
-                    loss_sales_by_symbol[ticker].append(
-                        {
-                            "date": order_dt,
-                            "loss_amount": abs(realized_pnl),
-                            "order_id": order.get("order_id"),
-                        }
-                    )
             enriched.append(order)
 
+        # Wash-sale detection
         for order in enriched:
             ticker = _safe_str(order.get("ticker")).upper()
             side = _safe_str(order.get("side")).lower()

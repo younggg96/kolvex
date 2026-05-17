@@ -27,6 +27,21 @@ ALLOWED_NAMES = {
 }
 
 
+class QuantStrategyStorageNotReady(Exception):
+    """Raised when the quant strategy Supabase migration has not been applied."""
+
+
+def _is_missing_quant_table_error(error: Exception) -> bool:
+    message = str(error).lower()
+    return (
+        "quant_strategies" in message
+        or "quant_strategy_assignments" in message
+        or "quant_backtests" in message
+        or "could not find the table" in message
+        or ("relation" in message and "does not exist" in message)
+    )
+
+
 @dataclass(frozen=True)
 class Rule:
     condition: str
@@ -216,14 +231,21 @@ class QuantStrategyService:
         self.market = get_yfinance_service()
 
     async def list_strategies(self, user_id: str) -> List[Dict[str, Any]]:
-        response = (
-            self.supabase.table("quant_strategies")
-            .select("*")
-            .eq("user_id", user_id)
-            .order("updated_at", desc=True)
-            .execute()
-        )
-        return response.data or []
+        try:
+            response = (
+                self.supabase.table("quant_strategies")
+                .select("*")
+                .eq("user_id", user_id)
+                .order("updated_at", desc=True)
+                .execute()
+            )
+            return response.data or []
+        except Exception as error:
+            if _is_missing_quant_table_error(error):
+                raise QuantStrategyStorageNotReady(
+                    "Quant strategy database migration has not been applied."
+                ) from error
+            raise
 
     async def create_strategy(self, user_id: str, payload: Dict[str, Any]) -> Dict[str, Any]:
         parse_dsl(payload["dsl"])
@@ -253,14 +275,21 @@ class QuantStrategyService:
         ).execute()
 
     async def list_assignments(self, user_id: str) -> List[Dict[str, Any]]:
-        response = (
-            self.supabase.table("quant_strategy_assignments")
-            .select("*")
-            .eq("user_id", user_id)
-            .order("symbol")
-            .execute()
-        )
-        return response.data or []
+        try:
+            response = (
+                self.supabase.table("quant_strategy_assignments")
+                .select("*")
+                .eq("user_id", user_id)
+                .order("symbol")
+                .execute()
+            )
+            return response.data or []
+        except Exception as error:
+            if _is_missing_quant_table_error(error):
+                raise QuantStrategyStorageNotReady(
+                    "Quant strategy database migration has not been applied."
+                ) from error
+            raise
 
     async def upsert_assignment(
         self, user_id: str, symbol: str, payload: Dict[str, Any]

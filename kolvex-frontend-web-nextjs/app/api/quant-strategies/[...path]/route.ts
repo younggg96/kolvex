@@ -31,7 +31,7 @@ async function proxyRequest(request: NextRequest, path: string, method: Method) 
       body: method === "GET" || method === "DELETE" ? undefined : await request.text(),
     });
     if (response.status === 204) return new NextResponse(null, { status: 204 });
-    const data = await response.json();
+    const data = await response.json().catch(() => ({}));
     if (!response.ok) {
       return NextResponse.json(
         { error: data.detail || "Request failed" },
