@@ -12,6 +12,7 @@ from app.api.routes.kol_tweets import router as kol_tweets_router
 from app.api.routes.kol_subscriptions import router as kol_subscriptions_router
 from app.api.routes.snaptrade import router as snaptrade_router
 from app.api.routes.robinhood import router as robinhood_router
+from app.api.routes.quant_strategies import router as quant_strategies_router
 from app.api.routes.xiaohongshu import router as xiaohongshu_router
 from app.api.routes.dataroma import router as dataroma_router
 from app.api.routes.scheduler_routes import router as scheduler_router
@@ -44,6 +45,7 @@ api_router.include_router(news_ai_router)
 api_router.include_router(market_data.router)
 api_router.include_router(snaptrade_router)
 api_router.include_router(robinhood_router)
+api_router.include_router(quant_strategies_router)
 api_router.include_router(notifications.router)
 api_router.include_router(xiaohongshu_router)
 api_router.include_router(dataroma_router)

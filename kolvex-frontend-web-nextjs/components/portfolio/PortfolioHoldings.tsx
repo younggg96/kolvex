@@ -20,6 +20,8 @@ import { AccountCard } from "./AccountCard";
 import { DisconnectDialog } from "./DisconnectDialog";
 import { PortfolioAIAnalysis } from "./PortfolioAIAnalysis";
 import { RobinhoodTransactionsTable } from "./RobinhoodTransactionsTable";
+import { QuantStrategyWorkbench } from "./QuantStrategyWorkbench";
+import { PositionRiskControls } from "./PositionRiskControls";
 
 // Hooks
 import { usePortfolioData } from "./hooks/usePortfolioData";
@@ -47,7 +49,7 @@ export default function PortfolioHoldings({
     new Set()
   );
   const [activeTab, setActiveTab] = useState<
-    "holdings" | "transactions" | "analytics" | "ai-insights"
+    "holdings" | "transactions" | "strategies" | "analytics" | "ai-insights"
   >("holdings");
   const [sparklineDataMap, setSparklineDataMap] = useState<
     Map<string, number[]>
@@ -104,6 +106,7 @@ export default function PortfolioHoldings({
       ...(isOwner
         ? [{ value: "transactions", label: t("portfolio.tabs.transactions") }]
         : []),
+      ...(isOwner ? [{ value: "strategies", label: "量化策略" }] : []),
       { value: "analytics", label: t("portfolio.tabs.analytics") },
       { value: "ai-insights", label: t("portfolio.tabs.aiInsights") },
     ],
@@ -354,7 +357,12 @@ export default function PortfolioHoldings({
               value={activeTab}
               onValueChange={(v) =>
                 setActiveTab(
-                  v as "holdings" | "transactions" | "analytics" | "ai-insights"
+                  v as
+                    | "holdings"
+                    | "transactions"
+                    | "strategies"
+                    | "analytics"
+                    | "ai-insights"
                 )
               }
               variant="underline"
@@ -412,6 +420,13 @@ export default function PortfolioHoldings({
                   onToggleVisibility={handleTogglePositionVisibility}
                 />
               ))}
+              {isOwner && (
+                <PositionRiskControls
+                  positions={holdings.accounts.flatMap(
+                    (account) => account.snaptrade_positions || []
+                  )}
+                />
+              )}
             </div>
           )}
 
@@ -428,6 +443,14 @@ export default function PortfolioHoldings({
               onLoadMore={handleLoadMoreRobinhoodOrders}
               onSync={handleSyncRobinhoodTransactions}
               syncing={syncing}
+            />
+          )}
+
+          {activeTab === "strategies" && isOwner && (
+            <QuantStrategyWorkbench
+              positions={holdings.accounts.flatMap(
+                (account) => account.snaptrade_positions || []
+              )}
             />
           )}
 
