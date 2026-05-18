@@ -45,6 +45,8 @@ export function usePortfolioData({ userId, isOwner }: UsePortfolioDataOptions) {
   >([]);
   const [robinhoodOrderStatusFilter, setRobinhoodOrderStatusFilter] =
     useState("filled");
+  const [robinhoodOrderSymbolFilter, setRobinhoodOrderSymbolFilter] =
+    useState<string | undefined>(undefined);
   const [loadingRobinhoodOrders, setLoadingRobinhoodOrders] = useState(false);
   const [holdings, setHoldings] = useState<SnapTradeHoldings | null>(null);
   const [loading, setLoading] = useState(true);
@@ -62,7 +64,7 @@ export function usePortfolioData({ userId, isOwner }: UsePortfolioDataOptions) {
         const result = await getRobinhoodOrders(
           robinhoodOrdersPageSize,
           reset ? 0 : offsetOverride,
-          undefined,
+          robinhoodOrderSymbolFilter,
           robinhoodOrderStatusFilter
         );
         setRobinhoodOrders((prev) =>
@@ -77,7 +79,7 @@ export function usePortfolioData({ userId, isOwner }: UsePortfolioDataOptions) {
         setLoadingRobinhoodOrders(false);
       }
     },
-    [robinhoodOrderStatusFilter]
+    [robinhoodOrderStatusFilter, robinhoodOrderSymbolFilter]
   );
 
   const handleLoadMoreRobinhoodOrders = useCallback(async () => {
@@ -95,7 +97,7 @@ export function usePortfolioData({ userId, isOwner }: UsePortfolioDataOptions) {
         const result = await getRobinhoodOrders(
           robinhoodOrdersPageSize,
           0,
-          undefined,
+          robinhoodOrderSymbolFilter,
           statusFilter
         );
         setRobinhoodOrders(result.orders);
@@ -108,7 +110,35 @@ export function usePortfolioData({ userId, isOwner }: UsePortfolioDataOptions) {
         setLoadingRobinhoodOrders(false);
       }
     },
-    []
+    [robinhoodOrderSymbolFilter]
+  );
+
+  const handleRobinhoodOrderSymbolFilterChange = useCallback(
+    async (symbol?: string) => {
+      const normalizedSymbol = symbol?.trim().toUpperCase() || undefined;
+      setRobinhoodOrderSymbolFilter(normalizedSymbol);
+      setRobinhoodOrders([]);
+      setRobinhoodOrdersTotal(0);
+      setRobinhoodOrdersHasMore(false);
+      setLoadingRobinhoodOrders(true);
+      try {
+        const result = await getRobinhoodOrders(
+          robinhoodOrdersPageSize,
+          0,
+          normalizedSymbol,
+          robinhoodOrderStatusFilter
+        );
+        setRobinhoodOrders(result.orders);
+        setRobinhoodOrdersTotal(result.total);
+        setRobinhoodOrdersHasMore(result.has_more);
+        setRobinhoodWashSaleRisks(result.wash_sale_risk_symbols || []);
+      } catch (error) {
+        console.warn("Failed to change Robinhood order symbol filter:", error);
+      } finally {
+        setLoadingRobinhoodOrders(false);
+      }
+    },
+    [robinhoodOrderStatusFilter]
   );
 
   // Load connection status and holdings data
@@ -428,6 +458,7 @@ export function usePortfolioData({ userId, isOwner }: UsePortfolioDataOptions) {
     robinhoodOrdersHasMore,
     robinhoodWashSaleRisks,
     robinhoodOrderStatusFilter,
+    robinhoodOrderSymbolFilter,
     loadingRobinhoodOrders,
     loading,
     syncing,
@@ -442,6 +473,7 @@ export function usePortfolioData({ userId, isOwner }: UsePortfolioDataOptions) {
     loadRobinhoodOrders,
     handleLoadMoreRobinhoodOrders,
     handleRobinhoodOrderStatusFilterChange,
+    handleRobinhoodOrderSymbolFilterChange,
     handleSyncRobinhoodTransactions,
     handleSync,
     handleTogglePublic,

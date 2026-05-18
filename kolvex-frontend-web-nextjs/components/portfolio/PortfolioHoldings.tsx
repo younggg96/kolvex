@@ -67,6 +67,7 @@ export default function PortfolioHoldings({
     robinhoodOrdersHasMore,
     robinhoodWashSaleRisks,
     robinhoodOrderStatusFilter,
+    robinhoodOrderSymbolFilter,
     loadingRobinhoodOrders,
     loading,
     syncing,
@@ -79,6 +80,7 @@ export default function PortfolioHoldings({
     handleResetRobinhoodAuth,
     handleLoadMoreRobinhoodOrders,
     handleRobinhoodOrderStatusFilterChange,
+    handleRobinhoodOrderSymbolFilterChange,
     handleSyncRobinhoodTransactions,
     handleSync,
     handleTogglePublic,
@@ -439,7 +441,9 @@ export default function PortfolioHoldings({
               loading={loadingRobinhoodOrders}
               washSaleRisks={robinhoodWashSaleRisks}
               statusFilter={robinhoodOrderStatusFilter}
+              symbolFilter={robinhoodOrderSymbolFilter}
               onStatusFilterChange={handleRobinhoodOrderStatusFilterChange}
+              onSymbolFilterChange={handleRobinhoodOrderSymbolFilterChange}
               onLoadMore={handleLoadMoreRobinhoodOrders}
               onSync={handleSyncRobinhoodTransactions}
               syncing={syncing}

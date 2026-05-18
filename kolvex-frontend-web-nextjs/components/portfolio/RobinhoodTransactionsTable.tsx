@@ -14,6 +14,7 @@ import {
   ReceiptText,
   RefreshCw,
   ShieldAlert,
+  X,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -57,7 +58,9 @@ interface RobinhoodTransactionsTableProps {
   loading: boolean;
   washSaleRisks: RobinhoodWashSaleRiskSymbol[];
   statusFilter: string;
+  symbolFilter?: string;
   onStatusFilterChange: (statusFilter: string) => Promise<void>;
+  onSymbolFilterChange: (symbol?: string) => Promise<void>;
   onLoadMore: () => Promise<void>;
   onSync: () => Promise<void>;
   syncing: boolean;
@@ -103,7 +106,9 @@ export function RobinhoodTransactionsTable({
   loading,
   washSaleRisks,
   statusFilter,
+  symbolFilter,
   onStatusFilterChange,
+  onSymbolFilterChange,
   onLoadMore,
   onSync,
   syncing,
@@ -133,6 +138,10 @@ export function RobinhoodTransactionsTable({
       .catch(() => setAvailableProviders([]))
       .finally(() => setProvidersLoaded(true));
   }, []);
+
+  useEffect(() => {
+    setSelectedOrderIds(new Set());
+  }, [statusFilter, symbolFilter]);
 
   const availableModels = useMemo(
     () =>
@@ -236,7 +245,7 @@ export function RobinhoodTransactionsTable({
         const page = await getRobinhoodOrders(
           limit,
           offset,
-          undefined,
+          symbolFilter,
           statusFilter
         );
         allOrders.push(...page.orders);
@@ -246,7 +255,7 @@ export function RobinhoodTransactionsTable({
       const rows = selectedOrders.length > 0 ? selectedOrders : allOrders;
       downloadText(
         buildCsv(rows),
-        `robinhood-transactions-${new Date().toISOString().slice(0, 10)}.csv`,
+        `robinhood-transactions${symbolFilter ? `-${symbolFilter}` : ""}-${new Date().toISOString().slice(0, 10)}.csv`,
         "text/csv;charset=utf-8"
       );
     } catch (error: any) {
@@ -286,7 +295,7 @@ export function RobinhoodTransactionsTable({
     );
   };
 
-  if (orders.length === 0) {
+  if (orders.length === 0 && !symbolFilter) {
     return (
       <div className="rounded-lg border border-border bg-card p-8 text-center">
         <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
@@ -312,9 +321,15 @@ export function RobinhoodTransactionsTable({
           </div>
           <div className="mt-2 flex flex-wrap gap-2">
             {washSaleRisks.map((risk) => (
-              <Badge key={risk.ticker} variant="outline">
+              <button
+                key={risk.ticker}
+                type="button"
+                onClick={() => void onSymbolFilterChange(risk.ticker)}
+              >
+                <Badge variant="outline" className="cursor-pointer hover:bg-amber-500/15">
                 {risk.ticker} · {risk.days_remaining}d
-              </Badge>
+                </Badge>
+              </button>
             ))}
           </div>
         </div>
@@ -323,6 +338,11 @@ export function RobinhoodTransactionsTable({
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div className="text-xs text-muted-foreground">
           {orders.length} / {total} {t("portfolio.tabs.transactions")}
+          {symbolFilter && (
+            <span className="ml-2">
+              · {t("portfolio.transactions.symbolFilter")}: {symbolFilter}
+            </span>
+          )}
           {selectedCount > 0 && (
             <span className="ml-2">
               · {selectedCount} {t("portfolio.transactions.selected")}
@@ -494,6 +514,26 @@ export function RobinhoodTransactionsTable({
         </div>
       </div>
 
+      {symbolFilter && (
+        <div className="flex items-center gap-2">
+          <Badge variant="outline" className="gap-1.5 py-1">
+            {symbolFilter}
+            <button
+              type="button"
+              onClick={() => void onSymbolFilterChange(undefined)}
+              aria-label={t("portfolio.transactions.clearSymbolFilter")}
+            >
+              <X className="h-3 w-3" />
+            </button>
+          </Badge>
+          <span className="text-xs text-muted-foreground">
+            {t("portfolio.transactions.viewingSymbolHistory", {
+              symbol: symbolFilter,
+            })}
+          </span>
+        </div>
+      )}
+
       {analysis && (
         <div className="rounded-lg border border-border bg-card p-4">
           <div className="mb-2 flex items-center gap-2 text-sm font-semibold">
@@ -504,6 +544,21 @@ export function RobinhoodTransactionsTable({
         </div>
       )}
 
+      {orders.length === 0 ? (
+        <div className="rounded-lg border border-border bg-card p-8 text-center">
+          <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
+            <ReceiptText className="h-5 w-5 text-muted-foreground" />
+          </div>
+          <h3 className="text-sm font-semibold">
+            {t("portfolio.transactions.emptySymbolTitle", {
+              symbol: symbolFilter || "",
+            })}
+          </h3>
+          <p className="mt-1 text-xs text-muted-foreground">
+            {t("portfolio.transactions.emptySymbolDescription")}
+          </p>
+        </div>
+      ) : (
       <div className="overflow-x-auto rounded-lg border border-border bg-card">
         <Table>
         <TableHeader>
@@ -571,7 +626,18 @@ export function RobinhoodTransactionsTable({
                     {normalizeLabel(order.side)}
                   </Badge>
                 </TableCell>
-                <TableCell className="font-semibold">{order.ticker}</TableCell>
+                <TableCell className="font-semibold">
+                  <button
+                    type="button"
+                    className="hover:text-primary hover:underline"
+                    onClick={() => void onSymbolFilterChange(order.ticker)}
+                    title={t("portfolio.transactions.viewSymbolHistory", {
+                      symbol: order.ticker,
+                    })}
+                  >
+                    {order.ticker}
+                  </button>
+                </TableCell>
                 <TableCell className="capitalize text-muted-foreground">
                   {normalizeLabel(order.order_type)}
                 </TableCell>
@@ -618,6 +684,7 @@ export function RobinhoodTransactionsTable({
         </TableBody>
         </Table>
       </div>
+      )}
       {hasMore && (
         <div className="flex justify-center">
           <Button
