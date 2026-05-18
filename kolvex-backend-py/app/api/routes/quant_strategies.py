@@ -70,6 +70,8 @@ async def create_strategy(
 ):
     try:
         return await service.create_strategy(user_id, payload.model_dump())
+    except QuantStrategyStorageNotReady as error:
+        raise HTTPException(status_code=503, detail=str(error))
     except ValueError as error:
         raise HTTPException(status_code=400, detail=str(error))
 
@@ -85,6 +87,8 @@ async def update_strategy(
         return await service.update_strategy(
             user_id, strategy_id, payload.model_dump(exclude_none=True)
         )
+    except QuantStrategyStorageNotReady as error:
+        raise HTTPException(status_code=503, detail=str(error))
     except ValueError as error:
         raise HTTPException(status_code=404, detail=str(error))
 
@@ -118,6 +122,8 @@ async def upsert_assignment(
 ):
     try:
         return await service.upsert_assignment(user_id, symbol, payload.model_dump())
+    except QuantStrategyStorageNotReady as error:
+        raise HTTPException(status_code=503, detail=str(error))
     except ValueError as error:
         raise HTTPException(status_code=404, detail=str(error))
 
@@ -149,5 +155,7 @@ async def run_backtest(
             period=payload.period,
             initial_capital=payload.initial_capital,
         )
+    except QuantStrategyStorageNotReady as error:
+        raise HTTPException(status_code=503, detail=str(error))
     except ValueError as error:
         raise HTTPException(status_code=400, detail=str(error))

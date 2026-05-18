@@ -250,21 +250,35 @@ class QuantStrategyService:
     async def create_strategy(self, user_id: str, payload: Dict[str, Any]) -> Dict[str, Any]:
         parse_dsl(payload["dsl"])
         row = {"user_id": user_id, **payload}
-        response = self.supabase.table("quant_strategies").insert(row).execute()
-        return response.data[0]
+        try:
+            response = self.supabase.table("quant_strategies").insert(row).execute()
+            return response.data[0]
+        except Exception as error:
+            if _is_missing_quant_table_error(error):
+                raise QuantStrategyStorageNotReady(
+                    "Quant strategy database migration has not been applied."
+                ) from error
+            raise
 
     async def update_strategy(
         self, user_id: str, strategy_id: str, payload: Dict[str, Any]
     ) -> Dict[str, Any]:
         if "dsl" in payload:
             parse_dsl(payload["dsl"])
-        response = (
-            self.supabase.table("quant_strategies")
-            .update(payload)
-            .eq("id", strategy_id)
-            .eq("user_id", user_id)
-            .execute()
-        )
+        try:
+            response = (
+                self.supabase.table("quant_strategies")
+                .update(payload)
+                .eq("id", strategy_id)
+                .eq("user_id", user_id)
+                .execute()
+            )
+        except Exception as error:
+            if _is_missing_quant_table_error(error):
+                raise QuantStrategyStorageNotReady(
+                    "Quant strategy database migration has not been applied."
+                ) from error
+            raise
         if not response.data:
             raise ValueError("Strategy not found")
         return response.data[0]
@@ -296,22 +310,36 @@ class QuantStrategyService:
     ) -> Dict[str, Any]:
         strategy_id = payload.get("strategy_id")
         if strategy_id:
-            strategy = (
-                self.supabase.table("quant_strategies")
-                .select("id")
-                .eq("id", strategy_id)
-                .eq("user_id", user_id)
-                .execute()
-            )
+            try:
+                strategy = (
+                    self.supabase.table("quant_strategies")
+                    .select("id")
+                    .eq("id", strategy_id)
+                    .eq("user_id", user_id)
+                    .execute()
+                )
+            except Exception as error:
+                if _is_missing_quant_table_error(error):
+                    raise QuantStrategyStorageNotReady(
+                        "Quant strategy database migration has not been applied."
+                    ) from error
+                raise
             if not strategy.data:
                 raise ValueError("Strategy not found")
         row = {"user_id": user_id, "symbol": symbol.upper(), **payload}
-        response = (
-            self.supabase.table("quant_strategy_assignments")
-            .upsert(row, on_conflict="user_id,symbol")
-            .execute()
-        )
-        return response.data[0]
+        try:
+            response = (
+                self.supabase.table("quant_strategy_assignments")
+                .upsert(row, on_conflict="user_id,symbol")
+                .execute()
+            )
+            return response.data[0]
+        except Exception as error:
+            if _is_missing_quant_table_error(error):
+                raise QuantStrategyStorageNotReady(
+                    "Quant strategy database migration has not been applied."
+                ) from error
+            raise
 
     async def preview(self, dsl: str, symbol: str, entry_price: float) -> Dict[str, Any]:
         rules = parse_dsl(dsl)
@@ -399,21 +427,28 @@ class QuantStrategyService:
             "trades": trades,
             "equity_curve": equity_curve,
         }
-        self.supabase.table("quant_backtests").insert(
-            {
-                "user_id": user_id,
-                "strategy_id": strategy_id,
-                "symbol": symbol.upper(),
-                "period": period,
-                "initial_capital": result["initial_capital"],
-                "final_capital": result["final_capital"],
-                "total_return_pct": result["total_return_pct"],
-                "max_drawdown_pct": result["max_drawdown_pct"],
-                "trades_count": result["trades_count"],
-                "win_rate_pct": result["win_rate_pct"],
-                "result": result,
-            }
-        ).execute()
+        try:
+            self.supabase.table("quant_backtests").insert(
+                {
+                    "user_id": user_id,
+                    "strategy_id": strategy_id,
+                    "symbol": symbol.upper(),
+                    "period": period,
+                    "initial_capital": result["initial_capital"],
+                    "final_capital": result["final_capital"],
+                    "total_return_pct": result["total_return_pct"],
+                    "max_drawdown_pct": result["max_drawdown_pct"],
+                    "trades_count": result["trades_count"],
+                    "win_rate_pct": result["win_rate_pct"],
+                    "result": result,
+                }
+            ).execute()
+        except Exception as error:
+            if _is_missing_quant_table_error(error):
+                raise QuantStrategyStorageNotReady(
+                    "Quant strategy database migration has not been applied."
+                ) from error
+            raise
         return result
 
 

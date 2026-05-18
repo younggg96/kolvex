@@ -29,6 +29,7 @@ export function PositionRiskControls({
   const [strategies, setStrategies] = useState<QuantStrategy[]>([]);
   const [assignments, setAssignments] = useState<Record<string, QuantAssignment>>({});
   const [busySymbol, setBusySymbol] = useState<string | null>(null);
+  const [setupRequired, setSetupRequired] = useState(false);
 
   useEffect(() => {
     Promise.all([listQuantStrategies(), listQuantAssignments()])
@@ -43,7 +44,13 @@ export function PositionRiskControls({
           )
         );
       })
-      .catch((error) => toast.error(error.message));
+      .catch((error) => {
+        if (error.message.includes("migration has not been applied")) {
+          setSetupRequired(true);
+        } else {
+          toast.error(error.message);
+        }
+      });
   }, []);
 
   const equityPositions = useMemo(
@@ -98,6 +105,11 @@ export function PositionRiskControls({
           百分比以持仓均价为基准，当前只做策略绑定和风控记录。
         </p>
       </div>
+      {setupRequired && (
+        <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 text-sm">
+          量化策略数据库尚未初始化，当前无法保存止损止盈配置。
+        </div>
+      )}
       <div className="overflow-x-auto rounded-lg border border-border">
         <div className="min-w-[760px]">
           <div className="grid grid-cols-[120px_1fr_120px_120px_120px_72px] gap-2 border-b border-border bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
@@ -170,7 +182,7 @@ export function PositionRiskControls({
                   size="icon"
                   variant="outline"
                   onClick={() => save(position.symbol)}
-                  disabled={busySymbol === position.symbol}
+                  disabled={setupRequired || busySymbol === position.symbol}
                   title="保存"
                 >
                   <Save className="h-4 w-4" />

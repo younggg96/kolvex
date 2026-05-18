@@ -47,6 +47,7 @@ export function QuantStrategyWorkbench({
   const [preview, setPreview] = useState<QuantPreview | null>(null);
   const [backtest, setBacktest] = useState<QuantBacktest | null>(null);
   const [busy, setBusy] = useState(false);
+  const [setupRequired, setSetupRequired] = useState(false);
 
   const entryPrice = useMemo(
     () =>
@@ -58,7 +59,13 @@ export function QuantStrategyWorkbench({
   useEffect(() => {
     listQuantStrategies()
       .then(({ strategies }) => setStrategies(strategies))
-      .catch((error) => toast.error(error.message));
+      .catch((error) => {
+        if (error.message.includes("migration has not been applied")) {
+          setSetupRequired(true);
+        } else {
+          toast.error(error.message);
+        }
+      });
   }, []);
 
   useEffect(() => {
@@ -152,6 +159,12 @@ export function QuantStrategyWorkbench({
 
   return (
     <div className="space-y-4">
+      {setupRequired && (
+        <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 p-4 text-sm">
+          量化策略数据库尚未初始化。请先在 Supabase 执行
+          `create_quant_strategy_tables.sql`，再重新部署 backend。
+        </div>
+      )}
       <div className="grid gap-3 lg:grid-cols-[280px_1fr]">
         <div className="space-y-3">
           <Select value={selectedId} onValueChange={chooseStrategy}>
@@ -174,11 +187,11 @@ export function QuantStrategyWorkbench({
             placeholder="策略备注"
           />
           <div className="grid grid-cols-2 gap-2">
-            <Button onClick={save} disabled={busy}>
+            <Button onClick={save} disabled={busy || setupRequired}>
               <Save className="mr-2 h-4 w-4" />
               保存
             </Button>
-            <Button variant="outline" onClick={remove} disabled={busy || selectedId === "new"}>
+            <Button variant="outline" onClick={remove} disabled={busy || setupRequired || selectedId === "new"}>
               <Trash2 className="mr-2 h-4 w-4" />
               删除
             </Button>
@@ -215,11 +228,11 @@ export function QuantStrategyWorkbench({
             <SelectItem value="5y">5 年</SelectItem>
           </SelectContent>
         </Select>
-        <Button variant="outline" onClick={previewSignal} disabled={busy}>
+        <Button variant="outline" onClick={previewSignal} disabled={busy || setupRequired}>
           <Activity className="mr-2 h-4 w-4" />
           预览当前信号
         </Button>
-        <Button onClick={backtestStrategy} disabled={busy}>
+        <Button onClick={backtestStrategy} disabled={busy || setupRequired}>
           <FlaskConical className="mr-2 h-4 w-4" />
           运行回测
         </Button>
