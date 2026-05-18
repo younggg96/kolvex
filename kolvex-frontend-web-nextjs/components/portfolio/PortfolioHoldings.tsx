@@ -12,7 +12,6 @@ import { useTranslation } from "@/lib/i18n";
 // Local components
 import { PortfolioSkeleton } from "./PortfolioSkeleton";
 import { PortfolioStatsGrid } from "./PortfolioStatsGrid";
-import { PortfolioAllocation } from "./PortfolioAllocation";
 import { PortfolioHeaderActions } from "./PortfolioHeaderActions";
 import { PortfolioPerformanceChart } from "./PortfolioPerformanceChart";
 import { NotConnectedState, InitialSyncState } from "./ConnectionStates";
@@ -49,14 +48,11 @@ export default function PortfolioHoldings({
     new Set()
   );
   const [activeTab, setActiveTab] = useState<
-    "holdings" | "transactions" | "strategies" | "analytics" | "ai-insights"
+    "holdings" | "transactions" | "strategies" | "ai-insights"
   >("holdings");
   const [sparklineDataMap, setSparklineDataMap] = useState<
     Map<string, number[]>
   >(new Map());
-  const [sectorDataMap, setSectorDataMap] = useState<Map<string, string>>(
-    new Map()
-  );
 
   // Custom hooks
   const {
@@ -93,12 +89,8 @@ export default function PortfolioHoldings({
   const optionSort = useOptionSort();
 
   // Stock data cache
-  const {
-    fetchSparklines,
-    fetchSectors,
-    isLoading: stockDataLoading,
-    lastRefreshTime,
-  } = useStockDataCache();
+  const { fetchSparklines, isLoading: stockDataLoading, lastRefreshTime } =
+    useStockDataCache();
 
   // Get all unique symbols from holdings
   const portfolioSymbols = usePortfolioSymbols(holdings?.accounts);
@@ -109,7 +101,6 @@ export default function PortfolioHoldings({
         ? [{ value: "transactions", label: t("portfolio.tabs.transactions") }]
         : []),
       ...(isOwner ? [{ value: "strategies", label: "量化策略" }] : []),
-      { value: "analytics", label: t("portfolio.tabs.analytics") },
       { value: "ai-insights", label: t("portfolio.tabs.aiInsights") },
     ],
     [isOwner, t]
@@ -156,15 +147,9 @@ export default function PortfolioHoldings({
     let cancelled = false;
 
     const fetchData = async () => {
-      // Fetch sparklines and sectors in parallel using cache
-      const [sparklines, sectors] = await Promise.all([
-        fetchSparklines(portfolioSymbols, false),
-        fetchSectors(portfolioSymbols, false),
-      ]);
-
+      const sparklines = await fetchSparklines(portfolioSymbols, false);
       if (!cancelled) {
         setSparklineDataMap(sparklines);
-        setSectorDataMap(sectors);
       }
     };
 
@@ -175,20 +160,15 @@ export default function PortfolioHoldings({
     };
     // Use symbolsKey instead of portfolioSymbols to prevent re-runs when array reference changes
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [symbolsKey, fetchSparklines, fetchSectors]);
+  }, [symbolsKey, fetchSparklines]);
 
   // Handle manual refresh
   const handleRefreshStockData = useCallback(async () => {
     if (portfolioSymbols.length === 0) return;
 
-    const [sparklines, sectors] = await Promise.all([
-      fetchSparklines(portfolioSymbols, true),
-      fetchSectors(portfolioSymbols, true),
-    ]);
-
+    const sparklines = await fetchSparklines(portfolioSymbols, true);
     setSparklineDataMap(sparklines);
-    setSectorDataMap(sectors);
-  }, [portfolioSymbols, fetchSparklines, fetchSectors]);
+  }, [portfolioSymbols, fetchSparklines]);
 
   // Format last refresh time
   const formatLastRefresh = useMemo(() => {
@@ -363,7 +343,6 @@ export default function PortfolioHoldings({
                     | "holdings"
                     | "transactions"
                     | "strategies"
-                    | "analytics"
                     | "ai-insights"
                 )
               }
@@ -455,17 +434,6 @@ export default function PortfolioHoldings({
               positions={holdings.accounts.flatMap(
                 (account) => account.snaptrade_positions || []
               )}
-            />
-          )}
-
-          {/* Analytics Tab Content */}
-          {activeTab === "analytics" && (
-            <PortfolioAllocation
-              holdings={holdings.accounts.flatMap(
-                (account) => account.snaptrade_positions || []
-              )}
-              isOwner={isOwner}
-              cachedSectorMap={sectorDataMap}
             />
           )}
 
