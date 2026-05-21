@@ -106,6 +106,39 @@ export interface RobinhoodOrdersAnalysisResponse {
   generated_at: string;
 }
 
+export interface RobinhoodSellPerformanceItem {
+  order_id: string;
+  ticker: string;
+  sell_time?: string | null;
+  quantity: number;
+  sell_price: number;
+  current_price?: number | null;
+  price_change?: number | null;
+  price_change_percent?: number | null;
+  opportunity_pnl?: number | null;
+  realized_pnl?: number | null;
+  realized_pnl_percent?: number | null;
+  verdict: "sold_too_early" | "good_sale" | "flat" | "unknown";
+  message: string;
+}
+
+export interface RobinhoodSellPerformanceResponse {
+  items: RobinhoodSellPerformanceItem[];
+  summary: {
+    total_sells: number;
+    sold_too_early_count: number;
+    good_sale_count: number;
+    unknown_count: number;
+    missed_upside_amount: number;
+    avoided_downside_amount: number;
+  };
+  total: number;
+  limit: number;
+  offset: number;
+  has_more: boolean;
+  generated_at: string;
+}
+
 export async function connectRobinhood(
   payload: RobinhoodConnectRequest
 ): Promise<RobinhoodConnectResponse> {
@@ -213,6 +246,21 @@ export async function getRobinhoodWashSaleRisk(): Promise<{
 }> {
   return apiRequest<{ symbols: RobinhoodWashSaleRiskSymbol[]; generated_at: string }>(
     "/wash-sale-risk"
+  );
+}
+
+export async function getRobinhoodSellPerformance(
+  limit = 100,
+  offset = 0,
+  symbol?: string
+): Promise<RobinhoodSellPerformanceResponse> {
+  const params = new URLSearchParams({
+    limit: String(limit),
+    offset: String(offset),
+  });
+  if (symbol) params.set("symbol", symbol);
+  return apiRequest<RobinhoodSellPerformanceResponse>(
+    `/sell-performance?${params.toString()}`
   );
 }
 

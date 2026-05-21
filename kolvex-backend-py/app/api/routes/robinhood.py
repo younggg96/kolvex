@@ -132,6 +132,41 @@ class RobinhoodAnalyzeOrdersResponse(BaseModel):
     generated_at: str
 
 
+class RobinhoodSellPerformanceItem(BaseModel):
+    order_id: str
+    ticker: str
+    sell_time: Optional[str] = None
+    quantity: float
+    sell_price: float
+    current_price: Optional[float] = None
+    price_change: Optional[float] = None
+    price_change_percent: Optional[float] = None
+    opportunity_pnl: Optional[float] = None
+    realized_pnl: Optional[float] = None
+    realized_pnl_percent: Optional[float] = None
+    verdict: str
+    message: str
+
+
+class RobinhoodSellPerformanceSummary(BaseModel):
+    total_sells: int
+    sold_too_early_count: int
+    good_sale_count: int
+    unknown_count: int
+    missed_upside_amount: float
+    avoided_downside_amount: float
+
+
+class RobinhoodSellPerformanceResponse(BaseModel):
+    items: list[RobinhoodSellPerformanceItem]
+    summary: RobinhoodSellPerformanceSummary
+    total: int
+    limit: int
+    offset: int
+    has_more: bool = False
+    generated_at: str
+
+
 @router.get("/status", response_model=RobinhoodStatusResponse)
 async def get_robinhood_status(
     current_user_id: str = Depends(get_current_user_id),
@@ -326,6 +361,36 @@ async def get_robinhood_wash_sale_risk(
         raise HTTPException(
             status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to get Robinhood wash sale risk: {str(e)}",
+        )
+
+
+@router.get("/sell-performance", response_model=RobinhoodSellPerformanceResponse)
+async def get_robinhood_sell_performance(
+    limit: int = Query(default=100, ge=1, le=500),
+    offset: int = Query(default=0, ge=0),
+    symbol: Optional[str] = Query(default=None),
+    current_user_id: str = Depends(get_current_user_id),
+    service: RobinhoodService = Depends(get_robinhood_service),
+):
+    try:
+        return RobinhoodSellPerformanceResponse(
+            **await service.get_sell_performance(
+                current_user_id,
+                limit=limit,
+                offset=offset,
+                symbol=symbol,
+            )
+        )
+    except RobinhoodStorageNotReady as e:
+        raise HTTPException(
+            status_code=http_status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=str(e),
+        )
+    except Exception as e:
+        logger.exception("Failed to get Robinhood sell performance")
+        raise HTTPException(
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to get Robinhood sell performance: {str(e)}",
         )
 
 

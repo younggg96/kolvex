@@ -82,6 +82,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       return proxyRequest(request, "/orders", { method: "GET" });
     case "wash-sale-risk":
       return proxyRequest(request, "/wash-sale-risk", { method: "GET" });
+    case "sell-performance":
+      return proxyRequest(request, "/sell-performance", { method: "GET" });
     default:
       return NextResponse.json({ error: "Not found" }, { status: 404 });
   }

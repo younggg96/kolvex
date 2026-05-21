@@ -48,7 +48,9 @@ import { MarkdownBody } from "@/components/trading-analysis/markdown";
 import {
   analyzeRobinhoodOrders,
   getRobinhoodOrders,
+  getRobinhoodSellPerformance,
   type RobinhoodOrder,
+  type RobinhoodSellPerformanceResponse,
   type RobinhoodWashSaleRiskSymbol,
 } from "@/lib/robinhoodApi";
 import { getAvailableProviders } from "@/lib/api/userApiKeysApi";
@@ -145,6 +147,9 @@ export function RobinhoodTransactionsTable({
   const [washRiskSort, setWashRiskSort] = useState<
     "expires_asc" | "expires_desc" | "loss_desc" | "loss_asc"
   >("expires_asc");
+  const [sellPerformance, setSellPerformance] =
+    useState<RobinhoodSellPerformanceResponse | null>(null);
+  const [sellPerformanceLoading, setSellPerformanceLoading] = useState(false);
   const provider = useMemo(() => {
     const config = MODEL_CONFIGS.find((model) => model.id === selectedModel);
     return config ? PROVIDER_NAME_TO_ID[config.provider] : "openai";
@@ -164,6 +169,27 @@ export function RobinhoodTransactionsTable({
   useEffect(() => {
     setSelectedOrderIds(new Set());
   }, [statusFilter, symbolFilter]);
+
+  useEffect(() => {
+    let cancelled = false;
+    setSellPerformanceLoading(true);
+    getRobinhoodSellPerformance(100, 0, symbolFilter)
+      .then((result) => {
+        if (!cancelled) setSellPerformance(result);
+      })
+      .catch((error) => {
+        if (!cancelled) {
+          console.warn("Failed to load Robinhood sell performance:", error);
+          setSellPerformance(null);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setSellPerformanceLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [symbolFilter]);
 
   const availableModels = useMemo(
     () =>
@@ -194,6 +220,13 @@ export function RobinhoodTransactionsTable({
     });
   }, [washSaleRisks, washRiskSort]);
   const selectedCount = selectedOrderIds.size;
+  const sellPerformanceItems = useMemo(() => {
+    return [...(sellPerformance?.items || [])].sort((a, b) => {
+      const aPnl = a.opportunity_pnl ?? 0;
+      const bPnl = b.opportunity_pnl ?? 0;
+      return bPnl - aPnl;
+    });
+  }, [sellPerformance?.items]);
 
   const headerSelectAllState = useMemo((): boolean | "indeterminate" => {
     if (orders.length === 0) return false;
@@ -695,6 +728,148 @@ export function RobinhoodTransactionsTable({
           <MarkdownBody content={analysis} />
         </div>
       )}
+
+      <div className="rounded-lg border border-border bg-card p-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <div className="text-sm font-semibold">
+              {t("portfolio.transactions.sellReviewTitle")}
+            </div>
+            <div className="mt-1 text-xs text-muted-foreground">
+              {t("portfolio.transactions.sellReviewDescription")}
+            </div>
+          </div>
+          {sellPerformanceLoading && (
+            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+          )}
+        </div>
+        {sellPerformance && sellPerformance.summary.total_sells > 0 ? (
+          <>
+            <div className="mt-4 grid gap-2 sm:grid-cols-4">
+              <div className="rounded-lg border border-border p-3">
+                <div className="text-xs text-muted-foreground">
+                  {t("portfolio.transactions.soldTooEarly")}
+                </div>
+                <div className="mt-1 text-lg font-semibold text-red-600 dark:text-red-400">
+                  {sellPerformance.summary.sold_too_early_count}
+                </div>
+              </div>
+              <div className="rounded-lg border border-border p-3">
+                <div className="text-xs text-muted-foreground">
+                  {t("portfolio.transactions.goodSale")}
+                </div>
+                <div className="mt-1 text-lg font-semibold text-green-600 dark:text-green-400">
+                  {sellPerformance.summary.good_sale_count}
+                </div>
+              </div>
+              <div className="rounded-lg border border-border p-3">
+                <div className="text-xs text-muted-foreground">
+                  {t("portfolio.transactions.missedUpside")}
+                </div>
+                <div className="mt-1 text-lg font-semibold text-red-600 dark:text-red-400">
+                  {formatCurrency(sellPerformance.summary.missed_upside_amount)}
+                </div>
+              </div>
+              <div className="rounded-lg border border-border p-3">
+                <div className="text-xs text-muted-foreground">
+                  {t("portfolio.transactions.avoidedDownside")}
+                </div>
+                <div className="mt-1 text-lg font-semibold text-green-600 dark:text-green-400">
+                  {formatCurrency(sellPerformance.summary.avoided_downside_amount)}
+                </div>
+              </div>
+            </div>
+            <div className="mt-4 overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>{t("portfolio.transactions.symbol")}</TableHead>
+                    <TableHead>{t("portfolio.transactions.date")}</TableHead>
+                    <TableHead className="text-right">
+                      {t("portfolio.transactions.sellPrice")}
+                    </TableHead>
+                    <TableHead className="text-right">
+                      {t("portfolio.transactions.currentPrice")}
+                    </TableHead>
+                    <TableHead className="text-right">
+                      {t("portfolio.transactions.afterSellMove")}
+                    </TableHead>
+                    <TableHead>{t("portfolio.transactions.verdict")}</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {sellPerformanceItems.slice(0, 8).map((item) => {
+                    const isMissed = item.verdict === "sold_too_early";
+                    const isGood = item.verdict === "good_sale";
+                    return (
+                      <TableRow key={item.order_id}>
+                        <TableCell>
+                          <button
+                            type="button"
+                            className="font-semibold hover:text-primary hover:underline"
+                            onClick={() => void onSymbolFilterChange(item.ticker)}
+                          >
+                            {item.ticker}
+                          </button>
+                        </TableCell>
+                        <TableCell className="whitespace-nowrap text-xs text-muted-foreground">
+                          {formatOrderDate(item.sell_time)}
+                        </TableCell>
+                        <TableCell className="text-right tabular-nums">
+                          {formatCurrency(item.sell_price)}
+                        </TableCell>
+                        <TableCell className="text-right tabular-nums">
+                          {item.current_price ? formatCurrency(item.current_price) : "-"}
+                        </TableCell>
+                        <TableCell
+                          className={cn(
+                            "text-right font-medium tabular-nums",
+                            isMissed && "text-red-600 dark:text-red-400",
+                            isGood && "text-green-600 dark:text-green-400"
+                          )}
+                        >
+                          {item.opportunity_pnl === null ||
+                          item.opportunity_pnl === undefined
+                            ? "-"
+                            : `${formatCurrency(item.opportunity_pnl)}${
+                                item.price_change_percent !== null &&
+                                item.price_change_percent !== undefined
+                                  ? ` (${item.price_change_percent.toFixed(2)}%)`
+                                  : ""
+                              }`}
+                        </TableCell>
+                        <TableCell>
+                          <Badge
+                            variant="outline"
+                            className={cn(
+                              isMissed &&
+                                "border-red-500/30 bg-red-500/10 text-red-600 dark:text-red-400",
+                              isGood &&
+                                "border-green-500/30 bg-green-500/10 text-green-600 dark:text-green-400"
+                            )}
+                          >
+                            {isMissed
+                              ? t("portfolio.transactions.soldTooEarly")
+                              : isGood
+                                ? t("portfolio.transactions.goodSale")
+                                : t("portfolio.transactions.flatOrUnknown")}
+                          </Badge>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
+          </>
+        ) : (
+          <div className="mt-4 text-sm text-muted-foreground">
+            {sellPerformanceLoading
+              ? t("common.loading")
+              : t("portfolio.transactions.noSellReview")}
+          </div>
+        )}
+      </div>
 
       {orders.length === 0 ? (
         <div className="rounded-lg border border-border bg-card p-8 text-center">

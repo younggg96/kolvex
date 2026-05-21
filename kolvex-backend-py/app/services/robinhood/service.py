@@ -35,6 +35,7 @@ ROBINHOOD_PENDING_WORKFLOW_TTL_SECONDS = 5 * 60
 from app.core.supabase import get_supabase_service
 from app.agent.llm import get_llm
 from app.services.portfolio_snapshot_service import get_portfolio_snapshot_service
+from app.services.yfinance.client import get_yfinance_service
 
 logger = logging.getLogger(__name__)
 
@@ -1403,6 +1404,170 @@ class RobinhoodService:
             "symbols": self._current_wash_sale_risk_symbols(enriched),
             "generated_at": datetime.utcnow().isoformat(),
         }
+
+    async def get_sell_performance(
+        self,
+        user_id: str,
+        limit: int = 100,
+        offset: int = 0,
+        symbol: str | None = None,
+    ) -> Dict[str, Any]:
+        """Compare filled sells with current market prices.
+
+        Positive opportunity P&L means the stock is above the user's sell price
+        now (missed upside / sold too early). Negative means the stock is below
+        the sell price now (the sale avoided further downside).
+        """
+
+        connection = await self._get_robinhood_connection(user_id)
+        if not connection:
+            return {
+                "items": [],
+                "summary": {
+                    "total_sells": 0,
+                    "sold_too_early_count": 0,
+                    "good_sale_count": 0,
+                    "unknown_count": 0,
+                    "missed_upside_amount": 0.0,
+                    "avoided_downside_amount": 0.0,
+                },
+                "total": 0,
+                "limit": limit,
+                "offset": offset,
+                "has_more": False,
+                "generated_at": datetime.utcnow().isoformat(),
+            }
+
+        avg_cost_map = self._get_avg_cost_map(user_id)
+        all_rows = self._fetch_all_user_orders(user_id, symbol=symbol)
+        enriched = self._enrich_orders(all_rows, avg_cost_map)
+        sell_orders = [
+            order
+            for order in enriched
+            if _safe_str(order.get("side")).lower() == "sell"
+            and _safe_str(order.get("state")).lower() == "filled"
+            and _safe_float(order.get("quantity")) > 0
+            and _safe_float(order.get("average_price")) > 0
+        ]
+        sell_orders = sorted(
+            sell_orders,
+            key=lambda order: (
+                _parse_order_datetime(order.get("executed_time") or order.get("created_time"))
+                or datetime.min.replace(tzinfo=timezone.utc)
+            ),
+            reverse=True,
+        )
+
+        symbols = sorted({_safe_str(order.get("ticker")).upper() for order in sell_orders})
+        quote_map: Dict[str, Dict[str, Any]] = {}
+        yfinance = get_yfinance_service()
+        for ticker in symbols:
+            if not ticker:
+                continue
+            try:
+                quote_map[ticker] = await asyncio.to_thread(yfinance.get_quote, ticker)
+            except Exception as error:
+                logger.warning("Could not fetch current quote for %s: %s", ticker, error)
+
+        items: List[Dict[str, Any]] = []
+        for order in sell_orders:
+            ticker = _safe_str(order.get("ticker")).upper()
+            sell_price = _safe_float(order.get("average_price"))
+            quantity = _safe_float(order.get("quantity"))
+            quote = quote_map.get(ticker, {})
+            current_price = _safe_float(quote.get("current_price"), default=0.0)
+            price_change = current_price - sell_price if current_price > 0 else None
+            price_change_percent = (
+                round((price_change / sell_price) * 100, 2)
+                if price_change is not None and sell_price > 0
+                else None
+            )
+            opportunity_pnl = (
+                round(price_change * quantity, 2)
+                if price_change is not None
+                else None
+            )
+            if opportunity_pnl is None:
+                verdict = "unknown"
+            elif opportunity_pnl > 0:
+                verdict = "sold_too_early"
+            elif opportunity_pnl < 0:
+                verdict = "good_sale"
+            else:
+                verdict = "flat"
+
+            items.append(
+                {
+                    "order_id": order.get("order_id"),
+                    "ticker": ticker,
+                    "sell_time": order.get("executed_time") or order.get("created_time"),
+                    "quantity": quantity,
+                    "sell_price": sell_price,
+                    "current_price": current_price if current_price > 0 else None,
+                    "price_change": round(price_change, 4) if price_change is not None else None,
+                    "price_change_percent": price_change_percent,
+                    "opportunity_pnl": opportunity_pnl,
+                    "realized_pnl": order.get("realized_pnl"),
+                    "realized_pnl_percent": order.get("realized_pnl_percent"),
+                    "verdict": verdict,
+                    "message": self._sell_performance_message(
+                        verdict=verdict,
+                        ticker=ticker,
+                        opportunity_pnl=opportunity_pnl,
+                        price_change_percent=price_change_percent,
+                    ),
+                }
+            )
+
+        missed = [
+            _safe_float(item.get("opportunity_pnl"))
+            for item in items
+            if item.get("opportunity_pnl") is not None and _safe_float(item.get("opportunity_pnl")) > 0
+        ]
+        avoided = [
+            abs(_safe_float(item.get("opportunity_pnl")))
+            for item in items
+            if item.get("opportunity_pnl") is not None and _safe_float(item.get("opportunity_pnl")) < 0
+        ]
+        total = len(items)
+        page = items[offset : offset + limit]
+        return {
+            "items": page,
+            "summary": {
+                "total_sells": total,
+                "sold_too_early_count": len([item for item in items if item["verdict"] == "sold_too_early"]),
+                "good_sale_count": len([item for item in items if item["verdict"] == "good_sale"]),
+                "unknown_count": len([item for item in items if item["verdict"] == "unknown"]),
+                "missed_upside_amount": round(sum(missed), 2),
+                "avoided_downside_amount": round(sum(avoided), 2),
+            },
+            "total": total,
+            "limit": limit,
+            "offset": offset,
+            "has_more": offset + limit < total,
+            "generated_at": datetime.utcnow().isoformat(),
+        }
+
+    def _sell_performance_message(
+        self,
+        verdict: str,
+        ticker: str,
+        opportunity_pnl: float | None,
+        price_change_percent: float | None,
+    ) -> str:
+        if verdict == "sold_too_early":
+            return (
+                f"{ticker} is above your sell price now. Missed upside is about "
+                f"${abs(opportunity_pnl or 0):,.2f} ({price_change_percent:.2f}%)."
+            )
+        if verdict == "good_sale":
+            return (
+                f"{ticker} is below your sell price now. The sale avoided about "
+                f"${abs(opportunity_pnl or 0):,.2f} of further downside."
+            )
+        if verdict == "flat":
+            return f"{ticker} is almost unchanged from your sell price."
+        return f"Current quote is unavailable for {ticker}."
 
     async def analyze_orders(
         self,
