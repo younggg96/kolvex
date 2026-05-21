@@ -14,11 +14,19 @@ import {
   ReceiptText,
   RefreshCw,
   ShieldAlert,
+  SlidersHorizontal,
   X,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   Select,
   SelectContent,
@@ -91,6 +99,16 @@ function normalizeLabel(value?: string | null) {
   return value.replace(/_/g, " ");
 }
 
+function formatRiskDate(value: string) {
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return "-";
+  return d.toLocaleDateString(undefined, {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
+}
+
 /** Buttons stay fixed width; Select triggers match toolbar density */
 const TRANSACTION_TOOLBAR_BTN =
   "h-9 w-48 shrink-0 gap-2 overflow-hidden px-3 text-xs disabled:opacity-50";
@@ -123,6 +141,10 @@ export function RobinhoodTransactionsTable({
   const [selectedOrderIds, setSelectedOrderIds] = useState<Set<string>>(
     new Set()
   );
+  const [washRiskModalOpen, setWashRiskModalOpen] = useState(false);
+  const [washRiskSort, setWashRiskSort] = useState<
+    "expires_asc" | "expires_desc" | "loss_desc" | "loss_asc"
+  >("expires_asc");
   const provider = useMemo(() => {
     const config = MODEL_CONFIGS.find((model) => model.id === selectedModel);
     return config ? PROVIDER_NAME_TO_ID[config.provider] : "openai";
@@ -155,6 +177,22 @@ export function RobinhoodTransactionsTable({
     () => orders.filter((order) => selectedOrderIds.has(order.order_id)),
     [orders, selectedOrderIds]
   );
+  const sortedWashSaleRisks = useMemo(() => {
+    return [...washSaleRisks].sort((a, b) => {
+      if (washRiskSort === "expires_asc") {
+        return a.days_remaining - b.days_remaining || a.ticker.localeCompare(b.ticker);
+      }
+      if (washRiskSort === "expires_desc") {
+        return b.days_remaining - a.days_remaining || a.ticker.localeCompare(b.ticker);
+      }
+      const aLoss = new Date(a.last_loss_sale_at).getTime() || 0;
+      const bLoss = new Date(b.last_loss_sale_at).getTime() || 0;
+      if (washRiskSort === "loss_desc") {
+        return bLoss - aLoss || a.ticker.localeCompare(b.ticker);
+      }
+      return aLoss - bLoss || a.ticker.localeCompare(b.ticker);
+    });
+  }, [washSaleRisks, washRiskSort]);
   const selectedCount = selectedOrderIds.size;
 
   const headerSelectAllState = useMemo((): boolean | "indeterminate" => {
@@ -315,12 +353,26 @@ export function RobinhoodTransactionsTable({
     <div className="space-y-3">
       {washSaleRisks.length > 0 && (
         <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-3">
-          <div className="flex items-center gap-2 text-sm font-semibold text-amber-700 dark:text-amber-300">
-            <ShieldAlert className="h-4 w-4" />
-            {t("portfolio.transactions.washRiskTitle")}
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-2 text-sm font-semibold text-amber-700 dark:text-amber-300">
+              <ShieldAlert className="h-4 w-4" />
+              {t("portfolio.transactions.washRiskTitle")}
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setWashRiskModalOpen(true)}
+              className="h-8 gap-2 self-start border-amber-500/40 bg-background/60 text-xs sm:self-auto"
+            >
+              <SlidersHorizontal className="h-3.5 w-3.5" />
+              {t("portfolio.transactions.viewWashRiskDetails", {
+                count: String(washSaleRisks.length),
+              })}
+            </Button>
           </div>
           <div className="mt-2 flex flex-wrap gap-2">
-            {washSaleRisks.map((risk) => (
+            {sortedWashSaleRisks.slice(0, 12).map((risk) => (
               <button
                 key={risk.ticker}
                 type="button"
@@ -331,9 +383,109 @@ export function RobinhoodTransactionsTable({
                 </Badge>
               </button>
             ))}
+            {washSaleRisks.length > 12 && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setWashRiskModalOpen(true)}
+                className="h-7 px-2 text-xs text-amber-700 dark:text-amber-300"
+              >
+                {t("portfolio.transactions.moreWashRiskSymbols", {
+                  count: String(washSaleRisks.length - 12),
+                })}
+              </Button>
+            )}
           </div>
         </div>
       )}
+
+      <Dialog open={washRiskModalOpen} onOpenChange={setWashRiskModalOpen}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>{t("portfolio.transactions.washRiskTitle")}</DialogTitle>
+            <DialogDescription>
+              {t("portfolio.transactions.washRiskDescription")}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex items-center justify-between gap-3 py-3">
+            <div className="text-sm text-muted-foreground">
+              {washSaleRisks.length} {t("portfolio.transactions.symbols")}
+            </div>
+            <Select
+              value={washRiskSort}
+              onValueChange={(value) =>
+                setWashRiskSort(value as typeof washRiskSort)
+              }
+            >
+              <SelectTrigger className="h-9 w-[220px] bg-background text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="expires_asc">
+                  {t("portfolio.transactions.sortRiskExpiresAsc")}
+                </SelectItem>
+                <SelectItem value="expires_desc">
+                  {t("portfolio.transactions.sortRiskExpiresDesc")}
+                </SelectItem>
+                <SelectItem value="loss_desc">
+                  {t("portfolio.transactions.sortLossNewest")}
+                </SelectItem>
+                <SelectItem value="loss_asc">
+                  {t("portfolio.transactions.sortLossOldest")}
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="max-h-[60vh] overflow-y-auto rounded-lg border border-border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>{t("portfolio.transactions.symbol")}</TableHead>
+                  <TableHead>{t("portfolio.transactions.lastLossSale")}</TableHead>
+                  <TableHead>{t("portfolio.transactions.riskExpires")}</TableHead>
+                  <TableHead className="text-right">
+                    {t("portfolio.transactions.daysRemaining")}
+                  </TableHead>
+                  <TableHead className="text-right">
+                    {t("portfolio.transactions.lossAmount")}
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {sortedWashSaleRisks.map((risk) => (
+                  <TableRow key={risk.ticker}>
+                    <TableCell>
+                      <button
+                        type="button"
+                        className="font-semibold hover:text-primary hover:underline"
+                        onClick={() => {
+                          setWashRiskModalOpen(false);
+                          void onSymbolFilterChange(risk.ticker);
+                        }}
+                      >
+                        {risk.ticker}
+                      </button>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {formatRiskDate(risk.last_loss_sale_at)}
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {formatRiskDate(risk.risk_expires_at)}
+                    </TableCell>
+                    <TableCell className="text-right tabular-nums">
+                      {risk.days_remaining}d
+                    </TableCell>
+                    <TableCell className="text-right tabular-nums text-red-600 dark:text-red-400">
+                      {formatCurrency(Math.abs(risk.loss_amount))}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div className="text-xs text-muted-foreground">
