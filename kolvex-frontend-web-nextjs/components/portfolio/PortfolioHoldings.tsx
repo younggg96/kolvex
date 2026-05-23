@@ -59,12 +59,16 @@ export default function PortfolioHoldings({
     status,
     holdings,
     robinhoodOrders,
+    robinhoodOptionOrders,
     robinhoodOrdersTotal,
+    robinhoodOptionOrdersTotal,
     robinhoodOrdersHasMore,
+    robinhoodOptionOrdersHasMore,
     robinhoodWashSaleRisks,
     robinhoodOrderStatusFilter,
     robinhoodOrderSymbolFilter,
     loadingRobinhoodOrders,
+    loadingRobinhoodOptionOrders,
     loading,
     syncing,
     connecting,
@@ -75,6 +79,7 @@ export default function PortfolioHoldings({
     handleConnectRobinhood,
     handleResetRobinhoodAuth,
     handleLoadMoreRobinhoodOrders,
+    handleLoadMoreRobinhoodOptionOrders,
     handleRobinhoodOrderStatusFilterChange,
     handleRobinhoodOrderSymbolFilterChange,
     handleSyncRobinhoodTransactions,
@@ -415,15 +420,20 @@ export default function PortfolioHoldings({
           {activeTab === "transactions" && isOwner && (
             <RobinhoodTransactionsTable
               orders={robinhoodOrders}
+              optionOrders={robinhoodOptionOrders}
               total={robinhoodOrdersTotal}
+              optionTotal={robinhoodOptionOrdersTotal}
               hasMore={robinhoodOrdersHasMore}
+              optionHasMore={robinhoodOptionOrdersHasMore}
               loading={loadingRobinhoodOrders}
+              optionLoading={loadingRobinhoodOptionOrders}
               washSaleRisks={robinhoodWashSaleRisks}
               statusFilter={robinhoodOrderStatusFilter}
               symbolFilter={robinhoodOrderSymbolFilter}
               onStatusFilterChange={handleRobinhoodOrderStatusFilterChange}
               onSymbolFilterChange={handleRobinhoodOrderSymbolFilterChange}
               onLoadMore={handleLoadMoreRobinhoodOrders}
+              onLoadMoreOptions={handleLoadMoreRobinhoodOptionOrders}
               onSync={handleSyncRobinhoodTransactions}
               syncing={syncing}
             />

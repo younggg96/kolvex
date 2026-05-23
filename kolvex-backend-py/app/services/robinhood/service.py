@@ -152,9 +152,17 @@ def _is_missing_robinhood_table_error(error: Exception) -> bool:
     return (
         "robinhood_connections" in message
         or "robinhood_stock_orders" in message
+        or "robinhood_option_orders" in message
         or "could not find the table" in message
         or ("relation" in message and "does not exist" in message)
     )
+
+
+def _option_id_from_url(value: object) -> str:
+    if not value:
+        return ""
+    text = str(value).rstrip("/")
+    return text.split("/")[-1]
 
 
 class RobinhoodService:
@@ -1165,6 +1173,7 @@ class RobinhoodService:
             holdings_data=await asyncio.to_thread(r.build_holdings),
         )
         orders_count = await self._sync_orders(user_id)
+        option_orders_count = await self._sync_option_orders(user_id)
 
         now = datetime.utcnow().isoformat()
         self.supabase.table("snaptrade_connections").update(
@@ -1185,10 +1194,11 @@ class RobinhoodService:
 
         await self._record_snapshot(user_id, positions)
         logger.info(
-            "Robinhood sync completed for user %s: %s positions, %s orders",
+            "Robinhood sync completed for user %s: %s positions, %s stock orders, %s option legs",
             user_id,
             len(positions),
             orders_count,
+            option_orders_count,
         )
         return positions
 
@@ -1233,12 +1243,26 @@ class RobinhoodService:
             )
             positions_count = result.count or 0
 
-        orders = (
+        stock_orders = (
             self.supabase.table("robinhood_stock_orders")
             .select("order_id", count="exact")
             .eq("user_id", user_id)
             .execute()
         )
+        option_orders_count = 0
+        try:
+            option_orders = (
+                self.supabase.table("robinhood_option_orders")
+                .select("option_order_id", count="exact")
+                .eq("user_id", user_id)
+                .execute()
+            )
+            option_orders_count = option_orders.count or 0
+        except Exception as error:
+            if _is_missing_robinhood_table_error(error):
+                logger.info("Robinhood option orders table is not ready yet")
+            else:
+                raise
 
         is_syncing, sync_started_at = self._derive_sync_state(user_id, connection)
 
@@ -1247,7 +1271,7 @@ class RobinhoodService:
             "last_synced_at": connection.get("last_synced_at"),
             "profile": connection.get("profile"),
             "positions_count": positions_count,
-            "orders_count": orders.count or 0,
+            "orders_count": (stock_orders.count or 0) + option_orders_count,
             "is_syncing": is_syncing,
             "sync_started_at": sync_started_at,
             "last_sync_error": connection.get("last_sync_error"),
@@ -2193,6 +2217,170 @@ class RobinhoodService:
             len(orders_data),
         )
         return synced
+
+    async def _sync_option_orders(self, user_id: str) -> int:
+        """Sync Robinhood option order legs."""
+
+        try:
+            orders_data = await asyncio.to_thread(r.get_all_option_orders)
+        except Exception as error:
+            logger.warning(
+                "Robinhood option order list fetch failed for user %s: %s",
+                user_id,
+                error,
+            )
+            return 0
+
+        if not orders_data:
+            return 0
+
+        instrument_cache: Dict[str, Dict[str, Any]] = {}
+        rows_to_upsert: List[Dict[str, Any]] = []
+
+        for raw_order in orders_data:
+            option_order_id = _safe_str(raw_order.get("id"))
+            if not option_order_id:
+                continue
+            legs = raw_order.get("legs") or []
+            if not isinstance(legs, list) or not legs:
+                legs = [{}]
+
+            for index, leg in enumerate(legs):
+                if not isinstance(leg, dict):
+                    leg = {}
+                option_url = leg.get("option") or leg.get("option_instrument")
+                instrument_data: Dict[str, Any] = {}
+                if option_url:
+                    option_url_key = str(option_url)
+                    if option_url_key not in instrument_cache:
+                        try:
+                            instrument_cache[option_url_key] = await asyncio.to_thread(
+                                request_get, option_url_key
+                            )
+                        except Exception as error:
+                            logger.debug(
+                                "Could not resolve option instrument %s: %s",
+                                option_url_key,
+                                error,
+                            )
+                            instrument_cache[option_url_key] = {}
+                    instrument_data = instrument_cache[option_url_key]
+
+                option_id = _option_id_from_url(option_url)
+                leg_id = _safe_str(leg.get("id")) or option_id or f"{option_order_id}:{index}"
+                processed_quantity = _safe_float(
+                    raw_order.get("processed_quantity") or raw_order.get("quantity")
+                )
+                price = _safe_float(raw_order.get("price"))
+                premium = processed_quantity * price * 100 if price > 0 else 0.0
+                chain_symbol = _safe_str(raw_order.get("chain_symbol"))
+                underlying_symbol = (
+                    chain_symbol or _safe_str(instrument_data.get("chain_symbol"))
+                )
+
+                rows_to_upsert.append(
+                    {
+                        "user_id": user_id,
+                        "option_order_id": option_order_id,
+                        "leg_id": leg_id,
+                        "chain_symbol": chain_symbol or None,
+                        "underlying_symbol": underlying_symbol or None,
+                        "option_type": _safe_str(
+                            instrument_data.get("type") or leg.get("option_type")
+                        )
+                        or None,
+                        "expiration_date": instrument_data.get("expiration_date"),
+                        "strike_price": _safe_float(instrument_data.get("strike_price")),
+                        "side": _safe_str(leg.get("side") or raw_order.get("side")),
+                        "direction": _safe_str(raw_order.get("direction")),
+                        "opening_strategy": _safe_str(raw_order.get("opening_strategy")),
+                        "closing_strategy": _safe_str(raw_order.get("closing_strategy")),
+                        "order_type": _safe_str(raw_order.get("type")),
+                        "quantity": _safe_float(raw_order.get("quantity")),
+                        "processed_quantity": processed_quantity,
+                        "price": price if price > 0 else None,
+                        "premium": premium,
+                        "state": _safe_str(raw_order.get("state")),
+                        "created_time": _parse_robinhood_timestamp(
+                            raw_order.get("created_at")
+                        ),
+                        "executed_time": _parse_robinhood_timestamp(
+                            raw_order.get("updated_at")
+                            or raw_order.get("processed_at")
+                            or raw_order.get("last_transaction_at")
+                        ),
+                        "raw_order": raw_order,
+                        "raw_leg": leg,
+                    }
+                )
+
+        if not rows_to_upsert:
+            return 0
+
+        try:
+            for start in range(0, len(rows_to_upsert), 100):
+                self.supabase.table("robinhood_option_orders").upsert(
+                    rows_to_upsert[start : start + 100],
+                    on_conflict="user_id,option_order_id,leg_id",
+                ).execute()
+        except Exception as error:
+            if _is_missing_robinhood_table_error(error):
+                raise RobinhoodStorageNotReady(
+                    "Robinhood option order migration has not been applied."
+                ) from error
+            raise
+
+        logger.info(
+            "Synced %s Robinhood option order legs for user %s",
+            len(rows_to_upsert),
+            user_id,
+        )
+        return len(rows_to_upsert)
+
+    async def get_option_orders(
+        self,
+        user_id: str,
+        limit: int = 100,
+        offset: int = 0,
+        symbol: str | None = None,
+        status_filter: str = "filled",
+    ) -> Dict[str, Any]:
+        connection = await self._get_robinhood_connection(user_id)
+        if not connection:
+            return {
+                "orders": [],
+                "total": 0,
+                "limit": limit,
+                "offset": offset,
+                "has_more": False,
+            }
+
+        try:
+            query = (
+                self.supabase.table("robinhood_option_orders")
+                .select("*", count="exact")
+                .eq("user_id", user_id)
+                .order("created_time", desc=True)
+            )
+            if symbol:
+                query = query.eq("underlying_symbol", symbol.upper())
+            if status_filter and status_filter.lower() != "all":
+                query = query.eq("state", status_filter)
+            result = query.range(offset, offset + limit - 1).execute()
+        except Exception as error:
+            if _is_missing_robinhood_table_error(error):
+                raise RobinhoodStorageNotReady(
+                    "Robinhood option order migration has not been applied."
+                ) from error
+            raise
+
+        return {
+            "orders": result.data or [],
+            "total": result.count or 0,
+            "limit": limit,
+            "offset": offset,
+            "has_more": offset + limit < (result.count or 0),
+        }
 
     async def _record_snapshot(
         self,

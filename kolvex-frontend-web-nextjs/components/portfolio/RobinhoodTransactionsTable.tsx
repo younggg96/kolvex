@@ -50,6 +50,7 @@ import {
   getRobinhoodOrders,
   getRobinhoodSellPerformance,
   type RobinhoodOrder,
+  type RobinhoodOptionOrder,
   type RobinhoodSellPerformanceResponse,
   type RobinhoodWashSaleRiskSymbol,
 } from "@/lib/robinhoodApi";
@@ -63,15 +64,20 @@ import {
 
 interface RobinhoodTransactionsTableProps {
   orders: RobinhoodOrder[];
+  optionOrders: RobinhoodOptionOrder[];
   total: number;
+  optionTotal: number;
   hasMore: boolean;
+  optionHasMore: boolean;
   loading: boolean;
+  optionLoading: boolean;
   washSaleRisks: RobinhoodWashSaleRiskSymbol[];
   statusFilter: string;
   symbolFilter?: string;
   onStatusFilterChange: (statusFilter: string) => Promise<void>;
   onSymbolFilterChange: (symbol?: string) => Promise<void>;
   onLoadMore: () => Promise<void>;
+  onLoadMoreOptions: () => Promise<void>;
   onSync: () => Promise<void>;
   syncing: boolean;
 }
@@ -121,15 +127,20 @@ const TRANSACTION_TOOLBAR_SELECT_TRIGGER = cn(
 
 export function RobinhoodTransactionsTable({
   orders,
+  optionOrders,
   total,
+  optionTotal,
   hasMore,
+  optionHasMore,
   loading,
+  optionLoading,
   washSaleRisks,
   statusFilter,
   symbolFilter,
   onStatusFilterChange,
   onSymbolFilterChange,
   onLoadMore,
+  onLoadMoreOptions,
   onSync,
   syncing,
 }: RobinhoodTransactionsTableProps) {
@@ -144,12 +155,14 @@ export function RobinhoodTransactionsTable({
     new Set()
   );
   const [washRiskModalOpen, setWashRiskModalOpen] = useState(false);
+  const [assetType, setAssetType] = useState<"stocks" | "options">("stocks");
   const [washRiskSort, setWashRiskSort] = useState<
     "expires_asc" | "expires_desc" | "loss_desc" | "loss_asc"
   >("expires_asc");
   const [sellPerformance, setSellPerformance] =
     useState<RobinhoodSellPerformanceResponse | null>(null);
   const [sellPerformanceLoading, setSellPerformanceLoading] = useState(false);
+  const [sellPerformanceError, setSellPerformanceError] = useState<string | null>(null);
   const provider = useMemo(() => {
     const config = MODEL_CONFIGS.find((model) => model.id === selectedModel);
     return config ? PROVIDER_NAME_TO_ID[config.provider] : "openai";
@@ -172,15 +185,44 @@ export function RobinhoodTransactionsTable({
 
   useEffect(() => {
     let cancelled = false;
+    const cacheKey = `kolvex-robinhood-sell-performance:${symbolFilter || "all"}`;
+    const cacheTtlMs = 5 * 60 * 1000;
+
+    try {
+      const cached = window.sessionStorage.getItem(cacheKey);
+      if (cached) {
+        const parsed = JSON.parse(cached) as {
+          savedAt: number;
+          data: RobinhoodSellPerformanceResponse;
+        };
+        if (Date.now() - parsed.savedAt < cacheTtlMs) {
+          setSellPerformance(parsed.data);
+        }
+      }
+    } catch {
+      // Cache is an optimization only; ignore malformed entries.
+    }
+
+    setSellPerformanceError(null);
     setSellPerformanceLoading(true);
     getRobinhoodSellPerformance(100, 0, symbolFilter)
       .then((result) => {
-        if (!cancelled) setSellPerformance(result);
+        if (!cancelled) {
+          setSellPerformance(result);
+          try {
+            window.sessionStorage.setItem(
+              cacheKey,
+              JSON.stringify({ savedAt: Date.now(), data: result })
+            );
+          } catch {
+            // Session storage may be unavailable; the live response is still usable.
+          }
+        }
       })
       .catch((error) => {
         if (!cancelled) {
           console.warn("Failed to load Robinhood sell performance:", error);
-          setSellPerformance(null);
+          setSellPerformanceError(error?.message || "sell-performance-unavailable");
         }
       })
       .finally(() => {
@@ -366,22 +408,6 @@ export function RobinhoodTransactionsTable({
     );
   };
 
-  if (orders.length === 0 && !symbolFilter) {
-    return (
-      <div className="rounded-lg border border-border bg-card p-8 text-center">
-        <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
-          <ReceiptText className="h-5 w-5 text-muted-foreground" />
-        </div>
-        <h3 className="text-sm font-semibold">
-          {t("portfolio.transactions.emptyTitle")}
-        </h3>
-        <p className="mt-1 text-xs text-muted-foreground">
-          {t("portfolio.transactions.emptyDescription")}
-        </p>
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-3">
       {washSaleRisks.length > 0 && (
@@ -522,7 +548,10 @@ export function RobinhoodTransactionsTable({
 
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div className="text-xs text-muted-foreground">
-          {orders.length} / {total} {t("portfolio.tabs.transactions")}
+          {assetType === "stocks"
+            ? `${orders.length} / ${total}`
+            : `${optionOrders.length} / ${optionTotal}`}{" "}
+          {t("portfolio.tabs.transactions")}
           {symbolFilter && (
             <span className="ml-2">
               · {t("portfolio.transactions.symbolFilter")}: {symbolFilter}
@@ -547,6 +576,19 @@ export function RobinhoodTransactionsTable({
               {t("portfolio.transactions.selectPage")}
             </span>
           </Button>
+          <Select value={assetType} onValueChange={(value) => setAssetType(value as "stocks" | "options")}>
+            <SelectTrigger className={TRANSACTION_TOOLBAR_SELECT_TRIGGER}>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="stocks">
+                {t("portfolio.transactions.stocks")}
+              </SelectItem>
+              <SelectItem value="options">
+                {t("portfolio.transactions.options")}
+              </SelectItem>
+            </SelectContent>
+          </Select>
           <Select
             value={statusFilter}
             onValueChange={(value) => {
@@ -866,12 +908,102 @@ export function RobinhoodTransactionsTable({
           <div className="mt-4 text-sm text-muted-foreground">
             {sellPerformanceLoading
               ? t("common.loading")
-              : t("portfolio.transactions.noSellReview")}
+              : sellPerformanceError
+                ? t("portfolio.transactions.sellReviewUnavailable")
+                : t("portfolio.transactions.noSellReview")}
+          </div>
+        )}
+        {sellPerformanceError && sellPerformance && (
+          <div className="mt-3 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-700 dark:text-amber-300">
+            {t("portfolio.transactions.sellReviewStaleData")}
           </div>
         )}
       </div>
 
-      {orders.length === 0 ? (
+      {assetType === "options" ? (
+        optionOrders.length === 0 ? (
+          <div className="rounded-lg border border-border bg-card p-8 text-center">
+            <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
+              <ReceiptText className="h-5 w-5 text-muted-foreground" />
+            </div>
+            <h3 className="text-sm font-semibold">
+              {t("portfolio.transactions.noOptionOrders")}
+            </h3>
+            <p className="mt-1 text-xs text-muted-foreground">
+              {t("portfolio.transactions.noOptionOrdersDescription")}
+            </p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto rounded-lg border border-border bg-card">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="pl-4">{t("portfolio.transactions.date")}</TableHead>
+                  <TableHead>{t("portfolio.transactions.symbol")}</TableHead>
+                  <TableHead>{t("portfolio.transactions.contract")}</TableHead>
+                  <TableHead>{t("portfolio.transactions.side")}</TableHead>
+                  <TableHead>{t("portfolio.transactions.strategy")}</TableHead>
+                  <TableHead className="text-right">{t("portfolio.transactions.quantity")}</TableHead>
+                  <TableHead className="text-right">{t("portfolio.transactions.price")}</TableHead>
+                  <TableHead className="text-right">{t("portfolio.transactions.premium")}</TableHead>
+                  <TableHead className="pr-4">{t("portfolio.transactions.status")}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {optionOrders.map((order) => (
+                  <TableRow key={`${order.option_order_id}:${order.leg_id}`}>
+                    <TableCell className="whitespace-nowrap pl-4 text-xs text-muted-foreground">
+                      {formatOrderDate(order.executed_time || order.created_time)}
+                    </TableCell>
+                    <TableCell>
+                      <button
+                        type="button"
+                        className="font-semibold hover:text-primary hover:underline"
+                        onClick={() =>
+                          void onSymbolFilterChange(order.underlying_symbol || order.chain_symbol || undefined)
+                        }
+                      >
+                        {order.underlying_symbol || order.chain_symbol || "-"}
+                      </button>
+                    </TableCell>
+                    <TableCell className="whitespace-nowrap text-sm">
+                      {[
+                        order.expiration_date,
+                        order.strike_price ? `$${Number(order.strike_price).toFixed(2)}` : null,
+                        order.option_type?.toUpperCase(),
+                      ]
+                        .filter(Boolean)
+                        .join(" ")}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className="capitalize">
+                        {normalizeLabel(order.side || order.direction)}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="capitalize text-muted-foreground">
+                      {normalizeLabel(order.opening_strategy || order.closing_strategy)}
+                    </TableCell>
+                    <TableCell className="text-right tabular-nums">
+                      {formatShares(order.processed_quantity || order.quantity)}
+                    </TableCell>
+                    <TableCell className="text-right tabular-nums">
+                      {order.price ? formatCurrency(order.price) : "-"}
+                    </TableCell>
+                    <TableCell className="text-right font-medium tabular-nums">
+                      {formatCurrency(order.premium || 0)}
+                    </TableCell>
+                    <TableCell className="pr-4">
+                      <Badge variant="secondary" className="capitalize">
+                        {normalizeLabel(order.state)}
+                      </Badge>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        )
+      ) : orders.length === 0 ? (
         <div className="rounded-lg border border-border bg-card p-8 text-center">
           <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
             <ReceiptText className="h-5 w-5 text-muted-foreground" />
@@ -1012,7 +1144,7 @@ export function RobinhoodTransactionsTable({
         </Table>
       </div>
       )}
-      {hasMore && (
+      {assetType === "stocks" && hasMore && (
         <div className="flex justify-center">
           <Button
             variant="outline"
@@ -1022,6 +1154,20 @@ export function RobinhoodTransactionsTable({
             className="gap-2"
           >
             {loading && <Loader2 className="h-4 w-4 animate-spin" />}
+            {t("portfolio.transactions.loadMore")}
+          </Button>
+        </div>
+      )}
+      {assetType === "options" && optionHasMore && (
+        <div className="flex justify-center">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onLoadMoreOptions}
+            disabled={optionLoading}
+            className="gap-2"
+          >
+            {optionLoading && <Loader2 className="h-4 w-4 animate-spin" />}
             {t("portfolio.transactions.loadMore")}
           </Button>
         </div>

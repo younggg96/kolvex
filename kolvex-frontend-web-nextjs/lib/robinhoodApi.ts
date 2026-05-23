@@ -98,6 +98,39 @@ export interface RobinhoodOrdersResponse {
   wash_sale_risk_symbols: RobinhoodWashSaleRiskSymbol[];
 }
 
+export interface RobinhoodOptionOrder {
+  id: string;
+  option_order_id: string;
+  leg_id: string;
+  chain_symbol?: string | null;
+  underlying_symbol?: string | null;
+  option_type?: string | null;
+  expiration_date?: string | null;
+  strike_price?: number | null;
+  side?: string | null;
+  direction?: string | null;
+  opening_strategy?: string | null;
+  closing_strategy?: string | null;
+  order_type?: string | null;
+  quantity?: number | null;
+  processed_quantity?: number | null;
+  price?: number | null;
+  premium?: number | null;
+  state?: string | null;
+  created_time?: string | null;
+  executed_time?: string | null;
+  raw_order?: Record<string, unknown> | null;
+  raw_leg?: Record<string, unknown> | null;
+}
+
+export interface RobinhoodOptionOrdersResponse {
+  orders: RobinhoodOptionOrder[];
+  total: number;
+  limit: number;
+  offset: number;
+  has_more: boolean;
+}
+
 export interface RobinhoodOrdersAnalysisResponse {
   analysis: string;
   provider: string;
@@ -237,6 +270,23 @@ export async function getRobinhoodOrders(
   if (symbol) params.set("symbol", symbol);
   return apiRequest<RobinhoodOrdersResponse>(
     `/orders?${params.toString()}`
+  );
+}
+
+export async function getRobinhoodOptionOrders(
+  limit = 100,
+  offset = 0,
+  symbol?: string,
+  status = "filled"
+): Promise<RobinhoodOptionOrdersResponse> {
+  const params = new URLSearchParams({
+    limit: String(limit),
+    offset: String(offset),
+    status,
+  });
+  if (symbol) params.set("symbol", symbol);
+  return apiRequest<RobinhoodOptionOrdersResponse>(
+    `/option-orders?${params.toString()}`
   );
 }
 

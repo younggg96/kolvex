@@ -15,12 +15,14 @@ import {
 import {
   connectRobinhood as connectRobinhoodBroker,
   disconnectRobinhood,
+  getRobinhoodOptionOrders,
   getRobinhoodOrders,
   getRobinhoodStatus,
   resetRobinhoodAuth,
   syncRobinhood,
   waitForRobinhoodSync,
   type RobinhoodOrder,
+  type RobinhoodOptionOrder,
   type RobinhoodStatus,
 } from "@/lib/robinhoodApi";
 import type {
@@ -48,6 +50,7 @@ interface PortfolioRootCache {
 }
 
 type RobinhoodOrdersPayload = Awaited<ReturnType<typeof getRobinhoodOrders>>;
+type RobinhoodOptionOrdersPayload = Awaited<ReturnType<typeof getRobinhoodOptionOrders>>;
 
 const memoryCache = new Map<string, CacheEnvelope<unknown>>();
 
@@ -113,6 +116,12 @@ export function usePortfolioData({ userId, isOwner }: UsePortfolioDataOptions) {
   const [robinhoodStatus, setRobinhoodStatus] =
     useState<RobinhoodStatus | null>(null);
   const [robinhoodOrders, setRobinhoodOrders] = useState<RobinhoodOrder[]>([]);
+  const [robinhoodOptionOrders, setRobinhoodOptionOrders] = useState<
+    RobinhoodOptionOrder[]
+  >([]);
+  const [robinhoodOptionOrdersTotal, setRobinhoodOptionOrdersTotal] = useState(0);
+  const [robinhoodOptionOrdersHasMore, setRobinhoodOptionOrdersHasMore] =
+    useState(false);
   const [robinhoodOrdersTotal, setRobinhoodOrdersTotal] = useState(0);
   const [robinhoodOrdersHasMore, setRobinhoodOrdersHasMore] = useState(false);
   const [robinhoodWashSaleRisks, setRobinhoodWashSaleRisks] = useState<
@@ -123,6 +132,8 @@ export function usePortfolioData({ userId, isOwner }: UsePortfolioDataOptions) {
   const [robinhoodOrderSymbolFilter, setRobinhoodOrderSymbolFilter] =
     useState<string | undefined>(undefined);
   const [loadingRobinhoodOrders, setLoadingRobinhoodOrders] = useState(false);
+  const [loadingRobinhoodOptionOrders, setLoadingRobinhoodOptionOrders] =
+    useState(false);
   const [holdings, setHoldings] = useState<SnapTradeHoldings | null>(null);
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
@@ -176,6 +187,48 @@ export function usePortfolioData({ userId, isOwner }: UsePortfolioDataOptions) {
     await loadRobinhoodOrders(false, robinhoodOrders.length);
   }, [loadRobinhoodOrders, robinhoodOrders.length]);
 
+  const loadRobinhoodOptionOrders = useCallback(
+    async (reset = false, offsetOverride = 0, forceRefresh = false) => {
+      setLoadingRobinhoodOptionOrders(true);
+      const offset = reset ? 0 : offsetOverride;
+      const ordersCacheKey = getCacheKey("robinhood-option-orders", [
+        cacheUserId,
+        robinhoodOrderStatusFilter,
+        robinhoodOrderSymbolFilter,
+        robinhoodOrdersPageSize,
+        offset,
+      ]);
+      try {
+        const cached = !forceRefresh
+          ? readCache<RobinhoodOptionOrdersPayload>(ordersCacheKey)
+          : null;
+        const result =
+          cached ||
+          (await getRobinhoodOptionOrders(
+            robinhoodOrdersPageSize,
+            offset,
+            robinhoodOrderSymbolFilter,
+            robinhoodOrderStatusFilter
+          ));
+        if (!cached) writeCache(ordersCacheKey, result);
+        setRobinhoodOptionOrders((prev) =>
+          reset ? result.orders : [...prev, ...result.orders]
+        );
+        setRobinhoodOptionOrdersTotal(result.total);
+        setRobinhoodOptionOrdersHasMore(result.has_more);
+      } catch (error) {
+        console.warn("Failed to load Robinhood option orders:", error);
+      } finally {
+        setLoadingRobinhoodOptionOrders(false);
+      }
+    },
+    [cacheUserId, robinhoodOrderStatusFilter, robinhoodOrderSymbolFilter]
+  );
+
+  const handleLoadMoreRobinhoodOptionOrders = useCallback(async () => {
+    await loadRobinhoodOptionOrders(false, robinhoodOptionOrders.length);
+  }, [loadRobinhoodOptionOrders, robinhoodOptionOrders.length]);
+
   const handleRobinhoodOrderStatusFilterChange = useCallback(
     async (statusFilter: string) => {
       setRobinhoodOrderStatusFilter(statusFilter);
@@ -205,13 +258,14 @@ export function usePortfolioData({ userId, isOwner }: UsePortfolioDataOptions) {
         setRobinhoodOrdersTotal(result.total);
         setRobinhoodOrdersHasMore(result.has_more);
         setRobinhoodWashSaleRisks(result.wash_sale_risk_symbols || []);
+        void loadRobinhoodOptionOrders(true, 0);
       } catch (error) {
         console.warn("Failed to change Robinhood order status filter:", error);
       } finally {
         setLoadingRobinhoodOrders(false);
       }
     },
-    [cacheUserId, robinhoodOrderSymbolFilter]
+    [cacheUserId, loadRobinhoodOptionOrders, robinhoodOrderSymbolFilter]
   );
 
   const handleRobinhoodOrderSymbolFilterChange = useCallback(
@@ -244,13 +298,14 @@ export function usePortfolioData({ userId, isOwner }: UsePortfolioDataOptions) {
         setRobinhoodOrdersTotal(result.total);
         setRobinhoodOrdersHasMore(result.has_more);
         setRobinhoodWashSaleRisks(result.wash_sale_risk_symbols || []);
+        void loadRobinhoodOptionOrders(true, 0);
       } catch (error) {
         console.warn("Failed to change Robinhood order symbol filter:", error);
       } finally {
         setLoadingRobinhoodOrders(false);
       }
     },
-    [cacheUserId, robinhoodOrderStatusFilter]
+    [cacheUserId, loadRobinhoodOptionOrders, robinhoodOrderStatusFilter]
   );
 
   // Load connection status and holdings data
@@ -263,6 +318,7 @@ export function usePortfolioData({ userId, isOwner }: UsePortfolioDataOptions) {
       setRobinhoodStatus(cachedRoot.robinhoodStatus);
       setLoading(false);
       await loadRobinhoodOrders(true, 0, forceRefresh);
+      await loadRobinhoodOptionOrders(true, 0, forceRefresh);
       return;
     }
 
@@ -283,6 +339,7 @@ export function usePortfolioData({ userId, isOwner }: UsePortfolioDataOptions) {
           robinhoodStatus: robinhoodData,
         });
         await loadRobinhoodOrders(true, 0, forceRefresh);
+        await loadRobinhoodOptionOrders(true, 0, forceRefresh);
       } else if (userId) {
         // Load public holdings for other users
         const publicHoldings = await getPublicHoldings(userId);
@@ -329,7 +386,7 @@ export function usePortfolioData({ userId, isOwner }: UsePortfolioDataOptions) {
     } finally {
       setLoading(false);
     }
-  }, [cacheUserId, isOwner, userId, loadRobinhoodOrders]);
+  }, [cacheUserId, isOwner, userId, loadRobinhoodOrders, loadRobinhoodOptionOrders]);
 
   useEffect(() => {
     loadData();
@@ -540,8 +597,11 @@ export function usePortfolioData({ userId, isOwner }: UsePortfolioDataOptions) {
       setRobinhoodStatus(null);
       setHoldings(null);
       setRobinhoodOrders([]);
+      setRobinhoodOptionOrders([]);
       setRobinhoodOrdersTotal(0);
+      setRobinhoodOptionOrdersTotal(0);
       setRobinhoodOrdersHasMore(false);
+      setRobinhoodOptionOrdersHasMore(false);
       setRobinhoodWashSaleRisks([]);
       toast.success("Broker disconnected");
       return true;
@@ -607,12 +667,16 @@ export function usePortfolioData({ userId, isOwner }: UsePortfolioDataOptions) {
     status,
     holdings,
     robinhoodOrders,
+    robinhoodOptionOrders,
     robinhoodOrdersTotal,
+    robinhoodOptionOrdersTotal,
     robinhoodOrdersHasMore,
+    robinhoodOptionOrdersHasMore,
     robinhoodWashSaleRisks,
     robinhoodOrderStatusFilter,
     robinhoodOrderSymbolFilter,
     loadingRobinhoodOrders,
+    loadingRobinhoodOptionOrders,
     loading,
     syncing,
     connecting,
@@ -624,7 +688,9 @@ export function usePortfolioData({ userId, isOwner }: UsePortfolioDataOptions) {
     handleConnectRobinhood,
     handleResetRobinhoodAuth,
     loadRobinhoodOrders,
+    loadRobinhoodOptionOrders,
     handleLoadMoreRobinhoodOrders,
+    handleLoadMoreRobinhoodOptionOrders,
     handleRobinhoodOrderStatusFilterChange,
     handleRobinhoodOrderSymbolFilterChange,
     handleSyncRobinhoodTransactions,

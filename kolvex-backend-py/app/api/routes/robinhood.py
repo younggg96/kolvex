@@ -116,6 +116,39 @@ class RobinhoodOrdersResponse(BaseModel):
     )
 
 
+class RobinhoodOptionOrderResponse(BaseModel):
+    id: str
+    option_order_id: str
+    leg_id: str
+    chain_symbol: Optional[str] = None
+    underlying_symbol: Optional[str] = None
+    option_type: Optional[str] = None
+    expiration_date: Optional[str] = None
+    strike_price: Optional[float] = None
+    side: Optional[str] = None
+    direction: Optional[str] = None
+    opening_strategy: Optional[str] = None
+    closing_strategy: Optional[str] = None
+    order_type: Optional[str] = None
+    quantity: Optional[float] = None
+    processed_quantity: Optional[float] = None
+    price: Optional[float] = None
+    premium: Optional[float] = None
+    state: Optional[str] = None
+    created_time: Optional[str] = None
+    executed_time: Optional[str] = None
+    raw_order: Optional[Dict[str, Any]] = None
+    raw_leg: Optional[Dict[str, Any]] = None
+
+
+class RobinhoodOptionOrdersResponse(BaseModel):
+    orders: list[RobinhoodOptionOrderResponse]
+    total: int
+    limit: int
+    offset: int
+    has_more: bool = False
+
+
 class RobinhoodAnalyzeOrdersRequest(BaseModel):
     provider: str = Field(default="openai")
     model: str = Field(default="gpt-4o-mini")
@@ -346,6 +379,38 @@ async def get_robinhood_orders(
         raise HTTPException(
             status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to get Robinhood orders: {str(e)}",
+        )
+
+
+@router.get("/option-orders", response_model=RobinhoodOptionOrdersResponse)
+async def get_robinhood_option_orders(
+    limit: int = Query(default=100, ge=1, le=500),
+    offset: int = Query(default=0, ge=0),
+    symbol: Optional[str] = Query(default=None),
+    status_filter: str = Query(default="filled", alias="status"),
+    current_user_id: str = Depends(get_current_user_id),
+    service: RobinhoodService = Depends(get_robinhood_service),
+):
+    try:
+        return RobinhoodOptionOrdersResponse(
+            **await service.get_option_orders(
+                current_user_id,
+                limit=limit,
+                offset=offset,
+                symbol=symbol,
+                status_filter=status_filter,
+            )
+        )
+    except RobinhoodStorageNotReady as e:
+        raise HTTPException(
+            status_code=http_status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=str(e),
+        )
+    except Exception as e:
+        logger.exception("Failed to get Robinhood option orders")
+        raise HTTPException(
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to get Robinhood option orders: {str(e)}",
         )
 
 

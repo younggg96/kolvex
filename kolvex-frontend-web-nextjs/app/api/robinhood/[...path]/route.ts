@@ -80,6 +80,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       return proxyRequest(request, "/profile", { method: "GET" });
     case "orders":
       return proxyRequest(request, "/orders", { method: "GET" });
+    case "option-orders":
+      return proxyRequest(request, "/option-orders", { method: "GET" });
     case "wash-sale-risk":
       return proxyRequest(request, "/wash-sale-risk", { method: "GET" });
     case "sell-performance":
