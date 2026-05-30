@@ -496,6 +496,8 @@
       "premium": "Premium",
       "noOptionOrders": "No option transactions",
       "noOptionOrdersDescription": "Processed option order history will appear after syncing Robinhood.",
+      "optionOrdersSetupRequired": "Option transaction table is not created yet",
+      "optionOrdersSetupDescription": "Run the add_robinhood_option_orders.sql Supabase migration, redeploy the backend, then sync Robinhood again.",
       "statusFilled": "Filled",
       "statusCancelled": "Cancelled",
       "statusAll": "All statuses",

@@ -467,6 +467,8 @@
       "premium": "权利金",
       "noOptionOrders": "暂无期权交易记录",
       "noOptionOrdersDescription": "同步 Robinhood 后会导入已处理的期权订单历史。",
+      "optionOrdersSetupRequired": "期权交易表还没有创建",
+      "optionOrdersSetupDescription": "需要先在 Supabase 执行 add_robinhood_option_orders.sql 迁移，然后重新部署后端并同步 Robinhood。",
       "statusFilled": "已成交",
       "statusCancelled": "已取消",
       "statusAll": "全部状态",

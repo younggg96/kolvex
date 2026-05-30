@@ -64,6 +64,7 @@ export default function PortfolioHoldings({
     robinhoodOptionOrdersTotal,
     robinhoodOrdersHasMore,
     robinhoodOptionOrdersHasMore,
+    robinhoodOptionOrdersError,
     robinhoodWashSaleRisks,
     robinhoodOrderStatusFilter,
     robinhoodOrderSymbolFilter,
@@ -427,6 +428,7 @@ export default function PortfolioHoldings({
               optionHasMore={robinhoodOptionOrdersHasMore}
               loading={loadingRobinhoodOrders}
               optionLoading={loadingRobinhoodOptionOrders}
+              optionError={robinhoodOptionOrdersError}
               washSaleRisks={robinhoodWashSaleRisks}
               statusFilter={robinhoodOrderStatusFilter}
               symbolFilter={robinhoodOrderSymbolFilter}

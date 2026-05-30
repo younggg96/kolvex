@@ -2,11 +2,13 @@
 
 const withPWA = require("@ducanh2912/next-pwa").default({
   dest: "public",
-  cacheOnFrontEndNav: true,
-  aggressiveFrontEndNavCaching: true,
-  reloadOnOnline: true,
+  cacheOnFrontEndNav: false,
+  aggressiveFrontEndNavCaching: false,
+  reloadOnOnline: false,
   swcMinify: true,
-  disable: process.env.NODE_ENV === "development",
+  disable:
+    process.env.NODE_ENV === "development" ||
+    process.env.NEXT_PUBLIC_ENABLE_PWA !== "true",
   workboxOptions: {
     disableDevLogs: true,
   },
@@ -107,6 +109,7 @@ const nextConfig = {
         https://s3.tradingview.com
         https://*.tradingview.com
         https://va.vercel-scripts.com
+        https://vercel.live
         https://*.vercel-insights.com
         https://*.financialjuice.com
         https://feed.financialjuice.com
@@ -119,6 +122,7 @@ const nextConfig = {
         https://s3.tradingview.com
         https://*.tradingview.com
         https://va.vercel-scripts.com
+        https://vercel.live
         https://*.vercel-insights.com
         https://*.financialjuice.com
         https://feed.financialjuice.com
@@ -209,6 +213,27 @@ const nextConfig = {
           {
             key: "Cache-Control",
             value: "public, max-age=31536000, immutable",
+          },
+        ],
+      },
+      // Authenticated app routes and API calls are real-time data surfaces.
+      // Do not let browser/proxy caches or old service workers serve stale
+      // portfolio and Robinhood sync state.
+      {
+        source: "/dashboard/:path*",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "no-store, no-cache, must-revalidate, proxy-revalidate",
+          },
+        ],
+      },
+      {
+        source: "/api/:path*",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "no-store, no-cache, must-revalidate, proxy-revalidate",
           },
         ],
       },

@@ -71,6 +71,7 @@ interface RobinhoodTransactionsTableProps {
   optionHasMore: boolean;
   loading: boolean;
   optionLoading: boolean;
+  optionError?: string | null;
   washSaleRisks: RobinhoodWashSaleRiskSymbol[];
   statusFilter: string;
   symbolFilter?: string;
@@ -134,6 +135,7 @@ export function RobinhoodTransactionsTable({
   optionHasMore,
   loading,
   optionLoading,
+  optionError,
   washSaleRisks,
   statusFilter,
   symbolFilter,
@@ -921,7 +923,21 @@ export function RobinhoodTransactionsTable({
       </div>
 
       {assetType === "options" ? (
-        optionOrders.length === 0 ? (
+        optionError ? (
+          <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-6">
+            <div className="flex items-start gap-3">
+              <ShieldAlert className="mt-0.5 h-5 w-5 text-amber-600 dark:text-amber-300" />
+              <div>
+                <h3 className="text-sm font-semibold text-amber-700 dark:text-amber-300">
+                  {t("portfolio.transactions.optionOrdersSetupRequired")}
+                </h3>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  {t("portfolio.transactions.optionOrdersSetupDescription")}
+                </p>
+              </div>
+            </div>
+          </div>
+        ) : optionOrders.length === 0 ? (
           <div className="rounded-lg border border-border bg-card p-8 text-center">
             <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
               <ReceiptText className="h-5 w-5 text-muted-foreground" />

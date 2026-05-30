@@ -122,6 +122,8 @@ export function usePortfolioData({ userId, isOwner }: UsePortfolioDataOptions) {
   const [robinhoodOptionOrdersTotal, setRobinhoodOptionOrdersTotal] = useState(0);
   const [robinhoodOptionOrdersHasMore, setRobinhoodOptionOrdersHasMore] =
     useState(false);
+  const [robinhoodOptionOrdersError, setRobinhoodOptionOrdersError] =
+    useState<string | null>(null);
   const [robinhoodOrdersTotal, setRobinhoodOrdersTotal] = useState(0);
   const [robinhoodOrdersHasMore, setRobinhoodOrdersHasMore] = useState(false);
   const [robinhoodWashSaleRisks, setRobinhoodWashSaleRisks] = useState<
@@ -216,8 +218,13 @@ export function usePortfolioData({ userId, isOwner }: UsePortfolioDataOptions) {
         );
         setRobinhoodOptionOrdersTotal(result.total);
         setRobinhoodOptionOrdersHasMore(result.has_more);
-      } catch (error) {
-        console.warn("Failed to load Robinhood option orders:", error);
+        setRobinhoodOptionOrdersError(null);
+      } catch (error: any) {
+        const message = error?.message || "Failed to load Robinhood option orders";
+        setRobinhoodOptionOrdersError(message);
+        if (!message.includes("migration has not been applied")) {
+          console.warn("Failed to load Robinhood option orders:", error);
+        }
       } finally {
         setLoadingRobinhoodOptionOrders(false);
       }
@@ -598,6 +605,7 @@ export function usePortfolioData({ userId, isOwner }: UsePortfolioDataOptions) {
       setHoldings(null);
       setRobinhoodOrders([]);
       setRobinhoodOptionOrders([]);
+      setRobinhoodOptionOrdersError(null);
       setRobinhoodOrdersTotal(0);
       setRobinhoodOptionOrdersTotal(0);
       setRobinhoodOrdersHasMore(false);
@@ -672,6 +680,7 @@ export function usePortfolioData({ userId, isOwner }: UsePortfolioDataOptions) {
     robinhoodOptionOrdersTotal,
     robinhoodOrdersHasMore,
     robinhoodOptionOrdersHasMore,
+    robinhoodOptionOrdersError,
     robinhoodWashSaleRisks,
     robinhoodOrderStatusFilter,
     robinhoodOrderSymbolFilter,
