@@ -47,6 +47,7 @@ import { useTranslation } from "@/lib/i18n";
 import { MarkdownBody } from "@/components/trading-analysis/markdown";
 import {
   analyzeRobinhoodOrders,
+  getRobinhoodOptionOrders,
   getRobinhoodOrders,
   getRobinhoodSellPerformance,
   type RobinhoodOrder,
@@ -158,6 +159,10 @@ export function RobinhoodTransactionsTable({
   );
   const [washRiskModalOpen, setWashRiskModalOpen] = useState(false);
   const [assetType, setAssetType] = useState<"stocks" | "options">("stocks");
+  const [optionTypeFilter, setOptionTypeFilter] = useState("all");
+  const [optionSideFilter, setOptionSideFilter] = useState("all");
+  const [optionStrategyFilter, setOptionStrategyFilter] = useState("all");
+  const [optionSort, setOptionSort] = useState("newest");
   const [washRiskSort, setWashRiskSort] = useState<
     "expires_asc" | "expires_desc" | "loss_desc" | "loss_asc"
   >("expires_asc");
@@ -271,6 +276,66 @@ export function RobinhoodTransactionsTable({
       return bPnl - aPnl;
     });
   }, [sellPerformance?.items]);
+  const optionStrategyOptions = useMemo(() => {
+    return Array.from(
+      new Set(
+        optionOrders
+          .map((order) => order.opening_strategy || order.closing_strategy)
+          .filter(Boolean)
+      )
+    ).sort() as string[];
+  }, [optionOrders]);
+  const filteredOptionOrders = useMemo(() => {
+    const filtered = optionOrders.filter((order) => {
+      const optionType = (order.option_type || "").toLowerCase();
+      const side = (order.side || order.direction || "").toLowerCase();
+      const strategy = order.opening_strategy || order.closing_strategy || "";
+      if (optionTypeFilter !== "all" && optionType !== optionTypeFilter) return false;
+      if (optionSideFilter !== "all" && !side.includes(optionSideFilter)) return false;
+      if (optionStrategyFilter !== "all" && strategy !== optionStrategyFilter) return false;
+      return true;
+    });
+    return [...filtered].sort((a, b) => {
+      if (optionSort === "oldest") {
+        return (
+          new Date(a.executed_time || a.created_time || 0).getTime() -
+          new Date(b.executed_time || b.created_time || 0).getTime()
+        );
+      }
+      if (optionSort === "expiration_asc") {
+        return (
+          new Date(a.expiration_date || 0).getTime() -
+          new Date(b.expiration_date || 0).getTime()
+        );
+      }
+      if (optionSort === "premium_desc") {
+        return (b.premium || 0) - (a.premium || 0);
+      }
+      return (
+        new Date(b.executed_time || b.created_time || 0).getTime() -
+        new Date(a.executed_time || a.created_time || 0).getTime()
+      );
+    });
+  }, [
+    optionOrders,
+    optionSideFilter,
+    optionSort,
+    optionStrategyFilter,
+    optionTypeFilter,
+  ]);
+  const optionSummary = useMemo(() => {
+    const callCount = filteredOptionOrders.filter(
+      (order) => order.option_type?.toLowerCase() === "call"
+    ).length;
+    const putCount = filteredOptionOrders.filter(
+      (order) => order.option_type?.toLowerCase() === "put"
+    ).length;
+    const premium = filteredOptionOrders.reduce(
+      (sum, order) => sum + Math.abs(order.premium || 0),
+      0
+    );
+    return { callCount, putCount, premium };
+  }, [filteredOptionOrders]);
 
   const headerSelectAllState = useMemo((): boolean | "indeterminate" => {
     if (orders.length === 0) return false;
@@ -341,6 +406,52 @@ export function RobinhoodTransactionsTable({
     ].join("\n");
   };
 
+  const buildOptionCsv = (rows: RobinhoodOptionOrder[]) => {
+    const headers = [
+      "date",
+      "underlying_symbol",
+      "contract",
+      "option_type",
+      "expiration_date",
+      "strike_price",
+      "side",
+      "direction",
+      "opening_strategy",
+      "closing_strategy",
+      "quantity",
+      "processed_quantity",
+      "price",
+      "premium",
+      "state",
+      "option_order_id",
+      "leg_id",
+    ];
+    return [
+      headers.join(","),
+      ...rows.map((order) =>
+        headers
+          .map((key) => {
+            const value =
+              key === "date"
+                ? order.executed_time || order.created_time || ""
+                : key === "contract"
+                  ? [
+                      order.expiration_date,
+                      order.strike_price
+                        ? `$${Number(order.strike_price).toFixed(2)}`
+                        : "",
+                      order.option_type?.toUpperCase() || "",
+                    ]
+                      .filter(Boolean)
+                      .join(" ")
+                  : (order as any)[key] ?? "";
+            return `"${String(value).replace(/"/g, '""')}"`;
+          })
+          .join(",")
+      ),
+    ].join("\n");
+  };
+
   const downloadText = (content: string, filename: string, type: string) => {
     const blob = new Blob([content], { type });
     const url = URL.createObjectURL(blob);
@@ -353,6 +464,37 @@ export function RobinhoodTransactionsTable({
 
   const handleExportCsv = async () => {
     try {
+      if (assetType === "options") {
+        const allOptionOrders: RobinhoodOptionOrder[] = [];
+        let offset = 0;
+        const limit = 500;
+        while (true) {
+          const page = await getRobinhoodOptionOrders(
+            limit,
+            offset,
+            symbolFilter,
+            statusFilter
+          );
+          allOptionOrders.push(...page.orders);
+          if (!page.has_more) break;
+          offset += limit;
+        }
+        const exportedRows = allOptionOrders.filter((order) => {
+          const optionType = (order.option_type || "").toLowerCase();
+          const side = (order.side || order.direction || "").toLowerCase();
+          const strategy = order.opening_strategy || order.closing_strategy || "";
+          if (optionTypeFilter !== "all" && optionType !== optionTypeFilter) return false;
+          if (optionSideFilter !== "all" && !side.includes(optionSideFilter)) return false;
+          if (optionStrategyFilter !== "all" && strategy !== optionStrategyFilter) return false;
+          return true;
+        });
+        downloadText(
+          buildOptionCsv(exportedRows),
+          `robinhood-option-transactions${symbolFilter ? `-${symbolFilter}` : ""}-${new Date().toISOString().slice(0, 10)}.csv`,
+          "text/csv;charset=utf-8"
+        );
+        return;
+      }
       const allOrders: RobinhoodOrder[] = [];
       let offset = 0;
       const limit = 500;
@@ -552,7 +694,7 @@ export function RobinhoodTransactionsTable({
         <div className="text-xs text-muted-foreground">
           {assetType === "stocks"
             ? `${orders.length} / ${total}`
-            : `${optionOrders.length} / ${optionTotal}`}{" "}
+            : `${filteredOptionOrders.length} / ${optionTotal}`}{" "}
           {t("portfolio.tabs.transactions")}
           {symbolFilter && (
             <span className="ml-2">
@@ -566,18 +708,20 @@ export function RobinhoodTransactionsTable({
           )}
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={toggleCurrentPage}
-            disabled={orders.length === 0}
-            className={TRANSACTION_TOOLBAR_BTN}
-          >
-            <CheckSquare className="h-4 w-4 shrink-0" />
-            <span className="min-w-0 flex-1 truncate text-center">
-              {t("portfolio.transactions.selectPage")}
-            </span>
-          </Button>
+          {assetType === "stocks" && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={toggleCurrentPage}
+              disabled={orders.length === 0}
+              className={TRANSACTION_TOOLBAR_BTN}
+            >
+              <CheckSquare className="h-4 w-4 shrink-0" />
+              <span className="min-w-0 flex-1 truncate text-center">
+                {t("portfolio.transactions.selectPage")}
+              </span>
+            </Button>
+          )}
           <Select value={assetType} onValueChange={(value) => setAssetType(value as "stocks" | "options")}>
             <SelectTrigger className={TRANSACTION_TOOLBAR_SELECT_TRIGGER}>
               <SelectValue />
@@ -742,6 +886,83 @@ export function RobinhoodTransactionsTable({
           </Button>
         </div>
       </div>
+
+      {assetType === "options" && (
+        <div className="rounded-lg border border-cyan-500/20 bg-cyan-500/[0.06] p-3">
+          <div className="mb-3 grid gap-2 sm:grid-cols-3">
+            <div className="rounded-md border border-border bg-background/60 p-3">
+              <div className="text-[11px] uppercase text-muted-foreground">
+                {t("portfolio.transactions.optionCalls")}
+              </div>
+              <div className="mt-1 text-lg font-semibold text-green-500">
+                {optionSummary.callCount}
+              </div>
+            </div>
+            <div className="rounded-md border border-border bg-background/60 p-3">
+              <div className="text-[11px] uppercase text-muted-foreground">
+                {t("portfolio.transactions.optionPuts")}
+              </div>
+              <div className="mt-1 text-lg font-semibold text-red-500">
+                {optionSummary.putCount}
+              </div>
+            </div>
+            <div className="rounded-md border border-border bg-background/60 p-3">
+              <div className="text-[11px] uppercase text-muted-foreground">
+                {t("portfolio.transactions.optionPremium")}
+              </div>
+              <div className="mt-1 text-lg font-semibold">
+                {formatCurrency(optionSummary.premium)}
+              </div>
+            </div>
+          </div>
+          <div className="grid gap-2 md:grid-cols-4">
+            <Select value={optionTypeFilter} onValueChange={setOptionTypeFilter}>
+              <SelectTrigger className="h-9 bg-background text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{t("portfolio.transactions.optionTypeAll")}</SelectItem>
+                <SelectItem value="call">CALL</SelectItem>
+                <SelectItem value="put">PUT</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={optionSideFilter} onValueChange={setOptionSideFilter}>
+              <SelectTrigger className="h-9 bg-background text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{t("portfolio.transactions.sideAll")}</SelectItem>
+                <SelectItem value="buy">{t("portfolio.transactions.buy")}</SelectItem>
+                <SelectItem value="sell">{t("portfolio.transactions.sell")}</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={optionStrategyFilter} onValueChange={setOptionStrategyFilter}>
+              <SelectTrigger className="h-9 bg-background text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{t("portfolio.transactions.strategyAll")}</SelectItem>
+                {optionStrategyOptions.map((strategy) => (
+                  <SelectItem key={strategy} value={strategy}>
+                    {normalizeLabel(strategy)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={optionSort} onValueChange={setOptionSort}>
+              <SelectTrigger className="h-9 bg-background text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="newest">{t("portfolio.transactions.sortNewest")}</SelectItem>
+                <SelectItem value="oldest">{t("portfolio.transactions.sortOldest")}</SelectItem>
+                <SelectItem value="expiration_asc">{t("portfolio.transactions.sortExpiration")}</SelectItem>
+                <SelectItem value="premium_desc">{t("portfolio.transactions.sortPremium")}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      )}
 
       {symbolFilter && (
         <div className="flex items-center gap-2">
@@ -937,7 +1158,7 @@ export function RobinhoodTransactionsTable({
               </div>
             </div>
           </div>
-        ) : optionOrders.length === 0 ? (
+        ) : filteredOptionOrders.length === 0 ? (
           <div className="rounded-lg border border-border bg-card p-8 text-center">
             <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
               <ReceiptText className="h-5 w-5 text-muted-foreground" />
@@ -950,7 +1171,7 @@ export function RobinhoodTransactionsTable({
             </p>
           </div>
         ) : (
-          <div className="overflow-x-auto rounded-lg border border-border bg-card">
+          <div className="overflow-x-auto rounded-lg border border-cyan-500/20 bg-card shadow-[inset_3px_0_0_rgba(6,182,212,0.35)]">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -966,8 +1187,16 @@ export function RobinhoodTransactionsTable({
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {optionOrders.map((order) => (
-                  <TableRow key={`${order.option_order_id}:${order.leg_id}`}>
+                {filteredOptionOrders.map((order) => {
+                  const isCall = order.option_type?.toLowerCase() === "call";
+                  const isBuy = (order.side || order.direction || "")
+                    .toLowerCase()
+                    .includes("buy");
+                  return (
+                  <TableRow
+                    key={`${order.option_order_id}:${order.leg_id}`}
+                    className="hover:bg-cyan-500/[0.04]"
+                  >
                     <TableCell className="whitespace-nowrap pl-4 text-xs text-muted-foreground">
                       {formatOrderDate(order.executed_time || order.created_time)}
                     </TableCell>
@@ -983,16 +1212,38 @@ export function RobinhoodTransactionsTable({
                       </button>
                     </TableCell>
                     <TableCell className="whitespace-nowrap text-sm">
-                      {[
-                        order.expiration_date,
-                        order.strike_price ? `$${Number(order.strike_price).toFixed(2)}` : null,
-                        order.option_type?.toUpperCase(),
-                      ]
-                        .filter(Boolean)
-                        .join(" ")}
+                      <div className="flex items-center gap-2">
+                        <Badge
+                          variant="outline"
+                          className={
+                            isCall
+                              ? "border-green-500/30 bg-green-500/10 text-green-600 dark:text-green-400"
+                              : "border-red-500/30 bg-red-500/10 text-red-600 dark:text-red-400"
+                          }
+                        >
+                          {order.option_type?.toUpperCase() || "-"}
+                        </Badge>
+                        <span>
+                          {[
+                            order.expiration_date,
+                            order.strike_price
+                              ? `$${Number(order.strike_price).toFixed(2)}`
+                              : null,
+                          ]
+                            .filter(Boolean)
+                            .join(" ")}
+                        </span>
+                      </div>
                     </TableCell>
                     <TableCell>
-                      <Badge variant="outline" className="capitalize">
+                      <Badge
+                        variant="outline"
+                        className={
+                          isBuy
+                            ? "border-green-500/30 bg-green-500/10 text-green-600 dark:text-green-400"
+                            : "border-red-500/30 bg-red-500/10 text-red-600 dark:text-red-400"
+                        }
+                      >
                         {normalizeLabel(order.side || order.direction)}
                       </Badge>
                     </TableCell>
@@ -1014,7 +1265,8 @@ export function RobinhoodTransactionsTable({
                       </Badge>
                     </TableCell>
                   </TableRow>
-                ))}
+                  );
+                })}
               </TableBody>
             </Table>
           </div>

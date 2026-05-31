@@ -1168,9 +1168,22 @@ class RobinhoodService:
             user_id=user_id,
             profile=profile,
         )
+        option_positions_data: Optional[List[Dict[str, Any]]] = None
+        try:
+            option_positions_data = await asyncio.to_thread(
+                r.get_open_option_positions
+            )
+        except Exception as error:
+            logger.warning(
+                "Could not fetch Robinhood option positions for user %s: %s",
+                user_id,
+                error,
+            )
+
         positions = await self._sync_positions(
             account_id=account["id"],
             holdings_data=await asyncio.to_thread(r.build_holdings),
+            option_positions_data=option_positions_data,
         )
         orders_count = await self._sync_orders(user_id)
         option_orders_count = await self._sync_option_orders(user_id)
@@ -1982,9 +1995,11 @@ class RobinhoodService:
         self,
         account_id: str,
         holdings_data: Dict[str, Dict[str, Any]],
+        option_positions_data: Optional[List[Dict[str, Any]]] = None,
     ) -> List[Dict[str, Any]]:
         synced_positions: List[Dict[str, Any]] = []
         synced_keys: Set[str] = set()
+        option_positions_loaded = option_positions_data is not None
 
         for ticker, data in holdings_data.items():
             quantity = _safe_float(data.get("quantity"))
@@ -2013,6 +2028,130 @@ class RobinhoodService:
                 synced_positions.append(result.data[0])
             synced_keys.add(f"{ticker}:equity")
 
+        option_instrument_cache: Dict[str, Dict[str, Any]] = {}
+        option_market_cache: Dict[str, Dict[str, Any]] = {}
+
+        for raw_position in option_positions_data or []:
+            quantity = _safe_float(raw_position.get("quantity"))
+            if quantity == 0:
+                continue
+
+            option_url = _safe_str(
+                raw_position.get("option") or raw_position.get("instrument")
+            )
+            option_id = _option_id_from_url(option_url)
+            if not option_id:
+                logger.warning("Skipping Robinhood option position without option id")
+                continue
+
+            if option_id not in option_instrument_cache:
+                instrument = None
+                try:
+                    if option_url:
+                        instrument = await asyncio.to_thread(request_get, option_url)
+                    if not instrument:
+                        instrument = await asyncio.to_thread(
+                            r.get_option_instrument_data_by_id, option_id
+                        )
+                except Exception as error:
+                    logger.warning(
+                        "Failed to fetch option instrument %s: %s",
+                        option_id,
+                        error,
+                    )
+                    instrument = {}
+                option_instrument_cache[option_id] = instrument or {}
+
+            if option_id not in option_market_cache:
+                market_data = {}
+                try:
+                    raw_market_data = await asyncio.to_thread(
+                        r.get_option_market_data_by_id, option_id
+                    )
+                    if isinstance(raw_market_data, list) and raw_market_data:
+                        market_data = raw_market_data[0] or {}
+                    elif isinstance(raw_market_data, dict):
+                        market_data = raw_market_data
+                except Exception as error:
+                    logger.warning(
+                        "Failed to fetch option market data %s: %s",
+                        option_id,
+                        error,
+                    )
+                option_market_cache[option_id] = market_data
+
+            instrument_data = option_instrument_cache.get(option_id, {})
+            market_data = option_market_cache.get(option_id, {})
+            underlying = _safe_str(
+                instrument_data.get("chain_symbol")
+                or raw_position.get("chain_symbol")
+                or raw_position.get("symbol")
+            ).upper()
+            option_type = _safe_str(
+                instrument_data.get("type") or raw_position.get("option_type")
+            ).lower()
+            expiration = instrument_data.get("expiration_date") or raw_position.get(
+                "expiration_date"
+            )
+            strike = _safe_float(
+                instrument_data.get("strike_price") or raw_position.get("strike_price")
+            )
+            contract_symbol = _safe_str(
+                market_data.get("symbol")
+                or market_data.get("instrument")
+                or f"{underlying} {expiration} {strike:g} {option_type.upper()}"
+            )
+            side = _safe_str(raw_position.get("type") or raw_position.get("side")).lower()
+            signed_quantity = -quantity if side == "short" else quantity
+            mark_price = _safe_float(
+                market_data.get("adjusted_mark_price")
+                or market_data.get("mark_price")
+                or market_data.get("last_trade_price")
+                or raw_position.get("price")
+            )
+            average_price = _safe_float(
+                raw_position.get("average_price")
+                or raw_position.get("average_open_price")
+                or raw_position.get("average_purchase_price")
+            )
+            average_purchase_price = average_price * 100 if average_price else None
+            security_name = " ".join(
+                str(part)
+                for part in [
+                    underlying,
+                    expiration,
+                    f"${strike:g}" if strike else None,
+                    option_type.upper() if option_type else None,
+                ]
+                if part
+            )
+
+            position = {
+                "account_id": account_id,
+                "position_type": "option",
+                "symbol": contract_symbol,
+                "symbol_id": option_id,
+                "security_name": security_name or contract_symbol,
+                "units": signed_quantity,
+                "price": mark_price,
+                "open_pnl": None,
+                "fractional_units": signed_quantity,
+                "average_purchase_price": average_purchase_price,
+                "currency": "USD",
+                "option_type": option_type or None,
+                "strike_price": strike or None,
+                "expiration_date": expiration,
+                "underlying_symbol": underlying or None,
+            }
+            result = (
+                self.supabase.table("snaptrade_positions")
+                .upsert(position, on_conflict="account_id,symbol,position_type")
+                .execute()
+            )
+            if result.data:
+                synced_positions.append(result.data[0])
+            synced_keys.add(f"{contract_symbol}:option")
+
         existing = (
             self.supabase.table("snaptrade_positions")
             .select("id, symbol, position_type")
@@ -2021,6 +2160,8 @@ class RobinhoodService:
         )
         for pos in existing.data or []:
             key = f"{pos.get('symbol')}:{pos.get('position_type', 'equity')}"
+            if pos.get("position_type") == "option" and not option_positions_loaded:
+                continue
             if key not in synced_keys:
                 self.supabase.table("snaptrade_positions").delete().eq(
                     "id", pos["id"]

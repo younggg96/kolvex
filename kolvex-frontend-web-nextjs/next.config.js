@@ -110,6 +110,7 @@ const nextConfig = {
         https://*.tradingview.com
         https://va.vercel-scripts.com
         https://vercel.live
+        https://*.vercel.live
         https://*.vercel-insights.com
         https://*.financialjuice.com
         https://feed.financialjuice.com
@@ -123,6 +124,7 @@ const nextConfig = {
         https://*.tradingview.com
         https://va.vercel-scripts.com
         https://vercel.live
+        https://*.vercel.live
         https://*.vercel-insights.com
         https://*.financialjuice.com
         https://feed.financialjuice.com
@@ -156,6 +158,10 @@ const nextConfig = {
         https://platform.twitter.com
         https://*.supabase.co
         https://va.vercel-scripts.com
+        https://vercel.live
+        https://*.vercel.live
+        wss://vercel.live
+        wss://*.vercel.live
         https://*.vercel-insights.com
         https://*.financialjuice.com
         https://feed.financialjuice.com
@@ -165,6 +171,8 @@ const nextConfig = {
 
       frame-src
         'self'
+        https://vercel.live
+        https://*.vercel.live
         https://platform.twitter.com
         https://x.com
         https://twitter.com

@@ -190,13 +190,20 @@ export function usePortfolioData({ userId, isOwner }: UsePortfolioDataOptions) {
   }, [loadRobinhoodOrders, robinhoodOrders.length]);
 
   const loadRobinhoodOptionOrders = useCallback(
-    async (reset = false, offsetOverride = 0, forceRefresh = false) => {
+    async (
+      reset = false,
+      offsetOverride = 0,
+      forceRefresh = false,
+      filters?: { symbol?: string; status?: string }
+    ) => {
       setLoadingRobinhoodOptionOrders(true);
       const offset = reset ? 0 : offsetOverride;
+      const symbol = filters?.symbol ?? robinhoodOrderSymbolFilter;
+      const status = filters?.status ?? robinhoodOrderStatusFilter;
       const ordersCacheKey = getCacheKey("robinhood-option-orders", [
         cacheUserId,
-        robinhoodOrderStatusFilter,
-        robinhoodOrderSymbolFilter,
+        status,
+        symbol,
         robinhoodOrdersPageSize,
         offset,
       ]);
@@ -209,8 +216,8 @@ export function usePortfolioData({ userId, isOwner }: UsePortfolioDataOptions) {
           (await getRobinhoodOptionOrders(
             robinhoodOrdersPageSize,
             offset,
-            robinhoodOrderSymbolFilter,
-            robinhoodOrderStatusFilter
+            symbol,
+            status
           ));
         if (!cached) writeCache(ordersCacheKey, result);
         setRobinhoodOptionOrders((prev) =>
@@ -265,7 +272,10 @@ export function usePortfolioData({ userId, isOwner }: UsePortfolioDataOptions) {
         setRobinhoodOrdersTotal(result.total);
         setRobinhoodOrdersHasMore(result.has_more);
         setRobinhoodWashSaleRisks(result.wash_sale_risk_symbols || []);
-        void loadRobinhoodOptionOrders(true, 0);
+        void loadRobinhoodOptionOrders(true, 0, false, {
+          symbol: robinhoodOrderSymbolFilter,
+          status: statusFilter,
+        });
       } catch (error) {
         console.warn("Failed to change Robinhood order status filter:", error);
       } finally {
@@ -305,7 +315,10 @@ export function usePortfolioData({ userId, isOwner }: UsePortfolioDataOptions) {
         setRobinhoodOrdersTotal(result.total);
         setRobinhoodOrdersHasMore(result.has_more);
         setRobinhoodWashSaleRisks(result.wash_sale_risk_symbols || []);
-        void loadRobinhoodOptionOrders(true, 0);
+        void loadRobinhoodOptionOrders(true, 0, false, {
+          symbol: normalizedSymbol,
+          status: robinhoodOrderStatusFilter,
+        });
       } catch (error) {
         console.warn("Failed to change Robinhood order symbol filter:", error);
       } finally {
