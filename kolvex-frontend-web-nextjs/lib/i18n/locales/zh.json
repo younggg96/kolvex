@@ -461,6 +461,8 @@
       "sellReviewStaleData": "当前显示的是上一次缓存的卖出复盘，最新行情加载暂时失败。",
       "stocks": "股票",
       "options": "期权",
+      "stockRecordsTitle": "股票交易记录",
+      "optionRecordsTitle": "期权交易记录",
       "contract": "合约",
       "strategy": "策略",
       "price": "价格",

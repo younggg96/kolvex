@@ -48,6 +48,7 @@ class RobinhoodStatusResponse(BaseModel):
     last_synced_at: Optional[str] = None
     profile: Optional[Dict[str, Any]] = None
     positions_count: int = 0
+    option_positions_count: int = 0
     orders_count: int = 0
     setup_required: bool = False
     message: Optional[str] = None

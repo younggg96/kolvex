@@ -17,9 +17,12 @@ import {
   SlidersHorizontal,
   X,
 } from "lucide-react";
+import { StatCard } from "@/components/common";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
+import { SwitchTab } from "@/components/ui/switch-tab";
 import {
   Dialog,
   DialogContent,
@@ -119,13 +122,8 @@ function formatRiskDate(value: string) {
   });
 }
 
-/** Buttons stay fixed width; Select triggers match toolbar density */
-const TRANSACTION_TOOLBAR_BTN =
-  "h-9 w-48 shrink-0 gap-2 overflow-hidden px-3 text-xs disabled:opacity-50";
-const TRANSACTION_TOOLBAR_SELECT_TRIGGER = cn(
-  "h-9 min-w-[11rem] max-w-[min(22rem,calc(100vw-3rem))] shrink px-3 text-xs",
-  "bg-background"
-);
+const TRANSACTION_FILTER_SELECT = "h-8 w-[140px] shrink-0 text-xs bg-background";
+const TRANSACTION_ACTION_BTN = "h-8 gap-1.5 px-2.5 text-xs";
 
 export function RobinhoodTransactionsTable({
   orders,
@@ -690,311 +688,315 @@ export function RobinhoodTransactionsTable({
         </DialogContent>
       </Dialog>
 
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <div className="text-xs text-muted-foreground">
-          {assetType === "stocks"
-            ? `${orders.length} / ${total}`
-            : `${filteredOptionOrders.length} / ${optionTotal}`}{" "}
-          {t("portfolio.tabs.transactions")}
+      <Card className="overflow-hidden">
+        <CardHeader className="space-y-3 border-b border-border py-3 px-4">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3 min-w-0">
+              <SwitchTab
+                options={[
+                  {
+                    value: "stocks",
+                    label: t("portfolio.transactions.stocks"),
+                  },
+                  {
+                    value: "options",
+                    label: t("portfolio.transactions.options"),
+                  },
+                ]}
+                value={assetType}
+                onValueChange={(value) =>
+                  setAssetType(value as "stocks" | "options")
+                }
+                variant="pills"
+                size="sm"
+                className="!w-fit shrink-0"
+              />
+              <div className="min-w-0">
+                <CardTitle className="text-sm font-semibold">
+                  {assetType === "options"
+                    ? t("portfolio.transactions.optionRecordsTitle")
+                    : t("portfolio.transactions.stockRecordsTitle")}
+                </CardTitle>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {assetType === "stocks"
+                    ? `${orders.length} / ${total}`
+                    : `${filteredOptionOrders.length} / ${optionTotal}`}{" "}
+                  {t("portfolio.tabs.transactions")}
+                  {symbolFilter && (
+                    <span className="ml-1">
+                      · {symbolFilter}
+                    </span>
+                  )}
+                  {assetType === "stocks" && selectedCount > 0 && (
+                    <span className="ml-1">
+                      · {selectedCount} {t("portfolio.transactions.selected")}
+                    </span>
+                  )}
+                </p>
+              </div>
+            </div>
+            <div className="flex flex-wrap items-center gap-1.5">
+              <Select
+                value={statusFilter}
+                onValueChange={(value) => {
+                  void onStatusFilterChange(value);
+                }}
+                disabled={syncing || loading || optionLoading}
+              >
+                <SelectTrigger className={TRANSACTION_FILTER_SELECT}>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="filled">
+                    {t("portfolio.transactions.statusFilled")}
+                  </SelectItem>
+                  <SelectItem value="cancelled">
+                    {t("portfolio.transactions.statusCancelled")}
+                  </SelectItem>
+                  <SelectItem value="all">
+                    {t("portfolio.transactions.statusAll")}
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onSync}
+                disabled={syncing}
+                className={TRANSACTION_ACTION_BTN}
+              >
+                {syncing ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <RefreshCw className="h-3.5 w-3.5" />
+                )}
+                {syncing
+                  ? t("portfolio.transactions.syncing")
+                  : t("portfolio.transactions.syncRobinhood")}
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleExportCsv}
+                className={TRANSACTION_ACTION_BTN}
+              >
+                <Download className="h-3.5 w-3.5" />
+                {t("portfolio.transactions.exportCsv")}
+              </Button>
+              {assetType === "stocks" && (
+                <>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={toggleCurrentPage}
+                    disabled={orders.length === 0}
+                    className={TRANSACTION_ACTION_BTN}
+                  >
+                    <CheckSquare className="h-3.5 w-3.5" />
+                    {t("portfolio.transactions.selectPage")}
+                  </Button>
+                  {availableModels.length > 0 ? (
+                    <Select
+                      value={selectedModel}
+                      onValueChange={setSelectedModel}
+                      disabled={!providersLoaded}
+                    >
+                      <SelectTrigger className={cn(TRANSACTION_FILTER_SELECT, "w-[120px]")}>
+                        <SelectValue placeholder="Model" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {availableModels.map((model) => (
+                          <SelectItem key={model.id} value={model.id}>
+                            {model.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  ) : null}
+                  <Select
+                    value={analysisLanguage}
+                    onValueChange={(v) =>
+                      setAnalysisLanguage(v as "zh" | "en")
+                    }
+                  >
+                    <SelectTrigger className="h-8 w-[88px] text-xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="zh">
+                        {t("portfolio.transactions.languageZh")}
+                      </SelectItem>
+                      <SelectItem value="en">
+                        {t("portfolio.transactions.languageEn")}
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleAnalyze}
+                    disabled={
+                      analyzing ||
+                      orders.length === 0 ||
+                      !providersLoaded ||
+                      availableModels.length === 0
+                    }
+                    className={TRANSACTION_ACTION_BTN}
+                  >
+                    {analyzing ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <Brain className="h-3.5 w-3.5" />
+                    )}
+                    {t("portfolio.transactions.analyze")}
+                  </Button>
+                </>
+              )}
+            </div>
+          </div>
+
+          {assetType === "options" && (
+            <div className="grid gap-2 grid-cols-2 sm:grid-cols-3">
+              <StatCard
+                label={t("portfolio.transactions.optionCalls")}
+                value={optionSummary.callCount}
+                variant="positive"
+              />
+              <StatCard
+                label={t("portfolio.transactions.optionPuts")}
+                value={optionSummary.putCount}
+                variant="negative"
+              />
+              <StatCard
+                label={t("portfolio.transactions.optionPremium")}
+                value={formatCurrency(optionSummary.premium)}
+                className="col-span-2 sm:col-span-1"
+              />
+            </div>
+          )}
+
+          {assetType === "options" && (
+            <div className="flex flex-wrap gap-2">
+              <Select value={optionTypeFilter} onValueChange={setOptionTypeFilter}>
+                <SelectTrigger className={TRANSACTION_FILTER_SELECT}>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">{t("portfolio.transactions.optionTypeAll")}</SelectItem>
+                  <SelectItem value="call">CALL</SelectItem>
+                  <SelectItem value="put">PUT</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={optionSideFilter} onValueChange={setOptionSideFilter}>
+                <SelectTrigger className={TRANSACTION_FILTER_SELECT}>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">{t("portfolio.transactions.sideAll")}</SelectItem>
+                  <SelectItem value="buy">{t("portfolio.transactions.buy")}</SelectItem>
+                  <SelectItem value="sell">{t("portfolio.transactions.sell")}</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={optionStrategyFilter} onValueChange={setOptionStrategyFilter}>
+                <SelectTrigger className={cn(TRANSACTION_FILTER_SELECT, "w-[160px]")}>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">{t("portfolio.transactions.strategyAll")}</SelectItem>
+                  {optionStrategyOptions.map((strategy) => (
+                    <SelectItem key={strategy} value={strategy}>
+                      {normalizeLabel(strategy)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select value={optionSort} onValueChange={setOptionSort}>
+                <SelectTrigger className={TRANSACTION_FILTER_SELECT}>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="newest">{t("portfolio.transactions.sortNewest")}</SelectItem>
+                  <SelectItem value="oldest">{t("portfolio.transactions.sortOldest")}</SelectItem>
+                  <SelectItem value="expiration_asc">{t("portfolio.transactions.sortExpiration")}</SelectItem>
+                  <SelectItem value="premium_desc">{t("portfolio.transactions.sortPremium")}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+        </CardHeader>
+
+        <CardContent className="!p-0">
           {symbolFilter && (
-            <span className="ml-2">
-              · {t("portfolio.transactions.symbolFilter")}: {symbolFilter}
-            </span>
+            <div className="flex items-center gap-2 border-b border-border px-4 py-2.5 bg-muted/30">
+              <Badge variant="outline" className="gap-1.5 py-1 border-primary/30 text-primary">
+                {symbolFilter}
+                <button
+                  type="button"
+                  onClick={() => void onSymbolFilterChange(undefined)}
+                  aria-label={t("portfolio.transactions.clearSymbolFilter")}
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </Badge>
+              <span className="text-xs text-muted-foreground">
+                {t("portfolio.transactions.viewingSymbolHistory", {
+                  symbol: symbolFilter,
+                })}
+              </span>
+            </div>
           )}
-          {selectedCount > 0 && (
-            <span className="ml-2">
-              · {selectedCount} {t("portfolio.transactions.selected")}
-            </span>
+
+          {assetType === "stocks" && analysis && (
+            <div className="border-b border-border p-4">
+              <div className="mb-2 flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2 text-sm font-semibold">
+                  <Brain className="h-4 w-4 text-primary" />
+                  {t("portfolio.transactions.aiAnalysis")}
+                </div>
+                <div className="flex items-center gap-1">
+                  <Select
+                    value={analysisLanguage}
+                    onValueChange={(v) =>
+                      setAnalysisLanguage(v as "zh" | "en")
+                    }
+                  >
+                    <SelectTrigger className="h-8 w-[100px] text-xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="zh">
+                        {t("portfolio.transactions.languageZh")}
+                      </SelectItem>
+                      <SelectItem value="en">
+                        {t("portfolio.transactions.languageEn")}
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleAnalyze}
+                    disabled={analyzing}
+                    className="h-8 px-2 text-xs"
+                  >
+                    <Languages className="h-3.5 w-3.5" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleDownloadAnalysis}
+                    className="h-8 px-2 text-xs"
+                  >
+                    <FileText className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+              </div>
+              <MarkdownBody content={analysis} />
+            </div>
           )}
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
+
           {assetType === "stocks" && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={toggleCurrentPage}
-              disabled={orders.length === 0}
-              className={TRANSACTION_TOOLBAR_BTN}
-            >
-              <CheckSquare className="h-4 w-4 shrink-0" />
-              <span className="min-w-0 flex-1 truncate text-center">
-                {t("portfolio.transactions.selectPage")}
-              </span>
-            </Button>
-          )}
-          <Select value={assetType} onValueChange={(value) => setAssetType(value as "stocks" | "options")}>
-            <SelectTrigger className={TRANSACTION_TOOLBAR_SELECT_TRIGGER}>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="stocks">
-                {t("portfolio.transactions.stocks")}
-              </SelectItem>
-              <SelectItem value="options">
-                {t("portfolio.transactions.options")}
-              </SelectItem>
-            </SelectContent>
-          </Select>
-          <Select
-            value={statusFilter}
-            onValueChange={(value) => {
-              void onStatusFilterChange(value);
-            }}
-            disabled={syncing || loading}
-          >
-            <SelectTrigger className={TRANSACTION_TOOLBAR_SELECT_TRIGGER}>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="filled">
-                {t("portfolio.transactions.statusFilled")}
-              </SelectItem>
-              <SelectItem value="cancelled">
-                {t("portfolio.transactions.statusCancelled")}
-              </SelectItem>
-              <SelectItem value="all">
-                {t("portfolio.transactions.statusAll")}
-              </SelectItem>
-            </SelectContent>
-          </Select>
-          {availableModels.length > 0 ? (
-            <Select
-              value={selectedModel}
-              onValueChange={setSelectedModel}
-              disabled={!providersLoaded}
-            >
-              <SelectTrigger className={TRANSACTION_TOOLBAR_SELECT_TRIGGER}>
-                <SelectValue placeholder="Model" />
-              </SelectTrigger>
-              <SelectContent>
-                {availableModels.map((model) => (
-                  <SelectItem key={model.id} value={model.id}>
-                    {model.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          ) : (
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              disabled
-              className={TRANSACTION_TOOLBAR_BTN}
-            >
-              <span className="min-w-0 flex-1 truncate text-center text-xs">
-                {providersLoaded
-                  ? t("portfolio.transactions.noAiModel")
-                  : t("common.loading")}
-              </span>
-            </Button>
-          )}
-          <Select
-            value={analysisLanguage}
-            onValueChange={(v) =>
-              setAnalysisLanguage(v as "zh" | "en")
-            }
-          >
-            <SelectTrigger className={TRANSACTION_TOOLBAR_SELECT_TRIGGER}>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="zh">
-                {t("portfolio.transactions.languageZh")}
-              </SelectItem>
-              <SelectItem value="en">
-                {t("portfolio.transactions.languageEn")}
-              </SelectItem>
-            </SelectContent>
-          </Select>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={onSync}
-            disabled={syncing}
-            className={TRANSACTION_TOOLBAR_BTN}
-          >
-            {syncing ? (
-              <Loader2 className="h-4 w-4 shrink-0 animate-spin" />
-            ) : (
-              <RefreshCw className="h-4 w-4 shrink-0" />
-            )}
-            <span className="min-w-0 flex-1 truncate text-center">
-              {syncing
-                ? t("portfolio.transactions.syncing")
-                : t("portfolio.transactions.syncRobinhood")}
-            </span>
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleAnalyze}
-            disabled={
-              analyzing ||
-              orders.length === 0 ||
-              !providersLoaded ||
-              availableModels.length === 0
-            }
-            className={TRANSACTION_TOOLBAR_BTN}
-          >
-            {analyzing ? (
-              <Loader2 className="h-4 w-4 shrink-0 animate-spin" />
-            ) : (
-              <Brain className="h-4 w-4 shrink-0" />
-            )}
-            <span className="min-w-0 flex-1 truncate text-center">
-              {t("portfolio.transactions.analyze")}
-            </span>
-          </Button>
-          {analysis && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleAnalyze}
-              disabled={analyzing}
-              className={TRANSACTION_TOOLBAR_BTN}
-            >
-              <Languages className="h-4 w-4 shrink-0" />
-              <span className="min-w-0 flex-1 truncate text-center">
-                {t("portfolio.transactions.translate")}
-              </span>
-            </Button>
-          )}
-          {analysis && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleDownloadAnalysis}
-              className={TRANSACTION_TOOLBAR_BTN}
-            >
-              <FileText className="h-4 w-4 shrink-0" />
-              <span className="min-w-0 flex-1 truncate text-center">
-                {t("portfolio.transactions.downloadAnalysis")}
-              </span>
-            </Button>
-          )}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleExportCsv}
-            className={TRANSACTION_TOOLBAR_BTN}
-          >
-            <Download className="h-4 w-4 shrink-0" />
-            <span className="min-w-0 flex-1 truncate text-center">
-              {t("portfolio.transactions.exportCsv")}
-            </span>
-          </Button>
-        </div>
-      </div>
-
-      {assetType === "options" && (
-        <div className="rounded-lg border border-cyan-500/20 bg-cyan-500/[0.06] p-3">
-          <div className="mb-3 grid gap-2 sm:grid-cols-3">
-            <div className="rounded-md border border-border bg-background/60 p-3">
-              <div className="text-[11px] uppercase text-muted-foreground">
-                {t("portfolio.transactions.optionCalls")}
-              </div>
-              <div className="mt-1 text-lg font-semibold text-green-500">
-                {optionSummary.callCount}
-              </div>
-            </div>
-            <div className="rounded-md border border-border bg-background/60 p-3">
-              <div className="text-[11px] uppercase text-muted-foreground">
-                {t("portfolio.transactions.optionPuts")}
-              </div>
-              <div className="mt-1 text-lg font-semibold text-red-500">
-                {optionSummary.putCount}
-              </div>
-            </div>
-            <div className="rounded-md border border-border bg-background/60 p-3">
-              <div className="text-[11px] uppercase text-muted-foreground">
-                {t("portfolio.transactions.optionPremium")}
-              </div>
-              <div className="mt-1 text-lg font-semibold">
-                {formatCurrency(optionSummary.premium)}
-              </div>
-            </div>
-          </div>
-          <div className="grid gap-2 md:grid-cols-4">
-            <Select value={optionTypeFilter} onValueChange={setOptionTypeFilter}>
-              <SelectTrigger className="h-9 bg-background text-xs">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">{t("portfolio.transactions.optionTypeAll")}</SelectItem>
-                <SelectItem value="call">CALL</SelectItem>
-                <SelectItem value="put">PUT</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={optionSideFilter} onValueChange={setOptionSideFilter}>
-              <SelectTrigger className="h-9 bg-background text-xs">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">{t("portfolio.transactions.sideAll")}</SelectItem>
-                <SelectItem value="buy">{t("portfolio.transactions.buy")}</SelectItem>
-                <SelectItem value="sell">{t("portfolio.transactions.sell")}</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={optionStrategyFilter} onValueChange={setOptionStrategyFilter}>
-              <SelectTrigger className="h-9 bg-background text-xs">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">{t("portfolio.transactions.strategyAll")}</SelectItem>
-                {optionStrategyOptions.map((strategy) => (
-                  <SelectItem key={strategy} value={strategy}>
-                    {normalizeLabel(strategy)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select value={optionSort} onValueChange={setOptionSort}>
-              <SelectTrigger className="h-9 bg-background text-xs">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="newest">{t("portfolio.transactions.sortNewest")}</SelectItem>
-                <SelectItem value="oldest">{t("portfolio.transactions.sortOldest")}</SelectItem>
-                <SelectItem value="expiration_asc">{t("portfolio.transactions.sortExpiration")}</SelectItem>
-                <SelectItem value="premium_desc">{t("portfolio.transactions.sortPremium")}</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-      )}
-
-      {symbolFilter && (
-        <div className="flex items-center gap-2">
-          <Badge variant="outline" className="gap-1.5 py-1">
-            {symbolFilter}
-            <button
-              type="button"
-              onClick={() => void onSymbolFilterChange(undefined)}
-              aria-label={t("portfolio.transactions.clearSymbolFilter")}
-            >
-              <X className="h-3 w-3" />
-            </button>
-          </Badge>
-          <span className="text-xs text-muted-foreground">
-            {t("portfolio.transactions.viewingSymbolHistory", {
-              symbol: symbolFilter,
-            })}
-          </span>
-        </div>
-      )}
-
-      {analysis && (
-        <div className="rounded-lg border border-border bg-card p-4">
-          <div className="mb-2 flex items-center gap-2 text-sm font-semibold">
-            <Brain className="h-4 w-4 text-primary" />
-            {t("portfolio.transactions.aiAnalysis")}
-          </div>
-          <MarkdownBody content={analysis} />
-        </div>
-      )}
-
-      <div className="rounded-lg border border-border bg-card p-4">
+      <div className="border-b border-border p-4">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <div className="text-sm font-semibold">
@@ -1010,39 +1012,27 @@ export function RobinhoodTransactionsTable({
         </div>
         {sellPerformance && sellPerformance.summary.total_sells > 0 ? (
           <>
-            <div className="mt-4 grid gap-2 sm:grid-cols-4">
-              <div className="rounded-lg border border-border p-3">
-                <div className="text-xs text-muted-foreground">
-                  {t("portfolio.transactions.soldTooEarly")}
-                </div>
-                <div className="mt-1 text-lg font-semibold text-red-600 dark:text-red-400">
-                  {sellPerformance.summary.sold_too_early_count}
-                </div>
-              </div>
-              <div className="rounded-lg border border-border p-3">
-                <div className="text-xs text-muted-foreground">
-                  {t("portfolio.transactions.goodSale")}
-                </div>
-                <div className="mt-1 text-lg font-semibold text-green-600 dark:text-green-400">
-                  {sellPerformance.summary.good_sale_count}
-                </div>
-              </div>
-              <div className="rounded-lg border border-border p-3">
-                <div className="text-xs text-muted-foreground">
-                  {t("portfolio.transactions.missedUpside")}
-                </div>
-                <div className="mt-1 text-lg font-semibold text-red-600 dark:text-red-400">
-                  {formatCurrency(sellPerformance.summary.missed_upside_amount)}
-                </div>
-              </div>
-              <div className="rounded-lg border border-border p-3">
-                <div className="text-xs text-muted-foreground">
-                  {t("portfolio.transactions.avoidedDownside")}
-                </div>
-                <div className="mt-1 text-lg font-semibold text-green-600 dark:text-green-400">
-                  {formatCurrency(sellPerformance.summary.avoided_downside_amount)}
-                </div>
-              </div>
+            <div className="mt-4 grid gap-2 grid-cols-2 lg:grid-cols-4">
+              <StatCard
+                label={t("portfolio.transactions.soldTooEarly")}
+                value={sellPerformance.summary.sold_too_early_count}
+                variant="negative"
+              />
+              <StatCard
+                label={t("portfolio.transactions.goodSale")}
+                value={sellPerformance.summary.good_sale_count}
+                variant="positive"
+              />
+              <StatCard
+                label={t("portfolio.transactions.missedUpside")}
+                value={formatCurrency(sellPerformance.summary.missed_upside_amount)}
+                variant="negative"
+              />
+              <StatCard
+                label={t("portfolio.transactions.avoidedDownside")}
+                value={formatCurrency(sellPerformance.summary.avoided_downside_amount)}
+                variant="positive"
+              />
             </div>
             <div className="mt-4 overflow-x-auto">
               <Table>
@@ -1142,10 +1132,11 @@ export function RobinhoodTransactionsTable({
           </div>
         )}
       </div>
+          )}
 
-      {assetType === "options" ? (
+          {assetType === "options" ? (
         optionError ? (
-          <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-6">
+          <div className="border-b border-amber-500/30 bg-amber-500/10 p-6">
             <div className="flex items-start gap-3">
               <ShieldAlert className="mt-0.5 h-5 w-5 text-amber-600 dark:text-amber-300" />
               <div>
@@ -1159,7 +1150,7 @@ export function RobinhoodTransactionsTable({
             </div>
           </div>
         ) : filteredOptionOrders.length === 0 ? (
-          <div className="rounded-lg border border-border bg-card p-8 text-center">
+          <div className="p-8 text-center">
             <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
               <ReceiptText className="h-5 w-5 text-muted-foreground" />
             </div>
@@ -1171,8 +1162,12 @@ export function RobinhoodTransactionsTable({
             </p>
           </div>
         ) : (
-          <div className="overflow-x-auto rounded-lg border border-cyan-500/20 bg-card shadow-[inset_3px_0_0_rgba(6,182,212,0.35)]">
-            <Table>
+          <>
+            <div className="px-4 py-3 bg-primary/5 text-xs font-medium text-primary dark:text-primary-dark flex items-center border-y border-primary/30 dark:border-border-dark">
+              {t("portfolio.table.optionsContracts")}
+            </div>
+            <div className="overflow-x-auto">
+            <Table className="min-w-[1000px]">
               <TableHeader>
                 <TableRow>
                   <TableHead className="pl-4">{t("portfolio.transactions.date")}</TableHead>
@@ -1195,7 +1190,7 @@ export function RobinhoodTransactionsTable({
                   return (
                   <TableRow
                     key={`${order.option_order_id}:${order.leg_id}`}
-                    className="hover:bg-cyan-500/[0.04]"
+                    className="hover:bg-muted/50 transition-colors"
                   >
                     <TableCell className="whitespace-nowrap pl-4 text-xs text-muted-foreground">
                       {formatOrderDate(order.executed_time || order.created_time)}
@@ -1269,10 +1264,11 @@ export function RobinhoodTransactionsTable({
                 })}
               </TableBody>
             </Table>
-          </div>
+            </div>
+          </>
         )
       ) : orders.length === 0 ? (
-        <div className="rounded-lg border border-border bg-card p-8 text-center">
+        <div className="p-8 text-center">
           <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
             <ReceiptText className="h-5 w-5 text-muted-foreground" />
           </div>
@@ -1286,7 +1282,11 @@ export function RobinhoodTransactionsTable({
           </p>
         </div>
       ) : (
-      <div className="overflow-x-auto rounded-lg border border-border bg-card">
+      <>
+        <div className="px-4 py-3 bg-primary/5 text-xs font-medium text-primary dark:text-primary-dark flex items-center border-y border-primary/30 dark:border-border-dark">
+          {t("portfolio.transactions.stockRecordsTitle")}
+        </div>
+        <div className="overflow-x-auto">
         <Table>
         <TableHeader>
           <TableRow>
@@ -1410,36 +1410,40 @@ export function RobinhoodTransactionsTable({
           })}
         </TableBody>
         </Table>
-      </div>
-      )}
-      {assetType === "stocks" && hasMore && (
-        <div className="flex justify-center">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={onLoadMore}
-            disabled={loading}
-            className="gap-2"
-          >
-            {loading && <Loader2 className="h-4 w-4 animate-spin" />}
-            {t("portfolio.transactions.loadMore")}
-          </Button>
         </div>
+      </>
       )}
-      {assetType === "options" && optionHasMore && (
-        <div className="flex justify-center">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={onLoadMoreOptions}
-            disabled={optionLoading}
-            className="gap-2"
-          >
-            {optionLoading && <Loader2 className="h-4 w-4 animate-spin" />}
-            {t("portfolio.transactions.loadMore")}
-          </Button>
-        </div>
-      )}
+
+          {assetType === "stocks" && hasMore && (
+            <div className="flex justify-center border-t border-border py-4">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onLoadMore}
+                disabled={loading}
+                className="gap-2"
+              >
+                {loading && <Loader2 className="h-4 w-4 animate-spin" />}
+                {t("portfolio.transactions.loadMore")}
+              </Button>
+            </div>
+          )}
+          {assetType === "options" && optionHasMore && (
+            <div className="flex justify-center border-t border-border py-4">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onLoadMoreOptions}
+                disabled={optionLoading}
+                className="gap-2"
+              >
+                {optionLoading && <Loader2 className="h-4 w-4 animate-spin" />}
+                {t("portfolio.transactions.loadMore")}
+              </Button>
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

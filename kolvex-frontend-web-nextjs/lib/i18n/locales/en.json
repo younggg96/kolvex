@@ -490,6 +490,8 @@
       "sellReviewStaleData": "Showing the last cached sell review because the latest quote refresh failed.",
       "stocks": "Stocks",
       "options": "Options",
+      "stockRecordsTitle": "Stock transactions",
+      "optionRecordsTitle": "Option transactions",
       "contract": "Contract",
       "strategy": "Strategy",
       "price": "Price",
