@@ -140,6 +140,9 @@ class RobinhoodOptionOrderResponse(BaseModel):
     executed_time: Optional[str] = None
     raw_order: Optional[Dict[str, Any]] = None
     raw_leg: Optional[Dict[str, Any]] = None
+    cost_basis: Optional[float] = None
+    realized_pnl: Optional[float] = None
+    realized_pnl_percent: Optional[float] = None
 
 
 class RobinhoodOptionOrdersResponse(BaseModel):

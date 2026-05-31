@@ -121,6 +121,9 @@ export interface RobinhoodOptionOrder {
   executed_time?: string | null;
   raw_order?: Record<string, unknown> | null;
   raw_leg?: Record<string, unknown> | null;
+  cost_basis?: number | null;
+  realized_pnl?: number | null;
+  realized_pnl_percent?: number | null;
 }
 
 export interface RobinhoodOptionOrdersResponse {

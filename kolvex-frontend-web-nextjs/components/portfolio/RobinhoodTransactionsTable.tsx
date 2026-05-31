@@ -420,6 +420,9 @@ export function RobinhoodTransactionsTable({
       "processed_quantity",
       "price",
       "premium",
+      "cost_basis",
+      "realized_pnl",
+      "realized_pnl_percent",
       "state",
       "option_order_id",
       "leg_id",
@@ -1178,6 +1181,7 @@ export function RobinhoodTransactionsTable({
                   <TableHead className="text-right">{t("portfolio.transactions.quantity")}</TableHead>
                   <TableHead className="text-right">{t("portfolio.transactions.price")}</TableHead>
                   <TableHead className="text-right">{t("portfolio.transactions.premium")}</TableHead>
+                  <TableHead className="text-right">{t("portfolio.transactions.pnl")}</TableHead>
                   <TableHead className="pr-4">{t("portfolio.transactions.status")}</TableHead>
                 </TableRow>
               </TableHeader>
@@ -1253,6 +1257,27 @@ export function RobinhoodTransactionsTable({
                     </TableCell>
                     <TableCell className="text-right font-medium tabular-nums">
                       {formatCurrency(order.premium || 0)}
+                    </TableCell>
+                    <TableCell
+                      className={cn(
+                        "text-right font-medium tabular-nums",
+                        order.realized_pnl === null ||
+                          order.realized_pnl === undefined
+                          ? "text-muted-foreground"
+                          : order.realized_pnl >= 0
+                            ? "text-green-600 dark:text-green-400"
+                            : "text-red-600 dark:text-red-400"
+                      )}
+                    >
+                      {order.realized_pnl === null ||
+                      order.realized_pnl === undefined
+                        ? "-"
+                        : `${formatCurrency(order.realized_pnl)}${
+                            order.realized_pnl_percent !== null &&
+                            order.realized_pnl_percent !== undefined
+                              ? ` (${order.realized_pnl_percent.toFixed(2)}%)`
+                              : ""
+                          }`}
                     </TableCell>
                     <TableCell className="pr-4">
                       <Badge variant="secondary" className="capitalize">

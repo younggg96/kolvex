@@ -2554,6 +2554,7 @@ class RobinhoodService:
             if status_filter and status_filter.lower() != "all":
                 query = query.eq("state", status_filter)
             result = query.range(offset, offset + limit - 1).execute()
+            orders = self._attach_option_realized_pnl(user_id, result.data or [])
         except Exception as error:
             if _is_missing_robinhood_table_error(error):
                 raise RobinhoodStorageNotReady(
@@ -2562,12 +2563,120 @@ class RobinhoodService:
             raise
 
         return {
-            "orders": result.data or [],
+            "orders": orders,
             "total": result.count or 0,
             "limit": limit,
             "offset": offset,
             "has_more": offset + limit < (result.count or 0),
         }
+
+    def _attach_option_realized_pnl(
+        self,
+        user_id: str,
+        page_orders: List[Dict[str, Any]],
+    ) -> List[Dict[str, Any]]:
+        """Attach FIFO realized P&L to option sell rows.
+
+        Robinhood option orders do not include realized P&L, so we reconstruct
+        it from prior filled buy lots for the same contract. If a sell cannot
+        be matched to a previous buy lot, the P&L fields stay null.
+        """
+        if not page_orders:
+            return page_orders
+
+        try:
+            all_rows = (
+                self.supabase.table("robinhood_option_orders")
+                .select(
+                    "option_order_id,leg_id,underlying_symbol,chain_symbol,option_type,"
+                    "expiration_date,strike_price,side,direction,opening_strategy,"
+                    "closing_strategy,quantity,processed_quantity,price,state,"
+                    "created_time,executed_time"
+                )
+                .eq("user_id", user_id)
+                .eq("state", "filled")
+                .order("created_time", desc=False)
+                .execute()
+            )
+        except Exception as error:
+            logger.warning("Could not calculate Robinhood option realized P&L: %s", error)
+            return page_orders
+
+        lots: Dict[tuple, deque] = defaultdict(deque)
+        pnl_by_row: Dict[str, Dict[str, Optional[float]]] = {}
+
+        def row_key(row: Dict[str, Any]) -> str:
+            return f"{row.get('option_order_id')}:{row.get('leg_id')}"
+
+        def contract_key(row: Dict[str, Any]) -> tuple:
+            return (
+                _safe_str(row.get("underlying_symbol") or row.get("chain_symbol")).upper(),
+                _safe_str(row.get("expiration_date")),
+                round(_safe_float(row.get("strike_price")), 8),
+                _safe_str(row.get("option_type")).lower(),
+            )
+
+        for row in all_rows.data or []:
+            quantity = _safe_float(row.get("processed_quantity") or row.get("quantity"))
+            price = _safe_float(row.get("price"))
+            if quantity <= 0 or price <= 0:
+                continue
+
+            side = _safe_str(row.get("side") or row.get("direction")).lower()
+            key = contract_key(row)
+
+            if "buy" in side:
+                lots[key].append({"quantity": quantity, "price": price})
+                continue
+
+            if "sell" not in side:
+                continue
+
+            remaining = quantity
+            matched_quantity = 0.0
+            cost_basis = 0.0
+
+            while remaining > 0 and lots[key]:
+                lot = lots[key][0]
+                lot_quantity = _safe_float(lot.get("quantity"))
+                matched = min(remaining, lot_quantity)
+                cost_basis += matched * _safe_float(lot.get("price")) * 100
+                matched_quantity += matched
+                remaining -= matched
+                lot["quantity"] = lot_quantity - matched
+                if lot["quantity"] <= 1e-9:
+                    lots[key].popleft()
+
+            if matched_quantity <= 0 or cost_basis <= 0:
+                pnl_by_row[row_key(row)] = {
+                    "cost_basis": None,
+                    "realized_pnl": None,
+                    "realized_pnl_percent": None,
+                }
+                continue
+
+            proceeds = matched_quantity * price * 100
+            realized_pnl = proceeds - cost_basis
+            pnl_by_row[row_key(row)] = {
+                "cost_basis": round(cost_basis, 2),
+                "realized_pnl": round(realized_pnl, 2),
+                "realized_pnl_percent": round((realized_pnl / cost_basis) * 100, 2),
+            }
+
+        return [
+            {
+                **order,
+                **pnl_by_row.get(
+                    row_key(order),
+                    {
+                        "cost_basis": None,
+                        "realized_pnl": None,
+                        "realized_pnl_percent": None,
+                    },
+                ),
+            }
+            for order in page_orders
+        ]
 
     async def _record_snapshot(
         self,
