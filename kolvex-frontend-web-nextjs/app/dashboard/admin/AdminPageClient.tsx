@@ -309,6 +309,11 @@ interface ScheduledJob {
     timezone?: string | null;
   };
   is_paused?: boolean;
+  health?: {
+    last_status?: string;
+    last_run_at?: string;
+    last_error?: string | null;
+  };
 }
 
 interface SchedulerData {
@@ -360,6 +365,15 @@ const scheduledJobsConfig: ScheduledJobConfig[] = [
     actionEndpoint: "fetch-news",
   },
   {
+    id: "fetch_financial_juice",
+    name: "FinancialJuice Scrape",
+    description: "Scrape FinancialJuice news and trigger AI analysis",
+    icon: Newspaper,
+    frequency: "Every 30 minutes",
+    category: "news",
+    actionEndpoint: "fetch-news",
+  },
+  {
     id: "scrape_kol_tweets",
     name: "KOL Posts Scrape",
     description: "Scrape Twitter and Xiaohongshu posts from active KOLs",
@@ -369,31 +383,57 @@ const scheduledJobsConfig: ScheduledJobConfig[] = [
     actionEndpoint: "scrape-twitter",
   },
   {
-    id: "daily_sync_holdings",
-    name: "Morning Sync Holdings",
-    description: "Sync all users' holdings data (08:00 UTC)",
-    icon: Activity,
-    frequency: "Daily at 08:00 UTC",
-    category: "sync",
-    actionEndpoint: "sync-holdings",
+    id: "scrape_youtube_kols",
+    name: "YouTube KOL Scrape",
+    description: "Scrape latest videos from active YouTube KOLs",
+    icon: MessageSquare,
+    frequency: "Daily at 08:00 / 20:00 UTC",
+    category: "scraper",
+    actionEndpoint: "scrape-youtube",
   },
   {
-    id: "afternoon_sync_holdings",
-    name: "Afternoon Sync Holdings",
-    description: "Sync all users' holdings data (20:00 UTC / 4PM ET)",
+    id: "options_flow_scan",
+    name: "Options Flow Scan",
+    description: "Scan unusual options activity during market hours",
     icon: Activity,
-    frequency: "Daily at 20:00 UTC",
-    category: "sync",
-    actionEndpoint: "sync-holdings",
+    frequency: "Weekdays every 30 min, 06:00-13:30 PT",
+    category: "scraper",
+    actionEndpoint: "options-flow-scan",
   },
   {
-    id: "daily_portfolio_snapshot",
-    name: "📸 Daily Portfolio Snapshot",
-    description: "Record portfolio snapshots for profit curve (21:00 UTC)",
+    id: "portfolio_snapshot_morning",
+    name: "Portfolio Snapshot Morning",
+    description: "Sync holdings and record snapshot before market open",
     icon: Camera,
-    frequency: "Daily at 21:00 UTC",
+    frequency: "Daily at 06:00 PT",
     category: "sync",
     actionEndpoint: "portfolio-snapshot",
+  },
+  {
+    id: "portfolio_snapshot_noon",
+    name: "Portfolio Snapshot Noon",
+    description: "Sync holdings and record midday snapshot",
+    icon: Camera,
+    frequency: "Daily at 12:00 PT",
+    category: "sync",
+    actionEndpoint: "portfolio-snapshot",
+  },
+  {
+    id: "portfolio_snapshot_afternoon",
+    name: "Portfolio Snapshot Close",
+    description: "Sync holdings and record post-close snapshot",
+    icon: Camera,
+    frequency: "Daily at 13:30 PT",
+    category: "sync",
+    actionEndpoint: "portfolio-snapshot",
+  },
+  {
+    id: "screener_cache_warm",
+    name: "Stock Screener Cache",
+    description: "Warm S&P 500 screener data cache",
+    icon: Database,
+    frequency: "Daily at 06:00 ET",
+    category: "sync",
   },
 ];
 
@@ -1304,7 +1344,7 @@ export default function AdminPageClient() {
   const runSchedulerAction = useCallback(
     async (
       jobId: string,
-      action: "pause" | "resume" | "reschedule",
+      action: "pause" | "resume" | "reschedule" | "run-now",
       payload?: Record<string, any>
     ) => {
       const key = `${jobId}:${action}`;
@@ -2318,6 +2358,20 @@ export default function AdminPageClient() {
                                     </div>
 
                                     <div className="flex flex-wrap items-center gap-2">
+                                      <Button
+                                        size="xs"
+                                        variant="outline"
+                                        onClick={() => runSchedulerAction(jobConfig.id, "run-now")}
+                                        disabled={schedulerActions.has(`${jobConfig.id}:run-now`)}
+                                        className="h-6 px-2 text-[10px]"
+                                      >
+                                        {schedulerActions.has(`${jobConfig.id}:run-now`) ? (
+                                          <Loader2 className="h-3 w-3 animate-spin" />
+                                        ) : (
+                                          <Play className="h-3 w-3" />
+                                        )}
+                                        Trigger Job
+                                      </Button>
                                       <Button
                                         size="xs"
                                         variant="outline"

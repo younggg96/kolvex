@@ -7,6 +7,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 import logging
+from datetime import datetime, timezone
 
 # 导入路由和配置
 from app.api.routes import api_router
@@ -22,6 +23,7 @@ logger = logging.getLogger(__name__)
 
 # 定时任务调度器
 scheduler = None
+scheduler_job_health = {}
 
 
 def setup_scheduler():
@@ -32,8 +34,44 @@ def setup_scheduler():
         from apscheduler.schedulers.asyncio import AsyncIOScheduler
         from apscheduler.triggers.interval import IntervalTrigger
         from apscheduler.triggers.cron import CronTrigger
+        from apscheduler.events import (
+            EVENT_JOB_ERROR,
+            EVENT_JOB_EXECUTED,
+            EVENT_JOB_MISSED,
+        )
 
         scheduler = AsyncIOScheduler()
+
+        def record_job_event(event):
+            now = datetime.now(timezone.utc).isoformat()
+            status = "success"
+            error_message = None
+
+            if event.code == EVENT_JOB_ERROR:
+                status = "error"
+                error_message = str(event.exception)
+                logger.error(
+                    "❌ [SCHEDULER] Job %s failed: %s",
+                    event.job_id,
+                    error_message,
+                )
+            elif event.code == EVENT_JOB_MISSED:
+                status = "missed"
+                error_message = "Job missed its scheduled run window"
+                logger.warning("⚠️ [SCHEDULER] Job %s missed", event.job_id)
+            else:
+                logger.info("✅ [SCHEDULER] Job %s finished", event.job_id)
+
+            scheduler_job_health[event.job_id] = {
+                "last_status": status,
+                "last_run_at": now,
+                "last_error": error_message,
+            }
+
+        scheduler.add_listener(
+            record_job_event,
+            EVENT_JOB_EXECUTED | EVENT_JOB_ERROR | EVENT_JOB_MISSED,
+        )
 
         # ============================================================
         # 任务 1: 每小时获取 KOL 标的新闻（按 ticker 查询）
@@ -551,13 +589,17 @@ def setup_scheduler():
             logger.info(f"📅 [SCRAPE] 下次执行时间: {scrape_job.next_run_time}")
         
         # 更新持仓同步任务状态
-        holdings_morning_job = scheduler.get_job("sync_all_holdings_morning")
+        holdings_morning_job = scheduler.get_job("portfolio_snapshot_morning")
         if holdings_morning_job:
             logger.info(f"📅 [HOLDINGS] 早上同步下次执行时间: {holdings_morning_job.next_run_time}")
         
-        holdings_evening_job = scheduler.get_job("sync_all_holdings_evening")
-        if holdings_evening_job:
-            logger.info(f"📅 [HOLDINGS] 晚上同步下次执行时间: {holdings_evening_job.next_run_time}")
+        holdings_noon_job = scheduler.get_job("portfolio_snapshot_noon")
+        if holdings_noon_job:
+            logger.info(f"📅 [HOLDINGS] 中午同步下次执行时间: {holdings_noon_job.next_run_time}")
+
+        holdings_afternoon_job = scheduler.get_job("portfolio_snapshot_afternoon")
+        if holdings_afternoon_job:
+            logger.info(f"📅 [HOLDINGS] 下午同步下次执行时间: {holdings_afternoon_job.next_run_time}")
 
         options_flow_job = scheduler.get_job("options_flow_scan")
         if options_flow_job:

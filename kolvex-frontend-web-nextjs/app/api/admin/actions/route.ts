@@ -34,6 +34,8 @@ export async function POST(request: NextRequest) {
     const actionEndpoints: Record<string, string> = {
       "scrape-twitter": "/api/v1/admin/actions/scrape-twitter",
       "scrape-xiaohongshu": "/api/v1/admin/actions/scrape-xiaohongshu",
+      "scrape-youtube": "/api/v1/admin/actions/scrape-youtube",
+      "options-flow-scan": "/api/v1/admin/actions/options-flow-scan",
       "analyze-news": "/api/v1/admin/actions/analyze-news",
       "analyze-posts": "/api/v1/admin/actions/analyze-posts",
       "analyze-all-posts": "/api/v1/admin/actions/analyze-all-posts",

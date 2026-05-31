@@ -394,6 +394,30 @@ async def trigger_youtube_scrape(
         return {"success": False, "message": str(e)}
 
 
+@router.post("/actions/options-flow-scan", response_model=Dict[str, Any])
+async def trigger_options_flow_scan(
+    max_expirations: int = Query(3, ge=1, le=8, description="每个标的扫描的到期日数量"),
+    admin_id: str = Depends(verify_admin),
+):
+    """
+    手动触发期权异动扫描。
+    """
+    try:
+        from app.services.options_flow.service import get_options_flow_service
+
+        service = get_options_flow_service()
+        results = service.scan_multiple(max_expirations=max_expirations)
+        saved = service.save_results(results) if results else 0
+        return {
+            "success": True,
+            "message": f"Options flow scan completed: {len(results)} detected, {saved} saved",
+            "detected": len(results),
+            "saved": saved,
+        }
+    except Exception as e:
+        return {"success": False, "message": str(e)}
+
+
 @router.post("/actions/analyze-news", response_model=Dict[str, Any])
 async def trigger_news_analysis(
     limit: int = Query(50, description="分析的新闻数量限制"),

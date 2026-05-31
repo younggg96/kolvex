@@ -328,7 +328,15 @@ class SchedulerService:
     def get_jobs_info(self) -> List[Dict[str, Any]]:
         """获取所有定时任务信息"""
         active_scheduler = self._get_active_scheduler()
-        return [self._serialize_job(job) for job in active_scheduler.get_jobs()]
+        jobs = [self._serialize_job(job) for job in active_scheduler.get_jobs()]
+        try:
+            from main import scheduler_job_health
+
+            for job in jobs:
+                job["health"] = scheduler_job_health.get(job["id"], {})
+        except ImportError:
+            pass
+        return jobs
 
     def pause_job(self, job_id: str) -> Dict[str, Any]:
         scheduler = self._get_active_scheduler()
@@ -395,7 +403,6 @@ def stop_scheduler():
     if _scheduler_instance:
         _scheduler_instance.stop()
         _scheduler_instance = None
-
 
 
 

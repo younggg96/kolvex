@@ -7,6 +7,8 @@ from fastapi import APIRouter, Depends, HTTPException
 from starlette import status as http_status
 from typing import Dict, List, Any, Optional, Literal
 import logging
+import asyncio
+import inspect
 from pydantic import BaseModel, Field
 
 from app.api.dependencies.auth import get_current_user_id
@@ -173,6 +175,55 @@ async def resume_job(
         )
 
 
+@router.post("/jobs/{job_id}/run-now", response_model=Dict[str, Any])
+async def run_job_now(
+    job_id: str,
+    current_user_id: str = Depends(get_current_user_id),
+):
+    """
+    手动触发 main.py 中已注册的 APScheduler job。
+    用于诊断 KOL、新闻、期权异动等自动化任务是否能正常执行。
+    """
+    try:
+        from main import scheduler as main_scheduler
+
+        if main_scheduler is None:
+            raise HTTPException(
+                status_code=http_status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Main scheduler is not initialized",
+            )
+
+        job = main_scheduler.get_job(job_id)
+        if not job:
+            raise HTTPException(
+                status_code=http_status.HTTP_404_NOT_FOUND,
+                detail=f"Job not found: {job_id}",
+            )
+
+        func = job.func
+
+        async def runner():
+            if inspect.iscoroutinefunction(func):
+                await func(*job.args, **job.kwargs)
+            else:
+                await asyncio.to_thread(func, *job.args, **job.kwargs)
+
+        asyncio.create_task(runner())
+        return {
+            "success": True,
+            "message": f"Job {job_id} triggered",
+            "job_id": job_id,
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"手动触发任务失败: {e}")
+        raise HTTPException(
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to run job: {str(e)}",
+        )
+
+
 @router.post("/jobs/{job_id}/reschedule", response_model=Dict[str, Any])
 async def reschedule_job(
     job_id: str,
@@ -206,7 +257,6 @@ async def reschedule_job(
             status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to reschedule job: {str(e)}",
         )
-
 
 
 
