@@ -379,6 +379,23 @@ export async function checkAnalysisHealth(): Promise<AnalysisHealthResponse> {
 
 // ========== Helper Functions ==========
 
+const OPTION_CONTRACT_MULTIPLIER = 100;
+
+function normalizeOptionCost(rawAveragePrice: number, currentPremium: number) {
+  if (!Number.isFinite(rawAveragePrice) || rawAveragePrice <= 0) {
+    return { costPerContract: 0 };
+  }
+
+  const looksLikeContractCost =
+    rawAveragePrice > 50 ||
+    (currentPremium > 0 && rawAveragePrice > currentPremium * 10);
+  const premiumPerShare = looksLikeContractCost
+    ? rawAveragePrice / OPTION_CONTRACT_MULTIPLIER
+    : rawAveragePrice;
+
+  return { costPerContract: premiumPerShare * OPTION_CONTRACT_MULTIPLIER };
+}
+
 /**
  * Calculate total portfolio value
  * Options are multiplied by 100 (each contract represents 100 shares)
@@ -408,9 +425,17 @@ export function calculateTotalPnL(holdings: SnapTradeHoldings): number {
       if (position.position_type === "option") {
         // For options: calculate P&L from current value - cost basis
         if (position.price && position.average_purchase_price) {
-          const currentValue = position.price * position.units * 100;
-          const costBasis = position.average_purchase_price * position.units;
-          total += currentValue - costBasis;
+          const contracts = Math.abs(position.units || 0);
+          const currentPremium = Math.abs(position.price || 0);
+          const currentValue =
+            currentPremium * contracts * OPTION_CONTRACT_MULTIPLIER;
+          const { costPerContract } = normalizeOptionCost(
+            Math.abs(position.average_purchase_price || 0),
+            currentPremium
+          );
+          const costBasis = costPerContract * contracts;
+          const isShort = (position.units || 0) < 0;
+          total += isShort ? costBasis - currentValue : currentValue - costBasis;
         }
       } else {
         // For equities: use open_pnl or calculate from average_purchase_price

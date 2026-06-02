@@ -28,6 +28,23 @@ interface UseSectorDataResult {
   requiredSymbols: string[];
 }
 
+const OPTION_CONTRACT_MULTIPLIER = 100;
+
+function normalizeOptionCost(rawAveragePrice: number, currentPremium: number) {
+  if (!Number.isFinite(rawAveragePrice) || rawAveragePrice <= 0) {
+    return { costPerContract: 0 };
+  }
+
+  const looksLikeContractCost =
+    rawAveragePrice > 50 ||
+    (currentPremium > 0 && rawAveragePrice > currentPremium * 10);
+  const premiumPerShare = looksLikeContractCost
+    ? rawAveragePrice / OPTION_CONTRACT_MULTIPLIER
+    : rawAveragePrice;
+
+  return { costPerContract: premiumPerShare * OPTION_CONTRACT_MULTIPLIER };
+}
+
 export function useSectorData({
   holdings,
   sortKey,
@@ -157,11 +174,28 @@ export function useSectorData({
       if (pos.is_hidden) return;
 
       const isOption = pos.position_type === "option";
-      const marketValue =
-        pos.market_value ?? (pos.price ?? 0) * pos.units * (isOption ? 100 : 1);
-      const costBasis =
-        (pos.average_purchase_price ?? 0) * pos.units * (isOption ? 1 : 1);
-      const gain = pos.open_pnl ?? marketValue - costBasis;
+      const contracts = Math.abs(pos.units || 0);
+      const optionPremium = Math.abs(pos.price || 0);
+      const optionMarketValue =
+        optionPremium * contracts * OPTION_CONTRACT_MULTIPLIER;
+      const { costPerContract } = normalizeOptionCost(
+        Math.abs(pos.average_purchase_price || 0),
+        optionPremium
+      );
+      const optionCostBasis = costPerContract * contracts;
+      const isShortOption = isOption && (pos.units || 0) < 0;
+      const marketValue = isOption
+        ? optionMarketValue
+        : pos.market_value ?? (pos.price ?? 0) * pos.units;
+      const costBasis = isOption
+        ? optionCostBasis
+        : (pos.average_purchase_price ?? 0) * pos.units;
+      const gain =
+        isOption
+          ? isShortOption
+            ? optionCostBasis - optionMarketValue
+            : optionMarketValue - optionCostBasis
+          : pos.open_pnl ?? marketValue - costBasis;
       const gainPercent = costBasis > 0 ? (gain / costBasis) * 100 : 0;
 
       // Determine sector - use underlying symbol for options

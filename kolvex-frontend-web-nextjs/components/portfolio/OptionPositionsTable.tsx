@@ -30,6 +30,29 @@ import type { OptionPositionsTableProps, SnapTradePosition } from "./types";
 const isHiddenValue = (val: any): val is string =>
   val === "***" || val === null || val === undefined;
 
+const OPTION_CONTRACT_MULTIPLIER = 100;
+
+function normalizeOptionCost(rawAveragePrice: number, currentPremium: number) {
+  if (!Number.isFinite(rawAveragePrice) || rawAveragePrice <= 0) {
+    return { premiumPerShare: 0, costPerContract: 0 };
+  }
+
+  // Robinhood option positions are stored as total contract cost
+  // (average option premium * 100). SnapTrade-style payloads can be
+  // per-share premium, so normalize before calculating P&L.
+  const looksLikeContractCost =
+    rawAveragePrice > 50 ||
+    (currentPremium > 0 && rawAveragePrice > currentPremium * 10);
+  const premiumPerShare = looksLikeContractCost
+    ? rawAveragePrice / OPTION_CONTRACT_MULTIPLIER
+    : rawAveragePrice;
+
+  return {
+    premiumPerShare,
+    costPerContract: premiumPerShare * OPTION_CONTRACT_MULTIPLIER,
+  };
+}
+
 export function OptionPositionsTable({
   positions,
   isOwner,
@@ -98,9 +121,16 @@ export function OptionPositionsTable({
                 type="amount"
                 className="w-[80px] min-w-[80px]"
               />
-              <TableHead className="text-center w-[80px] min-w-[80px]">
-                <span className="text-xs text-muted-foreground whitespace-nowrap">{t("portfolio.table.cost")}</span>
-              </TableHead>
+              <SortableHeader
+                label={t("portfolio.table.cost")}
+                sortKey="cost"
+                currentSortKey={sortKey}
+                sortDirection={sortDir}
+                onSort={onSort}
+                align="center"
+                type="amount"
+                className="w-[80px] min-w-[80px]"
+              />
               <SortableHeader
                 label={t("portfolio.table.contracts")}
                 sortKey="units"
@@ -163,9 +193,6 @@ export function OptionPositionsTable({
               const isHiddenPosition = pos.is_hidden || pos.units == null;
 
               // Safely get numeric values, handling hidden values "***"
-              const safeMarketValue = isHiddenValue(pos.market_value)
-                ? null
-                : (pos.market_value as number);
               const safePrice = isHiddenValue(pos.price)
                 ? 0
                 : (pos.price as number);
@@ -173,28 +200,35 @@ export function OptionPositionsTable({
                 ? 0
                 : (pos.average_purchase_price as number);
 
-              const value = safeMarketValue ?? safePrice;
-              const cost = (safeAvgPrice as number) / 100;
-              const isShort = (pos.weight_percent ?? 0) < 0;
-              const costBasis = Math.abs(cost * 100);
-              const currentValue = Math.abs(value);
-              const units = Math.abs(pos.units);
-              // Short: profit when option loses value (premium received - current cost to close)
-              // Long: profit when option gains value (current value - cost paid)
-              const calPnl = isShort
-                ? costBasis - currentValue
-                : currentValue - costBasis;
-              const profit = calPnl >= 0;
-              const pnl = Math.abs(calPnl) * units;
-
-              // P&L per share: option price - cost per share
-              // cost = average_purchase_price / 100 (per-share cost)
-              const pnlPerShare = isShort
-                ? Math.abs(cost) - Math.abs(safePrice)
-                : Math.abs(safePrice) - Math.abs(cost);
+              const signedContracts = isHiddenValue(pos.units)
+                ? 0
+                : Number(pos.units || 0);
+              const contracts = Math.abs(signedContracts);
+              const currentPremium = Math.abs(Number(safePrice || 0));
+              const { costPerContract } =
+                normalizeOptionCost(Math.abs(Number(safeAvgPrice || 0)), currentPremium);
+              const computedMarketValue =
+                currentPremium * contracts * OPTION_CONTRACT_MULTIPLIER;
+              const storedMarketValue = isHiddenValue(pos.market_value)
+                ? 0
+                : Math.abs(Number(pos.market_value || 0));
+              const marketValue = computedMarketValue || storedMarketValue;
+              const canShowMarketValue =
+                computedMarketValue > 0 || !isHiddenValue(pos.market_value);
+              const totalCost = costPerContract * contracts;
+              const isShort =
+                signedContracts < 0 || (!signedContracts && (pos.weight_percent ?? 0) < 0);
+              // Short options profit when the premium falls. Long options profit when it rises.
+              const pnl = isShort ? totalCost - marketValue : marketValue - totalCost;
+              const profit = pnl >= 0;
+              const pnlPerShare =
+                contracts > 0
+                  ? pnl / (contracts * OPTION_CONTRACT_MULTIPLIER)
+                  : 0;
               const pnlPerShareProfit = pnlPerShare >= 0;
               // Privacy: per-share PnL visibility (owner always sees, public checks setting)
               const showPnlPerShare = isOwner || privacySettings?.show_position_pnl_per_share !== false;
+              const showPnl = isOwner || privacySettings?.show_position_pnl !== false;
 
               // Whether to completely hide (secret option)
               const isSecretOption = isHiddenPosition && !isOwner;
@@ -278,13 +312,13 @@ export function OptionPositionsTable({
                         <div className="flex items-center gap-1 text-[14px]">
                           <Badge
                             variant={
-                              (pos.weight_percent ?? 0) < 0
+                              isShort
                                 ? "destructive"
                                 : "default"
                             }
                             className="!text-[12px] shrink-0"
                           >
-                            {(pos.weight_percent ?? 0) < 0 ? t("portfolio.table.short") : t("portfolio.table.long")}
+                            {isShort ? t("portfolio.table.short") : t("portfolio.table.long")}
                           </Badge>
                           {formatCurrency(pos.strike_price, "USD", 0, 0)}{" "}
                           {pos.option_type || "-"}
@@ -302,29 +336,28 @@ export function OptionPositionsTable({
                     )}
                   </TableCell>
                   <TableCell className="text-center tabular-nums text-muted-foreground">
-                    {isSecretOption ||
-                      isHiddenValue((pos.average_purchase_price as number) / 100) ? (
+                    {isSecretOption || isHiddenValue(pos.average_purchase_price) ? (
                       <span className="text-muted-foreground">***</span>
                     ) : (
-                      formatCurrency((pos.average_purchase_price as number) / 100)
+                      formatCurrency(costPerContract)
                     )}
                   </TableCell>
                   <TableCell className="text-center tabular-nums">
                     {isSecretOption || isHiddenValue(pos.units) ? (
                       <span className="text-muted-foreground">***</span>
                     ) : (
-                      pos.units
+                      contracts
                     )}
                   </TableCell>
                   <TableCell className="text-center tabular-nums font-medium">
-                    {isSecretOption || isHiddenValue(pos.market_value) ? (
+                    {isSecretOption || !canShowMarketValue ? (
                       <span className="text-muted-foreground">***</span>
                     ) : (
-                      formatCurrency(pos.market_value as number)
+                      formatCurrency(marketValue)
                     )}
                   </TableCell>
                   <TableCell className="text-right">
-                    {isSecretOption || isHiddenValue(pos.open_pnl || !privacySettings?.show_shares) ? (
+                    {isSecretOption || !showPnl || isHiddenValue(pos.average_purchase_price) || isHiddenValue(pos.price) ? (
                       <span className="text-muted-foreground">***</span>
                     ) : (
                       <span
@@ -336,7 +369,7 @@ export function OptionPositionsTable({
                         ) : (
                           <ArrowDownRight className="w-3 h-3" />
                         )}
-                        {formatCurrency(pnl)}
+                        {formatCurrency(Math.abs(pnl))}
                       </span>
                     )}
                   </TableCell>
@@ -401,4 +434,3 @@ export function OptionPositionsTable({
     </>
   );
 }
-

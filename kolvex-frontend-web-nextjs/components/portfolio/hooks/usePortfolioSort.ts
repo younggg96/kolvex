@@ -1,6 +1,53 @@
 import { useState, useCallback, useMemo } from "react";
 import type { SnapTradePosition, EquitySortKey, OptionSortKey } from "../types";
 
+const OPTION_CONTRACT_MULTIPLIER = 100;
+
+function normalizeOptionCost(rawAveragePrice: number, currentPremium: number) {
+  if (!Number.isFinite(rawAveragePrice) || rawAveragePrice <= 0) {
+    return { premiumPerShare: 0, costPerContract: 0 };
+  }
+
+  const looksLikeContractCost =
+    rawAveragePrice > 50 ||
+    (currentPremium > 0 && rawAveragePrice > currentPremium * 10);
+  const premiumPerShare = looksLikeContractCost
+    ? rawAveragePrice / OPTION_CONTRACT_MULTIPLIER
+    : rawAveragePrice;
+
+  return {
+    premiumPerShare,
+    costPerContract: premiumPerShare * OPTION_CONTRACT_MULTIPLIER,
+  };
+}
+
+function getOptionMetrics(position: SnapTradePosition) {
+  const signedContracts = Number(position.units || 0);
+  const contracts = Math.abs(signedContracts);
+  const currentPremium = Math.abs(Number(position.price || 0));
+  const { premiumPerShare, costPerContract } = normalizeOptionCost(
+    Math.abs(Number(position.average_purchase_price || 0)),
+    currentPremium
+  );
+  const marketValue = currentPremium * contracts * OPTION_CONTRACT_MULTIPLIER;
+  const totalCost = costPerContract * contracts;
+  const isShort =
+    signedContracts < 0 || (!signedContracts && (position.weight_percent || 0) < 0);
+  const pnl = isShort ? totalCost - marketValue : marketValue - totalCost;
+  const pnlPerShare =
+    contracts > 0 ? pnl / (contracts * OPTION_CONTRACT_MULTIPLIER) : 0;
+
+  return {
+    contracts,
+    marketValue,
+    totalCost,
+    pnl,
+    pnlPerShare,
+    costPerContract,
+    premiumPerShare,
+  };
+}
+
 export function useEquitySort() {
   const [sortKey, setSortKey] = useState<EquitySortKey | null>(null);
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
@@ -129,24 +176,25 @@ export function useOptionSort() {
             aVal = a.price || 0;
             bVal = b.price || 0;
             break;
+          case "cost":
+            aVal = getOptionMetrics(a).costPerContract;
+            bVal = getOptionMetrics(b).costPerContract;
+            break;
           case "units":
-            aVal = a.units || 0;
-            bVal = b.units || 0;
+            aVal = getOptionMetrics(a).contracts;
+            bVal = getOptionMetrics(b).contracts;
             break;
           case "value":
-            aVal = (a.price || 0) * a.units * 100;
-            bVal = (b.price || 0) * b.units * 100;
+            aVal = getOptionMetrics(a).marketValue;
+            bVal = getOptionMetrics(b).marketValue;
             break;
           case "pnl":
-            const aCost = (a.average_purchase_price || 0) * a.units;
-            const bCost = (b.average_purchase_price || 0) * b.units;
-            aVal = (a.price || 0) * a.units * 100 - aCost;
-            bVal = (b.price || 0) * b.units * 100 - bCost;
+            aVal = getOptionMetrics(a).pnl;
+            bVal = getOptionMetrics(b).pnl;
             break;
           case "pnl_per_share":
-            // Per-share P&L for options: price - (average_purchase_price / 100)
-            aVal = (a.price || 0) - ((a.average_purchase_price || 0) / 100);
-            bVal = (b.price || 0) - ((b.average_purchase_price || 0) / 100);
+            aVal = getOptionMetrics(a).pnlPerShare;
+            bVal = getOptionMetrics(b).pnlPerShare;
             break;
           case "weight":
             aVal = a.weight_percent || 0;
@@ -168,4 +216,3 @@ export function useOptionSort() {
 
   return { sortKey, sortDir, handleSort, sortPositions };
 }
-

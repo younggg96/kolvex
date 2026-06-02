@@ -24,6 +24,7 @@ export type OptionSortKey =
   | "expiration_date"
   | "strike"
   | "price"
+  | "cost"
   | "units"
   | "value"
   | "pnl"
