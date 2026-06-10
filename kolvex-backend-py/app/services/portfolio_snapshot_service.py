@@ -16,6 +16,20 @@ OPTION_CONTRACT_MULTIPLIER = 100
 CURRENT_SNAPSHOT_CALCULATION_VERSION = 2
 
 
+def _is_missing_calculation_version_error(error: Exception) -> bool:
+    """Return whether PostgREST has not loaded the calculation_version column."""
+    error_code = getattr(error, "code", None)
+    error_message = str(error).lower()
+    return (
+        error_code == "PGRST204"
+        or "pgrst204" in error_message
+        or (
+            "calculation_version" in error_message
+            and ("schema cache" in error_message or "could not find" in error_message)
+        )
+    )
+
+
 def _safe_number(value: Any) -> float:
     try:
         return float(value or 0)
@@ -132,17 +146,31 @@ class PortfolioSnapshotService:
                 snapshot_data,
                 on_conflict="user_id,snapshot_date"
             ).execute()
-            
-            if result.data:
-                logger.info(f"✅ Successfully recorded snapshot for user {user_id[:8]} on {snapshot_date}: {result.data[0].get('id', 'N/A')}")
-                return result.data[0]
-            else:
-                logger.warning(f"⚠️ Upsert returned no data for user {user_id[:8]}. Response: {result}")
-                return snapshot_data
         except Exception as e:
-            logger.error(f"❌ Failed to record snapshot for user {user_id[:8]}: {type(e).__name__}: {e}")
-            # Re-raise to let caller handle
-            raise
+            if not _is_missing_calculation_version_error(e):
+                logger.error(f"❌ Failed to record snapshot for user {user_id[:8]}: {type(e).__name__}: {e}")
+                raise
+
+            logger.warning(
+                "portfolio_snapshots.calculation_version is not available yet; "
+                "retrying snapshot write with the legacy schema"
+            )
+            legacy_snapshot_data = {
+                key: value
+                for key, value in snapshot_data.items()
+                if key != "calculation_version"
+            }
+            result = self.supabase.table("portfolio_snapshots").upsert(
+                legacy_snapshot_data,
+                on_conflict="user_id,snapshot_date"
+            ).execute()
+
+        if result.data:
+            logger.info(f"✅ Successfully recorded snapshot for user {user_id[:8]} on {snapshot_date}: {result.data[0].get('id', 'N/A')}")
+            return result.data[0]
+
+        logger.warning(f"⚠️ Upsert returned no data for user {user_id[:8]}. Response: {result}")
+        return snapshot_data
     
     async def get_snapshots(
         self,
@@ -166,20 +194,43 @@ class PortfolioSnapshotService:
         if end_date is None:
             end_date = date.today()
         
-        try:
-            query = self.supabase.table("portfolio_snapshots").select(
+        def build_query(include_calculation_version: bool):
+            selected_columns = (
                 "snapshot_date, total_value, total_cost_basis, unrealized_pnl, "
-                "unrealized_pnl_percent, positions_count, calculation_version"
-            ).eq("user_id", user_id).gte(
-                "calculation_version", CURRENT_SNAPSHOT_CALCULATION_VERSION
-            ).lte("snapshot_date", end_date.isoformat()).order(
+                "unrealized_pnl_percent, positions_count"
+            )
+            if include_calculation_version:
+                selected_columns += ", calculation_version"
+
+            query = self.supabase.table("portfolio_snapshots").select(
+                selected_columns
+            ).eq("user_id", user_id)
+
+            if include_calculation_version:
+                query = query.gte(
+                    "calculation_version", CURRENT_SNAPSHOT_CALCULATION_VERSION
+                )
+
+            query = query.lte("snapshot_date", end_date.isoformat()).order(
                 "snapshot_date", desc=False
             ).limit(limit)
-            
+
             if start_date:
                 query = query.gte("snapshot_date", start_date.isoformat())
-            
-            result = query.execute()
+
+            return query
+
+        try:
+            try:
+                result = build_query(include_calculation_version=True).execute()
+            except Exception as e:
+                if not _is_missing_calculation_version_error(e):
+                    raise
+                logger.warning(
+                    "Reading portfolio snapshots with the legacy schema because "
+                    "calculation_version is unavailable"
+                )
+                result = build_query(include_calculation_version=False).execute()
             return result.data or []
         except Exception as e:
             logger.error(f"Failed to get snapshots for user {user_id}: {e}")
@@ -223,11 +274,18 @@ class PortfolioSnapshotService:
     async def get_latest_snapshot(self, user_id: str) -> Optional[Dict[str, Any]]:
         """Get the most recent snapshot for a user"""
         try:
-            result = self.supabase.table("portfolio_snapshots").select("*").eq(
-                "user_id", user_id
-            ).gte(
-                "calculation_version", CURRENT_SNAPSHOT_CALCULATION_VERSION
-            ).order("snapshot_date", desc=True).limit(1).execute()
+            try:
+                result = self.supabase.table("portfolio_snapshots").select("*").eq(
+                    "user_id", user_id
+                ).gte(
+                    "calculation_version", CURRENT_SNAPSHOT_CALCULATION_VERSION
+                ).order("snapshot_date", desc=True).limit(1).execute()
+            except Exception as e:
+                if not _is_missing_calculation_version_error(e):
+                    raise
+                result = self.supabase.table("portfolio_snapshots").select("*").eq(
+                    "user_id", user_id
+                ).order("snapshot_date", desc=True).limit(1).execute()
             
             return result.data[0] if result.data else None
         except Exception as e:
@@ -237,11 +295,20 @@ class PortfolioSnapshotService:
     async def get_first_snapshot_date(self, user_id: str) -> Optional[date]:
         """Get the date of the first snapshot for a user"""
         try:
-            result = self.supabase.table("portfolio_snapshots").select(
-                "snapshot_date"
-            ).eq("user_id", user_id).gte(
-                "calculation_version", CURRENT_SNAPSHOT_CALCULATION_VERSION
-            ).order("snapshot_date", desc=False).limit(1).execute()
+            try:
+                result = self.supabase.table("portfolio_snapshots").select(
+                    "snapshot_date"
+                ).eq("user_id", user_id).gte(
+                    "calculation_version", CURRENT_SNAPSHOT_CALCULATION_VERSION
+                ).order("snapshot_date", desc=False).limit(1).execute()
+            except Exception as e:
+                if not _is_missing_calculation_version_error(e):
+                    raise
+                result = self.supabase.table("portfolio_snapshots").select(
+                    "snapshot_date"
+                ).eq("user_id", user_id).order(
+                    "snapshot_date", desc=False
+                ).limit(1).execute()
             
             if result.data:
                 return date.fromisoformat(result.data[0]["snapshot_date"])

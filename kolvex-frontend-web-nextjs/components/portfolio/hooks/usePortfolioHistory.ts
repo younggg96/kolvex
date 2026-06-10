@@ -58,6 +58,65 @@ interface SnapshotRow {
   calculation_version: number | null;
 }
 
+const SNAPSHOT_COLUMNS =
+  "snapshot_date, total_value, unrealized_pnl, unrealized_pnl_percent, positions_count, calculation_version";
+const LEGACY_SNAPSHOT_COLUMNS =
+  "snapshot_date, total_value, unrealized_pnl, unrealized_pnl_percent, positions_count";
+
+function isMissingCalculationVersionError(error: {
+  code?: string;
+  message?: string;
+} | null): boolean {
+  if (!error) return false;
+  const message = (error.message || "").toLowerCase();
+  return (
+    error.code === "PGRST204" ||
+    (message.includes("calculation_version") &&
+      (message.includes("schema cache") || message.includes("could not find")))
+  );
+}
+
+async function fetchSnapshotRows(
+  userId: string,
+  startDate: string,
+): Promise<SnapshotRow[]> {
+  const supabase = createClient();
+  const currentSchemaResult = await supabase
+    .from("portfolio_snapshots")
+    .select(SNAPSHOT_COLUMNS)
+    .eq("user_id", userId)
+    .gte("calculation_version", 2)
+    .gte("snapshot_date", startDate)
+    .order("snapshot_date", { ascending: true });
+
+  if (!currentSchemaResult.error) {
+    return (currentSchemaResult.data || []) as SnapshotRow[];
+  }
+
+  if (!isMissingCalculationVersionError(currentSchemaResult.error)) {
+    throw new Error(currentSchemaResult.error.message);
+  }
+
+  console.warn(
+    "portfolio_snapshots.calculation_version is unavailable; using legacy snapshots until the migration is applied.",
+  );
+  const legacyResult = await supabase
+    .from("portfolio_snapshots")
+    .select(LEGACY_SNAPSHOT_COLUMNS)
+    .eq("user_id", userId)
+    .gte("snapshot_date", startDate)
+    .order("snapshot_date", { ascending: true });
+
+  if (legacyResult.error) {
+    throw new Error(legacyResult.error.message);
+  }
+
+  return (legacyResult.data || []).map((snapshot) => ({
+    ...snapshot,
+    calculation_version: null,
+  })) as SnapshotRow[];
+}
+
 // ============================================================
 // Module-level Cache (persists across page navigations)
 // ============================================================
@@ -246,23 +305,11 @@ export function usePortfolioHistory(
     setError(null);
 
     try {
-      // Fetch from Supabase
-      const supabase = createClient();
       const startDate = getStartDate(period);
-      
-      const { data: snapshotData, error: fetchError } = await supabase
-        .from("portfolio_snapshots")
-        .select("snapshot_date, total_value, unrealized_pnl, unrealized_pnl_percent, positions_count, calculation_version")
-        .eq("user_id", userId)
-        .gte("calculation_version", 2)
-        .gte("snapshot_date", startDate.toISOString().split("T")[0])
-        .order("snapshot_date", { ascending: true });
-      
-      if (fetchError) {
-        throw new Error(fetchError.message);
-      }
-      
-      const snapshots = snapshotData || [];
+      const snapshots = await fetchSnapshotRows(
+        userId,
+        startDate.toISOString().split("T")[0],
+      );
       
       // Store in global cache
       setCachedSnapshots(cacheKey, snapshots);
@@ -300,22 +347,11 @@ export function usePortfolioHistory(
     setError(null);
 
     try {
-      const supabase = createClient();
       const startDate = getStartDate(period);
-      
-      const { data: snapshotData, error: fetchError } = await supabase
-        .from("portfolio_snapshots")
-        .select("snapshot_date, total_value, unrealized_pnl, unrealized_pnl_percent, positions_count, calculation_version")
-        .eq("user_id", userId)
-        .gte("calculation_version", 2)
-        .gte("snapshot_date", startDate.toISOString().split("T")[0])
-        .order("snapshot_date", { ascending: true });
-      
-      if (fetchError) {
-        throw new Error(fetchError.message);
-      }
-      
-      const snapshots = snapshotData || [];
+      const snapshots = await fetchSnapshotRows(
+        userId,
+        startDate.toISOString().split("T")[0],
+      );
       setCachedSnapshots(`${userId}-${period}`, snapshots);
       processSnapshots(snapshots, period);
     } catch (err) {
