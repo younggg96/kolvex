@@ -428,6 +428,15 @@ const scheduledJobsConfig: ScheduledJobConfig[] = [
     actionEndpoint: "portfolio-snapshot",
   },
   {
+    id: "robinhood_daily_sync",
+    name: "Robinhood Daily Sync",
+    description:
+      "Sync Robinhood holdings, stock orders, option orders, and portfolio snapshot",
+    icon: RefreshCw,
+    frequency: "Weekdays at 14:15 PT",
+    category: "sync",
+  },
+  {
     id: "screener_cache_warm",
     name: "Stock Screener Cache",
     description: "Warm S&P 500 screener data cache",

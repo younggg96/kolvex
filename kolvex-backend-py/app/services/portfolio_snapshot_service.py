@@ -12,6 +12,58 @@ from app.core.supabase import get_supabase_service
 
 logger = logging.getLogger(__name__)
 
+OPTION_CONTRACT_MULTIPLIER = 100
+CURRENT_SNAPSHOT_CALCULATION_VERSION = 2
+
+
+def _safe_number(value: Any) -> float:
+    try:
+        return float(value or 0)
+    except (TypeError, ValueError):
+        return 0.0
+
+
+def calculate_position_snapshot_metrics(
+    position: Dict[str, Any],
+) -> Dict[str, float]:
+    """Calculate market value, cost basis and unrealized P&L consistently."""
+    position_type = position.get("position_type", "equity")
+    signed_units = _safe_number(position.get("units"))
+    units = abs(signed_units)
+    price = abs(_safe_number(position.get("price")))
+    average_price = abs(_safe_number(position.get("average_purchase_price")))
+    is_short = signed_units < 0
+
+    if position_type == "option":
+        market_value = price * units * OPTION_CONTRACT_MULTIPLIER
+        # Option average_purchase_price is stored as cost/credit per contract.
+        cost_basis = average_price * units
+        unrealized_pnl = (
+            cost_basis - market_value
+            if is_short
+            else market_value - cost_basis
+        )
+        signed_market_value = -market_value if is_short else market_value
+    else:
+        market_value = price * units
+        cost_basis = average_price * units
+        raw_open_pnl = position.get("open_pnl")
+        if raw_open_pnl is not None:
+            unrealized_pnl = _safe_number(raw_open_pnl)
+        else:
+            unrealized_pnl = (
+                cost_basis - market_value
+                if is_short
+                else market_value - cost_basis
+            )
+        signed_market_value = -market_value if is_short else market_value
+
+    return {
+        "market_value": signed_market_value,
+        "cost_basis": cost_basis,
+        "unrealized_pnl": unrealized_pnl,
+    }
+
 
 class PortfolioSnapshotService:
     """Service for managing portfolio snapshots"""
@@ -69,6 +121,7 @@ class PortfolioSnapshotService:
             "positions_count": int(positions_count),
             "accounts_count": int(accounts_count),
             "positions_snapshot": positions_snapshot or [],
+            "calculation_version": CURRENT_SNAPSHOT_CALCULATION_VERSION,
         }
         
         logger.info(f"📸 Recording snapshot for user {user_id[:8]}... data: {snapshot_data}")
@@ -115,8 +168,11 @@ class PortfolioSnapshotService:
         
         try:
             query = self.supabase.table("portfolio_snapshots").select(
-                "snapshot_date, total_value, unrealized_pnl, unrealized_pnl_percent, positions_count"
-            ).eq("user_id", user_id).lte("snapshot_date", end_date.isoformat()).order(
+                "snapshot_date, total_value, total_cost_basis, unrealized_pnl, "
+                "unrealized_pnl_percent, positions_count, calculation_version"
+            ).eq("user_id", user_id).gte(
+                "calculation_version", CURRENT_SNAPSHOT_CALCULATION_VERSION
+            ).lte("snapshot_date", end_date.isoformat()).order(
                 "snapshot_date", desc=False
             ).limit(limit)
             
@@ -169,6 +225,8 @@ class PortfolioSnapshotService:
         try:
             result = self.supabase.table("portfolio_snapshots").select("*").eq(
                 "user_id", user_id
+            ).gte(
+                "calculation_version", CURRENT_SNAPSHOT_CALCULATION_VERSION
             ).order("snapshot_date", desc=True).limit(1).execute()
             
             return result.data[0] if result.data else None
@@ -181,7 +239,9 @@ class PortfolioSnapshotService:
         try:
             result = self.supabase.table("portfolio_snapshots").select(
                 "snapshot_date"
-            ).eq("user_id", user_id).order("snapshot_date", desc=False).limit(1).execute()
+            ).eq("user_id", user_id).gte(
+                "calculation_version", CURRENT_SNAPSHOT_CALCULATION_VERSION
+            ).order("snapshot_date", desc=False).limit(1).execute()
             
             if result.data:
                 return date.fromisoformat(result.data[0]["snapshot_date"])

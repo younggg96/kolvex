@@ -13,7 +13,10 @@ from supabase import Client
 
 from app.core.supabase import get_supabase_service
 from app.services.snaptrade.service import SnapTradeService
-from app.services.portfolio_snapshot_service import get_portfolio_snapshot_service
+from app.services.portfolio_snapshot_service import (
+    calculate_position_snapshot_metrics,
+    get_portfolio_snapshot_service,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -113,6 +116,22 @@ class SchedulerService:
             replace_existing=True,
             misfire_grace_time=3600,
         )
+
+        self.scheduler.add_job(
+            self.sync_all_robinhood_accounts,
+            CronTrigger(
+                day_of_week="mon-fri",
+                hour=14,
+                minute=15,
+                timezone="America/Los_Angeles",
+            ),
+            id="robinhood_daily_sync",
+            name="Robinhood 每日自动同步 - 下午 2:15 PST",
+            replace_existing=True,
+            misfire_grace_time=7200,
+            max_instances=1,
+            coalesce=True,
+        )
         
         self.scheduler.start()
         logger.info("定时任务调度器已启动")
@@ -197,6 +216,82 @@ class SchedulerService:
         except Exception as e:
             logger.error(f"执行每日持仓同步任务失败: {e}", exc_info=True)
             raise
+
+    async def sync_all_robinhood_accounts(self) -> Dict[str, Any]:
+        """Sync every connected Robinhood account sequentially.
+
+        robin_stocks keeps authentication in module-level state, so running
+        multiple users concurrently can leak one user's session into another
+        request. Sequential execution keeps the scheduled sync deterministic.
+        """
+        from app.services.robinhood.service import (
+            RobinhoodService,
+            RobinhoodSessionExpired,
+        )
+
+        logger.info("开始执行 Robinhood 每日自动同步任务")
+        started_at = datetime.now()
+        service = RobinhoodService(supabase=self.supabase)
+
+        result = (
+            self.supabase.table("robinhood_connections")
+            .select("user_id, username, is_connected, last_synced_at")
+            .eq("is_connected", True)
+            .execute()
+        )
+        connections = result.data or []
+
+        summary: Dict[str, Any] = {
+            "total_users": len(connections),
+            "success_count": 0,
+            "error_count": 0,
+            "session_expired_count": 0,
+            "errors": [],
+        }
+
+        for connection in connections:
+            user_id = connection["user_id"]
+            try:
+                positions = await service.sync(user_id)
+                summary["success_count"] += 1
+                logger.info(
+                    "Robinhood 自动同步成功: user=%s positions=%s",
+                    user_id[:8],
+                    len(positions),
+                )
+            except RobinhoodSessionExpired as error:
+                summary["session_expired_count"] += 1
+                summary["error_count"] += 1
+                summary["errors"].append(
+                    {"user_id": user_id, "error": str(error)}
+                )
+                logger.warning(
+                    "Robinhood 自动同步需要用户重新连接: user=%s error=%s",
+                    user_id[:8],
+                    error,
+                )
+            except Exception as error:
+                summary["error_count"] += 1
+                summary["errors"].append(
+                    {"user_id": user_id, "error": str(error)[:500]}
+                )
+                logger.exception(
+                    "Robinhood 自动同步失败: user=%s",
+                    user_id[:8],
+                )
+
+        summary["duration_seconds"] = (
+            datetime.now() - started_at
+        ).total_seconds()
+        summary["errors"] = summary["errors"][:20]
+        logger.info(
+            "Robinhood 每日自动同步完成: total=%s success=%s failed=%s expired=%s",
+            summary["total_users"],
+            summary["success_count"],
+            summary["error_count"],
+            summary["session_expired_count"],
+        )
+        return summary
             
     async def _save_sync_log(self, summary: Dict[str, Any]):
         """保存同步日志到数据库"""
@@ -256,24 +351,11 @@ class SchedulerService:
                     for account in holdings["accounts"]:
                         positions = account.get("snaptrade_positions", [])
                         for pos in positions:
-                            price = pos.get("price", 0) or 0
-                            units = pos.get("units", 0) or 0
-                            avg_cost = pos.get("average_purchase_price", 0) or 0
-                            position_type = pos.get("position_type", "equity")
-                            
-                            multiplier = 100 if position_type == "option" else 1
-                            position_value = price * units * multiplier
-                            cost_basis = avg_cost * units
-                            
-                            total_value += position_value
-                            total_cost_basis += cost_basis
+                            metrics = calculate_position_snapshot_metrics(pos)
+                            total_value += metrics["market_value"]
+                            total_cost_basis += metrics["cost_basis"]
+                            total_pnl += metrics["unrealized_pnl"]
                             positions_count += 1
-                            
-                            if position_type == "option":
-                                pnl = position_value - cost_basis
-                            else:
-                                pnl = pos.get("open_pnl") or (position_value - cost_basis)
-                            total_pnl += pnl
                     
                     # 记录快照
                     await snapshot_service.record_snapshot(
@@ -324,6 +406,10 @@ class SchedulerService:
         """
         logger.info("手动触发持仓同步任务")
         return await self.sync_all_users_holdings()
+
+    async def trigger_robinhood_sync_now(self) -> Dict[str, Any]:
+        logger.info("手动触发所有 Robinhood 账户同步任务")
+        return await self.sync_all_robinhood_accounts()
         
     def get_jobs_info(self) -> List[Dict[str, Any]]:
         """获取所有定时任务信息"""
@@ -403,9 +489,6 @@ def stop_scheduler():
     if _scheduler_instance:
         _scheduler_instance.stop()
         _scheduler_instance = None
-
-
-
 
 
 

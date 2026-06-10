@@ -60,6 +60,41 @@ const STAGES = [
 
 const STAGE_ORDER: string[] = STAGES.map((s) => s.key);
 
+function getProgressEventKey(event: ProgressEvent, index: number) {
+  return [
+    event.stage || "",
+    event.node || "",
+    event.message || "",
+    event.detail_type || "",
+    event.detail || "",
+    event.status || "",
+    String(event.elapsed ?? ""),
+    String((event as any).created_at ?? index),
+  ].join("|");
+}
+
+function mergeProgressEvents(
+  current: ProgressEvent[],
+  incoming: ProgressEvent[]
+) {
+  if (incoming.length === 0) return current;
+
+  const seen = new Set(
+    current.map((event, index) => getProgressEventKey(event, index))
+  );
+  const next = [...current];
+
+  incoming.forEach((event, index) => {
+    const key = getProgressEventKey(event, index);
+    if (!seen.has(key)) {
+      seen.add(key);
+      next.push(event);
+    }
+  });
+
+  return next;
+}
+
 export default function TradingAnalysisDetailPage() {
   const params = useParams();
   const router = useRouter();
@@ -78,6 +113,23 @@ export default function TradingAnalysisDetailPage() {
     try {
       const data = await getAnalysis(analysisId);
       setAnalysis(data);
+      const storedEvents = Array.isArray(data.progress_events)
+        ? data.progress_events
+        : [];
+      if (storedEvents.length > 0) {
+        setProgressEvents((prev) => mergeProgressEvents(prev, storedEvents));
+      } else if (data.status === "running" && data.progress_stage) {
+        setProgressEvents((prev) =>
+          mergeProgressEvents(prev, [
+            {
+              stage: data.progress_stage!,
+              message:
+                data.progress_message ||
+                t(`tradingAnalysis.stageDesc.${data.progress_stage}`),
+            },
+          ])
+        );
+      }
       if (data.status === "completed") {
         setCurrentStage("completed");
       } else if (data.status === "failed") {
@@ -96,7 +148,7 @@ export default function TradingAnalysisDetailPage() {
     } finally {
       setLoading(false);
     }
-  }, [analysisId]);
+  }, [analysisId, t]);
 
   const handlePublishToggle = useCallback(async () => {
     if (!analysis || publishing) return;
@@ -158,7 +210,7 @@ export default function TradingAnalysisDetailPage() {
         analysisId,
         (event) => {
           if (cancelled) return;
-          setProgressEvents((prev) => [...prev, event]);
+          setProgressEvents((prev) => mergeProgressEvents(prev, [event]));
           if (event.stage) {
             setCurrentStage((prev) => {
               const prevIdx = STAGE_ORDER.indexOf(prev);

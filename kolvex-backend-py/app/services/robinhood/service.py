@@ -34,7 +34,10 @@ ROBINHOOD_PENDING_WORKFLOW_TTL_SECONDS = 5 * 60
 
 from app.core.supabase import get_supabase_service
 from app.agent.llm import get_llm
-from app.services.portfolio_snapshot_service import get_portfolio_snapshot_service
+from app.services.portfolio_snapshot_service import (
+    calculate_position_snapshot_metrics,
+    get_portfolio_snapshot_service,
+)
 from app.services.yfinance.client import get_yfinance_service
 
 logger = logging.getLogger(__name__)
@@ -2689,12 +2692,12 @@ class RobinhoodService:
         snapshot_positions: List[Dict[str, Any]] = []
 
         for pos in positions:
+            metrics = calculate_position_snapshot_metrics(pos)
             units = _safe_float(pos.get("units"))
             price = _safe_float(pos.get("price"))
-            average_price = _safe_float(pos.get("average_purchase_price"))
-            value = units * price
-            cost_basis = units * average_price
-            pnl = _safe_float(pos.get("open_pnl"), value - cost_basis)
+            value = metrics["market_value"]
+            cost_basis = metrics["cost_basis"]
+            pnl = metrics["unrealized_pnl"]
 
             total_value += value
             total_cost_basis += cost_basis
@@ -2705,7 +2708,9 @@ class RobinhoodService:
                     "units": units,
                     "price": price,
                     "market_value": round(value, 2),
+                    "cost_basis": round(cost_basis, 2),
                     "open_pnl": pnl,
+                    "position_type": pos.get("position_type", "equity"),
                 }
             )
 

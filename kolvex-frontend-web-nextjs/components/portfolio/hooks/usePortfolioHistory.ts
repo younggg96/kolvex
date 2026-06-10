@@ -18,6 +18,11 @@ export interface PerformanceDataPoint {
 export interface PerformanceSummary {
   startValue: number;
   endValue: number;
+  valueChange: number;
+  valueChangePercent: number;
+  startPnL: number;
+  endPnL: number;
+  pnlChange: number;
   totalPnL: number;
   totalPnLPercent: number;
   highValue: number;
@@ -50,6 +55,7 @@ interface SnapshotRow {
   unrealized_pnl: number | null;
   unrealized_pnl_percent: number | null;
   positions_count: number | null;
+  calculation_version: number | null;
 }
 
 // ============================================================
@@ -188,11 +194,21 @@ export function usePortfolioHistory(
       }));
 
       const values = dataPoints.map((d) => d.value);
+      const first = dataPoints[0];
+      const last = dataPoints[dataPoints.length - 1];
       const summaryData: PerformanceSummary = {
-        startValue: values[0],
-        endValue: values[values.length - 1],
-        totalPnL: values[values.length - 1] - values[0],
-        totalPnLPercent: values[0] > 0 ? ((values[values.length - 1] - values[0]) / values[0]) * 100 : 0,
+        startValue: first.value,
+        endValue: last.value,
+        valueChange: last.value - first.value,
+        valueChangePercent:
+          first.value > 0
+            ? ((last.value - first.value) / first.value) * 100
+            : 0,
+        startPnL: first.pnl,
+        endPnL: last.pnl,
+        pnlChange: last.pnl - first.pnl,
+        totalPnL: last.pnl,
+        totalPnLPercent: last.pnlPercent,
         highValue: Math.max(...values),
         lowValue: Math.min(...values),
         dataPoints: values.length,
@@ -236,8 +252,9 @@ export function usePortfolioHistory(
       
       const { data: snapshotData, error: fetchError } = await supabase
         .from("portfolio_snapshots")
-        .select("snapshot_date, total_value, unrealized_pnl, unrealized_pnl_percent, positions_count")
+        .select("snapshot_date, total_value, unrealized_pnl, unrealized_pnl_percent, positions_count, calculation_version")
         .eq("user_id", userId)
+        .gte("calculation_version", 2)
         .gte("snapshot_date", startDate.toISOString().split("T")[0])
         .order("snapshot_date", { ascending: true });
       
@@ -288,8 +305,9 @@ export function usePortfolioHistory(
       
       const { data: snapshotData, error: fetchError } = await supabase
         .from("portfolio_snapshots")
-        .select("snapshot_date, total_value, unrealized_pnl, unrealized_pnl_percent, positions_count")
+        .select("snapshot_date, total_value, unrealized_pnl, unrealized_pnl_percent, positions_count, calculation_version")
         .eq("user_id", userId)
+        .gte("calculation_version", 2)
         .gte("snapshot_date", startDate.toISOString().split("T")[0])
         .order("snapshot_date", { ascending: true });
       

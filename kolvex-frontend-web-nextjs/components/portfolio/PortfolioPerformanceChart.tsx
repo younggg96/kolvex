@@ -115,25 +115,26 @@ function CustomTooltip({ active, payload, chartView, isOwner, t }: CustomTooltip
                 </div>
             )}
 
-            {/* P&L Percent - Show for everyone */}
-            <div className={cn(
-                "flex items-center justify-between gap-4",
-                isOwner && "mt-1.5 pt-1.5 border-t border-white/5"
-            )}>
-                <div className="flex items-center gap-1.5">
-                    <div className={cn(
-                        "w-2 h-2 rounded-full",
-                        isPositive ? "bg-emerald-500" : "bg-red-500"
-                    )} />
-                    <span className="text-xs text-gray-400">{t("portfolio.performance.change")}</span>
-                </div>
-                <span className={cn(
-                    "text-sm font-semibold",
-                    isPositive ? "text-emerald-400" : "text-red-400"
+            {chartView !== "value" && (
+                <div className={cn(
+                    "flex items-center justify-between gap-4",
+                    isOwner && "mt-1.5 pt-1.5 border-t border-white/5"
                 )}>
-                    {formatPercent(data.pnlPercent)}
-                </span>
-            </div>
+                    <div className="flex items-center gap-1.5">
+                        <div className={cn(
+                            "w-2 h-2 rounded-full",
+                            isPositive ? "bg-emerald-500" : "bg-red-500"
+                        )} />
+                        <span className="text-xs text-gray-400">{t("portfolio.performance.pnlPercent")}</span>
+                    </div>
+                    <span className={cn(
+                        "text-sm font-semibold",
+                        isPositive ? "text-emerald-400" : "text-red-400"
+                    )}>
+                        {formatPercent(data.pnlPercent)}
+                    </span>
+                </div>
+            )}
         </div>
     );
 }
@@ -145,12 +146,18 @@ function CustomTooltip({ active, payload, chartView, isOwner, t }: CustomTooltip
 interface SummaryStatsProps {
     summary: PerformanceSummary;
     period: PerformancePeriod;
+    chartView: ChartView;
     isOwner: boolean;
     t: (key: string, params?: Record<string, string>) => string;
 }
 
-function SummaryStats({ summary, period, isOwner, t }: SummaryStatsProps) {
-    const isPositive = summary.totalPnL >= 0;
+function SummaryStats({ summary, period, chartView, isOwner, t }: SummaryStatsProps) {
+    const showingValueOnly = chartView === "value";
+    const primaryChange = showingValueOnly ? summary.valueChange : summary.totalPnL;
+    const primaryPercent = showingValueOnly
+        ? summary.valueChangePercent
+        : summary.totalPnLPercent;
+    const isPositive = primaryChange >= 0;
     const Icon = isPositive ? TrendingUp : TrendingDown;
 
     const periodLabel = period === "YTD"
@@ -163,14 +170,12 @@ function SummaryStats({ summary, period, isOwner, t }: SummaryStatsProps) {
 
     return (
         <div className="flex flex-col gap-2">
-            {/* Current Value - Only show for owner */}
-            {isOwner && (
+            {isOwner && chartView !== "pnl" && (
                 <span className="text-xl font-bold text-foreground">
                     {formatCurrency(summary.endValue)}
                 </span>
             )}
 
-            {/* P&L Summary */}
             <div className="flex items-center gap-2">
                 <Icon
                     className={cn(
@@ -188,7 +193,7 @@ function SummaryStats({ summary, period, isOwner, t }: SummaryStatsProps) {
                                 : "text-red-600 dark:text-red-400"
                         )}
                     >
-                        {isPositive ? "+" : ""}{formatCurrency(summary.totalPnL)}
+                        {isPositive ? "+" : ""}{formatCurrency(primaryChange)}
                     </span>
                 )}
                 {/* P&L Percent - Show for everyone */}
@@ -200,12 +205,14 @@ function SummaryStats({ summary, period, isOwner, t }: SummaryStatsProps) {
                             : "text-red-600 dark:text-red-400"
                     )}
                 >
-                    {isOwner ? "(" : ""}{formatPercent(summary.totalPnLPercent)}{isOwner ? ")" : ""}
+                    {isOwner ? "(" : ""}{formatPercent(primaryPercent)}{isOwner ? ")" : ""}
                 </span>
             </div>
 
             <span className="text-xs text-muted-foreground">
-                {periodLabel}
+                {showingValueOnly
+                    ? `${t("portfolio.performance.valueChange")} · ${periodLabel}`
+                    : t("portfolio.performance.currentUnrealizedPnl")}
             </span>
         </div>
     );
@@ -335,8 +342,7 @@ export function PortfolioPerformanceChart({
         firstSnapshotDate,
     } = usePortfolioHistory({ userId });
 
-    // For non-owner, default to pnl (percent) view only
-    const [chartView, setChartView] = useState<ChartView>(isOwner ? "combined" : "pnl");
+    const [chartView, setChartView] = useState<ChartView>("pnl");
 
     // P&L color based on overall performance
     const pnlColor = useMemo(() => {
@@ -424,7 +430,13 @@ export function PortfolioPerformanceChart({
             <div className="flex items-start justify-between gap-4 mb-4">
                 <div className="flex-1 min-w-0">
                     {summary ? (
-                        <SummaryStats summary={summary} period={period} isOwner={isOwner} t={t} />
+                        <SummaryStats
+                            summary={summary}
+                            period={period}
+                            chartView={chartView}
+                            isOwner={isOwner}
+                            t={t}
+                        />
                     ) : (
                         <div className="flex flex-col gap-1">
                             <span className="text-lg font-semibold text-foreground">{t("portfolio.performance.title")}</span>

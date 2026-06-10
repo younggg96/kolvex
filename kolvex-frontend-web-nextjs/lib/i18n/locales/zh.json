@@ -360,6 +360,7 @@
     },
     "actions": {
       "refresh": "刷新",
+      "autoSyncSchedule": "工作日收盘后自动同步",
       "settings": "设置",
       "community": "社区",
       "view": "查看",
@@ -580,6 +581,9 @@
       "pnl": "盈亏",
       "portfolioValue": "组合价值",
       "change": "变化",
+      "pnlPercent": "未实现盈亏率",
+      "currentUnrealizedPnl": "当前未实现盈亏",
+      "valueChange": "组合市值变化",
       "performanceLabel": "表现"
     },
     "allocation": {

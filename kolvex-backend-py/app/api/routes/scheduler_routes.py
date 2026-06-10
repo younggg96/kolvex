@@ -103,6 +103,35 @@ async def trigger_portfolio_snapshot(
         )
 
 
+@router.post("/robinhood-sync/trigger", response_model=Dict[str, Any])
+async def trigger_robinhood_sync(
+    current_user_id: str = Depends(get_current_user_id),
+    scheduler: SchedulerService = Depends(get_scheduler_service),
+):
+    """Immediately run the same all-account Robinhood sync used by cron."""
+    try:
+        logger.info(
+            "用户 %s 手动触发所有 Robinhood 账户同步",
+            current_user_id,
+        )
+        result = await scheduler.trigger_robinhood_sync_now()
+        return {
+            "success": result.get("error_count", 0) == 0,
+            "message": (
+                f"Robinhood sync completed for "
+                f"{result.get('success_count', 0)}/"
+                f"{result.get('total_users', 0)} users"
+            ),
+            "details": result,
+        }
+    except Exception as e:
+        logger.error("手动触发 Robinhood 同步失败: %s", e)
+        raise HTTPException(
+            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to trigger Robinhood sync: {str(e)}",
+        )
+
+
 @router.get("/status", response_model=Dict[str, Any])
 async def get_scheduler_status(
     current_user_id: str = Depends(get_current_user_id),
@@ -257,7 +286,6 @@ async def reschedule_job(
             status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to reschedule job: {str(e)}",
         )
-
 
 
 

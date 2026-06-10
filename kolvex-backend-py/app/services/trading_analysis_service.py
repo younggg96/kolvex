@@ -153,6 +153,7 @@ NODE_STAGE_MAP: dict[str, tuple[str, str]] = {
 }
 
 DETAIL_PREVIEW_LEN = 300
+MAX_STORED_PROGRESS_EVENTS = 200
 
 
 def _extract_node_detail(node_name: str, node_output: dict) -> dict:
@@ -254,6 +255,47 @@ def _progress_key(analysis_id: str) -> str:
     return f"ta:progress:{analysis_id}"
 
 
+def _stored_progress_event(event: dict) -> dict:
+    stored = dict(event)
+    stored.setdefault("created_at", datetime.utcnow().isoformat())
+    return stored
+
+
+def _append_db_progress_event(analysis_id: str, event: dict) -> None:
+    """Persist progress history for DB polling fallback.
+
+    This is intentionally best-effort because older deployments may not have
+    the progress_events column until the migration is applied.
+    """
+    try:
+        supabase = get_supabase_service()
+        result = (
+            supabase.table(TABLE)
+            .select("progress_events")
+            .eq("id", analysis_id)
+            .maybe_single()
+            .execute()
+        )
+        current = []
+        if result and isinstance(result.data, dict):
+            raw_events = result.data.get("progress_events")
+            if isinstance(raw_events, list):
+                current = raw_events
+
+        current.append(_stored_progress_event(event))
+        current = current[-MAX_STORED_PROGRESS_EVENTS:]
+
+        supabase.table(TABLE).update({
+            "progress_events": current,
+            "progress_stage": event.get("stage"),
+            "progress_message": event.get("message", ""),
+        }).eq("id", analysis_id).execute()
+    except Exception as e:
+        logger.warning(
+            f"[TradingAnalysis] {analysis_id}: DB progress append failed: {e}"
+        )
+
+
 def _run_graph_sync(
     config: dict[str, Any],
     selected_analysts: list[str],
@@ -293,6 +335,8 @@ def _run_graph_sync(
                 rc.expire(full_key, PROGRESS_TTL)
             except Exception as e:
                 logger.warning(f"[TradingAnalysis] {analysis_id}: progress push failed: {e}")
+
+        _append_db_progress_event(analysis_id, event)
 
         stage = event.get("stage")
         if stage and stage != _last_db_stage[0]:
@@ -622,17 +666,20 @@ class TradingAnalysisService:
 
     @staticmethod
     def _push_failure_progress(progress_key: str, error_type: str, error_msg: str):
+        analysis_id = progress_key.replace("ta:progress:", "", 1)
+        failure_event = {
+            "stage": "done",
+            "status": "failed",
+            "error_message": f"[{error_type}] {error_msg[:500]}",
+        }
+        _append_db_progress_event(analysis_id, failure_event)
         try:
             import redis as sync_redis
             from app.core.config import settings
             redis_url = settings.REDIS_URL or f"redis://{settings.REDIS_HOST}:{settings.REDIS_PORT}/{settings.REDIS_DB}"
             rc = sync_redis.from_url(redis_url, decode_responses=True)
             full_key = f"{settings.REDIS_KEY_PREFIX}{progress_key}"
-            rc.rpush(full_key, json.dumps({
-                "stage": "done",
-                "status": "failed",
-                "error_message": f"[{error_type}] {error_msg[:500]}",
-            }))
+            rc.rpush(full_key, json.dumps(failure_event))
             rc.expire(full_key, PROGRESS_TTL)
             rc.close()
         except Exception:
@@ -830,15 +877,30 @@ class TradingAnalysisService:
         try:
             result = (
                 self._supabase.table(TABLE)
-                .select("id, status, final_decision, error_message, progress_stage, progress_message")
+                .select("id, status, final_decision, error_message, progress_stage, progress_message, progress_events")
                 .eq("id", analysis_id)
                 .maybe_single()
                 .execute()
             )
             return result.data if result else None
         except Exception as e:
-            logger.warning(f"get_analysis_status({analysis_id}) failed: {e}")
-            return None
+            logger.warning(
+                f"get_analysis_status({analysis_id}) with progress_events failed: {e}"
+            )
+            try:
+                result = (
+                    self._supabase.table(TABLE)
+                    .select("id, status, final_decision, error_message, progress_stage, progress_message")
+                    .eq("id", analysis_id)
+                    .maybe_single()
+                    .execute()
+                )
+                return result.data if result else None
+            except Exception as fallback_error:
+                logger.warning(
+                    f"get_analysis_status({analysis_id}) failed: {fallback_error}"
+                )
+                return None
 
     async def stream_progress(
         self, analysis_id: str, max_duration: int = 2100
@@ -860,6 +922,7 @@ class TradingAnalysisService:
         iteration = 0
         ever_received_events = False
         last_db_stage: str | None = None
+        db_cursor = 0
 
         logger.info(
             f"[StreamProgress] Starting stream for {analysis_id}, "
@@ -891,6 +954,20 @@ class TradingAnalysisService:
                         "error_message": "Analysis record not found (may have been deleted).",
                     }
                     return
+
+                db_events = record.get("progress_events")
+                if (
+                    isinstance(db_events, list)
+                    and not ever_received_events
+                    and db_cursor < len(db_events)
+                ):
+                    for event in db_events[db_cursor:]:
+                        if isinstance(event, dict):
+                            yield event
+                        else:
+                            yield {"stage": "info", "message": str(event)}
+                    db_cursor = len(db_events)
+
                 if record.get("status") in ("completed", "failed"):
                     logger.info(
                         f"[StreamProgress] {analysis_id}: "

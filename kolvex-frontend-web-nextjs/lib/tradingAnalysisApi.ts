@@ -35,6 +35,7 @@ export interface TradingAnalysis {
   error_message?: string | null;
   progress_stage?: string | null;
   progress_message?: string | null;
+  progress_events?: ProgressEvent[] | null;
   duration_seconds?: number | null;
   is_published?: boolean;
   published_at?: string | null;

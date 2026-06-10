@@ -28,6 +28,7 @@ CREATE TABLE IF NOT EXISTS portfolio_snapshots (
     
     -- 持仓明细 (可选，用于详细回溯)
     positions_snapshot JSONB DEFAULT '[]'::jsonb,
+    calculation_version SMALLINT NOT NULL DEFAULT 1,
     
     -- 时间戳
     created_at TIMESTAMPTZ DEFAULT NOW(),

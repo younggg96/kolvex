@@ -24,6 +24,7 @@ import {
   Eye,
   FileSpreadsheet,
   FileJson,
+  Clock3,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import type { SnapTradeHoldings } from "@/lib/supabase/database.types";
@@ -66,11 +67,17 @@ export function PortfolioHeaderActions({
 
   return (
     <div className="flex items-center gap-2">
-      <span className="text-xs text-muted-foreground hidden sm:inline opacity-60">
-        {holdings?.last_synced_at
-          ? `Updated ${formatDistanceToNow(new Date(holdings.last_synced_at), { addSuffix: true })}`
-          : t("portfolio.actions.notSyncedYet")}
-      </span>
+      <div className="text-xs text-muted-foreground hidden lg:flex flex-col items-end opacity-60">
+        <span>
+          {holdings?.last_synced_at
+            ? `Updated ${formatDistanceToNow(new Date(holdings.last_synced_at), { addSuffix: true })}`
+            : t("portfolio.actions.notSyncedYet")}
+        </span>
+        <span className="inline-flex items-center gap-1">
+          <Clock3 className="w-3 h-3" />
+          {t("portfolio.actions.autoSyncSchedule")}
+        </span>
+      </div>
 
       <Button
         variant="outline"

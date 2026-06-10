@@ -389,6 +389,7 @@
     },
     "actions": {
       "refresh": "Refresh",
+      "autoSyncSchedule": "Auto-syncs after market close",
       "settings": "Settings",
       "community": "Community",
       "view": "View",
@@ -609,6 +610,9 @@
       "pnl": "P&L",
       "portfolioValue": "Portfolio Value",
       "change": "Change",
+      "pnlPercent": "Unrealized P&L %",
+      "currentUnrealizedPnl": "Current unrealized P&L",
+      "valueChange": "Portfolio value change",
       "performanceLabel": "Performance"
     },
     "allocation": {

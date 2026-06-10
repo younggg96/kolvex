@@ -326,7 +326,10 @@ def setup_scheduler():
         # ============================================================
         async def record_user_portfolio_snapshot(user_id: str, snaptrade_service):
             """为单个用户记录 portfolio 快照"""
-            from app.services.portfolio_snapshot_service import get_portfolio_snapshot_service
+            from app.services.portfolio_snapshot_service import (
+                calculate_position_snapshot_metrics,
+                get_portfolio_snapshot_service,
+            )
             
             try:
                 holdings = await snaptrade_service.get_user_holdings(user_id)
@@ -344,27 +347,11 @@ def setup_scheduler():
                 for account in holdings["accounts"]:
                     positions = account.get("snaptrade_positions", [])
                     for pos in positions:
-                        price = pos.get("price", 0) or 0
-                        units = pos.get("units", 0) or 0
-                        avg_cost = pos.get("average_purchase_price", 0) or 0
-                        position_type = pos.get("position_type", "equity")
-                        
-                        # Options multiplier
-                        multiplier = 100 if position_type == "option" else 1
-                        
-                        position_value = price * units * multiplier
-                        cost_basis = avg_cost * units * (1 if position_type == "option" else 1)
-                        
-                        total_value += position_value
-                        total_cost_basis += cost_basis
+                        metrics = calculate_position_snapshot_metrics(pos)
+                        total_value += metrics["market_value"]
+                        total_cost_basis += metrics["cost_basis"]
+                        total_pnl += metrics["unrealized_pnl"]
                         positions_count += 1
-                        
-                        # Calculate P&L
-                        if position_type == "option":
-                            pnl = position_value - cost_basis
-                        else:
-                            pnl = pos.get("open_pnl") or (position_value - cost_basis)
-                        total_pnl += pnl
                 
                 # Record snapshot
                 snapshot_service = get_portfolio_snapshot_service()
@@ -484,6 +471,41 @@ def setup_scheduler():
             misfire_grace_time=3600,
         )
 
+        # Robinhood uses its own cached OAuth session and is not covered by
+        # SnapTrade's scheduled sync. Run it sequentially after market close.
+        async def scheduled_robinhood_sync():
+            from app.services.scheduler_service import SchedulerService
+
+            logger.info("⏰ [ROBINHOOD] 定时任务触发: 开始自动同步所有账户")
+            service = SchedulerService()
+            try:
+                summary = await service.sync_all_robinhood_accounts()
+                logger.info(
+                    "✅ [ROBINHOOD] 自动同步完成 - 用户: %s, 成功: %s, 失败: %s",
+                    summary.get("total_users", 0),
+                    summary.get("success_count", 0),
+                    summary.get("error_count", 0),
+                )
+            except Exception as error:
+                logger.exception("❌ [ROBINHOOD] 自动同步任务失败: %s", error)
+                raise
+
+        scheduler.add_job(
+            scheduled_robinhood_sync,
+            CronTrigger(
+                day_of_week="mon-fri",
+                hour=14,
+                minute=15,
+                timezone="America/Los_Angeles",
+            ),
+            id="robinhood_daily_sync",
+            name="Robinhood 每日自动同步 - 下午 2:15 PST",
+            replace_existing=True,
+            misfire_grace_time=7200,
+            max_instances=1,
+            coalesce=True,
+        )
+
         # ============================================================
         # 任务 5: 盘中每 30 分钟扫描期权异动
         # 美东时间 9:30-16:00 → 美西时间 6:30-13:00
@@ -600,6 +622,13 @@ def setup_scheduler():
         holdings_afternoon_job = scheduler.get_job("portfolio_snapshot_afternoon")
         if holdings_afternoon_job:
             logger.info(f"📅 [HOLDINGS] 下午同步下次执行时间: {holdings_afternoon_job.next_run_time}")
+
+        robinhood_job = scheduler.get_job("robinhood_daily_sync")
+        if robinhood_job:
+            logger.info(
+                "📅 [ROBINHOOD] 每日自动同步下次执行时间: %s",
+                robinhood_job.next_run_time,
+            )
 
         options_flow_job = scheduler.get_job("options_flow_scan")
         if options_flow_job:

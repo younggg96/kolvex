@@ -40,6 +40,9 @@ CREATE TABLE IF NOT EXISTS trading_analyses (
 
     -- Metadata
     error_message TEXT,
+    progress_stage TEXT,
+    progress_message TEXT,
+    progress_events JSONB NOT NULL DEFAULT '[]'::jsonb,
     duration_seconds FLOAT,
     created_at TIMESTAMPTZ DEFAULT now(),
     completed_at TIMESTAMPTZ
