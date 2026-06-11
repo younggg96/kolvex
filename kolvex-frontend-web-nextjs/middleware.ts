@@ -1,7 +1,18 @@
 import { type NextRequest } from "next/server";
+import { NextResponse } from "next/server";
 import { updateSession } from "@/lib/supabase/middleware";
+import {
+  DISABLED_PRODUCT_REDIRECT,
+  isProductRouteDisabled,
+} from "@/lib/productFeatures";
 
 export async function middleware(request: NextRequest) {
+  if (isProductRouteDisabled(request.nextUrl.pathname)) {
+    return NextResponse.redirect(
+      new URL(DISABLED_PRODUCT_REDIRECT, request.url),
+    );
+  }
+
   return await updateSession(request);
 }
 

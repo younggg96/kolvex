@@ -54,6 +54,7 @@ import { cn } from "@/lib/utils";
 import { ChatSidebarContent } from "@/components/chat";
 import { useUserProfileContext } from "@/components/user/UserProfileProvider";
 import { useTranslation } from "@/lib/i18n";
+import { isProductRouteDisabled } from "@/lib/productFeatures";
 
 // Social Media sub-items (titles are brand names — not translated)
 const socialMediaSubItems = [
@@ -183,10 +184,12 @@ function AppSidebar({ onNavigate }: AppSidebarProps) {
   const { t } = useTranslation();
 
   // Resolve translated nav items
-  const mainNavItems = mainNavItemDefs.map((item) => ({
-    ...item,
-    title: t(item.titleKey),
-  }));
+  const mainNavItems = mainNavItemDefs
+    .filter((item) => !isProductRouteDisabled(item.href))
+    .map((item) => ({
+      ...item,
+      title: t(item.titleKey),
+    }));
   const bottomNavItems = bottomNavItemDefs.map((item) => ({
     ...item,
     title: t(item.titleKey),
