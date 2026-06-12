@@ -13,12 +13,14 @@ from concurrent.futures import ThreadPoolExecutor
 
 from app.core.redis import get_redis
 from app.services.yfinance.client import YFinanceService, _safe_float
+from app.services.stock_screener.symbols import SP500_SYMBOLS
 
 logger = logging.getLogger(__name__)
 
 SP500_CACHE_KEY = "screener:sp500:universe"
 STOCK_DATA_KEY_PREFIX = "screener:stock:"
-CACHE_TTL = 86400  # 24 hours
+CACHE_TTL = 3 * 86400
+UNIVERSE_CACHE_TTL = 14 * 86400
 
 _yf = YFinanceService()
 _executor = ThreadPoolExecutor(max_workers=20)
@@ -52,6 +54,8 @@ SORTABLE_FIELDS = FILTERABLE_FIELDS | {
 class StockScreenerService:
     """Stateless service — operates on cached data + YFinance fallback."""
 
+    _warm_task: Optional[asyncio.Task] = None
+
     # ------------------------------------------------------------------
     # Cache warming (called by scheduler)
     # ------------------------------------------------------------------
@@ -62,6 +66,15 @@ class StockScreenerService:
         Returns the number of successfully cached stocks."""
         redis = get_redis()
         cached = 0
+        normalized_symbols = list(dict.fromkeys(sym.upper() for sym in symbols))
+
+        # Publish the universe before the slower quote refresh so readers can
+        # use any snapshots that have already been populated.
+        await redis.set(
+            SP500_CACHE_KEY,
+            json.dumps(normalized_symbols),
+            ttl=UNIVERSE_CACHE_TTL,
+        )
 
         async def _fetch_one(sym: str) -> Optional[Dict[str, Any]]:
             loop = asyncio.get_event_loop()
@@ -75,8 +88,8 @@ class StockScreenerService:
                 return None
 
         batch_size = 20
-        for i in range(0, len(symbols), batch_size):
-            batch = symbols[i : i + batch_size]
+        for i in range(0, len(normalized_symbols), batch_size):
+            batch = normalized_symbols[i : i + batch_size]
             tasks = [_fetch_one(sym) for sym in batch]
             results = await asyncio.gather(*tasks)
 
@@ -86,13 +99,34 @@ class StockScreenerService:
                     await redis.set_json(key, result, ttl=CACHE_TTL)
                     cached += 1
 
-            if i + batch_size < len(symbols):
-                await asyncio.sleep(1)
+            if i + batch_size < len(normalized_symbols):
+                await asyncio.sleep(0.25)
 
-        symbol_list_json = json.dumps(symbols)
-        await redis.set(SP500_CACHE_KEY, symbol_list_json, ttl=CACHE_TTL)
-        logger.info(f"Screener cache warmed: {cached}/{len(symbols)} stocks")
+        logger.info(
+            "Screener cache warmed: %s/%s stocks",
+            cached,
+            len(normalized_symbols),
+        )
         return cached
+
+    @classmethod
+    def start_background_warm(cls) -> bool:
+        """Start one cache rebuild in the current process."""
+        if cls._warm_task and not cls._warm_task.done():
+            return False
+
+        cls._warm_task = asyncio.create_task(cls.warm_cache(SP500_SYMBOLS))
+        cls._warm_task.add_done_callback(cls._log_warm_result)
+        return True
+
+    @staticmethod
+    def _log_warm_result(task: asyncio.Task) -> None:
+        try:
+            task.result()
+        except asyncio.CancelledError:
+            logger.info("Background stock screener cache warm was cancelled")
+        except Exception:
+            logger.exception("Background stock screener cache warm failed")
 
     # ------------------------------------------------------------------
     # Screening
@@ -108,7 +142,7 @@ class StockScreenerService:
         sectors: Optional[List[str]] = None,
     ) -> Dict[str, Any]:
         """Run a screening query and return paginated results."""
-        all_stocks = await self._load_universe()
+        all_stocks, cache_status = await self._load_universe()
 
         # Apply sector filter
         if sectors:
@@ -135,22 +169,38 @@ class StockScreenerService:
             "page": page,
             "page_size": page_size,
             "total_pages": math.ceil(total / page_size) if page_size else 0,
+            "cache_status": cache_status,
+            "message": (
+                "Stock data is being prepared. Results will appear automatically."
+                if cache_status == "warming"
+                else None
+            ),
         }
 
     # ------------------------------------------------------------------
     # Internal helpers
     # ------------------------------------------------------------------
 
-    async def _load_universe(self) -> List[Dict[str, Any]]:
+    async def _load_universe(self) -> Tuple[List[Dict[str, Any]], str]:
         """Load all stock data from Redis cache, falling back to live fetch."""
         redis = get_redis()
 
         symbols_raw = await redis.get(SP500_CACHE_KEY)
         if not symbols_raw:
-            logger.warning("SP500 universe not cached; returning empty")
-            return []
-
-        symbols: List[str] = json.loads(symbols_raw)
+            logger.warning("SP500 universe not cached; starting background warm")
+            symbols = SP500_SYMBOLS
+            await redis.set(
+                SP500_CACHE_KEY,
+                json.dumps(symbols),
+                ttl=UNIVERSE_CACHE_TTL,
+            )
+            self.start_background_warm()
+        else:
+            try:
+                symbols = json.loads(symbols_raw)
+            except (TypeError, json.JSONDecodeError):
+                symbols = SP500_SYMBOLS
+                self.start_background_warm()
 
         keys = [f"{STOCK_DATA_KEY_PREFIX}{sym}" for sym in symbols]
         raw_map = await redis.mget(keys)
@@ -164,7 +214,17 @@ class StockScreenerService:
                     stocks.append(data)
                 except Exception:
                     pass
-        return stocks
+
+        minimum_ready_count = min(20, len(symbols))
+        if len(stocks) < minimum_ready_count:
+            logger.warning(
+                "Screener cache has only %s stocks; background warm requested",
+                len(stocks),
+            )
+            self.start_background_warm()
+            return stocks, "warming"
+
+        return stocks, "ready"
 
     @staticmethod
     def _apply_filters(

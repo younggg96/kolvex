@@ -6,6 +6,7 @@ FastAPI 应用入口
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
+import asyncio
 import logging
 from datetime import datetime, timezone
 
@@ -546,33 +547,14 @@ def setup_scheduler():
         # ============================================================
         # 任务: 每日预热 Stock Screener 缓存 (美东 6:00)
         # ============================================================
+        from app.services.stock_screener.screener_service import StockScreenerService
+        from app.services.stock_screener.symbols import SP500_SYMBOLS
+
         async def scheduled_screener_cache_warm():
             """Pre-warm S&P 500 financial data into Redis for the stock screener."""
-            import json as _json
-            from app.services.stock_screener.screener_service import StockScreenerService
-
             logger.info("⏰ [SCREENER] 开始预热 S&P 500 数据缓存")
             try:
-                import importlib.resources
-                import pathlib
-
-                sp500_path = pathlib.Path(__file__).parent / "sp500_symbols.json"
-                if sp500_path.exists():
-                    symbols = _json.loads(sp500_path.read_text())
-                else:
-                    from app.services.stock_screener.screener_service import _yf
-                    import yfinance as yf
-                    tickers = yf.Tickers("^GSPC")
-                    symbols = [
-                        "AAPL", "MSFT", "AMZN", "NVDA", "GOOGL", "META", "TSLA",
-                        "BRK-B", "UNH", "XOM", "JNJ", "JPM", "V", "PG", "MA",
-                        "HD", "CVX", "MRK", "ABBV", "LLY", "PEP", "KO", "AVGO",
-                        "COST", "MCD", "WMT", "CSCO", "TMO", "ACN", "ABT",
-                        "CRM", "DHR", "NKE", "TXN", "NEE", "PM", "UNP", "MS",
-                        "RTX", "HON", "LOW", "ORCL", "INTC", "AMD", "QCOM",
-                        "IBM", "GE", "CAT", "BA", "DIS",
-                    ]
-                count = await StockScreenerService.warm_cache(symbols)
+                count = await StockScreenerService.warm_cache(SP500_SYMBOLS)
                 logger.info(f"✅ [SCREENER] 缓存预热完成: {count} stocks")
             except Exception as e:
                 logger.error(f"❌ [SCREENER] 缓存预热失败: {e}")
@@ -587,6 +569,10 @@ def setup_scheduler():
 
         scheduler.start()
         logger.info("✅ 定时任务调度器已启动")
+
+        # Do not wait until the next 6:00 AM run after a deploy or Redis reset.
+        # The service guards against duplicate warm tasks in this process.
+        StockScreenerService.start_background_warm()
 
         # 更新 KOL 任务状态
         kol_job = scheduler.get_job("fetch_kol_news")

@@ -64,6 +64,8 @@ export interface ScreenResponse {
   page: number;
   page_size: number;
   total_pages: number;
+  cache_status?: "ready" | "warming";
+  message?: string | null;
 }
 
 export interface Strategy {

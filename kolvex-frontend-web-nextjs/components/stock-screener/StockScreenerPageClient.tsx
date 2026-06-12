@@ -63,8 +63,13 @@ export default function StockScreenerPageClient() {
   useEffect(() => {
     getStrategies()
       .then(setStrategies)
-      .catch(() => {});
-  }, []);
+      .catch((error) => {
+        console.error("Failed to load screener strategies:", error);
+        toast.error(
+          locale === "zh" ? "选股策略加载失败，请稍后重试" : "Failed to load screener strategies",
+        );
+      });
+  }, [locale]);
 
   const doScreen = useCallback(
     async (overrides?: Partial<ScreenRequest>) => {
@@ -103,6 +108,16 @@ export default function StockScreenerPageClient() {
       pageSize,
     ]
   );
+
+  useEffect(() => {
+    if (screenResult?.cache_status !== "warming") return;
+
+    const timer = window.setTimeout(() => {
+      void doScreen();
+    }, 8000);
+
+    return () => window.clearTimeout(timer);
+  }, [screenResult?.cache_status, doScreen]);
 
   const handleStrategySelect = useCallback(
     (id: string) => {
@@ -254,6 +269,16 @@ export default function StockScreenerPageClient() {
               <ScreenerSkeleton />
             ) : screenResult ? (
               <>
+                {screenResult.cache_status === "warming" && (
+                  <div className="flex items-center gap-3 rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-700 dark:text-amber-300">
+                    <span className="size-2 shrink-0 rounded-full bg-amber-500 animate-pulse" />
+                    <span>
+                      {isZh
+                        ? "股票数据正在自动准备，页面会每 8 秒刷新结果。"
+                        : "Stock data is being prepared. Results refresh automatically every 8 seconds."}
+                    </span>
+                  </div>
+                )}
                 <ScreenerResultsTable
                   data={screenResult}
                   sortBy={sortBy}
