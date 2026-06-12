@@ -4,6 +4,8 @@ export const DISABLED_PRODUCT_ROUTE_PREFIXES = [
   "/dashboard/stocks",
   "/dashboard/investors",
   "/dashboard/kol",
+  "/dashboard/stock-screener",
+  "/dashboard/options-flow",
 ] as const;
 
 export const DISABLED_PRODUCT_REDIRECT = "/dashboard/portfolio";
