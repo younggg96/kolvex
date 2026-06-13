@@ -9,6 +9,8 @@ import {
   KeyRound,
   Landmark,
   Building2,
+  BookOpen,
+  ExternalLink,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,6 +23,62 @@ import {
 } from "@/components/ui/dialog";
 import { useTranslation } from "@/lib/i18n";
 import type { ConnectionStateProps, InitialSyncStateProps } from "./types";
+
+const IBKR_PORTAL_URL =
+  "https://ndcdyn.interactivebrokers.com/sso/Login";
+const IBKR_GUIDE_URL =
+  "https://www.ibkrguides.com/clientportal/performanceandstatements/flex-web-service.htm";
+
+function IbkrSetupGuide() {
+  const { t } = useTranslation();
+  const steps = [
+    t("portfolio.connect.ibkrGuideStep1"),
+    t("portfolio.connect.ibkrGuideStep2"),
+    t("portfolio.connect.ibkrGuideStep3"),
+    t("portfolio.connect.ibkrGuideStep4"),
+  ];
+
+  return (
+    <div className="space-y-3 rounded-lg border border-border bg-muted/20 p-3">
+      <div>
+        <div className="flex items-center gap-2 text-sm font-semibold">
+          <BookOpen className="h-4 w-4 text-primary" />
+          {t("portfolio.connect.ibkrGuideTitle")}
+        </div>
+        <p className="mt-1 text-xs text-muted-foreground">
+          {t("portfolio.connect.ibkrGuideDescription")}
+        </p>
+      </div>
+      <ol className="space-y-2">
+        {steps.map((step, index) => (
+          <li key={step} className="flex gap-2 text-xs leading-5">
+            <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/10 font-semibold text-primary">
+              {index + 1}
+            </span>
+            <span>{step}</span>
+          </li>
+        ))}
+      </ol>
+      <div className="rounded-md bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-300">
+        {t("portfolio.connect.ibkrGuideNote")}
+      </div>
+      <div className="flex flex-wrap gap-2">
+        <Button variant="outline" size="sm" asChild className="h-8 gap-1.5 text-xs">
+          <a href={IBKR_PORTAL_URL} target="_blank" rel="noreferrer">
+            {t("portfolio.connect.openIbkrPortal")}
+            <ExternalLink className="h-3.5 w-3.5" />
+          </a>
+        </Button>
+        <Button variant="ghost" size="sm" asChild className="h-8 gap-1.5 text-xs">
+          <a href={IBKR_GUIDE_URL} target="_blank" rel="noreferrer">
+            {t("portfolio.connect.officialGuide")}
+            <ExternalLink className="h-3.5 w-3.5" />
+          </a>
+        </Button>
+      </div>
+    </div>
+  );
+}
 
 /**
  * State when user has not connected their broker yet
@@ -39,6 +97,7 @@ export function NotConnectedState({
   const [challengeCode, setChallengeCode] = useState("");
   const [flexToken, setFlexToken] = useState("");
   const [flexQueryId, setFlexQueryId] = useState("");
+  const [ibkrGuideOpen, setIbkrGuideOpen] = useState(false);
 
   const canConnectRobinhood = username.trim().length > 0 && password.length > 0;
 
@@ -106,6 +165,16 @@ export function NotConnectedState({
                 disabled={connecting}
               />
             </div>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => setIbkrGuideOpen(true)}
+              className="w-full gap-2"
+            >
+              <BookOpen className="h-4 w-4" />
+              {t("portfolio.connect.howToGetIbkrCredentials")}
+            </Button>
             <Button
               type="submit"
               size="lg"
@@ -201,6 +270,18 @@ export function NotConnectedState({
           </form>
         </div>
 
+        <Dialog open={ibkrGuideOpen} onOpenChange={setIbkrGuideOpen}>
+          <DialogContent className="max-h-[85vh] max-w-lg overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>{t("portfolio.connect.ibkrGuideTitle")}</DialogTitle>
+              <DialogDescription>
+                {t("portfolio.connect.ibkrGuideDescription")}
+              </DialogDescription>
+            </DialogHeader>
+            <IbkrSetupGuide />
+          </DialogContent>
+        </Dialog>
+
         <div className="flex justify-center gap-6 text-xs text-muted-foreground">
           <span className="flex items-center gap-1.5">
             <Check className="w-3 h-3 text-green-500" /> {t("portfolio.connect.secure")}
@@ -246,13 +327,14 @@ export function IbkrConnectDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-h-[90vh] max-w-lg overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{t("portfolio.connect.ibkrTitle")}</DialogTitle>
           <DialogDescription>
             {t("portfolio.connect.ibkrDescription")}
           </DialogDescription>
         </DialogHeader>
+        <IbkrSetupGuide />
         <form onSubmit={handleSubmit} className="space-y-3">
           <Input
             value={flexToken}
