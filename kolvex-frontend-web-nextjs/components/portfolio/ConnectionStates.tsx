@@ -6,12 +6,19 @@ import {
   Check,
   Loader2,
   RefreshCw,
-  ShieldCheck,
   KeyRound,
   Landmark,
+  Building2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { useTranslation } from "@/lib/i18n";
 import type { ConnectionStateProps, InitialSyncStateProps } from "./types";
 
@@ -19,7 +26,7 @@ import type { ConnectionStateProps, InitialSyncStateProps } from "./types";
  * State when user has not connected their broker yet
  */
 export function NotConnectedState({
-  onConnect,
+  onConnectIbkr,
   onConnectRobinhood,
   onResetRobinhoodAuth,
   connecting,
@@ -30,6 +37,8 @@ export function NotConnectedState({
   const [password, setPassword] = useState("");
   const [totpSecret, setTotpSecret] = useState("");
   const [challengeCode, setChallengeCode] = useState("");
+  const [flexToken, setFlexToken] = useState("");
+  const [flexQueryId, setFlexQueryId] = useState("");
 
   const canConnectRobinhood = username.trim().length > 0 && password.length > 0;
 
@@ -41,6 +50,15 @@ export function NotConnectedState({
       password,
       totp_secret: totpSecret.trim() || undefined,
       challenge_code: challengeCode.trim() || undefined,
+    });
+  };
+
+  const handleIbkrSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!flexToken.trim() || !flexQueryId.trim()) return;
+    await onConnectIbkr({
+      flex_token: flexToken.trim(),
+      flex_query_id: flexQueryId.trim(),
     });
   };
 
@@ -58,32 +76,50 @@ export function NotConnectedState({
         </div>
 
         <div className="grid gap-4 md:grid-cols-2">
-          <div className="rounded-lg border border-border bg-card p-4 space-y-4">
+          <form
+            onSubmit={handleIbkrSubmit}
+            className="rounded-lg border border-primary/30 bg-card p-4 space-y-4"
+          >
             <div className="flex items-center gap-3">
               <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                <ShieldCheck className="h-5 w-5 text-primary" />
+                <Building2 className="h-5 w-5 text-primary" />
               </div>
               <div>
-                <h3 className="font-semibold">{t("portfolio.connect.snaptradeTitle")}</h3>
+                <h3 className="font-semibold">{t("portfolio.connect.ibkrTitle")}</h3>
                 <p className="text-xs text-muted-foreground">
-                  {t("portfolio.connect.snaptradeDescription")}
+                  {t("portfolio.connect.ibkrDescription")}
                 </p>
               </div>
             </div>
+            <div className="space-y-2">
+              <Input
+                value={flexToken}
+                onChange={(event) => setFlexToken(event.target.value)}
+                type="password"
+                placeholder={t("portfolio.connect.ibkrToken")}
+                disabled={connecting}
+              />
+              <Input
+                value={flexQueryId}
+                onChange={(event) => setFlexQueryId(event.target.value)}
+                placeholder={t("portfolio.connect.ibkrQueryId")}
+                disabled={connecting}
+              />
+            </div>
             <Button
+              type="submit"
               size="lg"
-              onClick={onConnect}
-              disabled={connecting}
+              disabled={connecting || !flexToken.trim() || !flexQueryId.trim()}
               className="w-full gap-2"
             >
               {connecting ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
               ) : (
-                <ShieldCheck className="w-4 h-4" />
+                <Building2 className="w-4 h-4" />
               )}
-              {connecting ? t("portfolio.connect.connecting") : t("portfolio.connect.connectBroker")}
+              {connecting ? t("portfolio.connect.connecting") : t("portfolio.connect.connectIbkr")}
             </Button>
-          </div>
+          </form>
 
           <form
             onSubmit={handleRobinhoodSubmit}
@@ -178,6 +214,76 @@ export function NotConnectedState({
         </div>
       </div>
     </div>
+  );
+}
+
+export function IbkrConnectDialog({
+  open,
+  onOpenChange,
+  onConnect,
+  connecting,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onConnect: ConnectionStateProps["onConnectIbkr"];
+  connecting: boolean;
+}) {
+  const { t } = useTranslation();
+  const [flexToken, setFlexToken] = useState("");
+  const [flexQueryId, setFlexQueryId] = useState("");
+
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!flexToken.trim() || !flexQueryId.trim()) return;
+    await onConnect({
+      flex_token: flexToken.trim(),
+      flex_query_id: flexQueryId.trim(),
+    });
+    onOpenChange(false);
+    setFlexToken("");
+    setFlexQueryId("");
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>{t("portfolio.connect.ibkrTitle")}</DialogTitle>
+          <DialogDescription>
+            {t("portfolio.connect.ibkrDescription")}
+          </DialogDescription>
+        </DialogHeader>
+        <form onSubmit={handleSubmit} className="space-y-3">
+          <Input
+            value={flexToken}
+            onChange={(event) => setFlexToken(event.target.value)}
+            type="password"
+            placeholder={t("portfolio.connect.ibkrToken")}
+            disabled={connecting}
+          />
+          <Input
+            value={flexQueryId}
+            onChange={(event) => setFlexQueryId(event.target.value)}
+            placeholder={t("portfolio.connect.ibkrQueryId")}
+            disabled={connecting}
+          />
+          <Button
+            type="submit"
+            className="w-full gap-2"
+            disabled={connecting || !flexToken.trim() || !flexQueryId.trim()}
+          >
+            {connecting ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Building2 className="h-4 w-4" />
+            )}
+            {connecting
+              ? t("portfolio.connect.connecting")
+              : t("portfolio.connect.connectIbkr")}
+          </Button>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 }
 

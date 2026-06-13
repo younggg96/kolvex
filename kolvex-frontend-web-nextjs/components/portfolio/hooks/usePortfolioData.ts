@@ -25,6 +25,15 @@ import {
   type RobinhoodOptionOrder,
   type RobinhoodStatus,
 } from "@/lib/robinhoodApi";
+import {
+  connectIbkr,
+  disconnectIbkr,
+  getIbkrHoldings,
+  getIbkrOrders,
+  getIbkrStatus,
+  syncIbkr,
+  type IBKRStatus,
+} from "@/lib/ibkrApi";
 import type {
   SnapTradeConnectionStatus,
   SnapTradeHoldings,
@@ -46,11 +55,62 @@ interface CacheEnvelope<T> {
 interface PortfolioRootCache {
   status: SnapTradeConnectionStatus | null;
   robinhoodStatus: RobinhoodStatus | null;
+  ibkrStatus: IBKRStatus | null;
   holdings: SnapTradeHoldings | null;
 }
 
 type RobinhoodOrdersPayload = Awaited<ReturnType<typeof getRobinhoodOrders>>;
 type RobinhoodOptionOrdersPayload = Awaited<ReturnType<typeof getRobinhoodOptionOrders>>;
+
+function transactionTime(order: RobinhoodOrder | RobinhoodOptionOrder) {
+  return new Date(order.executed_time || order.created_time || 0).getTime();
+}
+
+async function getCombinedStockOrders(
+  limit: number,
+  offset: number,
+  symbol: string | undefined,
+  status: string
+): Promise<RobinhoodOrdersPayload> {
+  const [robinhood, ibkr] = await Promise.all([
+    getRobinhoodOrders(limit, offset, symbol, status),
+    status === "filled" || status === "all"
+      ? getIbkrOrders("stocks", limit, offset, symbol).catch(() => null)
+      : Promise.resolve(null),
+  ]);
+  const ibkrOrders = (ibkr?.orders || []) as RobinhoodOrder[];
+  return {
+    ...robinhood,
+    orders: [...robinhood.orders, ...ibkrOrders].sort(
+      (a, b) => transactionTime(b) - transactionTime(a)
+    ),
+    total: robinhood.total + (ibkr?.total || 0),
+    has_more: robinhood.has_more || Boolean(ibkr?.has_more),
+  };
+}
+
+async function getCombinedOptionOrders(
+  limit: number,
+  offset: number,
+  symbol: string | undefined,
+  status: string
+): Promise<RobinhoodOptionOrdersPayload> {
+  const [robinhood, ibkr] = await Promise.all([
+    getRobinhoodOptionOrders(limit, offset, symbol, status),
+    status === "filled" || status === "all"
+      ? getIbkrOrders("options", limit, offset, symbol).catch(() => null)
+      : Promise.resolve(null),
+  ]);
+  const ibkrOrders = (ibkr?.orders || []) as RobinhoodOptionOrder[];
+  return {
+    ...robinhood,
+    orders: [...robinhood.orders, ...ibkrOrders].sort(
+      (a, b) => transactionTime(b) - transactionTime(a)
+    ),
+    total: robinhood.total + (ibkr?.total || 0),
+    has_more: robinhood.has_more || Boolean(ibkr?.has_more),
+  };
+}
 
 const memoryCache = new Map<string, CacheEnvelope<unknown>>();
 
@@ -115,6 +175,7 @@ export function usePortfolioData({ userId, isOwner }: UsePortfolioDataOptions) {
   const [status, setStatus] = useState<SnapTradeConnectionStatus | null>(null);
   const [robinhoodStatus, setRobinhoodStatus] =
     useState<RobinhoodStatus | null>(null);
+  const [ibkrStatus, setIbkrStatus] = useState<IBKRStatus | null>(null);
   const [robinhoodOrders, setRobinhoodOrders] = useState<RobinhoodOrder[]>([]);
   const [robinhoodOptionOrders, setRobinhoodOptionOrders] = useState<
     RobinhoodOptionOrder[]
@@ -163,7 +224,7 @@ export function usePortfolioData({ userId, isOwner }: UsePortfolioDataOptions) {
           : null;
         const result =
           cached ||
-          (await getRobinhoodOrders(
+          (await getCombinedStockOrders(
             robinhoodOrdersPageSize,
             offset,
             robinhoodOrderSymbolFilter,
@@ -213,7 +274,7 @@ export function usePortfolioData({ userId, isOwner }: UsePortfolioDataOptions) {
           : null;
         const result =
           cached ||
-          (await getRobinhoodOptionOrders(
+          (await getCombinedOptionOrders(
             robinhoodOrdersPageSize,
             offset,
             symbol,
@@ -261,7 +322,7 @@ export function usePortfolioData({ userId, isOwner }: UsePortfolioDataOptions) {
         const cached = readCache<RobinhoodOrdersPayload>(ordersCacheKey);
         const result =
           cached ||
-          (await getRobinhoodOrders(
+          (await getCombinedStockOrders(
             robinhoodOrdersPageSize,
             0,
             robinhoodOrderSymbolFilter,
@@ -304,7 +365,7 @@ export function usePortfolioData({ userId, isOwner }: UsePortfolioDataOptions) {
         const cached = readCache<RobinhoodOrdersPayload>(ordersCacheKey);
         const result =
           cached ||
-          (await getRobinhoodOrders(
+          (await getCombinedStockOrders(
             robinhoodOrdersPageSize,
             0,
             normalizedSymbol,
@@ -336,6 +397,7 @@ export function usePortfolioData({ userId, isOwner }: UsePortfolioDataOptions) {
       setStatus(cachedRoot.status);
       setHoldings(cachedRoot.holdings);
       setRobinhoodStatus(cachedRoot.robinhoodStatus);
+      setIbkrStatus(cachedRoot.ibkrStatus);
       setLoading(false);
       await loadRobinhoodOrders(true, 0, forceRefresh);
       await loadRobinhoodOptionOrders(true, 0, forceRefresh);
@@ -345,18 +407,44 @@ export function usePortfolioData({ userId, isOwner }: UsePortfolioDataOptions) {
     setLoading(true);
     try {
       if (isOwner) {
-        const [statusData, holdingsData, robinhoodData] = await Promise.all([
+        const [statusData, holdingsData, robinhoodData, ibkrData, ibkrHoldings] = await Promise.all([
             getConnectionStatus(),
             getMyHoldings(),
             getRobinhoodStatus().catch(() => null),
+            getIbkrStatus().catch(() => null),
+            getIbkrHoldings().catch(() => null),
           ]);
-        setStatus(statusData);
-        setHoldings(holdingsData);
+        const mergedAccounts = [
+          ...(holdingsData?.accounts || []),
+          ...(ibkrHoldings?.accounts || []),
+        ];
+        const mergedStatus = ibkrData?.is_connected
+          ? {
+              ...statusData,
+              is_registered: true,
+              is_connected: true,
+              accounts_count: mergedAccounts.length,
+              last_synced_at:
+                ibkrData.last_synced_at || statusData.last_synced_at,
+            }
+          : statusData;
+        const mergedHoldings = {
+          ...holdingsData,
+          is_connected:
+            holdingsData?.is_connected || Boolean(ibkrData?.is_connected),
+          last_synced_at:
+            ibkrData?.last_synced_at || holdingsData?.last_synced_at,
+          accounts: mergedAccounts,
+        };
+        setStatus(mergedStatus);
+        setHoldings(mergedHoldings);
         setRobinhoodStatus(robinhoodData);
+        setIbkrStatus(ibkrData);
         writeCache<PortfolioRootCache>(rootCacheKey, {
-          status: statusData,
-          holdings: holdingsData,
+          status: mergedStatus,
+          holdings: mergedHoldings,
           robinhoodStatus: robinhoodData,
+          ibkrStatus: ibkrData,
         });
         await loadRobinhoodOrders(true, 0, forceRefresh);
         await loadRobinhoodOptionOrders(true, 0, forceRefresh);
@@ -398,6 +486,7 @@ export function usePortfolioData({ userId, isOwner }: UsePortfolioDataOptions) {
               hidden_positions_count: publicHoldings.hidden_positions_count,
             },
             robinhoodStatus: null,
+            ibkrStatus: null,
           });
         }
       }
@@ -425,6 +514,23 @@ export function usePortfolioData({ userId, isOwner }: UsePortfolioDataOptions) {
       setConnecting(false);
     }
   }, []);
+
+  const handleConnectIbkr = useCallback(
+    async (credentials: { flex_token: string; flex_query_id: string }) => {
+      setConnecting(true);
+      try {
+        await connectIbkr(credentials);
+        clearPortfolioCache(cacheUserId);
+        await loadData(true);
+        toast.success("Interactive Brokers connected and synced");
+      } catch (error: any) {
+        toast.error(error?.message || "Failed to connect Interactive Brokers");
+      } finally {
+        setConnecting(false);
+      }
+    },
+    [cacheUserId, loadData]
+  );
 
   const handleConnectRobinhood = useCallback(
     async (credentials: {
@@ -543,12 +649,19 @@ export function usePortfolioData({ userId, isOwner }: UsePortfolioDataOptions) {
   const handleSync = useCallback(async () => {
     setSyncing(true);
     try {
+      let syncedDirectBroker = false;
       if (robinhoodStatus?.is_connected) {
         // /sync schedules a background task and returns immediately; we then
         // poll /status until it finishes so the UI stays in "Syncing..." mode.
         await syncRobinhood();
         await waitForRobinhoodSync();
-      } else {
+        syncedDirectBroker = true;
+      }
+      if (ibkrStatus?.is_connected) {
+        await syncIbkr();
+        syncedDirectBroker = true;
+      }
+      if (!syncedDirectBroker) {
         await syncAccounts();
         await syncPositions();
       }
@@ -560,22 +673,32 @@ export function usePortfolioData({ userId, isOwner }: UsePortfolioDataOptions) {
     } finally {
       setSyncing(false);
     }
-  }, [cacheUserId, loadData, robinhoodStatus?.is_connected]);
+  }, [cacheUserId, ibkrStatus?.is_connected, loadData, robinhoodStatus?.is_connected]);
 
   const handleSyncRobinhoodTransactions = useCallback(async () => {
     setSyncing(true);
     try {
-      await syncRobinhood();
-      await waitForRobinhoodSync();
+      if (robinhoodStatus?.is_connected) {
+        await syncRobinhood();
+        await waitForRobinhoodSync();
+      }
+      if (ibkrStatus?.is_connected) {
+        await syncIbkr();
+      }
       clearPortfolioCache(cacheUserId);
       await loadData(true);
-      toast.success("Robinhood transactions synced");
+      toast.success("Broker transactions synced");
     } catch (error: any) {
       toast.error(error.message || "Robinhood sync failed");
     } finally {
       setSyncing(false);
     }
-  }, [cacheUserId, loadData]);
+  }, [
+    cacheUserId,
+    ibkrStatus?.is_connected,
+    loadData,
+    robinhoodStatus?.is_connected,
+  ]);
 
   const handleResetRobinhoodAuth = useCallback(async () => {
     setResettingRobinhoodAuth(true);
@@ -609,12 +732,15 @@ export function usePortfolioData({ userId, isOwner }: UsePortfolioDataOptions) {
     try {
       if (robinhoodStatus?.is_connected) {
         await disconnectRobinhood();
+      } else if (ibkrStatus?.is_connected) {
+        await disconnectIbkr();
       } else {
         await disconnectSnapTrade();
       }
       clearPortfolioCache(cacheUserId);
       setStatus(null);
       setRobinhoodStatus(null);
+      setIbkrStatus(null);
       setHoldings(null);
       setRobinhoodOrders([]);
       setRobinhoodOptionOrders([]);
@@ -632,7 +758,7 @@ export function usePortfolioData({ userId, isOwner }: UsePortfolioDataOptions) {
     } finally {
       setDisconnecting(false);
     }
-  }, [cacheUserId, robinhoodStatus?.is_connected]);
+  }, [cacheUserId, ibkrStatus?.is_connected, robinhoodStatus?.is_connected]);
 
   const handleCopyShareLink = useCallback(async () => {
     if (!userId) return;
@@ -707,6 +833,7 @@ export function usePortfolioData({ userId, isOwner }: UsePortfolioDataOptions) {
     copied,
     loadData,
     handleConnect,
+    handleConnectIbkr,
     handleConnectRobinhood,
     handleResetRobinhoodAuth,
     loadRobinhoodOrders,

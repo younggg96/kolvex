@@ -58,6 +58,7 @@ import {
   type RobinhoodSellPerformanceResponse,
   type RobinhoodWashSaleRiskSymbol,
 } from "@/lib/robinhoodApi";
+import { analyzeIbkrOrders, getIbkrOrders } from "@/lib/ibkrApi";
 import { getAvailableProviders } from "@/lib/api/userApiKeysApi";
 import { cn } from "@/lib/utils";
 import {
@@ -470,14 +471,19 @@ export function RobinhoodTransactionsTable({
         let offset = 0;
         const limit = 500;
         while (true) {
-          const page = await getRobinhoodOptionOrders(
-            limit,
-            offset,
-            symbolFilter,
-            statusFilter
+          const [robinhoodPage, ibkrPage] = await Promise.all([
+            getRobinhoodOptionOrders(limit, offset, symbolFilter, statusFilter),
+            statusFilter === "filled" || statusFilter === "all"
+              ? getIbkrOrders("options", limit, offset, symbolFilter).catch(
+                  () => null
+                )
+              : Promise.resolve(null),
+          ]);
+          allOptionOrders.push(
+            ...robinhoodPage.orders,
+            ...((ibkrPage?.orders || []) as RobinhoodOptionOrder[])
           );
-          allOptionOrders.push(...page.orders);
-          if (!page.has_more) break;
+          if (!robinhoodPage.has_more && !ibkrPage?.has_more) break;
           offset += limit;
         }
         const exportedRows = allOptionOrders.filter((order) => {
@@ -491,7 +497,7 @@ export function RobinhoodTransactionsTable({
         });
         downloadText(
           buildOptionCsv(exportedRows),
-          `robinhood-option-transactions${symbolFilter ? `-${symbolFilter}` : ""}-${new Date().toISOString().slice(0, 10)}.csv`,
+          `broker-option-transactions${symbolFilter ? `-${symbolFilter}` : ""}-${new Date().toISOString().slice(0, 10)}.csv`,
           "text/csv;charset=utf-8"
         );
         return;
@@ -500,20 +506,25 @@ export function RobinhoodTransactionsTable({
       let offset = 0;
       const limit = 500;
       while (true) {
-        const page = await getRobinhoodOrders(
-          limit,
-          offset,
-          symbolFilter,
-          statusFilter
+        const [robinhoodPage, ibkrPage] = await Promise.all([
+          getRobinhoodOrders(limit, offset, symbolFilter, statusFilter),
+          statusFilter === "filled" || statusFilter === "all"
+            ? getIbkrOrders("stocks", limit, offset, symbolFilter).catch(
+                () => null
+              )
+            : Promise.resolve(null),
+        ]);
+        allOrders.push(
+          ...robinhoodPage.orders,
+          ...((ibkrPage?.orders || []) as RobinhoodOrder[])
         );
-        allOrders.push(...page.orders);
-        if (!page.has_more) break;
+        if (!robinhoodPage.has_more && !ibkrPage?.has_more) break;
         offset += limit;
       }
       const rows = selectedOrders.length > 0 ? selectedOrders : allOrders;
       downloadText(
         buildCsv(rows),
-        `robinhood-transactions${symbolFilter ? `-${symbolFilter}` : ""}-${new Date().toISOString().slice(0, 10)}.csv`,
+        `broker-transactions${symbolFilter ? `-${symbolFilter}` : ""}-${new Date().toISOString().slice(0, 10)}.csv`,
         "text/csv;charset=utf-8"
       );
     } catch (error: any) {
@@ -528,14 +539,44 @@ export function RobinhoodTransactionsTable({
     }
     setAnalyzing(true);
     try {
-      const result = await analyzeRobinhoodOrders({
-        provider,
-        model: selectedModel,
-        limit: 300,
-        order_ids: selectedOrders.map((order) => order.order_id),
-        language: analysisLanguage,
-      });
-      setAnalysis(result.analysis);
+      const selectedRobinhoodIds = selectedOrders
+        .filter((order) => order.broker !== "ibkr")
+        .map((order) => order.order_id);
+      const selectedIbkrIds = selectedOrders
+        .filter((order) => order.broker === "ibkr")
+        .map((order) => order.order_id);
+      const analyzeAll = selectedOrders.length === 0;
+      const results = await Promise.allSettled([
+        analyzeAll || selectedRobinhoodIds.length > 0
+          ? analyzeRobinhoodOrders({
+              provider,
+              model: selectedModel,
+              limit: 300,
+              order_ids: selectedRobinhoodIds,
+              language: analysisLanguage,
+            })
+          : Promise.reject(new Error("skip")),
+        analyzeAll || selectedIbkrIds.length > 0
+          ? analyzeIbkrOrders({
+              provider,
+              model: selectedModel,
+              limit: 300,
+              trade_ids: selectedIbkrIds,
+              language: analysisLanguage,
+            })
+          : Promise.reject(new Error("skip")),
+      ]);
+      const sections = results.flatMap((result, index) =>
+        result.status === "fulfilled"
+          ? [
+              `## ${index === 0 ? "Robinhood" : "Interactive Brokers"}\n\n${result.value.analysis}`,
+            ]
+          : []
+      );
+      if (sections.length === 0) {
+        throw new Error("No selected broker transactions could be analyzed");
+      }
+      setAnalysis(sections.join("\n\n---\n\n"));
       toast.success("AI trade analysis complete");
     } catch (error: any) {
       toast.error(error?.message || "Failed to analyze trades");
@@ -548,7 +589,7 @@ export function RobinhoodTransactionsTable({
     if (!analysis) return;
     downloadText(
       analysis,
-      `robinhood-trade-analysis-${new Date().toISOString().slice(0, 10)}.md`,
+      `broker-trade-analysis-${new Date().toISOString().slice(0, 10)}.md`,
       "text/markdown;charset=utf-8"
     );
   };
@@ -1200,15 +1241,22 @@ export function RobinhoodTransactionsTable({
                       {formatOrderDate(order.executed_time || order.created_time)}
                     </TableCell>
                     <TableCell>
-                      <button
-                        type="button"
-                        className="font-semibold hover:text-primary hover:underline"
-                        onClick={() =>
-                          void onSymbolFilterChange(order.underlying_symbol || order.chain_symbol || undefined)
-                        }
-                      >
-                        {order.underlying_symbol || order.chain_symbol || "-"}
-                      </button>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          className="font-semibold hover:text-primary hover:underline"
+                          onClick={() =>
+                            void onSymbolFilterChange(order.underlying_symbol || order.chain_symbol || undefined)
+                          }
+                        >
+                          {order.underlying_symbol || order.chain_symbol || "-"}
+                        </button>
+                        {order.broker === "ibkr" && (
+                          <Badge variant="secondary" className="text-[10px]">
+                            IBKR
+                          </Badge>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell className="whitespace-nowrap text-sm">
                       <div className="flex items-center gap-2">
@@ -1379,16 +1427,23 @@ export function RobinhoodTransactionsTable({
                   </Badge>
                 </TableCell>
                 <TableCell className="font-semibold">
-                  <button
-                    type="button"
-                    className="hover:text-primary hover:underline"
-                    onClick={() => void onSymbolFilterChange(order.ticker)}
-                    title={t("portfolio.transactions.viewSymbolHistory", {
-                      symbol: order.ticker,
-                    })}
-                  >
-                    {order.ticker}
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      className="hover:text-primary hover:underline"
+                      onClick={() => void onSymbolFilterChange(order.ticker)}
+                      title={t("portfolio.transactions.viewSymbolHistory", {
+                        symbol: order.ticker,
+                      })}
+                    >
+                      {order.ticker}
+                    </button>
+                    {order.broker === "ibkr" && (
+                      <Badge variant="secondary" className="text-[10px]">
+                        IBKR
+                      </Badge>
+                    )}
+                  </div>
                 </TableCell>
                 <TableCell className="capitalize text-muted-foreground">
                   {normalizeLabel(order.order_type)}

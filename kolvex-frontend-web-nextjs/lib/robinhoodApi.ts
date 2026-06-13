@@ -79,6 +79,7 @@ export interface RobinhoodOrder {
   realized_pnl_percent?: number | null;
   wash_sale_flag?: boolean;
   wash_sale_reason?: string | null;
+  broker?: "robinhood" | "ibkr";
 }
 
 export interface RobinhoodWashSaleRiskSymbol {
@@ -124,6 +125,7 @@ export interface RobinhoodOptionOrder {
   cost_basis?: number | null;
   realized_pnl?: number | null;
   realized_pnl_percent?: number | null;
+  broker?: "robinhood" | "ibkr";
 }
 
 export interface RobinhoodOptionOrdersResponse {

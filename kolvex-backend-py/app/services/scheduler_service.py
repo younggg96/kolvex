@@ -13,6 +13,7 @@ from supabase import Client
 
 from app.core.supabase import get_supabase_service
 from app.services.snaptrade.service import SnapTradeService
+from app.services.ibkr import get_ibkr_flex_service
 from app.services.portfolio_snapshot_service import (
     calculate_position_snapshot_metrics,
     get_portfolio_snapshot_service,
@@ -127,6 +128,22 @@ class SchedulerService:
             ),
             id="robinhood_daily_sync",
             name="Robinhood 每日自动同步 - 下午 2:15 PST",
+            replace_existing=True,
+            misfire_grace_time=7200,
+            max_instances=1,
+            coalesce=True,
+        )
+
+        self.scheduler.add_job(
+            self.sync_all_ibkr_accounts,
+            CronTrigger(
+                day_of_week="mon-fri",
+                hour=14,
+                minute=30,
+                timezone="America/Los_Angeles",
+            ),
+            id="ibkr_daily_sync",
+            name="IBKR Flex 每日自动同步 - 下午 2:30 PST",
             replace_existing=True,
             misfire_grace_time=7200,
             max_instances=1,
@@ -410,6 +427,10 @@ class SchedulerService:
     async def trigger_robinhood_sync_now(self) -> Dict[str, Any]:
         logger.info("手动触发所有 Robinhood 账户同步任务")
         return await self.sync_all_robinhood_accounts()
+
+    async def sync_all_ibkr_accounts(self) -> Dict[str, Any]:
+        logger.info("开始执行 IBKR Flex 每日同步任务")
+        return await get_ibkr_flex_service().sync_all_connected()
         
     def get_jobs_info(self) -> List[Dict[str, Any]]:
         """获取所有定时任务信息"""
@@ -489,6 +510,5 @@ def stop_scheduler():
     if _scheduler_instance:
         _scheduler_instance.stop()
         _scheduler_instance = None
-
 
 

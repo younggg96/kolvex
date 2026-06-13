@@ -82,4 +82,3 @@ async def disconnect_snaptrade(
             status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to disconnect: {str(e)}",
         )
-

@@ -14,7 +14,11 @@ import { PortfolioSkeleton } from "./PortfolioSkeleton";
 import { PortfolioStatsGrid } from "./PortfolioStatsGrid";
 import { PortfolioHeaderActions } from "./PortfolioHeaderActions";
 import { PortfolioPerformanceChart } from "./PortfolioPerformanceChart";
-import { NotConnectedState, InitialSyncState } from "./ConnectionStates";
+import {
+  IbkrConnectDialog,
+  NotConnectedState,
+  InitialSyncState,
+} from "./ConnectionStates";
 import { AccountCard } from "./AccountCard";
 import { DisconnectDialog } from "./DisconnectDialog";
 import { PortfolioAIAnalysis } from "./PortfolioAIAnalysis";
@@ -44,6 +48,7 @@ export default function PortfolioHoldings({
 }: PortfolioHoldingsProps) {
   const { t, locale } = useTranslation();
   const [disconnectDialogOpen, setDisconnectDialogOpen] = useState(false);
+  const [ibkrConnectDialogOpen, setIbkrConnectDialogOpen] = useState(false);
   const [expandedAccounts, setExpandedAccounts] = useState<Set<string>>(
     new Set()
   );
@@ -77,6 +82,7 @@ export default function PortfolioHoldings({
     disconnecting,
     copied,
     handleConnect,
+    handleConnectIbkr,
     handleConnectRobinhood,
     handleResetRobinhoodAuth,
     handleLoadMoreRobinhoodOrders,
@@ -200,7 +206,7 @@ export default function PortfolioHoldings({
           onTogglePublic: handleTogglePublic,
           onCopyShareLink: handleCopyShareLink,
           copied,
-          onConnect: handleConnect,
+          onConnect: () => setIbkrConnectDialogOpen(true),
           onDisconnect: () => setDisconnectDialogOpen(true),
           onDownload: handleDownload,
         });
@@ -218,7 +224,6 @@ export default function PortfolioHoldings({
     handleSync,
     handleTogglePublic,
     handleCopyShareLink,
-    handleConnect,
     handleDownload,
   ]);
 
@@ -265,11 +270,13 @@ export default function PortfolioHoldings({
     return <PortfolioSkeleton />;
   }
 
-  // State 1: Not registered
-  if (!status?.is_registered) {
+  // No live brokerage authorization yet. A SnapTrade user registration by
+  // itself is not a broker connection, so keep the broker choices visible.
+  if (!status?.is_connected) {
     return (
       <NotConnectedState
         onConnect={handleConnect}
+        onConnectIbkr={handleConnectIbkr}
         onConnectRobinhood={handleConnectRobinhood}
         onResetRobinhoodAuth={handleResetRobinhoodAuth}
         connecting={connecting}
@@ -278,8 +285,8 @@ export default function PortfolioHoldings({
     );
   }
 
-  // State 2: Registered but not synced
-  if (!status?.is_connected) {
+  // Broker is authorized remotely, but its accounts have not been imported.
+  if (status.accounts_count === 0) {
     return <InitialSyncState onSync={handleSync} syncing={syncing} />;
   }
 
@@ -294,7 +301,7 @@ export default function PortfolioHoldings({
           onTogglePublic={handleTogglePublic}
           onCopyShareLink={handleCopyShareLink}
           copied={copied}
-          onConnect={handleConnect}
+          onConnect={() => setIbkrConnectDialogOpen(true)}
           onDisconnect={() => setDisconnectDialogOpen(true)}
           onDownload={handleDownload}
         />
@@ -482,6 +489,12 @@ export default function PortfolioHoldings({
         onOpenChange={setDisconnectDialogOpen}
         onDisconnect={handleDisconnectAndClose}
         disconnecting={disconnecting}
+      />
+      <IbkrConnectDialog
+        open={ibkrConnectDialogOpen}
+        onOpenChange={setIbkrConnectDialogOpen}
+        onConnect={handleConnectIbkr}
+        connecting={connecting}
       />
     </div>
   );

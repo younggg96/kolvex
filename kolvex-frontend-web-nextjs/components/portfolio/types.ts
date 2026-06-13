@@ -43,6 +43,10 @@ export interface PortfolioHoldingsProps {
 
 export interface ConnectionStateProps {
   onConnect: () => Promise<void>;
+  onConnectIbkr: (credentials: {
+    flex_token: string;
+    flex_query_id: string;
+  }) => Promise<void>;
   onConnectRobinhood: (credentials: {
     username: string;
     password: string;
