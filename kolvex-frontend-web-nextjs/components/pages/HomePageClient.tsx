@@ -3,7 +3,6 @@
 import React, { useEffect } from "react";
 import BaseLayout from "@/components/layout/BaseLayout";
 import LandingHero from "@/components/landing/LandingHero";
-import LandingStockTicker from "@/components/landing/LandingStockTicker";
 import LandingHowItWorks from "@/components/landing/LandingHowItWorks";
 import LandingCTA from "@/components/landing/LandingCTA";
 
@@ -35,9 +34,6 @@ export default function HomePageClient() {
       <div className="flex flex-col w-full">
         {/* Hero Section - Main attention grabber */}
         <LandingHero />
-
-        {/* Stock Ticker - Social proof & real-time data */}
-        <LandingStockTicker />
 
         {/* How It Works - Reduce friction */}
         <LandingHowItWorks />
