@@ -7,10 +7,8 @@ import Image from "next/image";
 import Cropper from "react-easy-crop";
 import type { Area, Point } from "react-easy-crop";
 import {
-  CreditCard,
   Bell,
   Settings,
-  Sparkles,
   Globe,
   Sun,
   Moon,
@@ -40,7 +38,6 @@ import {
 import { toast } from "sonner";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import SectionCard from "@/components/layout/SectionCard";
-import PricingCard from "@/components/common/PricingCard";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useTranslation, SUPPORTED_LOCALES } from "@/lib/i18n";
 import type { Locale } from "@/lib/i18n";
@@ -84,70 +81,8 @@ import {
 const settingsTabDefs = [
   { value: "account", icon: User, labelKey: "settings.tabs.account" },
   { value: "api-keys", icon: Key, labelKey: "settings.tabs.apiKeys" },
-  { value: "billing", icon: CreditCard, labelKey: "settings.tabs.billing" },
   { value: "notifications", icon: Bell, labelKey: "settings.tabs.notifications" },
   { value: "preferences", icon: Settings, labelKey: "settings.tabs.preferences" },
-];
-
-const getPricingPlans = (currentMembership: string, t: (key: string) => string) => [
-  {
-    name: t("settings.billing.plans.free.name"),
-    price: 0,
-    features: [
-      { text: t("settings.billing.plans.free.features.basicData"), included: true },
-      { text: t("settings.billing.plans.free.features.watchlist5"), included: true },
-      { text: t("settings.billing.plans.free.features.dailyNews"), included: true },
-      { text: t("settings.billing.plans.free.features.realTimeData"), included: false },
-      { text: t("settings.billing.plans.free.features.aiAnalysis"), included: false },
-    ],
-    buttonText: currentMembership === "FREE" ? t("common.currentPlan") : t("common.downgrade"),
-    buttonVariant: "outline" as const,
-    buttonDisabled: currentMembership === "FREE",
-    badge:
-      currentMembership === "FREE"
-        ? { icon: Sparkles, text: t("common.currentPlan") }
-        : undefined,
-    highlight: currentMembership === "FREE",
-  },
-  {
-    name: t("settings.billing.plans.pro.name"),
-    price: 29,
-    features: [
-      { text: t("settings.billing.plans.pro.features.realTimeData"), included: true, highlighted: true },
-      { text: t("settings.billing.plans.pro.features.unlimitedWatchlist"), included: true, highlighted: true },
-      { text: t("settings.billing.plans.pro.features.aiAnalysis"), included: true, highlighted: true },
-      { text: t("settings.billing.plans.pro.features.advancedCharts"), included: true, highlighted: true },
-      { text: t("settings.billing.plans.pro.features.prioritySupport"), included: true, highlighted: true },
-    ],
-    buttonText: currentMembership === "PRO" ? t("common.currentPlan") : t("common.upgrade"),
-    buttonVariant: "default" as const,
-    buttonDisabled: currentMembership === "PRO",
-    badge:
-      currentMembership === "PRO"
-        ? { icon: Sparkles, text: t("common.currentPlan") }
-        : undefined,
-    highlight: currentMembership === "PRO",
-    popularLabel: t("settings.billing.plans.pro.popular"),
-  },
-  {
-    name: t("settings.billing.plans.enterprise.name"),
-    price: 99,
-    features: [
-      { text: t("settings.billing.plans.enterprise.features.everythingInPro"), included: true },
-      { text: t("settings.billing.plans.enterprise.features.customAI"), included: true },
-      { text: t("settings.billing.plans.enterprise.features.apiAccess"), included: true },
-      { text: t("settings.billing.plans.enterprise.features.teamCollaboration"), included: true },
-      { text: t("settings.billing.plans.enterprise.features.dedicatedSupport"), included: true },
-    ],
-    buttonText: currentMembership === "ENTERPRISE" ? t("common.currentPlan") : t("common.upgrade"),
-    buttonVariant: "default" as const,
-    buttonDisabled: currentMembership === "ENTERPRISE",
-    badge:
-      currentMembership === "ENTERPRISE"
-        ? { icon: Sparkles, text: t("common.currentPlan") }
-        : undefined,
-    highlight: currentMembership === "ENTERPRISE",
-  },
 ];
 
 function SettingsContent() {
@@ -273,9 +208,8 @@ function SettingsContent() {
 
     // Get tab from URL
     const tab = searchParams.get("tab");
-    if (tab) {
-      setActiveTab(tab);
-    }
+    const validTab = settingsTabDefs.some((definition) => definition.value === tab);
+    setActiveTab(validTab && tab ? tab : "account");
   }, [searchParams]);
 
   const handleTabChange = (value: string) => {
@@ -1119,25 +1053,6 @@ function SettingsContent() {
                             })}
                           </div>
                         </>
-                      )}
-                    </div>
-                  </SectionCard>
-                </TabsContent>
-
-                {/* Billing Tab */}
-                <TabsContent value="billing" className="mt-0">
-                  <SectionCard
-                    title={t("settings.billing.title")}
-                    useSectionHeader
-                    sectionHeaderIcon={CreditCard}
-                    sectionHeaderSubtitle={t("settings.billing.subtitle")}
-                  >
-                    {/* Pricing Cards */}
-                    <div className="px-4 sm:px-6 mt-0 sm:mt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 md:gap-6 mb-4 sm:mb-6">
-                      {getPricingPlans(profile?.membership || "FREE", t).map(
-                        (plan) => (
-                          <PricingCard key={plan.name} {...plan} />
-                        )
                       )}
                     </div>
                   </SectionCard>

@@ -1,23 +1,16 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
-import TypewriterText from "@/components/common/TypewriterText";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import {
-  ArrowRight,
-  Shield,
-  Zap,
-  Users,
-} from "lucide-react";
+import { ArrowRight, LockKeyhole, Shield } from "lucide-react";
 import { useTranslation } from "@/lib/i18n";
 
 function TrustBadges() {
   const { t } = useTranslation();
   const badges = [
-    { icon: Shield, label: t("landing.hero.trustBadges.security") },
-    { icon: Zap, label: t("landing.hero.trustBadges.realTime") },
-    { icon: Users, label: t("landing.hero.trustBadges.investors") },
+    { icon: Shield, label: t("landing.hero.trustBadges.readOnly") },
+    { icon: LockKeyhole, label: t("landing.hero.trustBadges.encrypted") },
   ];
 
   return (
@@ -48,7 +41,7 @@ export default function LandingHero() {
   return (
     <section
       ref={heroRef}
-      className="relative min-h-[90vh] flex items-center overflow-hidden pt-20 pb-16 md:pt-24 md:pb-24"
+      className="relative min-h-[72vh] flex items-center overflow-hidden pt-16 pb-14 md:pt-20 md:pb-20"
     >
       <div className="container px-4 mx-auto relative z-10">
         <div className="max-w-4xl">
@@ -66,7 +59,7 @@ export default function LandingHero() {
             {t("landing.hero.badge")}
           </div>
 
-          {/* Headline — left-aligned, no gradient text */}
+          {/* Headline */}
           <h1
             className={`text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight leading-[1.1] mb-6 transition-all duration-700 ${
               isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
@@ -80,17 +73,7 @@ export default function LandingHero() {
               {t("landing.hero.headline")}
             </span>
             <span className="block text-primary mt-1">
-              <TypewriterText
-                phrases={[
-                  "Social Intelligence",
-                  "AI-Powered Analysis",
-                  "Real-Time Signals",
-                  "Smart Money Tracking",
-                ]}
-                typingSpeed={90}
-                deletingSpeed={35}
-                delayBetweenPhrases={2500}
-              />
+              {t("landing.hero.headlineHighlight")}
             </span>
           </h1>
 
@@ -146,13 +129,6 @@ export default function LandingHero() {
         </div>
       </div>
 
-      {/* Subtle gradient — not neon, warm tinted */}
-      <div
-        className="absolute top-0 right-0 w-1/2 h-full pointer-events-none"
-        style={{
-          background: "radial-gradient(ellipse 80% 60% at 70% 40%, oklch(55% 0.15 145 / 0.06), transparent 70%)",
-        }}
-      />
     </section>
   );
 }

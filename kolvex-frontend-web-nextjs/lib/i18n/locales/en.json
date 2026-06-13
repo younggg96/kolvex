@@ -87,19 +87,20 @@
   },
   "landing": {
     "hero": {
-      "badge": "Powered by AI",
-      "headline": "Invest Smarter with",
+      "badge": "Broker data and trade review",
+      "headline": "Kolvex Portfolio Workspace",
+      "headlineHighlight": "Give every trade its full context",
       "phrases": [
         "Social Intelligence",
         "AI-Powered Analysis",
         "Real-Time Signals",
         "Smart Money Tracking"
       ],
-      "subheadline": "Track influential voices, decode market sentiment, and discover opportunities before they trend. Join thousands of investors gaining an edge with AI.",
-      "startFreeTrial": "Start Free Trial",
+      "subheadline": "Connect Robinhood or Interactive Brokers, organize stock and option positions, trades, P&L, and wash-sale risk, then review them with your preferred AI model.",
+      "startFreeTrial": "Connect My Broker",
       "trustBadges": {
-        "security": "Bank-Level Security",
-        "realTime": "Real-Time Data",
+        "readOnly": "Read-only broker sync",
+        "encrypted": "Encrypted connection credentials",
         "investors": "5,000+ Investors"
       },
       "preview": {
@@ -181,44 +182,44 @@
       }
     },
     "howItWorks": {
-      "badge": "HOW IT WORKS",
-      "title": "Start in 4 simple steps",
-      "subtitle": "From signup to your first AI-powered insight in under 2 minutes. No complex setup, no learning curve.",
+      "badge": "THE WORKFLOW",
+      "title": "From broker connection to trade review",
+      "subtitle": "Keep data organized, surface risk clearly, and carry selected trades into export or analysis.",
       "steps": [
         {
-          "title": "Create Your Account",
-          "description": "Sign up in seconds with email or social login. No credit card required.",
+          "title": "Connect a Broker",
+          "description": "Connect Robinhood or Interactive Brokers with read-only access.",
           "details": [
-            "Free forever tier available",
-            "Connect social accounts",
-            "Set up in 30 seconds"
+            "Robinhood account sync",
+            "Official IBKR Flex integration",
+            "Encrypted connection credentials"
           ]
         },
         {
-          "title": "Select Your KOLs",
-          "description": "Choose from 2,500+ influential investors and analysts to track.",
+          "title": "Sync Your Portfolio",
+          "description": "Bring holdings, stock trades, and option activity into one view.",
           "details": [
-            "Curated expert lists",
-            "Custom watchlists",
-            "Multi-platform coverage"
+            "Automatic daily sync",
+            "Stocks and options",
+            "History filters and CSV export"
           ]
         },
         {
-          "title": "Get AI Insights",
-          "description": "Our AI analyzes posts, extracts sentiment, and identifies signals.",
+          "title": "Review Risk and Performance",
+          "description": "Understand P&L, sell timing, and current wash-sale exposure.",
           "details": [
-            "Real-time processing",
-            "94% accuracy rate",
-            "Actionable alerts"
+            "Realized and unrealized P&L",
+            "Wash-sale risk list",
+            "Post-sale performance review"
           ]
         },
         {
-          "title": "Make Better Decisions",
-          "description": "Use social intelligence to time your entries and exits perfectly.",
+          "title": "Improve Your Process",
+          "description": "Use your preferred AI model and quantitative risk plans.",
           "details": [
-            "Data-driven trades",
-            "Reduced emotional bias",
-            "Consistent returns"
+            "AI Markdown trade review",
+            "Stop-loss and take-profit plans",
+            "Strategy backtesting"
           ]
         }
       ]
@@ -235,10 +236,10 @@
       }
     },
     "cta": {
-      "title": "Ready to invest with",
-      "titleHighlight": "AI-powered intelligence?",
-      "subtitle": "Join thousands of investors who are already using social intelligence to make better trading decisions. Start free, no credit card required.",
-      "getStarted": "Get Started Free",
+      "title": "Turn scattered trading data",
+      "titleHighlight": "into an investment record you can improve",
+      "subtitle": "Connect one broker account and let Kolvex organize your positions, transactions, risk, and review context.",
+      "getStarted": "Organize My Portfolio",
       "contactUs": "Contact Us",
       "trust": {
         "security": "Bank-level security",

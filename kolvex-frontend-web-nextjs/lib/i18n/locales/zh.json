@@ -87,14 +87,15 @@
   },
   "landing": {
     "hero": {
-      "badge": "AI 驱动",
-      "headline": "更智能地投资",
+      "badge": "券商数据与交易复盘",
+      "headline": "Kolvex 投资组合工作台",
+      "headlineHighlight": "让每一笔交易都有上下文",
       "phrases": ["社交智能", "AI 驱动分析", "实时信号", "聪明资金追踪"],
-      "subheadline": "追踪意见领袖，解码市场情绪，在趋势形成之前发现机会。加入数千名借助 AI 获得优势的投资者。",
-      "startFreeTrial": "免费开始",
+      "subheadline": "连接 Robinhood 或 Interactive Brokers，统一管理股票与期权持仓、交易历史、盈亏和 wash sale 风险，再用您选择的 AI 模型完成复盘。",
+      "startFreeTrial": "连接我的券商",
       "trustBadges": {
-        "security": "银行级安全",
-        "realTime": "实时数据",
+        "readOnly": "只读券商同步",
+        "encrypted": "连接凭证加密存储",
         "investors": "5,000+ 投资者"
       },
       "preview": {
@@ -168,29 +169,29 @@
       }
     },
     "howItWorks": {
-      "badge": "使用流程",
-      "title": "4 个简单步骤即可开始",
-      "subtitle": "从注册到获得第一个 AI 洞察不到 2 分钟。无需复杂设置，无学习成本。",
+      "badge": "实际工作流",
+      "title": "从连接账户到完成交易复盘",
+      "subtitle": "数据自动归档，风险集中呈现，分析结果可以继续筛选、导出和验证。",
       "steps": [
         {
-          "title": "创建账户",
-          "description": "通过邮箱或社交账号几秒钟内完成注册。无需信用卡。",
-          "details": ["永久免费版可用", "连接社交账号", "30 秒完成设置"]
+          "title": "连接券商",
+          "description": "通过只读方式连接 Robinhood 或 Interactive Brokers。",
+          "details": ["Robinhood 账户同步", "IBKR Flex 官方直连", "连接凭证加密存储"]
         },
         {
-          "title": "选择 KOL",
-          "description": "从 2,500+ 位有影响力的投资者和分析师中选择追踪对象。",
-          "details": ["精选专家列表", "自定义关注列表", "多平台覆盖"]
+          "title": "同步投资组合",
+          "description": "把持仓、股票交易和期权活动整理到同一个视图。",
+          "details": ["每日自动同步", "股票与期权数据", "历史筛选和 CSV 导出"]
         },
         {
-          "title": "获取 AI 洞察",
-          "description": "我们的 AI 分析帖子、提取情绪、识别信号。",
-          "details": ["实时处理", "94% 准确率", "可操作的提醒"]
+          "title": "检查风险与表现",
+          "description": "查看真实盈亏、卖出时机和当前 wash sale 风险。",
+          "details": ["已实现与未实现盈亏", "Wash sale 风险清单", "卖出后走势复盘"]
         },
         {
-          "title": "做出更好的决策",
-          "description": "利用社交智能精准把握买入和卖出时机。",
-          "details": ["数据驱动交易", "减少情绪偏差", "稳定收益"]
+          "title": "改进交易流程",
+          "description": "使用您选择的 AI 模型和量化风控计划复盘交易。",
+          "details": ["AI Markdown 交易复盘", "止损止盈计划", "策略回测"]
         }
       ]
     },
@@ -206,10 +207,10 @@
       }
     },
     "cta": {
-      "title": "准备好使用",
-      "titleHighlight": "AI 驱动的智能投资了吗？",
-      "subtitle": "加入数千名已在使用社交智能做出更好交易决策的投资者。免费开始，无需信用卡。",
-      "getStarted": "免费开始",
+      "title": "把分散的交易数据",
+      "titleHighlight": "变成可以持续改进的投资记录",
+      "subtitle": "先连接一个券商账户，Kolvex 会帮您整理持仓、交易、风险和复盘上下文。",
+      "getStarted": "开始整理投资组合",
       "contactUs": "联系我们",
       "trust": {
         "security": "银行级安全",

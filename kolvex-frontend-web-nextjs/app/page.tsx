@@ -2,27 +2,29 @@ import { Metadata } from "next";
 import HomePageClient from "@/components/pages/HomePageClient";
 
 export const metadata: Metadata = {
-  title: "Kolvex - AI-Powered Investment Intelligence",
+  title: "Kolvex - Broker Portfolio and AI Trade Review",
   description:
-    "Track social media KOLs, monitor retail sentiment, and get AI-powered investment analysis across multiple platforms",
+    "Connect Robinhood or Interactive Brokers, sync holdings and trades, review P&L and wash-sale risk, and analyze transactions with your preferred AI model.",
   keywords: [
-    "stock analysis",
-    "investment intelligence",
-    "social media tracking",
-    "KOL monitoring",
-    "AI investment",
+    "broker portfolio",
+    "trade journal",
+    "wash sale tracking",
+    "options trading history",
+    "AI trade review",
+    "Robinhood portfolio",
+    "Interactive Brokers Flex",
   ],
   openGraph: {
-    title: "Kolvex - AI-Powered Investment Intelligence",
+    title: "Kolvex - Broker Portfolio and AI Trade Review",
     description:
-      "Track social media KOLs, monitor retail sentiment, and get AI-powered investment analysis",
+      "Sync holdings and trades, review portfolio risk, and improve your investment process with AI.",
     type: "website",
   },
   twitter: {
     card: "summary",
-    title: "Kolvex - AI-Powered Investment Intelligence",
+    title: "Kolvex - Broker Portfolio and AI Trade Review",
     description:
-      "Track social media KOLs, monitor retail sentiment, and get AI-powered investment analysis",
+      "Sync holdings and trades, review portfolio risk, and improve your investment process with AI.",
   },
   icons: {
     icon: "/icon.svg",

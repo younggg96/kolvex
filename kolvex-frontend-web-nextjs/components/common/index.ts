@@ -7,7 +7,6 @@ export * from "./LoadingSkeleton";
 export { default as LoadingSpinner } from "./LoadingSpinner";
 export { default as LogoIcon } from "./LogoIcon";
 export * from "./PageTransition";
-export { default as PricingCard } from "./PricingCard";
 export { default as SearchWithAutocomplete } from "./SearchWithAutocomplete";
 export { default as SentimentBadge } from "./SentimentBadge";
 export * from "./SourceToggle";

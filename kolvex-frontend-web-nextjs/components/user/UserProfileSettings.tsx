@@ -205,28 +205,6 @@ export default function UserProfileSettings() {
         </form>
       </section>
 
-      {/* 会员信息 */}
-      <section className="bg-white rounded-lg shadow p-6 mb-6">
-        <h2 className="text-xl font-semibold mb-4">会员信息</h2>
-
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-sm text-gray-600">当前会员等级</p>
-            <p className="text-lg font-semibold mt-1">
-              {profile?.membership === "FREE" && "免费版"}
-              {profile?.membership === "PRO" && "Pro 版"}
-              {profile?.membership === "ENTERPRISE" && "企业版"}
-            </p>
-          </div>
-
-          {profile?.membership === "FREE" && (
-            <button className="bg-gradient-to-r from-blue-500 to-purple-600 text-white px-6 py-2 rounded-lg hover:from-blue-600 hover:to-purple-700 transition">
-              升级到 Pro
-            </button>
-          )}
-        </div>
-      </section>
-
       {/* 主题设置 */}
       <section className="bg-white rounded-lg shadow p-6 mb-6">
         <h2 className="text-xl font-semibold mb-4">主题设置</h2>

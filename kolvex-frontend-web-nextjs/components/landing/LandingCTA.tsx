@@ -3,7 +3,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Zap, Shield, Clock } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { useTranslation } from "@/lib/i18n";
 
 export default function LandingCTA() {
@@ -26,7 +26,7 @@ export default function LandingCTA() {
   return (
     <section
       ref={sectionRef}
-      className="py-20 md:py-28 lg:py-36 relative"
+      className="py-16 md:py-24 relative"
     >
       <div className="container px-4 mx-auto">
         <div className="max-w-3xl mx-auto text-center">
@@ -58,9 +58,9 @@ export default function LandingCTA() {
             {t("landing.cta.subtitle")}
           </p>
 
-          {/* CTA Buttons */}
+          {/* CTA */}
           <div
-            className={`flex flex-col sm:flex-row gap-3 justify-center items-center mb-10 md:mb-14 transition-all duration-700 ${
+            className={`flex justify-center transition-all duration-700 ${
               isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
             }`}
             style={{
@@ -77,36 +77,8 @@ export default function LandingCTA() {
                 />
               </Button>
             </Link>
-            <Link href="/contact">
-              <Button variant="outline" size="lg">
-                {t("landing.cta.contactUs")}
-              </Button>
-            </Link>
           </div>
 
-          {/* Trust indicators — clean, no decoration */}
-          <div
-            className={`flex flex-wrap justify-center gap-6 text-muted-foreground text-sm transition-all duration-700 ${
-              isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
-            }`}
-            style={{
-              transitionTimingFunction: "cubic-bezier(0.25, 1, 0.5, 1)",
-              transitionDelay: "400ms",
-            }}
-          >
-            <div className="flex items-center gap-2">
-              <Shield size={15} className="text-primary" />
-              <span>{t("landing.cta.trust.security")}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Clock size={15} className="text-primary" />
-              <span>{t("landing.cta.trust.setup")}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Zap size={15} className="text-primary" />
-              <span>{t("landing.cta.trust.cancel")}</span>
-            </div>
-          </div>
         </div>
       </div>
     </section>

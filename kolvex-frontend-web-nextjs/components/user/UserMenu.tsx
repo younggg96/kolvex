@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { ChevronDown, User, CreditCard, Bell, LogOut } from "lucide-react";
+import { ChevronDown, User, Bell, LogOut } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -109,13 +109,6 @@ export default function UserMenu({ isCollapsed = false }: UserMenuProps) {
         >
           <User className="w-3 h-3" />
           <span>{t("userMenu.account")}</span>
-        </DropdownMenuItem>
-
-        <DropdownMenuItem
-          onClick={() => router.push("/dashboard/settings?tab=billing")}
-        >
-          <CreditCard className="w-3 h-3" />
-          <span>{t("userMenu.billing")}</span>
         </DropdownMenuItem>
 
         <DropdownMenuItem
