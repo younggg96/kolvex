@@ -95,6 +95,12 @@ export async function upsertQuantAssignment(
   });
 }
 
+export async function deleteQuantAssignment(symbol: string) {
+  return apiRequest<void>(`/assignments/${encodeURIComponent(symbol)}`, {
+    method: "DELETE",
+  });
+}
+
 export async function previewQuantStrategy(payload: {
   dsl: string;
   symbol: string;

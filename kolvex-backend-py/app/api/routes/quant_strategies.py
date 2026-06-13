@@ -128,6 +128,18 @@ async def upsert_assignment(
         raise HTTPException(status_code=404, detail=str(error))
 
 
+@router.delete("/assignments/{symbol}", status_code=http_status.HTTP_204_NO_CONTENT)
+async def delete_assignment(
+    symbol: str,
+    user_id: str = Depends(get_current_user_id),
+    service: QuantStrategyService = Depends(get_quant_strategy_service),
+):
+    try:
+        await service.delete_assignment(user_id, symbol)
+    except QuantStrategyStorageNotReady as error:
+        raise HTTPException(status_code=503, detail=str(error))
+
+
 @router.post("/preview")
 async def preview_strategy(
     payload: PreviewPayload,

@@ -341,6 +341,22 @@ class QuantStrategyService:
                 ) from error
             raise
 
+    async def delete_assignment(self, user_id: str, symbol: str) -> None:
+        try:
+            (
+                self.supabase.table("quant_strategy_assignments")
+                .delete()
+                .eq("user_id", user_id)
+                .eq("symbol", symbol.upper())
+                .execute()
+            )
+        except Exception as error:
+            if _is_missing_quant_table_error(error):
+                raise QuantStrategyStorageNotReady(
+                    "Quant strategy database migration has not been applied."
+                ) from error
+            raise
+
     async def preview(self, dsl: str, symbol: str, entry_price: float) -> Dict[str, Any]:
         rules = parse_dsl(dsl)
         candles = self.market.get_history(symbol, period="6mo", interval="1d")
