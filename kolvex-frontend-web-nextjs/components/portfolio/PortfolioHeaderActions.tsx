@@ -27,7 +27,7 @@ import {
   Clock3,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
-import type { SnapTradeHoldings } from "@/lib/supabase/database.types";
+import type { PortfolioHoldings } from "@/lib/supabase/database.types";
 import PrivacySettingsDialog from "./PrivacySettingsDialog";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/lib/i18n";
@@ -37,7 +37,7 @@ export type DownloadFormat = "csv" | "json";
 export interface PortfolioHeaderActionsProps {
   syncing: boolean;
   onSync: () => void;
-  holdings: SnapTradeHoldings | null;
+  holdings: PortfolioHoldings | null;
   onTogglePublic: (isPublic: boolean) => void;
   onCopyShareLink: () => void;
   copied: boolean;

@@ -36,8 +36,8 @@ import {
   type QuantAssignment,
   type QuantStrategy,
 } from "@/lib/quantStrategyApi";
-import { formatCurrency } from "@/lib/snaptradeApi";
-import type { SnapTradePosition } from "./types";
+import { formatCurrency } from "@/lib/portfolioApi";
+import type { PortfolioPosition } from "./types";
 
 type RiskDraft = {
   strategy_id: string | null;
@@ -58,15 +58,15 @@ function numberOrNull(value: string) {
   return value && Number.isFinite(parsed) ? parsed : null;
 }
 
-function getAveragePrice(position: SnapTradePosition) {
+function getAveragePrice(position: PortfolioPosition) {
   return Number(position.average_purchase_price || 0);
 }
 
-function getCurrentPrice(position: SnapTradePosition) {
+function getCurrentPrice(position: PortfolioPosition) {
   return Number(position.price || 0);
 }
 
-function getUnits(position: SnapTradePosition) {
+function getUnits(position: PortfolioPosition) {
   return Math.abs(Number(position.units || 0));
 }
 
@@ -82,12 +82,12 @@ function hasRiskPlan(assignment?: QuantAssignment) {
 export function PositionRiskControls({
   positions,
 }: {
-  positions: SnapTradePosition[];
+  positions: PortfolioPosition[];
 }) {
   const [strategies, setStrategies] = useState<QuantStrategy[]>([]);
   const [assignments, setAssignments] = useState<Record<string, QuantAssignment>>({});
   const [selectedPosition, setSelectedPosition] =
-    useState<SnapTradePosition | null>(null);
+    useState<PortfolioPosition | null>(null);
   const [draft, setDraft] = useState<RiskDraft>(EMPTY_DRAFT);
   const [busy, setBusy] = useState(false);
   const [setupRequired, setSetupRequired] = useState(false);
@@ -129,7 +129,7 @@ export function PositionRiskControls({
     hasRiskPlan(assignments[position.symbol])
   ).length;
 
-  const openEditor = (position: SnapTradePosition) => {
+  const openEditor = (position: PortfolioPosition) => {
     const assignment = assignments[position.symbol];
     setSelectedPosition(position);
     setDraft({

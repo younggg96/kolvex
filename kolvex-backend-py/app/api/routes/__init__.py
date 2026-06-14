@@ -10,7 +10,7 @@ from app.api.routes.scraper import router as scraper_router
 from app.api.routes.stocks import router as stocks_router
 from app.api.routes.kol_tweets import router as kol_tweets_router
 from app.api.routes.kol_subscriptions import router as kol_subscriptions_router
-from app.api.routes.snaptrade import router as snaptrade_router
+from app.api.routes.portfolio import router as portfolio_router
 from app.api.routes.robinhood import router as robinhood_router
 from app.api.routes.quant_strategies import router as quant_strategies_router
 from app.api.routes.xiaohongshu import router as xiaohongshu_router
@@ -44,7 +44,7 @@ api_router.include_router(stocks_router)
 api_router.include_router(news.router)
 api_router.include_router(news_ai_router)
 api_router.include_router(market_data.router)
-api_router.include_router(snaptrade_router)
+api_router.include_router(portfolio_router)
 api_router.include_router(robinhood_router)
 api_router.include_router(quant_strategies_router)
 api_router.include_router(notifications.router)

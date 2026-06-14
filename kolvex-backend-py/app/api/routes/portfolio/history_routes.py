@@ -1,5 +1,5 @@
 """
-SnapTrade Portfolio History Routes
+Portfolio Portfolio History Routes
 Endpoints for portfolio historical data
 """
 

@@ -164,7 +164,7 @@ class IBKRFlexService:
                     "brokerage_name": "Interactive Brokers",
                     "account_name": account.get("account_name") or "IBKR Account",
                     "account_type": "Brokerage",
-                    "snaptrade_positions": positions.data or [],
+                    "portfolio_positions": positions.data or [],
                 }
             )
         return {

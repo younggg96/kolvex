@@ -333,6 +333,7 @@ async def stream_message(
     5. 完成后保存完整 AI 回复
 
     SSE 事件类型：
+    - status: Agent 当前阶段
     - token: AI 回复的文本 token
     - tool_start: Agent 开始调用工具
     - tool_end: Agent 工具调用完成
@@ -387,6 +388,9 @@ async def stream_message(
                     full_response += token
                     yield f"data: {json.dumps({'type': 'token', 'content': token})}\n\n"
 
+                elif event_type == "status":
+                    yield f"data: {json.dumps({'type': 'status', 'stage': event.get('stage', ''), 'content': event.get('content', '')})}\n\n"
+
                 elif event_type == "tool_start":
                     yield f"data: {json.dumps({'type': 'tool_start', 'tool': event.get('tool', '')})}\n\n"
 
@@ -402,19 +406,12 @@ async def stream_message(
                             role="assistant",
                             content=full_response,
                         )
-                        yield f"data: {json.dumps({'type': 'done', 'message_id': ai_msg['id'] if ai_msg else None})}\n\n"
+                        yield f"data: {json.dumps({'type': 'done', 'message_id': ai_msg['id'] if ai_msg else None, 'content': full_response, 'created_at': ai_msg.get('created_at') if ai_msg else None})}\n\n"
                     else:
                         yield f"data: {json.dumps({'type': 'done', 'message_id': None})}\n\n"
 
                 elif event_type == "error":
                     error_msg = event.get("content", "Unknown error")
-                    # 保存错误回复
-                    await save_message(
-                        user_id=current_user_id,
-                        conversation_id=conversation_id,
-                        role="assistant",
-                        content=f"Error: {error_msg}",
-                    )
                     yield f"data: {json.dumps({'type': 'error', 'content': error_msg})}\n\n"
 
         except Exception as e:

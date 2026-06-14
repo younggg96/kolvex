@@ -176,10 +176,12 @@ export interface AgentMessageResponse {
  * SSE event types from the LangGraph agent stream
  */
 export interface AgentStreamEvent {
-  type: "token" | "tool_start" | "tool_end" | "done" | "error";
+  type: "status" | "token" | "tool_start" | "tool_end" | "done" | "error";
   content?: string;
   tool?: string;
+  stage?: "routing" | "planning" | "writing" | string;
   message_id?: string;
+  created_at?: string;
 }
 
 /**
@@ -188,7 +190,7 @@ export interface AgentStreamEvent {
 export interface AgentRequestOptions {
   /** Model ID (e.g. "gpt-4o-mini", "deepseek-chat") */
   model?: string;
-  /** Active data sources: "kol", "news", "web", "portfolio" */
+  /** Active data sources: "kol", "news", "web", "portfolio", "robinhood" */
   sources?: string[];
 }
 
@@ -227,7 +229,8 @@ export async function sendAgentMessage(
 export async function streamAgentMessage(
   conversationId: string,
   content: string,
-  options?: AgentRequestOptions
+  options?: AgentRequestOptions,
+  signal?: AbortSignal
 ): Promise<Response> {
   const response = await fetch(
     `${API_PREFIX}/conversations/${conversationId}/stream`,
@@ -241,6 +244,7 @@ export async function streamAgentMessage(
         model: options?.model || undefined,
         sources: options?.sources || undefined,
       }),
+      signal,
     }
   );
 
@@ -250,4 +254,49 @@ export async function streamAgentMessage(
   }
 
   return response;
+}
+
+/**
+ * Consume an SSE response without assuming network chunks align to lines or
+ * events. Browsers may split a JSON payload anywhere in the byte stream.
+ */
+export async function readAgentStream(
+  response: Response,
+  onEvent: (event: AgentStreamEvent) => void | Promise<void>
+): Promise<void> {
+  if (!response.body) {
+    throw new Error("The chat stream returned no response body.");
+  }
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+
+  const processEventBlock = async (block: string) => {
+    const data = block
+      .split(/\r?\n/)
+      .filter((line) => line.startsWith("data:"))
+      .map((line) => line.slice(5).trimStart())
+      .join("\n");
+
+    if (!data || data === "[DONE]") return;
+    await onEvent(JSON.parse(data) as AgentStreamEvent);
+  };
+
+  while (true) {
+    const { done, value } = await reader.read();
+    buffer += decoder.decode(value, { stream: !done });
+
+    const blocks = buffer.split(/\r?\n\r?\n/);
+    buffer = blocks.pop() || "";
+    for (const block of blocks) {
+      if (block.trim()) await processEventBlock(block);
+    }
+
+    if (done) break;
+  }
+
+  if (buffer.trim()) {
+    await processEventBlock(buffer);
+  }
 }

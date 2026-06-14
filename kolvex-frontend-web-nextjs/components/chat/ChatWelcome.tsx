@@ -19,8 +19,8 @@ const PROVIDER_NAME_TO_ID: Record<string, string> = {
 };
 
 const suggestionKeys = [
-  { key: "chat.suggestions.analyzeNvidia", isChat: true },
-  { key: "chat.suggestions.explainTrends", isChat: true },
+  { key: "chat.suggestions.reviewRobinhood", isChat: true },
+  { key: "chat.suggestions.checkWashSale", isChat: true },
   { key: "chat.suggestions.latestNews", href: "/dashboard/news", isChat: false },
 ];
 

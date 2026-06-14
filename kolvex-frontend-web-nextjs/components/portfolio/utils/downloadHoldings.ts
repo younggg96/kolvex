@@ -1,5 +1,5 @@
 import { toast } from "sonner";
-import type { SnapTradeHoldings } from "../types";
+import type { PortfolioHoldings } from "../types";
 
 interface ExportPosition {
   account_name: string;
@@ -22,7 +22,7 @@ interface ExportPosition {
 }
 
 export function downloadHoldings(
-  holdings: SnapTradeHoldings,
+  holdings: PortfolioHoldings,
   format: "csv" | "json"
 ) {
   if (!holdings?.accounts) {
@@ -34,7 +34,7 @@ export function downloadHoldings(
   const allPositions: ExportPosition[] = [];
 
   holdings.accounts.forEach((account) => {
-    account.snaptrade_positions?.forEach((pos) => {
+    account.portfolio_positions?.forEach((pos) => {
       const units = typeof pos.units === "number" ? pos.units : 0;
       const price = typeof pos.price === "number" ? pos.price : 0;
       const multiplier = pos.position_type === "option" ? 100 : 1;

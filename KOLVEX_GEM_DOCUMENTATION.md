@@ -167,7 +167,6 @@ lxml              5.0.0+      # XML/HTML 解析器
 #### 第三方集成
 
 ```
-snaptrade-python-sdk 11.0.0+  # SnapTrade 券商 API
 MCP               1.0.0+      # Model Context Protocol
 ```
 
@@ -748,12 +747,12 @@ Response:
 
 ---
 
-### 6. SnapTrade 投资组合模块 (`/api/snaptrade/`)
+### 6. Portfolio 投资组合模块 (`/api/portfolio/`)
 
 #### 获取我的持仓
 
 ```http
-GET /api/snaptrade/holdings
+GET /api/portfolio/holdings
 Authorization: Bearer <token>
 ```
 
@@ -802,7 +801,7 @@ Authorization: Bearer <token>
 #### 获取公开投资组合用户
 
 ```http
-GET /api/snaptrade/public-users?limit=20&offset=0&sort_by=pnl_percent&sort_order=desc
+GET /api/portfolio/public-users?limit=20&offset=0&sort_by=pnl_percent&sort_order=desc
 ```
 
 **响应:**
@@ -829,13 +828,13 @@ GET /api/snaptrade/public-users?limit=20&offset=0&sort_by=pnl_percent&sort_order
 #### 获取用户公开持仓
 
 ```http
-GET /api/snaptrade/holdings/{user_id}
+GET /api/portfolio/holdings/{user_id}
 ```
 
 #### 切换公开分享
 
 ```http
-POST /api/snaptrade/toggle-public
+POST /api/portfolio/toggle-public
 Authorization: Bearer <token>
 Content-Type: application/json
 
@@ -847,7 +846,7 @@ Content-Type: application/json
 #### 隐藏/显示持仓
 
 ```http
-POST /api/snaptrade/positions/{position_id}/visibility
+POST /api/portfolio/positions/{position_id}/visibility
 Authorization: Bearer <token>
 Content-Type: application/json
 
@@ -859,7 +858,7 @@ Content-Type: application/json
 #### 批量隐藏/显示持仓
 
 ```http
-POST /api/snaptrade/positions/visibility/batch
+POST /api/portfolio/positions/visibility/batch
 Authorization: Bearer <token>
 Content-Type: application/json
 
@@ -872,7 +871,7 @@ Content-Type: application/json
 #### 获取隐私设置
 
 ```http
-GET /api/snaptrade/privacy-settings
+GET /api/portfolio/privacy-settings
 Authorization: Bearer <token>
 ```
 
@@ -894,7 +893,7 @@ Authorization: Bearer <token>
 #### 更新隐私设置
 
 ```http
-PUT /api/snaptrade/privacy-settings
+PUT /api/portfolio/privacy-settings
 Authorization: Bearer <token>
 Content-Type: application/json
 
@@ -1190,7 +1189,7 @@ GET /api/market-data/indices
 | Bearish   | 看跌               | 对市场/股票持悲观态度                   |
 | Neutral   | 中性               | 对市场/股票无明确倾向                   |
 | Ticker    | 股票代码           | 如 AAPL, NVDA, TSLA                     |
-| SnapTrade | 券商聚合           | 连接用户真实券商账户的服务              |
+| Portfolio | 券商聚合           | 连接用户真实券商账户的服务              |
 | Dataroma  | 持仓数据源         | 追踪超级投资者持仓的数据来源            |
 | PnL       | Profit and Loss    | 盈亏                                    |
 | 持仓      | Position/Holdings  | 用户持有的股票/期权                     |
@@ -1267,7 +1266,7 @@ kolvex/
 │   │   │       ├── auth/                # 认证路由
 │   │   │       ├── kol_tweets/          # KOL 帖子路由
 │   │   │       ├── stocks/              # 股票路由
-│   │   │       ├── snaptrade/           # SnapTrade 路由
+│   │   │       ├── portfolio/           # Portfolio 路由
 │   │   │       ├── dataroma/            # Dataroma 路由
 │   │   │       ├── xiaohongshu/         # 小红书路由
 │   │   │       ├── notifications.py     # 通知路由
@@ -1279,7 +1278,7 @@ kolvex/
 │   │   ├── models/                      # 数据模型
 │   │   ├── schemas/                     # Pydantic Schemas
 │   │   └── services/                    # 业务服务层
-│   │       ├── snaptrade.py
+│   │       ├── portfolio.py
 │   │       ├── kol_service.py
 │   │       └── ...
 │   ├── migrations/                      # 数据库迁移

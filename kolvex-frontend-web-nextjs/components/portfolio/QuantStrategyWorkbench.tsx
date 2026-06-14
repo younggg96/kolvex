@@ -24,7 +24,7 @@ import {
   type QuantPreview,
   type QuantStrategy,
 } from "@/lib/quantStrategyApi";
-import type { SnapTradePosition } from "./types";
+import type { PortfolioPosition } from "./types";
 
 const DEFAULT_DSL = `# First matching rule wins
 WHEN price <= entry_price * 0.92 THEN stop_loss
@@ -35,7 +35,7 @@ WHEN rsi14 > 70 AND price < ema20 THEN reduce`;
 export function QuantStrategyWorkbench({
   positions,
 }: {
-  positions: SnapTradePosition[];
+  positions: PortfolioPosition[];
 }) {
   const [strategies, setStrategies] = useState<QuantStrategy[]>([]);
   const [selectedId, setSelectedId] = useState<string>("new");

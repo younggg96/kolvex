@@ -49,60 +49,6 @@ async def get_scheduled_jobs(
         )
 
 
-@router.post("/sync-holdings/trigger", response_model=Dict[str, Any])
-async def trigger_holdings_sync(
-    current_user_id: str = Depends(get_current_user_id),
-    scheduler: SchedulerService = Depends(get_scheduler_service),
-):
-    """
-    手动触发所有用户持仓同步
-    
-    立即执行一次所有用户的持仓同步任务，无需等待定时任务
-    注意：这个操作可能需要较长时间，建议管理员使用
-    """
-    try:
-        logger.info(f"用户 {current_user_id} 手动触发持仓同步")
-        result = await scheduler.trigger_sync_now()
-        return {
-            "success": True,
-            "message": "Sync completed",
-            "details": result,
-        }
-    except Exception as e:
-        logger.error(f"手动触发持仓同步失败: {e}")
-        raise HTTPException(
-            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to trigger sync: {str(e)}",
-        )
-
-
-@router.post("/portfolio-snapshot/trigger", response_model=Dict[str, Any])
-async def trigger_portfolio_snapshot(
-    current_user_id: str = Depends(get_current_user_id),
-    scheduler: SchedulerService = Depends(get_scheduler_service),
-):
-    """
-    📸 手动触发 Portfolio Snapshot
-    
-    立即为所有用户记录投资组合快照，用于生成盈利曲线
-    注意：这个操作可能需要较长时间
-    """
-    try:
-        logger.info(f"用户 {current_user_id} 手动触发 Portfolio Snapshot")
-        result = await scheduler.record_all_users_snapshots()
-        return {
-            "success": True,
-            "message": f"Snapshot completed for {result.get('success_count', 0)}/{result.get('total_users', 0)} users",
-            "details": result,
-        }
-    except Exception as e:
-        logger.error(f"手动触发 Portfolio Snapshot 失败: {e}")
-        raise HTTPException(
-            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to trigger snapshot: {str(e)}",
-        )
-
-
 @router.post("/robinhood-sync/trigger", response_model=Dict[str, Any])
 async def trigger_robinhood_sync(
     current_user_id: str = Depends(get_current_user_id),
@@ -286,7 +232,6 @@ async def reschedule_job(
             status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to reschedule job: {str(e)}",
         )
-
 
 
 

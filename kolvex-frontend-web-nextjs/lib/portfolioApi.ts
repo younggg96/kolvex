@@ -1,19 +1,18 @@
 /**
- * SnapTrade API Module
+ * Portfolio API Module
  * Client-side API calls for portfolio sharing functionality
  */
 
 import type {
-  SnapTradeConnectionStatus,
-  SnapTradeHoldings,
-  SnapTradePublicHoldings,
-  SnapTradeAccount,
+  PortfolioConnectionStatus,
+  PortfolioHoldings,
+  PortfolioPublicHoldings,
   PublicUserSummary,
   PublicUsersResponse,
   PrivacySettings,
 } from "@/lib/supabase/database.types";
 
-const API_PREFIX = "/api/snaptrade";
+const API_PREFIX = "/api/portfolio";
 
 /**
  * API request wrapper
@@ -38,51 +37,10 @@ async function apiRequest<T>(
   return response.json();
 }
 
-// ========== Connection Status ==========
+// ========== Portfolio status ==========
 
-/**
- * Get current user's SnapTrade connection status
- */
-export async function getConnectionStatus(): Promise<SnapTradeConnectionStatus> {
-  return apiRequest<SnapTradeConnectionStatus>("/status");
-}
-
-/**
- * Get connection portal URL
- * @param redirectUri Optional redirect URI after connection
- */
-export async function getConnectionPortalUrl(
-  redirectUri?: string
-): Promise<string> {
-  const params = redirectUri
-    ? `?redirect_uri=${encodeURIComponent(redirectUri)}`
-    : "";
-  const result = await apiRequest<{ redirect_url: string }>(
-    `/connect${params}`,
-    { method: "POST" }
-  );
-  return result.redirect_url;
-}
-
-// ========== Sync Operations ==========
-
-/**
- * Sync brokerage accounts
- */
-export async function syncAccounts(): Promise<SnapTradeAccount[]> {
-  return apiRequest<SnapTradeAccount[]>("/sync/accounts", { method: "POST" });
-}
-
-/**
- * Sync positions data
- */
-export async function syncPositions(): Promise<{
-  message: string;
-  success: boolean;
-}> {
-  return apiRequest<{ message: string; success: boolean }>("/sync/positions", {
-    method: "POST",
-  });
+export async function getConnectionStatus(): Promise<PortfolioConnectionStatus> {
+  return apiRequest<PortfolioConnectionStatus>("/status");
 }
 
 // ========== Holdings Data ==========
@@ -90,8 +48,8 @@ export async function syncPositions(): Promise<{
 /**
  * Get current user's holdings data
  */
-export async function getMyHoldings(): Promise<SnapTradeHoldings> {
-  return apiRequest<SnapTradeHoldings>("/holdings");
+export async function getMyHoldings(): Promise<PortfolioHoldings> {
+  return apiRequest<PortfolioHoldings>("/holdings");
 }
 
 /**
@@ -100,9 +58,9 @@ export async function getMyHoldings(): Promise<SnapTradeHoldings> {
  */
 export async function getPublicHoldings(
   userId: string
-): Promise<SnapTradePublicHoldings | null> {
+): Promise<PortfolioPublicHoldings | null> {
   try {
-    return await apiRequest<SnapTradePublicHoldings>(`/holdings/${userId}`);
+    return await apiRequest<PortfolioPublicHoldings>(`/holdings/${userId}`);
   } catch (error) {
     // Return null for 404 errors
     if (error instanceof Error && error.message.includes("404")) {
@@ -143,18 +101,6 @@ export async function togglePublicSharing(
   return apiRequest<{ message: string; success: boolean }>("/toggle-public", {
     method: "POST",
     body: JSON.stringify({ is_public: isPublic }),
-  });
-}
-
-/**
- * Disconnect SnapTrade connection
- */
-export async function disconnectSnapTrade(): Promise<{
-  message: string;
-  success: boolean;
-}> {
-  return apiRequest<{ message: string; success: boolean }>("/disconnect", {
-    method: "DELETE",
   });
 }
 
@@ -400,10 +346,10 @@ function normalizeOptionCost(rawAveragePrice: number, currentPremium: number) {
  * Calculate total portfolio value
  * Options are multiplied by 100 (each contract represents 100 shares)
  */
-export function calculateTotalValue(holdings: SnapTradeHoldings): number {
+export function calculateTotalValue(holdings: PortfolioHoldings): number {
   let total = 0;
   for (const account of holdings.accounts || []) {
-    for (const position of account.snaptrade_positions || []) {
+    for (const position of account.portfolio_positions || []) {
       if (position.price && position.units) {
         const multiplier = position.position_type === "option" ? 100 : 1;
         total += position.price * position.units * multiplier;
@@ -418,10 +364,10 @@ export function calculateTotalValue(holdings: SnapTradeHoldings): number {
  * For options: always calculate from current value - cost basis (API returns 0)
  * For equities: use open_pnl if available
  */
-export function calculateTotalPnL(holdings: SnapTradeHoldings): number {
+export function calculateTotalPnL(holdings: PortfolioHoldings): number {
   let total = 0;
   for (const account of holdings.accounts || []) {
-    for (const position of account.snaptrade_positions || []) {
+    for (const position of account.portfolio_positions || []) {
       if (position.position_type === "option") {
         // For options: calculate P&L from current value - cost basis
         if (position.price && position.average_purchase_price) {

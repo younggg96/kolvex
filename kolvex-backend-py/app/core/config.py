@@ -48,11 +48,6 @@ class Settings(BaseSettings):
     # Benzinga API 配置
     BENZINGA_API_KEY: str = os.getenv("BENZINGA_API_KEY", "")
 
-    # SnapTrade API 配置
-    SNAPTRADE_CLIENT_ID: str = os.getenv("SNAPTRADE_CLIENT_ID", "")
-    SNAPTRADE_CONSUMER_KEY: str = os.getenv("SNAPTRADE_CONSUMER_KEY", "")
-    SNAPTRADE_WEBHOOK_SECRET: str = os.getenv("SNAPTRADE_WEBHOOK_SECRET", "")
-
     # CORS 配置
     ALLOWED_ORIGINS: Union[List[str], str] = os.getenv(
         "ALLOWED_ORIGINS", "http://localhost:3000,http://localhost:3001"

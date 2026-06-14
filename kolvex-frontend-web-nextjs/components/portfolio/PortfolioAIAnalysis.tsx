@@ -37,7 +37,7 @@ import {
     type PortfolioAnalysisResponse,
     type StockAnalysis,
     type OverallAnalysis,
-} from "@/lib/snaptradeApi";
+} from "@/lib/portfolioApi";
 
 // ============================================================
 // Types

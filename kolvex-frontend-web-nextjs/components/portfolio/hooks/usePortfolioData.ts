@@ -2,16 +2,12 @@ import { useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
 import {
   getConnectionStatus,
-  getConnectionPortalUrl,
-  syncAccounts,
-  syncPositions,
   getMyHoldings,
   getPublicHoldings,
   togglePublicSharing,
-  disconnectSnapTrade,
   togglePositionVisibility,
   getShareUrl,
-} from "@/lib/snaptradeApi";
+} from "@/lib/portfolioApi";
 import {
   connectRobinhood as connectRobinhoodBroker,
   disconnectRobinhood,
@@ -35,8 +31,8 @@ import {
   type IBKRStatus,
 } from "@/lib/ibkrApi";
 import type {
-  SnapTradeConnectionStatus,
-  SnapTradeHoldings,
+  PortfolioConnectionStatus,
+  PortfolioHoldings,
 } from "../types";
 
 interface UsePortfolioDataOptions {
@@ -53,10 +49,10 @@ interface CacheEnvelope<T> {
 }
 
 interface PortfolioRootCache {
-  status: SnapTradeConnectionStatus | null;
+  status: PortfolioConnectionStatus | null;
   robinhoodStatus: RobinhoodStatus | null;
   ibkrStatus: IBKRStatus | null;
-  holdings: SnapTradeHoldings | null;
+  holdings: PortfolioHoldings | null;
 }
 
 type RobinhoodOrdersPayload = Awaited<ReturnType<typeof getRobinhoodOrders>>;
@@ -172,7 +168,7 @@ function clearPortfolioCache(userId?: string) {
 }
 
 export function usePortfolioData({ userId, isOwner }: UsePortfolioDataOptions) {
-  const [status, setStatus] = useState<SnapTradeConnectionStatus | null>(null);
+  const [status, setStatus] = useState<PortfolioConnectionStatus | null>(null);
   const [robinhoodStatus, setRobinhoodStatus] =
     useState<RobinhoodStatus | null>(null);
   const [ibkrStatus, setIbkrStatus] = useState<IBKRStatus | null>(null);
@@ -197,7 +193,7 @@ export function usePortfolioData({ userId, isOwner }: UsePortfolioDataOptions) {
   const [loadingRobinhoodOrders, setLoadingRobinhoodOrders] = useState(false);
   const [loadingRobinhoodOptionOrders, setLoadingRobinhoodOptionOrders] =
     useState(false);
-  const [holdings, setHoldings] = useState<SnapTradeHoldings | null>(null);
+  const [holdings, setHoldings] = useState<PortfolioHoldings | null>(null);
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
   const [connecting, setConnecting] = useState(false);
@@ -452,7 +448,7 @@ export function usePortfolioData({ userId, isOwner }: UsePortfolioDataOptions) {
         // Load public holdings for other users
         const publicHoldings = await getPublicHoldings(userId);
         if (publicHoldings) {
-          // Convert public holdings to SnapTradeHoldings format
+          // Convert public holdings to PortfolioHoldings format
           setHoldings({
             accounts: publicHoldings.accounts,
             last_synced_at: publicHoldings.last_synced_at,
@@ -502,17 +498,7 @@ export function usePortfolioData({ userId, isOwner }: UsePortfolioDataOptions) {
   }, [loadData]);
 
   const handleConnect = useCallback(async () => {
-    setConnecting(true);
-    try {
-      const redirectUri = `${window.location.origin}/dashboard/portfolio?connected=true`;
-      const url = await getConnectionPortalUrl(redirectUri);
-      window.open(url, "_blank", "width=800,height=600");
-      toast.info("Please complete the broker connection in the new window");
-    } catch (error: any) {
-      toast.error(error.message || "Failed to get connection link");
-    } finally {
-      setConnecting(false);
-    }
+    toast.info("Choose Robinhood or Interactive Brokers to connect.");
   }, []);
 
   const handleConnectIbkr = useCallback(
@@ -661,10 +647,7 @@ export function usePortfolioData({ userId, isOwner }: UsePortfolioDataOptions) {
         await syncIbkr();
         syncedDirectBroker = true;
       }
-      if (!syncedDirectBroker) {
-        await syncAccounts();
-        await syncPositions();
-      }
+      if (!syncedDirectBroker) throw new Error("Connect a broker before syncing");
       clearPortfolioCache(cacheUserId);
       await loadData(true);
       toast.success("Data refreshed successfully");
@@ -734,9 +717,7 @@ export function usePortfolioData({ userId, isOwner }: UsePortfolioDataOptions) {
         await disconnectRobinhood();
       } else if (ibkrStatus?.is_connected) {
         await disconnectIbkr();
-      } else {
-        await disconnectSnapTrade();
-      }
+      } else throw new Error("No connected broker found");
       clearPortfolioCache(cacheUserId);
       setStatus(null);
       setRobinhoodStatus(null);
@@ -789,7 +770,7 @@ export function usePortfolioData({ userId, isOwner }: UsePortfolioDataOptions) {
             ...prev,
             accounts: prev.accounts.map((account) => ({
               ...account,
-              snaptrade_positions: account.snaptrade_positions?.map((pos) =>
+              portfolio_positions: account.portfolio_positions?.map((pos) =>
                 pos.id === positionId
                   ? { ...pos, is_hidden: !currentlyHidden }
                   : pos

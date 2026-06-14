@@ -1,5 +1,5 @@
 import { useState, useCallback, useMemo } from "react";
-import type { SnapTradePosition, EquitySortKey, OptionSortKey } from "../types";
+import type { PortfolioPosition, EquitySortKey, OptionSortKey } from "../types";
 
 const OPTION_CONTRACT_MULTIPLIER = 100;
 
@@ -21,7 +21,7 @@ function normalizeOptionCost(rawAveragePrice: number, currentPremium: number) {
   };
 }
 
-function getOptionMetrics(position: SnapTradePosition) {
+function getOptionMetrics(position: PortfolioPosition) {
   const signedContracts = Number(position.units || 0);
   const contracts = Math.abs(signedContracts);
   const currentPremium = Math.abs(Number(position.price || 0));
@@ -73,7 +73,7 @@ export function useEquitySort() {
   );
 
   const sortPositions = useCallback(
-    (positions: SnapTradePosition[]) => {
+    (positions: PortfolioPosition[]) => {
       if (!sortKey) return positions;
       return [...positions].sort((a, b) => {
         let aVal: number | string = 0;
@@ -153,7 +153,7 @@ export function useOptionSort() {
   );
 
   const sortPositions = useCallback(
-    (positions: SnapTradePosition[]) => {
+    (positions: PortfolioPosition[]) => {
       if (!sortKey) return positions;
       return [...positions].sort((a, b) => {
         let aVal: number | string = 0;

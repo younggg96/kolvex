@@ -7,18 +7,37 @@ import { ChatMessageList } from "./ChatMessageList";
 import { ChatInput, MODEL_CONFIGS } from "./ChatInput";
 import { useChatHistory } from "./useChatHistory";
 import { useAvailableProviders } from "@/hooks/useAvailableProviders";
-import { streamAgentMessage } from "@/lib/chatApi";
-import type { AIModel, SearchSource, ToolStatus } from "./types";
+import {
+  readAgentStream,
+  streamAgentMessage,
+  type AgentStreamEvent,
+} from "@/lib/chatApi";
+import type {
+  AgentStatus,
+  AIModel,
+  SearchSource,
+  ToolStatus,
+} from "./types";
 import { TOOL_LABELS as toolLabels } from "./types";
+import { useTranslation } from "@/lib/i18n";
 
 // ===== localStorage helpers for persisting chat preferences =====
 const PREFS_SOURCES_KEY = "kolvex:sources";
 const PREFS_MODEL_KEY = "kolvex:model";
+const AVAILABLE_SOURCES: SearchSource[] = [
+  "robinhood",
+  "portfolio",
+  "news",
+  "web",
+];
 
 function loadSavedSources(conversationId: string): SearchSource[] | null {
   try {
     const raw = localStorage.getItem(`${PREFS_SOURCES_KEY}:${conversationId}`);
-    if (raw) return JSON.parse(raw) as SearchSource[];
+    if (raw) {
+      const parsed = JSON.parse(raw) as SearchSource[];
+      return parsed.filter((source) => AVAILABLE_SOURCES.includes(source));
+    }
   } catch {}
   return null;
 }
@@ -63,7 +82,7 @@ interface ChatDetailContainerProps {
 }
 
 /** Default sources when nothing is saved */
-const DEFAULT_SOURCES: SearchSource[] = ["kol", "news", "web", "portfolio"];
+const DEFAULT_SOURCES: SearchSource[] = AVAILABLE_SOURCES;
 
 export function ChatDetailContainer({
   className,
@@ -73,6 +92,7 @@ export function ChatDetailContainer({
   initialModel,
   onConversationChange,
 }: ChatDetailContainerProps) {
+  const { t } = useTranslation();
   const router = useRouter();
   const pathname = usePathname();
   const [query, setQuery] = useState("");
@@ -81,7 +101,11 @@ export function ChatDetailContainer({
   // Resolve initial sources: URL params > localStorage > defaults
   const [activeSources, setActiveSources] = useState<SearchSource[]>(() => {
     if (initialSources) {
-      const parsed = initialSources.split(",").filter(Boolean) as SearchSource[];
+      const parsed = initialSources
+        .split(",")
+        .filter((source): source is SearchSource =>
+          AVAILABLE_SOURCES.includes(source as SearchSource)
+        );
       if (parsed.length > 0) return parsed;
     }
     const saved = loadSavedSources(conversationId);
@@ -92,6 +116,9 @@ export function ChatDetailContainer({
   const [isLoading, setIsLoading] = useState(false);
   const [streamingContent, setStreamingContent] = useState("");
   const [pendingUserMessage, setPendingUserMessage] = useState("");
+  const [agentStatus, setAgentStatus] = useState<AgentStatus | null>(null);
+  const [streamError, setStreamError] = useState<string | null>(null);
+  const [lastSubmittedMessage, setLastSubmittedMessage] = useState("");
 
   // Resolve initial model: URL params > localStorage > default
   const [selectedModel, setSelectedModel] = useState<AIModel>(() => {
@@ -106,6 +133,7 @@ export function ChatDetailContainer({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const sentFirstMessageRef = useRef<string | null>(null);
   const isLoadingRef = useRef(false);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   // Keep loading ref in sync
   useEffect(() => {
@@ -125,86 +153,73 @@ export function ChatDetailContainer({
     currentConversationId,
     currentConversation,
     messages,
-    addMessage,
     selectConversation,
     deleteConversation,
-    refreshConversations,
   } = useChatHistory();
 
   // ---- Stream processing helper ----
   const processAgentStream = useCallback(
     async (response: Response) => {
-      const reader = response.body?.getReader();
-      const decoder = new TextDecoder();
       let accumulatedContent = "";
-      let buffer = "";
+      let completed = false;
 
-      while (reader) {
-        const { done, value } = await reader.read();
-        if (done) break;
+      await readAgentStream(response, (event: AgentStreamEvent) => {
+        switch (event.type) {
+          case "status":
+            setAgentStatus({
+              stage: event.stage || "working",
+              message: event.content,
+            });
+            break;
 
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split("\n");
-        buffer = lines.pop() || "";
-
-        for (const line of lines) {
-          const trimmed = line.trim();
-          if (!trimmed || !trimmed.startsWith("data: ")) continue;
-
-          const data = trimmed.slice(6);
-          try {
-            const event = JSON.parse(data);
-
-            switch (event.type) {
-              case "token":
-                if (event.content) {
-                  accumulatedContent += event.content;
-                  setStreamingContent(accumulatedContent);
-                }
-                break;
-
-              case "tool_start":
-                if (event.tool) {
-                  const label = toolLabels[event.tool] || event.tool;
-                  setActiveTools((prev) => [
-                    ...prev.filter((t) => t.name !== event.tool),
-                    { name: event.tool, label, status: "running" },
-                  ]);
-                }
-                break;
-
-              case "tool_end":
-                if (event.tool) {
-                  setActiveTools((prev) =>
-                    prev.map((t) =>
-                      t.name === event.tool ? { ...t, status: "done" } : t
-                    )
-                  );
-                }
-                break;
-
-              case "done":
-                setStreamingContent("");
-                setActiveTools([]);
-                await refreshConversations();
-                await selectConversation(conversationId);
-                break;
-
-              case "error":
-                console.error("Agent error:", event.content);
-                setStreamingContent("");
-                setActiveTools([]);
-                await refreshConversations();
-                await selectConversation(conversationId);
-                break;
+          case "token":
+            if (event.content) {
+              accumulatedContent += event.content;
+              setStreamingContent(accumulatedContent);
+              setAgentStatus({ stage: "writing", message: event.content });
             }
-          } catch {
-            // Ignore JSON parse errors for incomplete chunks
+            break;
+
+          case "tool_start":
+            if (event.tool) {
+              const toolName = event.tool;
+              const translationKey = `chat.tools.${toolName}`;
+              const translatedLabel = t(translationKey);
+              const label =
+                translatedLabel === translationKey
+                  ? toolLabels[toolName] || toolName
+                  : translatedLabel;
+              setActiveTools((prev) => [
+                ...prev.filter((tool) => tool.name !== toolName),
+                { name: toolName, label, status: "running" },
+              ]);
+            }
+            break;
+
+          case "tool_end":
+            if (event.tool) {
+              setActiveTools((prev) =>
+                prev.map((tool) =>
+                  tool.name === event.tool ? { ...tool, status: "done" } : tool
+                )
+              );
+            }
+            break;
+
+          case "done":
+            completed = true;
+            break;
+
+          case "error":
+            throw new Error(event.content || "The AI agent could not complete the response.");
           }
-        }
+      });
+
+      if (!completed) {
+        throw new Error("The response stream ended before completion.");
       }
     },
-    [conversationId, refreshConversations, selectConversation]
+    [t]
   );
 
   // ---- Notify parent when conversation changes ----
@@ -228,6 +243,10 @@ export function ChatDetailContainer({
     }
   }, [conversationId, currentConversationId, selectConversation, router]);
 
+  useEffect(() => {
+    return () => abortControllerRef.current?.abort();
+  }, [conversationId]);
+
   // ---- Auto-send first message from welcome page ----
   // Guard: use the actual firstMessage+conversationId combo as the dedup key
   // so React strict mode double-runs won't cause duplicate sends
@@ -248,27 +267,45 @@ export function ChatDetailContainer({
     setIsLoading(true);
     setStreamingContent("");
     setActiveTools([]);
+    setAgentStatus({ stage: "routing" });
+    setStreamError(null);
+    setLastSubmittedMessage(firstMessage);
 
     (async () => {
+      const controller = new AbortController();
+      abortControllerRef.current = controller;
       try {
-        const response = await streamAgentMessage(conversationId, firstMessage, {
-          model: selectedModel,
-          sources: activeSources,
-        });
-        setPendingUserMessage("");
+        const response = await streamAgentMessage(
+          conversationId,
+          firstMessage,
+          {
+            model: selectedModel,
+            sources: activeSources,
+          },
+          controller.signal
+        );
         await processAgentStream(response);
+        await selectConversation(conversationId);
       } catch (error) {
         console.error("First message error:", error);
-        setPendingUserMessage("");
-        await addMessage({
-          role: "assistant",
-          content:
-            "Sorry, I couldn't process your request. The AI agent may be unavailable. Please try again later.",
-        });
+        const aborted = error instanceof DOMException && error.name === "AbortError";
+        setStreamError(
+          aborted
+            ? "Generation was stopped."
+            : error instanceof Error
+              ? error.message
+              : "The AI agent may be unavailable. Please try again."
+        );
+        await selectConversation(conversationId).catch(() => undefined);
       } finally {
+        if (abortControllerRef.current === controller) {
+          abortControllerRef.current = null;
+        }
         setIsLoading(false);
+        setPendingUserMessage("");
         setStreamingContent("");
         setActiveTools([]);
+        setAgentStatus(null);
       }
     })();
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -280,6 +317,8 @@ export function ChatDetailContainer({
       selectConversation(e.detail.id);
       setStreamingContent("");
       setActiveTools([]);
+      setAgentStatus(null);
+      setStreamError(null);
     };
 
     const handleDeleteChat = (e: CustomEvent<{ id: string }>) => {
@@ -309,7 +348,7 @@ export function ChatDetailContainer({
         handleDeleteChat as EventListener
       );
     };
-  }, [selectConversation, deleteConversation]);
+  }, [conversationId, deleteConversation, router, selectConversation]);
 
   const toggleSource = (source: SearchSource) => {
     setActiveSources((prev) => {
@@ -335,10 +374,15 @@ export function ChatDetailContainer({
       setIsLoading(true);
       setStreamingContent("");
       setActiveTools([]);
+      setAgentStatus({ stage: "routing" });
+      setStreamError(null);
+      setLastSubmittedMessage(trimmedMessage);
 
       // Optimistic update: show user message immediately
       setPendingUserMessage(trimmedMessage);
 
+      const controller = new AbortController();
+      abortControllerRef.current = controller;
       try {
         // Stream response from LangGraph Agent via backend
         // The /stream endpoint saves user message + generates AI response
@@ -348,30 +392,46 @@ export function ChatDetailContainer({
           {
             model: selectedModel,
             sources: activeSources,
-          }
+          },
+          controller.signal
         );
 
-        // Clear pending user message once stream starts (backend saved it)
-        setPendingUserMessage("");
-
         await processAgentStream(response);
+        await selectConversation(conversationId);
       } catch (error) {
         console.error("Chat error:", error);
-        setPendingUserMessage("");
-
-        await addMessage({
-          role: "assistant",
-          content:
-            "Sorry, I couldn't process your request. The AI agent may be unavailable. Please try again later.",
-        });
+        const aborted = error instanceof DOMException && error.name === "AbortError";
+        setStreamError(
+          aborted
+            ? "Generation was stopped."
+            : error instanceof Error
+              ? error.message
+              : "The AI agent may be unavailable. Please try again."
+        );
+        await selectConversation(conversationId).catch(() => undefined);
       } finally {
+        if (abortControllerRef.current === controller) {
+          abortControllerRef.current = null;
+        }
         setIsLoading(false);
+        setPendingUserMessage("");
         setStreamingContent("");
         setActiveTools([]);
+        setAgentStatus(null);
       }
     },
-    [conversationId, isLoading, isBlocked, addMessage, processAgentStream, selectedModel, activeSources]
+    [conversationId, isLoading, isBlocked, processAgentStream, selectConversation, selectedModel, activeSources]
   );
+
+  const handleCancel = useCallback(() => {
+    abortControllerRef.current?.abort();
+  }, []);
+
+  const handleRetry = useCallback(() => {
+    if (lastSubmittedMessage && !isLoading) {
+      handleSubmit(lastSubmittedMessage);
+    }
+  }, [handleSubmit, isLoading, lastSubmittedMessage]);
 
   const handleFormSubmit = (e?: React.FormEvent) => {
     e?.preventDefault();
@@ -393,21 +453,25 @@ export function ChatDetailContainer({
           isLoading={isLoading}
           messagesEndRef={messagesEndRef}
           activeTools={activeTools}
+          agentStatus={agentStatus}
+          errorMessage={streamError}
+          onRetry={streamError ? handleRetry : undefined}
           modelName={MODEL_CONFIGS.find((m) => m.id === selectedModel)?.name}
         />
         {/* Chat Input */}
-        <div className="fixed bottom-0 left-0 right-0 border-t border-border bg-background/80 backdrop-blur-xl">
+        <div className="sticky bottom-0 z-20 border-t border-border bg-background/90 backdrop-blur-xl">
           <div className="max-w-4xl mx-auto p-4">
             <ChatInput
               value={query}
               onChange={setQuery}
               onSubmit={handleFormSubmit}
+              onCancel={handleCancel}
               isLoading={isLoading}
               isFocused={isFocused}
               onFocus={() => setIsFocused(true)}
               onBlur={() => setIsFocused(false)}
               inputRef={inputRef}
-              placeholder="Ask about stocks, KOL opinions, market trends..."
+              placeholder={t("chat.input.placeholder")}
               activeSources={activeSources}
               onToggleSource={toggleSource}
               showSourceToggle={true}

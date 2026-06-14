@@ -49,11 +49,11 @@ export interface ProfileUpdate {
   is_subscribe_newsletter?: boolean;
 }
 
-// SnapTrade 相关类型
-export interface SnapTradeConnection {
+// Portfolio 相关类型
+export interface PortfolioConnection {
   id: string;
   user_id: string;
-  snaptrade_user_id: string;
+  provider: "robinhood" | "ibkr";
   is_connected: boolean;
   is_public: boolean;
   last_synced_at?: string;
@@ -61,7 +61,7 @@ export interface SnapTradeConnection {
   updated_at: string;
 }
 
-export interface SnapTradeAccount {
+export interface PortfolioAccount {
   id: string;
   connection_id: string;
   account_id: string;
@@ -71,10 +71,10 @@ export interface SnapTradeAccount {
   account_type?: string;
   created_at: string;
   updated_at: string;
-  snaptrade_positions?: SnapTradePosition[];
+  portfolio_positions?: PortfolioPosition[];
 }
 
-export interface SnapTradePosition {
+export interface PortfolioPosition {
   id: string;
   account_id: string;
   position_type?: "equity" | "option";
@@ -101,7 +101,7 @@ export interface SnapTradePosition {
   updated_at: string;
 }
 
-export interface SnapTradeConnectionStatus {
+export interface PortfolioConnectionStatus {
   is_registered: boolean;
   is_connected: boolean;
   is_public: boolean;
@@ -109,23 +109,23 @@ export interface SnapTradeConnectionStatus {
   accounts_count: number;
 }
 
-export interface SnapTradeHoldings {
+export interface PortfolioHoldings {
   is_connected: boolean;
   is_public: boolean;
   last_synced_at?: string;
-  accounts: SnapTradeAccount[];
+  accounts: PortfolioAccount[];
   total_value?: number | string; // Total portfolio value ("***" if hidden in public view)
   privacy_settings?: PrivacySettings; // Privacy settings for public view
   hidden_positions_count?: number; // Number of hidden positions (public view only)
   hidden_accounts_count?: number; // Number of hidden accounts (public view only)
 }
 
-export interface SnapTradePublicHoldings {
+export interface PortfolioPublicHoldings {
   user_id: string;
   is_connected: boolean; // Always true for public holdings
   is_public: boolean; // Always true for public holdings
   last_synced_at?: string;
-  accounts: SnapTradeAccount[];
+  accounts: PortfolioAccount[];
   total_value?: number | string; // Total portfolio value ("***" if hidden)
   total_pnl?: number | string; // Total P&L ("***" if hidden)
   pnl_percent?: number | string; // P&L percentage ("***" if hidden)

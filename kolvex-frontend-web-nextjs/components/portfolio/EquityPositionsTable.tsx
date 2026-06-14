@@ -22,9 +22,9 @@ import CompanyLogo from "@/components/ui/company-logo";
 import { Badge } from "@/components/ui/badge";
 import { WeightIndicator } from "@/components/ui/weight-indicator";
 import MiniSparkline from "@/components/stock/MiniSparkline";
-import { formatCurrency } from "@/lib/snaptradeApi";
+import { formatCurrency } from "@/lib/portfolioApi";
 import { useTranslation } from "@/lib/i18n";
-import type { EquityPositionsTableProps, SnapTradePosition } from "./types";
+import type { EquityPositionsTableProps, PortfolioPosition } from "./types";
 
 // Helper to check if a value is hidden
 const isHiddenValue = (val: any): val is string =>
@@ -136,7 +136,7 @@ export function EquityPositionsTable({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {positions.map((pos: SnapTradePosition) => {
+          {positions.map((pos: PortfolioPosition) => {
             const isHiddenPosition = pos.is_hidden || pos.units == null;
             const pnl = pos.open_pnl ?? 0;
             const profit = pnl >= 0;

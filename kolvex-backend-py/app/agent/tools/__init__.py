@@ -41,6 +41,7 @@ from app.agent.tools.trading_analysis_tools import (
     run_trading_analysis,
     set_user_api_keys_for_tool,
 )
+from app.agent.tools.robinhood_tools import create_robinhood_tools_for_user
 
 # 所有可用工具列表
 ALL_TOOLS = [
@@ -120,7 +121,7 @@ def get_tools_for_sources(
     根据前端激活的 sources 过滤工具集
 
     Args:
-        sources: 激活的数据源 ["kol", "news", "web", "portfolio"]
+        sources: 激活的数据源 ["kol", "news", "web", "portfolio", "robinhood"]
                  None 表示全部启用
         base_tools: 基础工具集 ("financial", "research", "alert")
         user_id: 当前认证用户 ID，用于绑定 portfolio 工具
@@ -155,6 +156,11 @@ def get_tools_for_sources(
         "news": [search_stock_news, get_trending_news],
         "web": [web_search],
         "portfolio": [portfolio_tool],
+        "robinhood": (
+            create_robinhood_tools_for_user(user_id)
+            if user_id and user_id.strip()
+            else []
+        ),
     }
 
     # 如果 sources 为 None，启用全部
@@ -183,6 +189,7 @@ __all__ = [
     "ALERT_TOOLS",
     "get_tools_for_sources",
     "create_portfolio_tool_for_user",
+    "create_robinhood_tools_for_user",
     "run_trading_analysis",
     "set_user_api_keys_for_tool",
 ]

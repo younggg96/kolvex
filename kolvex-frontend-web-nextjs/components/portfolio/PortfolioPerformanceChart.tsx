@@ -13,7 +13,7 @@ import {
 import { TrendingUp, TrendingDown, BarChart3, RefreshCw, Info, DollarSign, Activity, Percent } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/lib/i18n";
-import { formatCurrency, formatPercent } from "@/lib/snaptradeApi";
+import { formatCurrency, formatPercent } from "@/lib/portfolioApi";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import {

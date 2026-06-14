@@ -18,9 +18,9 @@ def _fetch_portfolio(user_id: str) -> str:
     内部函数: 从数据库获取用户持仓数据
 
     数据模型关系链:
-        snaptrade_connections (user_id)
-            → snaptrade_accounts (connection_id)
-                → snaptrade_positions (account_id)
+        portfolio_connections (user_id)
+            → portfolio_accounts (connection_id)
+                → portfolio_positions (account_id)
     """
     if not user_id or not user_id.strip():
         logger.error("_fetch_portfolio called with empty user_id")
@@ -37,21 +37,21 @@ def _fetch_portfolio(user_id: str) -> str:
     try:
         supabase = get_supabase_service()
 
-        # 1. 获取用户的 SnapTrade 连接
+        # 1. 获取用户的直连券商缓存
         conn_result = (
-            supabase.table("snaptrade_connections")
+            supabase.table("portfolio_connections")
             .select("id")
             .eq("user_id", user_id)
             .execute()
         )
 
         if not conn_result.data:
-            logger.info(f"No SnapTrade connection found for user_id={user_id}")
+            logger.info(f"No broker portfolio found for user_id={user_id}")
             return json.dumps({
                 "status": "empty",
                 "user_id": user_id,
                 "message": "The user has not connected a brokerage account yet, so there is no portfolio data available. "
-                           "Suggest the user to connect their brokerage account via SnapTrade in the Settings page to enable portfolio tracking.",
+                           "Suggest the user connect Robinhood or Interactive Brokers from the portfolio page.",
                 "positions": [],
             })
 
@@ -59,8 +59,8 @@ def _fetch_portfolio(user_id: str) -> str:
 
         # 2. 通过连接 → 账户 → 持仓关系链查询
         accounts_result = (
-            supabase.table("snaptrade_accounts")
-            .select("id, snaptrade_positions(*)")
+            supabase.table("portfolio_accounts")
+            .select("id, portfolio_positions(*)")
             .eq("connection_id", connection_id)
             .execute()
         )
@@ -68,7 +68,7 @@ def _fetch_portfolio(user_id: str) -> str:
         # 3. 汇总所有账户的持仓
         all_positions = []
         for account in (accounts_result.data or []):
-            for pos in account.get("snaptrade_positions", []):
+            for pos in account.get("portfolio_positions", []):
                 # 跳过隐藏的持仓
                 if pos.get("is_hidden", False):
                     continue

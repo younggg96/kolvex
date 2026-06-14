@@ -30,10 +30,10 @@ import {
   getPrivacySettings,
   updatePrivacySettings,
   getMyHoldings,
-} from "@/lib/snaptradeApi";
+} from "@/lib/portfolioApi";
 import type {
   PrivacySettings,
-  SnapTradeAccount,
+  PortfolioAccount,
 } from "@/lib/supabase/database.types";
 
 type BooleanSettingKey = Exclude<keyof PrivacySettings, "hidden_accounts">;
@@ -70,7 +70,7 @@ export default function PrivacySettingsDialog({
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [settings, setSettings] = useState<PrivacySettings | null>(null);
-  const [accounts, setAccounts] = useState<SnapTradeAccount[]>([]);
+  const [accounts, setAccounts] = useState<PortfolioAccount[]>([]);
   const [summaryOpen, setSummaryOpen] = useState(true);
   const [positionOpen, setPositionOpen] = useState(true);
   const [accountsOpen, setAccountsOpen] = useState(true);
@@ -247,9 +247,9 @@ export default function PrivacySettingsDialog({
     );
   };
 
-  const AccountRow = ({ account }: { account: SnapTradeAccount }) => {
+  const AccountRow = ({ account }: { account: PortfolioAccount }) => {
     const isHidden = hiddenAccountIds.has(account.id);
-    const positionsCount = account.snaptrade_positions?.length || 0;
+    const positionsCount = account.portfolio_positions?.length || 0;
 
     return (
       <div className="flex items-center justify-between py-2 px-3 rounded-md hover:bg-muted/40 transition-colors group">

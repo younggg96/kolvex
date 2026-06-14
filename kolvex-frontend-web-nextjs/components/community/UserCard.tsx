@@ -14,7 +14,7 @@ import {
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import CompanyLogo from "@/components/ui/company-logo";
-import { formatCurrency, formatPercent } from "@/lib/snaptradeApi";
+import { formatCurrency, formatPercent } from "@/lib/portfolioApi";
 import type { PublicUserSummary } from "@/lib/supabase/database.types";
 import { RankBadge } from "./RankBadge";
 import { FollowButton } from "./FollowButton";

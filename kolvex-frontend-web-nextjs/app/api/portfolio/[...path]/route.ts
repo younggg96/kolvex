@@ -7,7 +7,7 @@ const API_BASE_URL =
 type RouteParams = { params: Promise<{ path: string[] }> };
 
 /**
- * Proxy request to backend SnapTrade API
+ * Proxy request to backend Portfolio API
  */
 async function proxyRequest(
   request: NextRequest,
@@ -45,7 +45,7 @@ async function proxyRequest(
     }
 
     const response = await fetch(
-      `${API_BASE_URL}/api/v1/snaptrade${path}`,
+      `${API_BASE_URL}/api/v1/portfolio${path}`,
       fetchOptions
     );
 
@@ -62,20 +62,20 @@ async function proxyRequest(
   } catch (error: unknown) {
     const message =
       error instanceof Error ? error.message : "Internal server error";
-    console.error(`SnapTrade API error [${path}]:`, error);
+    console.error(`Portfolio API error [${path}]:`, error);
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
 
 /**
  * GET handler
- * - /api/snaptrade/status -> GET /status
- * - /api/snaptrade/holdings -> GET /holdings
- * - /api/snaptrade/holdings/:userId -> GET /holdings/:userId (public, no auth)
- * - /api/snaptrade/public-users -> GET /public-users (public, no auth)
- * - /api/snaptrade/history -> GET /history (with period query param)
- * - /api/snaptrade/history/status -> GET /history/status
- * - /api/snaptrade/analysis/health -> GET /analysis/health
+ * - /api/portfolio/status -> GET /status
+ * - /api/portfolio/holdings -> GET /holdings
+ * - /api/portfolio/holdings/:userId -> GET /holdings/:userId (public, no auth)
+ * - /api/portfolio/public-users -> GET /public-users (public, no auth)
+ * - /api/portfolio/history -> GET /history (with period query param)
+ * - /api/portfolio/history/status -> GET /history/status
+ * - /api/portfolio/analysis/health -> GET /analysis/health
  */
 export async function GET(request: NextRequest, { params }: RouteParams) {
   const { path } = await params;
@@ -88,10 +88,10 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
     case "holdings":
       if (path.length === 1) {
-        // /api/snaptrade/holdings - user's own holdings
+        // /api/portfolio/holdings - user's own holdings
         return proxyRequest(request, "/holdings", { method: "GET" });
       } else {
-        // /api/snaptrade/holdings/:userId - public holdings
+        // /api/portfolio/holdings/:userId - public holdings
         return proxyRequest(request, `/holdings/${path[1]}`, {
           method: "GET",
           requireAuth: false,
@@ -99,7 +99,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       }
 
     case "public-users": {
-      // /api/snaptrade/public-users - get all public users (no auth)
+      // /api/portfolio/public-users - get all public users (no auth)
       const limit = searchParams.get("limit") || "20";
       const offset = searchParams.get("offset") || "0";
       const sortBy = searchParams.get("sort_by") || "updated";
@@ -112,12 +112,12 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     }
 
     case "privacy-settings":
-      // /api/snaptrade/privacy-settings - get privacy settings
+      // /api/portfolio/privacy-settings - get privacy settings
       return proxyRequest(request, "/privacy-settings", { method: "GET" });
 
     case "history": {
-      // /api/snaptrade/history -> GET /history
-      // /api/snaptrade/history/status -> GET /history/status
+      // /api/portfolio/history -> GET /history
+      // /api/portfolio/history/status -> GET /history/status
       if (path[1] === "status") {
         return proxyRequest(request, "/history/status", { method: "GET" });
       }
@@ -126,7 +126,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     }
 
     case "analysis":
-      // /api/snaptrade/analysis/health -> GET /analysis/health
+      // /api/portfolio/analysis/health -> GET /analysis/health
       if (path[1] === "health") {
         return proxyRequest(request, "/analysis/health", { method: "GET" });
       }
@@ -139,37 +139,17 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
 /**
  * POST handler
- * - /api/snaptrade/connect -> POST /connect
- * - /api/snaptrade/sync/accounts -> POST /sync/accounts
- * - /api/snaptrade/sync/positions -> POST /sync/positions
- * - /api/snaptrade/toggle-public -> POST /toggle-public
- * - /api/snaptrade/positions/:id/visibility -> POST /positions/:id/visibility
- * - /api/snaptrade/positions/visibility/batch -> POST /batch-toggle-position-visibility
- * - /api/snaptrade/analysis -> POST /analysis (AI portfolio analysis)
- * - /api/snaptrade/analysis/stock -> POST /analysis/stock (AI single stock analysis)
+ * - /api/portfolio/toggle-public -> POST /toggle-public
+ * - /api/portfolio/positions/:id/visibility -> POST /positions/:id/visibility
+ * - /api/portfolio/positions/visibility/batch -> POST /batch-toggle-position-visibility
+ * - /api/portfolio/analysis -> POST /analysis (AI portfolio analysis)
+ * - /api/portfolio/analysis/stock -> POST /analysis/stock (AI single stock analysis)
  */
 export async function POST(request: NextRequest, { params }: RouteParams) {
   const { path } = await params;
 
   // Route matching
   switch (path[0]) {
-    case "connect": {
-      const { searchParams } = new URL(request.url);
-      const redirectUri = searchParams.get("redirect_uri");
-      const endpoint = redirectUri
-        ? `/connect?redirect_uri=${encodeURIComponent(redirectUri)}`
-        : "/connect";
-      return proxyRequest(request, endpoint, { method: "POST" });
-    }
-
-    case "sync":
-      if (path[1] === "accounts") {
-        return proxyRequest(request, "/sync/accounts", { method: "POST" });
-      } else if (path[1] === "positions") {
-        return proxyRequest(request, "/sync/positions", { method: "POST" });
-      }
-      return NextResponse.json({ error: "Not found" }, { status: 404 });
-
     case "toggle-public":
       return proxyRequest(request, "/toggle-public", {
         method: "POST",
@@ -177,8 +157,8 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       });
 
     case "positions":
-      // /api/snaptrade/positions/visibility/batch -> POST /positions/visibility/batch
-      // /api/snaptrade/positions/:id/visibility -> POST /positions/:id/visibility
+      // /api/portfolio/positions/visibility/batch -> POST /positions/visibility/batch
+      // /api/portfolio/positions/:id/visibility -> POST /positions/:id/visibility
       if (path[1] === "visibility" && path[2] === "batch") {
         return proxyRequest(request, "/positions/visibility/batch", {
           method: "POST",
@@ -195,8 +175,8 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
 
     case "analysis":
-      // /api/snaptrade/analysis -> POST /analysis (full portfolio analysis)
-      // /api/snaptrade/analysis/stock -> POST /analysis/stock (single stock analysis)
+      // /api/portfolio/analysis -> POST /analysis (full portfolio analysis)
+      // /api/portfolio/analysis/stock -> POST /analysis/stock (single stock analysis)
       if (path.length === 1) {
         return proxyRequest(request, "/analysis", {
           method: "POST",
@@ -217,7 +197,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
 /**
  * PUT handler
- * - /api/snaptrade/privacy-settings -> PUT /privacy-settings
+ * - /api/portfolio/privacy-settings -> PUT /privacy-settings
  */
 export async function PUT(request: NextRequest, { params }: RouteParams) {
   const { path } = await params;
@@ -228,22 +208,6 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
         method: "PUT",
         hasBody: true,
       });
-
-    default:
-      return NextResponse.json({ error: "Not found" }, { status: 404 });
-  }
-}
-
-/**
- * DELETE handler
- * - /api/snaptrade/disconnect -> DELETE /disconnect
- */
-export async function DELETE(request: NextRequest, { params }: RouteParams) {
-  const { path } = await params;
-
-  switch (path[0]) {
-    case "disconnect":
-      return proxyRequest(request, "/disconnect", { method: "DELETE" });
 
     default:
       return NextResponse.json({ error: "Not found" }, { status: 404 });

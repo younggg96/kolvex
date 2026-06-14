@@ -7,7 +7,7 @@ import {
   EyeOff,
 } from "lucide-react";
 import { StatCard } from "@/components/common";
-import { formatCurrency, formatPercent } from "@/lib/snaptradeApi";
+import { formatCurrency, formatPercent } from "@/lib/portfolioApi";
 import { useTranslation } from "@/lib/i18n";
 
 interface PortfolioStatsGridProps {

@@ -164,7 +164,7 @@
       },
       "portfolio": {
         "title": "Portfolio Integration",
-        "description": "Connect your brokerage via SnapTrade to overlay social intelligence on your actual positions.",
+        "description": "Connect your brokerage via Portfolio to overlay social intelligence on your actual positions.",
         "stats": {
           "brokers": "Brokers",
           "security": "Security",
@@ -250,16 +250,53 @@
   },
   "chat": {
     "title": "Chat with Kolvex",
+    "userName": "You",
+    "assistantName": "Kolvex",
+    "actions": {
+      "copy": "Copy",
+      "copied": "Copied",
+      "retry": "Retry"
+    },
+    "activity": {
+      "routing": "Understanding your request",
+      "planning": "Planning the analysis",
+      "writing": "Writing the response",
+      "working": "Working on the analysis",
+      "interrupted": "Response interrupted"
+    },
+    "tools": {
+      "get_robinhood_account": "Loading Robinhood account and positions",
+      "get_robinhood_stock_trades": "Loading Robinhood stock trades",
+      "get_robinhood_option_trades": "Loading Robinhood option trades",
+      "get_robinhood_wash_sale_risk": "Checking Robinhood wash-sale risk",
+      "get_robinhood_sell_review": "Reviewing Robinhood sales",
+      "get_stock_quote": "Getting stock quote",
+      "get_stock_financials": "Fetching financials",
+      "get_analyst_recommendations": "Checking analyst ratings",
+      "get_stock_history": "Loading price history",
+      "get_company_info": "Looking up company information",
+      "search_stock_news": "Searching stock news",
+      "get_trending_news": "Getting market news",
+      "get_kol_latest_tweets": "Reading market opinions",
+      "analyze_kol_sentiment": "Analyzing market sentiment",
+      "get_user_portfolio": "Loading your portfolio",
+      "search_knowledge_base": "Searching the knowledge base",
+      "get_superinvestor_holdings": "Checking institutional holdings",
+      "web_search": "Searching the web"
+    },
     "badge": "AI-Powered Insights",
     "heading": "What would you like to <highlight>explore</highlight>?",
     "description": "Ask about stocks, market trends, or browse our curated insights powered by AI",
     "suggestions": {
+      "reviewRobinhood": "Review my Robinhood account",
+      "checkWashSale": "Check current wash-sale risk",
       "analyzeNvidia": "Analyze NVIDIA stock",
       "explainTrends": "Explain market trends",
       "trendingStocks": "Top trending stocks",
       "latestNews": "Latest news"
     },
     "input": {
+      "placeholder": "Ask about your portfolio, trades, risk, or the market...",
       "apiKeyRequired": "API key required",
       "apiKeyRequiredDesc": "Add at least one model API key in Settings to unlock the model dropdown and start chatting.",
       "settingsApiKeys": "Settings → API Keys",
@@ -267,6 +304,7 @@
       "addApiKey": "Add API key",
       "selectModel": "Select model",
       "sources": {
+        "robinhood": "Robinhood",
         "kol": "KOL",
         "news": "News",
         "web": "Web",
@@ -408,8 +446,6 @@
       "description": "Link your brokerage account to automatically track your positions, monitor performance, and share your portfolio publicly.",
       "connecting": "Connecting...",
       "connectBroker": "Connect Broker",
-      "snaptradeTitle": "SnapTrade",
-      "snaptradeDescription": "Use the hosted broker portal for supported institutions.",
       "ibkrTitle": "Interactive Brokers",
       "ibkrDescription": "Use IBKR Flex Web Service directly. Kolvex never receives your IBKR password.",
       "connectIbkr": "Connect Interactive Brokers",

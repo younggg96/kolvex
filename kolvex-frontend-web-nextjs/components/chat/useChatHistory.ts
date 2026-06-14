@@ -78,7 +78,7 @@ export function useChatHistory() {
   );
 
   // Get history items for sidebar
-  const historyItems: ChatHistoryItem[] = conversations
+  const historyItems: ChatHistoryItem[] = [...conversations]
     .sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime())
     .map((conv) => ({
       id: conv.id,

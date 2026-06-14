@@ -1198,7 +1198,7 @@ class RobinhoodService:
         option_orders_count = await self._sync_option_orders(user_id)
 
         now = datetime.utcnow().isoformat()
-        self.supabase.table("snaptrade_connections").update(
+        self.supabase.table("portfolio_connections").update(
             {"is_connected": True, "last_synced_at": now}
         ).eq("id", portfolio_connection["id"]).execute()
         self.supabase.table("robinhood_connections").update(
@@ -1261,7 +1261,7 @@ class RobinhoodService:
         option_positions_count = 0
         if account:
             result = (
-                self.supabase.table("snaptrade_positions")
+                self.supabase.table("portfolio_positions")
                 .select("id", count="exact")
                 .eq("account_id", account["id"])
                 .execute()
@@ -1269,7 +1269,7 @@ class RobinhoodService:
             positions_count = result.count or 0
             try:
                 option_result = (
-                    self.supabase.table("snaptrade_positions")
+                    self.supabase.table("portfolio_positions")
                     .select("id", count="exact")
                     .eq("account_id", account["id"])
                     .eq("position_type", "option")
@@ -1738,7 +1738,7 @@ class RobinhoodService:
         """
         try:
             result = (
-                self.supabase.table("snaptrade_positions")
+                self.supabase.table("portfolio_positions")
                 .select("symbol, average_purchase_price")
                 .execute()
             )
@@ -1894,15 +1894,16 @@ class RobinhoodService:
 
     async def disconnect(self, user_id: str) -> bool:
         portfolio_connection = (
-            self.supabase.table("snaptrade_connections")
+            self.supabase.table("portfolio_connections")
             .select("*")
             .eq("user_id", user_id)
+            .eq("provider", "robinhood")
             .execute()
         )
 
         account = await self._get_portfolio_account(user_id)
         if account:
-            self.supabase.table("snaptrade_accounts").delete().eq(
+            self.supabase.table("portfolio_accounts").delete().eq(
                 "id", account["id"]
             ).execute()
 
@@ -1919,15 +1920,13 @@ class RobinhoodService:
         if portfolio_connection.data:
             connection = portfolio_connection.data[0]
             remaining_accounts = (
-                self.supabase.table("snaptrade_accounts")
+                self.supabase.table("portfolio_accounts")
                 .select("id", count="exact")
                 .eq("connection_id", connection["id"])
                 .execute()
             )
-            if (remaining_accounts.count or 0) == 0 and str(
-                connection.get("snaptrade_user_id", "")
-            ).startswith("robinhood_"):
-                self.supabase.table("snaptrade_connections").delete().eq(
+            if (remaining_accounts.count or 0) == 0:
+                self.supabase.table("portfolio_connections").delete().eq(
                     "id", connection["id"]
                 ).execute()
 
@@ -1970,9 +1969,10 @@ class RobinhoodService:
 
     async def _ensure_portfolio_connection(self, user_id: str) -> Dict[str, Any]:
         result = (
-            self.supabase.table("snaptrade_connections")
+            self.supabase.table("portfolio_connections")
             .select("*")
             .eq("user_id", user_id)
+            .eq("provider", "robinhood")
             .execute()
         )
         if result.data:
@@ -1980,13 +1980,12 @@ class RobinhoodService:
 
         data = {
             "user_id": user_id,
-            "snaptrade_user_id": f"robinhood_{user_id}",
-            "snaptrade_user_secret": "managed_by_robinhood_integration",
+            "provider": "robinhood",
             "is_connected": True,
             "is_public": False,
             "last_synced_at": datetime.utcnow().isoformat(),
         }
-        created = self.supabase.table("snaptrade_connections").insert(data).execute()
+        created = self.supabase.table("portfolio_connections").insert(data).execute()
         if not created.data:
             raise Exception("Failed to create portfolio connection")
         return created.data[0]
@@ -2007,7 +2006,7 @@ class RobinhoodService:
             "account_type": profile.get("type") or "brokerage",
         }
         result = (
-            self.supabase.table("snaptrade_accounts")
+            self.supabase.table("portfolio_accounts")
             .upsert(data, on_conflict="connection_id,account_id")
             .execute()
         )
@@ -2044,7 +2043,7 @@ class RobinhoodService:
                 "currency": "USD",
             }
             result = (
-                self.supabase.table("snaptrade_positions")
+                self.supabase.table("portfolio_positions")
                 .upsert(position, on_conflict="account_id,symbol,position_type")
                 .execute()
             )
@@ -2176,7 +2175,7 @@ class RobinhoodService:
                     "underlying_symbol": underlying or None,
                 }
                 result = (
-                    self.supabase.table("snaptrade_positions")
+                    self.supabase.table("portfolio_positions")
                     .upsert(position, on_conflict="account_id,symbol,position_type")
                     .execute()
                 )
@@ -2202,7 +2201,7 @@ class RobinhoodService:
             )
 
         existing = (
-            self.supabase.table("snaptrade_positions")
+            self.supabase.table("portfolio_positions")
             .select("id, symbol, position_type")
             .eq("account_id", account_id)
             .execute()
@@ -2212,7 +2211,7 @@ class RobinhoodService:
             if pos.get("position_type") == "option" and not option_positions_loaded:
                 continue
             if key not in synced_keys:
-                self.supabase.table("snaptrade_positions").delete().eq(
+                self.supabase.table("portfolio_positions").delete().eq(
                     "id", pos["id"]
                 ).execute()
 
@@ -2743,16 +2742,17 @@ class RobinhoodService:
 
     async def _get_portfolio_account(self, user_id: str) -> Optional[Dict[str, Any]]:
         connection = (
-            self.supabase.table("snaptrade_connections")
+            self.supabase.table("portfolio_connections")
             .select("id")
             .eq("user_id", user_id)
+            .eq("provider", "robinhood")
             .execute()
         )
         if not connection.data:
             return None
 
         account = (
-            self.supabase.table("snaptrade_accounts")
+            self.supabase.table("portfolio_accounts")
             .select("*")
             .eq("connection_id", connection.data[0]["id"])
             .eq("account_id", f"robinhood:{user_id}")

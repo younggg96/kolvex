@@ -1,7 +1,7 @@
 import type {
-  SnapTradeConnectionStatus,
-  SnapTradeHoldings,
-  SnapTradePosition,
+  PortfolioConnectionStatus,
+  PortfolioHoldings,
+  PortfolioPosition,
   PrivacySettings,
 } from "@/lib/supabase/database.types";
 
@@ -64,7 +64,7 @@ export interface InitialSyncStateProps {
 }
 
 export interface EquityPositionsTableProps {
-  positions: SnapTradePosition[];
+  positions: PortfolioPosition[];
   isOwner: boolean;
   isPublic: boolean;
   privacySettings?: PrivacySettings;
@@ -80,7 +80,7 @@ export interface EquityPositionsTableProps {
 }
 
 export interface OptionPositionsTableProps {
-  positions: SnapTradePosition[];
+  positions: PortfolioPosition[];
   isOwner: boolean;
   isPublic: boolean;
   privacySettings?: PrivacySettings;
@@ -103,4 +103,4 @@ export interface DisconnectDialogProps {
 }
 
 // Re-export database types for convenience
-export type { SnapTradeConnectionStatus, SnapTradeHoldings, SnapTradePosition };
+export type { PortfolioConnectionStatus, PortfolioHoldings, PortfolioPosition };

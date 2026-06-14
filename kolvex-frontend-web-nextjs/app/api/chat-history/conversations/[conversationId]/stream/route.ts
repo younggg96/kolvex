@@ -45,6 +45,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
           Authorization: `Bearer ${session.access_token}`,
         },
         body: JSON.stringify(body),
+        signal: request.signal,
       }
     );
 

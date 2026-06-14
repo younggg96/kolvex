@@ -171,7 +171,7 @@ Provide a comprehensive analysis. Respond with ONLY this JSON object:
         accounts = holdings_data.get("accounts", [])
         
         for account in accounts:
-            for position in account.get("snaptrade_positions", []):
+            for position in account.get("portfolio_positions", []):
                 # Skip hidden positions
                 if position.get("is_hidden"):
                     continue

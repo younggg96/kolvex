@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useEffect, useState, useCallback } from "react";
-import type { SnapTradePosition } from "@/lib/supabase/database.types";
+import type { PortfolioPosition } from "@/lib/supabase/database.types";
 import type {
   SectorData,
   PositionInfo,
@@ -13,7 +13,7 @@ import { getSectorColor } from "./constants";
 import { parseOptionSymbol, getUnderlyingSymbol } from "./utils";
 
 interface UseSectorDataOptions {
-  holdings: SnapTradePosition[];
+  holdings: PortfolioPosition[];
   sortKey: SortKey;
   sortDir: SortDirection;
   // Optional: use cached sector data from parent (avoids duplicate fetches)

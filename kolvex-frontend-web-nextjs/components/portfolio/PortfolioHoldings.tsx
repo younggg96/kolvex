@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { AlertCircle, RefreshCw, Clock } from "lucide-react";
 import { SwitchTab } from "@/components/ui/switch-tab";
 import { EmptyState } from "@/components/common/EmptyState";
-import { calculateTotalValue, calculateTotalPnL } from "@/lib/snaptradeApi";
+import { calculateTotalValue, calculateTotalPnL } from "@/lib/portfolioApi";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/lib/i18n";
@@ -140,7 +140,7 @@ export default function PortfolioHoldings({
   useEffect(() => {
     if (holdings?.accounts) {
       const accountsWithPositions = holdings.accounts
-        .filter((a) => (a.snaptrade_positions?.length || 0) > 0)
+        .filter((a) => (a.portfolio_positions?.length || 0) > 0)
         .map((a) => a.id);
       setExpandedAccounts(new Set(accountsWithPositions));
     }
@@ -261,7 +261,7 @@ export default function PortfolioHoldings({
     : publicHoldings?.pnl_percent ?? 0;
   const totalPositions = isOwner
     ? holdings?.accounts?.reduce(
-      (acc, curr) => acc + (curr.snaptrade_positions?.length || 0),
+      (acc, curr) => acc + (curr.portfolio_positions?.length || 0),
       0
     ) || 0
     : publicHoldings?.positions_count ?? 0;
@@ -270,8 +270,7 @@ export default function PortfolioHoldings({
     return <PortfolioSkeleton />;
   }
 
-  // No live brokerage authorization yet. A SnapTrade user registration by
-  // itself is not a broker connection, so keep the broker choices visible.
+  // No direct brokerage authorization yet, so keep both broker choices visible.
   if (!status?.is_connected) {
     return (
       <NotConnectedState
@@ -417,7 +416,7 @@ export default function PortfolioHoldings({
               {isOwner && (
                 <PositionRiskControls
                   positions={holdings.accounts.flatMap(
-                    (account) => account.snaptrade_positions || []
+                    (account) => account.portfolio_positions || []
                   )}
                 />
               )}
@@ -451,7 +450,7 @@ export default function PortfolioHoldings({
           {activeTab === "strategies" && isOwner && (
             <QuantStrategyWorkbench
               positions={holdings.accounts.flatMap(
-                (account) => account.snaptrade_positions || []
+                (account) => account.portfolio_positions || []
               )}
             />
           )}

@@ -14,22 +14,22 @@ import { EquityPositionsTable } from "./EquityPositionsTable";
 import { OptionPositionsTable } from "./OptionPositionsTable";
 import { useTranslation } from "@/lib/i18n";
 import type {
-  SnapTradePosition,
+  PortfolioPosition,
   EquitySortKey,
   OptionSortKey,
 } from "./types";
 import type { PrivacySettings } from "@/lib/supabase/database.types";
 
-interface SnapTradeAccount {
+interface PortfolioAccount {
   id: string;
   account_name?: string;
   account_number?: string;
   brokerage_name?: string;
-  snaptrade_positions?: SnapTradePosition[];
+  portfolio_positions?: PortfolioPosition[];
 }
 
 interface AccountCardProps {
-  account: SnapTradeAccount;
+  account: PortfolioAccount;
   isExpanded: boolean;
   onToggle: () => void;
   isOwner: boolean;
@@ -39,12 +39,12 @@ interface AccountCardProps {
   equitySortKey: EquitySortKey | null;
   equitySortDir: "asc" | "desc";
   onEquitySort: (key: EquitySortKey) => void;
-  sortEquityPositions: (positions: SnapTradePosition[]) => SnapTradePosition[];
+  sortEquityPositions: (positions: PortfolioPosition[]) => PortfolioPosition[];
   // Option sorting
   optionSortKey: OptionSortKey | null;
   optionSortDir: "asc" | "desc";
   onOptionSort: (key: OptionSortKey) => void;
-  sortOptionPositions: (positions: SnapTradePosition[]) => SnapTradePosition[];
+  sortOptionPositions: (positions: PortfolioPosition[]) => PortfolioPosition[];
   // Sparkline data
   sparklineDataMap: Map<string, number[]>;
   // Visibility toggle
@@ -75,12 +75,12 @@ export function AccountCard({
 }: AccountCardProps) {
   const { t } = useTranslation();
   const equityPositions =
-    account.snaptrade_positions?.filter((p) => p.position_type !== "option") ||
+    account.portfolio_positions?.filter((p) => p.position_type !== "option") ||
     [];
   const optionPositions =
-    account.snaptrade_positions?.filter((p) => p.position_type === "option") ||
+    account.portfolio_positions?.filter((p) => p.position_type === "option") ||
     [];
-  const accountPositions = account.snaptrade_positions?.length || 0;
+  const accountPositions = account.portfolio_positions?.length || 0;
 
   return (
     <Collapsible open={isExpanded} onOpenChange={onToggle}>

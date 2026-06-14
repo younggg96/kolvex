@@ -33,7 +33,7 @@ const FAQ = [
   },
   {
     question: 'Is my portfolio data secure?',
-    answer: 'Yes. Portfolio connections use SnapTrade, a regulated financial data provider. Your credentials are encrypted and never stored on our servers.',
+    answer: 'Yes. Kolvex uses read-only Robinhood and IBKR connections, and stores only the data needed for your portfolio features.',
   },
   {
     question: 'How do I track a stock?',

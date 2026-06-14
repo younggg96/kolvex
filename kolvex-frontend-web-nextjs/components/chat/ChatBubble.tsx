@@ -7,6 +7,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import type { ChatBubbleProps } from "./types";
 import { Button } from "../ui/button";
+import { useTranslation } from "@/lib/i18n";
 
 export function ChatBubble({
   role,
@@ -17,6 +18,7 @@ export function ChatBubble({
   onRetry,
   modelName,
 }: ChatBubbleProps) {
+  const { t } = useTranslation();
   const [copied, setCopied] = useState(false);
   const isUser = role === "user";
 
@@ -38,10 +40,10 @@ export function ChatBubble({
   if (isUser) {
     return (
       <div className="flex w-full justify-end animate-fade-in">
-        <div className="max-w-[85%] md:max-w-[70%]">
+        <div className="max-w-[88%] md:max-w-[70%]">
           <div className="flex items-center justify-end gap-2 mb-1.5 px-0.5">
             <span className="text-xs font-medium text-muted-foreground">
-              You
+              {t("chat.userName")}
             </span>
             {timestamp && (
               <span className="text-[11px] text-muted-foreground/60">
@@ -51,7 +53,7 @@ export function ChatBubble({
           </div>
           <div
             className={cn(
-              "px-4 py-3 rounded-2xl rounded-tr-sm",
+              "px-4 py-3 rounded-lg rounded-tr-sm",
               "bg-gray-900 dark:bg-primary/70",
               "text-white dark:text-primary-foreground",
               "shadow-sm"
@@ -69,7 +71,7 @@ export function ChatBubble({
   // Assistant message
   return (
     <div className="group flex w-full justify-start animate-fade-in">
-      <div className="flex gap-4 max-w-[85%] md:max-w-[80%]">
+      <div className="flex w-full gap-3 md:gap-4 max-w-[96%] md:max-w-[90%]">
         {/* AI Avatar */}
         <div className="flex-shrink-0">
           <div className="w-8 h-8 rounded-full bg-primary/10 dark:bg-primary/20 flex items-center justify-center ring-2 ring-primary/20">
@@ -91,7 +93,7 @@ export function ChatBubble({
           {/* Header */}
           <div className="flex items-center gap-2 mb-1.5 px-0.5">
             <span className="text-xs font-medium text-muted-foreground">
-              Kolvex
+              {t("chat.assistantName")}
             </span>
             {modelName && (
               <span className="text-[10px] text-muted-foreground/50 font-medium px-1.5 py-0.5 rounded-full bg-muted/50 border border-border/50">
@@ -108,7 +110,7 @@ export function ChatBubble({
           {/* Bubble */}
           <div
             className={cn(
-              "relative px-4 py-3 rounded-2xl rounded-tl-sm",
+              "relative px-4 py-3 rounded-lg rounded-tl-sm",
               "bg-card",
               "border border-border",
               "text-foreground"
@@ -117,7 +119,8 @@ export function ChatBubble({
             <div
               className={cn(
                 "prose prose-sm dark:prose-invert max-w-none",
-                "prose-headings:mt-4 prose-headings:mb-2 prose-headings:font-semibold",
+                "break-words prose-headings:mt-4 prose-headings:mb-2 prose-headings:font-semibold",
+                "prose-h1:text-xl prose-h1:leading-tight",
                 "prose-h2:text-base prose-h3:text-sm",
                 "prose-p:my-1.5 prose-p:leading-relaxed prose-p:text-[14px]",
                 "prose-ul:my-1.5 prose-ul:pl-4 prose-li:my-0.5 prose-li:text-[14px]",
@@ -125,7 +128,7 @@ export function ChatBubble({
                 "prose-strong:text-foreground prose-strong:font-semibold",
                 "prose-code:text-xs prose-code:bg-muted prose-code:px-1 prose-code:py-0.5 prose-code:rounded",
                 "prose-pre:bg-muted prose-pre:rounded-lg prose-pre:text-xs",
-                "prose-table:text-xs prose-th:px-2 prose-th:py-1 prose-td:px-2 prose-td:py-1",
+                "prose-table:block prose-table:max-w-full prose-table:overflow-x-auto prose-table:text-xs prose-th:px-2 prose-th:py-1 prose-td:px-2 prose-td:py-1",
                 "[&>*:first-child]:mt-0 [&>*:last-child]:mb-0"
               )}
             >
@@ -162,12 +165,12 @@ export function ChatBubble({
                 {copied ? (
                   <>
                     <Check className="w-3.5 h-3.5 text-primary" />
-                    <span className="text-primary">Copied</span>
+                    <span className="text-primary">{t("chat.actions.copied")}</span>
                   </>
                 ) : (
                   <>
                     <Copy className="w-3.5 h-3.5" />
-                    <span>Copy</span>
+                    <span>{t("chat.actions.copy")}</span>
                   </>
                 )}
               </Button>
@@ -175,7 +178,7 @@ export function ChatBubble({
               {onRetry && (
                 <Button variant="ghost" size="xs" onClick={onRetry}>
                   <RotateCcw className="w-3.5 h-3.5" />
-                  <span>Retry</span>
+                  <span>{t("chat.actions.retry")}</span>
                 </Button>
               )}
             </div>

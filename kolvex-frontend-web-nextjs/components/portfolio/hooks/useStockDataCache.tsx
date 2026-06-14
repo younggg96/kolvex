@@ -322,7 +322,7 @@ export function useStockDataCache(): StockDataCacheContextValue {
 export function usePortfolioSymbols(
   accounts:
     | Array<{
-        snaptrade_positions?: Array<{
+        portfolio_positions?: Array<{
           symbol: string;
           underlying_symbol?: string | null;
           position_type?: string;
@@ -336,7 +336,7 @@ export function usePortfolioSymbols(
 
     const symbols = new Set<string>();
     accounts.forEach((account) => {
-      account.snaptrade_positions?.forEach((pos) => {
+      account.portfolio_positions?.forEach((pos) => {
         if (pos.is_hidden) return;
         const symbol =
           pos.position_type === "option"

@@ -17,6 +17,34 @@ from app.agent.tools import FINANCIAL_TOOLS, RESEARCH_TOOLS, ALERT_TOOLS, get_to
 
 logger = logging.getLogger(__name__)
 
+
+def _content_to_text(content: Any) -> str:
+    """Normalize provider-specific message content into displayable text."""
+    if isinstance(content, str):
+        return content
+    if not isinstance(content, list):
+        return ""
+
+    parts: list[str] = []
+    for item in content:
+        if isinstance(item, str):
+            parts.append(item)
+        elif isinstance(item, dict) and item.get("type") in (None, "text"):
+            text = item.get("text")
+            if isinstance(text, str):
+                parts.append(text)
+    return "".join(parts)
+
+
+def _message_has_tool_calls(message: Any) -> bool:
+    """Return True when a model response is an internal tool-planning turn."""
+    tool_calls = getattr(message, "tool_calls", None)
+    if tool_calls:
+        return True
+
+    additional_kwargs = getattr(message, "additional_kwargs", None) or {}
+    return bool(additional_kwargs.get("tool_calls"))
+
 # =====================================================================
 # Sub-Agent 系统提示词
 # =====================================================================
@@ -46,6 +74,7 @@ SOURCE_FOCUS_PROMPTS = {
     "news": "\n\nIMPORTANT: The user has selected News as a data source. Prioritize using news-related tools (search_stock_news, get_trending_news) to provide the latest news in your response.",
     "web": "\n\nIMPORTANT: The user has selected Web as a data source. Prioritize using the web_search tool to find the latest information from the internet.",
     "portfolio": "\n\nIMPORTANT: The user has selected Portfolio as a data source. Prioritize using the get_user_portfolio tool to analyze the user's portfolio holdings.",
+    "robinhood": "\n\nIMPORTANT: The user has selected Robinhood as a data source. Use the read-only Robinhood tools for account totals, current positions, stock and option trades, wash-sale risk, and sell reviews. Never request or expose Robinhood credentials, authentication tokens, or device approval data. Never claim to place or modify an order.",
 }
 
 
@@ -200,6 +229,12 @@ async def stream_agent(
     if user_id and user_api_keys:
         set_user_api_keys_for_tool(user_id, user_api_keys)
 
+    yield {
+        "type": "status",
+        "stage": "routing",
+        "content": "Understanding your request",
+    }
+
     # 1. 先分类意图
     agent_type = await _classify_intent(messages, user_api_keys=user_api_keys)
 
@@ -208,8 +243,20 @@ async def stream_agent(
         agent_type, provider, model, sources, user_id=user_id, user_api_keys=user_api_keys
     )
 
+    yield {
+        "type": "status",
+        "stage": "planning",
+        "content": "Planning the analysis",
+    }
+
     # 3. 流式运行
     try:
+        # LangGraph emits model tokens for both tool-planning turns and the
+        # final answer. Buffer each model run until on_chat_model_end so only
+        # a response without tool calls is exposed to the user.
+        model_buffers: Dict[str, list[str]] = {}
+        final_response_emitted = False
+
         async for event in agent.astream_events(
             {"messages": messages},
             config={"recursion_limit": MAX_TOOL_ITERATIONS * 3},
@@ -218,12 +265,36 @@ async def stream_agent(
             kind = event.get("event", "")
 
             if kind == "on_chat_model_stream":
-                # LLM token 流
+                # Buffer the model run. It may be an internal tool-planning
+                # turn and must not leak into the final assistant message.
                 chunk = event.get("data", {}).get("chunk")
-                if chunk and hasattr(chunk, "content") and chunk.content:
+                text = _content_to_text(getattr(chunk, "content", ""))
+                if text:
+                    run_id = str(event.get("run_id", "default"))
+                    model_buffers.setdefault(run_id, []).append(text)
+
+            elif kind == "on_chat_model_end":
+                run_id = str(event.get("run_id", "default"))
+                output = event.get("data", {}).get("output")
+                buffered_text = "".join(model_buffers.pop(run_id, []))
+                final_text = buffered_text or _content_to_text(
+                    getattr(output, "content", "")
+                )
+
+                if (
+                    final_text
+                    and not _message_has_tool_calls(output)
+                    and not final_response_emitted
+                ):
+                    final_response_emitted = True
+                    yield {
+                        "type": "status",
+                        "stage": "writing",
+                        "content": "Writing the response",
+                    }
                     yield {
                         "type": "token",
-                        "content": chunk.content,
+                        "content": final_text,
                     }
 
             elif kind == "on_tool_start":
@@ -243,6 +314,13 @@ async def stream_agent(
                     "type": "tool_end",
                     "tool": tool_name,
                 }
+
+        if not final_response_emitted:
+            yield {
+                "type": "error",
+                "content": "The agent completed without a final response.",
+            }
+            return
 
         yield {"type": "done", "content": ""}
 

@@ -1,11 +1,25 @@
 "use client";
 
 import { useRef, useEffect, useState, useCallback } from "react";
-import { ChevronDown, Search, BarChart3, Newspaper, Users, Briefcase, BookOpen, CheckCircle2, Loader2, Globe } from "lucide-react";
+import {
+  AlertCircle,
+  BarChart3,
+  BookOpen,
+  Briefcase,
+  CheckCircle2,
+  ChevronDown,
+  Globe,
+  Loader2,
+  Newspaper,
+  RotateCcw,
+  Search,
+  Users,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ChatBubble } from "./ChatBubble";
 import type { ChatMessageListProps, ToolStatus } from "./types";
 import { Button } from "../ui/button";
+import { useTranslation } from "@/lib/i18n";
 
 // Tool category icons
 function getToolIcon(toolName: string) {
@@ -18,7 +32,7 @@ function getToolIcon(toolName: string) {
   if (toolName.includes("kol") || toolName.includes("sentiment")) {
     return <Users className="w-3 h-3" />;
   }
-  if (toolName.includes("portfolio")) {
+  if (toolName.includes("portfolio") || toolName.includes("robinhood")) {
     return <Briefcase className="w-3 h-3" />;
   }
   if (toolName.includes("knowledge") || toolName.includes("superinvestor")) {
@@ -38,11 +52,14 @@ function AgentActivityIndicator({
   tools,
   isThinking,
   modelName,
+  statusMessage,
 }: {
   tools: ToolStatus[];
   isThinking: boolean;
   modelName?: string;
+  statusMessage?: string;
 }) {
+  const { t } = useTranslation();
   if (!isThinking && tools.length === 0) return null;
 
   return (
@@ -68,7 +85,7 @@ function AgentActivityIndicator({
         <div className="flex flex-col gap-1.5 min-w-0">
           <div className="flex items-center gap-2 px-0.5">
             <span className="text-xs font-medium text-muted-foreground">
-              Kolvex
+              {t("chat.assistantName")}
             </span>
             {modelName && (
               <span className="text-[10px] text-muted-foreground/50 font-medium px-1.5 py-0.5 rounded-full bg-muted/50 border border-border/50">
@@ -99,7 +116,7 @@ function AgentActivityIndicator({
                     className={cn(
                       "flex items-center gap-1.5",
                       tool.status === "done"
-                        ? "text-muted-foreground line-through"
+                        ? "text-muted-foreground"
                         : "text-foreground"
                     )}
                   >
@@ -109,7 +126,7 @@ function AgentActivityIndicator({
                 </div>
               ))}
 
-              {/* Thinking dots — shown when loading but no tools active, or after all tools done */}
+              {/* Current agent stage */}
               {isThinking && (
                 <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                   <div className="flex gap-0.5">
@@ -125,7 +142,7 @@ function AgentActivityIndicator({
                     ))}
                   </div>
                   <span className="ml-0.5">
-                    {tools.length > 0 ? "Generating response..." : "Thinking..."}
+                    {statusMessage || t("chat.activity.working")}
                   </span>
                 </div>
               )}
@@ -144,11 +161,16 @@ export function ChatMessageList({
   isLoading = false,
   messagesEndRef,
   activeTools = [],
+  agentStatus,
+  errorMessage,
+  onRetry,
   modelName,
 }: ChatMessageListProps) {
+  const { t } = useTranslation();
   const containerRef = useRef<HTMLDivElement>(null);
   const endRef = useRef<HTMLDivElement>(null);
   const [showScrollButton, setShowScrollButton] = useState(false);
+  const isNearBottomRef = useRef(true);
 
   const actualEndRef = messagesEndRef || endRef;
 
@@ -165,7 +187,9 @@ export function ChatMessageList({
       isLoading ||
       activeTools.length > 0
     ) {
-      scrollToBottom();
+      if (isNearBottomRef.current || pendingUserMessage) {
+        scrollToBottom();
+      }
     }
   }, [messages, streamingContent, pendingUserMessage, isLoading, activeTools, scrollToBottom]);
 
@@ -177,6 +201,7 @@ export function ChatMessageList({
     const handleScroll = () => {
       const { scrollTop, scrollHeight, clientHeight } = container;
       const isNearBottom = scrollHeight - scrollTop - clientHeight < 100;
+      isNearBottomRef.current = isNearBottom;
       setShowScrollButton(!isNearBottom && messages.length > 0);
     };
 
@@ -189,13 +214,22 @@ export function ChatMessageList({
     !pendingUserMessage &&
     !streamingContent &&
     !isLoading &&
+    !errorMessage &&
     activeTools.length === 0
   ) {
     return null;
   }
 
   // Determine if the agent is still "thinking" (loading but no streaming content yet)
-  const showThinking = isLoading && !streamingContent;
+  const showThinking = isLoading;
+  const statusLabels: Record<string, string> = {
+    routing: t("chat.activity.routing"),
+    planning: t("chat.activity.planning"),
+    writing: t("chat.activity.writing"),
+  };
+  const statusMessage = agentStatus
+    ? statusLabels[agentStatus.stage] || agentStatus.message
+    : undefined;
 
   return (
     <div ref={containerRef} className="relative flex-1 pb-28 overflow-y-auto">
@@ -227,6 +261,7 @@ export function ChatMessageList({
               tools={activeTools}
               isThinking={showThinking}
               modelName={modelName}
+              statusMessage={statusMessage}
             />
           )}
 
@@ -238,6 +273,32 @@ export function ChatMessageList({
               isStreaming={true}
               modelName={modelName}
             />
+          )}
+
+          {errorMessage && (
+            <div className="flex w-full justify-start">
+              <div className="ml-12 flex max-w-xl items-start gap-3 rounded-lg border border-destructive/20 bg-destructive/5 px-4 py-3 text-sm">
+                <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0 text-destructive" />
+                <div className="min-w-0">
+                  <p className="font-medium text-foreground">
+                    {t("chat.activity.interrupted")}
+                  </p>
+                  <p className="mt-1 text-muted-foreground">{errorMessage}</p>
+                  {onRetry && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="xs"
+                      onClick={onRetry}
+                      className="mt-2 gap-1.5 px-0 text-primary hover:bg-transparent"
+                    >
+                      <RotateCcw className="h-3.5 w-3.5" />
+                      {t("chat.actions.retry")}
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </div>
           )}
         </div>
 

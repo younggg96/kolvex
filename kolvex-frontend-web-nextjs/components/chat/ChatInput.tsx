@@ -3,15 +3,16 @@
 import { useEffect, useRef, useState } from "react";
 import {
   Send,
-  Users,
   Newspaper,
   Globe,
   ChevronDown,
   Sparkles,
   Check,
   Briefcase,
+  Landmark,
   Lock,
   Settings,
+  Square,
 } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
@@ -322,18 +323,38 @@ function ModelSelector({
 // Shared Send Button Component
 function SendButton({
   disabled,
+  isLoading,
+  onCancel,
   className,
 }: {
   disabled: boolean;
+  isLoading?: boolean;
+  onCancel?: () => void;
   className?: string;
 }) {
+  if (isLoading && onCancel) {
+    return (
+      <Button
+        type="button"
+        onClick={onCancel}
+        size="icon"
+        variant="outline"
+        className={cn("h-8 w-8 flex-shrink-0 rounded-lg", className)}
+        aria-label="Stop generating"
+        title="Stop generating"
+      >
+        <Square className="h-3.5 w-3.5 fill-current" />
+      </Button>
+    );
+  }
+
   return (
     <Button
       type="submit"
       disabled={disabled}
       size="icon"
       className={cn(
-        "h-8 w-8 rounded-xl flex-shrink-0 transition-all duration-200",
+        "h-8 w-8 rounded-lg flex-shrink-0 transition-all duration-200",
         "bg-primary text-white shadow-sm shadow-primary/20",
         "hover:bg-primary/90 hover:shadow-md hover:shadow-primary/25",
         "disabled:bg-muted disabled:text-muted-foreground disabled:shadow-none",
@@ -350,13 +371,14 @@ export function ChatInput({
   value,
   onChange,
   onSubmit,
+  onCancel,
   onKeyDown,
   isLoading = false,
   isFocused = false,
   onFocus,
   onBlur,
   placeholder = "Ask anything about stocks, markets, or investments...",
-  activeSources = ["kol"],
+  activeSources = ["robinhood", "portfolio"],
   onToggleSource,
   showSourceToggle = true,
   inputRef: externalRef,
@@ -386,9 +408,9 @@ export function ChatInput({
     label: string;
   }[] = [
     {
-      source: "kol",
-      icon: <Users className="w-3.5 h-3.5" />,
-      label: t("chat.input.sources.kol"),
+      source: "robinhood",
+      icon: <Landmark className="w-3.5 h-3.5" />,
+      label: t("chat.input.sources.robinhood"),
     },
     {
       source: "news",
@@ -460,6 +482,15 @@ export function ChatInput({
     onSubmit(e);
   };
 
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    onKeyDown?.(event);
+    if (event.defaultPrevented || isBlocked) return;
+    if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) {
+      event.preventDefault();
+      if (!isSendDisabled) onSubmit();
+    }
+  };
+
   return (
     <form onSubmit={handleFormSubmit}>
       {/* Need API key prompt when user has not configured any keys */}
@@ -488,7 +519,7 @@ export function ChatInput({
       {/* Main Container */}
       <div
         className={cn(
-          "relative flex flex-col rounded-2xl border overflow-hidden transition-all duration-200",
+          "relative flex flex-col rounded-lg border overflow-hidden transition-all duration-200",
           "bg-card/80 backdrop-blur-sm",
           isFocused
             ? "border-primary/20 ring-1 ring-primary/10 shadow-lg shadow-black/5 dark:shadow-black/20"
@@ -505,13 +536,13 @@ export function ChatInput({
             onChange={(e) => onChange(e.target.value)}
             onFocus={onFocus}
             onBlur={onBlur}
-            onKeyDown={isBlocked ? undefined : onKeyDown}
+            onKeyDown={handleKeyDown}
             placeholder={
               isBlocked
                 ? t("chat.input.addApiKeyPlaceholder")
                 : placeholder
             }
-            disabled={isLoading || isBlocked}
+            disabled={isBlocked}
             className={cn(
               "flex-1 bg-transparent resize-none outline-none",
               "text-foreground placeholder:text-muted-foreground/50",
@@ -522,7 +553,13 @@ export function ChatInput({
           />
 
           {/* Send Button - inline when no footer */}
-          {!hasFooter && <SendButton disabled={isSendDisabled} />}
+          {!hasFooter && (
+            <SendButton
+              disabled={isSendDisabled}
+              isLoading={isLoading}
+              onCancel={onCancel}
+            />
+          )}
         </div>
 
         {/* Footer - show when source toggle or model selector is enabled */}
@@ -570,7 +607,11 @@ export function ChatInput({
             </div>
 
             {/* Send Button */}
-            <SendButton disabled={isSendDisabled} />
+            <SendButton
+              disabled={isSendDisabled}
+              isLoading={isLoading}
+              onCancel={onCancel}
+            />
           </div>
         )}
       </div>

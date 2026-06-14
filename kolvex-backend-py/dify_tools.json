@@ -157,6 +157,7 @@
       }
     },
     "/api/users/me/theme": {},
+    "/api/users/me/locale": {},
     "/api/users/me/notifications": {},
     "/api/users/{user_id}": {
       "get": {
@@ -446,7 +447,7 @@
           "Stocks"
         ],
         "summary": "\u83b7\u53d6\u8d8b\u52bf\u80a1\u7968\u5217\u8868",
-        "description": "\u83b7\u53d6\u8d8b\u52bf\u80a1\u7968\u5217\u8868\n\n\u4ece\u6240\u6709 KOL \u63a8\u6587\u4e2d\u63d0\u53d6\u7684\u80a1\u7968\u4ee3\u7801\u7edf\u8ba1\uff0c\u5305\u542b\u6240\u6709\u88ab\u63d0\u53ca\u7684\u80a1\u7968\n\n- **min_mentions=0**: \u663e\u793a\u6240\u6709\u88ab KOL \u63d0\u53ca\u7684\u80a1\u7968\n- **min_mentions=1+**: \u8fc7\u6ee4\u51fa\u81f3\u5c11\u88ab\u63d0\u53ca N \u6b21\u7684\u80a1\u7968",
+        "description": "\u83b7\u53d6\u8d8b\u52bf\u80a1\u7968\u5217\u8868\uff08\u9ad8\u6027\u80fd\u7f13\u5b58\u7248\uff09\n\n\u4ece\u6240\u6709 KOL \u63a8\u6587\u4e2d\u63d0\u53d6\u7684\u80a1\u7968\u4ee3\u7801\u7edf\u8ba1\uff0c\u5305\u542b\u6240\u6709\u88ab\u63d0\u53ca\u7684\u80a1\u7968\u3002\n\u6570\u636e\u6bcf 60 \u79d2\u81ea\u52a8\u5237\u65b0\uff0c\u9996\u6b21\u8bf7\u6c42\u540e\u540e\u7eed\u8bf7\u6c42 <1ms \u54cd\u5e94\u3002\n\n- **min_mentions=0**: \u663e\u793a\u6240\u6709\u88ab KOL \u63d0\u53ca\u7684\u80a1\u7968\n- **min_mentions=1+**: \u8fc7\u6ee4\u51fa\u81f3\u5c11\u88ab\u63d0\u53ca N \u6b21\u7684\u80a1\u7968",
         "operationId": "get_trending_stocks_api_stocks_trending_get",
         "parameters": [
           {
@@ -1885,7 +1886,7 @@
           "News"
         ],
         "summary": "\u83b7\u53d6\u65b0\u95fb\u5217\u8868",
-        "description": "\u83b7\u53d6\u6570\u636e\u5e93\u4e2d\u7684\u65b0\u95fb\u5217\u8868\n\n- **page**: \u9875\u7801\uff0c\u4ece 1 \u5f00\u59cb\n- **page_size**: \u6bcf\u9875\u6570\u91cf\uff0c\u9ed8\u8ba4 20\n- **ticker**: \u53ef\u9009\uff0c\u6309\u80a1\u7968\u4ee3\u7801\u7b5b\u9009\n- **tag**: \u53ef\u9009\uff0c\u6309\u6807\u7b7e\u7b5b\u9009",
+        "description": "\u83b7\u53d6\u65b0\u95fb\u5217\u8868\uff08\u805a\u5408\u591a\u4e2a\u6570\u636e\u6e90\uff09\n\n- **page**: \u9875\u7801\uff0c\u4ece 1 \u5f00\u59cb\n- **page_size**: \u6bcf\u9875\u6570\u91cf\uff0c\u9ed8\u8ba4 20\n- **ticker**: \u53ef\u9009\uff0c\u6309\u80a1\u7968\u4ee3\u7801\u7b5b\u9009\n- **include_yfinance**: \u662f\u5426\u5305\u542b Yahoo Finance \u5b9e\u65f6\u65b0\u95fb\uff0c\u9ed8\u8ba4 True\n\n\u5f53\u4e0d\u6307\u5b9a ticker \u65f6\uff0c\u4f1a\u81ea\u52a8\u83b7\u53d6 trending \u70ed\u95e8\u65b0\u95fb",
         "operationId": "get_news_list_api_news__get",
         "parameters": [
           {
@@ -1934,7 +1935,7 @@
             "description": "\u6309\u80a1\u7968\u4ee3\u7801\u7b5b\u9009"
           },
           {
-            "name": "tag",
+            "name": "source",
             "in": "query",
             "required": false,
             "schema": {
@@ -1946,10 +1947,22 @@
                   "type": "null"
                 }
               ],
-              "description": "\u6309\u6807\u7b7e\u7b5b\u9009",
-              "title": "Tag"
+              "description": "\u6309\u6765\u6e90\u7b5b\u9009\uff0c\u9017\u53f7\u5206\u9694\u591a\u4e2a\uff0c\u5982 rss_feed,yahoo_finance",
+              "title": "Source"
             },
-            "description": "\u6309\u6807\u7b7e\u7b5b\u9009"
+            "description": "\u6309\u6765\u6e90\u7b5b\u9009\uff0c\u9017\u53f7\u5206\u9694\u591a\u4e2a\uff0c\u5982 rss_feed,yahoo_finance"
+          },
+          {
+            "name": "include_yfinance",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "\u662f\u5426\u5305\u542b Yahoo Finance \u65b0\u95fb",
+              "default": true,
+              "title": "Include Yfinance"
+            },
+            "description": "\u662f\u5426\u5305\u542b Yahoo Finance \u65b0\u95fb"
           }
         ],
         "responses": {
@@ -2048,6 +2061,8 @@
         }
       }
     },
+    "/api/news/webhook/fetch-financial-juice": {},
+    "/api/news/webhook/fetch-rss": {},
     "/api/news/kol-tickers": {
       "get": {
         "tags": [
@@ -3237,6 +3252,317 @@
       }
     },
     "/api/kol-posts/analytics/snapshots/cleanup": {},
+    "/api/kol-posts/ai/analyze/{post_id}": {},
+    "/api/kol-posts/ai/analyze-batch": {},
+    "/api/kol-posts/ai/analysis-stats": {
+      "get": {
+        "tags": [
+          "KOL Posts",
+          "KOL Posts",
+          "KOL Posts AI Analysis",
+          "KOL Posts AI Analysis"
+        ],
+        "summary": "Get Analysis Stats",
+        "description": "\ud83d\udcca \u83b7\u53d6 AI \u5206\u6790\u7edf\u8ba1\n\n\u8fd4\u56de AI \u5206\u6790\u7684\u7edf\u8ba1\u4fe1\u606f\uff0c\u5305\u62ec\uff1a\n- \u5df2\u5206\u6790/\u672a\u5206\u6790\u5e16\u5b50\u6570\u91cf\n- \u60c5\u611f\u5206\u5e03\n- \u80a1\u7968\u76f8\u5173\u6027\u5206\u5e03\n- \u5206\u6790\u8986\u76d6\u7387",
+        "operationId": "get_analysis_stats_api_kol_posts_ai_analysis_stats_get",
+        "parameters": [
+          {
+            "name": "platform",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "\u6309\u5e73\u53f0\u7b5b\u9009 (twitter, xiaohongshu)",
+              "title": "Platform"
+            },
+            "description": "\u6309\u5e73\u53f0\u7b5b\u9009 (twitter, xiaohongshu)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PostAnalysisStatsResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/kol-posts/ai/top-tickers": {
+      "get": {
+        "tags": [
+          "KOL Posts",
+          "KOL Posts",
+          "KOL Posts AI Analysis",
+          "KOL Posts AI Analysis"
+        ],
+        "summary": "Get Top Tickers",
+        "description": "\ud83d\udcc8 \u83b7\u53d6\u70ed\u95e8\u80a1\u7968\u4ee3\u7801\n\n\u8fd4\u56de\u88ab\u63d0\u53ca\u6700\u591a\u7684\u80a1\u7968\u4ee3\u7801\u53ca\u5176\u5e16\u5b50\u6570\u91cf",
+        "operationId": "get_top_tickers_api_kol_posts_ai_top_tickers_get",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 50,
+              "minimum": 1,
+              "description": "\u8fd4\u56de\u6570\u91cf",
+              "default": 10,
+              "title": "Limit"
+            },
+            "description": "\u8fd4\u56de\u6570\u91cf"
+          },
+          {
+            "name": "platform",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "\u6309\u5e73\u53f0\u7b5b\u9009 (twitter, xiaohongshu)",
+              "title": "Platform"
+            },
+            "description": "\u6309\u5e73\u53f0\u7b5b\u9009 (twitter, xiaohongshu)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TopTickersResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/kol-posts/ai/analyze-all": {},
+    "/api/kol-posts/ai/analyze-by-ids": {},
+    "/api/kol-posts/tracking-requests": {
+      "get": {
+        "tags": [
+          "KOL Posts",
+          "KOL Posts",
+          "KOL Tracking Requests"
+        ],
+        "summary": "Get My Tracking Requests",
+        "description": "\u83b7\u53d6\u5f53\u524d\u7528\u6237\u7684 KOL \u8ffd\u8e2a\u8bf7\u6c42\u5217\u8868",
+        "operationId": "get_my_tracking_requests_api_kol_posts_tracking_requests_get",
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by status: pending, approved, rejected",
+              "title": "Status"
+            },
+            "description": "Filter by status: pending, approved, rejected"
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KOLTrackingRequestsResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/kol-posts/tracking-requests/admin": {
+      "get": {
+        "tags": [
+          "KOL Posts",
+          "KOL Posts",
+          "KOL Tracking Requests"
+        ],
+        "summary": "Get All Tracking Requests",
+        "description": "[\u7ba1\u7406\u5458] \u83b7\u53d6\u6240\u6709 KOL \u8ffd\u8e2a\u8bf7\u6c42\n\n- **status**: \u6309\u72b6\u6001\u7b5b\u9009\n- **platform**: \u6309\u5e73\u53f0\u7b5b\u9009\n- **limit**: \u6bcf\u9875\u6570\u91cf\n- **offset**: \u504f\u79fb\u91cf",
+        "operationId": "get_all_tracking_requests_api_kol_posts_tracking_requests_admin_get",
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by status: pending, approved, rejected",
+              "title": "Status"
+            },
+            "description": "Filter by status: pending, approved, rejected"
+          },
+          {
+            "name": "platform",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by platform",
+              "title": "Platform"
+            },
+            "description": "Filter by platform"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KOLTrackingRequestsResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/kol-posts/tracking-requests/{request_id}/review": {},
+    "/api/kol-posts/tracking-requests/{request_id}": {},
     "/api/kol-subscriptions/tracked": {
       "get": {
         "tags": [
@@ -4911,15 +5237,15 @@
         }
       }
     },
-    "/api/snaptrade/status": {
+    "/api/portfolio/status": {
       "get": {
         "tags": [
-          "SnapTrade",
-          "SnapTrade"
+          "Portfolio",
+          "Portfolio"
         ],
         "summary": "Get Connection Status",
-        "description": "Get current user's SnapTrade connection status",
-        "operationId": "get_connection_status_api_snaptrade_status_get",
+        "description": "Get current user's Portfolio connection status",
+        "operationId": "get_connection_status_api_portfolio_status_get",
         "parameters": [
           {
             "name": "authorization",
@@ -4962,19 +5288,15 @@
         }
       }
     },
-    "/api/snaptrade/connect": {},
-    "/api/snaptrade/disconnect": {},
-    "/api/snaptrade/sync/accounts": {},
-    "/api/snaptrade/sync/positions": {},
-    "/api/snaptrade/holdings": {
+    "/api/portfolio/holdings": {
       "get": {
         "tags": [
-          "SnapTrade",
-          "SnapTrade"
+          "Portfolio",
+          "Portfolio"
         ],
         "summary": "Get My Holdings",
         "description": "Get current user's holdings data",
-        "operationId": "get_my_holdings_api_snaptrade_holdings_get",
+        "operationId": "get_my_holdings_api_portfolio_holdings_get",
         "parameters": [
           {
             "name": "authorization",
@@ -5017,15 +5339,15 @@
         }
       }
     },
-    "/api/snaptrade/public-users": {
+    "/api/portfolio/public-users": {
       "get": {
         "tags": [
-          "SnapTrade",
-          "SnapTrade"
+          "Portfolio",
+          "Portfolio"
         ],
         "summary": "Get Public Users",
         "description": "Get list of users who have public portfolios\n\nNo authentication required - this is public data\n\nArgs:\n    sort_by: Sort field - \"updated\" (last_synced_at) or \"pnl_percent\"\n    sort_order: Sort order - \"asc\" or \"desc\"",
-        "operationId": "get_public_users_api_snaptrade_public_users_get",
+        "operationId": "get_public_users_api_portfolio_public_users_get",
         "parameters": [
           {
             "name": "limit",
@@ -5092,15 +5414,15 @@
         }
       }
     },
-    "/api/snaptrade/holdings/{user_id}": {
+    "/api/portfolio/holdings/{user_id}": {
       "get": {
         "tags": [
-          "SnapTrade",
-          "SnapTrade"
+          "Portfolio",
+          "Portfolio"
         ],
         "summary": "Get Public Holdings",
         "description": "Get user's public holdings data\n\nOnly viewable if user has enabled public sharing",
-        "operationId": "get_public_holdings_api_snaptrade_holdings__user_id__get",
+        "operationId": "get_public_holdings_api_portfolio_holdings__user_id__get",
         "parameters": [
           {
             "name": "user_id",
@@ -5126,7 +5448,7 @@
                       "type": "null"
                     }
                   ],
-                  "title": "Response Get Public Holdings Api Snaptrade Holdings  User Id  Get"
+                  "title": "Response Get Public Holdings Api Portfolio Holdings  User Id  Get"
                 }
               }
             }
@@ -5144,18 +5466,18 @@
         }
       }
     },
-    "/api/snaptrade/toggle-public": {},
-    "/api/snaptrade/positions/{position_id}/visibility": {},
-    "/api/snaptrade/positions/visibility/batch": {},
-    "/api/snaptrade/privacy-settings": {
+    "/api/portfolio/toggle-public": {},
+    "/api/portfolio/positions/{position_id}/visibility": {},
+    "/api/portfolio/positions/visibility/batch": {},
+    "/api/portfolio/privacy-settings": {
       "get": {
         "tags": [
-          "SnapTrade",
-          "SnapTrade"
+          "Portfolio",
+          "Portfolio"
         ],
         "summary": "Get Privacy Settings",
         "description": "Get current privacy settings for public portfolio sharing",
-        "operationId": "get_privacy_settings_api_snaptrade_privacy_settings_get",
+        "operationId": "get_privacy_settings_api_portfolio_privacy_settings_get",
         "parameters": [
           {
             "name": "authorization",
@@ -5192,6 +5514,142 @@
                 "schema": {
                   "$ref": "#/components/schemas/HTTPValidationError"
                 }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/portfolio/history": {
+      "get": {
+        "tags": [
+          "Portfolio",
+          "Portfolio"
+        ],
+        "summary": "Get Portfolio History",
+        "description": "Get portfolio performance history.\n\nReturns historical portfolio value data points for the specified period.\nIf no historical data exists, returns an empty array with has_real_data=False.",
+        "operationId": "get_portfolio_history_api_portfolio_history_get",
+        "parameters": [
+          {
+            "name": "period",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "Period: 1D, 1W, 1M, 3M, YTD, ALL",
+              "default": "1M",
+              "title": "Period"
+            },
+            "description": "Period: 1D, 1W, 1M, 3M, YTD, ALL"
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PortfolioHistoryResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/portfolio/history/snapshot": {},
+    "/api/portfolio/history/status": {
+      "get": {
+        "tags": [
+          "Portfolio",
+          "Portfolio"
+        ],
+        "summary": "Get History Status",
+        "description": "Get the status of portfolio history data.\n\nReturns information about available historical data.",
+        "operationId": "get_history_status_api_portfolio_history_status_get",
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/portfolio/analysis": {},
+    "/api/portfolio/analysis/stock": {},
+    "/api/portfolio/analysis/health": {
+      "get": {
+        "tags": [
+          "Portfolio",
+          "Portfolio"
+        ],
+        "summary": "Check AI Analysis Health",
+        "description": "Check if the AI analysis service is available.",
+        "operationId": "check_analysis_health_api_portfolio_analysis_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
               }
             }
           }
@@ -5467,14 +5925,16 @@
         }
       }
     },
+    "/api/chat/conversations/{conversation_id}/send": {},
+    "/api/chat/conversations/{conversation_id}/stream": {},
     "/api/notifications": {
       "get": {
         "tags": [
           "Notifications",
           "notifications"
         ],
-        "summary": "\u83b7\u53d6\u901a\u77e5\u5217\u8868",
-        "description": "\u83b7\u53d6\u5f53\u524d\u7528\u6237\u7684\u901a\u77e5\u5217\u8868\n\n\u9700\u8981\u8ba4\u8bc1\uff1aBearer token",
+        "summary": "Get notification list",
+        "description": "Get the current user's notification list\n\nRequires authentication: Bearer token",
         "operationId": "get_notifications_api_notifications_get",
         "parameters": [
           {
@@ -5484,11 +5944,11 @@
             "schema": {
               "type": "integer",
               "minimum": 1,
-              "description": "\u9875\u7801",
+              "description": "Page number",
               "default": 1,
               "title": "Page"
             },
-            "description": "\u9875\u7801"
+            "description": "Page number"
           },
           {
             "name": "page_size",
@@ -5498,11 +5958,11 @@
               "type": "integer",
               "maximum": 100,
               "minimum": 1,
-              "description": "\u6bcf\u9875\u6570\u91cf",
+              "description": "Items per page",
               "default": 20,
               "title": "Page Size"
             },
-            "description": "\u6bcf\u9875\u6570\u91cf"
+            "description": "Items per page"
           },
           {
             "name": "unread_only",
@@ -5510,11 +5970,11 @@
             "required": false,
             "schema": {
               "type": "boolean",
-              "description": "\u662f\u5426\u53ea\u8fd4\u56de\u672a\u8bfb\u901a\u77e5",
+              "description": "Return only unread notifications",
               "default": false,
               "title": "Unread Only"
             },
-            "description": "\u662f\u5426\u53ea\u8fd4\u56de\u672a\u8bfb\u901a\u77e5"
+            "description": "Return only unread notifications"
           },
           {
             "name": "read_only",
@@ -5522,11 +5982,11 @@
             "required": false,
             "schema": {
               "type": "boolean",
-              "description": "\u662f\u5426\u53ea\u8fd4\u56de\u5df2\u8bfb\u901a\u77e5",
+              "description": "Return only read notifications",
               "default": false,
               "title": "Read Only"
             },
-            "description": "\u662f\u5426\u53ea\u8fd4\u56de\u5df2\u8bfb\u901a\u77e5"
+            "description": "Return only read notifications"
           },
           {
             "name": "authorization",
@@ -5575,8 +6035,8 @@
           "Notifications",
           "notifications"
         ],
-        "summary": "\u83b7\u53d6\u672a\u8bfb\u901a\u77e5\u6570\u91cf",
-        "description": "\u83b7\u53d6\u5f53\u524d\u7528\u6237\u7684\u672a\u8bfb\u901a\u77e5\u6570\u91cf\n\n\u9700\u8981\u8ba4\u8bc1\uff1aBearer token",
+        "summary": "Get unread notification count",
+        "description": "Get the current user's unread notification count\n\nRequires authentication: Bearer token",
         "operationId": "get_unread_count_api_notifications_unread_count_get",
         "parameters": [
           {
@@ -5623,6 +6083,7 @@
     "/api/notifications/{notification_id}/read": {},
     "/api/notifications/read-all": {},
     "/api/notifications/{notification_id}": {},
+    "/api/notifications/test-send-email": {},
     "/api/upload/avatar": {},
     "/api/upload/avatar/base64": {},
     "/api/scheduler/jobs": {
@@ -5681,6 +6142,8 @@
       }
     },
     "/api/scheduler/sync-holdings/trigger": {},
+    "/api/scheduler/portfolio-snapshot/trigger": {},
+    "/api/scheduler/robinhood-sync/trigger": {},
     "/api/scheduler/status": {
       "get": {
         "tags": [
@@ -5732,62 +6195,14 @@
           }
         }
       }
-    }
+    },
+    "/api/scheduler/jobs/{job_id}/pause": {},
+    "/api/scheduler/jobs/{job_id}/resume": {},
+    "/api/scheduler/jobs/{job_id}/run-now": {},
+    "/api/scheduler/jobs/{job_id}/reschedule": {}
   },
   "components": {
     "schemas": {
-      "AccountResponse": {
-        "properties": {
-          "id": {
-            "type": "string",
-            "title": "Id"
-          },
-          "account_id": {
-            "type": "string",
-            "title": "Account Id"
-          },
-          "brokerage_name": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Brokerage Name"
-          },
-          "account_name": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Account Name"
-          },
-          "account_type": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Account Type"
-          }
-        },
-        "type": "object",
-        "required": [
-          "id",
-          "account_id"
-        ],
-        "title": "AccountResponse",
-        "description": "Account response"
-      },
       "AddMessageRequest": {
         "properties": {
           "role": {
@@ -5809,6 +6224,23 @@
         ],
         "title": "AddMessageRequest",
         "description": "\u6dfb\u52a0\u6d88\u606f\u8bf7\u6c42"
+      },
+      "AgentMessageResponse": {
+        "properties": {
+          "message": {
+            "$ref": "#/components/schemas/app__api__routes__chat__schemas__MessageResponse"
+          },
+          "response": {
+            "$ref": "#/components/schemas/app__api__routes__chat__schemas__MessageResponse"
+          }
+        },
+        "type": "object",
+        "required": [
+          "message",
+          "response"
+        ],
+        "title": "AgentMessageResponse",
+        "description": "Agent \u6d88\u606f\u54cd\u5e94\uff08\u5305\u542b\u7528\u6237\u6d88\u606f\u548c AI \u56de\u590d\uff09"
       },
       "AnalystRecommendation": {
         "properties": {
@@ -6088,6 +6520,79 @@
         "type": "object",
         "title": "BatchAnalyzeDbRequest",
         "description": "\u6279\u91cf\u5206\u6790\u6570\u636e\u5e93\u63a8\u6587\u8bf7\u6c42"
+      },
+      "BatchPostAnalysisRequest": {
+        "properties": {
+          "limit": {
+            "type": "integer",
+            "title": "Limit",
+            "default": 10
+          },
+          "force": {
+            "type": "boolean",
+            "title": "Force",
+            "default": false
+          },
+          "only_unanalyzed": {
+            "type": "boolean",
+            "title": "Only Unanalyzed",
+            "default": true
+          },
+          "platform": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Platform"
+          },
+          "username": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Username"
+          }
+        },
+        "type": "object",
+        "title": "BatchPostAnalysisRequest",
+        "description": "\u6279\u91cf\u5e16\u5b50 AI \u5206\u6790\u8bf7\u6c42"
+      },
+      "BatchPostAnalysisResponse": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          }
+        },
+        "type": "object",
+        "required": [
+          "success",
+          "message",
+          "total",
+          "status"
+        ],
+        "title": "BatchPostAnalysisResponse",
+        "description": "\u6279\u91cf\u5e16\u5b50 AI \u5206\u6790\u54cd\u5e94"
       },
       "BatchScrapeRequest": {
         "properties": {
@@ -6483,27 +6988,12 @@
         "title": "CompanyInfoResponse",
         "description": "\u516c\u53f8\u4fe1\u606f\u54cd\u5e94"
       },
-      "ConnectionPortalResponse": {
-        "properties": {
-          "redirect_url": {
-            "type": "string",
-            "title": "Redirect Url",
-            "description": "Redirect URL for broker connection"
-          }
-        },
-        "type": "object",
-        "required": [
-          "redirect_url"
-        ],
-        "title": "ConnectionPortalResponse",
-        "description": "Connection portal response"
-      },
       "ConnectionStatusResponse": {
         "properties": {
           "is_registered": {
             "type": "boolean",
             "title": "Is Registered",
-            "description": "Whether user is registered with SnapTrade"
+            "description": "Whether user is registered with Portfolio"
           },
           "is_connected": {
             "type": "boolean",
@@ -8973,6 +9463,279 @@
         "title": "KOLTrackedCheckResponse",
         "description": "\u68c0\u67e5 KOL \u662f\u5426\u5df2\u8ffd\u8e2a\u7684\u54cd\u5e94"
       },
+      "KOLTrackingRequest": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "user_id": {
+            "type": "string",
+            "title": "User Id"
+          },
+          "platform": {
+            "type": "string",
+            "title": "Platform"
+          },
+          "platform_user_id": {
+            "type": "string",
+            "title": "Platform User Id"
+          },
+          "status": {
+            "$ref": "#/components/schemas/TrackingRequestStatus"
+          },
+          "user_notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Notes"
+          },
+          "admin_notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Admin Notes"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          },
+          "reviewed_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reviewed At"
+          },
+          "reviewed_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reviewed By"
+          },
+          "user_email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Email"
+          },
+          "user_username": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Username"
+          },
+          "user_avatar_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Avatar Url"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "user_id",
+          "platform",
+          "platform_user_id",
+          "status",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "KOLTrackingRequest",
+        "description": "KOL \u8ffd\u8e2a\u8bf7\u6c42\u6a21\u578b"
+      },
+      "KOLTrackingRequestCreate": {
+        "properties": {
+          "platform": {
+            "type": "string",
+            "title": "Platform",
+            "default": "twitter"
+          },
+          "platform_user_id": {
+            "type": "string",
+            "title": "Platform User Id"
+          },
+          "user_notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Notes"
+          }
+        },
+        "type": "object",
+        "required": [
+          "platform_user_id"
+        ],
+        "title": "KOLTrackingRequestCreate",
+        "description": "\u521b\u5efa KOL \u8ffd\u8e2a\u8bf7\u6c42"
+      },
+      "KOLTrackingRequestResponse": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          },
+          "request": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/KOLTrackingRequest"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "success",
+          "message"
+        ],
+        "title": "KOLTrackingRequestResponse",
+        "description": "\u5355\u4e2a KOL \u8ffd\u8e2a\u8bf7\u6c42\u54cd\u5e94"
+      },
+      "KOLTrackingRequestReview": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "approved",
+              "rejected"
+            ],
+            "title": "Status"
+          },
+          "admin_notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Admin Notes"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "title": "KOLTrackingRequestReview",
+        "description": "\u5ba1\u6838 KOL \u8ffd\u8e2a\u8bf7\u6c42"
+      },
+      "KOLTrackingRequestsResponse": {
+        "properties": {
+          "requests": {
+            "items": {
+              "$ref": "#/components/schemas/KOLTrackingRequest"
+            },
+            "type": "array",
+            "title": "Requests"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          }
+        },
+        "type": "object",
+        "required": [
+          "requests",
+          "total"
+        ],
+        "title": "KOLTrackingRequestsResponse",
+        "description": "KOL \u8ffd\u8e2a\u8bf7\u6c42\u5217\u8868\u54cd\u5e94"
+      },
+      "KeyMetrics": {
+        "properties": {
+          "concentration_risk": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Concentration Risk"
+          },
+          "sector_balance": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sector Balance"
+          },
+          "growth_potential": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Growth Potential"
+          }
+        },
+        "type": "object",
+        "title": "KeyMetrics",
+        "description": "Key portfolio metrics"
+      },
       "KeywordScrapeRequest": {
         "properties": {
           "keywords": {
@@ -9006,6 +9769,15 @@
         ],
         "title": "KeywordScrapeRequest",
         "description": "\u5173\u952e\u8bcd\u722c\u53d6\u8bf7\u6c42"
+      },
+      "LocaleEnum": {
+        "type": "string",
+        "enum": [
+          "en",
+          "zh"
+        ],
+        "title": "LocaleEnum",
+        "description": "\u8bed\u8a00\u679a\u4e3e"
       },
       "MajorHolder": {
         "properties": {
@@ -9209,14 +9981,6 @@
             "title": "Url",
             "description": "\u6587\u7ae0 URL"
           },
-          "tags": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array",
-            "title": "Tags",
-            "description": "\u6807\u7b7e\u5217\u8868"
-          },
           "tickers": {
             "items": {
               "type": "string"
@@ -9242,6 +10006,98 @@
               }
             ],
             "title": "Created At"
+          },
+          "ai_summary": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ai Summary",
+            "description": "AI \u751f\u6210\u7684\u6458\u8981"
+          },
+          "sentiment": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sentiment",
+            "description": "\u60c5\u611f: bullish/bearish/neutral"
+          },
+          "sentiment_confidence": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sentiment Confidence",
+            "description": "\u60c5\u611f\u7f6e\u4fe1\u5ea6"
+          },
+          "trading_action": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Trading Action",
+            "description": "\u4ea4\u6613\u4fe1\u53f7: buy/sell/hold"
+          },
+          "market_impact": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Market Impact",
+            "description": "\u5e02\u573a\u5f71\u54cd: high/medium/low"
+          },
+          "key_points": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Key Points",
+            "description": "\u5173\u952e\u8981\u70b9"
+          },
+          "us_market_relevance": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Us Market Relevance",
+            "description": "\u7f8e\u80a1\u76f8\u5173\u6027: high/medium/low/none"
+          },
+          "analyzed_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Analyzed At",
+            "description": "\u5206\u6790\u65f6\u95f4"
           }
         },
         "type": "object",
@@ -9445,16 +10301,7 @@
           "unread_count"
         ],
         "title": "NotificationListResponse",
-        "description": "\u901a\u77e5\u5217\u8868\u54cd\u5e94"
-      },
-      "NotificationMethodEnum": {
-        "type": "string",
-        "enum": [
-          "EMAIL",
-          "MESSAGE"
-        ],
-        "title": "NotificationMethodEnum",
-        "description": "\u901a\u77e5\u65b9\u5f0f\u679a\u4e3e"
+        "description": "Notification list response"
       },
       "NotificationResponse": {
         "properties": {
@@ -9538,7 +10385,7 @@
           "created_at"
         ],
         "title": "NotificationResponse",
-        "description": "\u901a\u77e5\u54cd\u5e94"
+        "description": "Notification response"
       },
       "OAuthRequest": {
         "properties": {
@@ -9814,6 +10661,447 @@
         ],
         "title": "OptionsResponse",
         "description": "\u671f\u6743\u6570\u636e\u54cd\u5e94"
+      },
+      "OverallAnalysis": {
+        "properties": {
+          "summary": {
+            "type": "string",
+            "title": "Summary"
+          },
+          "risk_level": {
+            "type": "string",
+            "title": "Risk Level"
+          },
+          "diversification_score": {
+            "type": "integer",
+            "title": "Diversification Score"
+          },
+          "portfolio_style": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Portfolio Style"
+          },
+          "strengths": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Strengths",
+            "default": []
+          },
+          "weaknesses": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Weaknesses",
+            "default": []
+          },
+          "key_metrics": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/KeyMetrics"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "summary",
+          "risk_level",
+          "diversification_score"
+        ],
+        "title": "OverallAnalysis",
+        "description": "Overall portfolio analysis"
+      },
+      "PortfolioAnalysisRequest": {
+        "properties": {
+          "user_context": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Context",
+            "description": "Optional user-provided context for analysis (e.g., investment goals, risk tolerance)"
+          }
+        },
+        "type": "object",
+        "title": "PortfolioAnalysisRequest",
+        "description": "Request for portfolio analysis"
+      },
+      "PortfolioAnalysisResponse": {
+        "properties": {
+          "overall_analysis": {
+            "$ref": "#/components/schemas/OverallAnalysis"
+          },
+          "stock_analyses": {
+            "items": {
+              "$ref": "#/components/schemas/StockAnalysis"
+            },
+            "type": "array",
+            "title": "Stock Analyses"
+          },
+          "portfolio_suggestions": {
+            "$ref": "#/components/schemas/PortfolioSuggestions"
+          },
+          "analyzed_at": {
+            "type": "string",
+            "title": "Analyzed At"
+          },
+          "model": {
+            "type": "string",
+            "title": "Model"
+          },
+          "positions_analyzed": {
+            "type": "integer",
+            "title": "Positions Analyzed"
+          }
+        },
+        "type": "object",
+        "required": [
+          "overall_analysis",
+          "stock_analyses",
+          "portfolio_suggestions",
+          "analyzed_at",
+          "model",
+          "positions_analyzed"
+        ],
+        "title": "PortfolioAnalysisResponse",
+        "description": "Full portfolio analysis response"
+      },
+      "PortfolioHistoryResponse": {
+        "properties": {
+          "period": {
+            "type": "string",
+            "title": "Period"
+          },
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/SnapshotDataPoint"
+            },
+            "type": "array",
+            "title": "Data"
+          },
+          "first_snapshot_date": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "First Snapshot Date"
+          },
+          "has_real_data": {
+            "type": "boolean",
+            "title": "Has Real Data",
+            "default": false
+          },
+          "data_points": {
+            "type": "integer",
+            "title": "Data Points",
+            "default": 0
+          }
+        },
+        "type": "object",
+        "required": [
+          "period",
+          "data"
+        ],
+        "title": "PortfolioHistoryResponse",
+        "description": "Portfolio history response"
+      },
+      "PortfolioSuggestions": {
+        "properties": {
+          "rebalancing": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Rebalancing",
+            "default": []
+          },
+          "risk_management": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Risk Management",
+            "default": []
+          },
+          "opportunities": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Opportunities",
+            "default": []
+          },
+          "tax_considerations": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Tax Considerations",
+            "default": []
+          }
+        },
+        "type": "object",
+        "title": "PortfolioSuggestions",
+        "description": "Portfolio improvement suggestions"
+      },
+      "PostAIAnalysisRequest": {
+        "properties": {
+          "post_ids": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "Post Ids"
+          },
+          "force": {
+            "type": "boolean",
+            "title": "Force",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "post_ids"
+        ],
+        "title": "PostAIAnalysisRequest",
+        "description": "\u5e16\u5b50 AI \u5206\u6790\u8bf7\u6c42\uff08\u6309 ID \u5217\u8868\uff09"
+      },
+      "PostAIAnalysisResponse": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success"
+          },
+          "post_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Post Id"
+          },
+          "sentiment": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sentiment"
+          },
+          "sentiment_confidence": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sentiment Confidence"
+          },
+          "sentiment_reasoning": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sentiment Reasoning"
+          },
+          "tickers": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tickers"
+          },
+          "tags": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tags"
+          },
+          "summary": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Summary"
+          },
+          "trading_signal": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Trading Signal"
+          },
+          "is_stock_related": {
+            "type": "boolean",
+            "title": "Is Stock Related",
+            "default": false
+          },
+          "stock_related_confidence": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stock Related Confidence"
+          },
+          "stock_related_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stock Related Reason"
+          },
+          "analyzed_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Analyzed At"
+          },
+          "model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model"
+          },
+          "cached": {
+            "type": "boolean",
+            "title": "Cached",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "success"
+        ],
+        "title": "PostAIAnalysisResponse",
+        "description": "\u5e16\u5b50 AI \u5206\u6790\u54cd\u5e94"
+      },
+      "PostAnalysisStatsResponse": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success"
+          },
+          "total_posts": {
+            "type": "integer",
+            "title": "Total Posts"
+          },
+          "analyzed_posts": {
+            "type": "integer",
+            "title": "Analyzed Posts"
+          },
+          "unanalyzed_posts": {
+            "type": "integer",
+            "title": "Unanalyzed Posts"
+          },
+          "stock_related_posts": {
+            "type": "integer",
+            "title": "Stock Related Posts"
+          },
+          "sentiment_distribution": {
+            "type": "object",
+            "title": "Sentiment Distribution"
+          },
+          "analysis_rate": {
+            "type": "number",
+            "title": "Analysis Rate"
+          },
+          "platform": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Platform"
+          }
+        },
+        "type": "object",
+        "required": [
+          "success",
+          "total_posts",
+          "analyzed_posts",
+          "unanalyzed_posts",
+          "stock_related_posts",
+          "sentiment_distribution",
+          "analysis_rate"
+        ],
+        "title": "PostAnalysisStatsResponse",
+        "description": "\u5e16\u5b50\u5206\u6790\u7edf\u8ba1\u54cd\u5e94"
       },
       "PrivacySettings": {
         "properties": {
@@ -10487,6 +11775,107 @@
         "title": "RecommendationSummary",
         "description": "\u8bc4\u7ea7\u6458\u8981"
       },
+      "RecordSnapshotRequest": {
+        "properties": {
+          "total_value": {
+            "type": "number",
+            "title": "Total Value"
+          },
+          "total_cost_basis": {
+            "type": "number",
+            "title": "Total Cost Basis",
+            "default": 0
+          },
+          "unrealized_pnl": {
+            "type": "number",
+            "title": "Unrealized Pnl",
+            "default": 0
+          },
+          "positions_count": {
+            "type": "integer",
+            "title": "Positions Count",
+            "default": 0
+          },
+          "accounts_count": {
+            "type": "integer",
+            "title": "Accounts Count",
+            "default": 0
+          }
+        },
+        "type": "object",
+        "required": [
+          "total_value"
+        ],
+        "title": "RecordSnapshotRequest",
+        "description": "Request to record a snapshot"
+      },
+      "RescheduleRequest": {
+        "properties": {
+          "trigger_type": {
+            "type": "string",
+            "enum": [
+              "interval",
+              "cron"
+            ],
+            "title": "Trigger Type"
+          },
+          "hours": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 168.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hours"
+          },
+          "hour": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 23.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hour"
+          },
+          "minute": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 59.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Minute"
+          },
+          "timezone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Timezone"
+          }
+        },
+        "type": "object",
+        "required": [
+          "trigger_type"
+        ],
+        "title": "RescheduleRequest"
+      },
       "ResetPasswordRequest": {
         "properties": {
           "email": {
@@ -10655,6 +12044,117 @@
         ],
         "title": "ScrapeResponse",
         "description": "\u722c\u53d6\u54cd\u5e94"
+      },
+      "SendEmailRequest": {
+        "properties": {
+          "notification_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notification Ids"
+          },
+          "send_all_unread": {
+            "type": "boolean",
+            "title": "Send All Unread",
+            "default": false
+          },
+          "send_as_digest": {
+            "type": "boolean",
+            "title": "Send As Digest",
+            "default": true
+          }
+        },
+        "type": "object",
+        "title": "SendEmailRequest",
+        "description": "Send email request"
+      },
+      "SendEmailResponse": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          },
+          "emails_sent": {
+            "type": "integer",
+            "title": "Emails Sent"
+          },
+          "notifications_processed": {
+            "type": "integer",
+            "title": "Notifications Processed"
+          },
+          "errors": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Errors",
+            "default": []
+          }
+        },
+        "type": "object",
+        "required": [
+          "success",
+          "message",
+          "emails_sent",
+          "notifications_processed"
+        ],
+        "title": "SendEmailResponse",
+        "description": "Send email response"
+      },
+      "SendMessageRequest": {
+        "properties": {
+          "content": {
+            "type": "string",
+            "maxLength": 100000,
+            "minLength": 1,
+            "title": "Content"
+          },
+          "model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model",
+            "description": "Model ID to use (e.g. gpt-4o-mini, deepseek-chat, qwen-plus). If not set, uses server default."
+          },
+          "sources": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sources",
+            "description": "Active data sources: kol, news, web, portfolio. If not set, all sources are available."
+          }
+        },
+        "type": "object",
+        "required": [
+          "content"
+        ],
+        "title": "SendMessageRequest",
+        "description": "\u53d1\u9001\u6d88\u606f\u8bf7\u6c42\uff08Agent \u6a21\u5f0f - \u81ea\u52a8\u751f\u6210 AI \u56de\u590d\uff09"
       },
       "SentimentAnalysis": {
         "properties": {
@@ -11007,6 +12507,144 @@
         "title": "SingleKeywordRequest",
         "description": "\u5355\u4e2a\u5173\u952e\u8bcd\u722c\u53d6\u8bf7\u6c42"
       },
+      "SingleStockAnalysisResponse": {
+        "properties": {
+          "symbol": {
+            "type": "string",
+            "title": "Symbol"
+          },
+          "sentiment": {
+            "type": "string",
+            "title": "Sentiment"
+          },
+          "sentiment_confidence": {
+            "type": "number",
+            "title": "Sentiment Confidence"
+          },
+          "short_term_outlook": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Short Term Outlook"
+          },
+          "long_term_outlook": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Long Term Outlook"
+          },
+          "analysis_summary": {
+            "type": "string",
+            "title": "Analysis Summary"
+          },
+          "key_factors": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Key Factors",
+            "default": []
+          },
+          "risk_factors": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Risk Factors",
+            "default": []
+          },
+          "recommendation": {
+            "type": "string",
+            "title": "Recommendation"
+          },
+          "target_weight": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Weight"
+          },
+          "rationale": {
+            "type": "string",
+            "title": "Rationale"
+          },
+          "analyzed_at": {
+            "type": "string",
+            "title": "Analyzed At"
+          },
+          "model": {
+            "type": "string",
+            "title": "Model"
+          }
+        },
+        "type": "object",
+        "required": [
+          "symbol",
+          "sentiment",
+          "sentiment_confidence",
+          "analysis_summary",
+          "recommendation",
+          "rationale",
+          "analyzed_at",
+          "model"
+        ],
+        "title": "SingleStockAnalysisResponse",
+        "description": "Single stock analysis response"
+      },
+      "SnapshotDataPoint": {
+        "properties": {
+          "date": {
+            "type": "string",
+            "title": "Date"
+          },
+          "value": {
+            "type": "number",
+            "title": "Value"
+          },
+          "pnl": {
+            "type": "number",
+            "title": "Pnl"
+          },
+          "pnl_percent": {
+            "type": "number",
+            "title": "Pnl Percent"
+          },
+          "positions_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Positions Count"
+          }
+        },
+        "type": "object",
+        "required": [
+          "date",
+          "value",
+          "pnl",
+          "pnl_percent"
+        ],
+        "title": "SnapshotDataPoint",
+        "description": "Portfolio snapshot data point"
+      },
       "SortField": {
         "type": "string",
         "enum": [
@@ -11036,6 +12674,103 @@
         ],
         "title": "StatsResponse",
         "description": "\u7edf\u8ba1\u54cd\u5e94"
+      },
+      "StockAnalysis": {
+        "properties": {
+          "symbol": {
+            "type": "string",
+            "title": "Symbol"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "current_weight": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Current Weight"
+          },
+          "sentiment": {
+            "type": "string",
+            "title": "Sentiment"
+          },
+          "analysis": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Analysis"
+          },
+          "recommendation": {
+            "type": "string",
+            "title": "Recommendation"
+          },
+          "confidence": {
+            "type": "number",
+            "title": "Confidence"
+          },
+          "key_points": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Key Points",
+            "default": []
+          }
+        },
+        "type": "object",
+        "required": [
+          "symbol",
+          "sentiment",
+          "recommendation",
+          "confidence"
+        ],
+        "title": "StockAnalysis",
+        "description": "Individual stock analysis"
+      },
+      "StockAnalysisRequest": {
+        "properties": {
+          "symbol": {
+            "type": "string",
+            "title": "Symbol",
+            "description": "Stock ticker symbol"
+          },
+          "position_data": {
+            "type": "object",
+            "title": "Position Data",
+            "description": "Position data"
+          },
+          "include_portfolio_context": {
+            "type": "boolean",
+            "title": "Include Portfolio Context",
+            "description": "Whether to include overall portfolio context",
+            "default": true
+          }
+        },
+        "type": "object",
+        "required": [
+          "symbol",
+          "position_data"
+        ],
+        "title": "StockAnalysisRequest",
+        "description": "Request for single stock analysis"
       },
       "StockDiscussionsResponse": {
         "properties": {
@@ -11567,6 +13302,25 @@
         "title": "ThemeEnum",
         "description": "\u4e3b\u9898\u679a\u4e3e"
       },
+      "TickerCount": {
+        "properties": {
+          "ticker": {
+            "type": "string",
+            "title": "Ticker"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          }
+        },
+        "type": "object",
+        "required": [
+          "ticker",
+          "count"
+        ],
+        "title": "TickerCount",
+        "description": "\u80a1\u7968\u4ee3\u7801\u8ba1\u6570"
+      },
       "TickersResponse": {
         "properties": {
           "tickers": {
@@ -11699,6 +13453,44 @@
         ],
         "title": "TopPosition",
         "description": "Top position in portfolio"
+      },
+      "TopTickersResponse": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success"
+          },
+          "tickers": {
+            "items": {
+              "$ref": "#/components/schemas/TickerCount"
+            },
+            "type": "array",
+            "title": "Tickers"
+          },
+          "total_unique_tickers": {
+            "type": "integer",
+            "title": "Total Unique Tickers"
+          },
+          "platform": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Platform"
+          }
+        },
+        "type": "object",
+        "required": [
+          "success",
+          "tickers",
+          "total_unique_tickers"
+        ],
+        "title": "TopTickersResponse",
+        "description": "\u70ed\u95e8\u80a1\u7968\u4ee3\u7801\u54cd\u5e94"
       },
       "TrackedStockCreate": {
         "properties": {
@@ -11900,6 +13692,16 @@
         ],
         "title": "TrackedStocksListResponse",
         "description": "\u8ffd\u8e2a\u80a1\u7968\u5217\u8868\u54cd\u5e94"
+      },
+      "TrackingRequestStatus": {
+        "type": "string",
+        "enum": [
+          "pending",
+          "approved",
+          "rejected"
+        ],
+        "title": "TrackingRequestStatus",
+        "description": "\u8ffd\u8e2a\u8bf7\u6c42\u72b6\u6001"
       },
       "TradingSignal": {
         "properties": {
@@ -12159,7 +13961,7 @@
           "unread_count"
         ],
         "title": "UnreadCountResponse",
-        "description": "\u672a\u8bfb\u6570\u91cf\u54cd\u5e94"
+        "description": "Unread count response"
       },
       "UpdateConversationRequest": {
         "properties": {
@@ -12269,9 +14071,22 @@
         "title": "UserFollowResponse",
         "description": "\u7528\u6237\u5173\u6ce8\u54cd\u5e94"
       },
+      "UserLocaleUpdate": {
+        "properties": {
+          "locale": {
+            "$ref": "#/components/schemas/LocaleEnum"
+          }
+        },
+        "type": "object",
+        "required": [
+          "locale"
+        ],
+        "title": "UserLocaleUpdate",
+        "description": "\u66f4\u65b0\u7528\u6237\u8bed\u8a00\u504f\u597d"
+      },
       "UserNotificationUpdate": {
         "properties": {
-          "is_subscribe_newsletter": {
+          "email_notifications_enabled": {
             "anyOf": [
               {
                 "type": "boolean"
@@ -12280,17 +14095,7 @@
                 "type": "null"
               }
             ],
-            "title": "Is Subscribe Newsletter"
-          },
-          "notification_method": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/NotificationMethodEnum"
-              },
-              {
-                "type": "null"
-              }
-            ]
+            "title": "Email Notifications Enabled"
           }
         },
         "type": "object",
@@ -12412,19 +14217,26 @@
               }
             ]
           },
-          "is_subscribe_newsletter": {
-            "type": "boolean",
-            "title": "Is Subscribe Newsletter"
-          },
-          "notification_method": {
+          "locale": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/NotificationMethodEnum"
+                "type": "string"
               },
               {
                 "type": "null"
               }
-            ]
+            ],
+            "title": "Locale"
+          },
+          "email_notifications_enabled": {
+            "type": "boolean",
+            "title": "Email Notifications Enabled",
+            "default": true
+          },
+          "is_admin": {
+            "type": "boolean",
+            "title": "Is Admin",
+            "default": false
           },
           "created_at": {
             "type": "string",
@@ -12442,7 +14254,6 @@
           "id",
           "email",
           "membership",
-          "is_subscribe_newsletter",
           "created_at",
           "updated_at"
         ],
@@ -12452,11 +14263,12 @@
           "avatar_url": "https://example.com/avatar.jpg",
           "created_at": "2024-01-01T00:00:00Z",
           "email": "user@example.com",
+          "email_notifications_enabled": true,
           "full_name": "John Doe",
           "id": "550e8400-e29b-41d4-a716-446655440000",
-          "is_subscribe_newsletter": true,
+          "is_admin": false,
+          "locale": "en",
           "membership": "FREE",
-          "notification_method": "EMAIL",
           "phone_e164": "+1234567890",
           "theme": "SYSTEM",
           "updated_at": "2024-01-01T00:00:00Z",
@@ -12522,7 +14334,7 @@
               }
             ]
           },
-          "is_subscribe_newsletter": {
+          "email_notifications_enabled": {
             "anyOf": [
               {
                 "type": "boolean"
@@ -12531,17 +14343,7 @@
                 "type": "null"
               }
             ],
-            "title": "Is Subscribe Newsletter"
-          },
-          "notification_method": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/NotificationMethodEnum"
-              },
-              {
-                "type": "null"
-              }
-            ]
+            "title": "Email Notifications Enabled"
           }
         },
         "type": "object",
@@ -12792,9 +14594,9 @@
           "message"
         ],
         "title": "MessageResponse",
-        "description": "\u901a\u7528\u6d88\u606f\u54cd\u5e94"
+        "description": "Generic message response"
       },
-      "app__api__routes__snaptrade__schemas__MessageResponse": {
+      "app__api__routes__portfolio__schemas__MessageResponse": {
         "properties": {
           "message": {
             "type": "string",

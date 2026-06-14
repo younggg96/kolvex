@@ -155,7 +155,7 @@
       },
       "portfolio": {
         "title": "投资组合集成",
-        "description": "通过 SnapTrade 连接您的券商，将社交智能叠加到您的实际持仓上。",
+        "description": "通过 Portfolio 连接您的券商，将社交智能叠加到您的实际持仓上。",
         "stats": { "brokers": "券商数", "security": "安全性", "sync": "同步" }
       },
       "filtering": {
@@ -221,16 +221,53 @@
   },
   "chat": {
     "title": "与 Kolvex 对话",
+    "userName": "你",
+    "assistantName": "Kolvex",
+    "actions": {
+      "copy": "复制",
+      "copied": "已复制",
+      "retry": "重试"
+    },
+    "activity": {
+      "routing": "正在理解你的问题",
+      "planning": "正在规划分析步骤",
+      "writing": "正在整理回答",
+      "working": "正在分析",
+      "interrupted": "回答已中断"
+    },
+    "tools": {
+      "get_robinhood_account": "读取 Robinhood 账户与持仓",
+      "get_robinhood_stock_trades": "读取 Robinhood 股票交易",
+      "get_robinhood_option_trades": "读取 Robinhood 期权交易",
+      "get_robinhood_wash_sale_risk": "检查 Robinhood wash sale 风险",
+      "get_robinhood_sell_review": "复盘 Robinhood 卖出表现",
+      "get_stock_quote": "获取股票报价",
+      "get_stock_financials": "读取财务数据",
+      "get_analyst_recommendations": "查询分析师评级",
+      "get_stock_history": "加载历史价格",
+      "get_company_info": "读取公司资料",
+      "search_stock_news": "搜索相关新闻",
+      "get_trending_news": "获取市场新闻",
+      "get_kol_latest_tweets": "读取市场观点",
+      "analyze_kol_sentiment": "分析市场情绪",
+      "get_user_portfolio": "读取你的投资组合",
+      "search_knowledge_base": "查询知识库",
+      "get_superinvestor_holdings": "查询机构持仓",
+      "web_search": "搜索网页"
+    },
     "badge": "AI 驱动洞察",
     "heading": "您想<highlight>探索</highlight>什么？",
     "description": "询问股票、市场趋势，或浏览我们 AI 驱动的精选洞察",
     "suggestions": {
+      "reviewRobinhood": "复盘我的 Robinhood 账户",
+      "checkWashSale": "检查当前 wash sale 风险",
       "analyzeNvidia": "分析英伟达股票",
       "explainTrends": "解释市场趋势",
       "trendingStocks": "热门趋势股票",
       "latestNews": "最新新闻"
     },
     "input": {
+      "placeholder": "询问你的投资组合、交易、风险或市场情况...",
       "apiKeyRequired": "需要 API 密钥",
       "apiKeyRequiredDesc": "请在设置中添加至少一个模型 API 密钥，以解锁模型选择并开始对话。",
       "settingsApiKeys": "设置 → API 密钥",
@@ -238,6 +275,7 @@
       "addApiKey": "添加 API 密钥",
       "selectModel": "选择模型",
       "sources": {
+        "robinhood": "Robinhood",
         "kol": "KOL",
         "news": "新闻",
         "web": "网页",
@@ -379,8 +417,6 @@
       "description": "连接您的券商账户，自动追踪持仓、监控表现，并可公开分享您的投资组合。",
       "connecting": "连接中...",
       "connectBroker": "连接券商",
-      "snaptradeTitle": "SnapTrade",
-      "snaptradeDescription": "通过托管券商连接门户连接已支持的机构。",
       "ibkrTitle": "Interactive Brokers",
       "ibkrDescription": "使用 IBKR Flex Web Service 官方直连，Kolvex 不会获取您的 IBKR 密码。",
       "connectIbkr": "连接 Interactive Brokers",

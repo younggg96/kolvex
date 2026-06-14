@@ -45,7 +45,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { formatCurrency } from "@/lib/snaptradeApi";
+import { formatCurrency } from "@/lib/portfolioApi";
 import { useTranslation } from "@/lib/i18n";
 import { MarkdownBody } from "@/components/trading-analysis/markdown";
 import {

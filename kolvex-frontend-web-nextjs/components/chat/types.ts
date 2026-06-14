@@ -23,7 +23,12 @@ export interface ChatHistoryItem {
   messageCount: number;
 }
 
-export type SearchSource = "kol" | "news" | "web" | "portfolio";
+export type SearchSource =
+  | "kol"
+  | "news"
+  | "web"
+  | "portfolio"
+  | "robinhood";
 
 export type AIModel =
   | "gpt-4o"
@@ -54,6 +59,7 @@ export interface ChatInputProps {
   value: string;
   onChange: (value: string) => void;
   onSubmit: (e?: React.FormEvent) => void;
+  onCancel?: () => void;
   onKeyDown?: (e: React.KeyboardEvent) => void;
   isLoading?: boolean;
   isFocused?: boolean;
@@ -129,6 +135,11 @@ export interface ToolStatus {
   status: "running" | "done";
 }
 
+export interface AgentStatus {
+  stage: string;
+  message?: string;
+}
+
 export interface ChatMessageListProps {
   messages: Message[];
   pendingUserMessage?: string;
@@ -136,6 +147,9 @@ export interface ChatMessageListProps {
   isLoading?: boolean;
   messagesEndRef?: React.RefObject<HTMLDivElement>;
   activeTools?: ToolStatus[];
+  agentStatus?: AgentStatus | null;
+  errorMessage?: string | null;
+  onRetry?: () => void;
   /** Display name of the currently selected model */
   modelName?: string;
 }

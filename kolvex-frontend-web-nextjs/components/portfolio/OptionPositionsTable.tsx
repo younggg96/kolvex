@@ -22,9 +22,9 @@ import { SortableHeader } from "@/components/ui/sortable-header";
 import CompanyLogo from "@/components/ui/company-logo";
 import { WeightIndicator } from "@/components/ui/weight-indicator";
 import MiniSparkline from "@/components/stock/MiniSparkline";
-import { formatCurrency } from "@/lib/snaptradeApi";
+import { formatCurrency } from "@/lib/portfolioApi";
 import { useTranslation } from "@/lib/i18n";
-import type { OptionPositionsTableProps, SnapTradePosition } from "./types";
+import type { OptionPositionsTableProps, PortfolioPosition } from "./types";
 
 // Helper to check if a value is hidden
 const isHiddenValue = (val: any): val is string =>
@@ -38,7 +38,7 @@ function normalizeOptionCost(rawAveragePrice: number, currentPremium: number) {
   }
 
   // Robinhood option positions are stored as total contract cost
-  // (average option premium * 100). SnapTrade-style payloads can be
+  // (average option premium * 100). Portfolio-style payloads can be
   // per-share premium, so normalize before calculating P&L.
   const looksLikeContractCost =
     rawAveragePrice > 50 ||
@@ -189,7 +189,7 @@ export function OptionPositionsTable({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {positions.map((pos: SnapTradePosition) => {
+            {positions.map((pos: PortfolioPosition) => {
               const isHiddenPosition = pos.is_hidden || pos.units == null;
 
               // Safely get numeric values, handling hidden values "***"

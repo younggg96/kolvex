@@ -1,9 +1,9 @@
-import type { SnapTradePosition } from "@/lib/supabase/database.types";
+import type { PortfolioPosition } from "@/lib/supabase/database.types";
 
 // ================== TYPES ==================
 
 export interface PortfolioAllocationProps {
-  holdings: SnapTradePosition[];
+  holdings: PortfolioPosition[];
   className?: string;
   isOwner?: boolean;
   // Optional: use cached sector data from parent (avoids duplicate fetches)

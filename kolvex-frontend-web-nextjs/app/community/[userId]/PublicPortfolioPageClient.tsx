@@ -13,7 +13,7 @@ import {
   PublicPortfolioNotFound,
   FollowButton,
 } from "@/components/community";
-import { getPublicHoldings } from "@/lib/snaptradeApi";
+import { getPublicHoldings } from "@/lib/portfolioApi";
 import { getUserProfile, type UserProfile } from "@/lib/api/users";
 import { getFollowStatus } from "@/lib/followApi";
 import type { FollowStatus } from "@/lib/supabase/database.types";

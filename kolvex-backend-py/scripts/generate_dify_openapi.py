@@ -17,7 +17,7 @@ from app.api.routes.scraper import router as scraper_router
 from app.api.routes.stocks import router as stocks_router
 from app.api.routes.kol_tweets import router as kol_tweets_router
 from app.api.routes.kol_subscriptions import router as kol_subscriptions_router
-from app.api.routes.snaptrade import router as snaptrade_router
+from app.api.routes.portfolio import router as portfolio_router
 from app.api.routes.xiaohongshu import router as xiaohongshu_router
 from app.api.routes.dataroma import router as dataroma_router
 from app.api.routes.scheduler_routes import router as scheduler_router
@@ -54,8 +54,8 @@ dify_app.include_router(dataroma_router, prefix="/api", tags=["超级投资者"]
 # 社交平台
 dify_app.include_router(xiaohongshu_router, prefix="/api", tags=["小红书"])
 
-# 券商连接 (SnapTrade)
-dify_app.include_router(snaptrade_router, prefix="/api", tags=["SnapTrade"])
+# 券商连接 (Portfolio)
+dify_app.include_router(portfolio_router, prefix="/api", tags=["Portfolio"])
 
 # AI 分析
 dify_app.include_router(ai.router, prefix="/api", tags=["AI"])

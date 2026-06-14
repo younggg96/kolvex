@@ -32,7 +32,7 @@ import {
   getPublicUsers,
   type PublicUsersSortBy,
   type SortOrder,
-} from "@/lib/snaptradeApi";
+} from "@/lib/portfolioApi";
 import { getFollowing } from "@/lib/followApi";
 import { useAuth } from "@/hooks/useAuth";
 import { useTranslation } from "@/lib/i18n";

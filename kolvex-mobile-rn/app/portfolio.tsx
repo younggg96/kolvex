@@ -34,7 +34,7 @@ export default function PortfolioScreen() {
             Connect Your Portfolio
           </Text>
           <Text style={[styles.description, { color: colors.mutedForeground }]}>
-            Link your brokerage account via SnapTrade to see your holdings, P&L analysis, and AI-powered insights.
+            Connect Robinhood or Interactive Brokers to see holdings, P&L analysis, and AI-powered insights.
           </Text>
         </View>
 
@@ -58,14 +58,14 @@ export default function PortfolioScreen() {
           size="lg"
           fullWidth
           onPress={() => {
-            // TODO: Implement SnapTrade connection
+            // TODO: Open the direct broker connection flow.
           }}
         >
           Connect Brokerage
         </Button>
 
         <Text style={[styles.note, { color: colors.mutedForeground }]}>
-          Powered by SnapTrade. Your credentials are encrypted and never stored on our servers.
+          Broker data is read-only. Robinhood and IBKR connections are managed separately.
         </Text>
       </ScrollView>
     </View>

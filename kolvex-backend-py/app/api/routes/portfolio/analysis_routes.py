@@ -8,7 +8,7 @@ from pydantic import BaseModel, Field
 from typing import Optional, List, Dict, Any
 
 from app.api.dependencies.auth import get_current_user_id
-from app.services.snaptrade import SnapTradeService, get_snaptrade_service
+from app.services.portfolio import PortfolioService, get_portfolio_service
 from app.services.portfolio_analyzer import analyze_portfolio, analyze_stock
 
 router = APIRouter()
@@ -109,7 +109,7 @@ class SingleStockAnalysisResponse(BaseModel):
 async def analyze_user_portfolio(
     request: PortfolioAnalysisRequest = None,
     current_user_id: str = Depends(get_current_user_id),
-    service: SnapTradeService = Depends(get_snaptrade_service),
+    service: PortfolioService = Depends(get_portfolio_service),
 ):
     """
     Analyze the current user's portfolio using AI.
@@ -189,7 +189,7 @@ async def analyze_user_portfolio(
 async def analyze_single_stock_position(
     request: StockAnalysisRequest,
     current_user_id: str = Depends(get_current_user_id),
-    service: SnapTradeService = Depends(get_snaptrade_service),
+    service: PortfolioService = Depends(get_portfolio_service),
 ):
     """
     Analyze a single stock position in detail.
@@ -210,7 +210,7 @@ async def analyze_single_stock_position(
             if holdings:
                 total_value = 0
                 for account in holdings.get("accounts", []):
-                    for pos in account.get("snaptrade_positions", []):
+                    for pos in account.get("portfolio_positions", []):
                         price = pos.get("price", 0) or 0
                         units = pos.get("units", 0) or 0
                         multiplier = 100 if pos.get("position_type") == "option" else 1
@@ -219,7 +219,7 @@ async def analyze_single_stock_position(
                 portfolio_context = {
                     "total_value": total_value,
                     "positions_count": sum(
-                        len(a.get("snaptrade_positions", [])) 
+                        len(a.get("portfolio_positions", [])) 
                         for a in holdings.get("accounts", [])
                     ),
                 }

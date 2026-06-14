@@ -936,7 +936,7 @@ async def trigger_news_fetch(
 
 @router.post("/actions/portfolio-snapshot", response_model=Dict[str, Any])
 async def trigger_portfolio_snapshot(
-    sync_first: bool = Query(True, description="先同步持仓数据再记录快照"),
+    sync_first: bool = Query(False, description="已弃用；券商同步由各自服务执行"),
     admin_id: str = Depends(verify_admin),
 ):
     """
@@ -955,26 +955,26 @@ async def trigger_portfolio_snapshot(
 
     logger = logging.getLogger(__name__)
 
-    from app.services.snaptrade.service import SnapTradeService
+    from app.services.portfolio.service import PortfolioService
     from app.services.portfolio_snapshot_service import get_portfolio_snapshot_service
 
     try:
         supabase = get_supabase_service()
-        snaptrade_service = SnapTradeService(supabase=supabase)
+        portfolio_service = PortfolioService(supabase=supabase)
         snapshot_service = get_portfolio_snapshot_service()
 
         logger.info(f"📸 Starting portfolio snapshot (sync_first={sync_first})")
 
         # 获取所有已连接的用户
         result = (
-            supabase.table("snaptrade_connections")
-            .select("user_id, snaptrade_user_id, is_connected")
+            supabase.table("portfolio_connections")
+            .select("user_id, is_connected")
             .eq("is_connected", True)
             .execute()
         )
 
         if not result.data:
-            logger.warning("No connected users found in snaptrade_connections")
+            logger.warning("No connected users found in portfolio_connections")
             return {
                 "success": True,
                 "message": "No connected users found",
@@ -994,14 +994,8 @@ async def trigger_portfolio_snapshot(
             user_id = connection["user_id"]
 
             try:
-                # 可选：先同步持仓数据
-                if sync_first:
-                    logger.info(f"Syncing data for user {user_id[:8]}...")
-                    await snaptrade_service.sync_accounts(user_id)
-                    await snaptrade_service.sync_positions(user_id)
-
                 # 获取持仓数据计算快照
-                holdings = await snaptrade_service.get_user_holdings(user_id)
+                holdings = await portfolio_service.get_user_holdings(user_id)
 
                 if not holdings or not holdings.get("accounts"):
                     logger.warning(f"No holdings data for user {user_id[:8]}")
@@ -1022,7 +1016,7 @@ async def trigger_portfolio_snapshot(
                 accounts_count = len(holdings["accounts"])
 
                 for account in holdings["accounts"]:
-                    positions = account.get("snaptrade_positions", [])
+                    positions = account.get("portfolio_positions", [])
                     for pos in positions:
                         price = pos.get("price", 0) or 0
                         units = pos.get("units", 0) or 0
@@ -1217,8 +1211,8 @@ async def get_database_stats(
         "kol_subscriptions",
         "notifications",
         "user_follows",
-        "snaptrade_connections",
-        "snaptrade_positions",
+        "portfolio_connections",
+        "portfolio_positions",
         "chat_conversations",
     ]
 

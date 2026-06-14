@@ -1,5 +1,5 @@
 """
-SnapTrade API Schemas
+Portfolio API Schemas
 Pydantic models for request/response validation
 """
 
@@ -9,14 +9,9 @@ from typing import Optional, List, Dict, Any
 
 # ========== Connection Schemas ==========
 
-class ConnectionPortalResponse(BaseModel):
-    """Connection portal response"""
-    redirect_url: str = Field(..., description="Redirect URL for broker connection")
-
-
 class ConnectionStatusResponse(BaseModel):
     """Connection status response"""
-    is_registered: bool = Field(..., description="Whether user is registered with SnapTrade")
+    is_registered: bool = Field(..., description="Whether user is registered with Portfolio")
     is_connected: bool = Field(..., description="Whether user has connected a broker")
     is_public: bool = Field(..., description="Whether portfolio is publicly shared")
     last_synced_at: Optional[str] = Field(None, description="Last sync timestamp")
@@ -144,4 +139,3 @@ class MessageResponse(BaseModel):
     """Generic message response"""
     message: str
     success: bool = True
-

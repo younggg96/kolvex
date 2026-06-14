@@ -24,7 +24,12 @@ export function ChatWelcomeContainer({
   onConversationChange,
 }: ChatWelcomeContainerProps) {
   const router = useRouter();
-  const [activeSources, setActiveSources] = useState<SearchSource[]>(["kol", "news", "web", "portfolio"]);
+  const [activeSources, setActiveSources] = useState<SearchSource[]>([
+    "robinhood",
+    "portfolio",
+    "news",
+    "web",
+  ]);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedModel, setSelectedModel] = useState<AIModel>("deepseek-chat");
 

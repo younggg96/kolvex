@@ -1,5 +1,5 @@
 """
-SnapTrade Holdings Routes
+Portfolio Holdings Routes
 Endpoints for managing and viewing holdings data
 """
 
@@ -9,7 +9,7 @@ from typing import Optional
 import logging
 
 from app.api.dependencies.auth import get_current_user_id
-from app.services.snaptrade import SnapTradeService, get_snaptrade_service
+from app.services.portfolio import PortfolioService, get_portfolio_service
 from .schemas import (
     HoldingsResponse, 
     PublicHoldingsResponse, 
@@ -30,7 +30,7 @@ router = APIRouter()
 @router.get("/holdings", response_model=HoldingsResponse)
 async def get_my_holdings(
     current_user_id: str = Depends(get_current_user_id),
-    service: SnapTradeService = Depends(get_snaptrade_service),
+    service: PortfolioService = Depends(get_portfolio_service),
 ):
     """
     Get current user's holdings data
@@ -52,7 +52,7 @@ async def get_public_users(
     offset: int = 0,
     sort_by: str = "updated",  # "updated" or "pnl_percent"
     sort_order: str = "desc",  # "asc" or "desc"
-    service: SnapTradeService = Depends(get_snaptrade_service),
+    service: PortfolioService = Depends(get_portfolio_service),
 ):
     """
     Get list of users who have public portfolios
@@ -82,7 +82,7 @@ async def get_public_users(
 @router.get("/holdings/{user_id}", response_model=Optional[PublicHoldingsResponse])
 async def get_public_holdings(
     user_id: str, 
-    service: SnapTradeService = Depends(get_snaptrade_service)
+    service: PortfolioService = Depends(get_portfolio_service)
 ):
     """
     Get user's public holdings data
@@ -94,7 +94,7 @@ async def get_public_holdings(
         if not holdings:
             raise HTTPException(
                 status_code=http_status.HTTP_404_NOT_FOUND,
-                detail="User has not shared their portfolio or is not connected to SnapTrade",
+                detail="User has not shared their portfolio or is not connected to Portfolio",
             )
         return PublicHoldingsResponse(**holdings)
     except HTTPException:
@@ -111,7 +111,7 @@ async def get_public_holdings(
 async def toggle_public_sharing(
     request: TogglePublicRequest,
     current_user_id: str = Depends(get_current_user_id),
-    service: SnapTradeService = Depends(get_snaptrade_service),
+    service: PortfolioService = Depends(get_portfolio_service),
 ):
     """
     Toggle portfolio public sharing status
@@ -142,7 +142,7 @@ async def toggle_position_visibility(
     position_id: str,
     request: TogglePositionVisibilityRequest,
     current_user_id: str = Depends(get_current_user_id),
-    service: SnapTradeService = Depends(get_snaptrade_service),
+    service: PortfolioService = Depends(get_portfolio_service),
 ):
     """
     Toggle visibility of a single position when portfolio is public
@@ -176,7 +176,7 @@ async def toggle_position_visibility(
 async def batch_toggle_position_visibility(
     request: BatchTogglePositionVisibilityRequest,
     current_user_id: str = Depends(get_current_user_id),
-    service: SnapTradeService = Depends(get_snaptrade_service),
+    service: PortfolioService = Depends(get_portfolio_service),
 ):
     """
     Batch toggle visibility of multiple positions
@@ -206,7 +206,7 @@ async def batch_toggle_position_visibility(
 @router.get("/privacy-settings", response_model=PrivacySettingsResponse)
 async def get_privacy_settings(
     current_user_id: str = Depends(get_current_user_id),
-    service: SnapTradeService = Depends(get_snaptrade_service),
+    service: PortfolioService = Depends(get_portfolio_service),
 ):
     """
     Get current privacy settings for public portfolio sharing
@@ -226,7 +226,7 @@ async def get_privacy_settings(
 async def update_privacy_settings(
     request: PrivacySettings,
     current_user_id: str = Depends(get_current_user_id),
-    service: SnapTradeService = Depends(get_snaptrade_service),
+    service: PortfolioService = Depends(get_portfolio_service),
 ):
     """
     Update privacy settings for public portfolio sharing

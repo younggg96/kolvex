@@ -95,7 +95,7 @@ Agent 方式（改造后）：
 │                                    ▼                        │
 │  ┌─────────────────────────────────────────────────────┐   │
 │  │              现有服务层 (Services)                     │   │
-│  │  YFinance / Finnhub / Benzinga / SnapTrade /        │   │
+│  │  YFinance / Finnhub / Benzinga / Portfolio /        │   │
 │  │  NewsAggregator / Supabase / Dataroma               │   │
 │  └─────────────────────────────────────────────────────┘   │
 └─────────────────────────────────────────────────────────────┘
@@ -290,7 +290,7 @@ class AgentState(TypedDict):
 | `get_trending_news` | news_tools.py | NewsAggregator.get_trending_news() | 获取热门金融新闻 |
 | `get_kol_latest_tweets` | kol_tools.py | Supabase kol_tweets 表 | 查询 KOL 最新推文 |
 | `analyze_kol_sentiment` | kol_tools.py | Supabase kol_tweets 表 | 聚合某股票的 KOL 情感 |
-| `get_user_portfolio` | portfolio_tools.py | Supabase snaptrade_positions 表 | 用户持仓、权重、盈亏 |
+| `get_user_portfolio` | portfolio_tools.py | Supabase portfolio_positions 表 | 用户持仓、权重、盈亏 |
 | `search_knowledge_base` | search_tools.py | Supabase 多表全文搜索 | KOL推文/新闻/小红书 搜索 |
 | `get_superinvestor_holdings` | search_tools.py | Supabase dataroma 表 | 对冲基金持仓查询 |
 
