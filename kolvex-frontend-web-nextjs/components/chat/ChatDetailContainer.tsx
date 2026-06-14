@@ -132,6 +132,7 @@ export function ChatDetailContainer({
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const sentFirstMessageRef = useRef<string | null>(null);
+  const messageIdsBeforePendingRef = useRef<Set<string>>(new Set());
   const isLoadingRef = useRef(false);
   const abortControllerRef = useRef<AbortController | null>(null);
 
@@ -262,6 +263,13 @@ export function ChatDetailContainer({
       window.history.replaceState(null, "", pathname);
     }
 
+    // Remember which messages existed before this optimistic message. The
+    // stream endpoint persists the user message immediately, so a history
+    // refresh can return it before generation finishes.
+    messageIdsBeforePendingRef.current = new Set(
+      messages.map((message) => message.id)
+    );
+
     // Show the user message optimistically and send to agent
     setPendingUserMessage(firstMessage);
     setIsLoading(true);
@@ -303,6 +311,7 @@ export function ChatDetailContainer({
         }
         setIsLoading(false);
         setPendingUserMessage("");
+        messageIdsBeforePendingRef.current.clear();
         setStreamingContent("");
         setActiveTools([]);
         setAgentStatus(null);
@@ -379,6 +388,9 @@ export function ChatDetailContainer({
       setLastSubmittedMessage(trimmedMessage);
 
       // Optimistic update: show user message immediately
+      messageIdsBeforePendingRef.current = new Set(
+        messages.map((message) => message.id)
+      );
       setPendingUserMessage(trimmedMessage);
 
       const controller = new AbortController();
@@ -415,12 +427,22 @@ export function ChatDetailContainer({
         }
         setIsLoading(false);
         setPendingUserMessage("");
+        messageIdsBeforePendingRef.current.clear();
         setStreamingContent("");
         setActiveTools([]);
         setAgentStatus(null);
       }
     },
-    [conversationId, isLoading, isBlocked, processAgentStream, selectConversation, selectedModel, activeSources]
+    [
+      conversationId,
+      isLoading,
+      isBlocked,
+      processAgentStream,
+      selectConversation,
+      selectedModel,
+      activeSources,
+      messages,
+    ]
   );
 
   const handleCancel = useCallback(() => {
@@ -439,6 +461,16 @@ export function ChatDetailContainer({
     handleSubmit(query);
   };
 
+  const normalizedPendingMessage = pendingUserMessage.trim();
+  const pendingMessageWasPersisted =
+    normalizedPendingMessage.length > 0 &&
+    messages.some(
+      (message) =>
+        message.role === "user" &&
+        message.content.trim() === normalizedPendingMessage &&
+        !messageIdsBeforePendingRef.current.has(message.id)
+    );
+
   return (
     <div className={cn("flex h-full", className)}>
       <div className="flex-1 flex flex-col min-w-0 relative bg-background">
@@ -448,7 +480,9 @@ export function ChatDetailContainer({
         {/* Content Area */}
         <ChatMessageList
           messages={messages}
-          pendingUserMessage={pendingUserMessage}
+          pendingUserMessage={
+            pendingMessageWasPersisted ? undefined : pendingUserMessage
+          }
           streamingContent={streamingContent}
           isLoading={isLoading}
           messagesEndRef={messagesEndRef}

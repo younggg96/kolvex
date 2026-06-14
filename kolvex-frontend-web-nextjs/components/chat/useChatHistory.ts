@@ -13,15 +13,22 @@ function generateTitle(firstMessage: string): string {
 function convertApiConversation(
   apiConv: chatApi.ChatConversation
 ): ChatConversation {
+  const seenMessageIds = new Set<string>();
   return {
     id: apiConv.id,
     title: apiConv.title,
-    messages: apiConv.messages.map((msg) => ({
-      id: msg.id,
-      role: msg.role as "user" | "assistant" | "system",
-      content: msg.content,
-      timestamp: new Date(msg.created_at),
-    })),
+    messages: apiConv.messages
+      .filter((msg) => {
+        if (seenMessageIds.has(msg.id)) return false;
+        seenMessageIds.add(msg.id);
+        return true;
+      })
+      .map((msg) => ({
+        id: msg.id,
+        role: msg.role as "user" | "assistant" | "system",
+        content: msg.content,
+        timestamp: new Date(msg.created_at),
+      })),
     createdAt: new Date(apiConv.created_at),
     updatedAt: new Date(apiConv.updated_at),
   };

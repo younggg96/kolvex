@@ -232,8 +232,8 @@ export function ChatMessageList({
     : undefined;
 
   return (
-    <div ref={containerRef} className="relative flex-1 pb-28 overflow-y-auto">
-      <div className="max-w-4xl mx-auto px-4 md:px-6 py-8">
+    <div ref={containerRef} className="relative flex-1 overflow-y-auto">
+      <div className="mx-auto flex min-h-full max-w-4xl flex-col justify-end px-4 py-6 md:px-6">
         {/* Messages */}
         <div className="space-y-6">
           {messages.map((message, index) => (
