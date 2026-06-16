@@ -1166,11 +1166,13 @@ class RobinhoodService:
             profile = await self._fetch_profile()
 
         portfolio_connection = await self._ensure_portfolio_connection(user_id)
-        account = await self._upsert_portfolio_account(
-            connection_id=portfolio_connection["id"],
-            user_id=user_id,
-            profile=profile,
-        )
+        account = None
+        if portfolio_connection:
+            account = await self._upsert_portfolio_account(
+                connection_id=portfolio_connection["id"],
+                user_id=user_id,
+                profile=profile,
+            )
         option_positions_data: Optional[List[Dict[str, Any]]] = None
         try:
             option_positions_data = await asyncio.to_thread(
@@ -1189,18 +1191,28 @@ class RobinhoodService:
                 exc_info=True,
             )
 
-        positions = await self._sync_positions(
-            account_id=account["id"],
-            holdings_data=await asyncio.to_thread(r.build_holdings),
-            option_positions_data=option_positions_data,
-        )
+        positions: List[Dict[str, Any]] = []
+        holdings_data = await asyncio.to_thread(r.build_holdings)
+        if account:
+            positions = await self._sync_positions(
+                account_id=account["id"],
+                holdings_data=holdings_data,
+                option_positions_data=option_positions_data,
+            )
+        else:
+            logger.warning(
+                "Portfolio storage tables are unavailable; skipping Robinhood "
+                "positions sync for user %s",
+                user_id,
+            )
         orders_count = await self._sync_orders(user_id)
         option_orders_count = await self._sync_option_orders(user_id)
 
         now = datetime.utcnow().isoformat()
-        self.supabase.table("portfolio_connections").update(
-            {"is_connected": True, "last_synced_at": now}
-        ).eq("id", portfolio_connection["id"]).execute()
+        if portfolio_connection:
+            self.supabase.table("portfolio_connections").update(
+                {"is_connected": True, "last_synced_at": now}
+            ).eq("id", portfolio_connection["id"]).execute()
         self.supabase.table("robinhood_connections").update(
             {
                 "is_connected": True,
@@ -1214,7 +1226,8 @@ class RobinhoodService:
             }
         ).eq("user_id", user_id).execute()
 
-        await self._record_snapshot(user_id, positions)
+        if account:
+            await self._record_snapshot(user_id, positions)
         logger.info(
             "Robinhood sync completed for user %s: %s positions, %s stock orders, %s option legs",
             user_id,
@@ -1260,14 +1273,14 @@ class RobinhoodService:
         positions_count = 0
         option_positions_count = 0
         if account:
-            result = (
-                self.supabase.table("portfolio_positions")
-                .select("id", count="exact")
-                .eq("account_id", account["id"])
-                .execute()
-            )
-            positions_count = result.count or 0
             try:
+                result = (
+                    self.supabase.table("portfolio_positions")
+                    .select("id", count="exact")
+                    .eq("account_id", account["id"])
+                    .execute()
+                )
+                positions_count = result.count or 0
                 option_result = (
                     self.supabase.table("portfolio_positions")
                     .select("id", count="exact")
@@ -1276,8 +1289,11 @@ class RobinhoodService:
                     .execute()
                 )
                 option_positions_count = option_result.count or 0
-            except Exception:
-                pass
+            except Exception as error:
+                if _is_missing_robinhood_table_error(error):
+                    logger.info("Portfolio positions table is not ready yet")
+                else:
+                    raise
 
         stock_orders = (
             self.supabase.table("robinhood_stock_orders")
@@ -1893,19 +1909,32 @@ class RobinhoodService:
         return sorted(risks.values(), key=lambda item: item["ticker"])
 
     async def disconnect(self, user_id: str) -> bool:
-        portfolio_connection = (
-            self.supabase.table("portfolio_connections")
-            .select("*")
-            .eq("user_id", user_id)
-            .eq("provider", "robinhood")
-            .execute()
-        )
+        try:
+            portfolio_connection = (
+                self.supabase.table("portfolio_connections")
+                .select("*")
+                .eq("user_id", user_id)
+                .eq("provider", "robinhood")
+                .execute()
+            )
+        except Exception as error:
+            if _is_missing_robinhood_table_error(error):
+                logger.info("Portfolio connection table is not ready yet")
+                portfolio_connection = None
+            else:
+                raise
 
         account = await self._get_portfolio_account(user_id)
         if account:
-            self.supabase.table("portfolio_accounts").delete().eq(
-                "id", account["id"]
-            ).execute()
+            try:
+                self.supabase.table("portfolio_accounts").delete().eq(
+                    "id", account["id"]
+                ).execute()
+            except Exception as error:
+                if _is_missing_robinhood_table_error(error):
+                    logger.info("Portfolio accounts table is not ready yet")
+                else:
+                    raise
 
         self.supabase.table("robinhood_stock_orders").delete().eq(
             "user_id", user_id
@@ -1917,18 +1946,24 @@ class RobinhoodService:
             "user_id", user_id
         ).execute()
 
-        if portfolio_connection.data:
+        if portfolio_connection and portfolio_connection.data:
             connection = portfolio_connection.data[0]
-            remaining_accounts = (
-                self.supabase.table("portfolio_accounts")
-                .select("id", count="exact")
-                .eq("connection_id", connection["id"])
-                .execute()
-            )
-            if (remaining_accounts.count or 0) == 0:
-                self.supabase.table("portfolio_connections").delete().eq(
-                    "id", connection["id"]
-                ).execute()
+            try:
+                remaining_accounts = (
+                    self.supabase.table("portfolio_accounts")
+                    .select("id", count="exact")
+                    .eq("connection_id", connection["id"])
+                    .execute()
+                )
+                if (remaining_accounts.count or 0) == 0:
+                    self.supabase.table("portfolio_connections").delete().eq(
+                        "id", connection["id"]
+                    ).execute()
+            except Exception as error:
+                if _is_missing_robinhood_table_error(error):
+                    logger.info("Portfolio storage tables are not ready yet")
+                else:
+                    raise
 
         return True
 
@@ -1967,14 +2002,25 @@ class RobinhoodService:
         )
         return result.data[0] if result.data else data
 
-    async def _ensure_portfolio_connection(self, user_id: str) -> Dict[str, Any]:
-        result = (
-            self.supabase.table("portfolio_connections")
-            .select("*")
-            .eq("user_id", user_id)
-            .eq("provider", "robinhood")
-            .execute()
-        )
+    async def _ensure_portfolio_connection(
+        self, user_id: str
+    ) -> Optional[Dict[str, Any]]:
+        try:
+            result = (
+                self.supabase.table("portfolio_connections")
+                .select("*")
+                .eq("user_id", user_id)
+                .eq("provider", "robinhood")
+                .execute()
+            )
+        except Exception as error:
+            if _is_missing_robinhood_table_error(error):
+                logger.warning(
+                    "Portfolio connection table is unavailable; Robinhood "
+                    "connection metadata will be stored without portfolio rows."
+                )
+                return None
+            raise
         if result.data:
             return result.data[0]
 
@@ -1985,7 +2031,16 @@ class RobinhoodService:
             "is_public": False,
             "last_synced_at": datetime.utcnow().isoformat(),
         }
-        created = self.supabase.table("portfolio_connections").insert(data).execute()
+        try:
+            created = self.supabase.table("portfolio_connections").insert(data).execute()
+        except Exception as error:
+            if _is_missing_robinhood_table_error(error):
+                logger.warning(
+                    "Portfolio connection table is unavailable; Robinhood "
+                    "connection metadata will be stored without portfolio rows."
+                )
+                return None
+            raise
         if not created.data:
             raise Exception("Failed to create portfolio connection")
         return created.data[0]
@@ -2741,23 +2796,35 @@ class RobinhoodService:
         return result.data[0] if result.data else None
 
     async def _get_portfolio_account(self, user_id: str) -> Optional[Dict[str, Any]]:
-        connection = (
-            self.supabase.table("portfolio_connections")
-            .select("id")
-            .eq("user_id", user_id)
-            .eq("provider", "robinhood")
-            .execute()
-        )
+        try:
+            connection = (
+                self.supabase.table("portfolio_connections")
+                .select("id")
+                .eq("user_id", user_id)
+                .eq("provider", "robinhood")
+                .execute()
+            )
+        except Exception as error:
+            if _is_missing_robinhood_table_error(error):
+                logger.info("Portfolio connection table is not ready yet")
+                return None
+            raise
         if not connection.data:
             return None
 
-        account = (
-            self.supabase.table("portfolio_accounts")
-            .select("*")
-            .eq("connection_id", connection.data[0]["id"])
-            .eq("account_id", f"robinhood:{user_id}")
-            .execute()
-        )
+        try:
+            account = (
+                self.supabase.table("portfolio_accounts")
+                .select("*")
+                .eq("connection_id", connection.data[0]["id"])
+                .eq("account_id", f"robinhood:{user_id}")
+                .execute()
+            )
+        except Exception as error:
+            if _is_missing_robinhood_table_error(error):
+                logger.info("Portfolio accounts table is not ready yet")
+                return None
+            raise
         return account.data[0] if account.data else None
 
 

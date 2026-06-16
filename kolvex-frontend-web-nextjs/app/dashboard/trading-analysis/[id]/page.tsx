@@ -107,6 +107,9 @@ export default function TradingAnalysisDetailPage() {
   const [progressEvents, setProgressEvents] = useState<ProgressEvent[]>([]);
   const [currentStage, setCurrentStage] = useState("initializing");
   const [activeReportTab, setActiveReportTab] = useState("market");
+  const [isStreamConnected, setIsStreamConnected] = useState(false);
+  const [lastActivityAt, setLastActivityAt] = useState(() => Date.now());
+  const [now, setNow] = useState(() => Date.now());
   const cleanupRef = useRef<(() => void) | null>(null);
 
   const loadAnalysis = useCallback(async () => {
@@ -117,7 +120,11 @@ export default function TradingAnalysisDetailPage() {
         ? data.progress_events
         : [];
       if (storedEvents.length > 0) {
-        setProgressEvents((prev) => mergeProgressEvents(prev, storedEvents));
+        setProgressEvents((prev) => {
+          const next = mergeProgressEvents(prev, storedEvents);
+          if (next.length > prev.length) setLastActivityAt(Date.now());
+          return next;
+        });
       } else if (data.status === "running" && data.progress_stage) {
         setProgressEvents((prev) =>
           mergeProgressEvents(prev, [
@@ -132,8 +139,10 @@ export default function TradingAnalysisDetailPage() {
       }
       if (data.status === "completed") {
         setCurrentStage("completed");
+        setLastActivityAt(Date.now());
       } else if (data.status === "failed") {
         setCurrentStage("failed");
+        setLastActivityAt(Date.now());
       } else if (data.status === "running" && data.progress_stage) {
         setCurrentStage((prev) => {
           const prevIdx = STAGE_ORDER.indexOf(prev);
@@ -185,7 +194,7 @@ export default function TradingAnalysisDetailPage() {
       pollTimer = setTimeout(async () => {
         if (cancelled) return;
         const data = await loadAnalysis();
-        if (data && data.status === "running") {
+        if (!cancelled && (!data || data.status === "running")) {
           startPolling();
         }
       }, 5_000);
@@ -210,6 +219,7 @@ export default function TradingAnalysisDetailPage() {
         analysisId,
         (event) => {
           if (cancelled) return;
+          setLastActivityAt(Date.now());
           setProgressEvents((prev) => mergeProgressEvents(prev, [event]));
           if (event.stage) {
             setCurrentStage((prev) => {
@@ -226,16 +236,16 @@ export default function TradingAnalysisDetailPage() {
         () => {
           if (cancelled) return;
           console.log("SSE error/timeout, falling back to polling");
-          loadAnalysis().then((data) => {
-            if (!cancelled && data?.status === "running") {
-              startPolling();
-            }
-          });
+          setIsStreamConnected(false);
+          loadAnalysis();
         },
         () => {
           if (!cancelled) loadAnalysis();
         },
-        accessToken
+        accessToken,
+        (connected) => {
+          if (!cancelled) setIsStreamConnected(connected);
+        }
       );
       cleanupRef.current = cleanup;
     };
@@ -243,6 +253,7 @@ export default function TradingAnalysisDetailPage() {
     loadAnalysis().then((data) => {
       if (cancelled) return;
       if (data && data.status === "running") {
+        startPolling();
         connectSSE();
       }
     });
@@ -254,6 +265,12 @@ export default function TradingAnalysisDetailPage() {
       cleanupRef.current = null;
     };
   }, [analysisId, loadAnalysis]);
+
+  useEffect(() => {
+    if (analysis?.status !== "running") return;
+    const timer = setInterval(() => setNow(Date.now()), 1_000);
+    return () => clearInterval(timer);
+  }, [analysis?.status]);
 
   const activeStageIdx = Math.max(
     STAGES.findIndex((s) => s.key === currentStage),
@@ -312,6 +329,15 @@ export default function TradingAnalysisDetailPage() {
   const isRunning = analysis.status === "running";
   const isCompleted = analysis.status === "completed";
   const isFailed = analysis.status === "failed";
+  const startedAt = new Date(analysis.created_at).getTime();
+  const elapsedSeconds = Number.isFinite(startedAt)
+    ? Math.max(0, Math.floor((now - startedAt) / 1000))
+    : 0;
+  const activityIdleSeconds = Math.max(
+    0,
+    Math.floor((now - lastActivityAt) / 1000)
+  );
+  const isWaitingForModel = isRunning && activityIdleSeconds >= 20;
 
   const reportTabs = [
     {
@@ -470,10 +496,37 @@ export default function TradingAnalysisDetailPage() {
                       <span className="text-sm font-semibold text-foreground">
                         {t("tradingAnalysis.analysisInProgress")}
                       </span>
+                      <span
+                        className={cn(
+                          "inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[10px] font-medium",
+                          isStreamConnected
+                            ? "bg-primary/10 text-primary"
+                            : "bg-amber-500/10 text-amber-500"
+                        )}
+                      >
+                        <span
+                          className={cn(
+                            "h-1.5 w-1.5 rounded-full animate-pulse",
+                            isStreamConnected ? "bg-primary" : "bg-amber-500"
+                          )}
+                        />
+                        {t(
+                          isStreamConnected
+                            ? "tradingAnalysis.liveUpdates"
+                            : "tradingAnalysis.syncingStatus"
+                        )}
+                      </span>
                     </div>
-                    <span className="text-xs font-medium text-muted-foreground tabular-nums">
-                      {t("tradingAnalysis.stage")} {activeStageIdx + 1}/{STAGES.length}
-                    </span>
+                    <div className="flex items-center gap-3 text-xs font-medium text-muted-foreground tabular-nums">
+                      <span>
+                        {t("tradingAnalysis.elapsed", {
+                          seconds: String(elapsedSeconds),
+                        })}
+                      </span>
+                      <span>
+                        {t("tradingAnalysis.stage")} {activeStageIdx + 1}/{STAGES.length}
+                      </span>
+                    </div>
                   </div>
                   <div className="h-1.5 rounded-full bg-muted overflow-hidden">
                     <div
@@ -573,7 +626,9 @@ export default function TradingAnalysisDetailPage() {
                           {t(`tradingAnalysis.stages.${activeStage.key}`)}
                         </p>
                         <p className="text-[11px] text-primary/60 truncate">
-                          {t(`tradingAnalysis.stageDesc.${activeStage.key}`)}
+                          {isWaitingForModel
+                            ? t("tradingAnalysis.waitingForModel")
+                            : t(`tradingAnalysis.stageDesc.${activeStage.key}`)}
                         </p>
                       </div>
                       <Loader2 className="w-4 h-4 text-primary/60 animate-spin ml-auto shrink-0" />
@@ -581,7 +636,10 @@ export default function TradingAnalysisDetailPage() {
                   )}
 
                   {progressEvents.length > 0 && (
-                    <ProgressLog events={progressEvents} />
+                    <ProgressLog
+                      events={progressEvents}
+                      isLive={isStreamConnected}
+                    />
                   )}
                 </div>
               </div>

@@ -435,7 +435,13 @@ function AgentStep({
   );
 }
 
-export function ProgressLog({ events }: { events: ProgressEvent[] }) {
+export function ProgressLog({
+  events,
+  isLive = true,
+}: {
+  events: ProgressEvent[];
+  isLive?: boolean;
+}) {
   const groups = useMemo(() => groupByAgent(events), [events]);
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -458,8 +464,15 @@ export function ProgressLog({ events }: { events: ProgressEvent[] }) {
           agent activity
         </span>
         <div className="ml-auto flex items-center gap-1">
-          <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-          <span className="text-[9px] text-gray-600 font-mono">live</span>
+          <span
+            className={cn(
+              "w-1.5 h-1.5 rounded-full",
+              isLive ? "bg-primary animate-pulse" : "bg-amber-400 animate-pulse"
+            )}
+          />
+          <span className="text-[9px] text-gray-600 font-mono">
+            {isLive ? "live" : "syncing"}
+          </span>
         </div>
       </div>
 

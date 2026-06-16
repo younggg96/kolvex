@@ -1161,6 +1161,10 @@
       "completed": "Analysis complete"
     },
     "analysisInProgress": "Analysis in Progress",
+    "liveUpdates": "Live updates",
+    "syncingStatus": "Syncing",
+    "elapsed": "{seconds}s elapsed",
+    "waitingForModel": "The model is processing this step. Results will update automatically.",
     "stage": "Stage",
     "decision": {
       "buy": "BUY",

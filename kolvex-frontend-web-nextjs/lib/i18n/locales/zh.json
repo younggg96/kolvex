@@ -1132,6 +1132,10 @@
       "completed": "分析已完成"
     },
     "analysisInProgress": "分析进行中",
+    "liveUpdates": "实时更新",
+    "syncingStatus": "状态同步中",
+    "elapsed": "已运行 {seconds} 秒",
+    "waitingForModel": "模型正在处理当前步骤，结果会自动更新，请无需停留在此页面。",
     "stage": "阶段",
     "decision": {
       "buy": "买入",

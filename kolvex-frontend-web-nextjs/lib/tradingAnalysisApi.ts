@@ -208,7 +208,8 @@ export function streamAnalysisProgress(
   onEvent: (event: ProgressEvent) => void,
   onError?: (error: Error) => void,
   onDone?: () => void,
-  accessToken?: string
+  accessToken?: string,
+  onConnectionChange?: (connected: boolean) => void
 ): () => void {
   const backendUrl = process.env.NEXT_PUBLIC_BACKEND_API_URL;
   let url: string;
@@ -230,19 +231,20 @@ export function streamAnalysisProgress(
   let closed = false;
   let retriedWithProxy = false;
 
-  const DATA_TIMEOUT_MS = 30_000;
+  const INITIAL_DATA_TIMEOUT_MS = 30_000;
+  const IDLE_DATA_TIMEOUT_MS = 45_000;
   let dataTimer: ReturnType<typeof setTimeout> | null = null;
 
-  const resetDataTimer = () => {
+  const resetDataTimer = (timeoutMs: number) => {
     if (dataTimer) clearTimeout(dataTimer);
     if (closed) return;
     dataTimer = setTimeout(() => {
-      if (!closed && !receivedAnyData) {
-        console.warn("[SSE] no data within timeout, closing");
+      if (!closed) {
+        console.warn("[SSE] progress stream became idle, falling back to polling");
         cleanup();
-        onError?.(new Error("SSE data timeout"));
+        onError?.(new Error("SSE progress timeout"));
       }
-    }, DATA_TIMEOUT_MS);
+    }, timeoutMs);
   };
 
   const cleanup = () => {
@@ -250,16 +252,19 @@ export function streamAnalysisProgress(
     closed = true;
     if (dataTimer) clearTimeout(dataTimer);
     currentSource?.close();
+    onConnectionChange?.(false);
   };
 
   const attachHandlers = (es: EventSource) => {
-    es.onopen = () => console.log("[SSE] connection opened");
+    es.onopen = () => {
+      console.log("[SSE] connection opened");
+      onConnectionChange?.(true);
+    };
 
     es.onmessage = (event) => {
       errorCount = 0;
       receivedAnyData = true;
-      if (dataTimer) clearTimeout(dataTimer);
-      dataTimer = null;
+      resetDataTimer(IDLE_DATA_TIMEOUT_MS);
       try {
         const data: ProgressEvent = JSON.parse(event.data);
         onEvent(data);
@@ -287,6 +292,7 @@ export function streamAnalysisProgress(
         const proxySrc = new EventSource(proxyUrl);
         currentSource = proxySrc;
         attachHandlers(proxySrc);
+        resetDataTimer(INITIAL_DATA_TIMEOUT_MS);
         return;
       }
 
@@ -300,7 +306,7 @@ export function streamAnalysisProgress(
 
   currentSource = new EventSource(url);
   attachHandlers(currentSource);
-  resetDataTimer();
+  resetDataTimer(INITIAL_DATA_TIMEOUT_MS);
 
   return cleanup;
 }
