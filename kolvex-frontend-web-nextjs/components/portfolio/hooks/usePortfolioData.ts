@@ -1,4 +1,9 @@
 import { useState, useEffect, useCallback } from "react";
+import {
+  usePlaidLink,
+  type PlaidLinkOnExit,
+  type PlaidLinkOnSuccess,
+} from "react-plaid-link";
 import { toast } from "sonner";
 import {
   getConnectionStatus,
@@ -24,30 +29,6 @@ import type {
   PortfolioHoldings,
 } from "../types";
 
-declare global {
-  interface Window {
-    Plaid?: {
-      create: (config: {
-        token: string;
-        onSuccess: (
-          publicToken: string,
-          metadata: {
-            institution?: { name?: string | null; institution_id?: string | null };
-            accounts?: Array<{
-              id: string;
-              name?: string | null;
-              mask?: string | null;
-              type?: string | null;
-              subtype?: string | null;
-            }>;
-          },
-        ) => void;
-        onExit?: (error: unknown) => void;
-      }) => { open: () => void };
-    };
-  }
-}
-
 interface UsePortfolioDataOptions {
   userId?: string;
   isOwner: boolean;
@@ -55,7 +36,6 @@ interface UsePortfolioDataOptions {
 
 const PORTFOLIO_CACHE_TTL_MS = 5 * 60 * 1000;
 const PORTFOLIO_CACHE_PREFIX = "kolvex:portfolio";
-const PLAID_LINK_SCRIPT_ID = "plaid-link-script";
 
 interface CacheEnvelope<T> {
   timestamp: number;
@@ -127,36 +107,11 @@ function clearPortfolioCache(userId?: string) {
   } catch {}
 }
 
-function loadPlaidLinkScript() {
-  if (typeof window === "undefined") {
-    return Promise.reject(new Error("Plaid Link is only available in the browser"));
-  }
-  if (window.Plaid) return Promise.resolve();
-
-  const existing = document.getElementById(PLAID_LINK_SCRIPT_ID) as HTMLScriptElement | null;
-  if (existing) {
-    return new Promise<void>((resolve, reject) => {
-      existing.addEventListener("load", () => resolve(), { once: true });
-      existing.addEventListener("error", () => reject(new Error("Failed to load Plaid Link")), {
-        once: true,
-      });
-    });
-  }
-
-  return new Promise<void>((resolve, reject) => {
-    const script = document.createElement("script");
-    script.id = PLAID_LINK_SCRIPT_ID;
-    script.src = "https://cdn.plaid.com/link/v2/stable/link-initialize.js";
-    script.async = true;
-    script.onload = () => resolve();
-    script.onerror = () => reject(new Error("Failed to load Plaid Link"));
-    document.head.appendChild(script);
-  });
-}
-
 export function usePortfolioData({ userId, isOwner }: UsePortfolioDataOptions) {
   const [status, setStatus] = useState<PortfolioConnectionStatus | null>(null);
   const [plaidStatus, setPlaidStatus] = useState<PlaidConnectionStatus | null>(null);
+  const [plaidLinkToken, setPlaidLinkToken] = useState<string | null>(null);
+  const [shouldOpenPlaidLink, setShouldOpenPlaidLink] = useState(false);
   const [transactions, setTransactions] = useState<PlaidInvestmentTransaction[]>([]);
   const [transactionsTotal, setTransactionsTotal] = useState(0);
   const [transactionsHasMore, setTransactionsHasMore] = useState(false);
@@ -336,45 +291,79 @@ export function usePortfolioData({ userId, isOwner }: UsePortfolioDataOptions) {
     loadData();
   }, [loadData]);
 
+  const handlePlaidSuccess = useCallback<PlaidLinkOnSuccess>(
+    async (publicToken, metadata) => {
+      if (!publicToken) {
+        toast.error("Plaid did not return a public token");
+        setConnecting(false);
+        return;
+      }
+
+      try {
+        await exchangePlaidPublicToken({
+          public_token: publicToken,
+          institution: metadata.institution ?? undefined,
+          accounts: metadata.accounts,
+        });
+        toast.info("Syncing Plaid investment holdings...");
+        await syncPlaidInvestments();
+        clearPortfolioCache(cacheUserId);
+        await loadData(true);
+        toast.success("Plaid Investments connected");
+      } catch (error: any) {
+        toast.error(error?.message || "Failed to finish Plaid connection");
+      } finally {
+        setConnecting(false);
+        setShouldOpenPlaidLink(false);
+      }
+    },
+    [cacheUserId, loadData],
+  );
+
+  const handlePlaidExit = useCallback<PlaidLinkOnExit>((error) => {
+    if (error) console.warn("Plaid Link exited with error:", error);
+    setConnecting(false);
+    setShouldOpenPlaidLink(false);
+  }, []);
+
+  const {
+    open: openPlaidLink,
+    ready: plaidLinkReady,
+    error: plaidLinkError,
+  } = usePlaidLink({
+    token: plaidLinkToken,
+    onSuccess: handlePlaidSuccess,
+    onExit: handlePlaidExit,
+  });
+
+  useEffect(() => {
+    if (!shouldOpenPlaidLink || !plaidLinkToken || !plaidLinkReady) return;
+    openPlaidLink();
+    setShouldOpenPlaidLink(false);
+  }, [openPlaidLink, plaidLinkReady, plaidLinkToken, shouldOpenPlaidLink]);
+
+  useEffect(() => {
+    if (!plaidLinkError) return;
+    const message =
+      plaidLinkError instanceof Error
+        ? plaidLinkError.message
+        : "Failed to load Plaid Link";
+    toast.error(message);
+    setConnecting(false);
+    setShouldOpenPlaidLink(false);
+  }, [plaidLinkError]);
+
   const handleConnectPlaid = useCallback(async () => {
     setConnecting(true);
     try {
-      await loadPlaidLinkScript();
       const { link_token } = await createPlaidLinkToken();
-      if (!window.Plaid) throw new Error("Plaid Link failed to initialize");
-
-      const handler = window.Plaid.create({
-        token: link_token,
-        onSuccess: async (publicToken, metadata) => {
-          try {
-            await exchangePlaidPublicToken({
-              public_token: publicToken,
-              institution: metadata.institution,
-              accounts: metadata.accounts,
-            });
-            toast.info("Syncing Plaid investment holdings...");
-            await syncPlaidInvestments();
-            clearPortfolioCache(cacheUserId);
-            await loadData(true);
-            toast.success("Plaid Investments connected");
-          } catch (error: any) {
-            toast.error(error?.message || "Failed to finish Plaid connection");
-          } finally {
-            setConnecting(false);
-          }
-        },
-        onExit: (error) => {
-          if (error) console.warn("Plaid Link exited with error:", error);
-          setConnecting(false);
-        },
-      });
-
-      handler.open();
+      setPlaidLinkToken(link_token);
+      setShouldOpenPlaidLink(true);
     } catch (error: any) {
-      toast.error(error?.message || "Failed to open Plaid Link");
+      toast.error(error?.message || "Failed to prepare Plaid Link");
       setConnecting(false);
     }
-  }, [cacheUserId, loadData]);
+  }, []);
 
   const handleSync = useCallback(async () => {
     setSyncing(true);

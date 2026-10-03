@@ -114,6 +114,7 @@ const nextConfig = {
         https://*.vercel-insights.com
         https://*.financialjuice.com
         https://feed.financialjuice.com
+        https://cdn.plaid.com/link/v2/stable/link-initialize.js
       ;
 
       script-src-elem
@@ -128,6 +129,7 @@ const nextConfig = {
         https://*.vercel-insights.com
         https://*.financialjuice.com
         https://feed.financialjuice.com
+        https://cdn.plaid.com/link/v2/stable/link-initialize.js
       ;
 
       style-src
@@ -137,6 +139,17 @@ const nextConfig = {
         https://*.tradingview.com
         https://*.financialjuice.com
         https://feed.financialjuice.com
+      ;
+
+      style-src-elem
+        'self'
+        'unsafe-inline'
+        https://cdn.plaid.com
+        https://*.plaid.com
+      ;
+
+      style-src-attr
+        'unsafe-inline'
       ;
 
       img-src
@@ -165,6 +178,10 @@ const nextConfig = {
         https://*.vercel-insights.com
         https://*.financialjuice.com
         https://feed.financialjuice.com
+        https://production.plaid.com
+        https://sandbox.plaid.com
+        https://development.plaid.com
+        https://cdn.plaid.com
         https://*.up.railway.app
         ${isDevelopment ? localApiUrl : ""}
       ;
@@ -181,6 +198,7 @@ const nextConfig = {
         https://*.tradingview.com
         https://*.financialjuice.com
         https://feed.financialjuice.com
+        https://cdn.plaid.com
       ;
 
       worker-src
