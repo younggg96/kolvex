@@ -97,7 +97,6 @@ react-easy-crop   5.5.6       # 图片裁剪
 #### 工具与服务
 
 ```
-resend            6.4.2       # 邮件服务
 @vercel/analytics 1.6.1       # 分析服务
 @ducanh2912/next-pwa 10.2.9   # PWA 支持
 ```

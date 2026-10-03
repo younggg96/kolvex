@@ -1,37 +1,25 @@
 """
-Email Service - Send email notifications using Resend
+Email Service - disabled mail transport.
+
+Email template helpers remain here because notification modules reuse them, but
+Kolvex no longer sends email.
 """
 
 import logging
 import asyncio
 from typing import Optional, List, Dict, Any, Tuple
-import resend
-
-from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
-# Resend rate limit: 2 emails per second for free plan
 EMAIL_SEND_DELAY = 0.55  # 550ms delay between emails (slightly more than 1/2 second)
-EMAIL_RETRY_DELAY = 1.5  # Wait longer before retry on rate limit
-EMAIL_MAX_RETRIES = 3  # Maximum retry attempts for rate limited requests
 
 
 class EmailService:
     """邮件服务类"""
 
     def __init__(self):
-        self.api_key = settings.RESEND_API_KEY
-        self.from_address = settings.EMAIL_FROM_ADDRESS
-        self.enabled = settings.EMAIL_ENABLED and bool(self.api_key)
-
-        if self.enabled:
-            resend.api_key = self.api_key
-            logger.info("📧 Email service initialized")
-        else:
-            logger.warning(
-                "📧 Email service is disabled (no API key or disabled in config)"
-            )
+        self.enabled = False
+        logger.info("Email service is disabled")
 
     async def send_email(
         self,
@@ -43,7 +31,7 @@ class EmailService:
         retry_on_rate_limit: bool = True,
     ) -> Tuple[bool, Optional[str]]:
         """
-        Send a single email with rate limit retry support
+        Email delivery is disabled.
 
         Args:
             to: Recipient email address
@@ -56,61 +44,10 @@ class EmailService:
         Returns:
             Tuple of (success, error_message)
         """
-        if not self.enabled:
-            logger.debug(f"Email service disabled, skipping email to {to}")
-            return False, "Email service is disabled"
-
-        params: resend.Emails.SendParams = {
-            "from": self.from_address,
-            "to": [to],
-            "subject": subject,
-            "html": html_content,
-        }
-
-        if text_content:
-            params["text"] = text_content
-
-        retries = 0
-        max_retries = EMAIL_MAX_RETRIES if retry_on_rate_limit else 1
-
-        while retries < max_retries:
-            try:
-                email = resend.Emails.send(params)
-                logger.info(
-                    f"✅ Email sent successfully to {to}, id: {email.get('id')}"
-                )
-
-                # Add delay to avoid rate limiting when sending multiple emails
-                if with_delay:
-                    await asyncio.sleep(EMAIL_SEND_DELAY)
-
-                return True, None
-
-            except resend.exceptions.ResendError as e:
-                error_str = str(e)
-                is_rate_limit = (
-                    "rate" in error_str.lower() or "too many" in error_str.lower()
-                )
-
-                if is_rate_limit and retry_on_rate_limit and retries < max_retries - 1:
-                    retries += 1
-                    wait_time = EMAIL_RETRY_DELAY * retries  # Exponential backoff
-                    logger.warning(
-                        f"⏳ Rate limited sending to {to}, retry {retries}/{max_retries - 1} after {wait_time}s"
-                    )
-                    await asyncio.sleep(wait_time)
-                    continue
-
-                error_msg = f"Resend API error: {error_str}"
-                logger.error(f"❌ Failed to send email to {to}: {error_msg}")
-                return False, error_msg
-
-            except Exception as e:
-                error_msg = str(e)
-                logger.error(f"❌ Failed to send email to {to}: {error_msg}")
-                return False, error_msg
-
-        return False, "Max retries exceeded"
+        if with_delay:
+            await asyncio.sleep(EMAIL_SEND_DELAY)
+        logger.debug("Email delivery disabled, skipping email to %s", to)
+        return False, "Email delivery is disabled"
 
     async def send_bulk_emails(
         self,

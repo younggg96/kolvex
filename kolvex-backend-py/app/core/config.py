@@ -56,15 +56,6 @@ class Settings(BaseSettings):
     # API Key 配置 (用于 Dify 等外部服务，不过期)
     DIFY_API_KEY: str = os.getenv("DIFY_API_KEY", "")
 
-    # Email Service (Resend) 配置
-    RESEND_API_KEY: str = os.getenv(
-        "RESEND_API_KEY", "re_UNTp1c6M_NiZAo74CjZoGXL7T1uZ2Jswy"
-    )
-    EMAIL_FROM_ADDRESS: str = os.getenv(
-        "EMAIL_FROM_ADDRESS", "Kolvex <support@kolvex.app>"
-    )
-    EMAIL_ENABLED: bool = os.getenv("EMAIL_ENABLED", "True").lower() == "true"
-
     # Ollama AI 配置
     OLLAMA_BASE_URL: str = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
     OLLAMA_MODEL: str = os.getenv("OLLAMA_MODEL", "")

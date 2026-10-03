@@ -99,9 +99,6 @@ services:
       FINNHUB_API_KEY: ${FINNHUB_API_KEY:-}
       # Benzinga 新闻 API
       BENZINGA_API_KEY: ${BENZINGA_API_KEY:-}
-      # Email Service
-      RESEND_API_KEY: ${RESEND_API_KEY:-}
-      EMAIL_FROM_ADDRESS: ${EMAIL_FROM_ADDRESS:-}
       # Twilio (用于 WhatsApp 通知)
       TWILIO_ACCOUNT_SID: ${TWILIO_ACCOUNT_SID:-}
       TWILIO_AUTH_TOKEN: ${TWILIO_AUTH_TOKEN:-}

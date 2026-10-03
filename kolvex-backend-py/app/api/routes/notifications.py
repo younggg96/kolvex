@@ -380,7 +380,7 @@ async def test_send_notification_email(
                     related_symbol=notif.get("related_symbol"),
                 )
 
-                # Use with_delay=True to avoid Resend rate limiting
+                # Keep the delay flag for compatibility with the disabled email transport.
                 success, error_msg = await email_service.send_email(
                     to=user_email,
                     subject=f"🔔 {notif.get('title', 'Notification')}",
