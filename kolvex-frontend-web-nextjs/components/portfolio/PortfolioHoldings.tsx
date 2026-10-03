@@ -8,37 +8,26 @@ import { calculateTotalValue, calculateTotalPnL } from "@/lib/portfolioApi";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/lib/i18n";
-
-// Local components
 import { PortfolioSkeleton } from "./PortfolioSkeleton";
 import { PortfolioStatsGrid } from "./PortfolioStatsGrid";
 import { PortfolioHeaderActions } from "./PortfolioHeaderActions";
 import { PortfolioPerformanceChart } from "./PortfolioPerformanceChart";
-import {
-  IbkrConnectDialog,
-  NotConnectedState,
-  InitialSyncState,
-} from "./ConnectionStates";
+import { NotConnectedState, InitialSyncState } from "./ConnectionStates";
 import { AccountCard } from "./AccountCard";
 import { DisconnectDialog } from "./DisconnectDialog";
 import { PortfolioAIAnalysis } from "./PortfolioAIAnalysis";
-import { RobinhoodTransactionsTable } from "./RobinhoodTransactionsTable";
+import { InvestmentTransactionsTable } from "./InvestmentTransactionsTable";
 import { QuantStrategyWorkbench } from "./QuantStrategyWorkbench";
 import { PositionRiskControls } from "./PositionRiskControls";
-
-// Hooks
 import { usePortfolioData } from "./hooks/usePortfolioData";
 import { useEquitySort, useOptionSort } from "./hooks/usePortfolioSort";
 import {
   useStockDataCache,
   usePortfolioSymbols,
 } from "./hooks/useStockDataCache";
-
-// Utils
 import { downloadHoldings } from "./utils/downloadHoldings";
-
-// Types
 import type { PortfolioHoldingsProps } from "./types";
+
 export type { PortfolioHeaderActionsProps } from "./PortfolioHeaderActions";
 
 export default function PortfolioHoldings({
@@ -48,9 +37,8 @@ export default function PortfolioHoldings({
 }: PortfolioHoldingsProps) {
   const { t, locale } = useTranslation();
   const [disconnectDialogOpen, setDisconnectDialogOpen] = useState(false);
-  const [ibkrConnectDialogOpen, setIbkrConnectDialogOpen] = useState(false);
   const [expandedAccounts, setExpandedAccounts] = useState<Set<string>>(
-    new Set()
+    new Set(),
   );
   const [activeTab, setActiveTab] = useState<
     "holdings" | "transactions" | "strategies" | "ai-insights"
@@ -59,37 +47,23 @@ export default function PortfolioHoldings({
     Map<string, number[]>
   >(new Map());
 
-  // Custom hooks
   const {
     status,
     holdings,
-    robinhoodOrders,
-    robinhoodOptionOrders,
-    robinhoodOrdersTotal,
-    robinhoodOptionOrdersTotal,
-    robinhoodOrdersHasMore,
-    robinhoodOptionOrdersHasMore,
-    robinhoodOptionOrdersError,
-    robinhoodWashSaleRisks,
-    robinhoodOrderStatusFilter,
-    robinhoodOrderSymbolFilter,
-    loadingRobinhoodOrders,
-    loadingRobinhoodOptionOrders,
+    transactions,
+    transactionsTotal,
+    transactionsHasMore,
+    transactionSymbolFilter,
+    loadingTransactions,
     loading,
     syncing,
     connecting,
-    resettingRobinhoodAuth,
     disconnecting,
     copied,
-    handleConnect,
-    handleConnectIbkr,
-    handleConnectRobinhood,
-    handleResetRobinhoodAuth,
-    handleLoadMoreRobinhoodOrders,
-    handleLoadMoreRobinhoodOptionOrders,
-    handleRobinhoodOrderStatusFilterChange,
-    handleRobinhoodOrderSymbolFilterChange,
-    handleSyncRobinhoodTransactions,
+    handleConnectPlaid,
+    handleLoadMoreTransactions,
+    handleTransactionSymbolFilterChange,
+    handleSyncTransactions,
     handleSync,
     handleTogglePublic,
     handleDisconnect,
@@ -99,13 +73,10 @@ export default function PortfolioHoldings({
 
   const equitySort = useEquitySort();
   const optionSort = useOptionSort();
-
-  // Stock data cache
   const { fetchSparklines, isLoading: stockDataLoading, lastRefreshTime } =
     useStockDataCache();
-
-  // Get all unique symbols from holdings
   const portfolioSymbols = usePortfolioSymbols(holdings?.accounts);
+
   const tabOptions = useMemo(
     () => [
       { value: "holdings", label: t("portfolio.tabs.holdings") },
@@ -115,104 +86,83 @@ export default function PortfolioHoldings({
       ...(isOwner ? [{ value: "strategies", label: "量化策略" }] : []),
       { value: "ai-insights", label: t("portfolio.tabs.aiInsights") },
     ],
-    [isOwner, t]
+    [isOwner, t],
   );
 
-  // Handle download
   const handleDownload = useCallback(
     (format: "csv" | "json") => {
-      if (holdings) {
-        downloadHoldings(holdings, format);
-      }
+      if (holdings) downloadHoldings(holdings, format);
     },
-    [holdings]
+    [holdings],
   );
 
-  // Handle disconnect with dialog close
   const handleDisconnectAndClose = useCallback(async () => {
     const success = await handleDisconnect();
-    if (success) {
-      setDisconnectDialogOpen(false);
-    }
+    if (success) setDisconnectDialogOpen(false);
   }, [handleDisconnect]);
 
-  // Expand accounts with positions by default, collapse empty accounts
   useEffect(() => {
     if (holdings?.accounts) {
       const accountsWithPositions = holdings.accounts
-        .filter((a) => (a.portfolio_positions?.length || 0) > 0)
-        .map((a) => a.id);
+        .filter((account) => (account.portfolio_positions?.length || 0) > 0)
+        .map((account) => account.id);
       setExpandedAccounts(new Set(accountsWithPositions));
     }
   }, [holdings?.accounts]);
 
-  // Create a stable key for the symbols to detect actual changes
   const symbolsKey = useMemo(
     () => portfolioSymbols.sort().join(","),
-    [portfolioSymbols]
+    [portfolioSymbols],
   );
 
-  // Fetch stock data when symbols change (uses cache)
   useEffect(() => {
     if (portfolioSymbols.length === 0) return;
-
     let cancelled = false;
 
     const fetchData = async () => {
       const sparklines = await fetchSparklines(portfolioSymbols, false);
-      if (!cancelled) {
-        setSparklineDataMap(sparklines);
-      }
+      if (!cancelled) setSparklineDataMap(sparklines);
     };
 
     fetchData();
-
     return () => {
       cancelled = true;
     };
-    // Use symbolsKey instead of portfolioSymbols to prevent re-runs when array reference changes
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [symbolsKey, fetchSparklines]);
 
-  // Handle manual refresh
   const handleRefreshStockData = useCallback(async () => {
     if (portfolioSymbols.length === 0) return;
-
     const sparklines = await fetchSparklines(portfolioSymbols, true);
     setSparklineDataMap(sparklines);
   }, [portfolioSymbols, fetchSparklines]);
 
-  // Format last refresh time
   const formatLastRefresh = useMemo(() => {
     if (!lastRefreshTime) return null;
-    const now = Date.now();
-    const diffMs = now - lastRefreshTime;
+    const diffMs = Date.now() - lastRefreshTime;
     const diffMins = Math.floor(diffMs / 60000);
     const diffHours = Math.floor(diffMs / 3600000);
-
     if (diffMins < 1) return locale === "zh" ? "刚刚" : "Just now";
     if (diffMins < 60) return `${diffMins}m`;
     return `${diffHours}h`;
   }, [lastRefreshTime, locale]);
 
-  // Notify parent component of header actions state
   useEffect(() => {
-    if (onHeaderActionsReady) {
-      if (isOwner && status?.is_connected) {
-        onHeaderActionsReady({
-          syncing,
-          onSync: handleSync,
-          holdings,
-          onTogglePublic: handleTogglePublic,
-          onCopyShareLink: handleCopyShareLink,
-          copied,
-          onConnect: () => setIbkrConnectDialogOpen(true),
-          onDisconnect: () => setDisconnectDialogOpen(true),
-          onDownload: handleDownload,
-        });
-      } else {
-        onHeaderActionsReady(null);
-      }
+    if (!onHeaderActionsReady) return;
+    if (isOwner && status?.is_connected) {
+      onHeaderActionsReady({
+        syncing,
+        onSync: handleSync,
+        holdings,
+        onTogglePublic: handleTogglePublic,
+        onCopyShareLink: handleCopyShareLink,
+        copied,
+        onConnect: handleConnectPlaid,
+        onDisconnect: () => setDisconnectDialogOpen(true),
+        onDownload: handleDownload,
+      });
+    } else {
+      onHeaderActionsReady(null);
     }
   }, [
     onHeaderActionsReady,
@@ -224,23 +174,19 @@ export default function PortfolioHoldings({
     handleSync,
     handleTogglePublic,
     handleCopyShareLink,
+    handleConnectPlaid,
     handleDownload,
   ]);
 
   const toggleAccount = (accountId: string) => {
     setExpandedAccounts((prev) => {
       const next = new Set(prev);
-      if (next.has(accountId)) {
-        next.delete(accountId);
-      } else {
-        next.add(accountId);
-      }
+      if (next.has(accountId)) next.delete(accountId);
+      else next.add(accountId);
       return next;
     });
   };
 
-  // Calculate summary data
-  // For owner: calculate locally; For public view: use backend values (which may be "***")
   const publicHoldings = holdings as any;
   const totalValue = isOwner
     ? holdings
@@ -255,43 +201,34 @@ export default function PortfolioHoldings({
   const pnlPercent = isOwner
     ? typeof totalValue === "number" && totalValue > 0
       ? ((totalPnL as number) /
-        ((totalValue as number) - (totalPnL as number))) *
-      100
+          ((totalValue as number) - (totalPnL as number))) *
+        100
       : 0
     : publicHoldings?.pnl_percent ?? 0;
   const totalPositions = isOwner
     ? holdings?.accounts?.reduce(
-      (acc, curr) => acc + (curr.portfolio_positions?.length || 0),
-      0
-    ) || 0
+        (acc, curr) => acc + (curr.portfolio_positions?.length || 0),
+        0,
+      ) || 0
     : publicHoldings?.positions_count ?? 0;
 
-  if (loading) {
-    return <PortfolioSkeleton />;
-  }
+  if (loading) return <PortfolioSkeleton />;
 
-  // No direct brokerage authorization yet, so keep both broker choices visible.
   if (!status?.is_connected) {
     return (
       <NotConnectedState
-        onConnect={handleConnect}
-        onConnectIbkr={handleConnectIbkr}
-        onConnectRobinhood={handleConnectRobinhood}
-        onResetRobinhoodAuth={handleResetRobinhoodAuth}
+        onConnectPlaid={handleConnectPlaid}
         connecting={connecting}
-        resettingRobinhoodAuth={resettingRobinhoodAuth}
       />
     );
   }
 
-  // Broker is authorized remotely, but its accounts have not been imported.
   if (status.accounts_count === 0) {
     return <InitialSyncState onSync={handleSync} syncing={syncing} />;
   }
 
   return (
     <div className="space-y-3">
-      {/* Inline Header Actions (when onHeaderActionsReady is not provided) */}
       {isOwner && !onHeaderActionsReady && status?.is_connected && (
         <PortfolioHeaderActions
           syncing={syncing}
@@ -300,13 +237,12 @@ export default function PortfolioHoldings({
           onTogglePublic={handleTogglePublic}
           onCopyShareLink={handleCopyShareLink}
           copied={copied}
-          onConnect={() => setIbkrConnectDialogOpen(true)}
+          onConnect={handleConnectPlaid}
           onDisconnect={() => setDisconnectDialogOpen(true)}
           onDownload={handleDownload}
         />
       )}
 
-      {/* Stats Grid */}
       <PortfolioStatsGrid
         totalValue={totalValue}
         totalPnL={
@@ -337,25 +273,23 @@ export default function PortfolioHoldings({
         }
       />
 
-      {/* Performance Chart */}
       {holdings?.accounts && holdings.accounts.length > 0 && userId && (
         <PortfolioPerformanceChart userId={userId} isOwner={isOwner} />
       )}
 
-      {/* Tab Navigation with Refresh Button */}
       {holdings?.accounts && holdings.accounts.length > 0 && (
         <>
           <div className="flex items-center justify-between gap-4">
             <SwitchTab
               options={tabOptions}
               value={activeTab}
-              onValueChange={(v) =>
+              onValueChange={(value) =>
                 setActiveTab(
-                  v as
+                  value as
                     | "holdings"
                     | "transactions"
                     | "strategies"
-                    | "ai-insights"
+                    | "ai-insights",
                 )
               }
               variant="underline"
@@ -363,7 +297,6 @@ export default function PortfolioHoldings({
               className="!w-fit"
             />
 
-            {/* Stock Data Refresh Button */}
             <div className="flex items-center gap-2">
               {formatLastRefresh && (
                 <span className="text-xs text-muted-foreground flex items-center gap-1">
@@ -381,26 +314,27 @@ export default function PortfolioHoldings({
                 <RefreshCw
                   className={cn(
                     "w-3.5 h-3.5",
-                    stockDataLoading && "animate-spin"
+                    stockDataLoading && "animate-spin",
                   )}
                 />
-                {stockDataLoading ? t("portfolio.holdings.refreshing") : t("portfolio.holdings.refreshPrices")}
+                {stockDataLoading
+                  ? t("portfolio.holdings.refreshing")
+                  : t("portfolio.holdings.refreshPrices")}
               </Button>
             </div>
           </div>
 
-          {/* Holdings Tab Content */}
           {activeTab === "holdings" && (
             <div className="space-y-2">
-              {holdings?.accounts?.map((account) => (
+              {holdings.accounts.map((account) => (
                 <AccountCard
                   key={account.id}
                   account={account}
                   isExpanded={expandedAccounts.has(account.id)}
                   onToggle={() => toggleAccount(account.id)}
                   isOwner={isOwner}
-                  isPublic={holdings?.is_public || false}
-                  privacySettings={holdings?.privacy_settings}
+                  isPublic={holdings.is_public || false}
+                  privacySettings={holdings.privacy_settings}
                   equitySortKey={equitySort.sortKey}
                   equitySortDir={equitySort.sortDir}
                   onEquitySort={equitySort.handleSort}
@@ -416,33 +350,23 @@ export default function PortfolioHoldings({
               {isOwner && (
                 <PositionRiskControls
                   positions={holdings.accounts.flatMap(
-                    (account) => account.portfolio_positions || []
+                    (account) => account.portfolio_positions || [],
                   )}
                 />
               )}
             </div>
           )}
 
-          {/* Transactions Tab Content */}
           {activeTab === "transactions" && isOwner && (
-            <RobinhoodTransactionsTable
-              orders={robinhoodOrders}
-              optionOrders={robinhoodOptionOrders}
-              total={robinhoodOrdersTotal}
-              optionTotal={robinhoodOptionOrdersTotal}
-              hasMore={robinhoodOrdersHasMore}
-              optionHasMore={robinhoodOptionOrdersHasMore}
-              loading={loadingRobinhoodOrders}
-              optionLoading={loadingRobinhoodOptionOrders}
-              optionError={robinhoodOptionOrdersError}
-              washSaleRisks={robinhoodWashSaleRisks}
-              statusFilter={robinhoodOrderStatusFilter}
-              symbolFilter={robinhoodOrderSymbolFilter}
-              onStatusFilterChange={handleRobinhoodOrderStatusFilterChange}
-              onSymbolFilterChange={handleRobinhoodOrderSymbolFilterChange}
-              onLoadMore={handleLoadMoreRobinhoodOrders}
-              onLoadMoreOptions={handleLoadMoreRobinhoodOptionOrders}
-              onSync={handleSyncRobinhoodTransactions}
+            <InvestmentTransactionsTable
+              transactions={transactions}
+              total={transactionsTotal}
+              hasMore={transactionsHasMore}
+              loading={loadingTransactions}
+              symbolFilter={transactionSymbolFilter}
+              onSymbolFilterChange={handleTransactionSymbolFilterChange}
+              onLoadMore={handleLoadMoreTransactions}
+              onSync={handleSyncTransactions}
               syncing={syncing}
             />
           )}
@@ -450,17 +374,13 @@ export default function PortfolioHoldings({
           {activeTab === "strategies" && isOwner && (
             <QuantStrategyWorkbench
               positions={holdings.accounts.flatMap(
-                (account) => account.portfolio_positions || []
+                (account) => account.portfolio_positions || [],
               )}
             />
           )}
 
-          {/* AI Insights Tab Content */}
-          {activeTab === "ai-insights" && isOwner && (
-            <PortfolioAIAnalysis />
-          )}
+          {activeTab === "ai-insights" && isOwner && <PortfolioAIAnalysis />}
 
-          {/* AI Insights - Non-owner message */}
           {activeTab === "ai-insights" && !isOwner && (
             <div className="text-center py-8 text-muted-foreground">
               <p>{t("portfolio.holdings.aiOnlyOwner")}</p>
@@ -469,31 +389,25 @@ export default function PortfolioHoldings({
         </>
       )}
 
-      {/* Empty State */}
       {(!holdings?.accounts || holdings.accounts.length === 0) && (
         <EmptyState
           icon={AlertCircle}
           title={t("portfolio.holdings.noAccountData")}
           description={t("portfolio.holdings.noAccountDataDesc")}
           action={{
-            label: syncing ? t("portfolio.connect.syncing") : t("portfolio.holdings.syncNow"),
+            label: syncing
+              ? t("portfolio.connect.syncing")
+              : t("portfolio.holdings.syncNow"),
             onClick: handleSync,
           }}
         />
       )}
 
-      {/* Disconnect Dialog */}
       <DisconnectDialog
         open={disconnectDialogOpen}
         onOpenChange={setDisconnectDialogOpen}
         onDisconnect={handleDisconnectAndClose}
         disconnecting={disconnecting}
-      />
-      <IbkrConnectDialog
-        open={ibkrConnectDialogOpen}
-        onOpenChange={setIbkrConnectDialogOpen}
-        onConnect={handleConnectIbkr}
-        connecting={connecting}
       />
     </div>
   );

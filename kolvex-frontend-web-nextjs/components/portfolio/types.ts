@@ -42,20 +42,8 @@ export interface PortfolioHoldingsProps {
 }
 
 export interface ConnectionStateProps {
-  onConnect: () => Promise<void>;
-  onConnectIbkr: (credentials: {
-    flex_token: string;
-    flex_query_id: string;
-  }) => Promise<void>;
-  onConnectRobinhood: (credentials: {
-    username: string;
-    password: string;
-    totp_secret?: string;
-    challenge_code?: string;
-  }) => Promise<void>;
-  onResetRobinhoodAuth: () => Promise<void>;
+  onConnectPlaid: () => Promise<void>;
   connecting: boolean;
-  resettingRobinhoodAuth: boolean;
 }
 
 export interface InitialSyncStateProps {

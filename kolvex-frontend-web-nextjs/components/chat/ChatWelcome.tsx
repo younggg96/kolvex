@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import { Zap } from "lucide-react";
 import { ChipButton } from "@/components/ui/chip-button";
 import { ChatInput, MODEL_CONFIGS } from "./ChatInput";
@@ -19,9 +18,8 @@ const PROVIDER_NAME_TO_ID: Record<string, string> = {
 };
 
 const suggestionKeys = [
-  { key: "chat.suggestions.reviewRobinhood", isChat: true },
+  { key: "chat.suggestions.reviewPortfolio", isChat: true },
   { key: "chat.suggestions.checkWashSale", isChat: true },
-  { key: "chat.suggestions.latestNews", href: "/dashboard/news", isChat: false },
 ];
 
 export function ChatWelcome({
@@ -37,12 +35,10 @@ export function ChatWelcome({
   const [query, setQuery] = useState("");
   const [isFocused, setIsFocused] = useState(false);
   const inputRef = useRef<HTMLTextAreaElement>(null);
-  const router = useRouter();
 
   const suggestions = suggestionKeys.map((s) => ({
     text: t(s.key),
     isChat: s.isChat,
-    ...(s.href ? { href: s.href } : {}),
   }));
 
   // Whether the user has any usable model
@@ -69,8 +65,6 @@ export function ChatWelcome({
     if (suggestion.isChat) {
       if (isBlocked) return;
       onSubmit(suggestion.text);
-    } else if (suggestion.href) {
-      router.push(suggestion.href);
     }
   };
 

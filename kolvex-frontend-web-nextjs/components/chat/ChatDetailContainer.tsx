@@ -25,7 +25,7 @@ import { useTranslation } from "@/lib/i18n";
 const PREFS_SOURCES_KEY = "kolvex:sources";
 const PREFS_MODEL_KEY = "kolvex:model";
 const AVAILABLE_SOURCES: SearchSource[] = [
-  "robinhood",
+  "plaid",
   "portfolio",
   "news",
   "web",

@@ -87,7 +87,7 @@
   },
   "landing": {
     "hero": {
-      "badge": "Broker data and trade review",
+      "badge": "Plaid investment data and trade review",
       "headline": "Kolvex Portfolio Workspace",
       "headlineHighlight": "Give every trade its full context",
       "phrases": [
@@ -96,11 +96,11 @@
         "Real-Time Signals",
         "Smart Money Tracking"
       ],
-      "subheadline": "Connect Robinhood or Interactive Brokers, organize stock and option positions, trades, P&L, and wash-sale risk, then review them with your preferred AI model.",
-      "startFreeTrial": "Connect My Broker",
+      "subheadline": "Connect investment accounts with Plaid, organize positions, transactions, P&L, and portfolio risk, then review them with your preferred AI model.",
+      "startFreeTrial": "Connect with Plaid",
       "trustBadges": {
-        "readOnly": "Read-only broker sync",
-        "encrypted": "Encrypted connection credentials",
+        "readOnly": "Read-only Plaid sync",
+        "encrypted": "Secure Plaid Link",
         "investors": "5,000+ Investors"
       },
       "preview": {
@@ -183,16 +183,16 @@
     },
     "howItWorks": {
       "badge": "THE WORKFLOW",
-      "title": "From broker connection to trade review",
+      "title": "From Plaid connection to trade review",
       "subtitle": "Keep data organized, surface risk clearly, and carry selected trades into export or analysis.",
       "steps": [
         {
-          "title": "Connect a Broker",
-          "description": "Connect Robinhood or Interactive Brokers with read-only access.",
+          "title": "Connect with Plaid",
+          "description": "Link supported investment accounts through Plaid with read-only access.",
           "details": [
-            "Robinhood account sync",
-            "Official IBKR Flex integration",
-            "Encrypted connection credentials"
+            "Plaid Investments",
+            "Holdings and transactions",
+            "Secure account linking"
           ]
         },
         {
@@ -265,11 +265,11 @@
       "interrupted": "Response interrupted"
     },
     "tools": {
-      "get_robinhood_account": "Loading Robinhood account and positions",
-      "get_robinhood_stock_trades": "Loading Robinhood stock trades",
-      "get_robinhood_option_trades": "Loading Robinhood option trades",
-      "get_robinhood_wash_sale_risk": "Checking Robinhood wash-sale risk",
-      "get_robinhood_sell_review": "Reviewing Robinhood sales",
+      "get_plaid_account": "Loading Plaid account and positions",
+      "get_plaid_stock_trades": "Loading Plaid stock trades",
+      "get_plaid_option_trades": "Loading Plaid option trades",
+      "get_plaid_wash_sale_risk": "Checking Plaid wash-sale risk",
+      "get_plaid_sell_review": "Reviewing Plaid sales",
       "get_stock_quote": "Getting stock quote",
       "get_stock_financials": "Fetching financials",
       "get_analyst_recommendations": "Checking analyst ratings",
@@ -288,7 +288,8 @@
     "heading": "What would you like to <highlight>explore</highlight>?",
     "description": "Ask about stocks, market trends, or browse our curated insights powered by AI",
     "suggestions": {
-      "reviewRobinhood": "Review my Robinhood account",
+      "reviewPortfolio": "Review my investment account",
+      "reviewPortfolio": "Review my investment account",
       "checkWashSale": "Check current wash-sale risk",
       "analyzeNvidia": "Analyze NVIDIA stock",
       "explainTrends": "Explain market trends",
@@ -304,7 +305,7 @@
       "addApiKey": "Add API key",
       "selectModel": "Select model",
       "sources": {
-        "robinhood": "Robinhood",
+        "plaid": "Plaid",
         "kol": "KOL",
         "news": "News",
         "web": "Web",
@@ -442,39 +443,18 @@
       "disconnect": "Disconnect"
     },
     "connect": {
-      "title": "Connect Your Broker",
-      "description": "Link your brokerage account to automatically track your positions, monitor performance, and share your portfolio publicly.",
+      "title": "Connect Investments",
+      "description": "Link investment accounts with Plaid to automatically track positions, transactions, and portfolio performance.",
       "connecting": "Connecting...",
       "connectBroker": "Connect Broker",
-      "ibkrTitle": "Interactive Brokers",
-      "ibkrDescription": "Use IBKR Flex Web Service directly. Kolvex never receives your IBKR password.",
-      "connectIbkr": "Connect Interactive Brokers",
-      "ibkrToken": "IBKR Flex token",
-      "ibkrQueryId": "IBKR Flex Query ID",
-      "howToGetIbkrCredentials": "How to get Token and Query ID",
-      "ibkrGuideTitle": "Get IBKR Flex credentials",
-      "ibkrGuideDescription": "This takes about two minutes and is completed in IBKR Client Portal.",
-      "ibkrGuideStep1": "Sign in to IBKR Client Portal, then open Performance & Reports → Flex Queries.",
-      "ibkrGuideStep2": "Create an Activity Flex Query with account, position, trade, and options data. Choose XML and save it.",
-      "ibkrGuideStep3": "Copy the Query ID generated for that query.",
-      "ibkrGuideStep4": "Open Flex Web Service Configuration, enable it, generate a Token, then enter the Token and Query ID below.",
-      "ibkrGuideNote": "Leave IP Address blank unless you use a fixed server IP. Generating a new Token immediately invalidates the old one.",
-      "openIbkrPortal": "Open IBKR Portal",
-      "officialGuide": "Official guide",
-      "robinhoodTitle": "Robinhood",
-      "robinhoodDescription": "Connect directly with Robinhood credentials and import your account summary, holdings, and orders.",
-      "robinhoodUsername": "Robinhood email or username",
-      "robinhoodPassword": "Robinhood password",
-      "robinhoodTotp": "TOTP secret (optional)",
-      "robinhoodChallengeCode": "Robinhood verification code (if sent)",
-      "connectRobinhood": "Connect Robinhood",
-      "resetRobinhoodAuth": "Reset Robinhood login state",
-      "resettingRobinhood": "Resetting Robinhood...",
+      "plaidTitle": "Plaid Investments",
+      "plaidDescription": "Use Plaid Link to connect supported brokerage and investment accounts. Kolvex never receives your brokerage password.",
+      "connectPlaid": "Connect with Plaid",
       "secure": "Secure",
       "readOnly": "Read-only",
       "encrypted": "Encrypted",
-      "connectedTitle": "Broker Connected!",
-      "connectedDescription": "Great! Your account is linked. Sync now to import your current positions and start tracking.",
+      "connectedTitle": "Plaid Connected!",
+      "connectedDescription": "Great! Your investment account is linked. Sync now to import current positions and transactions.",
       "syncing": "Syncing...",
       "syncPositions": "Sync Positions"
     },
@@ -497,7 +477,7 @@
     },
     "transactions": {
       "emptyTitle": "No synced transactions",
-      "emptyDescription": "Run a sync after Robinhood is connected to import your order history.",
+      "emptyDescription": "Run a sync after Plaid is connected to import your investment transaction history.",
       "date": "Date",
       "side": "Side",
       "symbol": "Symbol",
@@ -539,7 +519,7 @@
       "afterSellMove": "After-sale move",
       "verdict": "Verdict",
       "noSellReview": "No filled sell orders to review yet.",
-      "sellReviewUnavailable": "Sell review could not be loaded right now. Try refreshing or syncing Robinhood again.",
+      "sellReviewUnavailable": "Sell review could not be loaded right now. Try refreshing or syncing investments again.",
       "sellReviewStaleData": "Showing the last cached sell review because the latest quote refresh failed.",
       "stocks": "Stocks",
       "options": "Options",
@@ -550,9 +530,9 @@
       "price": "Price",
       "premium": "Premium",
       "noOptionOrders": "No option transactions",
-      "noOptionOrdersDescription": "Processed option order history will appear after syncing Robinhood.",
+      "noOptionOrdersDescription": "Processed option history will appear after syncing Plaid Investments.",
       "optionOrdersSetupRequired": "Option transaction table is not created yet",
-      "optionOrdersSetupDescription": "Run the add_robinhood_option_orders.sql Supabase migration, redeploy the backend, then sync Robinhood again.",
+      "optionOrdersSetupDescription": "Enable investment transaction sync in the backend, then sync Plaid again.",
       "optionCalls": "Calls",
       "optionPuts": "Puts",
       "optionPremium": "Filtered premium",
@@ -568,7 +548,7 @@
       "statusFilled": "Filled",
       "statusCancelled": "Cancelled",
       "statusAll": "All statuses",
-      "syncRobinhood": "Sync brokers",
+      "syncInvestments": "Sync brokers",
       "syncing": "Syncing...",
       "selected": "selected",
       "select": "Select",

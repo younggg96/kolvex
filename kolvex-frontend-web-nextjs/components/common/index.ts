@@ -1,4 +1,3 @@
-export { default as AIAnalysis } from "./AIAnalysis";
 export * from "./EmptyState";
 export { default as ExpandableText } from "./ExpandableText";
 export * from "./FilterSheet";
@@ -8,7 +7,6 @@ export { default as LoadingSpinner } from "./LoadingSpinner";
 export { default as LogoIcon } from "./LogoIcon";
 export * from "./PageTransition";
 export { default as SearchWithAutocomplete } from "./SearchWithAutocomplete";
-export { default as SentimentBadge } from "./SentimentBadge";
 export * from "./SourceToggle";
 export { StatCard } from "./StatCard";
 export { default as Tags } from "./Tags";

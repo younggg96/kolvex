@@ -1,7 +1,6 @@
 "use client";
 
 import React from "react";
-import { useRouter } from "next/navigation";
 import {
   ArrowUpRight,
   ArrowDownRight,
@@ -21,7 +20,7 @@ import { SortableHeader } from "@/components/ui/sortable-header";
 import CompanyLogo from "@/components/ui/company-logo";
 import { Badge } from "@/components/ui/badge";
 import { WeightIndicator } from "@/components/ui/weight-indicator";
-import MiniSparkline from "@/components/stock/MiniSparkline";
+import MiniSparkline from "@/components/common/MiniSparkline";
 import { formatCurrency } from "@/lib/portfolioApi";
 import { useTranslation } from "@/lib/i18n";
 import type { EquityPositionsTableProps, PortfolioPosition } from "./types";
@@ -41,7 +40,6 @@ export function EquityPositionsTable({
   sparklineDataMap,
   onToggleVisibility,
 }: EquityPositionsTableProps) {
-  const router = useRouter();
   const { t } = useTranslation();
 
   if (positions.length === 0) return null;
@@ -158,9 +156,7 @@ export function EquityPositionsTable({
                   : "hover:bg-muted/50"
                   } transition-colors`}
               >
-                <TableCell className="pl-4 py-3 cursor-pointer" onClick={() =>
-                  !isSecretStock && router.push(`/dashboard/stock/${pos.symbol}`)
-                }>
+                <TableCell className="pl-4 py-3">
                   <div className="flex items-center gap-2.5">
                     {isSecretStock ? (
                       <div className="w-8 h-8 rounded-lg bg-muted/80 flex items-center justify-center">
@@ -318,4 +314,3 @@ export function EquityPositionsTable({
     </div>
   );
 }
-

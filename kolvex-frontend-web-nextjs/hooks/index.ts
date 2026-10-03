@@ -8,5 +8,4 @@ export {
   type UserProfileUpdate,
   type UserNotificationUpdate,
 } from "./useUserProfile";
-export { useTrackedKOLs } from "./useTrackedKOLs";
 export { useAvailableProviders } from "./useAvailableProviders";

@@ -28,7 +28,7 @@ export type SearchSource =
   | "news"
   | "web"
   | "portfolio"
-  | "robinhood";
+  | "plaid";
 
 export type AIModel =
   | "gpt-4o"

@@ -1,7 +1,6 @@
 "use client";
 
 import React from "react";
-import { useRouter } from "next/navigation";
 import {
   ArrowUpRight,
   ArrowDownRight,
@@ -21,7 +20,7 @@ import {
 import { SortableHeader } from "@/components/ui/sortable-header";
 import CompanyLogo from "@/components/ui/company-logo";
 import { WeightIndicator } from "@/components/ui/weight-indicator";
-import MiniSparkline from "@/components/stock/MiniSparkline";
+import MiniSparkline from "@/components/common/MiniSparkline";
 import { formatCurrency } from "@/lib/portfolioApi";
 import { useTranslation } from "@/lib/i18n";
 import type { OptionPositionsTableProps, PortfolioPosition } from "./types";
@@ -37,7 +36,7 @@ function normalizeOptionCost(rawAveragePrice: number, currentPremium: number) {
     return { premiumPerShare: 0, costPerContract: 0 };
   }
 
-  // Robinhood option positions are stored as total contract cost
+  // Plaid option positions are stored as total contract cost
   // (average option premium * 100). Portfolio-style payloads can be
   // per-share premium, so normalize before calculating P&L.
   const looksLikeContractCost =
@@ -64,7 +63,6 @@ export function OptionPositionsTable({
   sparklineDataMap,
   onToggleVisibility,
 }: OptionPositionsTableProps) {
-  const router = useRouter();
   const { t } = useTranslation();
 
   if (positions.length === 0) return null;
@@ -239,12 +237,7 @@ export function OptionPositionsTable({
                   className={`${isSecretOption ? "opacity-70" : "hover:bg-muted/50"
                     } transition-colors`}
                 >
-                  <TableCell className="pl-4 py-3 cursor-pointer" onClick={() =>
-                    !isSecretOption &&
-                    router.push(
-                      `/dashboard/stock/${pos.underlying_symbol || pos.symbol}`
-                    )
-                  }>
+                  <TableCell className="pl-4 py-3">
                     <div className="flex items-center gap-2.5">
                       {isSecretOption ? (
                         <div className="w-8 h-8 rounded-lg bg-muted/80 flex items-center justify-center">

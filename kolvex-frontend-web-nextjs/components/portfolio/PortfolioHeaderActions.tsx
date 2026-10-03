@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import {
@@ -19,8 +18,6 @@ import {
   Globe,
   Lock,
   Settings2,
-  Users,
-  ChevronRight,
   Eye,
   FileSpreadsheet,
   FileJson,
@@ -165,16 +162,6 @@ export function PortfolioHeaderActions({
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
-
-      <Link href="/community">
-        <Button variant="outline" size={size} className="gap-1.5 group">
-          <Users className="w-3.5 h-3.5" />
-          <span className={cn("hidden sm:inline", size === "xs" && "text-xs")}>
-            {size === "xs" ? t("portfolio.actions.view") : t("portfolio.actions.community")}
-          </span>
-          <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
-        </Button>
-      </Link>
     </div>
   );
 }

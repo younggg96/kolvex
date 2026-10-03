@@ -378,7 +378,7 @@ export function ChatInput({
   onFocus,
   onBlur,
   placeholder = "Ask anything about stocks, markets, or investments...",
-  activeSources = ["robinhood", "portfolio"],
+  activeSources = ["plaid", "portfolio"],
   onToggleSource,
   showSourceToggle = true,
   inputRef: externalRef,
@@ -408,9 +408,9 @@ export function ChatInput({
     label: string;
   }[] = [
     {
-      source: "robinhood",
+      source: "plaid",
       icon: <Landmark className="w-3.5 h-3.5" />,
-      label: t("chat.input.sources.robinhood"),
+      label: "Plaid",
     },
     {
       source: "news",

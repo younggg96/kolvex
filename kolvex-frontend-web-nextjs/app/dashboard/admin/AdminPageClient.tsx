@@ -428,10 +428,10 @@ const scheduledJobsConfig: ScheduledJobConfig[] = [
     actionEndpoint: "portfolio-snapshot",
   },
   {
-    id: "robinhood_daily_sync",
-    name: "Robinhood Daily Sync",
+    id: "plaid_investments_daily_sync",
+    name: "Plaid Investments Daily Sync",
     description:
-      "Sync Robinhood holdings, stock orders, option orders, and portfolio snapshot",
+      "Sync Plaid investment holdings, transactions, and portfolio snapshot",
     icon: RefreshCw,
     frequency: "Weekdays at 14:15 PT",
     category: "sync",

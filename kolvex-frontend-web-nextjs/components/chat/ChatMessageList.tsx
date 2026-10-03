@@ -32,7 +32,7 @@ function getToolIcon(toolName: string) {
   if (toolName.includes("kol") || toolName.includes("sentiment")) {
     return <Users className="w-3 h-3" />;
   }
-  if (toolName.includes("portfolio") || toolName.includes("robinhood")) {
+  if (toolName.includes("portfolio") || toolName.includes("plaid")) {
     return <Briefcase className="w-3 h-3" />;
   }
   if (toolName.includes("knowledge") || toolName.includes("superinvestor")) {

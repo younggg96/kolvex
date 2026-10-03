@@ -25,7 +25,7 @@ export function ChatWelcomeContainer({
 }: ChatWelcomeContainerProps) {
   const router = useRouter();
   const [activeSources, setActiveSources] = useState<SearchSource[]>([
-    "robinhood",
+    "plaid",
     "portfolio",
     "news",
     "web",

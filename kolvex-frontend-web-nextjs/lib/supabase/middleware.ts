@@ -3,11 +3,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { supabaseUrl, supabaseAnonKey } from "./config";
 
 // Routes that require authentication
-const protectedRoutes = [
-  "/dashboard",
-  "/community",
-  "/config",
-];
+const protectedRoutes = ["/dashboard", "/config"];
 
 // Routes that should redirect to dashboard if user is already authenticated
 const authRoutes = ["/auth"];
@@ -100,4 +96,3 @@ export async function updateSession(request: NextRequest) {
 
   return response;
 }
-

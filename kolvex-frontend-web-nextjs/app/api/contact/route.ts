@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Resend } from "resend";
 
-const resend = new Resend(process.env.NEXT_PUBLIC_RESEND_API_KEY);
-
 // 你接收消息的邮箱地址
 // 重要：使用 Resend 免费测试域名 (onboarding@resend.dev) 时，
 // 只能发送到你注册 Resend 时使用的邮箱地址！
@@ -12,8 +10,10 @@ const CONTACT_EMAIL =
 
 export async function POST(request: NextRequest) {
   try {
+    const resendApiKey = process.env.NEXT_PUBLIC_RESEND_API_KEY;
+
     // 检查 API key 是否配置
-    if (!process.env.NEXT_PUBLIC_RESEND_API_KEY) {
+    if (!resendApiKey) {
       console.error("RESEND_API_KEY is not configured");
       return NextResponse.json(
         { error: "Email service is not configured" },
@@ -43,6 +43,7 @@ export async function POST(request: NextRequest) {
     console.log("Sending email to:", CONTACT_EMAIL);
 
     // 发送邮件
+    const resend = new Resend(resendApiKey);
     const { data, error } = await resend.emails.send({
       from: "Kolvex Contact <support@kolvex.app>", // 使用 Resend 测试域名
       to: [CONTACT_EMAIL],

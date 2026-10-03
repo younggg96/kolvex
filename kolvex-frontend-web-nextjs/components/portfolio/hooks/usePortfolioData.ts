@@ -9,31 +9,44 @@ import {
   getShareUrl,
 } from "@/lib/portfolioApi";
 import {
-  connectRobinhood as connectRobinhoodBroker,
-  disconnectRobinhood,
-  getRobinhoodOptionOrders,
-  getRobinhoodOrders,
-  getRobinhoodStatus,
-  resetRobinhoodAuth,
-  syncRobinhood,
-  waitForRobinhoodSync,
-  type RobinhoodOrder,
-  type RobinhoodOptionOrder,
-  type RobinhoodStatus,
-} from "@/lib/robinhoodApi";
-import {
-  connectIbkr,
-  disconnectIbkr,
-  getIbkrHoldings,
-  getIbkrOrders,
-  getIbkrStatus,
-  syncIbkr,
-  type IBKRStatus,
-} from "@/lib/ibkrApi";
+  createPlaidLinkToken,
+  disconnectPlaid,
+  exchangePlaidPublicToken,
+  getPlaidInvestmentTransactions,
+  getPlaidStatus,
+  syncPlaidInvestments,
+  type PlaidConnectionStatus,
+  type PlaidInvestmentTransaction,
+  type PlaidTransactionsResponse,
+} from "@/lib/plaidApi";
 import type {
   PortfolioConnectionStatus,
   PortfolioHoldings,
 } from "../types";
+
+declare global {
+  interface Window {
+    Plaid?: {
+      create: (config: {
+        token: string;
+        onSuccess: (
+          publicToken: string,
+          metadata: {
+            institution?: { name?: string | null; institution_id?: string | null };
+            accounts?: Array<{
+              id: string;
+              name?: string | null;
+              mask?: string | null;
+              type?: string | null;
+              subtype?: string | null;
+            }>;
+          },
+        ) => void;
+        onExit?: (error: unknown) => void;
+      }) => { open: () => void };
+    };
+  }
+}
 
 interface UsePortfolioDataOptions {
   userId?: string;
@@ -42,6 +55,7 @@ interface UsePortfolioDataOptions {
 
 const PORTFOLIO_CACHE_TTL_MS = 5 * 60 * 1000;
 const PORTFOLIO_CACHE_PREFIX = "kolvex:portfolio";
+const PLAID_LINK_SCRIPT_ID = "plaid-link-script";
 
 interface CacheEnvelope<T> {
   timestamp: number;
@@ -50,62 +64,8 @@ interface CacheEnvelope<T> {
 
 interface PortfolioRootCache {
   status: PortfolioConnectionStatus | null;
-  robinhoodStatus: RobinhoodStatus | null;
-  ibkrStatus: IBKRStatus | null;
+  plaidStatus: PlaidConnectionStatus | null;
   holdings: PortfolioHoldings | null;
-}
-
-type RobinhoodOrdersPayload = Awaited<ReturnType<typeof getRobinhoodOrders>>;
-type RobinhoodOptionOrdersPayload = Awaited<ReturnType<typeof getRobinhoodOptionOrders>>;
-
-function transactionTime(order: RobinhoodOrder | RobinhoodOptionOrder) {
-  return new Date(order.executed_time || order.created_time || 0).getTime();
-}
-
-async function getCombinedStockOrders(
-  limit: number,
-  offset: number,
-  symbol: string | undefined,
-  status: string
-): Promise<RobinhoodOrdersPayload> {
-  const [robinhood, ibkr] = await Promise.all([
-    getRobinhoodOrders(limit, offset, symbol, status),
-    status === "filled" || status === "all"
-      ? getIbkrOrders("stocks", limit, offset, symbol).catch(() => null)
-      : Promise.resolve(null),
-  ]);
-  const ibkrOrders = (ibkr?.orders || []) as RobinhoodOrder[];
-  return {
-    ...robinhood,
-    orders: [...robinhood.orders, ...ibkrOrders].sort(
-      (a, b) => transactionTime(b) - transactionTime(a)
-    ),
-    total: robinhood.total + (ibkr?.total || 0),
-    has_more: robinhood.has_more || Boolean(ibkr?.has_more),
-  };
-}
-
-async function getCombinedOptionOrders(
-  limit: number,
-  offset: number,
-  symbol: string | undefined,
-  status: string
-): Promise<RobinhoodOptionOrdersPayload> {
-  const [robinhood, ibkr] = await Promise.all([
-    getRobinhoodOptionOrders(limit, offset, symbol, status),
-    status === "filled" || status === "all"
-      ? getIbkrOrders("options", limit, offset, symbol).catch(() => null)
-      : Promise.resolve(null),
-  ]);
-  const ibkrOrders = (ibkr?.orders || []) as RobinhoodOptionOrder[];
-  return {
-    ...robinhood,
-    orders: [...robinhood.orders, ...ibkrOrders].sort(
-      (a, b) => transactionTime(b) - transactionTime(a)
-    ),
-    total: robinhood.total + (ibkr?.total || 0),
-    has_more: robinhood.has_more || Boolean(ibkr?.has_more),
-  };
 }
 
 const memoryCache = new Map<string, CacheEnvelope<unknown>>();
@@ -167,289 +127,187 @@ function clearPortfolioCache(userId?: string) {
   } catch {}
 }
 
+function loadPlaidLinkScript() {
+  if (typeof window === "undefined") {
+    return Promise.reject(new Error("Plaid Link is only available in the browser"));
+  }
+  if (window.Plaid) return Promise.resolve();
+
+  const existing = document.getElementById(PLAID_LINK_SCRIPT_ID) as HTMLScriptElement | null;
+  if (existing) {
+    return new Promise<void>((resolve, reject) => {
+      existing.addEventListener("load", () => resolve(), { once: true });
+      existing.addEventListener("error", () => reject(new Error("Failed to load Plaid Link")), {
+        once: true,
+      });
+    });
+  }
+
+  return new Promise<void>((resolve, reject) => {
+    const script = document.createElement("script");
+    script.id = PLAID_LINK_SCRIPT_ID;
+    script.src = "https://cdn.plaid.com/link/v2/stable/link-initialize.js";
+    script.async = true;
+    script.onload = () => resolve();
+    script.onerror = () => reject(new Error("Failed to load Plaid Link"));
+    document.head.appendChild(script);
+  });
+}
+
 export function usePortfolioData({ userId, isOwner }: UsePortfolioDataOptions) {
   const [status, setStatus] = useState<PortfolioConnectionStatus | null>(null);
-  const [robinhoodStatus, setRobinhoodStatus] =
-    useState<RobinhoodStatus | null>(null);
-  const [ibkrStatus, setIbkrStatus] = useState<IBKRStatus | null>(null);
-  const [robinhoodOrders, setRobinhoodOrders] = useState<RobinhoodOrder[]>([]);
-  const [robinhoodOptionOrders, setRobinhoodOptionOrders] = useState<
-    RobinhoodOptionOrder[]
-  >([]);
-  const [robinhoodOptionOrdersTotal, setRobinhoodOptionOrdersTotal] = useState(0);
-  const [robinhoodOptionOrdersHasMore, setRobinhoodOptionOrdersHasMore] =
-    useState(false);
-  const [robinhoodOptionOrdersError, setRobinhoodOptionOrdersError] =
-    useState<string | null>(null);
-  const [robinhoodOrdersTotal, setRobinhoodOrdersTotal] = useState(0);
-  const [robinhoodOrdersHasMore, setRobinhoodOrdersHasMore] = useState(false);
-  const [robinhoodWashSaleRisks, setRobinhoodWashSaleRisks] = useState<
-    Awaited<ReturnType<typeof getRobinhoodOrders>>["wash_sale_risk_symbols"]
-  >([]);
-  const [robinhoodOrderStatusFilter, setRobinhoodOrderStatusFilter] =
-    useState("filled");
-  const [robinhoodOrderSymbolFilter, setRobinhoodOrderSymbolFilter] =
+  const [plaidStatus, setPlaidStatus] = useState<PlaidConnectionStatus | null>(null);
+  const [transactions, setTransactions] = useState<PlaidInvestmentTransaction[]>([]);
+  const [transactionsTotal, setTransactionsTotal] = useState(0);
+  const [transactionsHasMore, setTransactionsHasMore] = useState(false);
+  const [transactionSymbolFilter, setTransactionSymbolFilter] =
     useState<string | undefined>(undefined);
-  const [loadingRobinhoodOrders, setLoadingRobinhoodOrders] = useState(false);
-  const [loadingRobinhoodOptionOrders, setLoadingRobinhoodOptionOrders] =
-    useState(false);
+  const [loadingTransactions, setLoadingTransactions] = useState(false);
   const [holdings, setHoldings] = useState<PortfolioHoldings | null>(null);
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
   const [connecting, setConnecting] = useState(false);
-  const [resettingRobinhoodAuth, setResettingRobinhoodAuth] = useState(false);
   const [disconnecting, setDisconnecting] = useState(false);
   const [copied, setCopied] = useState(false);
-  const robinhoodOrdersPageSize = 100;
+  const transactionsPageSize = 100;
   const cacheUserId = userId || "me";
 
-  const loadRobinhoodOrders = useCallback(
+  const loadTransactions = useCallback(
     async (reset = false, offsetOverride = 0, forceRefresh = false) => {
-      setLoadingRobinhoodOrders(true);
+      setLoadingTransactions(true);
       const offset = reset ? 0 : offsetOverride;
-      const ordersCacheKey = getCacheKey("robinhood-orders", [
+      const transactionsCacheKey = getCacheKey("plaid-transactions", [
         cacheUserId,
-        robinhoodOrderStatusFilter,
-        robinhoodOrderSymbolFilter,
-        robinhoodOrdersPageSize,
+        transactionSymbolFilter,
+        transactionsPageSize,
         offset,
       ]);
       try {
         const cached = !forceRefresh
-          ? readCache<RobinhoodOrdersPayload>(ordersCacheKey)
+          ? readCache<PlaidTransactionsResponse>(transactionsCacheKey)
           : null;
         const result =
           cached ||
-          (await getCombinedStockOrders(
-            robinhoodOrdersPageSize,
+          (await getPlaidInvestmentTransactions(
+            transactionsPageSize,
             offset,
-            robinhoodOrderSymbolFilter,
-            robinhoodOrderStatusFilter
+            transactionSymbolFilter,
           ));
-        if (!cached) writeCache(ordersCacheKey, result);
-        setRobinhoodOrders((prev) =>
-          reset ? result.orders : [...prev, ...result.orders]
+        if (!cached) writeCache(transactionsCacheKey, result);
+        setTransactions((prev) =>
+          reset ? result.transactions : [...prev, ...result.transactions],
         );
-        setRobinhoodOrdersTotal(result.total);
-        setRobinhoodOrdersHasMore(result.has_more);
-        setRobinhoodWashSaleRisks(result.wash_sale_risk_symbols || []);
+        setTransactionsTotal(result.total);
+        setTransactionsHasMore(result.has_more);
       } catch (error) {
-        console.warn("Failed to load Robinhood orders:", error);
+        console.warn("Failed to load Plaid investment transactions:", error);
       } finally {
-        setLoadingRobinhoodOrders(false);
+        setLoadingTransactions(false);
       }
     },
-    [cacheUserId, robinhoodOrderStatusFilter, robinhoodOrderSymbolFilter]
+    [cacheUserId, transactionSymbolFilter],
   );
 
-  const handleLoadMoreRobinhoodOrders = useCallback(async () => {
-    await loadRobinhoodOrders(false, robinhoodOrders.length);
-  }, [loadRobinhoodOrders, robinhoodOrders.length]);
+  const handleLoadMoreTransactions = useCallback(async () => {
+    await loadTransactions(false, transactions.length);
+  }, [loadTransactions, transactions.length]);
 
-  const loadRobinhoodOptionOrders = useCallback(
-    async (
-      reset = false,
-      offsetOverride = 0,
-      forceRefresh = false,
-      filters?: { symbol?: string; status?: string }
-    ) => {
-      setLoadingRobinhoodOptionOrders(true);
-      const offset = reset ? 0 : offsetOverride;
-      const symbol = filters?.symbol ?? robinhoodOrderSymbolFilter;
-      const status = filters?.status ?? robinhoodOrderStatusFilter;
-      const ordersCacheKey = getCacheKey("robinhood-option-orders", [
-        cacheUserId,
-        status,
-        symbol,
-        robinhoodOrdersPageSize,
-        offset,
-      ]);
-      try {
-        const cached = !forceRefresh
-          ? readCache<RobinhoodOptionOrdersPayload>(ordersCacheKey)
-          : null;
-        const result =
-          cached ||
-          (await getCombinedOptionOrders(
-            robinhoodOrdersPageSize,
-            offset,
-            symbol,
-            status
-          ));
-        if (!cached) writeCache(ordersCacheKey, result);
-        setRobinhoodOptionOrders((prev) =>
-          reset ? result.orders : [...prev, ...result.orders]
-        );
-        setRobinhoodOptionOrdersTotal(result.total);
-        setRobinhoodOptionOrdersHasMore(result.has_more);
-        setRobinhoodOptionOrdersError(null);
-      } catch (error: any) {
-        const message = error?.message || "Failed to load Robinhood option orders";
-        setRobinhoodOptionOrdersError(message);
-        if (!message.includes("migration has not been applied")) {
-          console.warn("Failed to load Robinhood option orders:", error);
-        }
-      } finally {
-        setLoadingRobinhoodOptionOrders(false);
-      }
-    },
-    [cacheUserId, robinhoodOrderStatusFilter, robinhoodOrderSymbolFilter]
-  );
-
-  const handleLoadMoreRobinhoodOptionOrders = useCallback(async () => {
-    await loadRobinhoodOptionOrders(false, robinhoodOptionOrders.length);
-  }, [loadRobinhoodOptionOrders, robinhoodOptionOrders.length]);
-
-  const handleRobinhoodOrderStatusFilterChange = useCallback(
-    async (statusFilter: string) => {
-      setRobinhoodOrderStatusFilter(statusFilter);
-      setRobinhoodOrders([]);
-      setRobinhoodOrdersTotal(0);
-      setRobinhoodOrdersHasMore(false);
-      setLoadingRobinhoodOrders(true);
-      const ordersCacheKey = getCacheKey("robinhood-orders", [
-        cacheUserId,
-        statusFilter,
-        robinhoodOrderSymbolFilter,
-        robinhoodOrdersPageSize,
-        0,
-      ]);
-      try {
-        const cached = readCache<RobinhoodOrdersPayload>(ordersCacheKey);
-        const result =
-          cached ||
-          (await getCombinedStockOrders(
-            robinhoodOrdersPageSize,
-            0,
-            robinhoodOrderSymbolFilter,
-            statusFilter
-          ));
-        if (!cached) writeCache(ordersCacheKey, result);
-        setRobinhoodOrders(result.orders);
-        setRobinhoodOrdersTotal(result.total);
-        setRobinhoodOrdersHasMore(result.has_more);
-        setRobinhoodWashSaleRisks(result.wash_sale_risk_symbols || []);
-        void loadRobinhoodOptionOrders(true, 0, false, {
-          symbol: robinhoodOrderSymbolFilter,
-          status: statusFilter,
-        });
-      } catch (error) {
-        console.warn("Failed to change Robinhood order status filter:", error);
-      } finally {
-        setLoadingRobinhoodOrders(false);
-      }
-    },
-    [cacheUserId, loadRobinhoodOptionOrders, robinhoodOrderSymbolFilter]
-  );
-
-  const handleRobinhoodOrderSymbolFilterChange = useCallback(
+  const handleTransactionSymbolFilterChange = useCallback(
     async (symbol?: string) => {
       const normalizedSymbol = symbol?.trim().toUpperCase() || undefined;
-      setRobinhoodOrderSymbolFilter(normalizedSymbol);
-      setRobinhoodOrders([]);
-      setRobinhoodOrdersTotal(0);
-      setRobinhoodOrdersHasMore(false);
-      setLoadingRobinhoodOrders(true);
-      const ordersCacheKey = getCacheKey("robinhood-orders", [
+      setTransactionSymbolFilter(normalizedSymbol);
+      setTransactions([]);
+      setTransactionsTotal(0);
+      setTransactionsHasMore(false);
+      setLoadingTransactions(true);
+      const transactionsCacheKey = getCacheKey("plaid-transactions", [
         cacheUserId,
-        robinhoodOrderStatusFilter,
         normalizedSymbol,
-        robinhoodOrdersPageSize,
+        transactionsPageSize,
         0,
       ]);
       try {
-        const cached = readCache<RobinhoodOrdersPayload>(ordersCacheKey);
+        const cached = readCache<PlaidTransactionsResponse>(transactionsCacheKey);
         const result =
           cached ||
-          (await getCombinedStockOrders(
-            robinhoodOrdersPageSize,
+          (await getPlaidInvestmentTransactions(
+            transactionsPageSize,
             0,
             normalizedSymbol,
-            robinhoodOrderStatusFilter
           ));
-        if (!cached) writeCache(ordersCacheKey, result);
-        setRobinhoodOrders(result.orders);
-        setRobinhoodOrdersTotal(result.total);
-        setRobinhoodOrdersHasMore(result.has_more);
-        setRobinhoodWashSaleRisks(result.wash_sale_risk_symbols || []);
-        void loadRobinhoodOptionOrders(true, 0, false, {
-          symbol: normalizedSymbol,
-          status: robinhoodOrderStatusFilter,
-        });
+        if (!cached) writeCache(transactionsCacheKey, result);
+        setTransactions(result.transactions);
+        setTransactionsTotal(result.total);
+        setTransactionsHasMore(result.has_more);
       } catch (error) {
-        console.warn("Failed to change Robinhood order symbol filter:", error);
+        console.warn("Failed to change Plaid transaction symbol filter:", error);
       } finally {
-        setLoadingRobinhoodOrders(false);
+        setLoadingTransactions(false);
       }
     },
-    [cacheUserId, loadRobinhoodOptionOrders, robinhoodOrderStatusFilter]
+    [cacheUserId],
   );
 
-  // Load connection status and holdings data
   const loadData = useCallback(async (forceRefresh = false) => {
     const rootCacheKey = getCacheKey("root", [cacheUserId, isOwner ? "owner" : "public"]);
     const cachedRoot = forceRefresh ? null : readCache<PortfolioRootCache>(rootCacheKey);
     if (cachedRoot) {
       setStatus(cachedRoot.status);
       setHoldings(cachedRoot.holdings);
-      setRobinhoodStatus(cachedRoot.robinhoodStatus);
-      setIbkrStatus(cachedRoot.ibkrStatus);
+      setPlaidStatus(cachedRoot.plaidStatus);
       setLoading(false);
-      await loadRobinhoodOrders(true, 0, forceRefresh);
-      await loadRobinhoodOptionOrders(true, 0, forceRefresh);
+      if (isOwner && cachedRoot.plaidStatus?.is_connected) {
+        await loadTransactions(true, 0, forceRefresh);
+      }
       return;
     }
 
     setLoading(true);
     try {
       if (isOwner) {
-        const [statusData, holdingsData, robinhoodData, ibkrData, ibkrHoldings] = await Promise.all([
-            getConnectionStatus(),
-            getMyHoldings(),
-            getRobinhoodStatus().catch(() => null),
-            getIbkrStatus().catch(() => null),
-            getIbkrHoldings().catch(() => null),
-          ]);
-        const mergedAccounts = [
-          ...(holdingsData?.accounts || []),
-          ...(ibkrHoldings?.accounts || []),
-        ];
-        const mergedStatus = ibkrData?.is_connected
+        const [statusData, holdingsData, plaidData] = await Promise.all([
+          getConnectionStatus(),
+          getMyHoldings(),
+          getPlaidStatus().catch(() => null),
+        ]);
+        const mergedStatus = plaidData?.is_connected
           ? {
               ...statusData,
               is_registered: true,
               is_connected: true,
-              accounts_count: mergedAccounts.length,
-              last_synced_at:
-                ibkrData.last_synced_at || statusData.last_synced_at,
+              accounts_count: Math.max(
+                statusData.accounts_count || 0,
+                plaidData.accounts_count || 0,
+              ),
+              last_synced_at: plaidData.last_synced_at || statusData.last_synced_at,
             }
           : statusData;
         const mergedHoldings = {
           ...holdingsData,
-          is_connected:
-            holdingsData?.is_connected || Boolean(ibkrData?.is_connected),
-          last_synced_at:
-            ibkrData?.last_synced_at || holdingsData?.last_synced_at,
-          accounts: mergedAccounts,
+          is_connected: holdingsData?.is_connected || Boolean(plaidData?.is_connected),
+          last_synced_at: plaidData?.last_synced_at || holdingsData?.last_synced_at,
         };
         setStatus(mergedStatus);
         setHoldings(mergedHoldings);
-        setRobinhoodStatus(robinhoodData);
-        setIbkrStatus(ibkrData);
+        setPlaidStatus(plaidData);
         writeCache<PortfolioRootCache>(rootCacheKey, {
           status: mergedStatus,
           holdings: mergedHoldings,
-          robinhoodStatus: robinhoodData,
-          ibkrStatus: ibkrData,
+          plaidStatus: plaidData,
         });
-        await loadRobinhoodOrders(true, 0, forceRefresh);
-        await loadRobinhoodOptionOrders(true, 0, forceRefresh);
+        if (plaidData?.is_connected) {
+          await loadTransactions(true, 0, forceRefresh);
+        }
       } else if (userId) {
-        // Load public holdings for other users
         const publicHoldings = await getPublicHoldings(userId);
         if (publicHoldings) {
-          // Convert public holdings to PortfolioHoldings format
-          setHoldings({
+          const publicStatus = {
+            is_registered: true,
+            is_connected: true,
+            is_public: true,
+            accounts_count: publicHoldings.accounts.length,
+          };
+          const publicHoldingsView = {
             accounts: publicHoldings.accounts,
             last_synced_at: publicHoldings.last_synced_at,
             is_connected: true,
@@ -457,32 +315,13 @@ export function usePortfolioData({ userId, isOwner }: UsePortfolioDataOptions) {
             total_value: publicHoldings.total_value ?? undefined,
             privacy_settings: publicHoldings.privacy_settings,
             hidden_positions_count: publicHoldings.hidden_positions_count,
-          });
-          // Set status as connected for public view
-          setStatus({
-            is_registered: true,
-            is_connected: true,
-            is_public: true,
-            accounts_count: publicHoldings.accounts.length,
-          });
+          };
+          setHoldings(publicHoldingsView);
+          setStatus(publicStatus);
           writeCache<PortfolioRootCache>(rootCacheKey, {
-            status: {
-              is_registered: true,
-              is_connected: true,
-              is_public: true,
-              accounts_count: publicHoldings.accounts.length,
-            },
-            holdings: {
-              accounts: publicHoldings.accounts,
-              last_synced_at: publicHoldings.last_synced_at,
-              is_connected: true,
-              is_public: true,
-              total_value: publicHoldings.total_value ?? undefined,
-              privacy_settings: publicHoldings.privacy_settings,
-              hidden_positions_count: publicHoldings.hidden_positions_count,
-            },
-            robinhoodStatus: null,
-            ibkrStatus: null,
+            status: publicStatus,
+            holdings: publicHoldingsView,
+            plaidStatus: null,
           });
         }
       }
@@ -491,211 +330,80 @@ export function usePortfolioData({ userId, isOwner }: UsePortfolioDataOptions) {
     } finally {
       setLoading(false);
     }
-  }, [cacheUserId, isOwner, userId, loadRobinhoodOrders, loadRobinhoodOptionOrders]);
+  }, [cacheUserId, isOwner, userId, loadTransactions]);
 
   useEffect(() => {
     loadData();
   }, [loadData]);
 
-  const handleConnect = useCallback(async () => {
-    toast.info("Choose Robinhood or Interactive Brokers to connect.");
-  }, []);
+  const handleConnectPlaid = useCallback(async () => {
+    setConnecting(true);
+    try {
+      await loadPlaidLinkScript();
+      const { link_token } = await createPlaidLinkToken();
+      if (!window.Plaid) throw new Error("Plaid Link failed to initialize");
 
-  const handleConnectIbkr = useCallback(
-    async (credentials: { flex_token: string; flex_query_id: string }) => {
-      setConnecting(true);
-      try {
-        await connectIbkr(credentials);
-        clearPortfolioCache(cacheUserId);
-        await loadData(true);
-        toast.success("Interactive Brokers connected and synced");
-      } catch (error: any) {
-        toast.error(error?.message || "Failed to connect Interactive Brokers");
-      } finally {
-        setConnecting(false);
-      }
-    },
-    [cacheUserId, loadData]
-  );
-
-  const handleConnectRobinhood = useCallback(
-    async (credentials: {
-      username: string;
-      password: string;
-      totp_secret?: string;
-      challenge_code?: string;
-    }) => {
-      setConnecting(true);
-
-      // Total wall-clock cap on the auto-resume polling (Robinhood's
-      // verification workflow itself expires after ~5 min anyway).
-      const maxTotalMs = 3 * 60 * 1000;
-      const startedAt = Date.now();
-
-      const showApprovalToast = (message?: string | null) => {
-        toast.info(
-          message ||
-            "Tap \"Yes, it's me\" on the Robinhood app — we'll detect it automatically.",
-          { id: "robinhood-approval", duration: 4000 }
-        );
-      };
-
-      const finishConnectedSync = async () => {
-        toast.info("Syncing your Robinhood positions and orders...", {
-          id: "robinhood-approval",
-          duration: 4000,
-        });
-        try {
-          await waitForRobinhoodSync();
-        } catch (syncError: any) {
-          toast.error(
-            syncError?.message ||
-              "Robinhood is connected but the background sync failed. Try again later.",
-            { id: "robinhood-approval" }
-          );
-          await loadData();
-          return;
-        }
-        clearPortfolioCache(cacheUserId);
-        await loadData(true);
-        toast.success("Robinhood connected and synced", {
-          id: "robinhood-approval",
-        });
-      };
-
-      try {
-        while (true) {
-          let result: Awaited<ReturnType<typeof connectRobinhoodBroker>> | null =
-            null;
-          let connectError: unknown = null;
+      const handler = window.Plaid.create({
+        token: link_token,
+        onSuccess: async (publicToken, metadata) => {
           try {
-            result = await connectRobinhoodBroker(credentials);
-          } catch (error) {
-            connectError = error;
+            await exchangePlaidPublicToken({
+              public_token: publicToken,
+              institution: metadata.institution,
+              accounts: metadata.accounts,
+            });
+            toast.info("Syncing Plaid investment holdings...");
+            await syncPlaidInvestments();
+            clearPortfolioCache(cacheUserId);
+            await loadData(true);
+            toast.success("Plaid Investments connected");
+          } catch (error: any) {
+            toast.error(error?.message || "Failed to finish Plaid connection");
+          } finally {
+            setConnecting(false);
           }
+        },
+        onExit: (error) => {
+          if (error) console.warn("Plaid Link exited with error:", error);
+          setConnecting(false);
+        },
+      });
 
-          // /connect can fail mid-flight (Vercel/network timeout while the
-          // backend is still polling Robinhood). The backend keeps running
-          // and may have actually finished the sync, so always re-check
-          // /status before declaring failure.
-          if (!result) {
-            try {
-              const status = await getRobinhoodStatus();
-              if (status.is_connected) {
-                await finishConnectedSync();
-                return;
-              }
-            } catch {
-              // ignore - fall through to error handling below
-            }
-            throw connectError;
-          }
-
-          if (result.setup_required) {
-            toast.error(
-              result.message ||
-                "Robinhood database setup is missing. Apply the Supabase migration and try again.",
-              { id: "robinhood-approval" }
-            );
-            return;
-          }
-
-          if (result.approval_required) {
-            showApprovalToast(result.message);
-            if (Date.now() - startedAt >= maxTotalMs) {
-              toast.error(
-                "Still waiting on Robinhood device approval. Tap \"Yes, it's me\" and click Connect Robinhood again.",
-                { id: "robinhood-approval" }
-              );
-              return;
-            }
-            // Resume the same workflow on the next loop iteration. The backend
-            // will reuse the existing push (no new mobile notification) and
-            // poll for ~25s before returning.
-            await new Promise((resolve) => setTimeout(resolve, 1500));
-            continue;
-          }
-
-          // Login + token persistence succeeded. The actual data fetch is
-          // running in the background to dodge the Vercel proxy timeout.
-          await finishConnectedSync();
-          return;
-        }
-      } catch (error: any) {
-        toast.error(error?.message || "Failed to connect Robinhood", {
-          id: "robinhood-approval",
-        });
-      } finally {
-        setConnecting(false);
-      }
-    },
-    [cacheUserId, loadData]
-  );
+      handler.open();
+    } catch (error: any) {
+      toast.error(error?.message || "Failed to open Plaid Link");
+      setConnecting(false);
+    }
+  }, [cacheUserId, loadData]);
 
   const handleSync = useCallback(async () => {
     setSyncing(true);
     try {
-      let syncedDirectBroker = false;
-      if (robinhoodStatus?.is_connected) {
-        // /sync schedules a background task and returns immediately; we then
-        // poll /status until it finishes so the UI stays in "Syncing..." mode.
-        await syncRobinhood();
-        await waitForRobinhoodSync();
-        syncedDirectBroker = true;
-      }
-      if (ibkrStatus?.is_connected) {
-        await syncIbkr();
-        syncedDirectBroker = true;
-      }
-      if (!syncedDirectBroker) throw new Error("Connect a broker before syncing");
+      await syncPlaidInvestments();
       clearPortfolioCache(cacheUserId);
       await loadData(true);
-      toast.success("Data refreshed successfully");
+      toast.success("Plaid investment data refreshed");
     } catch (error: any) {
       toast.error(error.message || "Refresh failed");
     } finally {
       setSyncing(false);
     }
-  }, [cacheUserId, ibkrStatus?.is_connected, loadData, robinhoodStatus?.is_connected]);
+  }, [cacheUserId, loadData]);
 
-  const handleSyncRobinhoodTransactions = useCallback(async () => {
+  const handleSyncTransactions = useCallback(async () => {
     setSyncing(true);
     try {
-      if (robinhoodStatus?.is_connected) {
-        await syncRobinhood();
-        await waitForRobinhoodSync();
-      }
-      if (ibkrStatus?.is_connected) {
-        await syncIbkr();
-      }
+      await syncPlaidInvestments();
       clearPortfolioCache(cacheUserId);
       await loadData(true);
-      toast.success("Broker transactions synced");
+      await loadTransactions(true, 0, true);
+      toast.success("Plaid investment transactions synced");
     } catch (error: any) {
-      toast.error(error.message || "Robinhood sync failed");
+      toast.error(error.message || "Plaid sync failed");
     } finally {
       setSyncing(false);
     }
-  }, [
-    cacheUserId,
-    ibkrStatus?.is_connected,
-    loadData,
-    robinhoodStatus?.is_connected,
-  ]);
-
-  const handleResetRobinhoodAuth = useCallback(async () => {
-    setResettingRobinhoodAuth(true);
-    try {
-      await resetRobinhoodAuth();
-      clearPortfolioCache(cacheUserId);
-      setRobinhoodStatus(null);
-      toast.success("Robinhood login state reset. Click Connect Robinhood again.");
-    } catch (error: any) {
-      toast.error(error?.message || "Failed to reset Robinhood login state");
-    } finally {
-      setResettingRobinhoodAuth(false);
-    }
-  }, [cacheUserId]);
+  }, [cacheUserId, loadData, loadTransactions]);
 
   const handleTogglePublic = useCallback(async (isPublic: boolean) => {
     try {
@@ -703,7 +411,7 @@ export function usePortfolioData({ userId, isOwner }: UsePortfolioDataOptions) {
       setHoldings((prev) => (prev ? { ...prev, is_public: isPublic } : null));
       clearPortfolioCache(cacheUserId);
       toast.success(
-        isPublic ? "Portfolio is now public" : "Portfolio is now private"
+        isPublic ? "Portfolio is now public" : "Portfolio is now private",
       );
     } catch (error: any) {
       toast.error(error.message || "Operation failed");
@@ -713,25 +421,15 @@ export function usePortfolioData({ userId, isOwner }: UsePortfolioDataOptions) {
   const handleDisconnect = useCallback(async () => {
     setDisconnecting(true);
     try {
-      if (robinhoodStatus?.is_connected) {
-        await disconnectRobinhood();
-      } else if (ibkrStatus?.is_connected) {
-        await disconnectIbkr();
-      } else throw new Error("No connected broker found");
+      await disconnectPlaid();
       clearPortfolioCache(cacheUserId);
       setStatus(null);
-      setRobinhoodStatus(null);
-      setIbkrStatus(null);
+      setPlaidStatus(null);
       setHoldings(null);
-      setRobinhoodOrders([]);
-      setRobinhoodOptionOrders([]);
-      setRobinhoodOptionOrdersError(null);
-      setRobinhoodOrdersTotal(0);
-      setRobinhoodOptionOrdersTotal(0);
-      setRobinhoodOrdersHasMore(false);
-      setRobinhoodOptionOrdersHasMore(false);
-      setRobinhoodWashSaleRisks([]);
-      toast.success("Broker disconnected");
+      setTransactions([]);
+      setTransactionsTotal(0);
+      setTransactionsHasMore(false);
+      toast.success("Plaid Investments disconnected");
       return true;
     } catch (error: any) {
       toast.error(error.message || "Failed to disconnect");
@@ -739,7 +437,7 @@ export function usePortfolioData({ userId, isOwner }: UsePortfolioDataOptions) {
     } finally {
       setDisconnecting(false);
     }
-  }, [cacheUserId, ibkrStatus?.is_connected, robinhoodStatus?.is_connected]);
+  }, [cacheUserId]);
 
   const handleCopyShareLink = useCallback(async () => {
     if (!userId) return;
@@ -758,12 +456,11 @@ export function usePortfolioData({ userId, isOwner }: UsePortfolioDataOptions) {
     async (
       e: React.MouseEvent,
       positionId: string,
-      currentlyHidden: boolean
+      currentlyHidden: boolean,
     ) => {
       e.stopPropagation();
       try {
         await togglePositionVisibility(positionId, !currentlyHidden);
-        // Update local state
         setHoldings((prev) => {
           if (!prev) return prev;
           return {
@@ -773,7 +470,7 @@ export function usePortfolioData({ userId, isOwner }: UsePortfolioDataOptions) {
               portfolio_positions: account.portfolio_positions?.map((pos) =>
                 pos.id === positionId
                   ? { ...pos, is_hidden: !currentlyHidden }
-                  : pos
+                  : pos,
               ),
             })),
           };
@@ -782,48 +479,35 @@ export function usePortfolioData({ userId, isOwner }: UsePortfolioDataOptions) {
         toast.success(
           currentlyHidden
             ? "Position now visible"
-            : "Position hidden from public"
+            : "Position hidden from public",
         );
       } catch (error: any) {
         toast.error(error.message || "Failed to update visibility");
       }
     },
-    [cacheUserId]
+    [cacheUserId],
   );
 
   return {
     status,
     holdings,
-    robinhoodOrders,
-    robinhoodOptionOrders,
-    robinhoodOrdersTotal,
-    robinhoodOptionOrdersTotal,
-    robinhoodOrdersHasMore,
-    robinhoodOptionOrdersHasMore,
-    robinhoodOptionOrdersError,
-    robinhoodWashSaleRisks,
-    robinhoodOrderStatusFilter,
-    robinhoodOrderSymbolFilter,
-    loadingRobinhoodOrders,
-    loadingRobinhoodOptionOrders,
+    plaidStatus,
+    transactions,
+    transactionsTotal,
+    transactionsHasMore,
+    transactionSymbolFilter,
+    loadingTransactions,
     loading,
     syncing,
     connecting,
-    resettingRobinhoodAuth,
     disconnecting,
     copied,
     loadData,
-    handleConnect,
-    handleConnectIbkr,
-    handleConnectRobinhood,
-    handleResetRobinhoodAuth,
-    loadRobinhoodOrders,
-    loadRobinhoodOptionOrders,
-    handleLoadMoreRobinhoodOrders,
-    handleLoadMoreRobinhoodOptionOrders,
-    handleRobinhoodOrderStatusFilterChange,
-    handleRobinhoodOrderSymbolFilterChange,
-    handleSyncRobinhoodTransactions,
+    handleConnectPlaid,
+    loadTransactions,
+    handleLoadMoreTransactions,
+    handleTransactionSymbolFilterChange,
+    handleSyncTransactions,
     handleSync,
     handleTogglePublic,
     handleDisconnect,

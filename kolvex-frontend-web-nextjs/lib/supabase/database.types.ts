@@ -53,7 +53,7 @@ export interface ProfileUpdate {
 export interface PortfolioConnection {
   id: string;
   user_id: string;
-  provider: "robinhood" | "ibkr";
+  provider: "plaid";
   is_connected: boolean;
   is_public: boolean;
   last_synced_at?: string;

@@ -1,1 +1,0 @@
-export { XhsPostsContent } from "./XhsPostsContent";

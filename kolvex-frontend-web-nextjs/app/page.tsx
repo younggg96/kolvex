@@ -2,17 +2,16 @@ import { Metadata } from "next";
 import HomePageClient from "@/components/pages/HomePageClient";
 
 export const metadata: Metadata = {
-  title: "Kolvex - Broker Portfolio and AI Trade Review",
+  title: "Kolvex - Plaid Portfolio and AI Trade Review",
   description:
-    "Connect Robinhood or Interactive Brokers, sync holdings and trades, review P&L and wash-sale risk, and analyze transactions with your preferred AI model.",
+    "Connect investment accounts with Plaid, sync holdings and trades, review portfolio risk, and analyze transactions with your preferred AI model.",
   keywords: [
     "broker portfolio",
     "trade journal",
-    "wash sale tracking",
+    "investment account sync",
     "options trading history",
     "AI trade review",
-    "Robinhood portfolio",
-    "Interactive Brokers Flex",
+    "Plaid Investments",
   ],
   openGraph: {
     title: "Kolvex - Broker Portfolio and AI Trade Review",
