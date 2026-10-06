@@ -11,6 +11,8 @@ from __future__ import annotations
 from collections import defaultdict
 from datetime import datetime, date, timezone
 from hashlib import sha256
+from math import isfinite
+import re
 from statistics import mean
 from typing import Any, Dict, Iterable, List, Optional
 from urllib.parse import parse_qs, urlparse
@@ -47,19 +49,12 @@ class YouTubeStockOpinionService:
         payload: Dict[str, Any],
         uploaded_by: Optional[str] = None,
     ) -> Dict[str, Any]:
+        self.validate_payload(payload)
         rows = self._rows_from_payload(payload, uploaded_by=uploaded_by)
-        if not rows:
-            raise ValueError("No stock opinions found in payload")
-
-        written_rows: List[Dict[str, Any]] = []
-        for row in rows:
-            result = (
-                self.supabase.table(TABLE_NAME)
-                .upsert(row, on_conflict="video_id,ticker")
-                .execute()
-            )
-            if result.data:
-                written_rows.extend(result.data)
+        result = self.supabase.table(TABLE_NAME).upsert(
+            rows, on_conflict="video_id,ticker"
+        ).execute()
+        written_rows = result.data or []
 
         self._best_effort_sync_unified_kol_tables(payload, rows)
 
@@ -70,6 +65,62 @@ class YouTubeStockOpinionService:
             "tickers": [row["ticker"] for row in rows],
             "rows": written_rows,
         }
+
+    def validate_payload(self, payload: Dict[str, Any]) -> Dict[str, Any]:
+        """Validate the import contract before any database writes."""
+        for section, fields in (("channel", ("id", "title")),
+                                ("video", ("id", "title", "published_at"))):
+            obj = payload.get(section)
+            if not isinstance(obj, dict):
+                raise ValueError(f"{section} must be an object")
+            for field in fields:
+                if not isinstance(obj.get(field), str) or not obj[field].strip():
+                    raise ValueError(f"{section}.{field} is required")
+        published_at = payload["video"]["published_at"]
+        try:
+            parsed = datetime.fromisoformat(published_at.replace("Z", "+00:00"))
+            if parsed.tzinfo is None:
+                raise ValueError()
+        except ValueError:
+            raise ValueError("video.published_at must be an ISO timestamp with timezone")
+        opinions = payload.get("opinions")
+        if not isinstance(opinions, list) or not 1 <= len(opinions) <= 200:
+            raise ValueError("opinions must contain 1 to 200 stock opinions")
+        seen = set()
+        for index, opinion in enumerate(opinions):
+            path = f"opinions[{index}]"
+            if not isinstance(opinion, dict):
+                raise ValueError(f"{path} must be an object")
+            ticker = opinion.get("ticker")
+            if not isinstance(ticker, str) or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9.\-]{0,19}", ticker):
+                raise ValueError(f"{path}.ticker must be a stock symbol, e.g. NVDA")
+            if ticker.upper() in seen:
+                raise ValueError(f"{path}.ticker duplicates {ticker.upper()}")
+            seen.add(ticker.upper())
+            if opinion.get("sentiment") not in {"bullish", "bearish", "neutral", "mixed"}:
+                raise ValueError(f"{path}.sentiment must be bullish, bearish, neutral or mixed")
+            if not isinstance(opinion.get("summary"), str) or not opinion["summary"].strip():
+                raise ValueError(f"{path}.summary is required")
+            for field, low, high in (("direction_score", -100, 100), ("confidence", 0, 1)):
+                value = opinion.get(field)
+                if value is not None and (isinstance(value, bool) or not isinstance(value, (int, float)) or not isfinite(value) or not low <= value <= high):
+                    raise ValueError(f"{path}.{field} must be a number between {low} and {high}")
+            for field in ("key_points", "risks"):
+                value = opinion.get(field, [])
+                if not isinstance(value, list) or any(not isinstance(item, str) for item in value):
+                    raise ValueError(f"{path}.{field} must be an array of strings")
+            targets = opinion.get("price_targets", [])
+            if not isinstance(targets, list) or any(not isinstance(item, dict) or isinstance(item.get("value"), bool) or not isinstance(item.get("value"), (int, float)) or not isfinite(item["value"]) or item["value"] <= 0 for item in targets):
+                raise ValueError(f"{path}.price_targets must contain objects with positive numeric value")
+            if opinion.get("opinion_date"):
+                try:
+                    date.fromisoformat(opinion["opinion_date"])
+                except (ValueError, TypeError):
+                    raise ValueError(f"{path}.opinion_date must be YYYY-MM-DD")
+        rows = self._rows_from_payload(payload, uploaded_by=None)
+        return {"video_id": rows[0]["video_id"], "video_title": rows[0]["video_title"],
+                "channel_title": rows[0]["channel_title"], "count": len(rows),
+                "opinions": [{key: row[key] for key in ("ticker", "sentiment", "direction_score", "confidence", "summary", "opinion_date")} for row in rows]}
 
     async def get_dashboard(
         self,
@@ -603,14 +654,10 @@ def _normalize_score(value: Optional[float], sentiment: str) -> float:
         return 0
 
     score = value
-    if -1 <= score <= 1:
-        score *= 100
     if sentiment == "bearish" and score > 0:
         score = -score
     if sentiment == "bullish" and score < 0:
         score = abs(score)
-    if sentiment in {"neutral", "mixed"} and abs(score) > 35:
-        score = 0
     return round(max(-100, min(100, score)), 2)
 
 

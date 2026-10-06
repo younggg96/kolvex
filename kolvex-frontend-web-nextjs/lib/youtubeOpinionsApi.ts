@@ -162,3 +162,18 @@ export async function uploadYouTubeOpinionPayload(
     body: JSON.stringify(payload),
   });
 }
+
+export interface YouTubeImportPreview {
+  video_id: string;
+  video_title: string;
+  channel_title: string;
+  count: number;
+  opinions: Pick<YouTubeOpinion, "ticker" | "sentiment" | "direction_score" | "confidence" | "summary" | "opinion_date">[];
+}
+
+export function validateYouTubeOpinionPayload(payload: Record<string, unknown>) {
+  return apiRequest<YouTubeImportPreview>("/validate", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}

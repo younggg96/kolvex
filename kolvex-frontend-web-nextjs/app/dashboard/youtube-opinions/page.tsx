@@ -25,6 +25,7 @@ import {
 import { toast } from "sonner";
 
 import DashboardLayout from "@/components/layout/DashboardLayout";
+import YouTubeOpinionImporter from "@/components/admin/YouTubeOpinionImporter";
 import { useUserProfileContext } from "@/components/user/UserProfileProvider";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -32,7 +33,6 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -44,12 +44,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
 import { useTranslation } from "@/lib/i18n";
 import { cn, proxyImageUrl } from "@/lib/utils";
 import {
   getYouTubeOpinionDashboard,
-  uploadYouTubeOpinionPayload,
   type OpinionSentiment,
   type YouTubeCreatorSummary,
   type YouTubeDailyChange,
@@ -59,49 +57,6 @@ import {
 } from "@/lib/youtubeOpinionsApi";
 
 const SENTIMENTS: OpinionSentiment[] = ["bullish", "bearish", "neutral", "mixed"];
-
-const samplePayload = {
-  channel: {
-    id: "UC_sample_channel",
-    title: "Example Market Channel",
-    handle: "@examplemarkets",
-    url: "https://www.youtube.com/@examplemarkets",
-  },
-  video: {
-    id: "sample-video-id",
-    title: "NVDA and TSLA market setup",
-    url: "https://www.youtube.com/watch?v=sample-video-id",
-    published_at: "2026-10-06T15:00:00Z",
-    analyzed_at: "2026-10-06T16:00:00Z",
-  },
-  model: "gemini-2.5-pro",
-  opinions: [
-    {
-      ticker: "NVDA",
-      company_name: "NVIDIA",
-      sentiment: "bullish",
-      direction_score: 78,
-      confidence: 0.86,
-      time_horizon: "3-6 months",
-      summary: "The creator expects AI infrastructure demand to support revenue growth.",
-      thesis: "Data center demand and product cycle strength outweigh valuation risk.",
-      key_points: ["AI capex demand", "Strong gross margin", "Blackwell ramp"],
-      risks: ["Valuation compression", "Export restrictions"],
-      price_targets: [{ label: "base", value: 165 }],
-    },
-    {
-      ticker: "TSLA",
-      company_name: "Tesla",
-      sentiment: "mixed",
-      direction_score: 8,
-      confidence: 0.62,
-      time_horizon: "1-3 months",
-      summary: "The creator sees upside from autonomy but wants cleaner delivery trends.",
-      key_points: ["Robotaxi optionality", "Delivery volatility"],
-      risks: ["Margin pressure"],
-    },
-  ],
-};
 
 function formatDate(value?: string | null) {
   if (!value) return "-";
@@ -460,8 +415,6 @@ export default function YouTubeOpinionsPage() {
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [uploadOpen, setUploadOpen] = useState(false);
-  const [payloadText, setPayloadText] = useState("");
-  const [uploading, setUploading] = useState(false);
 
   const loadData = useCallback(async () => {
     try {
@@ -494,33 +447,6 @@ export default function YouTubeOpinionsPage() {
     setSentiment("all");
     setDateFrom("");
     setDateTo("");
-  };
-
-  const handleUpload = async () => {
-    let parsed: Record<string, unknown>;
-    try {
-      parsed = JSON.parse(payloadText);
-    } catch {
-      toast.error(t("youtubeOpinions.invalidJson"));
-      return;
-    }
-
-    setUploading(true);
-    try {
-      const result = await uploadYouTubeOpinionPayload(parsed);
-      toast.success(
-        t("youtubeOpinions.uploadSuccess", {
-          count: String(result.inserted_count),
-        })
-      );
-      setUploadOpen(false);
-      setPayloadText("");
-      loadData();
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : t("youtubeOpinions.uploadFailed"));
-    } finally {
-      setUploading(false);
-    }
   };
 
   const summary = data?.summary;
@@ -762,44 +688,15 @@ export default function YouTubeOpinionsPage() {
         </div>
       </div>
 
-      <Dialog open={uploadOpen} onOpenChange={setUploadOpen}>
-        <DialogContent className="max-w-3xl">
+      <Dialog open={isAdmin && uploadOpen} onOpenChange={setUploadOpen}>
+        <DialogContent className="max-h-[90vh] max-w-3xl overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{t("youtubeOpinions.uploadTitle")}</DialogTitle>
             <DialogDescription>
               {t("youtubeOpinions.uploadDescription")}
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-3 py-4">
-            <div className="flex items-center justify-between gap-3">
-              <label className="text-sm font-medium">
-                {t("youtubeOpinions.payload")}
-              </label>
-              <Button
-                type="button"
-                variant="outline"
-                size="xs"
-                onClick={() => setPayloadText(JSON.stringify(samplePayload, null, 2))}
-              >
-                {t("youtubeOpinions.useExample")}
-              </Button>
-            </div>
-            <Textarea
-              value={payloadText}
-              onChange={(event) => setPayloadText(event.target.value)}
-              className="min-h-[420px] font-mono text-xs"
-              spellCheck={false}
-            />
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setUploadOpen(false)}>
-              {t("common.cancel")}
-            </Button>
-            <Button onClick={handleUpload} disabled={uploading || !payloadText.trim()}>
-              {uploading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {uploading ? t("youtubeOpinions.uploading") : t("youtubeOpinions.uploadJson")}
-            </Button>
-          </DialogFooter>
+          <YouTubeOpinionImporter onImported={loadData} />
         </DialogContent>
       </Dialog>
     </DashboardLayout>

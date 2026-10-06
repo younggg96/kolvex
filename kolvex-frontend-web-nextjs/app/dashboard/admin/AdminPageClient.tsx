@@ -49,6 +49,7 @@ import {
   Zap,
   Brain,
   Download,
+  Upload,
   MessageSquare,
   UserPlus,
   ExternalLink,
@@ -77,6 +78,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
+import YouTubeOpinionImporter from "@/components/admin/YouTubeOpinionImporter";
 
 // User Avatar with error handling - uses Next.js Image for caching
 const UserAvatar = memo(function UserAvatar({
@@ -1556,11 +1558,18 @@ export default function AdminPageClient() {
             <SwitchTab
               value={activeTab}
               onValueChange={setActiveTab}
-              options={tabOptions}
+              options={[...tabOptions, { value: "youtube-import", label: "YouTube 观点导入", icon: <Upload className="h-4 w-4" /> }]}
               size="sm"
               variant="pills"
-              className="!w-fit"
+              className="!w-fit max-w-full overflow-x-auto"
             />
+
+            <TabsContent value="youtube-import" className="mt-4">
+              <div className="max-w-4xl space-y-4">
+                <h2 className="text-lg font-semibold">YouTube 股票观点导入</h2>
+                <YouTubeOpinionImporter />
+              </div>
+            </TabsContent>
 
             {/* Overview Tab */}
             <TabsContent value="overview" className="mt-4 space-y-4">

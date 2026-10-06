@@ -69,6 +69,18 @@ async def get_youtube_stock_detail(
         )
 
 
+@router.post("/validate")
+async def validate_youtube_opinion_payload(
+    payload: Dict[str, Any],
+    admin_id: str = Depends(verify_admin),
+    service: YouTubeStockOpinionService = Depends(get_service),
+):
+    try:
+        return service.validate_payload(payload)
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+
 @router.post("/upload")
 async def upload_youtube_opinion_payload(
     payload: Dict[str, Any],
