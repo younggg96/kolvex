@@ -1,6 +1,7 @@
 export type ProductFeatureId =
   | "chat"
   | "tradingAnalysis"
+  | "youtubeOpinions"
   | "portfolio"
   | "settings"
   | "admin";
@@ -33,6 +34,14 @@ export const PRODUCT_FEATURES = [
     apiPrefixes: ["/api/trading-analysis"],
     componentDirs: ["components/trading-analysis"],
     libFiles: ["lib/tradingAnalysisApi.ts"],
+  },
+  {
+    id: "youtubeOpinions",
+    label: "YouTube Opinions",
+    enabled: true,
+    routePrefixes: ["/dashboard/youtube-opinions"],
+    apiPrefixes: ["/api/youtube-opinions"],
+    libFiles: ["lib/youtubeOpinionsApi.ts"],
   },
   {
     id: "portfolio",

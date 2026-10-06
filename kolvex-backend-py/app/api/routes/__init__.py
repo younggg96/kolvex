@@ -28,6 +28,7 @@ from app.api.routes.trading_analysis import router as trading_analysis_router
 from app.api.routes.stock_screener import router as stock_screener_router
 from app.api.routes.ibkr import router as ibkr_router
 from app.api.routes.plaid import router as plaid_router
+from app.api.routes.youtube_opinions import router as youtube_opinions_router
 
 # Create API router
 api_router = APIRouter()
@@ -63,5 +64,6 @@ api_router.include_router(trading_analysis_router)
 api_router.include_router(stock_screener_router)
 api_router.include_router(ibkr_router)
 api_router.include_router(plaid_router)
+api_router.include_router(youtube_opinions_router)
 
 __all__ = ["api_router"]

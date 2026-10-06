@@ -1,0 +1,89 @@
+"""
+YouTube KOL stock opinion API routes.
+"""
+
+from typing import Any, Dict, Optional
+
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from supabase import Client
+
+from app.api.dependencies.auth import verify_admin
+from app.core.supabase import get_supabase_service
+from app.services.youtube_stock_opinions import YouTubeStockOpinionService
+
+
+router = APIRouter(prefix="/youtube-opinions", tags=["YouTube Opinions"])
+
+
+def get_service(
+    supabase: Client = Depends(get_supabase_service),
+) -> YouTubeStockOpinionService:
+    return YouTubeStockOpinionService(supabase)
+
+
+@router.get("/dashboard")
+async def get_youtube_opinions_dashboard(
+    ticker: Optional[str] = Query(default=None, max_length=20),
+    channel_id: Optional[str] = Query(default=None),
+    sentiment: Optional[str] = Query(default=None),
+    date_from: Optional[str] = Query(default=None, pattern=r"^\d{4}-\d{2}-\d{2}$"),
+    date_to: Optional[str] = Query(default=None, pattern=r"^\d{4}-\d{2}-\d{2}$"),
+    limit: int = Query(default=80, ge=1, le=200),
+    service: YouTubeStockOpinionService = Depends(get_service),
+):
+    """Return dashboard aggregates for YouTube stock opinions."""
+    try:
+        return await service.get_dashboard(
+            ticker=ticker,
+            channel_id=channel_id,
+            sentiment=sentiment,
+            date_from=date_from,
+            date_to=date_to,
+            limit=limit,
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to load YouTube opinions: {str(e)}",
+        )
+
+
+@router.get("/stocks/{ticker}")
+async def get_youtube_stock_detail(
+    ticker: str,
+    date_from: Optional[str] = Query(default=None, pattern=r"^\d{4}-\d{2}-\d{2}$"),
+    date_to: Optional[str] = Query(default=None, pattern=r"^\d{4}-\d{2}-\d{2}$"),
+    service: YouTubeStockOpinionService = Depends(get_service),
+):
+    """Return creator and day-level opinion detail for a single ticker."""
+    try:
+        return await service.get_stock_detail(
+            ticker=ticker,
+            date_from=date_from,
+            date_to=date_to,
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to load stock opinion detail: {str(e)}",
+        )
+
+
+@router.post("/upload")
+async def upload_youtube_opinion_payload(
+    payload: Dict[str, Any],
+    admin_id: str = Depends(verify_admin),
+    service: YouTubeStockOpinionService = Depends(get_service),
+):
+    """
+    Admin-only JSON upload for Gemini YouTube stock opinion analysis.
+    """
+    try:
+        return await service.upload_payload(payload, uploaded_by=admin_id)
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to upload YouTube opinion payload: {str(e)}",
+        )

@@ -12,6 +12,8 @@ import {
   Briefcase,
   MessageCircleIcon,
   ShieldCheck,
+  Youtube,
+  type LucideIcon,
 } from "lucide-react";
 import UserMenu from "@/components/user/UserMenu";
 import { Button } from "@/components/ui/button";
@@ -53,19 +55,26 @@ const mainNavItemDefs = [
     featureId: "tradingAnalysis",
   },
   {
+    icon: Youtube,
+    titleKey: "sidebar.youtubeOpinions",
+    href: "/dashboard/youtube-opinions",
+    type: "link",
+    featureId: "youtubeOpinions",
+  },
+  {
     icon: Briefcase,
     titleKey: "sidebar.portfolio",
     href: "/dashboard/portfolio",
     type: "link",
     featureId: "portfolio",
   },
-  ] satisfies Array<{
-    icon: typeof LayoutDashboard | null;
-    titleKey: string;
-    href: string;
-    type: "chat-submenu" | "link";
-    featureId: ProductFeatureId;
-  }>;
+] satisfies Array<{
+  icon: LucideIcon | null;
+  titleKey: string;
+  href: string;
+  type: "chat-submenu" | "link";
+  featureId: ProductFeatureId;
+}>;
 
 const bottomNavItemDefs = [
   {
