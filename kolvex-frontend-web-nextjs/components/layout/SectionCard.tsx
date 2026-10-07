@@ -70,7 +70,7 @@ export default function SectionCard({
 
   return (
     <div
-      className={`bg-card border border-border rounded-lg transition-colors duration-300 flex flex-col ${
+      className={`min-w-0 bg-card border-y border-border flex flex-col ${
         scrollable ? "overflow-hidden" : ""
       } ${className}`}
     >
@@ -116,7 +116,7 @@ export default function SectionCard({
               {icon && icon}
               {title && (
                 <h2
-                  className={`${titleSizeClasses[titleSize]} font-bold text-foreground`}
+                  className={`${titleSizeClasses[titleSize]} font-semibold text-foreground`}
                 >
                   {title}
                 </h2>

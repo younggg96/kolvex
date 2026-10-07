@@ -12,7 +12,6 @@ export default function Dashboard() {
       title={t("chat.title")}
       showHeader={true}
       noTransition={true}
-      headerClassName="lg:hidden"
     >
       <ChatWelcomeContainer className="flex-1" />
     </DashboardLayout>

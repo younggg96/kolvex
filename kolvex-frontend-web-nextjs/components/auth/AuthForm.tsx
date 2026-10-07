@@ -99,17 +99,15 @@ export default function AuthForm({ mode, onModeChange }: AuthFormProps) {
   };
 
   return (
-    <div className="w-full max-w-sm sm:max-w-md px-4 sm:px-0 animate-fade-in-up">
-      <div className="relative bg-white dark:bg-[#0a0e0a] backdrop-blur-xl border border-gray-200 dark:border-[#1a1f1a] rounded-2xl p-6 sm:p-8 shadow-2xl hover:shadow-primary/5 transition-all duration-500 hover:-translate-y-1">
-        {/* Glow Effect */}
-        <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-primary/5 via-transparent to-transparent opacity-0 hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
+    <div className="w-full">
+      <div className="relative border-t border-border pt-6">
 
         <div className="relative z-10">
           {/* Mode Toggle */}
-          <div className="relative flex gap-2 mb-6 sm:mb-8 rounded-full p-1.5 border border-gray-300 dark:border-white/10 bg-gray-50 dark:bg-white/5">
+          <div className="relative mb-7 flex gap-2 rounded-md border border-border bg-muted p-1.5">
             {/* Sliding Background Indicator */}
             <div
-              className={`absolute top-1.5 bottom-1.5 w-[calc(50%-10px)] bg-primary rounded-full shadow-lg shadow-primary/30 transition-all duration-300 ease-out ${
+              className={`absolute top-1.5 bottom-1.5 w-[calc(50%-10px)] bg-card rounded transition-all duration-200 ${
                 mode === "login" ? "left-1.5" : "left-[calc(50%+4px)]"
               }`}
             ></div>
@@ -118,10 +116,11 @@ export default function AuthForm({ mode, onModeChange }: AuthFormProps) {
               variant="ghost"
               type="button"
               onClick={() => onModeChange("login")}
-              className={`flex-1 py-2.5 px-4 rounded-full text-sm font-semibold transition-all duration-300 relative z-10 hover:!bg-transparent dark:hover:!bg-transparent ${
+              aria-pressed={mode === "login"}
+              className={`flex-1 py-2.5 px-4 rounded text-sm font-semibold relative z-10 hover:!bg-transparent ${
                 mode === "login"
-                  ? "text-white dark:text-background-dark"
-                  : "text-gray-600 dark:text-white/60 hover:text-gray-900 dark:hover:text-white"
+                  ? "text-foreground"
+                  : "text-muted-foreground hover:text-foreground"
               }`}
             >
               Login
@@ -130,10 +129,11 @@ export default function AuthForm({ mode, onModeChange }: AuthFormProps) {
               variant="ghost"
               type="button"
               onClick={() => onModeChange("signup")}
-              className={`flex-1 py-2.5 px-4 rounded-full text-sm font-semibold transition-all duration-300 relative z-10 hover:!bg-transparent dark:hover:!bg-transparent ${
+              aria-pressed={mode === "signup"}
+              className={`flex-1 py-2.5 px-4 rounded text-sm font-semibold relative z-10 hover:!bg-transparent ${
                 mode === "signup"
-                  ? "text-white dark:text-background-dark"
-                  : "text-gray-600 dark:text-white/60 hover:text-gray-900 dark:hover:text-white"
+                  ? "text-foreground"
+                  : "text-muted-foreground hover:text-foreground"
               }`}
             >
               Sign Up
@@ -266,7 +266,7 @@ export default function AuthForm({ mode, onModeChange }: AuthFormProps) {
               type="submit"
               size="lg"
               disabled={isLoading}
-              className="w-full hover:scale-[1.02] active:scale-[0.98] transition-all duration-200"
+              className="w-full"
             >
               {isLoading
                 ? "Processing..."
@@ -293,7 +293,7 @@ export default function AuthForm({ mode, onModeChange }: AuthFormProps) {
               size="lg"
               onClick={handleGoogleSignIn}
               disabled={isGoogleLoading || isLoading}
-              className="w-full hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+              className="w-full gap-2"
             >
               <Image
                 src="/logo/google.svg"

@@ -211,7 +211,7 @@ function CreatorRow({
   t: (key: string) => string;
 }) {
   return (
-    <div className="flex items-center justify-between gap-3 rounded-lg border border-border bg-card p-3">
+    <div className="flex items-center justify-between gap-3 border-b border-border py-3 last:border-0">
       <div className="flex min-w-0 items-center gap-3">
         <CreatorAvatar creator={creator} />
         <div className="min-w-0">
@@ -470,14 +470,13 @@ export default function YouTubeOpinionsPage() {
       }
     >
       <div className="relative flex-1 overflow-y-auto bg-background">
-        <div className="absolute inset-0 bg-grid opacity-40 pointer-events-none" />
-        <div className="relative mx-auto flex w-full max-w-[1500px] flex-col gap-4 p-4 md:p-6">
-          <section className="rounded-lg border border-border bg-card p-4">
+        <div className="relative mx-auto flex w-full max-w-[1500px] flex-col gap-6 p-4 md:p-7">
+          <section className="border-b border-border pb-5">
             <div className="mb-3 flex items-center gap-2 text-sm font-medium">
               <Youtube className="h-4 w-4 text-red-500" />
               {t("youtubeOpinions.filters")}
             </div>
-            <div className="grid gap-3 md:grid-cols-[minmax(120px,0.8fr)_minmax(160px,1fr)_minmax(150px,0.8fr)_repeat(2,minmax(140px,0.8fr))_auto]">
+            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-[minmax(100px,0.8fr)_minmax(130px,1fr)_minmax(120px,0.8fr)_repeat(2,minmax(130px,0.8fr))_auto]">
               <Input
                 value={ticker}
                 onChange={(event) => setTicker(event.target.value)}
@@ -533,7 +532,7 @@ export default function YouTubeOpinionsPage() {
             </div>
           </section>
 
-          <div className="grid gap-3 md:grid-cols-4">
+          <div className="data-summary">
             <StatTile
               label={t("youtubeOpinions.opinions")}
               value={summary?.total_opinions ?? 0}
@@ -561,13 +560,15 @@ export default function YouTubeOpinionsPage() {
               <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
             </div>
           ) : !data || data.summary.total_opinions === 0 ? (
-            <div className="flex min-h-[420px] items-center justify-center rounded-lg border border-border bg-card text-muted-foreground">
-              {t("youtubeOpinions.noData")}
+            <div className="flex min-h-[320px] flex-col items-center justify-center gap-4 text-center text-muted-foreground">
+              <Youtube className="h-8 w-8 text-red-500" />
+              <p className="max-w-md text-sm">{t("youtubeOpinions.noData")}</p>
+              {isAdmin && <Button variant="outline" onClick={() => setUploadOpen(true)}><Upload className="mr-2 h-4 w-4" />{t("youtubeOpinions.uploadJson")}</Button>}
             </div>
           ) : (
             <>
               <div className="grid gap-4 xl:grid-cols-[1.25fr_0.75fr]">
-                <section className="rounded-lg border border-border bg-card p-4">
+                <section className="research-section">
                   <div className="mb-4 flex items-center justify-between gap-3">
                     <h2 className="text-base font-semibold">
                       {t("youtubeOpinions.dailyTrend")}
@@ -593,15 +594,16 @@ export default function YouTubeOpinionsPage() {
                         <Tooltip
                           contentStyle={{
                             borderRadius: 8,
-                            border: "1px solid hsl(var(--border))",
-                            background: "hsl(var(--card))",
+                            border: "1px solid rgb(var(--border))",
+                            background: "rgb(var(--card))",
                           }}
                         />
-                        <Bar yAxisId="count" dataKey="total" fill="#94a3b8" opacity={0.25} />
+                        <Bar yAxisId="count" dataKey="total" fill="#94a3b8" opacity={0.25} isAnimationActive={false} />
                         <Line
                           yAxisId="score"
                           type="monotone"
                           dataKey="avg_score"
+                          isAnimationActive={false}
                           stroke="#2563eb"
                           strokeWidth={2}
                           dot={false}
@@ -610,6 +612,7 @@ export default function YouTubeOpinionsPage() {
                           yAxisId="count"
                           type="monotone"
                           dataKey="bullish_count"
+                          isAnimationActive={false}
                           stroke="#10b981"
                           strokeWidth={2}
                           dot={false}
@@ -618,6 +621,7 @@ export default function YouTubeOpinionsPage() {
                           yAxisId="count"
                           type="monotone"
                           dataKey="bearish_count"
+                          isAnimationActive={false}
                           stroke="#f43f5e"
                           strokeWidth={2}
                           dot={false}
@@ -627,7 +631,7 @@ export default function YouTubeOpinionsPage() {
                   </div>
                 </section>
 
-                <section className="rounded-lg border border-border bg-card p-4">
+                <section className="research-section">
                   <h2 className="mb-4 text-base font-semibold">
                     {t("youtubeOpinions.dailyChanges")}
                   </h2>

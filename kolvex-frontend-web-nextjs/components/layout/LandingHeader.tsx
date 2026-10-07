@@ -10,8 +10,10 @@ import { useTheme } from "next-themes";
 import { useAuth, useUserProfile } from "@/hooks";
 import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
+import { useTranslation } from "@/lib/i18n";
 
 export default function LandingHeader() {
+  const { locale } = useTranslation();
   const { theme } = useTheme();
   const { user, isAuthenticated, isLoading } = useAuth();
   const { profile } = useUserProfile();
@@ -44,21 +46,27 @@ export default function LandingHeader() {
   };
 
   return (
-    <header className="relative z-10 px-4 sm:px-6 md:px-8 py-4 sm:py-5 md:py-6 flex justify-between items-center">
+    <header className="relative z-10 border-b border-border bg-card">
+      <div className="landing-width flex min-h-[72px] items-center justify-between gap-4 py-3">
       <Link
         href="/"
         className="flex items-center gap-1.5 sm:gap-2 group transition-all"
       >
         <LogoIcon
           size={24}
-          className="w-6 h-6 group-hover:scale-110 transition-transform"
+          className="h-7 w-7 text-primary"
         />
         <span
-          className={`${textColorClass} text-lg sm:text-xl font-bold group-hover:text-primary transition-colors`}
+          className={`${textColorClass} text-xl font-extrabold`}
         >
           Kolvex
         </span>
       </Link>
+      <nav className="hidden items-center gap-7 text-sm text-muted-foreground md:flex" aria-label="Main navigation">
+        <Link href="/#workflow" className="hover:text-foreground">{locale === "zh" ? "投资流程" : "Workflow"}</Link>
+        <Link href="/dashboard/youtube-opinions" className="hover:text-foreground">{locale === "zh" ? "博主观点" : "Creator research"}</Link>
+        <Link href="/dashboard/portfolio" className="hover:text-foreground">{locale === "zh" ? "投资组合" : "Portfolio"}</Link>
+      </nav>
       <div className="flex items-center gap-3 sm:gap-4">
         {isLoading ? (
           // Loading state - use same Button structure to prevent layout shift
@@ -105,13 +113,14 @@ export default function LandingHeader() {
                   href="/auth"
                   className="text-sm text-gray-500 dark:text-white/50 hover:text-gray-700 dark:hover:text-white/70 transition-colors"
                 >
-                  Sign In
+                  {locale === "zh" ? "登录" : "Sign in"}
                 </Link>
               )
             )}
           </>
         )}
         <ThemeToggle />
+      </div>
       </div>
     </header>
   );

@@ -5,19 +5,8 @@
 @import "react-day-picker/dist/style.css";
 
 html {
-  font-size: 18px;
-
-  @media (max-width: 1024px) {
-    font-size: 17px;
-  }
-
-  @media (max-width: 768px) {
-    font-size: 16px;
-  }
-
-  @media (max-width: 480px) {
-    font-size: 15px;
-  }
+  font-size: 16px;
+  scroll-padding-top: 80px;
 }
 
 /* ========================================
@@ -27,15 +16,16 @@ html {
    ======================================== */
 
 :root {
-  --background: 247 248 250;
-  --foreground: 23 23 23;
-  --muted: 241 245 249;
-  --muted-foreground: 100 116 139;
+  --background: 248 250 250;
+  --foreground: 31 40 43;
+  --muted: 238 242 242;
+  --muted-foreground: 94 110 114;
   --card: 255 255 255;
-  --card-foreground: 23 23 23;
-  --border: 229 231 235;
-  --secondary: 241 245 249;
-  --secondary-foreground: 15 23 42;
+  --card-foreground: 31 40 43;
+  --border: 219 228 229;
+  --secondary: 232 239 240;
+  --secondary-foreground: 40 60 65;
+  --primary: 8 113 104;
   --destructive: 239 68 68;
   --destructive-foreground: 255 255 255;
   --primary-foreground: 255 255 255;
@@ -47,18 +37,19 @@ html {
 }
 
 .dark {
-  --background: 10 14 15;
-  --foreground: 229 231 235;
-  --muted: 30 33 36;
-  --muted-foreground: 156 163 175;
-  --card: 26 29 31;
-  --card-foreground: 229 231 235;
-  --border: 42 45 47;
-  --secondary: 30 33 36;
-  --secondary-foreground: 229 231 235;
+  --background: 21 24 26;
+  --foreground: 234 239 240;
+  --muted: 37 43 46;
+  --muted-foreground: 164 179 184;
+  --card: 28 33 36;
+  --card-foreground: 234 239 240;
+  --border: 53 64 68;
+  --secondary: 40 49 53;
+  --secondary-foreground: 234 239 240;
+  --primary: 73 200 179;
   --destructive: 239 68 68;
   --destructive-foreground: 255 255 255;
-  --primary-foreground: 255 255 255;
+  --primary-foreground: 14 42 37;
 }
 
 body {
@@ -67,6 +58,8 @@ body {
   font-kerning: normal;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  font-size: 14px;
+  line-height: 1.55;
   transition:
     background-color 0.3s var(--ease-out-quart),
     color 0.3s var(--ease-out-quart);
@@ -169,19 +162,7 @@ body {
   }
 
   .bg-grid {
-    background-image:
-      linear-gradient(
-        to right,
-        rgb(var(--foreground) / 0.06) 1px,
-        transparent 1px
-      ),
-      linear-gradient(
-        to bottom,
-        rgb(var(--foreground) / 0.06) 1px,
-        transparent 1px
-      );
-    background-size: 40px 40px;
-    animation: bg-pan 20s linear infinite;
+    background-image: none;
   }
 
   /* Hide scrollbar but keep functionality */
@@ -741,10 +722,80 @@ body {
    ======================================== */
 
 :focus-visible {
-  outline: 2px solid #00c805;
+  outline: 2px solid rgb(var(--primary));
   outline-offset: 2px;
 }
 
 :focus:not(:focus-visible) {
   outline: none;
+}
+
+/* Shared workbench surfaces keep portfolio, research and administration aligned. */
+.app-workbench {
+  height: 100dvh;
+  --sidebar-background: var(--card);
+}
+
+.app-workbench [data-sidebar="header"] {
+  padding: 20px 16px 14px;
+}
+
+.app-workbench [data-sidebar="footer"] {
+  border-top: 1px solid rgb(var(--border));
+  padding: 12px;
+}
+
+.app-workbench [data-sidebar="menu-button"] {
+  min-height: 40px;
+  border-radius: 6px;
+  gap: 12px;
+}
+
+.app-workbench [data-sidebar="menu-button"][data-active="true"] {
+  background: rgb(var(--primary) / 0.09);
+  box-shadow: inset 3px 0 0 rgb(var(--primary));
+  font-weight: 650;
+}
+
+.dashboard-content {
+  min-height: 0;
+}
+
+.dashboard-content section {
+  min-width: 0;
+}
+
+.research-section {
+  border-top: 1px solid rgb(var(--border));
+  padding-top: 24px;
+}
+
+.data-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  border-block: 1px solid rgb(var(--border));
+}
+
+.data-summary > * {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  padding: 20px;
+}
+
+.data-summary > * + * {
+  border-left: 1px solid rgb(var(--border));
+}
+
+.landing-width {
+  width: min(1200px, calc(100% - 48px));
+  margin-inline: auto;
+}
+
+@media (max-width: 640px) {
+  .landing-width { width: calc(100% - 32px); }
+  .data-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .data-summary > * { padding: 16px 12px; }
+  .data-summary > :nth-child(3) { border-left: 0; }
+  .data-summary > :nth-child(n+3) { border-top: 1px solid rgb(var(--border)); }
 }

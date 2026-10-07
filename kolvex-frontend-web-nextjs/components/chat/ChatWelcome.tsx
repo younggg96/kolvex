@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Zap } from "lucide-react";
+import { Zap, Briefcase, Youtube, ArrowUpRight } from "lucide-react";
+import Link from "next/link";
 import { ChipButton } from "@/components/ui/chip-button";
 import { ChatInput, MODEL_CONFIGS } from "./ChatInput";
 import { useTranslation } from "@/lib/i18n";
@@ -31,7 +32,7 @@ export function ChatWelcome({
   onSelectModel,
   availableProviders,
 }: ChatWelcomeProps) {
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
   const [query, setQuery] = useState("");
   const [isFocused, setIsFocused] = useState(false);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -69,36 +70,35 @@ export function ChatWelcome({
   };
 
   return (
-    <div className="flex-1 flex flex-col items-center justify-center p-4 md:p-6">
+    <div className="flex flex-1 flex-col items-center justify-center overflow-y-auto px-5 py-10 md:px-8">
       {/* Welcome Section */}
-      <div className="w-full max-w-2xl mx-auto text-center mb-8 animate-fade-in">
+      <div className="mx-auto mb-8 w-full max-w-2xl text-left">
         {/* Badge */}
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-gradient-to-r from-primary/10 to-emerald-500/10 border border-primary/20 text-primary text-xs font-bold mb-6">
+        <div className="mb-4 text-sm font-medium text-muted-foreground">
           {t("chat.badge")}
         </div>
 
         {/* Heading */}
-        <h1 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-3 tracking-tight">
+        <h1 className="mb-4 text-2xl font-bold leading-snug text-foreground md:text-3xl">
           {(() => {
             const raw = t("chat.heading");
             const parts = raw.split(/<highlight>|<\/highlight>/);
             if (parts.length === 3) {
-              return <>{parts[0]}<span className="text-primary">{parts[1]}</span>{parts[2]}</>;
+              return <>{parts[0]}{parts[1]}{parts[2]}</>;
             }
             return raw;
           })()}
         </h1>
 
         {/* Description */}
-        <p className="text-gray-600 dark:text-white/60 text-sm max-w-xl mx-auto">
+        <p className="max-w-xl text-sm leading-relaxed text-muted-foreground">
           {t("chat.description")}
         </p>
       </div>
 
       {/* Search Input */}
       <div
-        className="w-full max-w-2xl mx-auto mb-8 animate-fade-in-up"
-        style={{ animationDelay: "100ms" }}
+        className="mx-auto mb-8 w-full max-w-2xl"
       >
         <ChatInput
           value={query}
@@ -119,7 +119,7 @@ export function ChatWelcome({
         />
 
         {/* Quick Suggestions — only chat suggestions are blocked when no key */}
-        <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+        <div className="mt-4 flex flex-wrap items-center gap-2">
           {suggestions.map((suggestion, index) => (
             <ChipButton
               key={index}
@@ -131,6 +131,12 @@ export function ChatWelcome({
             </ChipButton>
           ))}
         </div>
+      </div>
+      <div className="mx-auto grid w-full max-w-2xl gap-4 border-t border-border pt-5 sm:grid-cols-2">
+        {[
+          { href: "/dashboard/youtube-opinions", icon: Youtube, label: locale === "zh" ? "比较博主股票观点" : "Compare creator opinions" },
+          { href: "/dashboard/portfolio", icon: Briefcase, label: locale === "zh" ? "查看投资组合" : "Review your portfolio" },
+        ].map(({ href, icon: Icon, label }) => <Link key={href} href={href} className="flex min-w-0 items-center gap-3 rounded-md py-3 text-sm hover:text-primary"><Icon className="h-5 w-5 shrink-0 text-muted-foreground" /><span className="flex-1">{label}</span><ArrowUpRight className="h-4 w-4 shrink-0" /></Link>)}
       </div>
     </div>
   );

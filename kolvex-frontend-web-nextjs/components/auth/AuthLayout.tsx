@@ -14,16 +14,16 @@ export default function AuthLayout({
 }: AuthLayoutProps) {
   return (
     <BaseLayout hasFooter={false}>
-      <div className="relative z-10 flex-1 flex items-start justify-center text-center px-4 sm:px-6 md:px-8 py-8 sm:py-10 md:py-12">
-        <div className="w-full max-w-sm sm:max-w-md">
-          <div className="flex flex-col gap-4 sm:gap-6 items-center justify-center">
-            <div className="flex flex-col gap-1.5 sm:gap-2 animate-fade-in-up">
-              <h1 className="text-gray-900 dark:text-white text-2xl sm:text-3xl md:text-4xl font-black tracking-tighter">
+      <div className="relative z-10 flex flex-1 items-start justify-center px-4 py-12 md:py-16">
+        <div className="w-full max-w-[420px]">
+          <div className="flex flex-col gap-7">
+            <div className="flex flex-col gap-3 text-left">
+              <h1 className="text-3xl font-bold text-foreground">
                 {title}
               </h1>
-              <h2 className="text-gray-700 dark:text-white/70 text-xs sm:text-sm font-normal px-4">
+              <p className="text-sm leading-relaxed text-muted-foreground">
                 {subtitle}
-              </h2>
+              </p>
             </div>
             {children}
           </div>

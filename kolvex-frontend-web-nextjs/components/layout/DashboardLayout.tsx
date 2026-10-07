@@ -48,7 +48,7 @@ export default function DashboardLayout({
         </div>
       )}
       <div
-        className={`flex flex-col flex-1 overflow-hidden ${
+        className={`dashboard-content flex min-w-0 flex-col flex-1 overflow-hidden ${
           noTransition ? "" : "animate-page-enter"
         }`}
       >

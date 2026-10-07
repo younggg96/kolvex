@@ -80,8 +80,8 @@ export default function YouTubeOpinionImporter({ onImported }: { onImported?: ()
   }
 
   return (
-    <div className="min-w-0 space-y-5">
-      <div className="flex flex-wrap gap-2">
+    <div className="min-w-0 space-y-6">
+      <div className="flex flex-wrap gap-2 border-b border-border pb-5">
         <Button variant="outline" size="sm" onClick={downloadTemplate}><Download className="mr-2 h-4 w-4" />下载 JSON 模板</Button>
         <Button variant="outline" size="sm" onClick={async () => {
           try { await navigator.clipboard.writeText(prompt); setCopied(true); }
@@ -130,7 +130,7 @@ export default function YouTubeOpinionImporter({ onImported }: { onImported?: ()
         </tbody></table></div>
         <p className="text-xs text-muted-foreground">导入后观点将对所有用户可见。同一视频 ID 与股票代码的记录会被更新；每日变化按视频发布时间统计。</p>
       </section>}
-      <div className="flex flex-wrap gap-2">
+      <div className="sticky bottom-0 flex flex-wrap gap-2 border-t border-border bg-card py-4">
         <Button variant="outline" onClick={validate} disabled={busy || !text.trim()}><CheckCircle2 className="mr-2 h-4 w-4" />校验并预览</Button>
         <Button onClick={submit} disabled={busy || !preview || !payload}>{busy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}确认导入</Button>
       </div>

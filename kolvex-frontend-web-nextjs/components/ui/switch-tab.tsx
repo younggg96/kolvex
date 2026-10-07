@@ -173,6 +173,9 @@ export const SwitchTab = React.memo(function SwitchTab({
               }
             }}
             disabled={isDisabled}
+            aria-label={option.label}
+            aria-pressed={isActive}
+            title={option.label}
             className={cn(
               "relative z-10 rounded-md font-medium transition-all duration-200 flex items-center justify-center gap-1.5",
               config.size.button,

@@ -1,134 +1,37 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
+import { ArrowUpRight, Briefcase, Youtube } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, LockKeyhole, Shield } from "lucide-react";
 import { useTranslation } from "@/lib/i18n";
 
-function TrustBadges() {
-  const { t } = useTranslation();
-  const badges = [
-    { icon: Shield, label: t("landing.hero.trustBadges.readOnly") },
-    { icon: LockKeyhole, label: t("landing.hero.trustBadges.encrypted") },
-  ];
-
-  return (
-    <div className="flex flex-wrap gap-x-6 gap-y-2 mt-10 md:mt-14">
-      {badges.map((badge, i) => (
-        <div
-          key={i}
-          className="flex items-center gap-2 text-sm text-muted-foreground"
-        >
-          <badge.icon className="w-4 h-4 text-primary" />
-          <span>{badge.label}</span>
-        </div>
-      ))}
-    </div>
-  );
-}
-
 export default function LandingHero() {
-  const { t } = useTranslation();
-  const [isVisible, setIsVisible] = useState(false);
-  const heroRef = useRef<HTMLElement>(null);
-
-  useEffect(() => {
-    const timer = setTimeout(() => setIsVisible(true), 100);
-    return () => clearTimeout(timer);
-  }, []);
-
+  const { locale } = useTranslation();
+  const zh = locale === "zh";
   return (
-    <section
-      ref={heroRef}
-      className="relative min-h-[72vh] flex items-center overflow-hidden pt-16 pb-14 md:pt-20 md:pb-20"
-    >
-      <div className="container px-4 mx-auto relative z-10">
-        <div className="max-w-4xl">
-          {/* Badge */}
-          <div
-            className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/8 border border-primary/15 text-primary text-xs font-semibold mb-8 transition-all duration-700 ${
-              isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
-            }`}
-            style={{ transitionTimingFunction: "cubic-bezier(0.25, 1, 0.5, 1)" }}
-          >
-            <span className="relative flex h-1.5 w-1.5">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
-              <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-primary" />
-            </span>
-            {t("landing.hero.badge")}
-          </div>
-
-          {/* Headline */}
-          <h1
-            className={`text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight leading-[1.1] mb-6 transition-all duration-700 ${
-              isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
-            }`}
-            style={{
-              transitionTimingFunction: "cubic-bezier(0.25, 1, 0.5, 1)",
-              transitionDelay: "80ms",
-            }}
-          >
-            <span className="block text-foreground">
-              {t("landing.hero.headline")}
-            </span>
-            <span className="block text-primary mt-1">
-              {t("landing.hero.headlineHighlight")}
-            </span>
-          </h1>
-
-          {/* Subheadline */}
-          <p
-            className={`text-base md:text-lg text-muted-foreground max-w-2xl leading-relaxed mb-10 transition-all duration-700 ${
-              isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
-            }`}
-            style={{
-              transitionTimingFunction: "cubic-bezier(0.25, 1, 0.5, 1)",
-              transitionDelay: "160ms",
-            }}
-          >
-            {t("landing.hero.subheadline")}
-          </p>
-
-          {/* CTA */}
-          <div
-            className={`flex flex-col sm:flex-row gap-3 transition-all duration-700 ${
-              isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
-            }`}
-            style={{
-              transitionTimingFunction: "cubic-bezier(0.25, 1, 0.5, 1)",
-              transitionDelay: "240ms",
-            }}
-          >
-            <Link href="/auth">
-              <Button
-                size="lg"
-                className="font-semibold group"
-              >
-                {t("landing.hero.startFreeTrial")}
-                <ArrowRight
-                  size={16}
-                  className="ml-2 group-hover:translate-x-0.5 transition-transform duration-200"
-                />
-              </Button>
-            </Link>
-          </div>
-
-          {/* Trust badges */}
-          <div
-            className={`transition-all duration-700 ${
-              isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
-            }`}
-            style={{
-              transitionTimingFunction: "cubic-bezier(0.25, 1, 0.5, 1)",
-              transitionDelay: "360ms",
-            }}
-          >
-            <TrustBadges />
-          </div>
+    <section className="relative overflow-hidden border-b border-border bg-card">
+      <div className="landing-width py-14 md:py-20">
+        <h1 className="max-w-3xl text-6xl font-extrabold leading-none md:text-7xl">Kolvex</h1>
+        <p className="mt-6 max-w-2xl text-xl font-medium leading-relaxed md:text-2xl">
+          {zh ? "把博主的观点、你的持仓和投资决策，放在同一张工作台。" : "Your portfolio. The voices you follow. A clearer view of every decision."}
+        </p>
+        <p className="mt-4 max-w-xl text-sm leading-relaxed text-muted-foreground">
+          {zh ? "追踪不同博主对每只股票的看法，比较观点的每日变化，再结合持仓与 AI 分析开展研究。" : "Follow stock opinions across creators, compare how their views change, and connect that research to your holdings and AI trade reviews."}
+        </p>
+        <div className="mt-7 flex flex-wrap gap-3">
+          <Button asChild size="lg"><Link href="/auth">{zh ? "进入工作台" : "Open workspace"}<ArrowUpRight className="ml-2 h-4 w-4" /></Link></Button>
+          <Button asChild variant="outline" size="lg"><Link href="#workflow">{zh ? "了解投资流程" : "Explore the workflow"}</Link></Button>
+        </div>
+        <div className="mt-8 flex flex-wrap gap-x-6 gap-y-3 text-xs text-muted-foreground">
+          <span className="flex items-center gap-2"><Youtube className="h-4 w-4 text-red-600" />{zh ? "YouTube 博主观点" : "YouTube creator research"}</span>
+          <span className="flex items-center gap-2"><Briefcase className="h-4 w-4 text-primary" />{zh ? "持仓与交易分析" : "Portfolio and trade review"}</span>
         </div>
       </div>
-
+      <div className="landing-width pb-10">
+        <Image src="/research-workbench.png" alt={zh ? "Kolvex 股票观点工作台示例" : "Example of the Kolvex stock opinion workbench"} width={1440} height={960} priority className="h-auto w-full border-y border-border object-contain" />
+        <p className="mt-2 text-xs text-muted-foreground">{zh ? "工作台示例，观点数据仅用于演示。" : "Workspace preview with illustrative opinion data."}</p>
+      </div>
     </section>
   );
 }

@@ -145,11 +145,11 @@ function AppSidebar({ onNavigate }: AppSidebarProps) {
             className="flex items-center gap-2 py-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:w-full"
             onClick={onNavigate}
           >
-            <div className="flex aspect-square size-8 items-center justify-center rounded-lg">
-              <LogoIcon size={20} />
+            <div className="flex aspect-square size-9 items-center justify-center rounded-md bg-primary text-primary-foreground">
+              <LogoIcon size={24} />
             </div>
             <div className="flex flex-col gap-0.5 leading-none group-data-[collapsible=icon]:hidden">
-              <span className="font-bold text-sm">Kolvex</span>
+              <span className="text-lg font-extrabold">Kolvex</span>
             </div>
           </Link>
           <Button
@@ -158,6 +158,7 @@ function AppSidebar({ onNavigate }: AppSidebarProps) {
             onClick={toggleSidebar}
             className="h-8 w-8 rounded-lg hidden lg:flex group-data-[collapsible=icon]:w-full group-data-[collapsible=icon]:justify-center"
             suppressHydrationWarning
+            title={t("sidebar.toggleSidebar")}
           >
             <span suppressHydrationWarning>
               {isMounted && isInitialized && state === "expanded" ? (
@@ -174,7 +175,7 @@ function AppSidebar({ onNavigate }: AppSidebarProps) {
       <SidebarContent>
         {/* Main Navigation */}
         <SidebarGroup>
-          <SidebarGroupLabel className="sr-only">
+          <SidebarGroupLabel className="mb-2 text-xs group-data-[collapsible=icon]:sr-only">
             <span>Kolvex</span>
           </SidebarGroupLabel>
           <SidebarGroupContent>
