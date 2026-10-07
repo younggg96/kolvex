@@ -1091,7 +1091,10 @@
     "uploadSuccess": "已导入 {count} 条观点",
     "uploadFailed": "上传失败",
     "loadFailed": "加载失败",
-    "invalidJson": "JSON 格式不正确"
+    "invalidJson": "JSON 格式不正确",
+    "filterDescription": "按博主、观点和视频发布日期筛选。",
+    "resetDates": "清除日期范围",
+    "invalidDateRange": "开始日期不能晚于结束日期。"
   },
   "tradingAnalysis": {
     "title": "深度分析",

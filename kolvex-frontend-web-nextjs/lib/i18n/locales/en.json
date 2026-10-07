@@ -1120,7 +1120,10 @@
     "uploadSuccess": "Imported {count} opinions",
     "uploadFailed": "Upload failed",
     "loadFailed": "Failed to load",
-    "invalidJson": "Invalid JSON"
+    "invalidJson": "Invalid JSON",
+    "filterDescription": "Filter by creator, stance and publication date.",
+    "resetDates": "Clear date range",
+    "invalidDateRange": "Start date must be on or before end date."
   },
   "tradingAnalysis": {
     "title": "Deep Analysis",

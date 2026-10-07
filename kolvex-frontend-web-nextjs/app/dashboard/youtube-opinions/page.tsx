@@ -1,8 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  ChevronDown,
+  Search,
+  SlidersHorizontal,
+  X,
   ExternalLink,
   Loader2,
   RefreshCw,
@@ -399,25 +401,37 @@ export default function YouTubeOpinionsPage() {
   const [dateTo, setDateTo] = useState("");
   const [uploadOpen, setUploadOpen] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [draftFilters, setDraftFilters] = useState({ creator: "all", sentiment: "all", dateFrom: "", dateTo: "" });
+  const [searchTicker, setSearchTicker] = useState("");
+  const [creatorOptions, setCreatorOptions] = useState<YouTubeOpinionDashboard["filters"]["creators"]>([]);
+  const latestRequest = useRef(0);
+
+  useEffect(() => {
+    const timeout = setTimeout(() => setSearchTicker(ticker.trim().toUpperCase()), 300);
+    return () => clearTimeout(timeout);
+  }, [ticker]);
 
   const loadData = useCallback(async () => {
+    const request = ++latestRequest.current;
     try {
       setLoading(true);
       const result = await getYouTubeOpinionDashboard({
-        ticker: ticker.trim().toUpperCase() || undefined,
+        ticker: searchTicker || undefined,
         channel_id: creator === "all" ? undefined : creator,
         sentiment: sentiment === "all" ? undefined : sentiment,
         date_from: dateFrom || undefined,
         date_to: dateTo || undefined,
         limit: 80,
       });
+      if (request !== latestRequest.current) return;
       setData(result);
+      setCreatorOptions((previous) => Array.from(new Map([...previous, ...result.filters.creators].map((item) => [item.channel_id, item])).values()));
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : t("youtubeOpinions.loadFailed"));
+      if (request === latestRequest.current) toast.error(error instanceof Error ? error.message : t("youtubeOpinions.loadFailed"));
     } finally {
-      setLoading(false);
+      if (request === latestRequest.current) setLoading(false);
     }
-  }, [creator, dateFrom, dateTo, sentiment, t, ticker]);
+  }, [creator, dateFrom, dateTo, searchTicker, sentiment, t]);
 
   useEffect(() => {
     loadData();
@@ -433,7 +447,21 @@ export default function YouTubeOpinionsPage() {
     setDateTo("");
   };
 
-  const activeFilterCount = [ticker.trim(), creator !== "all", sentiment !== "all", dateFrom, dateTo].filter(Boolean).length;
+  const activeFilterCount = [creator !== "all", sentiment !== "all", Boolean(dateFrom || dateTo)].filter(Boolean).length;
+  const creatorLabel = creatorOptions.find((item) => item.channel_id === creator)?.channel_title || creator;
+  const invalidDateRange = Boolean(draftFilters.dateFrom && draftFilters.dateTo && draftFilters.dateFrom > draftFilters.dateTo);
+  const openFilters = () => {
+    setDraftFilters({ creator, sentiment, dateFrom, dateTo });
+    setFiltersOpen(true);
+  };
+  const applyFilters = () => {
+    if (invalidDateRange) return;
+    setCreator(draftFilters.creator);
+    setSentiment(draftFilters.sentiment);
+    setDateFrom(draftFilters.dateFrom);
+    setDateTo(draftFilters.dateTo);
+    setFiltersOpen(false);
+  };
 
   return (
     <DashboardLayout
@@ -455,83 +483,27 @@ export default function YouTubeOpinionsPage() {
     >
       <div className="relative min-h-0 min-w-0 flex-1 overflow-y-auto bg-background">
         <div className="relative mx-auto flex w-full min-w-0 max-w-[1500px] flex-col gap-5 px-4 py-3 sm:gap-6 sm:p-4 md:p-7">
-          <section className="border-b border-border pb-3 sm:pb-5">
-            <div className="flex min-w-0 items-center justify-between gap-2 sm:mb-3">
-              <Button variant="ghost" className="h-11 gap-2 px-0 sm:hidden" onClick={() => setFiltersOpen(!filtersOpen)} aria-expanded={filtersOpen} aria-controls="youtube-opinion-filters">
-                <Youtube className="h-4 w-4 text-red-500" />
-                {t("youtubeOpinions.filters")}
-                {activeFilterCount > 0 && <Badge variant="secondary">{activeFilterCount}</Badge>}
-                <ChevronDown className={cn("h-4 w-4 transition-transform", filtersOpen && "rotate-180")} />
+          <section className="space-y-2">
+            <div className="flex min-w-0 items-center gap-2">
+              <div className="relative min-w-0 flex-1 sm:max-w-xs">
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input value={ticker} onChange={(event) => setTicker(event.target.value)} autoCapitalize="characters" enterKeyHint="search" spellCheck={false} onKeyDown={(event) => { if (event.key === "Enter") event.currentTarget.blur(); }} placeholder={t("youtubeOpinions.ticker")} aria-label={t("youtubeOpinions.ticker")} className="h-11 min-w-0 pl-9 text-base uppercase sm:text-sm" />
+              </div>
+              <Button variant="outline" className="relative h-11 shrink-0 gap-1.5" style={{ paddingInline: 8 }} onClick={openFilters} aria-haspopup="dialog">
+                <SlidersHorizontal className="h-4 w-4" />{t("youtubeOpinions.filters")}
+                {activeFilterCount > 0 && <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] text-primary-foreground">{activeFilterCount}</span>}
               </Button>
-              <div className="hidden items-center gap-2 text-sm font-medium sm:flex"><Youtube className="h-4 w-4 text-red-500" />{t("youtubeOpinions.filters")}</div>
-              <div className="flex items-center gap-2 sm:hidden">
+              <div className="flex shrink-0 items-center gap-2 sm:hidden">
                 <Button variant="ghost" size="icon" className="h-11 w-11" aria-label={t("youtubeOpinions.refresh")} onClick={loadData} disabled={loading}><RefreshCw className={cn("h-4 w-4", loading && "animate-spin")} /></Button>
-                {isAdmin && <Button variant="outline" size="icon" className="h-11 w-11" aria-label={t("youtubeOpinions.uploadJson")} title={t("youtubeOpinions.uploadJson")} onClick={() => setUploadOpen(true)}><Upload className="h-4 w-4" /></Button>}
+                {isAdmin && <Button variant="ghost" size="icon" className="h-11 w-11" aria-label={t("youtubeOpinions.uploadJson")} onClick={() => setUploadOpen(true)}><Upload className="h-4 w-4" /></Button>}
               </div>
             </div>
-            <div id="youtube-opinion-filters" className={cn("mt-3 min-w-0 grid-cols-2 gap-3 sm:mt-0 sm:grid xl:grid-cols-[minmax(100px,0.8fr)_minmax(130px,1fr)_minmax(120px,0.8fr)_repeat(2,minmax(130px,0.8fr))_auto]", filtersOpen ? "grid" : "hidden")}>
-              <Input
-                value={ticker}
-                onChange={(event) => setTicker(event.target.value)}
-                placeholder={t("youtubeOpinions.ticker")}
-                aria-label={t("youtubeOpinions.ticker")}
-                className="col-span-2 h-11 min-w-0 text-base uppercase sm:col-span-1 sm:h-10"
-              />
-              <Select value={creator} onValueChange={setCreator}>
-                <SelectTrigger aria-label={t("youtubeOpinions.creator")} className="h-11 min-w-0 sm:h-10">
-                  <SelectValue placeholder={t("youtubeOpinions.creator")} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">{t("youtubeOpinions.allCreators")}</SelectItem>
-                  {(data?.filters.creators || []).map((item) => (
-                    <SelectItem key={item.channel_id} value={item.channel_id}>
-                      {item.channel_title || item.channel_handle || item.channel_id}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Select value={sentiment} onValueChange={setSentiment}>
-                <SelectTrigger aria-label={t("youtubeOpinions.sentiment")} className="h-11 min-w-0 sm:h-10">
-                  <SelectValue placeholder={t("youtubeOpinions.sentiment")} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">{t("youtubeOpinions.allSentiments")}</SelectItem>
-                  {SENTIMENTS.map((item) => (
-                    <SelectItem key={item} value={item}>
-                      {t(`youtubeOpinions.${item}`)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <label className="min-w-0 space-y-1 text-xs text-muted-foreground">
-                <span className="sm:hidden">{t("youtubeOpinions.dateFrom")}</span>
-                <Input
-                  type="date"
-                  className="h-11 w-full min-w-0 text-base sm:h-10"
-                  value={dateFrom}
-                  onChange={(event) => setDateFrom(event.target.value)}
-                  aria-label={t("youtubeOpinions.dateFrom")}
-                />
-              </label>
-              <label className="min-w-0 space-y-1 text-xs text-muted-foreground">
-                <span className="sm:hidden">{t("youtubeOpinions.dateTo")}</span>
-                <Input
-                  type="date"
-                  className="h-11 w-full min-w-0 text-base sm:h-10"
-                  value={dateTo}
-                  onChange={(event) => setDateTo(event.target.value)}
-                  aria-label={t("youtubeOpinions.dateTo")}
-                />
-              </label>
-              <div className="col-span-2 flex gap-2 sm:col-span-1">
-                <Button type="button" onClick={loadData} className="h-11 flex-1 sm:h-10">
-                  {t("youtubeOpinions.apply")}
-                </Button>
-                <Button type="button" variant="outline" className="h-11 flex-1 sm:h-10 sm:flex-none" onClick={handleReset}>
-                  {t("youtubeOpinions.reset")}
-                </Button>
-              </div>
-            </div>
+            {(activeFilterCount > 0 || ticker.trim()) && <div className="flex min-w-0 flex-wrap items-center gap-2 text-xs">
+              {creator !== "all" && <button type="button" className="inline-flex max-w-full items-center gap-1 rounded border border-border px-2 py-1 text-muted-foreground hover:text-foreground" aria-label={`${t("youtubeOpinions.reset")}: ${creatorLabel}`} onClick={() => setCreator("all")}><span className="max-w-40 truncate">{creatorLabel}</span><X className="h-3 w-3 shrink-0" /></button>}
+              {sentiment !== "all" && <button type="button" className="inline-flex items-center gap-1 rounded border border-border px-2 py-1 text-muted-foreground hover:text-foreground" onClick={() => setSentiment("all")} aria-label={`${t("youtubeOpinions.reset")}: ${t(`youtubeOpinions.${sentiment}`)}`}>{t(`youtubeOpinions.${sentiment}`)}<X className="h-3 w-3" /></button>}
+              {(dateFrom || dateTo) && <button type="button" className="inline-flex max-w-full items-center gap-1 rounded border border-border px-2 py-1 text-muted-foreground hover:text-foreground" onClick={() => { setDateFrom(""); setDateTo(""); }} aria-label={t("youtubeOpinions.resetDates")}><span className="truncate">{dateFrom || "…"} – {dateTo || "…"}</span><X className="h-3 w-3 shrink-0" /></button>}
+              <button type="button" onClick={handleReset} className="px-1 py-2 text-muted-foreground underline-offset-4 hover:text-foreground hover:underline">{t("youtubeOpinions.reset")}</button>
+            </div>}
           </section>
 
           {loading && !data ? (
@@ -670,6 +642,32 @@ export default function YouTubeOpinionsPage() {
           )}
         </div>
       </div>
+
+      <Dialog open={filtersOpen} onOpenChange={setFiltersOpen}>
+        <DialogContent className="max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] max-w-sm overflow-y-auto p-4 sm:p-5">
+          <DialogHeader><DialogTitle>{t("youtubeOpinions.filters")}</DialogTitle><DialogDescription className="sr-only">{t("youtubeOpinions.filterDescription")}</DialogDescription></DialogHeader>
+          <div className="grid min-w-0 gap-4 py-2">
+            <label className="grid min-w-0 gap-1.5 text-xs text-muted-foreground">{t("youtubeOpinions.creator")}
+              <Select value={draftFilters.creator} onValueChange={(value) => setDraftFilters((previous) => ({ ...previous, creator: value }))}>
+                <SelectTrigger aria-label={t("youtubeOpinions.creator")} className="h-11 min-w-0"><SelectValue /></SelectTrigger>
+                <SelectContent><SelectItem value="all">{t("youtubeOpinions.allCreators")}</SelectItem>{creatorOptions.map((item) => <SelectItem key={item.channel_id} value={item.channel_id}>{item.channel_title || item.channel_handle || item.channel_id}</SelectItem>)}</SelectContent>
+              </Select>
+            </label>
+            <label className="grid min-w-0 gap-1.5 text-xs text-muted-foreground">{t("youtubeOpinions.sentiment")}
+              <Select value={draftFilters.sentiment} onValueChange={(value) => setDraftFilters((previous) => ({ ...previous, sentiment: value }))}>
+                <SelectTrigger aria-label={t("youtubeOpinions.sentiment")} className="h-11 min-w-0"><SelectValue /></SelectTrigger>
+                <SelectContent><SelectItem value="all">{t("youtubeOpinions.allSentiments")}</SelectItem>{SENTIMENTS.map((item) => <SelectItem key={item} value={item}>{t(`youtubeOpinions.${item}`)}</SelectItem>)}</SelectContent>
+              </Select>
+            </label>
+            <div className="grid min-w-0 grid-cols-2 gap-3">
+              <label className="grid min-w-0 gap-1.5 text-xs text-muted-foreground">{t("youtubeOpinions.dateFrom")}<Input type="date" className="h-11 w-full min-w-0 text-base" value={draftFilters.dateFrom} max={draftFilters.dateTo || undefined} onChange={(event) => setDraftFilters((previous) => ({ ...previous, dateFrom: event.target.value }))} aria-label={t("youtubeOpinions.dateFrom")} /></label>
+              <label className="grid min-w-0 gap-1.5 text-xs text-muted-foreground">{t("youtubeOpinions.dateTo")}<Input type="date" className="h-11 w-full min-w-0 text-base" value={draftFilters.dateTo} min={draftFilters.dateFrom || undefined} onChange={(event) => setDraftFilters((previous) => ({ ...previous, dateTo: event.target.value }))} aria-label={t("youtubeOpinions.dateTo")} /></label>
+            </div>
+            {invalidDateRange && <p role="alert" className="text-xs text-destructive">{t("youtubeOpinions.invalidDateRange")}</p>}
+          </div>
+          <div className="grid grid-cols-2 gap-2 border-t border-border pt-4"><Button variant="ghost" className="h-11" onClick={() => setDraftFilters({ creator: "all", sentiment: "all", dateFrom: "", dateTo: "" })}>{t("youtubeOpinions.reset")}</Button><Button className="h-11" onClick={applyFilters} disabled={invalidDateRange}>{t("youtubeOpinions.apply")}</Button></div>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={isAdmin && uploadOpen} onOpenChange={setUploadOpen}>
         <DialogContent className="max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] max-w-3xl overflow-x-hidden overflow-y-auto p-4 sm:p-6">
