@@ -23,6 +23,12 @@ const config: Config = {
         card: "rgb(var(--card) / <alpha-value>)",
         "card-foreground": "rgb(var(--card-foreground) / <alpha-value>)",
         border: "rgb(var(--border) / <alpha-value>)",
+        sidebar: "rgb(var(--card) / <alpha-value>)",
+        "sidebar-foreground": "rgb(var(--foreground) / <alpha-value>)",
+        "sidebar-border": "rgb(var(--border) / <alpha-value>)",
+        "sidebar-accent": "rgb(var(--muted) / <alpha-value>)",
+        "sidebar-accent-foreground": "rgb(var(--foreground) / <alpha-value>)",
+        "sidebar-ring": "rgb(var(--primary) / <alpha-value>)",
         /* Legacy aliases — both map to the same CSS var so dark: prefix is redundant */
         "background-light": "rgb(var(--background) / <alpha-value>)",
         "background-dark": "rgb(var(--background) / <alpha-value>)",
