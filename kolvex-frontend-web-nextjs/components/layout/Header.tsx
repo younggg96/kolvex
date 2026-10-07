@@ -19,7 +19,7 @@ export default function Header({
   extra,
 }: HeaderProps) {
   return (
-    <header className="relative z-10 flex min-h-14 shrink-0 flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b border-border/70 bg-background px-4 py-2.5 lg:min-h-16 lg:px-8">
+    <header className="relative z-10 flex min-h-14 shrink-0 flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b border-border/70 bg-sidebar px-4 py-2.5 lg:min-h-16 lg:px-8">
       <div className="flex min-w-0 items-center gap-2">
         {hasSidebarTrigger && <SidebarTrigger className="-ml-1.5 lg:hidden" />}
         {leftAction}

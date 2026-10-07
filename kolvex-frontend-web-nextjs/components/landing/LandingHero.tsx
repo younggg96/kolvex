@@ -1,9 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 import { ArrowUpRight, Briefcase, Youtube } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import LandingPreview from "@/components/landing/LandingPreview";
 import { useTranslation } from "@/lib/i18n";
 
 export default function LandingHero() {
@@ -29,10 +29,7 @@ export default function LandingHero() {
           <span className="flex items-center gap-2"><Briefcase className="h-4 w-4 text-primary" />{zh ? "持仓与交易分析" : "Portfolio and trade review"}</span>
         </div>
       </div>
-      <div className="rh-product-preview landing-width relative z-10 pb-10">
-        <Image src="/research-workbench-green.png" alt={zh ? "Kolvex 股票观点工作台示例" : "Example of the Kolvex stock opinion workbench"} width={1440} height={960} priority className="h-auto w-full border-y border-border object-contain" />
-        <p className="mt-2 text-xs text-muted-foreground">{zh ? "工作台示例，观点数据仅用于演示。" : "Workspace preview with illustrative opinion data."}</p>
-      </div>
+      <LandingPreview />
     </section>
   );
 }

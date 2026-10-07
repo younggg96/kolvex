@@ -64,15 +64,14 @@ export default function AdminPageClient() {
   const recordCount = Object.values(tables).reduce((sum, count) => sum + count, 0);
 
   return (
-    <DashboardLayout title="管理后台">
+    <DashboardLayout
+      title="管理后台"
+      headerActions={
+        <Button variant="outline" disabled={busy} onClick={() => void refresh()}>刷新</Button>
+      }
+    >
       <div className="mx-auto w-full max-w-[1080px] space-y-8 px-4 pb-16 pt-6 md:px-8 md:pt-8">
-        <div className="flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <h2 className="text-[28px] font-bold leading-tight md:text-[32px]">管理后台</h2>
-            <p className="mt-2 text-[15px] text-muted-foreground">管理用户与研究数据</p>
-          </div>
-          <Button variant="outline" disabled={busy} onClick={() => void refresh()}>刷新</Button>
-        </div>
+        <p className="text-[15px] text-muted-foreground">管理用户与研究数据</p>
 
         <dl className="grid grid-cols-3 border-y border-border">
           {[

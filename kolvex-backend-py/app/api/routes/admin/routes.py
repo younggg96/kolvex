@@ -19,8 +19,20 @@ BUSINESS_TABLES = (
 async def get_database_stats(admin_id: str = Depends(verify_admin), supabase: Client = Depends(get_supabase_service)):
     counts = {}
     for name in BUSINESS_TABLES:
-        result = supabase.table(name).select("id", count="exact", head=True).execute()
-        counts[name] = result.count or 0
+        try:
+            result = (
+                supabase.table(name)
+                .select("id", count="exact")
+                .limit(0)
+                .execute()
+            )
+            counts[name] = result.count or 0
+        except Exception as exc:
+            logger.exception("Failed to count table %s", name)
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Failed to count {name}: {exc}",
+            ) from exc
     return {"tables": counts}
 
 @router.get("/overview")

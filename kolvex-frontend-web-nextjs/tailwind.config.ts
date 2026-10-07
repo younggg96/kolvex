@@ -28,7 +28,7 @@ const config: Config = {
         warning: "rgb(var(--warning) / <alpha-value>)",
         "positive-fill": "rgb(var(--positive-fill) / <alpha-value>)",
         "negative-fill": "rgb(var(--negative-fill) / <alpha-value>)",
-        sidebar: "rgb(var(--background) / <alpha-value>)",
+        sidebar: "rgb(var(--sidebar) / <alpha-value>)",
         "sidebar-foreground": "rgb(var(--foreground) / <alpha-value>)",
         "sidebar-border": "rgb(var(--border) / <alpha-value>)",
         "sidebar-accent": "rgb(var(--muted) / <alpha-value>)",
