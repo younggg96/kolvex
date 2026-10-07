@@ -1,12 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { CheckCircle2, ClipboardCopy, Download, FileJson, Loader2, Upload } from "lucide-react";
+import { CheckCircle2, ClipboardCopy, Download, FileJson, Loader2, Upload, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useUserProfileContext } from "@/components/user/UserProfileProvider";
 import { uploadYouTubeOpinionPayload, validateYouTubeOpinionPayload, type YouTubeImportPreview } from "@/lib/youtubeOpinionsApi";
+
+const MAX_FILE_BYTES = 2 * 1024 * 1024;
+const MAX_VIDEOS = 50;
 
 const template = {
   channel: { id: "REPLACE_CHANNEL_ID", title: "REPLACE_CREATOR_NAME", handle: "@creator", url: "https://www.youtube.com/@creator" },
@@ -15,13 +18,35 @@ const template = {
   opinions: [{ ticker: "NVDA", company_name: "NVIDIA", sentiment: "bullish", direction_score: 60, confidence: 0.85, time_horizon: "3-6 months", summary: "REPLACE_WITH_CREATOR_VIEW", thesis: "REPLACE_WITH_REASONING", key_points: ["REPLACE_WITH_KEY_POINT"], risks: ["REPLACE_WITH_RISK"], price_targets: [{ label: "base", value: 165 }] }],
 };
 
-const prompt = `Analyze the supplied YouTube video and extract only stock opinions explicitly expressed by its creator. Return a single JSON object matching the template below, with no Markdown fences. Use the actual channel ID/name and video ID/title/URL/publication timestamp. Never invent missing facts: ask for missing required metadata before generating JSON. Use one opinions entry per stock ticker and combine repeated mentions in the same video. sentiment must be bullish, bearish, neutral or mixed. direction_score uses -100 to 100 (bearish negative, bullish positive); confidence uses 0 to 1. Do not infer a directional view from a mere stock mention. Optional facts that are not stated should be omitted; use empty arrays for missing key_points, risks and price_targets. Summaries and reasoning should be in Chinese. Video publication time must use ISO 8601 with timezone; historical views must retain the original publication date. Price targets require a positive numeric value. Return no stock opinions that are not present in the video.\n\n${JSON.stringify(template, null, 2)}`;
+const prompt = `Analyze the supplied YouTube video and extract only stock opinions explicitly expressed by its creator. Return a single JSON object matching the template below, with no Markdown fences. When several videos are supplied, return a JSON array holding one such object per video. Use the actual channel ID/name and video ID/title/URL/publication timestamp. Never invent missing facts: ask for missing required metadata before generating JSON. Use one opinions entry per stock ticker and combine repeated mentions in the same video. sentiment must be bullish, bearish, neutral or mixed. direction_score uses -100 to 100 (bearish negative, bullish positive); confidence uses 0 to 1. Do not infer a directional view from a mere stock mention. Optional facts that are not stated should be omitted; use empty arrays for missing key_points, risks and price_targets. Summaries and reasoning should be in Chinese. Video publication time must use ISO 8601 with timezone; historical views must retain the original publication date. Price targets require a positive numeric value. Return no stock opinions that are not present in the video.\n\n${JSON.stringify(template, null, 2)}`;
+
+type Payload = Record<string, unknown>;
+
+function parsePayloads(value: string): Payload[] {
+  const raw = value.trim().replace(/^```(?:json)?\s*\n?/i, "").replace(/\s*```$/, "");
+  const parsed: unknown = JSON.parse(raw);
+  const items = Array.isArray(parsed) ? parsed : [parsed];
+  if (!items.length || items.some((item) => !item || typeof item !== "object" || Array.isArray(item)))
+    throw new Error("JSON 必须是一个视频对象，或由多个视频对象组成的数组。");
+  return items as Payload[];
+}
+
+function serialize(payloads: Payload[]) {
+  return JSON.stringify(payloads.length === 1 ? payloads[0] : payloads, null, 2);
+}
+
+function sourceLabels(names: string[]) {
+  const counts = new Map<string, number>();
+  names.forEach((name) => counts.set(name, (counts.get(name) ?? 0) + 1));
+  return [...counts].map(([name, count]) => (count > 1 ? `${name} ×${count}` : name));
+}
 
 export default function YouTubeOpinionImporter({ onImported }: { onImported?: () => void }) {
   const { profile } = useUserProfileContext();
   const [text, setText] = useState("");
+  const [sources, setSources] = useState<string[]>([]);
   const [preview, setPreview] = useState<YouTubeImportPreview | null>(null);
-  const [payload, setPayload] = useState<Record<string, unknown> | null>(null);
+  const [payloads, setPayloads] = useState<Payload[] | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [result, setResult] = useState("");
@@ -29,19 +54,71 @@ export default function YouTubeOpinionImporter({ onImported }: { onImported?: ()
 
   if (!profile?.is_admin) return null;
 
-  function updateText(value: string) {
+  function updateText(value: string, nextSources: string[] = []) {
     setText(value);
+    setSources(nextSources);
     setPreview(null);
-    setPayload(null);
+    setPayloads(null);
     setError("");
     setResult("");
   }
 
-  function downloadTemplate() {
-    const url = URL.createObjectURL(new Blob([JSON.stringify(template, null, 2)], { type: "application/json" }));
+  function videoLabel(index: number) {
+    return sources[index] || `视频 ${index + 1}`;
+  }
+
+  // Keep already loaded videos so several files can be picked in separate rounds.
+  function loadedPayloads() {
+    if (!text.trim()) return { payloads: [] as Payload[], names: [] as string[] };
+    try {
+      const loaded = parsePayloads(text);
+      return { payloads: loaded, names: sources.length === loaded.length ? sources : loaded.map((_, index) => `视频 ${index + 1}`) };
+    } catch {
+      return { payloads: [] as Payload[], names: [] as string[] };
+    }
+  }
+
+  async function addFiles(files: File[]) {
+    setError("");
+    const oversized = files.find((file) => file.size > MAX_FILE_BYTES);
+    if (oversized) {
+      setError(`${oversized.name} 超过 2 MB，请拆分后再上传。`);
+      return;
+    }
+    setBusy(true);
+    try {
+      const loaded = loadedPayloads();
+      const nextPayloads = [...loaded.payloads];
+      const nextSources = [...loaded.names];
+      for (const file of files) {
+        let parsed: Payload[];
+        try {
+          parsed = parsePayloads(await file.text());
+        } catch {
+          setError(`${file.name} 不是有效的视频 JSON。`);
+          return;
+        }
+        nextPayloads.push(...parsed);
+        nextSources.push(...parsed.map(() => file.name));
+      }
+      if (nextPayloads.length > MAX_VIDEOS) {
+        setError(`单次最多导入 ${MAX_VIDEOS} 个视频，当前为 ${nextPayloads.length} 个。`);
+        return;
+      }
+      updateText(serialize(nextPayloads), nextSources);
+    } catch {
+      setError("文件读取失败。");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function downloadTemplate(batch: boolean) {
+    const content = batch ? [template, template] : template;
+    const url = URL.createObjectURL(new Blob([JSON.stringify(content, null, 2)], { type: "application/json" }));
     const link = document.createElement("a");
     link.href = url;
-    link.download = "youtube-opinions-template.json";
+    link.download = batch ? "youtube-opinions-batch-template.json" : "youtube-opinions-template.json";
     link.click();
     URL.revokeObjectURL(url);
   }
@@ -51,14 +128,13 @@ export default function YouTubeOpinionImporter({ onImported }: { onImported?: ()
     setError("");
     setResult("");
     setPreview(null);
-    setPayload(null);
+    setPayloads(null);
     try {
-      const raw = text.trim().replace(/^```(?:json)?\s*\n?/i, "").replace(/\s*```$/, "");
-      const parsed: unknown = JSON.parse(raw);
-      if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) throw new Error("JSON 顶层必须是一个对象，每次导入一个视频。");
+      const parsed = parsePayloads(text);
+      if (parsed.length > MAX_VIDEOS) throw new Error(`单次最多导入 ${MAX_VIDEOS} 个视频，当前为 ${parsed.length} 个。`);
       if (JSON.stringify(parsed).includes("REPLACE_")) throw new Error("请将模板中的 REPLACE_ 占位内容替换为真实视频数据。");
-      const checked = await validateYouTubeOpinionPayload(parsed as Record<string, unknown>);
-      setPayload(parsed as Record<string, unknown>);
+      const checked = await validateYouTubeOpinionPayload(parsed);
+      setPayloads(parsed);
       setPreview(checked);
     } catch (e) {
       setError(e instanceof SyntaxError ? "JSON 格式错误，请检查引号、逗号和括号。" : e instanceof Error ? e.message : "校验失败");
@@ -66,14 +142,14 @@ export default function YouTubeOpinionImporter({ onImported }: { onImported?: ()
   }
 
   async function submit() {
-    if (!payload || !preview) return;
+    if (!payloads || !preview || preview.errors.length) return;
     setBusy(true);
     setError("");
     try {
-      const imported = await uploadYouTubeOpinionPayload(payload);
-      setResult(`已保存 ${imported.inserted_count} 条股票观点：${imported.tickers.join(", ")}。`);
-      setPreview(null);
-      setPayload(null);
+      const imported = await uploadYouTubeOpinionPayload(payloads);
+      const tickers = [...new Set(imported.videos.flatMap((video) => video.tickers))];
+      updateText("");
+      setResult(`已保存 ${imported.video_count} 个视频的 ${imported.inserted_count} 条股票观点：${tickers.join(", ")}。`);
       onImported?.();
     } catch (e) { setError(e instanceof Error ? e.message : "导入失败，可重新提交。"); }
     finally { setBusy(false); }
@@ -82,7 +158,8 @@ export default function YouTubeOpinionImporter({ onImported }: { onImported?: ()
   return (
     <div className="min-w-0 space-y-6">
       <div className="flex flex-wrap gap-2 border-b border-border pb-5">
-        <Button variant="outline" size="sm" onClick={downloadTemplate}><Download className="mr-2 h-4 w-4" />下载 JSON 模板</Button>
+        <Button variant="outline" size="sm" onClick={() => downloadTemplate(false)}><Download className="mr-2 h-4 w-4" />下载 JSON 模板</Button>
+        <Button variant="outline" size="sm" onClick={() => downloadTemplate(true)}><Download className="mr-2 h-4 w-4" />下载批量模板</Button>
         <Button variant="outline" size="sm" onClick={async () => {
           try { await navigator.clipboard.writeText(prompt); setCopied(true); }
           catch { setError("无法复制，请展开下方 Gemini 提示词并选择文本。"); }
@@ -107,32 +184,42 @@ export default function YouTubeOpinionImporter({ onImported }: { onImported?: ()
       </details>
       <div className="space-y-2">
         <label htmlFor="youtube-json-file" className="flex items-center gap-2 text-sm font-medium"><FileJson className="h-4 w-4" />JSON 文件</label>
-        <Input id="youtube-json-file" type="file" accept=".json,application/json" disabled={busy} onChange={async (event) => {
-          const file = event.target.files?.[0];
+        <Input id="youtube-json-file" type="file" accept=".json,application/json" multiple disabled={busy} onChange={async (event) => {
+          const files = Array.from(event.target.files ?? []);
           event.target.value = "";
-          if (!file) return;
-          if (file.size > 2 * 1024 * 1024) { setError("文件不能超过 2 MB。"); return; }
-          setBusy(true);
-          try { updateText(await file.text()); } catch { setError("文件读取失败。"); }
-          finally { setBusy(false); }
+          if (files.length) await addFiles(files);
         }} />
+        <p className="text-xs text-muted-foreground">可一次选择多个文件批量导入，单文件不超过 2 MB，单次最多 {MAX_VIDEOS} 个视频；每个文件可以是一个视频对象或一个视频数组。</p>
       </div>
+      {sources.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2 text-xs">
+          <span className="text-muted-foreground">已载入 {sources.length} 个视频：</span>
+          {sourceLabels(sources).map((label) => <span key={label} className="max-w-full truncate rounded-full bg-muted px-2 py-0.5 font-mono">{label}</span>)}
+          <Button variant="ghost" size="sm" className="h-6 px-2" onClick={() => updateText("")}><X className="mr-1 h-3 w-3" />清空</Button>
+        </div>
+      )}
       <div className="space-y-2">
         <label htmlFor="youtube-json-payload" className="text-sm font-medium">JSON 内容</label>
         <Textarea id="youtube-json-payload" value={text} disabled={busy} onChange={(event) => updateText(event.target.value)} spellCheck={false} className="h-64 font-mono text-xs" />
       </div>
       {error && <div role="alert" className="break-words rounded-md border border-destructive/30 p-3 text-sm text-destructive">{error}</div>}
       {result && <div role="status" className="flex items-start gap-2 text-sm text-positive"><CheckCircle2 className="h-4 w-4 shrink-0" />{result}</div>}
-      {preview && <section className="space-y-3 border-t pt-4">
-        <h3 className="text-sm font-medium">{preview.channel_title} · {preview.video_title} · {preview.count} 条观点</h3>
-        <div className="max-h-64 min-w-0 overflow-auto"><table className="w-full text-left text-xs"><thead><tr className="border-b"><th className="p-2">股票</th><th className="p-2">观点</th><th className="p-2">分数</th><th className="p-2">日期</th><th className="p-2">摘要</th></tr></thead><tbody>
-          {preview.opinions.map((row) => <tr key={row.ticker} className="border-b"><td className="p-2 font-medium">{row.ticker}</td><td className="p-2">{{ bullish: "看涨", bearish: "看跌", neutral: "中性", mixed: "分歧" }[row.sentiment]}</td><td className="p-2">{row.direction_score}</td><td className="whitespace-nowrap p-2">{row.opinion_date}</td><td className="min-w-40 break-words p-2">{row.summary}</td></tr>)}
-        </tbody></table></div>
-        <p className="text-xs text-muted-foreground">导入后观点将对所有用户可见。同一视频 ID 与股票代码的记录会被更新；每日变化按视频发布时间统计。</p>
+      {preview && <section className="space-y-4 border-t pt-4">
+        <h3 className="text-sm font-medium">{preview.video_count} 个视频 · {preview.count} 条观点{preview.errors.length ? ` · ${preview.errors.length} 个视频未通过校验` : ""}</h3>
+        {preview.errors.length > 0 && <ul role="alert" className="space-y-1 rounded-md border border-destructive/30 p-3 text-sm text-destructive">
+          {preview.errors.map((item) => <li key={item.index} className="break-words"><span className="font-mono">{videoLabel(item.index)}</span>：{item.message}</li>)}
+        </ul>}
+        {preview.videos.map((video) => <div key={video.video_id} className="min-w-0 space-y-2">
+          <h4 className="break-words text-sm font-medium">{video.channel_title} · {video.video_title} · {video.count} 条观点</h4>
+          <div className="max-h-64 min-w-0 overflow-auto"><table className="w-full text-left text-xs"><thead><tr className="border-b"><th className="p-2">股票</th><th className="p-2">观点</th><th className="p-2">分数</th><th className="p-2">日期</th><th className="p-2">摘要</th></tr></thead><tbody>
+            {video.opinions.map((row) => <tr key={row.ticker} className="border-b"><td className="p-2 font-medium">{row.ticker}</td><td className="p-2">{{ bullish: "看涨", bearish: "看跌", neutral: "中性", mixed: "分歧" }[row.sentiment]}</td><td className="p-2">{row.direction_score}</td><td className="whitespace-nowrap p-2">{row.opinion_date}</td><td className="min-w-40 break-words p-2">{row.summary}</td></tr>)}
+          </tbody></table></div>
+        </div>)}
+        <p className="text-xs text-muted-foreground">导入后观点将对所有用户可见。同一视频 ID 与股票代码的记录会被更新；每日变化按视频发布时间统计。校验未通过的视频需要先修正，否则本次导入不会写入任何数据。</p>
       </section>}
       <div className="sticky bottom-0 grid grid-cols-2 gap-2 border-t border-border bg-card py-4 sm:flex sm:flex-wrap">
         <Button variant="outline" className="h-11 px-2 sm:px-4" onClick={validate} disabled={busy || !text.trim()}><CheckCircle2 className="mr-2 h-4 w-4" />校验并预览</Button>
-        <Button className="h-11 px-2 sm:px-4" onClick={submit} disabled={busy || !preview || !payload}>{busy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}确认导入</Button>
+        <Button className="h-11 px-2 sm:px-4" onClick={submit} disabled={busy || !preview || !payloads || preview.errors.length > 0}>{busy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}确认导入</Button>
       </div>
     </div>
   );

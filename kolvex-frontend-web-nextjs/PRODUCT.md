@@ -16,7 +16,7 @@ Kolvex turns scattered investment opinion into something an individual can check
 
 - **AI Chat** (`/dashboard`, `/dashboard/chat`): a research agent that answers questions about stocks, markets, and the user's portfolio.
 - **Trading Analysis / 深度分析** (`/dashboard/trading-analysis`): multi-agent analysis runs on a ticker that produce a written report with analyst debate and a final decision; past reports can be explored.
-- **YouTube Opinions / YouTube 观点追踪** (`/dashboard/youtube-opinions`): opinions extracted from finance creators' videos, browsable by stock or by creator, each with sentiment (bullish, bearish, neutral, mixed), a direction score from −100 to +100, confidence, summary, key points, risks, and a link to the source video. The numeric score is never shown to users; strength is expressed qualitatively (轻度 / 中度 / 强烈 + 看涨 / 看跌, 转强 / 转弱 for changes). Admins import opinions as JSON.
+- **YouTube Opinions / YouTube 观点追踪** (`/dashboard/youtube-opinions`): opinions extracted from finance creators' videos, browsable by stock or by creator, each with sentiment (bullish, bearish, neutral, mixed), a direction score from −100 to +100, confidence, summary, key points, risks, and a link to the source video. The numeric score is never shown to users; strength is expressed qualitatively (轻度 / 中度 / 强烈 + 看涨 / 看跌, 转强 / 转弱 for changes). Admins import opinions as JSON, one video per object and many videos per batch.
 - **Portfolio / 投资组合** (`/dashboard/portfolio`): holdings, options positions, transactions, allocation, performance, and AI portfolio analysis, connected through Plaid Investments.
 - **Settings** and **Admin** (admin-only).
 
