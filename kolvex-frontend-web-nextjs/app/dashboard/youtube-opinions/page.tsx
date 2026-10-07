@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  BarChart3,
   ChevronDown,
   ExternalLink,
   Loader2,
@@ -11,7 +10,6 @@ import {
   TrendingUp,
   Upload,
   Youtube,
-  type LucideIcon,
 } from "lucide-react";
 import {
   Bar,
@@ -114,26 +112,6 @@ function SentimentBadge({
     <Badge variant="outline" className={cn("capitalize", sentimentClass(sentiment))}>
       {t(`youtubeOpinions.${sentiment}`)}
     </Badge>
-  );
-}
-
-function StatTile({
-  label,
-  value,
-  icon: Icon,
-}: {
-  label: string;
-  value: string | number;
-  icon: LucideIcon;
-}) {
-  return (
-    <div className="min-w-0 rounded-lg border border-border bg-card p-3 sm:p-4">
-      <div className="flex items-center justify-between gap-3">
-        <p className="text-sm text-muted-foreground">{label}</p>
-        <Icon className="h-4 w-4 text-muted-foreground" />
-      </div>
-      <div className="mt-3 text-2xl font-semibold tracking-normal">{value}</div>
-    </div>
   );
 }
 
@@ -455,7 +433,6 @@ export default function YouTubeOpinionsPage() {
     setDateTo("");
   };
 
-  const summary = data?.summary;
   const activeFilterCount = [ticker.trim(), creator !== "all", sentiment !== "all", dateFrom, dateTo].filter(Boolean).length;
 
   return (
@@ -556,29 +533,6 @@ export default function YouTubeOpinionsPage() {
               </div>
             </div>
           </section>
-
-          <div className="data-summary">
-            <StatTile
-              label={t("youtubeOpinions.opinions")}
-              value={summary?.total_opinions ?? 0}
-              icon={BarChart3}
-            />
-            <StatTile
-              label={t("youtubeOpinions.stocks")}
-              value={summary?.total_stocks ?? 0}
-              icon={TrendingUp}
-            />
-            <StatTile
-              label={t("youtubeOpinions.creators")}
-              value={summary?.total_creators ?? 0}
-              icon={Youtube}
-            />
-            <StatTile
-              label={t("youtubeOpinions.avgScore")}
-              value={formatScore(summary?.avg_score)}
-              icon={BarChart3}
-            />
-          </div>
 
           {loading && !data ? (
             <div className="flex min-h-[420px] items-center justify-center rounded-lg border border-border bg-card">
