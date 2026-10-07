@@ -14,7 +14,7 @@ export default function LandingHowItWorks() {
     <section id="workflow" className="border-b border-border py-14 md:py-20">
       <div className="landing-width">
         <ScrollReveal>
-          <h2 className="max-w-2xl font-editorial text-3xl font-normal md:text-4xl">{t("landing.howItWorks.title")}</h2>
+          <h2 className="max-w-2xl font-display text-3xl font-bold md:text-4xl">{t("landing.howItWorks.title")}</h2>
           <p className="mt-4 max-w-2xl text-sm text-muted-foreground">{t("landing.howItWorks.subtitle")}</p>
         </ScrollReveal>
         <div className="mt-10 grid gap-8 sm:grid-cols-2 lg:grid-cols-4">

@@ -13,7 +13,7 @@ export default function LandingHero() {
     <section className="relative overflow-hidden border-b border-border bg-background">
       <div aria-hidden="true" className="pointer-events-none absolute inset-0 bg-grid opacity-30" />
       <div className="landing-width relative z-10 py-12 text-center md:py-16">
-        <h1 className="rh-enter mx-auto max-w-3xl font-editorial text-6xl font-normal leading-none md:text-7xl">Kolvex</h1>
+        <h1 className="rh-enter mx-auto max-w-3xl font-display text-6xl font-extrabold leading-none md:text-7xl">Kolvex</h1>
         <p className="rh-enter rh-enter-delay mx-auto mt-6 max-w-2xl text-xl font-normal leading-relaxed md:text-2xl">
           {zh ? "把博主的观点、你的持仓和投资决策，放在同一张工作台。" : "Your portfolio. The voices you follow. A clearer view of every decision."}
         </p>
