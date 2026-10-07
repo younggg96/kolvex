@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   BarChart3,
+  ChevronDown,
   ExternalLink,
   Loader2,
   RefreshCw,
@@ -126,7 +127,7 @@ function StatTile({
   icon: LucideIcon;
 }) {
   return (
-    <div className="rounded-lg border border-border bg-card p-4">
+    <div className="min-w-0 rounded-lg border border-border bg-card p-3 sm:p-4">
       <div className="flex items-center justify-between gap-3">
         <p className="text-sm text-muted-foreground">{label}</p>
         <Icon className="h-4 w-4 text-muted-foreground" />
@@ -168,13 +169,13 @@ function StockConsensusCard({
   const neutralPct = Math.max(0, 100 - bullishPct - bearishPct);
 
   return (
-    <div className="rounded-lg border border-border bg-card p-4">
+    <div className="min-w-0 rounded-lg border border-border bg-card p-3 sm:p-4">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <div className="flex items-center gap-2">
-            <span className="font-semibold">{stock.ticker}</span>
+          <div className="flex min-w-0 items-center gap-2">
+            <span className="shrink-0 font-semibold">{stock.ticker}</span>
             {stock.company_name && (
-              <span className="truncate text-xs text-muted-foreground">
+              <span className="min-w-0 truncate text-xs text-muted-foreground">
                 {stock.company_name}
               </span>
             )}
@@ -250,15 +251,17 @@ function DailyChangeRow({
 }) {
   const change = item.change;
   return (
-    <div className="grid grid-cols-[minmax(64px,0.7fr)_1fr_1fr_auto] items-center gap-3 border-b border-border py-3 text-sm last:border-0">
-      <div className="font-semibold">{item.ticker}</div>
-      <div>
+    <div className="grid min-w-0 grid-cols-2 items-center gap-x-3 gap-y-2 border-b border-border py-3 text-sm last:border-0 sm:grid-cols-[minmax(64px,0.7fr)_1fr_1fr_auto]">
+      <div className="order-1 min-w-0 break-words font-semibold">{item.ticker}</div>
+      <div className="order-3 min-w-0 sm:order-2">
+        <div className="mb-0.5 text-xs text-muted-foreground sm:hidden">{t("youtubeOpinions.current")}</div>
         <div className={cn("font-medium", scoreClass(item.current_score))}>
           {formatScore(item.current_score)}
         </div>
         <div className="text-xs text-muted-foreground">{item.current_date}</div>
       </div>
-      <div>
+      <div className="order-4 min-w-0 sm:order-3">
+        <div className="mb-0.5 text-xs text-muted-foreground sm:hidden">{t("youtubeOpinions.previous")}</div>
         <div className={cn("font-medium", scoreClass(item.previous_score))}>
           {item.previous_score === null || item.previous_score === undefined
             ? t("youtubeOpinions.noPrevious")
@@ -270,7 +273,7 @@ function DailyChangeRow({
       </div>
       <div
         className={cn(
-          "flex items-center gap-1 rounded-md px-2 py-1 text-xs font-semibold",
+          "order-2 flex items-center justify-self-end gap-1 whitespace-nowrap rounded-md px-2 py-1 text-xs font-semibold sm:order-4",
           (change || 0) > 0
             ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300"
             : (change || 0) < 0
@@ -307,29 +310,29 @@ function LatestOpinion({
   const risks = displayList(opinion.risks);
 
   return (
-    <article className="rounded-lg border border-border bg-card p-4">
+    <article className="min-w-0 max-w-full rounded-lg border border-border bg-card p-3 [overflow-wrap:anywhere] sm:p-4">
       <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-        <div className="flex min-w-0 items-start gap-3">
+        <div className="flex min-w-0 flex-1 items-start gap-3">
           <CreatorAvatar creator={opinion} />
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="font-medium">{opinion.channel_title || opinion.channel_id}</span>
+              <span className="min-w-0 break-words font-medium">{opinion.channel_title || opinion.channel_id}</span>
               <Badge variant="secondary" size="xs">
                 {opinion.ticker}
               </Badge>
               <SentimentBadge sentiment={opinion.sentiment} t={t} />
             </div>
-            <div className="mt-1 truncate text-sm text-muted-foreground">
+            <div className="mt-1 break-words text-sm leading-5 text-muted-foreground">
               {opinion.video_title || opinion.video_id}
             </div>
           </div>
         </div>
-        <div className="flex shrink-0 items-center gap-3">
+        <div className="flex shrink-0 items-center justify-between gap-3 md:justify-end">
           <div className={cn("text-lg font-semibold", scoreClass(opinion.direction_score))}>
             {formatScore(opinion.direction_score)}
           </div>
           {opinion.video_url && (
-            <Button asChild variant="ghost" size="icon">
+            <Button asChild variant="ghost" size="icon" className="h-11 w-11">
               <a href={opinion.video_url} target="_blank" rel="noreferrer">
                 <ExternalLink className="h-4 w-4" />
                 <span className="sr-only">{t("youtubeOpinions.openVideo")}</span>
@@ -340,26 +343,26 @@ function LatestOpinion({
       </div>
 
       {(opinion.summary || opinion.thesis) && (
-        <p className="mt-4 text-sm leading-6 text-foreground/90">
+        <p className="mt-4 break-words text-sm leading-6 text-foreground/90">
           {opinion.summary || opinion.thesis}
         </p>
       )}
 
-      <div className="mt-4 grid gap-3 text-sm md:grid-cols-3">
+      <div className="mt-4 grid grid-cols-2 gap-3 text-sm sm:grid-cols-3">
         <div>
-          <div className="text-xs font-medium uppercase text-muted-foreground">
+          <div className="text-xs font-medium text-muted-foreground">
             {t("youtubeOpinions.confidence")}
           </div>
           <div className="mt-1">{formatConfidence(opinion.confidence)}</div>
         </div>
         <div>
-          <div className="text-xs font-medium uppercase text-muted-foreground">
+          <div className="text-xs font-medium text-muted-foreground">
             {t("youtubeOpinions.latest")}
           </div>
           <div className="mt-1">{formatDate(opinion.video_published_at)}</div>
         </div>
         <div>
-          <div className="text-xs font-medium uppercase text-muted-foreground">
+          <div className="text-xs font-medium text-muted-foreground">
             {t("youtubeOpinions.score")}
           </div>
           <div className={cn("mt-1 font-medium", scoreClass(opinion.direction_score))}>
@@ -369,15 +372,15 @@ function LatestOpinion({
       </div>
 
       {(keyPoints.length > 0 || risks.length > 0) && (
-        <div className="mt-4 grid gap-3 md:grid-cols-2">
+        <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2">
           {keyPoints.length > 0 && (
             <div>
-              <div className="text-xs font-medium uppercase text-muted-foreground">
+              <div className="text-xs font-medium text-muted-foreground">
                 {t("youtubeOpinions.keyPoints")}
               </div>
               <div className="mt-2 flex flex-wrap gap-1.5">
                 {keyPoints.slice(0, 5).map((point) => (
-                  <Badge key={point} variant="outline" className="font-normal">
+                  <Badge key={point} variant="outline" className="max-w-full whitespace-normal break-words text-left font-normal leading-5">
                     {point}
                   </Badge>
                 ))}
@@ -386,12 +389,12 @@ function LatestOpinion({
           )}
           {risks.length > 0 && (
             <div>
-              <div className="text-xs font-medium uppercase text-muted-foreground">
+              <div className="text-xs font-medium text-muted-foreground">
                 {t("youtubeOpinions.risks")}
               </div>
               <div className="mt-2 flex flex-wrap gap-1.5">
                 {risks.slice(0, 5).map((risk) => (
-                  <Badge key={risk} variant="outline" className="font-normal">
+                  <Badge key={risk} variant="outline" className="max-w-full whitespace-normal break-words text-left font-normal leading-5">
                     {risk}
                   </Badge>
                 ))}
@@ -417,6 +420,7 @@ export default function YouTubeOpinionsPage() {
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [uploadOpen, setUploadOpen] = useState(false);
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
   const loadData = useCallback(async () => {
     try {
@@ -452,12 +456,13 @@ export default function YouTubeOpinionsPage() {
   };
 
   const summary = data?.summary;
+  const activeFilterCount = [ticker.trim(), creator !== "all", sentiment !== "all", dateFrom, dateTo].filter(Boolean).length;
 
   return (
     <DashboardLayout
       title={t("youtubeOpinions.title")}
       headerActions={
-        <>
+        <div className="hidden items-center gap-2 sm:flex">
           <Button variant="ghost" size="xs" onClick={loadData} disabled={loading}>
             <RefreshCw className={cn("mr-1 h-3.5 w-3.5", loading && "animate-spin")} />
             {t("youtubeOpinions.refresh")}
@@ -468,25 +473,35 @@ export default function YouTubeOpinionsPage() {
               {t("youtubeOpinions.uploadJson")}
             </Button>
           )}
-        </>
+        </div>
       }
     >
-      <div className="relative flex-1 overflow-y-auto bg-background">
-        <div className="relative mx-auto flex w-full max-w-[1500px] flex-col gap-6 p-4 md:p-7">
-          <section className="border-b border-border pb-5">
-            <div className="mb-3 flex items-center gap-2 text-sm font-medium">
-              <Youtube className="h-4 w-4 text-red-500" />
-              {t("youtubeOpinions.filters")}
+      <div className="relative min-h-0 min-w-0 flex-1 overflow-y-auto bg-background">
+        <div className="relative mx-auto flex w-full min-w-0 max-w-[1500px] flex-col gap-5 px-4 py-3 sm:gap-6 sm:p-4 md:p-7">
+          <section className="border-b border-border pb-3 sm:pb-5">
+            <div className="flex min-w-0 items-center justify-between gap-2 sm:mb-3">
+              <Button variant="ghost" className="h-11 gap-2 px-0 sm:hidden" onClick={() => setFiltersOpen(!filtersOpen)} aria-expanded={filtersOpen} aria-controls="youtube-opinion-filters">
+                <Youtube className="h-4 w-4 text-red-500" />
+                {t("youtubeOpinions.filters")}
+                {activeFilterCount > 0 && <Badge variant="secondary">{activeFilterCount}</Badge>}
+                <ChevronDown className={cn("h-4 w-4 transition-transform", filtersOpen && "rotate-180")} />
+              </Button>
+              <div className="hidden items-center gap-2 text-sm font-medium sm:flex"><Youtube className="h-4 w-4 text-red-500" />{t("youtubeOpinions.filters")}</div>
+              <div className="flex items-center gap-2 sm:hidden">
+                <Button variant="ghost" size="icon" className="h-11 w-11" aria-label={t("youtubeOpinions.refresh")} onClick={loadData} disabled={loading}><RefreshCw className={cn("h-4 w-4", loading && "animate-spin")} /></Button>
+                {isAdmin && <Button variant="outline" size="icon" className="h-11 w-11" aria-label={t("youtubeOpinions.uploadJson")} title={t("youtubeOpinions.uploadJson")} onClick={() => setUploadOpen(true)}><Upload className="h-4 w-4" /></Button>}
+              </div>
             </div>
-            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-[minmax(100px,0.8fr)_minmax(130px,1fr)_minmax(120px,0.8fr)_repeat(2,minmax(130px,0.8fr))_auto]">
+            <div id="youtube-opinion-filters" className={cn("mt-3 min-w-0 grid-cols-2 gap-3 sm:mt-0 sm:grid xl:grid-cols-[minmax(100px,0.8fr)_minmax(130px,1fr)_minmax(120px,0.8fr)_repeat(2,minmax(130px,0.8fr))_auto]", filtersOpen ? "grid" : "hidden")}>
               <Input
                 value={ticker}
                 onChange={(event) => setTicker(event.target.value)}
                 placeholder={t("youtubeOpinions.ticker")}
-                className="uppercase"
+                aria-label={t("youtubeOpinions.ticker")}
+                className="col-span-2 h-11 min-w-0 text-base uppercase sm:col-span-1 sm:h-10"
               />
               <Select value={creator} onValueChange={setCreator}>
-                <SelectTrigger>
+                <SelectTrigger aria-label={t("youtubeOpinions.creator")} className="h-11 min-w-0 sm:h-10">
                   <SelectValue placeholder={t("youtubeOpinions.creator")} />
                 </SelectTrigger>
                 <SelectContent>
@@ -499,7 +514,7 @@ export default function YouTubeOpinionsPage() {
                 </SelectContent>
               </Select>
               <Select value={sentiment} onValueChange={setSentiment}>
-                <SelectTrigger>
+                <SelectTrigger aria-label={t("youtubeOpinions.sentiment")} className="h-11 min-w-0 sm:h-10">
                   <SelectValue placeholder={t("youtubeOpinions.sentiment")} />
                 </SelectTrigger>
                 <SelectContent>
@@ -511,23 +526,31 @@ export default function YouTubeOpinionsPage() {
                   ))}
                 </SelectContent>
               </Select>
-              <Input
-                type="date"
-                value={dateFrom}
-                onChange={(event) => setDateFrom(event.target.value)}
-                aria-label={t("youtubeOpinions.dateFrom")}
-              />
-              <Input
-                type="date"
-                value={dateTo}
-                onChange={(event) => setDateTo(event.target.value)}
-                aria-label={t("youtubeOpinions.dateTo")}
-              />
-              <div className="flex gap-2">
-                <Button type="button" onClick={loadData} className="flex-1">
+              <label className="min-w-0 space-y-1 text-xs text-muted-foreground">
+                <span className="sm:hidden">{t("youtubeOpinions.dateFrom")}</span>
+                <Input
+                  type="date"
+                  className="h-11 w-full min-w-0 text-base sm:h-10"
+                  value={dateFrom}
+                  onChange={(event) => setDateFrom(event.target.value)}
+                  aria-label={t("youtubeOpinions.dateFrom")}
+                />
+              </label>
+              <label className="min-w-0 space-y-1 text-xs text-muted-foreground">
+                <span className="sm:hidden">{t("youtubeOpinions.dateTo")}</span>
+                <Input
+                  type="date"
+                  className="h-11 w-full min-w-0 text-base sm:h-10"
+                  value={dateTo}
+                  onChange={(event) => setDateTo(event.target.value)}
+                  aria-label={t("youtubeOpinions.dateTo")}
+                />
+              </label>
+              <div className="col-span-2 flex gap-2 sm:col-span-1">
+                <Button type="button" onClick={loadData} className="h-11 flex-1 sm:h-10">
                   {t("youtubeOpinions.apply")}
                 </Button>
-                <Button type="button" variant="outline" onClick={handleReset}>
+                <Button type="button" variant="outline" className="h-11 flex-1 sm:h-10 sm:flex-none" onClick={handleReset}>
                   {t("youtubeOpinions.reset")}
                 </Button>
               </div>
@@ -569,9 +592,9 @@ export default function YouTubeOpinionsPage() {
             </div>
           ) : (
             <>
-              <div className="grid gap-4 xl:grid-cols-[1.25fr_0.75fr]">
-                <section className="research-section">
-                  <div className="mb-4 flex items-center justify-between gap-3">
+              <div className="grid min-w-0 grid-cols-1 gap-4 xl:grid-cols-[1.25fr_0.75fr]">
+                <section className="research-section min-w-0">
+                  <div className="mb-4 flex flex-wrap items-center justify-between gap-2 sm:gap-3">
                     <h2 className="text-base font-semibold">
                       {t("youtubeOpinions.dailyTrend")}
                     </h2>
@@ -586,12 +609,12 @@ export default function YouTubeOpinionsPage() {
                       </span>
                     </div>
                   </div>
-                  <div className="h-72">
+                  <div className="h-56 min-w-0 overflow-hidden sm:h-72">
                     <ResponsiveContainer width="100%" height="100%">
                       <ComposedChart data={chartData}>
                         <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                        <XAxis dataKey="date" tick={{ fontSize: 12 }} />
-                        <YAxis yAxisId="score" tick={{ fontSize: 12 }} domain={[-100, 100]} />
+                        <XAxis dataKey="date" tick={{ fontSize: 11 }} minTickGap={28} tickFormatter={(value: string) => value.slice(5)} />
+                        <YAxis yAxisId="score" width={38} tick={{ fontSize: 11 }} domain={[-100, 100]} />
                         <YAxis yAxisId="count" orientation="right" hide />
                         <Tooltip
                           contentStyle={{
@@ -633,7 +656,7 @@ export default function YouTubeOpinionsPage() {
                   </div>
                 </section>
 
-                <section className="research-section">
+                <section className="research-section min-w-0">
                   <h2 className="mb-4 text-base font-semibold">
                     {t("youtubeOpinions.dailyChanges")}
                   </h2>
@@ -645,14 +668,14 @@ export default function YouTubeOpinionsPage() {
                 </section>
               </div>
 
-              <div className="grid gap-4 xl:grid-cols-[1fr_0.9fr]">
+              <div className="grid min-w-0 grid-cols-1 gap-4 xl:grid-cols-[1fr_0.9fr]">
                 <section>
                   <div className="mb-3 flex items-center justify-between gap-3">
                     <h2 className="text-base font-semibold">
                       {t("youtubeOpinions.stockConsensus")}
                     </h2>
                   </div>
-                  <div className="grid gap-3 md:grid-cols-2">
+                  <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                     {data.stocks.slice(0, 8).map((stock) => (
                       <StockConsensusCard key={stock.ticker} stock={stock} t={t} />
                     ))}
@@ -665,7 +688,7 @@ export default function YouTubeOpinionsPage() {
                       {t("youtubeOpinions.creatorCoverage")}
                     </h2>
                   </div>
-                  <div className="grid gap-3">
+                  <div className="grid grid-cols-1 gap-3">
                     {data.creators.slice(0, 8).map((creatorSummary) => (
                       <CreatorRow
                         key={creatorSummary.channel_id}
@@ -683,7 +706,7 @@ export default function YouTubeOpinionsPage() {
                     {t("youtubeOpinions.latestOpinions")}
                   </h2>
                 </div>
-                <div className="grid gap-3">
+                <div className="grid grid-cols-1 gap-3">
                   {data.latest.map((opinion) => (
                     <LatestOpinion key={opinion.id} opinion={opinion} t={t} />
                   ))}
@@ -695,7 +718,7 @@ export default function YouTubeOpinionsPage() {
       </div>
 
       <Dialog open={isAdmin && uploadOpen} onOpenChange={setUploadOpen}>
-        <DialogContent className="max-h-[90vh] max-w-3xl overflow-y-auto">
+        <DialogContent className="max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] max-w-3xl overflow-x-hidden overflow-y-auto p-4 sm:p-6">
           <DialogHeader>
             <DialogTitle>{t("youtubeOpinions.uploadTitle")}</DialogTitle>
             <DialogDescription>
