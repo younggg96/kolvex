@@ -29,6 +29,7 @@ async def get_youtube_opinions_dashboard(
     date_from: Optional[str] = Query(default=None, pattern=r"^\d{4}-\d{2}-\d{2}$"),
     date_to: Optional[str] = Query(default=None, pattern=r"^\d{4}-\d{2}-\d{2}$"),
     limit: int = Query(default=80, ge=1, le=200),
+    offset: int = Query(default=0, ge=0),
     service: YouTubeStockOpinionService = Depends(get_service),
 ):
     """Return dashboard aggregates for YouTube stock opinions."""
@@ -40,6 +41,7 @@ async def get_youtube_opinions_dashboard(
             date_from=date_from,
             date_to=date_to,
             limit=limit,
+            offset=offset,
         )
     except Exception as e:
         raise HTTPException(

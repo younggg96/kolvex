@@ -131,6 +131,7 @@ class YouTubeStockOpinionService:
         date_from: Optional[str] = None,
         date_to: Optional[str] = None,
         limit: int = 80,
+        offset: int = 0,
     ) -> Dict[str, Any]:
         rows = self._fetch_rows(
             ticker=ticker,
@@ -146,7 +147,8 @@ class YouTubeStockOpinionService:
             "creators": self._build_creator_summaries(rows),
             "daily": self._build_daily_summaries(rows),
             "changes": self._build_daily_changes(rows),
-            "latest": rows[:limit],
+            "latest": rows[offset:offset + limit],
+            "pagination": {"offset": offset, "limit": limit, "total": len(rows), "has_more": offset + limit < len(rows)},
             "filters": {
                 "tickers": sorted({row["ticker"] for row in rows if row.get("ticker")}),
                 "creators": self._creator_filter_options(rows),
@@ -309,28 +311,35 @@ class YouTubeStockOpinionService:
         date_from: Optional[str] = None,
         date_to: Optional[str] = None,
     ) -> List[Dict[str, Any]]:
-        query = (
-            self.supabase.table(TABLE_NAME)
-            .select("*")
-            .order("video_published_at", desc=True, nullsfirst=False)
-            .order("created_at", desc=True)
-            .limit(5000)
-        )
-
-        if ticker:
-            query = query.eq("ticker", ticker.upper())
-        if channel_id:
-            query = query.eq("channel_id", channel_id)
         normalized_sentiment = _normalize_sentiment(sentiment)
-        if sentiment and normalized_sentiment:
-            query = query.eq("sentiment", normalized_sentiment)
-        if date_from:
-            query = query.gte("opinion_date", date_from)
-        if date_to:
-            query = query.lte("opinion_date", date_to)
-
-        result = query.execute()
-        return result.data or []
+        # Read every page so older stocks and creators are not silently omitted.
+        rows = []
+        while True:
+            query = (
+                self.supabase.table(TABLE_NAME)
+                .select("*", count="exact")
+                .order("video_published_at", desc=True, nullsfirst=False)
+                .order("created_at", desc=True)
+                .order("id")
+            )
+            if ticker:
+                query = query.eq("ticker", ticker.upper())
+            if channel_id:
+                query = query.eq("channel_id", channel_id)
+            if sentiment and normalized_sentiment:
+                query = query.eq("sentiment", normalized_sentiment)
+            if date_from:
+                query = query.gte("opinion_date", date_from)
+            if date_to:
+                query = query.lte("opinion_date", date_to)
+            result = query.range(len(rows), len(rows) + 999).execute()
+            page = result.data or []
+            rows.extend(page)
+            if not page or (result.count is not None and len(rows) >= result.count):
+                break
+            if result.count is None and len(page) < 1000:
+                break
+        return rows
 
     def _build_summary(self, rows: List[Dict[str, Any]]) -> Dict[str, Any]:
         tickers = {row["ticker"] for row in rows if row.get("ticker")}

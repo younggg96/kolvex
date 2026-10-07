@@ -115,6 +115,7 @@ export interface YouTubeOpinionDashboard {
   changes: YouTubeDailyChange[];
   latest: YouTubeOpinion[];
   filters: YouTubeOpinionFilters;
+  pagination?: { offset: number; limit: number; total: number; has_more: boolean };
 }
 
 export interface YouTubeOpinionDashboardParams {
@@ -124,6 +125,7 @@ export interface YouTubeOpinionDashboardParams {
   date_from?: string;
   date_to?: string;
   limit?: number;
+  offset?: number;
 }
 
 const API_PREFIX = "/api/youtube-opinions";
@@ -159,6 +161,7 @@ export async function getYouTubeOpinionDashboard(
   if (params.date_from) searchParams.set("date_from", params.date_from);
   if (params.date_to) searchParams.set("date_to", params.date_to);
   if (params.limit) searchParams.set("limit", String(params.limit));
+  if (params.offset !== undefined) searchParams.set("offset", String(params.offset));
 
   const qs = searchParams.toString();
   return apiRequest<YouTubeOpinionDashboard>(`/dashboard${qs ? `?${qs}` : ""}`);
