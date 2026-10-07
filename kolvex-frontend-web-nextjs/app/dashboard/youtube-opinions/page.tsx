@@ -28,6 +28,7 @@ import { toast } from "sonner";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import YouTubeOpinionImporter from "@/components/admin/YouTubeOpinionImporter";
 import CreatorProfileDialog from "@/components/youtube/CreatorProfileDialog";
+import DateFilterField from "@/components/youtube/DateFilterField";
 import { useUserProfileContext } from "@/components/user/UserProfileProvider";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -659,9 +660,9 @@ export default function YouTubeOpinionsPage() {
                 <SelectContent><SelectItem value="all">{t("youtubeOpinions.allSentiments")}</SelectItem>{SENTIMENTS.map((item) => <SelectItem key={item} value={item}>{t(`youtubeOpinions.${item}`)}</SelectItem>)}</SelectContent>
               </Select>
             </label>
-            <div className="grid min-w-0 grid-cols-2 gap-3">
-              <label className="grid min-w-0 gap-1.5 text-xs text-muted-foreground">{t("youtubeOpinions.dateFrom")}<Input type="date" className="h-11 w-full min-w-0 text-base" value={draftFilters.dateFrom} max={draftFilters.dateTo || undefined} onChange={(event) => setDraftFilters((previous) => ({ ...previous, dateFrom: event.target.value }))} aria-label={t("youtubeOpinions.dateFrom")} /></label>
-              <label className="grid min-w-0 gap-1.5 text-xs text-muted-foreground">{t("youtubeOpinions.dateTo")}<Input type="date" className="h-11 w-full min-w-0 text-base" value={draftFilters.dateTo} min={draftFilters.dateFrom || undefined} onChange={(event) => setDraftFilters((previous) => ({ ...previous, dateTo: event.target.value }))} aria-label={t("youtubeOpinions.dateTo")} /></label>
+            <div className="grid min-w-0 grid-cols-1 gap-3">
+              <DateFilterField label={t("youtubeOpinions.dateFrom")} value={draftFilters.dateFrom} max={draftFilters.dateTo || undefined} onChange={(value) => setDraftFilters((previous) => ({ ...previous, dateFrom: value }))} />
+              <DateFilterField label={t("youtubeOpinions.dateTo")} value={draftFilters.dateTo} min={draftFilters.dateFrom || undefined} onChange={(value) => setDraftFilters((previous) => ({ ...previous, dateTo: value }))} />
             </div>
             {invalidDateRange && <p role="alert" className="text-xs text-destructive">{t("youtubeOpinions.invalidDateRange")}</p>}
           </div>
