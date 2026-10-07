@@ -623,7 +623,7 @@ export default function YouTubeOpinionExplorer() {
   const breadcrumbNav = (
     <nav
       aria-label={t("common.breadcrumb")}
-      className="ml-1 flex min-w-0 items-center gap-1 text-sm text-muted-foreground"
+      className="flex min-w-0 items-center gap-1 text-sm text-muted-foreground"
     >
       <Button
         size="icon"
@@ -635,7 +635,7 @@ export default function YouTubeOpinionExplorer() {
       >
         <ArrowLeft className="h-4 w-4" />
       </Button>
-      <ExplorerLink onNavigate={navigate} target={root} className="hover:text-foreground">
+      <ExplorerLink onNavigate={navigate} target={root} className="shrink-0 rounded-sm whitespace-nowrap hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
         {route.tab === "stocks" ? t("youtubeOpinions.allStocks") : t("youtubeOpinions.allCreators")}
       </ExplorerLink>
       {route.creator && route.ticker && (
@@ -644,7 +644,7 @@ export default function YouTubeOpinionExplorer() {
           <ExplorerLink
             onNavigate={navigate}
             target={{ tab: "creators", creator: route.creator }}
-            className="min-w-0 truncate hover:text-foreground"
+            className="min-w-0 truncate rounded-sm hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
           >
             {title}
           </ExplorerLink>
@@ -656,13 +656,12 @@ export default function YouTubeOpinionExplorer() {
   return (
     <DashboardLayout
       title={t("youtubeOpinions.title")}
-      headerExtra={inDetail ? breadcrumbNav : tabSwitcher}
       headerActions={
         <div className="flex items-center gap-1">
           <Button
             size="icon"
             variant="ghost"
-            className="h-10 w-10"
+            className="h-8 w-8"
             title={t("youtubeOpinions.refresh")}
             aria-label={t("youtubeOpinions.refresh")}
             onClick={refresh}
@@ -673,7 +672,9 @@ export default function YouTubeOpinionExplorer() {
             <Button
               size="sm"
               variant="outline"
-              className="gap-1.5"
+              className="h-8 w-8 gap-1.5 p-0 sm:w-auto sm:px-3"
+              title={t("youtubeOpinions.uploadJson")}
+              aria-label={t("youtubeOpinions.uploadJson")}
               onClick={() => setUploadOpen(true)}
             >
               <Upload className="h-4 w-4" />
@@ -688,6 +689,9 @@ export default function YouTubeOpinionExplorer() {
         className="min-h-0 min-w-0 flex-1 overflow-y-auto"
       >
         <div className="mx-auto w-full min-w-0 max-w-[1180px] px-4 pb-16 pt-5 md:px-8 md:pt-7">
+          <div className="mb-5 min-w-0 sm:mb-6">
+            {inDetail ? breadcrumbNav : tabSwitcher}
+          </div>
           <Tabs
             value={route.tab}
             onValueChange={(value) => navigate({ tab: value as Route["tab"] })}

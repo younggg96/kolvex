@@ -1,9 +1,38 @@
+"use client";
+
 import { useState } from "react";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
 
 /** Financial Modeling Prep 图片 URL 基础路径 */
 const FMP_IMAGE_BASE_URL = "https://financialmodelingprep.com/image-stock";
+
+/** Some providers return a successful response containing only a blank image. */
+function isBlankLogo(image: HTMLImageElement): boolean {
+  if (!image.naturalWidth || !image.naturalHeight) return true;
+
+  const canvas = document.createElement("canvas");
+  canvas.width = 32;
+  canvas.height = 32;
+  const context = canvas.getContext("2d", { willReadFrequently: true });
+  if (!context) return false;
+
+  try {
+    context.drawImage(image, 0, 0, canvas.width, canvas.height);
+    const { data } = context.getImageData(0, 0, canvas.width, canvas.height);
+    for (let i = 0; i < data.length; i += 4) {
+      // Composite against the white logo background, including transparent pixels.
+      const alpha = data[i + 3] / 255;
+      if ([data[i], data[i + 1], data[i + 2]].some(
+        (channel) => channel * alpha + 255 * (1 - alpha) < 245
+      )) return false;
+    }
+    return true;
+  } catch {
+    // Unoptimized cross-origin images may not permit reading their pixels.
+    return false;
+  }
+}
 
 interface CompanyLogoProps {
   /** Stock symbol (用于生成图片 URL 和 fallback 显示) */
@@ -95,10 +124,12 @@ export default function CompanyLogo({
   className = "",
   imageClassName = "",
 }: CompanyLogoProps) {
-  const [hasError, setHasError] = useState(false);
+  const [failedLogoUrl, setFailedLogoUrl] = useState<string | null>(null);
 
   // 根据股票代码生成图片 URL
-  const logoUrl = `${FMP_IMAGE_BASE_URL}/${symbol.toUpperCase()}.png`;
+  const abbreviation = symbol.trim().toUpperCase();
+  const logoUrl = `${FMP_IMAGE_BASE_URL}/${abbreviation}.png`;
+  const hasError = !abbreviation || failedLogoUrl === logoUrl;
 
   // 获取尺寸配置
   const sizeConfig = sizeMap[size];
@@ -113,8 +144,6 @@ export default function CompanyLogo({
   const borderColorClass = customBorderColor
     ? customBorderColor
     : borderColorMap[borderColor];
-
-  const abbreviation = symbol.toUpperCase();
 
   return (
     <div
@@ -132,13 +161,17 @@ export default function CompanyLogo({
     >
       {!hasError ? (
         <Image
+          key={logoUrl}
           src={logoUrl}
           alt={name || symbol}
           width={imageSize}
           height={imageSize}
           className={cn("object-contain w-full h-full", imageClassName)}
           unoptimized={unoptimized}
-          onError={() => setHasError(true)}
+          onError={() => setFailedLogoUrl(logoUrl)}
+          onLoad={(event) => {
+            if (isBlankLogo(event.currentTarget)) setFailedLogoUrl(logoUrl);
+          }}
           priority={false}
           loading="lazy"
           quality={85}
@@ -151,10 +184,9 @@ export default function CompanyLogo({
             textColor
           )}
         >
-          {abbreviation}
+          {abbreviation || "?"}
         </span>
       )}
     </div>
   );
 }
-
