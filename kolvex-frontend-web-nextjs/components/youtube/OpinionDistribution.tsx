@@ -1,15 +1,15 @@
 "use client";
 
 import { cn } from "@/lib/utils";
+import { useTranslation } from "@/lib/i18n";
 import type { YouTubeOpinionSummary } from "@/lib/youtubeOpinionsApi";
 
 export default function OpinionDistribution({
   summary,
-  zh,
 }: {
   summary: YouTubeOpinionSummary;
-  zh: boolean;
 }) {
+  const { t } = useTranslation();
   const total = summary.total_opinions;
   if (!total) return null;
   const mixed = Math.max(
@@ -17,10 +17,10 @@ export default function OpinionDistribution({
     0,
   );
   const rows = [
-    { key: "bullish", label: zh ? "看涨" : "Bullish", count: summary.bullish_count, fill: "bg-positive-fill", text: "text-positive" },
-    { key: "neutral", label: zh ? "中性" : "Neutral", count: summary.neutral_count, fill: "bg-foreground/40", text: "text-foreground" },
-    ...(mixed ? [{ key: "mixed", label: zh ? "分歧" : "Mixed", count: mixed, fill: "bg-warning", text: "text-warning" }] : []),
-    { key: "bearish", label: zh ? "看跌" : "Bearish", count: summary.bearish_count, fill: "bg-negative-fill", text: "text-negative" },
+    { key: "bullish", label: t("youtubeOpinions.bullish"), count: summary.bullish_count, fill: "bg-positive-fill", text: "text-positive" },
+    { key: "neutral", label: t("youtubeOpinions.neutral"), count: summary.neutral_count, fill: "bg-foreground/40", text: "text-foreground" },
+    ...(mixed ? [{ key: "mixed", label: t("youtubeOpinions.mixed"), count: mixed, fill: "bg-warning", text: "text-warning" }] : []),
+    { key: "bearish", label: t("youtubeOpinions.bearish"), count: summary.bearish_count, fill: "bg-negative-fill", text: "text-negative" },
   ];
   const lead = rows.reduce((best, row) => (row.count > best.count ? row : best), rows[0]);
   const share = (count: number) => Math.round((count / total) * 100);
@@ -28,12 +28,12 @@ export default function OpinionDistribution({
   return (
     <section className="grid gap-6 pt-6 sm:grid-cols-[180px_minmax(0,1fr)] sm:items-center">
       <div>
-        <h2 className="text-lg font-semibold">{zh ? "博主观点分布" : "Creator opinions"}</h2>
+        <h2 className="text-lg font-semibold">{t("youtubeOpinions.distributionTitle")}</h2>
         <p className={cn("figure mt-3 text-[32px] font-semibold leading-none", lead.text)}>
           {share(lead.count)}%
         </p>
         <p className="mt-1.5 text-sm text-muted-foreground">
-          {zh ? `${total} 条观点中为${lead.label}` : `of ${total} opinions are ${lead.label.toLowerCase()}`}
+          {t(`youtubeOpinions.distributionLead.${lead.key}`, { total: String(total) })}
         </p>
       </div>
       <dl className="grid gap-3">

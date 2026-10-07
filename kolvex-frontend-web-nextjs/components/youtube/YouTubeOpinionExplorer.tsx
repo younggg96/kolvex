@@ -157,8 +157,7 @@ function Avatar({
 }
 
 export default function YouTubeOpinionExplorer() {
-  const { t, locale } = useTranslation();
-  const zh = locale === "zh";
+  const { t } = useTranslation();
   const { profile } = useUserProfileContext();
   const [route, setRoute] = useState<Route>({ tab: "stocks" });
   const [ready, setReady] = useState(false);
@@ -349,7 +348,7 @@ export default function YouTubeOpinionExplorer() {
   const stocks = (route.creator ? context?.stocks : catalogue?.stocks) || [];
   const directoryActive = !inDetail;
   const matchesTone = (score: number) =>
-    !directoryActive || toneFilter === "all" || describeStrength(score, { zh }).tone === toneFilter;
+    !directoryActive || toneFilter === "all" || describeStrength(score, { t }).tone === toneFilter;
   const latestTime = (value?: string | null) => (value ? new Date(value).getTime() || 0 : 0);
   const activeSort: DirectorySort = directoryActive ? sortBy : "opinions";
   const compareBy = <T extends { total_opinions: number; avg_score: number; latest_opinion_at?: string | null }>(
@@ -395,20 +394,20 @@ export default function YouTubeOpinionExplorer() {
     setToneFilter("all");
   };
   const toneOptions: Array<{ value: DirectoryTone; label: string }> = [
-    { value: "all", label: zh ? "全部" : "All" },
+    { value: "all", label: t("common.all") },
     { value: "positive", label: t("youtubeOpinions.bullish") },
     { value: "negative", label: t("youtubeOpinions.bearish") },
     { value: "neutral", label: t("youtubeOpinions.neutral") },
   ];
   const sortOptions: Array<{ value: DirectorySort; label: string }> = [
-    { value: "opinions", label: zh ? "观点最多" : "Most opinions" },
+    { value: "opinions", label: t("youtubeOpinions.mostOpinions") },
     ...(route.tab === "stocks"
-      ? [{ value: "creators" as const, label: zh ? "博主最多" : "Most creators" }]
+      ? [{ value: "creators" as const, label: t("youtubeOpinions.mostCreators") }]
       : []),
-    { value: "latest", label: zh ? "最近更新" : "Most recent" },
-    { value: "bullish", label: zh ? "最看涨" : "Most bullish" },
-    { value: "bearish", label: zh ? "最看跌" : "Most bearish" },
-    { value: "name", label: route.tab === "stocks" ? (zh ? "代码 A–Z" : "Ticker A–Z") : zh ? "名称 A–Z" : "Name A–Z" },
+    { value: "latest", label: t("youtubeOpinions.mostRecent") },
+    { value: "bullish", label: t("youtubeOpinions.mostBullish") },
+    { value: "bearish", label: t("youtubeOpinions.mostBearish") },
+    { value: "name", label: route.tab === "stocks" ? t("youtubeOpinions.tickerAZ") : t("youtubeOpinions.nameAZ") },
   ];
   const invalidRange = Boolean(draft.from && draft.to && draft.from > draft.to);
   const hasMore =
@@ -422,7 +421,7 @@ export default function YouTubeOpinionExplorer() {
       : root;
   const rowClass =
     "group grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-4 border-b border-border py-3.5 transition-colors duration-150 hover:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary sm:-mx-3 sm:rounded-xl sm:border-transparent sm:px-3";
-  const dateFormatter = new Intl.DateTimeFormat(zh ? "zh-CN" : "en-US", {
+  const dateFormatter = new Intl.DateTimeFormat(t("common.intlLocale"), {
     month: "short",
     day: "numeric",
     year: "numeric",
@@ -439,21 +438,21 @@ export default function YouTubeOpinionExplorer() {
     count: day.total,
   }));
   const headlineValue = scrub ? scrub.value : overview?.avg_score;
-  const headline = describeStrength(headlineValue, { zh });
-  const overallTone = describeStrength(overview?.avg_score, { zh }).tone;
+  const headline = describeStrength(headlineValue, { t });
+  const overallTone = describeStrength(overview?.avg_score, { t }).tone;
   const sentimentOptions = [
-    { value: "all", label: zh ? "全部" : "All" },
+    { value: "all", label: t("common.all") },
     { value: "bullish", label: t("youtubeOpinions.bullish") },
     { value: "bearish", label: t("youtubeOpinions.bearish") },
     { value: "neutral", label: t("youtubeOpinions.neutral") },
     { value: "mixed", label: t("youtubeOpinions.mixed") },
   ];
   const rangeOptions: Array<{ value: Range; label: string }> = [
-    { value: "1m", label: zh ? "1个月" : "1M" },
-    { value: "3m", label: zh ? "3个月" : "3M" },
-    { value: "6m", label: zh ? "6个月" : "6M" },
-    { value: "1y", label: zh ? "1年" : "1Y" },
-    { value: "all", label: zh ? "全部" : "All" },
+    { value: "1m", label: t("youtubeOpinions.range1m") },
+    { value: "3m", label: t("youtubeOpinions.range3m") },
+    { value: "6m", label: t("youtubeOpinions.range6m") },
+    { value: "1y", label: t("youtubeOpinions.range1y") },
+    { value: "all", label: t("common.all") },
   ];
   const changes = (route.creator ? context?.changes : catalogue?.changes) || [];
   const notableChanges = changes.filter((change) => change.change !== null).slice(0, 8);
@@ -478,7 +477,7 @@ export default function YouTubeOpinionExplorer() {
             creator: route.creator,
           }}
           className={rowClass}
-          label={`${zh ? "查看股票" : "View stock"}: ${item.ticker}`}
+          label={`${t("youtubeOpinions.viewStock")}: ${item.ticker}`}
         >
           <div className="flex min-w-0 items-center gap-3">
             <CompanyLogo symbol={item.ticker} size="md" />
@@ -492,17 +491,18 @@ export default function YouTubeOpinionExplorer() {
           <div className="flex min-w-0 flex-col items-end gap-0.5 text-right">
             <OpinionStrength value={item.avg_score} />
             <p className="text-xs text-muted-foreground tabular-nums">
-              {zh
-                ? `${item.creator_count} 位博主，${item.total_opinions} 条观点`
-                : `${item.creator_count} creators, ${item.total_opinions} opinions`}
+              {t("youtubeOpinions.creatorOpinionCount", {
+                creators: String(item.creator_count),
+                opinions: String(item.total_opinions),
+              })}
             </p>
           </div>
         </ExplorerLink>
       ))}
       {!visibleStocks.length && (
         <EmptyLine
-          text={filtering ? (zh ? "没有符合筛选条件的股票" : "No stocks match these filters") : t("youtubeOpinions.noData")}
-          action={filtering ? { label: zh ? "清除筛选" : "Clear filters", onClick: clearFilters } : undefined}
+          text={filtering ? t("youtubeOpinions.noStocksMatch") : t("youtubeOpinions.noData")}
+          action={filtering ? { label: t("common.clearFilters"), onClick: clearFilters } : undefined}
         />
       )}
     </div>
@@ -516,7 +516,7 @@ export default function YouTubeOpinionExplorer() {
           key={item.channel_id}
           target={{ tab: "creators", creator: item.channel_id }}
           className={rowClass}
-          label={`${zh ? "查看博主" : "View creator"}: ${item.channel_title || item.channel_id}`}
+          label={`${t("youtubeOpinions.viewCreator")}: ${item.channel_title || item.channel_id}`}
         >
           <div className="flex min-w-0 items-center gap-3">
             <Avatar creator={item} />
@@ -532,7 +532,7 @@ export default function YouTubeOpinionExplorer() {
           <div className="flex min-w-0 flex-col items-end gap-0.5 text-right">
             <OpinionStrength value={item.avg_score} />
             <p className="text-xs text-muted-foreground tabular-nums">
-              {zh ? `${item.total_opinions} 条观点` : `${item.total_opinions} opinions`}
+              {t("youtubeOpinions.opinionCount", { count: String(item.total_opinions) })}
             </p>
           </div>
         </ExplorerLink>
@@ -543,10 +543,10 @@ export default function YouTubeOpinionExplorer() {
   const changeList = notableChanges.length > 0 && (
     <section className="min-w-0">
       <h2 className="text-base font-semibold">
-        {zh ? "最近观点变化" : "Recent shifts"}
+        {t("youtubeOpinions.recentShifts")}
       </h2>
       <p className="mt-1 text-xs text-muted-foreground">
-        {zh ? "与该股票上一次被讨论时相比" : "Compared with the previous day it was discussed"}
+        {t("youtubeOpinions.comparedWithPrevious")}
       </p>
       <ul className="mt-3">
         {notableChanges.map((change) => (
@@ -575,7 +575,7 @@ export default function YouTubeOpinionExplorer() {
   );
 
   const loadingBlock = (
-    <div role="status" className="space-y-3 py-6" aria-label={zh ? "加载中" : "Loading"}>
+    <div role="status" className="space-y-3 py-6" aria-label={t("common.loadingStatus")}>
       {[0, 1, 2, 3, 4].map((index) => (
         <div key={index} className="flex items-center justify-between gap-4 py-2">
           <div className="space-y-2">
@@ -590,12 +590,12 @@ export default function YouTubeOpinionExplorer() {
 
   const tabSwitcher = (
     <nav
-      aria-label={zh ? "浏览方式" : "Browse by"}
+      aria-label={t("youtubeOpinions.browseBy")}
       className="ml-2 flex items-center gap-0.5 rounded-full bg-muted p-1"
     >
       {([
-        { tab: "stocks", label: zh ? "按股票" : "By stock" },
-        { tab: "creators", label: zh ? "按博主" : "By creator" },
+        { tab: "stocks", label: t("youtubeOpinions.byStock") },
+        { tab: "creators", label: t("youtubeOpinions.byCreator") },
       ] as const).map((item) => {
         const active = route.tab === item.tab;
         return (
@@ -622,21 +622,21 @@ export default function YouTubeOpinionExplorer() {
 
   const breadcrumbNav = (
     <nav
-      aria-label={zh ? "位置" : "Breadcrumb"}
+      aria-label={t("common.breadcrumb")}
       className="ml-1 flex min-w-0 items-center gap-1 text-sm text-muted-foreground"
     >
       <Button
         size="icon"
         variant="ghost"
-        title={zh ? "返回" : "Back"}
-        aria-label={zh ? "返回" : "Back"}
+        title={t("common.back")}
+        aria-label={t("common.back")}
         className="-ml-2 h-9 w-9 shrink-0"
         onClick={() => navigate(back)}
       >
         <ArrowLeft className="h-4 w-4" />
       </Button>
       <ExplorerLink onNavigate={navigate} target={root} className="hover:text-foreground">
-        {route.tab === "stocks" ? (zh ? "全部股票" : "All stocks") : zh ? "全部博主" : "All creators"}
+        {route.tab === "stocks" ? t("youtubeOpinions.allStocks") : t("youtubeOpinions.allCreators")}
       </ExplorerLink>
       {route.creator && route.ticker && (
         <>
@@ -700,25 +700,27 @@ export default function YouTubeOpinionExplorer() {
                     <div>
                       <h2 className="text-[28px] font-semibold leading-tight tracking-[-0.02em]">
                         {route.tab === "stocks"
-                          ? zh ? "博主讨论过的股票" : "Stocks creators discuss"
-                          : zh ? "追踪的博主" : "Tracked creators"}
+                          ? t("youtubeOpinions.stocksDiscussedTitle")
+                          : t("youtubeOpinions.trackedCreators")}
                       </h2>
                       {catalogue && (
                         <p className="mt-1 text-sm text-muted-foreground tabular-nums">
-                          {zh
-                            ? `${catalogue.summary.total_stocks} 只股票，${catalogue.summary.total_creators} 位博主，${catalogue.summary.total_opinions} 条观点`
-                            : `${catalogue.summary.total_stocks} stocks, ${catalogue.summary.total_creators} creators, ${catalogue.summary.total_opinions} opinions`}
+                          {t("youtubeOpinions.catalogueSummary", {
+                            stocks: String(catalogue.summary.total_stocks),
+                            creators: String(catalogue.summary.total_creators),
+                            opinions: String(catalogue.summary.total_opinions),
+                          })}
                         </p>
                       )}
                     </div>
                     <div className="relative w-full sm:max-w-xs">
                       <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                       <Input
-                        aria-label={zh ? "搜索" : "Search"}
+                        aria-label={t("common.search")}
                         placeholder={
                           route.tab === "stocks"
-                            ? zh ? "搜索代码或公司" : "Search ticker or company"
-                            : zh ? "搜索博主或频道" : "Search creator or channel"
+                            ? t("youtubeOpinions.searchTicker")
+                            : t("youtubeOpinions.searchCreator")
                         }
                         value={search}
                         onChange={(event) => setSearch(event.target.value)}
@@ -729,7 +731,7 @@ export default function YouTubeOpinionExplorer() {
                   <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-b border-border pb-3">
                     <div
                       role="radiogroup"
-                      aria-label={zh ? "按观点筛选" : "Filter by sentiment"}
+                      aria-label={t("youtubeOpinions.filterBySentiment")}
                       className="flex items-center gap-1 overflow-x-auto scrollbar-hide"
                     >
                       {toneOptions.map((option) => (
@@ -748,14 +750,14 @@ export default function YouTubeOpinionExplorer() {
                     <div className="ml-auto flex shrink-0 items-center gap-2">
                       {catalogue && (
                         <span className="shrink-0 whitespace-nowrap text-[13px] text-muted-foreground tabular-nums">
-                          {zh
-                            ? `${route.tab === "stocks" ? visibleStocks.length : visibleCreators.length} 项`
-                            : `${route.tab === "stocks" ? visibleStocks.length : visibleCreators.length} shown`}
+                          {t("youtubeOpinions.shownCount", {
+                            count: String(route.tab === "stocks" ? visibleStocks.length : visibleCreators.length),
+                          })}
                         </span>
                       )}
                       <Select value={sortBy} onValueChange={(value) => setSortBy(value as DirectorySort)}>
                         <SelectTrigger
-                          aria-label={zh ? "排序" : "Sort"}
+                          aria-label={t("common.sort")}
                           className="h-8 w-auto gap-1.5 rounded-full border-transparent bg-transparent px-3 text-[13px] font-semibold hover:bg-muted"
                         >
                           <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground" />
@@ -774,8 +776,8 @@ export default function YouTubeOpinionExplorer() {
                   <div className="mt-1">
                     {catalogueError ? (
                       <EmptyLine
-                        text={zh ? "观点目录加载失败，请检查网络后重试。" : "The opinion directory didn't load. Check your connection and try again."}
-                        action={{ label: zh ? "重试" : "Retry", onClick: refresh }}
+                        text={t("youtubeOpinions.directoryLoadFailed")}
+                        action={{ label: t("common.retry"), onClick: refresh }}
                         alert
                       />
                     ) : !catalogue ? (
@@ -787,8 +789,8 @@ export default function YouTubeOpinionExplorer() {
                           {creatorRows(visibleCreators)}
                           {!visibleCreators.length && (
                             <EmptyLine
-                              text={filtering ? (zh ? "没有符合筛选条件的博主" : "No creators match these filters") : t("youtubeOpinions.noData")}
-                              action={filtering ? { label: zh ? "清除筛选" : "Clear filters", onClick: clearFilters } : undefined}
+                              text={filtering ? t("youtubeOpinions.noCreatorsMatch") : t("youtubeOpinions.noData")}
+                              action={filtering ? { label: t("common.clearFilters"), onClick: clearFilters } : undefined}
                             />
                           )}
                         </TabsContent>
@@ -815,7 +817,7 @@ export default function YouTubeOpinionExplorer() {
                         <p className="mt-0.5 break-words text-sm text-muted-foreground">
                           {route.creator
                             ? route.ticker
-                              ? zh ? `${title} 的观点` : `Opinions from ${title}`
+                              ? t("youtubeOpinions.opinionsFrom", { name: title || "" })
                               : creator?.channel_handle
                             : stock?.company_name || context?.stocks[0]?.company_name}
                         </p>
@@ -825,12 +827,12 @@ export default function YouTubeOpinionExplorer() {
 
                     {contextError ? (
                       <EmptyLine
-                        text={zh ? "观点概览加载失败。" : "The overview didn't load."}
-                        action={{ label: zh ? "重试" : "Retry", onClick: refresh }}
+                        text={t("youtubeOpinions.overviewLoadFailed")}
+                        action={{ label: t("common.retry"), onClick: refresh }}
                         alert
                       />
                     ) : !context ? (
-                      <div className="mt-6 space-y-4" role="status" aria-label={zh ? "加载中" : "Loading"}>
+                      <div className="mt-6 space-y-4" role="status" aria-label={t("common.loadingStatus")}>
                         <Skeleton className="h-8 w-40" />
                         <Skeleton className="h-4 w-56" />
                         <Skeleton className="h-[150px] w-full sm:h-[190px]" />
@@ -839,17 +841,25 @@ export default function YouTubeOpinionExplorer() {
                       <>
                         <div className="mt-6" aria-live="polite">
                           <p className={cn("text-[28px] font-semibold leading-tight tracking-[-0.02em] sm:text-[32px]", toneText[headline.tone])}>
-                            {overview?.total_opinions ? headline.label : zh ? "暂无观点" : "No opinions yet"}
+                            {overview?.total_opinions ? headline.label : t("youtubeOpinions.noOpinionsYet")}
                           </p>
                           <p className="mt-1 text-sm text-muted-foreground tabular-nums">
                             {scrub
-                              ? zh
-                                ? `${formatDay(scrub.date)}，${scrub.count} 条观点`
-                                : `${formatDay(scrub.date)}, ${scrub.count} opinions`
+                              ? t("youtubeOpinions.scrubSummary", {
+                                  date: formatDay(scrub.date),
+                                  count: String(scrub.count),
+                                })
                               : overview
-                                ? zh
-                                  ? `${overview.total_opinions} 条观点，${overview.total_creators} 位博主${overview.latest_opinion_at ? `，最新 ${formatDay(overview.latest_opinion_at)}` : ""}`
-                                  : `${overview.total_opinions} opinions, ${overview.total_creators} creators${overview.latest_opinion_at ? `, latest ${formatDay(overview.latest_opinion_at)}` : ""}`
+                                ? overview.latest_opinion_at
+                                  ? t("youtubeOpinions.overviewSummaryLatest", {
+                                      opinions: String(overview.total_opinions),
+                                      creators: String(overview.total_creators),
+                                      date: formatDay(overview.latest_opinion_at),
+                                    })
+                                  : t("youtubeOpinions.overviewSummary", {
+                                      opinions: String(overview.total_opinions),
+                                      creators: String(overview.total_creators),
+                                    })
                                 : ""}
                           </p>
                         </div>
@@ -859,7 +869,7 @@ export default function YouTubeOpinionExplorer() {
                             <StrengthChart
                               points={chartPoints}
                               tone={overallTone}
-                              label={zh ? "观点强度走势，左右方向键查看每天" : "Opinion strength over time; use arrow keys to step through days"}
+                              label={t("youtubeOpinions.chartLabel")}
                               formatDate={formatDay}
                               onScrub={setScrub}
                             />
@@ -868,7 +878,7 @@ export default function YouTubeOpinionExplorer() {
 
                         <div
                           role="radiogroup"
-                          aria-label={zh ? "时间范围" : "Time range"}
+                          aria-label={t("common.timeRange")}
                           className="mt-3 flex items-center gap-1 overflow-x-auto border-b border-border pb-4 scrollbar-hide"
                         >
                           {rangeOptions.map((option) => (
@@ -907,11 +917,11 @@ export default function YouTubeOpinionExplorer() {
                                 <CalendarDays className="h-3.5 w-3.5" />
                                 {filters.range === "custom"
                                   ? `${filters.from || "…"} – ${filters.to || "…"}`
-                                  : zh ? "自定义" : "Custom"}
+                                  : t("common.custom")}
                               </button>
                             </PopoverTrigger>
                             <PopoverContent align="start" className="w-[300px] p-4">
-                              <p className="text-sm font-semibold">{zh ? "自定义时间范围" : "Custom range"}</p>
+                              <p className="text-sm font-semibold">{t("youtubeOpinions.customRange")}</p>
                               <div className="mt-3 grid gap-3">
                                 <DateFilterField
                                   label={t("youtubeOpinions.dateFrom")}
@@ -964,7 +974,7 @@ export default function YouTubeOpinionExplorer() {
 
                         {overview && overview.total_opinions > 0 && (
                           <div>
-                            <OpinionDistribution summary={overview} zh={zh} />
+                            <OpinionDistribution summary={overview} />
                           </div>
                         )}
                       </>
@@ -975,16 +985,16 @@ export default function YouTubeOpinionExplorer() {
                     {route.creator && !route.ticker && (
                       <section className="min-w-0">
                         <h2 className="text-base font-semibold">
-                          {zh ? "讨论过的股票" : "Stocks discussed"}
+                          {t("youtubeOpinions.stocksDiscussed")}
                         </h2>
                         {(context?.stocks.length || 0) > 6 && (
                           <div className="relative mt-3">
                             <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                             <Input
-                              aria-label={zh ? "搜索股票" : "Search stocks"}
+                              aria-label={t("youtubeOpinions.searchStocks")}
                               value={search}
                               onChange={(event) => setSearch(event.target.value)}
-                              placeholder={zh ? "搜索代码或公司" : "Search ticker or company"}
+                              placeholder={t("youtubeOpinions.searchTicker")}
                               className="h-10 rounded-full pl-10 text-base sm:text-sm"
                             />
                           </div>
@@ -995,7 +1005,7 @@ export default function YouTubeOpinionExplorer() {
                     {!route.creator && (
                       <section className="min-w-0">
                         <h2 className="text-base font-semibold">
-                          {zh ? "讨论这只股票的博主" : "Creators discussing it"}
+                          {t("youtubeOpinions.creatorsDiscussing")}
                         </h2>
                         <div className="mt-2">
                           {context ? creatorRows(context.creators) : loadingBlock}
@@ -1008,7 +1018,7 @@ export default function YouTubeOpinionExplorer() {
                   <section className="min-w-0 xl:col-start-1">
                     <div className="flex flex-col gap-3 border-b border-border pb-3 sm:flex-row sm:items-center sm:justify-between">
                       <h2 className="text-lg font-semibold">
-                        {zh ? "历史观点" : "Opinion history"}
+                        {t("youtubeOpinions.opinionHistory")}
                         {detail && (
                           <span className="ml-2 text-sm font-normal text-muted-foreground tabular-nums">
                             {detail.summary.total_opinions}
@@ -1042,8 +1052,8 @@ export default function YouTubeOpinionExplorer() {
                       <>
                         {detailError && (
                           <EmptyLine
-                            text={zh ? "观点加载失败，请重试。" : "Opinions didn't load. Try again."}
-                            action={{ label: zh ? "重试" : "Retry", onClick: detail ? loadMore : refresh }}
+                            text={t("youtubeOpinions.opinionsLoadFailed")}
+                            action={{ label: t("common.retry"), onClick: detail ? loadMore : refresh }}
                             alert
                           />
                         )}
@@ -1051,12 +1061,12 @@ export default function YouTubeOpinionExplorer() {
                           <EmptyLine
                             text={
                               filters.sentiment !== "all" || filters.range !== "all"
-                                ? zh ? "当前筛选条件下没有观点。" : "No opinions match these filters."
+                                ? t("youtubeOpinions.noOpinionsMatch")
                                 : t("youtubeOpinions.noData")
                             }
                             action={
                               filters.sentiment !== "all" || filters.range !== "all"
-                                ? { label: zh ? "清除筛选" : "Clear filters", onClick: () => setFilters(emptyFilters) }
+                                ? { label: t("common.clearFilters"), onClick: () => setFilters(emptyFilters) }
                                 : undefined
                             }
                           />
@@ -1084,7 +1094,7 @@ export default function YouTubeOpinionExplorer() {
                           <div className="mt-6 flex justify-center">
                             <Button variant="outline" onClick={loadMore} disabled={moreLoading}>
                               {moreLoading && <Loader2 className="h-4 w-4 animate-spin" />}
-                              {zh ? "加载更多观点" : "Load more opinions"}
+                              {t("youtubeOpinions.loadMoreOpinions")}
                             </Button>
                           </div>
                         )}

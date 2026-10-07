@@ -6,6 +6,7 @@
     "delete": "删除",
     "confirm": "确认",
     "loading": "加载中...",
+    "loadingStatus": "加载中",
     "saving": "保存中...",
     "uploading": "上传中...",
     "success": "成功",
@@ -29,7 +30,16 @@
     "add": "添加",
     "verified": "已验证",
     "notVerified": "未验证",
-    "noDataAvailable": "暂无数据"
+    "noDataAvailable": "暂无数据",
+    "retry": "重试",
+    "clearFilters": "清除筛选",
+    "all": "全部",
+    "custom": "自定义",
+    "sort": "排序",
+    "timeRange": "时间范围",
+    "breadcrumb": "位置",
+    "intlLocale": "zh-CN",
+    "justNow": "刚刚"
   },
   "sidebar": {
     "chat": "AI 对话",
@@ -212,7 +222,48 @@
         "setup": "30 秒完成设置",
         "cancel": "随时取消"
       }
+    },
+    "nav": {
+      "workflow": "投资流程",
+      "creatorResearch": "博主观点",
+      "portfolio": "投资组合",
+      "signIn": "登录"
+    },
+    "workspaceHero": {
+      "headline": "把博主的观点、你的持仓和投资决策，放在同一张工作台。",
+      "subheadline": "追踪不同博主对每只股票的看法，比较观点的每日变化，再结合持仓与 AI 分析开展研究。",
+      "openWorkspace": "进入工作台",
+      "exploreWorkflow": "了解投资流程",
+      "youtube": "YouTube 博主观点",
+      "portfolio": "持仓与交易分析"
+    },
+    "workspace": {
+      "title": "博主观点工作台",
+      "summary": "{stocks} 只股票 · {creators} 位博主",
+      "browseByStock": "按股票浏览",
+      "coverage": "{creators} 位博主，{opinions} 条观点",
+      "recentShifts": "最近观点变化",
+      "today": "今天",
+      "yesterday": "昨天",
+      "earlier": "3 天前",
+      "disclaimer": "界面示例，观点数据仅用于演示。",
+      "names": {
+        "NVDA": "英伟达",
+        "TSLA": "特斯拉",
+        "MSFT": "微软",
+        "AAPL": "苹果"
+      }
+    },
+    "closing": {
+      "title": "从下一次投资研究开始。",
+      "open": "打开 Kolvex"
     }
+  },
+  "footer": {
+    "nav": "页脚导航",
+    "privacy": "隐私政策",
+    "terms": "服务条款",
+    "contact": "联系我们"
   },
   "chat": {
     "title": "与 Kolvex 对话",
@@ -257,7 +308,9 @@
       "analyzeNvidia": "分析英伟达股票",
       "explainTrends": "解释市场趋势",
       "trendingStocks": "热门趋势股票",
-      "latestNews": "最新新闻"
+      "latestNews": "最新新闻",
+      "compareOpinions": "比较博主的股票观点",
+      "reviewPortfolio": "查看投资组合"
     },
     "input": {
       "placeholder": "询问你的投资组合、交易、风险或市场情况...",
@@ -592,6 +645,9 @@
       "yearToDate": "年初至今",
       "allTime": "全部时间",
       "pastPeriod": "过去 {period}",
+      "past1W": "过去1周",
+      "past1M": "过去1个月",
+      "past3M": "过去3个月",
       "noDataYet": "暂无历史数据",
       "ownerNoData": "同步您的投资组合以开始记录表现数据。历史数据将随时间积累。",
       "ownerNoDataStarted": "数据记录始于 {date}。继续同步以建立您的表现历史。",
@@ -606,7 +662,16 @@
       "pnlPercent": "未实现盈亏率",
       "currentUnrealizedPnl": "当前未实现盈亏",
       "valueChange": "组合市值变化",
-      "performanceLabel": "表现"
+      "performanceLabel": "表现",
+      "period": "时间范围",
+      "refreshChart": "刷新走势",
+      "periods": {
+        "1W": "1周",
+        "1M": "1个月",
+        "3M": "3个月",
+        "YTD": "今年",
+        "ALL": "全部"
+      }
     },
     "ai": {
       "title": "AI 投资组合分析",
@@ -981,7 +1046,95 @@
     "invalidJson": "JSON 格式不正确",
     "filterDescription": "按博主、观点和视频发布日期筛选。",
     "resetDates": "清除日期范围",
-    "invalidDateRange": "开始日期不能晚于结束日期。"
+    "invalidDateRange": "开始日期不能晚于结束日期。",
+    "mostOpinions": "观点最多",
+    "mostCreators": "博主最多",
+    "mostRecent": "最近更新",
+    "mostBullish": "最看涨",
+    "mostBearish": "最看跌",
+    "tickerAZ": "代码 A–Z",
+    "nameAZ": "名称 A–Z",
+    "viewStock": "查看股票",
+    "viewCreator": "查看博主",
+    "creatorOpinionCount": "{creators} 位博主，{opinions} 条观点",
+    "opinionCount": "{count} 条观点",
+    "recentShifts": "最近观点变化",
+    "comparedWithPrevious": "与该股票上一次被讨论时相比",
+    "browseBy": "浏览方式",
+    "byStock": "按股票",
+    "byCreator": "按博主",
+    "allStocks": "全部股票",
+    "allCreators": "全部博主",
+    "stocksDiscussedTitle": "博主讨论过的股票",
+    "trackedCreators": "追踪的博主",
+    "catalogueSummary": "{stocks} 只股票，{creators} 位博主，{opinions} 条观点",
+    "searchTicker": "搜索代码或公司",
+    "searchCreator": "搜索博主或频道",
+    "filterBySentiment": "按观点筛选",
+    "shownCount": "{count} 项",
+    "directoryLoadFailed": "观点目录加载失败，请检查网络后重试。",
+    "noStocksMatch": "没有符合筛选条件的股票",
+    "noCreatorsMatch": "没有符合筛选条件的博主",
+    "opinionsFrom": "{name} 的观点",
+    "overviewLoadFailed": "观点概览加载失败。",
+    "noOpinionsYet": "暂无观点",
+    "scrubSummary": "{date}，{count} 条观点",
+    "overviewSummary": "{opinions} 条观点，{creators} 位博主",
+    "overviewSummaryLatest": "{opinions} 条观点，{creators} 位博主，最新 {date}",
+    "chartLabel": "观点强度走势，左右方向键查看每天",
+    "range1m": "1个月",
+    "range3m": "3个月",
+    "range6m": "6个月",
+    "range1y": "1年",
+    "customRange": "自定义时间范围",
+    "stocksDiscussed": "讨论过的股票",
+    "searchStocks": "搜索股票",
+    "creatorsDiscussing": "讨论这只股票的博主",
+    "opinionHistory": "历史观点",
+    "opinionsLoadFailed": "观点加载失败，请重试。",
+    "noOpinionsMatch": "当前筛选条件下没有观点。",
+    "loadMoreOpinions": "加载更多观点",
+    "distributionTitle": "博主观点分布",
+    "distributionLead": {
+      "bullish": "{total} 条观点中为看涨",
+      "neutral": "{total} 条观点中为中性",
+      "mixed": "{total} 条观点中为分歧",
+      "bearish": "{total} 条观点中为看跌"
+    },
+    "strength": {
+      "noData": "暂无数据",
+      "unchanged": "持平",
+      "mild": "轻度",
+      "moderate": "中度",
+      "strong": "强烈",
+      "strengthening": "转强",
+      "weakening": "转弱",
+      "bullish": "看涨",
+      "bearish": "看跌",
+      "label": "{level}{direction}"
+    },
+    "profile": {
+      "unavailableExisting": "暂时无法获取最新频道资料，当前展示已有资料。",
+      "notAvailable": "未提供",
+      "subscribers": "订阅者",
+      "notPublic": "未公开",
+      "publicVideos": "公开视频",
+      "totalViews": "总观看量",
+      "importedOpinions": "已导入观点",
+      "viewProfile": "查看频道资料",
+      "publicProfile": "YouTube 公开频道资料",
+      "sourceYoutube": "来源：YouTube",
+      "sourceImported": "来源：导入资料",
+      "openChannel": "打开 YouTube 频道",
+      "loading": "正在获取频道资料…",
+      "unavailableImported": "最新频道资料暂不可用，以下展示已导入的资料。",
+      "about": "频道简介",
+      "noDescription": "暂无频道简介",
+      "country": "地区",
+      "created": "频道创建于",
+      "subscriberNote": "订阅数按 YouTube 公开口径展示，可能经过取整。",
+      "refresh": "刷新资料"
+    }
   },
   "tradingAnalysis": {
     "title": "深度分析",

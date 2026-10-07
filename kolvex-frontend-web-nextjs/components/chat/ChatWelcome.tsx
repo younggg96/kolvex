@@ -31,7 +31,7 @@ export function ChatWelcome({
   onSelectModel,
   availableProviders,
 }: ChatWelcomeProps) {
-  const { t, locale } = useTranslation();
+  const { t } = useTranslation();
   const [query, setQuery] = useState("");
   const [isFocused, setIsFocused] = useState(false);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -124,8 +124,8 @@ export function ChatWelcome({
             </li>
           ))}
           {[
-            { href: "/dashboard/youtube-opinions", icon: Youtube, label: locale === "zh" ? "比较博主的股票观点" : "Compare creator opinions" },
-            { href: "/dashboard/portfolio", icon: Briefcase, label: locale === "zh" ? "查看投资组合" : "Review your portfolio" },
+            { href: "/dashboard/youtube-opinions", icon: Youtube, label: t("chat.suggestions.compareOpinions") },
+            { href: "/dashboard/portfolio", icon: Briefcase, label: t("chat.suggestions.reviewPortfolio") },
           ].map(({ href, icon: Icon, label }) => (
             <li key={href}>
               <Link

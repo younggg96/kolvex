@@ -33,7 +33,7 @@ export default function PortfolioHoldings({
   isOwner = false,
   onHeaderActionsReady,
 }: PortfolioHoldingsProps) {
-  const { t, locale } = useTranslation();
+  const { t } = useTranslation();
   const [disconnectDialogOpen, setDisconnectDialogOpen] = useState(false);
   const [expandedAccounts, setExpandedAccounts] = useState<Set<string>>(
     new Set(),
@@ -139,10 +139,10 @@ export default function PortfolioHoldings({
     const diffMs = Date.now() - lastRefreshTime;
     const diffMins = Math.floor(diffMs / 60000);
     const diffHours = Math.floor(diffMs / 3600000);
-    if (diffMins < 1) return locale === "zh" ? "刚刚" : "Just now";
+    if (diffMins < 1) return t("common.justNow");
     if (diffMins < 60) return `${diffMins}m`;
     return `${diffHours}h`;
-  }, [lastRefreshTime, locale]);
+  }, [lastRefreshTime, t]);
 
   useEffect(() => {
     if (!onHeaderActionsReady) return;

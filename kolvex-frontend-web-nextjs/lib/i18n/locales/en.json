@@ -6,6 +6,7 @@
     "delete": "Delete",
     "confirm": "Confirm",
     "loading": "Loading...",
+    "loadingStatus": "Loading",
     "saving": "Saving...",
     "uploading": "Uploading...",
     "success": "Success",
@@ -29,7 +30,16 @@
     "add": "Add",
     "verified": "Verified",
     "notVerified": "Not verified",
-    "noDataAvailable": "No data available"
+    "noDataAvailable": "No data available",
+    "retry": "Retry",
+    "clearFilters": "Clear filters",
+    "all": "All",
+    "custom": "Custom",
+    "sort": "Sort",
+    "timeRange": "Time range",
+    "breadcrumb": "Breadcrumb",
+    "intlLocale": "en-US",
+    "justNow": "Just now"
   },
   "sidebar": {
     "chat": "Chat",
@@ -241,7 +251,48 @@
         "setup": "Setup in 30 seconds",
         "cancel": "Cancel anytime"
       }
+    },
+    "nav": {
+      "workflow": "Workflow",
+      "creatorResearch": "Creator research",
+      "portfolio": "Portfolio",
+      "signIn": "Sign in"
+    },
+    "workspaceHero": {
+      "headline": "Your portfolio. The voices you follow. A clearer view of every decision.",
+      "subheadline": "Follow stock opinions across creators, compare how their views change, and connect that research to your holdings and AI trade reviews.",
+      "openWorkspace": "Open workspace",
+      "exploreWorkflow": "Explore the workflow",
+      "youtube": "YouTube creator research",
+      "portfolio": "Portfolio and trade review"
+    },
+    "workspace": {
+      "title": "Creator opinion workspace",
+      "summary": "{stocks} stocks · {creators} creators",
+      "browseByStock": "Browse by stock",
+      "coverage": "{creators} creators, {opinions} opinions",
+      "recentShifts": "Recent shifts",
+      "today": "Today",
+      "yesterday": "Yesterday",
+      "earlier": "3 days ago",
+      "disclaimer": "Interface preview with illustrative opinion data.",
+      "names": {
+        "NVDA": "NVIDIA",
+        "TSLA": "Tesla",
+        "MSFT": "Microsoft",
+        "AAPL": "Apple"
+      }
+    },
+    "closing": {
+      "title": "Make room for better investment research.",
+      "open": "Open Kolvex"
     }
+  },
+  "footer": {
+    "nav": "Footer",
+    "privacy": "Privacy",
+    "terms": "Terms",
+    "contact": "Contact"
   },
   "chat": {
     "title": "Chat with Kolvex",
@@ -286,7 +337,9 @@
       "analyzeNvidia": "Analyze NVIDIA stock",
       "explainTrends": "Explain market trends",
       "trendingStocks": "Top trending stocks",
-      "latestNews": "Latest news"
+      "latestNews": "Latest news",
+      "compareOpinions": "Compare creator opinions",
+      "reviewPortfolio": "Review your portfolio"
     },
     "input": {
       "placeholder": "Ask about your portfolio, trades, risk, or the market...",
@@ -621,6 +674,9 @@
       "yearToDate": "Year to Date",
       "allTime": "All Time",
       "pastPeriod": "Past {period}",
+      "past1W": "Past week",
+      "past1M": "Past month",
+      "past3M": "Past 3 months",
       "noDataYet": "No historical data yet",
       "ownerNoData": "Sync your portfolio to start recording performance data. Historical data will accumulate over time.",
       "ownerNoDataStarted": "Data recording started on {date}. Keep syncing to build your performance history.",
@@ -635,7 +691,16 @@
       "pnlPercent": "Unrealized P&L %",
       "currentUnrealizedPnl": "Current unrealized P&L",
       "valueChange": "Portfolio value change",
-      "performanceLabel": "Performance"
+      "performanceLabel": "Performance",
+      "period": "Period",
+      "refreshChart": "Refresh chart",
+      "periods": {
+        "1W": "1W",
+        "1M": "1M",
+        "3M": "3M",
+        "YTD": "YTD",
+        "ALL": "ALL"
+      }
     },
     "ai": {
       "title": "AI Portfolio Analysis",
@@ -1010,7 +1075,95 @@
     "invalidJson": "Invalid JSON",
     "filterDescription": "Filter by creator, stance and publication date.",
     "resetDates": "Clear date range",
-    "invalidDateRange": "Start date must be on or before end date."
+    "invalidDateRange": "Start date must be on or before end date.",
+    "mostOpinions": "Most opinions",
+    "mostCreators": "Most creators",
+    "mostRecent": "Most recent",
+    "mostBullish": "Most bullish",
+    "mostBearish": "Most bearish",
+    "tickerAZ": "Ticker A–Z",
+    "nameAZ": "Name A–Z",
+    "viewStock": "View stock",
+    "viewCreator": "View creator",
+    "creatorOpinionCount": "{creators} creators, {opinions} opinions",
+    "opinionCount": "{count} opinions",
+    "recentShifts": "Recent shifts",
+    "comparedWithPrevious": "Compared with the previous day it was discussed",
+    "browseBy": "Browse by",
+    "byStock": "By stock",
+    "byCreator": "By creator",
+    "allStocks": "All stocks",
+    "allCreators": "All creators",
+    "stocksDiscussedTitle": "Stocks creators discuss",
+    "trackedCreators": "Tracked creators",
+    "catalogueSummary": "{stocks} stocks, {creators} creators, {opinions} opinions",
+    "searchTicker": "Search ticker or company",
+    "searchCreator": "Search creator or channel",
+    "filterBySentiment": "Filter by sentiment",
+    "shownCount": "{count} shown",
+    "directoryLoadFailed": "The opinion directory didn't load. Check your connection and try again.",
+    "noStocksMatch": "No stocks match these filters",
+    "noCreatorsMatch": "No creators match these filters",
+    "opinionsFrom": "Opinions from {name}",
+    "overviewLoadFailed": "The overview didn't load.",
+    "noOpinionsYet": "No opinions yet",
+    "scrubSummary": "{date}, {count} opinions",
+    "overviewSummary": "{opinions} opinions, {creators} creators",
+    "overviewSummaryLatest": "{opinions} opinions, {creators} creators, latest {date}",
+    "chartLabel": "Opinion strength over time; use arrow keys to step through days",
+    "range1m": "1M",
+    "range3m": "3M",
+    "range6m": "6M",
+    "range1y": "1Y",
+    "customRange": "Custom range",
+    "stocksDiscussed": "Stocks discussed",
+    "searchStocks": "Search stocks",
+    "creatorsDiscussing": "Creators discussing it",
+    "opinionHistory": "Opinion history",
+    "opinionsLoadFailed": "Opinions didn't load. Try again.",
+    "noOpinionsMatch": "No opinions match these filters.",
+    "loadMoreOpinions": "Load more opinions",
+    "distributionTitle": "Creator opinions",
+    "distributionLead": {
+      "bullish": "of {total} opinions are bullish",
+      "neutral": "of {total} opinions are neutral",
+      "mixed": "of {total} opinions are mixed",
+      "bearish": "of {total} opinions are bearish"
+    },
+    "strength": {
+      "noData": "No data",
+      "unchanged": "Unchanged",
+      "mild": "Mildly",
+      "moderate": "Moderately",
+      "strong": "Strongly",
+      "strengthening": "strengthening",
+      "weakening": "weakening",
+      "bullish": "bullish",
+      "bearish": "bearish",
+      "label": "{level} {direction}"
+    },
+    "profile": {
+      "unavailableExisting": "Latest channel details are unavailable. Showing existing details.",
+      "notAvailable": "Not available",
+      "subscribers": "Subscribers",
+      "notPublic": "Not public",
+      "publicVideos": "Public videos",
+      "totalViews": "Total views",
+      "importedOpinions": "Imported opinions",
+      "viewProfile": "View channel profile",
+      "publicProfile": "Public YouTube channel profile",
+      "sourceYoutube": "Source: YouTube",
+      "sourceImported": "Source: imported data",
+      "openChannel": "Open YouTube channel",
+      "loading": "Loading channel details…",
+      "unavailableImported": "Latest channel details are unavailable. Showing imported data.",
+      "about": "About the channel",
+      "noDescription": "No channel description available.",
+      "country": "Country",
+      "created": "Channel created",
+      "subscriberNote": "Subscriber counts follow YouTube's public, rounded figures.",
+      "refresh": "Refresh profile"
+    }
   },
   "tradingAnalysis": {
     "title": "Deep Analysis",

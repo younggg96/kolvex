@@ -42,13 +42,7 @@ interface PortfolioPerformanceChartProps {
 
 type ChartView = "value" | "pnl";
 
-const PERIOD_OPTIONS: { value: PerformancePeriod; label: string; zh: string }[] = [
-    { value: "1W", label: "1W", zh: "1周" },
-    { value: "1M", label: "1M", zh: "1个月" },
-    { value: "3M", label: "3M", zh: "3个月" },
-    { value: "YTD", label: "YTD", zh: "今年" },
-    { value: "ALL", label: "ALL", zh: "全部" },
-];
+const PERIOD_OPTIONS: PerformancePeriod[] = ["1W", "1M", "3M", "YTD", "ALL"];
 
 const POSITIVE = "rgb(var(--positive-fill))";
 const NEGATIVE = "rgb(var(--negative-fill))";
@@ -69,8 +63,7 @@ export function PortfolioPerformanceChart({
     livePnL,
     livePnlPercent,
 }: PortfolioPerformanceChartProps) {
-    const { t, locale } = useTranslation();
-    const zh = locale === "zh";
+    const { t } = useTranslation();
     const {
         data,
         summary,
@@ -115,11 +108,7 @@ export function PortfolioPerformanceChart({
             ? t("portfolio.performance.yearToDate")
             : period === "ALL"
                 ? t("portfolio.performance.allTime")
-                : zh
-                    ? `过去${PERIOD_OPTIONS.find((p) => p.value === period)?.zh}`
-                    : t("portfolio.performance.pastPeriod", {
-                        period: period === "1W" ? "week" : period === "1M" ? "month" : "3 months",
-                    });
+                : t(`portfolio.performance.past${period}`);
 
     // Headline: the scrubbed point, otherwise live figures, otherwise the latest snapshot.
     const headlineValue = active
@@ -197,7 +186,7 @@ export function PortfolioPerformanceChart({
                     <div role="alert" className="flex h-full flex-col items-center justify-center gap-3 text-sm text-muted-foreground">
                         <span>{error}</span>
                         <Button size="sm" variant="outline" onClick={refresh}>
-                            {zh ? "重试" : "Retry"}
+                            {t("common.retry")}
                         </Button>
                     </div>
                 ) : data.length === 0 ? (
@@ -260,23 +249,23 @@ export function PortfolioPerformanceChart({
             </div>
 
             <div className="mt-3 flex items-center justify-between gap-3 border-b border-border pb-4">
-                <div role="radiogroup" aria-label={zh ? "时间范围" : "Period"} className="flex items-center gap-1 overflow-x-auto scrollbar-hide">
-                    {PERIOD_OPTIONS.map((opt) => (
+                <div role="radiogroup" aria-label={t("portfolio.performance.period")} className="flex items-center gap-1 overflow-x-auto scrollbar-hide">
+                    {PERIOD_OPTIONS.map((value) => (
                         <button
-                            key={opt.value}
+                            key={value}
                             type="button"
                             role="radio"
-                            aria-checked={period === opt.value}
-                            onClick={() => setPeriod(opt.value)}
+                            aria-checked={period === value}
+                            onClick={() => setPeriod(value)}
                             disabled={loading}
                             className={cn(
                                 "inline-flex h-8 shrink-0 items-center rounded-full px-3.5 text-[13px] font-semibold transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:opacity-50",
-                                period === opt.value
+                                period === value
                                     ? "bg-foreground text-background"
                                     : "text-muted-foreground hover:bg-muted hover:text-foreground",
                             )}
                         >
-                            {zh ? opt.zh : opt.label}
+                            {t(`portfolio.performance.periods.${value}`)}
                         </button>
                     ))}
                 </div>
@@ -307,7 +296,7 @@ export function PortfolioPerformanceChart({
                         className="h-8 w-8 text-muted-foreground"
                         onClick={refresh}
                         disabled={loading}
-                        aria-label={zh ? "刷新走势" : "Refresh chart"}
+                        aria-label={t("portfolio.performance.refreshChart")}
                     >
                         <RefreshCw className={cn("h-4 w-4", loading && "animate-spin")} />
                     </Button>

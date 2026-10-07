@@ -2,15 +2,14 @@
 
 import { useState } from "react";
 import { PlayCircle } from "lucide-react";
-import { useTranslation } from "@/lib/i18n";
 import { proxyImageUrl } from "@/lib/utils";
 import type { YouTubeOpinion } from "@/lib/youtubeOpinionsApi";
 import OpinionStrength from "./OpinionStrength";
 
-function formatDate(value: string | null | undefined, zh: boolean) {
+function formatDate(value: string | null | undefined, intlLocale: string) {
   if (!value) return "";
   try {
-    return new Intl.DateTimeFormat(zh ? "zh-CN" : "en-US", {
+    return new Intl.DateTimeFormat(intlLocale, {
       month: "short",
       day: "numeric",
       year: "numeric",
@@ -61,8 +60,6 @@ export default function OpinionCard({
   showCreator?: boolean;
   showTicker?: boolean;
 }) {
-  const { locale } = useTranslation();
-  const zh = locale === "zh";
   const keyPoints = displayList(opinion.key_points).slice(0, 5);
   const risks = displayList(opinion.risks).slice(0, 5);
   const confidence =
@@ -99,7 +96,7 @@ export default function OpinionCard({
               dateTime={opinion.video_published_at || opinion.opinion_date}
               className="text-xs text-muted-foreground tabular-nums"
             >
-              {formatDate(opinion.video_published_at || opinion.opinion_date, zh)}
+              {formatDate(opinion.video_published_at || opinion.opinion_date, t("common.intlLocale"))}
             </time>
           </div>
           <div className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1">

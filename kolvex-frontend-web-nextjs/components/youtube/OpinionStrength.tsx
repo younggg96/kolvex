@@ -14,8 +14,8 @@ export default function OpinionStrength({
   change?: boolean;
   className?: string;
 }) {
-  const { locale } = useTranslation();
-  const strength = describeStrength(value, { zh: locale === "zh", change });
+  const { t } = useTranslation();
+  const strength = describeStrength(value, { t, change });
 
   return (
     <span

@@ -16,7 +16,8 @@ export default function DateFilterField({ label, value, onChange, min, max }: {
   max?: string;
 }) {
   const id = useId();
-  const { locale, t } = useTranslation();
+  const { t } = useTranslation();
+  const calendarLocale = { "zh-CN": zhCN, "en-US": enUS }[t("common.intlLocale")] ?? enUS;
   const [open, setOpen] = useState(false);
   // Date-only filters stay in local calendar time, without UTC conversion.
   const selected = value ? parseISO(value) : undefined;
@@ -30,7 +31,7 @@ export default function DateFilterField({ label, value, onChange, min, max }: {
       <span className={value ? "truncate tabular-nums" : "truncate text-muted-foreground"}>{value || label}</span>
     </Button>
     {open && <div id={`${id}-calendar`} className="min-w-0 border border-border p-2">
-      <Calendar mode="single" locale={locale === "zh" ? zhCN : enUS} selected={selected} defaultMonth={selected || from || to} initialFocus
+      <Calendar mode="single" locale={calendarLocale} selected={selected} defaultMonth={selected || from || to} initialFocus
         className="[--rdp-background-color:rgb(var(--muted))] [--rdp-background-color-dark:rgb(var(--muted))] [--rdp-accent-color:rgb(var(--primary))] [--rdp-accent-color-dark:rgb(var(--primary))]"
         classNames={{ head_row: "grid grid-cols-7", head_cell: "text-center text-xs text-muted-foreground", row: "mt-1 grid grid-cols-7", cell: "relative min-w-0 text-center text-sm", day: "h-9 w-full rounded-md p-0 text-sm hover:bg-muted focus-visible:ring-2 focus-visible:ring-primary" }}
         disabled={(date) => Boolean((from && date < from) || (to && date > to))}

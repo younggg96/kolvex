@@ -13,7 +13,7 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "@/lib/i18n";
 
 export default function LandingHeader() {
-  const { locale } = useTranslation();
+  const { t } = useTranslation();
   const { theme } = useTheme();
   const { user, isAuthenticated, isLoading } = useAuth();
   const { profile } = useUserProfile();
@@ -63,9 +63,9 @@ export default function LandingHeader() {
         </span>
       </Link>
       <nav className="hidden items-center gap-7 text-sm text-muted-foreground md:flex" aria-label="Main navigation">
-        <Link href="/#workflow" className="hover:text-foreground">{locale === "zh" ? "投资流程" : "Workflow"}</Link>
-        <Link href="/dashboard/youtube-opinions" className="hover:text-foreground">{locale === "zh" ? "博主观点" : "Creator research"}</Link>
-        <Link href="/dashboard/portfolio" className="hover:text-foreground">{locale === "zh" ? "投资组合" : "Portfolio"}</Link>
+        <Link href="/#workflow" className="hover:text-foreground">{t("landing.nav.workflow")}</Link>
+        <Link href="/dashboard/youtube-opinions" className="hover:text-foreground">{t("landing.nav.creatorResearch")}</Link>
+        <Link href="/dashboard/portfolio" className="hover:text-foreground">{t("landing.nav.portfolio")}</Link>
       </nav>
       <div className="flex items-center gap-3 sm:gap-4">
         {isLoading ? (
@@ -113,7 +113,7 @@ export default function LandingHeader() {
                   href="/auth"
                   className="rounded-full border border-primary px-5 py-2 text-sm text-primary transition-colors hover:bg-primary/10"
                 >
-                  {locale === "zh" ? "登录" : "Sign in"}
+                  {t("landing.nav.signIn")}
                 </Link>
               )
             )}
