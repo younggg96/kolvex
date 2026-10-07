@@ -1,14 +1,7 @@
-import {
-  TrendingUp,
-  TrendingDown,
-  Wallet,
-  BarChart3,
-  Briefcase,
-  EyeOff,
-} from "lucide-react";
-import { StatCard } from "@/components/common";
+import { EyeOff } from "lucide-react";
 import { formatCurrency, formatPercent } from "@/lib/portfolioApi";
 import { useTranslation } from "@/lib/i18n";
+import { cn } from "@/lib/utils";
 
 interface PortfolioStatsGridProps {
   totalValue: number | string; // "***" if hidden
@@ -20,10 +13,39 @@ interface PortfolioStatsGridProps {
   hiddenPositionsCount?: number;
   /** Number of hidden accounts (only shown in public view) */
   hiddenAccountsCount?: number;
+  /** Total value is already the chart headline */
+  showTotalValue?: boolean;
 }
 
-// Helper to check if value is hidden (returns "***")
 const isHidden = (value: number | string): value is string => value === "***";
+
+function Stat({
+  label,
+  value,
+  note,
+  tone,
+}: {
+  label: string;
+  value: React.ReactNode;
+  note?: React.ReactNode;
+  tone?: "positive" | "negative";
+}) {
+  return (
+    <div className="min-w-0 py-4 pr-4 sm:pr-6">
+      <dt className="text-[13px] text-muted-foreground">{label}</dt>
+      <dd
+        className={cn(
+          "figure mt-1 truncate text-xl font-semibold",
+          tone === "positive" && "text-positive",
+          tone === "negative" && "text-negative",
+        )}
+      >
+        {value}
+      </dd>
+      {note && <dd className="mt-0.5 text-xs text-muted-foreground">{note}</dd>}
+    </div>
+  );
+}
 
 export function PortfolioStatsGrid({
   totalValue,
@@ -33,76 +55,59 @@ export function PortfolioStatsGrid({
   accountsCount,
   hiddenPositionsCount = 0,
   hiddenAccountsCount = 0,
+  showTotalValue = false,
 }: PortfolioStatsGridProps) {
   const { t } = useTranslation();
-
-  // Get numeric values for styling (default to 0 if hidden)
-  const numericPnL = isHidden(totalPnL) ? 0 : totalPnL;
-  const numericPnlPercent = isHidden(pnlPercent) ? 0 : pnlPercent;
-
-  // P&L variant based on value
-  const pnlVariant = isHidden(totalPnL)
-    ? "muted"
-    : numericPnL >= 0
-    ? "positive"
-    : "negative";
-
-  // P&L subtitle with percentage
-  const pnlSubtitle = !isHidden(pnlPercent) && (
-    <span
-      className={numericPnlPercent >= 0 ? "text-green-600" : "text-red-600"}
-    >
-      {formatPercent(numericPnlPercent)} {t("portfolio.stats.allTime")}
-    </span>
-  );
-
-  // Positions subtitle for hidden count
-  const positionsSubtitle = hiddenPositionsCount > 0 && (
-    <span className="flex items-center gap-1">
-      <EyeOff className="h-3 w-3" />+{hiddenPositionsCount} {t("portfolio.stats.hidden")}
-    </span>
-  );
-
-  // Accounts subtitle for hidden count
-  const accountsSubtitle = hiddenAccountsCount > 0 && (
-    <span className="flex items-center gap-1">
-      <EyeOff className="h-3 w-3" />+{hiddenAccountsCount} {t("portfolio.stats.hidden")}
-    </span>
-  );
+  const pnlTone = isHidden(totalPnL) ? undefined : totalPnL >= 0 ? "positive" : "negative";
+  const hiddenNote = (count: number) =>
+    count > 0 ? (
+      <span className="inline-flex items-center gap-1">
+        <EyeOff className="h-3 w-3" />+{count} {t("portfolio.stats.hidden")}
+      </span>
+    ) : undefined;
 
   return (
-    <div className="grid gap-2 grid-cols-2 lg:grid-cols-4">
-      <StatCard
-        label={t("portfolio.stats.totalValue")}
-        value={isHidden(totalValue) ? totalValue : formatCurrency(totalValue)}
-        icon={Wallet}
-      />
-
-      <StatCard
+    <dl
+      className={cn(
+        "grid grid-cols-2 border-b border-border",
+        showTotalValue ? "sm:grid-cols-4" : "sm:grid-cols-3",
+      )}
+    >
+      {showTotalValue && (
+        <Stat
+          label={t("portfolio.stats.totalValue")}
+          value={isHidden(totalValue) ? totalValue : formatCurrency(totalValue)}
+        />
+      )}
+      <Stat
         label={t("portfolio.stats.unrealizedPnl")}
+        tone={pnlTone}
         value={
           isHidden(totalPnL)
             ? totalPnL
-            : `${numericPnL >= 0 ? "+" : ""}${formatCurrency(numericPnL)}`
+            : `${totalPnL >= 0 ? "+" : "−"}${formatCurrency(Math.abs(totalPnL))}`
         }
-        icon={numericPnL >= 0 ? TrendingUp : TrendingDown}
-        variant={pnlVariant}
-        subtitle={pnlSubtitle}
+        note={
+          !isHidden(pnlPercent) && (
+            <>
+              <span className={cn("font-semibold", pnlPercent >= 0 ? "text-positive" : "text-negative")}>
+                {formatPercent(pnlPercent)}
+              </span>{" "}
+              {t("portfolio.stats.allTime")}
+            </>
+          )
+        }
       />
-
-      <StatCard
+      <Stat
         label={t("portfolio.stats.positions")}
         value={totalPositions}
-        icon={BarChart3}
-        subtitle={positionsSubtitle}
+        note={hiddenNote(hiddenPositionsCount)}
       />
-
-      <StatCard
+      <Stat
         label={t("portfolio.stats.accounts")}
         value={accountsCount}
-        icon={Briefcase}
-        subtitle={accountsSubtitle}
+        note={hiddenNote(hiddenAccountsCount)}
       />
-    </div>
+    </dl>
   );
 }

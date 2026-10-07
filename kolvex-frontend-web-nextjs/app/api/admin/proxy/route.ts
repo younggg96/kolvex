@@ -6,7 +6,7 @@ export const dynamic = "force-dynamic";
 const API_BASE =
   process.env.NEXT_PUBLIC_BACKEND_API_URL || "http://localhost:8080";
 
-const ALLOWED_PREFIXES = ["/api/v1/scheduler/"];
+const ALLOWED_PREFIXES = ["/api/v1/admin/users/"];
 
 export async function POST(request: NextRequest) {
   try {

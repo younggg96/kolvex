@@ -2,8 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import {
-  Send,
-  Newspaper,
+  ArrowUp,
   Globe,
   ChevronDown,
   Sparkles,
@@ -177,12 +176,14 @@ function SourceChip({ icon, label, active, onClick }: SourceChipProps) {
       size="xs"
       onClick={onClick}
       className={cn(
-        "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium",
-        "focus:outline-none focus-visible:ring-0 focus-visible:ring-offset-0",
+        "inline-flex h-8 items-center gap-1.5 rounded-full px-3 text-[13px] font-medium",
+        "focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-0",
         active
-          ? "bg-primary/10 text-primary border !border-primary/20"
-          : "text-muted-foreground hover:text-foreground hover:bg-muted/50 border !border-transparent"
+          ? "bg-foreground/[0.08] text-foreground"
+          : "text-muted-foreground hover:bg-foreground/[0.05] hover:text-foreground"
       )}
+      aria-pressed={active}
+      title={label}
     >
       {icon}
       <span className="hidden sm:inline">{label}</span>
@@ -230,20 +231,19 @@ function ModelSelector({
           variant="ghost"
           size="xs"
           className={cn(
-            "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium",
-            "focus:outline-none focus-visible:ring-0 focus-visible:ring-offset-0",
-            "data-[state=open]:ring-0 data-[state=open]:outline-none",
+            "inline-flex h-8 items-center gap-1.5 rounded-full px-3 text-[13px] font-medium",
+            "focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-0",
             !hasAnyAvailable
               ? "text-muted-foreground"
-              : "text-foreground/80 hover:text-foreground hover:bg-muted/50 border !border-border/50"
+              : "text-foreground hover:bg-foreground/[0.05] data-[state=open]:bg-foreground/[0.05]"
           )}
         >
           {hasAnyAvailable ? (
-            <Sparkles className="w-3.5 h-3.5 text-primary/70" />
+            <Sparkles className="w-3.5 h-3.5 text-muted-foreground" />
           ) : (
             <Lock className="w-3.5 h-3.5 text-muted-foreground" />
           )}
-          <span className="hidden sm:inline text-xs">
+          <span className="hidden sm:inline">
             {triggerLabel}
           </span>
           <ChevronDown className="w-3 h-3 text-muted-foreground" />
@@ -263,7 +263,7 @@ function ModelSelector({
             </p>
             <Link
               href="/dashboard/settings?tab=api-keys"
-              className="inline-flex items-center gap-1 text-[11px] text-primary hover:underline font-medium"
+              className="inline-flex items-center gap-1 text-[11px] text-positive hover:underline font-medium"
             >
               <Settings className="w-3 h-3" />
               {t("chat.input.settingsApiKeys")}
@@ -288,7 +288,7 @@ function ModelSelector({
               {available ? (
                 <Check
                   className={cn(
-                    "w-3 h-3 flex-shrink-0 text-primary",
+                    "w-3 h-3 flex-shrink-0 text-positive",
                     selectedModel === model.id ? "opacity-100" : "opacity-0"
                   )}
                 />
@@ -301,14 +301,14 @@ function ModelSelector({
                   !available
                     ? "text-muted-foreground/50"
                     : selectedModel === model.id
-                      ? "text-primary"
-                      : "text-muted-foreground"
+                      ? "font-semibold text-foreground"
+                      : "text-foreground"
                 )}
               >
                 {model.name}
               </span>
               {model.isPro && available && (
-                <span className="ml-auto px-1 py-0.5 text-[9px] font-medium rounded bg-amber-500/10 text-amber-600 dark:text-amber-400">
+                <span className="ml-auto rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-semibold text-muted-foreground">
                   Pro
                 </span>
               )}
@@ -339,7 +339,7 @@ function SendButton({
         onClick={onCancel}
         size="icon"
         variant="outline"
-        className={cn("h-8 w-8 flex-shrink-0 rounded-lg", className)}
+        className={cn("h-9 w-9 flex-shrink-0 rounded-full border-border", className)}
         aria-label="Stop generating"
         title="Stop generating"
       >
@@ -354,15 +354,14 @@ function SendButton({
       disabled={disabled}
       size="icon"
       className={cn(
-        "h-8 w-8 rounded-lg flex-shrink-0 transition-all duration-200",
-        "bg-primary text-white shadow-sm shadow-primary/20",
-        "hover:bg-primary/90 hover:shadow-md hover:shadow-primary/25",
-        "disabled:bg-muted disabled:text-muted-foreground disabled:shadow-none",
-        "disabled:dark:bg-white/5 disabled:dark:text-white/25",
+        "h-9 w-9 flex-shrink-0 rounded-full transition-colors duration-150",
+        "bg-primary text-primary-foreground hover:brightness-95",
+        "disabled:bg-foreground/[0.08] disabled:text-muted-foreground disabled:opacity-100",
         className
       )}
+      aria-label="Send"
     >
-      <Send className="w-4 h-4" />
+      <ArrowUp className="h-[18px] w-[18px]" strokeWidth={2.5} />
     </Button>
   );
 }
@@ -411,11 +410,6 @@ export function ChatInput({
       source: "plaid",
       icon: <Landmark className="w-3.5 h-3.5" />,
       label: "Plaid",
-    },
-    {
-      source: "news",
-      icon: <Newspaper className="w-3.5 h-3.5" />,
-      label: t("chat.input.sources.news"),
     },
     {
       source: "web",
@@ -495,18 +489,18 @@ export function ChatInput({
     <form onSubmit={handleFormSubmit}>
       {/* Need API key prompt when user has not configured any keys */}
       {availableProviders !== undefined && !hasAnyModel && (
-        <div className="mb-2 p-3 rounded-xl border border-amber-200 dark:border-amber-500/20 bg-amber-50 dark:bg-amber-500/10">
-          <div className="flex items-start gap-2">
-            <Lock className="w-4 h-4 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" />
+        <div role="status" className="mb-3 rounded-2xl bg-warning/10 px-4 py-3">
+          <div className="flex items-start gap-2.5">
+            <Lock className="mt-0.5 h-4 w-4 flex-shrink-0 text-warning" />
             <div>
-              <p className="text-xs font-medium text-amber-800 dark:text-amber-300">
+              <p className="text-[13px] font-semibold text-foreground">
                 {t("chat.input.apiKeyRequired")}
               </p>
-              <p className="text-[11px] text-amber-700/80 dark:text-amber-400/70 mt-0.5">
+              <p className="mt-0.5 text-xs leading-5 text-muted-foreground">
                 {t("chat.input.apiKeyRequiredDesc")}{" "}
                 <Link
                   href="/dashboard/settings?tab=api-keys"
-                  className="text-primary hover:underline font-medium"
+                  className="font-semibold text-positive hover:underline"
                 >
                   {t("chat.input.settingsApiKeys")}
                 </Link>
@@ -519,16 +513,13 @@ export function ChatInput({
       {/* Main Container */}
       <div
         className={cn(
-          "relative flex flex-col rounded-lg border overflow-hidden transition-all duration-200",
-          "bg-card/80 backdrop-blur-sm",
-          isFocused
-            ? "border-primary/20 ring-1 ring-primary/10 shadow-lg shadow-black/5 dark:shadow-black/20"
-            : "border-border"
+          "relative flex flex-col overflow-hidden rounded-[26px] border bg-muted transition-colors duration-150",
+          isFocused ? "border-foreground/25" : "border-transparent"
         )}
       >
         {/* Input Area */}
         <div
-          className={cn("flex items-end gap-3 px-4 py-3", hasFooter && "pb-2")}
+          className={cn("flex items-end gap-3 px-5 pt-4", hasFooter ? "pb-1" : "pb-3")}
         >
           <textarea
             ref={inputRef as React.RefObject<HTMLTextAreaElement>}
@@ -545,8 +536,8 @@ export function ChatInput({
             disabled={isBlocked}
             className={cn(
               "flex-1 bg-transparent resize-none outline-none",
-              "text-foreground placeholder:text-muted-foreground/50",
-              "text-[15px] leading-relaxed min-h-[28px] max-h-[160px]",
+              "text-foreground placeholder:text-muted-foreground",
+              "text-base leading-relaxed min-h-[28px] max-h-[160px]",
               "disabled:opacity-50 disabled:cursor-not-allowed"
             )}
             rows={1}
@@ -565,14 +556,10 @@ export function ChatInput({
         {/* Footer - show when source toggle or model selector is enabled */}
         {hasFooter && (
           <div
-            className={cn(
-              "flex items-center justify-between gap-2 px-4 py-2.5",
-              "border-t border-border/50",
-              "bg-muted/30 dark:bg-white/[0.02]"
-            )}
+            className="flex items-center justify-between gap-2 px-2.5 pb-2.5 pt-1"
           >
             {/* Left Side - Source Toggles & Model Selector */}
-            <div className="flex items-center gap-1 flex-wrap">
+            <div className="flex min-w-0 flex-wrap items-center gap-0.5">
               {/* Source Toggles */}
               {showSourceToggle && onToggleSource && (
                 <>
@@ -593,7 +580,7 @@ export function ChatInput({
                 onToggleSource &&
                 showModelSelector &&
                 onSelectModel && (
-                  <div className="w-px h-4 bg-border mx-1" />
+                  <div className="mx-1 h-4 w-px bg-foreground/15" aria-hidden />
                 )}
 
               {/* Model Selector */}

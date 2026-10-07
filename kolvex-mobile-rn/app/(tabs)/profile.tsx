@@ -100,7 +100,6 @@ export default function ProfileScreen() {
   const displayName = profile?.display_name || profile?.username || user?.user_metadata?.username || 'Investor';
   const email = profile?.email || user?.email || 'No email';
   const trackedStocksCount = profile?.tracked_stocks_count || 0;
-  const trackedKolsCount = profile?.tracked_kols_count || 0;
   const activeAlertsCount = profile?.active_alerts_count || 0;
   const notifBadge = unreadCount?.count ? String(unreadCount.count) : undefined;
 
@@ -150,12 +149,6 @@ export default function ProfileScreen() {
             <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>Tracked Stocks</Text>
           </View>
           <View style={[styles.statDivider, { backgroundColor: colors.border }]} />
-          <View style={styles.statItem}>
-            <Text style={[styles.statValue, { color: colors.foreground }]}>
-              {trackedKolsCount}
-            </Text>
-            <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>Following KOLs</Text>
-          </View>
           <View style={[styles.statDivider, { backgroundColor: colors.border }]} />
           <View style={styles.statItem}>
             <Text style={[styles.statValue, { color: colors.foreground }]}>

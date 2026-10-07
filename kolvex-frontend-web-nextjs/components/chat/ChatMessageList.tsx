@@ -13,7 +13,6 @@ import {
   Newspaper,
   RotateCcw,
   Search,
-  Users,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ChatBubble } from "./ChatBubble";
@@ -28,9 +27,6 @@ function getToolIcon(toolName: string) {
   }
   if (toolName.includes("news") || toolName.includes("trending")) {
     return <Newspaper className="w-3 h-3" />;
-  }
-  if (toolName.includes("kol") || toolName.includes("sentiment")) {
-    return <Users className="w-3 h-3" />;
   }
   if (toolName.includes("portfolio") || toolName.includes("plaid")) {
     return <Briefcase className="w-3 h-3" />;
@@ -63,43 +59,15 @@ function AgentActivityIndicator({
   if (!isThinking && tools.length === 0) return null;
 
   return (
-    <div className="flex w-full justify-start animate-fade-in">
-      <div className="flex gap-4 max-w-[85%] md:max-w-[80%]">
-        {/* AI Avatar */}
-        <div className="flex-shrink-0">
-          <div className="w-8 h-8 rounded-full bg-primary/10 dark:bg-primary/20 flex items-center justify-center ring-2 ring-primary/20">
-            <svg
-              viewBox="0 0 24 24"
-              className="w-4 h-4 text-primary"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
-              <path d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707" />
-              <circle cx="12" cy="12" r="4" />
-            </svg>
-          </div>
-        </div>
-
-        {/* Compact status */}
-        <div className="flex flex-col gap-1.5 min-w-0">
-          <div className="flex items-center gap-2 px-0.5">
-            <span className="text-xs font-medium text-muted-foreground">
+    <div className="flex w-full justify-start animate-fade-in" aria-live="polite">
+      <div className="w-full max-w-[720px]">
+          <div className="mb-2 flex items-center gap-2 text-xs text-muted-foreground">
+            <span className="font-semibold text-foreground">
               {t("chat.assistantName")}
             </span>
-            {modelName && (
-              <span className="text-[10px] text-muted-foreground/50 font-medium px-1.5 py-0.5 rounded-full bg-muted/50 border border-border/50">
-                {modelName}
-              </span>
-            )}
+            {modelName && <span>{modelName}</span>}
           </div>
-          <div
-            className={cn(
-              "px-3.5 py-2.5 rounded-2xl rounded-tl-sm",
-              "bg-card",
-              "border border-border"
-            )}
-          >
+          <div>
             <div className="flex flex-col gap-1.5">
               {/* Tool items */}
               {tools.map((tool) => (
@@ -108,9 +76,9 @@ function AgentActivityIndicator({
                   className="flex items-center gap-2 text-xs"
                 >
                   {tool.status === "running" ? (
-                    <Loader2 className="w-3 h-3 text-primary animate-spin flex-shrink-0" />
+                    <Loader2 className="w-3 h-3 text-muted-foreground animate-spin flex-shrink-0" />
                   ) : (
-                    <CheckCircle2 className="w-3 h-3 text-emerald-500 flex-shrink-0" />
+                    <CheckCircle2 className="w-3 h-3 text-positive flex-shrink-0" />
                   )}
                   <span
                     className={cn(
@@ -133,7 +101,7 @@ function AgentActivityIndicator({
                     {[0, 1, 2].map((i) => (
                       <span
                         key={i}
-                        className="w-1 h-1 bg-primary/60 rounded-full"
+                        className="h-1 w-1 rounded-full bg-foreground/60"
                         style={{
                           animation: "pulse 1.4s ease-in-out infinite",
                           animationDelay: `${i * 0.2}s`,
@@ -148,7 +116,6 @@ function AgentActivityIndicator({
               )}
             </div>
           </div>
-        </div>
       </div>
     </div>
   );
@@ -233,9 +200,9 @@ export function ChatMessageList({
 
   return (
     <div ref={containerRef} className="relative flex-1 overflow-y-auto">
-      <div className="mx-auto flex min-h-full max-w-4xl flex-col justify-end px-4 py-6 md:px-6">
+      <div className="mx-auto flex min-h-full max-w-3xl flex-col justify-end px-4 py-6 md:px-6">
         {/* Messages */}
-        <div className="space-y-6">
+        <div className="space-y-8">
           {messages.map((message, index) => (
             <ChatBubble
               key={message.id}
@@ -277,8 +244,8 @@ export function ChatMessageList({
 
           {errorMessage && (
             <div className="flex w-full justify-start">
-              <div className="ml-12 flex max-w-xl items-start gap-3 rounded-lg border border-destructive/20 bg-destructive/5 px-4 py-3 text-sm">
-                <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0 text-destructive" />
+              <div role="alert" className="flex max-w-xl items-start gap-3 rounded-2xl bg-negative/10 px-4 py-3 text-sm">
+                <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0 text-negative" />
                 <div className="min-w-0">
                   <p className="font-medium text-foreground">
                     {t("chat.activity.interrupted")}
@@ -290,7 +257,7 @@ export function ChatMessageList({
                       variant="ghost"
                       size="xs"
                       onClick={onRetry}
-                      className="mt-2 gap-1.5 px-0 text-primary hover:bg-transparent"
+                      className="mt-2 gap-1.5 px-0 font-semibold text-foreground hover:bg-transparent hover:underline"
                     >
                       <RotateCcw className="h-3.5 w-3.5" />
                       {t("chat.actions.retry")}
@@ -311,17 +278,15 @@ export function ChatMessageList({
         <Button
           onClick={scrollToBottom}
           size="icon"
-          variant="default"
+          variant="outline"
           className={cn(
             "fixed bottom-40 left-1/2 -translate-x-1/2 z-20",
-            "w-9 h-9 !rounded-full",
-            "transition-all duration-200",
-            "hover:scale-105 hover:shadow-xl",
+            "w-9 h-9 !rounded-full bg-background surface-overlay",
             "animate-fade-in"
           )}
           aria-label="Scroll to bottom"
         >
-          <ChevronDown className="w-4 h-4 text-background" />
+          <ChevronDown className="w-4 h-4" />
         </Button>
       )}
     </div>

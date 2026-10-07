@@ -20,9 +20,7 @@ export interface UserProfile extends DBUserProfile {}
 
 export interface UserProfileUpdate extends ProfileUpdate {}
 
-export interface UserNotificationUpdate {
-  email_notifications_enabled?: boolean;
-}
+
 
 interface UserProfileContextValue {
   profile: UserProfile | null;
@@ -30,7 +28,6 @@ interface UserProfileContextValue {
   error: string | null;
   refresh: () => Promise<void>;
   updateProfile: (updates: UserProfileUpdate) => Promise<boolean>;
-  updateNotifications: (updates: UserNotificationUpdate) => Promise<boolean>;
 }
 
 const UserProfileContext = createContext<UserProfileContextValue | null>(null);
@@ -115,35 +112,7 @@ export function UserProfileProvider({ children }: UserProfileProviderProps) {
     [isAuthenticated]
   );
 
-  const updateNotifications = useCallback(
-    async (updates: UserNotificationUpdate): Promise<boolean> => {
-      if (!isAuthenticated) {
-        return false;
-      }
 
-      try {
-        const response = await fetch("/api/users/me/notifications", {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(updates),
-        });
-
-        if (!response.ok) {
-          throw new Error("Failed to update notification settings");
-        }
-
-        const data = await response.json();
-        setProfile(data);
-        return true;
-      } catch (err) {
-        console.error("Error updating notifications:", err);
-        return false;
-      }
-    },
-    [isAuthenticated]
-  );
 
   // 只在认证状态确定后且未获取过数据时获取
   useEffect(() => {
@@ -173,7 +142,6 @@ export function UserProfileProvider({ children }: UserProfileProviderProps) {
     error,
     refresh: fetchProfile,
     updateProfile,
-    updateNotifications,
   };
 
   return (

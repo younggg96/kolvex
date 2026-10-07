@@ -168,12 +168,5 @@ export const Animation = {
   slow: 500,
 };
 
-// Social Platform Colors (matches web logo colors)
-export const PlatformColors = {
-  twitter: '#1da1f2',
-  reddit: '#ff4500',
-  youtube: '#ff0000',
-  xiaohongshu: '#fe2c55',
-};
 
 export type ThemeColors = typeof Colors.light | typeof Colors.dark;

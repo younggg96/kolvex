@@ -6,6 +6,5 @@ export {
   useUserProfile,
   type UserProfile,
   type UserProfileUpdate,
-  type UserNotificationUpdate,
 } from "./useUserProfile";
 export { useAvailableProviders } from "./useAvailableProviders";

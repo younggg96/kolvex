@@ -196,7 +196,7 @@ export function FullReportActions({
               className="gap-1.5"
             >
               {copied ? (
-                <Check className="w-3.5 h-3.5 text-primary" />
+                <Check className="w-3.5 h-3.5 text-positive" />
               ) : (
                 <Copy className="w-3.5 h-3.5" />
               )}

@@ -1,5 +1,5 @@
 """
-Service for manually uploaded YouTube KOL stock opinions.
+Service for manually uploaded YouTube creator stock opinions.
 
 Gemini (or another video analyzer) can produce a JSON payload with video,
 channel, and per-ticker opinion data. This service normalizes that payload,
@@ -22,6 +22,7 @@ from app.services.youtube_channel_profiles import channel_profiles, channel_link
 
 
 TABLE_NAME = "youtube_stock_opinions"
+MAX_IMPORT_VIDEOS = 50
 SENTIMENT_ALIASES = {
     "bull": "bullish",
     "bullish": "bullish",
@@ -45,26 +46,66 @@ class YouTubeStockOpinionService:
     def __init__(self, supabase: Client):
         self.supabase = supabase
 
-    async def upload_payload(
+    async def upload_import(
         self,
-        payload: Dict[str, Any],
+        body: Any,
         uploaded_by: Optional[str] = None,
     ) -> Dict[str, Any]:
-        self.validate_payload(payload)
-        rows = self._rows_from_payload(payload, uploaded_by=uploaded_by)
+        """Import one video object or a batch of them in a single write."""
+        payloads = _as_payloads(body)
+        checked = self.validate_import(payloads)
+        if checked["errors"]:
+            failed = checked["errors"][0]
+            raise ValueError(_prefixed(failed["message"], failed["index"], len(payloads)))
+        rows = [
+            row
+            for payload in payloads
+            for row in self._rows_from_payload(payload, uploaded_by=uploaded_by)
+        ]
         result = self.supabase.table(TABLE_NAME).upsert(
             rows, on_conflict="video_id,ticker"
         ).execute()
         written_rows = result.data or []
 
-        self._best_effort_sync_unified_kol_tables(payload, rows)
-
         return {
             "success": True,
             "inserted_count": len(written_rows),
-            "video_id": rows[0]["video_id"],
-            "tickers": [row["ticker"] for row in rows],
+            "video_count": len(payloads),
+            "videos": [
+                {
+                    "video_id": video["video_id"],
+                    "video_title": video["video_title"],
+                    "channel_title": video["channel_title"],
+                    "tickers": [opinion["ticker"] for opinion in video["opinions"]],
+                }
+                for video in checked["videos"]
+            ],
             "rows": written_rows,
+        }
+
+    def validate_import(self, body: Any) -> Dict[str, Any]:
+        """Preview an import, reporting every rejected video before any write."""
+        payloads = _as_payloads(body)
+        videos: List[Dict[str, Any]] = []
+        errors: List[Dict[str, Any]] = []
+        seen_videos: Dict[str, int] = {}
+        for index, payload in enumerate(payloads):
+            try:
+                preview = self.validate_payload(payload)
+                duplicate_of = seen_videos.get(preview["video_id"])
+                if duplicate_of is not None:
+                    raise ValueError(
+                        f"video.id duplicates the video at position {duplicate_of + 1}"
+                    )
+                seen_videos[preview["video_id"]] = index
+                videos.append({"index": index, **preview})
+            except ValueError as e:
+                errors.append({"index": index, "message": str(e)})
+        return {
+            "video_count": len(payloads),
+            "count": sum(video["count"] for video in videos),
+            "videos": videos,
+            "errors": errors,
         }
 
     def validate_payload(self, payload: Dict[str, Any]) -> Dict[str, Any]:
@@ -187,7 +228,7 @@ class YouTubeStockOpinionService:
         payload: Dict[str, Any],
         uploaded_by: Optional[str],
     ) -> List[Dict[str, Any]]:
-        channel = _first_dict(payload, "channel", "creator", "kol", "author")
+        channel = _first_dict(payload, "channel", "creator", "author")
         video = _first_dict(payload, "video", "source")
         opinions = _extract_opinions(payload)
 
@@ -538,70 +579,25 @@ class YouTubeStockOpinionService:
             key=lambda item: (item.get("channel_title") or item["channel_id"]).lower(),
         )
 
-    def _best_effort_sync_unified_kol_tables(
-        self,
-        payload: Dict[str, Any],
-        rows: List[Dict[str, Any]],
-    ) -> None:
-        if not rows:
-            return
 
-        first = rows[0]
-        try:
-            profile = {
-                "platform": "youtube",
-                "platform_user_id": first["channel_id"],
-                "username": first.get("channel_handle") or first["channel_id"],
-                "display_name": first.get("channel_title"),
-                "avatar_url": first.get("channel_avatar_url"),
-                "website": first.get("channel_url"),
-                "is_active": True,
-                "updated_at": datetime.now(timezone.utc).isoformat(),
-            }
-            self.supabase.table("kol_profiles").upsert(
-                profile, on_conflict="platform,platform_user_id"
-            ).execute()
-        except Exception:
-            pass
 
-        try:
-            avg_score = mean([_score(row) for row in rows])
-            tickers = [row["ticker"] for row in rows]
-            video = {
-                "platform": "youtube",
-                "platform_post_id": first["video_id"],
-                "author_platform_id": first["channel_id"],
-                "username": first.get("channel_title") or first["channel_id"],
-                "title": first.get("video_title"),
-                "tweet_text": "\n\n".join(
-                    row.get("summary") or row.get("thesis") or "" for row in rows
-                )[:10000],
-                "tweet_hash": _stable_id(
-                    "youtube",
-                    first.get("video_id"),
-                    first.get("video_title"),
-                    first.get("channel_id"),
-                ),
-                "post_type": "video",
-                "created_at": first.get("video_published_at"),
-                "permalink": first.get("video_url"),
-                "cover_url": first.get("thumbnail_url"),
-                "video_url": first.get("video_url"),
-                "ai_sentiment": _sentiment_from_score(avg_score),
-                "ai_sentiment_confidence": _average_confidence(rows),
-                "ai_tickers": tickers,
-                "ai_tags": ["youtube", "stock-opinion"],
-                "ai_summary": _overall_summary(rows),
-                "ai_analyzed_at": first.get("analyzed_at"),
-                "ai_model": first.get("source_model"),
-                "media_urls": {"ticker_analyses": payload.get("opinions", [])},
-                "scraped_at": datetime.now(timezone.utc).isoformat(),
-            }
-            self.supabase.table("kol_tweets").upsert(
-                video, on_conflict="platform,platform_post_id"
-            ).execute()
-        except Exception:
-            pass
+def _as_payloads(body: Any) -> List[Dict[str, Any]]:
+    """Accept a single video object or an array of them."""
+    if isinstance(body, dict):
+        payloads = [body]
+    elif isinstance(body, list):
+        payloads = body
+    else:
+        raise ValueError("Import must be a video object or an array of video objects")
+    if not 1 <= len(payloads) <= MAX_IMPORT_VIDEOS:
+        raise ValueError(f"Import must contain 1 to {MAX_IMPORT_VIDEOS} videos")
+    if any(not isinstance(payload, dict) for payload in payloads):
+        raise ValueError("Each imported video must be an object")
+    return payloads
+
+
+def _prefixed(message: str, index: int, total: int) -> str:
+    return message if total == 1 else f"videos[{index}]: {message}"
 
 
 def _first_dict(payload: Dict[str, Any], *keys: str) -> Dict[str, Any]:

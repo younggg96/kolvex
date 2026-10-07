@@ -41,7 +41,6 @@
     "tradingAnalysis": "Deep Analysis",
     "superinvestors": "Superinvestors",
     "news": "News",
-    "kolTracker": "KOL Tracker",
     "youtubeOpinions": "YouTube Opinions",
     "portfolio": "Portfolio",
     "community": "Community",
@@ -49,6 +48,13 @@
     "settings": "Settings",
     "admin": "Admin",
     "toggleSidebar": "Toggle Sidebar"
+  },
+  "tabBar": {
+    "chat": "Chat",
+    "tradingAnalysis": "Analysis",
+    "youtubeOpinions": "Opinions",
+    "portfolio": "Portfolio",
+    "more": "More"
   },
   "userMenu": {
     "account": "Account",
@@ -106,7 +112,6 @@
       },
       "preview": {
         "portfolioValue": "Portfolio Value",
-        "kolsTracked": "KOLs Tracked",
         "aiSignals": "AI Signals",
         "sentimentScore": "Sentiment Score"
       }
@@ -114,8 +119,6 @@
     "stats": {
       "title": "Trusted by thousands of investors",
       "subtitle": "Our platform processes millions of data points daily to deliver actionable insights.",
-      "kolsTracked": "KOLs Tracked",
-      "kolsTrackedDesc": "Influential voices monitored",
       "aiSignals": "AI Signals Daily",
       "aiSignalsDesc": "Real-time market insights",
       "accuracy": "Accuracy Rate",
@@ -127,15 +130,6 @@
       "title": "Your unfair advantage in",
       "titleHighlight": "modern markets",
       "subtitle": "Kolvex combines cutting-edge AI with comprehensive social data to deliver insights previously available only to institutional investors.",
-      "kolTracking": {
-        "title": "KOL Tracking",
-        "description": "Monitor 2,500+ influential investors and analysts across Twitter, Reddit, StockTwits in real-time. Never miss a market-moving call.",
-        "stats": {
-          "kolsTracked": "KOLs Tracked",
-          "platforms": "Platforms",
-          "updatesDay": "Updates/Day"
-        }
-      },
       "aiAnalysis": {
         "title": "AI-Powered Analysis",
         "description": "Our proprietary AI models analyze sentiment, extract key signals, and predict market movements with institutional-grade accuracy.",
@@ -147,7 +141,7 @@
       },
       "alerts": {
         "title": "Instant Alerts",
-        "description": "Get notified immediately when tracked KOLs mention a stock or when sentiment shifts. Stay ahead of every market move.",
+        "description": "Get notified immediately when tracked creators mention a stock or when sentiment shifts. Stay ahead of every market move.",
         "stats": {
           "latency": "Latency",
           "channels": "Channels",
@@ -278,8 +272,6 @@
       "get_company_info": "Looking up company information",
       "search_stock_news": "Searching stock news",
       "get_trending_news": "Getting market news",
-      "get_kol_latest_tweets": "Reading market opinions",
-      "analyze_kol_sentiment": "Analyzing market sentiment",
       "get_user_portfolio": "Loading your portfolio",
       "search_knowledge_base": "Searching the knowledge base",
       "get_superinvestor_holdings": "Checking institutional holdings",
@@ -289,7 +281,6 @@
     "heading": "What would you like to <highlight>explore</highlight>?",
     "description": "Ask about stocks, market trends, or browse our curated insights powered by AI",
     "suggestions": {
-      "reviewPortfolio": "Review my investment account",
       "reviewPortfolio": "Review my investment account",
       "checkWashSale": "Check current wash-sale risk",
       "analyzeNvidia": "Analyze NVIDIA stock",
@@ -307,7 +298,6 @@
       "selectModel": "Select model",
       "sources": {
         "plaid": "Plaid",
-        "kol": "KOL",
         "news": "News",
         "web": "Web",
         "portfolio": "Portfolio"
@@ -329,7 +319,6 @@
     "dailyAvg": "{value} daily avg",
     "engagement": "Engagement",
     "perPost": "{value} per post",
-    "activeKOLs": "Active KOLs",
     "stockRelatedAnalyzed": "{count} stock-related posts analyzed",
     "activitySentimentByPlatform": "Activity & Sentiment by Platform",
     "sentiment": "Sentiment",
@@ -648,9 +637,6 @@
       "valueChange": "Portfolio value change",
       "performanceLabel": "Performance"
     },
-    "allocation": {
-      "title": "Portfolio Allocation by Sector"
-    },
     "ai": {
       "title": "AI Portfolio Analysis",
       "analyzing": "Analyzing...",
@@ -738,105 +724,6 @@
     "syncing": "Syncing...",
     "failedToLoadData": "Failed to load data",
     "syncFailed": "Sync failed"
-  },
-  "kol": {
-    "title": "KOL Tracker",
-    "hero": {
-      "title": "KOL Tracker",
-      "description": "Follow influential market leaders and stay updated on their insights",
-      "trackTopKols": "Track Top KOLs",
-      "getNotified": "Get Notified"
-    },
-    "tabs": {
-      "topRanking": "Top Ranking",
-      "trackingKols": "Tracking KOLs"
-    },
-    "headerTitle": {
-      "tracking": "Tracking KOLs",
-      "ranking": "Top Ranking KOLs"
-    },
-    "comingSoon": "(Coming Soon)",
-    "failedToLoadKols": "Failed to load KOLs",
-    "ranking": {
-      "rank": "Rank",
-      "kol": "KOL",
-      "platform": "Platform",
-      "influence": "Influence",
-      "trending": "Trending",
-      "followers": "Followers",
-      "lastPost": "Last Post",
-      "action": "Action",
-      "noKolsFound": "No KOLs found",
-      "noKolsFoundDesc": "No KOLs found. Try again later.",
-      "loadingMore": "Loading more KOLs...",
-      "noMoreKols": "No more KOLs to load",
-      "loading": "Loading",
-      "tracking": "Tracking",
-      "track": "Track",
-      "untracked": "Untracked {name}",
-      "nowTracking": "Now tracking {name}",
-      "failedToUpdateTracking": "Failed to update tracking status"
-    },
-    "tracker": {
-      "kol": "KOL",
-      "platform": "Platform",
-      "followers": "Followers",
-      "description": "Description",
-      "actions": "Actions",
-      "noTrackedKols": "No tracked KOLs yet. Click 'Track New KOL' button to start tracking.",
-      "noMatchingKols": "No KOLs match your search criteria.",
-      "stopTracking": "Stop tracking",
-      "removeFromTracking": "Remove from tracking",
-      "followers_suffix": "followers",
-      "addDialog": {
-        "title": "Track New KOL",
-        "description": "Add a KOL from our database to your tracking list. You can find KOL IDs from the Top Ranking tab.",
-        "kolId": "KOL ID",
-        "kolIdPlaceholder": "Enter KOL ID from database",
-        "kolIdHint": "Find KOLs in the Top Ranking tab and use their ID",
-        "platform": "Platform",
-        "track": "Track"
-      },
-      "deleteDialog": {
-        "title": "Remove KOL from Tracking",
-        "description": "Are you sure you want to stop tracking this KOL? You can add them back to your tracking list later.",
-        "remove": "Remove"
-      },
-      "toast": {
-        "added": "KOL added to tracking list successfully",
-        "addFailed": "Failed to add KOL",
-        "removed": "KOL removed from tracking list successfully",
-        "removeFailed": "Failed to remove KOL",
-        "stoppedTracking": "Stopped tracking KOL",
-        "updateFailed": "Failed to update tracking status"
-      }
-    },
-    "request": {
-      "button": "Request KOL",
-      "title": "Request New KOL",
-      "description": "Submit a request to track a KOL on X (Twitter). Our team will review and approve valid requests.",
-      "username": "X Username",
-      "usernamePlaceholder": "elonmusk",
-      "usernameHint": "Enter the username without the @ symbol",
-      "notes": "Notes (Optional)",
-      "notesPlaceholder": "Why do you want to track this KOL? (e.g., Financial expert, Stock analyst...)",
-      "infoText": "Requests are typically reviewed within 24-48 hours. Approved KOLs will be automatically added to the tracking system.",
-      "submitting": "Submitting...",
-      "submitRequest": "Submit Request",
-      "enterValidUsername": "Please enter a valid username",
-      "requestSubmitted": "Request submitted for @{username}",
-      "requestSubmittedDesc": "Your request will be reviewed by our team.",
-      "failedToSubmit": "Failed to submit request"
-    },
-    "myRequests": {
-      "title": "My KOL Requests",
-      "pending": "{count} pending",
-      "submitted": "Submitted {date}",
-      "reviewed": "Reviewed {date}",
-      "admin": "Admin:",
-      "cancelSuccess": "Request cancelled successfully",
-      "cancelFailed": "Failed to cancel request"
-    }
   },
   "stocks": {
     "title": "Stocks",

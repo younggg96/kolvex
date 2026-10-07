@@ -36,7 +36,7 @@ A modern stock market analysis and tracking platform built with Next.js 14, Type
 - 🔄 **离线支持** - Service Worker 自动缓存，离线也能访问
 - 🚀 **快速加载** - 智能缓存策略优化加载速度
 - 📱 **原生体验** - 独立窗口模式，无浏览器地址栏
-- 🎯 **应用快捷方式** - Dashboard、Stocks、KOL Tracker 快速访问
+- 🎯 **应用快捷方式** - Chat、Portfolio、YouTube 股票观点快速访问
 - 🍎 **iOS 支持** - 完美支持 iOS Safari 的添加到主屏幕功能
 - 🤖 **Android 支持** - 完整的 Android PWA 安装体验
 

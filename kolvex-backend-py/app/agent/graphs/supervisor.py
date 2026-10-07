@@ -60,9 +60,9 @@ from app.agent.graphs.alert import ALERT_SYSTEM_PROMPT
 ROUTER_SYSTEM_PROMPT = """You are a routing agent. Based on the user's message, determine which specialist agent should handle it.
 
 Choose ONE of:
-- "financial": For general financial questions, stock lookups, price checks, portfolio queries, news inquiries, KOL analysis, or any stock-related question.
+- "financial": For general financial questions, stock lookups, price checks, portfolio queries, or any stock-related question.
 - "research": For in-depth research requests like "analyze NVDA", "give me a research report on TSLA", "deep dive into AAPL", "run trading analysis on MSFT", "should I buy/sell NVDA", "bull vs bear case for AAPL", or any request asking for comprehensive multi-factor analysis or trading decisions.
-- "alert": For monitoring, alert, and notification related questions like "set alert for AAPL at $200", "notify me when...", "monitor this stock".
+Scheduled alerts and notifications are unavailable. Route market condition questions to "financial".
 
 If unclear, default to "financial".
 
@@ -70,11 +70,8 @@ Respond with ONLY the agent name, nothing else."""
 
 # 增强提示词 - 根据激活的 sources 添加优先级指引
 SOURCE_FOCUS_PROMPTS = {
-    "kol": "\n\nIMPORTANT: The user has selected KOL (Key Opinion Leader) as a data source. Prioritize using KOL-related tools (get_kol_latest_tweets, analyze_kol_sentiment) to provide KOL insights in your response.",
-    "news": "\n\nIMPORTANT: The user has selected News as a data source. Prioritize using news-related tools (search_stock_news, get_trending_news) to provide the latest news in your response.",
     "web": "\n\nIMPORTANT: The user has selected Web as a data source. Prioritize using the web_search tool to find the latest information from the internet.",
     "portfolio": "\n\nIMPORTANT: The user has selected Portfolio as a data source. Prioritize using the get_user_portfolio tool to analyze the user's portfolio holdings.",
-    "robinhood": "\n\nIMPORTANT: The user has selected Robinhood as a data source. Use the read-only Robinhood tools for account totals, current positions, stock and option trades, wash-sale risk, and sell reviews. Never request or expose Robinhood credentials, authentication tokens, or device approval data. Never claim to place or modify an order.",
 }
 
 
@@ -157,7 +154,7 @@ async def run_agent(
         conversation_id: 对话 ID
         metadata: 额外元数据
         model_id: 前端传来的模型 ID（如 "gpt-4o-mini"）
-        sources: 激活的数据源 ["kol", "news", "web", "portfolio"]
+        sources: 激活的数据源 ["web", "portfolio", "plaid"]
         user_api_keys: 用户自定义 API keys dict {provider: key}
 
     Returns:

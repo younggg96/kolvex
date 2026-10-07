@@ -32,17 +32,17 @@ export default function ExpandableText({
 
   return (
     <div className={`${className}`}>
-      <div className="text-gray-700 dark:text-white/90 leading-relaxed whitespace-pre-wrap">
+      <div className="text-foreground leading-relaxed whitespace-pre-wrap">
         {onFormatText ? onFormatText(displayText) : displayText}
         {needsTruncation && !isExpanded && (
-          <span className="text-gray-400">...</span>
+          <span className="text-muted-foreground">...</span>
         )}
       </div>
 
       {needsTruncation && (
         <button
           onClick={() => setIsExpanded(!isExpanded)}
-          className="mt-2 text-sm text-sky-500 hover:text-sky-600 dark:text-sky-400 dark:hover:text-sky-300 font-medium transition-colors inline-flex items-center gap-1"
+          className="mt-2 text-sm text-foreground hover:text-foreground font-medium transition-colors inline-flex items-center gap-1"
         >
           {isExpanded ? (
             <>

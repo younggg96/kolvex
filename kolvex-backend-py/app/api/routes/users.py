@@ -14,11 +14,7 @@ from app.schemas.user import (
     UserProfileResponse,
     UserThemeUpdate,
     UserLocaleUpdate,
-    UserNotificationUpdate,
     MessageResponse,
-    UserFollowResponse,
-    FollowStatusResponse,
-    FollowListResponse,
 )
 
 router = APIRouter(prefix="/users", tags=["users"])
@@ -36,7 +32,7 @@ async def get_current_user_profile(
 ):
     """
     获取当前登录用户的资料
-    
+
     需要认证：Bearer token
     """
     return await user_service.get_user_profile(current_user_id)
@@ -50,17 +46,15 @@ async def update_current_user_profile(
 ):
     """
     更新当前登录用户的资料
-    
+
     需要认证：Bearer token
-    
+
     可更新字段：
     - username: 用户名
     - full_name: 全名
     - avatar_url: 头像 URL
     - phone_e164: 手机号（E.164 格式）
     - theme: 主题偏好（LIGHT/DARK/SYSTEM）
-    - is_subscribe_newsletter: 是否订阅邮件通讯
-    - notification_method: 通知方式（EMAIL/MESSAGE）
     """
     return await user_service.update_user_profile(current_user_id, profile_update)
 
@@ -73,7 +67,7 @@ async def update_current_user_theme(
 ):
     """
     更新当前用户的主题偏好
-    
+
     需要认证：Bearer token
     """
     return await user_service.update_user_theme(current_user_id, theme_update)
@@ -93,18 +87,6 @@ async def update_current_user_locale(
     return await user_service.update_user_locale(current_user_id, locale_update)
 
 
-@router.patch("/me/notifications", response_model=UserProfileResponse, summary="更新通知设置")
-async def update_current_user_notifications(
-    notification_update: UserNotificationUpdate,
-    current_user_id: str = Depends(get_current_user_id),
-    user_service: UserService = Depends(get_user_service),
-):
-    """
-    更新当前用户的通知设置
-    
-    需要认证：Bearer token
-    """
-    return await user_service.update_user_notification(current_user_id, notification_update)
 
 
 @router.delete("/me", response_model=MessageResponse, summary="删除当前用户资料")
@@ -114,9 +96,9 @@ async def delete_current_user_profile(
 ):
     """
     删除当前用户的资料
-    
+
     需要认证：Bearer token
-    
+
     注意：这是硬删除操作，将永久删除用户资料
     """
     result = await user_service.delete_user_profile(current_user_id)
@@ -133,7 +115,7 @@ async def get_user_profile_by_id(
 ):
     """
     获取指定用户的公开资料
-    
+
     不需要认证
     """
     return await user_service.get_user_profile(user_id)
@@ -152,9 +134,9 @@ async def create_user_profile(
 ):
     """
     创建用户资料
-    
+
     需要认证：Bearer token
-    
+
     注意：通常在用户注册后通过 Supabase trigger 自动创建
     此接口主要用于手动创建或测试
     """
@@ -178,134 +160,13 @@ async def list_users(
 ):
     """
     获取用户列表（管理员功能）
-    
+
     需要认证：Bearer token
     需要权限：管理员
-    
+
     TODO: 添加管理员权限检查
     """
     return await user_service.list_users(page, page_size, search)
 
 
 # ===== Follow 相关路由 =====
-
-
-@router.post("/{user_id}/follow", response_model=UserFollowResponse, summary="关注用户")
-async def follow_user(
-    user_id: str,
-    current_user_id: str = Depends(get_current_user_id),
-    user_service: UserService = Depends(get_user_service),
-):
-    """
-    关注指定用户
-    
-    需要认证：Bearer token
-    
-    Args:
-        user_id: 要关注的用户ID
-    """
-    return await user_service.follow_user(current_user_id, user_id)
-
-
-@router.delete("/{user_id}/follow", response_model=MessageResponse, summary="取消关注用户")
-async def unfollow_user(
-    user_id: str,
-    current_user_id: str = Depends(get_current_user_id),
-    user_service: UserService = Depends(get_user_service),
-):
-    """
-    取消关注指定用户
-    
-    需要认证：Bearer token
-    
-    Args:
-        user_id: 要取消关注的用户ID
-    """
-    result = await user_service.unfollow_user(current_user_id, user_id)
-    return MessageResponse(
-        message=result.get("message", "已取消关注"),
-        success=True
-    )
-
-
-@router.get("/{user_id}/follow-status", response_model=FollowStatusResponse, summary="获取关注状态")
-async def get_follow_status(
-    user_id: str,
-    current_user_id: Optional[str] = Depends(get_optional_user_id),
-    user_service: UserService = Depends(get_user_service),
-):
-    """
-    获取指定用户的关注状态
-    
-    可选认证：Bearer token（用于判断当前用户是否关注目标用户）
-    
-    Args:
-        user_id: 目标用户ID
-        
-    Returns:
-        FollowStatusResponse: 包含是否关注、粉丝数、关注数
-    """
-    return await user_service.get_follow_status(current_user_id, user_id)
-
-
-@router.get("/{user_id}/followers", response_model=FollowListResponse, summary="获取用户粉丝列表")
-async def get_followers(
-    user_id: str,
-    page: int = Query(1, ge=1, description="页码"),
-    page_size: int = Query(20, ge=1, le=1000, description="每页数量"),
-    current_user_id: Optional[str] = Depends(get_optional_user_id),
-    user_service: UserService = Depends(get_user_service),
-):
-    """
-    获取指定用户的粉丝列表
-    
-    可选认证：Bearer token（用于判断当前用户是否关注这些粉丝）
-    
-    Args:
-        user_id: 目标用户ID
-        page: 页码
-        page_size: 每页数量
-    """
-    return await user_service.get_followers(user_id, current_user_id, page, page_size)
-
-
-@router.get("/{user_id}/following", response_model=FollowListResponse, summary="获取用户关注列表")
-async def get_following(
-    user_id: str,
-    page: int = Query(1, ge=1, description="页码"),
-    page_size: int = Query(20, ge=1, le=1000, description="每页数量"),
-    current_user_id: Optional[str] = Depends(get_optional_user_id),
-    user_service: UserService = Depends(get_user_service),
-):
-    """
-    获取指定用户的关注列表
-    
-    可选认证：Bearer token（用于判断当前用户是否也关注这些用户）
-    
-    Args:
-        user_id: 目标用户ID
-        page: 页码
-        page_size: 每页数量
-    """
-    return await user_service.get_following(user_id, current_user_id, page, page_size)
-
-
-@router.post("/batch-follow-status", response_model=dict, summary="批量检查关注状态")
-async def batch_check_follow_status(
-    user_ids: List[str] = Query(..., description="用户ID列表"),
-    current_user_id: str = Depends(get_current_user_id),
-    user_service: UserService = Depends(get_user_service),
-):
-    """
-    批量检查当前用户是否关注了指定用户列表
-    
-    需要认证：Bearer token
-    
-    Args:
-        user_ids: 要检查的用户ID列表
-        
-    Returns:
-        Dict[str, bool]: 用户ID到是否关注的映射
-    """
-    return await user_service.check_batch_following(current_user_id, user_ids)
-

@@ -1,8 +1,8 @@
 """
-YouTube KOL stock opinion API routes.
+YouTube creator stock opinion API routes.
 """
 
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional, Union
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from supabase import Client
@@ -13,6 +13,8 @@ from app.services.youtube_stock_opinions import YouTubeStockOpinionService
 
 
 router = APIRouter(prefix="/youtube-opinions", tags=["YouTube Opinions"])
+
+ImportBody = Union[Dict[str, Any], List[Dict[str, Any]]]
 
 
 def get_service(
@@ -84,27 +86,29 @@ async def get_creator_public_profile(
 
 @router.post("/validate")
 async def validate_youtube_opinion_payload(
-    payload: Dict[str, Any],
+    payload: ImportBody,
     admin_id: str = Depends(verify_admin),
     service: YouTubeStockOpinionService = Depends(get_service),
 ):
     try:
-        return service.validate_payload(payload)
+        return service.validate_import(payload)
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
 @router.post("/upload")
 async def upload_youtube_opinion_payload(
-    payload: Dict[str, Any],
+    payload: ImportBody,
     admin_id: str = Depends(verify_admin),
     service: YouTubeStockOpinionService = Depends(get_service),
 ):
     """
     Admin-only JSON upload for Gemini YouTube stock opinion analysis.
+
+    Accepts one video object or an array of video objects for batch imports.
     """
     try:
-        return await service.upload_payload(payload, uploaded_by=admin_id)
+        return await service.upload_import(payload, uploaded_by=admin_id)
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except Exception as e:

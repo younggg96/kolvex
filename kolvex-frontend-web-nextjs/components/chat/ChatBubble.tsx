@@ -41,28 +41,19 @@ export function ChatBubble({
     return (
       <div className="flex w-full justify-end animate-fade-in">
         <div className="max-w-[88%] md:max-w-[70%]">
-          <div className="flex items-center justify-end gap-2 mb-1.5 px-0.5">
-            <span className="text-xs font-medium text-muted-foreground">
-              {t("chat.userName")}
-            </span>
-            {timestamp && (
-              <span className="text-[11px] text-muted-foreground/60">
-                {formatTime(timestamp)}
-              </span>
-            )}
-          </div>
           <div
-            className={cn(
-              "px-4 py-3 rounded-lg rounded-tr-sm",
-              "bg-gray-900 dark:bg-primary/70",
-              "text-white dark:text-primary-foreground",
-              "shadow-sm"
-            )}
+            className="rounded-[22px] bg-muted px-4 py-2.5 text-foreground"
+            aria-label={t("chat.userName")}
           >
             <p className="text-[15px] leading-relaxed whitespace-pre-wrap">
               {content}
             </p>
           </div>
+          {timestamp && (
+            <p className="mt-1 px-1 text-right text-[11px] text-muted-foreground">
+              {formatTime(timestamp)}
+            </p>
+          )}
         </div>
       </div>
     );
@@ -71,63 +62,28 @@ export function ChatBubble({
   // Assistant message
   return (
     <div className="group flex w-full justify-start animate-fade-in">
-      <div className="flex w-full gap-3 md:gap-4 max-w-[96%] md:max-w-[90%]">
-        {/* AI Avatar */}
-        <div className="flex-shrink-0">
-          <div className="w-8 h-8 rounded-full bg-primary/10 dark:bg-primary/20 flex items-center justify-center ring-2 ring-primary/20">
-            <svg
-              viewBox="0 0 24 24"
-              className="w-4 h-4 text-primary"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
-              <path d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707" />
-              <circle cx="12" cy="12" r="4" />
-            </svg>
-          </div>
-        </div>
-
-        {/* Message Content */}
-        <div className="flex-1 min-w-0">
-          {/* Header */}
-          <div className="flex items-center gap-2 mb-1.5 px-0.5">
-            <span className="text-xs font-medium text-muted-foreground">
+      <div className="w-full min-w-0 max-w-[720px]">
+          <div className="mb-2 flex items-center gap-2 text-xs text-muted-foreground">
+            <span className="font-semibold text-foreground">
               {t("chat.assistantName")}
             </span>
-            {modelName && (
-              <span className="text-[10px] text-muted-foreground/50 font-medium px-1.5 py-0.5 rounded-full bg-muted/50 border border-border/50">
-                {modelName}
-              </span>
-            )}
-            {timestamp && (
-              <span className="text-[11px] text-muted-foreground/60">
-                {formatTime(timestamp)}
-              </span>
-            )}
+            {modelName && <span>{modelName}</span>}
+            {timestamp && <span>{formatTime(timestamp)}</span>}
           </div>
 
-          {/* Bubble */}
-          <div
-            className={cn(
-              "relative px-4 py-3 rounded-lg rounded-tl-sm",
-              "bg-card",
-              "border border-border",
-              "text-foreground"
-            )}
-          >
+          <div className="text-foreground">
             <div
               className={cn(
-                "prose prose-sm dark:prose-invert max-w-none",
+                "prose prose-sm dark:prose-invert max-w-none prose-a:text-positive",
                 "break-words prose-headings:mt-4 prose-headings:mb-2 prose-headings:font-semibold",
                 "prose-h1:text-xl prose-h1:leading-tight",
                 "prose-h2:text-base prose-h3:text-sm",
-                "prose-p:my-1.5 prose-p:leading-relaxed prose-p:text-[14px]",
-                "prose-ul:my-1.5 prose-ul:pl-4 prose-li:my-0.5 prose-li:text-[14px]",
+                "prose-p:my-2 prose-p:leading-7 prose-p:text-[15px]",
+                "prose-ul:my-2 prose-ul:pl-4 prose-li:my-0.5 prose-li:text-[15px]",
                 "prose-ol:my-1.5 prose-ol:pl-4",
                 "prose-strong:text-foreground prose-strong:font-semibold",
                 "prose-code:text-xs prose-code:bg-muted prose-code:px-1 prose-code:py-0.5 prose-code:rounded",
-                "prose-pre:bg-muted prose-pre:rounded-lg prose-pre:text-xs",
+                "prose-pre:bg-muted prose-pre:text-foreground prose-pre:rounded-xl prose-pre:text-xs",
                 "prose-table:block prose-table:max-w-full prose-table:overflow-x-auto prose-table:text-xs prose-th:px-2 prose-th:py-1 prose-td:px-2 prose-td:py-1",
                 "[&>*:first-child]:mt-0 [&>*:last-child]:mb-0"
               )}
@@ -137,7 +93,7 @@ export function ChatBubble({
               </ReactMarkdown>
               {isStreaming && (
                 <span className="inline-flex ml-0.5 align-middle">
-                  <span className="w-[3px] h-[18px] bg-primary rounded-sm animate-pulse" />
+                  <span className="h-[18px] w-[3px] animate-pulse rounded-sm bg-foreground" />
                 </span>
               )}
             </div>
@@ -148,7 +104,7 @@ export function ChatBubble({
             <div
               className={cn(
                 "flex items-center gap-1 mt-2 px-0.5",
-                "opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                "opacity-100 md:opacity-0 md:group-hover:opacity-100 md:focus-within:opacity-100 transition-opacity duration-150"
               )}
             >
               <Button
@@ -156,7 +112,7 @@ export function ChatBubble({
                 size="xs"
                 onClick={handleCopy}
                 className={cn(
-                  "flex items-center gap-1.5 px-2 py-1 rounded-md",
+                  "flex items-center gap-1.5 rounded-full px-2.5 py-1",
                   "text-xs text-muted-foreground",
                   "hover:text-foreground hover:bg-muted",
                   "transition-colors duration-150"
@@ -164,8 +120,8 @@ export function ChatBubble({
               >
                 {copied ? (
                   <>
-                    <Check className="w-3.5 h-3.5 text-primary" />
-                    <span className="text-primary">{t("chat.actions.copied")}</span>
+                    <Check className="w-3.5 h-3.5 text-positive" />
+                    <span className="text-positive">{t("chat.actions.copied")}</span>
                   </>
                 ) : (
                   <>
@@ -183,7 +139,6 @@ export function ChatBubble({
               )}
             </div>
           )}
-        </div>
       </div>
     </div>
   );

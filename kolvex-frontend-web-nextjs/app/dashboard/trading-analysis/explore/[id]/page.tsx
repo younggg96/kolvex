@@ -76,9 +76,8 @@ export default function PublishedAnalysisDetailPage() {
   if (loading) {
     return (
       <DashboardLayout title={t("tradingAnalysis.explore.title")}>
-        <div className="relative flex-1 overflow-y-auto bg-background">
-          <div className="absolute inset-0 bg-grid opacity-50 pointer-events-none" />
-          <div className="relative">
+        <div className="relative flex-1 overflow-y-auto">
+          <div className="mx-auto w-full max-w-[880px]">
             <DetailSkeleton />
           </div>
         </div>
@@ -89,10 +88,9 @@ export default function PublishedAnalysisDetailPage() {
   if (!analysis) {
     return (
       <DashboardLayout title={t("tradingAnalysis.explore.title")}>
-        <div className="relative flex-1 overflow-y-auto bg-background">
-          <div className="absolute inset-0 bg-grid opacity-50 pointer-events-none" />
+        <div className="relative flex-1 overflow-y-auto">
           <div className="flex flex-col items-center justify-center flex-1 min-h-[400px] gap-4">
-            <XCircle className="w-12 h-12 text-muted-foreground/40" />
+            <XCircle className="h-10 w-10 text-muted-foreground" />
             <p className="text-muted-foreground">
               {t("tradingAnalysis.notFound")}
             </p>
@@ -160,28 +158,25 @@ export default function PublishedAnalysisDetailPage() {
         <FullReportActions analysis={analysis} t={t} />
       }
     >
-      <div className="relative flex-1 overflow-y-auto bg-background">
-        <div className="absolute inset-0 bg-grid opacity-50 pointer-events-none" />
-
-        <div className="relative p-4 space-y-6 mx-auto">
+      <div className="relative flex-1 overflow-y-auto">
+        <div className="mx-auto w-full max-w-[880px] space-y-8 px-4 pb-16 pt-6 md:px-8 md:pt-8">
           {/* Header */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 animate-fade-in-up">
+          <div className="animate-fade-in-up">
             <div>
-              <div className="flex items-center gap-3">
+              <div className="flex flex-wrap items-center gap-3">
                 <CompanyLogo symbol={analysis.ticker} size="lg" />
-                <h1 className="text-2xl font-bold text-foreground">
+                <h1 className="text-[28px] font-bold leading-tight text-foreground md:text-[32px]">
                   {analysis.ticker}
                 </h1>
-                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary dark:bg-primary/20">
-                  <CheckCircle2 className="w-3 h-3" />
-                  {t("tradingAnalysis.statusCompleted")}
-                </span>
                 <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-muted text-muted-foreground">
                   <Globe className="w-3 h-3" />
                   {t("tradingAnalysis.publishedLabel")}
                 </span>
               </div>
-              <div className="flex items-center gap-3 mt-3 text-sm text-muted-foreground">
+              <div className="mt-5">
+                <DecisionBadgeLarge decision={analysis.final_decision} t={t} />
+              </div>
+              <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
                 {analysis.author && (
                   <span className="flex items-center gap-1.5">
                     <Avatar className="w-5 h-5">
@@ -210,14 +205,12 @@ export default function PublishedAnalysisDetailPage() {
                   </span>
                 )}
                 {analysis.llm_provider && (
-                  <span className="capitalize px-1.5 py-0.5 rounded bg-muted text-xs">
+                  <span className="capitalize">
                     {analysis.llm_provider}
                   </span>
                 )}
               </div>
             </div>
-
-            <DecisionBadgeLarge decision={analysis.final_decision} t={t} />
           </div>
 
           {/* Reports */}

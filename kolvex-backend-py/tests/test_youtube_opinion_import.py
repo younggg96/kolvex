@@ -70,9 +70,9 @@ class YouTubeImportTests(unittest.TestCase):
         payload["opinions"].append({**deepcopy(payload["opinions"][0]), "ticker": "TSLA"})
         table = self.client.table.return_value
         table.upsert.return_value.execute.return_value = SimpleNamespace(data=[{"ticker": "NVDA"}, {"ticker": "TSLA"}])
-        self.service._best_effort_sync_unified_kol_tables = Mock()
         result = asyncio.run(self.service.upload_payload(payload, "admin"))
         self.assertEqual(result["inserted_count"], 2)
+        self.client.table.assert_called_once_with("youtube_stock_opinions")
         table.upsert.assert_called_once()
         self.assertEqual(len(table.upsert.call_args.args[0]), 2)
         self.assertEqual(table.upsert.call_args.args[0][0]["uploaded_by"], "admin")

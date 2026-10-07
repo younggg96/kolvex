@@ -2,6 +2,7 @@
 
 import { ReactNode } from "react";
 import AppSidebar from "./Sidebar";
+import MobileTabBar from "./MobileTabBar";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 
 interface AppShellProps {
@@ -19,6 +20,7 @@ export default function AppShell({ children }: AppShellProps) {
         <AppSidebar />
         <SidebarInset className="flex flex-col min-w-0 overflow-hidden">
           {children}
+          <MobileTabBar />
         </SidebarInset>
       </div>
     </SidebarProvider>

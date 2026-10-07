@@ -16,7 +16,7 @@ const PasswordInput = React.forwardRef<HTMLInputElement, PasswordInputProps>(
         <input
           type={showPassword ? "text" : "password"}
           className={cn(
-            "flex h-10 w-full rounded-lg border border-gray-300 dark:border-white/10 bg-gray-50 dark:bg-white/5 px-4 py-2 pr-10 text-sm text-gray-900 dark:text-white ring-offset-white placeholder:text-gray-500 dark:placeholder:text-white/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:ring-offset-background-dark transition-colors duration-200",
+            "flex h-10 w-full rounded-lg border border-border bg-muted px-4 py-2 pr-10 text-sm text-foreground ring-offset-white placeholder:text-muted-foreground dark:placeholder:text-white/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:ring-offset-background-dark transition-colors duration-200",
             className
           )}
           ref={ref}
@@ -25,7 +25,7 @@ const PasswordInput = React.forwardRef<HTMLInputElement, PasswordInputProps>(
         <button
           type="button"
           onClick={() => setShowPassword(!showPassword)}
-          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-white/40 hover:text-gray-700 dark:hover:text-white/60 transition-colors duration-200 focus:outline-none"
+          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors duration-200 focus:outline-none"
           tabIndex={-1}
         >
           {showPassword ? (

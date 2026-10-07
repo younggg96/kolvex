@@ -27,7 +27,6 @@ export function ChatWelcomeContainer({
   const [activeSources, setActiveSources] = useState<SearchSource[]>([
     "plaid",
     "portfolio",
-    "news",
     "web",
   ]);
   const [isLoading, setIsLoading] = useState(false);
@@ -89,9 +88,7 @@ export function ChatWelcomeContainer({
 
   return (
     <div className={cn("flex h-full", className)}>
-      <div className="flex-1 flex flex-col min-w-0 relative bg-background">
-        {/* Background Grid */}
-        <div className="absolute inset-0 bg-grid opacity-50 pointer-events-none" />
+      <div className="flex-1 flex flex-col min-w-0 relative">
 
         {/* Content Area */}
         <div className="relative flex-1 flex flex-col overflow-hidden">

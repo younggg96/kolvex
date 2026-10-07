@@ -23,12 +23,12 @@ export function EmptyState({
 }: EmptyStateProps) {
   return (
     <div className="flex flex-col items-center justify-center py-12 px-4 text-center animate-fade-in">
-      <Icon className="text-gray-300 dark:text-white/20 w-16 h-16 mb-4" />
-      <h3 className="text-gray-800 dark:text-white/80 text-base font-semibold mb-2">
+      <Icon className="text-muted-foreground w-16 h-16 mb-4" />
+      <h3 className="text-foreground text-base font-semibold mb-2">
         {title}
       </h3>
       {description && (
-        <p className="text-gray-600 dark:text-white/50 text-sm mb-4 max-w-md">
+        <p className="text-muted-foreground text-sm mb-4 max-w-md">
           {description}
         </p>
       )}
@@ -57,17 +57,17 @@ export function ErrorState({
 }: ErrorStateProps) {
   return (
     <div className="flex flex-col items-center justify-center py-12 px-4 text-center animate-fade-in">
-      <AlertCircle className="text-red-500 dark:text-red-500/80 w-16 h-16 mb-4" />
-      <h3 className="text-gray-800 dark:text-white/80 text-base font-semibold mb-2">
+      <AlertCircle className="text-negative w-16 h-16 mb-4" />
+      <h3 className="text-foreground text-base font-semibold mb-2">
         {title}
       </h3>
-      <p className="text-gray-600 dark:text-white/50 text-sm mb-4 max-w-md">
+      <p className="text-muted-foreground text-sm mb-4 max-w-md">
         {message}
       </p>
       {retry && (
         <button
           onClick={retry}
-          className="px-4 py-2 bg-gray-200 dark:bg-white/10 text-gray-800 dark:text-white text-sm font-medium rounded-lg hover:bg-gray-300 dark:hover:bg-white/20 transition-colors"
+          className="px-4 py-2 bg-muted text-foreground text-sm font-medium rounded-lg hover:bg-foreground/20 transition-colors"
         >
           Try Again
         </button>

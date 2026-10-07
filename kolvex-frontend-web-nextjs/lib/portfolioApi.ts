@@ -78,16 +78,7 @@ export async function getPublicHoldings(
 export type PublicUsersSortBy = "updated" | "pnl_percent";
 export type SortOrder = "asc" | "desc";
 
-export async function getPublicUsers(
-  limit: number = 20,
-  offset: number = 0,
-  sortBy: PublicUsersSortBy = "updated",
-  sortOrder: SortOrder = "desc"
-): Promise<PublicUsersResponse> {
-  return apiRequest<PublicUsersResponse>(
-    `/public-users?limit=${limit}&offset=${offset}&sort_by=${sortBy}&sort_order=${sortOrder}`
-  );
-}
+
 
 // ========== Settings ==========
 

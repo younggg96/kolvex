@@ -49,37 +49,11 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="feed"
-        options={{
-          title: 'Feed',
-          tabBarIcon: ({ color, focused }) => (
-            <Newspaper
-              size={22}
-              color={color}
-              strokeWidth={focused ? 2.5 : 2}
-            />
-          ),
-        }}
-      />
-      <Tabs.Screen
         name="stocks"
         options={{
           title: 'Stocks',
           tabBarIcon: ({ color, focused }) => (
             <TrendingUp
-              size={22}
-              color={color}
-              strokeWidth={focused ? 2.5 : 2}
-            />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="kols"
-        options={{
-          title: 'KOLs',
-          tabBarIcon: ({ color, focused }) => (
-            <Users
               size={22}
               color={color}
               strokeWidth={focused ? 2.5 : 2}

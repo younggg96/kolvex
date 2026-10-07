@@ -24,8 +24,6 @@ export interface ChatHistoryItem {
 }
 
 export type SearchSource =
-  | "kol"
-  | "news"
   | "web"
   | "portfolio"
   | "plaid";
@@ -119,13 +117,7 @@ export const TOOL_LABELS: Record<string, string> = {
   get_analyst_recommendations: "Checking analyst ratings",
   get_stock_history: "Loading price history",
   get_company_info: "Looking up company info",
-  search_stock_news: "Searching news",
-  get_trending_news: "Getting trending news",
-  get_kol_latest_tweets: "Fetching KOL tweets",
-  analyze_kol_sentiment: "Analyzing KOL sentiment",
   get_user_portfolio: "Loading portfolio",
-  search_knowledge_base: "Searching knowledge base",
-  get_superinvestor_holdings: "Checking super investor holdings",
   web_search: "Searching the web",
 };
 

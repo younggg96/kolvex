@@ -3,7 +3,7 @@
  * All calls go through Next.js API routes -> FastAPI backend
  */
 
-import type { Theme, ProfileUpdate, NotificationSettings } from "@/lib/supabase/database.types";
+import type { Theme, ProfileUpdate } from "@/lib/supabase/database.types";
 
 interface ApiResponse<T = any> {
   success: boolean;
@@ -135,28 +135,3 @@ export async function updateTheme(theme: Theme): Promise<ApiResponse<UserProfile
 /**
  * Update notification settings (requires auth)
  */
-export async function updateNotificationSettings(
-  settings: Partial<NotificationSettings>
-): Promise<ApiResponse<UserProfile>> {
-  try {
-    const response = await fetch(`${API_BASE}/me/notifications`, {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(settings),
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.error || "Failed to update notification settings");
-    }
-
-    const data = await response.json();
-    return { success: true, data };
-  } catch (error: any) {
-    console.error("Update notification settings error:", error);
-    return { success: false, error: error.message };
-  }
-}
-

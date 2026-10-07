@@ -190,7 +190,7 @@ export interface AgentStreamEvent {
 export interface AgentRequestOptions {
   /** Model ID (e.g. "gpt-4o-mini", "deepseek-chat") */
   model?: string;
-  /** Active data sources: "kol", "news", "web", "portfolio", "plaid" */
+  /** Active data sources: "web", "portfolio", "plaid" */
   sources?: string[];
 }
 

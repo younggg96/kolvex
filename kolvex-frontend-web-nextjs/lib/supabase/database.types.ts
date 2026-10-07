@@ -1,6 +1,5 @@
 // Database types for Supabase
 
-export type Platform = "twitter" | "reddit" | "youtube" | "xiaohongshu";
 export type Theme = "LIGHT" | "DARK" | "SYSTEM";
 export type Membership = "FREE" | "PRO" | "ENTERPRISE";
 export type UserLocale = "en" | "zh";
@@ -21,25 +20,11 @@ export interface UserProfile {
   updated_at: string;
 }
 
-export interface KOLSubscription {
-  id: string;
-  user_id: string;
-  platform: Platform;
-  kol_id: string;
-  notify: boolean;
-  created_at: string;
-}
-
 export interface StockTracking {
   id: string;
   user_id: string;
   symbol: string;
   created_at: string;
-}
-
-export interface NotificationSettings {
-  email_notifications_enabled?: boolean;
-  notification_method?: NotificationMethod;
 }
 
 export interface ProfileUpdate {
@@ -174,66 +159,4 @@ export interface PublicUserSummary {
 export interface PublicUsersResponse {
   users: PublicUserSummary[];
   total: number;
-}
-
-// Follow 相关类型
-export interface UserFollow {
-  id: string;
-  follower_id: string;
-  following_id: string;
-  created_at: string;
-}
-
-export interface FollowStatus {
-  is_following: boolean;
-  followers_count: number;
-  following_count: number;
-}
-
-export interface FollowUserInfo {
-  user_id: string;
-  username?: string;
-  full_name?: string;
-  avatar_url?: string;
-  is_following: boolean;
-}
-
-export interface FollowListResponse {
-  users: FollowUserInfo[];
-  total: number;
-  page: number;
-  page_size: number;
-}
-
-// Notification 相关类型
-export type NotificationMethod = "EMAIL" | "MESSAGE";
-
-export type NotificationType =
-  | "POSITION_BUY"
-  | "POSITION_SELL"
-  | "POSITION_INCREASE"
-  | "POSITION_DECREASE"
-  | "NEW_FOLLOWER"
-  | "SYSTEM";
-
-export interface Notification {
-  id: string;
-  user_id: string;
-  type: NotificationType;
-  title: string;
-  message: string;
-  related_user_id?: string;
-  related_symbol?: string;
-  related_data?: Record<string, unknown>;
-  is_read: boolean;
-  read_at?: string;
-  created_at: string;
-}
-
-export interface NotificationListResponse {
-  notifications: Notification[];
-  total: number;
-  page: number;
-  page_size: number;
-  unread_count: number;
 }

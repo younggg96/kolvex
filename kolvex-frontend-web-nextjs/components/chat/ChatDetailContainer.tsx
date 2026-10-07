@@ -27,7 +27,6 @@ const PREFS_MODEL_KEY = "kolvex:model";
 const AVAILABLE_SOURCES: SearchSource[] = [
   "plaid",
   "portfolio",
-  "news",
   "web",
 ];
 
@@ -473,9 +472,7 @@ export function ChatDetailContainer({
 
   return (
     <div className={cn("flex h-full", className)}>
-      <div className="flex-1 flex flex-col min-w-0 relative bg-background">
-        {/* Background Grid */}
-        <div className="absolute inset-0 bg-grid opacity-50 pointer-events-none" />
+      <div className="flex-1 flex flex-col min-w-0 relative">
 
         {/* Content Area */}
         <ChatMessageList
@@ -493,8 +490,8 @@ export function ChatDetailContainer({
           modelName={MODEL_CONFIGS.find((m) => m.id === selectedModel)?.name}
         />
         {/* Chat Input */}
-        <div className="sticky bottom-0 z-20 border-t border-border bg-background/90 backdrop-blur-xl">
-          <div className="max-w-4xl mx-auto p-4">
+        <div className="sticky bottom-0 z-20 bg-background">
+          <div className="mx-auto max-w-3xl px-4 pb-4 pt-2">
             <ChatInput
               value={query}
               onChange={setQuery}

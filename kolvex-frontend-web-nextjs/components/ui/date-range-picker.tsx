@@ -39,7 +39,7 @@ export function DateRangePicker({
     <div className={cn("w-full flex items-center gap-2", className)}>
       {/* From Date */}
       <div className="space-y-2 flex-1">
-        <Label className="text-xs text-gray-500 dark:text-white/50">From</Label>
+        <Label className="text-xs text-muted-foreground">From</Label>
         <Popover>
           <PopoverTrigger asChild>
             <TriggerButton
@@ -70,7 +70,7 @@ export function DateRangePicker({
 
       {/* To Date */}
       <div className="space-y-2 flex-1">
-        <Label className="text-xs text-gray-500 dark:text-white/50">To</Label>
+        <Label className="text-xs text-muted-foreground">To</Label>
         <Popover>
           <PopoverTrigger asChild>
             <TriggerButton

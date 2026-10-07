@@ -17,8 +17,6 @@ import { AccountCard } from "./AccountCard";
 import { DisconnectDialog } from "./DisconnectDialog";
 import { PortfolioAIAnalysis } from "./PortfolioAIAnalysis";
 import { InvestmentTransactionsTable } from "./InvestmentTransactionsTable";
-import { QuantStrategyWorkbench } from "./QuantStrategyWorkbench";
-import { PositionRiskControls } from "./PositionRiskControls";
 import { usePortfolioData } from "./hooks/usePortfolioData";
 import { useEquitySort, useOptionSort } from "./hooks/usePortfolioSort";
 import {
@@ -41,7 +39,7 @@ export default function PortfolioHoldings({
     new Set(),
   );
   const [activeTab, setActiveTab] = useState<
-    "holdings" | "transactions" | "strategies" | "ai-insights"
+    "holdings" | "transactions" | "ai-insights"
   >("holdings");
   const [sparklineDataMap, setSparklineDataMap] = useState<
     Map<string, number[]>
@@ -83,7 +81,6 @@ export default function PortfolioHoldings({
       ...(isOwner
         ? [{ value: "transactions", label: t("portfolio.tabs.transactions") }]
         : []),
-      ...(isOwner ? [{ value: "strategies", label: "量化策略" }] : []),
       { value: "ai-insights", label: t("portfolio.tabs.aiInsights") },
     ],
     [isOwner, t],
@@ -228,7 +225,7 @@ export default function PortfolioHoldings({
   }
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-6">
       {isOwner && !onHeaderActionsReady && status?.is_connected && (
         <PortfolioHeaderActions
           syncing={syncing}
@@ -240,6 +237,24 @@ export default function PortfolioHoldings({
           onConnect={handleConnectPlaid}
           onDisconnect={() => setDisconnectDialogOpen(true)}
           onDownload={handleDownload}
+        />
+      )}
+
+      {holdings?.accounts && holdings.accounts.length > 0 && userId && (
+        <PortfolioPerformanceChart
+          userId={userId}
+          isOwner={isOwner}
+          liveValue={totalValue}
+          livePnL={
+            isOwner || holdings?.privacy_settings?.show_total_pnl
+              ? totalPnL
+              : "***"
+          }
+          livePnlPercent={
+            isOwner || holdings?.privacy_settings?.show_pnl_percent
+              ? pnlPercent
+              : "***"
+          }
         />
       )}
 
@@ -271,11 +286,8 @@ export default function PortfolioHoldings({
         hiddenAccountsCount={
           !isOwner ? publicHoldings?.hidden_accounts_count : undefined
         }
+        showTotalValue={!isOwner || !holdings?.accounts?.length}
       />
-
-      {holdings?.accounts && holdings.accounts.length > 0 && userId && (
-        <PortfolioPerformanceChart userId={userId} isOwner={isOwner} />
-      )}
 
       {holdings?.accounts && holdings.accounts.length > 0 && (
         <>
@@ -288,7 +300,6 @@ export default function PortfolioHoldings({
                   value as
                     | "holdings"
                     | "transactions"
-                    | "strategies"
                     | "ai-insights",
                 )
               }
@@ -347,13 +358,6 @@ export default function PortfolioHoldings({
                   onToggleVisibility={handleTogglePositionVisibility}
                 />
               ))}
-              {isOwner && (
-                <PositionRiskControls
-                  positions={holdings.accounts.flatMap(
-                    (account) => account.portfolio_positions || [],
-                  )}
-                />
-              )}
             </div>
           )}
 
@@ -371,13 +375,6 @@ export default function PortfolioHoldings({
             />
           )}
 
-          {activeTab === "strategies" && isOwner && (
-            <QuantStrategyWorkbench
-              positions={holdings.accounts.flatMap(
-                (account) => account.portfolio_positions || [],
-              )}
-            />
-          )}
 
           {activeTab === "ai-insights" && isOwner && <PortfolioAIAnalysis />}
 

@@ -293,9 +293,8 @@ export default function TradingAnalysisDetailPage() {
   if (loading) {
     return (
       <DashboardLayout title={t("tradingAnalysis.title")}>
-        <div className="relative flex-1 overflow-y-auto bg-background">
-          <div className="absolute inset-0 bg-grid opacity-50 pointer-events-none" />
-          <div className="relative">
+        <div className="relative flex-1 overflow-y-auto">
+          <div className="mx-auto w-full max-w-[880px]">
             <DetailSkeleton />
           </div>
         </div>
@@ -306,10 +305,9 @@ export default function TradingAnalysisDetailPage() {
   if (!analysis) {
     return (
       <DashboardLayout title={t("tradingAnalysis.title")}>
-        <div className="relative flex-1 overflow-y-auto bg-background">
-          <div className="absolute inset-0 bg-grid opacity-50 pointer-events-none" />
+        <div className="relative flex-1 overflow-y-auto">
           <div className="flex flex-col items-center justify-center flex-1 min-h-[400px] gap-4">
-            <XCircle className="w-12 h-12 text-muted-foreground/40" />
+            <XCircle className="h-10 w-10 text-muted-foreground" />
             <p className="text-muted-foreground">
               {t("tradingAnalysis.notFound")}
             </p>
@@ -389,15 +387,10 @@ export default function TradingAnalysisDetailPage() {
         <>
           <Button
             variant={analysis.is_published ? "default" : "outline"}
-            size="xs"
+            size="sm"
             onClick={handlePublishToggle}
             disabled={publishing}
-            className={cn(
-              "gap-1.5 transition-all",
-              analysis.is_published
-                ? "bg-primary hover:bg-primary/90 text-white"
-                : ""
-            )}
+            className="gap-1.5"
           >
             {publishing ? (
               <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -415,34 +408,26 @@ export default function TradingAnalysisDetailPage() {
         </>
       }
     >
-      <div className="relative flex-1 overflow-y-auto bg-background">
-        <div className="absolute inset-0 bg-grid opacity-50 pointer-events-none" />
-
-        <div className="relative p-4 space-y-6 mx-auto">
+      <div className="relative flex-1 overflow-y-auto">
+        <div className="mx-auto w-full max-w-[880px] space-y-8 px-4 pb-16 pt-6 md:px-8 md:pt-8">
           {/* Header */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 animate-fade-in-up">
+          <div className="animate-fade-in-up">
             <div>
-              <div className="flex items-center gap-3">
+              <div className="flex flex-wrap items-center gap-3">
                 <CompanyLogo symbol={analysis.ticker} size="lg" />
-                <h1 className="text-2xl font-bold text-foreground">
+                <h1 className="text-[28px] font-bold leading-tight text-foreground md:text-[32px]">
                   {analysis.ticker}
                 </h1>
                 {isRunning && (
-                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary dark:bg-primary/20 animate-pulse">
+                  <span className="inline-flex items-center gap-1 rounded-full bg-foreground/[0.06] px-2.5 py-1 text-xs font-medium text-foreground">
                     <Loader2 className="w-3 h-3 animate-spin" />
                     {t("tradingAnalysis.statusAnalyzing")}
                   </span>
                 )}
                 {isFailed && (
-                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-500/20 dark:text-red-400">
+                  <span className="inline-flex items-center gap-1 rounded-full bg-negative/10 px-2.5 py-1 text-xs font-medium text-negative">
                     <XCircle className="w-3 h-3" />
                     {t("tradingAnalysis.statusFailed")}
-                  </span>
-                )}
-                {isCompleted && (
-                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary dark:bg-primary/20">
-                    <CheckCircle2 className="w-3 h-3" />
-                    {t("tradingAnalysis.statusCompleted")}
                   </span>
                 )}
                 {analysis.is_published && (
@@ -452,7 +437,12 @@ export default function TradingAnalysisDetailPage() {
                   </span>
                 )}
               </div>
-              <div className="flex items-center gap-3 mt-1.5 text-sm text-muted-foreground">
+              {isCompleted && (
+                <div className="mt-5">
+                  <DecisionBadgeLarge decision={analysis.final_decision} t={t} />
+                </div>
+              )}
+              <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
                 <span className="flex items-center gap-1">
                   <Calendar className="w-3.5 h-3.5" />
                   {analysis.trade_date}
@@ -466,16 +456,12 @@ export default function TradingAnalysisDetailPage() {
                   </span>
                 )}
                 {analysis.llm_provider && (
-                  <span className="capitalize px-1.5 py-0.5 rounded bg-muted text-xs">
+                  <span className="capitalize">
                     {analysis.llm_provider}
                   </span>
                 )}
               </div>
             </div>
-
-            {isCompleted && (
-              <DecisionBadgeLarge decision={analysis.final_decision} t={t} />
-            )}
           </div>
 
           {/* Progress */}
@@ -486,13 +472,11 @@ export default function TradingAnalysisDetailPage() {
             const activeStage = STAGES[activeStageIdx];
 
             return (
-              <div className="bg-card border border-border rounded-lg overflow-hidden animate-fade-in-up stagger-1">
-                <div className="px-5 py-3 border-b border-border bg-muted/50">
+              <div className="overflow-hidden rounded-2xl bg-muted/60 animate-fade-in-up stagger-1">
+                <div className="border-b border-border px-5 py-4">
                   <div className="flex items-center justify-between mb-2.5">
                     <div className="flex items-center gap-2">
-                      <div className="w-7 h-7 rounded-lg bg-primary/10 dark:bg-primary/20 flex items-center justify-center">
-                        <Loader2 className="w-3.5 h-3.5 text-primary animate-spin" />
-                      </div>
+                      <Loader2 className="h-4 w-4 animate-spin text-foreground" />
                       <span className="text-sm font-semibold text-foreground">
                         {t("tradingAnalysis.analysisInProgress")}
                       </span>
@@ -500,14 +484,14 @@ export default function TradingAnalysisDetailPage() {
                         className={cn(
                           "inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[10px] font-medium",
                           isStreamConnected
-                            ? "bg-primary/10 text-primary"
-                            : "bg-amber-500/10 text-amber-500"
+                            ? "bg-positive/10 text-positive"
+                            : "bg-warning/10 text-foreground"
                         )}
                       >
                         <span
                           className={cn(
                             "h-1.5 w-1.5 rounded-full animate-pulse",
-                            isStreamConnected ? "bg-primary" : "bg-amber-500"
+                            isStreamConnected ? "bg-positive-fill" : "bg-warning"
                           )}
                         />
                         {t(
@@ -528,9 +512,9 @@ export default function TradingAnalysisDetailPage() {
                       </span>
                     </div>
                   </div>
-                  <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+                  <div className="h-1 overflow-hidden rounded-full bg-foreground/10">
                     <div
-                      className="h-full rounded-full bg-primary animate-progress-stripes transition-all duration-700 ease-out"
+                      className="h-full rounded-full bg-primary transition-[width] duration-700 ease-out"
                       style={{ width: `${Math.max(progressPercent, 5)}%` }}
                     />
                   </div>
@@ -552,18 +536,12 @@ export default function TradingAnalysisDetailPage() {
                               <TooltipTrigger asChild>
                                 <div className="flex flex-col items-center flex-1 cursor-default min-w-0">
                                   <div className="relative">
-                                    {isActive && (
-                                      <div className="absolute inset-0 w-10 h-10 rounded-full bg-primary/20 dark:bg-primary/10 animate-pulse-ring" style={{ "--pulse-color": "rgba(0, 200, 5, 0.4)" } as React.CSSProperties} />
-                                    )}
                                     <div
                                       className={cn(
-                                        "relative w-10 h-10 rounded-full flex items-center justify-center transition-all duration-500",
-                                        isDone &&
-                                        "bg-primary/10 dark:bg-primary/20 text-primary",
-                                        isActive &&
-                                        "bg-primary/15 dark:bg-primary/20 text-primary ring-2 ring-primary/40 ring-offset-2 ring-offset-background scale-110 shadow-lg shadow-primary/10",
-                                        !isDone && !isActive &&
-                                        "bg-muted text-muted-foreground"
+                                        "relative flex h-10 w-10 items-center justify-center rounded-full transition-colors duration-200",
+                                        isDone && "bg-primary text-primary-foreground",
+                                        isActive && "bg-foreground text-background",
+                                        !isDone && !isActive && "bg-background text-muted-foreground"
                                       )}
                                     >
                                       {isActive ? (
@@ -578,8 +556,8 @@ export default function TradingAnalysisDetailPage() {
                                   <span
                                     className={cn(
                                       "text-[10px] mt-2 font-semibold transition-colors duration-300 text-center",
-                                      isActive && "text-primary",
-                                      isDone && "text-primary/70 dark:text-primary/60",
+                                      isActive && "text-foreground",
+                                      isDone && "text-foreground",
                                       !isDone && !isActive && "text-muted-foreground"
                                     )}
                                   >
@@ -595,14 +573,14 @@ export default function TradingAnalysisDetailPage() {
 
                             {idx < STAGES.length - 1 && (
                               <div className="flex-shrink-0 w-full max-w-[48px] h-0.5 mt-5 mx-0.5">
-                                <div className="h-full rounded-full bg-muted overflow-hidden">
+                                <div className="h-full overflow-hidden rounded-full bg-foreground/10">
                                   <div
                                     className={cn(
                                       "h-full rounded-full transition-all duration-700 ease-out",
                                       idx < activeStageIdx
                                         ? "w-full bg-primary"
                                         : idx === activeStageIdx
-                                          ? "w-1/2 bg-primary/60 animate-pulse-subtle"
+                                          ? "w-1/2 bg-primary/60"
                                           : "w-0"
                                     )}
                                   />
@@ -616,22 +594,22 @@ export default function TradingAnalysisDetailPage() {
                   </TooltipProvider>
 
                   {activeStage && (
-                    <div className="flex items-center gap-3 p-3 rounded-lg bg-primary/5 dark:bg-primary/5 border border-primary/20 dark:border-primary/15 animate-slide-in">
+                    <div className="flex items-center gap-3 rounded-xl bg-background p-3 animate-slide-in">
                       {(() => {
                         const ActiveIcon = activeStage.icon;
-                        return <ActiveIcon className="w-5 h-5 text-primary shrink-0" />;
+                        return <ActiveIcon className="h-5 w-5 shrink-0 text-foreground" />;
                       })()}
                       <div className="min-w-0">
-                        <p className="text-xs font-semibold text-primary">
+                        <p className="text-[13px] font-semibold text-foreground">
                           {t(`tradingAnalysis.stages.${activeStage.key}`)}
                         </p>
-                        <p className="text-[11px] text-primary/60 truncate">
+                        <p className="truncate text-xs text-muted-foreground">
                           {isWaitingForModel
                             ? t("tradingAnalysis.waitingForModel")
                             : t(`tradingAnalysis.stageDesc.${activeStage.key}`)}
                         </p>
                       </div>
-                      <Loader2 className="w-4 h-4 text-primary/60 animate-spin ml-auto shrink-0" />
+                      <Loader2 className="ml-auto h-4 w-4 shrink-0 animate-spin text-muted-foreground" />
                     </div>
                   )}
 
@@ -648,8 +626,8 @@ export default function TradingAnalysisDetailPage() {
 
           {/* Error */}
           {isFailed && analysis.error_message && (
-            <div className="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 rounded-lg p-4 animate-fade-in-up">
-              <p className="text-sm text-red-700 dark:text-red-400">
+            <div role="alert" className="rounded-2xl bg-negative/10 p-4 animate-fade-in-up">
+              <p className="text-sm text-foreground">
                 {analysis.error_message}
               </p>
             </div>

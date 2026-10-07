@@ -120,7 +120,7 @@ export function FilterSheet({
               <Label className="text-base font-semibold">Authors</Label>
               <div className="flex items-center gap-2 flex-shrink-0">
                 {selectedAuthors.length > 0 && (
-                  <span className="text-xs text-gray-500 dark:text-white/50">
+                  <span className="text-xs text-muted-foreground">
                     {selectedAuthors.length} selected
                   </span>
                 )}
@@ -146,7 +146,7 @@ export function FilterSheet({
                 columns={2}
               />
             ) : (
-              <p className="text-sm text-gray-500 dark:text-white/50">
+              <p className="text-sm text-muted-foreground">
                 No authors available for this platform
               </p>
             )}
@@ -160,7 +160,7 @@ export function FilterSheet({
               <Label className="text-base font-semibold">Tags</Label>
               <div className="flex items-center gap-2 flex-shrink-0">
                 {selectedTags.length > 0 && (
-                  <span className="text-xs text-gray-500 dark:text-white/50">
+                  <span className="text-xs text-muted-foreground">
                     {selectedTags.length} selected
                   </span>
                 )}
@@ -188,7 +188,7 @@ export function FilterSheet({
                 blurOpacity={80}
               />
             ) : (
-              <p className="text-sm text-gray-500 dark:text-white/50">
+              <p className="text-sm text-muted-foreground">
                 No tags available for this platform
               </p>
             )}

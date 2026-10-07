@@ -19,20 +19,20 @@ interface SentimentBadgeProps {
 
 const getSentimentColor = (score?: number) => {
   if (score === undefined || score === null)
-    return "text-gray-500 dark:text-white/50";
-  if (score > 0) return "text-green-600 dark:text-green-400";
-  if (score < 0) return "text-red-600 dark:text-red-400";
-  return "text-gray-500 dark:text-white/50";
+    return "text-muted-foreground";
+  if (score > 0) return "text-positive";
+  if (score < 0) return "text-negative";
+  return "text-muted-foreground";
 };
 
 const getSentimentBgColor = (score?: number) => {
   if (score === undefined || score === null)
-    return "bg-gray-100 dark:bg-white/5 border-gray-200 dark:border-white/10";
+    return "bg-muted border-border";
   if (score > 0)
-    return "bg-green-50 dark:bg-green-500/10 border-green-200 dark:border-green-500/20";
+    return "bg-positive/10 border-positive/30";
   if (score < 0)
-    return "bg-red-50 dark:bg-red-500/10 border-red-200 dark:border-red-500/20";
-  return "bg-gray-100 dark:bg-white/5 border-gray-200 dark:border-white/10";
+    return "bg-negative/10 border-negative/30";
+  return "bg-muted border-border";
 };
 
 const getSentimentText = (score?: number) => {

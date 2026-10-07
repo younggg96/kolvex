@@ -37,11 +37,9 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import DashboardLayout from "@/components/layout/DashboardLayout";
-import SectionCard from "@/components/layout/SectionCard";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useTranslation, SUPPORTED_LOCALES } from "@/lib/i18n";
 import type { Locale } from "@/lib/i18n";
-import { SwitchTab } from "@/components/ui/switch-tab";
 import {
   Select,
   SelectContent,
@@ -67,7 +65,6 @@ import { ProfileInfoSkeleton } from "@/components/common/LoadingSkeleton";
 import {
   useCurrentUserProfile,
   updateUserTheme,
-  updateUserNotifications,
   type UserProfileUpdate,
 } from "@/lib/api/userApi";
 import {
@@ -78,10 +75,56 @@ import {
   type UserApiKey,
 } from "@/lib/api/userApiKeysApi";
 
+function SettingsSection({
+  title,
+  subtitle,
+  action,
+  children,
+}: {
+  title: string;
+  subtitle?: string;
+  action?: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="pt-2">
+      <div className="flex items-start justify-between gap-4 border-b border-border pb-4">
+        <div className="min-w-0">
+          <h2 className="text-[22px] font-bold leading-tight text-foreground">{title}</h2>
+          {subtitle && (
+            <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p>
+          )}
+        </div>
+        {action}
+      </div>
+      {children}
+    </section>
+  );
+}
+
+function FieldRow({
+  icon: Icon,
+  label,
+  children,
+}: {
+  icon?: React.ComponentType<{ className?: string }>;
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="grid gap-1.5 border-b border-border py-4 sm:grid-cols-[180px_minmax(0,1fr)] sm:items-center sm:gap-6">
+      <Label className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground">
+        {Icon && <Icon className="h-3.5 w-3.5" />}
+        {label}
+      </Label>
+      <div className="min-w-0 text-[15px] text-foreground">{children}</div>
+    </div>
+  );
+}
+
 const settingsTabDefs = [
   { value: "account", icon: User, labelKey: "settings.tabs.account" },
   { value: "api-keys", icon: Key, labelKey: "settings.tabs.apiKeys" },
-  { value: "notifications", icon: Bell, labelKey: "settings.tabs.notifications" },
   { value: "preferences", icon: Settings, labelKey: "settings.tabs.preferences" },
 ];
 
@@ -97,7 +140,6 @@ function SettingsContent() {
     updateProfile,
     updateTheme: updateProfileTheme,
     updateLocale: updateProfileLocale,
-    updateNotifications,
     refetch: refreshProfile,
   } = useCurrentUserProfile();
 
@@ -129,8 +171,6 @@ function SettingsContent() {
     phone: "",
   });
 
-  // Notification settings state - simplified to just enabled/disabled
-  const [emailNotificationsEnabled, setEmailNotificationsEnabled] = useState(true);
 
   // API Keys state
   const [apiKeys, setApiKeys] = useState<UserApiKey[]>([]);
@@ -199,7 +239,6 @@ function SettingsContent() {
         email: profile.email || "",
         phone: profile.phone_e164 || "",
       });
-      setEmailNotificationsEnabled(profile.email_notifications_enabled ?? true);
     }
   }, [profile]);
 
@@ -475,26 +514,7 @@ function SettingsContent() {
     setIsEditing(false);
   };
 
-  const handleNotificationToggle = async (enabled: boolean) => {
-    const previousValue = emailNotificationsEnabled;
-    setEmailNotificationsEnabled(enabled);
 
-    // Update via backend API
-    try {
-      const result = await updateNotifications({ email_notifications_enabled: enabled });
-
-      if (result.success) {
-        toast.success(enabled ? t("settings.notifications.enabled") : t("settings.notifications.disabled"));
-      } else {
-        throw new Error(result.error);
-      }
-    } catch (error: any) {
-      console.error("Notification update error:", error);
-      toast.error(error.message || t("settings.notifications.failedToUpdate"));
-      // Revert on error
-      setEmailNotificationsEnabled(previousValue);
-    }
-  };
 
   const handleLanguageChange = async (newLocale: string) => {
     setLocale(newLocale as Locale);
@@ -519,41 +539,38 @@ function SettingsContent() {
   return (
     <DashboardLayout title={t("settings.title")}>
       <div className="flex-1 overflow-y-auto">
-        <div className="p-2 min-w-0">
+        <div className="mx-auto w-full min-w-0 max-w-[760px] px-4 pb-16 pt-6 md:px-8 md:pt-8">
           {/* Settings Tabs */}
           <Tabs value={activeTab} onValueChange={handleTabChange}>
-            <div className="flex flex-col gap-2">
-              <SwitchTab
-                value={activeTab}
-                onValueChange={handleTabChange}
-                options={tabOptions}
-                size="md"
-                variant="pills"
-                className="!w-fit border border-gray-200 dark:border-white/10 rounded-lg"
-              />
+            <div className="flex flex-col gap-8">
+              <TabsList aria-label={t("settings.title")}>
+                {tabOptions.map((tab) => (
+                  <TabsTrigger key={tab.value} value={tab.value}>
+                    {tab.label}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
 
               {/* Tab Content Area */}
               <div className="flex-1 min-w-0">
                 {/* Account Info Tab */}
                 <TabsContent value="account" className="mt-0">
-                  <SectionCard
+                  <SettingsSection
                     title={t("settings.account.title")}
-                    useSectionHeader
-                    sectionHeaderIcon={User}
-                    sectionHeaderSubtitle={
+                    subtitle={
                       isEditing
                         ? t("settings.account.updateDetails")
                         : t("settings.account.viewDetails")
                     }
-                    sectionHeaderAction={
+                    action={
                       !isEditing && !profileLoading ? (
                         <Button
                           variant="outline"
                           size="sm"
                           onClick={() => setIsEditing(true)}
-                          className="gap-1.5 h-8 text-xs"
+                          className="gap-1.5"
                         >
-                          <Edit className="w-3 h-3" />
+                          <Edit className="h-3.5 w-3.5" />
                           {t("common.edit")}
                         </Button>
                       ) : undefined
@@ -562,38 +579,41 @@ function SettingsContent() {
                     {profileLoading ? (
                       <ProfileInfoSkeleton />
                     ) : (
-                      <div className="space-y-4 px-4 pb-4">
+                      <div>
                         {/* Avatar with fullscreen preview */}
-                        <div className="flex items-center gap-3 sm:gap-4 p-2 sm:p-3">
+                        <div className="flex items-center gap-4 border-b border-border py-5">
                           <div className="relative">
                             {profile?.avatar_url ? (
                               <button
                                 onClick={() => setAvatarPreviewOpen(true)}
-                                className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-full overflow-hidden shadow-lg cursor-pointer group"
+                                aria-label={t("settings.account.uploadAvatar")}
+                                className="group relative h-[72px] w-[72px] cursor-pointer overflow-hidden rounded-full"
                               >
                                 <Image
                                   src={profile.avatar_url}
                                   alt="Profile"
                                   fill
-                                  className="object-cover transition-transform duration-200 group-hover:scale-110"
+                                  className="object-cover"
                                   sizes="(max-width: 640px) 64px, 80px"
                                 />
-                                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-200 flex items-center justify-center">
-                                  <Maximize2 className="w-5 h-5 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
+                                <div className="absolute inset-0 flex items-center justify-center bg-black/0 transition-colors duration-150 group-hover:bg-black/30">
+                                  <Maximize2 className="h-5 w-5 text-white opacity-0 transition-opacity duration-150 group-hover:opacity-100" />
                                 </div>
                               </button>
                             ) : (
-                              <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center text-white text-xl sm:text-2xl font-bold shadow-lg">
+                              <div className="flex h-[72px] w-[72px] items-center justify-center rounded-full bg-primary text-2xl font-bold text-primary-foreground">
                                 {profile?.email
                                   ?.substring(0, 2)
                                   .toUpperCase() || "US"}
                               </div>
                             )}
                             <button
+                              type="button"
                               onClick={() => setAvatarDialogOpen(true)}
-                              className="absolute -bottom-1 -right-1 w-6 h-6 sm:w-7 sm:h-7 bg-white dark:bg-card-dark rounded-full flex items-center justify-center shadow-md border-2 border-gray-200 dark:border-white/10 hover:scale-110 transition-all duration-200 cursor-pointer"
+                              aria-label={t("settings.account.uploadAvatar")}
+                              className="absolute -bottom-0.5 -right-0.5 flex h-7 w-7 cursor-pointer items-center justify-center rounded-full border-2 border-background bg-foreground text-background transition-transform duration-150 hover:scale-105"
                             >
-                              <Camera className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-gray-600 dark:text-white/70" />
+                              <Camera className="h-3.5 w-3.5" />
                             </button>
                           </div>
                         </div>
@@ -640,7 +660,7 @@ function SettingsContent() {
                               {previewUrl ? (
                                 <div className="space-y-4 mb-4">
                                   {/* Cropper area */}
-                                  <div className="relative w-full aspect-square bg-gray-900 rounded-xl overflow-hidden">
+                                  <div className="relative aspect-square w-full overflow-hidden rounded-2xl bg-black">
                                     <Cropper
                                       image={previewUrl}
                                       crop={crop}
@@ -656,7 +676,7 @@ function SettingsContent() {
 
                                   {/* Zoom controls */}
                                   <div className="flex items-center gap-3 px-2">
-                                    <ZoomOut className="w-4 h-4 text-gray-500 dark:text-white/50" />
+                                    <ZoomOut className="h-4 w-4 text-muted-foreground" />
                                     <input
                                       type="range"
                                       min={1}
@@ -666,9 +686,10 @@ function SettingsContent() {
                                       onChange={(e) =>
                                         setZoom(Number(e.target.value))
                                       }
-                                      className="flex-1 h-2 bg-gray-200 dark:bg-white/10 rounded-lg appearance-none cursor-pointer accent-primary"
+                                      aria-label="Zoom"
+                                      className="h-2 flex-1 cursor-pointer appearance-none rounded-full bg-muted accent-primary"
                                     />
-                                    <ZoomIn className="w-4 h-4 text-gray-500 dark:text-white/50" />
+                                    <ZoomIn className="h-4 w-4 text-muted-foreground" />
                                   </div>
 
                                   {/* Action buttons for cropper */}
@@ -718,8 +739,8 @@ function SettingsContent() {
                                     onDragLeave={handleDragLeave}
                                     onDrop={handleDrop}
                                     className={`flex flex-col items-center justify-center w-full h-48 sm:h-64 border-2 border-dashed rounded-xl cursor-pointer transition-all duration-200 ${isDragging
-                                        ? "border-primary bg-primary/10 dark:bg-primary/20 scale-[1.02]"
-                                        : "border-gray-300 dark:border-white/10 bg-gray-50 dark:bg-white/5 hover:bg-gray-100 dark:hover:bg-white/10"
+                                        ? "border-foreground bg-muted"
+                                        : "border-border bg-muted/60 hover:bg-muted"
                                       }`}
                                   >
                                     <div className="flex flex-col items-center justify-center pt-4 pb-5 sm:pt-5 sm:pb-6 px-4">
@@ -729,15 +750,15 @@ function SettingsContent() {
                                       >
                                         <ImageIcon
                                           className={`w-10 h-10 sm:w-12 sm:h-12 ${isDragging
-                                              ? "text-primary"
-                                              : "text-gray-400 dark:text-white/40"
+                                              ? "text-foreground"
+                                              : "text-muted-foreground"
                                             }`}
                                         />
                                       </div>
                                       <p
                                         className={`mb-2 text-xs sm:text-sm text-center ${isDragging
-                                            ? "text-primary font-medium"
-                                            : "text-gray-600 dark:text-white/60"
+                                            ? "font-medium text-foreground"
+                                            : "text-muted-foreground"
                                           }`}
                                       >
                                         {isDragging ? (
@@ -751,7 +772,7 @@ function SettingsContent() {
                                           </>
                                         )}
                                       </p>
-                                      <p className="text-[10px] sm:text-xs text-gray-500 dark:text-white/40">
+                                      <p className="text-xs text-muted-foreground">
                                         {t("settings.account.imageFormats")}
                                       </p>
                                     </div>
@@ -769,11 +790,11 @@ function SettingsContent() {
                               {/* Upload progress bar */}
                               {isUploading && (
                                 <div className="space-y-2">
-                                  <div className="flex items-center justify-between text-xs text-gray-600 dark:text-white/60">
+                                  <div className="flex items-center justify-between text-xs text-muted-foreground">
                                     <span>{t("common.uploading")}</span>
                                     <span>{uploadProgress}%</span>
                                   </div>
-                                  <div className="w-full h-2 bg-gray-200 dark:bg-white/10 rounded-full overflow-hidden">
+                                  <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
                                     <div
                                       className="h-full bg-primary rounded-full transition-all duration-300 ease-out"
                                       style={{ width: `${uploadProgress}%` }}
@@ -807,23 +828,11 @@ function SettingsContent() {
                           </DialogContent>
                         </Dialog>
 
-                        {/* Email */}
-                        <div className="space-y-1.5">
-                          <Label className="text-xs font-medium text-gray-700 dark:text-white/70 flex items-center gap-1.5">
-                            <Mail className="w-3 h-3" />
-                            {t("settings.account.emailAddress")}
-                          </Label>
-                          <p className="text-xs sm:text-sm text-gray-900 dark:text-white py-1.5 sm:py-2 px-2.5 sm:px-3 bg-gray-50 dark:bg-white/5 rounded-lg border border-gray-200 dark:border-white/10 break-all">
-                            {formData.email}
-                          </p>
-                        </div>
+                        <FieldRow icon={Mail} label={t("settings.account.emailAddress")}>
+                          <p className="break-all">{formData.email}</p>
+                        </FieldRow>
 
-                        {/* Full Name */}
-                        <div className="space-y-1.5">
-                          <Label className="text-xs font-medium text-gray-700 dark:text-white/70 flex items-center gap-1.5">
-                            <UserCircle className="w-3 h-3" />
-                            {t("settings.account.fullName")}
-                          </Label>
+                        <FieldRow icon={UserCircle} label={t("settings.account.fullName")}>
                           {isEditing ? (
                             <Input
                               id="full_name"
@@ -836,20 +845,13 @@ function SettingsContent() {
                                 })
                               }
                               placeholder={t("settings.account.enterFullName")}
-                              className="h-8 sm:h-9 text-xs sm:text-sm"
                             />
                           ) : (
-                            <p className="text-xs sm:text-sm text-gray-900 dark:text-white py-1.5 sm:py-2 px-2.5 sm:px-3 bg-gray-50 dark:bg-white/5 rounded-lg border border-gray-200 dark:border-white/10">
-                              {formData.full_name || "-"}
-                            </p>
+                            <p>{formData.full_name || "—"}</p>
                           )}
-                        </div>
-                        {/* Phone */}
-                        <div className="space-y-1.5">
-                          <Label className="text-xs font-medium text-gray-700 dark:text-white/70 flex items-center gap-1.5">
-                            <Phone className="w-3 h-3" />
-                            {t("settings.account.phoneNumber")}
-                          </Label>
+                        </FieldRow>
+
+                        <FieldRow icon={Phone} label={t("settings.account.phoneNumber")}>
                           {isEditing ? (
                             <div className="space-y-1">
                               <Input
@@ -863,33 +865,30 @@ function SettingsContent() {
                                   })
                                 }
                                 placeholder="+14155552671"
-                                className="h-8 sm:h-9 text-xs sm:text-sm"
                               />
-                              <p className="text-[10px] text-gray-500 dark:text-white/40">
+                              <p className="text-xs text-muted-foreground">
                                 {t("settings.account.phoneFormat")}
                               </p>
                             </div>
                           ) : (
-                            <p className="text-xs sm:text-sm text-gray-900 dark:text-white py-1.5 sm:py-2 px-2.5 sm:px-3 bg-gray-50 dark:bg-white/5 rounded-lg border border-gray-200 dark:border-white/10">
-                              {formData.phone || "-"}
-                            </p>
+                            <p className="figure">{formData.phone || "—"}</p>
                           )}
-                        </div>
+                        </FieldRow>
 
                         {/* Action Buttons */}
                         {isEditing && (
-                          <div className="flex flex-col sm:flex-row items-center gap-2 pt-3 border-t border-gray-200 dark:border-white/10">
+                          <div className="flex flex-col-reverse items-center gap-2 pt-5 sm:flex-row sm:justify-end">
                             <Button
                               variant="outline"
                               size="sm"
                               onClick={handleCancelEdit}
-                              className="w-full sm:w-auto h-8 text-xs"
+                              className="w-full sm:w-auto"
                             >
                               {t("common.cancel")}
                             </Button>
                             <Button
                               size="sm"
-                              className="gap-1.5 w-full sm:w-auto sm:ml-auto h-8 text-xs"
+                              className="w-full gap-1.5 sm:w-auto"
                               onClick={handleSaveChanges}
                               disabled={isSaving}
                             >
@@ -900,18 +899,16 @@ function SettingsContent() {
                         )}
                       </div>
                     )}
-                  </SectionCard>
+                  </SettingsSection>
                 </TabsContent>
 
                 {/* API Keys Tab */}
                 <TabsContent value="api-keys" className="mt-0">
-                  <SectionCard
+                  <SettingsSection
                     title={t("settings.apiKeys.title")}
-                    useSectionHeader
-                    sectionHeaderIcon={Key}
-                    sectionHeaderSubtitle={t("settings.apiKeys.subtitle")}
+                    subtitle={t("settings.apiKeys.subtitle")}
                   >
-                    <div className="px-4 pb-4 space-y-3">
+                    <div>
                       {apiKeysLoading ? (
                         <div className="flex items-center justify-center py-8">
                           <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
@@ -920,14 +917,14 @@ function SettingsContent() {
                       ) : (
                         <>
                           {/* Info banner */}
-                          <div className="p-3 rounded-lg bg-primary/10 dark:bg-primary/20 border border-primary/20 dark:border-primary/30">
-                            <p className="text-xs text-primary dark:text-primary-foreground">
+                          <div className="mt-4 rounded-2xl bg-muted px-4 py-3">
+                            <p className="text-[13px] leading-5 text-muted-foreground">
                               {t("settings.apiKeys.infoBanner")}
                             </p>
                           </div>
 
                           {/* Provider list */}
-                          <div className="space-y-3">
+                          <div className="divide-y divide-border">
                             {(supportedProviders.length > 0
                               ? supportedProviders
                               : Object.keys(PROVIDER_INFO)
@@ -946,22 +943,22 @@ function SettingsContent() {
                               return (
                                 <div
                                   key={provider}
-                                  className="p-3 sm:p-4 rounded-lg border border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/[0.02] hover:bg-gray-100 dark:hover:bg-white/[0.04] transition-colors"
+                                  className="py-5"
                                 >
                                   {/* Provider header */}
-                                  <div className="flex items-center justify-between mb-2">
+                                  <div className="mb-3 flex items-start justify-between gap-4">
                                     <div>
                                       <div className="flex items-center gap-2">
-                                        <h4 className="text-sm font-medium text-gray-900 dark:text-white">
+                                        <h3 className="text-[15px] font-semibold text-foreground">
                                           {info.name}
-                                        </h4>
+                                        </h3>
                                         {existingKey && (
-                                          <span className="px-1.5 py-0.5 text-[10px] font-medium rounded bg-green-100 dark:bg-green-500/20 text-green-700 dark:text-green-400">
+                                          <span className="rounded-full bg-positive/10 px-2 py-0.5 text-[11px] font-semibold text-positive">
                                             {t("common.configured")}
                                           </span>
                                         )}
                                       </div>
-                                      <p className="text-[11px] text-gray-500 dark:text-white/50 mt-0.5">
+                                      <p className="mt-0.5 text-[13px] text-muted-foreground">
                                         {info.description}
                                       </p>
                                     </div>
@@ -969,7 +966,7 @@ function SettingsContent() {
                                       href={info.docsUrl}
                                       target="_blank"
                                       rel="noopener noreferrer"
-                                      className="text-xs text-primary hover:text-primary/80 flex items-center gap-1 flex-shrink-0"
+                                      className="flex flex-shrink-0 items-center gap-1 text-[13px] font-semibold text-positive hover:underline"
                                     >
                                       {t("settings.apiKeys.getKey")}
                                       <ExternalLink className="w-3 h-3" />
@@ -979,7 +976,7 @@ function SettingsContent() {
                                   {/* Existing key display */}
                                   {existingKey && (
                                     <div className="flex items-center gap-2 mb-2">
-                                      <code className="flex-1 text-xs px-2.5 py-1.5 rounded bg-gray-200 dark:bg-white/10 text-gray-600 dark:text-white/60 font-mono truncate">
+                                      <code className="flex-1 truncate rounded-xl bg-muted px-3 py-2 font-mono text-xs text-muted-foreground">
                                         {existingKey.api_key_masked}
                                       </code>
                                       <Button
@@ -987,7 +984,8 @@ function SettingsContent() {
                                         size="sm"
                                         onClick={() => handleDeleteApiKey(provider)}
                                         disabled={isDeleting}
-                                        className="h-7 w-7 p-0 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 flex-shrink-0"
+                                        aria-label={`${t("common.delete")} ${info.name}`}
+                                        className="h-9 w-9 flex-shrink-0 rounded-full p-0 text-negative hover:bg-negative/10 hover:text-negative"
                                       >
                                         {isDeleting ? (
                                           <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -1016,7 +1014,8 @@ function SettingsContent() {
                                             handleSaveApiKey(provider);
                                           }
                                         }}
-                                        className="h-8 text-xs pr-8 font-mono"
+                                        aria-label={`${info.name} API key`}
+                                        className="pr-10 font-mono text-[13px]"
                                       />
                                       <button
                                         type="button"
@@ -1026,7 +1025,8 @@ function SettingsContent() {
                                             [provider]: !prev[provider],
                                           }))
                                         }
-                                        className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-white/60"
+                                        aria-label={isVisible ? "Hide key" : "Show key"}
+                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                                       >
                                         {isVisible ? (
                                           <EyeOff className="w-3.5 h-3.5" />
@@ -1039,7 +1039,7 @@ function SettingsContent() {
                                       size="sm"
                                       onClick={() => handleSaveApiKey(provider)}
                                       disabled={!inputValue.trim() || isSaving}
-                                      className="h-8 text-xs px-3 flex-shrink-0"
+                                      className="flex-shrink-0"
                                     >
                                       {isSaving ? (
                                         <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -1055,74 +1055,22 @@ function SettingsContent() {
                         </>
                       )}
                     </div>
-                  </SectionCard>
-                </TabsContent>
-
-                {/* Notifications Tab */}
-                <TabsContent
-                  value="notifications"
-                  className="mt-0 space-y-4 sm:space-y-6"
-                >
-                  <SectionCard
-                    title={t("settings.notifications.title")}
-                    useSectionHeader
-                    sectionHeaderIcon={Bell}
-                    sectionHeaderSubtitle={t("settings.notifications.subtitle")}
-                  >
-                    <div className="px-4 pb-4 space-y-4 sm:space-y-5">
-                      {/* Email Notifications Toggle */}
-                      <div>
-                        <h3 className="text-xs font-medium mb-2 text-gray-700 dark:text-white/70">
-                          {t("settings.notifications.emailNotifications")}
-                        </h3>
-                        <div className="space-y-2">
-                          <div className="flex items-center justify-between p-2 sm:p-2.5 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/5 rounded-lg hover:bg-gray-100 dark:hover:bg-white/10 transition-colors duration-200">
-                            <div className="flex-1 space-y-0.5 pr-2">
-                              <Label
-                                htmlFor="email-notifications"
-                                className="text-xs sm:text-sm font-medium text-gray-900 dark:text-white cursor-pointer"
-                              >
-                                {t("settings.notifications.enableEmail")}
-                              </Label>
-                              <p className="text-[10px] sm:text-xs text-gray-600 dark:text-white/60">
-                                {t("settings.notifications.emailDescription")}
-                              </p>
-                            </div>
-                            <Switch
-                              id="email-notifications"
-                              checked={emailNotificationsEnabled}
-                              onCheckedChange={handleNotificationToggle}
-                              className="ml-2 flex-shrink-0"
-                            />
-                          </div>
-                        </div>
-                        <p className="text-[10px] text-gray-500 dark:text-white/40 mt-2">
-                          {t("settings.notifications.emailHint")}
-                        </p>
-                      </div>
-                    </div>
-                  </SectionCard>
+                  </SettingsSection>
                 </TabsContent>
 
                 {/* Preferences Tab */}
                 <TabsContent
                   value="preferences"
-                  className="mt-0 space-y-4 sm:space-y-6"
+                  className="mt-0"
                 >
-                  <SectionCard
+                  <SettingsSection
                     title={t("settings.preferences.title")}
-                    useSectionHeader
-                    sectionHeaderIcon={Settings}
-                    sectionHeaderSubtitle={t("settings.preferences.subtitle")}
+                    subtitle={t("settings.preferences.subtitle")}
                   >
-                    <div className="px-4 pb-4 space-y-3 sm:space-y-4">
-                      {/* Language */}
-                      <div className="space-y-2">
-                        <Label className="text-xs font-medium text-gray-700 dark:text-white/70">
-                          {t("settings.preferences.language")}
-                        </Label>
+                    <div>
+                      <FieldRow icon={Globe} label={t("settings.preferences.language")}>
                         <Select value={locale} onValueChange={handleLanguageChange}>
-                          <SelectTrigger className="h-8 sm:h-9 text-xs sm:text-sm w-full sm:w-[400px]">
+                          <SelectTrigger className="w-full sm:w-[280px]" aria-label={t("settings.preferences.language")}>
                             <SelectValue placeholder={t("settings.preferences.selectLanguage")} />
                           </SelectTrigger>
                           <SelectContent>
@@ -1133,14 +1081,10 @@ function SettingsContent() {
                             ))}
                           </SelectContent>
                         </Select>
-                      </div>
-                      {/* Theme Selection */}
-                      <div className="space-y-2">
-                        <Label className="text-xs font-medium text-gray-700 dark:text-white/70 flex items-center gap-1.5">
-                          {t("settings.preferences.theme")}
-                        </Label>
+                      </FieldRow>
+                      <FieldRow icon={SunMoon} label={t("settings.preferences.theme")}>
                         {mounted && (
-                          <div className="flex flex-wrap gap-2">
+                          <div role="radiogroup" aria-label={t("settings.preferences.theme")} className="inline-flex flex-wrap gap-1 rounded-full bg-muted p-1">
                             {[
                               {
                                 value: "light",
@@ -1166,38 +1110,26 @@ function SettingsContent() {
                               return (
                                 <button
                                   key={mode.value}
+                                  type="button"
+                                  role="radio"
+                                  aria-checked={isActive}
+                                  title={mode.description}
                                   onClick={() => handleThemeChange(mode.value)}
-                                  className={`w-[100px] flex flex-col items-center gap-1.5 sm:gap-2 p-2 sm:p-3 rounded-lg border-2 transition-all duration-200 ${isActive
-                                      ? "border-primary bg-primary/5 dark:bg-primary/10"
-                                      : "border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 hover:border-gray-300 dark:hover:border-white/20 hover:bg-gray-100 dark:hover:bg-white/10"
+                                  className={`inline-flex h-9 items-center gap-1.5 rounded-full px-4 text-[13px] font-semibold transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${isActive
+                                      ? "bg-background text-foreground shadow-[0_1px_2px_rgb(0_0_0/0.12)]"
+                                      : "text-muted-foreground hover:text-foreground"
                                     }`}
                                 >
-                                  <div
-                                    className={`w-8 h-8 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center transition-colors ${isActive
-                                        ? "bg-primary text-white"
-                                        : "dark:bg-card-dark text-gray-600 dark:text-white/70"
-                                      }`}
-                                  >
-                                    <Icon className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
-                                  </div>
-                                  <div className="text-center">
-                                    <p
-                                      className={`font-medium text-[10px] sm:text-xs ${isActive
-                                          ? "text-primary"
-                                          : "text-gray-900 dark:text-white"
-                                        }`}
-                                    >
-                                      {mode.label}
-                                    </p>
-                                  </div>
+                                  <Icon className="h-4 w-4" />
+                                  {mode.label}
                                 </button>
                               );
                             })}
                           </div>
                         )}
-                      </div>
+                      </FieldRow>
                     </div>
-                  </SectionCard>
+                  </SettingsSection>
                 </TabsContent>
               </div>
             </div>

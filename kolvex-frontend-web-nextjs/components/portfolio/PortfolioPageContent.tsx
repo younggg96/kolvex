@@ -7,7 +7,6 @@ import DashboardLayout from "@/components/layout/DashboardLayout";
 import PortfolioHoldings, {
   type PortfolioHeaderActionsProps,
 } from "@/components/portfolio/PortfolioHoldings";
-import { PortfolioHeroSection } from "./PortfolioHeroSection";
 import { PortfolioSkeleton } from "./PortfolioSkeleton";
 import { useAuth } from "@/hooks";
 import { PortfolioHeaderActions } from "./PortfolioHeaderActions";
@@ -42,12 +41,9 @@ export function PortfolioPageContent() {
   // Show loading while auth is loading
   if (isLoading) {
     return (
-      <DashboardLayout headerClassName="lg:hidden" title={t("portfolio.loadingTitle")}>
-        <div className="relative min-w-0 space-y-3">
-          {/* Hero Skeleton */}
-          <PortfolioHeroSection className="lg:block hidden" />
-          {/* Content Skeleton */}
-          <PortfolioSkeleton className="p-4 !mt-0" />
+      <DashboardLayout title={t("portfolio.loadingTitle")}>
+        <div className="mx-auto w-full max-w-[1080px] px-4 pt-6 md:px-8">
+          <PortfolioSkeleton className="!mt-0" />
         </div>
       </DashboardLayout>
     );
@@ -56,22 +52,14 @@ export function PortfolioPageContent() {
   return (
     <DashboardLayout
       title={t("portfolio.title")}
-      headerClassName="lg:hidden"
       headerActions={
         headerActionsProps ? (
-          <PortfolioHeaderActions {...headerActionsProps} size="xs" />
+          <PortfolioHeaderActions {...headerActionsProps} size="sm" />
         ) : undefined
       }
     >
-      <div className="relative flex-1 overflow-y-auto bg-background">
-        <div className="absolute inset-0 bg-grid opacity-50 pointer-events-none" />
-        {/* Hero Section */}
-        <PortfolioHeroSection
-          headerActionsProps={headerActionsProps ?? undefined}
-          className="hidden lg:block"
-        />
-        <div className="relative p-4 min-w-0 space-y-6">
-          {/* Main Portfolio Content */}
+      <div className="relative flex-1 overflow-y-auto">
+        <div className="mx-auto w-full min-w-0 max-w-[1080px] px-4 pb-16 pt-6 md:px-8 md:pt-8">
           {user && (
             <PortfolioHoldings
               userId={user.id}

@@ -1,7 +1,7 @@
 {
   "name": "Kolvex AI - Investment Platform",
   "short_name": "Kolvex AI",
-  "description": "Track Social Media KOLs, monitor retail sentiment, and get AI-powered investment analysis across multiple platforms",
+  "description": "AI financial chat, trading analysis, YouTube stock opinions and portfolio research",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#0a0a0a",
@@ -57,28 +57,35 @@
       "purpose": "maskable any"
     }
   ],
-  "categories": ["finance", "investment", "business"],
+  "categories": [
+    "finance",
+    "investment",
+    "business"
+  ],
   "shortcuts": [
     {
       "name": "Dashboard",
       "short_name": "Dashboard",
       "description": "View your investment dashboard",
       "url": "/dashboard",
-      "icons": [{ "src": "/icons/icon-96x96.png", "sizes": "96x96" }]
+      "icons": [
+        {
+          "src": "/icons/icon-96x96.png",
+          "sizes": "96x96"
+        }
+      ]
     },
     {
       "name": "Stocks",
       "short_name": "Stocks",
       "description": "Browse stock information",
       "url": "/dashboard/stocks",
-      "icons": [{ "src": "/icons/icon-96x96.png", "sizes": "96x96" }]
-    },
-    {
-      "name": "KOL Tracker",
-      "short_name": "KOL",
-      "description": "Track KOL insights",
-      "url": "/dashboard/kol",
-      "icons": [{ "src": "/icons/icon-96x96.png", "sizes": "96x96" }]
+      "icons": [
+        {
+          "src": "/icons/icon-96x96.png",
+          "sizes": "96x96"
+        }
+      ]
     }
   ]
 }

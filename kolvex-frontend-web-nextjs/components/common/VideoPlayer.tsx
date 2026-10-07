@@ -34,7 +34,7 @@ export default function VideoPlayer({
   // 否则显示视频封面 + 播放按钮（链接到原始页面）
   return (
     <div
-      className={`relative aspect-video rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-800 ${className}`}
+      className={`relative aspect-video rounded-lg overflow-hidden bg-muted ${className}`}
     >
       {coverUrl ? (
         <img
@@ -43,11 +43,11 @@ export default function VideoPlayer({
           className="w-full h-full object-cover"
         />
       ) : (
-        <div className="w-full h-full bg-gray-200 dark:bg-gray-700" />
+        <div className="w-full h-full bg-muted" />
       )}
       <div className="absolute inset-0 flex items-center justify-center bg-black/30">
         <div className="w-12 h-12 rounded-full bg-white/90 flex items-center justify-center">
-          <Play className="w-6 h-6 text-rose-500 ml-1" />
+          <Play className="w-6 h-6 text-foreground ml-1" />
         </div>
       </div>
       {permalink && (

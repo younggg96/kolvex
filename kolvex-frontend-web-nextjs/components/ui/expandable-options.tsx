@@ -98,7 +98,7 @@ export function ExpandableOptions({
               {options.slice(defaultVisibleCount).map((option) => (
                 <div
                   key={option.value}
-                  className="h-8 rounded-md bg-gray-200 dark:bg-white/10"
+                  className="h-8 rounded-md bg-muted"
                 />
               ))}
             </div>
@@ -122,7 +122,7 @@ export function ExpandableOptions({
         <div className="mt-2">
           <button
             onClick={() => setIsExpanded(false)}
-            className="w-full flex items-center justify-center gap-1 py-2 text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors"
+            className="w-full flex items-center justify-center gap-1 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
           >
             Show less
             <ChevronUp className="w-4 h-4" />

@@ -48,11 +48,16 @@ export default function DashboardLayout({
         </div>
       )}
       <div
-        className={`dashboard-content flex min-w-0 flex-col flex-1 overflow-hidden ${
-          noTransition ? "" : "animate-page-enter"
-        }`}
+        className="relative flex min-w-0 flex-1 flex-col overflow-hidden"
       >
-        {children}
+        <div aria-hidden className="pointer-events-none absolute inset-0 bg-grid opacity-90" />
+        <div
+          className={`dashboard-content relative flex min-w-0 flex-col flex-1 overflow-hidden ${
+            noTransition ? "" : "animate-page-enter"
+          }`}
+        >
+          {children}
+        </div>
       </div>
     </>
   );

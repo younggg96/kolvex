@@ -2,18 +2,9 @@
  * Hooks for stock data fetching
  */
 import { useCallback } from 'react';
-import { useApi, usePaginatedApi } from './useApi';
+import { useApi } from './useApi';
 import { stockApi, marketApi } from '@/lib/api';
-import type { TrendingStock, TrendingStocksResponse, StockQuote, StockOverview, StockDiscussionsResponse } from '@/lib/types';
-
-/** Fetch trending stocks - extracts the stocks array from the response */
-export function useTrendingStocks() {
-  const fetcher = useCallback(
-    () => stockApi.getTrending().then(res => res.stocks),
-    []
-  );
-  return useApi<TrendingStock[]>(fetcher);
-}
+import type { StockQuote, StockOverview } from '@/lib/types';
 
 /** Fetch a single stock quote */
 export function useStockQuote(symbol: string) {
@@ -25,20 +16,6 @@ export function useStockQuote(symbol: string) {
 export function useStockOverview(symbol: string) {
   const fetcher = useCallback(() => marketApi.getOverview(symbol), [symbol]);
   return useApi<StockOverview>(fetcher, { deps: [symbol] });
-}
-
-/** Fetch stock discussions from KOLs */
-export function useStockDiscussions(ticker: string) {
-  const fetcher = useCallback(
-    (page: number, pageSize: number) =>
-      stockApi.getDiscussions(ticker, { page, page_size: pageSize }).then(res => ({
-        items: res.tweets,
-        total: res.total_tweets,
-        hasMore: res.has_more,
-      })),
-    [ticker]
-  );
-  return usePaginatedApi(fetcher, { pageSize: 15 });
 }
 
 /** Check if a stock is tracked */

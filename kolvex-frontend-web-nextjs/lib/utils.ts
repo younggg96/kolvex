@@ -8,25 +8,14 @@ export function cn(...inputs: ClassValue[]) {
  * 需要通过代理访问的图片域名
  */
 const PROXY_DOMAINS = [
-  "pbs.twimg.com",
-  "abs.twimg.com",
   "financialmodelingprep.com",
   "static.finnhub.io",
   "static2.finnhub.io",
-  // 小红书图片 CDN
-  "sns-webpic-qc.xhscdn.com",
-  "sns-webpic-bd.xhscdn.com",
-  "sns-webpic-hw.xhscdn.com",
-  "sns-img-qc.xhscdn.com",
-  "sns-img-bd.xhscdn.com",
-  "sns-img-hw.xhscdn.com",
-  "sns-avatar-qc.xhscdn.com",
-  "ci.xiaohongshu.com",
 ];
 
 /**
  * 将外部图片 URL 转换为代理 URL
- * 用于绕过 CORS 限制（如 Twitter 图片）
+ * 用于代理访问股票标识等外部图片
  */
 export function proxyImageUrl(url: string | null | undefined): string {
   if (!url) return "";

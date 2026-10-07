@@ -14,34 +14,20 @@ from app.agent.tools.stock_tools import (
     get_stock_history,
     get_company_info,
 )
-from app.agent.tools.news_tools import (
-    search_stock_news,
-    get_trending_news,
-)
-from app.agent.tools.kol_tools import (
-    get_kol_latest_tweets,
-    analyze_kol_sentiment,
-)
 from app.agent.tools.portfolio_tools import (
     get_user_portfolio,
     create_portfolio_tool_for_user,
 )
-from app.agent.tools.search_tools import (
-    search_knowledge_base,
-    get_superinvestor_holdings,
-)
 from app.agent.tools.web_tools import (
     web_search,
 )
-from app.agent.tools.options_flow_tools import (
-    scan_unusual_options,
+from app.agent.tools.options_tools import (
     get_options_chain_summary,
 )
 from app.agent.tools.trading_analysis_tools import (
     run_trading_analysis,
     set_user_api_keys_for_tool,
 )
-from app.agent.tools.robinhood_tools import create_robinhood_tools_for_user
 
 # 所有可用工具列表
 ALL_TOOLS = [
@@ -51,19 +37,9 @@ ALL_TOOLS = [
     get_analyst_recommendations,
     get_stock_history,
     get_company_info,
-    # News tools
-    search_stock_news,
-    get_trending_news,
-    # KOL tools
-    get_kol_latest_tweets,
-    analyze_kol_sentiment,
     # Portfolio tools
     get_user_portfolio,
-    # Search tools
-    search_knowledge_base,
-    get_superinvestor_holdings,
     # Options flow tools
-    scan_unusual_options,
     get_options_chain_summary,
     # Web search
     web_search,
@@ -75,14 +51,7 @@ FINANCIAL_TOOLS = [
     get_stock_financials,
     get_analyst_recommendations,
     get_company_info,
-    search_stock_news,
-    get_trending_news,
-    get_kol_latest_tweets,
-    analyze_kol_sentiment,
     get_user_portfolio,
-    search_knowledge_base,
-    get_superinvestor_holdings,
-    scan_unusual_options,
     get_options_chain_summary,
     web_search,
 ]
@@ -93,12 +62,6 @@ RESEARCH_TOOLS = [
     get_analyst_recommendations,
     get_stock_history,
     get_company_info,
-    search_stock_news,
-    get_kol_latest_tweets,
-    analyze_kol_sentiment,
-    search_knowledge_base,
-    get_superinvestor_holdings,
-    scan_unusual_options,
     get_options_chain_summary,
     web_search,
     run_trading_analysis,
@@ -106,9 +69,6 @@ RESEARCH_TOOLS = [
 
 ALERT_TOOLS = [
     get_stock_quote,
-    search_stock_news,
-    get_kol_latest_tweets,
-    scan_unusual_options,
     web_search,
 ]
 
@@ -121,7 +81,7 @@ def get_tools_for_sources(
     根据前端激活的 sources 过滤工具集
 
     Args:
-        sources: 激活的数据源 ["kol", "news", "web", "portfolio", "robinhood"]
+        sources: 激活的数据源 ["web", "portfolio"]
                  None 表示全部启用
         base_tools: 基础工具集 ("financial", "research", "alert")
         user_id: 当前认证用户 ID，用于绑定 portfolio 工具
@@ -138,9 +98,6 @@ def get_tools_for_sources(
         get_analyst_recommendations,
         get_company_info,
         get_stock_history,
-        search_knowledge_base,
-        get_superinvestor_holdings,
-        scan_unusual_options,
         get_options_chain_summary,
     ]
 
@@ -152,15 +109,9 @@ def get_tools_for_sources(
 
     # source → 工具映射
     source_tool_map = {
-        "kol": [get_kol_latest_tweets, analyze_kol_sentiment],
-        "news": [search_stock_news, get_trending_news],
         "web": [web_search],
         "portfolio": [portfolio_tool],
-        "robinhood": (
-            create_robinhood_tools_for_user(user_id)
-            if user_id and user_id.strip()
-            else []
-        ),
+        "plaid": [portfolio_tool],
     }
 
     # 如果 sources 为 None，启用全部
@@ -189,7 +140,6 @@ __all__ = [
     "ALERT_TOOLS",
     "get_tools_for_sources",
     "create_portfolio_tool_for_user",
-    "create_robinhood_tools_for_user",
     "run_trading_analysis",
     "set_user_api_keys_for_tool",
 ]

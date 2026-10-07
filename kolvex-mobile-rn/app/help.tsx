@@ -25,15 +25,15 @@ import { Colors, FontSize, FontWeight, Spacing, BorderRadius } from '@/constants
 const FAQ = [
   {
     question: 'What is Kolvex?',
-    answer: 'Kolvex is an AI-powered investment platform that tracks KOL (Key Opinion Leader) sentiment across social media to help you make informed investment decisions.',
+    answer: 'Kolvex supports AI financial conversations, stock research and portfolio analysis.',
   },
   {
     question: 'How does sentiment analysis work?',
-    answer: 'We use AI to analyze posts from KOLs across Twitter, Reddit, YouTube, and Xiaohongshu, extracting bullish, bearish, or neutral sentiment for specific stocks.',
+    answer: 'YouTube stock opinions show the creator’s stated views, while AI analysis helps you review market data and portfolio risk.',
   },
   {
     question: 'Is my portfolio data secure?',
-    answer: 'Yes. Kolvex uses read-only Robinhood and IBKR connections, and stores only the data needed for your portfolio features.',
+    answer: 'Kolvex stores portfolio data to support your portfolio features. Manage account connections from your portfolio settings.',
   },
   {
     question: 'How do I track a stock?',

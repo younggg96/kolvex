@@ -13,66 +13,51 @@ export function NotConnectedState({
   const { t } = useTranslation();
 
   return (
-    <div className="flex items-center justify-center min-h-[60vh]">
-      <div className="max-w-xl w-full space-y-8 p-8 text-center">
-        <div className="mx-auto w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center">
-          <Link2 className="w-8 h-8 text-primary" />
-        </div>
-        <div className="space-y-3">
-          <h2 className="text-2xl font-bold">
-            {t("portfolio.connect.title")}
-          </h2>
-          <p className="text-muted-foreground text-sm leading-relaxed">
-            {t("portfolio.connect.description")}
-          </p>
-        </div>
+    <div className="max-w-xl py-6 md:py-10">
+      <h2 className="text-[28px] font-bold leading-tight md:text-[32px]">
+        {t("portfolio.connect.title")}
+      </h2>
+      <p className="mt-3 max-w-[52ch] text-[15px] leading-relaxed text-muted-foreground">
+        {t("portfolio.connect.description")}
+      </p>
 
-        <div className="rounded-lg border border-border bg-card p-5 space-y-4 text-left">
-          <div className="flex items-start gap-3">
-            <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
-              <ShieldCheck className="h-5 w-5 text-primary" />
-            </div>
-            <div>
-              <h3 className="font-semibold">
-                {t("portfolio.connect.plaidTitle")}
-              </h3>
-              <p className="mt-1 text-xs text-muted-foreground leading-relaxed">
-                {t("portfolio.connect.plaidDescription")}
-              </p>
-            </div>
+      <ul className="mt-8 divide-y divide-border border-y border-border">
+        <li className="flex items-start gap-3 py-4">
+          <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-foreground" />
+          <div>
+            <h3 className="text-[15px] font-semibold">
+              {t("portfolio.connect.plaidTitle")}
+            </h3>
+            <p className="mt-1 text-[13px] leading-5 text-muted-foreground">
+              {t("portfolio.connect.plaidDescription")}
+            </p>
           </div>
-          <Button
-            size="lg"
-            onClick={onConnectPlaid}
-            disabled={connecting}
-            className="w-full gap-2"
-          >
-            {connecting ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <Link2 className="w-4 h-4" />
-            )}
-            {connecting
-              ? t("portfolio.connect.connecting")
-              : t("portfolio.connect.connectPlaid")}
-          </Button>
-        </div>
+        </li>
+        <li className="flex flex-wrap gap-x-6 gap-y-2 py-4 text-[13px] text-muted-foreground">
+          {(["secure", "readOnly", "encrypted"] as const).map((key) => (
+            <span key={key} className="flex items-center gap-1.5">
+              <Check className="h-3.5 w-3.5 text-positive" />
+              {t(`portfolio.connect.${key}`)}
+            </span>
+          ))}
+        </li>
+      </ul>
 
-        <div className="flex justify-center gap-6 text-xs text-muted-foreground">
-          <span className="flex items-center gap-1.5">
-            <Check className="w-3 h-3 text-green-500" />{" "}
-            {t("portfolio.connect.secure")}
-          </span>
-          <span className="flex items-center gap-1.5">
-            <Check className="w-3 h-3 text-green-500" />{" "}
-            {t("portfolio.connect.readOnly")}
-          </span>
-          <span className="flex items-center gap-1.5">
-            <Check className="w-3 h-3 text-green-500" />{" "}
-            {t("portfolio.connect.encrypted")}
-          </span>
-        </div>
-      </div>
+      <Button
+        size="lg"
+        onClick={onConnectPlaid}
+        disabled={connecting}
+        className="mt-8 gap-2"
+      >
+        {connecting ? (
+          <Loader2 className="h-4 w-4 animate-spin" />
+        ) : (
+          <Link2 className="h-4 w-4" />
+        )}
+        {connecting
+          ? t("portfolio.connect.connecting")
+          : t("portfolio.connect.connectPlaid")}
+      </Button>
     </div>
   );
 }
@@ -81,35 +66,29 @@ export function InitialSyncState({ onSync, syncing }: InitialSyncStateProps) {
   const { t } = useTranslation();
 
   return (
-    <div className="flex items-center justify-center min-h-[60vh]">
-      <div className="max-w-md w-full text-center space-y-8 p-8">
-        <div className="mx-auto w-16 h-16 rounded-2xl bg-green-500/10 flex items-center justify-center">
-          <Check className="w-8 h-8 text-green-500" />
-        </div>
-        <div className="space-y-3">
-          <h2 className="text-2xl font-bold">
-            {t("portfolio.connect.connectedTitle")}
-          </h2>
-          <p className="text-muted-foreground text-sm leading-relaxed">
-            {t("portfolio.connect.connectedDescription")}
-          </p>
-        </div>
-        <Button
-          size="lg"
-          onClick={onSync}
-          disabled={syncing}
-          className="w-full gap-2"
-        >
-          {syncing ? (
-            <Loader2 className="w-4 h-4 animate-spin" />
-          ) : (
-            <RefreshCw className="w-4 h-4" />
-          )}
-          {syncing
-            ? t("portfolio.connect.syncing")
-            : t("portfolio.connect.syncPositions")}
-        </Button>
-      </div>
+    <div className="max-w-xl py-6 md:py-10">
+      <h2 className="flex items-center gap-2 text-[28px] font-bold leading-tight md:text-[32px]">
+        <Check className="h-7 w-7 shrink-0 text-positive" strokeWidth={2.5} />
+        {t("portfolio.connect.connectedTitle")}
+      </h2>
+      <p className="mt-3 max-w-[52ch] text-[15px] leading-relaxed text-muted-foreground">
+        {t("portfolio.connect.connectedDescription")}
+      </p>
+      <Button
+        size="lg"
+        onClick={onSync}
+        disabled={syncing}
+        className="mt-8 gap-2"
+      >
+        {syncing ? (
+          <Loader2 className="h-4 w-4 animate-spin" />
+        ) : (
+          <RefreshCw className="h-4 w-4" />
+        )}
+        {syncing
+          ? t("portfolio.connect.syncing")
+          : t("portfolio.connect.syncPositions")}
+      </Button>
     </div>
   );
 }

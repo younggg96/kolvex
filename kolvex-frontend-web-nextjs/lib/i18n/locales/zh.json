@@ -41,7 +41,6 @@
     "tradingAnalysis": "深度分析",
     "superinvestors": "超级投资者",
     "news": "新闻",
-    "kolTracker": "KOL 追踪",
     "youtubeOpinions": "YouTube 观点",
     "portfolio": "投资组合",
     "community": "社区",
@@ -49,6 +48,13 @@
     "settings": "设置",
     "admin": "管理员",
     "toggleSidebar": "切换侧边栏"
+  },
+  "tabBar": {
+    "chat": "对话",
+    "tradingAnalysis": "分析",
+    "youtubeOpinions": "观点",
+    "portfolio": "组合",
+    "more": "更多"
   },
   "userMenu": {
     "account": "账户",
@@ -101,7 +107,6 @@
       },
       "preview": {
         "portfolioValue": "投资组合价值",
-        "kolsTracked": "追踪 KOL 数",
         "aiSignals": "AI 信号",
         "sentimentScore": "情绪评分"
       }
@@ -109,8 +114,6 @@
     "stats": {
       "title": "深受数千名投资者信赖",
       "subtitle": "我们的平台每日处理数百万数据点，提供可操作的洞察。",
-      "kolsTracked": "追踪 KOL 数",
-      "kolsTrackedDesc": "监控意见领袖",
       "aiSignals": "每日 AI 信号",
       "aiSignalsDesc": "实时市场洞察",
       "accuracy": "准确率",
@@ -122,15 +125,6 @@
       "title": "您在",
       "titleHighlight": "现代市场中的独特优势",
       "subtitle": "Kolvex 将前沿 AI 与全面的社交数据相结合，提供以前只有机构投资者才能获得的洞察。",
-      "kolTracking": {
-        "title": "KOL 追踪",
-        "description": "实时监控 Twitter、Reddit、StockTwits 上 2,500+ 有影响力的投资者和分析师。不错过任何市场关键信息。",
-        "stats": {
-          "kolsTracked": "追踪 KOL 数",
-          "platforms": "平台数",
-          "updatesDay": "日更新量"
-        }
-      },
       "aiAnalysis": {
         "title": "AI 智能分析",
         "description": "我们的专有 AI 模型分析情绪、提取关键信号，并以机构级准确度预测市场走势。",
@@ -142,7 +136,7 @@
       },
       "alerts": {
         "title": "即时提醒",
-        "description": "当被追踪的 KOL 提及某只股票或情绪发生变化时，立即收到通知。始终领先市场一步。",
+        "description": "当被追踪的 博主 提及某只股票或情绪发生变化时，立即收到通知。始终领先市场一步。",
         "stats": {
           "latency": "延迟",
           "channels": "通道",
@@ -249,8 +243,6 @@
       "get_company_info": "读取公司资料",
       "search_stock_news": "搜索相关新闻",
       "get_trending_news": "获取市场新闻",
-      "get_kol_latest_tweets": "读取市场观点",
-      "analyze_kol_sentiment": "分析市场情绪",
       "get_user_portfolio": "读取你的投资组合",
       "search_knowledge_base": "查询知识库",
       "get_superinvestor_holdings": "查询机构持仓",
@@ -260,7 +252,6 @@
     "heading": "您想<highlight>探索</highlight>什么？",
     "description": "询问股票、市场趋势，或浏览我们 AI 驱动的精选洞察",
     "suggestions": {
-      "reviewPortfolio": "复盘我的投资账户",
       "reviewPortfolio": "复盘我的投资账户",
       "checkWashSale": "检查当前 wash sale 风险",
       "analyzeNvidia": "分析英伟达股票",
@@ -278,7 +269,6 @@
       "selectModel": "选择模型",
       "sources": {
         "plaid": "Plaid",
-        "kol": "KOL",
         "news": "新闻",
         "web": "网页",
         "portfolio": "投资组合"
@@ -300,7 +290,6 @@
     "dailyAvg": "{value} 日均",
     "engagement": "互动量",
     "perPost": "每帖 {value}",
-    "activeKOLs": "活跃 KOL",
     "stockRelatedAnalyzed": "{count} 条股票相关帖子已分析",
     "activitySentimentByPlatform": "按平台活跃度与情绪",
     "sentiment": "情绪分析",
@@ -431,7 +420,7 @@
       "syncPositions": "同步持仓"
     },
     "allocation": {
-      "title": "按行业分配投资组合"
+      "title": "按板块分配"
     },
     "stats": {
       "totalValue": "总价值",
@@ -619,9 +608,6 @@
       "valueChange": "组合市值变化",
       "performanceLabel": "表现"
     },
-    "allocation": {
-      "title": "按板块分配"
-    },
     "ai": {
       "title": "AI 投资组合分析",
       "analyzing": "分析中...",
@@ -709,105 +695,6 @@
     "syncing": "同步中...",
     "failedToLoadData": "加载数据失败",
     "syncFailed": "同步失败"
-  },
-  "kol": {
-    "title": "KOL 追踪",
-    "hero": {
-      "title": "KOL 追踪",
-      "description": "关注有影响力的市场领袖，及时获取他们的洞察",
-      "trackTopKols": "追踪顶级 KOL",
-      "getNotified": "获取通知"
-    },
-    "tabs": {
-      "topRanking": "排行榜",
-      "trackingKols": "追踪中"
-    },
-    "headerTitle": {
-      "tracking": "追踪中的 KOL",
-      "ranking": "KOL 排行榜"
-    },
-    "comingSoon": "（即将推出）",
-    "failedToLoadKols": "加载 KOL 失败",
-    "ranking": {
-      "rank": "排名",
-      "kol": "KOL",
-      "platform": "平台",
-      "influence": "影响力",
-      "trending": "热度",
-      "followers": "粉丝",
-      "lastPost": "最近发帖",
-      "action": "操作",
-      "noKolsFound": "未找到 KOL",
-      "noKolsFoundDesc": "未找到 KOL，请稍后再试。",
-      "loadingMore": "加载更多 KOL...",
-      "noMoreKols": "没有更多 KOL 了",
-      "loading": "加载中",
-      "tracking": "追踪中",
-      "track": "追踪",
-      "untracked": "已取消追踪 {name}",
-      "nowTracking": "已开始追踪 {name}",
-      "failedToUpdateTracking": "更新追踪状态失败"
-    },
-    "tracker": {
-      "kol": "KOL",
-      "platform": "平台",
-      "followers": "粉丝",
-      "description": "简介",
-      "actions": "操作",
-      "noTrackedKols": "暂无追踪的 KOL。点击\"追踪新 KOL\"按钮开始追踪。",
-      "noMatchingKols": "没有匹配的 KOL。",
-      "stopTracking": "停止追踪",
-      "removeFromTracking": "移除追踪",
-      "followers_suffix": "粉丝",
-      "addDialog": {
-        "title": "追踪新 KOL",
-        "description": "从数据库中添加 KOL 到您的追踪列表。您可以在排行榜中找到 KOL ID。",
-        "kolId": "KOL ID",
-        "kolIdPlaceholder": "输入数据库中的 KOL ID",
-        "kolIdHint": "在排行榜中找到 KOL 并使用其 ID",
-        "platform": "平台",
-        "track": "追踪"
-      },
-      "deleteDialog": {
-        "title": "移除 KOL 追踪",
-        "description": "确定要停止追踪此 KOL 吗？您可以稍后重新添加追踪。",
-        "remove": "移除"
-      },
-      "toast": {
-        "added": "KOL 已成功添加到追踪列表",
-        "addFailed": "添加 KOL 失败",
-        "removed": "KOL 已从追踪列表移除",
-        "removeFailed": "移除 KOL 失败",
-        "stoppedTracking": "已停止追踪 KOL",
-        "updateFailed": "更新追踪状态失败"
-      }
-    },
-    "request": {
-      "button": "请求追踪 KOL",
-      "title": "请求追踪新 KOL",
-      "description": "提交请求以追踪 X (Twitter) 上的 KOL。我们的团队将审核并批准有效请求。",
-      "username": "X 用户名",
-      "usernamePlaceholder": "elonmusk",
-      "usernameHint": "输入不带 @ 符号的用户名",
-      "notes": "备注（可选）",
-      "notesPlaceholder": "为什么要追踪此 KOL？（例如：金融专家、股票分析师...）",
-      "infoText": "请求通常在 24-48 小时内审核。批准的 KOL 将自动添加到追踪系统。",
-      "submitting": "提交中...",
-      "submitRequest": "提交请求",
-      "enterValidUsername": "请输入有效的用户名",
-      "requestSubmitted": "已提交 @{username} 的追踪请求",
-      "requestSubmittedDesc": "您的请求将由我们的团队审核。",
-      "failedToSubmit": "提交请求失败"
-    },
-    "myRequests": {
-      "title": "我的 KOL 请求",
-      "pending": "{count} 个待审核",
-      "submitted": "提交于 {date}",
-      "reviewed": "审核于 {date}",
-      "admin": "管理员：",
-      "cancelSuccess": "请求已取消",
-      "cancelFailed": "取消请求失败"
-    }
   },
   "stocks": {
     "title": "股票",

@@ -103,7 +103,7 @@ export const MultiSelect = React.forwardRef<HTMLDivElement, MultiSelectProps>(
             >
               <div className="flex-1 flex flex-wrap gap-1 items-center min-w-0">
                 {selectedOptions.length === 0 ? (
-                  <span className="text-gray-500 dark:text-white/50">{placeholder}</span>
+                  <span className="text-muted-foreground">{placeholder}</span>
                 ) : (
                   <>
                     {selectedOptions.slice(0, maxVisibleTags).map((option) => (
@@ -125,7 +125,7 @@ export const MultiSelect = React.forwardRef<HTMLDivElement, MultiSelectProps>(
                       </span>
                     ))}
                     {selectedOptions.length > maxVisibleTags && (
-                      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600 dark:bg-white/10 dark:text-white/70">
+                      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-muted text-muted-foreground">
                         +{selectedOptions.length - maxVisibleTags} more
                       </span>
                     )}
@@ -151,7 +151,7 @@ export const MultiSelect = React.forwardRef<HTMLDivElement, MultiSelectProps>(
             <div className="max-h-[168px] overflow-y-auto">
               <div className="p-1 flex flex-col gap-1">
                 {options.length === 0 ? (
-                  <div className="py-6 text-center text-sm text-gray-500 dark:text-white/50">
+                  <div className="py-6 text-center text-sm text-muted-foreground">
                     No options available
                   </div>
                 ) : (
@@ -165,7 +165,7 @@ export const MultiSelect = React.forwardRef<HTMLDivElement, MultiSelectProps>(
                           "flex w-full cursor-pointer select-none items-center rounded-md py-2 pl-8 pr-2 text-sm outline-none transition-colors duration-150",
                           isSelected
                             ? "bg-primary/10 text-primary dark:bg-primary/20"
-                            : "hover:bg-gray-100 dark:hover:bg-white/10 text-gray-900 dark:text-white"
+                            : "hover:bg-muted text-foreground"
                         )}
                         role="option"
                         aria-selected={isSelected}

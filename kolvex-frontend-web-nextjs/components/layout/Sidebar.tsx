@@ -4,17 +4,8 @@ import Link from "next/link";
 import LogoIcon from "@/components/common/LogoIcon";
 import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
-import {
-  LayoutDashboard,
-  Settings,
-  PanelLeftClose,
-  PanelLeft,
-  Briefcase,
-  MessageCircleIcon,
-  ShieldCheck,
-  Youtube,
-  type LucideIcon,
-} from "lucide-react";
+import { Settings, PanelLeftClose, PanelLeft, ShieldCheck } from "lucide-react";
+import { MAIN_NAV_ITEMS } from "./navItems";
 import UserMenu from "@/components/user/UserMenu";
 import { Button } from "@/components/ui/button";
 import {
@@ -34,47 +25,7 @@ import { useBreakpoints } from "@/hooks";
 import { ChatSidebarContent } from "@/components/chat";
 import { useUserProfileContext } from "@/components/user/UserProfileProvider";
 import { useTranslation } from "@/lib/i18n";
-import {
-  isProductFeatureEnabled,
-  type ProductFeatureId,
-} from "@/lib/productFeatures";
-
-const mainNavItemDefs = [
-  {
-    icon: LayoutDashboard,
-    titleKey: "sidebar.chat",
-    href: "/dashboard",
-    type: "chat-submenu",
-    featureId: "chat",
-  },
-  {
-    icon: ShieldCheck,
-    titleKey: "sidebar.tradingAnalysis",
-    href: "/dashboard/trading-analysis",
-    type: "link",
-    featureId: "tradingAnalysis",
-  },
-  {
-    icon: Youtube,
-    titleKey: "sidebar.youtubeOpinions",
-    href: "/dashboard/youtube-opinions",
-    type: "link",
-    featureId: "youtubeOpinions",
-  },
-  {
-    icon: Briefcase,
-    titleKey: "sidebar.portfolio",
-    href: "/dashboard/portfolio",
-    type: "link",
-    featureId: "portfolio",
-  },
-] satisfies Array<{
-  icon: LucideIcon | null;
-  titleKey: string;
-  href: string;
-  type: "chat-submenu" | "link";
-  featureId: ProductFeatureId;
-}>;
+import { isProductFeatureEnabled } from "@/lib/productFeatures";
 
 const bottomNavItemDefs = [
   {
@@ -96,12 +47,12 @@ interface AppSidebarProps {
 
 function AppSidebar({ onNavigate }: AppSidebarProps) {
   const pathname = usePathname();
-  const { state, toggleSidebar, isInitialized } = useSidebar();
+  const { state, toggleSidebar, isInitialized, isMobile: sidebarIsMobile, openMobile, setOpenMobile } = useSidebar();
   const { profile } = useUserProfileContext();
   const { t } = useTranslation();
 
   // Resolve translated nav items
-  const mainNavItems = mainNavItemDefs
+  const mainNavItems = MAIN_NAV_ITEMS
     .filter((item) => isProductFeatureEnabled(item.featureId))
     .map((item) => ({
       ...item,
@@ -119,11 +70,20 @@ function AppSidebar({ onNavigate }: AppSidebarProps) {
   // Check if user is admin
   const isAdmin = profile?.is_admin ?? false;
 
-  const isCollapsed = isMounted && isInitialized && state === "collapsed";
+  const isCollapsed = isMounted && isInitialized && !sidebarIsMobile && state === "collapsed";
+  const sidebarVisible = isMounted && isInitialized && (sidebarIsMobile ? openMobile : state === "expanded");
+  const handleNavigate = () => {
+    setOpenMobile(false);
+    onNavigate?.();
+  };
+
+  useEffect(() => {
+    setOpenMobile(false);
+  }, [pathname, setOpenMobile]);
 
   const isActive = (href: string) => {
     if (href === "/dashboard") {
-      return pathname === "/dashboard";
+      return pathname === "/dashboard" || pathname.startsWith("/dashboard/chat");
     }
     return pathname.startsWith(href) && href !== "#";
   };
@@ -136,27 +96,27 @@ function AppSidebar({ onNavigate }: AppSidebarProps) {
     <SidebarPrimitive
       variant="sidebar"
       collapsible="icon"
-      className="border-r border-border"
+      className="border-r border-border/70"
     >
       <SidebarHeader>
         <div className="flex items-center justify-between gap-2 group-data-[collapsible=icon]:flex-col group-data-[collapsible=icon]:items-center">
           <Link
             href="/dashboard"
             className="flex items-center gap-2 py-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:w-full"
-            onClick={onNavigate}
+            onClick={handleNavigate}
           >
-            <div className="flex aspect-square size-9 items-center justify-center">
-              <LogoIcon size={24} />
+            <div className="flex aspect-square size-8 items-center justify-center">
+              <LogoIcon size={22} />
             </div>
-            <div className="flex flex-col gap-0.5 leading-none group-data-[collapsible=icon]:hidden">
-              <span className="text-lg font-extrabold">Kolvex</span>
-            </div>
+            <span className="text-[17px] font-bold tracking-[-0.02em] group-data-[collapsible=icon]:hidden">
+              Kolvex
+            </span>
           </Link>
           <Button
             variant="ghost"
             size="icon"
             onClick={toggleSidebar}
-            className="h-8 w-8 rounded-lg hidden lg:flex group-data-[collapsible=icon]:w-full group-data-[collapsible=icon]:justify-center"
+            className="hidden h-8 w-8 text-muted-foreground hover:text-foreground lg:flex group-data-[collapsible=icon]:w-full group-data-[collapsible=icon]:justify-center"
             suppressHydrationWarning
             title={t("sidebar.toggleSidebar")}
           >
@@ -188,14 +148,14 @@ function AppSidebar({ onNavigate }: AppSidebarProps) {
                       <SidebarMenuButton
                         asChild
                         isActive={isActive("/dashboard")}
-                        onClick={onNavigate}
+                        onClick={handleNavigate}
                       >
                         <Link href="/dashboard">
-                          <MessageCircleIcon className="size-4" />
+                          <item.icon />
                           <span>{t("sidebar.chat")}</span>
                         </Link>
                       </SidebarMenuButton>
-                      <ChatSidebarContent isCollapsed={isCollapsed} />
+                      <ChatSidebarContent isCollapsed={isCollapsed} enabled={sidebarVisible} onNavigate={handleNavigate} />
                     </SidebarMenuItem>
                   );
                 }
@@ -205,7 +165,7 @@ function AppSidebar({ onNavigate }: AppSidebarProps) {
                     <SidebarMenuButton
                       asChild
                       isActive={isActive(item.href)}
-                      onClick={onNavigate}
+                      onClick={handleNavigate}
                     >
                       <Link href={item.href}>
                         {item.icon && <item.icon />}
@@ -229,7 +189,7 @@ function AppSidebar({ onNavigate }: AppSidebarProps) {
                   <SidebarMenuButton
                     asChild
                     isActive={isActive(adminNavItem.href)}
-                    onClick={onNavigate}
+                    onClick={handleNavigate}
                   >
                     <Link href={adminNavItem.href}>
                       <adminNavItem.icon className="size-4" />
@@ -243,7 +203,7 @@ function AppSidebar({ onNavigate }: AppSidebarProps) {
                   <SidebarMenuButton
                     asChild
                     isActive={isActive(item.href)}
-                    onClick={onNavigate}
+                    onClick={handleNavigate}
                   >
                     <Link href={item.href}>
                       <item.icon className="size-4" />

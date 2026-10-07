@@ -51,14 +51,12 @@ export const PRODUCT_FEATURES = [
     apiPrefixes: [
       "/api/portfolio",
       "/api/plaid",
-      "/api/quant-strategies",
       "/api/stocks",
     ],
     componentDirs: ["components/portfolio"],
     libFiles: [
       "lib/portfolioApi.ts",
       "lib/plaidApi.ts",
-      "lib/quantStrategyApi.ts",
       "lib/stockApi.ts",
       "lib/stockApi.server.ts",
     ],
@@ -82,6 +80,7 @@ export const PRODUCT_FEATURES = [
 
 export const RETIRED_PRODUCT_ROUTE_PREFIXES = [
   "/community",
+  "/dashboard/alerts",
   "/dashboard/analytics",
   "/dashboard/investors",
   "/dashboard/kol",

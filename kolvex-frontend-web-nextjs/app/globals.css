@@ -10,59 +10,102 @@ html {
 }
 
 /* ========================================
-   DESIGN TOKENS — Tinted Neutrals
-   Warm-tinted grays with a hint of brand hue
-   for subconscious cohesion (Impeccable: color)
+   DESIGN TOKENS
+   Plain white / pure black ground, one grey,
+   hairlines. Green and orange-red mean direction.
+   *-foreground pairs keep text on fills ≥ 4.5:1.
    ======================================== */
 
 :root {
-  --background: 247 248 250;
-  --foreground: 23 23 23;
-  --muted: 241 245 249;
-  --muted-foreground: 100 116 139;
+  --background: 255 255 255;
+  --foreground: 0 0 0;
   --card: 255 255 255;
-  --card-foreground: 23 23 23;
-  --border: 229 231 235;
-  --secondary: 241 245 249;
-  --secondary-foreground: 15 23 42;
+  --card-foreground: 0 0 0;
+  --muted: 245 246 247;
+  --muted-foreground: 106 110 115;
+  --secondary: 238 240 242;
+  --secondary-foreground: 0 0 0;
+  --border: 227 229 232;
   --primary: 0 200 5;
-  --destructive: 239 68 68;
+  --primary-foreground: 0 0 0;
+  /* Text-safe direction colours (small text on the ground) */
+  --positive: 0 133 3;
+  --negative: 214 58 0;
+  --warning: 168 100 0;
+  /* Fill direction colours (charts, dots, large numerals) */
+  --positive-fill: 0 200 5;
+  --negative-fill: 255 80 0;
+  --destructive: 214 58 0;
   --destructive-foreground: 255 255 255;
-  --primary-foreground: 255 255 255;
 
   --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
   --ease-out-quint: cubic-bezier(0.22, 1, 0.36, 1);
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-in-quart: cubic-bezier(0.5, 0, 0.75, 0);
+
+  color-scheme: light;
 }
 
 .dark {
-  --background: 10 14 15;
-  --foreground: 229 231 235;
-  --muted: 30 33 36;
-  --muted-foreground: 156 163 175;
-  --card: 26 29 31;
-  --card-foreground: 229 231 235;
-  --border: 42 45 47;
-  --secondary: 30 33 36;
-  --secondary-foreground: 229 231 235;
+  --background: 0 0 0;
+  --foreground: 255 255 255;
+  --card: 14 15 16;
+  --card-foreground: 255 255 255;
+  --muted: 22 23 25;
+  --muted-foreground: 155 160 166;
+  --secondary: 30 32 34;
+  --secondary-foreground: 255 255 255;
+  --border: 40 42 45;
   --primary: 0 200 5;
-  --destructive: 239 68 68;
-  --destructive-foreground: 255 255 255;
-  --primary-foreground: 255 255 255;
+  --primary-foreground: 0 0 0;
+  --positive: 0 200 5;
+  --negative: 255 80 0;
+  --warning: 255 176 32;
+  --positive-fill: 0 200 5;
+  --negative-fill: 255 80 0;
+  --destructive: 255 80 0;
+  --destructive-foreground: 0 0 0;
+
+  color-scheme: dark;
 }
 
 body {
   color: rgb(var(--foreground));
   background: rgb(var(--background));
   font-kerning: normal;
+  font-feature-settings: "cv11", "ss01";
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   font-size: 14px;
   line-height: 1.55;
-  transition:
-    background-color 0.3s var(--ease-out-quart),
-    color 0.3s var(--ease-out-quart);
+  caret-color: rgb(var(--primary));
+  accent-color: rgb(var(--primary));
+}
+
+::selection {
+  background: rgb(var(--primary) / 0.28);
+  color: inherit;
+}
+
+a {
+  text-underline-offset: 3px;
+}
+
+@layer components {
+  /* Floating surfaces: shadow in light, hairline in dark where shadows vanish */
+  .surface-overlay {
+    background: rgb(var(--card));
+    color: rgb(var(--card-foreground));
+    border: 1px solid transparent;
+    box-shadow:
+      0 12px 32px -8px rgb(0 0 0 / 0.18),
+      0 2px 6px rgb(0 0 0 / 0.06);
+  }
+
+  .dark .surface-overlay {
+    border-color: rgb(var(--border));
+    box-shadow: 0 16px 40px -8px rgb(0 0 0 / 0.7);
+  }
 }
 
 /* Tabular numbers for data alignment */
@@ -179,18 +222,11 @@ body {
     display: none;
   }
 
-  /* Custom scrollbar styles - thin and modern */
   * {
-    /* Firefox */
     scrollbar-width: thin;
-    scrollbar-color: rgba(156, 163, 175, 0.3) transparent;
+    scrollbar-color: rgb(var(--foreground) / 0.18) transparent;
   }
 
-  .dark * {
-    scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
-  }
-
-  /* Webkit browsers (Chrome, Safari, Edge) */
   *::-webkit-scrollbar {
     width: 6px;
     height: 6px;
@@ -201,20 +237,19 @@ body {
   }
 
   *::-webkit-scrollbar-thumb {
-    background: rgba(156, 163, 175, 0.3);
+    background: rgb(var(--foreground) / 0.18);
     border-radius: 3px;
   }
 
   *::-webkit-scrollbar-thumb:hover {
-    background: rgba(156, 163, 175, 0.5);
+    background: rgb(var(--foreground) / 0.32);
   }
 
-  .dark *::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.2);
-  }
-
-  .dark *::-webkit-scrollbar-thumb:hover {
-    background: rgba(255, 255, 255, 0.3);
+  /* Large tabular numerals: prices, scores, values */
+  .figure {
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.02em;
+    font-feature-settings: "tnum", "cv11";
   }
 }
 
@@ -741,33 +776,42 @@ body {
 }
 
 .app-workbench [data-sidebar="header"] {
-  padding: 20px 16px 14px;
+  padding: 16px 12px 8px;
 }
 
 .app-workbench [data-sidebar="footer"] {
-  border-top: 1px solid rgb(var(--border));
-  padding: 12px;
+  padding: 8px 12px 12px;
 }
 
 .app-workbench [data-sidebar="menu-button"] {
   min-height: 40px;
-  border-radius: 6px;
+  border-radius: 9999px;
   gap: 12px;
-  transition: background-color 180ms ease, color 180ms ease;
+  padding-inline: 12px;
+  font-size: 14px;
+  font-weight: 500;
+  color: rgb(var(--muted-foreground));
+  transition: background-color 150ms ease, color 150ms ease;
+}
+
+.app-workbench [data-collapsible="icon"] [data-sidebar="menu-button"] {
+  min-height: 0;
+  padding-inline: 8px;
+}
+
+.app-workbench [data-sidebar="menu-button"]:hover {
+  color: rgb(var(--foreground));
 }
 
 .app-workbench [data-sidebar="menu-button"][data-active="true"] {
-  background: transparent;
-  box-shadow: none;
-  font-weight: 650;
+  background: rgb(var(--secondary));
+  color: rgb(var(--foreground));
+  font-weight: 600;
 }
 
 .app-workbench [data-sidebar="menu-button"] svg {
-  transition: transform 180ms var(--ease-out-quart);
-}
-
-.app-workbench [data-sidebar="menu-button"]:hover svg {
-  transform: translateX(2px);
+  width: 18px;
+  height: 18px;
 }
 
 .dashboard-content {
@@ -852,14 +896,6 @@ body {
 
 .dashboard-content .recharts-line-curve {
   animation: rh-chart-reveal 700ms var(--ease-out-quart) both;
-}
-
-.dashboard-content article {
-  transition: border-color 180ms ease;
-}
-
-.dashboard-content article:hover {
-  border-color: rgb(var(--foreground) / 0.3);
 }
 
 @keyframes rh-enter {

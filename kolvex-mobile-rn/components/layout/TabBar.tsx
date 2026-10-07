@@ -33,7 +33,6 @@ interface TabConfig {
 const TAB_CONFIG: Record<string, TabConfig> = {
   index: { icon: Home, label: 'Home' },
   stocks: { icon: TrendingUp, label: 'Stocks' },
-  kols: { icon: Users, label: 'KOLs' },
   chat: { icon: MessageCircle, label: 'AI Chat' },
   profile: { icon: User, label: 'Profile' },
 };

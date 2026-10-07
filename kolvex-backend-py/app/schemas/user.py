@@ -51,7 +51,6 @@ class UserProfileUpdate(BaseModel):
     avatar_url: Optional[str] = None
     phone_e164: Optional[str] = Field(None, max_length=20)
     theme: Optional[ThemeEnum] = None
-    email_notifications_enabled: Optional[bool] = None
 
     model_config = ConfigDict(use_enum_values=True)
 
@@ -72,12 +71,6 @@ class UserLocaleUpdate(BaseModel):
     model_config = ConfigDict(use_enum_values=True)
 
 
-class UserNotificationUpdate(BaseModel):
-    """更新用户通知设置"""
-
-    email_notifications_enabled: Optional[bool] = None
-
-    model_config = ConfigDict(use_enum_values=True)
 
 
 # ===== 响应 Schemas =====
@@ -95,7 +88,7 @@ class UserProfileResponse(BaseModel):
     membership: MembershipEnum
     theme: Optional[ThemeEnum] = None
     locale: Optional[str] = None
-    email_notifications_enabled: bool = True
+    email_notifications_enabled: bool = False
     is_admin: bool = False
     created_at: datetime
     updated_at: datetime
@@ -114,7 +107,7 @@ class UserProfileResponse(BaseModel):
                 "membership": "FREE",
                 "theme": "SYSTEM",
                 "locale": "en",
-                "email_notifications_enabled": True,
+                "email_notifications_enabled": False,
                 "is_admin": False,
                 "created_at": "2024-01-01T00:00:00Z",
                 "updated_at": "2024-01-01T00:00:00Z",
@@ -165,43 +158,3 @@ class ErrorResponse(BaseModel):
 
 
 # ===== Follow 相关 Schemas =====
-
-
-class UserFollowResponse(BaseModel):
-    """用户关注响应"""
-
-    id: str
-    follower_id: str
-    following_id: str
-    created_at: datetime
-
-    model_config = ConfigDict(from_attributes=True)
-
-
-class FollowStatusResponse(BaseModel):
-    """关注状态响应"""
-
-    is_following: bool
-    followers_count: int = 0
-    following_count: int = 0
-
-
-class FollowListResponse(BaseModel):
-    """关注列表响应"""
-
-    users: list["FollowUserInfo"]
-    total: int
-    page: int
-    page_size: int
-
-
-class FollowUserInfo(BaseModel):
-    """关注用户基本信息"""
-
-    user_id: str
-    username: Optional[str] = None
-    full_name: Optional[str] = None
-    avatar_url: Optional[str] = None
-    is_following: bool = False  # 当前用户是否关注该用户
-
-    model_config = ConfigDict(from_attributes=True)

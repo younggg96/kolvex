@@ -1,2 +1,0 @@
-"""Robinhood portfolio sync service."""
-

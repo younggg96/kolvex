@@ -21,10 +21,10 @@ export default function SectionHeader({
           <Icon className="w-5 h-5 text-primary" />
         </div>
         <div>
-          <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">
+          <h3 className="text-base sm:text-lg font-semibold text-foreground">
             {title}
           </h3>
-          <p className="text-xs sm:text-sm text-gray-600 dark:text-white/60">
+          <p className="text-xs sm:text-sm text-muted-foreground">
             {subtitle}
           </p>
         </div>

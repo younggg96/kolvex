@@ -54,10 +54,14 @@ function groupConversationsByDate(conversations: ChatHistoryItem[]) {
 
 interface ChatSidebarContentProps {
   isCollapsed?: boolean;
+  enabled?: boolean;
+  onNavigate?: () => void;
 }
 
 export function ChatSidebarContent({
   isCollapsed = false,
+  enabled = true,
+  onNavigate,
 }: ChatSidebarContentProps) {
   const router = useRouter();
   const [conversations, setConversations] = useState<ChatHistoryItem[]>([]);
@@ -65,11 +69,17 @@ export function ChatSidebarContent({
     string | null
   >(null);
   const [isLoading, setIsLoading] = useState(true);
-  const initialLoadDone = useRef(false);
+  const needsRefresh = useRef(true);
+  const inFlight = useRef(false);
+  const enabledRef = useRef(enabled);
+  enabledRef.current = enabled;
 
   // Load conversations from API
   const loadConversations = useCallback(async () => {
-    if (typeof window === "undefined") return;
+    if (typeof window === "undefined" || !enabledRef.current || inFlight.current) return;
+    inFlight.current = true;
+    needsRefresh.current = false;
+    setIsLoading(true);
 
     try {
       const response = await chatApi.getConversations();
@@ -86,17 +96,17 @@ export function ChatSidebarContent({
       );
       setConversations(apiConversations);
     } catch (err) {
+      needsRefresh.current = true;
       console.error("Failed to load conversations:", err);
     } finally {
+      inFlight.current = false;
       setIsLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    if (initialLoadDone.current) return;
-    initialLoadDone.current = true;
-    loadConversations();
-  }, [loadConversations]);
+    if (enabled && needsRefresh.current) void loadConversations();
+  }, [enabled, loadConversations]);
 
   useEffect(() => {
     // Listen for current chat changes (from useChatHistory)
@@ -106,7 +116,8 @@ export function ChatSidebarContent({
 
     // Listen for conversation updates (refresh list when new message added)
     const handleConversationUpdate = () => {
-      loadConversations();
+      needsRefresh.current = true;
+      if (enabledRef.current) void loadConversations();
     };
 
     window.addEventListener(
@@ -136,9 +147,10 @@ export function ChatSidebarContent({
       setCurrentConversationId(id);
 
       // Navigate to specific chat page
+      onNavigate?.();
       router.push(`/dashboard/chat/${id}`);
     },
-    [router]
+    [router, onNavigate]
   );
 
   // Handle delete conversation
@@ -152,6 +164,7 @@ export function ChatSidebarContent({
         setConversations(remaining);
 
         if (currentConversationId === id) {
+          onNavigate?.();
           setCurrentConversationId(null);
 
           // Navigate: if there are other conversations, go to the most recent one;
@@ -166,13 +179,13 @@ export function ChatSidebarContent({
         console.error("Failed to delete conversation:", err);
       }
     },
-    [currentConversationId, conversations, router]
+    [currentConversationId, conversations, router, onNavigate]
   );
 
   const grouped = groupConversationsByDate(conversations);
 
   // Collapsed state - hide content
-  if (isCollapsed) {
+  if (isCollapsed || !enabled) {
     return null;
   }
 
@@ -181,7 +194,7 @@ export function ChatSidebarContent({
     return (
       <div className="flex flex-col h-full pl-3">
         <div className="flex items-center justify-center h-32">
-          <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
+          <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
         </div>
       </div>
     );
@@ -247,7 +260,7 @@ function ConversationSection({
 
   return (
     <div>
-      <h3 className="px-2 py-1 text-[10px] font-bold tracking-wider text-gray-400 dark:text-gray-500">
+      <h3 className="px-2 py-1 text-xs font-semibold text-muted-foreground">
         {title}
       </h3>
       {conversations.map((conv) => (
@@ -298,14 +311,14 @@ function ConversationItem({
       className={cn(
         "group relative w-full flex items-start gap-2 p-2 rounded-lg text-left transition-all duration-200 cursor-pointer",
         isActive
-          ? "bg-primary/10 text-primary"
-          : "hover:bg-gray-100 dark:hover:bg-white/5 text-gray-700 dark:text-gray-300"
+          ? "bg-secondary text-foreground"
+          : "hover:bg-muted text-muted-foreground hover:text-foreground"
       )}
     >
       <MessagesSquare className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
       <div className="flex-1 min-w-0 overflow-hidden">
-        <p className="text-xs font-medium truncate">{conversation.title}</p>
-        <p className="text-[10px] text-gray-400 dark:text-gray-500 truncate">
+        <p className="text-[13px] font-medium truncate">{conversation.title}</p>
+        <p className="text-[11px] text-muted-foreground truncate">
           {formatRelativeTime(new Date(conversation.updatedAt))}
         </p>
       </div>
@@ -316,7 +329,7 @@ function ConversationItem({
             e.stopPropagation();
             onDelete();
           }}
-          className="absolute right-1 top-1/2 -translate-y-1/2 p-1 rounded text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
+          className="absolute right-1 top-1/2 -translate-y-1/2 p-1 rounded text-muted-foreground hover:text-negative hover:bg-negative/10 transition-colors"
         >
           <Trash2 className="w-3 h-3" />
         </button>

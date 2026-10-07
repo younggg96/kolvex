@@ -162,57 +162,6 @@ export function SentimentBadge({ sentiment, size = 'md', style }: SentimentBadge
   );
 }
 
-// Platform Badge
-interface PlatformBadgeProps {
-  platform: 'twitter' | 'reddit' | 'youtube' | 'xiaohongshu';
-  size?: BadgeSize;
-  style?: ViewStyle;
-}
-
-export function PlatformBadge({ platform, size = 'sm', style }: PlatformBadgeProps) {
-  const getPlatformInfo = (): { label: string; color: string } => {
-    switch (platform) {
-      case 'twitter':
-        return { label: 'Twitter', color: '#1DA1F2' };
-      case 'reddit':
-        return { label: 'Reddit', color: '#FF4500' };
-      case 'youtube':
-        return { label: 'YouTube', color: '#FF0000' };
-      case 'xiaohongshu':
-        return { label: '小红书', color: '#FE2C55' };
-      default:
-        return { label: platform, color: '#6B7280' };
-    }
-  };
-
-  const { label, color } = getPlatformInfo();
-
-  const sizeStyles = {
-    sm: { paddingVertical: 2, paddingHorizontal: Spacing.sm, fontSize: FontSize.xs },
-    md: { paddingVertical: Spacing.xs, paddingHorizontal: Spacing.sm, fontSize: FontSize.sm },
-    lg: { paddingVertical: Spacing.sm, paddingHorizontal: Spacing.md, fontSize: FontSize.base },
-  };
-
-  return (
-    <View
-      style={[
-        styles.container,
-        {
-          backgroundColor: `${color}20`,
-          paddingVertical: sizeStyles[size].paddingVertical,
-          paddingHorizontal: sizeStyles[size].paddingHorizontal,
-          borderRadius: BorderRadius.md,
-        },
-        style,
-      ]}
-    >
-      <Text style={[styles.text, { color, fontSize: sizeStyles[size].fontSize }]}>
-        {label}
-      </Text>
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
   container: {
     alignSelf: 'flex-start',

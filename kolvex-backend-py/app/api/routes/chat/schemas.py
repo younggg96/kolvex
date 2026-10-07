@@ -57,7 +57,7 @@ class SendMessageRequest(BaseModel):
     )
     sources: Optional[List[str]] = Field(
         default=None,
-        description="Active data sources: kol, news, web, portfolio. If not set, all sources are available."
+        description="Active data sources: web, portfolio, plaid. If not set, all sources are available."
     )
 
 

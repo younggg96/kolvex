@@ -25,12 +25,6 @@ const nextConfig = {
       "i.pravatar.cc",
       // Google (User Avatars)
       "lh3.googleusercontent.com",
-      // Twitter/X
-      "pbs.twimg.com",
-      "abs.twimg.com",
-      "abs-0.twimg.com",
-      // Twitter/X Periscope (Live streaming thumbnails)
-      "prod-fastly-us-east-1.video.pscp.tv",
       // Reddit
       "www.redditstatic.com",
       "i.redd.it",
@@ -42,12 +36,7 @@ const nextConfig = {
       "i.ytimg.com",
       "yt3.ggpht.com",
       "img.youtube.com",
-      // RedNote (小红书)
-      "sns-img-qc.xhscdn.com",
-      "sns-img-bd.xhscdn.com",
-      "sns-img-hw.xhscdn.com",
       "ci.rednote.com",
-      "sns-avatar-qc.xhscdn.com",
       // Finnhub (Company Logos)
       "static.finnhub.io",
       "static2.finnhub.io",
@@ -68,13 +57,7 @@ const nextConfig = {
         port: "",
         pathname: "/storage/v1/object/public/**",
       },
-      // Twitter/X Periscope live streaming thumbnails
-      {
-        protocol: "https",
-        hostname: "**.video.pscp.tv",
-        port: "",
-        pathname: "/**",
-      },
+
     ],
     dangerouslyAllowSVG: true,
     contentDispositionType: "attachment",
@@ -105,7 +88,6 @@ const nextConfig = {
         'self'
         'unsafe-inline'
         'unsafe-eval'
-        https://platform.twitter.com
         https://s3.tradingview.com
         https://*.tradingview.com
         https://va.vercel-scripts.com
@@ -120,7 +102,6 @@ const nextConfig = {
       script-src-elem
         'self'
         'unsafe-inline'
-        https://platform.twitter.com
         https://s3.tradingview.com
         https://*.tradingview.com
         https://va.vercel-scripts.com
@@ -135,7 +116,6 @@ const nextConfig = {
       style-src
         'self'
         'unsafe-inline'
-        https://platform.twitter.com
         https://*.tradingview.com
         https://*.financialjuice.com
         https://feed.financialjuice.com
@@ -168,7 +148,6 @@ const nextConfig = {
       connect-src
         'self'
         https://*.tradingview.com
-        https://platform.twitter.com
         https://*.supabase.co
         https://va.vercel-scripts.com
         https://vercel.live
@@ -190,7 +169,6 @@ const nextConfig = {
         'self'
         https://vercel.live
         https://*.vercel.live
-        https://platform.twitter.com
         https://x.com
         https://twitter.com
         https://www.youtube.com
@@ -244,7 +222,7 @@ const nextConfig = {
       },
       // Authenticated app routes and API calls are real-time data surfaces.
       // Do not let browser/proxy caches or old service workers serve stale
-      // portfolio and Robinhood sync state.
+      // portfolio sync state.
       {
         source: "/dashboard/:path*",
         headers: [

@@ -72,7 +72,6 @@ async function proxyRequest(
  * - /api/portfolio/status -> GET /status
  * - /api/portfolio/holdings -> GET /holdings
  * - /api/portfolio/holdings/:userId -> GET /holdings/:userId (public, no auth)
- * - /api/portfolio/public-users -> GET /public-users (public, no auth)
  * - /api/portfolio/history -> GET /history (with period query param)
  * - /api/portfolio/history/status -> GET /history/status
  * - /api/portfolio/analysis/health -> GET /analysis/health
@@ -98,18 +97,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         });
       }
 
-    case "public-users": {
-      // /api/portfolio/public-users - get all public users (no auth)
-      const limit = searchParams.get("limit") || "20";
-      const offset = searchParams.get("offset") || "0";
-      const sortBy = searchParams.get("sort_by") || "updated";
-      const sortOrder = searchParams.get("sort_order") || "desc";
-      return proxyRequest(
-        request,
-        `/public-users?limit=${limit}&offset=${offset}&sort_by=${sortBy}&sort_order=${sortOrder}`,
-        { method: "GET", requireAuth: false }
-      );
-    }
+
 
     case "privacy-settings":
       // /api/portfolio/privacy-settings - get privacy settings

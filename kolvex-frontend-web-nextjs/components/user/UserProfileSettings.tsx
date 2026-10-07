@@ -15,7 +15,6 @@ export default function UserProfileSettings() {
     error,
     updateProfile,
     updateTheme,
-    updateNotifications,
   } = useCurrentUserProfile();
 
   // 表单状态
@@ -78,28 +77,12 @@ export default function UserProfileSettings() {
     }
   };
 
-  // 更新通知设置
-  const handleNotificationToggle = async () => {
-    if (!profile) return;
 
-    const result = await updateNotifications({
-      email_notifications_enabled: !profile.email_notifications_enabled,
-    });
-
-    if (result.success) {
-      setMessage({
-        type: "success",
-        text: profile.email_notifications_enabled ? "已关闭邮件通知" : "已开启邮件通知",
-      });
-    } else {
-      setMessage({ type: "error", text: result.error || "更新失败" });
-    }
-  };
 
   if (loading) {
     return (
       <div className="flex items-center justify-center p-8">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-border"></div>
       </div>
     );
   }
@@ -107,9 +90,9 @@ export default function UserProfileSettings() {
   if (error) {
     return (
       <div className="p-8">
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-          <h3 className="text-red-800 font-semibold">加载失败</h3>
-          <p className="text-red-600 mt-2">{error}</p>
+        <div className="bg-negative/10 border border-negative/30 rounded-lg p-4">
+          <h3 className="text-negative font-semibold">加载失败</h3>
+          <p className="text-negative mt-2">{error}</p>
         </div>
       </div>
     );
@@ -124,8 +107,8 @@ export default function UserProfileSettings() {
         <div
           className={`mb-6 p-4 rounded-lg ${
             message.type === "success"
-              ? "bg-green-50 border border-green-200 text-green-800"
-              : "bg-red-50 border border-red-200 text-red-800"
+              ? "bg-positive/10 border border-positive/30 text-positive"
+              : "bg-negative/10 border border-negative/30 text-negative"
           }`}
         >
           {message.text}
@@ -138,20 +121,20 @@ export default function UserProfileSettings() {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-foreground mb-2">
               邮箱
             </label>
             <input
               type="email"
               value={profile?.email || ""}
               disabled
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50"
+              className="w-full px-4 py-2 border border-border rounded-lg bg-muted"
             />
-            <p className="text-sm text-gray-500 mt-1">邮箱无法修改</p>
+            <p className="text-sm text-muted-foreground mt-1">邮箱无法修改</p>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-foreground mb-2">
               用户名
             </label>
             <input
@@ -160,12 +143,12 @@ export default function UserProfileSettings() {
               value={formData.username}
               onChange={handleInputChange}
               placeholder="输入用户名"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-foreground mb-2">
               全名
             </label>
             <input
@@ -174,12 +157,12 @@ export default function UserProfileSettings() {
               value={formData.full_name}
               onChange={handleInputChange}
               placeholder="输入全名"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-foreground mb-2">
               手机号
             </label>
             <input
@@ -188,9 +171,9 @@ export default function UserProfileSettings() {
               value={formData.phone_e164}
               onChange={handleInputChange}
               placeholder="+1234567890"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
-            <p className="text-sm text-gray-500 mt-1">
+            <p className="text-sm text-muted-foreground mt-1">
               请使用 E.164 格式（如 +1234567890）
             </p>
           </div>
@@ -198,7 +181,7 @@ export default function UserProfileSettings() {
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600 disabled:bg-gray-400 disabled:cursor-not-allowed transition"
+            className="w-full bg-primary text-primary-foreground py-2 px-4 rounded-full font-semibold hover:brightness-95 disabled:opacity-50 disabled:cursor-not-allowed transition"
           >
             {isSubmitting ? "保存中..." : "保存更改"}
           </button>
@@ -214,8 +197,8 @@ export default function UserProfileSettings() {
             onClick={() => handleThemeChange("LIGHT")}
             className={`p-4 border-2 rounded-lg transition ${
               profile?.theme === "LIGHT"
-                ? "border-blue-500 bg-blue-50"
-                : "border-gray-200 hover:border-gray-300"
+                ? "border-border bg-muted"
+                : "border-border hover:border-border"
             }`}
           >
             <div className="text-center">
@@ -228,8 +211,8 @@ export default function UserProfileSettings() {
             onClick={() => handleThemeChange("DARK")}
             className={`p-4 border-2 rounded-lg transition ${
               profile?.theme === "DARK"
-                ? "border-blue-500 bg-blue-50"
-                : "border-gray-200 hover:border-gray-300"
+                ? "border-border bg-muted"
+                : "border-border hover:border-border"
             }`}
           >
             <div className="text-center">
@@ -242,8 +225,8 @@ export default function UserProfileSettings() {
             onClick={() => handleThemeChange("SYSTEM")}
             className={`p-4 border-2 rounded-lg transition ${
               profile?.theme === "SYSTEM"
-                ? "border-blue-500 bg-blue-50"
-                : "border-gray-200 hover:border-gray-300"
+                ? "border-border bg-muted"
+                : "border-border hover:border-border"
             }`}
           >
             <div className="text-center">
@@ -254,49 +237,18 @@ export default function UserProfileSettings() {
         </div>
       </section>
 
-      {/* 通知设置 */}
-      <section className="bg-white rounded-lg shadow p-6">
-        <h2 className="text-xl font-semibold mb-4">通知设置</h2>
-
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="font-medium">邮件通知</p>
-              <p className="text-sm text-gray-600">
-                开启后当关注的人有持仓变化时会收到邮件通知
-              </p>
-            </div>
-
-            <button
-              onClick={handleNotificationToggle}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${
-                profile?.email_notifications_enabled ? "bg-blue-500" : "bg-gray-300"
-              }`}
-            >
-              <span
-                className={`inline-block h-4 w-4 transform rounded-full bg-white transition ${
-                  profile?.email_notifications_enabled
-                    ? "translate-x-6"
-                    : "translate-x-1"
-                }`}
-              />
-            </button>
-          </div>
-        </div>
-      </section>
-
       {/* 账户信息 */}
-      <section className="bg-gray-50 rounded-lg p-6 mt-6">
+      <section className="bg-muted rounded-lg p-6 mt-6">
         <h2 className="text-xl font-semibold mb-4">账户信息</h2>
 
         <div className="grid grid-cols-2 gap-4 text-sm">
           <div>
-            <p className="text-gray-600">账户 ID</p>
+            <p className="text-muted-foreground">账户 ID</p>
             <p className="font-mono mt-1">{profile?.id.slice(0, 8)}...</p>
           </div>
 
           <div>
-            <p className="text-gray-600">注册时间</p>
+            <p className="text-muted-foreground">注册时间</p>
             <p className="mt-1">
               {profile?.created_at &&
                 new Date(profile.created_at).toLocaleDateString("zh-CN")}

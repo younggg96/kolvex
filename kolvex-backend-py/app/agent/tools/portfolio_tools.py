@@ -51,7 +51,7 @@ def _fetch_portfolio(user_id: str) -> str:
                 "status": "empty",
                 "user_id": user_id,
                 "message": "The user has not connected a brokerage account yet, so there is no portfolio data available. "
-                           "Suggest the user connect Robinhood or Interactive Brokers from the portfolio page.",
+                           "Suggest the user connect a supported brokerage from the portfolio page.",
                 "positions": [],
             })
 

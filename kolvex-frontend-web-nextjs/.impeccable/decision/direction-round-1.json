@@ -1,0 +1,169 @@
+{
+  "title": "选择 Kolvex 的视觉方向",
+  "question": "随机分配到了「晚间天气预报」方向。保留它、换成备选，或者重新抽一轮。",
+  "options": [
+    {
+      "id": "assigned",
+      "label": "晚间天气预报",
+      "kicker": "THE ROLL",
+      "lineage": "新闻联播后的天气预报：城市列表、天气状况、最高/最低温度条",
+      "thesis": "每只股票像预报里的一座城市：一眼看到博主共识，以及所有博主打分的最高与最低区间。",
+      "palette": ["#0E3A7B", "#F3F7FC", "#00C805", "#E5484D", "#F5A524", "#10213A"],
+      "materials": ["纯色播报面板，无渐变无阴影", "城市列表式的表格节奏", "窄体数字（Archivo 窄宽轴）+ 系统黑体"],
+      "viewport": "左侧整条预报蓝侧栏；YouTube 观点页打开即是股票列表，每行：代码、公司、共识（看涨/看跌/分歧/中性）、博主数、-100 到 +100 的观点区间条（每位博主一个刻度），以及最新日期。",
+      "risk": "天气隐喻处理不好会显得卖萌，或让人误以为 Kolvex 在做预测；文案必须写「博主观点」，界面里不放天气图标。",
+      "raised": [
+        { "from": "jet-age ticket wallet", "raise": "观点不会消失，只会作废：博主改口后，旧观点留在历史里，划线并标注修改日期。" },
+        { "from": "orienteering map", "raise": "保留色只做一件事：预报蓝只用于当前选中，绿/红只用于看涨/看跌方向。" },
+        { "from": "variable font specimen", "raise": "层级只靠字号对比：分数用大号窄体数字，标签用小字，不用色块框来强调。" },
+        { "from": "zoo guide map", "raise": "纯色平涂：侧栏是一整块实色，全站不用渐变和装饰阴影。" },
+        { "from": "factory records sleeve", "raise": "一张图统领页面：每个详情页顶部只放一张主图，即分数随时间的走势。" }
+      ],
+      "wireframe": {
+        "cols": 12, "rows": 10,
+        "regions": [
+          { "label": "预报蓝侧栏", "x": 0, "y": 0, "w": 2, "h": 10, "accent": true },
+          { "label": "页头 + 股票/博主切换", "x": 2, "y": 0, "w": 10, "h": 1 },
+          { "label": "股票列表：共识 + 观点区间条", "x": 2, "y": 1, "w": 7, "h": 9 },
+          { "label": "选中股票：分数走势 + 最新观点", "x": 9, "y": 1, "w": 3, "h": 9 }
+        ]
+      },
+      "comp": ".impeccable/mocks/decision/assigned.webp"
+    },
+    {
+      "id": "model-pick",
+      "label": "券商研报",
+      "kicker": "IMPECCABLE’S PICK",
+      "lineage": "中资券商研报的封面与首页：投资评级框、核心观点、风险提示",
+      "thesis": "每只股票、每位博主的页面都像一份研报首页：评级框、核心观点、风险提示、分数区间。",
+      "palette": ["#FFFFFF", "#00C805", "#1A1F1C", "#E5484D", "#D9DEE3"],
+      "materials": ["顶部品牌绿色条", "细线表格", "评级框"],
+      "viewport": "股票页顶部是评级框（共识 + 平均分 + 博主数），下方左栏核心观点、右栏风险提示，再往下是按博主排列的观点表。",
+      "risk": "最熟悉的方向，也是这类产品多数方案会落到的地方；容易像一份文档，而不是一个可操作的工具。",
+      "wireframe": {
+        "cols": 12, "rows": 10,
+        "regions": [
+          { "label": "侧栏", "x": 0, "y": 0, "w": 2, "h": 10 },
+          { "label": "品牌绿色条 + 评级框", "x": 2, "y": 0, "w": 10, "h": 2, "accent": true },
+          { "label": "核心观点", "x": 2, "y": 2, "w": 5, "h": 4 },
+          { "label": "风险提示", "x": 7, "y": 2, "w": 5, "h": 4 },
+          { "label": "博主观点表", "x": 2, "y": 6, "w": 10, "h": 4 }
+        ]
+      },
+      "comp": ".impeccable/mocks/decision/model-pick.webp"
+    },
+    {
+      "id": "challenger-acetate-tabs",
+      "label": "带索引页的说明书",
+      "verdict": "competitive",
+      "lineage": "盒装软件说明书的彩色分隔页和侧边阶梯索引",
+      "thesis": "每个功能区一种分区色，一条阶梯式索引带贯穿全站，用户始终知道自己在哪一章。",
+      "palette": ["#00C805", "#E8A317", "#1E7F8C", "#3A4FB8", "#F7F7F2", "#16181A"],
+      "materials": ["乳白半透明内容层", "整页分区色底板"],
+      "viewport": "侧栏是阶梯索引：AI 对话、深度分析、YouTube 观点、投资组合各一种颜色，当前分区的颜色铺满页头。",
+      "case": "融合后产品清晰度不错（四个分区一眼可分），但目标用户对说明书没有认同感。",
+      "risk": "多种分区色会冲淡品牌绿；分区色若到处出现，会和看涨/看跌的红绿语义打架。",
+      "wireframe": {
+        "cols": 12, "rows": 10,
+        "regions": [
+          { "label": "阶梯索引侧栏", "x": 0, "y": 0, "w": 2, "h": 10, "accent": true },
+          { "label": "分区色页头", "x": 2, "y": 0, "w": 10, "h": 2, "accent": true },
+          { "label": "内容层", "x": 2, "y": 2, "w": 10, "h": 8 }
+        ]
+      },
+      "comp": ".impeccable/mocks/decision/challenger-acetate-tabs.webp",
+      "hero": "https://impeccable.style/worlds/cards/rw-manual-acetate-tab-board-hero.webp"
+    },
+    {
+      "id": "challenger-ticket-wallet",
+      "label": "喷气时代机票夹",
+      "verdict": "declined",
+      "lineage": "复写联机票、行李牌",
+      "thesis": "每条观点是一张票根，状态用印章盖上去。",
+      "palette": ["#1B2A52", "#C8102E", "#FFFFFF", "#5B3A8C"],
+      "materials": ["复写纸", "作废印章"],
+      "viewport": "观点按票根堆叠，作废的旧观点盖章。",
+      "risk": "票据隐喻和投资观点关系很弱。",
+      "case": "两个维度都输：用户不认同，信息也不更清楚。",
+      "kept": "观点只作废、不消失。",
+      "hero": "https://impeccable.style/worlds/cards/vernacular-ephemera-jet-age-ticket-wallet-hero.webp"
+    },
+    {
+      "id": "challenger-orienteering",
+      "label": "定向越野地图",
+      "verdict": "declined",
+      "lineage": "ISOM 标准配色的定向越野地图",
+      "thesis": "用户持仓是叠在观点地形上的紫色路线。",
+      "palette": ["#FFFFFF", "#8DBF3F", "#F6C342", "#A0522D", "#9B2FAE"],
+      "materials": ["等高线", "紫色路线层"],
+      "viewport": "观点地形图上叠加持仓路线。",
+      "risk": "地图隐喻对数据阅读是负担。",
+      "case": "两个维度都输。",
+      "kept": "保留色只用于当前选中。",
+      "hero": "https://impeccable.style/worlds/cards/notation-diagram-systems-orienteering-map-hero.webp"
+    },
+    {
+      "id": "challenger-type-specimen",
+      "label": "可变字体样张",
+      "verdict": "declined",
+      "lineage": "字体样张",
+      "thesis": "只用字号对比建立层级。",
+      "palette": ["#FAFAF7", "#111111", "#00C805"],
+      "materials": ["大留白", "巨大字形"],
+      "viewport": "一个巨大分数占满屏幕。",
+      "risk": "对数据密集的工具来说太空。",
+      "case": "两个维度都输。",
+      "kept": "层级只靠字号对比。",
+      "hero": "https://impeccable.style/worlds/cards/variable-font-specimen-hero.webp"
+    },
+    {
+      "id": "challenger-zoo-map",
+      "label": "动物园导览图",
+      "verdict": "declined",
+      "lineage": "平涂色块导览图",
+      "thesis": "每个区域是一块膨胀的纯色色块。",
+      "palette": ["#8ED462", "#F5F1E4", "#2C2E2A", "#F5E211", "#FF705D"],
+      "materials": ["纯色平涂"],
+      "viewport": "一块色块统领每屏。",
+      "risk": "太童趣，不适合投资工具。",
+      "case": "两个维度都输。",
+      "kept": "纯色平涂，不用渐变。",
+      "hero": "https://impeccable.style/worlds/cards/aww2-zoo-gardens-guide-map-hero.webp"
+    },
+    {
+      "id": "challenger-saville",
+      "label": "Factory 唱片目录",
+      "verdict": "declined",
+      "lineage": "Peter Saville 唱片封套",
+      "thesis": "黑底白线脉冲图统领整个画面。",
+      "palette": ["#0A0A0A", "#FFFFFF", "#E63946", "#2A9D8F"],
+      "materials": ["哑光黑", "白色细线图"],
+      "viewport": "一张脉冲图占满全屏。",
+      "risk": "黑底单色是 AI 常见套路，且需要亮色模式。",
+      "case": "两个维度都输。",
+      "kept": "一张图统领页面。",
+      "hero": "https://impeccable.style/worlds/cards/brand-identity-canon-saville-catalog-sleeve-hero.webp"
+    }
+  ],
+  "reroll": { "registers": ["safer", "bolder"] },
+  "buildPath": { "value": "code", "toggle": true },
+  "canon": true,
+  "canonCard": {
+    "label": "行业标准做法",
+    "thesis": "像富途牛牛、Robinhood 那样的金融产品，做到极致精致。",
+    "palette": ["#FFFFFF", "#0F1419", "#00C805", "#F2F4F6"],
+    "materials": ["干净网格", "圆角卡片", "列表"],
+    "viewport": "侧栏 + 页头 + 卡片列表，用户预期的布局，做到最高工艺。",
+    "risk": "刻意和竞品一样，难以区分。",
+    "wireframe": {
+      "cols": 12, "rows": 10,
+      "regions": [
+        { "label": "侧栏", "x": 0, "y": 0, "w": 2, "h": 10 },
+        { "label": "页头", "x": 2, "y": 0, "w": 10, "h": 1 },
+        { "label": "卡片列表", "x": 2, "y": 1, "w": 10, "h": 9 }
+      ]
+    },
+    "comp": ".impeccable/mocks/decision/canon.webp"
+  },
+  "steer": true
+}

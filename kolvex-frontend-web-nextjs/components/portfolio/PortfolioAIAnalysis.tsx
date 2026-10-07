@@ -57,33 +57,33 @@ const SENTIMENT_CONFIG = {
     bullish: {
         icon: TrendingUp,
         label: "Bullish",
-        className: "bg-green-50 dark:bg-green-500/10 text-green-600 dark:text-green-400 border-green-200 dark:border-green-500/20",
+        className: "bg-positive/10 text-positive border-positive/30",
     },
     bearish: {
         icon: TrendingDown,
         label: "Bearish",
-        className: "bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 border-red-200 dark:border-red-500/20",
+        className: "bg-negative/10 text-negative border-negative/30",
     },
     neutral: {
         icon: MinusCircle,
         label: "Neutral",
-        className: "bg-muted text-gray-600 dark:text-gray-400 border-border",
+        className: "bg-muted text-muted-foreground border-border",
     },
 } as const;
 
 const RECOMMENDATION_CONFIG = {
-    strong_buy: { label: "Strong Buy", icon: CheckCircle2, className: "bg-green-600 text-white" },
-    buy: { label: "Buy", icon: TrendingUp, className: "bg-green-500/20 text-green-600 dark:text-green-400" },
-    buy_more: { label: "Buy More", icon: TrendingUp, className: "bg-green-500/20 text-green-600 dark:text-green-400" },
-    hold: { label: "Hold", icon: MinusCircle, className: "bg-amber-500/20 text-amber-600 dark:text-amber-400" },
-    reduce: { label: "Reduce", icon: TrendingDown, className: "bg-orange-500/20 text-orange-600 dark:text-orange-400" },
-    sell: { label: "Sell", icon: XCircle, className: "bg-red-500/20 text-red-600 dark:text-red-400" },
+    strong_buy: { label: "Strong Buy", icon: CheckCircle2, className: "bg-primary text-primary-foreground" },
+    buy: { label: "Buy", icon: TrendingUp, className: "bg-positive/10 text-positive" },
+    buy_more: { label: "Buy More", icon: TrendingUp, className: "bg-positive/10 text-positive" },
+    hold: { label: "Hold", icon: MinusCircle, className: "bg-warning/10 text-warning" },
+    reduce: { label: "Reduce", icon: TrendingDown, className: "bg-warning/10 text-warning" },
+    sell: { label: "Sell", icon: XCircle, className: "bg-negative/10 text-negative" },
 } as const;
 
 const RISK_CONFIG = {
-    low: { label: "Low Risk", color: "bg-green-500", width: "33%", textColor: "text-green-600 dark:text-green-400" },
-    medium: { label: "Medium Risk", color: "bg-amber-500", width: "66%", textColor: "text-amber-600 dark:text-amber-400" },
-    high: { label: "High Risk", color: "bg-red-500", width: "100%", textColor: "text-red-600 dark:text-red-400" },
+    low: { label: "Low Risk", color: "bg-positive-fill", width: "33%", textColor: "text-positive" },
+    medium: { label: "Medium Risk", color: "bg-warning", width: "66%", textColor: "text-warning" },
+    high: { label: "High Risk", color: "bg-negative-fill", width: "100%", textColor: "text-negative" },
 } as const;
 
 // ============================================================
@@ -140,9 +140,9 @@ function RiskMeter({ level, t }: { level: string; t: TFunction }) {
 
 function DiversificationGauge({ score, t }: { score: number; t: TFunction }) {
     const getColor = (s: number) => {
-        if (s >= 70) return { ring: "text-green-500", text: "text-green-600 dark:text-green-400" };
-        if (s >= 40) return { ring: "text-amber-500", text: "text-amber-600 dark:text-amber-400" };
-        return { ring: "text-red-500", text: "text-red-600 dark:text-red-400" };
+        if (s >= 70) return { ring: "text-positive", text: "text-positive" };
+        if (s >= 40) return { ring: "text-warning", text: "text-warning" };
+        return { ring: "text-negative", text: "text-negative" };
     };
     const colors = getColor(score);
     const circumference = 2 * Math.PI * 40;
@@ -160,7 +160,7 @@ function DiversificationGauge({ score, t }: { score: number; t: TFunction }) {
                         fill="none"
                         stroke="currentColor"
                         strokeWidth="8"
-                        className="text-gray-200 dark:text-white/10"
+                        className="text-gray-200"
                     />
                     <circle
                         cx="50"
@@ -213,7 +213,7 @@ function StockAnalysisItem({ stock, t }: { stock: StockAnalysis; t: TFunction })
         <AccordionItem value={stock.symbol} className="border border-border rounded-lg mb-2 overflow-hidden">
             <AccordionTrigger className="px-4 py-3 hover:no-underline hover:bg-muted transition-colors">
                 <div className="flex items-center gap-3 flex-1">
-                    <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center shrink-0">
+                    <div className="w-10 h-10 rounded-lg  from-primary/20 to-primary/5 flex items-center justify-center shrink-0">
                         <span className="text-sm font-bold text-primary">
                             {stock.symbol.slice(0, 2).toUpperCase()}
                         </span>
@@ -279,7 +279,7 @@ function OverallAnalysisSection({ analysis, t }: { analysis: OverallAnalysis; t:
     return (
         <div className="space-y-4">
             {/* Summary Card */}
-            <div className="p-4 rounded-lg bg-gradient-to-br from-primary/5 via-primary/3 to-transparent border border-primary/10">
+            <div className="p-4 rounded-lg  from-primary/5 via-primary/3 to-transparent border border-primary/10">
                 <p className="text-sm leading-relaxed">{analysis.summary}</p>
             </div>
 
@@ -304,15 +304,15 @@ function OverallAnalysisSection({ analysis, t }: { analysis: OverallAnalysis; t:
             {/* Strengths & Weaknesses */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {analysis.strengths && analysis.strengths.length > 0 && (
-                    <div className="p-4 rounded-lg border border-green-200 dark:border-green-500/20 bg-green-50/50 dark:bg-green-500/5">
+                    <div className="p-4 rounded-lg border border-positive/30 bg-positive/10">
                         <div className="flex items-center gap-2 mb-3">
-                            <CheckCircle2 className="w-4 h-4 text-green-600 dark:text-green-400" />
-                            <span className="text-sm font-semibold text-green-700 dark:text-green-400">{t("portfolio.ai.strengths")}</span>
+                            <CheckCircle2 className="w-4 h-4 text-positive" />
+                            <span className="text-sm font-semibold text-positive">{t("portfolio.ai.strengths")}</span>
                         </div>
                         <ul className="space-y-1.5">
                             {analysis.strengths.map((item, idx) => (
-                                <li key={idx} className="flex items-start gap-2 text-sm text-green-800 dark:text-green-300/80">
-                                    <span className="w-1 h-1 rounded-full bg-green-500 mt-2 shrink-0" />
+                                <li key={idx} className="flex items-start gap-2 text-sm text-positive">
+                                    <span className="w-1 h-1 rounded-full bg-positive-fill mt-2 shrink-0" />
                                     <span>{item}</span>
                                 </li>
                             ))}
@@ -321,15 +321,15 @@ function OverallAnalysisSection({ analysis, t }: { analysis: OverallAnalysis; t:
                 )}
 
                 {analysis.weaknesses && analysis.weaknesses.length > 0 && (
-                    <div className="p-4 rounded-lg border border-amber-200 dark:border-amber-500/20 bg-amber-50/50 dark:bg-amber-500/5">
+                    <div className="p-4 rounded-lg border border-warning/30 bg-warning/10">
                         <div className="flex items-center gap-2 mb-3">
-                            <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400" />
-                            <span className="text-sm font-semibold text-amber-700 dark:text-amber-400">{t("portfolio.ai.areasToImprove")}</span>
+                            <AlertTriangle className="w-4 h-4 text-warning" />
+                            <span className="text-sm font-semibold text-warning">{t("portfolio.ai.areasToImprove")}</span>
                         </div>
                         <ul className="space-y-1.5">
                             {analysis.weaknesses.map((item, idx) => (
-                                <li key={idx} className="flex items-start gap-2 text-sm text-amber-800 dark:text-amber-300/80">
-                                    <span className="w-1 h-1 rounded-full bg-amber-500 mt-2 shrink-0" />
+                                <li key={idx} className="flex items-start gap-2 text-sm text-warning">
+                                    <span className="w-1 h-1 rounded-full bg-warning mt-2 shrink-0" />
                                     <span>{item}</span>
                                 </li>
                             ))}
@@ -346,10 +346,10 @@ function OverallAnalysisSection({ analysis, t }: { analysis: OverallAnalysis; t:
 // ============================================================
 
 const SUGGESTION_SECTIONS = [
-    { key: "rebalancing", titleKey: "portfolio.ai.rebalancing", icon: Target, color: "text-gery-500 dark:text-blue-400", bg: "bg-blue-500/10" },
-    { key: "risk_management", titleKey: "portfolio.ai.riskManagement", icon: Shield, color: "text-purple-500 dark:text-purple-400", bg: "bg-purple-500/10" },
-    { key: "opportunities", titleKey: "portfolio.ai.opportunities", icon: Lightbulb, color: "text-amber-500 dark:text-amber-400", bg: "bg-amber-500/10" },
-    { key: "tax_considerations", titleKey: "portfolio.ai.taxTips", icon: Info, color: "text-teal-500 dark:text-teal-400", bg: "bg-teal-500/10" },
+    { key: "rebalancing", titleKey: "portfolio.ai.rebalancing", icon: Target, color: "text-gery-500", bg: "bg-muted" },
+    { key: "risk_management", titleKey: "portfolio.ai.riskManagement", icon: Shield, color: "text-foreground", bg: "bg-muted" },
+    { key: "opportunities", titleKey: "portfolio.ai.opportunities", icon: Lightbulb, color: "text-warning", bg: "bg-warning/10" },
+    { key: "tax_considerations", titleKey: "portfolio.ai.taxTips", icon: Info, color: "text-foreground", bg: "bg-muted" },
 ] as const;
 
 function SuggestionsSection({ suggestions, t }: { suggestions: PortfolioAnalysisResponse["portfolio_suggestions"]; t: TFunction }) {
@@ -441,8 +441,8 @@ function EmptyAnalysisState({ onAnalyze, loading, t }: { onAnalyze: () => void; 
 function ErrorState({ error, onRetry, t }: { error: string; onRetry: () => void; t: TFunction }) {
     return (
         <div className="text-center py-10">
-            <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-red-500/10 flex items-center justify-center">
-                <AlertTriangle className="w-7 h-7 text-red-500" />
+            <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-negative/10 flex items-center justify-center">
+                <AlertTriangle className="w-7 h-7 text-negative" />
             </div>
             <h3 className="font-semibold mb-1">{t("portfolio.ai.analysisFailed")}</h3>
             <p className="text-sm text-muted-foreground mb-4 max-w-sm mx-auto">{error}</p>

@@ -354,7 +354,7 @@ export function OptionPositionsTable({
                       <span className="text-muted-foreground">***</span>
                     ) : (
                       <span
-                        className={`inline-flex items-center gap-0.5 tabular-nums font-medium ${profit ? "text-green-600" : "text-red-600"
+                        className={`inline-flex items-center gap-0.5 tabular-nums font-medium ${profit ? "text-positive" : "text-negative"
                           }`}
                       >
                         {profit ? (
@@ -371,7 +371,7 @@ export function OptionPositionsTable({
                       <span className="text-muted-foreground">***</span>
                     ) : (
                       <span
-                        className={`inline-flex items-center gap-0.5 tabular-nums font-medium ${pnlPerShareProfit ? "text-green-600" : "text-red-600"
+                        className={`inline-flex items-center gap-0.5 tabular-nums font-medium ${pnlPerShareProfit ? "text-positive" : "text-negative"
                           }`}
                       >
                         {pnlPerShareProfit ? (
@@ -402,7 +402,7 @@ export function OptionPositionsTable({
                         }
                         className={`p-1.5 rounded-md transition-colors ${pos.is_hidden
                           ? "text-muted-foreground hover:text-foreground hover:bg-muted"
-                          : "text-green-600 hover:text-green-700 hover:bg-green-50 dark:hover:bg-green-950"
+                          : "text-positive hover:text-positive hover:bg-positive/10"
                           }`}
                         title={
                           pos.is_hidden

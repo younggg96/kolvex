@@ -77,21 +77,14 @@ export function ReportCard({
   if (!content) return null;
   return (
     <TooltipProvider>
-      <div
-        className={cn(
-          "bg-card border border-border rounded-lg overflow-hidden transition-all duration-300 hover:border-primary/30 dark:hover:border-primary/20",
-          className
-        )}
-      >
-        <div className="flex items-center gap-2 px-4 py-3 border-b border-border bg-gray-50/50 dark:bg-white/[0.02]">
-          <div className="w-6 h-6 rounded-md bg-primary/10 dark:bg-primary/20 flex items-center justify-center shrink-0">
-            <Icon className="w-3.5 h-3.5 text-primary" />
-          </div>
-          <h3 className="text-sm font-semibold text-foreground">
+      <section className={cn("border-t border-border pt-4", className)}>
+        <div className="flex flex-wrap items-center gap-2 pb-3">
+          <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />
+          <h3 className="text-[17px] font-semibold text-foreground">
             {title}
           </h3>
           {headerExtra && (
-            <div className="flex-1 flex justify-end">{headerExtra}</div>
+            <div className="order-last flex w-full sm:order-none sm:w-auto sm:flex-1 sm:justify-end">{headerExtra}</div>
           )}
           {!headerExtra && <div className="flex-1" />}
           <div className="flex items-center gap-0.5">
@@ -100,10 +93,10 @@ export function ReportCard({
                 <button
                   type="button"
                   onClick={handleCopy}
-                  className="p-1.5 rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                  className="flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground transition-colors duration-150 hover:bg-muted hover:text-foreground"
                 >
                   {copied ? (
-                    <Check className="w-3.5 h-3.5 text-primary" />
+                    <Check className="w-3.5 h-3.5 text-positive" />
                   ) : (
                     <Copy className="w-3.5 h-3.5" />
                   )}
@@ -123,7 +116,7 @@ export function ReportCard({
                 <button
                   type="button"
                   onClick={handleDownload}
-                  className="p-1.5 rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                  className="flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground transition-colors duration-150 hover:bg-muted hover:text-foreground"
                 >
                   <Download className="w-3.5 h-3.5" />
                 </button>
@@ -138,7 +131,7 @@ export function ReportCard({
                 <button
                   type="button"
                   onClick={handleShare}
-                  className="p-1.5 rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                  className="flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground transition-colors duration-150 hover:bg-muted hover:text-foreground"
                 >
                   <Share2 className="w-3.5 h-3.5" />
                 </button>
@@ -156,10 +149,10 @@ export function ReportCard({
             />
           </div>
         </div>
-        <div className="p-4 max-h-[500px] overflow-y-auto">
+        <div className="max-w-[72ch]">
           <MarkdownBody content={displayContent || ""} />
         </div>
-      </div>
+      </section>
     </TooltipProvider>
   );
 }

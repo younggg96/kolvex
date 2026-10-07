@@ -631,56 +631,8 @@ async def get_options_chain(
         raise HTTPException(status_code=500, detail=f"获取期权链失败: {str(e)}")
 
 
-@router.get(
-    "/holders/{symbol}",
-    response_model=HoldersResponse,
-    summary="获取持仓数据",
-    description="获取机构持仓、主要持有人、内部人交易等信息"
-)
-async def get_holders(
-    symbol: str = Path(..., description="股票代码")
-):
-    """获取持仓数据"""
-    try:
-        service = get_yfinance_service()
-        data = service.get_holders(symbol)
-        return HoldersResponse(
-            symbol=data["symbol"],
-            held_percent_insiders=data.get("held_percent_insiders"),
-            held_percent_institutions=data.get("held_percent_institutions"),
-            float_shares=data.get("float_shares"),
-            shares_outstanding=data.get("shares_outstanding"),
-            shares_short=data.get("shares_short"),
-            short_ratio=data.get("short_ratio"),
-            short_percent_of_float=data.get("short_percent_of_float"),
-            shares_short_prior_month=data.get("shares_short_prior_month"),
-            institutional_holders=[InstitutionalHolder(**h) for h in data.get("institutional_holders", [])],
-            major_holders=[MajorHolder(**h) for h in data.get("major_holders", [])],
-            insider_transactions=[InsiderTransaction(**t) for t in data.get("insider_transactions", [])]
-        )
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"获取持仓数据失败: {str(e)}")
 
 
-@router.get(
-    "/insider-transactions/{symbol}",
-    summary="获取内部人交易",
-    description="获取内部人交易记录详情"
-)
-async def get_insider_transactions(
-    symbol: str = Path(..., description="股票代码")
-):
-    """获取内部人交易记录"""
-    try:
-        service = get_yfinance_service()
-        data = service.get_insider_transactions(symbol)
-        return {
-            "symbol": symbol.upper(),
-            "transactions": data,
-            "count": len(data)
-        }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"获取内部人交易失败: {str(e)}")
 
 
 # ============================================================
@@ -743,26 +695,6 @@ async def get_earnings(
         raise HTTPException(status_code=500, detail=f"获取盈利数据失败: {str(e)}")
 
 
-@router.get(
-    "/news/{symbol}",
-    response_model=NewsResponse,
-    summary="获取相关新闻",
-    description="获取股票相关的最新新闻"
-)
-async def get_news(
-    symbol: str = Path(..., description="股票代码")
-):
-    """获取相关新闻"""
-    try:
-        service = get_yfinance_service()
-        data = service.get_news(symbol)
-        return NewsResponse(
-            symbol=symbol.upper(),
-            news=[NewsItem(**n) for n in data],
-            count=len(data)
-        )
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"获取新闻失败: {str(e)}")
 
 
 # ============================================================
@@ -794,13 +726,3 @@ async def get_stock_overview(
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"获取综合概览失败: {str(e)}")
-
-
-
-
-
-
-
-
-
-

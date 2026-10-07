@@ -1,9 +1,8 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
-import { Zap, Briefcase, Youtube, ArrowUpRight } from "lucide-react";
+import { useState, useRef } from "react";
+import { MessageCircle, Briefcase, Youtube, ArrowUpRight } from "lucide-react";
 import Link from "next/link";
-import { ChipButton } from "@/components/ui/chip-button";
 import { ChatInput, MODEL_CONFIGS } from "./ChatInput";
 import { useTranslation } from "@/lib/i18n";
 import type { ChatWelcomeProps } from "./types";
@@ -20,7 +19,7 @@ const PROVIDER_NAME_TO_ID: Record<string, string> = {
 
 const suggestionKeys = [
   { key: "chat.suggestions.reviewPortfolio", isChat: true },
-  { key: "chat.suggestions.checkWashSale", isChat: true },
+  { key: "chat.suggestions.analyzeNvidia", isChat: true },
 ];
 
 export function ChatWelcome({
@@ -71,15 +70,8 @@ export function ChatWelcome({
 
   return (
     <div className="flex flex-1 flex-col items-center justify-center overflow-y-auto px-5 py-10 md:px-8">
-      {/* Welcome Section */}
-      <div className="mx-auto mb-8 w-full max-w-2xl text-left animate-fade-in">
-        {/* Badge */}
-        <div className="mb-4 text-sm font-medium text-muted-foreground">
-          {t("chat.badge")}
-        </div>
-
-        {/* Heading */}
-        <h1 className="mb-4 text-2xl font-medium leading-snug text-foreground md:text-3xl">
+      <div className="mx-auto mb-8 w-full max-w-2xl animate-fade-in">
+        <h1 className="text-[28px] font-bold leading-tight tracking-[-0.01em] text-foreground md:text-[32px]">
           {(() => {
             const raw = t("chat.heading");
             const parts = raw.split(/<highlight>|<\/highlight>/);
@@ -89,16 +81,13 @@ export function ChatWelcome({
             return raw;
           })()}
         </h1>
-
-        {/* Description */}
-        <p className="max-w-xl text-sm leading-relaxed text-muted-foreground">
+        <p className="mt-3 max-w-xl text-[15px] leading-relaxed text-muted-foreground">
           {t("chat.description")}
         </p>
       </div>
 
-      {/* Search Input */}
       <div
-        className="mx-auto mb-8 w-full max-w-2xl animate-fade-in-up"
+        className="mx-auto w-full max-w-2xl animate-fade-in-up"
         style={{ animationDelay: "100ms" }}
       >
         <ChatInput
@@ -119,25 +108,37 @@ export function ChatWelcome({
           availableProviders={availableProviders}
         />
 
-        {/* Quick Suggestions — only chat suggestions are blocked when no key */}
-        <div className="mt-4 flex flex-wrap items-center gap-2">
+        <ul className="mt-6 divide-y divide-border border-y border-border">
           {suggestions.map((suggestion, index) => (
-            <ChipButton
-              key={index}
-              onClick={() => handleSuggestionClick(suggestion)}
-              disabled={suggestion.isChat && isBlocked}
-              icon={<Zap className="w-3 h-3 text-primary/70" />}
-            >
-              {suggestion.text}
-            </ChipButton>
+            <li key={index}>
+              <button
+                type="button"
+                onClick={() => handleSuggestionClick(suggestion)}
+                disabled={suggestion.isChat && isBlocked}
+                className="group flex w-full items-center gap-3 py-3.5 text-left text-[15px] transition-colors duration-150 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+              >
+                <MessageCircle className="h-4 w-4 shrink-0 text-muted-foreground" />
+                <span className="min-w-0 flex-1">{suggestion.text}</span>
+                <ArrowUpRight className="h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-150 group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
+              </button>
+            </li>
           ))}
-        </div>
-      </div>
-      <div className="mx-auto grid w-full max-w-2xl gap-4 border-t border-border pt-5 sm:grid-cols-2">
-        {[
-          { href: "/dashboard/youtube-opinions", icon: Youtube, label: locale === "zh" ? "比较博主股票观点" : "Compare creator opinions" },
-          { href: "/dashboard/portfolio", icon: Briefcase, label: locale === "zh" ? "查看投资组合" : "Review your portfolio" },
-        ].map(({ href, icon: Icon, label }) => <Link key={href} href={href} className="flex min-w-0 items-center gap-3 rounded-md py-3 text-sm hover:text-primary"><Icon className="h-5 w-5 shrink-0 text-muted-foreground" /><span className="flex-1">{label}</span><ArrowUpRight className="h-4 w-4 shrink-0" /></Link>)}
+          {[
+            { href: "/dashboard/youtube-opinions", icon: Youtube, label: locale === "zh" ? "比较博主的股票观点" : "Compare creator opinions" },
+            { href: "/dashboard/portfolio", icon: Briefcase, label: locale === "zh" ? "查看投资组合" : "Review your portfolio" },
+          ].map(({ href, icon: Icon, label }) => (
+            <li key={href}>
+              <Link
+                href={href}
+                className="group flex min-w-0 items-center gap-3 py-3.5 text-[15px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+              >
+                <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />
+                <span className="flex-1">{label}</span>
+                <ArrowUpRight className="h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-150 group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
+              </Link>
+            </li>
+          ))}
+        </ul>
       </div>
     </div>
   );

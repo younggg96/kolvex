@@ -100,7 +100,7 @@ export default function YouTubeOpinionImporter({ onImported }: { onImported?: ()
               ["direction_score / confidence", "可选：方向分数 -100 到 100；置信度 0 到 1"],
               ["thesis / time_horizon", "可选：观点理由 / 时间范围"],
               ["key_points / risks / price_targets", "可选：要点字符串数组 / 风险字符串数组 / 目标价对象数组"],
-            ].map(([field, description]) => <tr key={field} className="border-b border-border"><td className="p-2 font-mono">{field}</td><td className="p-2">{description}</td></tr>)}
+            ].map(([field, description]) => <tr key={field} className="border-b border-border"><td className="max-w-32 break-all p-2 font-mono sm:max-w-none">{field}</td><td className="p-2">{description}</td></tr>)}
           </tbody></table>
           <Textarea aria-label="Gemini 提示词" readOnly value={prompt} className="mt-3 h-48 font-mono text-xs" />
         </div>
@@ -122,17 +122,17 @@ export default function YouTubeOpinionImporter({ onImported }: { onImported?: ()
         <Textarea id="youtube-json-payload" value={text} disabled={busy} onChange={(event) => updateText(event.target.value)} spellCheck={false} className="h-64 font-mono text-xs" />
       </div>
       {error && <div role="alert" className="break-words rounded-md border border-destructive/30 p-3 text-sm text-destructive">{error}</div>}
-      {result && <div role="status" className="flex items-start gap-2 text-sm text-emerald-600"><CheckCircle2 className="h-4 w-4 shrink-0" />{result}</div>}
+      {result && <div role="status" className="flex items-start gap-2 text-sm text-positive"><CheckCircle2 className="h-4 w-4 shrink-0" />{result}</div>}
       {preview && <section className="space-y-3 border-t pt-4">
         <h3 className="text-sm font-medium">{preview.channel_title} · {preview.video_title} · {preview.count} 条观点</h3>
-        <div className="max-h-64 overflow-auto"><table className="w-full text-left text-xs"><thead><tr className="border-b"><th className="p-2">股票</th><th className="p-2">观点</th><th className="p-2">分数</th><th className="p-2">日期</th><th className="p-2">摘要</th></tr></thead><tbody>
+        <div className="max-h-64 min-w-0 overflow-auto"><table className="w-full text-left text-xs"><thead><tr className="border-b"><th className="p-2">股票</th><th className="p-2">观点</th><th className="p-2">分数</th><th className="p-2">日期</th><th className="p-2">摘要</th></tr></thead><tbody>
           {preview.opinions.map((row) => <tr key={row.ticker} className="border-b"><td className="p-2 font-medium">{row.ticker}</td><td className="p-2">{{ bullish: "看涨", bearish: "看跌", neutral: "中性", mixed: "分歧" }[row.sentiment]}</td><td className="p-2">{row.direction_score}</td><td className="whitespace-nowrap p-2">{row.opinion_date}</td><td className="min-w-40 break-words p-2">{row.summary}</td></tr>)}
         </tbody></table></div>
         <p className="text-xs text-muted-foreground">导入后观点将对所有用户可见。同一视频 ID 与股票代码的记录会被更新；每日变化按视频发布时间统计。</p>
       </section>}
-      <div className="sticky bottom-0 flex flex-wrap gap-2 border-t border-border bg-card py-4">
-        <Button variant="outline" onClick={validate} disabled={busy || !text.trim()}><CheckCircle2 className="mr-2 h-4 w-4" />校验并预览</Button>
-        <Button onClick={submit} disabled={busy || !preview || !payload}>{busy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}确认导入</Button>
+      <div className="sticky bottom-0 grid grid-cols-2 gap-2 border-t border-border bg-card py-4 sm:flex sm:flex-wrap">
+        <Button variant="outline" className="h-11 px-2 sm:px-4" onClick={validate} disabled={busy || !text.trim()}><CheckCircle2 className="mr-2 h-4 w-4" />校验并预览</Button>
+        <Button className="h-11 px-2 sm:px-4" onClick={submit} disabled={busy || !preview || !payload}>{busy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}确认导入</Button>
       </div>
     </div>
   );

@@ -33,29 +33,23 @@ const TriggerButton = React.forwardRef<HTMLButtonElement, TriggerButtonProps>(
       switch (variant) {
         case "green":
           return [
-            "border-2 border-green-500 bg-green-500/20 text-gray-900",
-            "hover:bg-green-500/30 hover:border-green-500",
-            "dark:border-green-500 dark:bg-green-500/20 dark:text-green-400",
-            "dark:hover:bg-green-500/30 dark:hover:border-green-500",
+            "border-2 border-positive/30 bg-positive/10 text-foreground",
+            "hover:bg-positive/20 hover:border-positive/50",
           ];
         case "red":
           return [
-            "border-2 border-red-500 bg-red-500/20 text-gray-900",
-            "hover:bg-red-500/30 hover:border-red-500",
-            "dark:border-red-500 dark:bg-red-500/20 dark:text-red-400",
-            "dark:hover:bg-red-500/30 dark:hover:border-red-500",
+            "border-2 border-negative/30 bg-negative/10 text-foreground",
+            "hover:bg-negative/20 hover:border-negative/50",
           ];
         case "gray":
           return [
-            "border-2 border-gray-400 bg-gray-400/20 text-gray-900",
-            "hover:bg-gray-400/30 hover:border-gray-400",
-            "dark:border-gray-400 dark:bg-gray-400/20 dark:text-gray-300",
-            "dark:hover:bg-gray-400/30 dark:hover:border-gray-400",
+            "border-2 border-border bg-foreground/10 text-foreground",
+            "hover:bg-foreground/[0.15] hover:border-border",
           ];
         default:
           return [
             // Light mode - selected
-            "border-2 border-primary/60 bg-primary/40 text-gray-900",
+            "border-2 border-primary/60 bg-primary/40 text-foreground",
             "hover:bg-primary/10 hover:border-primary",
             
             // Dark mode - selected
@@ -81,12 +75,10 @@ const TriggerButton = React.forwardRef<HTMLButtonElement, TriggerButtonProps>(
           // Default state (not selected)
           !selected && [
             // Light mode - default
-            "border border-gray-200 bg-white text-gray-900",
-            "hover:bg-gray-50 hover:border-gray-300",
+            "border border-border bg-background text-foreground",
+            "hover:bg-muted hover:border-border",
             
             // Dark mode - default
-            "dark:border-white/10 dark:bg-white/5 dark:text-white",
-            "dark:hover:bg-white/10 dark:hover:border-white/20",
           ],
           
           // Selected state with variant styles

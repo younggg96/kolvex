@@ -379,8 +379,7 @@ export default function PrivacyPage() {
               policies before providing them with your information.
             </p>
             <p className="text-gray-700 dark:text-gray-300 mb-4">
-              The Service aggregates content from third-party platforms
-              (Twitter, Reddit, YouTube, Xiaohongshu). Your interactions with
+              The Service presents creator stock opinions from YouTube. Your interactions with
               that content may be subject to those platforms&apos; privacy
               policies.
             </p>

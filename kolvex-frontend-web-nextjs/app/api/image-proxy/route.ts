@@ -4,8 +4,6 @@ export const dynamic = "force-dynamic";
 
 // 允许代理的域名白名单
 const ALLOWED_DOMAINS = [
-  "pbs.twimg.com",
-  "abs.twimg.com",
   "financialmodelingprep.com",
   "static.finnhub.io",
   "static2.finnhub.io",
@@ -13,19 +11,6 @@ const ALLOWED_DOMAINS = [
   "upload.wikimedia.org",
   "i.ytimg.com",
   "yt3.ggpht.com",
-  // 小红书图片 CDN (包含所有可能的子域名)
-  "sns-webpic-qc.xhscdn.com",
-  "sns-webpic-bd.xhscdn.com",
-  "sns-webpic-hw.xhscdn.com",
-  "sns-img-qc.xhscdn.com",
-  "sns-img-bd.xhscdn.com",
-  "sns-img-hw.xhscdn.com",
-  "sns-avatar-qc.xhscdn.com",
-  "ci.xiaohongshu.com",
-  // 添加其他可能出现的 CDN 域名
-  "sns-video-qc.xhscdn.com",
-  "sns-video-bd.xhscdn.com",
-  "sns-video-hw.xhscdn.com",
 ];
 
 export async function GET(request: NextRequest) {
@@ -65,13 +50,7 @@ export async function GET(request: NextRequest) {
       return new NextResponse("Domain not allowed", { status: 403 });
     }
 
-    // 4. 判断是否是小红书域名 (用于特殊处理)
-    const isXhsDomain =
-      parsedUrl.hostname.includes("xhscdn.com") ||
-      parsedUrl.hostname.includes("xiaohongshu.com");
-
-    // 5. 构造伪装 Header
-    // 小红书等平台检查非常严格，必须模拟真实浏览器的行为
+    // 构造外部图片请求 Header
     const fetchHeaders: HeadersInit = {
       // 核心：告诉服务器我们访问的是哪个主机
       Host: parsedUrl.host,
@@ -97,15 +76,7 @@ export async function GET(request: NextRequest) {
       Pragma: "no-cache",
     };
 
-    // 小红书特殊的 Referer 处理
-    if (isXhsDomain) {
-      // 经验证，小红书部分 CDN 节点如果检测到 Referer 为空或非官方域名会拦截
-      fetchHeaders["Referer"] = "https://www.xiaohongshu.com/";
-      fetchHeaders["Origin"] = "https://www.xiaohongshu.com";
-    } else {
-      // 其他网站一般使用源站作为 Referer
-      fetchHeaders["Referer"] = parsedUrl.origin;
-    }
+    fetchHeaders["Referer"] = parsedUrl.origin;
 
     // 6. 发起请求
     const response = await fetch(decodedUrl, {

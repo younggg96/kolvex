@@ -34,9 +34,9 @@ function Calendar({
         table: "w-full border-collapse space-y-1",
         head_row: "flex",
         head_cell:
-          "text-gray-500 dark:text-white/50 rounded-md w-9 font-normal text-[0.8rem]",
+          "text-muted-foreground rounded-md w-9 font-normal text-[0.8rem]",
         row: "flex w-full mt-2",
-        cell: "h-9 w-9 text-center text-sm !p-0 relative [&:has([aria-selected].day-range-end)]:rounded-r-md [&:has([aria-selected].day-outside)]:bg-gray-100/50 dark:[&:has([aria-selected].day-outside)]:bg-white/5 [&:has([aria-selected])]:bg-gray-100 dark:[&:has([aria-selected])]:bg-white/10 first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md focus-within:relative focus-within:z-20",
+        cell: "h-9 w-9 text-center text-sm !p-0 relative [&:has([aria-selected].day-range-end)]:rounded-r-md [&:has([aria-selected].day-outside)]:bg-muted dark:[&:has([aria-selected].day-outside)]:bg-white/5 [&:has([aria-selected])]:bg-muted dark:[&:has([aria-selected])]:bg-white/10 first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md focus-within:relative focus-within:z-20",
         day: cn(
           buttonVariants({ variant: "ghost" }),
           "h-9 w-9 !p-0 font-normal aria-selected:opacity-100"
@@ -44,12 +44,12 @@ function Calendar({
         day_range_end: "day-range-end",
         day_selected:
           "bg-primary text-white hover:!bg-primary hover:!text-white",
-        day_today: "bg-gray-100 dark:bg-white/10 text-gray-900 dark:text-white",
+        day_today: "bg-muted text-foreground",
         day_outside:
-          "day-outside text-gray-500 dark:text-white/50 opacity-50 aria-selected:bg-gray-100/50 dark:aria-selected:bg-white/5 aria-selected:text-gray-500 dark:aria-selected:text-white/50 aria-selected:opacity-30",
-        day_disabled: "text-gray-500 dark:text-white/50 opacity-50",
+          "day-outside text-muted-foreground opacity-50 aria-selected:bg-muted dark:aria-selected:bg-white/5 aria-selected:text-muted-foreground dark:aria-selected:text-white/50 aria-selected:opacity-30",
+        day_disabled: "text-muted-foreground opacity-50",
         day_range_middle:
-          "aria-selected:bg-gray-100 dark:aria-selected:bg-white/10 aria-selected:text-gray-900 dark:aria-selected:text-white",
+          "aria-selected:bg-muted dark:aria-selected:bg-white/10 aria-selected:text-foreground dark:aria-selected:text-white",
         day_hidden: "invisible",
         ...classNames,
       }}

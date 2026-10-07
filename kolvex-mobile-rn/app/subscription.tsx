@@ -20,7 +20,7 @@ const PLANS = [
     current: true,
     features: [
       'Basic stock tracking (5 stocks)',
-      'KOL feed access',
+      'Stock market data',
       'AI chat (limited)',
       'Basic sentiment analysis',
     ],
@@ -32,7 +32,7 @@ const PLANS = [
     badge: 'Popular',
     features: [
       'Unlimited stock tracking',
-      'Full KOL analytics',
+      'AI investment analysis',
       'Unlimited AI chat',
       'Advanced sentiment analysis',
       'Price alerts',

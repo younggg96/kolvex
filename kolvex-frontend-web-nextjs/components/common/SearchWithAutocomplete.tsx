@@ -223,14 +223,14 @@ export default function SearchWithAutocomplete<T extends SearchItem>({
           )}
         >
           {!searchTerm && popularLabel && (
-            <div className="px-3 py-2 text-[10px] font-medium text-gray-500 dark:text-white/50 border-b border-gray-100 dark:border-white/5">
+            <div className="px-3 py-2 text-[10px] font-medium text-muted-foreground border-b border-border">
               {popularLabel}
             </div>
           )}
           {isLoading ? (
             <div className="flex items-center justify-center py-4">
-              <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
-              <span className="ml-2 text-sm text-gray-500">Searching...</span>
+              <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+              <span className="ml-2 text-sm text-muted-foreground">Searching...</span>
             </div>
           ) : displayList.length > 0 ? (
             displayList.map((item) => (
@@ -242,7 +242,7 @@ export default function SearchWithAutocomplete<T extends SearchItem>({
               </div>
             ))
           ) : searchTerm ? (
-            <div className="px-3 py-4 text-sm text-gray-500 dark:text-white/50 text-center">
+            <div className="px-3 py-4 text-sm text-muted-foreground text-center">
               No results found for &quot;{searchTerm}&quot;
             </div>
           ) : null}

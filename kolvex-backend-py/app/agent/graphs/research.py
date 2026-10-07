@@ -1,7 +1,7 @@
 """
 Research Agent Sub-Graph
 深度研究 Agent - 自动执行多步骤研究流程
-收集数据 -> 分析KOL情感 -> 查看新闻 -> 查看超级投资者 -> 编写报告
+收集市场数据 -> 分析基本面 -> 编写报告
 """
 
 import logging
@@ -28,28 +28,9 @@ When asked to research a stock, follow this systematic process:
 - Get analyst recommendations and target prices
 - Note the consensus rating and price targets
 
-**Step 3: KOL Sentiment Analysis**
-- Search for KOL tweets mentioning this stock
-- Analyze overall sentiment (bullish/bearish ratio)
-- Highlight notable KOL opinions
-
-**Step 4: News Analysis**
-- Search for recent news about the stock
-- Identify key themes and catalysts
-
-**Step 5: Super Investor Check**
-- Check if any super investors (hedge funds) hold this stock
-- Note position sizes and changes
-
-**Step 6: Compile Research Report**
-Produce a structured report with:
-- Executive Summary
-- Price & Valuation Analysis
-- Fundamental Analysis
-- Sentiment Analysis (KOL + News)
-- Smart Money Activity
-- Risk Factors
-- Conclusion with Bull/Bear Case
+**Step 3: Compile Research Report**
+Use market data, fundamentals, analyst consensus, options chain data and web research.
+Include an executive summary, valuation, risk factors, and a supported bull/bear case.
 
 **Step 7 (Optional): TradingAgents Multi-Agent Analysis**
 - If the user specifically asks for a trading decision, buy/sell recommendation, or multi-agent analysis,

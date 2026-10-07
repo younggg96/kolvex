@@ -8,9 +8,7 @@ export interface UserProfileUpdate {
   phone_e164?: string;
 }
 
-export interface NotificationUpdate {
-  email_notifications_enabled?: boolean;
-}
+
 
 interface ApiResult {
   success: boolean;
@@ -29,7 +27,6 @@ export function useCurrentUserProfile() {
     error,
     refresh,
     updateProfile: contextUpdateProfile,
-    updateNotifications: contextUpdateNotifications,
   } = useUserProfileContext();
 
   const updateProfile = async (
@@ -97,17 +94,7 @@ export function useCurrentUserProfile() {
     }
   };
 
-  const updateNotifications = async (
-    settings: NotificationUpdate
-  ): Promise<ApiResult> => {
-    const success = await contextUpdateNotifications({
-      email_notifications_enabled: settings.email_notifications_enabled,
-    });
-    if (success) {
-      return { success: true, data: profile || undefined };
-    }
-    return { success: false, error: "Failed to update notification settings" };
-  };
+
 
   return {
     profile,
@@ -117,7 +104,6 @@ export function useCurrentUserProfile() {
     updateProfile,
     updateTheme,
     updateLocale,
-    updateNotifications,
   };
 }
 
@@ -153,32 +139,3 @@ export async function updateUserTheme(theme: Theme): Promise<ApiResult> {
 /**
  * Update user notification settings (standalone function)
  */
-export async function updateUserNotifications(
-  settings: NotificationUpdate
-): Promise<ApiResult> {
-  try {
-    const response = await fetch("/api/users/me/notifications", {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(settings),
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(
-        errorData.error || "Failed to update notification settings"
-      );
-    }
-
-    const data = await response.json();
-    return { success: true, data };
-  } catch (err) {
-    console.error("Error updating notifications:", err);
-    return {
-      success: false,
-      error: err instanceof Error ? err.message : "An error occurred",
-    };
-  }
-}

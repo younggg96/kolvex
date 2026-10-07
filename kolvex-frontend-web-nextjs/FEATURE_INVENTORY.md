@@ -8,7 +8,7 @@
 | --- | --- | --- | --- |
 | AI Chat | `chat` | `/dashboard`, `/dashboard/chat` | `components/chat`, `lib/chatApi.ts`, `/api/chat`, `/api/chat-history` |
 | Trading Analysis | `tradingAnalysis` | `/dashboard/trading-analysis` | `components/trading-analysis`, `lib/tradingAnalysisApi.ts`, `/api/trading-analysis` |
-| Portfolio | `portfolio` | `/dashboard/portfolio` | `components/portfolio`, Plaid Investments/portfolio/quant strategy APIs |
+| Portfolio | `portfolio` | `/dashboard/portfolio` | `components/portfolio`, Plaid Investments/portfolio APIs |
 | Settings | `settings` | `/dashboard/settings`, `/config` | `components/user`, user API key and avatar APIs |
 | Admin | `admin` | `/dashboard/admin` | `/api/admin` |
 

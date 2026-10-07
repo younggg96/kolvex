@@ -105,7 +105,7 @@ export function PortfolioHeaderActions({
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4 text-xs">
                 {holdings?.is_public ? (
-                  <Globe className="h-4 w-4 text-green-500" />
+                  <Globe className="h-4 w-4 text-positive" />
                 ) : (
                   <Lock className="h-4 w-4" />
                 )}
@@ -154,7 +154,7 @@ export function PortfolioHeaderActions({
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem
-            className="!text-red-500 focus:!text-red-500"
+            className="!text-negative focus:!text-negative"
             onClick={onDisconnect}
           >
             <LogOut className="mr-2 h-4 w-4" />

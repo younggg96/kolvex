@@ -4,14 +4,10 @@ import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
-  Globe,
-  Loader2,
   TrendingUp,
   TrendingDown,
   Minus,
-  Calendar,
   Clock,
-  Bot,
   Search,
   ArrowLeft,
   User,
@@ -19,7 +15,6 @@ import {
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/lib/i18n";
 import DashboardLayout from "@/components/layout/DashboardLayout";
-import { HeroSection } from "@/components/ui/hero-section";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -28,67 +23,20 @@ import {
   getPublishedAnalyses,
   type TradingAnalysis,
 } from "@/lib/tradingAnalysisApi";
+import { DecisionBadge } from "@/components/trading-analysis/badges";
 import CompanyLogo from "@/components/ui/company-logo";
-
-function DecisionBadge({
-  decision,
-  t,
-}: {
-  decision: string | null | undefined;
-  t: (key: string) => string;
-}) {
-  if (!decision) return null;
-  const d = decision.toUpperCase();
-  const config =
-    d === "BUY"
-      ? {
-          icon: TrendingUp,
-          label: t("tradingAnalysis.decision.buy"),
-          cls: "bg-primary/10 text-primary dark:bg-primary/20 dark:text-primary",
-        }
-      : d === "SELL"
-      ? {
-          icon: TrendingDown,
-          label: t("tradingAnalysis.decision.sell"),
-          cls: "bg-red-100 text-red-800 dark:bg-red-500/20 dark:text-red-400",
-        }
-      : {
-          icon: Minus,
-          label: t("tradingAnalysis.decision.hold"),
-          cls: "bg-amber-100 text-amber-800 dark:bg-amber-500/20 dark:text-amber-400",
-        };
-  const Icon = config.icon;
-  return (
-    <span
-      className={cn(
-        "inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold",
-        config.cls
-      )}
-    >
-      <Icon className="w-3 h-3" /> {config.label}
-    </span>
-  );
-}
 
 function ExploreSkeleton() {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+    <div className="divide-y divide-border">
       {Array.from({ length: 6 }).map((_, i) => (
-        <div
-          key={i}
-          className="bg-card border border-border rounded-lg p-4 space-y-3"
-        >
-          <div className="flex items-start justify-between">
-            <div className="space-y-2">
-              <Skeleton className="h-5 w-16" />
-              <Skeleton className="h-5 w-16 rounded-full" />
-            </div>
-            <Skeleton className="h-5 w-12 rounded-full" />
+        <div key={i} className="flex items-center gap-4 py-3.5">
+          <Skeleton className="h-10 w-10 shrink-0 rounded-full" />
+          <div className="flex-1 space-y-2">
+            <Skeleton className="h-4 w-16" />
+            <Skeleton className="h-3 w-48" />
           </div>
-          <div className="flex gap-3">
-            <Skeleton className="h-3.5 w-20" />
-            <Skeleton className="h-3.5 w-14" />
-          </div>
+          <Skeleton className="h-6 w-14 rounded-full" />
         </div>
       ))}
     </div>
@@ -149,168 +97,121 @@ export default function ExploreAnalysesPage() {
         </Button>
       }
     >
-      <div className="relative flex-1 overflow-y-auto bg-background">
-        <div className="absolute inset-0 bg-grid opacity-50 pointer-events-none" />
+      <div className="relative flex-1 overflow-y-auto">
+        <div className="mx-auto w-full max-w-[1080px] space-y-8 px-4 pb-16 pt-6 md:px-8 md:pt-8">
+          <div>
+            <h2 className="text-[28px] font-bold leading-tight md:text-[32px]">
+              {t("tradingAnalysis.explore.title")}
+            </h2>
+            <p className="mt-2 max-w-[60ch] text-[15px] leading-relaxed text-muted-foreground">
+              {t("tradingAnalysis.explore.description")}
+            </p>
+          </div>
 
-        <div className="relative">
-          <HeroSection
-            title={t("tradingAnalysis.explore.title")}
-            description={t("tradingAnalysis.explore.description")}
-            features={[
-              {
-                icon: Globe,
-                label: t("tradingAnalysis.explore.featureCommunity"),
-              },
-              {
-                icon: TrendingUp,
-                label: t("tradingAnalysis.explore.featureInsights"),
-              },
-              {
-                icon: Bot,
-                label: t("tradingAnalysis.explore.featureAI"),
-              },
-            ]}
-          />
-
-          <div className="p-4 space-y-6">
-            {/* Search bar */}
-            <div className="flex items-center gap-2 max-w-md">
+          <form
+            role="search"
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleSearch();
+            }}
+            className="flex max-w-md items-center gap-2"
+          >
+            <div className="relative flex-1">
+              <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 placeholder={t("tradingAnalysis.explore.searchPlaceholder")}
                 value={searchTicker}
                 onChange={(e) => setSearchTicker(e.target.value.toUpperCase())}
-                onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-                className="flex-1"
+                aria-label={t("tradingAnalysis.explore.searchPlaceholder")}
+                className="h-11 rounded-full pl-10"
               />
-              <Button size="sm" onClick={handleSearch} className="gap-1.5">
-                <Search className="w-3.5 h-3.5" />
-                {t("common.search")}
-              </Button>
-              {appliedTicker && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    setSearchTicker("");
-                    setAppliedTicker("");
-                  }}
-                >
-                  {t("common.reset")}
-                </Button>
-              )}
             </div>
+            <Button type="submit" className="h-11">
+              {t("common.search")}
+            </Button>
+            {appliedTicker && (
+              <Button
+                type="button"
+                variant="ghost"
+                className="h-11"
+                onClick={() => {
+                  setSearchTicker("");
+                  setAppliedTicker("");
+                }}
+              >
+                {t("common.reset")}
+              </Button>
+            )}
+          </form>
 
-            {/* Results */}
-            <div className="space-y-3 animate-fade-in-up">
-              <div className="flex items-center gap-2">
-                <div className="w-7 h-7 rounded-lg bg-primary/10 dark:bg-primary/20 flex items-center justify-center">
-                  <Globe className="w-3.5 h-3.5 text-primary" />
-                </div>
-                <h2 className="text-sm font-semibold text-foreground">
-                  {t("tradingAnalysis.explore.published")}
-                  {total > 0 && (
-                    <span className="ml-1.5 text-xs font-normal text-gray-400">
-                      ({total})
-                    </span>
-                  )}
-                </h2>
-              </div>
+          <section aria-labelledby="explore-published" className="animate-fade-in-up">
+            <h3 id="explore-published" className="border-b border-border pb-3 text-[17px] font-semibold text-foreground">
+              {t("tradingAnalysis.explore.published")}
+              {total > 0 && (
+                <span className="figure ml-2 text-sm font-normal text-muted-foreground">
+                  {total}
+                </span>
+              )}
+            </h3>
 
-              {loading ? (
-                <ExploreSkeleton />
-              ) : analyses.length === 0 ? (
-                <div className="bg-card border border-border rounded-lg text-center py-16">
-                  <Globe className="w-10 h-10 mx-auto mb-3 text-muted-foreground/40" />
-                  <p className="text-sm text-muted-foreground">
-                    {appliedTicker
-                      ? t("tradingAnalysis.explore.noResultsForTicker", {
-                          ticker: appliedTicker,
-                        })
-                      : t("tradingAnalysis.explore.noPublished")}
-                  </p>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
-                  {analyses.map((item, idx) => (
-                    <div
-                      key={item.id}
-                      onClick={() =>
-                        router.push(
-                          `/dashboard/trading-analysis/explore/${item.id}`
-                        )
-                      }
-                      className={cn(
-                        "group bg-card border border-border rounded-lg p-4 cursor-pointer",
-                        "hover:border-primary/30 dark:hover:border-primary/20 transition-all duration-200 hover:shadow-sm",
-                        "animate-fade-in-up",
-                        idx < 6 && `stagger-${Math.min(idx + 1, 5)}`
-                      )}
-                    >
-                      <div className="flex items-start justify-between mb-3">
-                        <div className="flex items-center gap-3 min-w-0">
-                          <CompanyLogo symbol={item.ticker} size="md" />
-                          <div className="min-w-0">
-                            <span className="text-lg font-bold text-foreground">
-                              {item.ticker}
-                            </span>
-                            <div className="flex items-center gap-2 mt-1 flex-wrap">
-                              <DecisionBadge
-                                decision={item.final_decision}
-                                t={t}
-                              />
-                            </div>
-                          </div>
-                        </div>
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-muted text-muted-foreground">
-                          <Globe className="w-2.5 h-2.5" />
-                          {t("tradingAnalysis.publishedLabel")}
-                        </span>
-                      </div>
-
-                      <div className="flex items-center justify-between text-xs text-muted-foreground">
-                        <div className="flex items-center gap-3">
-                          <span className="flex items-center gap-1">
-                            <Calendar className="w-3 h-3" />
-                            {item.trade_date}
-                          </span>
-                          {item.duration_seconds && (
-                            <span className="flex items-center gap-1">
-                              <Clock className="w-3 h-3" />
-                              {t("tradingAnalysis.durationSeconds", {
-                                seconds: String(
-                                  Math.round(item.duration_seconds)
-                                ),
-                              })}
-                            </span>
-                          )}
-                          {item.llm_provider && (
-                            <span className="capitalize px-1.5 py-0.5 rounded bg-muted text-[10px]">
-                              {item.llm_provider}
-                            </span>
-                          )}
-                        </div>
+            {loading ? (
+              <ExploreSkeleton />
+            ) : analyses.length === 0 ? (
+              <p className="py-12 text-[15px] text-muted-foreground">
+                {appliedTicker
+                  ? t("tradingAnalysis.explore.noResultsForTicker", {
+                      ticker: appliedTicker,
+                    })
+                  : t("tradingAnalysis.explore.noPublished")}
+              </p>
+            ) : (
+              <ul className="divide-y divide-border">
+                {analyses.map((item) => (
+                  <li key={item.id} className="relative flex items-center gap-3 py-3.5 sm:gap-4">
+                    <CompanyLogo symbol={item.ticker} size="md" />
+                    <div className="min-w-0 flex-1">
+                      <Link
+                        href={`/dashboard/trading-analysis/explore/${item.id}`}
+                        className="text-[15px] font-semibold text-foreground after:absolute after:inset-0 focus-visible:outline-none focus-visible:after:rounded-xl focus-visible:after:ring-2 focus-visible:after:ring-primary"
+                      >
+                        {item.ticker}
+                      </Link>
+                      <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
                         {item.author && (
-                          <div className="flex items-center gap-1.5 shrink-0">
-                            <Avatar className="w-4 h-4">
+                          <span className="flex min-w-0 items-center gap-1.5">
+                            <Avatar className="h-4 w-4">
                               {item.author.avatar_url && (
                                 <AvatarImage src={item.author.avatar_url} alt="" />
                               )}
-                              <AvatarFallback className="text-[8px] bg-muted">
-                                <User className="w-2.5 h-2.5" />
+                              <AvatarFallback className="bg-muted text-[8px]">
+                                <User className="h-2.5 w-2.5" />
                               </AvatarFallback>
                             </Avatar>
-                            <span className="text-[10px] text-muted-foreground truncate max-w-[80px]">
+                            <span className="max-w-[120px] truncate">
                               {item.author.full_name || item.author.username || "User"}
                             </span>
-                          </div>
+                          </span>
+                        )}
+                        <span className="figure">{item.trade_date}</span>
+                        {item.duration_seconds && (
+                          <span className="flex items-center gap-1">
+                            <Clock className="h-3 w-3" />
+                            {t("tradingAnalysis.durationSeconds", {
+                              seconds: String(Math.round(item.duration_seconds)),
+                            })}
+                          </span>
+                        )}
+                        {item.llm_provider && (
+                          <span className="capitalize">{item.llm_provider}</span>
                         )}
                       </div>
                     </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
+                    <DecisionBadge decision={item.final_decision} t={t} />
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
         </div>
       </div>
     </DashboardLayout>

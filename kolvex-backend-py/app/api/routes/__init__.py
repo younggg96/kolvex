@@ -3,30 +3,14 @@ API Routes
 """
 
 from fastapi import APIRouter
-from app.api.routes import health, users, ai, news, market_data, notifications
+from app.api.routes import health, users, market_data
 from app.api.routes.auth import router as auth_router
 from app.api.routes.upload import router as upload_router
-from app.api.routes.scraper import router as scraper_router
-from app.api.routes.stocks import router as stocks_router
-from app.api.routes.kol_tweets import router as kol_tweets_router
-from app.api.routes.kol_subscriptions import router as kol_subscriptions_router
 from app.api.routes.portfolio import router as portfolio_router
-from app.api.routes.robinhood import router as robinhood_router
-from app.api.routes.quant_strategies import router as quant_strategies_router
-from app.api.routes.xiaohongshu import router as xiaohongshu_router
-from app.api.routes.dataroma import router as dataroma_router
-from app.api.routes.scheduler_routes import router as scheduler_router
 from app.api.routes.chat import router as chat_router
-from app.api.routes.dify_knowledge import router as dify_knowledge_router
-from app.api.routes.news_ai import router as news_ai_router
 from app.api.routes.admin import router as admin_router
-from app.api.routes.stock_alerts import router as stock_alerts_router
 from app.api.routes.user_api_keys import router as user_api_keys_router
-from app.api.routes.options_flow import router as options_flow_router
-from app.api.routes.options_ai import router as options_ai_router
 from app.api.routes.trading_analysis import router as trading_analysis_router
-from app.api.routes.stock_screener import router as stock_screener_router
-from app.api.routes.ibkr import router as ibkr_router
 from app.api.routes.plaid import router as plaid_router
 from app.api.routes.youtube_opinions import router as youtube_opinions_router
 
@@ -38,31 +22,12 @@ api_router.include_router(health.router)
 api_router.include_router(auth_router)
 api_router.include_router(upload_router)
 api_router.include_router(users.router)
-api_router.include_router(kol_tweets_router)
-api_router.include_router(kol_subscriptions_router)
-api_router.include_router(scraper_router)
-api_router.include_router(ai.router)
-api_router.include_router(stocks_router)
-api_router.include_router(news.router)
-api_router.include_router(news_ai_router)
 api_router.include_router(market_data.router)
 api_router.include_router(portfolio_router)
-api_router.include_router(robinhood_router)
-api_router.include_router(quant_strategies_router)
-api_router.include_router(notifications.router)
-api_router.include_router(xiaohongshu_router)
-api_router.include_router(dataroma_router)
-api_router.include_router(scheduler_router)
 api_router.include_router(chat_router)
-api_router.include_router(dify_knowledge_router)
 api_router.include_router(admin_router, prefix="/admin", tags=["Admin"])
-api_router.include_router(stock_alerts_router)
 api_router.include_router(user_api_keys_router)
-api_router.include_router(options_flow_router)
-api_router.include_router(options_ai_router)
 api_router.include_router(trading_analysis_router)
-api_router.include_router(stock_screener_router)
-api_router.include_router(ibkr_router)
 api_router.include_router(plaid_router)
 api_router.include_router(youtube_opinions_router)
 

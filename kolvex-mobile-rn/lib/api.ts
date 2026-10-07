@@ -5,20 +5,11 @@
 import { supabase } from './supabase';
 import { API_BASE_URL } from '@/constants';
 import type {
-  KOLPost,
-  KOLPostsResponse,
-  KOLPostsParams,
-  KOLProfile,
-  KOLProfilesResponse,
   StockQuote,
   StockOverview,
   IntradayData,
   HistoricalData,
-  TrendingStock,
-  TrendingStocksResponse,
-  StockDiscussionsResponse,
   TrackedStock,
-  TrackedKOL,
   Conversation,
   ChatMessage,
   ConversationsResponse,
@@ -30,7 +21,6 @@ import type {
   StockAlertRule,
   NewsArticle,
   NewsListResponse,
-  Platform,
   Sentiment,
 } from './types';
 
@@ -154,23 +144,9 @@ export const stockApi = {
   search: (query: string) =>
     apiRequest<unknown[]>(`/stocks/search${buildQuery({ q: query })}`),
 
-  /** Get popular stocks (by KOL mentions) */
-  getPopular: () =>
-    apiRequest<unknown[]>('/stocks/popular'),
-
   /** Autocomplete stock search */
   autocomplete: (query: string) =>
     apiRequest<unknown[]>(`/stocks/autocomplete${buildQuery({ q: query })}`),
-
-  /** Get trending stocks with sentiment */
-  getTrending: () =>
-    apiRequest<TrendingStocksResponse>('/stocks/trending'),
-
-  /** Get stock discussions from KOLs */
-  getDiscussions: (ticker: string, params?: { page?: number; page_size?: number; sort_by?: string; sort_direction?: string }) =>
-    apiRequest<StockDiscussionsResponse>(
-      `/stocks/${ticker.toUpperCase()}/discussions${buildQuery(params || {})}`
-    ),
 
   /** Get user's tracked stocks (requires auth) */
   getTracked: () =>
@@ -191,68 +167,6 @@ export const stockApi = {
   checkTracked: (symbol: string) =>
     apiRequest<{ is_tracked: boolean; stock_id?: string }>(
       `/stocks/tracked/check/${symbol.toUpperCase()}`
-    ),
-};
-
-// ============================================================
-// KOL Posts API - /kol-posts/
-// ============================================================
-
-export const kolPostsApi = {
-  /** Get KOL posts list (multi-platform) */
-  getPosts: (params: KOLPostsParams = {}) =>
-    apiRequest<KOLPostsResponse>(`/kol-posts/${buildQuery(params)}`),
-
-  /** Get posts by a specific user */
-  getUserPosts: (username: string, params?: { page?: number; page_size?: number; platform?: Platform }) =>
-    apiRequest<KOLPostsResponse>(
-      `/kol-posts/user/${encodeURIComponent(username)}${buildQuery(params || {})}`
-    ),
-
-  /** Get KOL profiles list */
-  getProfiles: (params?: { platform?: Platform; sort_by?: string; sort_order?: string }) =>
-    apiRequest<KOLProfilesResponse>(`/kol-posts/profiles${buildQuery(params || {})}`),
-
-  /** Get KOL profile detail */
-  getProfile: (username: string) =>
-    apiRequest<KOLProfile>(`/kol-posts/profile/${encodeURIComponent(username)}`),
-
-  /** Get KOL stats */
-  getStats: () =>
-    apiRequest<{ total_posts: number; total_kols: number }>('/kol-posts/stats'),
-
-  /** Get AI analysis for a post */
-  getAIAnalysis: (postId: number) =>
-    apiRequest<unknown>(`/kol-posts/ai/${postId}`),
-};
-
-// ============================================================
-// KOL Subscriptions API - /kol-subscriptions/
-// ============================================================
-
-export const kolSubscriptionApi = {
-  /** Get tracked KOLs */
-  getTracked: () =>
-    apiRequest<TrackedKOL[]>('/kol-subscriptions/tracked'),
-
-  /** Add tracked KOL */
-  addTracked: (username: string, platform: Platform) =>
-    apiRequest<TrackedKOL>('/kol-subscriptions/tracked', {
-      method: 'POST',
-      body: { username, platform },
-    }),
-
-  /** Remove tracked KOL */
-  removeTracked: (data: { username: string; platform: Platform }) =>
-    apiRequest<void>('/kol-subscriptions/tracked', {
-      method: 'DELETE',
-      body: data,
-    }),
-
-  /** Check if KOL is tracked */
-  checkTracked: (username: string, platform: Platform) =>
-    apiRequest<{ is_tracked: boolean }>(
-      `/kol-subscriptions/tracked/check${buildQuery({ username, platform })}`
     ),
 };
 

@@ -55,7 +55,6 @@ function RootLayoutNav() {
         <Stack.Screen name="(auth)" options={{ animation: 'fade' }} />
         <Stack.Screen name="(tabs)" options={{ animation: 'fade' }} />
         <Stack.Screen name="stock/[symbol]" options={{ animation: 'slide_from_right' }} />
-        <Stack.Screen name="kol/[username]" options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name="settings/index" options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name="settings/profile" options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name="settings/appearance" options={{ animation: 'slide_from_right' }} />

@@ -52,14 +52,10 @@ export default function TermsPage() {
               provides:
             </p>
             <ul className="list-disc pl-6 text-gray-700 dark:text-gray-300 mb-4 space-y-2">
-              <li>
-                Social media monitoring and analysis from platforms including
-                Twitter, Reddit, YouTube, and Xiaohongshu
-              </li>
-              <li>Key Opinion Leader (KOL) tracking and sentiment analysis</li>
+              <li>YouTube creator stock opinion research</li>
               <li>Stock market data aggregation and visualization</li>
               <li>AI-generated investment insights and analysis</li>
-              <li>Earnings calendar and financial news aggregation</li>
+              <li>Portfolio tracking and financial research</li>
             </ul>
           </section>
 

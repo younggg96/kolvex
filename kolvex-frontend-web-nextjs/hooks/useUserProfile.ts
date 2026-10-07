@@ -2,10 +2,9 @@ import {
   useUserProfileContext,
   type UserProfile,
   type UserProfileUpdate,
-  type UserNotificationUpdate,
 } from "@/components/user/UserProfileProvider";
 
-export type { UserProfile, UserProfileUpdate, UserNotificationUpdate };
+export type { UserProfile, UserProfileUpdate };
 
 interface UseUserProfileReturn {
   profile: UserProfile | null;
@@ -13,7 +12,6 @@ interface UseUserProfileReturn {
   error: string | null;
   refresh: () => Promise<void>;
   updateProfile: (updates: UserProfileUpdate) => Promise<boolean>;
-  updateNotifications: (updates: UserNotificationUpdate) => Promise<boolean>;
 }
 
 /**

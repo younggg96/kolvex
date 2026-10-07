@@ -1,3 +1,7 @@
+-- Apply atomically; refuse long waits on a busy database.
+SET LOCAL lock_timeout = '5s';
+SET LOCAL statement_timeout = '60s';
+
 -- Broker-neutral portfolio cache used by direct Robinhood and IBKR integrations.
 
 CREATE TABLE IF NOT EXISTS portfolio_connections (
@@ -134,10 +138,29 @@ CREATE POLICY "Service role manages portfolio positions"
     ON portfolio_positions FOR ALL
     USING (auth.jwt() ->> 'role' = 'service_role');
 
+DO $$
+BEGIN
+    IF to_regclass('public.portfolio_snapshots') IS NOT NULL THEN
+        DROP POLICY IF EXISTS "Users can view public portfolio snapshots"
+            ON portfolio_snapshots;
+        CREATE POLICY "Users can view public portfolio snapshots"
+            ON portfolio_snapshots FOR SELECT
+            USING (EXISTS (
+                SELECT 1 FROM portfolio_connections pc
+                WHERE pc.user_id = portfolio_snapshots.user_id
+                  AND pc.is_public
+            ));
+    END IF;
+END $$;
+
 -- Preserve only direct Robinhood cache rows from the retired legacy schema.
 DO $$
 BEGIN
     IF to_regclass('public.snaptrade_connections') IS NOT NULL THEN
+        LOCK TABLE snaptrade_connections, snaptrade_accounts, snaptrade_positions IN ACCESS EXCLUSIVE MODE;
+        IF EXISTS (SELECT 1 FROM snaptrade_connections WHERE snaptrade_user_id NOT LIKE 'robinhood_%' OR snaptrade_user_id IS NULL) THEN
+            RAISE EXCEPTION 'Legacy non-Robinhood connections require separate review';
+        END IF;
         INSERT INTO portfolio_connections (
             id, user_id, provider, is_connected, is_public, privacy_settings,
             last_synced_at, created_at, updated_at
@@ -182,23 +205,44 @@ BEGIN
         JOIN portfolio_accounts a ON a.id = p.account_id
         ON CONFLICT (account_id, symbol, position_type) DO NOTHING;
 
-        DROP TABLE snaptrade_positions CASCADE;
-        DROP TABLE snaptrade_accounts CASCADE;
-        DROP TABLE snaptrade_connections CASCADE;
-    END IF;
-END $$;
+        IF EXISTS ((SELECT
+            sc.id, sc.user_id, 'robinhood', sc.is_connected, sc.is_public,
+            COALESCE(to_jsonb(sc)->'privacy_settings', '{}'::jsonb),
+            sc.last_synced_at, sc.created_at, sc.updated_at
+        FROM snaptrade_connections sc
+        WHERE sc.snaptrade_user_id LIKE 'robinhood_%') EXCEPT (SELECT id, user_id, provider, is_connected, is_public, privacy_settings,
+            last_synced_at, created_at, updated_at FROM portfolio_connections)) THEN
+            RAISE EXCEPTION 'Legacy data verification failed for portfolio_connections';
+        END IF;
+        IF EXISTS ((SELECT
+            a.id, a.connection_id, a.account_id, a.brokerage_name, a.account_name,
+            a.account_number, a.account_type, a.created_at, a.updated_at
+        FROM snaptrade_accounts a
+        JOIN portfolio_connections c ON c.id = a.connection_id) EXCEPT (SELECT id, connection_id, account_id, brokerage_name, account_name,
+            account_number, account_type, created_at, updated_at FROM portfolio_accounts)) THEN
+            RAISE EXCEPTION 'Legacy data verification failed for portfolio_accounts';
+        END IF;
+        IF EXISTS ((SELECT
+            p.id, p.account_id, p.symbol, p.symbol_id, p.security_name, p.units,
+            p.price, p.open_pnl, p.fractional_units, p.average_purchase_price,
+            p.currency,
+            COALESCE((to_jsonb(p)->>'is_hidden')::BOOLEAN, FALSE),
+            COALESCE(to_jsonb(p)->>'position_type', 'equity'),
+            to_jsonb(p)->>'option_type',
+            (to_jsonb(p)->>'strike_price')::NUMERIC,
+            (to_jsonb(p)->>'expiration_date')::DATE,
+            to_jsonb(p)->>'underlying_symbol',
+            p.created_at, p.updated_at
+        FROM snaptrade_positions p
+        JOIN portfolio_accounts a ON a.id = p.account_id) EXCEPT (SELECT id, account_id, symbol, symbol_id, security_name, units, price,
+            open_pnl, fractional_units, average_purchase_price, currency,
+            is_hidden, position_type, option_type, strike_price,
+            expiration_date, underlying_symbol, created_at, updated_at FROM portfolio_positions)) THEN
+            RAISE EXCEPTION 'Legacy data verification failed for portfolio_positions';
+        END IF;
 
-DO $$
-BEGIN
-    IF to_regclass('public.portfolio_snapshots') IS NOT NULL THEN
-        DROP POLICY IF EXISTS "Users can view public portfolio snapshots"
-            ON portfolio_snapshots;
-        CREATE POLICY "Users can view public portfolio snapshots"
-            ON portfolio_snapshots FOR SELECT
-            USING (EXISTS (
-                SELECT 1 FROM portfolio_connections pc
-                WHERE pc.user_id = portfolio_snapshots.user_id
-                  AND pc.is_public
-            ));
+        DROP TABLE snaptrade_positions RESTRICT;
+        DROP TABLE snaptrade_accounts RESTRICT;
+        DROP TABLE snaptrade_connections RESTRICT;
     END IF;
 END $$;

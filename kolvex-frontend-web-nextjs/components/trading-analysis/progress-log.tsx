@@ -54,100 +54,29 @@ interface AgentTheme {
   text: string;
 }
 
-const AGENT_THEMES: Record<string, AgentTheme> = {
-  "Market Analyst": {
-    icon: BarChart3,
-    accent: "text-blue-400",
-    bg: "bg-blue-500/10",
-    border: "border-blue-500/20",
-    text: "text-blue-300",
-  },
-  "Social Analyst": {
-    icon: Users,
-    accent: "text-purple-400",
-    bg: "bg-purple-500/10",
-    border: "border-purple-500/20",
-    text: "text-purple-300",
-  },
-  "News Analyst": {
-    icon: Newspaper,
-    accent: "text-amber-400",
-    bg: "bg-amber-500/10",
-    border: "border-amber-500/20",
-    text: "text-amber-300",
-  },
-  "Fundamentals Analyst": {
-    icon: DollarSign,
-    accent: "text-emerald-400",
-    bg: "bg-emerald-500/10",
-    border: "border-emerald-500/20",
-    text: "text-emerald-300",
-  },
-  "Bull Researcher": {
-    icon: TrendingUp,
-    accent: "text-green-400",
-    bg: "bg-green-500/10",
-    border: "border-green-500/20",
-    text: "text-green-300",
-  },
-  "Bear Researcher": {
-    icon: TrendingDown,
-    accent: "text-red-400",
-    bg: "bg-red-500/10",
-    border: "border-red-500/20",
-    text: "text-red-300",
-  },
-  "Research Manager": {
-    icon: Scale,
-    accent: "text-yellow-400",
-    bg: "bg-yellow-500/10",
-    border: "border-yellow-500/20",
-    text: "text-yellow-300",
-  },
-  Trader: {
-    icon: Briefcase,
-    accent: "text-cyan-400",
-    bg: "bg-cyan-500/10",
-    border: "border-cyan-500/20",
-    text: "text-cyan-300",
-  },
-  "Aggressive Analyst": {
-    icon: Zap,
-    accent: "text-orange-400",
-    bg: "bg-orange-500/10",
-    border: "border-orange-500/20",
-    text: "text-orange-300",
-  },
-  "Conservative Analyst": {
-    icon: Shield,
-    accent: "text-sky-400",
-    bg: "bg-sky-500/10",
-    border: "border-sky-500/20",
-    text: "text-sky-300",
-  },
-  "Neutral Analyst": {
-    icon: Scale,
-    accent: "text-gray-400",
-    bg: "bg-gray-500/10",
-    border: "border-gray-500/20",
-    text: "text-gray-300",
-  },
-  "Risk Judge": {
-    icon: ShieldCheck,
-    accent: "text-yellow-400",
-    bg: "bg-yellow-500/10",
-    border: "border-yellow-500/20",
-    text: "text-yellow-300",
-  },
+const NEUTRAL = {
+  accent: "text-foreground",
+  bg: "bg-foreground/[0.06]",
+  border: "border-foreground/10",
+  text: "text-foreground/80",
 };
 
-const DEFAULT_THEME: AgentTheme = {
-  icon: Bot,
-  accent: "text-primary",
-  bg: "bg-primary/10",
-  border: "border-primary/20",
-  text: "text-primary/80",
+const AGENT_THEMES: Record<string, AgentTheme> = {
+  "Market Analyst": { ...NEUTRAL, icon: BarChart3 },
+  "Social Analyst": { ...NEUTRAL, icon: Users },
+  "News Analyst": { ...NEUTRAL, icon: Newspaper },
+  "Fundamentals Analyst": { ...NEUTRAL, icon: DollarSign },
+  "Bull Researcher": { ...NEUTRAL, icon: TrendingUp, accent: "text-positive", border: "border-positive/30" },
+  "Bear Researcher": { ...NEUTRAL, icon: TrendingDown, accent: "text-negative", border: "border-negative/30" },
+  "Research Manager": { ...NEUTRAL, icon: Scale },
+  Trader: { ...NEUTRAL, icon: Briefcase },
+  "Aggressive Analyst": { ...NEUTRAL, icon: Zap },
+  "Conservative Analyst": { ...NEUTRAL, icon: Shield },
+  "Neutral Analyst": { ...NEUTRAL, icon: Scale },
+  "Risk Judge": { ...NEUTRAL, icon: ShieldCheck },
 };
+
+const DEFAULT_THEME: AgentTheme = { ...NEUTRAL, icon: Bot };
 
 interface AgentGroup {
   agentName: string;
@@ -288,12 +217,12 @@ function AgentStep({
         {group.events.map((ev, i) => (
           <div
             key={i}
-            className="flex items-center gap-2 text-[11px] text-gray-400 animate-slide-in"
+            className="flex items-center gap-2 text-xs text-muted-foreground animate-slide-in"
           >
-            <CheckCircle2 className="w-3 h-3 text-primary shrink-0" />
+            <CheckCircle2 className="w-3 h-3 text-positive shrink-0" />
             <span className="truncate">{ev.message || ev.stage}</span>
             {ev.elapsed != null && (
-              <span className="ml-auto text-[10px] text-gray-600 tabular-nums shrink-0">
+              <span className="ml-auto text-[11px] text-muted-foreground tabular-nums shrink-0">
                 {ev.elapsed}s
               </span>
             )}
@@ -306,10 +235,10 @@ function AgentStep({
   return (
     <div
       className={cn(
-        "rounded-md border transition-all duration-500 animate-slide-in overflow-hidden",
+        "rounded-xl border transition-colors duration-200 animate-slide-in overflow-hidden",
         group.isActive
           ? `${theme.border} ${theme.bg}`
-          : "border-gray-800/50 bg-gray-900/30"
+          : "border-transparent bg-transparent"
       )}
     >
       {/* Agent header */}
@@ -318,13 +247,13 @@ function AgentStep({
         onClick={toggleExpanded}
         className={cn(
           "flex items-center gap-2 w-full px-2.5 py-1.5 text-left",
-          hasDetail && "cursor-pointer hover:bg-white/[0.02]"
+          hasDetail && "cursor-pointer hover:bg-foreground/[0.03]"
         )}
       >
         <div
           className={cn(
-            "w-5 h-5 rounded flex items-center justify-center shrink-0",
-            group.isActive ? theme.bg : "bg-gray-800/60"
+            "w-6 h-6 rounded-full flex items-center justify-center shrink-0",
+            theme.bg
           )}
         >
           {group.isActive ? (
@@ -335,15 +264,15 @@ function AgentStep({
             <Icon
               className={cn(
                 "w-3 h-3",
-                group.isActive ? theme.accent : "text-gray-500"
+                theme.accent
               )}
             />
           )}
         </div>
         <span
           className={cn(
-            "text-[11px] font-semibold truncate",
-            group.isActive ? theme.accent : "text-gray-400"
+            "text-xs font-semibold truncate",
+            group.isActive ? theme.accent : "text-foreground"
           )}
         >
           {group.agentName}
@@ -362,14 +291,14 @@ function AgentStep({
           </span>
         )}
         {group.elapsed != null && (
-          <span className="ml-auto text-[10px] text-gray-600 tabular-nums shrink-0">
+          <span className="ml-auto text-[11px] text-muted-foreground tabular-nums shrink-0">
             {group.elapsed}s
           </span>
         )}
         {hasDetail && (
           <ChevronDown
             className={cn(
-              "w-3 h-3 text-gray-600 shrink-0 transition-transform duration-200",
+              "w-3 h-3 text-muted-foreground shrink-0 transition-transform duration-200",
               expanded && "rotate-180"
             )}
           />
@@ -385,13 +314,13 @@ function AgentStep({
               {group.toolCalls.map((tc, i) => (
                 <div
                   key={i}
-                  className="flex items-start gap-1.5 text-[10px] text-gray-500 font-mono animate-slide-in"
+                  className="flex items-start gap-1.5 text-[11px] text-muted-foreground font-mono animate-slide-in"
                   style={{ animationDelay: `${i * 50}ms` }}
                 >
                   {tc.startsWith("→") ? (
-                    <FileText className="w-3 h-3 shrink-0 mt-px text-gray-600" />
+                    <FileText className="w-3 h-3 shrink-0 mt-px" />
                   ) : (
-                    <Wrench className="w-3 h-3 shrink-0 mt-px text-gray-600" />
+                    <Wrench className="w-3 h-3 shrink-0 mt-px" />
                   )}
                   <span className="break-all">{tc}</span>
                 </div>
@@ -403,15 +332,13 @@ function AgentStep({
           {group.latestDetail && (
             <div
               className={cn(
-                "rounded px-2 py-1.5 text-[10px] leading-relaxed border-l-2",
-                group.isActive
-                  ? `bg-black/20 ${theme.border} ${theme.text}`
-                  : "bg-black/10 border-gray-700 text-gray-500"
+                "rounded-lg bg-foreground/[0.04] px-2.5 py-1.5 text-xs leading-relaxed",
+                group.isActive ? theme.text : "text-muted-foreground"
               )}
             >
               <div className="flex items-center gap-1 mb-0.5">
                 <Brain className="w-2.5 h-2.5 opacity-60" />
-                <span className="text-[9px] font-medium uppercase tracking-wider opacity-60">
+                <span className="text-[11px] font-medium opacity-70">
                   {group.latestDetailType === "report_preview"
                     ? "Report"
                     : "Thinking"}
@@ -454,24 +381,18 @@ export function ProgressLog({
   }, [groups.length, events.length]);
 
   return (
-    <div className="rounded-lg bg-gray-950 dark:bg-black/60 border border-gray-800 dark:border-white/5 overflow-hidden">
-      {/* Terminal header */}
-      <div className="flex items-center gap-1.5 px-3 py-1.5 border-b border-gray-800 dark:border-white/5 bg-gray-900 dark:bg-white/[0.02]">
-        <span className="w-2 h-2 rounded-full bg-red-500/60" />
-        <span className="w-2 h-2 rounded-full bg-yellow-500/60" />
-        <span className="w-2 h-2 rounded-full bg-green-500/60" />
-        <span className="ml-2 text-[10px] text-gray-500 font-mono tracking-wider">
-          agent activity
-        </span>
-        <div className="ml-auto flex items-center gap-1">
+    <div className="overflow-hidden rounded-xl bg-background">
+      <div className="flex items-center gap-2 border-b border-border px-3 py-2">
+        <span className="text-xs font-semibold text-foreground">Agent activity</span>
+        <div className="ml-auto flex items-center gap-1.5" aria-live="polite">
           <span
             className={cn(
-              "w-1.5 h-1.5 rounded-full",
-              isLive ? "bg-primary animate-pulse" : "bg-amber-400 animate-pulse"
+              "h-1.5 w-1.5 rounded-full",
+              isLive ? "bg-positive-fill" : "bg-warning"
             )}
           />
-          <span className="text-[9px] text-gray-600 font-mono">
-            {isLive ? "live" : "syncing"}
+          <span className="text-[11px] text-muted-foreground">
+            {isLive ? "Live" : "Syncing"}
           </span>
         </div>
       </div>

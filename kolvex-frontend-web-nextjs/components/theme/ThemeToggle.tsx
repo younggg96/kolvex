@@ -16,8 +16,8 @@ export default function ThemeToggle() {
 
   if (!mounted) {
     return (
-      <div className="w-9 h-9 rounded-lg bg-gray-200 dark:bg-white/5 flex items-center justify-center">
-        <SunMoon className="w-5 h-5 text-gray-600 dark:text-white/50" />
+      <div className="w-9 h-9 rounded-lg bg-muted flex items-center justify-center">
+        <SunMoon className="w-5 h-5 text-muted-foreground" />
       </div>
     );
   }
@@ -30,9 +30,9 @@ export default function ThemeToggle() {
       title={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
     >
       {theme === "dark" ? (
-        <Sun className="w-5 h-5 text-yellow-400" />
+        <Sun className="w-5 h-5 text-warning" />
       ) : (
-        <Moon className="w-5 h-5 text-gray-700" />
+        <Moon className="w-5 h-5 text-foreground" />
       )}
     </Button>
   );

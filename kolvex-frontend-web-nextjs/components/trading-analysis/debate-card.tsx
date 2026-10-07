@@ -3,7 +3,6 @@ import {
   TrendingUp,
   TrendingDown,
   ShieldCheck,
-  Swords,
   ChevronDown,
   Download,
   Copy,
@@ -40,29 +39,26 @@ function DebatePanel({
   return (
     <div
       className={cn(
-        "flex-1 min-w-0 rounded-lg transition-all duration-300",
-        isBull
-          ? "border-primary/60 bg-primary/[0.03] dark:bg-primary/[0.04]"
-          : "border-red-400/60 dark:border-red-500/40 bg-red-500/[0.03] dark:bg-red-500/[0.04]"
+        "flex-1 min-w-0"
       )}
     >
-      <div className="flex items-center gap-2 px-3 py-2.5">
+      <div className="flex items-center gap-2 pb-2">
         <Icon
           className={cn(
             "w-3.5 h-3.5 shrink-0",
-            isBull ? "text-primary" : "text-red-500"
+            isBull ? "text-positive" : "text-negative"
           )}
         />
         <span
           className={cn(
-            "text-xs font-semibold",
-            isBull ? "text-primary" : "text-red-600 dark:text-red-400"
+            "text-[13px] font-semibold",
+            isBull ? "text-positive" : "text-negative"
           )}
         >
           {label}
         </span>
       </div>
-      <div className="px-3 pb-3">
+      <div>
         <div
           className={cn(
             "overflow-y-auto transition-all duration-300",
@@ -75,7 +71,7 @@ function DebatePanel({
           <button
             type="button"
             onClick={() => setExpanded((v) => !v)}
-            className="mt-2 flex items-center gap-1 text-[11px] font-medium text-muted-foreground opacity-70 hover:opacity-100 transition-colors"
+            className="mt-2 flex items-center gap-1 text-xs font-semibold text-foreground hover:underline"
           >
             <ChevronDown
               className={cn(
@@ -203,16 +199,14 @@ export function DebateCard({
     <TooltipProvider>
       <div
         className={cn(
-          "bg-card border border-border rounded-lg overflow-hidden transition-all duration-300 hover:border-primary/30 dark:hover:border-primary/20",
+          "border-t border-border pt-4",
           className
         )}
       >
         {/* Header */}
-        <div className="flex items-center gap-2 px-4 py-3 border-b border-border bg-gray-50/50 dark:bg-white/[0.02]">
-          <div className="w-6 h-6 rounded-md bg-primary/10 dark:bg-primary/20 flex items-center justify-center">
-            <Icon className="w-3.5 h-3.5 text-primary" />
-          </div>
-          <h3 className="text-sm font-semibold text-foreground flex-1">
+        <div className="flex items-center gap-2 pb-4">
+          <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />
+          <h3 className="flex-1 text-[17px] font-semibold text-foreground">
             {title}
           </h3>
           <div className="flex items-center gap-0.5">
@@ -221,10 +215,10 @@ export function DebateCard({
                 <button
                   type="button"
                   onClick={handleCopy}
-                  className="p-1.5 rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                  className="flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground transition-colors duration-150 hover:bg-muted hover:text-foreground"
                 >
                   {copied ? (
-                    <Check className="w-3.5 h-3.5 text-primary" />
+                    <Check className="w-3.5 h-3.5 text-positive" />
                   ) : (
                     <Copy className="w-3.5 h-3.5" />
                   )}
@@ -244,7 +238,7 @@ export function DebateCard({
                 <button
                   type="button"
                   onClick={handleDownload}
-                  className="p-1.5 rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                  className="flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground transition-colors duration-150 hover:bg-muted hover:text-foreground"
                 >
                   <Download className="w-3.5 h-3.5" />
                 </button>
@@ -259,7 +253,7 @@ export function DebateCard({
                 <button
                   type="button"
                   onClick={handleShare}
-                  className="p-1.5 rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                  className="flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground transition-colors duration-150 hover:bg-muted hover:text-foreground"
                 >
                   <Share2 className="w-3.5 h-3.5" />
                 </button>
@@ -280,8 +274,8 @@ export function DebateCard({
 
         {/* Bull vs Bear */}
         {(hasBull || hasBear) && (
-          <div className="p-4">
-            <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] gap-3 items-stretch">
+          <div>
+            <div className="grid grid-cols-1 items-stretch gap-6 md:grid-cols-2">
               {hasBull && (
                 <DebatePanel
                   label={bullLabel}
@@ -289,26 +283,6 @@ export function DebateCard({
                   content={getContent(bullKey!) || ""}
                   variant="bull"
                 />
-              )}
-
-              {hasBull && hasBear && (
-                <div className="hidden md:flex flex-col items-center justify-center py-4">
-                  <div className="w-px flex-1 bg-border" />
-                  <div className="my-2 w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-800 border border-border flex items-center justify-center">
-                    <Swords className="w-3.5 h-3.5 text-gray-500 dark:text-gray-400" />
-                  </div>
-                  <div className="w-px flex-1 bg-border" />
-                </div>
-              )}
-
-              {hasBull && hasBear && (
-                <div className="flex md:hidden items-center gap-2 py-1">
-                  <div className="flex-1 h-px bg-border" />
-                  <div className="w-7 h-7 rounded-full bg-gray-100 dark:bg-gray-800 border border-border flex items-center justify-center">
-                    <Swords className="w-3 h-3 text-gray-500 dark:text-gray-400" />
-                  </div>
-                  <div className="flex-1 h-px bg-border" />
-                </div>
               )}
 
               {hasBear && (
@@ -325,14 +299,13 @@ export function DebateCard({
 
         {/* Judge Verdict */}
         {hasJudge && (
-          <div className="border-t border-border">
-            <div className="bg-gray-50/50 dark:bg-white/[0.02] px-4 py-4">
-              <div className="flex items-center gap-2 mb-3">
-                <ShieldCheck className="w-3.5 h-3.5 text-gray-500 dark:text-gray-400 shrink-0" />
-                <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">
+          <div className="mt-6">
+            <div className="rounded-2xl bg-muted px-4 py-4">
+              <div className="mb-2 flex items-center gap-2">
+                <ShieldCheck className="h-4 w-4 shrink-0 text-foreground" />
+                <span className="text-[13px] font-semibold text-foreground">
                   {judgeLabel}
                 </span>
-                <div className="flex-1 h-px bg-border" />
               </div>
               <div
                 className={cn(
@@ -348,7 +321,7 @@ export function DebateCard({
                 <button
                   type="button"
                   onClick={() => setJudgeExpanded((v) => !v)}
-                  className="mt-2 flex items-center gap-1 text-[11px] font-medium text-muted-foreground opacity-70 hover:opacity-100 transition-colors"
+                  className="mt-2 flex items-center gap-1 text-xs font-semibold text-foreground hover:underline"
                 >
                   <ChevronDown
                     className={cn(

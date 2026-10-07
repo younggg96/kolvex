@@ -13,7 +13,6 @@ from app.services.portfolio import PortfolioService, get_portfolio_service
 from .schemas import (
     HoldingsResponse, 
     PublicHoldingsResponse, 
-    PublicUsersResponse,
     TogglePublicRequest, 
     TogglePositionVisibilityRequest,
     BatchTogglePositionVisibilityRequest,
@@ -46,37 +45,6 @@ async def get_my_holdings(
         )
 
 
-@router.get("/public-users", response_model=PublicUsersResponse)
-async def get_public_users(
-    limit: int = 20,
-    offset: int = 0,
-    sort_by: str = "updated",  # "updated" or "pnl_percent"
-    sort_order: str = "desc",  # "asc" or "desc"
-    service: PortfolioService = Depends(get_portfolio_service),
-):
-    """
-    Get list of users who have public portfolios
-    
-    No authentication required - this is public data
-    
-    Args:
-        sort_by: Sort field - "updated" (last_synced_at) or "pnl_percent"
-        sort_order: Sort order - "asc" or "desc"
-    """
-    try:
-        result = await service.get_public_users(
-            limit=limit, 
-            offset=offset, 
-            sort_by=sort_by, 
-            sort_order=sort_order
-        )
-        return PublicUsersResponse(**result)
-    except Exception as e:
-        logger.error(f"Failed to get public users: {e}")
-        raise HTTPException(
-            status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to get public users: {str(e)}",
-        )
 
 
 @router.get("/holdings/{user_id}", response_model=Optional[PublicHoldingsResponse])
@@ -251,4 +219,3 @@ async def update_privacy_settings(
             status_code=http_status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to update privacy settings: {str(e)}",
         )
-

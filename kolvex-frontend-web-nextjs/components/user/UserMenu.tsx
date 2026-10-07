@@ -48,24 +48,24 @@ export default function UserMenu({ isCollapsed = false }: UserMenuProps) {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <button
-          className={`flex items-center gap-2 py-1.5 hover:bg-gray-100 dark:hover:bg-white/5 rounded-lg transition-colors w-full ${
-            isCollapsed ? "justify-center" : "px-1.5"
+          className={`flex w-full items-center gap-2.5 rounded-full py-1.5 transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
+            isCollapsed ? "justify-center" : "pl-1.5 pr-3"
           }`}
         >
           {/* Avatar */}
           <div className="relative flex-shrink-0">
             {profile?.avatar_url ? (
-              <div className="relative w-7 h-7 rounded-full overflow-hidden">
+              <div className="relative h-8 w-8 overflow-hidden rounded-full">
                 <Image
                   src={profile.avatar_url}
                   alt="Profile"
                   fill
                   className="object-cover"
-                  sizes="28px"
+                  sizes="32px"
                 />
               </div>
             ) : (
-              <div className="w-7 h-7 rounded-full bg-primary flex items-center justify-center text-white text-xs font-semibold">
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground">
                 {getInitials()}
               </div>
             )}
@@ -74,10 +74,10 @@ export default function UserMenu({ isCollapsed = false }: UserMenuProps) {
           {/* User Details */}
           {!isCollapsed && (
             <div className="flex flex-col overflow-hidden text-left flex-1">
-              <span className="text-gray-900 dark:text-white text-xs font-medium truncate">
+              <span className="truncate text-sm font-semibold text-foreground">
                 {displayName}
               </span>
-              <span className="text-gray-600 dark:text-white/50 text-[10px] truncate">
+              <span className="truncate text-xs text-muted-foreground">
                 {displayEmail}
               </span>
             </div>
@@ -85,7 +85,7 @@ export default function UserMenu({ isCollapsed = false }: UserMenuProps) {
 
           {/* Dropdown Icon */}
           {!isCollapsed && (
-            <ChevronDown className="w-3 h-3 text-gray-500 dark:text-white/50" />
+            <ChevronDown className="h-4 w-4 text-muted-foreground" />
           )}
         </button>
       </DropdownMenuTrigger>
@@ -93,10 +93,10 @@ export default function UserMenu({ isCollapsed = false }: UserMenuProps) {
       <DropdownMenuContent align={"start"} className="w-48">
         <DropdownMenuLabel>
           <div className="flex flex-col space-y-0.5">
-            <p className="text-xs font-medium text-gray-900 dark:text-white">
+            <p className="text-sm font-semibold text-foreground">
               {displayName}
             </p>
-            <p className="text-[10px] text-gray-600 dark:text-white/50 truncate">
+            <p className="truncate text-xs text-muted-foreground">
               {displayEmail}
             </p>
           </div>
@@ -107,24 +107,18 @@ export default function UserMenu({ isCollapsed = false }: UserMenuProps) {
         <DropdownMenuItem
           onClick={() => router.push("/dashboard/settings?tab=account")}
         >
-          <User className="w-3 h-3" />
+          <User className="h-4 w-4" />
           <span>{t("userMenu.account")}</span>
         </DropdownMenuItem>
 
-        <DropdownMenuItem
-          onClick={() => router.push("/dashboard/settings?tab=notifications")}
-        >
-          <Bell className="w-3 h-3" />
-          <span>{t("userMenu.notifications")}</span>
-        </DropdownMenuItem>
 
         <DropdownMenuSeparator />
 
         <DropdownMenuItem
           onClick={handleLogout}
-          className="text-red-600 dark:text-red-400 focus:text-red-600 dark:focus:text-red-400"
+          className="text-negative hover:text-negative focus:text-negative"
         >
-          <LogOut className="w-3 h-3" />
+          <LogOut className="h-4 w-4" />
           <span>{t("userMenu.logOut")}</span>
         </DropdownMenuItem>
       </DropdownMenuContent>

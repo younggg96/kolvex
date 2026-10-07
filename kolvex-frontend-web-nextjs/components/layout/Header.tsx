@@ -19,13 +19,12 @@ export default function Header({
   extra,
 }: HeaderProps) {
   return (
-    <header className="relative z-10 flex min-h-16 shrink-0 flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b border-border bg-background px-4 py-3 lg:px-7">
-      <div className="flex min-w-0 items-center gap-3">
-        {/* Mobile menu button */}
-        {hasSidebarTrigger && <SidebarTrigger className="lg:hidden" />}
+    <header className="relative z-10 flex min-h-14 shrink-0 flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b border-border/70 bg-background px-4 py-2.5 lg:min-h-16 lg:px-8">
+      <div className="flex min-w-0 items-center gap-2">
+        {hasSidebarTrigger && <SidebarTrigger className="-ml-1.5 lg:hidden" />}
         {leftAction}
         {title && (
-          <h1 className="min-w-0 break-words text-base font-medium text-foreground">
+          <h1 className="min-w-0 truncate text-[17px] font-semibold tracking-[-0.01em] text-foreground">
             {title}
           </h1>
         )}

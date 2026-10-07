@@ -463,104 +463,7 @@ class YFinanceService:
             "puts": puts,
         }
 
-    def get_holders(self, symbol: str) -> Dict[str, Any]:
-        """
-        获取持仓数据
-        包含: 机构持仓、主要持有人、内部人持仓
-        """
-        ticker = self.get_ticker(symbol)
-        info = ticker.info
 
-        # 机构持仓
-        institutional_holders = []
-        try:
-            inst_df = ticker.institutional_holders
-            if inst_df is not None and not inst_df.empty:
-                for _, row in inst_df.iterrows():
-                    date_held = row.get("Date Reported")
-                    institutional_holders.append({
-                        "holder": row.get("Holder"),
-                        "shares": row.get("Shares"),
-                        "date_reported": date_held.isoformat() if hasattr(date_held, "isoformat") else str(date_held) if date_held else None,
-                        "percent_out": row.get("% Out"),
-                        "value": row.get("Value"),
-                    })
-        except Exception:
-            pass
-
-        # 主要持有人
-        major_holders = []
-        try:
-            major_df = ticker.major_holders
-            if major_df is not None and not major_df.empty:
-                for idx, row in major_df.iterrows():
-                    major_holders.append({
-                        "value": row[0] if len(row) > 0 else None,
-                        "description": row[1] if len(row) > 1 else str(idx),
-                    })
-        except Exception:
-            pass
-
-        # 内部人持仓
-        insider_holders = []
-        try:
-            insider_df = ticker.insider_transactions
-            if insider_df is not None and not insider_df.empty:
-                for _, row in insider_df.head(20).iterrows():
-                    start_date = row.get("Start Date")
-                    insider_holders.append({
-                        "insider": row.get("Insider"),
-                        "relation": row.get("Relation"),
-                        "shares": row.get("Shares"),
-                        "transaction": row.get("Transaction"),
-                        "start_date": start_date.isoformat() if hasattr(start_date, "isoformat") else str(start_date) if start_date else None,
-                        "value": row.get("Value"),
-                    })
-        except Exception:
-            pass
-
-        return {
-            "symbol": symbol.upper(),
-            "held_percent_insiders": info.get("heldPercentInsiders"),
-            "held_percent_institutions": info.get("heldPercentInstitutions"),
-            "float_shares": info.get("floatShares"),
-            "shares_outstanding": info.get("sharesOutstanding"),
-            "shares_short": info.get("sharesShort"),
-            "short_ratio": info.get("shortRatio"),
-            "short_percent_of_float": info.get("shortPercentOfFloat"),
-            "shares_short_prior_month": info.get("sharesShortPriorMonth"),
-            "institutional_holders": institutional_holders,
-            "major_holders": major_holders,
-            "insider_transactions": insider_holders,
-        }
-
-    def get_insider_transactions(self, symbol: str) -> List[Dict[str, Any]]:
-        """
-        获取内部人交易记录
-        """
-        ticker = self.get_ticker(symbol)
-
-        try:
-            df = ticker.insider_transactions
-            if df is None or df.empty:
-                return []
-        except Exception:
-            return []
-
-        result = []
-        for _, row in df.iterrows():
-            start_date = row.get("Start Date")
-            result.append({
-                "insider": row.get("Insider"),
-                "relation": row.get("Relation"),
-                "shares": row.get("Shares"),
-                "transaction": row.get("Transaction"),
-                "start_date": start_date.isoformat() if hasattr(start_date, "isoformat") else str(start_date) if start_date else None,
-                "value": row.get("Value"),
-                "url": row.get("URL"),
-            })
-
-        return result
 
     # ============================================================
     # 分析师与新闻
@@ -669,34 +572,6 @@ class YFinanceService:
             "earnings_dates": earnings_dates,
         }
 
-    def get_news(self, symbol: str) -> List[Dict[str, Any]]:
-        """
-        获取相关新闻
-        """
-        ticker = self.get_ticker(symbol)
-
-        try:
-            news = ticker.news
-        except Exception:
-            return []
-
-        if not news:
-            return []
-
-        result = []
-        for item in news[:20]:  # 限制数量
-            result.append({
-                "uuid": item.get("uuid"),
-                "title": item.get("title"),
-                "publisher": item.get("publisher"),
-                "link": item.get("link"),
-                "publish_time": item.get("providerPublishTime"),
-                "type": item.get("type"),
-                "thumbnail": item.get("thumbnail", {}).get("resolutions", [{}])[0].get("url") if item.get("thumbnail") else None,
-                "related_tickers": item.get("relatedTickers", []),
-            })
-
-        return result
 
     # ============================================================
     # 批量操作
@@ -742,28 +617,3 @@ def get_yfinance_service() -> YFinanceService:
     if _yfinance_service is None:
         _yfinance_service = YFinanceService()
     return _yfinance_service
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

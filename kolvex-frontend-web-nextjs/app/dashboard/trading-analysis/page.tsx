@@ -4,15 +4,11 @@ import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
-  Activity,
   Play,
   Plus,
   Loader2,
   Trash2,
   Clock,
-  TrendingUp,
-  Calendar,
-  Bot,
   Settings,
   Globe,
   RefreshCw,
@@ -21,7 +17,6 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/lib/i18n";
 import DashboardLayout from "@/components/layout/DashboardLayout";
-import { HeroSection } from "@/components/ui/hero-section";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -233,50 +228,39 @@ export default function TradingAnalysisPage() {
       title={t("tradingAnalysis.title")}
       headerActions={
         <>
-          <Button variant="ghost" size="xs" onClick={loadHistory}>
-            <RefreshCw className="w-3.5 h-3.5 mr-1" />
-            {t("tradingAnalysis.refresh")}
+          <Button variant="ghost" size="icon" onClick={loadHistory} aria-label={t("tradingAnalysis.refresh")} className="h-9 w-9">
+            <RefreshCw className={cn("h-4 w-4", loading && "animate-spin")} />
           </Button>
           <Button
             variant="outline"
-            size="xs"
+            size="sm"
             onClick={() => router.push("/dashboard/trading-analysis/explore")}
-            className="gap-1"
+            className="gap-1.5"
           >
-            <Globe className="w-3.5 h-3.5" />
+            <Globe className="h-4 w-4" />
             {t("tradingAnalysis.explore.title")}
-          </Button>
-          <Button size="xs" onClick={() => setDialogOpen(true)}>
-            <Plus className="w-3.5 h-3.5 mr-1" />
-            {t("tradingAnalysis.newAnalysis")}
           </Button>
         </>
       }
     >
-      <div className="relative flex-1 overflow-y-auto bg-background">
-        <div className="absolute inset-0 bg-grid opacity-50 pointer-events-none" />
+      <div className="relative flex-1 overflow-y-auto">
+        <div className="mx-auto w-full max-w-[1080px] px-4 pb-16 pt-6 md:px-8 md:pt-8">
+          <div className="space-y-8">
+            <div className="flex flex-wrap items-end justify-between gap-4">
+              <div className="min-w-0">
+                <h2 className="text-[28px] font-bold leading-tight md:text-[32px]">
+                  {t("tradingAnalysis.title")}
+                </h2>
+                <p className="mt-2 max-w-[60ch] text-[15px] leading-relaxed text-muted-foreground">
+                  {t("tradingAnalysis.heroDescription")}
+                </p>
+              </div>
+              <Button onClick={() => setDialogOpen(true)} className="gap-1.5">
+                <Plus className="h-4 w-4" />
+                {t("tradingAnalysis.newAnalysis")}
+              </Button>
+            </div>
 
-        <div className="relative">
-          <HeroSection
-            title={t("tradingAnalysis.title")}
-            description={t("tradingAnalysis.heroDescription")}
-            features={[
-              {
-                icon: Activity,
-                label: t("tradingAnalysis.heroFeatures.multiAgent"),
-              },
-              {
-                icon: Bot,
-                label: t("tradingAnalysis.heroFeatures.debate"),
-              },
-              {
-                icon: TrendingUp,
-                label: t("tradingAnalysis.heroFeatures.risk"),
-              },
-            ]}
-          />
-
-          <div className="p-4 space-y-6">
             {/* ── New Analysis Dialog ── */}
             <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
               <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
@@ -319,7 +303,7 @@ export default function TradingAnalysisPage() {
                         {t("tradingAnalysis.llmProvider")}
                       </label>
                       {providersLoading ? (
-                        <div className="flex items-center h-10 px-4 text-sm text-muted-foreground border border-border bg-muted rounded-lg">
+                        <div className="flex h-10 items-center rounded-xl bg-muted px-4 text-sm text-muted-foreground">
                           <Loader2 className="w-3.5 h-3.5 mr-2 animate-spin" />
                           {t("common.loading")}
                         </div>
@@ -337,7 +321,7 @@ export default function TradingAnalysisPage() {
                           </SelectTrigger>
                           <SelectContent>
                             <SelectGroup>
-                              <SelectLabel className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                              <SelectLabel className="text-xs text-muted-foreground">
                                 {t("tradingAnalysis.available")}
                               </SelectLabel>
                               {allProviders
@@ -352,7 +336,7 @@ export default function TradingAnalysisPage() {
                               <>
                                 <SelectSeparator />
                                 <SelectGroup>
-                                  <SelectLabel className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                                  <SelectLabel className="text-xs text-muted-foreground">
                                     {t("tradingAnalysis.needApiKey")}
                                   </SelectLabel>
                                   {allProviders
@@ -374,7 +358,7 @@ export default function TradingAnalysisPage() {
                       ) : (
                         <Link
                           href="/dashboard/settings?tab=api-keys"
-                          className="flex items-center justify-center gap-1.5 h-10 px-4 text-xs font-medium text-primary border border-dashed border-primary/30 dark:border-primary/40 rounded-lg bg-primary/5 hover:bg-primary/10 transition-colors"
+                          className="flex h-10 items-center justify-center gap-1.5 rounded-xl border border-dashed border-border px-4 text-[13px] font-semibold text-positive transition-colors duration-150 hover:bg-muted"
                         >
                           <Settings className="w-3.5 h-3.5" />
                           {t("tradingAnalysis.addApiKey")}
@@ -433,7 +417,7 @@ export default function TradingAnalysisPage() {
                               <span className="flex items-center gap-2">
                                 {m.name}
                                 {m.isPro && (
-                                  <span className="px-1 py-0.5 text-[9px] font-medium rounded bg-amber-500/10 text-amber-600 dark:text-amber-400">
+                                  <span className="rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-semibold text-muted-foreground">
                                     Pro
                                   </span>
                                 )}
@@ -467,7 +451,7 @@ export default function TradingAnalysisPage() {
                               <span className="flex items-center gap-2">
                                 {m.name}
                                 {m.isPro && (
-                                  <span className="px-1 py-0.5 text-[9px] font-medium rounded bg-amber-500/10 text-amber-600 dark:text-amber-400">
+                                  <span className="rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-semibold text-muted-foreground">
                                     Pro
                                   </span>
                                 )}
@@ -489,12 +473,14 @@ export default function TradingAnalysisPage() {
                         return (
                           <button
                             key={id}
+                            type="button"
                             onClick={() => toggleAnalyst(id)}
+                            aria-pressed={isActive}
                             className={cn(
-                              "px-3.5 py-1.5 rounded-full text-xs font-medium border transition-all duration-200",
+                              "h-9 rounded-full px-4 text-[13px] font-semibold transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
                               isActive
-                                ? "bg-primary/10 text-primary border-primary/30 dark:bg-primary/20 dark:border-primary/40 shadow-sm"
-                                : "bg-muted text-muted-foreground border-border hover:border-border"
+                                ? "bg-foreground text-background"
+                                : "bg-muted text-muted-foreground hover:text-foreground"
                             )}
                           >
                             {analystLabels[id]}
@@ -532,123 +518,92 @@ export default function TradingAnalysisPage() {
             </Dialog>
 
             {/* ── History ── */}
-            <div className="space-y-3 animate-fade-in-up">
-              <div className="flex items-center gap-2">
-                <div className="w-7 h-7 rounded-lg bg-primary/10 dark:bg-primary/20 flex items-center justify-center">
-                  <Activity className="w-3.5 h-3.5 text-primary" />
-                </div>
-                <h2 className="text-sm font-semibold text-foreground">
-                  {t("tradingAnalysis.history")}
-                  {total > 0 && (
-                    <span className="ml-1.5 text-xs font-normal text-gray-400">
-                      ({total})
-                    </span>
-                  )}
-                </h2>
-              </div>
+            <section aria-labelledby="analysis-history" className="animate-fade-in-up">
+              <h3 id="analysis-history" className="border-b border-border pb-3 text-[17px] font-semibold text-foreground">
+                {t("tradingAnalysis.history")}
+                {total > 0 && (
+                  <span className="figure ml-2 text-sm font-normal text-muted-foreground">
+                    {total}
+                  </span>
+                )}
+              </h3>
 
               {loading ? (
                 <HistorySkeleton />
               ) : history.length === 0 ? (
-                <div className="bg-card border border-border rounded-lg text-center py-16">
-                  <Bot className="w-10 h-10 mx-auto mb-3 text-muted-foreground/40" />
-                  <p className="text-sm text-muted-foreground">
+                <div className="flex flex-col items-start gap-3 py-12">
+                  <p className="text-[15px] text-muted-foreground">
                     {t("tradingAnalysis.noHistory")}
                   </p>
+                  <Button variant="outline" onClick={() => setDialogOpen(true)} className="gap-1.5">
+                    <Plus className="h-4 w-4" />
+                    {t("tradingAnalysis.newAnalysis")}
+                  </Button>
                 </div>
               ) : (
                 <TooltipProvider>
-                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
-                    {history.map((item, idx) => (
-                      <div
-                        key={item.id}
-                        onClick={() =>
-                          router.push(
-                            `/dashboard/trading-analysis/${item.id}`
-                          )
-                        }
-                        className={cn(
-                          "group bg-card border border-border rounded-lg p-4 cursor-pointer",
-                          "hover:border-primary/30 dark:hover:border-primary/20 transition-all duration-200 hover:shadow-sm",
-                          "animate-fade-in-up",
-                          idx < 6 && `stagger-${Math.min(idx + 1, 5)}`
-                        )}
-                      >
-                        <div className="flex items-start justify-between mb-3">
-                          <div className="flex items-center gap-3 min-w-0">
-                            <CompanyLogo symbol={item.ticker} size="md" />
-                            <div className="min-w-0">
-                              <span className="text-lg font-bold text-foreground">
-                                {item.ticker}
+                  <ul className="divide-y divide-border">
+                    {history.map((item) => (
+                      <li key={item.id} className="group relative flex items-center gap-3 py-3.5 sm:gap-4">
+                        <CompanyLogo symbol={item.ticker} size="md" />
+                        <div className="min-w-0 flex-1">
+                          <Link
+                            href={`/dashboard/trading-analysis/${item.id}`}
+                            className="text-[15px] font-semibold text-foreground after:absolute after:inset-0 focus-visible:outline-none focus-visible:after:rounded-xl focus-visible:after:ring-2 focus-visible:after:ring-primary"
+                          >
+                            {item.ticker}
+                          </Link>
+                          <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                            <span className="figure">{item.trade_date}</span>
+                            {item.duration_seconds && (
+                              <span className="flex items-center gap-1">
+                                <Clock className="h-3 w-3" />
+                                {t("tradingAnalysis.durationSeconds", {
+                                  seconds: String(Math.round(item.duration_seconds)),
+                                })}
                               </span>
-                              <div className="flex items-center gap-2 mt-1 flex-wrap">
-                                <StatusBadge status={item.status} t={t} />
-                                <DecisionBadge
-                                  decision={item.final_decision}
-                                  t={t}
-                                />
-                                {item.is_published && (
-                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-muted text-muted-foreground">
-                                  <Globe className="w-2.5 h-2.5" />
-                                  {t("tradingAnalysis.publishedLabel")}
-                                </span>
-                              )}
-                              </div>
-                            </div>
+                            )}
+                            {item.llm_provider && (
+                              <span className="capitalize">{item.llm_provider}</span>
+                            )}
+                            {item.is_published && (
+                              <span className="flex items-center gap-1">
+                                <Globe className="h-3 w-3" />
+                                {t("tradingAnalysis.publishedLabel")}
+                              </span>
+                            )}
                           </div>
+                          {item.error_message && (
+                            <p className="mt-1 truncate text-xs text-negative">
+                              {item.error_message}
+                            </p>
+                          )}
+                        </div>
+                        <div className="flex shrink-0 items-center gap-2">
+                          {item.status !== "completed" && <StatusBadge status={item.status} t={t} />}
+                          <DecisionBadge decision={item.final_decision} t={t} />
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleDelete(item.id);
-                                }}
-                                className="p-1.5 rounded-md opacity-0 group-hover:opacity-100 hover:bg-red-50 dark:hover:bg-red-500/10 text-gray-400 hover:text-red-500 transition-all"
+                                type="button"
+                                onClick={() => handleDelete(item.id)}
+                                aria-label={`${t("common.delete")} ${item.ticker}`}
+                                className="relative z-10 flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground transition-colors duration-150 hover:bg-negative/10 hover:text-negative focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary md:opacity-0 md:group-hover:opacity-100 md:focus-visible:opacity-100"
                               >
-                                <Trash2 className="w-3.5 h-3.5" />
+                                <Trash2 className="h-4 w-4" />
                               </button>
                             </TooltipTrigger>
                             <TooltipContent side="left">
-                              <p className="text-xs">
-                                {t("common.delete")}
-                              </p>
+                              <p className="text-xs">{t("common.delete")}</p>
                             </TooltipContent>
                           </Tooltip>
                         </div>
-
-                        <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                          <span className="flex items-center gap-1">
-                            <Calendar className="w-3 h-3" />
-                            {item.trade_date}
-                          </span>
-                          {item.duration_seconds && (
-                            <span className="flex items-center gap-1">
-                              <Clock className="w-3 h-3" />
-                              {t("tradingAnalysis.durationSeconds", {
-                                seconds: String(
-                                  Math.round(item.duration_seconds)
-                                ),
-                              })}
-                            </span>
-                          )}
-                          {item.llm_provider && (
-                            <span className="capitalize px-1.5 py-0.5 rounded bg-muted text-[10px]">
-                              {item.llm_provider}
-                            </span>
-                          )}
-                        </div>
-
-                        {item.error_message && (
-                          <p className="mt-2 text-xs text-red-500 truncate">
-                            {item.error_message}
-                          </p>
-                        )}
-                      </div>
+                      </li>
                     ))}
-                  </div>
+                  </ul>
                 </TooltipProvider>
               )}
-            </div>
+            </section>
           </div>
         </div>
       </div>

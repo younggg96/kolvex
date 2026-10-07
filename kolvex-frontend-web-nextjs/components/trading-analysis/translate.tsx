@@ -55,10 +55,11 @@ export function TranslateButton({
           onClick={onToggle}
           disabled={isTranslating}
           aria-label={label}
+          aria-pressed={showTranslated}
           className={cn(
-            "p-1.5 rounded-md transition-colors",
+            "flex h-8 w-8 items-center justify-center rounded-full transition-colors duration-150",
             showTranslated
-              ? "text-primary bg-primary/10"
+              ? "bg-foreground text-background"
               : "text-muted-foreground hover:bg-muted hover:text-foreground",
             isTranslating && "opacity-50 cursor-not-allowed"
           )}

@@ -37,8 +37,8 @@ export function StatCard({
   // 根据 variant 决定值的颜色
   const valueColorClass = {
     default: "",
-    positive: "text-green-600 dark:text-green-500",
-    negative: "text-red-600 dark:text-red-500",
+    positive: "text-positive",
+    negative: "text-negative",
     muted: "text-muted-foreground",
   }[variant];
 

@@ -167,9 +167,23 @@ export async function getYouTubeOpinionDashboard(
   return apiRequest<YouTubeOpinionDashboard>(`/dashboard${qs ? `?${qs}` : ""}`);
 }
 
+export type YouTubeImportBody = Record<string, unknown> | Record<string, unknown>[];
+
+export interface YouTubeImportResult {
+  success: boolean;
+  inserted_count: number;
+  video_count: number;
+  videos: Array<{
+    video_id: string;
+    video_title: string;
+    channel_title: string;
+    tickers: string[];
+  }>;
+}
+
 export async function uploadYouTubeOpinionPayload(
-  payload: Record<string, unknown>
-): Promise<{ success: boolean; inserted_count: number; video_id: string; tickers: string[] }> {
+  payload: YouTubeImportBody
+): Promise<YouTubeImportResult> {
   return apiRequest("/upload", {
     method: "POST",
     body: JSON.stringify(payload),
@@ -180,7 +194,8 @@ export function getYouTubeCreatorProfile(channelId: string) {
   return apiRequest<YouTubeCreatorSummary>(`/creators/${encodeURIComponent(channelId)}/profile`);
 }
 
-export interface YouTubeImportPreview {
+export interface YouTubeImportVideoPreview {
+  index: number;
   video_id: string;
   video_title: string;
   channel_title: string;
@@ -188,7 +203,14 @@ export interface YouTubeImportPreview {
   opinions: Pick<YouTubeOpinion, "ticker" | "sentiment" | "direction_score" | "confidence" | "summary" | "opinion_date">[];
 }
 
-export function validateYouTubeOpinionPayload(payload: Record<string, unknown>) {
+export interface YouTubeImportPreview {
+  video_count: number;
+  count: number;
+  videos: YouTubeImportVideoPreview[];
+  errors: Array<{ index: number; message: string }>;
+}
+
+export function validateYouTubeOpinionPayload(payload: YouTubeImportBody) {
   return apiRequest<YouTubeImportPreview>("/validate", {
     method: "POST",
     body: JSON.stringify(payload),

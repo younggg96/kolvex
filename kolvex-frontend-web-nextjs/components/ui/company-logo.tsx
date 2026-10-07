@@ -56,9 +56,9 @@ const borderMap = {
 };
 
 const borderColorMap = {
-  gray: "border-gray-100 dark:border-gray-800", // 更淡的边框，更现代
+  gray: "border-border", // 更淡的边框，更现代
   primary: "border-primary/20 dark:border-primary/40",
-  orange: "border-orange-200 dark:border-orange-700",
+  orange: "border-warning/30",
   custom: "",
 };
 
@@ -90,7 +90,7 @@ export default function CompanyLogo({
   borderColor = "gray",
   customBorderColor,
   bgColor = "bg-white",
-  textColor = "text-gray-500 dark:text-gray-400", // 更柔和的文字颜色
+  textColor = "text-muted-foreground", // 更柔和的文字颜色
   unoptimized = false,
   className = "",
   imageClassName = "",
@@ -123,7 +123,7 @@ export default function CompanyLogo({
         "p-1", // 保持内边距，让 logo 有呼吸感
         containerSize,
         // 如果出错使用柔和的灰色背景，否则使用传入的背景（默认白色）
-        hasError ? "bg-gray-50 dark:bg-gray-800" : bgColor,
+        hasError ? "bg-muted" : bgColor,
         shapeClass,
         borderClass,
         borderColorClass,

@@ -34,7 +34,7 @@ export default function PortfolioScreen() {
             Connect Your Portfolio
           </Text>
           <Text style={[styles.description, { color: colors.mutedForeground }]}>
-            Connect Robinhood or Interactive Brokers to see holdings, P&L analysis, and AI-powered insights.
+            Connect a supported brokerage to see holdings, P&L analysis, and AI-powered insights.
           </Text>
         </View>
 
@@ -44,7 +44,7 @@ export default function PortfolioScreen() {
             'Real-time portfolio tracking',
             'P&L analysis with charts',
             'AI-powered stock recommendations',
-            'KOL sentiment overlay',
+            'Portfolio risk insights',
           ].map((feature) => (
             <View key={feature} style={styles.featureRow}>
               <View style={[styles.featureDot, { backgroundColor: primary }]} />
@@ -65,7 +65,7 @@ export default function PortfolioScreen() {
         </Button>
 
         <Text style={[styles.note, { color: colors.mutedForeground }]}>
-          Broker data is read-only. Robinhood and IBKR connections are managed separately.
+          Manage your brokerage connections from your portfolio settings.
         </Text>
       </ScrollView>
     </View>

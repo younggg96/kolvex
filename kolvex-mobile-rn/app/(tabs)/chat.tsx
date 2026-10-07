@@ -55,7 +55,7 @@ export default function ChatScreen() {
       const initConversation = async () => {
         const conv = await createConversation(`Analysis: ${stock}`);
         if (conv) {
-          await sendChatMessage(`Analyze the stock ${stock} - what's the current sentiment, recent news, and KOL opinions?`);
+          await sendChatMessage(`Analyze the stock ${stock} - what's the current sentiment, fundamentals, and market conditions?`);
         }
       };
       initConversation();
@@ -253,7 +253,7 @@ export default function ChatScreen() {
                 AI Investment Assistant
               </Text>
               <Text style={[styles.welcomeText, { color: colors.mutedForeground }]}>
-                Ask me about stocks, market trends, KOL analysis, and more.
+                Ask me about stocks, market trends, portfolio analysis, and more.
               </Text>
             </View>
           }
@@ -305,7 +305,7 @@ export default function ChatScreen() {
           <View style={[styles.inputWrapper, { backgroundColor: isDark ? Colors.dark.inputBackground : Colors.light.inputBackground, borderColor: isDark ? Colors.dark.inputBorder : Colors.light.inputBorder }]}>
             <TextInput
               style={[styles.input, { color: colors.foreground }]}
-              placeholder="Ask about stocks, trends, KOLs..."
+              placeholder="Ask about stocks, trends, portfolios..."
               placeholderTextColor={colors.mutedForeground}
               value={inputText}
               onChangeText={setInputText}

@@ -37,14 +37,14 @@ const SearchInput = React.forwardRef<HTMLInputElement, SearchInputProps>(
     return (
       <div
         className={cn(
-          "relative w-fit bg-white dark:bg-card-dark border border-border-light dark:border-primary/20 transition-colors duration-200",
+          "relative w-fit bg-background border border-border transition-colors duration-200",
           config.container,
           containerClassName
         )}
       >
         <Search
           className={cn(
-            "absolute top-1/2 -translate-y-1/2 pointer-events-none text-gray-500 dark:text-white/60",
+            "absolute top-1/2 -translate-y-1/2 pointer-events-none text-muted-foreground",
             config.icon,
             iconClassName
           )}
@@ -53,7 +53,7 @@ const SearchInput = React.forwardRef<HTMLInputElement, SearchInputProps>(
           ref={ref}
           type="text"
           className={cn(
-            "w-full bg-transparent border-none outline-none text-gray-900 dark:text-white placeholder:text-gray-500 dark:placeholder:text-white/40 focus-visible:outline-none focus-visible:ring-0 transition-colors duration-200",
+            "w-full bg-transparent border-none outline-none text-foreground placeholder:text-muted-foreground dark:placeholder:text-white/40 focus-visible:outline-none focus-visible:ring-0 transition-colors duration-200",
             config.input,
             className
           )}
