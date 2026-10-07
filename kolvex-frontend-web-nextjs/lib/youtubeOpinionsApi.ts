@@ -30,6 +30,16 @@ export interface YouTubeCreatorSummary {
   channel_handle?: string | null;
   channel_avatar_url?: string | null;
   channel_url?: string | null;
+  description?: string | null;
+  country?: string | null;
+  channel_published_at?: string | null;
+  subscriber_count?: number | null;
+  hidden_subscriber_count?: boolean;
+  video_count?: number | null;
+  view_count?: number | null;
+  profile_source?: "youtube" | "imported";
+  profile_status?: "available" | "imported" | "not_configured" | "unavailable" | "not_found" | "invalid_identity";
+  profile_updated_at?: string | null;
   total_opinions: number;
   bullish_count: number;
   bearish_count: number;
@@ -161,6 +171,10 @@ export async function uploadYouTubeOpinionPayload(
     method: "POST",
     body: JSON.stringify(payload),
   });
+}
+
+export function getYouTubeCreatorProfile(channelId: string) {
+  return apiRequest<YouTubeCreatorSummary>(`/creators/${encodeURIComponent(channelId)}/profile`);
 }
 
 export interface YouTubeImportPreview {

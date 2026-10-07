@@ -18,6 +18,7 @@ from typing import Any, Dict, Iterable, List, Optional
 from urllib.parse import parse_qs, urlparse
 
 from supabase import Client
+from app.services.youtube_channel_profiles import channel_profiles, channel_link, public_count
 
 
 TABLE_NAME = "youtube_stock_opinions"
@@ -151,6 +152,17 @@ class YouTubeStockOpinionService:
                 "creators": self._creator_filter_options(rows),
             },
         }
+
+    async def get_creator_profile(self, channel_id: str) -> Dict[str, Any]:
+        rows = self._fetch_rows(channel_id=channel_id)
+        if not rows:
+            raise LookupError("Creator not found in imported opinions")
+        creator = self._build_creator_summaries(rows)[0]
+        remote = await channel_profiles.get_profile(
+            channel_id, creator.get("channel_handle"), creator.get("channel_url")
+        )
+        remote = {key: value for key, value in remote.items() if value is not None or key not in {"channel_title", "channel_handle", "channel_avatar_url", "description"}}
+        return {**creator, **remote}
 
     async def get_stock_detail(
         self,
@@ -395,6 +407,7 @@ class YouTubeStockOpinionService:
                     "channel_handle": latest.get("channel_handle"),
                     "channel_avatar_url": latest.get("channel_avatar_url"),
                     "channel_url": latest.get("channel_url"),
+                    **self._imported_channel_profile(latest),
                     "total_opinions": len(creator_rows),
                     "bullish_count": _sentiment_count(creator_rows, "bullish"),
                     "bearish_count": _sentiment_count(creator_rows, "bearish"),
@@ -413,6 +426,27 @@ class YouTubeStockOpinionService:
             )
 
         return sorted(summaries, key=lambda item: item["total_opinions"], reverse=True)
+
+    @staticmethod
+    def _imported_channel_profile(row: Dict[str, Any]) -> Dict[str, Any]:
+        raw = row.get("raw_payload") or {}
+        channel = raw.get("channel", {}) if isinstance(raw, dict) else {}
+        if not isinstance(channel, dict):
+            channel = {}
+        hidden = channel.get("hidden_subscriber_count") is True
+        return {
+            "description": channel.get("description") if isinstance(channel.get("description"), str) else None,
+            "country": channel.get("country") if isinstance(channel.get("country"), str) else None,
+            "channel_published_at": channel.get("published_at") if isinstance(channel.get("published_at"), str) else None,
+            "subscriber_count": None if hidden else public_count(channel.get("subscriber_count")),
+            "hidden_subscriber_count": hidden,
+            "video_count": public_count(channel.get("video_count")),
+            "view_count": public_count(channel.get("view_count")),
+            "channel_url": channel_link(row.get("channel_id"), row.get("channel_handle"), row.get("channel_url")),
+            "profile_source": "imported",
+            "profile_status": "imported",
+            "profile_updated_at": None,
+        }
 
     def _build_daily_summaries(self, rows: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         grouped: Dict[str, List[Dict[str, Any]]] = defaultdict(list)

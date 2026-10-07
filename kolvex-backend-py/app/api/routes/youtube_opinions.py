@@ -69,6 +69,17 @@ async def get_youtube_stock_detail(
         )
 
 
+@router.get("/creators/{channel_id}/profile")
+async def get_creator_public_profile(
+    channel_id: str,
+    service: YouTubeStockOpinionService = Depends(get_service),
+):
+    try:
+        return await service.get_creator_profile(channel_id)
+    except LookupError:
+        raise HTTPException(status_code=404, detail="Creator not found")
+
+
 @router.post("/validate")
 async def validate_youtube_opinion_payload(
     payload: Dict[str, Any],

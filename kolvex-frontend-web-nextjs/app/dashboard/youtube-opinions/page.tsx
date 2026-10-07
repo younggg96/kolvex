@@ -26,6 +26,7 @@ import { toast } from "sonner";
 
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import YouTubeOpinionImporter from "@/components/admin/YouTubeOpinionImporter";
+import CreatorProfileDialog from "@/components/youtube/CreatorProfileDialog";
 import { useUserProfileContext } from "@/components/user/UserProfileProvider";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -210,14 +211,15 @@ function CreatorRow({
   creator: YouTubeCreatorSummary;
   t: (key: string) => string;
 }) {
+  const [profile, setProfile] = useState<YouTubeCreatorSummary | null>(null);
+  const { locale } = useTranslation();
   return (
     <div className="flex items-center justify-between gap-3 border-b border-border py-3 last:border-0">
       <div className="flex min-w-0 items-center gap-3">
-        <CreatorAvatar creator={creator} />
+        <CreatorAvatar creator={profile || creator} />
         <div className="min-w-0">
-          <div className="truncate text-sm font-medium">
-            {creator.channel_title || creator.channel_id}
-          </div>
+          <CreatorProfileDialog creator={creator} onLoaded={setProfile} />
+          {(profile?.subscriber_count !== null && profile?.subscriber_count !== undefined) && <p className="mt-1 text-xs text-muted-foreground">YouTube · {new Intl.NumberFormat(undefined, { notation: "compact", maximumFractionDigits: 1 }).format(profile.subscriber_count)} {locale === "zh" ? "订阅者" : "subscribers"}</p>}
           <div className="mt-1 flex flex-wrap gap-1">
             {creator.top_tickers.slice(0, 4).map((item) => (
               <Badge key={item.ticker} variant="secondary" size="xs">
