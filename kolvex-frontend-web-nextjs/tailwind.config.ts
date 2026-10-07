@@ -38,6 +38,7 @@ const config: Config = {
         "border-dark": "rgb(var(--border) / <alpha-value>)",
       },
       fontFamily: {
+        editorial: ["Georgia", "Times New Roman", "serif"],
         sans: ["var(--font-manrope)", "Manrope", "sans-serif"],
         display: ["var(--font-manrope)", "Manrope", "sans-serif"],
       },

@@ -145,7 +145,7 @@ function AppSidebar({ onNavigate }: AppSidebarProps) {
             className="flex items-center gap-2 py-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:w-full"
             onClick={onNavigate}
           >
-            <div className="flex aspect-square size-9 items-center justify-center rounded-md bg-primary text-primary-foreground">
+            <div className="flex aspect-square size-9 items-center justify-center">
               <LogoIcon size={24} />
             </div>
             <div className="flex flex-col gap-0.5 leading-none group-data-[collapsible=icon]:hidden">
@@ -175,7 +175,7 @@ function AppSidebar({ onNavigate }: AppSidebarProps) {
       <SidebarContent>
         {/* Main Navigation */}
         <SidebarGroup>
-          <SidebarGroupLabel className="mb-2 text-xs group-data-[collapsible=icon]:sr-only">
+          <SidebarGroupLabel className="sr-only">
             <span>Kolvex</span>
           </SidebarGroupLabel>
           <SidebarGroupContent>

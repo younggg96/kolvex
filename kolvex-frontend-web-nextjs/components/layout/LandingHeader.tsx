@@ -46,7 +46,7 @@ export default function LandingHeader() {
   };
 
   return (
-    <header className="relative z-10 border-b border-border bg-card">
+    <header className="relative z-10 border-b border-border bg-background">
       <div className="landing-width flex min-h-[72px] items-center justify-between gap-4 py-3">
       <Link
         href="/"
@@ -111,7 +111,7 @@ export default function LandingHeader() {
               !isAuthRoute && (
                 <Link
                   href="/auth"
-                  className="text-sm text-gray-500 dark:text-white/50 hover:text-gray-700 dark:hover:text-white/70 transition-colors"
+                  className="rounded-full border border-primary px-5 py-2 text-sm text-primary transition-colors hover:bg-primary/10"
                 >
                   {locale === "zh" ? "登录" : "Sign in"}
                 </Link>

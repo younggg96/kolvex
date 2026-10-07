@@ -18,7 +18,7 @@ export default function AuthLayout({
         <div className="w-full max-w-[420px]">
           <div className="flex flex-col gap-7">
             <div className="flex flex-col gap-3 text-left">
-              <h1 className="text-3xl font-bold text-foreground">
+              <h1 className="rh-enter text-3xl font-medium text-foreground">
                 {title}
               </h1>
               <p className="text-sm leading-relaxed text-muted-foreground">

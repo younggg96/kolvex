@@ -79,7 +79,7 @@ export function ChatWelcome({
         </div>
 
         {/* Heading */}
-        <h1 className="mb-4 text-2xl font-bold leading-snug text-foreground md:text-3xl">
+        <h1 className="mb-4 text-2xl font-medium leading-snug text-foreground md:text-3xl">
           {(() => {
             const raw = t("chat.heading");
             const parts = raw.split(/<highlight>|<\/highlight>/);

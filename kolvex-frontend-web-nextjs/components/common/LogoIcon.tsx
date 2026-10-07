@@ -12,7 +12,7 @@ interface LogoIconProps {
 export default function LogoIcon({
   className = "",
   size = 24,
-  color = "currentColor",
+  color = "#53d22d",
 }: LogoIconProps) {
   return (
     <svg
