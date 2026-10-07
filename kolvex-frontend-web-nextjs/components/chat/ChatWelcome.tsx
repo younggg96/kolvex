@@ -72,7 +72,7 @@ export function ChatWelcome({
   return (
     <div className="flex flex-1 flex-col items-center justify-center overflow-y-auto px-5 py-10 md:px-8">
       {/* Welcome Section */}
-      <div className="mx-auto mb-8 w-full max-w-2xl text-left">
+      <div className="mx-auto mb-8 w-full max-w-2xl text-left animate-fade-in">
         {/* Badge */}
         <div className="mb-4 text-sm font-medium text-muted-foreground">
           {t("chat.badge")}
@@ -98,7 +98,8 @@ export function ChatWelcome({
 
       {/* Search Input */}
       <div
-        className="mx-auto mb-8 w-full max-w-2xl"
+        className="mx-auto mb-8 w-full max-w-2xl animate-fade-in-up"
+        style={{ animationDelay: "100ms" }}
       >
         <ChatInput
           value={query}

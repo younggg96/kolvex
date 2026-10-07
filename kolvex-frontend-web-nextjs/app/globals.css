@@ -162,7 +162,11 @@ body {
   }
 
   .bg-grid {
-    background-image: none;
+    background-image:
+      linear-gradient(to right, rgb(var(--foreground) / 0.06) 1px, transparent 1px),
+      linear-gradient(to bottom, rgb(var(--foreground) / 0.06) 1px, transparent 1px);
+    background-size: 40px 40px;
+    animation: bg-pan 20s linear infinite;
   }
 
   /* Hide scrollbar but keep functionality */
@@ -809,6 +813,39 @@ body {
 .rh-enter-delay { animation-delay: 90ms; }
 .rh-enter-late { animation-delay: 180ms; }
 
+.scroll-reveal[data-reveal="pending"] {
+  opacity: 0;
+  transform: translateY(12px);
+}
+
+.scroll-reveal[data-reveal="visible"] {
+  animation: rh-enter 600ms var(--ease-out-quart) both;
+}
+
+.auth-motion {
+  transition: transform 300ms var(--ease-out-quart), filter 300ms ease;
+}
+
+.auth-motion::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(135deg, rgb(var(--primary) / 0.05), transparent 65%);
+  opacity: 0;
+  transition: opacity 300ms ease;
+}
+
+.auth-motion:focus-within::before { opacity: 1; }
+
+@media (hover: hover) and (pointer: fine) {
+  .auth-motion:hover {
+    transform: translateY(-4px);
+    filter: drop-shadow(0 5px 12px rgb(var(--primary) / 0.06));
+  }
+  .auth-motion:hover::before { opacity: 1; }
+}
+
 .rh-product-preview {
   animation: rh-enter 700ms 240ms var(--ease-out-quint) both;
 }
@@ -839,6 +876,12 @@ body {
   .rh-enter, .rh-product-preview, .dashboard-content .recharts-line-curve {
     animation: none;
   }
+  .scroll-reveal[data-reveal] {
+    opacity: 1;
+    transform: none;
+    animation: none;
+  }
+  .auth-motion:hover { transform: none; filter: none; }
 }
 
 .landing-width {

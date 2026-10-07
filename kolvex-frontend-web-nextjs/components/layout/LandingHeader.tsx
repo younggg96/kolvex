@@ -54,7 +54,7 @@ export default function LandingHeader() {
       >
         <LogoIcon
           size={24}
-          className="h-7 w-7 text-primary"
+          className="h-7 w-7 text-primary transition-transform duration-200 group-hover:scale-110 motion-reduce:transform-none"
         />
         <span
           className={`${textColorClass} text-xl font-extrabold`}

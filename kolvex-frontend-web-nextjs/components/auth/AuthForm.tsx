@@ -99,8 +99,8 @@ export default function AuthForm({ mode, onModeChange }: AuthFormProps) {
   };
 
   return (
-    <div className="w-full">
-      <div className="relative border-t border-border pt-6">
+    <div className="w-full animate-fade-in-up">
+      <div className="auth-motion relative border-t border-border pt-6">
 
         <div className="relative z-10">
           {/* Mode Toggle */}
@@ -266,7 +266,7 @@ export default function AuthForm({ mode, onModeChange }: AuthFormProps) {
               type="submit"
               size="lg"
               disabled={isLoading}
-              className="w-full"
+              className="w-full hover:scale-[1.02] active:scale-[0.98] motion-reduce:transform-none"
             >
               {isLoading
                 ? "Processing..."
@@ -293,7 +293,7 @@ export default function AuthForm({ mode, onModeChange }: AuthFormProps) {
               size="lg"
               onClick={handleGoogleSignIn}
               disabled={isGoogleLoading || isLoading}
-              className="w-full gap-2"
+              className="w-full gap-2 hover:scale-[1.02] active:scale-[0.98] disabled:hover:scale-100 motion-reduce:transform-none"
             >
               <Image
                 src="/logo/google.svg"
