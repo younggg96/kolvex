@@ -8,14 +8,18 @@ stores one row per video/ticker, and builds dashboard-friendly aggregates.
 
 from __future__ import annotations
 
+import asyncio
+import logging
+import re
 from collections import defaultdict
 from datetime import datetime, date, timezone
 from hashlib import sha256
 from math import isfinite
-import re
 from statistics import mean
 from typing import Any, Dict, Iterable, List, Optional
 from urllib.parse import parse_qs, urlparse
+
+logger = logging.getLogger(__name__)
 
 from supabase import Client
 from app.services.youtube_channel_profiles import channel_profiles, channel_link, public_count
@@ -62,6 +66,7 @@ class YouTubeStockOpinionService:
             for payload in payloads
             for row in self._rows_from_payload(payload, uploaded_by=uploaded_by)
         ]
+        await self._fill_missing_avatars(rows)
         result = self.supabase.table(TABLE_NAME).upsert(
             rows, on_conflict="video_id,ticker"
         ).execute()
@@ -181,6 +186,7 @@ class YouTubeStockOpinionService:
             date_from=date_from,
             date_to=date_to,
         )
+        await self._fill_missing_avatars(rows)
 
         return {
             "summary": self._build_summary(rows),
@@ -200,6 +206,7 @@ class YouTubeStockOpinionService:
         rows = self._fetch_rows(channel_id=channel_id)
         if not rows:
             raise LookupError("Creator not found in imported opinions")
+        await self._fill_missing_avatars(rows)
         creator = self._build_creator_summaries(rows)[0]
         remote = await channel_profiles.get_profile(
             channel_id, creator.get("channel_handle"), creator.get("channel_url")
@@ -214,6 +221,7 @@ class YouTubeStockOpinionService:
         date_to: Optional[str] = None,
     ) -> Dict[str, Any]:
         rows = self._fetch_rows(ticker=ticker, date_from=date_from, date_to=date_to)
+        await self._fill_missing_avatars(rows)
         return {
             "ticker": ticker.upper(),
             "summary": self._build_summary(rows),
@@ -222,6 +230,61 @@ class YouTubeStockOpinionService:
             "changes": self._build_daily_changes(rows),
             "opinions": rows,
         }
+
+    async def _fill_missing_avatars(self, rows: List[Dict[str, Any]]) -> None:
+        """Look up public YouTube avatars for creators imported without one."""
+        samples: Dict[str, Dict[str, Any]] = {}
+        for row in rows:
+            channel_id = row.get("channel_id")
+            if not channel_id or _https_url(row.get("channel_avatar_url")):
+                continue
+            current = samples.get(channel_id)
+            if current is None or (
+                not _youtube_video_id(current.get("video_id")) and _youtube_video_id(row.get("video_id"))
+            ):
+                samples[channel_id] = row
+        if not samples:
+            return
+
+        async def lookup(channel_id: str, sample: Dict[str, Any]):
+            try:
+                avatar = await _avatar_from_profile(
+                    channel_id, sample.get("channel_handle"), sample.get("channel_url")
+                )
+                if not avatar:
+                    resolved = await channel_profiles.channel_id_for_video(sample.get("video_id"))
+                    if resolved and resolved != channel_id:
+                        avatar = await _avatar_from_profile(resolved)
+            except Exception:
+                logger.warning("YouTube avatar lookup failed for %s", channel_id, exc_info=True)
+                return channel_id, None
+            return channel_id, avatar
+
+        found = {
+            channel_id: avatar
+            for channel_id, avatar in await asyncio.gather(
+                *(lookup(channel_id, sample) for channel_id, sample in samples.items())
+            )
+            if avatar
+        }
+        if not found:
+            return
+
+        for row in rows:
+            channel_id = row.get("channel_id")
+            if channel_id in found and not _https_url(row.get("channel_avatar_url")):
+                row["channel_avatar_url"] = found[channel_id]
+
+        for channel_id, avatar in found.items():
+            try:
+                (
+                    self.supabase.table(TABLE_NAME)
+                    .update({"channel_avatar_url": avatar})
+                    .eq("channel_id", channel_id)
+                    .execute()
+                )
+            except Exception:
+                logger.warning("Failed to store YouTube avatar for %s", channel_id, exc_info=True)
 
     def _rows_from_payload(
         self,
@@ -598,6 +661,20 @@ def _as_payloads(body: Any) -> List[Dict[str, Any]]:
 
 def _prefixed(message: str, index: int, total: int) -> str:
     return message if total == 1 else f"videos[{index}]: {message}"
+
+
+def _https_url(value: Any) -> bool:
+    return isinstance(value, str) and value.startswith("https://")
+
+
+def _youtube_video_id(value: Any) -> bool:
+    return isinstance(value, str) and bool(re.fullmatch(r"[A-Za-z0-9_-]{11}", value))
+
+
+async def _avatar_from_profile(channel_id: str, handle: Optional[str] = None, channel_url: Optional[str] = None):
+    profile = await channel_profiles.get_profile(channel_id, handle, channel_url)
+    avatar = profile.get("channel_avatar_url") if isinstance(profile, dict) else None
+    return avatar if _https_url(avatar) else None
 
 
 def _first_dict(payload: Dict[str, Any], *keys: str) -> Dict[str, Any]:

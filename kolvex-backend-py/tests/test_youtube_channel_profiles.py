@@ -66,6 +66,18 @@ class ChannelProfileTests(unittest.TestCase):
                 self.assertNotIn("key", get.call_args.kwargs["params"])
         asyncio.run(exercise())
 
+    def test_video_lookup_returns_channel_id_without_exposing_credential(self):
+        async def exercise():
+            service = YouTubeChannelProfiles(api_key="test-key")
+            response = httpx.Response(200, json={"items": [{"snippet": {"channelId": CHANNEL_ID}}]})
+            get = AsyncMock(return_value=response)
+            with patch("httpx.AsyncClient.get", get):
+                self.assertEqual(await service.channel_id_for_video("abcdefghijk"), CHANNEL_ID)
+                self.assertIsNone(await service.channel_id_for_video("short"))
+                get.assert_awaited_once()
+                self.assertNotIn("key", get.call_args.kwargs["params"])
+        asyncio.run(exercise())
+
     def test_quota_errors_are_backed_off_across_channels(self):
         async def exercise():
             service = YouTubeChannelProfiles(api_key="test-key")

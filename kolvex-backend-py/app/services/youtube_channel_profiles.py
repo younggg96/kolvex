@@ -89,6 +89,45 @@ class YouTubeChannelProfiles:
                 self._cache.popitem(last=False)
             return dict(result)
 
+    async def channel_id_for_video(self, video_id):
+        """Resolve a public channel id from a YouTube video when the import id is not usable."""
+        if not re.fullmatch(r"[A-Za-z0-9_-]{11}", video_id or ""):
+            return None
+        if not self.api_key:
+            return None
+        cache_key = ("video", video_id)
+        async with self._lock:
+            now = monotonic()
+            cached = self._cache.get(cache_key)
+            if cached and cached[0] > now:
+                self._cache.move_to_end(cache_key)
+                return cached[1].get("youtube_channel_id")
+            if now < self._retry_after:
+                return None
+            channel_id = None
+            try:
+                async with httpx.AsyncClient(timeout=8) as client:
+                    response = await client.get(
+                        "https://www.googleapis.com/youtube/v3/videos",
+                        params={"part": "snippet", "id": video_id},
+                        headers={"X-Goog-Api-Key": self.api_key},
+                    )
+                if response.status_code != 200:
+                    if response.status_code in {400, 401, 403, 429}:
+                        self._retry_after = now + 300
+                else:
+                    items = response.json().get("items", [])
+                    candidate = items[0].get("snippet", {}).get("channelId") if items else None
+                    if re.fullmatch(r"UC[A-Za-z0-9_-]{22}", candidate or ""):
+                        channel_id = candidate
+            except (httpx.HTTPError, ValueError, KeyError, TypeError, AttributeError):
+                channel_id = None
+            self._cache[cache_key] = (monotonic() + (21600 if channel_id else 300), {"youtube_channel_id": channel_id})
+            self._cache.move_to_end(cache_key)
+            while len(self._cache) > 128:
+                self._cache.popitem(last=False)
+            return channel_id
+
     @staticmethod
     def normalize(channel):
         snippet = channel.get("snippet", {})

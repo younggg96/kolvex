@@ -1,7 +1,7 @@
 import asyncio
 import unittest
 from types import SimpleNamespace
-from unittest.mock import Mock
+from unittest.mock import AsyncMock, Mock, patch
 
 from app.services.youtube_stock_opinions import YouTubeStockOpinionService
 
@@ -52,6 +52,61 @@ class ExplorerTests(unittest.TestCase):
         query.eq.assert_any_call("ticker", "NVDA")
         query.eq.assert_any_call("channel_id", "creator1")
         query.order.assert_any_call("id")
+
+    def test_missing_avatars_are_filled_from_youtube_and_stored(self):
+        client = Mock()
+        update = client.table.return_value.update.return_value
+        update.eq.return_value = update
+        service = YouTubeStockOpinionService(client)
+        row = opinion(0)
+        row["channel_handle"] = "@example"
+        service._fetch_rows = Mock(return_value=[row])
+        avatar = "https://yt3.ggpht.com/avatar"
+        with patch(
+            "app.services.youtube_stock_opinions.channel_profiles.get_profile",
+            AsyncMock(return_value={"channel_avatar_url": avatar, "profile_status": "available"}),
+        ) as lookup:
+            result = asyncio.run(service.get_dashboard())
+        lookup.assert_awaited_once()
+        self.assertEqual(result["creators"][0]["channel_avatar_url"], avatar)
+        self.assertEqual(result["latest"][0]["channel_avatar_url"], avatar)
+        client.table.return_value.update.assert_called_once_with({"channel_avatar_url": avatar})
+        update.eq.assert_called_once_with("channel_id", row["channel_id"])
+
+    def test_avatar_falls_back_to_the_video_channel(self):
+        client = Mock()
+        update = client.table.return_value.update.return_value
+        update.eq.return_value = update
+        service = YouTubeStockOpinionService(client)
+        row = opinion(0)
+        row["video_id"] = "abcdefghijk"
+        row["channel_handle"] = "@missing"
+        service._fetch_rows = Mock(return_value=[row])
+        avatar = "https://yt3.ggpht.com/from-video"
+        resolved = "UC" + "b" * 22
+
+        async def profile(channel_id, handle=None, channel_url=None):
+            if channel_id == resolved:
+                return {"channel_avatar_url": avatar}
+            return {"profile_status": "not_found"}
+
+        with patch("app.services.youtube_stock_opinions.channel_profiles.get_profile", AsyncMock(side_effect=profile)), \
+             patch("app.services.youtube_stock_opinions.channel_profiles.channel_id_for_video", AsyncMock(return_value=resolved)):
+            result = asyncio.run(service.get_dashboard())
+        self.assertEqual(result["creators"][0]["channel_avatar_url"], avatar)
+
+    def test_existing_https_avatar_skips_youtube_lookup(self):
+        service = YouTubeStockOpinionService(Mock())
+        row = opinion(0)
+        row["channel_avatar_url"] = "https://yt3.ggpht.com/existing"
+        service._fetch_rows = Mock(return_value=[row])
+        with patch(
+            "app.services.youtube_stock_opinions.channel_profiles.get_profile",
+            AsyncMock(),
+        ) as lookup:
+            result = asyncio.run(service.get_dashboard())
+        lookup.assert_not_awaited()
+        self.assertEqual(result["creators"][0]["channel_avatar_url"], "https://yt3.ggpht.com/existing")
 
     def test_empty_database_stops_paging(self):
         query = Mock()
