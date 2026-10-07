@@ -3,6 +3,8 @@
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { format, parseISO } from "date-fns";
+import { enUS, zhCN } from "date-fns/locale";
 import {
   Play,
   Plus,
@@ -12,6 +14,7 @@ import {
   Settings,
   Globe,
   RefreshCw,
+  CalendarDays,
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -19,6 +22,8 @@ import { useTranslation } from "@/lib/i18n";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   Select,
   SelectContent,
@@ -99,10 +104,12 @@ export default function TradingAnalysisPage() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [datePickerOpen, setDatePickerOpen] = useState(false);
+  const calendarLocale = t("common.intlLocale") === "zh-CN" ? zhCN : enUS;
 
   const [ticker, setTicker] = useState("");
   const [tradeDate, setTradeDate] = useState(
-    new Date().toISOString().split("T")[0]
+    () => format(new Date(), "yyyy-MM-dd")
   );
   const [provider, setProvider] = useState("");
   const [deepModel, setDeepModel] = useState("");
@@ -263,7 +270,7 @@ export default function TradingAnalysisPage() {
 
             {/* ── New Analysis Dialog ── */}
             <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-              <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+              <DialogContent className="max-w-2xl max-h-[85dvh] overflow-x-hidden overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle>{t("tradingAnalysis.newAnalysis")}</DialogTitle>
                   <DialogDescription>
@@ -285,15 +292,48 @@ export default function TradingAnalysisPage() {
                         }
                       />
                     </div>
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-medium text-muted-foreground">
+                    <div className="min-w-0 space-y-1.5">
+                      <label htmlFor="analysis-date" className="text-xs font-medium text-muted-foreground">
                         {t("tradingAnalysis.analysisDate")}
                       </label>
-                      <Input
-                        type="date"
-                        value={tradeDate}
-                        onChange={(e) => setTradeDate(e.target.value)}
-                      />
+                      <Popover open={datePickerOpen} onOpenChange={setDatePickerOpen}>
+                        <PopoverTrigger asChild>
+                          <Button
+                            id="analysis-date"
+                            type="button"
+                            variant="ghost"
+                            aria-label={t("tradingAnalysis.analysisDate")}
+                            className="h-10 w-full min-w-0 justify-start gap-2 rounded-xl bg-muted px-3.5 text-sm font-normal hover:bg-secondary"
+                          >
+                            <CalendarDays className="h-4 w-4 shrink-0 text-muted-foreground" />
+                            <span className="truncate">
+                              {format(parseISO(tradeDate), "PPP", { locale: calendarLocale })}
+                            </span>
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent align="start" collisionPadding={16} className="w-[284px] max-w-[calc(100vw-32px)] p-3">
+                          <Calendar
+                            mode="single"
+                            required
+                            locale={calendarLocale}
+                            selected={parseISO(tradeDate)}
+                            defaultMonth={parseISO(tradeDate)}
+                            initialFocus
+                            classNames={{
+                              head_row: "grid grid-cols-7",
+                              head_cell: "text-center text-xs text-muted-foreground",
+                              row: "mt-2 grid grid-cols-7",
+                              cell: "relative min-w-0 text-center text-sm !p-0",
+                              day: "h-9 w-full rounded-md !p-0 text-sm hover:bg-muted focus-visible:ring-2 focus-visible:ring-primary",
+                            }}
+                            onSelect={(date) => {
+                              if (!date) return;
+                              setTradeDate(format(date, "yyyy-MM-dd"));
+                              setDatePickerOpen(false);
+                            }}
+                          />
+                        </PopoverContent>
+                      </Popover>
                     </div>
                   </div>
 
