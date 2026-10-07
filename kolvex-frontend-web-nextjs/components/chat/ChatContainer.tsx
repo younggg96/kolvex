@@ -31,6 +31,7 @@ export function ChatContainer({
   if (initialConversationId) {
     return (
       <ChatDetailContainer
+        key={initialConversationId}
         className={className}
         conversationId={initialConversationId}
         onConversationChange={onConversationChange}

@@ -30,6 +30,7 @@ export function ChatWelcomeContainer({
     "web",
   ]);
   const [isLoading, setIsLoading] = useState(false);
+  const submittingRef = useRef(false);
   const [selectedModel, setSelectedModel] = useState<AIModel>("deepseek-chat");
 
   const { createConversation } = useChatHistory();
@@ -53,9 +54,10 @@ export function ChatWelcomeContainer({
 
   const handleSubmit = useCallback(
     async (messageText: string) => {
-      if (!messageText.trim() || isLoading) return;
+      if (!messageText.trim() || submittingRef.current) return;
 
       const trimmedMessage = messageText.trim();
+      submittingRef.current = true;
       setIsLoading(true);
 
       try {
@@ -79,11 +81,11 @@ export function ChatWelcomeContainer({
         );
       } catch (error) {
         console.error("Failed to start chat:", error);
-      } finally {
+        submittingRef.current = false;
         setIsLoading(false);
       }
     },
-    [isLoading, createConversation, router, activeSources, selectedModel]
+    [createConversation, router, activeSources, selectedModel]
   );
 
   return (

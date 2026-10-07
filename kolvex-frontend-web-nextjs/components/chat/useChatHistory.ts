@@ -46,6 +46,7 @@ export function useChatHistory() {
 
   // Use ref to track current conversation ID to avoid closure issues
   const currentConversationIdRef = useRef<string | null>(null);
+  const conversationRequestVersions = useRef(new Map<string, number>());
 
   // Keep ref in sync with state
   useEffect(() => {
@@ -66,7 +67,11 @@ export function useChatHistory() {
         const apiConversations = response.conversations.map(
           convertApiConversation
         );
-        setConversations(apiConversations);
+        // A slow initial list must not overwrite a chat created or loaded meanwhile.
+        setConversations((prev) => [
+          ...prev,
+          ...apiConversations.filter((conv) => !prev.some((item) => item.id === conv.id)),
+        ]);
       } catch (err) {
         console.error("Failed to load conversations:", err);
         setError("Failed to load chat history");
@@ -112,6 +117,7 @@ export function useChatHistory() {
             detail: { id: converted.id },
           })
         );
+        window.dispatchEvent(new CustomEvent("kolvex:conversationUpdated"));
       }
 
       return converted.id;
@@ -197,12 +203,15 @@ export function useChatHistory() {
 
   // Select a conversation
   const selectConversation = useCallback(async (id: string) => {
+    const version = (conversationRequestVersions.current.get(id) || 0) + 1;
+    conversationRequestVersions.current.set(id, version);
     setCurrentConversationId(id);
     currentConversationIdRef.current = id;
 
     try {
       // Fetch full conversation with messages
       const conv = await chatApi.getConversation(id);
+      if (conversationRequestVersions.current.get(id) !== version) return;
       const converted = convertApiConversation(conv);
 
       setConversations((prev) => {
@@ -216,16 +225,20 @@ export function useChatHistory() {
         }
       });
 
-      if (typeof window !== "undefined") {
+      if (typeof window !== "undefined" && currentConversationIdRef.current === id) {
         window.dispatchEvent(
           new CustomEvent("kolvex:currentChatChanged", { detail: { id } })
         );
+        window.dispatchEvent(new CustomEvent("kolvex:conversationUpdated"));
       }
     } catch (err) {
       console.error("Failed to fetch conversation:", err);
       // Reset state and re-throw so callers can handle (e.g. redirect)
-      setCurrentConversationId(null);
-      currentConversationIdRef.current = null;
+      if (conversationRequestVersions.current.get(id) !== version) return;
+      if (currentConversationIdRef.current === id) {
+        setCurrentConversationId(null);
+        currentConversationIdRef.current = null;
+      }
       throw err;
     }
   }, []);

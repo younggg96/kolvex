@@ -54,7 +54,7 @@ export function ChatWelcome({
 
   const handleSubmit = (e?: React.FormEvent) => {
     e?.preventDefault();
-    if (isBlocked) return;
+    if (isBlocked || isLoading) return;
     if (query.trim()) {
       onSubmit(query.trim());
       setQuery("");
@@ -63,7 +63,7 @@ export function ChatWelcome({
 
   const handleSuggestionClick = (suggestion: (typeof suggestions)[0]) => {
     if (suggestion.isChat) {
-      if (isBlocked) return;
+      if (isBlocked || isLoading) return;
       onSubmit(suggestion.text);
     }
   };
@@ -114,7 +114,7 @@ export function ChatWelcome({
               <button
                 type="button"
                 onClick={() => handleSuggestionClick(suggestion)}
-                disabled={suggestion.isChat && isBlocked}
+                disabled={suggestion.isChat && (isBlocked || isLoading)}
                 className="group flex w-full items-center gap-3 py-3.5 text-left text-[15px] transition-colors duration-150 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
               >
                 <MessageCircle className="h-4 w-4 shrink-0 text-muted-foreground" />

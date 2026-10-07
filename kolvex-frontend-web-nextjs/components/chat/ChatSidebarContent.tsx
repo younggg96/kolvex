@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Trash2, MessagesSquare, Loader2 } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import type { ChatHistoryItem } from "./types";
 import * as chatApi from "@/lib/chatApi";
@@ -64,6 +64,7 @@ export function ChatSidebarContent({
   onNavigate,
 }: ChatSidebarContentProps) {
   const router = useRouter();
+  const pathname = usePathname();
   const [conversations, setConversations] = useState<ChatHistoryItem[]>([]);
   const [currentConversationId, setCurrentConversationId] = useState<
     string | null
@@ -73,6 +74,11 @@ export function ChatSidebarContent({
   const inFlight = useRef(false);
   const enabledRef = useRef(enabled);
   enabledRef.current = enabled;
+
+  useEffect(() => {
+    const id = pathname.match(/^\/dashboard\/chat\/([^/]+)$/)?.[1] || null;
+    setCurrentConversationId(id);
+  }, [pathname]);
 
   // Load conversations from API
   const loadConversations = useCallback(async () => {

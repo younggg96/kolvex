@@ -48,6 +48,7 @@ export default function ChatPage() {
       }
     >
       <ChatDetailContainer
+        key={conversationId}
         className="flex-1"
         conversationId={conversationId}
         firstMessage={firstMessage}

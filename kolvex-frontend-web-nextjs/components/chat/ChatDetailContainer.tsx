@@ -135,11 +135,6 @@ export function ChatDetailContainer({
   const isLoadingRef = useRef(false);
   const abortControllerRef = useRef<AbortController | null>(null);
 
-  // Keep loading ref in sync
-  useEffect(() => {
-    isLoadingRef.current = isLoading;
-  }, [isLoading]);
-
   // Persist sources & model to localStorage whenever they change
   useEffect(() => {
     saveSources(conversationId, activeSources);
@@ -159,11 +154,12 @@ export function ChatDetailContainer({
 
   // ---- Stream processing helper ----
   const processAgentStream = useCallback(
-    async (response: Response) => {
+    async (response: Response, signal: AbortSignal) => {
       let accumulatedContent = "";
       let completed = false;
 
       await readAgentStream(response, (event: AgentStreamEvent) => {
+        if (signal.aborted) return;
         switch (event.type) {
           case "status":
             setAgentStatus({
@@ -235,89 +231,23 @@ export function ChatDetailContainer({
 
   // ---- Load conversation when ID changes ----
   useEffect(() => {
+    let active = true;
     if (conversationId && currentConversationId !== conversationId) {
       selectConversation(conversationId).catch(() => {
         // Conversation not found (deleted or invalid) — redirect to new chat
-        router.replace("/dashboard/chat");
+        if (active) router.replace("/dashboard/chat");
       });
     }
+    return () => { active = false; };
   }, [conversationId, currentConversationId, selectConversation, router]);
 
   useEffect(() => {
-    return () => abortControllerRef.current?.abort();
+    return () => {
+      const controller = abortControllerRef.current;
+      abortControllerRef.current = null;
+      controller?.abort();
+    };
   }, [conversationId]);
-
-  // ---- Auto-send first message from welcome page ----
-  // Guard: use the actual firstMessage+conversationId combo as the dedup key
-  // so React strict mode double-runs won't cause duplicate sends
-  useEffect(() => {
-    if (!firstMessage || isLoadingRef.current) return;
-
-    const dedupKey = `${conversationId}:${firstMessage}`;
-    if (sentFirstMessageRef.current === dedupKey) return;
-    sentFirstMessageRef.current = dedupKey;
-
-    // Clean up URL — remove ?firstMessage= to prevent re-trigger on refresh
-    if (pathname) {
-      window.history.replaceState(null, "", pathname);
-    }
-
-    // Remember which messages existed before this optimistic message. The
-    // stream endpoint persists the user message immediately, so a history
-    // refresh can return it before generation finishes.
-    messageIdsBeforePendingRef.current = new Set(
-      messages.map((message) => message.id)
-    );
-
-    // Show the user message optimistically and send to agent
-    setPendingUserMessage(firstMessage);
-    setIsLoading(true);
-    setStreamingContent("");
-    setActiveTools([]);
-    setAgentStatus({ stage: "routing" });
-    setStreamError(null);
-    setLastSubmittedMessage(firstMessage);
-
-    (async () => {
-      const controller = new AbortController();
-      abortControllerRef.current = controller;
-      try {
-        const response = await streamAgentMessage(
-          conversationId,
-          firstMessage,
-          {
-            model: selectedModel,
-            sources: activeSources,
-          },
-          controller.signal
-        );
-        await processAgentStream(response);
-        await selectConversation(conversationId);
-      } catch (error) {
-        console.error("First message error:", error);
-        const aborted = error instanceof DOMException && error.name === "AbortError";
-        setStreamError(
-          aborted
-            ? "Generation was stopped."
-            : error instanceof Error
-              ? error.message
-              : "The AI agent may be unavailable. Please try again."
-        );
-        await selectConversation(conversationId).catch(() => undefined);
-      } finally {
-        if (abortControllerRef.current === controller) {
-          abortControllerRef.current = null;
-        }
-        setIsLoading(false);
-        setPendingUserMessage("");
-        messageIdsBeforePendingRef.current.clear();
-        setStreamingContent("");
-        setActiveTools([]);
-        setAgentStatus(null);
-      }
-    })();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [firstMessage, conversationId]);
 
   // ---- Sidebar events ----
   useEffect(() => {
@@ -375,9 +305,10 @@ export function ChatDetailContainer({
   // ---- Submit user message from input ----
   const handleSubmit = useCallback(
     async (messageText: string) => {
-      if (!messageText.trim() || isLoading || isBlocked) return;
+      if (!messageText.trim() || isLoadingRef.current || isBlocked) return;
 
       const trimmedMessage = messageText.trim();
+      isLoadingRef.current = true;
       setQuery("");
       setIsLoading(true);
       setStreamingContent("");
@@ -407,9 +338,12 @@ export function ChatDetailContainer({
           controller.signal
         );
 
-        await processAgentStream(response);
+        await processAgentStream(response, controller.signal);
+        if (controller.signal.aborted) return;
         await selectConversation(conversationId);
       } catch (error) {
+        // Navigation aborts must not fetch history or mutate the next chat.
+        if (abortControllerRef.current !== controller) return;
         console.error("Chat error:", error);
         const aborted = error instanceof DOMException && error.name === "AbortError";
         setStreamError(
@@ -423,18 +357,18 @@ export function ChatDetailContainer({
       } finally {
         if (abortControllerRef.current === controller) {
           abortControllerRef.current = null;
+          isLoadingRef.current = false;
+          setIsLoading(false);
+          setPendingUserMessage("");
+          messageIdsBeforePendingRef.current.clear();
+          setStreamingContent("");
+          setActiveTools([]);
+          setAgentStatus(null);
         }
-        setIsLoading(false);
-        setPendingUserMessage("");
-        messageIdsBeforePendingRef.current.clear();
-        setStreamingContent("");
-        setActiveTools([]);
-        setAgentStatus(null);
       }
     },
     [
       conversationId,
-      isLoading,
       isBlocked,
       processAgentStream,
       selectConversation,
@@ -443,6 +377,24 @@ export function ChatDetailContainer({
       messages,
     ]
   );
+
+  // Defer the initial send until effects have settled. Strict Mode's setup /
+  // cleanup replay cancels the first timer instead of aborting a sent request.
+  useEffect(() => {
+    if (!firstMessage) return;
+    const dedupKey = `${conversationId}:${firstMessage}`;
+    if (sentFirstMessageRef.current === dedupKey) return;
+
+    const timeout = window.setTimeout(() => {
+      if (isLoadingRef.current || isBlocked) return;
+      sentFirstMessageRef.current = dedupKey;
+      // Preserve Next.js history state when removing the one-shot query params.
+      if (pathname) window.history.replaceState(window.history.state, "", pathname);
+      void handleSubmit(firstMessage);
+    }, 0);
+
+    return () => window.clearTimeout(timeout);
+  }, [firstMessage, conversationId, pathname, handleSubmit, isBlocked]);
 
   const handleCancel = useCallback(() => {
     abortControllerRef.current?.abort();

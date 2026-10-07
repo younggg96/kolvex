@@ -591,7 +591,7 @@ export default function YouTubeOpinionExplorer() {
   const tabSwitcher = (
     <nav
       aria-label={t("youtubeOpinions.browseBy")}
-      className="ml-2 flex items-center gap-0.5 rounded-full bg-muted p-1"
+      className="inline-flex w-fit max-w-full items-center gap-0.5 rounded-full bg-muted p-1 align-middle"
     >
       {([
         { tab: "stocks", label: t("youtubeOpinions.byStock") },
@@ -607,7 +607,7 @@ export default function YouTubeOpinionExplorer() {
               if (!active || inDetail) navigate({ tab: item.tab });
             }}
             className={cn(
-              "h-8 rounded-full px-3.5 text-[13px] font-semibold transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
+              "h-8 shrink-0 whitespace-nowrap rounded-full px-3.5 text-[13px] font-semibold transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
               active
                 ? "bg-background text-foreground shadow-[0_1px_2px_rgb(0_0_0/0.12)]"
                 : "text-muted-foreground hover:text-foreground",
