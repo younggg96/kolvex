@@ -53,9 +53,6 @@ class Settings(BaseSettings):
         "ALLOWED_ORIGINS", "http://localhost:3000,http://localhost:3001"
     )
 
-    # API Key 配置 (用于 Dify 等外部服务，不过期)
-    DIFY_API_KEY: str = os.getenv("DIFY_API_KEY", "")
-
     # Ollama AI 配置
     OLLAMA_BASE_URL: str = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
     OLLAMA_MODEL: str = os.getenv("OLLAMA_MODEL", "")
