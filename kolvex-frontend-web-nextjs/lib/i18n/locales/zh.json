@@ -1096,6 +1096,8 @@
     "byOpinion": "按观点",
     "videoStockCount": "{count} 只股票",
     "untitledVideo": "未命名视频",
+    "showMoreStocks": "查看更多",
+    "showFewerStocks": "收起",
     "opinionsLoadFailed": "观点加载失败，请重试。",
     "noOpinionsMatch": "当前筛选条件下没有观点。",
     "loadMoreOpinions": "加载更多观点",

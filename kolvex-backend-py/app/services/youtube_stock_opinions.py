@@ -360,6 +360,11 @@ class YouTubeStockOpinionService:
                     or (f"https://www.youtube.com/watch?v={video_id}" if video_id else None),
                     "thumbnail_url": _first_text(
                         video, payload, "thumbnail_url", "thumbnail", "cover_url"
+                    )
+                    or (
+                        f"https://i.ytimg.com/vi/{video_id}/mqdefault.jpg"
+                        if _youtube_video_id(video_id)
+                        else None
                     ),
                     "video_published_at": _to_iso_datetime(published_at),
                     "channel_id": channel_id,

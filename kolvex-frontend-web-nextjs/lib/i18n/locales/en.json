@@ -1125,6 +1125,8 @@
     "byOpinion": "By opinion",
     "videoStockCount": "{count} stocks",
     "untitledVideo": "Untitled video",
+    "showMoreStocks": "View more",
+    "showFewerStocks": "Show less",
     "opinionsLoadFailed": "Opinions didn't load. Try again.",
     "noOpinionsMatch": "No opinions match these filters.",
     "loadMoreOpinions": "Load more opinions",
