@@ -216,6 +216,33 @@ export function getYouTubeCreatorProfile(channelId: string) {
   return apiRequest<YouTubeCreatorSummary>(`/creators/${encodeURIComponent(channelId)}/profile`);
 }
 
+export interface YouTubeUntrackedUpload {
+  video_id: string;
+  title?: string | null;
+  published_at?: string | null;
+}
+
+export interface YouTubeUploadCoverage {
+  channel_id: string;
+  status: "available" | "not_configured" | "unavailable" | "not_found" | "invalid_identity";
+  since?: string | null;
+  checked_count: number;
+  untracked_count: number;
+  truncated: boolean;
+  latest_video_id?: string | null;
+  latest_published_at?: string | null;
+  untracked: YouTubeUntrackedUpload[];
+}
+
+export interface YouTubeUploadCoverageReport {
+  status: "available" | "not_configured" | "unavailable";
+  creators: YouTubeUploadCoverage[];
+}
+
+export function getYouTubeUploadCoverage() {
+  return apiRequest<YouTubeUploadCoverageReport>("/coverage");
+}
+
 export interface YouTubeImportVideoPreview {
   index: number;
   video_id: string;

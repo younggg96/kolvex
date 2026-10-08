@@ -22,7 +22,12 @@ from urllib.parse import parse_qs, urlparse
 logger = logging.getLogger(__name__)
 
 from supabase import Client
-from app.services.youtube_channel_profiles import channel_profiles, channel_link, public_count
+from app.services.youtube_channel_profiles import (
+    channel_link,
+    channel_profiles,
+    parse_youtube_time,
+    public_count,
+)
 
 
 TABLE_NAME = "youtube_stock_opinions"
@@ -304,6 +309,112 @@ class YouTubeStockOpinionService:
         )
         remote = {key: value for key, value in remote.items() if value is not None or key not in {"channel_title", "channel_handle", "channel_avatar_url", "description"}}
         return {**creator, **remote}
+
+    async def get_upload_coverage(self) -> Dict[str, Any]:
+        """Count uploads published after each creator's last tracked video."""
+        tracked: Dict[str, set] = defaultdict(set)
+        tracked_at: Dict[str, datetime] = {}
+        sample_video: Dict[str, str] = {}
+        for row in self._tracked_video_index():
+            channel_id = row.get("channel_id")
+            if not isinstance(channel_id, str) or not channel_id:
+                continue
+            tracked.setdefault(channel_id, set())
+            if _youtube_video_id(row.get("video_id")):
+                tracked[channel_id].add(row["video_id"])
+                sample_video.setdefault(channel_id, row["video_id"])
+            published = parse_youtube_time(row.get("video_published_at") or row.get("created_at"))
+            if published and (channel_id not in tracked_at or published > tracked_at[channel_id]):
+                tracked_at[channel_id] = published
+
+        def empty(channel_id: str, status: str) -> Dict[str, Any]:
+            return {
+                "channel_id": channel_id,
+                "status": status,
+                **compare_upload_coverage([], tracked[channel_id], tracked_at.get(channel_id), False),
+            }
+
+        if not channel_profiles.api_key:
+            return {
+                "status": "not_configured",
+                "creators": [empty(channel_id, "not_configured") for channel_id in tracked],
+            }
+
+        resolved: Dict[str, Optional[str]] = {}
+        lookup_ids = []
+        for channel_id in tracked:
+            if channel_id not in tracked_at:
+                resolved[channel_id] = None
+            elif re.fullmatch(r"UC[A-Za-z0-9_-]{22}", channel_id):
+                resolved[channel_id] = channel_id
+            elif channel_id in sample_video:
+                lookup_ids.append(channel_id)
+            else:
+                resolved[channel_id] = None
+
+        async def resolve(channel_id: str):
+            try:
+                return channel_id, await channel_profiles.channel_id_for_video(sample_video[channel_id])
+            except Exception:
+                logger.warning("YouTube channel lookup failed for %s", channel_id, exc_info=True)
+                return channel_id, None
+
+        for channel_id, youtube_id in await asyncio.gather(*(resolve(channel_id) for channel_id in lookup_ids)):
+            resolved[channel_id] = youtube_id
+
+        cutoffs: Dict[str, str] = {}
+        for channel_id, youtube_id in resolved.items():
+            published = tracked_at.get(channel_id)
+            if not youtube_id or not published:
+                continue
+            cutoff = published.astimezone(timezone.utc).isoformat()
+            previous = cutoffs.get(youtube_id)
+            if previous is None or cutoff < previous:
+                cutoffs[youtube_id] = cutoff
+        uploads = await channel_profiles.latest_uploads(cutoffs) if cutoffs else {}
+        creators = []
+        for channel_id, youtube_id in resolved.items():
+            if channel_id not in tracked_at:
+                creators.append(empty(channel_id, "available"))
+                continue
+            remote = uploads.get(youtube_id) if youtube_id else None
+            if not remote:
+                remote = {"status": "invalid_identity" if not youtube_id else "unavailable", "videos": [], "reached_cutoff": False}
+            creators.append({
+                "channel_id": channel_id,
+                "status": remote.get("status") or "unavailable",
+                **compare_upload_coverage(
+                    remote.get("videos") or [],
+                    tracked[channel_id],
+                    tracked_at.get(channel_id),
+                    not remote.get("reached_cutoff"),
+                ),
+            })
+        if any(item["status"] == "available" for item in creators):
+            status = "available"
+        elif not creators or all(item["status"] == "not_configured" for item in creators):
+            status = "not_configured"
+        elif any(item["status"] == "unavailable" for item in creators):
+            status = "unavailable"
+        else:
+            status = "available"
+        return {"status": status, "creators": creators}
+
+    def _tracked_video_index(self) -> List[Dict[str, Any]]:
+        rows: List[Dict[str, Any]] = []
+        while True:
+            result = (
+                self.supabase.table(TABLE_NAME)
+                .select("channel_id,video_id,video_published_at,created_at")
+                .order("id")
+                .range(len(rows), len(rows) + 999)
+                .execute()
+            )
+            page = result.data or []
+            rows.extend(page)
+            if len(page) < 1000:
+                break
+        return rows
 
     async def get_stock_detail(
         self,
@@ -765,6 +876,40 @@ def _https_url(value: Any) -> bool:
 
 def _youtube_video_id(value: Any) -> bool:
     return isinstance(value, str) and bool(re.fullmatch(r"[A-Za-z0-9_-]{11}", value))
+
+
+def compare_upload_coverage(
+    videos: List[Dict[str, Any]],
+    tracked_ids: set,
+    published_after: Optional[datetime],
+    truncated: bool,
+) -> Dict[str, Any]:
+    """Count uploads newer than the last tracked video that are still missing."""
+    seen: List[Dict[str, Any]] = []
+    known = set()
+    for video in videos:
+        video_id = video.get("video_id")
+        if not _youtube_video_id(video_id) or video_id in known:
+            continue
+        published = parse_youtube_time(video.get("published_at"))
+        if published_after and (published is None or published <= published_after):
+            continue
+        known.add(video_id)
+        seen.append({
+            "video_id": video_id,
+            "title": video.get("title") if isinstance(video.get("title"), str) else None,
+            "published_at": video.get("published_at") if isinstance(video.get("published_at"), str) else None,
+        })
+    untracked = [video for video in seen if video["video_id"] not in tracked_ids]
+    return {
+        "since": published_after.astimezone(timezone.utc).isoformat() if published_after else None,
+        "checked_count": len(seen),
+        "untracked_count": len(untracked),
+        "truncated": bool(truncated and untracked),
+        "latest_video_id": untracked[0]["video_id"] if untracked else None,
+        "latest_published_at": untracked[0]["published_at"] if untracked else None,
+        "untracked": untracked,
+    }
 
 
 async def _avatar_from_profile(channel_id: str, handle: Optional[str] = None, channel_url: Optional[str] = None):

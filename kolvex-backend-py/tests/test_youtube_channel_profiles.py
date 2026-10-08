@@ -3,8 +3,8 @@ import unittest
 from unittest.mock import AsyncMock, Mock, patch
 import httpx
 
-from app.services.youtube_channel_profiles import YouTubeChannelProfiles, channel_identity, channel_link, public_count
-from app.services.youtube_stock_opinions import YouTubeStockOpinionService
+from app.services.youtube_channel_profiles import YouTubeChannelProfiles, channel_identity, channel_link, parse_youtube_time, public_count
+from app.services.youtube_stock_opinions import YouTubeStockOpinionService, compare_upload_coverage
 
 
 CHANNEL_ID = "UC" + "a" * 22
@@ -78,6 +78,40 @@ class ChannelProfileTests(unittest.TestCase):
                 self.assertNotIn("key", get.call_args.kwargs["params"])
         asyncio.run(exercise())
 
+    def test_latest_uploads_skip_private_videos_and_keep_the_key_out_of_the_url(self):
+        async def exercise():
+            service = YouTubeChannelProfiles(api_key="test-key")
+            channels = httpx.Response(200, json={"items": [{"id": CHANNEL_ID, "contentDetails": {"relatedPlaylists": {"uploads": "UU" + "a" * 22}}}]})
+            playlist = httpx.Response(200, json={"items": [
+                {"snippet": {"title": "New video", "resourceId": {"kind": "youtube#video", "videoId": "aaaaaaaaaaa"}}, "contentDetails": {"videoId": "aaaaaaaaaaa", "videoPublishedAt": "2026-10-08T00:00:00Z"}},
+                {"snippet": {"title": "Private video", "resourceId": {"videoId": "ccccccccccc"}}, "contentDetails": {"videoId": "ccccccccccc"}},
+                {"snippet": {"title": "Older", "resourceId": {"videoId": "bbbbbbbbbbb"}}, "contentDetails": {"videoId": "bbbbbbbbbbb", "videoPublishedAt": "2026-10-01T00:00:00Z"}},
+            ]})
+            get = AsyncMock(side_effect=[channels, playlist])
+            with patch("httpx.AsyncClient.get", get):
+                first = await service.latest_uploads({CHANNEL_ID: "2026-10-02T00:00:00Z", "not-a-channel": "2026-10-02T00:00:00Z"})
+                second = await service.latest_uploads({CHANNEL_ID: "2026-10-02T00:00:00Z"})
+            self.assertEqual([video["video_id"] for video in first[CHANNEL_ID]["videos"]], ["aaaaaaaaaaa"])
+            self.assertTrue(first[CHANNEL_ID]["reached_cutoff"])
+            self.assertEqual(first["not-a-channel"]["status"], "invalid_identity")
+            self.assertEqual(second[CHANNEL_ID]["videos"][0]["title"], "New video")
+            self.assertEqual(get.await_count, 2)
+            for call in get.await_args_list:
+                self.assertNotIn("key", call.kwargs["params"])
+        asyncio.run(exercise())
+
+    def test_upload_lookup_stops_when_quota_is_exhausted(self):
+        async def exercise():
+            service = YouTubeChannelProfiles(api_key="test-key")
+            get = AsyncMock(return_value=httpx.Response(403, json={"error": {"message": "quota"}}))
+            with patch("httpx.AsyncClient.get", get):
+                first = await service.latest_uploads({CHANNEL_ID: "2026-10-02T00:00:00Z"})
+                second = await service.latest_uploads({"UC" + "b" * 22: "2026-10-02T00:00:00Z"})
+            self.assertEqual(first[CHANNEL_ID]["status"], "unavailable")
+            self.assertEqual(second["UC" + "b" * 22]["status"], "unavailable")
+            get.assert_awaited_once()
+        asyncio.run(exercise())
+
     def test_quota_errors_are_backed_off_across_channels(self):
         async def exercise():
             service = YouTubeChannelProfiles(api_key="test-key")
@@ -87,6 +121,62 @@ class ChannelProfileTests(unittest.TestCase):
                 self.assertEqual((await service.get_profile("UC" + "b" * 22))["profile_status"], "unavailable")
                 get.assert_awaited_once()
         asyncio.run(exercise())
+
+
+class UploadCoverageTests(unittest.TestCase):
+    def test_counts_videos_published_after_the_last_tracked_one(self):
+        since = parse_youtube_time("2026-10-01T00:00:00Z")
+        compared = compare_upload_coverage([
+            {"video_id": "aaaaaaaaaaa", "title": "Newest", "published_at": "2026-10-08T00:00:00Z"},
+            {"video_id": "ddddddddddd", "title": "In between", "published_at": "2026-10-05T00:00:00Z"},
+            {"video_id": "bbbbbbbbbbb", "title": "Last tracked", "published_at": "2026-10-01T00:00:00Z"},
+            {"video_id": "eeeeeeeeeee", "title": "Older and missing", "published_at": "2026-09-01T00:00:00Z"},
+        ], {"bbbbbbbbbbb"}, since, False)
+        self.assertEqual([video["title"] for video in compared["untracked"]], ["Newest", "In between"])
+        self.assertEqual(compared["untracked_count"], 2)
+        self.assertFalse(compared["truncated"])
+        self.assertIsNotNone(compared["since"])
+
+        caught_up = compare_upload_coverage([
+            {"video_id": "bbbbbbbbbbb", "title": "Last tracked", "published_at": "2026-10-01T00:00:00Z"},
+        ], {"bbbbbbbbbbb"}, since, False)
+        self.assertEqual(caught_up["untracked_count"], 0)
+
+    def test_coverage_uses_real_channel_uploads_without_calling_youtube_when_unconfigured(self):
+        service = YouTubeStockOpinionService(Mock())
+        service._tracked_video_index = Mock(return_value=[
+            {"channel_id": CHANNEL_ID, "video_id": "bbbbbbbbbbb", "video_published_at": "2026-10-01T00:00:00Z"},
+        ])
+        with patch("app.services.youtube_stock_opinions.channel_profiles.api_key", ""):
+            with patch("app.services.youtube_stock_opinions.channel_profiles.latest_uploads", AsyncMock()) as uploads:
+                report = asyncio.run(service.get_upload_coverage())
+        uploads.assert_not_awaited()
+        self.assertEqual(report["status"], "not_configured")
+        self.assertEqual(report["creators"][0]["untracked_count"], 0)
+        self.assertIsNotNone(report["creators"][0]["since"])
+
+    def test_coverage_counts_only_uploads_after_the_last_update(self):
+        service = YouTubeStockOpinionService(Mock())
+        service._tracked_video_index = Mock(return_value=[
+            {"channel_id": CHANNEL_ID, "video_id": "bbbbbbbbbbb", "video_published_at": "2026-10-01T12:00:00Z"},
+            {"channel_id": CHANNEL_ID, "video_id": "bbbbbbbbbbb", "video_published_at": "2026-10-01T12:00:00Z"},
+        ])
+        uploads = AsyncMock(return_value={
+            CHANNEL_ID: {"status": "available", "reached_cutoff": True, "videos": [
+                {"video_id": "aaaaaaaaaaa", "title": "Newest", "published_at": "2026-10-08T00:00:00Z"},
+                {"video_id": "ddddddddddd", "title": "In between", "published_at": "2026-10-05T00:00:00Z"},
+            ]},
+        })
+        with patch("app.services.youtube_stock_opinions.channel_profiles.api_key", "test-key"), \
+             patch("app.services.youtube_stock_opinions.channel_profiles.latest_uploads", uploads):
+            report = asyncio.run(service.get_upload_coverage())
+        self.assertEqual(report["status"], "available")
+        creator = report["creators"][0]
+        self.assertEqual(creator["untracked_count"], 2)
+        self.assertEqual(creator["latest_video_id"], "aaaaaaaaaaa")
+        self.assertFalse(creator["truncated"])
+        cutoff = uploads.await_args.args[0][CHANNEL_ID]
+        self.assertTrue(cutoff.startswith("2026-10-01T12:00:00"))
 
 
 if __name__ == "__main__":

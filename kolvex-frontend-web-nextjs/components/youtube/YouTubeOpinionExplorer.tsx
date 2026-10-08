@@ -42,9 +42,11 @@ import { useTranslation } from "@/lib/i18n";
 import { cn, proxyImageUrl } from "@/lib/utils";
 import {
   getYouTubeOpinionDashboard,
+  getYouTubeUploadCoverage,
   type YouTubeCreatorSummary,
   type YouTubeOpinionDashboard,
   type YouTubeOpinion,
+  type YouTubeUploadCoverage,
 } from "@/lib/youtubeOpinionsApi";
 import CreatorProfileDialog from "./CreatorProfileDialog";
 import OpinionDateRangePicker from "./OpinionDateRangePicker";
@@ -166,6 +168,7 @@ export default function YouTubeOpinionExplorer() {
   const [catalogue, setCatalogue] = useState<YouTubeOpinionDashboard | null>(
     null,
   );
+  const [coverage, setCoverage] = useState<Record<string, YouTubeUploadCoverage>>({});
   const [catalogueError, setCatalogueError] = useState("");
   const [detail, setDetail] = useState<YouTubeOpinionDashboard | null>(null);
   const [context, setContext] = useState<YouTubeOpinionDashboard | null>(null);
@@ -212,6 +215,25 @@ export default function YouTubeOpinionExplorer() {
           setCatalogueError(
             error instanceof Error ? error.message : "Failed to load directory",
           );
+      });
+    return () => {
+      active = false;
+    };
+  }, [revision]);
+
+  useEffect(() => {
+    let active = true;
+    getYouTubeUploadCoverage()
+      .then((result) => {
+        if (!active) return;
+        if (result.status === "not_configured") {
+          setCoverage({});
+          return;
+        }
+        setCoverage(Object.fromEntries(result.creators.map((creator) => [creator.channel_id, creator])));
+      })
+      .catch(() => {
+        if (active) setCoverage({});
       });
     return () => {
       active = false;
@@ -433,6 +455,28 @@ export default function YouTubeOpinionExplorer() {
     const parsed = new Date(value.length === 10 ? `${value}T00:00:00` : value);
     return Number.isNaN(parsed.getTime()) ? value.slice(0, 10) : dateFormatter.format(parsed);
   };
+  const lastUpdated = (value?: string | null) => {
+    const date = formatDay(value);
+    if (!value || !date) return null;
+    return (
+      <time dateTime={value.slice(0, 10)} className="whitespace-nowrap text-xs text-foreground/60 tabular-nums">
+        {t("youtubeOpinions.lastUpdated", { date })}
+      </time>
+    );
+  };
+  const coverageNote = (channelId?: string) => {
+    const item = channelId ? coverage[channelId] : undefined;
+    if (!item || item.status !== "available" || !item.since || item.untracked_count === 0) return null;
+    const label = item.truncated
+      ? t("youtubeOpinions.uploadsAllUntracked", { count: String(item.untracked_count) })
+      : t("youtubeOpinions.uploadsUntracked", { count: String(item.untracked_count) });
+    const hint = item.untracked.map((video) => video.title).filter((title): title is string => Boolean(title)).slice(0, 3).join(" · ");
+    return (
+      <p title={hint || undefined} className="mt-0.5 truncate text-xs tabular-nums text-warning">
+        {label}
+      </p>
+    );
+  };
   const overview = context?.summary;
   const chartPoints: StrengthPoint[] = (context?.daily || []).map((day) => ({
     date: day.date,
@@ -505,6 +549,7 @@ export default function YouTubeOpinionExplorer() {
                 opinions: String(item.total_opinions),
               })}
             </p>
+            {lastUpdated(item.latest_opinion_at)}
           </div>
         </ExplorerLink>
       ))}
@@ -536,6 +581,7 @@ export default function YouTubeOpinionExplorer() {
               <p className="mt-0.5 truncate text-[13px] text-foreground/80">
                 {item.channel_handle || item.channel_id}
               </p>
+              {coverageNote(item.channel_id)}
             </div>
           </div>
           <div className="flex min-w-0 flex-col items-end gap-0.5 text-right">
@@ -543,6 +589,7 @@ export default function YouTubeOpinionExplorer() {
             <p className="text-xs text-foreground/75 tabular-nums">
               {t("youtubeOpinions.opinionCount", { count: String(item.total_opinions) })}
             </p>
+            {lastUpdated(item.latest_opinion_at)}
           </div>
         </ExplorerLink>
       ))}
@@ -923,6 +970,7 @@ export default function YouTubeOpinionExplorer() {
                               : creator?.channel_handle
                             : stock?.company_name || context?.stocks[0]?.company_name}
                         </p>
+                        {route.creator && coverageNote(route.creator)}
                       </div>
                       {creator && <CreatorProfileDialog creator={creator} compact />}
                     </div>

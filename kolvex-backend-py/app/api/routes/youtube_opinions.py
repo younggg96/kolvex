@@ -23,6 +23,20 @@ def get_service(
     return YouTubeStockOpinionService(supabase)
 
 
+@router.get("/coverage")
+async def get_youtube_upload_coverage(
+    service: YouTubeStockOpinionService = Depends(get_service),
+):
+    """Compare imported videos with each creator's latest public YouTube uploads."""
+    try:
+        return await service.get_upload_coverage()
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to check YouTube uploads: {str(e)}",
+        )
+
+
 @router.get("/dashboard")
 async def get_youtube_opinions_dashboard(
     ticker: Optional[str] = Query(default=None, max_length=20),
