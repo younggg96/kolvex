@@ -40,7 +40,7 @@ export default function CommandLayer({ children }: { children: ReactNode }) {
   return (
     <CommandContext.Provider value={{ setContext }}>
       {children}
-      {!pathname.startsWith("/dashboard/chat") && (
+      {!pathname.startsWith("/dashboard/chat") && !pathname.startsWith("/dashboard/admin") && (
         <Button
           onClick={() => setOpen(true)}
           className="fixed bottom-20 right-4 z-30 rounded-full shadow-lg lg:bottom-6 lg:right-6"

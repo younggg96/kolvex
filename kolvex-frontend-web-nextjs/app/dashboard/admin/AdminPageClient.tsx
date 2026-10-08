@@ -70,7 +70,7 @@ export default function AdminPageClient() {
         <Button variant="outline" disabled={busy} onClick={() => void refresh()}>刷新</Button>
       }
     >
-      <div className="mx-auto w-full max-w-[1080px] space-y-8 px-4 pb-16 pt-6 md:px-8 md:pt-8">
+      <div className="mx-auto min-h-0 w-full max-w-[1080px] flex-1 space-y-8 overflow-y-auto overscroll-contain px-4 pb-8 pt-6 md:px-8 md:pt-8">
         <p className="text-[15px] text-muted-foreground">管理用户与研究数据</p>
 
         <dl className="grid grid-cols-3 border-y border-border">
@@ -107,8 +107,8 @@ export default function AdminPageClient() {
                 <tbody className="divide-y divide-border">
                   {Object.entries(tables).map(([name, count]) => (
                     <tr key={name}>
-                      <td className="py-3 font-mono text-[13px]">{name}</td>
-                      <td className="figure py-3 text-right">{count.toLocaleString()}</td>
+                      <td className="break-all py-3 pr-4 font-mono text-[13px]">{name}</td>
+                      <td className="figure whitespace-nowrap py-3 text-right">{count.toLocaleString()}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -156,7 +156,7 @@ export default function AdminPageClient() {
                 </tbody>
               </table>
             </div>
-            <div className="flex items-center justify-between gap-3 border-t border-border pt-4">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4">
               <span className="figure text-sm text-muted-foreground">第 {page} 页 · 共 {total} 人</span>
               <div className="flex gap-2">
                 <Button variant="outline" size="sm" disabled={busy || page === 1} onClick={() => setPage(page - 1)}>上一页</Button>

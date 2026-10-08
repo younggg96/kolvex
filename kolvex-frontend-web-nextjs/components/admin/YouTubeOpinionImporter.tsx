@@ -224,7 +224,7 @@ export default function YouTubeOpinionImporter({ onImported }: { onImported?: ()
         </div>)}
         <p className="text-xs text-muted-foreground">导入后观点将对所有用户可见。同一视频可重复导入，以最后一次导入为准：该视频已有的股票观点会被整体替换，新 JSON 中没有的股票将被移除；每日变化按视频发布时间统计。校验未通过的视频需要先修正，否则本次导入不会写入任何数据。</p>
       </section>}
-      <div className="sticky bottom-0 grid grid-cols-2 gap-2 border-t border-border bg-card py-4 sm:flex sm:flex-wrap">
+      <div className="grid grid-cols-2 gap-2 border-t border-border bg-background py-4 sm:sticky sm:bottom-0 sm:flex sm:flex-wrap">
         <Button variant="outline" className="h-11 px-2 sm:px-4" onClick={validate} disabled={busy || !text.trim()}><CheckCircle2 className="mr-2 h-4 w-4" />校验并预览</Button>
         <Button className="h-11 px-2 sm:px-4" onClick={submit} disabled={busy || !preview || !payloads || preview.errors.length > 0}>{busy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}确认导入</Button>
       </div>
