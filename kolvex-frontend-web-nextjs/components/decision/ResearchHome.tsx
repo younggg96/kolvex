@@ -13,6 +13,7 @@ import { listTheses, type Thesis } from "@/lib/decision";
 import { Empty, Panel, TickerSearch, WorkspaceLink, useCopy } from "./shared";
 import ThesisWatch from "./ThesisWatch";
 import { useDecisionCommand } from "./CommandLayer";
+import styles from "./ResearchHome.module.css";
 
 export default function ResearchHome({ home = false }: { home?: boolean }) {
   const c = useCopy();
@@ -85,15 +86,16 @@ export default function ResearchHome({ home = false }: { home?: boolean }) {
           disabled={loading}
         >
           <RefreshCw
-            className={`mr-2 h-4 w-4 ${loading ? "animate-spin" : ""}`}
+            className={`mr-2 h-4 w-4 ${loading ? "motion-safe:animate-spin" : ""}`}
           />
           {c("Refresh", "刷新")}
         </Button>
       }
     >
-      <main className="flex-1 overflow-y-auto">
-        <div className="mx-auto max-w-[1200px] space-y-8 px-4 py-8 md:px-8">
-          <section className="space-y-5">
+      <main className={`${styles.page} flex-1 overflow-y-auto`} aria-busy={loading}>
+        <div className={`${styles.content} mx-auto max-w-[1200px] space-y-8 px-4 py-8 md:px-8`}>
+          <section className={`${styles.hero} space-y-5`}>
+            <div className={styles.scan} aria-hidden="true" />
             <h1 className="max-w-2xl text-3xl font-semibold tracking-tight md:text-4xl">
               {home
                 ? c(
@@ -117,7 +119,7 @@ export default function ResearchHome({ home = false }: { home?: boolean }) {
                 <Link
                   key={ticker}
                   href={`/dashboard/research/${ticker}`}
-                  className="rounded-full border border-border px-3 py-1.5 text-xs font-medium hover:bg-muted"
+                  className={`${styles.ticker} rounded-full border border-border px-3 py-1.5 text-xs font-medium hover:bg-muted`}
                 >
                   {ticker}
                 </Link>
@@ -125,7 +127,8 @@ export default function ResearchHome({ home = false }: { home?: boolean }) {
             </div>
           </section>
           {loading && (
-            <p role="status" className="text-sm text-muted-foreground">
+            <p role="status" className={`${styles.loading} text-sm text-muted-foreground`}>
+              <span className={styles.loadingDot} aria-hidden="true" />
               {c("Loading your decision context…", "正在加载决策环境…")}
             </p>
           )}
@@ -174,10 +177,20 @@ export default function ResearchHome({ home = false }: { home?: boolean }) {
               }
             >
               <div className="divide-y divide-border">
-                {dashboard?.stocks.slice(0, 8).map((stock) => (
+                {loading && !dashboard && (
+                  <div className={styles.skeletons} aria-hidden="true">
+                    {[0, 1, 2, 3].map((row) => (
+                      <div key={row} className={styles.skeletonRow}>
+                        <span /><span />
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {dashboard?.stocks.slice(0, 8).map((stock, index) => (
                   <div
                     key={stock.ticker}
-                    className="flex flex-wrap items-center justify-between gap-3 py-4"
+                    style={{ animationDelay: `${index * 35}ms` }}
+                    className={`${styles.stockRow} flex flex-wrap items-center justify-between gap-3 py-4`}
                   >
                     <div>
                       <WorkspaceLink ticker={stock.ticker} />
@@ -255,23 +268,27 @@ export default function ResearchHome({ home = false }: { home?: boolean }) {
           {!!dashboard?.changes.length && (
             <Panel
               title={c(
-                "Recent shifts in creator evidence",
-                "近期创作者证据变化",
+                "Recent creator opinion updates",
+                "近期创作者观点动态",
               )}
             >
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {dashboard.changes.slice(0, 6).map((change) => (
+                {dashboard.changes.slice(0, 6).map((change, index) => (
                   <div
                     key={change.ticker}
-                    className="flex items-center justify-between gap-3 rounded-lg bg-muted/40 px-4 py-3"
+                    style={{ animationDelay: `${index * 45}ms` }}
+                    className={`${styles.opinionCard} flex items-center justify-between gap-3 rounded-lg bg-muted/40 px-4 py-3`}
                   >
                     <WorkspaceLink ticker={change.ticker} />
                     <div className="text-right text-xs text-muted-foreground">
                       <p>
                         {change.change == null
-                          ? "—"
-                          : `${change.change > 0 ? "+" : ""}${change.change.toFixed(1)}`}{" "}
-                        {c("direction score change", "方向分变化")}
+                          ? c("New opinions", "新增观点")
+                          : change.change > 0
+                            ? c("Opinions strengthening", "观点转强")
+                            : change.change < 0
+                              ? c("Opinions weakening", "观点转弱")
+                              : c("Opinions unchanged", "观点持平")}
                       </p>
                       <p className="mt-1">{change.current_date}</p>
                     </div>

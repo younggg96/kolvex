@@ -216,6 +216,18 @@ export function getYouTubeCreatorProfile(channelId: string) {
   return apiRequest<YouTubeCreatorSummary>(`/creators/${encodeURIComponent(channelId)}/profile`);
 }
 
+export type YouTubeCreatorUpdate = Pick<YouTubeCreatorSummary, "channel_title" | "channel_handle" | "channel_url" | "channel_avatar_url">;
+
+export function getAdminYouTubeCreators() {
+  return apiRequest<{ creators: YouTubeCreatorSummary[] }>("/creators");
+}
+
+export function updateYouTubeCreator(channelId: string, values: YouTubeCreatorUpdate) {
+  return apiRequest<{ success: boolean; creator: YouTubeCreatorSummary }>(`/creators/${encodeURIComponent(channelId)}`, {
+    method: "PATCH", body: JSON.stringify(values),
+  });
+}
+
 export interface YouTubeUntrackedUpload {
   video_id: string;
   title?: string | null;

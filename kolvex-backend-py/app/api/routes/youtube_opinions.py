@@ -6,6 +6,7 @@ from typing import Any, Dict, List, Optional, Union
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from supabase import Client
+from pydantic import BaseModel, ConfigDict, StrictStr
 
 from app.api.dependencies.auth import verify_admin
 from app.core.supabase import get_supabase_service
@@ -17,10 +18,41 @@ router = APIRouter(prefix="/youtube-opinions", tags=["YouTube Opinions"])
 ImportBody = Union[Dict[str, Any], List[Dict[str, Any]]]
 
 
+class CreatorUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    channel_title: Optional[StrictStr] = None
+    channel_handle: Optional[StrictStr] = None
+    channel_url: Optional[StrictStr] = None
+    channel_avatar_url: Optional[StrictStr] = None
+
+
 def get_service(
     supabase: Client = Depends(get_supabase_service),
 ) -> YouTubeStockOpinionService:
     return YouTubeStockOpinionService(supabase)
+
+
+@router.get("/creators")
+async def list_creators(
+    admin_id: str = Depends(verify_admin),
+    service: YouTubeStockOpinionService = Depends(get_service),
+):
+    return {"creators": service.list_creators()}
+
+
+@router.patch("/creators/{channel_id}")
+async def update_creator(
+    channel_id: str,
+    payload: CreatorUpdate,
+    admin_id: str = Depends(verify_admin),
+    service: YouTubeStockOpinionService = Depends(get_service),
+):
+    try:
+        return service.update_creator(channel_id, payload.model_dump(exclude_unset=True))
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    except LookupError:
+        raise HTTPException(status_code=404, detail="Creator not found")
 
 
 @router.get("/coverage")

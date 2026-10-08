@@ -1,0 +1,147 @@
+.content {
+  animation: arrive 520ms ease-out both;
+}
+
+.hero {
+  position: relative;
+  padding-top: 14px;
+}
+
+/* One sweep introduces the research workspace, then settles into a quiet rule. */
+.scan {
+  position: absolute;
+  inset: 0 0 auto;
+  height: 1px;
+  overflow: hidden;
+  background: rgb(var(--border));
+}
+
+.scan::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgb(var(--primary));
+  transform-origin: left;
+  animation: scan 1100ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.hero form > div {
+  transition: border-color 180ms ease, box-shadow 180ms ease;
+}
+
+.hero form:focus-within > div {
+  border-color: rgb(var(--primary) / 0.6);
+  box-shadow: 0 0 0 4px rgb(var(--primary) / 0.08);
+}
+
+.ticker {
+  transition: transform 180ms ease, border-color 180ms ease, background-color 180ms ease;
+}
+
+.stockRow,
+.opinionCard {
+  position: relative;
+  animation: resolve 360ms ease-out both;
+}
+
+.stockRow {
+  transition: background-color 180ms ease;
+}
+
+.stockRow::before {
+  content: "";
+  position: absolute;
+  left: -10px;
+  top: 25%;
+  bottom: 25%;
+  width: 2px;
+  border-radius: 2px;
+  background: rgb(var(--primary));
+  transform: scaleY(0);
+  transition: transform 180ms ease;
+}
+
+.stockRow:focus-within::before { transform: scaleY(1); }
+
+.opinionCard {
+  border: 1px solid transparent;
+  transition: transform 200ms ease, border-color 200ms ease, background-color 200ms ease;
+}
+
+.opinionCard:focus-within {
+  border-color: rgb(var(--primary) / 0.35);
+}
+
+.page section > header a,
+.page section > a {
+  text-underline-offset: 4px;
+  transition: color 180ms ease;
+}
+
+.page section > header a:hover,
+.page section > a:hover { text-decoration: underline; }
+
+.loading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.loadingDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgb(var(--primary));
+  animation: breathe 1200ms ease-in-out infinite;
+}
+
+.skeletons { padding-block: 4px; }
+.skeletonRow {
+  display: flex;
+  justify-content: space-between;
+  padding-block: 20px;
+}
+.skeletonRow span {
+  width: 24%;
+  height: 28px;
+  border-radius: 6px;
+  background: rgb(var(--muted));
+  animation: breathe 1400ms ease-in-out infinite;
+}
+.skeletonRow span:last-child { width: 36%; }
+
+@media (hover: hover) and (pointer: fine) {
+  .ticker:hover { transform: translateY(-2px); border-color: rgb(var(--primary) / 0.5); }
+  .stockRow:hover { background: rgb(var(--primary) / 0.025); }
+  .stockRow:hover::before { transform: scaleY(1); }
+  .opinionCard:hover {
+    transform: translateY(-3px);
+    border-color: rgb(var(--primary) / 0.25);
+    background: rgb(var(--primary) / 0.045);
+  }
+}
+
+@keyframes arrive {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes resolve {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes scan {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+@keyframes breathe {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page *, .page *::before, .page *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+  .ticker:hover, .opinionCard:hover { transform: none; }
+}

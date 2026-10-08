@@ -30,7 +30,7 @@ async function getAccessToken(): Promise<string | null> {
 async function proxyJson(
   request: NextRequest,
   path: string[],
-  method: "GET" | "POST",
+  method: "GET" | "POST" | "PATCH",
   requireAuth: boolean
 ) {
   const token = await getAccessToken();
@@ -50,7 +50,7 @@ async function proxyJson(
     {
       method,
       headers,
-      body: method === "POST" ? await request.text() : undefined,
+      body: method !== "GET" ? await request.text() : undefined,
       cache: "no-store",
     }
   );
@@ -74,4 +74,12 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 export async function POST(request: NextRequest, { params }: RouteParams) {
   const { path } = await params;
   return proxyJson(request, path, "POST", true);
+}
+
+export async function PATCH(request: NextRequest, { params }: RouteParams) {
+  const { path } = await params;
+  if (path.length !== 2 || path[0] !== "creators") {
+    return NextResponse.json({ error: "Unsupported path" }, { status: 400 });
+  }
+  return proxyJson(request, path, "PATCH", true);
 }

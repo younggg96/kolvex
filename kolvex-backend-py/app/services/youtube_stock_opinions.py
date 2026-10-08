@@ -55,6 +55,41 @@ class YouTubeStockOpinionService:
     def __init__(self, supabase: Client):
         self.supabase = supabase
 
+    def list_creators(self) -> List[Dict[str, Any]]:
+        return self._build_creator_summaries(self._fetch_rows())
+
+    def update_creator(self, channel_id: str, values: Dict[str, Any]) -> Dict[str, Any]:
+        allowed = {"channel_title", "channel_handle", "channel_url", "channel_avatar_url"}
+        if not values or set(values) - allowed:
+            raise ValueError("请选择可修改的博主资料字段。")
+        cleaned = {}
+        for field, value in values.items():
+            if value is not None and not isinstance(value, str):
+                raise ValueError("博主资料必须是文本。")
+            text = value.strip() if isinstance(value, str) else ""
+            if len(text) > (200 if field in {"channel_title", "channel_handle"} else 2048):
+                raise ValueError("博主资料超出长度限制。")
+            if field == "channel_title" and not text:
+                raise ValueError("博主名称不能为空。")
+            if field == "channel_handle" and text and not re.fullmatch(r"@[^\s/<>?#]+", text):
+                raise ValueError("YouTube 账号须以 @ 开头，且不能包含空格。")
+            if field in {"channel_url", "channel_avatar_url"} and text:
+                try:
+                    parsed = urlparse(text)
+                    valid = parsed.scheme == "https" and parsed.hostname and not parsed.username and not parsed.password
+                except ValueError:
+                    valid = False
+                if not valid:
+                    raise ValueError("链接必须是有效的 HTTPS 地址。")
+                if field == "channel_url" and parsed.hostname not in {"youtube.com", "www.youtube.com", "m.youtube.com"}:
+                    raise ValueError("频道链接必须指向 YouTube。")
+            cleaned[field] = text or None
+        result = self.supabase.table(TABLE_NAME).update(cleaned).eq("channel_id", channel_id).execute()
+        if not result.data:
+            raise LookupError("Creator not found")
+        rows = self._fetch_rows(channel_id=channel_id)
+        return {"success": True, "creator": self._build_creator_summaries(rows)[0]}
+
     async def upload_import(
         self,
         body: Any,
@@ -308,7 +343,10 @@ class YouTubeStockOpinionService:
             channel_id, creator.get("channel_handle"), creator.get("channel_url")
         )
         remote = {key: value for key, value in remote.items() if value is not None or key not in {"channel_title", "channel_handle", "channel_avatar_url", "description"}}
-        return {**creator, **remote}
+        # The stored identity is editable by administrators. Remote lookups only
+        # enrich it with statistics and descriptions, not replace saved fields.
+        identity = {key: creator.get(key) for key in ("channel_title", "channel_handle", "channel_url", "channel_avatar_url")}
+        return {**creator, **remote, **identity}
 
     async def get_upload_coverage(self) -> Dict[str, Any]:
         """Count uploads published after each creator's last tracked video."""
@@ -762,7 +800,7 @@ class YouTubeStockOpinionService:
             "hidden_subscriber_count": hidden,
             "video_count": public_count(channel.get("video_count")),
             "view_count": public_count(channel.get("view_count")),
-            "channel_url": channel_link(row.get("channel_id"), row.get("channel_handle"), row.get("channel_url")),
+            "channel_url": row.get("channel_url") if _https_url(row.get("channel_url")) else channel_link(row.get("channel_id"), row.get("channel_handle"), row.get("channel_url")),
             "profile_source": "imported",
             "profile_status": "imported",
             "profile_updated_at": None,
