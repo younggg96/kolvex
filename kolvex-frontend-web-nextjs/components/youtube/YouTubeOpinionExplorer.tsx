@@ -650,6 +650,113 @@ export default function YouTubeOpinionExplorer() {
       ))}
     </div>
   );
+  const focused = Boolean(route.creator && route.ticker);
+  const rangeControls = (compact: boolean) => {
+    const rangePill = (active: boolean) =>
+      compact ? cn(pill(active), "h-7 px-2.5 text-xs") : pill(active);
+    return (
+      <div
+        role="radiogroup"
+        aria-label={t("common.timeRange")}
+        className={cn(
+          "flex items-center gap-1",
+          compact
+            ? "flex-wrap"
+            : "mt-3 overflow-x-auto border-b border-border pb-4 scrollbar-hide",
+        )}
+      >
+        {rangeOptions.map((option) => (
+          <button
+            key={option.value}
+            type="button"
+            role="radio"
+            aria-checked={filters.range === option.value}
+            className={rangePill(filters.range === option.value)}
+            onClick={() =>
+              setFilters((previous) => ({
+                ...previous,
+                range: option.value,
+                from: rangeStart(option.value),
+                to: "",
+              }))
+            }
+          >
+            {option.label}
+          </button>
+        ))}
+        <Popover
+          open={filtersOpen}
+          onOpenChange={(open) => {
+            if (open) setDraft(filters);
+            setFiltersOpen(open);
+          }}
+        >
+          <PopoverTrigger asChild>
+            <button
+              type="button"
+              role="radio"
+              aria-checked={filters.range === "custom"}
+              className={cn(rangePill(filters.range === "custom"), "gap-1.5")}
+            >
+              <CalendarDays className="h-3.5 w-3.5" />
+              {filters.range === "custom"
+                ? `${filters.from || "…"} – ${filters.to || "…"}`
+                : t("common.custom")}
+            </button>
+          </PopoverTrigger>
+          <PopoverContent align={compact ? "end" : "start"} className="w-[300px] p-4">
+            <p className="text-sm font-semibold">{t("youtubeOpinions.customRange")}</p>
+            <div className="mt-3 grid gap-3">
+              <DateFilterField
+                label={t("youtubeOpinions.dateFrom")}
+                value={draft.from}
+                max={draft.to || undefined}
+                onChange={(from) => setDraft((previous) => ({ ...previous, from }))}
+              />
+              <DateFilterField
+                label={t("youtubeOpinions.dateTo")}
+                value={draft.to}
+                min={draft.from || undefined}
+                onChange={(to) => setDraft((previous) => ({ ...previous, to }))}
+              />
+              {invalidRange && (
+                <p role="alert" className="text-xs text-negative">
+                  {t("youtubeOpinions.invalidDateRange")}
+                </p>
+              )}
+            </div>
+            <div className="mt-4 flex justify-end gap-2">
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => {
+                  setFilters((previous) => ({ ...previous, range: "all", from: "", to: "" }));
+                  setFiltersOpen(false);
+                }}
+              >
+                {t("youtubeOpinions.resetDates")}
+              </Button>
+              <Button
+                size="sm"
+                disabled={invalidRange || (!draft.from && !draft.to)}
+                onClick={() => {
+                  setFilters((previous) => ({
+                    ...previous,
+                    range: "custom",
+                    from: draft.from,
+                    to: draft.to,
+                  }));
+                  setFiltersOpen(false);
+                }}
+              >
+                {t("youtubeOpinions.apply")}
+              </Button>
+            </div>
+          </PopoverContent>
+        </Popover>
+      </div>
+    );
+  };
   const onStock = (ticker: string) =>
     navigate({
       tab: route.creator ? "creators" : "stocks",
@@ -847,10 +954,16 @@ export default function YouTubeOpinionExplorer() {
 
             {inDetail && (
               <TabsContent value={route.tab} className="mt-0 min-w-0">
-                <div className="grid min-w-0 gap-x-12 gap-y-10 xl:grid-cols-[minmax(0,1fr)_300px] xl:grid-rows-[auto_1fr]">
+                <div
+                  className={cn(
+                    "grid min-w-0 gap-x-12 xl:grid-cols-[minmax(0,1fr)_300px] xl:grid-rows-[auto_1fr]",
+                    focused ? "gap-y-8" : "gap-y-10",
+                  )}
+                >
                   <div className="min-w-0 xl:col-start-1">
                     <div className="flex min-w-0 items-center gap-4">
                       {route.creator && !route.ticker && creator && <Avatar creator={creator} size="lg" />}
+                      {focused && route.ticker && <CompanyLogo symbol={route.ticker} size="lg" />}
                       <div className="min-w-0 flex-1">
                         <h2 className="break-words text-[32px] font-semibold leading-tight tracking-[-0.025em]">
                           {route.ticker || title}
@@ -874,9 +987,28 @@ export default function YouTubeOpinionExplorer() {
                       />
                     ) : !context ? (
                       <div className="mt-6 space-y-4" role="status" aria-label={t("common.loadingStatus")}>
-                        <Skeleton className="h-8 w-40" />
-                        <Skeleton className="h-4 w-56" />
-                        <Skeleton className="h-[150px] w-full sm:h-[190px]" />
+                        <Skeleton className={focused ? "h-6 w-48" : "h-8 w-40"} />
+                        {!focused && <Skeleton className="h-4 w-56" />}
+                        {!focused && <Skeleton className="h-[150px] w-full sm:h-[190px]" />}
+                      </div>
+                    ) : focused ? (
+                      <div className="mt-4 flex flex-wrap items-baseline gap-x-3 gap-y-1" aria-live="polite">
+                        <p className={cn("text-xl font-semibold tracking-[-0.01em]", toneText[headline.tone])}>
+                          {overview?.total_opinions ? headline.label : t("youtubeOpinions.noOpinionsYet")}
+                        </p>
+                        <p className="text-sm text-muted-foreground tabular-nums">
+                          {scrub
+                            ? t("youtubeOpinions.scrubSummary", {
+                                date: formatDay(scrub.date),
+                                count: String(scrub.count),
+                              })
+                            : overview?.latest_opinion_at
+                              ? t("youtubeOpinions.creatorStockSummary", {
+                                  opinions: String(overview.total_opinions),
+                                  date: formatDay(overview.latest_opinion_at),
+                                })
+                              : ""}
+                        </p>
                       </div>
                     ) : (
                       <>
@@ -917,101 +1049,7 @@ export default function YouTubeOpinionExplorer() {
                           </div>
                         )}
 
-                        <div
-                          role="radiogroup"
-                          aria-label={t("common.timeRange")}
-                          className="mt-3 flex items-center gap-1 overflow-x-auto border-b border-border pb-4 scrollbar-hide"
-                        >
-                          {rangeOptions.map((option) => (
-                            <button
-                              key={option.value}
-                              type="button"
-                              role="radio"
-                              aria-checked={filters.range === option.value}
-                              className={pill(filters.range === option.value)}
-                              onClick={() =>
-                                setFilters((previous) => ({
-                                  ...previous,
-                                  range: option.value,
-                                  from: rangeStart(option.value),
-                                  to: "",
-                                }))
-                              }
-                            >
-                              {option.label}
-                            </button>
-                          ))}
-                          <Popover
-                            open={filtersOpen}
-                            onOpenChange={(open) => {
-                              if (open) setDraft(filters);
-                              setFiltersOpen(open);
-                            }}
-                          >
-                            <PopoverTrigger asChild>
-                              <button
-                                type="button"
-                                role="radio"
-                                aria-checked={filters.range === "custom"}
-                                className={cn(pill(filters.range === "custom"), "gap-1.5")}
-                              >
-                                <CalendarDays className="h-3.5 w-3.5" />
-                                {filters.range === "custom"
-                                  ? `${filters.from || "…"} – ${filters.to || "…"}`
-                                  : t("common.custom")}
-                              </button>
-                            </PopoverTrigger>
-                            <PopoverContent align="start" className="w-[300px] p-4">
-                              <p className="text-sm font-semibold">{t("youtubeOpinions.customRange")}</p>
-                              <div className="mt-3 grid gap-3">
-                                <DateFilterField
-                                  label={t("youtubeOpinions.dateFrom")}
-                                  value={draft.from}
-                                  max={draft.to || undefined}
-                                  onChange={(from) => setDraft((previous) => ({ ...previous, from }))}
-                                />
-                                <DateFilterField
-                                  label={t("youtubeOpinions.dateTo")}
-                                  value={draft.to}
-                                  min={draft.from || undefined}
-                                  onChange={(to) => setDraft((previous) => ({ ...previous, to }))}
-                                />
-                                {invalidRange && (
-                                  <p role="alert" className="text-xs text-negative">
-                                    {t("youtubeOpinions.invalidDateRange")}
-                                  </p>
-                                )}
-                              </div>
-                              <div className="mt-4 flex justify-end gap-2">
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  onClick={() => {
-                                    setFilters((previous) => ({ ...previous, range: "all", from: "", to: "" }));
-                                    setFiltersOpen(false);
-                                  }}
-                                >
-                                  {t("youtubeOpinions.resetDates")}
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  disabled={invalidRange || (!draft.from && !draft.to)}
-                                  onClick={() => {
-                                    setFilters((previous) => ({
-                                      ...previous,
-                                      range: "custom",
-                                      from: draft.from,
-                                      to: draft.to,
-                                    }));
-                                    setFiltersOpen(false);
-                                  }}
-                                >
-                                  {t("youtubeOpinions.apply")}
-                                </Button>
-                              </div>
-                            </PopoverContent>
-                          </Popover>
-                        </div>
+                        {rangeControls(false)}
 
                         {overview && overview.total_opinions > 0 && (
                           <div>
@@ -1022,7 +1060,39 @@ export default function YouTubeOpinionExplorer() {
                     )}
                   </div>
 
-                  <aside className="min-w-0 space-y-10 xl:col-start-2 xl:row-span-2 xl:row-start-1 xl:sticky xl:top-6 xl:self-start">
+                  <aside
+                    className={cn(
+                      "min-w-0 space-y-10 xl:col-start-2 xl:row-span-2 xl:row-start-1 xl:sticky xl:top-6 xl:self-start",
+                      focused && "order-last space-y-8 border-t border-border pt-8 xl:order-none xl:border-0 xl:pt-1",
+                    )}
+                  >
+                    {focused && context && (
+                      <>
+                        <section className="min-w-0">
+                          <h2 className="text-sm font-semibold">{t("youtubeOpinions.strengthTrend")}</h2>
+                          {chartPoints.length > 1 ? (
+                            <div className="mt-3">
+                              <StrengthChart
+                                compact
+                                points={chartPoints}
+                                tone={overallTone}
+                                label={t("youtubeOpinions.chartLabel")}
+                                formatDate={formatDay}
+                                onScrub={setScrub}
+                              />
+                            </div>
+                          ) : (
+                            <p className="mt-2 text-[13px] leading-5 text-muted-foreground">
+                              {t("youtubeOpinions.trendNeedsMore")}
+                            </p>
+                          )}
+                          <div className="mt-3">{rangeControls(true)}</div>
+                        </section>
+                        {overview && overview.total_opinions > 0 && (
+                          <OpinionDistribution summary={overview} compact />
+                        )}
+                      </>
+                    )}
                     {route.creator && !route.ticker && (
                       <section className="min-w-0">
                         <h2 className="text-base font-semibold">

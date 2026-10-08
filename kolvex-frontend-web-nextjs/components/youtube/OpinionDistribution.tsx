@@ -6,8 +6,10 @@ import type { YouTubeOpinionSummary } from "@/lib/youtubeOpinionsApi";
 
 export default function OpinionDistribution({
   summary,
+  compact = false,
 }: {
   summary: YouTubeOpinionSummary;
+  compact?: boolean;
 }) {
   const { t } = useTranslation();
   const total = summary.total_opinions;
@@ -24,6 +26,34 @@ export default function OpinionDistribution({
   ];
   const lead = rows.reduce((best, row) => (row.count > best.count ? row : best), rows[0]);
   const share = (count: number) => Math.round((count / total) * 100);
+
+  if (compact) {
+    const present = rows.filter((row) => row.count > 0);
+    return (
+      <section className="min-w-0">
+        <h2 className="text-sm font-semibold">{t("youtubeOpinions.distributionTitle")}</h2>
+        <div className="mt-3 flex h-1.5 gap-0.5 overflow-hidden rounded-full bg-muted" aria-hidden="true">
+          {present.map((row) => (
+            <div key={row.key} className={row.fill} style={{ width: `${share(row.count)}%` }} />
+          ))}
+        </div>
+        <dl className="mt-3 grid gap-1.5 text-[13px]">
+          {present.map((row) => (
+            <div key={row.key} className="flex items-center justify-between gap-3">
+              <dt className="flex items-center gap-2 text-muted-foreground">
+                <span aria-hidden="true" className={cn("h-1.5 w-1.5 rounded-full", row.fill)} />
+                {row.label}
+              </dt>
+              <dd className="figure tabular-nums">
+                <span className={cn("font-semibold", row.text)}>{share(row.count)}%</span>
+                <span className="ml-2 text-muted-foreground">{row.count}</span>
+              </dd>
+            </div>
+          ))}
+        </dl>
+      </section>
+    );
+  }
 
   return (
     <section className="grid gap-6 pt-6 sm:grid-cols-[180px_minmax(0,1fr)] sm:items-center">

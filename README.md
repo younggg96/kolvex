@@ -1,314 +1,108 @@
-# Kolvex - 股票分析平台 / Stock Analysis Platform
+# Kolvex — 股票观点与 AI 投资分析平台
 
-<div align="center">
+Kolvex 整合 YouTube 创作者股票观点、市场行情、个人投资组合和 AI 投资分析。本仓库包含 Next.js 前端和 FastAPI 后端。
 
-**A Modern Stock Analysis Platform with Social Media Integration & KOL Tracking**
+本文以当前代码中的路由和服务为准。第三方服务需要配置对应凭据；代码实现不代表线上环境已经配置或通过验证。
 
-**现代化的股票分析平台，整合社交媒体内容、市场数据和 KOL 追踪功能**
+## 当前功能
 
-[English](#english) | [中文](#chinese)
+| 模块 | 功能 |
+| --- | --- |
+| YouTube 股票观点 | 管理员校验和导入单条或批量分析 JSON；按股票、创作者、情绪、日期筛选；股票和创作者汇总、每日观点及变化、创作者资料 |
+| 市场数据 | 单只及批量报价、历史和日内价格、公司信息、财务指标、三大财务报表、分红、分析师评级、财报信息、期权到期日及期权链 |
+| 投资组合 | 通过 Plaid 连接投资账户，同步账户、持仓和投资交易记录；公开分享、持仓可见性、隐私设置、资产及盈亏历史快照 |
+| 投资组合 AI 分析 | 使用 Ollama 分析组合风险、分散程度、持仓优缺点、调整建议和单只持仓 |
+| AI 金融助手 | 保存对话和消息、流式回复、切换模型；通过 LangGraph 调用市场数据、网页搜索、个人持仓和交易分析工具 |
+| 多智能体交易分析 | 市场、新闻、社交及基本面分析，多空辩论和风险讨论；后台运行、实时进度、历史报告、发布及撤回 |
+| 用户与管理 | Supabase Auth 注册、登录、OAuth、密码管理；用户资料、头像、主题、语言偏好、个人模型 API Key、管理员用户和数据统计 |
 
-</div>
+YouTube 模块接收外部生成的分析结果，当前未提供自动抓取视频并生成观点的完整流程。交易分析输出研究报告和建议，当前没有自动下单接口。
 
----
+Next.js 服务端还提供后端接口代理、行情缓存、指数聚合、文本翻译、图片代理及直接连接 Ollama 的聊天接口。
 
-<a name="english"></a>
+## 项目结构与技术栈
 
-## 📖 About
-
-Kolvex is a comprehensive stock analysis platform that integrates social media content, market data, and Key Opinion Leader (KOL) tracking capabilities to provide investors with real-time insights.
-
-## 🏗️ Project Structure
-
-This is a Monorepo project containing frontend and backend applications:
-
-```
+```text
 kolvex/
-├── kolvex-frontend-web-nextjs/    # Next.js Frontend Application
-└── kolvex-backend-py/             # FastAPI Backend API
+├── kolvex-frontend-web-nextjs/   # Next.js 14、React 18、TypeScript、Tailwind CSS
+└── kolvex-backend-py/            # FastAPI、Pydantic、Supabase、Redis
+    ├── app/api/routes/          # HTTP API
+    ├── app/services/            # 市场数据、Plaid、观点、聊天和分析服务
+    ├── app/agent/               # LangGraph 金融助手与工具
+    ├── tradingagents/          # 仓库内置的多智能体交易分析代码
+    ├── migrations/             # SQL 迁移文件
+    └── tests/                  # YouTube 观点相关测试
 ```
 
-## 📦 Sub-Projects
+主要业务数据和认证使用 Supabase；市场数据使用 yfinance，投资账户使用 Plaid，网页搜索使用 Tavily。AI 功能分别使用云端模型和 Ollama。仓库仍保留 SQLAlchemy、Alembic 依赖及本地 PostgreSQL 编排，但主要业务代码通过 Supabase 客户端读写。
 
-### Frontend (kolvex-frontend-web-nextjs)
+## 本地启动
 
-Modern web application built with Next.js 14+, featuring:
+需要 Node.js 18.17+、Python 3.11+ 和已配置的 Supabase 项目。Redis 用于缓存与分析进度；Ollama 用于本地模型功能。
 
-- 📊 Real-time stock data visualization
-- 👥 KOL tracking and content aggregation
-- 📰 Multi-platform news integration (Twitter, Reddit, YouTube, RedNote)
-- 📈 Stock charts and technical analysis
-- 🔔 Real-time notifications and subscriptions
-- 🌓 Dark mode support
-
-**Tech Stack:** Next.js, React, TypeScript, TailwindCSS, Supabase
-
-👉 [View Frontend Documentation](./kolvex-frontend-web-nextjs/README.md)
-
-### Backend (kolvex-backend-py)
-
-High-performance Python backend built with FastAPI, providing:
-
-- 🚀 RESTful API services
-- 🔐 User authentication and authorization
-- 💾 Data persistence
-- 🔄 Data synchronization and processing
-- 📊 Data analysis services
-
-**Tech Stack:** FastAPI, SQLAlchemy, PostgreSQL, Alembic
-
-👉 [View Backend Documentation](./kolvex-backend-py/README.md)
-
-## 🚀 Quick Start
-
-### Prerequisites
-
-- Node.js 18+
-- Python 3.11+
-- PostgreSQL 14+
-- npm or yarn
-
-### 1. Clone Repository
-
-```bash
-git clone https://github.com/younggg96/kolvex.git
-cd kolvex
-```
-
-### 2. Start Frontend
-
-```bash
-cd kolvex-frontend-web-nextjs
-npm install
-cp .env.example .env.local
-# Edit .env.local to configure environment variables
-npm run dev
-```
-
-Frontend will start at http://localhost:3000
-
-### 3. Start Backend
-
-```bash
-cd ../kolvex-backend-py
-python -m venv venv
-source venv/bin/activate  # macOS/Linux
-# On Windows: venv\Scripts\activate
-pip install -r requirements.txt
-cp .env.example .env
-# Edit .env to configure environment variables
-python main.py
-```
-
-Backend will start at http://localhost:8000
-
-## 📝 Development Guide
-
-### Project Conventions
-
-- **Code Style**: Frontend uses ESLint + Prettier, Backend uses Black + Flake8
-- **Commit Convention**: Conventional Commits
-- **Branching Strategy**: Git Flow
-
-### Environment Variables
-
-Each sub-project has its own environment configuration:
-
-- Frontend: `kolvex-frontend-web-nextjs/.env.local`
-- Backend: `kolvex-backend-py/.env`
-
-Please refer to the respective `.env.example` files for configuration.
-
-## 🚢 Deployment
-
-### Frontend Deployment (Vercel)
-
-```bash
-cd kolvex-frontend-web-nextjs
-vercel --prod
-```
-
-### Backend Deployment (Docker)
+### 后端
 
 ```bash
 cd kolvex-backend-py
-docker build -t kolvex-backend .
-docker run -p 8000:8000 kolvex-backend
-```
-
-## 🤝 Contributing
-
-1. Fork this repository
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
-
-## 📄 License
-
-MIT License - see [LICENSE](LICENSE) file for details
-
-## 📧 Contact
-
-- Repository: https://github.com/younggg96/kolvex
-- Issues: https://github.com/younggg96/kolvex/issues
-
-## 🧾 Progress Log
-
-- **2025-02-22**: Replaced FinancialJuice widget with direct crawler. Added `financial_juice_scraper` (Playwright), webhook `POST /api/v1/news/webhook/fetch-financial-juice`, scheduled job (every 30 min), and `LiveNewsList` component. RSS webhook retained as fallback.
-- **2025-12-12**: Refactored `TrackingStocksTable` row components into dedicated files under `kolvex-frontend-web-nextjs/components/tracking-stocks/`. Also converted stock detail page to SSR (server `page.tsx` + client interaction boundary).
-
----
-
-<a name="chinese"></a>
-
-## 📖 关于项目
-
-Kolvex 是一个综合性的股票分析平台，整合社交媒体内容、市场数据和关键意见领袖（KOL）追踪功能，为投资者提供实时洞察。
-
-## 🏗️ 项目结构
-
-这是一个 Monorepo 项目，包含前端和后端两个应用：
-
-```
-kolvex/
-├── kolvex-frontend-web-nextjs/    # Next.js 前端应用
-└── kolvex-backend-py/             # FastAPI 后端 API
-```
-
-## 📦 子项目
-
-### 前端 (kolvex-frontend-web-nextjs)
-
-基于 Next.js 14+ 的现代化 Web 应用，功能包括：
-
-- 📊 实时股票数据可视化
-- 👥 KOL 追踪和内容聚合
-- 📰 多平台新闻整合（Twitter, Reddit, YouTube, 小红书）
-- 📈 股票图表和技术分析
-- 🔔 实时通知和订阅功能
-- 🌓 深色模式支持
-
-**技术栈：** Next.js, React, TypeScript, TailwindCSS, Supabase
-
-👉 [查看前端详细文档](./kolvex-frontend-web-nextjs/README.md)
-
-### 后端 (kolvex-backend-py)
-
-基于 FastAPI 的高性能 Python 后端，提供：
-
-- 🚀 RESTful API 服务
-- 🔐 用户认证和授权
-- 💾 数据持久化
-- 🔄 数据同步和处理
-- 📊 数据分析服务
-
-**技术栈：** FastAPI, SQLAlchemy, PostgreSQL, Alembic
-
-👉 [查看后端详细文档](./kolvex-backend-py/README.md)
-
-## 🚀 快速开始
-
-### 前提条件
-
-- Node.js 18+
-- Python 3.11+
-- PostgreSQL 14+
-- npm 或 yarn
-
-### 1. 克隆项目
-
-```bash
-git clone https://github.com/younggg96/kolvex.git
-cd kolvex
-```
-
-### 2. 启动前端
-
-```bash
-cd kolvex-frontend-web-nextjs
-npm install
-cp .env.example .env.local
-# 编辑 .env.local 配置环境变量
-npm run dev
-```
-
-前端将在 http://localhost:3000 启动
-
-### 3. 启动后端
-
-```bash
-cd ../kolvex-backend-py
-python -m venv venv
-source venv/bin/activate  # macOS/Linux
-# Windows 系统: venv\Scripts\activate
+python3 -m venv venv
+source venv/bin/activate
 pip install -r requirements.txt
 cp .env.example .env
-# 编辑 .env 配置环境变量
+```
+
+编辑 `.env`，补充 `SUPABASE_URL`、`SUPABASE_KEY`、`SUPABASE_SERVICE_KEY` 和随机生成的 `SECRET_KEY`。按需要配置模型、Plaid、Redis 等服务，详见[后端 README](./kolvex-backend-py/README.md)。现有 `.env.example` 包含部分旧配置，不是完整的当前配置清单。
+
+```bash
 python main.py
 ```
 
-后端将在 http://localhost:8000 启动
+本地 API 为 `http://localhost:8080`，交互式文档为 `http://localhost:8080/docs`，健康检查为 `http://localhost:8080/health`。
 
-## 📝 开发指南
-
-### 项目约定
-
-- **代码风格**：前端使用 ESLint + Prettier，后端使用 Black + Flake8
-- **提交规范**：遵循 Conventional Commits
-- **分支策略**：Git Flow
-
-### 环境变量
-
-每个子项目都有自己的环境变量配置：
-
-- 前端：`kolvex-frontend-web-nextjs/.env.local`
-- 后端：`kolvex-backend-py/.env`
-
-请参考各自的 `.env.example` 文件进行配置。
-
-## 🚢 部署
-
-### 前端部署 (Vercel)
+### 前端
 
 ```bash
 cd kolvex-frontend-web-nextjs
-vercel --prod
+npm ci
 ```
 
-### 后端部署 (Docker)
+创建 `.env.local`：
+
+```dotenv
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
+NEXT_PUBLIC_BACKEND_API_URL=http://127.0.0.1:8080
+```
+
+```bash
+npm run dev
+```
+
+访问 `http://localhost:3000`。Supabase 服务端密钥只配置在后端。
+
+### Docker 开发环境
+
+完成后端 `.env` 配置后：
 
 ```bash
 cd kolvex-backend-py
-docker build -t kolvex-backend .
-docker run -p 8000:8000 kolvex-backend
+docker compose up -d --build
+docker compose logs -f backend
 ```
 
-## 🤝 贡献指南
+当前开发 Compose 启动后端、Redis 和本地 PostgreSQL；仍需单独配置 Supabase。Ollama 默认通过 `host.docker.internal:11434` 连接宿主机服务。后端端口为 `8080`。
 
-1. Fork 本仓库
-2. 创建特性分支 (`git checkout -b feature/AmazingFeature`)
-3. 提交更改 (`git commit -m 'Add some AmazingFeature'`)
-4. 推送到分支 (`git push origin feature/AmazingFeature`)
-5. 开启 Pull Request
+## 已退役功能
 
-## 📄 许可证
+当前不再提供 Robinhood／IBKR 直接接入、旧 Twitter／小红书 KOL 追踪、独立新闻聚合、超级投资者持仓追踪、量化策略和回测、股票追踪、用户关注、通知及定时预警、期权异动和独立期权 AI 分析。普通期权链查询与 Plaid 投资组合功能保留。联系表单邮件发送已禁用。
 
-MIT License - 详见 [LICENSE](LICENSE) 文件
+相关移除 SQL 位于后端 `migrations/`；保留的历史迁移和依赖不代表功能仍然启用，也不能据此判断生产数据库是否已执行迁移。
 
-## 📧 联系方式
+## English overview
 
-- 项目地址：https://github.com/younggg96/kolvex
-- 问题反馈：https://github.com/younggg96/kolvex/issues
+Kolvex combines imported YouTube stock opinions, market data, Plaid investment portfolios, an AI financial assistant, and multi-agent trading research. The monorepo uses Next.js for the frontend and FastAPI for the backend, with Supabase for authentication and business data, Redis for caching and analysis progress, and cloud LLMs or Ollama for AI features.
 
-## 🧾 进度日志
+YouTube opinions are imported from externally generated JSON; an automated video-to-opinion pipeline is not currently implemented. Trading research produces reports and recommendations without order execution. Local frontend and backend ports are `3000` and `8080`. Feature availability depends on service credentials and database setup.
 
-- **2025-12-12**：将 `TrackingStocksTable` 的行/骨架/表头组件拆分为 `kolvex-frontend-web-nextjs/components/tracking-stocks/` 下的独立文件；并将股票详情页改为 SSR（服务端 `page.tsx` + 客户端交互边界）。
+## License
 
----
-
-<div align="center">
-
-**Built with ❤️ by Kolvex Team**
-
-</div>
+[MIT](./LICENSE)

@@ -29,12 +29,14 @@ export default function StrengthChart({
   label,
   formatDate,
   onScrub,
+  compact = false,
 }: {
   points: StrengthPoint[];
   tone: StrengthTone;
   label: string;
   formatDate: (date: string) => string;
   onScrub: (point: StrengthPoint | null) => void;
+  compact?: boolean;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const [active, setActive] = useState<number | null>(null);
@@ -85,7 +87,10 @@ export default function StrengthChart({
         onPointerLeave={() => select(null)}
         onKeyDown={handleKey}
         onBlur={() => select(null)}
-        className="relative h-[150px] cursor-crosshair touch-pan-y select-none rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-4 focus-visible:ring-offset-background sm:h-[190px]"
+        className={cn(
+          "relative cursor-crosshair touch-pan-y select-none rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-4 focus-visible:ring-offset-background",
+          compact ? "h-[96px]" : "h-[150px] sm:h-[190px]",
+        )}
       >
         <svg
           viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
