@@ -133,6 +133,52 @@ export interface StockOverview {
   financials: APIFinancials;
 }
 
+export interface PriceBar {
+  date: string;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+  volume: number | null;
+}
+
+export interface PriceHistoryParams {
+  period?: string;
+  interval?: string;
+  start?: string;
+  end?: string;
+}
+
+/**
+ * Daily (or weekly) OHLCV bars; the backend needs both start and end for a date window.
+ */
+export async function getStockHistory(
+  symbol: string,
+  params: PriceHistoryParams = {},
+  signal?: AbortSignal
+): Promise<PriceBar[]> {
+  const searchParams = new URLSearchParams();
+  for (const [key, value] of Object.entries(params)) {
+    if (value) searchParams.set(key, value);
+  }
+  const qs = searchParams.toString();
+  const response = await fetch(
+    `/api/market/history/${encodeURIComponent(symbol)}${qs ? `?${qs}` : ""}`,
+    { signal }
+  );
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(data.error || `API error: ${response.status}`);
+  }
+  return ((data.data || []) as Array<Partial<PriceBar>>).filter(
+    (bar): bar is PriceBar =>
+      typeof bar.date === "string" &&
+      [bar.open, bar.high, bar.low, bar.close].every(
+        (value) => typeof value === "number" && Number.isFinite(value)
+      )
+  );
+}
+
 /**
  * Format price for display
  */

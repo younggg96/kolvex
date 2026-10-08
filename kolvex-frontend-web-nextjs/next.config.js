@@ -210,16 +210,21 @@ const nextConfig = {
           },
         ],
       },
-      {
-        source: "/_next/static/:path*",
-        locale: false,
-        headers: [
-          {
-            key: "Cache-Control",
-            value: "public, max-age=31536000, immutable",
-          },
-        ],
-      },
+      // Dev chunk URLs are not content-hashed, so caching them forever pins stale code.
+      ...(isDevelopment
+        ? []
+        : [
+            {
+              source: "/_next/static/:path*",
+              locale: false,
+              headers: [
+                {
+                  key: "Cache-Control",
+                  value: "public, max-age=31536000, immutable",
+                },
+              ],
+            },
+          ]),
       // Authenticated app routes and API calls are real-time data surfaces.
       // Do not let browser/proxy caches or old service workers serve stale
       // portfolio sync state.

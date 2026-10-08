@@ -167,6 +167,27 @@ export async function getYouTubeOpinionDashboard(
   return apiRequest<YouTubeOpinionDashboard>(`/dashboard${qs ? `?${qs}` : ""}`);
 }
 
+export interface YouTubeStockDetail {
+  ticker: string;
+  opinions: YouTubeOpinion[];
+}
+
+/** Every opinion on one ticker (unpaginated), for plotting calls on the price chart. */
+export async function getYouTubeStockDetail(
+  ticker: string,
+  params: Pick<YouTubeOpinionDashboardParams, "date_from" | "date_to"> = {},
+  signal?: AbortSignal
+): Promise<YouTubeStockDetail> {
+  const searchParams = new URLSearchParams();
+  if (params.date_from) searchParams.set("date_from", params.date_from);
+  if (params.date_to) searchParams.set("date_to", params.date_to);
+  const qs = searchParams.toString();
+  return apiRequest<YouTubeStockDetail>(
+    `/stocks/${encodeURIComponent(ticker)}${qs ? `?${qs}` : ""}`,
+    { signal }
+  );
+}
+
 export type YouTubeImportBody = Record<string, unknown> | Record<string, unknown>[];
 
 export interface YouTubeImportResult {

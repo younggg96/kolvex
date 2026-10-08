@@ -13,6 +13,7 @@ from app.api.routes.user_api_keys import router as user_api_keys_router
 from app.api.routes.trading_analysis import router as trading_analysis_router
 from app.api.routes.plaid import router as plaid_router
 from app.api.routes.youtube_opinions import router as youtube_opinions_router
+from app.api.routes.chart_drawings import router as chart_drawings_router
 
 # Create API router
 api_router = APIRouter()
@@ -30,5 +31,6 @@ api_router.include_router(user_api_keys_router)
 api_router.include_router(trading_analysis_router)
 api_router.include_router(plaid_router)
 api_router.include_router(youtube_opinions_router)
+api_router.include_router(chart_drawings_router)
 
 __all__ = ["api_router"]

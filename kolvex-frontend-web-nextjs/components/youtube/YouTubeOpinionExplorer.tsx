@@ -10,7 +10,6 @@ import {
 import {
   ArrowLeft,
   ArrowUpDown,
-  CalendarDays,
   ChevronRight,
   Loader2,
   RefreshCw,
@@ -39,7 +38,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useTranslation } from "@/lib/i18n";
 import { cn, proxyImageUrl } from "@/lib/utils";
 import {
@@ -49,16 +47,18 @@ import {
   type YouTubeOpinion,
 } from "@/lib/youtubeOpinionsApi";
 import CreatorProfileDialog from "./CreatorProfileDialog";
-import DateFilterField from "./DateFilterField";
+import OpinionDateRangePicker from "./OpinionDateRangePicker";
 import OpinionCard from "./OpinionCard";
 import OpinionDistribution from "./OpinionDistribution";
 import OpinionStrength from "./OpinionStrength";
+import PriceChart from "./PriceChart";
 import StrengthChart, { type StrengthPoint } from "./StrengthChart";
 import VideoOpinionCard, { groupOpinionsByVideo } from "./VideoOpinionCard";
 import { describeStrength, toneText, type StrengthTone } from "./strength";
 
 type DirectoryTone = "all" | StrengthTone;
 type HistoryView = "videos" | "opinions";
+type ChartView = "price" | "opinions";
 type DirectorySort = "opinions" | "creators" | "latest" | "bullish" | "bearish" | "name";
 
 type Route = { tab: "stocks" | "creators"; ticker?: string; creator?: string };
@@ -179,11 +179,10 @@ export default function YouTubeOpinionExplorer() {
   const [sortBy, setSortBy] = useState<DirectorySort>("opinions");
   const [revision, setRevision] = useState(0);
   const [uploadOpen, setUploadOpen] = useState(false);
-  const [filtersOpen, setFiltersOpen] = useState(false);
   const [filters, setFilters] = useState<Filters>(emptyFilters);
-  const [draft, setDraft] = useState<Filters>(emptyFilters);
   const [scrub, setScrub] = useState<StrengthPoint | null>(null);
   const [historyView, setHistoryView] = useState<HistoryView>("videos");
+  const [chartView, setChartView] = useState<ChartView>("price");
   const detailRequest = useRef(0);
   const scrollContainer = useRef<HTMLDivElement>(null);
   const inDetail = Boolean(route.ticker || route.creator);
@@ -301,6 +300,7 @@ export default function YouTubeOpinionExplorer() {
     if (next.tab === "creators" && sortBy === "creators") setSortBy("opinions");
     setFilters(emptyFilters);
     setScrub(null);
+    setChartView("price");
     scrollContainer.current?.scrollTo({ top: 0 });
   }
 
@@ -412,7 +412,6 @@ export default function YouTubeOpinionExplorer() {
     { value: "bearish", label: t("youtubeOpinions.mostBearish") },
     { value: "name", label: route.tab === "stocks" ? t("youtubeOpinions.tickerAZ") : t("youtubeOpinions.nameAZ") },
   ];
-  const invalidRange = Boolean(draft.from && draft.to && draft.from > draft.to);
   const hasMore =
     detail?.pagination?.has_more ??
     Boolean(detail && opinions.length < detail.summary.total_opinions);
@@ -465,14 +464,14 @@ export default function YouTubeOpinionExplorer() {
       "inline-flex h-8 shrink-0 items-center rounded-full px-3.5 text-[13px] font-semibold transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
       active
         ? "bg-foreground text-background"
-        : "text-muted-foreground hover:bg-muted hover:text-foreground",
+        : "text-foreground/80 hover:bg-muted hover:text-foreground",
     );
   const segment = (active: boolean) =>
     cn(
       "h-8 shrink-0 whitespace-nowrap rounded-full px-3.5 text-[13px] font-semibold transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
       active
         ? "bg-background text-foreground shadow-[0_1px_2px_rgb(0_0_0/0.12)]"
-        : "text-muted-foreground hover:text-foreground",
+        : "text-foreground/80 hover:text-foreground",
     );
 
   const stockRows = (
@@ -493,14 +492,14 @@ export default function YouTubeOpinionExplorer() {
             <CompanyLogo symbol={item.ticker} size="md" />
             <div className="min-w-0">
               <p className="text-[15px] font-semibold">{item.ticker}</p>
-              <p className="mt-0.5 truncate text-[13px] text-muted-foreground">
+              <p className="mt-0.5 truncate text-[13px] text-foreground/80">
                 {item.company_name || item.ticker}
               </p>
             </div>
           </div>
           <div className="flex min-w-0 flex-col items-end gap-0.5 text-right">
             <OpinionStrength value={item.avg_score} />
-            <p className="text-xs text-muted-foreground tabular-nums">
+            <p className="text-xs text-foreground/75 tabular-nums">
               {t("youtubeOpinions.creatorOpinionCount", {
                 creators: String(item.creator_count),
                 opinions: String(item.total_opinions),
@@ -534,14 +533,14 @@ export default function YouTubeOpinionExplorer() {
               <p className="truncate text-[15px] font-semibold">
                 {item.channel_title || item.channel_id}
               </p>
-              <p className="mt-0.5 truncate text-[13px] text-muted-foreground">
+              <p className="mt-0.5 truncate text-[13px] text-foreground/80">
                 {item.channel_handle || item.channel_id}
               </p>
             </div>
           </div>
           <div className="flex min-w-0 flex-col items-end gap-0.5 text-right">
             <OpinionStrength value={item.avg_score} />
-            <p className="text-xs text-muted-foreground tabular-nums">
+            <p className="text-xs text-foreground/75 tabular-nums">
               {t("youtubeOpinions.opinionCount", { count: String(item.total_opinions) })}
             </p>
           </div>
@@ -555,7 +554,7 @@ export default function YouTubeOpinionExplorer() {
       <h2 className="text-base font-semibold">
         {t("youtubeOpinions.recentShifts")}
       </h2>
-      <p className="mt-1 text-xs text-muted-foreground">
+      <p className="mt-1 text-xs text-foreground/75">
         {t("youtubeOpinions.comparedWithPrevious")}
       </p>
       <ul className="mt-3">
@@ -572,7 +571,7 @@ export default function YouTubeOpinionExplorer() {
             >
               <span className="min-w-0">
                 <span className="block font-semibold">{change.ticker}</span>
-                <span className="block text-xs text-muted-foreground tabular-nums">
+                <span className="block text-xs text-foreground/75 tabular-nums">
                   {formatDay(change.current_date)}
                 </span>
               </span>
@@ -684,76 +683,19 @@ export default function YouTubeOpinionExplorer() {
             {option.label}
           </button>
         ))}
-        <Popover
-          open={filtersOpen}
-          onOpenChange={(open) => {
-            if (open) setDraft(filters);
-            setFiltersOpen(open);
-          }}
-        >
-          <PopoverTrigger asChild>
-            <button
-              type="button"
-              role="radio"
-              aria-checked={filters.range === "custom"}
-              className={cn(rangePill(filters.range === "custom"), "gap-1.5")}
-            >
-              <CalendarDays className="h-3.5 w-3.5" />
-              {filters.range === "custom"
-                ? `${filters.from || "…"} – ${filters.to || "…"}`
-                : t("common.custom")}
-            </button>
-          </PopoverTrigger>
-          <PopoverContent align={compact ? "end" : "start"} className="w-[300px] p-4">
-            <p className="text-sm font-semibold">{t("youtubeOpinions.customRange")}</p>
-            <div className="mt-3 grid gap-3">
-              <DateFilterField
-                label={t("youtubeOpinions.dateFrom")}
-                value={draft.from}
-                max={draft.to || undefined}
-                onChange={(from) => setDraft((previous) => ({ ...previous, from }))}
-              />
-              <DateFilterField
-                label={t("youtubeOpinions.dateTo")}
-                value={draft.to}
-                min={draft.from || undefined}
-                onChange={(to) => setDraft((previous) => ({ ...previous, to }))}
-              />
-              {invalidRange && (
-                <p role="alert" className="text-xs text-negative">
-                  {t("youtubeOpinions.invalidDateRange")}
-                </p>
-              )}
-            </div>
-            <div className="mt-4 flex justify-end gap-2">
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => {
-                  setFilters((previous) => ({ ...previous, range: "all", from: "", to: "" }));
-                  setFiltersOpen(false);
-                }}
-              >
-                {t("youtubeOpinions.resetDates")}
-              </Button>
-              <Button
-                size="sm"
-                disabled={invalidRange || (!draft.from && !draft.to)}
-                onClick={() => {
-                  setFilters((previous) => ({
-                    ...previous,
-                    range: "custom",
-                    from: draft.from,
-                    to: draft.to,
-                  }));
-                  setFiltersOpen(false);
-                }}
-              >
-                {t("youtubeOpinions.apply")}
-              </Button>
-            </div>
-          </PopoverContent>
-        </Popover>
+        <OpinionDateRangePicker
+          from={filters.from}
+          to={filters.to}
+          active={filters.range === "custom"}
+          compact={compact}
+          triggerClassName={rangePill(filters.range === "custom")}
+          onApply={({ from, to }) =>
+            setFilters((previous) => ({ ...previous, range: "custom", from, to }))
+          }
+          onReset={() =>
+            setFilters((previous) => ({ ...previous, range: "all", from: "", to: "" }))
+          }
+        />
       </div>
     );
   };
@@ -767,7 +709,7 @@ export default function YouTubeOpinionExplorer() {
   const breadcrumbNav = (
     <nav
       aria-label={t("common.breadcrumb")}
-      className="flex min-w-0 items-center gap-1 text-sm text-muted-foreground"
+      className="flex min-w-0 items-center gap-1 text-sm text-foreground/75"
     >
       <Button
         size="icon"
@@ -852,7 +794,7 @@ export default function YouTubeOpinionExplorer() {
                           : t("youtubeOpinions.trackedCreators")}
                       </h2>
                       {catalogue && (
-                        <p className="mt-1 text-sm text-muted-foreground tabular-nums">
+                        <p className="mt-1 text-sm text-foreground/80 tabular-nums">
                           {t("youtubeOpinions.catalogueSummary", {
                             stocks: String(catalogue.summary.total_stocks),
                             creators: String(catalogue.summary.total_creators),
@@ -897,7 +839,7 @@ export default function YouTubeOpinionExplorer() {
                     </div>
                     <div className="ml-auto flex shrink-0 items-center gap-2">
                       {catalogue && (
-                        <span className="shrink-0 whitespace-nowrap text-[13px] text-muted-foreground tabular-nums">
+                        <span className="shrink-0 whitespace-nowrap text-[13px] text-foreground/75 tabular-nums">
                           {t("youtubeOpinions.shownCount", {
                             count: String(route.tab === "stocks" ? visibleStocks.length : visibleCreators.length),
                           })}
@@ -963,12 +905,18 @@ export default function YouTubeOpinionExplorer() {
                   <div className="min-w-0 xl:col-start-1">
                     <div className="flex min-w-0 items-center gap-4">
                       {route.creator && !route.ticker && creator && <Avatar creator={creator} size="lg" />}
-                      {focused && route.ticker && <CompanyLogo symbol={route.ticker} size="lg" />}
+                      {route.ticker && (
+                        <CompanyLogo
+                          symbol={route.ticker}
+                          name={stock?.company_name || context?.stocks[0]?.company_name || route.ticker}
+                          size="lg"
+                        />
+                      )}
                       <div className="min-w-0 flex-1">
                         <h2 className="break-words text-[32px] font-semibold leading-tight tracking-[-0.025em]">
                           {route.ticker || title}
                         </h2>
-                        <p className="mt-0.5 break-words text-sm text-muted-foreground">
+                        <p className="mt-0.5 break-words text-sm text-foreground/80">
                           {route.creator
                             ? route.ticker
                               ? t("youtubeOpinions.opinionsFrom", { name: title || "" })
@@ -996,7 +944,7 @@ export default function YouTubeOpinionExplorer() {
                         <p className={cn("text-xl font-semibold tracking-[-0.01em]", toneText[headline.tone])}>
                           {overview?.total_opinions ? headline.label : t("youtubeOpinions.noOpinionsYet")}
                         </p>
-                        <p className="text-sm text-muted-foreground tabular-nums">
+                        <p className="text-sm text-foreground/75 tabular-nums">
                           {scrub
                             ? t("youtubeOpinions.scrubSummary", {
                                 date: formatDay(scrub.date),
@@ -1016,7 +964,7 @@ export default function YouTubeOpinionExplorer() {
                           <p className={cn("text-[28px] font-semibold leading-tight tracking-[-0.02em] sm:text-[32px]", toneText[headline.tone])}>
                             {overview?.total_opinions ? headline.label : t("youtubeOpinions.noOpinionsYet")}
                           </p>
-                          <p className="mt-1 text-sm text-muted-foreground tabular-nums">
+                          <p className="mt-1 text-sm text-foreground/75 tabular-nums">
                             {scrub
                               ? t("youtubeOpinions.scrubSummary", {
                                   date: formatDay(scrub.date),
@@ -1037,8 +985,47 @@ export default function YouTubeOpinionExplorer() {
                           </p>
                         </div>
 
-                        {chartPoints.length > 0 && (
-                          <div className="mt-6">
+                        {route.ticker && (
+                          <div
+                            role="tablist"
+                            aria-label={t("youtubeOpinions.chartView")}
+                            className="mt-6 inline-flex w-fit max-w-full items-center gap-0.5 rounded-full bg-muted p-1"
+                          >
+                            {([
+                              { value: "price", label: t("youtubeOpinions.priceTrend") },
+                              { value: "opinions", label: t("youtubeOpinions.strengthTrend") },
+                            ] as const).map((item) => (
+                              <button
+                                key={item.value}
+                                type="button"
+                                role="tab"
+                                aria-selected={chartView === item.value}
+                                onClick={() => {
+                                  setChartView(item.value);
+                                  setScrub(null);
+                                }}
+                                className={segment(chartView === item.value)}
+                              >
+                                {item.label}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+
+                        {route.ticker && chartView === "price" ? (
+                          <div className="mt-5">
+                            <PriceChart
+                              symbol={route.ticker}
+                              range={filters.range}
+                              from={filters.from}
+                              to={filters.to}
+                              opinions={chartPoints}
+                              formatDate={formatDay}
+                              t={t}
+                            />
+                          </div>
+                        ) : chartPoints.length > 0 && (
+                          <div className={route.ticker ? "mt-5" : "mt-6"}>
                             <StrengthChart
                               points={chartPoints}
                               tone={overallTone}
@@ -1082,7 +1069,7 @@ export default function YouTubeOpinionExplorer() {
                               />
                             </div>
                           ) : (
-                            <p className="mt-2 text-[13px] leading-5 text-muted-foreground">
+                            <p className="mt-2 text-[13px] leading-5 text-foreground/75">
                               {t("youtubeOpinions.trendNeedsMore")}
                             </p>
                           )}
@@ -1132,7 +1119,7 @@ export default function YouTubeOpinionExplorer() {
                         <h2 className="text-lg font-semibold">
                           {t("youtubeOpinions.opinionHistory")}
                           {detail && (
-                            <span className="ml-2 text-sm font-normal text-muted-foreground tabular-nums">
+                            <span className="ml-2 text-sm font-normal text-foreground/75 tabular-nums">
                               {detail.summary.total_opinions}
                             </span>
                           )}

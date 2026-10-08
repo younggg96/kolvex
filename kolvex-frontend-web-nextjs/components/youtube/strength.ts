@@ -48,7 +48,7 @@ export function describeStrength(
 export const toneText: Record<StrengthTone, string> = {
   positive: "text-positive",
   negative: "text-negative",
-  neutral: "text-muted-foreground",
+  neutral: "text-foreground/75",
 };
 
 export const toneFill: Record<StrengthTone, string> = {
