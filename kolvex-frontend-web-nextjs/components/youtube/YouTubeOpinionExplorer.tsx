@@ -774,7 +774,7 @@ export default function YouTubeOpinionExplorer() {
         ref={scrollContainer}
         className="min-h-0 min-w-0 flex-1 overflow-y-auto"
       >
-        <div className="mx-auto w-full min-w-0 max-w-[1180px] px-4 pb-16 pt-5 md:px-8 md:pt-7">
+        <div className="mx-auto w-full min-w-0 px-4 pb-16 pt-5 md:px-8 md:pt-7">
           <div className="mb-5 min-w-0 sm:mb-6">
             {inDetail ? breadcrumbNav : tabSwitcher}
           </div>

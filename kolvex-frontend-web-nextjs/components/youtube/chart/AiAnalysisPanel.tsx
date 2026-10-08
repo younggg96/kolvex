@@ -39,30 +39,34 @@ export default function AiAnalysisPanel({
 }) {
   const result = state.result;
   const actionClass =
-    "inline-flex h-7 items-center gap-1 rounded-full px-2.5 text-xs font-semibold text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:opacity-50";
+    "inline-flex h-7 shrink-0 items-center gap-1 whitespace-nowrap rounded-full px-2.5 text-xs font-semibold text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:opacity-50";
 
   return (
-    <section aria-live="polite" aria-label={t("youtubeOpinions.ai.title")} className={cn("rounded-xl border border-border p-4 text-sm", className)}>
-      <header className="flex items-center gap-2">
-        <Sparkles className="h-4 w-4 text-violet-500" aria-hidden="true" />
-        <h3 className="font-semibold">{t("youtubeOpinions.ai.title")}</h3>
-        {result && (
-          <span className="text-xs text-muted-foreground">
-            {t(`youtubeOpinions.intervals.${interval}`)} · {formatDate(result.view.start.slice(0, 10))} – {formatDate(result.view.end.slice(0, 10))}
-          </span>
-        )}
-        <div className="ml-auto flex items-center gap-0.5">
-          <button type="button" onClick={onRetry} disabled={state.status === "loading"} className={actionClass}>
-            <RefreshCw className="h-3.5 w-3.5" aria-hidden="true" />
-            {t("youtubeOpinions.ai.rerun")}
-          </button>
-          {result && (
-            <button type="button" onClick={onClear} className={actionClass}>
-              <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
-              {t("youtubeOpinions.ai.clear")}
+    <section aria-live="polite" aria-label={t("youtubeOpinions.ai.title")} className={cn("min-w-0 rounded-xl border border-border p-4 text-sm", className)}>
+      <header className="flex flex-col gap-1.5">
+        <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5">
+          <div className="flex items-center gap-1.5">
+            <Sparkles className="h-4 w-4 shrink-0 text-violet-500" aria-hidden="true" />
+            <h3 className="whitespace-nowrap font-semibold leading-5">{t("youtubeOpinions.ai.title")}</h3>
+          </div>
+          <div className="flex shrink-0 items-center gap-1">
+            <button type="button" onClick={onRetry} disabled={state.status === "loading"} className={actionClass}>
+              <RefreshCw className="h-3.5 w-3.5" aria-hidden="true" />
+              {t("youtubeOpinions.ai.rerun")}
             </button>
-          )}
+            {result && (
+              <button type="button" onClick={onClear} className={actionClass}>
+                <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
+                {t("youtubeOpinions.ai.clear")}
+              </button>
+            )}
+          </div>
         </div>
+        {result && (
+          <p className="text-xs leading-5 text-muted-foreground">
+            {t(`youtubeOpinions.intervals.${interval}`)} · {formatDate(result.view.start.slice(0, 10))} – {formatDate(result.view.end.slice(0, 10))}
+          </p>
+        )}
       </header>
 
       {state.status === "loading" && (
