@@ -54,9 +54,11 @@ import OpinionCard from "./OpinionCard";
 import OpinionDistribution from "./OpinionDistribution";
 import OpinionStrength from "./OpinionStrength";
 import StrengthChart, { type StrengthPoint } from "./StrengthChart";
+import VideoOpinionCard, { groupOpinionsByVideo } from "./VideoOpinionCard";
 import { describeStrength, toneText, type StrengthTone } from "./strength";
 
 type DirectoryTone = "all" | StrengthTone;
+type HistoryView = "videos" | "opinions";
 type DirectorySort = "opinions" | "creators" | "latest" | "bullish" | "bearish" | "name";
 
 type Route = { tab: "stocks" | "creators"; ticker?: string; creator?: string };
@@ -181,6 +183,7 @@ export default function YouTubeOpinionExplorer() {
   const [filters, setFilters] = useState<Filters>(emptyFilters);
   const [draft, setDraft] = useState<Filters>(emptyFilters);
   const [scrub, setScrub] = useState<StrengthPoint | null>(null);
+  const [historyView, setHistoryView] = useState<HistoryView>("videos");
   const detailRequest = useRef(0);
   const scrollContainer = useRef<HTMLDivElement>(null);
   const inDetail = Boolean(route.ticker || route.creator);
@@ -464,6 +467,13 @@ export default function YouTubeOpinionExplorer() {
         ? "bg-foreground text-background"
         : "text-muted-foreground hover:bg-muted hover:text-foreground",
     );
+  const segment = (active: boolean) =>
+    cn(
+      "h-8 shrink-0 whitespace-nowrap rounded-full px-3.5 text-[13px] font-semibold transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
+      active
+        ? "bg-background text-foreground shadow-[0_1px_2px_rgb(0_0_0/0.12)]"
+        : "text-muted-foreground hover:text-foreground",
+    );
 
   const stockRows = (
     <div className="min-w-0">
@@ -606,12 +616,7 @@ export default function YouTubeOpinionExplorer() {
             onClick={() => {
               if (!active || inDetail) navigate({ tab: item.tab });
             }}
-            className={cn(
-              "h-8 shrink-0 whitespace-nowrap rounded-full px-3.5 text-[13px] font-semibold transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
-              active
-                ? "bg-background text-foreground shadow-[0_1px_2px_rgb(0_0_0/0.12)]"
-                : "text-muted-foreground hover:text-foreground",
-            )}
+            className={segment(active)}
           >
             {item.label}
           </button>
@@ -619,6 +624,38 @@ export default function YouTubeOpinionExplorer() {
       })}
     </nav>
   );
+
+  const groupByVideo = Boolean(route.creator && !route.ticker);
+  const videoView = groupByVideo && historyView === "videos";
+  const historySwitcher = groupByVideo && (
+    <div
+      role="radiogroup"
+      aria-label={t("youtubeOpinions.historyView")}
+      className="inline-flex w-fit max-w-full items-center gap-0.5 rounded-full bg-muted p-1 align-middle"
+    >
+      {([
+        { value: "videos", label: t("youtubeOpinions.byVideo") },
+        { value: "opinions", label: t("youtubeOpinions.byOpinion") },
+      ] as const).map((item) => (
+        <button
+          key={item.value}
+          type="button"
+          role="radio"
+          aria-checked={historyView === item.value}
+          onClick={() => setHistoryView(item.value)}
+          className={segment(historyView === item.value)}
+        >
+          {item.label}
+        </button>
+      ))}
+    </div>
+  );
+  const onStock = (ticker: string) =>
+    navigate({
+      tab: route.creator ? "creators" : "stocks",
+      creator: route.creator,
+      ticker,
+    });
 
   const breadcrumbNav = (
     <nav
@@ -1021,14 +1058,17 @@ export default function YouTubeOpinionExplorer() {
 
                   <section className="min-w-0 xl:col-start-1">
                     <div className="flex flex-col gap-3 border-b border-border pb-3 sm:flex-row sm:items-center sm:justify-between">
-                      <h2 className="text-lg font-semibold">
-                        {t("youtubeOpinions.opinionHistory")}
-                        {detail && (
-                          <span className="ml-2 text-sm font-normal text-muted-foreground tabular-nums">
-                            {detail.summary.total_opinions}
-                          </span>
-                        )}
-                      </h2>
+                      <div className="flex min-w-0 flex-wrap items-center gap-x-4 gap-y-2">
+                        <h2 className="text-lg font-semibold">
+                          {t("youtubeOpinions.opinionHistory")}
+                          {detail && (
+                            <span className="ml-2 text-sm font-normal text-muted-foreground tabular-nums">
+                              {detail.summary.total_opinions}
+                            </span>
+                          )}
+                        </h2>
+                        {historySwitcher}
+                      </div>
                       <div
                         role="radiogroup"
                         aria-label={t("youtubeOpinions.sentiment")}
@@ -1076,23 +1116,26 @@ export default function YouTubeOpinionExplorer() {
                           />
                         )}
                         <div className="min-w-0">
-                          {opinions.map((opinion) => (
-                            <OpinionCard
-                              key={opinion.id}
-                              opinion={opinion}
-                              t={t}
-                              showCreator={!route.creator}
-                              showTicker={!route.ticker}
-                              onCreator={(channelId) => navigate({ tab: "creators", creator: channelId })}
-                              onStock={(ticker) =>
-                                navigate({
-                                  tab: route.creator ? "creators" : "stocks",
-                                  creator: route.creator,
-                                  ticker,
-                                })
-                              }
-                            />
-                          ))}
+                          {videoView
+                            ? groupOpinionsByVideo(opinions).map((group) => (
+                                <VideoOpinionCard
+                                  key={group.videoId}
+                                  group={group}
+                                  t={t}
+                                  onStock={onStock}
+                                />
+                              ))
+                            : opinions.map((opinion) => (
+                                <OpinionCard
+                                  key={opinion.id}
+                                  opinion={opinion}
+                                  t={t}
+                                  showCreator={!route.creator}
+                                  showTicker={!route.ticker}
+                                  onCreator={(channelId) => navigate({ tab: "creators", creator: channelId })}
+                                  onStock={onStock}
+                                />
+                              ))}
                         </div>
                         {hasMore && (
                           <div className="mt-6 flex justify-center">
