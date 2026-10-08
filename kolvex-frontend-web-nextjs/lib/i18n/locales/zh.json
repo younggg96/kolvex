@@ -57,14 +57,20 @@
     "notifications": "通知",
     "settings": "设置",
     "admin": "管理员",
-    "toggleSidebar": "切换侧边栏"
+    "toggleSidebar": "切换侧边栏",
+    "home": "首页",
+    "research": "研究",
+    "journal": "日志"
   },
   "tabBar": {
     "chat": "对话",
     "tradingAnalysis": "分析",
     "youtubeOpinions": "观点",
     "portfolio": "组合",
-    "more": "更多"
+    "more": "更多",
+    "home": "首页",
+    "research": "研究",
+    "journal": "日志"
   },
   "userMenu": {
     "account": "账户",
@@ -107,7 +113,12 @@
       "badge": "Plaid 投资数据与交易复盘",
       "headline": "Kolvex 投资组合工作台",
       "headlineHighlight": "让每一笔交易都有上下文",
-      "phrases": ["社交智能", "AI 驱动分析", "实时信号", "聪明资金追踪"],
+      "phrases": [
+        "社交智能",
+        "AI 驱动分析",
+        "实时信号",
+        "聪明资金追踪"
+      ],
       "subheadline": "通过 Plaid 连接投资账户，统一管理持仓、交易、盈亏和组合风险，再用您选择的 AI 模型完成复盘。",
       "startFreeTrial": "使用 Plaid 连接",
       "trustBadges": {
@@ -156,12 +167,20 @@
       "sentiment": {
         "title": "情绪评分",
         "description": "来自社交媒体、新闻和分析师报告的 10,000+ 只股票的实时情绪评分。",
-        "stats": { "stocks": "股票数", "sources": "来源", "refresh": "刷新" }
+        "stats": {
+          "stocks": "股票数",
+          "sources": "来源",
+          "refresh": "刷新"
+        }
       },
       "portfolio": {
         "title": "投资组合集成",
         "description": "通过 Portfolio 连接您的券商，将社交智能叠加到您的实际持仓上。",
-        "stats": { "brokers": "券商数", "security": "安全性", "sync": "同步" }
+        "stats": {
+          "brokers": "券商数",
+          "security": "安全性",
+          "sync": "同步"
+        }
       },
       "filtering": {
         "title": "智能过滤",
@@ -181,22 +200,38 @@
         {
           "title": "使用 Plaid 连接",
           "description": "通过 Plaid 只读连接支持的券商和投资账户。",
-          "details": ["Plaid Investments", "持仓和交易记录", "安全账户授权"]
+          "details": [
+            "Plaid Investments",
+            "持仓和交易记录",
+            "安全账户授权"
+          ]
         },
         {
           "title": "同步投资组合",
           "description": "把持仓、股票交易和期权活动整理到同一个视图。",
-          "details": ["每日自动同步", "股票与期权数据", "历史筛选和 CSV 导出"]
+          "details": [
+            "每日自动同步",
+            "股票与期权数据",
+            "历史筛选和 CSV 导出"
+          ]
         },
         {
           "title": "检查风险与表现",
           "description": "查看真实盈亏、卖出时机和当前 wash sale 风险。",
-          "details": ["已实现与未实现盈亏", "Wash sale 风险清单", "卖出后走势复盘"]
+          "details": [
+            "已实现与未实现盈亏",
+            "Wash sale 风险清单",
+            "卖出后走势复盘"
+          ]
         },
         {
           "title": "改进交易流程",
           "description": "使用您选择的 AI 模型和量化风控计划复盘交易。",
-          "details": ["AI Markdown 交易复盘", "止损止盈计划", "策略回测"]
+          "details": [
+            "AI Markdown 交易复盘",
+            "止损止盈计划",
+            "策略回测"
+          ]
         }
       ]
     },
@@ -230,10 +265,10 @@
       "signIn": "登录"
     },
     "workspaceHero": {
-      "headline": "把博主的观点、你的持仓和投资决策，放在同一张工作台。",
-      "subheadline": "追踪不同博主对每只股票的看法，比较观点的每日变化，再结合持仓与 AI 分析开展研究。",
+      "headline": "知道为何持有一只股票，也知道这个理由何时改变。",
+      "subheadline": "Kolvex 将创作者观点、市场结构、AI 研究与真实持仓，汇集到一个投资决策工作台。",
       "openWorkspace": "进入工作台",
-      "exploreWorkflow": "了解投资流程",
+      "exploreWorkflow": "了解 NVDA 决策流程",
       "youtube": "YouTube 博主观点",
       "portfolio": "持仓与交易分析"
     },
@@ -255,7 +290,7 @@
       }
     },
     "closing": {
-      "title": "从下一次投资研究开始。",
+      "title": "建立一条值得持续回顾的投资判断。",
       "open": "打开 Kolvex"
     }
   },
@@ -300,17 +335,16 @@
       "web_search": "搜索网页"
     },
     "badge": "AI 驱动洞察",
-    "heading": "您想<highlight>探索</highlight>什么？",
-    "description": "询问股票、市场趋势，或浏览我们 AI 驱动的精选洞察",
+    "heading": "围绕下一项投资决策提问。",
+    "description": "研究一只股票、了解持仓风险，或检验投资判断背后的理由。",
     "suggestions": {
-      "reviewPortfolio": "复盘我的投资账户",
+      "reviewPortfolio": "查看投资组合",
       "checkWashSale": "检查当前 wash sale 风险",
       "analyzeNvidia": "分析英伟达股票",
       "explainTrends": "解释市场趋势",
       "trendingStocks": "热门趋势股票",
       "latestNews": "最新新闻",
-      "compareOpinions": "比较博主的股票观点",
-      "reviewPortfolio": "查看投资组合"
+      "compareOpinions": "比较博主的股票观点"
     },
     "input": {
       "placeholder": "询问你的投资组合、交易、风险或市场情况...",
@@ -1257,8 +1291,8 @@
     }
   },
   "tradingAnalysis": {
-    "title": "深度分析",
-    "heroDescription": "多智能体 AI 分析 — 分析师、研究员和风控经理协同产出买入/卖出/持有决策",
+    "title": "深度研究",
+    "heroDescription": "理解投资判断、支持它的证据，以及什么会改变判断。",
     "heroFeatures": {
       "multiAgent": "多智能体",
       "debate": "多空辩论",
@@ -1301,7 +1335,7 @@
     "deleted": "分析已删除",
     "deleteFailed": "删除失败",
     "startFailed": "启动分析失败",
-    "pageTitle": "{ticker} 分析",
+    "pageTitle": "{ticker} 深度研究",
     "backToList": "返回",
     "notFound": "未找到分析记录",
     "statusAnalyzing": "分析中...",
@@ -1333,9 +1367,9 @@
     "waitingForModel": "模型正在处理当前步骤，结果会自动更新，请无需停留在此页面。",
     "stage": "阶段",
     "decision": {
-      "buy": "买入",
-      "sell": "卖出",
-      "hold": "持有"
+      "buy": "看多",
+      "sell": "看空",
+      "hold": "中性"
     },
     "tabs": {
       "market": "市场分析",

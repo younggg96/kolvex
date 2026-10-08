@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback, useRef } from "react";
+import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import {
   ArrowLeft,
@@ -75,12 +76,12 @@ function getProgressEventKey(event: ProgressEvent, index: number) {
 
 function mergeProgressEvents(
   current: ProgressEvent[],
-  incoming: ProgressEvent[]
+  incoming: ProgressEvent[],
 ) {
   if (incoming.length === 0) return current;
 
   const seen = new Set(
-    current.map((event, index) => getProgressEventKey(event, index))
+    current.map((event, index) => getProgressEventKey(event, index)),
   );
   const next = [...current];
 
@@ -134,7 +135,7 @@ export default function TradingAnalysisDetailPage() {
                 data.progress_message ||
                 t(`tradingAnalysis.stageDesc.${data.progress_stage}`),
             },
-          ])
+          ]),
         );
       }
       if (data.status === "completed") {
@@ -166,15 +167,19 @@ export default function TradingAnalysisDetailPage() {
       if (analysis.is_published) {
         await unpublishAnalysis(analysisId);
         setAnalysis((prev) =>
-          prev ? { ...prev, is_published: false, published_at: null } : prev
+          prev ? { ...prev, is_published: false, published_at: null } : prev,
         );
         toast.success(t("tradingAnalysis.unpublished"));
       } else {
         await publishAnalysis(analysisId);
         setAnalysis((prev) =>
           prev
-            ? { ...prev, is_published: true, published_at: new Date().toISOString() }
-            : prev
+            ? {
+                ...prev,
+                is_published: true,
+                published_at: new Date().toISOString(),
+              }
+            : prev,
         );
         toast.success(t("tradingAnalysis.published"));
       }
@@ -207,9 +212,13 @@ export default function TradingAnalysisDetailPage() {
       let accessToken: string | undefined;
       try {
         const supabase = createClient();
-        const { data: { session } } = await supabase.auth.getSession();
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
         accessToken = session?.access_token;
-        console.log(`[SSE] token obtained: ${!!accessToken}, backend: ${process.env.NEXT_PUBLIC_BACKEND_API_URL?.slice(0, 30)}`);
+        console.log(
+          `[SSE] token obtained: ${!!accessToken}, backend: ${process.env.NEXT_PUBLIC_BACKEND_API_URL?.slice(0, 30)}`,
+        );
       } catch (e) {
         console.warn("[SSE] failed to get token, using proxy:", e);
       }
@@ -245,7 +254,7 @@ export default function TradingAnalysisDetailPage() {
         accessToken,
         (connected) => {
           if (!cancelled) setIsStreamConnected(connected);
-        }
+        },
       );
       cleanupRef.current = cleanup;
     };
@@ -274,7 +283,7 @@ export default function TradingAnalysisDetailPage() {
 
   const activeStageIdx = Math.max(
     STAGES.findIndex((s) => s.key === currentStage),
-    0
+    0,
   );
 
   useEffect(() => {
@@ -333,7 +342,7 @@ export default function TradingAnalysisDetailPage() {
     : 0;
   const activityIdleSeconds = Math.max(
     0,
-    Math.floor((now - lastActivityAt) / 1000)
+    Math.floor((now - lastActivityAt) / 1000),
   );
   const isWaitingForModel = isRunning && activityIdleSeconds >= 20;
 
@@ -404,6 +413,11 @@ export default function TradingAnalysisDetailPage() {
               : t("tradingAnalysis.publish")}
           </Button>
 
+          <Button asChild variant="outline" size="sm">
+            <Link href={`/dashboard/research/${analysis.ticker}`}>
+              {locale === "zh" ? "股票工作台" : "Stock workspace"}
+            </Link>
+          </Button>
           {isCompleted && <FullReportActions analysis={analysis} t={t} />}
         </>
       }
@@ -439,7 +453,10 @@ export default function TradingAnalysisDetailPage() {
               </div>
               {isCompleted && (
                 <div className="mt-5">
-                  <DecisionBadgeLarge decision={analysis.final_decision} t={t} />
+                  <DecisionBadgeLarge
+                    decision={analysis.final_decision}
+                    t={t}
+                  />
                 </div>
               )}
               <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
@@ -456,177 +473,206 @@ export default function TradingAnalysisDetailPage() {
                   </span>
                 )}
                 {analysis.llm_provider && (
-                  <span className="capitalize">
-                    {analysis.llm_provider}
-                  </span>
+                  <span className="capitalize">{analysis.llm_provider}</span>
                 )}
               </div>
             </div>
           </div>
 
           {/* Progress */}
-          {isRunning && (() => {
-            const progressPercent = Math.round(
-              (activeStageIdx / (STAGES.length - 1)) * 100
-            );
-            const activeStage = STAGES[activeStageIdx];
+          {isRunning &&
+            (() => {
+              const progressPercent = Math.round(
+                (activeStageIdx / (STAGES.length - 1)) * 100,
+              );
+              const activeStage = STAGES[activeStageIdx];
 
-            return (
-              <div className="overflow-hidden rounded-2xl bg-muted/60 animate-fade-in-up stagger-1">
-                <div className="border-b border-border px-5 py-4">
-                  <div className="flex items-center justify-between mb-2.5">
-                    <div className="flex items-center gap-2">
-                      <Loader2 className="h-4 w-4 animate-spin text-foreground" />
-                      <span className="text-sm font-semibold text-foreground">
-                        {t("tradingAnalysis.analysisInProgress")}
-                      </span>
-                      <span
-                        className={cn(
-                          "inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[10px] font-medium",
-                          isStreamConnected
-                            ? "bg-positive/10 text-positive"
-                            : "bg-warning/10 text-foreground"
-                        )}
-                      >
+              return (
+                <div className="overflow-hidden rounded-2xl bg-muted/60 animate-fade-in-up stagger-1">
+                  <div className="border-b border-border px-5 py-4">
+                    <div className="flex items-center justify-between mb-2.5">
+                      <div className="flex items-center gap-2">
+                        <Loader2 className="h-4 w-4 animate-spin text-foreground" />
+                        <span className="text-sm font-semibold text-foreground">
+                          {t("tradingAnalysis.analysisInProgress")}
+                        </span>
                         <span
                           className={cn(
-                            "h-1.5 w-1.5 rounded-full animate-pulse",
-                            isStreamConnected ? "bg-positive-fill" : "bg-warning"
+                            "inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[10px] font-medium",
+                            isStreamConnected
+                              ? "bg-positive/10 text-positive"
+                              : "bg-warning/10 text-foreground",
                           )}
-                        />
-                        {t(
-                          isStreamConnected
-                            ? "tradingAnalysis.liveUpdates"
-                            : "tradingAnalysis.syncingStatus"
-                        )}
-                      </span>
+                        >
+                          <span
+                            className={cn(
+                              "h-1.5 w-1.5 rounded-full animate-pulse",
+                              isStreamConnected
+                                ? "bg-positive-fill"
+                                : "bg-warning",
+                            )}
+                          />
+                          {t(
+                            isStreamConnected
+                              ? "tradingAnalysis.liveUpdates"
+                              : "tradingAnalysis.syncingStatus",
+                          )}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-3 text-xs font-medium text-muted-foreground tabular-nums">
+                        <span>
+                          {t("tradingAnalysis.elapsed", {
+                            seconds: String(elapsedSeconds),
+                          })}
+                        </span>
+                        <span>
+                          {t("tradingAnalysis.stage")} {activeStageIdx + 1}/
+                          {STAGES.length}
+                        </span>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-3 text-xs font-medium text-muted-foreground tabular-nums">
-                      <span>
-                        {t("tradingAnalysis.elapsed", {
-                          seconds: String(elapsedSeconds),
-                        })}
-                      </span>
-                      <span>
-                        {t("tradingAnalysis.stage")} {activeStageIdx + 1}/{STAGES.length}
-                      </span>
+                    <div className="h-1 overflow-hidden rounded-full bg-foreground/10">
+                      <div
+                        className="h-full rounded-full bg-primary transition-[width] duration-700 ease-out"
+                        style={{ width: `${Math.max(progressPercent, 5)}%` }}
+                      />
                     </div>
                   </div>
-                  <div className="h-1 overflow-hidden rounded-full bg-foreground/10">
-                    <div
-                      className="h-full rounded-full bg-primary transition-[width] duration-700 ease-out"
-                      style={{ width: `${Math.max(progressPercent, 5)}%` }}
-                    />
-                  </div>
-                </div>
 
-                <div className="p-5 space-y-5">
-                  <TooltipProvider>
-                    <div className="flex items-start">
-                      {STAGES.map((stage, idx) => {
-                        const Icon = stage.icon;
-                        const isActive = idx === activeStageIdx;
-                        const isDone = idx < activeStageIdx;
-                        const stageLabel = t(`tradingAnalysis.stages.${stage.key}`);
-                        const stageDesc = t(`tradingAnalysis.stageDesc.${stage.key}`);
+                  <div className="p-5 space-y-5">
+                    <TooltipProvider>
+                      <div className="flex items-start">
+                        {STAGES.map((stage, idx) => {
+                          const Icon = stage.icon;
+                          const isActive = idx === activeStageIdx;
+                          const isDone = idx < activeStageIdx;
+                          const stageLabel = t(
+                            `tradingAnalysis.stages.${stage.key}`,
+                          );
+                          const stageDesc = t(
+                            `tradingAnalysis.stageDesc.${stage.key}`,
+                          );
 
-                        return (
-                          <div key={stage.key} className="flex items-start flex-1 min-w-0">
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <div className="flex flex-col items-center flex-1 cursor-default min-w-0">
-                                  <div className="relative">
-                                    <div
+                          return (
+                            <div
+                              key={stage.key}
+                              className="flex items-start flex-1 min-w-0"
+                            >
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <div className="flex flex-col items-center flex-1 cursor-default min-w-0">
+                                    <div className="relative">
+                                      <div
+                                        className={cn(
+                                          "relative flex h-10 w-10 items-center justify-center rounded-full transition-colors duration-200",
+                                          isDone &&
+                                            "bg-primary text-primary-foreground",
+                                          isActive &&
+                                            "bg-foreground text-background",
+                                          !isDone &&
+                                            !isActive &&
+                                            "bg-background text-muted-foreground",
+                                        )}
+                                      >
+                                        {isActive ? (
+                                          <Loader2 className="w-4.5 h-4.5 animate-spin" />
+                                        ) : isDone ? (
+                                          <CheckCircle2 className="w-4.5 h-4.5" />
+                                        ) : (
+                                          <Icon className="w-4 h-4" />
+                                        )}
+                                      </div>
+                                    </div>
+                                    <span
                                       className={cn(
-                                        "relative flex h-10 w-10 items-center justify-center rounded-full transition-colors duration-200",
-                                        isDone && "bg-primary text-primary-foreground",
-                                        isActive && "bg-foreground text-background",
-                                        !isDone && !isActive && "bg-background text-muted-foreground"
+                                        "text-[10px] mt-2 font-semibold transition-colors duration-300 text-center",
+                                        isActive && "text-foreground",
+                                        isDone && "text-foreground",
+                                        !isDone &&
+                                          !isActive &&
+                                          "text-muted-foreground",
                                       )}
                                     >
-                                      {isActive ? (
-                                        <Loader2 className="w-4.5 h-4.5 animate-spin" />
-                                      ) : isDone ? (
-                                        <CheckCircle2 className="w-4.5 h-4.5" />
-                                      ) : (
-                                        <Icon className="w-4 h-4" />
-                                      )}
-                                    </div>
+                                      {stageLabel}
+                                    </span>
                                   </div>
-                                  <span
-                                    className={cn(
-                                      "text-[10px] mt-2 font-semibold transition-colors duration-300 text-center",
-                                      isActive && "text-foreground",
-                                      isDone && "text-foreground",
-                                      !isDone && !isActive && "text-muted-foreground"
-                                    )}
-                                  >
+                                </TooltipTrigger>
+                                <TooltipContent
+                                  side="bottom"
+                                  className="max-w-[180px]"
+                                >
+                                  <p className="text-xs font-medium">
                                     {stageLabel}
-                                  </span>
-                                </div>
-                              </TooltipTrigger>
-                              <TooltipContent side="bottom" className="max-w-[180px]">
-                                <p className="text-xs font-medium">{stageLabel}</p>
-                                <p className="text-[10px] text-muted-foreground mt-0.5">{stageDesc}</p>
-                              </TooltipContent>
-                            </Tooltip>
+                                  </p>
+                                  <p className="text-[10px] text-muted-foreground mt-0.5">
+                                    {stageDesc}
+                                  </p>
+                                </TooltipContent>
+                              </Tooltip>
 
-                            {idx < STAGES.length - 1 && (
-                              <div className="flex-shrink-0 w-full max-w-[48px] h-0.5 mt-5 mx-0.5">
-                                <div className="h-full overflow-hidden rounded-full bg-foreground/10">
-                                  <div
-                                    className={cn(
-                                      "h-full rounded-full transition-all duration-700 ease-out",
-                                      idx < activeStageIdx
-                                        ? "w-full bg-primary"
-                                        : idx === activeStageIdx
-                                          ? "w-1/2 bg-primary/60"
-                                          : "w-0"
-                                    )}
-                                  />
+                              {idx < STAGES.length - 1 && (
+                                <div className="flex-shrink-0 w-full max-w-[48px] h-0.5 mt-5 mx-0.5">
+                                  <div className="h-full overflow-hidden rounded-full bg-foreground/10">
+                                    <div
+                                      className={cn(
+                                        "h-full rounded-full transition-all duration-700 ease-out",
+                                        idx < activeStageIdx
+                                          ? "w-full bg-primary"
+                                          : idx === activeStageIdx
+                                            ? "w-1/2 bg-primary/60"
+                                            : "w-0",
+                                      )}
+                                    />
+                                  </div>
                                 </div>
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </TooltipProvider>
-
-                  {activeStage && (
-                    <div className="flex items-center gap-3 rounded-xl bg-background p-3 animate-slide-in">
-                      {(() => {
-                        const ActiveIcon = activeStage.icon;
-                        return <ActiveIcon className="h-5 w-5 shrink-0 text-foreground" />;
-                      })()}
-                      <div className="min-w-0">
-                        <p className="text-[13px] font-semibold text-foreground">
-                          {t(`tradingAnalysis.stages.${activeStage.key}`)}
-                        </p>
-                        <p className="truncate text-xs text-muted-foreground">
-                          {isWaitingForModel
-                            ? t("tradingAnalysis.waitingForModel")
-                            : t(`tradingAnalysis.stageDesc.${activeStage.key}`)}
-                        </p>
+                              )}
+                            </div>
+                          );
+                        })}
                       </div>
-                      <Loader2 className="ml-auto h-4 w-4 shrink-0 animate-spin text-muted-foreground" />
-                    </div>
-                  )}
+                    </TooltipProvider>
 
-                  {progressEvents.length > 0 && (
-                    <ProgressLog
-                      events={progressEvents}
-                      isLive={isStreamConnected}
-                    />
-                  )}
+                    {activeStage && (
+                      <div className="flex items-center gap-3 rounded-xl bg-background p-3 animate-slide-in">
+                        {(() => {
+                          const ActiveIcon = activeStage.icon;
+                          return (
+                            <ActiveIcon className="h-5 w-5 shrink-0 text-foreground" />
+                          );
+                        })()}
+                        <div className="min-w-0">
+                          <p className="text-[13px] font-semibold text-foreground">
+                            {t(`tradingAnalysis.stages.${activeStage.key}`)}
+                          </p>
+                          <p className="truncate text-xs text-muted-foreground">
+                            {isWaitingForModel
+                              ? t("tradingAnalysis.waitingForModel")
+                              : t(
+                                  `tradingAnalysis.stageDesc.${activeStage.key}`,
+                                )}
+                          </p>
+                        </div>
+                        <Loader2 className="ml-auto h-4 w-4 shrink-0 animate-spin text-muted-foreground" />
+                      </div>
+                    )}
+
+                    {progressEvents.length > 0 && (
+                      <ProgressLog
+                        events={progressEvents}
+                        isLive={isStreamConnected}
+                      />
+                    )}
+                  </div>
                 </div>
-              </div>
-            );
-          })()}
+              );
+            })()}
 
           {/* Error */}
           {isFailed && analysis.error_message && (
-            <div role="alert" className="rounded-2xl bg-negative/10 p-4 animate-fade-in-up">
+            <div
+              role="alert"
+              className="rounded-2xl bg-negative/10 p-4 animate-fade-in-up"
+            >
               <p className="text-sm text-foreground">
                 {analysis.error_message}
               </p>
@@ -636,6 +682,16 @@ export default function TradingAnalysisDetailPage() {
           {/* Reports */}
           {isCompleted && (
             <>
+              <div className="animate-fade-in-up stagger-3">
+                <ReportCard
+                  title={t("tradingAnalysis.sections.investmentPlan")}
+                  icon={DollarSign}
+                  content={analysis.investment_plan}
+                  locale={locale}
+                  t={t}
+                />
+              </div>
+
               {reportTabs.map((tab) =>
                 tab.key === activeReportTab ? (
                   <div key={tab.key} className="animate-fade-in-up stagger-1">
@@ -661,54 +717,14 @@ export default function TradingAnalysisDetailPage() {
                       }
                     />
                   </div>
-                ) : null
+                ) : null,
               )}
-
-              <div className="animate-fade-in-up stagger-2">
-                <DebateCard
-                  title={t("tradingAnalysis.sections.investmentDebate")}
-                  icon={Swords}
-                  debate={
-                    analysis.investment_debate as Record<string, string> | null
-                  }
-                  bullLabel={t("tradingAnalysis.debate.bullResearcher")}
-                  bearLabel={t("tradingAnalysis.debate.bearResearcher")}
-                  judgeLabel={t("tradingAnalysis.debate.judgeDecision")}
-                  locale={locale}
-                  t={t}
-                />
-              </div>
-
-              <div className="animate-fade-in-up stagger-3">
-                <ReportCard
-                  title={t("tradingAnalysis.sections.investmentPlan")}
-                  icon={DollarSign}
-                  content={analysis.investment_plan}
-                  locale={locale}
-                  t={t}
-                />
-              </div>
 
               <div className="animate-fade-in-up stagger-4">
                 <ReportCard
                   title={t("tradingAnalysis.sections.traderPlan")}
                   icon={TrendingUp}
                   content={analysis.trader_plan}
-                  locale={locale}
-                  t={t}
-                />
-              </div>
-
-              <div className="animate-fade-in-up stagger-5">
-                <DebateCard
-                  title={t("tradingAnalysis.sections.riskDebate")}
-                  icon={ShieldCheck}
-                  debate={
-                    analysis.risk_debate as Record<string, string> | null
-                  }
-                  bullLabel={t("tradingAnalysis.debate.aggressiveAnalyst")}
-                  bearLabel={t("tradingAnalysis.debate.conservativeAnalyst")}
-                  judgeLabel={t("tradingAnalysis.debate.judgeDecision")}
                   locale={locale}
                   t={t}
                 />
@@ -723,6 +739,45 @@ export default function TradingAnalysisDetailPage() {
                   t={t}
                 />
               </div>
+              <details className="space-y-4 border-t border-border pt-4">
+                <summary className="cursor-pointer text-sm font-medium">
+                  {locale === "zh"
+                    ? "查看 AI 如何得出结论"
+                    : "See how AI reached this conclusion"}
+                </summary>
+                <div className="animate-fade-in-up stagger-2">
+                  <DebateCard
+                    title={t("tradingAnalysis.sections.investmentDebate")}
+                    icon={Swords}
+                    debate={
+                      analysis.investment_debate as Record<
+                        string,
+                        string
+                      > | null
+                    }
+                    bullLabel={t("tradingAnalysis.debate.bullResearcher")}
+                    bearLabel={t("tradingAnalysis.debate.bearResearcher")}
+                    judgeLabel={t("tradingAnalysis.debate.judgeDecision")}
+                    locale={locale}
+                    t={t}
+                  />
+                </div>
+
+                <div className="animate-fade-in-up stagger-5">
+                  <DebateCard
+                    title={t("tradingAnalysis.sections.riskDebate")}
+                    icon={ShieldCheck}
+                    debate={
+                      analysis.risk_debate as Record<string, string> | null
+                    }
+                    bullLabel={t("tradingAnalysis.debate.aggressiveAnalyst")}
+                    bearLabel={t("tradingAnalysis.debate.conservativeAnalyst")}
+                    judgeLabel={t("tradingAnalysis.debate.judgeDecision")}
+                    locale={locale}
+                    t={t}
+                  />
+                </div>
+              </details>
             </>
           )}
         </div>

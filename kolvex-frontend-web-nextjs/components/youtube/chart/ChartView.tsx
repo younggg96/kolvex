@@ -188,6 +188,7 @@ export interface ChartViewProps {
   formatDate: (date: string) => string;
   t: Translate;
   onOpenAdvanced?: () => void;
+  onAnalysisChange?: (result: AiTechnicalAnalysis | null) => void;
   /** Advanced mode runs inside a dialog that owns Escape; this lets the chart consume it first. */
   escapeRef?: MutableRefObject<(() => boolean) | null>;
 }
@@ -209,6 +210,7 @@ export default function ChartView({
   formatDate,
   t,
   onOpenAdvanced,
+  onAnalysisChange,
   escapeRef,
 }: ChartViewProps) {
   const advanced = mode === "advanced";
@@ -754,6 +756,7 @@ export default function ChartView({
       ];
       setDrawings([...drawings.filter((item) => item.source !== "ai"), ...aiDrawings]);
       setAi({ status: "done", result });
+      onAnalysisChange?.(result);
     } catch (reason) {
       if (controller.signal.aborted) return;
       const status = reason instanceof AiAnalysisError ? reason.status : 0;
@@ -773,6 +776,7 @@ export default function ChartView({
   function clearAi() {
     setDrawings(drawings.filter((item) => item.source !== "ai"));
     setAi({ status: "idle" });
+    onAnalysisChange?.(null);
   }
 
   const iconButton = (isActive: boolean) =>

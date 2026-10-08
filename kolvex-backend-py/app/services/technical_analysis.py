@@ -111,6 +111,16 @@ class AiFib(BaseModel):
     to_price: float
 
 
+class AiSetup(BaseModel):
+    name: str = Field(max_length=100)
+    direction: Literal["bullish", "bearish"]
+    entry_low: float = Field(gt=0)
+    entry_high: float = Field(gt=0)
+    invalidation: float = Field(gt=0)
+    targets: List[float] = Field(min_length=1, max_length=2)
+    reason: str = Field(max_length=500)
+
+
 class AiAnalysis(BaseModel):
     trend: Literal["uptrend", "downtrend", "sideways"]
     bias: Literal["bullish", "bearish", "neutral"]
@@ -120,6 +130,7 @@ class AiAnalysis(BaseModel):
     fib: Optional[AiFib] = None
     signals: List[str] = Field(default_factory=list, max_length=6)
     invalidation: Optional[str] = Field(default=None, max_length=240)
+    setup: Optional[AiSetup] = None
 
 
 # ------------------------------------------------------------------ indicators
@@ -244,6 +255,7 @@ def sanitize(
     bars: List[Dict[str, Any]],
     swings: List[Dict[str, Any]],
     tolerance: float,
+    indicator_history: Optional[List[Dict[str, Any]]] = None,
 ) -> Dict[str, Any]:
     low = min(bar["low"] for bar in bars)
     high = max(bar["high"] for bar in bars)
@@ -291,6 +303,41 @@ def sanitize(
                 "to": {"date": bars[end]["date"], "price": round(result.fib.to_price, 2)},
             }
 
+    setup = None
+    candidate = result.setup
+    if candidate and candidate.direction == result.bias:
+        long = candidate.direction == "bullish"
+        ordered = candidate.entry_low <= candidate.entry_high
+        prices = [candidate.entry_low, candidate.entry_high, candidate.invalidation, *candidate.targets]
+        valid_prices = all(price > 0 and in_range(price) for price in prices)
+        valid_risk = candidate.invalidation < candidate.entry_low if long else candidate.invalidation > candidate.entry_high
+        valid_targets = all(target > candidate.entry_high if long else target < candidate.entry_low for target in candidate.targets)
+        if ordered and valid_prices and valid_risk and valid_targets:
+            values = [bar["close"] for bar in (indicator_history or bars)]
+            ema20, ema50 = ema(values, 20)[-1], ema(values, 50)[-1]
+            momentum = rsi(values)
+            volumes = [bar.get("volume") for bar in bars[-20:] if bar.get("volume") is not None and bar["volume"] > 0]
+            avg_volume = sum(volumes) / len(volumes) if len(volumes) >= 10 else None
+            checks = {
+                "trend_alignment": result.trend == ("uptrend" if long else "downtrend"),
+                "price_vs_ema20": None if ema20 is None else (values[-1] > ema20 if long else values[-1] < ema20),
+                "ema20_vs_ema50": None if ema20 is None or ema50 is None else (ema20 > ema50 if long else ema20 < ema50),
+                "rsi_momentum": None if momentum is None else (50 <= momentum <= 70 if long else 30 <= momentum <= 50),
+                "volume_confirmation": None if avg_volume is None or not bars[-1].get("volume") else bars[-1]["volume"] >= avg_volume,
+            }
+            available = [passed for passed in checks.values() if passed is not None]
+            # A full score requires all five inputs; missing evidence is never a pass.
+            score = sum(passed is True for passed in available) * 20 if len(available) == 5 else None
+            rounded = candidate.model_dump()
+            for key in ("entry_low", "entry_high", "invalidation"):
+                rounded[key] = round(rounded[key], 4)
+            rounded["targets"] = sorted(set(round(target, 4) for target in candidate.targets), reverse=not long)
+            entry = (rounded["entry_low"] + rounded["entry_high"]) / 2
+            risk = abs(entry - rounded["invalidation"])
+            still_valid = (rounded["invalidation"] < rounded["entry_low"] and all(t > rounded["entry_high"] for t in rounded["targets"])) if long else (rounded["invalidation"] > rounded["entry_high"] and all(t < rounded["entry_low"] for t in rounded["targets"]))
+            if still_valid and risk > 0:
+                setup = {**rounded, "risk_reward": round(abs(rounded["targets"][0] - entry) / risk, 2), "score": score, "checks": checks}
+
     return {
         "trend": result.trend,
         "bias": result.bias,
@@ -300,6 +347,7 @@ def sanitize(
         "fib": fib,
         "signals": [item.strip() for item in result.signals if item.strip()][:5],
         "invalidation": (result.invalidation or "").strip() or None,
+        "setup": setup,
     }
 
 
@@ -342,6 +390,7 @@ Use only the data provided. Do not invent prices, dates, news or fundamentals.
 - Fib: optional retracement between the most significant swing low and high in view.
 - summary: 3–5 sentences covering trend, momentum (EMA/RSI), the key levels and what would change the view.
 - signals: short bullet observations. invalidation: the price action that would invalidate the bias.
+- setup: optional conditional scenario only when bias is directional and the chart supports a coherent plan. Include a descriptive name (e.g. Pullback long), direction matching bias, entry_low <= entry_high, numeric invalidation beyond the entry range on the risk side, and 1–2 targets beyond entry on the reward side. Ground ALL prices in supplied swing points/candidate levels. Explain the condition in reason. Set setup to null when evidence is weak or neutral; never invent a setup score.
 This is educational analysis, not investment advice; never tell the user to buy or sell.
 Write all text in {language}."""
 
@@ -399,7 +448,7 @@ async def analyze_chart(
         "view": {"start": bars[0]["date"], "end": bars[-1]["date"]},
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "indicators": evidence["indicators"],
-        **sanitize(result, bars, swings, tolerance),
+        **sanitize(result, bars, swings, tolerance, history),
     }
     _cache[cache_key] = (time.time(), payload)
     if len(_cache) > 200:

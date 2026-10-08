@@ -93,7 +93,7 @@ function getDefaultQuickModel(providerId: string): string {
 
 // ==================== Page ====================
 
-export default function TradingAnalysisPage() {
+export default function TradingAnalysisPage({ searchParams }: { searchParams?: { ticker?: string } }) {
   const router = useRouter();
   const { t } = useTranslation();
   const { availableProviders, loading: providersLoading } =
@@ -108,6 +108,13 @@ export default function TradingAnalysisPage() {
   const calendarLocale = t("common.intlLocale") === "zh-CN" ? zhCN : enUS;
 
   const [ticker, setTicker] = useState("");
+  useEffect(() => {
+    const requested = searchParams?.ticker?.toUpperCase();
+    if (requested && /^[A-Z][A-Z0-9.-]{0,9}$/.test(requested)) {
+      setTicker(requested);
+      setDialogOpen(true);
+    }
+  }, [searchParams?.ticker]);
   const [tradeDate, setTradeDate] = useState(
     () => format(new Date(), "yyyy-MM-dd")
   );

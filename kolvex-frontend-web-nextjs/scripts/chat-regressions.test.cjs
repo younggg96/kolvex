@@ -25,6 +25,7 @@ function find(tree, type) {
 
 function harness(file, mocks = {}) {
   const slots = [], effects = [], events = [], timers = new Map(), historyStates = [];
+  const sessionValues = new Map();
   let cursor = 0, timerId = 0;
   const react = {
     useState(initial) {
@@ -55,12 +56,14 @@ function harness(file, mocks = {}) {
   vm.runInNewContext(code, {
     module, exports: module.exports, console: { error() {} }, window,
     localStorage: { getItem() { return null; }, setItem() {} },
+    sessionStorage: { getItem(key) { return sessionValues.get(key) ?? null; }, setItem(key, value) { sessionValues.set(key, value); }, removeItem(key) { sessionValues.delete(key); } },
     AbortController, DOMException, Date, Set, Map, URLSearchParams,
     CustomEvent: class { constructor(type, options) { this.type = type; this.detail = options?.detail; } },
     require(name) {
       if (name === 'react') return react;
       if (name === 'react/jsx-runtime') return { jsx: element, jsxs: element };
       if (name === '@/lib/utils') return { cn: () => '' };
+      if (name === 'sonner') return { toast: { error() {} } };
       if (name in mocks) return mocks[name];
       throw new Error(`Missing mock for ${name}`);
     },
@@ -72,10 +75,11 @@ function harness(file, mocks = {}) {
     flushTimers() { const callbacks = [...timers.values()]; timers.clear(); callbacks.forEach((fn) => fn()); },
     events,
     historyStates,
+    sessionValues,
   };
 }
 
-function welcomeFixture(createConversation) {
+function welcomeFixture(createConversation, props = {}) {
   const pushes = [];
   const h = harness('components/chat/ChatWelcomeContainer.tsx', {
     'next/navigation': { useRouter: () => ({ push: (url) => pushes.push(url) }) },
@@ -84,8 +88,20 @@ function welcomeFixture(createConversation) {
     '@/hooks/useAvailableProviders': { useAvailableProviders: () => ({ availableProviders: ['deepseek'] }) },
     './ChatInput': { getFirstAvailableModelId: () => 'deepseek-chat' },
   });
-  return { h, pushes, props: () => find(h.render('ChatWelcomeContainer', {}), 'welcome') };
+  return { h, pushes, props: () => find(h.render('ChatWelcomeContainer', props), 'welcome') };
 }
+
+test('decision context travels in session storage, never in the conversation URL', async () => {
+  const context = 'NVDA: 75 shares; private thesis reasoning';
+  let submitted = 0;
+  const f = welcomeFixture(async () => 'chat-context', { decisionContext: context, onSubmitted: () => submitted++ });
+  await f.props().onSubmit('What changed?');
+  assert.equal(submitted, 1);
+  assert.match(f.h.sessionValues.get('kolvex:pending:chat-context'), /75 shares/);
+  assert.match(f.pushes[0], /pending=1/);
+  assert.ok(!f.pushes[0].includes('firstMessage'));
+  assert.ok(!f.pushes[0].includes('shares'));
+});
 
 test('welcome locks both same-tick submissions and the gap before navigation mounts', async () => {
   const request = deferred(); let calls = 0;

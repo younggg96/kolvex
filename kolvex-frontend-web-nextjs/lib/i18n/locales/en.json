@@ -57,14 +57,20 @@
     "notifications": "Notifications",
     "settings": "Settings",
     "admin": "Admin",
-    "toggleSidebar": "Toggle Sidebar"
+    "toggleSidebar": "Toggle Sidebar",
+    "home": "Home",
+    "research": "Research",
+    "journal": "Journal"
   },
   "tabBar": {
     "chat": "Chat",
     "tradingAnalysis": "Analysis",
     "youtubeOpinions": "Opinions",
     "portfolio": "Portfolio",
-    "more": "More"
+    "more": "More",
+    "home": "Home",
+    "research": "Research",
+    "journal": "Journal"
   },
   "userMenu": {
     "account": "Account",
@@ -259,10 +265,10 @@
       "signIn": "Sign in"
     },
     "workspaceHero": {
-      "headline": "Your portfolio. The voices you follow. A clearer view of every decision.",
-      "subheadline": "Follow stock opinions across creators, compare how their views change, and connect that research to your holdings and AI trade reviews.",
+      "headline": "Know why you own a stock. Know when that reason changes.",
+      "subheadline": "Kolvex brings creator opinions, market structure, AI research, and your portfolio into one investment decision workspace.",
       "openWorkspace": "Open workspace",
-      "exploreWorkflow": "Explore the workflow",
+      "exploreWorkflow": "Explore an NVDA decision",
       "youtube": "YouTube creator research",
       "portfolio": "Portfolio and trade review"
     },
@@ -284,7 +290,7 @@
       }
     },
     "closing": {
-      "title": "Make room for better investment research.",
+      "title": "Build a thesis you can come back to.",
       "open": "Open Kolvex"
     }
   },
@@ -329,17 +335,16 @@
       "web_search": "Searching the web"
     },
     "badge": "AI-Powered Insights",
-    "heading": "What would you like to <highlight>explore</highlight>?",
-    "description": "Ask about stocks, market trends, or browse our curated insights powered by AI",
+    "heading": "Ask about your next decision.",
+    "description": "Explore a stock, understand your exposure, or challenge the reasons behind your thesis.",
     "suggestions": {
-      "reviewPortfolio": "Review my investment account",
+      "reviewPortfolio": "Review your portfolio",
       "checkWashSale": "Check current wash-sale risk",
       "analyzeNvidia": "Analyze NVIDIA stock",
       "explainTrends": "Explain market trends",
       "trendingStocks": "Top trending stocks",
       "latestNews": "Latest news",
-      "compareOpinions": "Compare creator opinions",
-      "reviewPortfolio": "Review your portfolio"
+      "compareOpinions": "Compare creator opinions"
     },
     "input": {
       "placeholder": "Ask about your portfolio, trades, risk, or the market...",
@@ -1036,7 +1041,7 @@
     "ticker": "Ticker",
     "allTickers": "All Tickers",
     "creator": "Creator",
-    "allCreators": "All Creators",
+    "allCreators": "All creators",
     "sentiment": "Stance",
     "allSentiments": "All Stances",
     "dateFrom": "Date From",
@@ -1097,7 +1102,6 @@
     "byStock": "By stock",
     "byCreator": "By creator",
     "allStocks": "All stocks",
-    "allCreators": "All creators",
     "stocksDiscussedTitle": "Stocks creators discuss",
     "trackedCreators": "Tracked creators",
     "catalogueSummary": "{stocks} stocks, {creators} creators, {opinions} opinions",
@@ -1287,8 +1291,8 @@
     }
   },
   "tradingAnalysis": {
-    "title": "Deep Analysis",
-    "heroDescription": "Multi-agent AI analysis — analysts, researchers, and risk managers collaborate to produce BUY/SELL/HOLD decisions",
+    "title": "Deep Research",
+    "heroDescription": "Understand the thesis, the supporting evidence and what could change it.",
     "heroFeatures": {
       "multiAgent": "Multi-Agent",
       "debate": "Bull vs Bear Debate",
@@ -1331,7 +1335,7 @@
     "deleted": "Analysis deleted",
     "deleteFailed": "Failed to delete",
     "startFailed": "Failed to start analysis",
-    "pageTitle": "{ticker} Analysis",
+    "pageTitle": "{ticker} Deep Research",
     "backToList": "Back",
     "notFound": "Analysis not found",
     "statusAnalyzing": "Analyzing...",
@@ -1363,9 +1367,9 @@
     "waitingForModel": "The model is processing this step. Results will update automatically.",
     "stage": "Stage",
     "decision": {
-      "buy": "BUY",
-      "sell": "SELL",
-      "hold": "HOLD"
+      "buy": "Bullish",
+      "sell": "Bearish",
+      "hold": "Neutral"
     },
     "tabs": {
       "market": "Market Analysis",

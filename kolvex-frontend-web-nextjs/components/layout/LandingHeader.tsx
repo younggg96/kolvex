@@ -65,7 +65,7 @@ export default function LandingHeader() {
       <nav className="hidden items-center gap-7 text-sm text-muted-foreground md:flex" aria-label="Main navigation">
         <Link href="/#workflow" className="hover:text-foreground">{t("landing.nav.workflow")}</Link>
         <Link href="/dashboard/youtube-opinions" className="hover:text-foreground">{t("landing.nav.creatorResearch")}</Link>
-        <Link href="/dashboard/portfolio" className="hover:text-foreground">{t("landing.nav.portfolio")}</Link>
+        <Link href="/dashboard/research" className="hover:text-foreground">{t("sidebar.research")}</Link>
       </nav>
       <div className="flex items-center gap-3 sm:gap-4">
         {isLoading ? (

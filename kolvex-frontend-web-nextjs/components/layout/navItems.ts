@@ -1,45 +1,36 @@
 import {
-  MessageCircle,
+  Home,
+  BookOpen,
   PieChart,
   ScanSearch,
   Youtube,
   type LucideIcon,
 } from "lucide-react";
 import type { ProductFeatureId } from "@/lib/productFeatures";
-
 export interface MainNavItem {
   icon: LucideIcon;
   titleKey: string;
   shortTitleKey: string;
   href: string;
-  type: "chat-submenu" | "link";
+  type: "link";
   featureId: ProductFeatureId;
 }
-
 export const MAIN_NAV_ITEMS: MainNavItem[] = [
   {
-    icon: MessageCircle,
-    titleKey: "sidebar.chat",
-    shortTitleKey: "tabBar.chat",
+    icon: Home,
+    titleKey: "sidebar.home",
+    shortTitleKey: "tabBar.home",
     href: "/dashboard",
-    type: "chat-submenu",
-    featureId: "chat",
+    type: "link",
+    featureId: "home",
   },
   {
     icon: ScanSearch,
-    titleKey: "sidebar.tradingAnalysis",
-    shortTitleKey: "tabBar.tradingAnalysis",
-    href: "/dashboard/trading-analysis",
+    titleKey: "sidebar.research",
+    shortTitleKey: "tabBar.research",
+    href: "/dashboard/research",
     type: "link",
-    featureId: "tradingAnalysis",
-  },
-  {
-    icon: Youtube,
-    titleKey: "sidebar.youtubeOpinions",
-    shortTitleKey: "tabBar.youtubeOpinions",
-    href: "/dashboard/youtube-opinions",
-    type: "link",
-    featureId: "youtubeOpinions",
+    featureId: "research",
   },
   {
     icon: PieChart,
@@ -49,11 +40,29 @@ export const MAIN_NAV_ITEMS: MainNavItem[] = [
     type: "link",
     featureId: "portfolio",
   },
+  {
+    icon: BookOpen,
+    titleKey: "sidebar.journal",
+    shortTitleKey: "tabBar.journal",
+    href: "/dashboard/journal",
+    type: "link",
+    featureId: "journal",
+  },
+  {
+    icon: Youtube,
+    titleKey: "sidebar.youtubeOpinions",
+    shortTitleKey: "tabBar.youtubeOpinions",
+    href: "/dashboard/youtube-opinions",
+    type: "link",
+    featureId: "youtubeOpinions",
+  },
 ];
-
 export function isNavItemActive(pathname: string, href: string) {
-  if (href === "/dashboard") {
-    return pathname === "/dashboard" || pathname.startsWith("/dashboard/chat");
-  }
-  return pathname.startsWith(href);
+  if (href === "/dashboard") return pathname === href;
+  if (
+    href === "/dashboard/research" &&
+    pathname.startsWith("/dashboard/trading-analysis")
+  )
+    return true;
+  return pathname === href || pathname.startsWith(`${href}/`);
 }

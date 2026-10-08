@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import Link from "next/link";
 import {
   ArrowUpRight,
   ArrowDownRight,
@@ -176,9 +177,9 @@ export function EquityPositionsTable({
                         {isSecretStock ? (
                           <span className="text-muted-foreground">****</span>
                         ) : (
-                          <span>
+                          <Link href={`/dashboard/research/${encodeURIComponent(pos.symbol)}`} className="hover:underline">
                             {pos.symbol}
-                          </span>
+                          </Link>
                         )}
                       </div>
                       <div

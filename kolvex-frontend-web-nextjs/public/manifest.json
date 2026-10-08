@@ -1,7 +1,7 @@
 {
-  "name": "Kolvex AI - Investment Platform",
-  "short_name": "Kolvex AI",
-  "description": "AI financial chat, trading analysis, YouTube stock opinions and portfolio research",
+  "name": "Kolvex \u2014 Investment Decision Workspace",
+  "short_name": "Kolvex",
+  "description": "Creator opinions, market context, AI research and your portfolio. Build, track and review investment theses.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#0a0a0a",
@@ -76,10 +76,10 @@
       ]
     },
     {
-      "name": "Stocks",
-      "short_name": "Stocks",
-      "description": "Browse stock information",
-      "url": "/dashboard/stocks",
+      "name": "Research",
+      "short_name": "Research",
+      "description": "Open a stock decision workspace",
+      "url": "/dashboard/research",
       "icons": [
         {
           "src": "/icons/icon-96x96.png",

@@ -3,9 +3,9 @@ import { Suspense } from "react";
 import AuthPageClient from "@/components/auth/AuthPageClient";
 
 export const metadata: Metadata = {
-  title: "Authentication | Kolvex AI",
+  title: "Sign in | Kolvex",
   description:
-    "Welcome to Kolvex AI. Login to access your investment dashboard and track your portfolio performance",
+    "Sign in to your Kolvex investment decision workspace. Research stocks, track your theses and review the reasons behind your decisions.",
 };
 
 function AuthPageFallback() {

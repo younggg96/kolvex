@@ -2,28 +2,28 @@ import { Metadata } from "next";
 import HomePageClient from "@/components/pages/HomePageClient";
 
 export const metadata: Metadata = {
-  title: "Kolvex - Plaid Portfolio and AI Trade Review",
+  title: "Kolvex — Investment Decision Workspace",
   description:
-    "Connect investment accounts with Plaid, sync holdings and trades, review portfolio risk, and analyze transactions with your preferred AI model.",
+    "Know why you own a stock. Know when that reason changes. Creator opinions, market structure, AI research and your portfolio in one investment decision workspace.",
   keywords: [
-    "broker portfolio",
-    "trade journal",
+    "investment decision workspace",
+    "investment thesis",
     "investment account sync",
-    "options trading history",
-    "AI trade review",
-    "Plaid Investments",
+    "creator stock opinions",
+    "stock research",
+    "decision journal",
   ],
   openGraph: {
-    title: "Kolvex - Broker Portfolio and AI Trade Review",
+    title: "Kolvex — Investment Decision Workspace",
     description:
-      "Sync holdings and trades, review portfolio risk, and improve your investment process with AI.",
+      "Creator opinions, market context, AI research and real holdings. Build, track and review your investment thesis.",
     type: "website",
   },
   twitter: {
     card: "summary",
-    title: "Kolvex - Broker Portfolio and AI Trade Review",
+    title: "Kolvex — Investment Decision Workspace",
     description:
-      "Sync holdings and trades, review portfolio risk, and improve your investment process with AI.",
+      "Creator opinions, market context, AI research and real holdings. Build, track and review your investment thesis.",
   },
   icons: {
     icon: "/icon.svg",
@@ -32,7 +32,7 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "Kolvex AI",
+    title: "Kolvex",
   },
   formatDetection: {
     telephone: false,

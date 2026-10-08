@@ -17,9 +17,9 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Kolvex AI - Investment Platform",
+  title: "Kolvex — Investment Decision Workspace",
   description:
-    "The Future of Investing is Here. Sign up for early access or updates.",
+    "Creator opinions, market context, AI research and your portfolio in one investment decision workspace.",
   icons: {
     icon: [{ url: "/icon.svg", type: "image/svg+xml" }],
     apple: [
@@ -31,20 +31,20 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "Kolvex AI",
+    title: "Kolvex",
   },
   formatDetection: {
     telephone: false,
   },
   openGraph: {
-    title: "Kolvex AI - Investment Platform",
-    description: "The Future of Investing is Here",
+    title: "Kolvex — Investment Decision Workspace",
+    description: "Know why you own a stock. Know when that reason changes.",
     type: "website",
   },
   twitter: {
     card: "summary",
-    title: "Kolvex AI - Investment Platform",
-    description: "The Future of Investing is Here",
+    title: "Kolvex — Investment Decision Workspace",
+    description: "Know why you own a stock. Know when that reason changes.",
   },
 };
 

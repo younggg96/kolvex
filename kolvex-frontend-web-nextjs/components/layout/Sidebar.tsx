@@ -5,7 +5,7 @@ import LogoIcon from "@/components/common/LogoIcon";
 import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { Settings, PanelLeftClose, PanelLeft, ShieldCheck } from "lucide-react";
-import { MAIN_NAV_ITEMS } from "./navItems";
+import { MAIN_NAV_ITEMS, isNavItemActive } from "./navItems";
 import UserMenu from "@/components/user/UserMenu";
 import { Button } from "@/components/ui/button";
 import {
@@ -22,7 +22,6 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { useBreakpoints } from "@/hooks";
-import { ChatSidebarContent } from "@/components/chat";
 import { useUserProfileContext } from "@/components/user/UserProfileProvider";
 import { useTranslation } from "@/lib/i18n";
 import { isProductFeatureEnabled } from "@/lib/productFeatures";
@@ -47,22 +46,31 @@ interface AppSidebarProps {
 
 function AppSidebar({ onNavigate }: AppSidebarProps) {
   const pathname = usePathname();
-  const { state, toggleSidebar, isInitialized, isMobile: sidebarIsMobile, openMobile, setOpenMobile } = useSidebar();
+  const {
+    state,
+    toggleSidebar,
+    isInitialized,
+    isMobile: sidebarIsMobile,
+    setOpenMobile,
+  } = useSidebar();
   const { profile } = useUserProfileContext();
   const { t } = useTranslation();
 
   // Resolve translated nav items
-  const mainNavItems = MAIN_NAV_ITEMS
-    .filter((item) => isProductFeatureEnabled(item.featureId))
-    .map((item) => ({
-      ...item,
-      title: t(item.titleKey),
-    }));
+  const mainNavItems = MAIN_NAV_ITEMS.filter((item) =>
+    isProductFeatureEnabled(item.featureId),
+  ).map((item) => ({
+    ...item,
+    title: t(item.titleKey),
+  }));
   const bottomNavItems = bottomNavItemDefs.map((item) => ({
     ...item,
     title: t(item.titleKey),
   }));
-  const adminNavItem = { ...adminNavItemDef, title: t(adminNavItemDef.titleKey) };
+  const adminNavItem = {
+    ...adminNavItemDef,
+    title: t(adminNavItemDef.titleKey),
+  };
   const [isMounted, setIsMounted] = useState(false);
 
   const { isMobile, isTablet } = useBreakpoints();
@@ -70,8 +78,6 @@ function AppSidebar({ onNavigate }: AppSidebarProps) {
   // Check if user is admin
   const isAdmin = profile?.is_admin ?? false;
 
-  const isCollapsed = isMounted && isInitialized && !sidebarIsMobile && state === "collapsed";
-  const sidebarVisible = isMounted && isInitialized && (sidebarIsMobile ? openMobile : state === "expanded");
   const handleNavigate = () => {
     setOpenMobile(false);
     onNavigate?.();
@@ -81,12 +87,7 @@ function AppSidebar({ onNavigate }: AppSidebarProps) {
     setOpenMobile(false);
   }, [pathname, setOpenMobile]);
 
-  const isActive = (href: string) => {
-    if (href === "/dashboard") {
-      return pathname === "/dashboard" || pathname.startsWith("/dashboard/chat");
-    }
-    return pathname.startsWith(href) && href !== "#";
-  };
+  const isActive = (href: string) => isNavItemActive(pathname, href);
 
   useEffect(() => {
     setIsMounted(true);
@@ -141,25 +142,6 @@ function AppSidebar({ onNavigate }: AppSidebarProps) {
           <SidebarGroupContent>
             <SidebarMenu>
               {mainNavItems.map((item) => {
-                // Chat submenu with history
-                if (item.type === "chat-submenu") {
-                  return (
-                    <SidebarMenuItem key="chat">
-                      <SidebarMenuButton
-                        asChild
-                        isActive={isActive("/dashboard")}
-                        onClick={handleNavigate}
-                      >
-                        <Link href="/dashboard">
-                          <item.icon />
-                          <span>{t("sidebar.chat")}</span>
-                        </Link>
-                      </SidebarMenuButton>
-                      <ChatSidebarContent isCollapsed={isCollapsed} enabled={sidebarVisible} onNavigate={handleNavigate} />
-                    </SidebarMenuItem>
-                  );
-                }
-                // link
                 return (
                   <SidebarMenuItem key={item.title}>
                     <SidebarMenuButton

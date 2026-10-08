@@ -22,6 +22,13 @@ export interface StockQuote {
   updatedAt?: string;
 }
 
+export async function getStockQuote(symbol: string): Promise<StockQuote> {
+  const response = await fetch(`/api/stocks?action=quote&symbol=${encodeURIComponent(symbol)}`);
+  const data = await response.json();
+  if (!response.ok || !Number.isFinite(data.price) || data.price <= 0) throw new Error("Market price unavailable");
+  return data as StockQuote;
+}
+
 export interface MarketIndex {
   symbol: string;
   name: string;
@@ -198,6 +205,18 @@ export interface AiTechnicalAnalysis {
   fib: { from: AiChartPoint; to: AiChartPoint } | null;
   signals: string[];
   invalidation: string | null;
+  setup?: {
+    name: string;
+    direction: "bullish" | "bearish";
+    entry_low: number;
+    entry_high: number;
+    invalidation: number;
+    targets: number[];
+    reason: string;
+    risk_reward: number;
+    score: number | null;
+    checks: Record<string, boolean | null>;
+  } | null;
 }
 
 export class AiAnalysisError extends Error {

@@ -53,6 +53,48 @@ class IndicatorTests(unittest.TestCase):
         self.assertEqual(min(bar["low"] for bar in merged), min(bar["low"] for bar in bars))
 
 
+class SetupTests(unittest.TestCase):
+    def bars(self, count=80):
+        return [{"date": f"2026-01-{i + 1:02d}", "open": 100 + i * .25, "close": 100 + i * .25,
+                 "low": 99 + i * .25, "high": 101 + i * .25, "volume": 1000 + i * 10} for i in range(count)]
+
+    def output(self, setup, bias="bullish", bars=None):
+        result = ta.AiAnalysis(trend="uptrend", bias=bias, summary="Evidence", setup=setup)
+        return ta.sanitize(result, bars or self.bars(), [], 1)["setup"]
+
+    def setup(self, **overrides):
+        return ta.AiSetup(name="Pullback long", direction="bullish", entry_low=115, entry_high=116,
+                          invalidation=110, targets=overrides.pop("targets", [122, 120]), reason="Retest support", **overrides)
+
+    def test_targets_ordered_and_score_is_evidence_not_llm_confidence(self):
+        setup = self.output(self.setup())
+        self.assertEqual(setup["targets"], [120, 122])
+        self.assertEqual(setup["risk_reward"], .82)
+        self.assertEqual(setup["score"], 80)
+        self.assertFalse(setup["checks"]["rsi_momentum"])
+
+    def test_rejects_inverted_or_non_directional_setup(self):
+        for patch in [{"entry_low": 117, "entry_high": 116}, {"invalidation": 115.5}, {"targets": [114]}, {"targets": [10000]}, {"direction": "bearish"}]:
+            candidate = self.setup().model_copy(update=patch)
+            self.assertIsNone(self.output(candidate))
+        self.assertIsNone(self.output(self.setup(), bias="neutral"))
+
+    def test_incomplete_inputs_do_not_get_a_complete_score(self):
+        bars = self.bars()
+        for bar in bars:
+            bar["volume"] = None
+        setup = self.output(self.setup(), bars=bars)
+        self.assertIsNone(setup["score"])
+        self.assertIsNone(setup["checks"]["volume_confirmation"])
+
+    def test_valid_short_has_risk_above_entry_and_targets_below(self):
+        candidate = ta.AiSetup(name="Retest short", direction="bearish", entry_low=110, entry_high=111,
+                               invalidation=116, targets=[103, 105], reason="Resistance")
+        setup = self.output(candidate, bias="bearish")
+        self.assertEqual(setup["targets"], [105, 103])
+        self.assertEqual(setup["risk_reward"], 1)
+
+
 class FourHourBarTests(unittest.TestCase):
     def test_hourly_bars_merge_within_each_session(self):
         index = pd.DatetimeIndex(

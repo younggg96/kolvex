@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { addDays, differenceInCalendarDays, format, subMonths } from "date-fns";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { getYouTubeStockDetail, type YouTubeOpinion } from "@/lib/youtubeOpinionsApi";
-import type { PriceHistoryParams } from "@/lib/stockApi";
+import type { PriceHistoryParams, AiTechnicalAnalysis } from "@/lib/stockApi";
 import { useSyncedDrawings, type Drawing } from "./chartDrawings";
 import ChartView from "./chart/ChartView";
 import type { StrengthPoint } from "./StrengthChart";
@@ -55,6 +55,7 @@ export default function PriceChart({
   opinions,
   formatDate,
   t,
+  onAnalysisChange,
 }: {
   symbol: string;
   range: PriceRange;
@@ -63,6 +64,7 @@ export default function PriceChart({
   opinions: StrengthPoint[];
   formatDate: (date: string) => string;
   t: Translate;
+  onAnalysisChange?: (result: AiTechnicalAnalysis | null) => void;
 }) {
   const { drawings, setDrawings: storeDrawings, status: syncStatus } = useSyncedDrawings(symbol);
   const [history, setHistory] = useState<Drawing[][]>([]);
@@ -110,6 +112,7 @@ export default function PriceChart({
     syncStatus,
     formatDate,
     t,
+    onAnalysisChange,
   };
 
   return (
