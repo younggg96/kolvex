@@ -179,6 +179,51 @@ export async function getStockHistory(
   );
 }
 
+export interface AiChartPoint {
+  date: string;
+  price: number;
+}
+
+export interface AiTechnicalAnalysis {
+  symbol: string;
+  interval: string;
+  view: { start: string; end: string };
+  generated_at: string;
+  indicators: Record<string, number | null>;
+  trend: "uptrend" | "downtrend" | "sideways";
+  bias: "bullish" | "bearish" | "neutral";
+  summary: string;
+  levels: Array<{ kind: "support" | "resistance"; price: number; strength: "weak" | "medium" | "strong"; reason: string }>;
+  trendlines: Array<{ kind: "support" | "resistance"; start: AiChartPoint; end: AiChartPoint; reason: string }>;
+  fib: { from: AiChartPoint; to: AiChartPoint } | null;
+  signals: string[];
+  invalidation: string | null;
+}
+
+export class AiAnalysisError extends Error {
+  constructor(message: string, public status: number) {
+    super(message);
+  }
+}
+
+export async function getAiTechnicalAnalysis(
+  symbol: string,
+  body: PriceHistoryParams & { view_start?: string; view_end?: string; locale?: string },
+  signal?: AbortSignal
+): Promise<AiTechnicalAnalysis> {
+  const response = await fetch(`/api/market/ai-technical/${encodeURIComponent(symbol)}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+    signal,
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new AiAnalysisError(data.error || `API error: ${response.status}`, response.status);
+  }
+  return data as AiTechnicalAnalysis;
+}
+
 /**
  * Format price for display
  */

@@ -14,6 +14,8 @@ export interface Drawing {
   type: DrawingType;
   points: Anchor[];
   color: string;
+  label?: string;
+  source?: "ai";
 }
 
 /** `local`: signed out or sync not set up; `offline`: last sync attempt failed. */

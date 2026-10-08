@@ -5,6 +5,7 @@ YFinance 客户端服务
 
 import math
 
+import pandas as pd
 import yfinance as yf
 from typing import Optional, Dict, Any, List
 from datetime import datetime, timedelta
@@ -32,6 +33,28 @@ def _safe_int(value, default: int = 0) -> int:
         return default if math.isnan(f) or math.isinf(f) else int(f)
     except (ValueError, TypeError):
         return default
+
+
+def _group_session_bars(df, size: int):
+    """
+    Merge consecutive hourly bars into `size`-hour bars without crossing sessions,
+    e.g. 09:30–13:30 and 13:30–16:00 for a regular US session.
+    """
+    session = df.index.date
+    bucket = df.groupby(session).cumcount() // size
+    keys = [session, bucket.values]
+    grouped = df.groupby(keys, sort=True)
+    merged = grouped.agg({
+        "Open": "first",
+        "High": "max",
+        "Low": "min",
+        "Close": "last",
+        "Volume": "sum",
+        **({"Dividends": "sum"} if "Dividends" in df else {}),
+        **({"Stock Splits": "sum"} if "Stock Splits" in df else {}),
+    })
+    merged.index = pd.DatetimeIndex([frame.index[0] for _, frame in grouped], name="Datetime")
+    return merged
 
 
 def _parse_option_row(row) -> Dict[str, Any]:
@@ -142,14 +165,18 @@ class YFinanceService:
             历史价格数据列表
         """
         ticker = self.get_ticker(symbol)
+        source_interval = "60m" if interval == "4h" else interval
 
         if start and end:
-            df = ticker.history(start=start, end=end, interval=interval)
+            df = ticker.history(start=start, end=end, interval=source_interval)
         else:
-            df = ticker.history(period=period, interval=interval)
+            df = ticker.history(period=period, interval=source_interval)
 
         if df.empty:
             return []
+
+        if interval == "4h":
+            df = _group_session_bars(df, 4)
 
         df = df.reset_index()
         result = []

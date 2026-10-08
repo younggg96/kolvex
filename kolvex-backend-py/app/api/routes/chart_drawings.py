@@ -35,6 +35,8 @@ class Drawing(BaseModel):
     type: Literal["trend", "ray", "hline", "rect", "fib", "measure"]
     points: List[Anchor] = Field(min_length=1, max_length=2)
     color: str = Field(max_length=48, pattern=r"^rgb\([0-9a-z \-()/.%]+\)$")
+    label: Optional[str] = Field(default=None, max_length=80)
+    source: Optional[Literal["ai"]] = None
 
     @model_validator(mode="after")
     def point_count(self) -> "Drawing":

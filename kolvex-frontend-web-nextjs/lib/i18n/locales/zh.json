@@ -1124,6 +1124,71 @@
       "local": "画线仅保存在本设备（登录后可跨设备同步）",
       "offline": "画线同步失败，已保存在本设备，稍后会自动重试"
     },
+    "indicators": "技术指标",
+    "priceVolumeFull": "成交量",
+    "zoomIn": "放大",
+    "zoomOut": "缩小",
+    "resetZoom": "重置缩放",
+    "zoomHint": "拖动平移，⌘/Ctrl + 滚轮或双指缩放，双击重置",
+    "advancedChart": "高级",
+    "advancedChartTitle": "{symbol} 高级图表",
+    "interval": "周期",
+    "autoScale": "自动缩放",
+    "advancedRange": {
+      "1D": "1日",
+      "1W": "1周",
+      "1M": "1月",
+      "3M": "3月",
+      "YTD": "年初至今",
+      "1Y": "1年",
+      "5Y": "5年",
+      "ALL": "全部"
+    },
+    "intervals": {
+      "5m": "5分钟",
+      "15m": "15分钟",
+      "1h": "1小时",
+      "4h": "4小时",
+      "1d": "日线",
+      "1wk": "周线",
+      "1mo": "月线"
+    },
+    "ai": {
+      "button": "AI 画线",
+      "run": "让 AI 分析当前可见区间并画出支撑、阻力和趋势线",
+      "title": "AI 技术分析",
+      "loading": "AI 正在分析K线…",
+      "rerun": "重新分析",
+      "clear": "清除 AI 画线",
+      "signIn": "登录后即可使用 AI 画线。",
+      "notConfigured": "尚未配置可用的 AI 模型 API Key。",
+      "openSettings": "前往设置",
+      "failed": "AI 技术分析暂时不可用，请稍后再试。",
+      "support": "支撑",
+      "resistance": "阻力",
+      "supportLine": "趋势支撑线",
+      "resistanceLine": "趋势阻力线",
+      "trend": {
+        "uptrend": "上升趋势",
+        "downtrend": "下降趋势",
+        "sideways": "横盘震荡"
+      },
+      "bias": {
+        "bullish": "偏多",
+        "bearish": "偏空",
+        "neutral": "中性"
+      },
+      "strength": {
+        "weak": "弱",
+        "medium": "中",
+        "strong": "强"
+      },
+      "levels": "关键价位",
+      "trendlines": "趋势线",
+      "signals": "信号",
+      "invalidation": "失效条件：",
+      "disclaimer": "AI 根据K线和指标自动生成，仅供学习参考，不构成投资建议。"
+    },
     "drawTools": "画图工具",
     "toolCursor": "光标（选择、拖动画线）",
     "toolTrend": "趋势线",

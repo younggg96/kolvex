@@ -66,7 +66,17 @@ export default function ChartDrawingLayer({
     const [a, b = a] = drawing.points.map(toPx);
     const [pa, pb = pa] = drawing.points;
     const selected = id === selectedId;
-    const stroke = { stroke: color, strokeWidth: selected ? 2 : 1.5 };
+    const stroke = {
+      stroke: color,
+      strokeWidth: selected ? 2 : 1.5,
+      strokeDasharray: drawing.source === "ai" ? "6 4" : undefined,
+    };
+    const caption = (point: Point, anchor: "start" | "end" = "start", dy = -5) =>
+      drawing.label ? (
+        <text x={point.x} y={point.y + dy} textAnchor={anchor} fill={color} fontWeight={600} {...labelProps}>
+          {drawing.label}
+        </text>
+      ) : null;
     let body: ReactNode = null;
 
     switch (drawing.type) {
@@ -74,6 +84,7 @@ export default function ChartDrawingLayer({
         body = (
           <>
             <line x1={a.x} y1={a.y} x2={b.x} y2={b.y} {...stroke} />
+            {caption(b.x >= a.x ? b : a, "end")}
             {hitLine(id, a, b)}
           </>
         );
@@ -85,6 +96,7 @@ export default function ChartDrawingLayer({
         body = (
           <>
             <line x1={a.x} y1={a.y} x2={end.x} y2={end.y} {...stroke} />
+            {caption(b, "start")}
             {hitLine(id, a, end)}
           </>
         );
@@ -95,7 +107,7 @@ export default function ChartDrawingLayer({
           <>
             <line x1={0} y1={a.y} x2={width} y2={a.y} {...stroke} />
             <text x={width - 4} y={a.y - 4} textAnchor="end" fill={color} {...labelProps}>
-              {formatPrice(pa.price)}
+              {drawing.label ? `${drawing.label} ${formatPrice(pa.price)}` : formatPrice(pa.price)}
             </text>
             {hitLine(id, { x: 0, y: a.y }, { x: width, y: a.y })}
           </>
@@ -128,7 +140,7 @@ export default function ChartDrawingLayer({
           const y = toPx({ time: pa.time, price }).y;
           return (
             <g key={level}>
-              <line x1={left} y1={y} x2={right} y2={y} stroke={color} strokeWidth={level === 0.5 ? 1.5 : 1} strokeOpacity={level === 0 || level === 1 ? 1 : 0.7} />
+              <line x1={left} y1={y} x2={right} y2={y} stroke={color} strokeWidth={level === 0.5 ? 1.5 : 1} strokeOpacity={level === 0 || level === 1 ? 1 : 0.7} strokeDasharray={stroke.strokeDasharray} />
               <text x={left + 4} y={y - 3} fill={color} {...labelProps}>
                 {`${level} (${formatPrice(price)})`}
               </text>

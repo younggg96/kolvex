@@ -3,13 +3,19 @@
 基于 yfinance 提供股票市场行情、基本面、交易持仓、分析师与新闻数据
 """
 
-from fastapi import APIRouter, Query, HTTPException, Path
+import logging
+from fastapi import APIRouter, Depends, Query, HTTPException, Path
 from typing import Optional, List, Any
 from pydantic import BaseModel, Field
 from datetime import datetime
 from enum import Enum
 
+from app.api.dependencies.auth import get_current_user_id
+from app.services.technical_analysis import AiNotConfigured, analyze_chart
+from app.services.user_api_keys_service import UserApiKeysService, get_user_api_keys_service
 from app.services.yfinance.client import get_yfinance_service
+
+logger = logging.getLogger(__name__)
 
 
 router = APIRouter(prefix="/market", tags=["Market Data"])
@@ -45,6 +51,7 @@ class HistoryInterval(str, Enum):
     SIXTY_MIN = "60m"
     NINETY_MIN = "90m"
     ONE_HOUR = "1h"
+    FOUR_HOURS = "4h"
     ONE_DAY = "1d"
     FIVE_DAYS = "5d"
     ONE_WEEK = "1wk"
@@ -418,6 +425,60 @@ async def get_history(
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"获取历史数据失败: {str(e)}")
+
+
+class AiTechnicalRequest(BaseModel):
+    """AI 技术分析请求：与图表相同的取数参数，加上当前可见区间"""
+    interval: HistoryInterval = HistoryInterval.ONE_DAY
+    period: Optional[HistoryPeriod] = None
+    start: Optional[str] = Field(None, pattern=r"^\d{4}-\d{2}-\d{2}$")
+    end: Optional[str] = Field(None, pattern=r"^\d{4}-\d{2}-\d{2}$")
+    view_start: Optional[str] = Field(None, max_length=40)
+    view_end: Optional[str] = Field(None, max_length=40)
+    locale: str = Field("zh", max_length=10)
+
+
+@router.post(
+    "/ai-technical/{symbol}",
+    summary="AI 技术分析画线",
+    description="基于可见K线计算指标与摆动点，由 LLM 选出支撑/阻力位与趋势线，并校验后返回",
+)
+async def ai_technical_analysis(
+    body: AiTechnicalRequest,
+    symbol: str = Path(..., min_length=1, max_length=20, pattern=r"^[A-Za-z0-9.\-^=]+$"),
+    user_id: str = Depends(get_current_user_id),
+    api_keys: UserApiKeysService = Depends(get_user_api_keys_service),
+):
+    service = get_yfinance_service()
+    try:
+        history = service.get_history(
+            symbol,
+            period=(body.period or HistoryPeriod.ONE_YEAR).value,
+            interval=body.interval.value,
+            start=body.start,
+            end=body.end,
+        )
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"获取历史数据失败: {str(e)}")
+    history = [bar for bar in history if None not in (bar["open"], bar["high"], bar["low"], bar["close"])]
+
+    try:
+        return await analyze_chart(
+            symbol.upper(),
+            body.interval.value,
+            history,
+            body.view_start,
+            body.view_end,
+            locale=body.locale,
+            user_api_keys=await api_keys.get_keys_dict(user_id) or None,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except AiNotConfigured:
+        raise HTTPException(status_code=503, detail="ai_not_configured")
+    except Exception as e:
+        logger.exception("AI technical analysis failed for %s", symbol)
+        raise HTTPException(status_code=503, detail=f"AI 技术分析暂不可用: {str(e)[:200]}")
 
 
 @router.get(
