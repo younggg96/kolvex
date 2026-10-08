@@ -55,7 +55,11 @@ class YouTubeStockOpinionService:
         body: Any,
         uploaded_by: Optional[str] = None,
     ) -> Dict[str, Any]:
-        """Import one video object or a batch of them in a single write."""
+        """Import one video object or a batch of them.
+
+        The latest import of a video is authoritative: its rows replace every
+        row previously stored for that video, including tickers it dropped.
+        """
         payloads = _as_payloads(body)
         checked = self.validate_import(payloads)
         if checked["errors"]:
@@ -63,19 +67,32 @@ class YouTubeStockOpinionService:
             raise ValueError(_prefixed(failed["message"], failed["index"], len(payloads)))
         rows = [
             row
-            for payload in payloads
-            for row in self._rows_from_payload(payload, uploaded_by=uploaded_by)
+            for video in checked["videos"]
+            for row in self._rows_from_payload(payloads[video["index"]], uploaded_by=uploaded_by)
         ]
+        corrected_channels = await self.correct_channel_ids(rows)
         await self._fill_missing_avatars(rows)
         result = self.supabase.table(TABLE_NAME).upsert(
             rows, on_conflict="video_id,ticker"
         ).execute()
         written_rows = result.data or []
 
+        tickers_by_video: Dict[str, List[str]] = defaultdict(list)
+        for row in rows:
+            tickers_by_video[row["video_id"]].append(row["ticker"])
+        for video_id, tickers in tickers_by_video.items():
+            (
+                self.supabase.table(TABLE_NAME)
+                .delete()
+                .eq("video_id", video_id)
+                .not_.in_("ticker", tickers)
+                .execute()
+            )
+
         return {
             "success": True,
             "inserted_count": len(written_rows),
-            "video_count": len(payloads),
+            "video_count": len(checked["videos"]),
             "videos": [
                 {
                     "video_id": video["video_id"],
@@ -85,31 +102,105 @@ class YouTubeStockOpinionService:
                 }
                 for video in checked["videos"]
             ],
+            "corrected_channels": corrected_channels,
             "rows": written_rows,
         }
 
+    async def correct_channel_ids(self, rows: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """Replace imported channel identity with the real owner of each YouTube video.
+
+        AI-generated payloads often invent channel ids and handles, which splits
+        one creator into several profiles. Rows whose video cannot be looked up
+        keep the imported identity.
+        """
+        by_video: Dict[str, List[Dict[str, Any]]] = defaultdict(list)
+        for row in rows:
+            if _youtube_video_id(row.get("video_id")):
+                by_video[row["video_id"]].append(row)
+        if not by_video:
+            return []
+
+        async def lookup(video_id: str):
+            try:
+                return video_id, await channel_profiles.channel_id_for_video(video_id)
+            except Exception:
+                logger.warning("YouTube channel lookup failed for video %s", video_id, exc_info=True)
+                return video_id, None
+
+        owners = dict(await asyncio.gather(*(lookup(video_id) for video_id in by_video)))
+        profiles: Dict[str, Dict[str, Any]] = {}
+        for channel_id in {owner for owner in owners.values() if owner}:
+            try:
+                profile = await channel_profiles.get_profile(channel_id)
+            except Exception:
+                profile = {}
+            profiles[channel_id] = profile if profile.get("profile_status") == "available" else {}
+
+        corrections = []
+        for video_id, video_rows in by_video.items():
+            owner = owners.get(video_id)
+            if not owner:
+                continue
+            profile = profiles.get(owner, {})
+            changed_id = video_rows[0].get("channel_id") != owner
+            if not changed_id and not profile:
+                continue
+            identity = {"channel_id": owner, "channel_url": channel_link(owner)}
+            if profile.get("channel_handle"):
+                identity["channel_handle"] = profile["channel_handle"]
+            elif changed_id:
+                identity["channel_handle"] = None
+            if profile.get("channel_title"):
+                identity["channel_title"] = profile["channel_title"]
+            if _https_url(profile.get("channel_avatar_url")):
+                identity["channel_avatar_url"] = profile["channel_avatar_url"]
+            elif changed_id:
+                identity["channel_avatar_url"] = None
+            if changed_id:
+                corrections.append({"video_id": video_id, "from": video_rows[0].get("channel_id"), "to": owner})
+            for row in video_rows:
+                row.update(identity)
+                raw = row.get("raw_payload")
+                if isinstance(raw, dict):
+                    channel = raw.get("channel") if isinstance(raw.get("channel"), dict) else {}
+                    row["raw_payload"] = {
+                        **raw,
+                        "channel": {
+                            **channel,
+                            "id": owner,
+                            "handle": row.get("channel_handle"),
+                            "url": identity["channel_url"],
+                            "title": row.get("channel_title"),
+                        },
+                    }
+        return corrections
+
     def validate_import(self, body: Any) -> Dict[str, Any]:
-        """Preview an import, reporting every rejected video before any write."""
+        """Preview an import, reporting every rejected video before any write.
+
+        When a batch repeats a video, the last copy wins and earlier copies
+        are listed in ``superseded``.
+        """
         payloads = _as_payloads(body)
-        videos: List[Dict[str, Any]] = []
+        latest: Dict[str, Dict[str, Any]] = {}
+        superseded: List[Dict[str, int]] = []
         errors: List[Dict[str, Any]] = []
-        seen_videos: Dict[str, int] = {}
         for index, payload in enumerate(payloads):
             try:
                 preview = self.validate_payload(payload)
-                duplicate_of = seen_videos.get(preview["video_id"])
-                if duplicate_of is not None:
-                    raise ValueError(
-                        f"video.id duplicates the video at position {duplicate_of + 1}"
-                    )
-                seen_videos[preview["video_id"]] = index
-                videos.append({"index": index, **preview})
             except ValueError as e:
                 errors.append({"index": index, "message": str(e)})
+                continue
+            previous = latest.pop(preview["video_id"], None)
+            if previous is not None:
+                superseded.append({"index": previous["index"], "by": index})
+            latest[preview["video_id"]] = {"index": index, **preview}
+        videos = sorted(latest.values(), key=lambda video: video["index"])
         return {
-            "video_count": len(payloads),
+            "video_count": len(videos) + len(errors),
             "count": sum(video["count"] for video in videos),
             "videos": videos,
+            "superseded": superseded,
             "errors": errors,
         }
 

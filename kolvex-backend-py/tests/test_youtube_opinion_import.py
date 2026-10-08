@@ -2,7 +2,7 @@ import asyncio
 from copy import deepcopy
 from types import SimpleNamespace
 import unittest
-from unittest.mock import Mock
+from unittest.mock import AsyncMock, Mock, patch
 
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
@@ -73,7 +73,7 @@ class YouTubeImportTests(unittest.TestCase):
         result = asyncio.run(self.service.upload_import(payload, "admin"))
         self.assertEqual(result["inserted_count"], 2)
         self.assertEqual(result["video_count"], 1)
-        self.client.table.assert_called_once_with("youtube_stock_opinions")
+        self.client.table.assert_called_with("youtube_stock_opinions")
         table.upsert.assert_called_once()
         self.assertEqual(len(table.upsert.call_args.args[0]), 2)
         self.assertEqual(table.upsert.call_args.args[0][0]["uploaded_by"], "admin")
@@ -89,12 +89,35 @@ class YouTubeImportTests(unittest.TestCase):
         self.assertEqual([error["index"] for error in preview["errors"]], [1])
         self.client.table.assert_not_called()
 
-    def test_batch_rejects_the_same_video_twice(self):
-        preview = self.service.validate_import([sample_payload(), sample_payload()])
-        self.assertRegex(preview["errors"][0]["message"], "duplicates")
-        with self.assertRaisesRegex(ValueError, r"videos\[1\]"):
-            asyncio.run(self.service.upload_import([sample_payload(), sample_payload()], "admin"))
-        self.client.table.assert_not_called()
+    def test_batch_keeps_the_last_copy_of_a_repeated_video(self):
+        latest = sample_payload()
+        latest["opinions"][0]["ticker"] = "TSLA"
+        preview = self.service.validate_import([sample_payload(), latest])
+        self.assertEqual(preview["errors"], [])
+        self.assertEqual(preview["video_count"], 1)
+        self.assertEqual(preview["superseded"], [{"index": 0, "by": 1}])
+        self.assertEqual(preview["videos"][0]["opinions"][0]["ticker"], "TSLA")
+
+        table = self.client.table.return_value
+        table.upsert.return_value.execute.return_value = SimpleNamespace(data=[{"ticker": "TSLA"}])
+        result = asyncio.run(self.service.upload_import([sample_payload(), latest], "admin"))
+        self.assertEqual(result["video_count"], 1)
+        self.assertEqual([row["ticker"] for row in table.upsert.call_args.args[0]], ["TSLA"])
+
+    def test_reupload_removes_tickers_missing_from_latest_payload(self):
+        payload = sample_payload()
+        payload["opinions"].append({**deepcopy(payload["opinions"][0]), "ticker": "TSLA"})
+        table = self.client.table.return_value
+        table.upsert.return_value.execute.return_value = SimpleNamespace(data=[])
+        asyncio.run(self.service.upload_import(payload, "admin"))
+        delete = table.delete.return_value
+        delete.eq.assert_called_once_with("video_id", "video-1")
+        delete.eq.return_value.not_.in_.assert_called_once_with("ticker", ["NVDA", "TSLA"])
+        delete.eq.return_value.not_.in_.return_value.execute.assert_called_once()
+        self.assertLess(
+            self.client.mock_calls.index(unittest.mock.call.table().upsert().execute()),
+            self.client.mock_calls.index(unittest.mock.call.table().delete().eq().not_.in_().execute()),
+        )
 
     def test_batch_writes_every_video_in_one_upsert(self):
         second = sample_payload()
@@ -108,6 +131,42 @@ class YouTubeImportTests(unittest.TestCase):
         self.assertEqual([video["tickers"] for video in result["videos"]], [["NVDA"], ["TSLA"]])
         table.upsert.assert_called_once()
         self.assertEqual([row["video_id"] for row in table.upsert.call_args.args[0]], ["video-1", "video-2"])
+
+    def test_upload_replaces_invented_channel_with_video_owner(self):
+        payload = sample_payload()
+        payload["video"]["id"] = "9tZvLw7z75E"
+        payload["channel"].update({"id": "UC_UNKNOWN_CHANNEL_ID", "handle": "@invented"})
+        real = "UC0-5GJAXNt3Bg0Gz6kvghYQ"
+        profiles = Mock()
+        profiles.channel_id_for_video = AsyncMock(return_value=real)
+        profiles.get_profile = AsyncMock(return_value={
+            "profile_status": "available", "channel_title": "老A聊美股",
+            "channel_handle": "@acestockpicks", "channel_avatar_url": "https://yt3.ggpht.com/a",
+        })
+        table = self.client.table.return_value
+        table.upsert.return_value.execute.return_value = SimpleNamespace(data=[])
+        with patch("app.services.youtube_stock_opinions.channel_profiles", profiles):
+            result = asyncio.run(self.service.upload_import(payload, "admin"))
+        row = table.upsert.call_args.args[0][0]
+        self.assertEqual(row["channel_id"], real)
+        self.assertEqual(row["channel_handle"], "@acestockpicks")
+        self.assertEqual(row["channel_title"], "老A聊美股")
+        self.assertEqual(row["raw_payload"]["channel"]["id"], real)
+        self.assertEqual(payload["channel"]["id"], "UC_UNKNOWN_CHANNEL_ID")
+        self.assertEqual(result["corrected_channels"], [{"video_id": "9tZvLw7z75E", "from": "UC_UNKNOWN_CHANNEL_ID", "to": real}])
+
+    def test_upload_keeps_imported_channel_when_lookup_fails(self):
+        payload = sample_payload()
+        payload["video"]["id"] = "9tZvLw7z75E"
+        profiles = Mock()
+        profiles.channel_id_for_video = AsyncMock(return_value=None)
+        profiles.get_profile = AsyncMock(return_value={"profile_status": "unavailable"})
+        table = self.client.table.return_value
+        table.upsert.return_value.execute.return_value = SimpleNamespace(data=[])
+        with patch("app.services.youtube_stock_opinions.channel_profiles", profiles):
+            result = asyncio.run(self.service.upload_import(payload, "admin"))
+        self.assertEqual(table.upsert.call_args.args[0][0]["channel_id"], "creator-1")
+        self.assertEqual(result["corrected_channels"], [])
 
     def test_batch_size_and_shape_are_bounded(self):
         for body in ([], [sample_payload()] * 51, "payload", [sample_payload(), "video"]):

@@ -149,7 +149,11 @@ export default function YouTubeOpinionImporter({ onImported }: { onImported?: ()
       const imported = await uploadYouTubeOpinionPayload(payloads);
       const tickers = [...new Set(imported.videos.flatMap((video) => video.tickers))];
       updateText("");
-      setResult(`已保存 ${imported.video_count} 个视频的 ${imported.inserted_count} 条股票观点：${tickers.join(", ")}。`);
+      const corrected = imported.corrected_channels ?? [];
+      const correctedNote = corrected.length
+        ? ` 已按 YouTube 视频归属修正 ${corrected.length} 个视频的频道 ID：${corrected.map((item) => `${item.from} → ${item.to}`).join("，")}。`
+        : "";
+      setResult(`已保存 ${imported.video_count} 个视频的 ${imported.inserted_count} 条股票观点：${tickers.join(", ")}。${correctedNote}`);
       onImported?.();
     } catch (e) { setError(e instanceof Error ? e.message : "导入失败，可重新提交。"); }
     finally { setBusy(false); }
@@ -209,13 +213,16 @@ export default function YouTubeOpinionImporter({ onImported }: { onImported?: ()
         {preview.errors.length > 0 && <ul role="alert" className="space-y-1 rounded-md border border-destructive/30 p-3 text-sm text-destructive">
           {preview.errors.map((item) => <li key={item.index} className="break-words"><span className="font-mono">{videoLabel(item.index)}</span>：{item.message}</li>)}
         </ul>}
+        {preview.superseded?.length ? <ul className="space-y-1 rounded-md border border-border p-3 text-xs text-muted-foreground">
+          {preview.superseded.map((item) => <li key={item.index} className="break-words"><span className="font-mono">{videoLabel(item.index)}</span> 与 <span className="font-mono">{videoLabel(item.by)}</span> 是同一视频，将以后者为准。</li>)}
+        </ul> : null}
         {preview.videos.map((video) => <div key={video.video_id} className="min-w-0 space-y-2">
           <h4 className="break-words text-sm font-medium">{video.channel_title} · {video.video_title} · {video.count} 条观点</h4>
           <div className="max-h-64 min-w-0 overflow-auto"><table className="w-full text-left text-xs"><thead><tr className="border-b"><th className="p-2">股票</th><th className="p-2">观点</th><th className="p-2">分数</th><th className="p-2">日期</th><th className="p-2">摘要</th></tr></thead><tbody>
             {video.opinions.map((row) => <tr key={row.ticker} className="border-b"><td className="p-2 font-medium">{row.ticker}</td><td className="p-2">{{ bullish: "看涨", bearish: "看跌", neutral: "中性", mixed: "分歧" }[row.sentiment]}</td><td className="p-2">{row.direction_score}</td><td className="whitespace-nowrap p-2">{row.opinion_date}</td><td className="min-w-40 break-words p-2">{row.summary}</td></tr>)}
           </tbody></table></div>
         </div>)}
-        <p className="text-xs text-muted-foreground">导入后观点将对所有用户可见。同一视频 ID 与股票代码的记录会被更新；每日变化按视频发布时间统计。校验未通过的视频需要先修正，否则本次导入不会写入任何数据。</p>
+        <p className="text-xs text-muted-foreground">导入后观点将对所有用户可见。同一视频可重复导入，以最后一次导入为准：该视频已有的股票观点会被整体替换，新 JSON 中没有的股票将被移除；每日变化按视频发布时间统计。校验未通过的视频需要先修正，否则本次导入不会写入任何数据。</p>
       </section>}
       <div className="sticky bottom-0 grid grid-cols-2 gap-2 border-t border-border bg-card py-4 sm:flex sm:flex-wrap">
         <Button variant="outline" className="h-11 px-2 sm:px-4" onClick={validate} disabled={busy || !text.trim()}><CheckCircle2 className="mr-2 h-4 w-4" />校验并预览</Button>

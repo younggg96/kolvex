@@ -200,6 +200,7 @@ export interface YouTubeImportResult {
     channel_title: string;
     tickers: string[];
   }>;
+  corrected_channels?: Array<{ video_id: string; from: string; to: string }>;
 }
 
 export async function uploadYouTubeOpinionPayload(
@@ -228,6 +229,7 @@ export interface YouTubeImportPreview {
   video_count: number;
   count: number;
   videos: YouTubeImportVideoPreview[];
+  superseded?: Array<{ index: number; by: number }>;
   errors: Array<{ index: number; message: string }>;
 }
 
