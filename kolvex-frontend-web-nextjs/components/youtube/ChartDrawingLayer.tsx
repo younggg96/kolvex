@@ -61,15 +61,24 @@ export default function ChartDrawingLayer({
     );
   }
 
+  function displayColor(drawing: Drawing) {
+    if (drawing.source !== "ai") return drawing.color;
+    if (drawing.type === "fib" || drawing.color.includes("245 158 11")) return "rgb(var(--chart-level))";
+    if (drawing.color.includes("negative")) return "rgb(var(--chart-down))";
+    if (drawing.color.includes("positive")) return "rgb(var(--chart-up))";
+    return drawing.color;
+  }
+
   function render(drawing: Drawing, preview: boolean) {
-    const { id, color } = drawing;
+    const { id } = drawing;
+    const color = displayColor(drawing);
     const [a, b = a] = drawing.points.map(toPx);
     const [pa, pb = pa] = drawing.points;
     const selected = id === selectedId;
+    const ai = drawing.source === "ai";
     const stroke = {
       stroke: color,
-      strokeWidth: selected ? 2 : 1.5,
-      strokeDasharray: drawing.source === "ai" ? "6 4" : undefined,
+      strokeWidth: selected ? 1.75 : ai ? 1 : 1.5,
     };
     const caption = (point: Point, anchor: "start" | "end" = "start", dy = -5) =>
       drawing.label ? (
@@ -140,7 +149,15 @@ export default function ChartDrawingLayer({
           const y = toPx({ time: pa.time, price }).y;
           return (
             <g key={level}>
-              <line x1={left} y1={y} x2={right} y2={y} stroke={color} strokeWidth={level === 0.5 ? 1.5 : 1} strokeOpacity={level === 0 || level === 1 ? 1 : 0.7} strokeDasharray={stroke.strokeDasharray} />
+              <line
+                x1={left}
+                y1={y}
+                x2={right}
+                y2={y}
+                stroke={color}
+                strokeWidth={level === 0 || level === 1 ? 1.25 : 1}
+                strokeOpacity={level === 0 || level === 0.5 || level === 1 ? 0.9 : 0.45}
+              />
               <text x={left + 4} y={y - 3} fill={color} {...labelProps}>
                 {`${level} (${formatPrice(price)})`}
               </text>

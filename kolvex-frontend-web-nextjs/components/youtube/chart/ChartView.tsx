@@ -716,7 +716,7 @@ export default function ChartView({
           id: `ai-${newDrawingId()}`,
           type: "hline" as const,
           points: [{ time: lastTime, price: level.price }],
-          color: toneStroke[level.kind === "support" ? "positive" : "negative"],
+          color: level.kind === "support" ? "rgb(var(--chart-up))" : "rgb(var(--chart-down))",
           label: t(`youtubeOpinions.ai.${level.kind}`),
           source: "ai" as const,
         })),
@@ -727,7 +727,7 @@ export default function ChartView({
             { time: Date.parse(line.start.date), price: line.start.price },
             { time: Date.parse(line.end.date), price: line.end.price },
           ],
-          color: toneStroke[line.kind === "support" ? "positive" : "negative"],
+          color: line.kind === "support" ? "rgb(var(--chart-up))" : "rgb(var(--chart-down))",
           label: t(`youtubeOpinions.ai.${line.kind}Line`),
           source: "ai" as const,
         })),
@@ -746,7 +746,7 @@ export default function ChartView({
                     price: result.fib.to.price,
                   },
                 ],
-                color: drawingColors[1],
+                color: "rgb(var(--chart-level))",
                 source: "ai" as const,
               },
             ]
@@ -1218,7 +1218,7 @@ export default function ChartView({
                     )}
                     {bars!.slice(firstVisible, lastVisible + 1).map((bar, offset) => {
                       const index = firstVisible + offset;
-                      const fill = toneStroke[bar.close >= bar.open ? "positive" : "negative"];
+                      const fill = bar.close >= bar.open ? "rgb(var(--chart-up))" : "rgb(var(--chart-down))";
                       const top = yOf(Math.max(bar.open, bar.close));
                       const bottom = yOf(Math.min(bar.open, bar.close));
                       const cx = xOf(index);
@@ -1259,9 +1259,8 @@ export default function ChartView({
                         x2={plotW}
                         y1={yOf(last.close)}
                         y2={yOf(last.close)}
-                        stroke={toneStroke[lastTone]}
-                        strokeDasharray="2 4"
-                        strokeOpacity={0.7}
+                        stroke={lastTone === "positive" ? "rgb(var(--chart-up))" : "rgb(var(--chart-down))"}
+                        strokeOpacity={0.45}
                       />
                     )}
                     {visibleExtremes && (
@@ -1381,7 +1380,7 @@ export default function ChartView({
                     style={{
                       left: plotW + 2,
                       top: yOf(last.close),
-                      backgroundColor: toneStroke[lastTone],
+                      backgroundColor: lastTone === "positive" ? "rgb(var(--chart-up))" : "rgb(var(--chart-down))",
                     }}
                   >
                     {last.close.toFixed(2)}
