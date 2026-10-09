@@ -2,7 +2,7 @@ import {
   BarChart3,
   BookOpen,
   PieChart,
-  ScanSearch,
+  Telescope,
   Youtube,
   type LucideIcon,
 } from "lucide-react";
@@ -25,12 +25,20 @@ export const MAIN_NAV_ITEMS: MainNavItem[] = [
     featureId: "home",
   },
   {
-    icon: ScanSearch,
-    titleKey: "sidebar.research",
-    shortTitleKey: "tabBar.research",
-    href: "/dashboard/research",
+    icon: Youtube,
+    titleKey: "sidebar.youtubeOpinions",
+    shortTitleKey: "tabBar.youtubeOpinions",
+    href: "/dashboard/youtube-opinions",
     type: "link",
-    featureId: "research",
+    featureId: "youtubeOpinions",
+  },
+  {
+    icon: Telescope,
+    titleKey: "sidebar.tradingAnalysis",
+    shortTitleKey: "tabBar.tradingAnalysis",
+    href: "/dashboard/ai-research",
+    type: "link",
+    featureId: "tradingAnalysis",
   },
   {
     icon: PieChart,
@@ -48,21 +56,10 @@ export const MAIN_NAV_ITEMS: MainNavItem[] = [
     type: "link",
     featureId: "journal",
   },
-  {
-    icon: Youtube,
-    titleKey: "sidebar.youtubeOpinions",
-    shortTitleKey: "tabBar.youtubeOpinions",
-    href: "/dashboard/youtube-opinions",
-    type: "link",
-    featureId: "youtubeOpinions",
-  },
 ];
 export function isNavItemActive(pathname: string, href: string) {
-  if (href === "/dashboard") return pathname === href;
-  // Retained report URLs belong to Research in both desktop and mobile navigation.
-  if (href === "/dashboard/research" &&
-    (pathname === "/dashboard/trading-analysis" || pathname.startsWith("/dashboard/trading-analysis/"))) {
-    return true;
-  }
+  if (href === "/dashboard") return pathname === href || pathname.startsWith("/dashboard/market/");
+  if (href === "/dashboard/ai-research" &&
+    (pathname === "/dashboard/trading-analysis" || pathname.startsWith("/dashboard/trading-analysis/"))) return true;
   return pathname === href || pathname.startsWith(`${href}/`);
 }

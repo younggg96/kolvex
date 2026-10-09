@@ -118,7 +118,7 @@ export default function TradingAnalysisDetailPage() {
     const heading = analysis?.ticker
       ? t("tradingAnalysis.pageTitle", { ticker: analysis.ticker })
       : t("tradingAnalysis.title");
-    document.title = `${heading} · ${t("sidebar.research")} — Kolvex`;
+    document.title = `${heading} · ${t("sidebar.tradingAnalysis")} — Kolvex`;
   }, [analysis?.ticker, t]);
 
   const loadAnalysis = useCallback(async () => {
@@ -422,7 +422,7 @@ export default function TradingAnalysisDetailPage() {
           </Button>
 
           <Button asChild variant="outline" size="sm">
-            <Link href={`/dashboard/research/${analysis.ticker}`}>
+            <Link href={`/dashboard/market/${analysis.ticker}`}>
               {locale === "zh" ? "股票工作台" : "Stock workspace"}
             </Link>
           </Button>

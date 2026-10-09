@@ -24,7 +24,9 @@ spacing:
   section-gap: "3rem"
 components:
   button: {}
-  research-navigation: {}
+  primary-navigation: {}
+  market-stock: {}
+  creator-opinions: {}
   report-list: {}
 ---
 
@@ -66,15 +68,16 @@ and allow descriptions to wrap.
 ## Layout
 
 AppShell owns the viewport, desktop sidebar and mobile navigation. DashboardLayout
-owns the header. ResearchLayout adds shared route navigation, with each page
-retaining its established content scroller. Pages use 16px horizontal padding on
-mobile and 32px from the medium breakpoint. Report content stays within 1080px;
-the creator overview retains its wider two-column layout and stacks on mobile.
+owns the header. Pages retain their established content scroller and use 16px
+horizontal padding on mobile and 32px from the medium breakpoint. Published
+reports stay within 1080px; Creator Opinions retains a wider two-column layout.
 
-Research has one primary navigation entry. Its two child views use native links,
-48px targets, icons plus text and a green underline for the current destination.
-No horizontal scrolling is needed for these two links. Preserve the selected
-view in the route so refresh, browser Back and copied links keep context.
+Markets, Creator Opinions and AI Research each have one primary navigation entry.
+The stock detail route belongs to Markets. Its existing K-line chart precedes
+the change summary, AI technical read and creator history. Latest news, the
+newest creator call and the linked position form the right rail on desktop;
+on narrow screens these sections follow the chart. Legacy Research URLs redirect
+to the appropriate entry so refresh and saved links keep working.
 
 ## Elevation & Depth
 
@@ -94,8 +97,8 @@ hover/focus rounding. Route navigation uses an underline and otherwise stays fla
 | Semantic colors and themes | `app/globals.css` | `tailwind.config.ts` → shared UI and research views |
 | Font stack | `tailwind.config.ts` | `font-sans`, `font-display`; global body sizing in CSS |
 | Buttons and focus | `components/ui/button.tsx` | Pill variants; neutral navigation actions use `asChild` links |
-| Research routes | `lib/researchRoutes.ts` | `ResearchLayout`, list entry points and report return links |
-| Route navigation | `components/decision/ResearchLayout.tsx` | Creator and deep research views, `aria-current`, visible keyboard focus |
+| AI Research routes | `lib/researchRoutes.ts` | AI Research list, authoring and report return links |
+| Route navigation | `components/layout/navItems.ts` | Markets, Creator Opinions and AI Research; `aria-current`, visible keyboard focus |
 | In-page tabs | `components/ui/tabs.tsx` | Radix tabs for peer report panels; not a replacement for route links |
 | Loading and data states | `components/ui/skeleton.tsx` and the owning list | Existing skeleton geometry, explicit empty/error states and retry |
 | Scrollbars | `app/globals.css` | Global standards properties and WebKit fallback; new scrollers need no opt-in class |
@@ -108,8 +111,9 @@ reports get an empty state, never invented content. The behavioral companion is
 
 ## Do's and Don'ts
 
-- Keep creator discovery and published reports within the same Research shell.
+- Keep creator discovery and the former Research overview within Creator Opinions.
+- Keep published reports under AI Research and the stock detail route under Markets.
 - Reuse semantic theme tokens, translated labels and shared UI primitives.
 - Preserve administrator-only authoring and existing backend access checks.
-- Do not add a separate primary Deep Research navigation item.
+- Do not restore the former Research or Deep Research navigation entries.
 - Do not add report-generation controls to the reader workflow.

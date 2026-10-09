@@ -29,6 +29,21 @@ export async function getStockQuote(symbol: string): Promise<StockQuote> {
   return data as StockQuote;
 }
 
+export interface StockNewsItem {
+  uuid: string;
+  title: string;
+  publisher: string | null;
+  link: string;
+  publish_time: number | null;
+}
+
+export async function getStockNews(symbol: string): Promise<StockNewsItem[]> {
+  const response = await fetch(`/api/market/news/${encodeURIComponent(symbol)}`);
+  if (!response.ok) throw new Error("Stock news unavailable");
+  const data = await response.json();
+  return Array.isArray(data.news) ? data.news : [];
+}
+
 export interface MarketIndex {
   symbol: string;
   name: string;

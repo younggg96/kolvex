@@ -84,7 +84,6 @@ export default function PublishedResearch({ page }: { page?: string }) {
 
   return (
     <ResearchLayout
-      activeView="deep-research"
       headerActions={profile?.is_admin ? (
         <Button asChild variant="outline" size="sm">
           <Link href={RESEARCH_AUTHORING_PATH}>{t("research.manageReports")}</Link>

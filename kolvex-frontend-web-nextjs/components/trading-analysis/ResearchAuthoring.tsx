@@ -239,7 +239,6 @@ export default function TradingAnalysisPage({ searchParams }: { searchParams?: {
 
   return (
     <ResearchLayout
-      activeView="deep-research"
       headerActions={
         <Button
           variant="outline"

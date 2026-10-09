@@ -177,7 +177,7 @@ export function EquityPositionsTable({
                         {isSecretStock ? (
                           <span className="text-muted-foreground">****</span>
                         ) : (
-                          <Link href={`/dashboard/research/${encodeURIComponent(pos.symbol)}`} className="hover:underline">
+                          <Link href={`/dashboard/market/${encodeURIComponent(pos.symbol)}`} className="hover:underline">
                             {pos.symbol}
                           </Link>
                         )}

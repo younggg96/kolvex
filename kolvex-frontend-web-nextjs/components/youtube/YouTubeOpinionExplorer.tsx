@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import {
   useEffect,
   useRef,
@@ -489,6 +490,14 @@ export default function YouTubeOpinionExplorer() {
   ];
   const changes = (route.creator ? context?.changes : catalogue?.changes) || [];
   const notableChanges = changes.filter((change) => change.change !== null).slice(0, 8);
+  const weekStart = Date.now() - 7 * 86_400_000;
+  const weekChanges = (catalogue?.changes || []).filter(
+    (change) => Date.parse(`${change.current_date}T23:59:59`) >= weekStart,
+  );
+  const holdingsWithCoverage = held.tickers.flatMap((ticker) => {
+    const stock = catalogue?.stocks.find((item) => item.ticker === ticker);
+    return stock ? [stock] : [];
+  });
 
   const pill = (active: boolean) =>
     cn(
@@ -803,6 +812,21 @@ export default function YouTubeOpinionExplorer() {
         className="min-h-0 min-w-0 flex-1 overflow-y-auto"
       >
         <div className="mx-auto w-full min-w-0 px-4 pb-16 pt-5 md:px-8 md:pt-7">
+          {!inDetail && catalogue && (
+            <section className="mb-7 border-b border-border pb-5" aria-label={t("research.creatorOpinions")}>
+              <p className="text-[13px] font-medium text-muted-foreground">{t("research.weeklyChanges")}</p>
+              <p className="mt-1 text-lg font-semibold">
+                {t("research.weeklyChangeCount", { count: String(weekChanges.length) })}
+              </p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {t("research.weeklyBreakdown", {
+                  stronger: String(weekChanges.filter((item) => (item.change ?? 0) > 0).length),
+                  weaker: String(weekChanges.filter((item) => (item.change ?? 0) < 0).length),
+                  new: String(weekChanges.filter((item) => item.change == null).length),
+                })}
+              </p>
+            </section>
+          )}
           <div className="mb-5 min-w-0 sm:mb-6">
             {inDetail ? breadcrumbNav : tabSwitcher}
           </div>
@@ -916,9 +940,43 @@ export default function YouTubeOpinionExplorer() {
                     )}
                   </div>
                 </div>
-                {changeList && (
-                  <aside className="min-w-0 xl:sticky xl:top-6 xl:self-start">{changeList}</aside>
-                )}
+                <aside className="min-w-0 space-y-8 xl:sticky xl:top-6 xl:self-start">
+                  <section aria-labelledby="creator-holdings-title">
+                    <h2 id="creator-holdings-title" className="text-base font-semibold">{t("research.holdingsByCreators")}</h2>
+                    {held.loading ? loadingBlock : held.error ? (
+                      <EmptyLine text={t("research.holdingsUnavailable")} />
+                    ) : !held.tickers.length ? (
+                      <p className="mt-3 text-sm text-muted-foreground">
+                        {t("research.noHoldings")}{" "}
+                        <Link href="/dashboard/portfolio" className="font-medium text-foreground underline-offset-4 hover:underline">
+                          {t("research.viewPortfolio")}
+                        </Link>
+                      </p>
+                    ) : (
+                      <>
+                        <ul className="mt-3 divide-y divide-border">
+                          {holdingsWithCoverage.map((stock) => (
+                            <li key={stock.ticker}>
+                              <Link
+                                href={`/dashboard/market/${encodeURIComponent(stock.ticker)}`}
+                                className="flex items-center justify-between gap-3 py-3 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                              >
+                                <span className="font-semibold">{stock.ticker}</span>
+                                <OpinionStrength value={stock.avg_score} />
+                              </Link>
+                            </li>
+                          ))}
+                        </ul>
+                        {held.tickers.length > holdingsWithCoverage.length && (
+                          <p className="mt-2 text-xs text-muted-foreground">
+                            {t("research.uncoveredHoldings", { count: String(held.tickers.length - holdingsWithCoverage.length) })}
+                          </p>
+                        )}
+                      </>
+                    )}
+                  </section>
+                  {changeList}
+                </aside>
               </div>
             )}
 

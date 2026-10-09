@@ -1,6 +1,5 @@
 export type ProductFeatureId =
   | "home"
-  | "research"
   | "journal"
   | "chat"
   | "tradingAnalysis"
@@ -20,8 +19,7 @@ export interface ProductFeature {
 }
 
 export const PRODUCT_FEATURES = [
-  { id: "home", label: "Markets", enabled: true, routePrefixes: ["/dashboard"] },
-  { id: "research", label: "Research", enabled: true, routePrefixes: ["/dashboard/research"] },
+  { id: "home", label: "Markets", enabled: true, routePrefixes: ["/dashboard", "/dashboard/market"] },
   { id: "journal", label: "Updates", enabled: true, routePrefixes: ["/dashboard/journal"], apiPrefixes: ["/api/theses"] },
   {
     id: "chat",
@@ -34,9 +32,9 @@ export const PRODUCT_FEATURES = [
   },
   {
     id: "tradingAnalysis",
-    label: "Deep Research",
+    label: "AI Research",
     enabled: true,
-    routePrefixes: ["/dashboard/research/deep-research", "/dashboard/trading-analysis"],
+    routePrefixes: ["/dashboard/ai-research", "/dashboard/research/deep-research", "/dashboard/trading-analysis"],
     apiPrefixes: ["/api/trading-analysis"],
     componentDirs: ["components/trading-analysis"],
     libFiles: ["lib/tradingAnalysisApi.ts"],
@@ -101,7 +99,7 @@ export const RETIRED_PRODUCT_ROUTE_PREFIXES = [
 
 export const DISABLED_PRODUCT_ROUTE_PREFIXES = RETIRED_PRODUCT_ROUTE_PREFIXES;
 
-export const DISABLED_PRODUCT_REDIRECT = "/dashboard/research";
+export const DISABLED_PRODUCT_REDIRECT = "/dashboard";
 
 export function isProductRouteDisabled(pathname: string): boolean {
   return DISABLED_PRODUCT_ROUTE_PREFIXES.some(

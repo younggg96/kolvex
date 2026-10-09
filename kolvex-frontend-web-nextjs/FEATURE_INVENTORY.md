@@ -1,14 +1,15 @@
 # Kolvex 功能整合清单
 
-本清单对应 `lib/productFeatures.ts`。当前前端产品入口已收敛为少量核心功能；已删除功能的历史页面 URL 会由 middleware 重定向到 `/dashboard/portfolio`。
+本清单对应 `lib/productFeatures.ts`。当前前端产品入口已收敛为少量核心功能；已删除功能的历史页面 URL 会由 middleware 重定向到 `/dashboard`。
 
 ## 当前保留
 
 | 功能 | ID | 页面入口 | 主要代码边界 |
 | --- | --- | --- | --- |
 | AI Chat | `chat` | `/dashboard`, `/dashboard/chat` | `components/chat`, `lib/chatApi.ts`, `/api/chat`, `/api/chat-history` |
-| Research | `research` | `/dashboard/research` | `components/decision/ResearchHome.tsx`, `components/decision/ResearchLayout.tsx` |
-| Deep Research（研究内） | `tradingAnalysis` | `/dashboard/research/deep-research`（旧 `/dashboard/trading-analysis` 入口重定向） | `components/trading-analysis`, `lib/tradingAnalysisApi.ts`, `/api/trading-analysis` |
+| Markets and stock page | `home` | `/dashboard`, `/dashboard/market/[ticker]` | `components/decision/Market.tsx`, `components/decision/StockWorkspace.tsx`, market/news APIs |
+| 博主观点 | `youtubeOpinions` | `/dashboard/youtube-opinions`（旧 `/dashboard/research` 重定向） | `components/youtube/YouTubeOpinionExplorer.tsx`, `/api/youtube-opinions` |
+| AI 研究 | `tradingAnalysis` | `/dashboard/ai-research`（旧 `/dashboard/research/deep-research` 和 `/dashboard/trading-analysis` 入口重定向） | `components/trading-analysis`, `lib/tradingAnalysisApi.ts`, `/api/trading-analysis` |
 | Portfolio | `portfolio` | `/dashboard/portfolio` | `components/portfolio`, Plaid Investments/portfolio APIs |
 | Settings | `settings` | `/dashboard/settings`, `/config` | `components/user`, user API key and avatar APIs |
 | Admin | `admin` | `/dashboard/admin` | `/api/admin` |

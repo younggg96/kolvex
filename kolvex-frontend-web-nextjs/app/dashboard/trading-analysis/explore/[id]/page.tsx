@@ -67,7 +67,7 @@ export default function PublishedAnalysisDetailPage() {
     const heading = analysis?.ticker
       ? t("tradingAnalysis.pageTitle", { ticker: analysis.ticker })
       : t("tradingAnalysis.title");
-    document.title = `${heading} · ${t("sidebar.research")} — Kolvex`;
+    document.title = `${heading} · ${t("sidebar.tradingAnalysis")} — Kolvex`;
   }, [analysis?.ticker, t]);
 
   useEffect(() => {

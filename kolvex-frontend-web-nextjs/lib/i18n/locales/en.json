@@ -51,10 +51,10 @@
     "stocks": "Stocks",
     "stockScreener": "AI Screener",
     "optionsFlow": "Options Flow",
-    "tradingAnalysis": "Deep Analysis",
+    "tradingAnalysis": "AI Research",
     "superinvestors": "Superinvestors",
     "news": "News",
-    "youtubeOpinions": "YouTube Opinions",
+    "youtubeOpinions": "Creator Opinions",
     "portfolio": "Portfolio",
     "community": "Community",
     "notifications": "Notifications",
@@ -68,8 +68,8 @@
   "tabBar": {
     "markets": "Markets",
     "chat": "Chat",
-    "tradingAnalysis": "Analysis",
-    "youtubeOpinions": "Opinions",
+    "tradingAnalysis": "AI Research",
+    "youtubeOpinions": "Creators",
     "portfolio": "Portfolio",
     "more": "More",
     "home": "Home",
@@ -1045,7 +1045,7 @@
     }
   },
   "youtubeOpinions": {
-    "title": "YouTube Opinion Tracker",
+    "title": "Creator Opinions",
     "refresh": "Refresh",
     "uploadJson": "Upload JSON",
     "uploadTitle": "Upload Gemini Analysis",
@@ -1310,10 +1310,18 @@
     "navigation": "Research views",
     "creatorOpinions": "Creator opinions",
     "manageReports": "Manage reports",
-    "author": "Author"
+    "author": "Author",
+    "weeklyChanges": "This week's creator changes",
+    "weeklyChangeCount": "Stocks with new creator calls: {count}",
+    "weeklyBreakdown": "{stronger} strengthening · {weaker} weakening · {new} first opinions",
+    "holdingsByCreators": "Creator views on your holdings",
+    "holdingsUnavailable": "Holdings are temporarily unavailable",
+    "noHoldings": "No linked stock holdings yet.",
+    "viewPortfolio": "View portfolio",
+    "uncoveredHoldings": "{count} other holdings have no creator opinions yet"
   },
   "tradingAnalysis": {
-    "title": "Deep Research",
+    "title": "AI Research",
     "heroDescription": "Understand the thesis, the supporting evidence and what could change it.",
     "heroFeatures": {
       "multiAgent": "Multi-Agent",
@@ -1357,7 +1365,7 @@
     "deleted": "Analysis deleted",
     "deleteFailed": "Failed to delete",
     "startFailed": "Failed to start analysis",
-    "pageTitle": "{ticker} Deep Research",
+    "pageTitle": "{ticker} AI Research",
     "backToList": "Back",
     "notFound": "Analysis not found",
     "statusAnalyzing": "Analyzing...",
@@ -1435,7 +1443,7 @@
       "noPublished": "No research reports have been published yet. Reports will appear here when available.",
       "noResultsForTicker": "No published analyses found for {ticker}",
       "searchPlaceholder": "Filter by ticker...",
-      "backToExplore": "Back to deep research"
+      "backToExplore": "Back to AI research"
     },
     "translate": "Translate",
     "showOriginal": "Original",

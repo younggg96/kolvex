@@ -335,7 +335,7 @@ export default function Market() {
                       return (
                         <Link
                           key={symbol}
-                          href={`/dashboard/research/${encodeURIComponent(symbol)}`}
+                          href={`/dashboard/market/${encodeURIComponent(symbol)}`}
                           className="-mx-3 grid grid-cols-[minmax(0,1fr)_88px_72px] items-center gap-3 rounded-xl px-3 py-3.5 transition-colors duration-150 hover:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary sm:grid-cols-[minmax(0,1fr)_140px_104px_80px]"
                         >
                           <div className="flex min-w-0 items-center gap-3">
@@ -382,7 +382,7 @@ export default function Market() {
             <TextLink href="/dashboard/youtube-opinions?tab=stocks">{c("Browse all stocks", "浏览全部股票")}</TextLink>
             <Panel
               title={c("Creator updates", "博主新动态")}
-              action={<TextLink href="/dashboard/research">{c("Research", "研究")}</TextLink>}
+              action={<TextLink href="/dashboard/youtube-opinions">{c("Creator opinions", "博主观点")}</TextLink>}
             >
               {catalogue.loading && !catalogue.data ? (
                 <div className="space-y-3 py-3">
@@ -393,7 +393,7 @@ export default function Market() {
                   {shifts.map((shift) => (
                     <li key={shift.ticker}>
                       <Link
-                        href={`/dashboard/research/${encodeURIComponent(shift.ticker)}`}
+                        href={`/dashboard/market/${encodeURIComponent(shift.ticker)}`}
                         className="-mx-2 flex items-center justify-between gap-3 rounded-lg px-2 py-3 hover:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                       >
                         <span className="flex min-w-0 items-center gap-2.5">

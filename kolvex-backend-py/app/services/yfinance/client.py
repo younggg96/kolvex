@@ -119,6 +119,50 @@ class YFinanceService:
         """获取股票 Ticker 对象"""
         return yf.Ticker(symbol.upper())
 
+    def get_news(self, symbol: str, limit: int = 8) -> List[Dict[str, Any]]:
+        """Return source-linked stock news in a stable shape for the stock page."""
+        try:
+            articles = self.get_ticker(symbol).get_news(count=limit) or []
+        except Exception:
+            articles = []
+        if not articles:
+            articles = yf.Search(symbol.upper(), news_count=limit, include_research=False, timeout=8).news or []
+        news: List[Dict[str, Any]] = []
+        for article in articles:
+            content = article.get("content") or article
+            related = content.get("relatedTickers") or article.get("relatedTickers") or []
+            if related and symbol.upper() not in {str(item).upper() for item in related}:
+                continue
+            links = (content.get("canonicalUrl"), content.get("clickThroughUrl"), content.get("link"))
+            candidates = [value.get("url", "") if isinstance(value, dict) else value for value in links]
+            link = next((value for value in candidates if isinstance(value, str) and value.startswith(("https://", "http://"))), None)
+            if not link:
+                continue
+            title = content.get("title")
+            if not isinstance(title, str) or not title.strip():
+                continue
+            provider = content.get("provider") or content.get("publisher") or {}
+            publisher = provider.get("displayName") if isinstance(provider, dict) else provider
+            published = content.get("pubDate") or content.get("providerPublishTime")
+            publish_time = None
+            if isinstance(published, (int, float)):
+                publish_time = int(published)
+            elif isinstance(published, str):
+                try:
+                    publish_time = int(datetime.fromisoformat(published.replace("Z", "+00:00")).timestamp())
+                except ValueError:
+                    pass
+            news.append({
+                "uuid": str(article.get("id") or article.get("uuid") or link),
+                "title": title.strip(),
+                "publisher": publisher if isinstance(publisher, str) else None,
+                "link": link,
+                "publish_time": publish_time,
+                "type": content.get("contentType") or article.get("type"),
+                "related_tickers": [symbol.upper()],
+            })
+        return sorted(news, key=lambda item: item["publish_time"] or 0, reverse=True)[:limit]
+
     # ============================================================
     # 市场行情数据
     # ============================================================

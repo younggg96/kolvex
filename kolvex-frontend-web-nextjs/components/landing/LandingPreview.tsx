@@ -255,7 +255,7 @@ export default function LandingPreview() {
                   {c("Bullish · 1–3 months", "看多 · 1–3个月")}
                 </p>
                 <Button asChild className="mt-7">
-                  <Link href="/dashboard/research/NVDA">
+                  <Link href="/dashboard/market/NVDA">
                     {c("Read stock analysis", "查看股票分析")}
                   </Link>
                 </Button>

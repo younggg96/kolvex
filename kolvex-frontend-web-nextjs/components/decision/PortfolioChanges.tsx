@@ -53,7 +53,7 @@ export default function PortfolioChanges({ tickers }: { tickers: string[] }) {
         <ul className="divide-y divide-border">
           {shifts.map((shift) => (
             <li key={`${shift.current_date}-${shift.ticker}`}>
-              <Link href={`/dashboard/research/${encodeURIComponent(shift.ticker)}`} className={rowClass}>
+              <Link href={`/dashboard/market/${encodeURIComponent(shift.ticker)}`} className={rowClass}>
                 <span className="flex min-w-0 items-center gap-3">
                   <span aria-hidden><CompanyLogo symbol={shift.ticker} size="md" /></span>
                   <span className="min-w-0">

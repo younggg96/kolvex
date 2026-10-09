@@ -82,7 +82,7 @@ export function TickerSearch({
       setError(true);
       return;
     }
-    router.push(`/dashboard/research/${symbol}`);
+    router.push(`/dashboard/market/${symbol}`);
   }
   return (
     <form onSubmit={submit} className={cn("w-full max-w-md", className)}>
@@ -202,7 +202,7 @@ export function WorkspaceLink({
 }) {
   return (
     <Link
-      href={`/dashboard/research/${encodeURIComponent(ticker)}`}
+      href={`/dashboard/market/${encodeURIComponent(ticker)}`}
       className={`${showLogo ? "inline-flex items-center gap-2 " : ""}rounded-sm font-semibold underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary`}
     >
       {showLogo && (

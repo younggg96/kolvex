@@ -12,7 +12,9 @@ import CreatorAvatar from "@/components/youtube/CreatorAvatar";
 import { MarkdownBody } from "@/components/trading-analysis/markdown";
 import {
   getStockQuote,
+  getStockNews,
   type StockQuote,
+  type StockNewsItem,
   type AiTechnicalAnalysis,
 } from "@/lib/stockApi";
 import {
@@ -46,12 +48,15 @@ const sideOf = (opinion: YouTubeOpinion): Side =>
 
 export default function StockWorkspace({ ticker }: { ticker: string }) {
   const c = useCopy();
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
   const { setContext } = useDecisionCommand();
   const [quote, setQuote] = useState<StockQuote | null>(null);
   const [opinions, setOpinions] = useState<YouTubeOpinion[]>([]);
   const [positions, setPositions] = useState<PortfolioPosition[]>([]);
   const [research, setResearch] = useState<TradingAnalysis | null>(null);
+  const [news, setNews] = useState<StockNewsItem[]>([]);
+  const [newsError, setNewsError] = useState(false);
+  const [positionsError, setPositionsError] = useState(false);
   const [technical, setTechnical] = useState<AiTechnicalAnalysis | null>(null);
   const [loading, setLoading] = useState(true);
   const [errors, setErrors] = useState<string[]>([]);
@@ -61,14 +66,17 @@ export default function StockWorkspace({ ticker }: { ticker: string }) {
     let alive = true;
     setLoading(true);
     setErrors([]);
+    setNewsError(false);
+    setPositionsError(false);
     Promise.allSettled([
       getStockQuote(ticker),
       getYouTubeStockDetail(ticker),
       getMyHoldings(),
       getPublishedAnalyses({ ticker, limit: 20 }),
+      getStockNews(ticker),
     ]).then((results) => {
       if (!alive) return;
-      const [q, o, p, r] = results;
+      const [q, o, p, r, n] = results;
       setQuote(q.status === "fulfilled" && q.value.price > 0 ? q.value : null);
       setOpinions(o.status === "fulfilled" ? o.value.opinions : []);
       setPositions(
@@ -83,10 +91,13 @@ export default function StockWorkspace({ ticker }: { ticker: string }) {
           ? (r.value.items.find((x) => x.status === "completed") ?? null)
           : null,
       );
+      setNews(n.status === "fulfilled" ? n.value : []);
+      setNewsError(n.status === "rejected");
+      setPositionsError(p.status === "rejected");
       setErrors(
         results.flatMap((result, index) =>
           result.status === "rejected"
-            ? [[c("Market", "行情"), c("Creators", "博主观点"), c("Portfolio", "持仓"), c("Research", "深度研究")][index]]
+            ? [[c("Market", "行情"), c("Creators", "博主观点"), c("Portfolio", "持仓"), c("AI research", "AI 研究"), c("News", "新闻")][index]]
             : [],
         ),
       );
@@ -143,6 +154,10 @@ export default function StockWorkspace({ ticker }: { ticker: string }) {
   const date = (value: string) =>
     new Date(value).toLocaleDateString(t("common.intlLocale"));
   const completedAt = research?.completed_at || research?.created_at;
+
+  useEffect(() => {
+    document.title = `${ticker} · ${locale === "zh" ? "行情" : "Markets"} — Kolvex`;
+  }, [ticker, locale]);
   const sorted = [...opinions].sort((a, b) => b.opinion_date.localeCompare(a.opinion_date));
   const shownOpinions = showAllOpinions ? sorted.slice(0, 30) : sorted.slice(0, 8);
   const up = (quote?.changePercent ?? 0) >= 0;
@@ -166,15 +181,15 @@ export default function StockWorkspace({ ticker }: { ticker: string }) {
       label: c("Fundamental", "基本面"),
       direction: null,
       detail: research?.fundamentals_report
-        ? c("In deep research below", "见下方深度研究")
-        : c("Needs deep research", "需要深度研究"),
+        ? c("In AI research below", "见下方 AI 研究")
+        : c("Needs AI research", "需要 AI 研究"),
     },
     {
       label: c("News", "新闻"),
       direction: null,
       detail: research?.news_report
-        ? c("In deep research below", "见下方深度研究")
-        : c("Needs deep research", "需要深度研究"),
+        ? c("In AI research below", "见下方 AI 研究")
+        : c("Needs AI research", "需要 AI 研究"),
     },
   ];
 
@@ -211,15 +226,15 @@ export default function StockWorkspace({ ticker }: { ticker: string }) {
   );
 
   return (
-    <DashboardLayout title={c("Research", "研究")}>
+    <DashboardLayout title={c("Markets", "行情")}>
       <main className="flex-1 overflow-y-auto">
         <div className="mx-auto px-4 pb-16 pt-4 md:px-8 md:pt-6">
           <Link
-            href="/dashboard/research"
+            href="/dashboard"
             className="-ml-1 inline-flex items-center gap-1.5 rounded-full px-1 py-1 text-[13px] text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
           >
             <ArrowLeft className="h-4 w-4" aria-hidden />
-            {c("Research", "研究")}
+            {c("Markets", "行情")}
           </Link>
 
           <div className="mt-4 grid gap-x-12 gap-y-10 xl:grid-cols-[minmax(0,1fr)_320px]">
@@ -252,9 +267,12 @@ export default function StockWorkspace({ ticker }: { ticker: string }) {
 
               </div>
               {!!errors.length && (
-                <p role="alert" className="mt-3 text-[13px] text-muted-foreground">
-                  {c("Some sources could not be loaded", "部分数据源未能加载")}：{errors.join(c(", ", "、"))}。
-                </p>
+                <div role="alert" className="mt-3 flex flex-wrap items-center gap-2 text-[13px] text-muted-foreground">
+                  <span>{c("Some sources could not be loaded", "部分数据源未能加载")}：{errors.join(c(", ", "、"))}。</span>
+                  <Button size="sm" variant="outline" onClick={() => setRefresh((value) => value + 1)}>
+                    {c("Retry", "重试")}
+                  </Button>
+                </div>
               )}
               <div className="mt-6">
                 <PriceChart
@@ -268,7 +286,32 @@ export default function StockWorkspace({ ticker }: { ticker: string }) {
                   onAnalysisChange={onAnalysis}
                 />
               </div>
-              <dl className="mt-6 grid grid-cols-2 gap-x-6 gap-y-5 border-y border-border py-5 sm:grid-cols-4">
+
+            </section>
+
+            <div className="min-w-0 space-y-12 xl:col-start-1 xl:row-start-2">
+              <Panel title={c("What changed · Summary", "变化摘要")}>
+                <div className="grid gap-4 pt-4 sm:grid-cols-3">
+                  <div>
+                    <p className="text-xs text-muted-foreground">{c("Market today", "今日行情")}</p>
+                    <p className="figure mt-1 text-sm font-semibold">
+                      {quote ? `${signedMoney(quote.change)} (${quote.changePercent >= 0 ? "+" : ""}${quote.changePercent.toFixed(2)}%)` : "—"}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">{c("Latest creator call", "最新博主观点")}</p>
+                    <p className="mt-1 text-sm font-semibold">
+                      {sorted[0] ? `${sorted[0].channel_title || sorted[0].channel_id} · ${date(sorted[0].opinion_date)}` : c("No coverage yet", "暂无观点")}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">{c("Latest AI research", "最近 AI 研究")}</p>
+                    <p className="mt-1 text-sm font-semibold">
+                      {completedAt ? date(completedAt) : c("No published report", "暂无已发布报告")}
+                    </p>
+                  </div>
+                </div>
+              <dl className="mt-6 grid grid-cols-2 gap-x-6 gap-y-5 border-t border-border pt-5 sm:grid-cols-4">
                 {evidenceItems.map((item) => (
                   <div key={item.label} className="min-w-0">
                     <dt className="text-[13px] text-muted-foreground">{item.label}</dt>
@@ -279,47 +322,35 @@ export default function StockWorkspace({ ticker }: { ticker: string }) {
                   </div>
                 ))}
               </dl>
-            </section>
+              </Panel>
 
-            <aside className="min-w-0 space-y-10 xl:col-start-2 xl:row-span-2 xl:row-start-1 xl:sticky xl:top-6 xl:self-start">
-              <section aria-labelledby="position-title">
-                <h2 id="position-title" className="text-[13px] font-semibold text-muted-foreground">
-                  {c("Your position", "你的仓位")}
-                </h2>
-                {positions.length ? (
-                  <>
-                    <p className="figure mt-1 text-2xl font-semibold">{money(positionValue)}</p>
-                    <p className="mt-0.5 text-[13px] text-muted-foreground">
-                      <span className="tabular-nums">{shares}</span> {c("shares across linked accounts", "股，来自已连接账户")}
-                      {positionPnl !== null && (
-                        <>
-                          {c(", ", "，")}
-                          <span className={cn("figure font-semibold", positionPnl >= 0 ? "text-positive" : "text-negative")}>
-                            {signedMoney(positionPnl)}
-                          </span>{" "}
-                          {c("unrealized", "浮动盈亏")}
-                        </>
-                      )}
-                    </p>
-                  </>
-                ) : (
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    {loading ? "…" : c("You don't hold this stock in a linked account.", "已连接账户中没有这只股票。")}
-                  </p>
-                )}
-              </section>
-
-              <Panel title={c("Latest creator update", "博主最新观点")}>
-                {sorted[0] ? (
-                  <div className="space-y-3 pt-4">
-                    <p className="text-xs text-muted-foreground">{date(sorted[0].opinion_date)} · {sorted[0].channel_title || sorted[0].channel_id}</p>
-                    <DirectionBadge direction={sideOf(sorted[0])} />
-                    <p className="text-sm leading-6">{sorted[0].summary || sorted[0].thesis || c("Read the source for details.", "查看原始视频了解详情。")}</p>
-                    {!!sorted[0].risks?.length && <div className="border-t border-border pt-3"><h3 className="text-xs font-semibold text-muted-foreground">{c("Risks mentioned", "提到的风险")}</h3><ul className="mt-2 space-y-2 text-sm">{sorted[0].risks.map((risk, index) => <li key={index}>{risk}</li>)}</ul></div>}
-                    <a className="inline-block text-sm font-medium underline-offset-4 hover:underline" href={sorted[0].video_url || `https://www.youtube.com/watch?v=${encodeURIComponent(sorted[0].video_id)}`} target="_blank" rel="noreferrer">{c("Watch source video", "查看原始视频")}</a>
+              <Panel title={c("AI Technical", "AI 技术画线")}>
+                {technical ? (
+                  <div className="pt-4">
+                    <DirectionBadge direction={technical.bias} />
+                    <p className="mt-2 text-sm leading-6">{technical.summary}</p>
+                    <ul className="mt-3 space-y-2 text-sm">
+                      {technical.signals.map((signal) => (
+                        <li key={signal} className="flex gap-2.5">
+                          <span aria-hidden className="mt-2 h-1 w-1 shrink-0 rounded-full bg-foreground/50" />
+                          {signal}
+                        </li>
+                      ))}
+                    </ul>
+                    {technical.invalidation && (
+                      <p className="mt-3 text-sm text-muted-foreground">
+                        {c("What changes the view", "什么会改变判断")}：{technical.invalidation}
+                      </p>
+                    )}
                   </div>
-                ) : <Empty>{loading ? c("Loading…", "加载中…") : c("No creator coverage yet.", "暂时没有博主观点。")}</Empty>}
-                <TextLink href="/dashboard/journal" className="mt-4 inline-block">{c("All updates", "全部变化动态")}</TextLink>
+                ) : (
+                  <Empty>
+                    {c(
+                      "Run AI analysis on the chart to draw support, resistance, trendlines and Fibonacci levels.",
+                      "在图表上运行 AI 分析，绘制支撑、阻力、趋势线和斐波那契水平。",
+                    )}
+                  </Empty>
+                )}
               </Panel>
 
               {technical?.setup && (
@@ -365,39 +396,8 @@ export default function StockWorkspace({ ticker }: { ticker: string }) {
                 </Panel>
               )}
 
-              <Panel title={c("AI technical read", "AI 技术解读")}>
-                {technical ? (
-                  <div className="pt-4">
-                    <DirectionBadge direction={technical.bias} />
-                    <p className="mt-2 text-sm leading-6">{technical.summary}</p>
-                    <ul className="mt-3 space-y-2 text-sm">
-                      {technical.signals.map((signal) => (
-                        <li key={signal} className="flex gap-2.5">
-                          <span aria-hidden className="mt-2 h-1 w-1 shrink-0 rounded-full bg-foreground/50" />
-                          {signal}
-                        </li>
-                      ))}
-                    </ul>
-                    {technical.invalidation && (
-                      <p className="mt-3 text-sm text-muted-foreground">
-                        {c("What changes the view", "什么会改变判断")}：{technical.invalidation}
-                      </p>
-                    )}
-                  </div>
-                ) : (
-                  <Empty>
-                    {c(
-                      "Run AI analysis on the chart to draw support, resistance, trendlines and Fibonacci levels.",
-                      "在图表上运行 AI 分析，绘制支撑、阻力、趋势线和斐波那契水平。",
-                    )}
-                  </Empty>
-                )}
-              </Panel>
-            </aside>
-
-            <div className="min-w-0 space-y-12 xl:col-start-1 xl:row-start-2">
               <Panel
-                title={c("What creators say", "博主怎么看")}
+                title={c("Creator Intelligence", "博主情报")}
                 description={c(
                   "Latest call per creator in the past 30 days decides the split. All tracked creators, not a personal list.",
                   "按近 30 天每位博主的最新观点统计。覆盖所有追踪的博主，并非个人关注列表。",
@@ -476,7 +476,7 @@ export default function StockWorkspace({ ticker }: { ticker: string }) {
               </Panel>
 
               <Panel
-                title={c("Deep research", "深度研究")}
+                title={c("AI research", "AI 研究")}
                 description={research && completedAt ? `${c("Last completed", "最近完成")}：${date(completedAt)}` : undefined}
               >
                 {research ? (
@@ -535,6 +535,85 @@ export default function StockWorkspace({ ticker }: { ticker: string }) {
                 )}
               </Panel>
             </div>
+
+            <aside className="min-w-0 space-y-10 xl:col-start-2 xl:row-span-2 xl:row-start-1 xl:self-start">
+              <Panel title={c("Latest news", "最新新闻")}>
+                {loading && !news.length ? (
+                  <div className="space-y-3 py-4">
+                    {[0, 1, 2].map((item) => <Skeleton key={item} className="h-12 w-full" />)}
+                  </div>
+                ) : news.length ? (
+                  <ul className="divide-y divide-border">
+                    {news.slice(0, 5).map((item) => (
+                      <li key={item.uuid}>
+                        <a
+                          href={item.link}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="-mx-2 block rounded-lg px-2 py-3 hover:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                        >
+                          <span className="line-clamp-2 text-sm font-medium leading-5">{item.title}</span>
+                          <span className="mt-1 block text-xs text-muted-foreground">
+                            {item.publisher || c("News", "新闻")}
+                            {item.publish_time ? ` · ${date(new Date(item.publish_time * 1000).toISOString())}` : ""}
+                          </span>
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <Empty>
+                    {newsError
+                      ? c("News could not be loaded. Retry above.", "新闻暂时无法加载，请在上方重试。")
+                      : c("No recent stock news is available.", "暂时没有这只股票的最新新闻。")}
+                  </Empty>
+                )}
+              </Panel>
+
+              <Panel title={c("Latest creator update", "博主最新观点")}>
+                {sorted[0] ? (
+                  <div className="space-y-3 pt-4">
+                    <p className="text-xs text-muted-foreground">{date(sorted[0].opinion_date)} · {sorted[0].channel_title || sorted[0].channel_id}</p>
+                    <DirectionBadge direction={sideOf(sorted[0])} />
+                    <p className="text-sm leading-6">{sorted[0].summary || sorted[0].thesis || c("Read the source for details.", "查看原始视频了解详情。")}</p>
+                    {!!sorted[0].risks?.length && <div className="border-t border-border pt-3"><h3 className="text-xs font-semibold text-muted-foreground">{c("Risks mentioned", "提到的风险")}</h3><ul className="mt-2 space-y-2 text-sm">{sorted[0].risks.map((risk, index) => <li key={index}>{risk}</li>)}</ul></div>}
+                    <a className="inline-block text-sm font-medium underline-offset-4 hover:underline" href={sorted[0].video_url || `https://www.youtube.com/watch?v=${encodeURIComponent(sorted[0].video_id)}`} target="_blank" rel="noreferrer">{c("Watch source video", "查看原始视频")}</a>
+                  </div>
+                ) : <Empty>{loading ? c("Loading…", "加载中…") : c("No creator coverage yet.", "暂时没有博主观点。")}</Empty>}
+                <TextLink href="/dashboard/journal" className="mt-4 inline-block">{c("All updates", "全部变化动态")}</TextLink>
+              </Panel>
+
+              <section aria-labelledby="position-title">
+                <h2 id="position-title" className="text-[13px] font-semibold text-muted-foreground">
+                  {c("Your position", "你的仓位")}
+                </h2>
+                {positionsError ? (
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    {c("Holdings could not be loaded. Retry above.", "持仓暂时无法加载，请在上方重试。")}
+                  </p>
+                ) : positions.length ? (
+                  <>
+                    <p className="figure mt-1 text-2xl font-semibold">{money(positionValue)}</p>
+                    <p className="mt-0.5 text-[13px] text-muted-foreground">
+                      <span className="tabular-nums">{shares}</span> {c("shares across linked accounts", "股，来自已连接账户")}
+                      {positionPnl !== null && (
+                        <>
+                          {c(", ", "，")}
+                          <span className={cn("figure font-semibold", positionPnl >= 0 ? "text-positive" : "text-negative")}>
+                            {signedMoney(positionPnl)}
+                          </span>{" "}
+                          {c("unrealized", "浮动盈亏")}
+                        </>
+                      )}
+                    </p>
+                  </>
+                ) : (
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    {loading ? "…" : c("You don't hold this stock in a linked account.", "已连接账户中没有这只股票。")}
+                  </p>
+                )}
+              </section>
+            </aside>
           </div>
         </div>
       </main>

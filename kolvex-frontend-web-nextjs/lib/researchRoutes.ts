@@ -1,5 +1,4 @@
-export const RESEARCH_PATH = "/dashboard/research";
-export const DEEP_RESEARCH_PATH = `${RESEARCH_PATH}/deep-research`;
+export const DEEP_RESEARCH_PATH = "/dashboard/ai-research";
 export const RESEARCH_AUTHORING_PATH = `${DEEP_RESEARCH_PATH}?view=authoring`;
 
 export function parseDeepResearchPage(value: string | null | undefined) {

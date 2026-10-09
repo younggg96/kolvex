@@ -1,4 +1,4 @@
-import ResearchHome from "@/components/decision/ResearchHome";
+import { redirect } from "next/navigation";
 export default function ResearchPage() {
-  return <ResearchHome />;
+  redirect("/dashboard/youtube-opinions");
 }

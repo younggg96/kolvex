@@ -51,10 +51,10 @@
     "stocks": "股票",
     "stockScreener": "AI 选股器",
     "optionsFlow": "期权异动",
-    "tradingAnalysis": "深度分析",
+    "tradingAnalysis": "AI 研究",
     "superinvestors": "超级投资者",
     "news": "新闻",
-    "youtubeOpinions": "YouTube 观点",
+    "youtubeOpinions": "博主观点",
     "portfolio": "投资组合",
     "community": "社区",
     "notifications": "通知",
@@ -68,8 +68,8 @@
   "tabBar": {
     "markets": "行情",
     "chat": "对话",
-    "tradingAnalysis": "分析",
-    "youtubeOpinions": "观点",
+    "tradingAnalysis": "AI 研究",
+    "youtubeOpinions": "博主观点",
     "portfolio": "组合",
     "more": "更多",
     "home": "首页",
@@ -1045,7 +1045,7 @@
     }
   },
   "youtubeOpinions": {
-    "title": "YouTube 观点追踪",
+    "title": "博主观点",
     "refresh": "刷新",
     "uploadJson": "上传 JSON",
     "uploadTitle": "上传 Gemini 分析",
@@ -1310,10 +1310,18 @@
     "navigation": "研究内容",
     "creatorOpinions": "博主观点",
     "manageReports": "管理报告",
-    "author": "作者"
+    "author": "作者",
+    "weeklyChanges": "本周观点变化",
+    "weeklyChangeCount": "{count} 只股票出现新观点",
+    "weeklyBreakdown": "{stronger} 只转强 · {weaker} 只转弱 · {new} 只首次出现观点",
+    "holdingsByCreators": "博主怎么看你的持仓",
+    "holdingsUnavailable": "持仓暂时无法加载",
+    "noHoldings": "尚未连接股票持仓。",
+    "viewPortfolio": "查看投资组合",
+    "uncoveredHoldings": "另外 {count} 只持仓暂无博主观点"
   },
   "tradingAnalysis": {
-    "title": "深度研究",
+    "title": "AI 研究",
     "heroDescription": "理解投资判断、支持它的证据，以及什么会改变判断。",
     "heroFeatures": {
       "multiAgent": "多智能体",
@@ -1357,7 +1365,7 @@
     "deleted": "分析已删除",
     "deleteFailed": "删除失败",
     "startFailed": "启动分析失败",
-    "pageTitle": "{ticker} 深度研究",
+    "pageTitle": "{ticker} AI 研究",
     "backToList": "返回",
     "notFound": "未找到分析记录",
     "statusAnalyzing": "分析中...",
@@ -1435,7 +1443,7 @@
       "noPublished": "暂时没有已发布的研究报告，发布后会显示在这里。",
       "noResultsForTicker": "未找到 {ticker} 的已发布分析",
       "searchPlaceholder": "按股票代码筛选...",
-      "backToExplore": "返回深度研究"
+      "backToExplore": "返回 AI 研究"
     },
     "translate": "翻译",
     "showOriginal": "原文",

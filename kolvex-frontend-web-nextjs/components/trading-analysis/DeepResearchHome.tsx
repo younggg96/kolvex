@@ -10,7 +10,7 @@ import PublishedResearch from "./PublishedResearch";
 function ResearchLoading() {
   const { t } = useTranslation();
   return (
-    <ResearchLayout activeView="deep-research">
+    <ResearchLayout>
       <div role="status" className="mx-auto w-full max-w-[1080px] space-y-4 px-4 py-8 md:px-8">
         <span className="sr-only">{t("common.loading")}</span>
         <Skeleton className="h-9 w-48" />
