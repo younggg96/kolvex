@@ -616,10 +616,13 @@ export default function YouTubeOpinionExplorer() {
               }}
               className="flex min-w-0 items-center justify-between gap-3 border-b border-border py-3 text-sm last:border-0 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
             >
-              <span className="min-w-0">
-                <span className="block font-semibold">{change.ticker}</span>
-                <span className="block text-xs text-foreground/75 tabular-nums">
-                  {formatDay(change.current_date)}
+              <span className="flex min-w-0 items-center gap-3">
+                <span aria-hidden="true"><CompanyLogo symbol={change.ticker} size="sm" /></span>
+                <span className="min-w-0">
+                  <span className="block font-semibold">{change.ticker}</span>
+                  <span className="block text-xs text-foreground/75 tabular-nums">
+                    {formatDay(change.current_date)}
+                  </span>
                 </span>
               </span>
               <OpinionStrength value={change.change} change />

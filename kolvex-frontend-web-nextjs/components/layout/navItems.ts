@@ -1,8 +1,9 @@
 import {
-  Home,
+  BarChart3,
   BookOpen,
   PieChart,
   ScanSearch,
+  Telescope,
   Youtube,
   type LucideIcon,
 } from "lucide-react";
@@ -17,9 +18,9 @@ export interface MainNavItem {
 }
 export const MAIN_NAV_ITEMS: MainNavItem[] = [
   {
-    icon: Home,
-    titleKey: "sidebar.home",
-    shortTitleKey: "tabBar.home",
+    icon: BarChart3,
+    titleKey: "sidebar.markets",
+    shortTitleKey: "tabBar.markets",
     href: "/dashboard",
     type: "link",
     featureId: "home",
@@ -31,6 +32,14 @@ export const MAIN_NAV_ITEMS: MainNavItem[] = [
     href: "/dashboard/research",
     type: "link",
     featureId: "research",
+  },
+  {
+    icon: Telescope,
+    titleKey: "tradingAnalysis.title",
+    shortTitleKey: "tabBar.tradingAnalysis",
+    href: "/dashboard/trading-analysis",
+    type: "link",
+    featureId: "tradingAnalysis",
   },
   {
     icon: PieChart,
@@ -59,10 +68,5 @@ export const MAIN_NAV_ITEMS: MainNavItem[] = [
 ];
 export function isNavItemActive(pathname: string, href: string) {
   if (href === "/dashboard") return pathname === href;
-  if (
-    href === "/dashboard/research" &&
-    pathname.startsWith("/dashboard/trading-analysis")
-  )
-    return true;
   return pathname === href || pathname.startsWith(`${href}/`);
 }

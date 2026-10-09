@@ -22,6 +22,7 @@ import {
     PieChart,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import CompanyLogo from "@/components/ui/company-logo";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -213,11 +214,7 @@ function StockAnalysisItem({ stock, t }: { stock: StockAnalysis; t: TFunction })
         <AccordionItem value={stock.symbol} className="border border-border rounded-lg mb-2 overflow-hidden">
             <AccordionTrigger className="px-4 py-3 hover:no-underline hover:bg-muted transition-colors">
                 <div className="flex items-center gap-3 flex-1">
-                    <div className="w-10 h-10 rounded-lg  from-primary/20 to-primary/5 flex items-center justify-center shrink-0">
-                        <span className="text-sm font-bold text-primary">
-                            {stock.symbol.slice(0, 2).toUpperCase()}
-                        </span>
-                    </div>
+                    <span aria-hidden="true"><CompanyLogo symbol={stock.symbol} name={stock.name} size="md" /></span>
                     <div className="flex-1 min-w-0 text-left">
                         <div className="flex items-center gap-2 flex-wrap">
                             <span className="font-semibold">{stock.symbol}</span>

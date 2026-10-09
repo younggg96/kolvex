@@ -14,7 +14,9 @@ Chinese-speaking individual investors in US equities. They follow Chinese-langua
 
 Kolvex turns scattered investment opinion into something an individual can check against their own book:
 
-- **AI Chat** (`/dashboard`, `/dashboard/chat`): a research agent that answers questions about stocks, markets, and the user's portfolio.
+- **Markets / 行情** (`/dashboard`): default signed-in entry with stock quotes and changes, SPY/QQQ/DIA benchmark ETFs, and selected-stock, holdings and creator-coverage lists. Quotes may be delayed; rankings apply only to the current list. There is no separate Home navigation entry.
+- **Research / 研究** (`/dashboard/research`): discover stocks and creators through imported YouTube opinions and open a stock decision workspace.
+- **AI Chat** (`/dashboard/chat`, Ask Kolvex in the app shell): a research agent that answers questions about stocks, markets, and the user's portfolio.
 - **Trading Analysis / 深度分析** (`/dashboard/trading-analysis`): multi-agent analysis runs on a ticker that produce a written report with analyst debate and a final decision; past reports can be explored.
 - **YouTube Opinions / YouTube 观点追踪** (`/dashboard/youtube-opinions`): opinions extracted from finance creators' videos, browsable by stock or by creator, each with sentiment (bullish, bearish, neutral, mixed), a direction score from −100 to +100, confidence, summary, key points, risks, and a link to the source video. The numeric score is never shown to users; strength is expressed qualitatively (轻度 / 中度 / 强烈 + 看涨 / 看跌, 转强 / 转弱 for changes). Admins import opinions as JSON, one video per object and many videos per batch.
 - **Portfolio / 投资组合** (`/dashboard/portfolio`): holdings, options positions, transactions, allocation, performance, and AI portfolio analysis, connected through Plaid Investments.

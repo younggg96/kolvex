@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import CreatorAvatar from "@/components/youtube/CreatorAvatar";
 import {
   getAdminYouTubeCreators, updateYouTubeCreator,
   type YouTubeCreatorSummary, type YouTubeCreatorUpdate,
@@ -112,7 +113,8 @@ export default function YouTubeCreatorManager() {
           <div className="divide-y divide-border">
             {filtered.map((creator) => (
               <div key={creator.channel_id} className="flex items-start justify-between gap-3 py-4">
-                <div className="min-w-0 space-y-1">
+                <CreatorAvatar name={creator.channel_title || creator.channel_id} avatarUrl={creator.channel_avatar_url} />
+                <div className="min-w-0 flex-1 space-y-1">
                   <p className="break-words text-sm font-semibold">{creator.channel_title || creator.channel_id}</p>
                   <p className="break-all text-xs text-muted-foreground">{creator.channel_handle || "未设置账号"} · {creator.total_opinions} 条观点</p>
                   <p className="break-all font-mono text-xs text-muted-foreground">{creator.channel_id}</p>

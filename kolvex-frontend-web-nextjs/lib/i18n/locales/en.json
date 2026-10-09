@@ -42,6 +42,7 @@
     "justNow": "Just now"
   },
   "sidebar": {
+    "markets": "Markets",
     "chat": "Chat",
     "analytics": "Analytics",
     "social": "Social",
@@ -63,6 +64,7 @@
     "journal": "Journal"
   },
   "tabBar": {
+    "markets": "Markets",
     "chat": "Chat",
     "tradingAnalysis": "Analysis",
     "youtubeOpinions": "Opinions",

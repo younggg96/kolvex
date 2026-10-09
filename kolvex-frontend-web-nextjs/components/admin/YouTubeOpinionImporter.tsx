@@ -4,6 +4,8 @@ import { useState } from "react";
 import { CheckCircle2, ClipboardCopy, Download, FileJson, Loader2, Upload, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import CompanyLogo from "@/components/ui/company-logo";
+import CreatorAvatar from "@/components/youtube/CreatorAvatar";
 import { Textarea } from "@/components/ui/textarea";
 import { useUserProfileContext } from "@/components/user/UserProfileProvider";
 import { uploadYouTubeOpinionPayload, validateYouTubeOpinionPayload, type YouTubeImportPreview } from "@/lib/youtubeOpinionsApi";
@@ -217,9 +219,9 @@ export default function YouTubeOpinionImporter({ onImported }: { onImported?: ()
           {preview.superseded.map((item) => <li key={item.index} className="break-words"><span className="font-mono">{videoLabel(item.index)}</span> 与 <span className="font-mono">{videoLabel(item.by)}</span> 是同一视频，将以后者为准。</li>)}
         </ul> : null}
         {preview.videos.map((video) => <div key={video.video_id} className="min-w-0 space-y-2">
-          <h4 className="break-words text-sm font-medium">{video.channel_title} · {video.video_title} · {video.count} 条观点</h4>
+          <h4 className="flex items-center gap-2 text-sm font-medium"><CreatorAvatar name={video.channel_title || "?"} /><span className="min-w-0 break-words">{video.channel_title} · {video.video_title} · {video.count} 条观点</span></h4>
           <div className="max-h-64 min-w-0 overflow-auto"><table className="w-full text-left text-xs"><thead><tr className="border-b"><th className="p-2">股票</th><th className="p-2">观点</th><th className="p-2">分数</th><th className="p-2">日期</th><th className="p-2">摘要</th></tr></thead><tbody>
-            {video.opinions.map((row) => <tr key={row.ticker} className="border-b"><td className="p-2 font-medium">{row.ticker}</td><td className="p-2">{{ bullish: "看涨", bearish: "看跌", neutral: "中性", mixed: "分歧" }[row.sentiment]}</td><td className="p-2">{row.direction_score}</td><td className="whitespace-nowrap p-2">{row.opinion_date}</td><td className="min-w-40 break-words p-2">{row.summary}</td></tr>)}
+            {video.opinions.map((row) => <tr key={row.ticker} className="border-b"><td className="p-2 font-medium"><span className="inline-flex items-center gap-2"><span aria-hidden="true"><CompanyLogo symbol={row.ticker} size="xs" /></span>{row.ticker}</span></td><td className="p-2">{{ bullish: "看涨", bearish: "看跌", neutral: "中性", mixed: "分歧" }[row.sentiment]}</td><td className="p-2">{row.direction_score}</td><td className="whitespace-nowrap p-2">{row.opinion_date}</td><td className="min-w-40 break-words p-2">{row.summary}</td></tr>)}
           </tbody></table></div>
         </div>)}
         <p className="text-xs text-muted-foreground">导入后观点将对所有用户可见。同一视频可重复导入，以最后一次导入为准：该视频已有的股票观点会被整体替换，新 JSON 中没有的股票将被移除；每日变化按视频发布时间统计。校验未通过的视频需要先修正，否则本次导入不会写入任何数据。</p>

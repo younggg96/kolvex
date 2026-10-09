@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
 import { PlayCircle } from "lucide-react";
-import { proxyImageUrl } from "@/lib/utils";
+import CompanyLogo from "@/components/ui/company-logo";
+import CreatorAvatar from "./CreatorAvatar";
 import type { YouTubeOpinion } from "@/lib/youtubeOpinionsApi";
 import OpinionStrength from "./OpinionStrength";
 
@@ -17,25 +17,6 @@ function formatDate(value: string | null | undefined, intlLocale: string) {
   } catch {
     return value.slice(0, 10);
   }
-}
-
-function CreatorAvatar({ opinion }: { opinion: YouTubeOpinion }) {
-  const [failed, setFailed] = useState(false);
-  const title = opinion.channel_title || opinion.channel_id;
-  return (
-    <span className="relative flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-secondary text-xs font-semibold text-muted-foreground">
-      {title.slice(0, 1).toUpperCase()}
-      {opinion.channel_avatar_url && !failed && (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={proxyImageUrl(opinion.channel_avatar_url)}
-          alt=""
-          onError={() => setFailed(true)}
-          className="absolute inset-0 h-full w-full object-cover"
-        />
-      )}
-    </span>
-  );
 }
 
 function displayList(value?: unknown[]) {
@@ -71,7 +52,7 @@ export default function OpinionCard({
   return (
     <article className="min-w-0 border-b border-border py-6 [overflow-wrap:anywhere] first:pt-2">
       <header className="flex min-w-0 items-start gap-3">
-        {showCreator && <CreatorAvatar opinion={opinion} />}
+        {showCreator && <CreatorAvatar name={opinion.channel_title || opinion.channel_id} avatarUrl={opinion.channel_avatar_url} />}
         <div className="min-w-0 flex-1">
           <div className="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-1">
             {showCreator && (
@@ -86,10 +67,11 @@ export default function OpinionCard({
             {showTicker && (
               <button
                 type="button"
-                className="text-[15px] font-semibold hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                className="inline-flex items-center gap-2 text-[15px] font-semibold hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                 onClick={() => onStock?.(opinion.ticker)}
               >
-                {opinion.ticker}
+                <span aria-hidden="true"><CompanyLogo symbol={opinion.ticker} size="xs" /></span>
+                <span>{opinion.ticker}</span>
               </button>
             )}
             <time

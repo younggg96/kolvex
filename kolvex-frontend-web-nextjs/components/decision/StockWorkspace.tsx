@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import PriceChart from "@/components/youtube/PriceChart";
 import CompanyLogo from "@/components/ui/company-logo";
+import CreatorAvatar from "@/components/youtube/CreatorAvatar";
 import { MarkdownBody } from "@/components/trading-analysis/markdown";
 import {
   getStockQuote,
@@ -536,9 +537,13 @@ export default function StockWorkspace({ ticker }: { ticker: string }) {
                     className="grid gap-3 py-4 md:grid-cols-[180px_minmax(0,1fr)]"
                   >
                     <div>
-                      <p className="font-medium">
-                        {opinion.channel_title || opinion.channel_id}
-                      </p>
+                      <Link
+                        href={`/dashboard/youtube-opinions?tab=creators&creator=${encodeURIComponent(opinion.channel_id)}`}
+                        className="flex min-w-0 items-center gap-2 font-medium hover:underline"
+                      >
+                        <CreatorAvatar name={opinion.channel_title || opinion.channel_id} avatarUrl={opinion.channel_avatar_url} />
+                        <span className="min-w-0 break-words">{opinion.channel_title || opinion.channel_id}</span>
+                      </Link>
                       <div className="mt-2">
                         <DirectionBadge
                           direction={

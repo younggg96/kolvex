@@ -6,6 +6,7 @@ import { FormEvent, ReactNode, useState } from "react";
 import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import CompanyLogo from "@/components/ui/company-logo";
 import { useTranslation } from "@/lib/i18n";
 import { validTicker, type Direction } from "@/lib/decision";
 
@@ -108,13 +109,14 @@ export function Empty({ children }: { children: ReactNode }) {
     <p className="py-3 text-sm leading-6 text-muted-foreground">{children}</p>
   );
 }
-export function WorkspaceLink({ ticker }: { ticker: string }) {
+export function WorkspaceLink({ ticker, showLogo = true }: { ticker: string; showLogo?: boolean }) {
   return (
     <Link
       href={`/dashboard/research/${encodeURIComponent(ticker)}`}
-      className="font-semibold underline-offset-4 hover:underline"
+      className={`${showLogo ? "inline-flex items-center gap-2 " : ""}font-semibold underline-offset-4 hover:underline`}
     >
-      {ticker}
+      {showLogo && <span aria-hidden="true"><CompanyLogo symbol={ticker} size="sm" /></span>}
+      <span>{ticker}</span>
     </Link>
   );
 }

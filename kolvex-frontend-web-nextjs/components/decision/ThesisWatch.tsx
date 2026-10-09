@@ -11,7 +11,7 @@ import {
 import { DirectionBadge, WorkspaceLink, money, useCopy } from "./shared";
 
 /** Evaluate on page load; missing sources never become a healthy signal. */
-export default function ThesisWatch({ theses }: { theses: Thesis[] }) {
+export default function ThesisWatch({ theses, showLogos = true }: { theses: Thesis[]; showLogos?: boolean }) {
   const c = useCopy();
   const [data, setData] = useState<
     Record<string, { quote: StockQuote | null; creators: Direction | null }>
@@ -83,7 +83,7 @@ export default function ThesisWatch({ theses }: { theses: Thesis[] }) {
           >
             <div className="min-w-0">
               <div className="flex items-center gap-3">
-                <WorkspaceLink ticker={thesis.ticker} />
+                <WorkspaceLink ticker={thesis.ticker} showLogo={showLogos} />
                 <DirectionBadge direction={thesis.direction} />
               </div>
               <p className="mt-2 max-w-xl truncate text-xs text-muted-foreground">

@@ -1,2 +1,2 @@
-import ResearchHome from "@/components/decision/ResearchHome";
-export default function Dashboard() { return <ResearchHome home/>; }
+import Market from "@/components/decision/Market";
+export default function Dashboard() { return <Market />; }

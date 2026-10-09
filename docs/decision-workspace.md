@@ -7,8 +7,9 @@ Kolvex brings creator opinions, market structure, AI research and real holdings 
 | Destination | Route | User's task |
 | --- | --- | --- |
 | Public home | `/` | Explore one illustrative NVDA decision, from research through review |
-| Home | `/dashboard` | Revisit active theses, creator shifts and personal exposure |
-| Research | `/dashboard/research` | Discover through creator coverage or enter a stock ticker |
+| Markets | `/dashboard` | Default entry: inspect stock quotes and benchmark ETFs; switch between selected stocks, holdings and creator coverage |
+| Research | `/dashboard/research` | Discover stocks through creator coverage, browse creators and compare opinion changes |
+| Deep Research | `/dashboard/trading-analysis` | Configure an AI analysis and review existing reports |
 | Stock workspace | `/dashboard/research/[ticker]` | Inspect market, creator, technical, research and personal evidence together |
 | Portfolio | `/dashboard/portfolio` | Review theses overlapping linked equity holdings, then inspect actual accounts and trades |
 | Journal | `/dashboard/journal` | Review active/closed theses and immutable reasoning history |
@@ -18,12 +19,12 @@ AI Chat and Trading Analysis are retained as capabilities. Ask Kolvex opens from
 
 ## Decision flow
 
-1. Enter a ticker from Home or Research, or open a linked equity ticker in Portfolio.
+1. Enter a ticker from Markets or Research, or open a linked equity ticker in Portfolio.
 2. Read source coverage and recent creator calls. The creator direction uses the **latest opinion per creator within 30 days**; missing coverage is not neutral evidence. This is all tracked creators, not a personal following list.
 3. Run chart AI analysis deliberately. The existing chart draws support, resistance, trendlines and Fibonacci levels, and retains creator markers and drawing synchronization.
 4. When grounded in the chart, AI can propose a conditional entry range, invalidation and up to two targets. The backend rejects incoherent or out-of-range plans. Setup Alignment is five equal technical checks: trend, price vs EMA20, EMA20 vs EMA50, RSI momentum and volume. A complete score requires all inputs. It is not a return probability.
 5. Use the setup as an editable draft, or write a thesis manually. Save direction, reasoning, optional price levels and a time horizon.
-6. Return to Home, Portfolio or Journal to compare the current quote and creator direction with saved thresholds/evidence. Run chart analysis in the workspace to compare technical direction. Review, change the reasoning or close the thesis; prior versions remain available.
+6. Return to Portfolio or Journal to compare the current quote and creator direction with saved thresholds/evidence. Run chart analysis in the workspace to compare technical direction. Review, change the reasoning or close the thesis; prior versions remain available.
 
 ## Persistence and deployment
 

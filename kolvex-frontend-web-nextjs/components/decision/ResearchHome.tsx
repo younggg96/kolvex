@@ -1,302 +1,78 @@
 "use client";
+
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { BookOpen, RefreshCw } from "lucide-react";
+import { RefreshCw } from "lucide-react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
-import {
-  getYouTubeOpinionDashboard,
-  type YouTubeOpinionDashboard,
-} from "@/lib/youtubeOpinionsApi";
-import { getMyHoldings } from "@/lib/portfolioApi";
-import { listTheses, type Thesis } from "@/lib/decision";
+import CreatorAvatar from "@/components/youtube/CreatorAvatar";
+import CompanyLogo from "@/components/ui/company-logo";
+import { getYouTubeOpinionDashboard, type YouTubeOpinionDashboard } from "@/lib/youtubeOpinionsApi";
 import { Empty, Panel, TickerSearch, WorkspaceLink, useCopy } from "./shared";
-import ThesisWatch from "./ThesisWatch";
 import { useDecisionCommand } from "./CommandLayer";
 import styles from "./ResearchHome.module.css";
 
-export default function ResearchHome({ home = false }: { home?: boolean }) {
+export default function ResearchHome() {
   const c = useCopy();
   const { setContext } = useDecisionCommand();
-  const [dashboard, setDashboard] = useState<YouTubeOpinionDashboard | null>(
-    null,
-  );
-  const [holdings, setHoldings] = useState<string[]>([]);
-  const [theses, setTheses] = useState<Thesis[]>([]);
+  const [dashboard, setDashboard] = useState<YouTubeOpinionDashboard | null>(null);
   const [loading, setLoading] = useState(true);
-  const [errors, setErrors] = useState<string[]>([]);
+  const [error, setError] = useState(false);
   const [attempt, setAttempt] = useState(0);
   useEffect(() => {
     let alive = true;
     setLoading(true);
-    Promise.allSettled([
-      getYouTubeOpinionDashboard({ limit: 8 }),
-      getMyHoldings(),
-      listTheses(),
-    ]).then(([opinions, portfolio, journal]) => {
-      if (!alive) return;
-      setDashboard(opinions.status === "fulfilled" ? opinions.value : null);
-      setHoldings(
-        portfolio.status === "fulfilled"
-          ? [
-              ...new Set(
-                portfolio.value.accounts
-                  .flatMap((a) => a.portfolio_positions || [])
-                  .filter((p) => p.position_type !== "option")
-                  .map((p) => p.symbol),
-              ),
-            ]
-          : [],
-      );
-      setTheses(journal.status === "fulfilled" ? journal.value.items : []);
-      setErrors(
-        [
-          opinions.status === "rejected" ? "Creator opinions" : "",
-          portfolio.status === "rejected" ? "Portfolio" : "",
-          journal.status === "rejected" ? "Journal" : "",
-        ].filter(Boolean),
-      );
-      setLoading(false);
-    });
-    return () => {
-      alive = false;
-    };
+    setError(false);
+    getYouTubeOpinionDashboard({ limit: 8 }).then((result) => {
+      if (alive) setDashboard(result);
+    }).catch(() => { if (alive) setError(true); }).finally(() => { if (alive) setLoading(false); });
+    return () => { alive = false; };
   }, [attempt]);
-  const active = theses.filter((t) => t.status === "active");
-  const commandContext = JSON.stringify({
-    workspace: home ? "Home" : "Research",
-    holdings,
-    theses: theses.slice(0, 20),
-    creatorCoverage: dashboard?.stocks.slice(0, 8),
-    recentCreatorChanges: dashboard?.changes.slice(0, 8),
-    unavailableSources: errors,
-  });
-  useEffect(() => {
-    setContext(commandContext);
-    return () => setContext("");
-  }, [commandContext, setContext]);
+  const context = JSON.stringify({ workspace: "Research", creatorCoverage: dashboard?.stocks.slice(0, 8), creators: dashboard?.creators.slice(0, 8), recentCreatorChanges: dashboard?.changes.slice(0, 6), unavailable: error });
+  useEffect(() => { setContext(context); return () => setContext(""); }, [context, setContext]);
+
   return (
-    <DashboardLayout
-      title={home ? c("Home", "首页") : c("Research", "研究")}
-      headerActions={
-        <Button
-          size="sm"
-          variant="ghost"
-          onClick={() => setAttempt((n) => n + 1)}
-          disabled={loading}
-        >
-          <RefreshCw
-            className={`mr-2 h-4 w-4 ${loading ? "motion-safe:animate-spin" : ""}`}
-          />
-          {c("Refresh", "刷新")}
-        </Button>
-      }
-    >
+    <DashboardLayout title={c("Research", "研究")} headerActions={<Button size="sm" variant="ghost" disabled={loading} onClick={() => setAttempt((n) => n + 1)}><RefreshCw className={`mr-2 h-4 w-4 ${loading ? "motion-safe:animate-spin" : ""}`} />{c("Refresh", "刷新")}</Button>}>
       <main className={`${styles.page} flex-1 overflow-y-auto`} aria-busy={loading}>
         <div className={`${styles.content} mx-auto max-w-[1200px] space-y-8 px-4 py-8 md:px-8`}>
           <section className={`${styles.hero} space-y-5`}>
             <div className={styles.scan} aria-hidden="true" />
-            <h1 className="max-w-2xl text-3xl font-semibold tracking-tight md:text-4xl">
-              {home
-                ? c(
-                    "What changed in your investment decisions?",
-                    "你的投资判断，发生了什么变化？",
-                  )
-                : c(
-                    "One stock. The whole decision.",
-                    "一只股票，完整的决策环境。",
-                  )}
-            </h1>
-            <p className="max-w-2xl text-sm leading-6 text-muted-foreground">
-              {c(
-                "Bring creator opinions, market structure and your exposure into a thesis you can return to.",
-                "将创作者观点、市场结构与真实持仓，汇成一条可以持续复核的投资判断。",
-              )}
-            </p>
+            <h1 className="text-3xl font-semibold tracking-tight md:text-4xl">{c("Find the reasoning behind a stock.", "发现股票背后的判断。")}</h1>
+            <p className="max-w-2xl text-sm leading-6 text-muted-foreground">{c("Explore what creators are saying, compare their views, and open a stock workspace to investigate further.", "从创作者观点出发，对比不同判断，进入股票工作台进一步研究。")}</p>
             <TickerSearch />
-            <div className="flex flex-wrap gap-2">
-              {["NVDA", "TSLA", "AAPL", "MSFT"].map((ticker) => (
-                <Link
-                  key={ticker}
-                  href={`/dashboard/research/${ticker}`}
-                  className={`${styles.ticker} rounded-full border border-border px-3 py-1.5 text-xs font-medium hover:bg-muted`}
-                >
-                  {ticker}
-                </Link>
-              ))}
-            </div>
           </section>
-          {loading && (
-            <p role="status" className={`${styles.loading} text-sm text-muted-foreground`}>
-              <span className={styles.loadingDot} aria-hidden="true" />
-              {c("Loading your decision context…", "正在加载决策环境…")}
-            </p>
-          )}
-          {!!errors.length && (
-            <p role="alert" className="text-sm text-muted-foreground">
-              {c("Sources unavailable", "暂时无法加载的数据源")}:{" "}
-              {errors.join(", ")}. {c("Refresh to retry.", "请刷新重试。")}
-            </p>
-          )}
-          {home && (
-            <Panel
-              title={c("Your theses to revisit", "需要回顾的投资判断")}
-              action={
-                <Link
-                  href="/dashboard/journal"
-                  className="text-sm text-primary"
-                >
-                  {c("Open journal", "打开决策日志")}
-                </Link>
-              }
-            >
-              <ThesisWatch key={attempt} theses={active} />
-              {!active.length && !loading && (
-                <Empty>
-                  {c(
-                    "Start with a stock, write down why it matters, and come back to check whether that reason still holds.",
-                    "从一只股票开始，记录关注它的理由，再回来检查这个理由是否仍然成立。",
-                  )}
-                </Empty>
-              )}
-            </Panel>
-          )}
-          <div className="grid gap-6 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
-            <Panel
-              title={c(
-                "Discover through creator opinions",
-                "通过创作者观点发现机会",
-              )}
-              action={
-                <Link
-                  href="/dashboard/youtube-opinions"
-                  className="text-sm text-primary"
-                >
-                  {c("All opinions", "全部观点")}
-                </Link>
-              }
-            >
+          {loading && <p role="status" className={`${styles.loading} text-sm text-muted-foreground`}><span className={styles.loadingDot} aria-hidden="true" />{c("Loading creator research…", "正在加载创作者研究…")}</p>}
+          {error && <p role="alert" className="text-sm text-muted-foreground">{c("Creator research is unavailable. Refresh to retry.", "创作者研究暂时无法加载，请刷新重试。")}</p>}
+          <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
+            <Panel title={c("Stocks creators discuss", "创作者讨论的股票")} action={<Link href="/dashboard/youtube-opinions?tab=stocks" className="text-sm text-primary">{c("All stocks", "全部股票")}</Link>}>
               <div className="divide-y divide-border">
-                {loading && !dashboard && (
-                  <div className={styles.skeletons} aria-hidden="true">
-                    {[0, 1, 2, 3].map((row) => (
-                      <div key={row} className={styles.skeletonRow}>
-                        <span /><span />
-                      </div>
-                    ))}
-                  </div>
-                )}
-                {dashboard?.stocks.slice(0, 8).map((stock, index) => (
-                  <div
-                    key={stock.ticker}
-                    style={{ animationDelay: `${index * 35}ms` }}
-                    className={`${styles.stockRow} flex flex-wrap items-center justify-between gap-3 py-4`}
-                  >
-                    <div>
-                      <WorkspaceLink ticker={stock.ticker} />
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        {stock.company_name}
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-sm">
-                        {stock.creator_count} {c("creators", "位创作者")} ·{" "}
-                        {stock.total_opinions} {c("opinions", "条观点")}
-                      </p>
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        {stock.bullish_count} {c("bullish", "看多")} /{" "}
-                        {stock.bearish_count} {c("bearish", "看空")}
-                      </p>
-                    </div>
-                  </div>
-                ))}
+                {loading && !dashboard && <div className={styles.skeletons} aria-hidden="true">{[0, 1, 2, 3].map((row) => <div key={row} className={styles.skeletonRow}><span /><span /></div>)}</div>}
+                {dashboard?.stocks.slice(0, 8).map((stock, index) => <div key={stock.ticker} style={{ animationDelay: `${index * 35}ms` }} className={`${styles.stockRow} flex flex-wrap items-center justify-between gap-3 py-4`}>
+                  <div><WorkspaceLink ticker={stock.ticker} /><p className="mt-1 text-xs text-muted-foreground">{stock.company_name}</p></div>
+                  <div className="text-right text-xs text-muted-foreground"><p>{stock.creator_count} {c("creators", "位创作者")} · {stock.total_opinions} {c("opinions", "条观点")}</p><p className="mt-1">{stock.bullish_count} {c("bullish", "看多")} / {stock.bearish_count} {c("bearish", "看空")}</p></div>
+                </div>)}
               </div>
-              {!dashboard?.stocks.length && !loading && (
-                <Empty>
-                  {c(
-                    "Creator coverage will appear here when opinions are available.",
-                    "有可用观点后，创作者覆盖的股票会出现在这里。",
-                  )}
-                </Empty>
-              )}
+              {!dashboard?.stocks.length && !loading && !error && <Empty>{c("Stocks will appear when creator opinions are available.", "有可用的创作者观点后，股票会出现在这里。")}</Empty>}
             </Panel>
-            <div className="space-y-6">
-              <Panel
-                title={c("Research your exposure", "研究自己的风险敞口")}
-                action={
-                  <Link
-                    href="/dashboard/portfolio"
-                    className="text-sm text-primary"
-                  >
-                    {c("Portfolio", "持仓")}
-                  </Link>
-                }
-              >
-                <div className="flex flex-wrap gap-3">
-                  {holdings.slice(0, 20).map((ticker) => (
-                    <WorkspaceLink key={ticker} ticker={ticker} />
-                  ))}
-                </div>
-                {!holdings.length && (
-                  <Empty>
-                    {c(
-                      "Connect an investment account in Portfolio to bring your holdings into each stock workspace.",
-                      "在持仓页连接投资账户，将真实持仓带入每只股票的工作台。",
-                    )}
-                  </Empty>
-                )}
-              </Panel>
-              <Panel
-                title={c("Make your reasoning useful", "让判断可以被复盘")}
-              >
-                <BookOpen className="mb-3 h-6 w-6 text-primary" />
-                <p className="text-sm leading-6 text-muted-foreground">
-                  {c(
-                    "A thesis keeps your direction, reasons, entry, target and invalidation together. Journal preserves how your thinking changes.",
-                    "一条判断记录方向、理由、入场、目标和失效价。决策日志保留思考的演变过程。",
-                  )}
-                </p>
-                <Link
-                  href="/dashboard/journal"
-                  className="mt-4 inline-block text-sm font-medium text-primary"
-                >
-                  {c("Your journal", "我的决策日志")}
-                </Link>
-              </Panel>
-            </div>
+            <Panel title={c("Explore creators", "发现创作者")} action={<Link href="/dashboard/youtube-opinions?tab=creators" className="text-sm text-primary">{c("All creators", "全部创作者")}</Link>}>
+              <div className="divide-y divide-border">
+                {dashboard?.creators.slice(0, 6).map((creator) => <Link key={creator.channel_id} href={`/dashboard/youtube-opinions?tab=creators&creator=${encodeURIComponent(creator.channel_id)}`} className={`${styles.stockRow} flex min-w-0 items-center gap-3 py-4`}>
+                  <CreatorAvatar name={creator.channel_title || creator.channel_id} avatarUrl={creator.channel_avatar_url} />
+                  <div className="min-w-0 flex-1"><p className="truncate text-sm font-semibold">{creator.channel_title || creator.channel_id}</p><div className="mt-2 flex flex-wrap gap-2 text-xs text-muted-foreground">{creator.top_tickers.slice(0, 3).map((stock) => <span key={stock.ticker} className="inline-flex items-center gap-1"><span aria-hidden="true"><CompanyLogo symbol={stock.ticker} size="xs" /></span>{stock.ticker}</span>)}</div></div>
+                  <span className="shrink-0 text-xs text-muted-foreground">{creator.total_opinions} {c("opinions", "条观点")}</span>
+                </Link>)}
+              </div>
+              {!dashboard?.creators.length && !loading && !error && <Empty>{c("No creators available yet.", "暂时没有可用创作者。")}</Empty>}
+            </Panel>
           </div>
-          {!!dashboard?.changes.length && (
-            <Panel
-              title={c(
-                "Recent creator opinion updates",
-                "近期创作者观点动态",
-              )}
-            >
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {dashboard.changes.slice(0, 6).map((change, index) => (
-                  <div
-                    key={change.ticker}
-                    style={{ animationDelay: `${index * 45}ms` }}
-                    className={`${styles.opinionCard} flex items-center justify-between gap-3 rounded-lg bg-muted/40 px-4 py-3`}
-                  >
-                    <WorkspaceLink ticker={change.ticker} />
-                    <div className="text-right text-xs text-muted-foreground">
-                      <p>
-                        {change.change == null
-                          ? c("New opinions", "新增观点")
-                          : change.change > 0
-                            ? c("Opinions strengthening", "观点转强")
-                            : change.change < 0
-                              ? c("Opinions weakening", "观点转弱")
-                              : c("Opinions unchanged", "观点持平")}
-                      </p>
-                      <p className="mt-1">{change.current_date}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </Panel>
-          )}
+          {!!dashboard?.changes.length && <Panel title={c("Recent creator opinion updates", "近期创作者观点动态")}>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {dashboard.changes.slice(0, 6).map((change, index) => <div key={change.ticker} style={{ animationDelay: `${index * 45}ms` }} className={`${styles.opinionCard} flex items-center justify-between gap-3 rounded-lg bg-muted/40 px-4 py-3`}>
+                <WorkspaceLink ticker={change.ticker} />
+                <div className="text-right text-xs text-muted-foreground"><p>{change.change == null ? c("New opinions", "新增观点") : change.change > 0 ? c("Opinions strengthening", "观点转强") : change.change < 0 ? c("Opinions weakening", "观点转弱") : c("Opinions unchanged", "观点持平")}</p><p className="mt-1">{change.current_date}</p></div>
+              </div>)}
+            </div>
+          </Panel>}
         </div>
       </main>
     </DashboardLayout>

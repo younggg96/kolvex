@@ -42,6 +42,7 @@
     "justNow": "刚刚"
   },
   "sidebar": {
+    "markets": "行情",
     "chat": "AI 对话",
     "analytics": "数据分析",
     "social": "社交媒体",
@@ -63,6 +64,7 @@
     "journal": "日志"
   },
   "tabBar": {
+    "markets": "行情",
     "chat": "对话",
     "tradingAnalysis": "分析",
     "youtubeOpinions": "观点",

@@ -20,7 +20,7 @@ export interface ProductFeature {
 }
 
 export const PRODUCT_FEATURES = [
-  { id: "home", label: "Home", enabled: true, routePrefixes: ["/dashboard"] },
+  { id: "home", label: "Markets", enabled: true, routePrefixes: ["/dashboard"] },
   { id: "research", label: "Research", enabled: true, routePrefixes: ["/dashboard/research"] },
   { id: "journal", label: "Decision Journal", enabled: true, routePrefixes: ["/dashboard/journal"], apiPrefixes: ["/api/theses"] },
   {
