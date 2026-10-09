@@ -12,7 +12,6 @@ import {
   ArrowUpDown,
   ChevronRight,
   Loader2,
-  RefreshCw,
   Search,
   Upload,
 } from "lucide-react";
@@ -785,31 +784,19 @@ export default function YouTubeOpinionExplorer() {
     <DashboardLayout
       title={t("youtubeOpinions.title")}
       headerActions={
-        <div className="flex items-center gap-1">
+        profile?.is_admin ? (
           <Button
-            size="icon"
-            variant="ghost"
-            className="h-8 w-8"
-            title={t("youtubeOpinions.refresh")}
-            aria-label={t("youtubeOpinions.refresh")}
-            onClick={refresh}
+            size="sm"
+            variant="outline"
+            className="h-8 w-8 gap-1.5 p-0 sm:w-auto sm:px-3"
+            title={t("youtubeOpinions.uploadJson")}
+            aria-label={t("youtubeOpinions.uploadJson")}
+            onClick={() => setUploadOpen(true)}
           >
-            <RefreshCw className="h-4 w-4" />
+            <Upload className="h-4 w-4" />
+            <span className="hidden sm:inline">{t("youtubeOpinions.uploadJson")}</span>
           </Button>
-          {profile?.is_admin && (
-            <Button
-              size="sm"
-              variant="outline"
-              className="h-8 w-8 gap-1.5 p-0 sm:w-auto sm:px-3"
-              title={t("youtubeOpinions.uploadJson")}
-              aria-label={t("youtubeOpinions.uploadJson")}
-              onClick={() => setUploadOpen(true)}
-            >
-              <Upload className="h-4 w-4" />
-              <span className="hidden sm:inline">{t("youtubeOpinions.uploadJson")}</span>
-            </Button>
-          )}
-        </div>
+        ) : undefined
       }
     >
       <div

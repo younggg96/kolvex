@@ -18,6 +18,7 @@ from math import isfinite
 from statistics import mean
 from typing import Any, Dict, Iterable, List, Optional
 from urllib.parse import parse_qs, urlparse
+from uuid import uuid4
 
 logger = logging.getLogger(__name__)
 
@@ -89,6 +90,122 @@ class YouTubeStockOpinionService:
             raise LookupError("Creator not found")
         rows = self._fetch_rows(channel_id=channel_id)
         return {"success": True, "creator": self._build_creator_summaries(rows)[0]}
+
+    def list_creator_opinions(self, channel_id: str) -> Dict[str, Any]:
+        rows = self._fetch_rows(channel_id=channel_id)
+        if not rows:
+            raise LookupError("Creator not found")
+        return {"opinions": [_public_opinion(row) for row in rows]}
+
+    def create_opinion(
+        self,
+        channel_id: str,
+        values: Dict[str, Any],
+        uploaded_by: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        existing = self._fetch_rows(channel_id=channel_id)
+        if not existing:
+            raise LookupError("Creator not found")
+        cleaned = _clean_opinion_input(values)
+        identity = existing[0]
+        video_id, video_url, thumbnail = _resolve_video(cleaned, None)
+        self._ensure_unique_opinion(video_id, cleaned["ticker"])
+        row = {
+            "video_id": video_id,
+            "video_title": cleaned["video_title"],
+            "video_url": video_url,
+            "thumbnail_url": thumbnail,
+            "video_published_at": cleaned["video_published_at"],
+            "channel_id": channel_id,
+            "channel_title": identity.get("channel_title"),
+            "channel_handle": identity.get("channel_handle"),
+            "channel_url": identity.get("channel_url"),
+            "channel_avatar_url": identity.get("channel_avatar_url"),
+            "ticker": cleaned["ticker"],
+            "company_name": cleaned["company_name"],
+            "sentiment": cleaned["sentiment"],
+            "direction_score": cleaned["direction_score"],
+            "confidence": cleaned["confidence"],
+            "time_horizon": cleaned["time_horizon"],
+            "thesis": cleaned["thesis"],
+            "summary": cleaned["summary"],
+            "key_points": cleaned["key_points"],
+            "risks": cleaned["risks"],
+            "price_targets": cleaned["price_targets"],
+            "opinion_date": cleaned["opinion_date"],
+            "analyzed_at": None,
+            "source_model": "admin",
+            "raw_payload": {},
+            "uploaded_by": uploaded_by,
+        }
+        result = self.supabase.table(TABLE_NAME).insert(row).execute()
+        written = (result.data or [row])[0]
+        return {"success": True, "opinion": _public_opinion(written)}
+
+    def update_opinion(self, opinion_id: str, values: Dict[str, Any]) -> Dict[str, Any]:
+        current = self._opinion_by_id(opinion_id)
+        cleaned = _clean_opinion_input(values)
+        video_id, video_url, thumbnail = _resolve_video(cleaned, current)
+        self._ensure_unique_opinion(video_id, cleaned["ticker"], ignore_id=opinion_id)
+        changes = {
+            "video_id": video_id,
+            "video_title": cleaned["video_title"],
+            "video_url": video_url,
+            "thumbnail_url": thumbnail,
+            "video_published_at": cleaned["video_published_at"],
+            "ticker": cleaned["ticker"],
+            "company_name": cleaned["company_name"],
+            "sentiment": cleaned["sentiment"],
+            "direction_score": cleaned["direction_score"],
+            "confidence": cleaned["confidence"],
+            "time_horizon": cleaned["time_horizon"],
+            "thesis": cleaned["thesis"],
+            "summary": cleaned["summary"],
+            "key_points": cleaned["key_points"],
+            "risks": cleaned["risks"],
+            "price_targets": cleaned["price_targets"],
+            "opinion_date": cleaned["opinion_date"],
+        }
+        result = (
+            self.supabase.table(TABLE_NAME).update(changes).eq("id", opinion_id).execute()
+        )
+        written = (result.data or [{**current, **changes}])[0]
+        return {"success": True, "opinion": _public_opinion(written)}
+
+    def delete_opinion(self, opinion_id: str) -> Dict[str, Any]:
+        self._opinion_by_id(opinion_id)
+        result = self.supabase.table(TABLE_NAME).delete().eq("id", opinion_id).execute()
+        if not result.data:
+            raise LookupError("Opinion not found")
+        return {"success": True, "id": opinion_id}
+
+    def _opinion_by_id(self, opinion_id: str) -> Dict[str, Any]:
+        if not re.fullmatch(r"[0-9a-fA-F-]{32,36}", opinion_id or ""):
+            raise LookupError("Opinion not found")
+        result = (
+            self.supabase.table(TABLE_NAME)
+            .select("*")
+            .eq("id", opinion_id)
+            .limit(1)
+            .execute()
+        )
+        rows = result.data or []
+        if not rows:
+            raise LookupError("Opinion not found")
+        return rows[0]
+
+    def _ensure_unique_opinion(self, video_id: str, ticker: str, ignore_id: Optional[str] = None) -> None:
+        result = (
+            self.supabase.table(TABLE_NAME)
+            .select("id")
+            .eq("video_id", video_id)
+            .eq("ticker", ticker)
+            .limit(1)
+            .execute()
+        )
+        match = (result.data or [None])[0]
+        if match and match.get("id") != ignore_id:
+            raise ValueError("这条视频已经有该股票的观点，请直接修改原观点。")
 
     async def upload_import(
         self,
@@ -914,6 +1031,186 @@ def _https_url(value: Any) -> bool:
 
 def _youtube_video_id(value: Any) -> bool:
     return isinstance(value, str) and bool(re.fullmatch(r"[A-Za-z0-9_-]{11}", value))
+
+
+OPINION_FIELDS = {
+    "ticker", "company_name", "sentiment", "direction_score", "confidence",
+    "time_horizon", "thesis", "summary", "key_points", "risks", "price_targets",
+    "opinion_date", "video_title", "video_url", "video_published_at",
+}
+PROFILE_FIELDS = {"channel_id", "channel_title", "channel_handle", "channel_url", "channel_avatar_url"}
+
+
+def _public_opinion(row: Dict[str, Any]) -> Dict[str, Any]:
+    score = row.get("direction_score")
+    confidence = row.get("confidence")
+    published = row.get("video_published_at")
+    opinion_date = row.get("opinion_date")
+    return {
+        "id": row.get("id"),
+        "video_id": row.get("video_id"),
+        "video_title": row.get("video_title"),
+        "video_url": row.get("video_url"),
+        "thumbnail_url": row.get("thumbnail_url"),
+        "video_published_at": str(published) if published else None,
+        "channel_id": row.get("channel_id"),
+        "ticker": row.get("ticker"),
+        "company_name": row.get("company_name"),
+        "sentiment": row.get("sentiment"),
+        "direction_score": float(score) if score is not None else 0,
+        "confidence": float(confidence) if confidence is not None else None,
+        "time_horizon": row.get("time_horizon"),
+        "thesis": row.get("thesis"),
+        "summary": row.get("summary"),
+        "key_points": row.get("key_points") or [],
+        "risks": row.get("risks") or [],
+        "price_targets": row.get("price_targets") or [],
+        "opinion_date": str(opinion_date)[:10] if opinion_date else None,
+        "created_at": row.get("created_at"),
+        "updated_at": row.get("updated_at"),
+    }
+
+
+def _clean_text(value: Any, limit: int, label: str, required: bool = False) -> Optional[str]:
+    if value is None:
+        text = ""
+    elif not isinstance(value, str):
+        raise ValueError(f"{label}必须是文本。")
+    else:
+        text = value.strip()
+    if len(text) > limit:
+        raise ValueError(f"{label}超出长度限制。")
+    if required and not text:
+        raise ValueError(f"{label}不能为空。")
+    return text or None
+
+
+def _clean_opinion_input(values: Dict[str, Any]) -> Dict[str, Any]:
+    if not values or set(values) - OPINION_FIELDS or set(values) & PROFILE_FIELDS:
+        raise ValueError("只能修改观点内容，不能修改博主资料。")
+    ticker = _normalize_ticker(values.get("ticker") if isinstance(values.get("ticker"), str) else None)
+    if not ticker or not re.fullmatch(r"[A-Z0-9][A-Z0-9.\-]{0,19}", ticker):
+        raise ValueError("股票代码格式不正确，例如 NVDA。")
+    sentiment = values.get("sentiment")
+    if sentiment not in {"bullish", "bearish", "neutral", "mixed"}:
+        raise ValueError("观点方向必须是看多、看空、中性或分歧。")
+    summary = _clean_text(values.get("summary"), 4000, "观点摘要", required=True)
+    score = values.get("direction_score")
+    if score is None:
+        score = _normalize_score(None, sentiment)
+    elif isinstance(score, bool) or not isinstance(score, (int, float)) or not isfinite(float(score)) or not -100 <= float(score) <= 100:
+        raise ValueError("方向分数必须在 -100 到 100 之间。")
+    else:
+        score = round(float(score), 2)
+    confidence = values.get("confidence")
+    if confidence is not None and (
+        isinstance(confidence, bool) or not isinstance(confidence, (int, float))
+        or not isfinite(float(confidence)) or not 0 <= float(confidence) <= 1
+    ):
+        raise ValueError("置信度必须在 0 到 1 之间。")
+    confidence = None if confidence is None else round(float(confidence), 3)
+    opinion_date = values.get("opinion_date") or date.today().isoformat()
+    if not isinstance(opinion_date, str):
+        raise ValueError("观点日期必须是 YYYY-MM-DD。")
+    try:
+        date.fromisoformat(opinion_date[:10])
+    except ValueError:
+        raise ValueError("观点日期必须是 YYYY-MM-DD。")
+    video_url = _clean_text(values.get("video_url"), 2048, "视频链接")
+    if video_url:
+        parsed = urlparse(video_url)
+        if parsed.scheme != "https" or not parsed.hostname or parsed.username or parsed.password:
+            raise ValueError("视频链接必须是有效的 HTTPS 地址。")
+    published = values.get("video_published_at")
+    if published in (None, ""):
+        published = None
+    elif not isinstance(published, str) or not _parsed_datetime(published):
+        raise ValueError("视频发布时间格式不正确。")
+    else:
+        published = _to_iso_datetime(published)
+    return {
+        "ticker": ticker,
+        "company_name": _clean_text(values.get("company_name"), 200, "公司名称"),
+        "sentiment": sentiment,
+        "direction_score": score,
+        "confidence": confidence,
+        "time_horizon": _clean_text(values.get("time_horizon"), 80, "时间范围"),
+        "thesis": _clean_text(values.get("thesis"), 8000, "理由"),
+        "summary": summary,
+        "key_points": _clean_lines(values.get("key_points"), "要点"),
+        "risks": _clean_lines(values.get("risks"), "风险"),
+        "price_targets": _clean_targets(values.get("price_targets")),
+        "opinion_date": opinion_date[:10],
+        "video_title": _clean_text(values.get("video_title"), 300, "视频标题"),
+        "video_url": video_url,
+        "video_published_at": published,
+    }
+
+
+def _parsed_datetime(value: str) -> bool:
+    try:
+        datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+        return True
+    except ValueError:
+        return False
+
+
+def _clean_lines(value: Any, label: str) -> List[str]:
+    if value is None:
+        return []
+    if not isinstance(value, list):
+        raise ValueError(f"{label}必须是文本列表。")
+    if len(value) > 20:
+        raise ValueError(f"{label}最多 20 条。")
+    lines = []
+    for item in value:
+        text = _clean_text(item, 500, label)
+        if text:
+            lines.append(text)
+    return lines
+
+
+def _clean_targets(value: Any) -> List[Dict[str, Any]]:
+    if value is None:
+        return []
+    if not isinstance(value, list) or len(value) > 10:
+        raise ValueError("目标价最多 10 条，且每条都要有正数价格。")
+    targets = []
+    for item in value:
+        if not isinstance(item, dict):
+            raise ValueError("目标价最多 10 条，且每条都要有正数价格。")
+        price = item.get("value")
+        if isinstance(price, bool) or not isinstance(price, (int, float)) or not isfinite(float(price)) or float(price) <= 0:
+            raise ValueError("目标价必须是大于 0 的数字。")
+        label = _clean_text(item.get("label"), 40, "目标价名称")
+        target = {"value": round(float(price), 4)}
+        if label:
+            target["label"] = label
+        targets.append(target)
+    return targets
+
+
+def _resolve_video(cleaned: Dict[str, Any], current: Optional[Dict[str, Any]]):
+    url = cleaned.get("video_url")
+    current_id = current.get("video_id") if current else None
+    extracted = _video_id_from_url(url) if url else None
+    if extracted:
+        video_id = extracted
+        thumbnail = f"https://i.ytimg.com/vi/{video_id}/mqdefault.jpg"
+    else:
+        video_id = current_id or f"manual-{uuid4().hex[:16]}"
+        thumbnail = current.get("thumbnail_url") if current and current.get("video_id") == video_id else None
+    return video_id, url, thumbnail
+
+
+def _video_id_from_url(url: str) -> Optional[str]:
+    host = (urlparse(url).hostname or "").lower()
+    if host in {"youtu.be", "www.youtu.be"} or host.endswith("youtube.com"):
+        video_id = _extract_youtube_video_id(url)
+        if not _youtube_video_id(video_id):
+            raise ValueError("无法从链接识别 YouTube 视频。")
+        return video_id
+    return None
 
 
 def compare_upload_coverage(

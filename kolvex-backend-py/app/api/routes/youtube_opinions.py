@@ -6,7 +6,7 @@ from typing import Any, Dict, List, Optional, Union
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from supabase import Client
-from pydantic import BaseModel, ConfigDict, StrictStr
+from pydantic import BaseModel, ConfigDict, Field, StrictStr
 
 from app.api.dependencies.auth import verify_admin
 from app.core.supabase import get_supabase_service
@@ -24,6 +24,31 @@ class CreatorUpdate(BaseModel):
     channel_handle: Optional[StrictStr] = None
     channel_url: Optional[StrictStr] = None
     channel_avatar_url: Optional[StrictStr] = None
+
+
+class PriceTargetInput(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    label: Optional[StrictStr] = None
+    value: float
+
+
+class OpinionWrite(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    ticker: StrictStr
+    company_name: Optional[StrictStr] = None
+    sentiment: StrictStr
+    direction_score: Optional[float] = None
+    confidence: Optional[float] = None
+    time_horizon: Optional[StrictStr] = None
+    thesis: Optional[StrictStr] = None
+    summary: StrictStr
+    key_points: List[StrictStr] = Field(default_factory=list)
+    risks: List[StrictStr] = Field(default_factory=list)
+    price_targets: List[PriceTargetInput] = Field(default_factory=list)
+    opinion_date: Optional[StrictStr] = None
+    video_title: Optional[StrictStr] = None
+    video_url: Optional[StrictStr] = None
+    video_published_at: Optional[StrictStr] = None
 
 
 def get_service(
@@ -117,6 +142,60 @@ async def get_youtube_stock_detail(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to load stock opinion detail: {str(e)}",
         )
+
+
+@router.get("/creators/{channel_id}/opinions")
+async def list_creator_opinions(
+    channel_id: str,
+    admin_id: str = Depends(verify_admin),
+    service: YouTubeStockOpinionService = Depends(get_service),
+):
+    try:
+        return service.list_creator_opinions(channel_id)
+    except LookupError:
+        raise HTTPException(status_code=404, detail="Creator not found")
+
+
+@router.post("/creators/{channel_id}/opinions")
+async def create_creator_opinion(
+    channel_id: str,
+    payload: OpinionWrite,
+    admin_id: str = Depends(verify_admin),
+    service: YouTubeStockOpinionService = Depends(get_service),
+):
+    try:
+        return service.create_opinion(channel_id, payload.model_dump(), uploaded_by=admin_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    except LookupError:
+        raise HTTPException(status_code=404, detail="Creator not found")
+
+
+@router.patch("/opinions/{opinion_id}")
+async def update_opinion(
+    opinion_id: str,
+    payload: OpinionWrite,
+    admin_id: str = Depends(verify_admin),
+    service: YouTubeStockOpinionService = Depends(get_service),
+):
+    try:
+        return service.update_opinion(opinion_id, payload.model_dump())
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    except LookupError:
+        raise HTTPException(status_code=404, detail="Opinion not found")
+
+
+@router.delete("/opinions/{opinion_id}")
+async def delete_opinion(
+    opinion_id: str,
+    admin_id: str = Depends(verify_admin),
+    service: YouTubeStockOpinionService = Depends(get_service),
+):
+    try:
+        return service.delete_opinion(opinion_id)
+    except LookupError:
+        raise HTTPException(status_code=404, detail="Opinion not found")
 
 
 @router.get("/creators/{channel_id}/profile")

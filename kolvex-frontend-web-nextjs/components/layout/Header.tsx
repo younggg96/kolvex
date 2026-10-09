@@ -1,7 +1,7 @@
 "use client";
 
 import { ReactNode } from "react";
-import { Sparkles } from "lucide-react";
+import { MessageSquareText } from "lucide-react";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { useDecisionCommand } from "@/components/decision/CommandLayer";
 import { useCopy } from "@/components/decision/shared";
@@ -41,7 +41,7 @@ export default function Header({
             aria-label={c("Ask Kolvex", "询问 Kolvex")}
             className="-mr-1.5 ml-auto flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary lg:hidden"
           >
-            <Sparkles className="h-[18px] w-[18px]" />
+            <MessageSquareText className="h-[18px] w-[18px]" />
           </button>
         )}
       </div>

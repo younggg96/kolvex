@@ -192,6 +192,8 @@ export interface AgentRequestOptions {
   model?: string;
   /** Active data sources: "web", "portfolio", "plaid" */
   sources?: string[];
+  /** Page evidence for this turn. The backend does not store it as the user message. */
+  context?: string;
 }
 
 /**
@@ -214,6 +216,7 @@ export async function sendAgentMessage(
         content,
         model: options?.model || undefined,
         sources: options?.sources || undefined,
+        context: options?.context || undefined,
       }),
     }
   );
@@ -243,6 +246,7 @@ export async function streamAgentMessage(
         content,
         model: options?.model || undefined,
         sources: options?.sources || undefined,
+        context: options?.context || undefined,
       }),
       signal,
     }

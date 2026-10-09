@@ -3,7 +3,6 @@
 import React, { useState, useCallback } from "react";
 import { useTranslation } from "@/lib/i18n";
 import {
-    Sparkles,
     TrendingUp,
     TrendingDown,
     AlertTriangle,
@@ -486,23 +485,7 @@ export function PortfolioAIAnalysis({ className }: PortfolioAIAnalysisProps) {
     return (
         <Card className={cn("overflow-hidden", className)}>
             <CardHeader className="pb-4">
-                <div className="flex items-center justify-between">
-                    <div>
-                        <CardTitle className="text-lg">{t("portfolio.ai.title")}</CardTitle>
-                    </div>
-                    {analysis && (
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={handleAnalyze}
-                            disabled={loading}
-                            className="gap-2"
-                        >
-                            <RefreshCw className={cn("w-4 h-4", loading && "animate-spin")} />
-                            {loading ? t("portfolio.ai.analyzing") : t("portfolio.ai.refresh")}
-                        </Button>
-                    )}
-                </div>
+                <CardTitle className="text-lg">{t("portfolio.ai.title")}</CardTitle>
             </CardHeader>
 
             <CardContent>

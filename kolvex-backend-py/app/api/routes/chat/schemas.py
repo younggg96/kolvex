@@ -59,6 +59,11 @@ class SendMessageRequest(BaseModel):
         default=None,
         description="Active data sources: web, portfolio, plaid. If not set, all sources are available."
     )
+    context: Optional[str] = Field(
+        default=None,
+        max_length=100000,
+        description="Page evidence for this turn only. It is not stored as the user message.",
+    )
 
 
 class MessageResponse(BaseModel):

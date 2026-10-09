@@ -5,13 +5,14 @@ import {
   ArrowUp,
   Globe,
   ChevronDown,
-  Sparkles,
+  Cpu,
   Check,
   Briefcase,
   Landmark,
   Lock,
   Settings,
   Square,
+  X,
 } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
@@ -239,7 +240,7 @@ function ModelSelector({
           )}
         >
           {hasAnyAvailable ? (
-            <Sparkles className="w-3.5 h-3.5 text-muted-foreground" />
+            <Cpu className="w-3.5 h-3.5 text-muted-foreground" />
           ) : (
             <Lock className="w-3.5 h-3.5 text-muted-foreground" />
           )}
@@ -376,7 +377,8 @@ export function ChatInput({
   isFocused = false,
   onFocus,
   onBlur,
-  placeholder = "Ask anything about stocks, markets, or investments...",
+  placeholder,
+  appearance = "panel",
   activeSources = ["plaid", "portfolio"],
   onToggleSource,
   showSourceToggle = true,
@@ -385,8 +387,12 @@ export function ChatInput({
   onSelectModel,
   showModelSelector = true,
   availableProviders,
+  evidenceLabel,
+  onClearEvidence,
 }: ChatInputProps) {
   const { t } = useTranslation();
+  const inline = appearance === "inline";
+  const prompt = placeholder ?? t("chat.input.placeholder");
   const internalRef = useRef<HTMLTextAreaElement>(null);
   const inputRef = externalRef || internalRef;
 
@@ -513,13 +519,44 @@ export function ChatInput({
       {/* Main Container */}
       <div
         className={cn(
-          "relative flex flex-col overflow-hidden rounded-[26px] border bg-muted transition-colors duration-150",
-          isFocused ? "border-foreground/25" : "border-transparent"
+          "relative flex flex-col",
+          inline
+            ? "bg-transparent"
+            : cn(
+                "overflow-hidden rounded-[26px] border bg-muted transition-colors duration-150",
+                isFocused ? "border-foreground/25" : "border-transparent"
+              )
         )}
       >
-        {/* Input Area */}
+        {evidenceLabel && (
+          <div
+            className={cn(
+              "flex items-center gap-2",
+              inline ? "px-0 pb-1 pt-1" : "px-4 pt-3"
+            )}
+          >
+            <p className="min-w-0 flex-1 truncate text-[13px] text-muted-foreground">
+              <span className="font-medium text-foreground">{t("chat.evidence.using")}</span>
+              <span className="px-1.5 text-foreground/30" aria-hidden>·</span>
+              {evidenceLabel}
+            </p>
+            {onClearEvidence && (
+              <button
+                type="button"
+                onClick={onClearEvidence}
+                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-muted-foreground hover:bg-foreground/[0.06] hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                aria-label={t("chat.evidence.clear")}
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            )}
+          </div>
+        )}
         <div
-          className={cn("flex items-end gap-3 px-5 pt-4", hasFooter ? "pb-1" : "pb-3")}
+          className={cn(
+            "flex items-end gap-3",
+            inline ? "px-0 pb-3 pt-1" : cn("px-5", evidenceLabel ? "pt-1" : "pt-4", hasFooter ? "pb-1" : "pb-3")
+          )}
         >
           <textarea
             ref={inputRef as React.RefObject<HTMLTextAreaElement>}
@@ -528,17 +565,15 @@ export function ChatInput({
             onFocus={onFocus}
             onBlur={onBlur}
             onKeyDown={handleKeyDown}
-            placeholder={
-              isBlocked
-                ? t("chat.input.addApiKeyPlaceholder")
-                : placeholder
-            }
+            placeholder={isBlocked ? t("chat.input.addApiKeyPlaceholder") : prompt}
             disabled={isBlocked}
             className={cn(
-              "flex-1 bg-transparent resize-none outline-none",
+              "flex-1 resize-none bg-transparent outline-none",
               "text-foreground placeholder:text-muted-foreground",
-              "text-base leading-relaxed min-h-[28px] max-h-[160px]",
-              "disabled:opacity-50 disabled:cursor-not-allowed"
+              "disabled:cursor-not-allowed disabled:opacity-50",
+              inline
+                ? "min-h-11 border-b-2 border-transparent text-[17px] leading-7 focus-visible:border-primary focus-visible:outline-none"
+                : "min-h-[28px] max-h-[160px] text-base leading-relaxed"
             )}
             rows={1}
           />
@@ -556,10 +591,15 @@ export function ChatInput({
         {/* Footer - show when source toggle or model selector is enabled */}
         {hasFooter && (
           <div
-            className="flex items-center justify-between gap-2 px-2.5 pb-2.5 pt-1"
+            className={cn(
+              "flex items-center justify-between gap-2",
+              inline
+                ? "border-t border-border px-0 py-2"
+                : "px-2.5 pb-2.5 pt-1"
+            )}
           >
             {/* Left Side - Source Toggles & Model Selector */}
-            <div className="flex min-w-0 flex-wrap items-center gap-0.5">
+            <div className={cn("flex min-w-0 flex-wrap items-center gap-0.5", inline && "-ml-3")}>
               {/* Source Toggles */}
               {showSourceToggle && onToggleSource && (
                 <>

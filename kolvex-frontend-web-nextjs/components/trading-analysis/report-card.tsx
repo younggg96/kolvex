@@ -149,9 +149,7 @@ export function ReportCard({
             />
           </div>
         </div>
-        <div className="max-w-[72ch]">
-          <MarkdownBody content={displayContent || ""} />
-        </div>
+        <MarkdownBody content={displayContent || ""} />
       </section>
     </TooltipProvider>
   );

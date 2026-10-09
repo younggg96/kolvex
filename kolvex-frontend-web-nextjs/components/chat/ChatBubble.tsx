@@ -5,6 +5,7 @@ import { Copy, Check, RotateCcw } from "lucide-react";
 import { useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { visibleQuestion } from "./pageEvidence";
 import type { ChatBubbleProps } from "./types";
 import { Button } from "../ui/button";
 import { useTranslation } from "@/lib/i18n";
@@ -21,6 +22,7 @@ export function ChatBubble({
   const { t } = useTranslation();
   const [copied, setCopied] = useState(false);
   const isUser = role === "user";
+  const question = isUser ? visibleQuestion(content) : content;
 
   const handleCopy = async () => {
     await navigator.clipboard.writeText(content);
@@ -46,7 +48,7 @@ export function ChatBubble({
             aria-label={t("chat.userName")}
           >
             <p className="text-[15px] leading-relaxed whitespace-pre-wrap">
-              {content}
+              {question}
             </p>
           </div>
           {timestamp && (

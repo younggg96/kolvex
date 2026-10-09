@@ -4,7 +4,7 @@ import Link from "next/link";
 import LogoIcon from "@/components/common/LogoIcon";
 import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
-import { Settings, PanelLeftClose, PanelLeft, ShieldCheck, Sparkles } from "lucide-react";
+import { Settings, PanelLeftClose, PanelLeft, ShieldCheck, MessageSquareText } from "lucide-react";
 import { useDecisionCommand } from "@/components/decision/CommandLayer";
 import { useCopy } from "@/components/decision/shared";
 import { MAIN_NAV_ITEMS, isNavItemActive } from "./navItems";
@@ -155,7 +155,7 @@ function AppSidebar({ onNavigate }: AppSidebarProps) {
                     tooltip={c("Ask Kolvex", "询问 Kolvex")}
                     className="border border-border/70 bg-background/60 text-muted-foreground hover:text-foreground group-data-[collapsible=icon]:border-transparent group-data-[collapsible=icon]:bg-transparent"
                   >
-                    <Sparkles className="text-primary" />
+                    <MessageSquareText className="text-primary" />
                     <span className="flex-1">{c("Ask Kolvex…", "询问 Kolvex…")}</span>
                     <kbd className="rounded border border-border px-1 font-sans text-[10px] leading-4 text-muted-foreground group-data-[collapsible=icon]:hidden">
                       ⌘K

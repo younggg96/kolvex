@@ -228,6 +228,46 @@ export function updateYouTubeCreator(channelId: string, values: YouTubeCreatorUp
   });
 }
 
+export interface YouTubeOpinionWrite {
+  ticker: string;
+  company_name?: string | null;
+  sentiment: OpinionSentiment;
+  direction_score?: number | null;
+  confidence?: number | null;
+  time_horizon?: string | null;
+  thesis?: string | null;
+  summary: string;
+  key_points: string[];
+  risks: string[];
+  price_targets: Array<{ label?: string | null; value: number }>;
+  opinion_date?: string | null;
+  video_title?: string | null;
+  video_url?: string | null;
+  video_published_at?: string | null;
+}
+
+export function getCreatorOpinions(channelId: string) {
+  return apiRequest<{ opinions: YouTubeOpinion[] }>(`/creators/${encodeURIComponent(channelId)}/opinions`);
+}
+
+export function createCreatorOpinion(channelId: string, values: YouTubeOpinionWrite) {
+  return apiRequest<{ success: boolean; opinion: YouTubeOpinion }>(`/creators/${encodeURIComponent(channelId)}/opinions`, {
+    method: "POST", body: JSON.stringify(values),
+  });
+}
+
+export function updateYouTubeOpinion(opinionId: string, values: YouTubeOpinionWrite) {
+  return apiRequest<{ success: boolean; opinion: YouTubeOpinion }>(`/opinions/${encodeURIComponent(opinionId)}`, {
+    method: "PATCH", body: JSON.stringify(values),
+  });
+}
+
+export function deleteYouTubeOpinion(opinionId: string) {
+  return apiRequest<{ success: boolean; id: string }>(`/opinions/${encodeURIComponent(opinionId)}`, {
+    method: "DELETE",
+  });
+}
+
 export interface YouTubeUntrackedUpload {
   video_id: string;
   title?: string | null;

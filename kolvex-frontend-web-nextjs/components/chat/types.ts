@@ -64,6 +64,8 @@ export interface ChatInputProps {
   onFocus?: () => void;
   onBlur?: () => void;
   placeholder?: string;
+  /** "inline" sits on the dialog ground; "panel" keeps the rounded composer used on the chat page. */
+  appearance?: "panel" | "inline";
   activeSources?: SearchSource[];
   onToggleSource?: (source: SearchSource) => void;
   showSourceToggle?: boolean;
@@ -74,6 +76,9 @@ export interface ChatInputProps {
   showModelSelector?: boolean;
   /** Backend provider IDs with usable keys (e.g. ["openai","deepseek"]) */
   availableProviders?: string[];
+  /** Human label for page evidence attached to this question. */
+  evidenceLabel?: string;
+  onClearEvidence?: () => void;
 }
 
 export interface ChatBubbleProps {
@@ -110,6 +115,11 @@ export interface ChatWelcomeProps {
   variant?: "page" | "compact";
   /** Overrides the default suggested questions */
   suggestions?: string[];
+  /** Overrides the input placeholder, for example when a page context is attached. */
+  placeholder?: string;
+  /** Human label for page evidence attached to this question. */
+  evidenceLabel?: string;
+  onClearEvidence?: () => void;
 }
 
 // ===== Agent Tool Status =====

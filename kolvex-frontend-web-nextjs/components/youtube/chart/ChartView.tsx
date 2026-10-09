@@ -28,8 +28,8 @@ import {
   RectangleHorizontal,
   RotateCcw,
   Ruler,
+  ScanSearch,
   Slash,
-  Sparkles,
   Trash2,
   Undo2,
   X,
@@ -1075,7 +1075,7 @@ export default function ChartView({
           title={t("youtubeOpinions.ai.run")}
           className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full bg-gradient-to-r from-violet-500/15 to-sky-500/15 px-3 text-[13px] font-semibold text-foreground transition-colors hover:from-violet-500/25 hover:to-sky-500/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:opacity-60"
         >
-          {ai.status === "loading" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+          {ai.status === "loading" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ScanSearch className="h-3.5 w-3.5" />}
           {t("youtubeOpinions.ai.button")}
         </button>
         <div className="ml-auto flex shrink-0 items-center gap-1">

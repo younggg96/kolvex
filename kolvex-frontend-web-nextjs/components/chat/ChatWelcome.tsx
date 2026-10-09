@@ -18,8 +18,9 @@ const PROVIDER_NAME_TO_ID: Record<string, string> = {
 };
 
 const suggestionKeys = [
-  { key: "chat.suggestions.reviewPortfolio", isChat: true },
-  { key: "chat.suggestions.analyzeNvidia", isChat: true },
+  { key: "chat.suggestions.askCreators", isChat: true },
+  { key: "chat.suggestions.holdingsOverlap", isChat: true },
+  { key: "chat.suggestions.whoShifted", isChat: true },
 ];
 
 export function ChatWelcome({
@@ -32,6 +33,9 @@ export function ChatWelcome({
   availableProviders,
   variant = "page",
   suggestions: suggestionOverrides,
+  placeholder,
+  evidenceLabel,
+  onClearEvidence,
 }: ChatWelcomeProps) {
   const { t } = useTranslation();
   const [query, setQuery] = useState("");
@@ -86,6 +90,8 @@ export function ChatWelcome({
       isFocused={isFocused}
       onFocus={() => setIsFocused(true)}
       onBlur={() => setIsFocused(false)}
+      placeholder={placeholder ?? t("chat.input.placeholder")}
+      appearance={compact ? "inline" : "panel"}
       activeSources={activeSources}
       onToggleSource={onToggleSource}
       showSourceToggle={true}
@@ -94,14 +100,16 @@ export function ChatWelcome({
       onSelectModel={onSelectModel}
       inputRef={inputRef}
       availableProviders={availableProviders}
+      evidenceLabel={evidenceLabel}
+      onClearEvidence={onClearEvidence}
     />
   );
 
   if (compact) {
     return (
-      <div className="flex w-full flex-col gap-3 pt-2">
+      <div className="flex w-full flex-col gap-4 pt-3">
         {input}
-        <div className="flex flex-wrap gap-2 px-1">
+        <div className="flex flex-wrap gap-2">
           {suggestions.map((suggestion) => (
             <button
               key={suggestion.text}

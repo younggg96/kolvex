@@ -65,12 +65,7 @@ export default function AdminPageClient() {
   const recordCount = Object.values(tables).reduce((sum, count) => sum + count, 0);
 
   return (
-    <DashboardLayout
-      title="管理后台"
-      headerActions={
-        <Button variant="outline" disabled={busy} onClick={() => void refresh()}>刷新</Button>
-      }
-    >
+    <DashboardLayout title="管理后台">
       <div className="mx-auto min-h-0 w-full max-w-[1080px] flex-1 space-y-8 overflow-y-auto overscroll-contain px-4 pb-8 pt-6 md:px-8 md:pt-8">
         <p className="text-[15px] text-muted-foreground">管理用户与研究数据</p>
 
@@ -93,7 +88,7 @@ export default function AdminPageClient() {
           <TabsList>
             <TabsTrigger value="database">数据库</TabsTrigger>
             <TabsTrigger value="users">用户</TabsTrigger>
-            <TabsTrigger value="creators">YouTube 博主</TabsTrigger>
+            <TabsTrigger value="creators">博主观点</TabsTrigger>
             <TabsTrigger value="youtube">YouTube 导入</TabsTrigger>
           </TabsList>
 

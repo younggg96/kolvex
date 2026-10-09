@@ -19,6 +19,12 @@ import type {
   ToolStatus,
 } from "./types";
 import { TOOL_LABELS as toolLabels } from "./types";
+import {
+  evidenceStorageKey,
+  formatEvidenceLabel,
+  readPageEvidence,
+  visibleQuestion,
+} from "./pageEvidence";
 import { useTranslation } from "@/lib/i18n";
 
 // ===== localStorage helpers for persisting chat preferences =====
@@ -120,6 +126,14 @@ export function ChatDetailContainer({
   const [lastSubmittedMessage, setLastSubmittedMessage] = useState("");
 
   // Resolve initial model: URL params > localStorage > default
+  const [pageEvidence, setPageEvidence] = useState(() => {
+    try {
+      return localStorage.getItem(evidenceStorageKey(conversationId)) || "";
+    } catch {
+      return "";
+    }
+  });
+
   const [selectedModel, setSelectedModel] = useState<AIModel>(() => {
     if (initialModel) return initialModel as AIModel;
     const saved = loadSavedModel(conversationId);
@@ -334,6 +348,7 @@ export function ChatDetailContainer({
           {
             model: selectedModel,
             sources: activeSources,
+            context: pageEvidence || undefined,
           },
           controller.signal
         );
@@ -375,6 +390,7 @@ export function ChatDetailContainer({
       selectedModel,
       activeSources,
       messages,
+      pageEvidence,
     ]
   );
 
@@ -390,7 +406,7 @@ export function ChatDetailContainer({
       sentFirstMessageRef.current = dedupKey;
       // Preserve Next.js history state when removing the one-shot query params.
       if (pathname) window.history.replaceState(window.history.state, "", pathname);
-      void handleSubmit(firstMessage);
+      void handleSubmit(visibleQuestion(firstMessage));
     }, 0);
 
     return () => window.clearTimeout(timeout);
@@ -405,6 +421,27 @@ export function ChatDetailContainer({
       handleSubmit(lastSubmittedMessage);
     }
   }, [handleSubmit, isLoading, lastSubmittedMessage]);
+
+  const clearEvidence = () => {
+    setPageEvidence("");
+    try {
+      localStorage.removeItem(evidenceStorageKey(conversationId));
+    } catch {}
+  };
+
+  const evidence = pageEvidence ? readPageEvidence(pageEvidence) : null;
+  const evidencePlace = evidence
+    ? {
+        ticker: t("chat.evidence.ticker"),
+        research: t("chat.evidence.research"),
+        markets: t("chat.evidence.markets"),
+        portfolio: t("chat.evidence.portfolio"),
+        page: t("chat.evidence.page"),
+      }[evidence.place]
+    : "";
+  const evidenceLabel = evidence
+    ? formatEvidenceLabel(evidence, evidencePlace)
+    : undefined;
 
   const handleFormSubmit = (e?: React.FormEvent) => {
     e?.preventDefault();
@@ -462,6 +499,8 @@ export function ChatDetailContainer({
               selectedModel={selectedModel}
               onSelectModel={(model) => setSelectedModel(model)}
               availableProviders={availableProviders}
+              evidenceLabel={evidenceLabel}
+              onClearEvidence={evidenceLabel ? clearEvidence : undefined}
             />
           </div>
         </div>

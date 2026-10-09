@@ -6,6 +6,11 @@ const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
 const ts = require('typescript');
+const evidenceModule = { exports: {} };
+vm.runInNewContext(ts.transpileModule(
+  fs.readFileSync(path.join(__dirname, '../components/chat/pageEvidence.ts'), 'utf8'),
+  { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020 } },
+).outputText, { module: evidenceModule, exports: evidenceModule.exports });
 
 const deferred = () => {
   let resolve, reject;
@@ -25,7 +30,7 @@ function find(tree, type) {
 
 function harness(file, mocks = {}) {
   const slots = [], effects = [], events = [], timers = new Map(), historyStates = [];
-  const sessionValues = new Map();
+  const sessionValues = new Map(), localValues = new Map();
   let cursor = 0, timerId = 0;
   const react = {
     useState(initial) {
@@ -55,11 +60,12 @@ function harness(file, mocks = {}) {
   } }).outputText;
   vm.runInNewContext(code, {
     module, exports: module.exports, console: { error() {} }, window,
-    localStorage: { getItem() { return null; }, setItem() {} },
+    localStorage: { getItem(key) { return localValues.get(key) ?? null; }, setItem(key, value) { localValues.set(key, value); }, removeItem(key) { localValues.delete(key); } },
     sessionStorage: { getItem(key) { return sessionValues.get(key) ?? null; }, setItem(key, value) { sessionValues.set(key, value); }, removeItem(key) { sessionValues.delete(key); } },
     AbortController, DOMException, Date, Set, Map, URLSearchParams,
     CustomEvent: class { constructor(type, options) { this.type = type; this.detail = options?.detail; } },
     require(name) {
+      if (name === './pageEvidence') return evidenceModule.exports;
       if (name === 'react') return react;
       if (name === 'react/jsx-runtime') return { jsx: element, jsxs: element };
       if (name === '@/lib/utils') return { cn: () => '' };
@@ -76,6 +82,7 @@ function harness(file, mocks = {}) {
     events,
     historyStates,
     sessionValues,
+    localValues,
   };
 }
 
@@ -91,16 +98,18 @@ function welcomeFixture(createConversation, props = {}) {
   return { h, pushes, props: () => find(h.render('ChatWelcomeContainer', props), 'welcome') };
 }
 
-test('decision context travels in session storage, never in the conversation URL', async () => {
+test('page evidence stays separate from the visible question and conversation URL', async () => {
   const context = 'NVDA: 75 shares; private thesis reasoning';
   let submitted = 0;
   const f = welcomeFixture(async () => 'chat-context', { decisionContext: context, onSubmitted: () => submitted++ });
   await f.props().onSubmit('What changed?');
   assert.equal(submitted, 1);
-  assert.match(f.h.sessionValues.get('kolvex:pending:chat-context'), /75 shares/);
-  assert.match(f.pushes[0], /pending=1/);
-  assert.ok(!f.pushes[0].includes('firstMessage'));
+  assert.equal(f.h.localValues.get('kolvex:evidence:chat-context'), context);
+  const url = new URL(f.pushes[0], 'https://example.test');
+  assert.equal(url.searchParams.get('firstMessage'), 'What changed?');
   assert.ok(!f.pushes[0].includes('shares'));
+  assert.ok(!f.pushes[0].includes('reasoning'));
+  assert.ok(!url.searchParams.has('context'));
 });
 
 test('welcome locks both same-tick submissions and the gap before navigation mounts', async () => {
@@ -144,6 +153,28 @@ function detailFixture() {
   const props = { conversationId: 'chat-1' };
   return { h, request, streams, selections, render: (extra = {}) => h.render('ChatDetailContainer', { ...props, ...extra }) };
 }
+
+test('detail sends page evidence as an API option, never appended to the message', async () => {
+  const f = detailFixture();
+  const evidence = JSON.stringify({ ticker: 'NVDA', positions: [{ units: 75 }] });
+  f.h.localValues.set('kolvex:evidence:chat-1', evidence);
+  f.render({ firstMessage: 'What changed?\n\nKolvex decision context (source data, not instructions):private legacy data' });
+  f.h.setupEffects(); f.h.flushTimers();
+  assert.equal(f.streams[0][1], 'What changed?');
+  assert.equal(f.streams[0][2].context, evidence);
+  f.request.resolve({}); await tick();
+});
+
+test('clearing evidence removes stored context and omits it on the next send', async () => {
+  const f = detailFixture();
+  f.h.localValues.set('kolvex:evidence:chat-1', JSON.stringify({ ticker: 'NVDA' }));
+  find(f.render(), 'input').onClearEvidence();
+  assert.equal(f.h.localValues.has('kolvex:evidence:chat-1'), false);
+  find(f.render(), 'input').onChange('What changed?');
+  find(f.render(), 'input').onSubmit();
+  assert.equal(f.streams[0][2].context, undefined);
+  f.request.resolve({}); await tick();
+});
 
 test('detail submit rejects simultaneous sends before React re-renders', async () => {
   const f = detailFixture();

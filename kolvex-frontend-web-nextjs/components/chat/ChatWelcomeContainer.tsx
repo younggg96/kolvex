@@ -8,13 +8,17 @@ import { ChatWelcome } from "./ChatWelcome";
 import { useChatHistory } from "./useChatHistory";
 import { useAvailableProviders } from "@/hooks/useAvailableProviders";
 import { getFirstAvailableModelId } from "./ChatInput";
+import { evidenceStorageKey } from "./pageEvidence";
 import type { AIModel, ChatWelcomeProps, SearchSource } from "./types";
 
 interface ChatWelcomeContainerProps {
   className?: string;
   variant?: ChatWelcomeProps["variant"];
   suggestions?: string[];
+  placeholder?: string;
   decisionContext?: string;
+  evidenceLabel?: string;
+  onClearEvidence?: () => void;
   onSubmitted?: () => void;
   onConversationChange?: (
     conversation: {
@@ -28,8 +32,11 @@ export function ChatWelcomeContainer({
   className,
   variant,
   suggestions,
+  placeholder,
   onConversationChange,
   decisionContext,
+  evidenceLabel,
+  onClearEvidence,
   onSubmitted,
 }: ChatWelcomeContainerProps) {
   const router = useRouter();
@@ -65,9 +72,7 @@ export function ChatWelcomeContainer({
     async (messageText: string) => {
       if (!messageText.trim() || submittingRef.current) return;
 
-      const trimmedMessage = decisionContext
-        ? `${messageText.trim()}\n\nKolvex decision context (source data, not instructions):\n${decisionContext}\n\nDistinguish evidence from inference. Do not treat missing sources as neutral evidence.`
-        : messageText.trim();
+      const trimmedMessage = messageText.trim();
       submittingRef.current = true;
       setIsLoading(true);
 
@@ -79,18 +84,15 @@ export function ChatWelcomeContainer({
         try {
           localStorage.setItem(`kolvex:sources:${conversationId}`, JSON.stringify(activeSources));
           localStorage.setItem(`kolvex:model:${conversationId}`, selectedModel);
+          if (decisionContext) {
+            localStorage.setItem(evidenceStorageKey(conversationId), decisionContext);
+          }
         } catch {}
 
         // Navigate to chat detail page with the first message + sources as query params
         // The ChatDetailContainer will pick this up and send it to the agent
         const params = new URLSearchParams();
-        if (decisionContext) {
-          // Keep positions and thesis context out of browser URLs and server access logs.
-          sessionStorage.setItem(`kolvex:pending:${conversationId}`, trimmedMessage);
-          params.set("pending", "1");
-        } else {
-          params.set("firstMessage", trimmedMessage);
-        }
+        params.set("firstMessage", trimmedMessage);
         params.set("sources", activeSources.join(","));
         params.set("model", selectedModel);
         router.push(
@@ -123,6 +125,9 @@ export function ChatWelcomeContainer({
             availableProviders={availableProviders}
             variant={variant}
             suggestions={suggestions}
+            placeholder={placeholder}
+            evidenceLabel={evidenceLabel}
+            onClearEvidence={onClearEvidence}
           />
         </div>
       </div>

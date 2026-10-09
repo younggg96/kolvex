@@ -1,12 +1,10 @@
 "use client";
 
 import React, { useState, useEffect, useCallback, useMemo } from "react";
-import { AlertCircle, RefreshCw, Clock } from "lucide-react";
+import { AlertCircle, Clock } from "lucide-react";
 import { SwitchTab } from "@/components/ui/switch-tab";
 import { EmptyState } from "@/components/common/EmptyState";
 import { calculateTotalValue, calculateTotalPnL } from "@/lib/portfolioApi";
-import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
 import { useTranslation } from "@/lib/i18n";
 import { PortfolioSkeleton } from "./PortfolioSkeleton";
 import { PortfolioStatsGrid } from "./PortfolioStatsGrid";
@@ -72,7 +70,7 @@ export default function PortfolioHoldings({
 
   const equitySort = useEquitySort();
   const optionSort = useOptionSort();
-  const { fetchSparklines, isLoading: stockDataLoading, lastRefreshTime } =
+  const { fetchSparklines, lastRefreshTime } =
     useStockDataCache();
   const portfolioSymbols = usePortfolioSymbols(holdings?.accounts);
 
@@ -141,12 +139,6 @@ export default function PortfolioHoldings({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [symbolsKey, fetchSparklines]);
 
-  const handleRefreshStockData = useCallback(async () => {
-    if (portfolioSymbols.length === 0) return;
-    const sparklines = await fetchSparklines(portfolioSymbols, true);
-    setSparklineDataMap(sparklines);
-  }, [portfolioSymbols, fetchSparklines]);
-
   const formatLastRefresh = useMemo(() => {
     if (!lastRefreshTime) return null;
     const diffMs = Date.now() - lastRefreshTime;
@@ -161,8 +153,6 @@ export default function PortfolioHoldings({
     if (!onHeaderActionsReady) return;
     if (isOwner && status?.is_connected) {
       onHeaderActionsReady({
-        syncing,
-        onSync: handleSync,
         holdings,
         onTogglePublic: handleTogglePublic,
         onCopyShareLink: handleCopyShareLink,
@@ -178,10 +168,8 @@ export default function PortfolioHoldings({
     onHeaderActionsReady,
     isOwner,
     status?.is_connected,
-    syncing,
     holdings,
     copied,
-    handleSync,
     handleTogglePublic,
     handleCopyShareLink,
     handleConnectPlaid,
@@ -241,8 +229,6 @@ export default function PortfolioHoldings({
     <div className="space-y-6">
       {isOwner && !onHeaderActionsReady && status?.is_connected && (
         <PortfolioHeaderActions
-          syncing={syncing}
-          onSync={handleSync}
           holdings={holdings}
           onTogglePublic={handleTogglePublic}
           onCopyShareLink={handleCopyShareLink}
@@ -323,31 +309,12 @@ export default function PortfolioHoldings({
               className="!w-fit"
             />
 
-            <div className="flex items-center gap-2">
-              {formatLastRefresh && (
-                <span className="text-xs text-muted-foreground flex items-center gap-1">
-                  <Clock className="w-3 h-3" />
-                  {formatLastRefresh}
-                </span>
-              )}
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleRefreshStockData}
-                disabled={stockDataLoading}
-                className="gap-1.5 text-xs h-7 px-2"
-              >
-                <RefreshCw
-                  className={cn(
-                    "w-3.5 h-3.5",
-                    stockDataLoading && "animate-spin",
-                  )}
-                />
-                {stockDataLoading
-                  ? t("portfolio.holdings.refreshing")
-                  : t("portfolio.holdings.refreshPrices")}
-              </Button>
-            </div>
+            {formatLastRefresh && (
+              <span className="text-xs text-muted-foreground flex items-center gap-1">
+                <Clock className="w-3 h-3" />
+                {formatLastRefresh}
+              </span>
+            )}
           </div>
 
           {activeTab === "holdings" && (

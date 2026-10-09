@@ -111,7 +111,7 @@ export function TickerSearch({
         <button
           type="submit"
           aria-label={c("Open stock", "打开股票")}
-          className="absolute right-1.5 flex h-8 w-8 items-center justify-center rounded-full bg-foreground text-background transition-opacity duration-150 hover:opacity-85 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+          className="absolute right-1.5 flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground transition-opacity duration-150 hover:opacity-85 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
         >
           <ArrowRight className="h-4 w-4" aria-hidden />
         </button>

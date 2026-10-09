@@ -186,12 +186,12 @@ export function FullReportActions({
 
   return (
     <TooltipProvider>
-      <div className="flex items-center gap-1">
+      <div className="flex items-center gap-2">
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
               variant="outline"
-              size="xs"
+              size="sm"
               onClick={handleCopy}
               className="gap-1.5"
             >
@@ -214,7 +214,7 @@ export function FullReportActions({
           <TooltipTrigger asChild>
             <Button
               variant="outline"
-              size="xs"
+              size="sm"
               onClick={handleDownload}
               className="gap-1.5"
             >
@@ -233,7 +233,7 @@ export function FullReportActions({
           <TooltipTrigger asChild>
             <Button
               variant="outline"
-              size="xs"
+              size="sm"
               onClick={handleShare}
               className="gap-1.5"
             >

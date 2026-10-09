@@ -27,10 +27,14 @@ async function getAccessToken(): Promise<string | null> {
   }
 }
 
+function isOpinionWrite(path: string[]) {
+  return path.length === 2 && path[0] === "opinions";
+}
+
 async function proxyJson(
   request: NextRequest,
   path: string[],
-  method: "GET" | "POST" | "PATCH",
+  method: "GET" | "POST" | "PATCH" | "DELETE",
   requireAuth: boolean
 ) {
   const token = await getAccessToken();
@@ -50,7 +54,7 @@ async function proxyJson(
     {
       method,
       headers,
-      body: method !== "GET" ? await request.text() : undefined,
+      body: method !== "GET" && method !== "DELETE" ? await request.text() : undefined,
       cache: "no-store",
     }
   );
@@ -78,8 +82,17 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
 export async function PATCH(request: NextRequest, { params }: RouteParams) {
   const { path } = await params;
-  if (path.length !== 2 || path[0] !== "creators") {
+  const creatorUpdate = path.length === 2 && path[0] === "creators";
+  if (!creatorUpdate && !isOpinionWrite(path)) {
     return NextResponse.json({ error: "Unsupported path" }, { status: 400 });
   }
   return proxyJson(request, path, "PATCH", true);
+}
+
+export async function DELETE(request: NextRequest, { params }: RouteParams) {
+  const { path } = await params;
+  if (!isOpinionWrite(path)) {
+    return NextResponse.json({ error: "Unsupported path" }, { status: 400 });
+  }
+  return proxyJson(request, path, "DELETE", true);
 }

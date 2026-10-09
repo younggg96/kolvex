@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { ExternalLink, Loader2, UserRound } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import CompanyLogo from "@/components/ui/company-logo";
 import CreatorAvatar from "./CreatorAvatar";
@@ -78,7 +77,6 @@ export default function CreatorProfileDialog({ creator, onLoaded, compact = fals
           </div>
           <div className="flex flex-wrap gap-2">{current.top_tickers.map(stock => <Badge variant="secondary" key={stock.ticker} className="gap-2"><span aria-hidden="true"><CompanyLogo symbol={stock.ticker} size="xs" /></span>{stock.ticker}</Badge>)}</div>
           {current.profile_source === "youtube" && <p className="text-xs text-muted-foreground">{t("youtubeOpinions.profile.subscriberNote")}</p>}
-          <div className="flex justify-end"><Button variant="outline" size="sm" onClick={loadProfile} disabled={loading}>{loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}{t("youtubeOpinions.profile.refresh")}</Button></div>
         </div>
       </DialogContent>
     </Dialog>

@@ -339,19 +339,31 @@
       "web_search": "搜索网页"
     },
     "badge": "AI 驱动洞察",
-    "heading": "围绕下一项投资决策提问。",
-    "description": "研究一只股票、了解持仓风险，或检验投资判断背后的理由。",
+    "heading": "问博主怎么说。",
+    "description": "对话里只留下你的问题。这页已有的观点、行情和持仓作为依据，不会贴进消息里。",
     "suggestions": {
       "reviewPortfolio": "查看投资组合",
       "checkWashSale": "检查当前 wash sale 风险",
       "analyzeNvidia": "分析英伟达股票",
+      "askCreators": "NVDA 上博主最近怎么说？",
+      "holdingsOverlap": "哪些观点和我的持仓有关？",
+      "whoShifted": "最近谁转强、谁转弱？",
       "explainTrends": "解释市场趋势",
       "trendingStocks": "热门趋势股票",
       "latestNews": "最新新闻",
       "compareOpinions": "比较博主的股票观点"
     },
+    "evidence": {
+      "using": "依据",
+      "clear": "不再使用这页的资料",
+      "ticker": "这只股票",
+      "research": "研究",
+      "markets": "行情",
+      "portfolio": "持仓",
+      "page": "当前页面"
+    },
     "input": {
-      "placeholder": "询问你的投资组合、交易、风险或市场情况...",
+      "placeholder": "问一只股票、一位博主，或和持仓的关系...",
       "apiKeyRequired": "需要 API 密钥",
       "apiKeyRequiredDesc": "请在设置中添加至少一个模型 API 密钥，以解锁模型选择并开始对话。",
       "settingsApiKeys": "设置 → API 密钥",
@@ -1228,7 +1240,7 @@
       "levels": "关键价位",
       "trendlines": "趋势线",
       "signals": "信号",
-      "invalidation": "失效条件：",
+      "invalidation": "失效条件",
       "disclaimer": "AI 根据K线和指标自动生成，仅供学习参考，不构成投资建议。"
     },
     "drawTools": "画图工具",

@@ -5,6 +5,7 @@ import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { MessageSquarePlus } from "lucide-react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { ChatDetailContainer } from "@/components/chat";
+import { visibleQuestion } from "@/components/chat/pageEvidence";
 import { Button } from "@/components/ui/button";
 
 export default function ChatPage() {
@@ -22,7 +23,7 @@ export default function ChatPage() {
         `kolvex:pending:${conversationId}`,
       );
       if (message) {
-        setPendingMessage(message);
+        setPendingMessage(visibleQuestion(message));
         sessionStorage.removeItem(`kolvex:pending:${conversationId}`);
       }
     } catch {

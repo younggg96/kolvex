@@ -269,38 +269,26 @@ export function PortfolioPerformanceChart({
                         </button>
                     ))}
                 </div>
-                <div className="flex shrink-0 items-center gap-1">
-                    {hasRealData && firstSnapshotDate && (
-                        <TooltipProvider>
-                            <UITooltip>
-                                <TooltipTrigger asChild>
-                                    <button
-                                        type="button"
-                                        className="flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground"
-                                        aria-label={t("portfolio.performance.dataSince", { date: new Date(firstSnapshotDate).toLocaleDateString() })}
-                                    >
-                                        <Info className="h-4 w-4" />
-                                    </button>
-                                </TooltipTrigger>
-                                <TooltipContent side="top" className="max-w-xs">
-                                    {isOwner
-                                        ? t("portfolio.performance.ownerDataTooltip", { date: new Date(firstSnapshotDate).toLocaleDateString() })
-                                        : t("portfolio.performance.publicDataTooltip", { date: new Date(firstSnapshotDate).toLocaleDateString() })}
-                                </TooltipContent>
-                            </UITooltip>
-                        </TooltipProvider>
-                    )}
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-muted-foreground"
-                        onClick={refresh}
-                        disabled={loading}
-                        aria-label={t("portfolio.performance.refreshChart")}
-                    >
-                        <RefreshCw className={cn("h-4 w-4", loading && "animate-spin")} />
-                    </Button>
-                </div>
+                {hasRealData && firstSnapshotDate && (
+                    <TooltipProvider>
+                        <UITooltip>
+                            <TooltipTrigger asChild>
+                                <button
+                                    type="button"
+                                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground"
+                                    aria-label={t("portfolio.performance.dataSince", { date: new Date(firstSnapshotDate).toLocaleDateString() })}
+                                >
+                                    <Info className="h-4 w-4" />
+                                </button>
+                            </TooltipTrigger>
+                            <TooltipContent side="top" className="max-w-xs">
+                                {isOwner
+                                    ? t("portfolio.performance.ownerDataTooltip", { date: new Date(firstSnapshotDate).toLocaleDateString() })
+                                    : t("portfolio.performance.publicDataTooltip", { date: new Date(firstSnapshotDate).toLocaleDateString() })}
+                            </TooltipContent>
+                        </UITooltip>
+                    </TooltipProvider>
+                )}
             </div>
         </section>
     );

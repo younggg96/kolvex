@@ -10,7 +10,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
-  RefreshCw,
   Link2,
   Copy,
   Check,
@@ -32,8 +31,6 @@ import { useTranslation } from "@/lib/i18n";
 export type DownloadFormat = "csv" | "json";
 
 export interface PortfolioHeaderActionsProps {
-  syncing: boolean;
-  onSync: () => void;
   holdings: PortfolioHoldings | null;
   onTogglePublic: (isPublic: boolean) => void;
   onCopyShareLink: () => void;
@@ -49,8 +46,6 @@ export interface PortfolioHeaderActionsProps {
  * Can be used in DashboardLayout's headerActions prop
  */
 export function PortfolioHeaderActions({
-  syncing,
-  onSync,
   holdings,
   size = "sm",
   onTogglePublic,
@@ -75,19 +70,6 @@ export function PortfolioHeaderActions({
           {t("portfolio.actions.autoSyncSchedule")}
         </span>
       </div>
-
-      <Button
-        variant="outline"
-        size={size}
-        onClick={onSync}
-        disabled={syncing}
-        className="gap-1.5"
-      >
-        <RefreshCw className={`w-3.5 h-3.5 ${syncing ? "animate-spin" : ""}`} />
-        <span className={cn("hidden sm:inline", size === "xs" && "text-xs")}>
-          {t("portfolio.actions.refresh")}
-        </span>
-      </Button>
 
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
