@@ -1,25 +1,16 @@
-/* Marketing-only tokens; product screens retain the global design system.
+/* Homepage aliases inherit the dashboard's semantic theme tokens.
    Layers: base 0, content 1, diagram notes 2, header 20. */
 .landing-page {
-  --landing-ground: #f8faf8;
-  --landing-surface: #ffffff;
-  --landing-ink: #142019;
-  --landing-muted: #606c64;
-  --landing-line: #dfe6e0;
-  --landing-wash: #edf3ed;
+  --landing-ground: rgb(var(--background));
+  --landing-surface: rgb(var(--card));
+  --landing-ink: rgb(var(--foreground));
+  --landing-muted: rgb(var(--muted-foreground));
+  --landing-line: rgb(var(--border));
+  --landing-wash: rgb(var(--muted));
   --landing-accent: rgb(var(--primary));
-  --landing-accent-text: #008503;
+  --landing-accent-text: rgb(var(--positive));
   background: var(--landing-ground);
   color: var(--landing-ink);
-}
-.dark .landing-page {
-  --landing-ground: #080d0a;
-  --landing-surface: #101812;
-  --landing-ink: #f0f5ef;
-  --landing-muted: #9daaa0;
-  --landing-line: #27332a;
-  --landing-wash: #141e16;
-  --landing-accent-text: #54dd63;
 }
 .landing-page > div {
   background: var(--landing-ground);
@@ -27,7 +18,11 @@
   overflow: clip;
 }
 .landing-page > div > .bg-grid {
-  display: none;
+  opacity: 0.12;
+  animation: none;
+}
+.dark .landing-page > div > .bg-grid {
+  opacity: 0.9;
 }
 .landing-page main {
   animation: none;
@@ -70,30 +65,10 @@
 }
 .landing-page :is(a, button):focus-visible {
   outline: 2px solid var(--landing-accent-text);
-  outline-offset: 5px;
+  outline-offset: 2px;
 }
 .landing-page section:focus {
   outline: none;
-}
-.landing-page .landing-primary {
-  min-height: 50px;
-  padding-inline: 26px;
-  background: var(--landing-accent);
-  color: #08210c;
-  box-shadow: 0 5px 0 rgb(0 100 5 / 0.1);
-  transition:
-    transform 0.25s,
-    box-shadow 0.25s,
-    background 0.25s;
-  white-space: nowrap;
-}
-.landing-page .landing-primary:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 8px 22px rgb(0 130 5 / 0.18);
-  background: #24d729;
-}
-.landing-page .landing-primary:active {
-  transform: translateY(0) scale(0.98);
 }
 .landing-text-link {
   display: inline-flex;
@@ -117,19 +92,6 @@
   position: relative;
   isolation: isolate;
 }
-.landing-hero::before {
-  content: "";
-  position: absolute;
-  inset: 0 0 auto 40%;
-  height: 620px;
-  pointer-events: none;
-  background: radial-gradient(
-    ellipse at 70% 45%,
-    rgb(0 200 5 / 0.085),
-    transparent 65%
-  );
-  z-index: -1;
-}
 .landing-hero-grid {
   display: grid;
   grid-template-columns: 1fr 1.03fr;
@@ -151,9 +113,9 @@
 }
 .landing-headline {
   font-size: clamp(42px, 5.2vw, 70px);
-  font-weight: 650;
+  font-weight: 600;
   line-height: 1.13;
-  letter-spacing: -0.065em;
+  letter-spacing: -0.04em;
 }
 .landing-headline span {
   display: block;
@@ -162,7 +124,7 @@
   color: var(--landing-accent-text);
 }
 .landing-page:lang(zh) .landing-headline {
-  letter-spacing: -0.055em;
+  letter-spacing: -0.035em;
   line-height: 1.2;
 }
 .landing-hero-description {
@@ -215,12 +177,9 @@
   inset: 66px 28px 66px 22px;
   background: var(--landing-surface);
   border: 1px solid var(--landing-line);
-  border-radius: 20px;
-  box-shadow: 0 24px 60px -20px rgb(18 65 28 / 0.18);
+  border-radius: 12px;
+  box-shadow: none;
   transform-style: preserve-3d;
-}
-.dark .signal-chart {
-  box-shadow: 0 30px 65px -20px rgb(0 0 0 / 0.5);
 }
 .signal-price-chart {
   color: var(--landing-accent-text);
@@ -238,7 +197,7 @@
   border: 1px solid var(--landing-line);
   border-radius: 12px;
   background: var(--landing-surface);
-  box-shadow: 0 8px 24px rgb(18 65 28 / 0.07);
+  box-shadow: none;
   font-size: 13px;
 }
 .signal-note svg {
@@ -262,7 +221,7 @@
   top: 260px;
 }
 .signal-note-holdings {
-  bottom: 27px;
+  bottom: 12px;
   left: 32px;
 }
 .signal-caption {
@@ -276,22 +235,27 @@
   border-radius: 999px;
   padding: 6px 13px;
   border: 1px solid transparent;
-  font:
-    11px ui-monospace,
-    monospace;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
   color: var(--landing-muted);
   transition:
     background 0.2s,
     border-color 0.2s;
 }
 .signal-ticker[aria-pressed="true"] {
-  color: var(--landing-ink);
-  border-color: var(--landing-line);
-  background: var(--landing-wash);
+  color: rgb(var(--primary-foreground));
+  border-color: var(--landing-accent);
+  background: var(--landing-accent);
 }
 .signal-ticker:hover {
   color: var(--landing-ink);
   background: var(--landing-wash);
+}
+.signal-ticker[aria-pressed="true"]:hover {
+  color: rgb(var(--primary-foreground));
+  background: var(--landing-accent);
+  filter: brightness(0.95);
 }
 .scene-pause {
   display: flex;
@@ -363,10 +327,10 @@
 }
 .landing-preview-frame {
   border: 1px solid var(--landing-line);
-  border-radius: 20px;
+  border-radius: 12px;
   background: var(--landing-surface);
   overflow: hidden;
-  box-shadow: 0 24px 55px -35px rgb(18 65 28 / 0.2);
+  box-shadow: none;
 }
 .preview-toolbar {
   display: flex;
@@ -514,7 +478,7 @@
   position: relative;
   min-height: 375px;
   border: 1px solid var(--landing-line);
-  border-radius: 20px;
+  border-radius: 12px;
   background: var(--landing-wash);
   padding: 40px 26px;
   overflow: hidden;
@@ -525,7 +489,7 @@
   justify-content: center;
   gap: 10px;
   font-size: 22px;
-  font-weight: 650;
+  font-weight: 600;
   color: var(--landing-ink);
 }
 .workflow-brand svg {
@@ -600,7 +564,7 @@
   justify-content: space-between;
   gap: 30px;
   border: 1px solid var(--landing-line);
-  border-radius: 20px;
+  border-radius: 12px;
   padding: 60px;
   background: var(--landing-wash);
   overflow: hidden;
@@ -816,7 +780,6 @@
     animation: none !important;
     transition: none !important;
   }
-  .landing-page .landing-primary:hover,
   .landing-text-link:hover svg,
   .landing-feature-nav a:hover .feature-nav-arrow {
     transform: none;

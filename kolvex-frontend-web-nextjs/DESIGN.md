@@ -278,14 +278,15 @@ theme tokens and Chinese/English messages remain authoritative.
 
 ## Marketing landing page
 
-The homepage is a deliberate marketing variant of the quieter stock workspace,
-authorized by the landing redesign brief. `components/landing/landing.css` owns
-its scoped tokens: mist #F8FAF8, white #FFFFFF, forest ink #142019, muted #606C64,
-line #DFE6E0 and the existing #00C805 brand accent. Dark mode uses #080D0A ground,
-#101812 surfaces, #F0F5EF ink and #9DAAA0 secondary text. Text-safe green is
-#008503 in light and #54DD63 in dark; the brand action fill remains unchanged.
-The existing Inter/Chinese stack preserves brand recognition, with tighter,
-larger display typography on the homepage only.
+The homepage uses the same visual system as the dashboard, with a larger
+marketing composition and its existing animation layer. `components/landing/landing.css`
+only aliases the runtime `background`, `card`, `foreground`, `muted-foreground`,
+`border`, `muted`, `primary` and `positive` tokens from `app/globals.css`.
+It has no independent palette or dark-mode color overrides. Theme changes follow
+the dashboard automatically. Header, footer and the subtle background grid use
+the same neutral surfaces as the application. Inter/Chinese typography remains
+shared; homepage display headings retain their larger scale with 600 weight
+and restrained tracking.
 
 The asymmetric hero pairs a two-line headline with an interactive illustrative
 price chart and opinion/research/holding nodes. The single ambient composition
@@ -302,5 +303,7 @@ and preserves content; narrow screens use a single column. Shared Radix Tabs own
 preview keyboard navigation. Feature disclosures use buttons with expanded state
 and corresponding regions. Existing route targets, section anchors, navigation
 labels, logo, footer/legal content and global application tokens are preserved.
-Buttons remain pills, example panels use 20px corners and their content nodes
-12px corners. Marketing layers are base 0, content 1, diagram notes 2, header 20.
+Buttons use the shared pill variants, including their colors and hover/pressed
+feedback. Example panels and content nodes use the dashboard’s 12px corners and
+quiet borders without static shadows. Marketing layers are base 0, content 1,
+diagram notes 2, header 20.
