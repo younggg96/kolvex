@@ -36,7 +36,7 @@ export default function AiDrawingSetup({ setup, t }: {
           {t("youtubeOpinions.ai.planReason")}
           <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground group-open/plan:rotate-180" aria-hidden="true" />
         </summary>
-        <p className="max-w-[72ch] whitespace-pre-line break-words pb-3 text-sm leading-7 text-muted-foreground">{setup.reason}</p>
+        <p className=" whitespace-pre-line break-words pb-3 text-sm leading-7 text-muted-foreground">{setup.reason}</p>
       </details>
     </section>
   );

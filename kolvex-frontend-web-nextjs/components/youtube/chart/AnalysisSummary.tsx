@@ -14,7 +14,7 @@ export default function AnalysisSummary({ text, t }: {
   const [expanded, setExpanded] = useState(false);
   const long = text.length > 240 || text.split("\n").length > 4;
   return (
-    <div className="max-w-[72ch]">
+    <div className="">
       <p id={id} className={cn("whitespace-pre-line break-words text-base leading-7", long && !expanded && "line-clamp-4")}>{text}</p>
       {long && <Button type="button" size="sm" variant="ghost" className="mt-2 text-muted-foreground"
         aria-controls={id} aria-expanded={expanded} onClick={() => setExpanded(value => !value)}>

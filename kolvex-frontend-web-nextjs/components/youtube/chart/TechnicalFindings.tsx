@@ -26,7 +26,7 @@ export default function TechnicalFindings({ result, t }: { result: AiTechnicalAn
         {evidence.map(finding => (
           <div key={finding.id}>
             <dt className="text-sm font-medium leading-6 break-words">{finding.title}</dt>
-            <dd className="mt-1 max-w-[72ch] whitespace-pre-line break-words text-sm leading-7 text-muted-foreground">
+            <dd className="mt-1  whitespace-pre-line break-words text-sm leading-7 text-muted-foreground">
               {finding.status === "unavailable" && <span>{t("youtubeOpinions.ai.focus.unavailable")} · </span>}
               {finding.explanation}
             </dd>

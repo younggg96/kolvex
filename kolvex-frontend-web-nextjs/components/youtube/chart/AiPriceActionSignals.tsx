@@ -35,7 +35,7 @@ export default function AiPriceActionSignals({ result, formatDate, t }: {
           {t("youtubeOpinions.ai.signalRules")}
           <ChevronDown className="h-3.5 w-3.5 group-open/rules:rotate-180" aria-hidden="true" />
         </summary>
-        <p className="max-w-[72ch] pb-2 text-sm leading-6 text-muted-foreground">{t("youtubeOpinions.ai.priceAction.rules")}</p>
+        <p className=" pb-2 text-sm leading-6 text-muted-foreground">{t("youtubeOpinions.ai.priceAction.rules")}</p>
       </details>
     </section>
   );

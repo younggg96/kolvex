@@ -410,7 +410,7 @@ export default function StockWorkspace({ ticker }: { ticker: string }) {
                     <h3 className="mb-3 text-sm font-semibold">
                       {c("Investment thesis and what could change it", "投资判断与可能改变判断的因素")}
                     </h3>
-                    <div className="max-w-[72ch]">
+                    <div className="">
                       <MarkdownBody content={research.investment_plan || research.trader_plan || research.market_report || ""} />
                     </div>
                     <details className="mt-5 border-t border-border pt-4">

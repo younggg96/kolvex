@@ -67,9 +67,9 @@ export default function AiAnalysisPanel({ state, busy = false, interval, onRetry
         {state.error === t("youtubeOpinions.ai.notConfigured") && <Link href="/dashboard/settings?tab=api-keys" className="font-medium underline underline-offset-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">{t("youtubeOpinions.ai.openSettings")}</Link>}
       </p>}
 
-      {state.status === "done" && result && <div className="mt-4 max-w-[72ch]">
+      {state.status === "done" && result && <div className="mt-4 ">
         <AnalysisSummary key={result.summary} text={result.summary} t={t} />
-        {result.invalidation && <div className="mt-4 max-w-[72ch] rounded-xl bg-muted/60 p-4">
+        {result.invalidation && <div className="mt-4  rounded-xl bg-muted/60 p-4">
           <h4 className="text-sm font-semibold text-warning">{t("youtubeOpinions.ai.invalidation")}</h4>
           <p className="mt-1 whitespace-pre-line break-words text-sm leading-7">{result.invalidation}</p>
         </div>}
@@ -85,7 +85,7 @@ export default function AiAnalysisPanel({ state, busy = false, interval, onRetry
                   <span className="text-xs font-normal text-muted-foreground">{t(`youtubeOpinions.ai.strength.${level.strength}`)}</span>
                   <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground group-open/level:rotate-180" aria-hidden="true" />
                 </summary>
-                <p className="max-w-[72ch] break-words pb-3 text-sm leading-7 text-muted-foreground">{level.reason}</p>
+                <p className=" break-words pb-3 text-sm leading-7 text-muted-foreground">{level.reason}</p>
               </details>
             </li>)}
           </ul>
@@ -109,19 +109,19 @@ export default function AiAnalysisPanel({ state, busy = false, interval, onRetry
               <ul className="mt-2 space-y-3">
                 {result.trendlines.map(line => <li key={`${line.start.date}-${line.end.date}-${line.kind}`}>
                   <p className={cn("text-sm font-medium", toneText[line.kind === "support" ? "positive" : "negative"])}>{t(`youtubeOpinions.ai.${line.kind}Line`)}</p>
-                  <p className="mt-1 max-w-[72ch] break-words text-sm leading-7 text-muted-foreground">{line.reason}</p>
+                  <p className="mt-1  break-words text-sm leading-7 text-muted-foreground">{line.reason}</p>
                 </li>)}
               </ul>
             </div>}
             {!result.findings?.length && result.signals.length > 0 && <div>
               <h4 className="text-sm font-medium">{t("youtubeOpinions.ai.signals")}</h4>
-              <ul className="mt-2 max-w-[72ch] space-y-2">
+              <ul className="mt-2  space-y-2">
                 {result.signals.map(signal => <li key={signal} className="break-words text-sm leading-7 text-muted-foreground">{signal}</li>)}
               </ul>
             </div>}
           </div>
         </details>}
-        <p className="mt-4 max-w-[72ch] text-xs leading-5 text-muted-foreground">{t("youtubeOpinions.ai.disclaimer")}</p>
+        <p className="mt-4  text-xs leading-5 text-muted-foreground">{t("youtubeOpinions.ai.disclaimer")}</p>
       </div>}
 
       <footer className="mt-4 flex flex-wrap items-center gap-2 border-t border-border pt-3">
