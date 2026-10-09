@@ -1045,7 +1045,6 @@
     }
   },
   "youtubeOpinions": {
-    "latestVideos": "Latest videos",
     "title": "YouTube Opinion Tracker",
     "refresh": "Refresh",
     "uploadJson": "Upload JSON",
@@ -1307,6 +1306,12 @@
       "refresh": "Refresh profile"
     }
   },
+  "research": {
+    "navigation": "Research views",
+    "creatorOpinions": "Creator opinions",
+    "manageReports": "Manage reports",
+    "author": "Author"
+  },
   "tradingAnalysis": {
     "title": "Deep Research",
     "heroDescription": "Understand the thesis, the supporting evidence and what could change it.",
@@ -1421,16 +1426,16 @@
     "shareAnalysis": "Share Analysis",
     "fullReportCopied": "Full report copied to clipboard",
     "explore": {
-      "title": "Explore Analyses",
+      "title": "Published reports",
       "description": "Read published AI research, including conclusions, evidence and risks.",
       "featureCommunity": "Community Shared",
       "featureInsights": "Expert Insights",
       "featureAI": "AI-Powered",
-      "published": "Published Analyses",
-      "noPublished": "No published analyses yet. Be the first to share!",
+      "published": "Published reports",
+      "noPublished": "No research reports have been published yet. Reports will appear here when available.",
       "noResultsForTicker": "No published analyses found for {ticker}",
       "searchPlaceholder": "Filter by ticker...",
-      "backToExplore": "Back to Explore"
+      "backToExplore": "Back to deep research"
     },
     "translate": "Translate",
     "showOriginal": "Original",

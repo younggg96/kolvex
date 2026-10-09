@@ -164,14 +164,15 @@ function AppSidebar({ onNavigate }: AppSidebarProps) {
                 </SidebarMenuItem>
               )}
               {mainNavItems.map((item) => {
+                const active = isActive(item.href);
                 return (
                   <SidebarMenuItem key={item.title}>
                     <SidebarMenuButton
                       asChild
-                      isActive={isActive(item.href)}
+                      isActive={active}
                       onClick={handleNavigate}
                     >
-                      <Link href={item.href}>
+                      <Link href={item.href} aria-current={active ? "page" : undefined}>
                         {item.icon && <item.icon />}
                         <span>{item.title}</span>
                       </Link>

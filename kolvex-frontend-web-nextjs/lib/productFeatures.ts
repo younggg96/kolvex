@@ -36,7 +36,7 @@ export const PRODUCT_FEATURES = [
     id: "tradingAnalysis",
     label: "Deep Research",
     enabled: true,
-    routePrefixes: ["/dashboard/trading-analysis"],
+    routePrefixes: ["/dashboard/research/deep-research", "/dashboard/trading-analysis"],
     apiPrefixes: ["/api/trading-analysis"],
     componentDirs: ["components/trading-analysis"],
     libFiles: ["lib/tradingAnalysisApi.ts"],

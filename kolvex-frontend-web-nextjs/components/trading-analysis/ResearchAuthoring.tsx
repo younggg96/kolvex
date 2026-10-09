@@ -18,7 +18,8 @@ import {
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/lib/i18n";
-import DashboardLayout from "@/components/layout/DashboardLayout";
+import ResearchLayout from "@/components/decision/ResearchLayout";
+import { DEEP_RESEARCH_PATH } from "@/lib/researchRoutes";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Calendar } from "@/components/ui/calendar";
@@ -237,17 +238,19 @@ export default function TradingAnalysisPage({ searchParams }: { searchParams?: {
   };
 
   return (
-    <DashboardLayout
-      title={t("tradingAnalysis.title")}
+    <ResearchLayout
+      activeView="deep-research"
       headerActions={
         <Button
           variant="outline"
           size="sm"
-          onClick={() => router.push("/dashboard/trading-analysis/explore")}
+          asChild
           className="gap-1.5"
         >
-          <Globe className="h-4 w-4" />
-          {t("tradingAnalysis.explore.title")}
+          <Link href={DEEP_RESEARCH_PATH}>
+            <Globe className="h-4 w-4" />
+            {t("tradingAnalysis.explore.title")}
+          </Link>
         </Button>
       }
     >
@@ -648,6 +651,6 @@ export default function TradingAnalysisPage({ searchParams }: { searchParams?: {
           </div>
         </div>
       </div>
-    </DashboardLayout>
+    </ResearchLayout>
   );
 }

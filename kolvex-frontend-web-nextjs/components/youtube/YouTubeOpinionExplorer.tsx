@@ -38,7 +38,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useTranslation } from "@/lib/i18n";
-import { cn, proxyImageUrl } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import {
   getYouTubeOpinionDashboard,
   getYouTubeUploadCoverage,
@@ -487,7 +487,6 @@ export default function YouTubeOpinionExplorer() {
     { value: "1y", label: t("youtubeOpinions.range1y") },
     { value: "all", label: t("common.all") },
   ];
-  const latestVideos = groupOpinionsByVideo(catalogue?.latest ?? []).slice(0, 4);
   const changes = (route.creator ? context?.changes : catalogue?.changes) || [];
   const notableChanges = changes.filter((change) => change.change !== null).slice(0, 8);
 
@@ -815,65 +814,6 @@ export default function YouTubeOpinionExplorer() {
             {!inDetail && (
               <div className="grid min-w-0 gap-10 xl:grid-cols-[minmax(0,1fr)_300px]">
                 <div className="min-w-0">
-                  {route.tab === "stocks" && latestVideos.length > 0 && (
-                    <section className="mb-10 min-w-0" aria-labelledby="latest-videos">
-                      <h2 id="latest-videos" className="text-base font-semibold">
-                        {t("youtubeOpinions.latestVideos")}
-                      </h2>
-                      <ul className="-mx-4 mt-3 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-2 scrollbar-hide sm:mx-0 sm:grid sm:grid-cols-2 sm:overflow-visible sm:px-0 lg:grid-cols-4">
-                        {latestVideos.map((group) => {
-                          const first = group.opinions[0];
-                          const href = first.video_url || `https://www.youtube.com/watch?v=${encodeURIComponent(group.videoId)}`;
-                          return (
-                            <li key={group.videoId} className="w-[68%] shrink-0 snap-start sm:w-auto">
-                              <a
-                                href={href}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="group block rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-                              >
-                                <span className="block aspect-video overflow-hidden rounded-xl bg-muted">
-                                  {first.thumbnail_url && (
-                                    // eslint-disable-next-line @next/next/no-img-element
-                                    <img
-                                      src={proxyImageUrl(first.thumbnail_url)}
-                                      alt=""
-                                      loading="lazy"
-                                      referrerPolicy="no-referrer"
-                                      className="h-full w-full object-cover transition-transform duration-200 group-hover:scale-[1.02]"
-                                    />
-                                  )}
-                                </span>
-                                <span className="mt-2 line-clamp-2 text-[13px] font-semibold leading-snug group-hover:underline">
-                                  {first.video_title || group.videoId}
-                                </span>
-                              </a>
-                              <p className="mt-1 flex min-w-0 items-center gap-1.5 text-xs text-foreground/75">
-                                <CreatorAvatar name={first.channel_title || first.channel_id} avatarUrl={first.channel_avatar_url} size="xs" />
-                                <span className="truncate">{first.channel_title || first.channel_id}</span>
-                                <span className="shrink-0 tabular-nums">{formatDay(first.opinion_date)}</span>
-                              </p>
-                              <p className="mt-1.5 flex flex-wrap gap-x-2.5 gap-y-1 text-xs">
-                                {group.opinions.map((opinion) => (
-                                  <ExplorerLink
-                                    key={opinion.id}
-                                    onNavigate={navigate}
-                                    target={{ tab: "stocks", ticker: opinion.ticker }}
-                                    className={cn(
-                                      "rounded-sm font-semibold hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
-                                      toneText[describeStrength(opinion.direction_score, { t }).tone],
-                                    )}
-                                  >
-                                    {opinion.ticker}
-                                  </ExplorerLink>
-                                ))}
-                              </p>
-                            </li>
-                          );
-                        })}
-                      </ul>
-                    </section>
-                  )}
                   <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
                     <div>
                       <h2 className="text-[28px] font-semibold leading-tight tracking-[-0.02em]">

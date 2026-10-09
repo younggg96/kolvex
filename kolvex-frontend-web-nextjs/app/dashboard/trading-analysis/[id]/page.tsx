@@ -24,6 +24,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/lib/i18n";
 import DashboardLayout from "@/components/layout/DashboardLayout";
+import { RESEARCH_AUTHORING_PATH } from "@/lib/researchRoutes";
 import { Button } from "@/components/ui/button";
 import {
   Tooltip,
@@ -112,6 +113,13 @@ export default function TradingAnalysisDetailPage() {
   const [lastActivityAt, setLastActivityAt] = useState(() => Date.now());
   const [now, setNow] = useState(() => Date.now());
   const cleanupRef = useRef<(() => void) | null>(null);
+
+  useEffect(() => {
+    const heading = analysis?.ticker
+      ? t("tradingAnalysis.pageTitle", { ticker: analysis.ticker })
+      : t("tradingAnalysis.title");
+    document.title = `${heading} · ${t("sidebar.research")} — Kolvex`;
+  }, [analysis?.ticker, t]);
 
   const loadAnalysis = useCallback(async () => {
     try {
@@ -322,7 +330,7 @@ export default function TradingAnalysisDetailPage() {
             </p>
             <Button
               variant="ghost"
-              onClick={() => router.push("/dashboard/trading-analysis")}
+              onClick={() => router.push(RESEARCH_AUTHORING_PATH)}
             >
               <ArrowLeft className="w-4 h-4 mr-2" />
               {t("common.back")}
@@ -383,7 +391,7 @@ export default function TradingAnalysisDetailPage() {
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => router.push("/dashboard/trading-analysis")}
+          onClick={() => router.push(RESEARCH_AUTHORING_PATH)}
           className="gap-1"
         >
           <ArrowLeft className="w-4 h-4" />

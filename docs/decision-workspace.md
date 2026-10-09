@@ -23,7 +23,39 @@ Markets, Research and Updates do not show personal thesis prompts or ticker-entr
 
 ## Authoring and retained records
 
-The deep research landing page shows published reports to readers. Existing research configuration and generation are retained for administrators in `components/trading-analysis/ResearchAuthoring.tsx`.
+Research uses one primary navigation entry with two child views: Creator opinions
+(`/dashboard/research`) and Deep Research (`/dashboard/research/deep-research`).
+The latter shows published reports by default. Administrators can choose Manage
+reports (`?view=authoring`) to access existing configuration and generation in
+`components/trading-analysis/ResearchAuthoring.tsx`.
+
+Legacy `/dashboard/trading-analysis` redirects to the authoring view, where readers
+still receive only published reports; the legacy ticker parameter is preserved.
+`/dashboard/trading-analysis/explore` redirects to the published library. Existing
+report detail URLs remain supported. Published reports return to the deep research
+library; authoring reports return to report management. Both desktop and mobile
+navigation mark Research active on these retained detail URLs.
+
+## Canonical UI map
+
+The frontend visual contract is `kolvex-frontend-web-nextjs/DESIGN.md`. The following
+owners govern the research workflow; this navigation change does not alter the
+backend report lifecycle, publishing permissions or paid generation behavior.
+
+| Capability | Canonical owner | Source of truth | Allowed variants | Verification |
+|---|---|---|---|---|
+| Scrollbar | `app/globals.css` | DESIGN.md | Existing application content scrollers | Browser layout and computed style |
+| Select/Listbox | `components/ui/select.tsx` | Existing report authoring controls | Authored Radix select | Retained controls; build and keyboard review |
+| Date | `components/ui/calendar.tsx` | Existing report authoring controls | Authored calendar | Retained zh-CN/en-US date behavior |
+| Toast | Sonner provider and existing report handlers | Existing authoring workflow | Success and error | Existing regression checks and build |
+| CRUD | `lib/tradingAnalysisApi.ts` and existing backend authorization | PRODUCT.md and report APIs | Reader library; administrator authoring | Reader/admin routing, report return navigation |
+
+Route links have native link keyboard behavior, visible focus, translated names
+and `aria-current`. In-page report panels retain the existing Radix tab model.
+Research document titles follow the current locale. Shared navigation stays
+usable during initial loading, empty lists and failed requests; retry remains in
+the affected content. The existing 30-report page limit and stale-request guard
+are retained. No additional external side effect occurs when changing views.
 
 Personal thesis entry and comparison have been disconnected from the reader UI. Existing thesis API helpers, database records, version history and migrations are retained; no database deletion or migration is required for this change. Legacy individual research and chat routes remain available.
 

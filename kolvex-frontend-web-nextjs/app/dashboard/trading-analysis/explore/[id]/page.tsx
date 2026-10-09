@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import {
   ArrowLeft,
   TrendingUp,
@@ -21,6 +21,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/lib/i18n";
 import DashboardLayout from "@/components/layout/DashboardLayout";
+import { deepResearchPagePath, parseDeepResearchPage } from "@/lib/researchRoutes";
 import { Button } from "@/components/ui/button";
 import { SwitchTab } from "@/components/ui/switch-tab";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -38,8 +39,10 @@ import CompanyLogo from "@/components/ui/company-logo";
 export default function PublishedAnalysisDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { t, locale } = useTranslation();
   const analysisId = params.id as string;
+  const listPath = deepResearchPagePath(parseDeepResearchPage(searchParams.get("page")));
 
   const [analysis, setAnalysis] = useState<TradingAnalysis | null>(null);
   const [loading, setLoading] = useState(true);
@@ -59,6 +62,13 @@ export default function PublishedAnalysisDetailPage() {
   useEffect(() => {
     loadAnalysis();
   }, [loadAnalysis]);
+
+  useEffect(() => {
+    const heading = analysis?.ticker
+      ? t("tradingAnalysis.pageTitle", { ticker: analysis.ticker })
+      : t("tradingAnalysis.title");
+    document.title = `${heading} · ${t("sidebar.research")} — Kolvex`;
+  }, [analysis?.ticker, t]);
 
   useEffect(() => {
     if (analysis?.status === "completed") {
@@ -97,7 +107,7 @@ export default function PublishedAnalysisDetailPage() {
             <Button
               variant="ghost"
               onClick={() =>
-                router.push("/dashboard/trading-analysis/explore")
+                router.push(listPath)
               }
             >
               <ArrowLeft className="w-4 h-4 mr-2" />
@@ -144,7 +154,7 @@ export default function PublishedAnalysisDetailPage() {
           variant="ghost"
           size="sm"
           onClick={() =>
-            router.push("/dashboard/trading-analysis/explore")
+            router.push(listPath)
           }
           className="gap-1"
         >

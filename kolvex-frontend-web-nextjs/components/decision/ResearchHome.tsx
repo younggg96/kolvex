@@ -2,14 +2,13 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import DashboardLayout from "@/components/layout/DashboardLayout";
+import ResearchLayout from "./ResearchLayout";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import CreatorAvatar from "@/components/youtube/CreatorAvatar";
 import OpinionStrength from "@/components/youtube/OpinionStrength";
 import CompanyLogo from "@/components/ui/company-logo";
-import type { YouTubeDailyChange, YouTubeOpinion } from "@/lib/youtubeOpinionsApi";
-import { cn, proxyImageUrl } from "@/lib/utils";
+import type { YouTubeDailyChange } from "@/lib/youtubeOpinionsApi";
 import {
   Empty,
   HeldMark,
@@ -23,8 +22,6 @@ import {
 import { useDecisionCommand } from "./CommandLayer";
 
 const WEEK_MS = 7 * 86_400_000;
-const sentimentTone = (sentiment: YouTubeOpinion["sentiment"]) =>
-  sentiment === "bullish" ? "text-positive" : sentiment === "bearish" ? "text-negative" : "text-muted-foreground";
 
 function groupBy<T>(items: T[], key: (item: T) => string) {
   const groups = new Map<string, T[]>();
@@ -54,7 +51,6 @@ export default function ResearchHome() {
   const weaker = thisWeek.filter((change) => (change.change ?? 0) < 0).length;
   const fresh = thisWeek.filter((change) => change.change == null).length;
   const timeline = groupBy(changes.slice(0, 14), (change) => change.current_date);
-  const videos = groupBy(dashboard?.latest ?? [], (opinion) => opinion.video_id).slice(0, 6);
   const consensus = new Map(dashboard?.stocks.map((stock) => [stock.ticker, stock]) ?? []);
   const heldCovered = held.tickers.filter((ticker) => consensus.has(ticker));
   const heldUncovered = held.tickers.length - heldCovered.length;
@@ -102,7 +98,7 @@ export default function ResearchHome() {
   };
 
   return (
-    <DashboardLayout title={c("Research", "研究")}>
+    <ResearchLayout activeView="creators">
       <main className="flex-1 overflow-y-auto" aria-busy={loading}>
         <div className="mx-auto px-4 pb-16 pt-6 md:px-8 md:pt-8">
           <section className="flex flex-col gap-6 border-b border-border pb-8 lg:flex-row lg:items-end lg:justify-between">
@@ -149,7 +145,7 @@ export default function ResearchHome() {
           </section>
 
           <div className="mt-10 grid gap-x-12 gap-y-12 xl:grid-cols-[minmax(0,1fr)_320px]">
-            <div className="min-w-0 space-y-12">
+            <div className="min-w-0">
               <Panel
                 title={c("Opinion changes", "观点变化")}
                 description={c("Each stock's latest creator consensus compared with its previous day of opinions.", "每只股票最新一天的博主共识，与它上一次有观点的那天相比。")}
@@ -172,77 +168,6 @@ export default function ResearchHome() {
                   </ol>
                 ) : (
                   !error && <Empty>{c("Changes will appear once creator opinions are imported.", "导入博主观点后，变化会出现在这里。")}</Empty>
-                )}
-              </Panel>
-
-              <Panel
-                title={c("Latest videos", "最新视频")}
-                action={<TextLink href="/dashboard/youtube-opinions?tab=creators">{c("All creators", "全部博主")}</TextLink>}
-              >
-                {loading && !dashboard ? (
-                  <div className="space-y-4 py-4">
-                    {[0, 1, 2].map((row) => <Skeleton key={row} className="h-[72px] w-full" />)}
-                  </div>
-                ) : videos.length ? (
-                  <ul className="divide-y divide-border">
-                    {videos.map(([videoId, opinions]) => {
-                      const first = opinions[0];
-                      const href = first.video_url || `https://www.youtube.com/watch?v=${encodeURIComponent(videoId)}`;
-                      return (
-                        <li key={videoId} className="grid grid-cols-[112px_minmax(0,1fr)] gap-4 py-4 sm:grid-cols-[148px_minmax(0,1fr)]">
-                          <a
-                            href={href}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="relative block aspect-video overflow-hidden rounded-lg bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-                            aria-label={c(`Watch: ${first.video_title || videoId}`, `观看：${first.video_title || videoId}`)}
-                          >
-                            {first.thumbnail_url && (
-                              // eslint-disable-next-line @next/next/no-img-element
-                              <img
-                                src={proxyImageUrl(first.thumbnail_url)}
-                                alt=""
-                                loading="lazy"
-                                referrerPolicy="no-referrer"
-                                className="h-full w-full object-cover"
-                              />
-                            )}
-                          </a>
-                          <div className="min-w-0">
-                            <a
-                              href={href}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="line-clamp-2 rounded-sm text-[15px] font-semibold leading-snug underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-                            >
-                              {first.video_title || videoId}
-                            </a>
-                            <Link
-                              href={`/dashboard/youtube-opinions?tab=creators&creator=${encodeURIComponent(first.channel_id)}`}
-                              className="mt-1.5 inline-flex max-w-full items-center gap-2 rounded-sm text-[13px] text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-                            >
-                              <CreatorAvatar name={first.channel_title || first.channel_id} avatarUrl={first.channel_avatar_url} size="xs" />
-                              <span className="truncate">{first.channel_title || first.channel_id}</span>
-                              <span className="shrink-0 tabular-nums">{dayLabel(first.opinion_date)}</span>
-                            </Link>
-                            <p className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-[13px]">
-                              {opinions.map((opinion) => (
-                                <Link
-                                  key={opinion.id}
-                                  href={`/dashboard/research/${encodeURIComponent(opinion.ticker)}`}
-                                  className={cn("rounded-sm font-semibold underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary", sentimentTone(opinion.sentiment))}
-                                >
-                                  {opinion.ticker}
-                                </Link>
-                              ))}
-                            </p>
-                          </div>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                ) : (
-                  !error && <Empty>{c("No videos imported yet.", "暂时没有导入的视频。")}</Empty>
                 )}
               </Panel>
             </div>
@@ -325,6 +250,6 @@ export default function ResearchHome() {
           </div>
         </div>
       </main>
-    </DashboardLayout>
+    </ResearchLayout>
   );
 }

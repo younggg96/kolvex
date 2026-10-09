@@ -7,7 +7,8 @@
 | 功能 | ID | 页面入口 | 主要代码边界 |
 | --- | --- | --- | --- |
 | AI Chat | `chat` | `/dashboard`, `/dashboard/chat` | `components/chat`, `lib/chatApi.ts`, `/api/chat`, `/api/chat-history` |
-| Trading Analysis | `tradingAnalysis` | `/dashboard/trading-analysis` | `components/trading-analysis`, `lib/tradingAnalysisApi.ts`, `/api/trading-analysis` |
+| Research | `research` | `/dashboard/research` | `components/decision/ResearchHome.tsx`, `components/decision/ResearchLayout.tsx` |
+| Deep Research（研究内） | `tradingAnalysis` | `/dashboard/research/deep-research`（旧 `/dashboard/trading-analysis` 入口重定向） | `components/trading-analysis`, `lib/tradingAnalysisApi.ts`, `/api/trading-analysis` |
 | Portfolio | `portfolio` | `/dashboard/portfolio` | `components/portfolio`, Plaid Investments/portfolio APIs |
 | Settings | `settings` | `/dashboard/settings`, `/config` | `components/user`, user API key and avatar APIs |
 | Admin | `admin` | `/dashboard/admin` | `/api/admin` |

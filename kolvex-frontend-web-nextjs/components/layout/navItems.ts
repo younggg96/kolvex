@@ -3,7 +3,6 @@ import {
   BookOpen,
   PieChart,
   ScanSearch,
-  Telescope,
   Youtube,
   type LucideIcon,
 } from "lucide-react";
@@ -34,14 +33,6 @@ export const MAIN_NAV_ITEMS: MainNavItem[] = [
     featureId: "research",
   },
   {
-    icon: Telescope,
-    titleKey: "tradingAnalysis.title",
-    shortTitleKey: "tabBar.tradingAnalysis",
-    href: "/dashboard/trading-analysis",
-    type: "link",
-    featureId: "tradingAnalysis",
-  },
-  {
     icon: PieChart,
     titleKey: "sidebar.portfolio",
     shortTitleKey: "tabBar.portfolio",
@@ -68,5 +59,10 @@ export const MAIN_NAV_ITEMS: MainNavItem[] = [
 ];
 export function isNavItemActive(pathname: string, href: string) {
   if (href === "/dashboard") return pathname === href;
+  // Retained report URLs belong to Research in both desktop and mobile navigation.
+  if (href === "/dashboard/research" &&
+    (pathname === "/dashboard/trading-analysis" || pathname.startsWith("/dashboard/trading-analysis/"))) {
+    return true;
+  }
   return pathname === href || pathname.startsWith(`${href}/`);
 }

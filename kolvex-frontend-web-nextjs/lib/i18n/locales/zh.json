@@ -1045,7 +1045,6 @@
     }
   },
   "youtubeOpinions": {
-    "latestVideos": "最新视频",
     "title": "YouTube 观点追踪",
     "refresh": "刷新",
     "uploadJson": "上传 JSON",
@@ -1307,6 +1306,12 @@
       "refresh": "刷新资料"
     }
   },
+  "research": {
+    "navigation": "研究内容",
+    "creatorOpinions": "博主观点",
+    "manageReports": "管理报告",
+    "author": "作者"
+  },
   "tradingAnalysis": {
     "title": "深度研究",
     "heroDescription": "理解投资判断、支持它的证据，以及什么会改变判断。",
@@ -1421,16 +1426,16 @@
     "shareAnalysis": "分享分析",
     "fullReportCopied": "完整报告已复制到剪贴板",
     "explore": {
-      "title": "探索分析",
+      "title": "已发布报告",
       "description": "直接阅读已发布的 AI 研究报告，查看结论、依据与风险。",
       "featureCommunity": "社区分享",
       "featureInsights": "专业洞察",
       "featureAI": "AI 驱动",
-      "published": "已发布分析",
-      "noPublished": "暂无已发布分析，快来成为第一个分享者吧！",
+      "published": "已发布报告",
+      "noPublished": "暂时没有已发布的研究报告，发布后会显示在这里。",
       "noResultsForTicker": "未找到 {ticker} 的已发布分析",
       "searchPlaceholder": "按股票代码筛选...",
-      "backToExplore": "返回探索"
+      "backToExplore": "返回深度研究"
     },
     "translate": "翻译",
     "showOriginal": "原文",

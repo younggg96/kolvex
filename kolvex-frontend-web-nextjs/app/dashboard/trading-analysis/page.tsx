@@ -1,9 +1,13 @@
-"use client";
-import { useUserProfileContext } from "@/components/user/UserProfileProvider";
-import dynamic from "next/dynamic";
-const ResearchAuthoring = dynamic(() => import("@/components/trading-analysis/ResearchAuthoring"));
-import ExploreAnalysesPage from "./explore/page";
-export default function TradingAnalysisPage({ searchParams }: { searchParams?: { ticker?: string } }) {
-  const { profile } = useUserProfileContext();
-  return profile?.is_admin ? <ResearchAuthoring searchParams={searchParams} /> : <ExploreAnalysesPage />;
+import { redirect } from "next/navigation";
+import { RESEARCH_AUTHORING_PATH } from "@/lib/researchRoutes";
+
+export default function TradingAnalysisPage({
+  searchParams,
+}: {
+  searchParams?: { ticker?: string };
+}) {
+  const ticker = searchParams?.ticker;
+  redirect(ticker
+    ? `${RESEARCH_AUTHORING_PATH}&ticker=${encodeURIComponent(ticker)}`
+    : RESEARCH_AUTHORING_PATH);
 }
