@@ -128,3 +128,22 @@ build and 390px browser component checks used an isolated local copy to avoid sh
 Next.js cache conflicts. The full-project premium audit reported existing settings-page
 select ownership/actionless-button and global scrollbar ownership findings; none
 pointed at the new focus components. Live authenticated stock generation was not tested.
+
+## User-selected chart models
+
+Both chart operations require an explicit `model` ID in the request and the
+signed-in user's saved API key for that model's provider. They do not consult
+server model defaults or switch to server keys/fallback providers. Missing or
+invalid selections and authentication failures return `503 ai_not_configured`;
+the chart offers the API Keys settings link and an explicit model selector.
+The selector shares the chat model catalogue and enables only user-configured
+providers. Selection remains local to the chart session; opening a chart does
+not automatically select a model or generate a result.
+
+Successful payloads carry server-assigned `provider` and `model`, identifying
+the API model actually requested. Both are saved with the immutable analysis
+snapshot and displayed for text analysis and drawings. Older snapshots without
+provenance remain readable without invented attribution. Changing the current
+selector does not relabel an existing result. Cache entries are separated by
+user, provider, model and a digest of the user's selected key; missing keys are
+rejected before a cache lookup.

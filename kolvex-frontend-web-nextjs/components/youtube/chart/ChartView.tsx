@@ -1,6 +1,9 @@
 "use client";
 
-import { DEFAULT_TECHNICAL_FOCUS, type TechnicalFocus } from "@/lib/technicalFocus";
+import Link from "next/link";
+import { MODEL_CONFIGS, PROVIDER_NAME_TO_ID } from "@/lib/aiModels";
+import { useAvailableProviders } from "@/hooks/useAvailableProviders";
+import { DEFAULT_TECHNICAL_FOCUS, DEFAULT_DRAWING_FOCUS, type TechnicalFocus } from "@/lib/technicalFocus";
 
 import {
   useEffect,
@@ -59,6 +62,8 @@ import {
 import ChartDrawingLayer from "../ChartDrawingLayer";
 import { drawingColors, newDrawingId, type Anchor, type Drawing, type DrawingTool, type SyncStatus } from "../chartDrawings";
 import { toneStroke, toneText, type StrengthTone } from "../strength";
+import AiPriceActionSignals from "./AiPriceActionSignals";
+import AiDrawingSetup from "./AiDrawingSetup";
 import AiAnalysisPanel from "./AiAnalysisPanel";
 import { computeIndicators, indicatorMeta, indicatorOrder, vwap, type IndicatorKey, type Series } from "./indicators";
 import {
@@ -200,6 +205,7 @@ export interface ChartViewProps {
   snapshotBars?: PriceBar[];
   generationRequest?: number;
   technicalFocus?: TechnicalFocus;
+  drawingFocus?: TechnicalFocus;
   onAnalysisBusy?: (busy: boolean) => void;
   /** Advanced mode runs inside a dialog that owns Escape; this lets the chart consume it first. */
   escapeRef?: MutableRefObject<(() => boolean) | null>;
@@ -231,6 +237,7 @@ export default function ChartView({
   snapshotBars,
   generationRequest = 0,
   technicalFocus = DEFAULT_TECHNICAL_FOCUS,
+  drawingFocus = DEFAULT_DRAWING_FOCUS,
   onAnalysisBusy,
   escapeRef,
 }: ChartViewProps) {
@@ -264,7 +271,11 @@ export default function ChartView({
   }>({
     status: "idle",
   });
-  const [drawingAi, setDrawingAi] = useState<{ status: "idle" | "loading" | "done" | "error"; error?: string }>({ status: "idle" });
+  const [selectedModel, setSelectedModel] = useState("");
+  const { availableProviders, loading: providersLoading, refresh: refreshProviders } = useAvailableProviders();
+  const eligibleModels = MODEL_CONFIGS.filter((model) => availableProviders?.includes(PROVIDER_NAME_TO_ID[model.provider]));
+  const modelReady = eligibleModels.some((model) => model.id === selectedModel);
+  const [drawingAi, setDrawingAi] = useState<{ status: "idle" | "loading" | "done" | "error"; error?: string; result?: AiTechnicalAnalysis }>({ status: "idle" });
   const gesture = useRef<Gesture | null>(null);
   const pointers = useRef(new Map<number, { x: number; y: number }>());
   const aiRequest = useRef<AbortController | null>(null);
@@ -418,7 +429,7 @@ export default function ChartView({
   useEffect(() => {
     setAi(savedAnalysis ? { status: "done", result: savedAnalysis } : { status: "idle" });
   }, [savedAnalysis]);
-  useEffect(() => { setDrawingAi({ status: savedDrawings ? "done" : "idle" }); }, [savedDrawings]);
+  useEffect(() => { setDrawingAi(savedDrawings ? { status: "done", result: savedDrawings } : { status: "idle" }); }, [savedDrawings]);
   useEffect(() => { onAnalysisBusy?.(ai.status === "loading" || drawingAi.status === "loading"); }, [ai.status, drawingAi.status, onAnalysisBusy]);
   useEffect(() => () => { aiRequest.current?.abort(); }, []);
   const handledGeneration = useRef(0);
@@ -744,6 +755,12 @@ export default function ChartView({
 
   async function runAi(operation: "analysis" | "drawings" = "analysis") {
     if (!bars || !count || aiBusy || ai.status === "loading" || drawingAi.status === "loading") return;
+    if (!modelReady) {
+      const error = t(eligibleModels.length ? "youtubeOpinions.ai.selectModel" : "youtubeOpinions.ai.notConfigured");
+      if (operation === "analysis") setAi({ status: "error", error });
+      else setDrawingAi({ status: "error", error });
+      return;
+    }
     aiRequest.current?.abort();
     const controller = new AbortController();
     aiRequest.current = controller;
@@ -756,8 +773,9 @@ export default function ChartView({
         symbol,
         {
           ...params,
-          ...(operation === "analysis" ? technicalFocus : { categories: ["levels", "structure"], custom_scenarios: [] }),
+          ...(operation === "analysis" ? technicalFocus : drawingFocus),
           operation,
+          model: selectedModel,
           view_start: from.date,
           view_end: to.date,
           locale: t("common.intlLocale") === "zh-CN" ? "zh" : "en",
@@ -769,7 +787,7 @@ export default function ChartView({
         setAi({ status: "done", result });
         onAnalysisChange?.(result);
       } else {
-        setDrawingAi({ status: "done" });
+        setDrawingAi({ status: "done", result });
         onDrawingsChange?.(result);
       }
     } catch (reason) {
@@ -966,19 +984,34 @@ export default function ChartView({
       </div>
 
       <div className="mt-3 flex flex-wrap gap-2" role="group" aria-label={t("youtubeOpinions.ai.actions")}>
+        <Select value={modelReady ? selectedModel : ""} onValueChange={setSelectedModel} onOpenChange={(open) => { if (open) void refreshProviders(); }} disabled={providersLoading || aiBusy || ai.status === "loading" || drawingAi.status === "loading"}>
+          <SelectTrigger aria-label={t("youtubeOpinions.ai.selectModel")} className="h-8 w-[220px] max-w-full text-xs">
+            <SelectValue placeholder={t("youtubeOpinions.ai.selectModel")} />
+          </SelectTrigger>
+          <SelectContent>
+            {MODEL_CONFIGS.map((model) => <SelectItem key={model.id} value={model.id} disabled={!availableProviders?.includes(PROVIDER_NAME_TO_ID[model.provider])}>{model.name}</SelectItem>)}
+          </SelectContent>
+        </Select>
         <Button size="sm" variant="outline" className="min-w-[104px]" onClick={() => void runAi("analysis")}
-          disabled={!loaded || aiBusy || ai.status === "loading" || drawingAi.status === "loading"}
+          disabled={!loaded || providersLoading || aiBusy || ai.status === "loading" || drawingAi.status === "loading"}
           title={t("youtubeOpinions.ai.runAnalysis")}>
           {ai.status === "loading" ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <ScanSearch className="mr-1.5 h-3.5 w-3.5" />}
           {t(ai.status === "loading" ? "youtubeOpinions.ai.analysisLoading" : "youtubeOpinions.ai.analysisButton")}
         </Button>
         <Button size="sm" variant="outline" className="min-w-[104px]" onClick={() => void runAi("drawings")}
-          disabled={!loaded || aiBusy || ai.status === "loading" || drawingAi.status === "loading"}
+          disabled={!loaded || providersLoading || aiBusy || ai.status === "loading" || drawingAi.status === "loading"}
           title={t("youtubeOpinions.ai.runDrawings")}>
           {drawingAi.status === "loading" ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <GanttChart className="mr-1.5 h-3.5 w-3.5" />}
           {t(drawingAi.status === "loading" ? "youtubeOpinions.ai.drawingLoading" : "youtubeOpinions.ai.button")}
         </Button>
       </div>
+      {!providersLoading && !modelReady && (
+        <p className="mt-2 text-xs leading-5 text-muted-foreground">
+          {t(eligibleModels.length ? "youtubeOpinions.ai.selectModel" : "youtubeOpinions.ai.notConfigured")}{" "}
+          <Link href="/dashboard/settings?tab=api-keys" className="underline underline-offset-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">{t("youtubeOpinions.ai.openSettings")}</Link>
+        </p>
+      )}
+
 
       <div
         role="toolbar"
@@ -1572,9 +1605,16 @@ export default function ChartView({
           </div>
         {drawingAi.status !== "idle" && <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-muted-foreground" role={drawingAi.status === "error" ? "alert" : "status"}>
           <span>{drawingAi.status === "loading" ? t("youtubeOpinions.ai.drawingLoading") : drawingAi.status === "error" ? drawingAi.error : t("youtubeOpinions.ai.drawingsReady")}</span>
+          {drawingAi.status === "done" && drawingAi.result?.model && <span>{t("youtubeOpinions.ai.generatedBy", { model: `${drawingAi.result.provider || ""} / ${drawingAi.result.model}` })}</span>}
+          {drawingAi.status === "error" && drawingAi.error === t("youtubeOpinions.ai.notConfigured") && <Link href="/dashboard/settings?tab=api-keys" className="underline underline-offset-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">{t("youtubeOpinions.ai.openSettings")}</Link>}
+          {drawingAi.status === "done" && drawingAi.result?.findings?.some(item => item.status === "unavailable") && <span>
+            {t("youtubeOpinions.ai.focus.unavailable")}：{drawingAi.result.findings.filter(item => item.status === "unavailable").map(item => t(`youtubeOpinions.ai.focus.categories.${item.id}`)).join(" / ")}
+          </span>}
           {drawingAi.status === "error" && <Button size="sm" variant="outline" disabled={aiBusy} onClick={() => void runAi("drawings")}>{t("youtubeOpinions.ai.retryDrawings")}</Button>}
           {drawingAi.status === "done" && <Button size="sm" variant="ghost" disabled={aiBusy} onClick={() => { setDrawingAi({ status: "idle" }); onDrawingsChange?.(null); }}>{t("youtubeOpinions.ai.clear")}</Button>}
         </div>}
+        {drawingAi.status === "done" && drawingAi.result && <AiPriceActionSignals result={drawingAi.result} formatDate={formatDate} t={t} />}
+        {drawingAi.status === "done" && drawingAi.result?.setup && <AiDrawingSetup setup={drawingAi.result.setup} t={t} />}
 
         </div>
 

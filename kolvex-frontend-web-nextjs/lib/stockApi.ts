@@ -208,6 +208,18 @@ export interface AiChartPoint {
 }
 
 export interface AiTechnicalAnalysis {
+  provider?: string;
+  model?: string;
+  overlays?: Array<{
+    category: TechnicalCategory;
+    status?: "pending" | "confirmed" | "failed" | "unconfirmed";
+    level?: number;
+    detected_at?: string;
+    label: string;
+    shape: "line" | "area";
+    direction: "bullish" | "bearish" | "neutral";
+    points: AiChartPoint[];
+  }>;
   operation?: "analysis" | "drawings";
   categories?: TechnicalCategory[];
   custom_scenarios?: string[];
@@ -249,7 +261,7 @@ export class AiAnalysisError extends Error {
 
 export async function getAiTechnicalAnalysis(
   symbol: string,
-  body: PriceHistoryParams & Partial<TechnicalFocus> & { view_start?: string; view_end?: string; locale?: string; operation?: "analysis" | "drawings" },
+  body: PriceHistoryParams & Partial<TechnicalFocus> & { view_start?: string; view_end?: string; locale?: string; model: string; operation?: "analysis" | "drawings" },
   signal?: AbortSignal
 ): Promise<AiTechnicalAnalysis> {
   const response = await fetch(`/api/market/ai-technical/${encodeURIComponent(symbol)}`, {

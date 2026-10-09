@@ -1224,7 +1224,9 @@
       "rerun": "重新分析",
       "clear": "清除 AI 画线",
       "signIn": "登录后即可使用 AI 分析和画线。",
-      "notConfigured": "尚未配置可用的 AI 模型 API Key。",
+      "notConfigured": "请在设置中添加或更新所选模型的 API Key；分析仅使用你提供的 Key。",
+      "selectModel": "请选择 AI 模型",
+      "generatedBy": "由 {model} 完成",
       "openSettings": "前往设置",
       "failed": "AI 技术分析暂时不可用，请稍后再试。",
       "support": "支撑",
@@ -1275,12 +1277,40 @@
           "score": "技术评分",
           "historical": "历史相似走势",
           "scenarios": "多空情景",
-          "invalidation": "失效条件"
+          "invalidation": "失效条件",
+          "waves": "波浪理论 / 数浪",
+          "moving_averages": "均线理论",
+          "trendlines": "趋势线 / 压力线",
+          "candlesticks": "蜡烛图形态",
+          "fibonacci": "斐波那契回撤",
+          "trade_plan": "入场 / 止损 / 盈亏比",
+          "breakouts": "突破 / 跌破",
+          "retests": "回踩 / 反抽确认",
+          "false_breakouts": "假突破 / 假跌破"
         },
         "more": "更多类别",
         "addScenario": "添加情景",
         "applyHint": "已选 {count} 项 · 更新分析后生效",
-        "evidence": "分析依据"
+        "evidence": "分析依据",
+        "drawingTitle": "画线内容",
+        "drawingHint": "选择要标注的技术类型，确认后点击 AI 画线。数浪为候选解释；未识别到形态时不强行画线。",
+        "drawingApplyHint": "已选 {count} 项 · 运行 AI 画线后生效",
+        "apply": "确认选择"
+      },
+      "tradePlan": {
+        "title": "条件计划",
+        "entry": "入场区间",
+        "entryPoint": "入场（区间中点）",
+        "stop": "止损",
+        "target": "目标",
+        "ratio": "盈亏比",
+        "basis": "按入场区间中点与第一目标计算，收益 : 风险",
+        "long": "偏多计划",
+        "short": "偏空计划"
+      },
+      "priceAction": {
+        "title": "价位行为信号",
+        "rules": "连续两根 K 线收盘越过价位确认突破；突破后 10 根内观察回踩，5 根内收回原区间标记假突破。影线穿越与收盘突破分别识别。"
       }
     },
     "drawTools": "画图工具",

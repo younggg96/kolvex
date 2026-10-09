@@ -110,6 +110,7 @@ export default function AiAnalysisPanel({
         {result && (
           <p className="mt-1.5 flex flex-wrap items-baseline gap-x-2 gap-y-0.5 text-xs leading-4 text-muted-foreground">
             <span>{t(`youtubeOpinions.intervals.${interval}`)}</span>
+            {result.model && <span>{t("youtubeOpinions.ai.generatedBy", { model: `${result.provider || ""} / ${result.model}` })}</span>}
             <span className="whitespace-nowrap tabular-nums">
               {formatDate(result.view.start.slice(0, 10))} – {formatDate(result.view.end.slice(0, 10))}
             </span>
@@ -126,7 +127,7 @@ export default function AiAnalysisPanel({
           {state.error}{" "}
           {state.error === t("youtubeOpinions.ai.notConfigured") && (
             <Link
-              href="/dashboard/settings"
+              href="/dashboard/settings?tab=api-keys"
               className="font-semibold text-primary underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
             >
               {t("youtubeOpinions.ai.openSettings")}

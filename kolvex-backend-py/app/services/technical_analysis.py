@@ -6,6 +6,7 @@ explains levels and trend lines from that evidence. Every price and date it retu
 validated against the actual bars before it reaches the chart.
 """
 
+import hashlib
 import json
 import logging
 import time
@@ -14,9 +15,10 @@ from typing import Any, Dict, List, Literal, Optional, Tuple
 
 from pydantic import BaseModel, Field
 
+from app.services.technical_overlays import chart_overlays
 from app.services.technical_focus import TechnicalFocus, TechnicalCategory, CATEGORY_GUIDANCE
 from app.agent.config import LLM_PROVIDER
-from app.agent.llm import OPENAI_COMPATIBLE_PROVIDERS, get_llm
+from app.agent.llm import MODEL_TO_PROVIDER, OPENAI_COMPATIBLE_PROVIDERS, get_user_llm, resolve_model_id
 
 logger = logging.getLogger(__name__)
 
@@ -30,6 +32,20 @@ PROVIDER_MODELS = {
 
 class AiNotConfigured(RuntimeError):
     """No usable LLM key; the user can add one under Settings → API Keys."""
+
+
+def _choose_user_model(model_id: Optional[str], user_api_keys: Optional[Dict[str, str]]) -> Tuple[str, str]:
+    """Require an explicit selection backed by that user's own API key."""
+    if not model_id:
+        raise AiNotConfigured("Select an AI model")
+    if model_id not in MODEL_TO_PROVIDER:
+        raise AiNotConfigured("Select a supported AI model")
+    provider, model = resolve_model_id(model_id)
+    if not provider or not model:
+        raise AiNotConfigured("Select a supported AI model")
+    if not (user_api_keys or {}).get(provider, "").strip():
+        raise AiNotConfigured("Configure your API key for the selected model")
+    return provider, model
 
 
 def _choose_model(user_api_keys: Optional[Dict[str, str]]) -> Tuple[Optional[str], Optional[str]]:
@@ -138,7 +154,7 @@ class AiAnalysis(BaseModel):
     signals: List[str] = Field(default_factory=list, max_length=6)
     invalidation: Optional[str] = Field(default=None, max_length=240)
     setup: Optional[AiSetup] = None
-    findings: List[AiFinding] = Field(default_factory=list, max_length=17)
+    findings: List[AiFinding] = Field(default_factory=list, max_length=26)
 
 
 # ------------------------------------------------------------------ indicators
@@ -422,6 +438,8 @@ async def analyze_chart(
     categories: Optional[List[TechnicalCategory]] = None,
     custom_scenarios: Optional[List[str]] = None,
     operation: str = "analysis",
+    model_id: Optional[str] = None,
+    user_id: Optional[str] = None,
 ) -> Dict[str, Any]:
     """`history` may extend before the view so long EMAs are warmed up."""
     bars = [
@@ -432,16 +450,34 @@ async def analyze_chart(
         raise ValueError("Need at least 20 bars in view for technical analysis")
 
     if operation == "drawings":
-        categories, custom_scenarios = ["levels", "structure"], []
+        categories = categories if categories is not None else ["levels", "trendlines", "fibonacci", "trade_plan"]
+        custom_scenarios = []
     focus = TechnicalFocus(**({"categories": categories} if categories is not None else {}), custom_scenarios=custom_scenarios or [])
-    cache_key = (operation, tuple(focus.categories), tuple(focus.custom_scenarios), symbol, interval, bars[0]["date"], bars[-1]["date"], bars[-1]["close"], locale)
+    provider, model = _choose_user_model(model_id, user_api_keys)
+    key_fingerprint = hashlib.sha256(user_api_keys[provider].strip().encode()).hexdigest()
+    cache_key = (user_id, provider, model, key_fingerprint, operation, tuple(focus.categories), tuple(focus.custom_scenarios), symbol, interval, bars[0]["date"], bars[-1]["date"], bars[-1]["close"], locale)
     cached = _cache.get(cache_key)
     if cached and time.time() - cached[0] < CACHE_TTL_SECONDS:
         return cached[1]
 
     end_index = history.index(bars[-1]) + 1
     evidence, swings, tolerance = _evidence(symbol, interval, bars, history[:end_index])
-    unavailable = {"patterns", "timeframes", "score", "historical"}
+    # Full warmed-up series are computed here, never by the LLM.
+    history_used = history[:end_index]
+    by_date = {bar["date"] for bar in bars}
+    averages = {
+        period: [{"date": bar["date"], "price": round(value, 4)}
+                 for bar, value in zip(history_used, ema([b["close"] for b in history_used], period))
+                 if bar["date"] in by_date and value is not None]
+        for period in (20, 50, 200)
+    }
+    overlays = chart_overlays(bars, swings, averages, tolerance, locale)
+    # Keep full EMA paths in the payload; the prompt needs only existing indicator values.
+    evidence["detected_annotations"] = [item for item in overlays if item["category"] != "moving_averages"]
+    unavailable = {"timeframes", "score", "historical"}
+    for category in ("waves", "patterns", "candlesticks", "moving_averages", "breakouts", "retests", "false_breakouts"):
+        if not any(item["category"] == category for item in overlays):
+            unavailable.add(category)
     if evidence["indicators"]["relativeVolume"] is None:
         unavailable.add("volume")
     if evidence["indicators"]["rsi14"] is None:
@@ -455,12 +491,11 @@ async def analyze_chart(
         for bar in compress(bars, MAX_PROMPT_BARS)
     )
     language = "Simplified Chinese" if locale.startswith("zh") else "English"
-    provider, model = _choose_model(user_api_keys)
     try:
-        llm = get_llm(provider=provider, model=model, temperature=0.2, user_api_keys=user_api_keys)
+        llm = get_user_llm(provider=provider, model=model, temperature=0.2, user_api_keys=user_api_keys)
         result = await _structured_call(llm, [
             ("system", SYSTEM_PROMPT.format(language=language) + (
-                "\nThis request is ONLY for chart drawings. Prioritize validated levels, trendlines and Fibonacci anchors. Keep summary and signals brief, and return setup=null."
+                "\nThis request is ONLY for chart drawings. Draw only the requested categories. Prioritize validated levels, trendlines and Fibonacci anchors when selected. Computed annotations are supplied separately; do not invent them. Keep summary and signals brief. Return a grounded conditional setup only when trade_plan is requested; otherwise return setup=null."
                 if operation == "drawings" else "\nThis request is for a written technical analysis. Prioritize the requested findings and interpretation; the UI will not draw overlays from this result."
             )),
             (
@@ -489,7 +524,29 @@ async def analyze_chart(
             "status": answers[key].status if supported and key in answers else "unavailable",
             "explanation": answers[key].explanation.strip() if supported and key in answers else missing_text,
         })
+    drawing_data = sanitize(result, bars, swings, tolerance, history)
+    if operation == "drawings":
+        if "levels" not in focus.categories:
+            drawing_data["levels"] = []
+        if not ({"trendlines", "structure"} & set(focus.categories)):
+            drawing_data["trendlines"] = []
+        if "fibonacci" not in focus.categories:
+            drawing_data["fib"] = None
+        if "trade_plan" not in focus.categories:
+            drawing_data["setup"] = None
+    if "trade_plan" in focus.categories:
+        plan = drawing_data["setup"]
+        for finding in findings:
+            if finding["id"] == "trade_plan":
+                if plan is None:
+                    finding["status"] = "unavailable"
+                    finding["explanation"] = "当前数据未形成有效的入场、止损与目标组合。" if locale.startswith("zh") else "The data does not support a valid entry, stop and target setup."
+                else:
+                    finding["status"] = "available"
+                    finding["explanation"] = plan["reason"]
     payload = {
+        "provider": provider,
+        "model": model,
         "operation": operation,
         "categories": focus.categories,
         "custom_scenarios": focus.custom_scenarios,
@@ -499,7 +556,8 @@ async def analyze_chart(
         "view": {"start": bars[0]["date"], "end": bars[-1]["date"]},
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "indicators": evidence["indicators"],
-        **sanitize(result, bars, swings, tolerance, history),
+        **drawing_data,
+        "overlays": [item for item in overlays if item["category"] in focus.categories] if operation == "drawings" else [],
     }
     _cache[cache_key] = (time.time(), payload)
     if len(_cache) > 200:

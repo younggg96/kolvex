@@ -450,6 +450,7 @@ class AiTechnicalRequest(TechnicalFocus):
     view_end: Optional[str] = Field(None, max_length=40)
     locale: str = Field("zh", max_length=10)
     operation: Literal["analysis", "drawings"] = "analysis"
+    model: Optional[str] = Field(None, min_length=1, max_length=100)
 
 
 @router.post(
@@ -488,6 +489,8 @@ async def ai_technical_analysis(
             custom_scenarios=body.custom_scenarios,
             operation=body.operation,
             user_api_keys=await api_keys.get_keys_dict(user_id) or None,
+            model_id=body.model,
+            user_id=user_id,
         )
         saved = StockAnalysisHistory(get_supabase_service()).save(
             user_id, symbol.upper(), result, body.model_dump(mode="json"), history,

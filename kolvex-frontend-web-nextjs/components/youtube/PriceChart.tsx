@@ -11,7 +11,7 @@ import AnalysisHistory, { useStockHistory } from "@/components/decision/Analysis
 import { analysisDrawings } from "./aiDrawings";
 import ChartView from "./chart/ChartView";
 import TechnicalFocusSelector from "./chart/TechnicalFocusSelector";
-import { DEFAULT_TECHNICAL_FOCUS, type TechnicalFocus } from "@/lib/technicalFocus";
+import { DEFAULT_TECHNICAL_FOCUS, DEFAULT_DRAWING_FOCUS, type TechnicalFocus } from "@/lib/technicalFocus";
 import type { StrengthPoint } from "./StrengthChart";
 
 type Translate = (key: string, params?: Record<string, string>) => string;
@@ -84,6 +84,7 @@ export default function PriceChart({
   const [hiddenDrawings, setHiddenDrawings] = useState(false);
   const [viewingHistory, setViewingHistory] = useState<"analysis" | "drawings">("analysis");
   const [aiOverrides, setAiOverrides] = useState<Drawing[] | null>(null);
+  const [drawingFocus, setDrawingFocus] = useState<TechnicalFocus>(DEFAULT_DRAWING_FOCUS);
   const [technicalFocus, setTechnicalFocus] = useState<TechnicalFocus>(DEFAULT_TECHNICAL_FOCUS);
   const [compactBusy, setCompactBusy] = useState(false);
   const [advancedBusy, setAdvancedBusy] = useState(false);
@@ -187,11 +188,12 @@ export default function PriceChart({
     savedAnalysis: selectedAnalysis,
     snapshotBars: historicalSnapshot?.bars,
     technicalFocus,
+    drawingFocus,
   };
 
   return (
     <>
-      <TechnicalFocusSelector value={technicalFocus} onChange={setTechnicalFocus} disabled={analysisBusy} t={t} />
+      <div className="mb-4 grid gap-x-6 border-b border-border sm:grid-cols-2"><TechnicalFocusSelector value={technicalFocus} onChange={setTechnicalFocus} disabled={analysisBusy} t={t} /><TechnicalFocusSelector drawings value={drawingFocus} onChange={setDrawingFocus} disabled={analysisBusy} t={t} /></div>
       <ChartView mode="compact" onAnalysisBusy={setCompactBusy} generationRequest={generationRequest} drawingRequest={drawingRequest} {...shared} onOpenAdvanced={() => setAdvancedOpen(true)} />
       <AnalysisHistory history={analysisHistory} />
       <AnalysisHistory history={drawingHistory} drawings />
@@ -206,7 +208,7 @@ export default function PriceChart({
           <DialogTitle className="sr-only">{t("youtubeOpinions.advancedChartTitle", { symbol })}</DialogTitle>
           <DialogDescription className="sr-only">{t("youtubeOpinions.zoomHint")}</DialogDescription>
           {advancedOpen && <>
-            <TechnicalFocusSelector value={technicalFocus} onChange={setTechnicalFocus} disabled={analysisBusy} t={t} />
+            <div className="mb-4 grid gap-x-6 border-b border-border sm:grid-cols-2"><TechnicalFocusSelector value={technicalFocus} onChange={setTechnicalFocus} disabled={analysisBusy} t={t} /><TechnicalFocusSelector drawings value={drawingFocus} onChange={setDrawingFocus} disabled={analysisBusy} t={t} /></div>
             <ChartView mode="advanced" onAnalysisBusy={setAdvancedBusy} {...shared} escapeRef={escapeRef} />
           </>}
         </DialogContent>

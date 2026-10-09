@@ -191,6 +191,19 @@ def _create_llm(
         )
 
 
+def get_user_llm(
+    provider: str,
+    model: str,
+    user_api_keys: Optional[dict[str, str]],
+    temperature: float = 0.2,
+) -> BaseChatModel:
+    """Create the selected model using only its user's key, without server fallback."""
+    key = (user_api_keys or {}).get(provider, "").strip()
+    if not key:
+        raise ValueError("User API key required")
+    return _create_llm(provider, model, temperature, user_api_keys={provider: key})
+
+
 def get_llm(
     provider: Optional[str] = None,
     model: Optional[str] = None,

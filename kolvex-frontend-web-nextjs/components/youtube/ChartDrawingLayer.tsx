@@ -89,6 +89,14 @@ export default function ChartDrawingLayer({
     let body: ReactNode = null;
 
     switch (drawing.type) {
+      case "polyline": {
+        const path = drawing.points.map(toPx);
+        body = <>
+          <polyline points={path.map(p => `${p.x},${p.y}`).join(" ")} fill="none" {...stroke} pointerEvents="none" />
+          {path.length > 0 && caption(path[path.length - 1], "end")}
+        </>;
+        break;
+      }
       case "trend":
         body = (
           <>
@@ -126,11 +134,13 @@ export default function ChartDrawingLayer({
         const x = Math.min(a.x, b.x);
         const y = Math.min(a.y, b.y);
         body = (
+          <>
+          {caption({ x, y })}
           <rect
             data-drawing={id}
             x={x}
             y={y}
-            width={Math.abs(b.x - a.x)}
+            width={ai ? Math.max(8, Math.abs(b.x - a.x)) : Math.abs(b.x - a.x)}
             height={Math.abs(b.y - a.y)}
             fill={color}
             fillOpacity={0.1}
@@ -138,6 +148,7 @@ export default function ChartDrawingLayer({
             className="cursor-move"
             {...stroke}
           />
+          </>
         );
         break;
       }
@@ -181,7 +192,7 @@ export default function ChartDrawingLayer({
               data-drawing={id}
               x={x}
               y={y}
-              width={Math.abs(b.x - a.x)}
+              width={ai ? Math.max(8, Math.abs(b.x - a.x)) : Math.abs(b.x - a.x)}
               height={Math.abs(b.y - a.y)}
               fill={tone}
               fillOpacity={0.14}

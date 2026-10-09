@@ -193,3 +193,39 @@ categories live under More categories with an explicit availability note. The
 written result leads with its summary, then a Technical evidence disclosure;
 unavailable standard topics share one notice. Preserve the existing theme tokens,
 keyboard focus and Inter/Chinese typography rather than adding colored topic pills.
+
+Chart focus controls use `TechnicalFocusSelector` dialogs for written analysis and
+AI drawings separately. Opening copies the saved selection into a draft; confirm
+applies it, while cancel, Escape and dismissal discard it. Checkboxes wrap into
+two columns on phones and three on desktop. Changing focus takes effect only on
+the next generation, preserving saved results. Drawing categories include levels,
+trendlines, candidate Elliott counts, computed EMA paths, detected chart and
+candlestick patterns, and Fibonacci. Wave counts remain explicitly tentative;
+missing detections show an unavailable state. Annotation dates and prices belong
+to the saved drawing version; EMA paths render as a single polyline rather than
+hundreds of editable segments.
+
+Chart AI analysis and drawings require an explicit selection from the shared
+`lib/aiModels.ts` catalogue and the user's own configured provider key. The
+chart uses the shared Radix Select and offers API Keys settings when configuration
+is missing or invalid. No server model or key fallback is allowed. Result
+metadata shows the provider and API model from the saved snapshot; changing the
+selector never changes attribution on an existing result. Legacy snapshots with
+no model metadata omit attribution.
+
+AI drawing focus also includes conditional entry/stop/target plans. The chart
+marks entry at the range midpoint, stop-loss and each target; `AiDrawingSetup`
+shows the full range, conditional reason and reward-to-risk ratio beneath it.
+The server validates direction and price ordering and computes the ratio from
+the entry midpoint and nearest target. Display reward : risk (e.g. 1.50 : 1).
+Invalid or neutral setups produce no plan overlays and an unavailable finding.
+These fields remain in the immutable saved drawing payload.
+
+Drawing and analysis selectors expose breakout/breakdown, retest and false-break
+categories. `AiPriceActionSignals` lists dated events and their reference prices
+in document flow below the chart; labels explicitly distinguish pending,
+confirmed, failed and unconfirmed breaks. Detection uses swing levels confirmed
+before the event, tolerance from preceding candles, two consecutive closes for
+confirmation, a ten-bar retest window and a five-bar failed-break window. Wick
+rejection is separate from a close crossing. These are declared detection rules,
+not a guarantee that a future break or retest will occur.

@@ -120,11 +120,13 @@ class AnalyzeChartTests(unittest.TestCase):
         ta._cache.clear()
 
     def run_with(self, result, **kwargs):
+        kwargs.setdefault("model_id", "deepseek-chat")
+        kwargs.setdefault("user_api_keys", {"deepseek": "user-test-key"})
         structured = MagicMock()
         structured.ainvoke = AsyncMock(return_value=result)
         llm = MagicMock()
         llm.with_structured_output.return_value = structured
-        with patch.object(ta, "get_llm", return_value=llm) as factory:
+        with patch.object(ta, "get_user_llm", return_value=llm) as factory:
             bars = make_bars()
             payload = asyncio.run(ta.analyze_chart("NVDA", "1d", bars, bars[20]["date"], None, **kwargs))
         return payload, factory, structured
@@ -174,8 +176,8 @@ class AnalyzeChartTests(unittest.TestCase):
         llm = MagicMock()
         llm.with_structured_output.return_value = structured
         bars = make_bars()
-        with patch.object(ta, "get_llm", return_value=llm), self.assertRaises(ta.AiNotConfigured):
-            asyncio.run(ta.analyze_chart("NVDA", "1d", bars, None, None))
+        with patch.object(ta, "get_user_llm", return_value=llm), self.assertRaises(ta.AiNotConfigured):
+            asyncio.run(ta.analyze_chart("NVDA", "1d", bars, None, None, model_id="deepseek-chat", user_api_keys={"deepseek": "user-test-key"}))
 
     def test_falls_back_when_provider_lacks_json_schema(self):
         unsupported = MagicMock()
@@ -185,8 +187,8 @@ class AnalyzeChartTests(unittest.TestCase):
         llm = MagicMock()
         llm.with_structured_output.side_effect = lambda schema, method: unsupported if method == "json_schema" else working
         bars = make_bars()
-        with patch.object(ta, "get_llm", return_value=llm):
-            payload = asyncio.run(ta.analyze_chart("NVDA", "1d", bars, None, None))
+        with patch.object(ta, "get_user_llm", return_value=llm):
+            payload = asyncio.run(ta.analyze_chart("NVDA", "1d", bars, None, None, model_id="deepseek-chat", user_api_keys={"deepseek": "user-test-key"}))
         self.assertEqual(payload["summary"], "横盘")
         self.assertEqual(
             [call.kwargs["method"] for call in llm.with_structured_output.call_args_list],
@@ -199,8 +201,8 @@ class AnalyzeChartTests(unittest.TestCase):
         llm = MagicMock()
         llm.with_structured_output.return_value = structured
         bars = make_bars()
-        with patch.object(ta, "get_llm", return_value=llm), self.assertRaises(Exception):
-            asyncio.run(ta.analyze_chart("NVDA", "1d", bars, None, None))
+        with patch.object(ta, "get_user_llm", return_value=llm), self.assertRaises(Exception):
+            asyncio.run(ta.analyze_chart("NVDA", "1d", bars, None, None, model_id="deepseek-chat", user_api_keys={"deepseek": "user-test-key"}))
         self.assertEqual(llm.with_structured_output.call_count, 1)
 
     def test_too_few_bars_is_rejected(self):

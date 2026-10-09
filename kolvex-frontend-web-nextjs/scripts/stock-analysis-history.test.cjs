@@ -91,3 +91,32 @@ test('PriceChart keeps text analysis and AI overlays in independent history chan
   assert.equal(cleared.props.drawings.length,0);
   assert.equal(cleared.props.savedAnalysis.summary,'text');
 });
+
+
+test('computed moving average paths and candle annotations preserve stored anchors',()=>{
+  const {analysisDrawings}=compile('components/youtube/aiDrawings.ts',{});
+  const result={version_id:'patterns',generated_at:'2026-10-09',view:{end:'2026-10-07'},levels:[],trendlines:[],fib:null,
+    overlays:[{category:'moving_averages',label:'EMA20',shape:'line',direction:'neutral',points:[{date:'2026-10-01',price:100},{date:'2026-10-02',price:101},{date:'2026-10-03',price:102}]},
+    {category:'candlesticks',label:'Doji',shape:'area',direction:'neutral',points:[{date:'2026-10-06',price:100},{date:'2026-10-07',price:104}]}]};
+  const drawings=analysisDrawings(result,k=>k);
+  assert.equal(drawings[0].type,'polyline');assert.equal(drawings[0].points.length,3);
+  assert.equal(drawings[0].points[1].time,Date.parse('2026-10-02'));
+  assert.equal(drawings[1].type,'rect');assert.equal(drawings[1].label,'Doji');
+  assert.equal(drawings[0].id,analysisDrawings(result,k=>k)[0].id);
+});
+
+test('entry stop and target overlays keep saved prices and calculated risk reward',()=>{
+  const {analysisDrawings}=compile('components/youtube/aiDrawings.ts',{});
+  const result={version_id:'plan',generated_at:'2026-10-09',view:{end:'2026-10-07'},levels:[],trendlines:[],fib:null,
+    setup:{direction:'bullish',entry_low:105,entry_high:107,invalidation:100,targets:[115,120],risk_reward:1.5}};
+  const drawings=analysisDrawings(result,k=>k);
+  assert.equal(drawings.length,4);
+  assert.deepEqual(Array.from(drawings,d=>d.points[0].price),[106,100,115,120]);
+  assert.ok(drawings[2].label.includes('1.50 : 1'));
+  assert.ok(drawings[1].label.includes('stop'));
+  assert.ok(drawings.every(d=>d.type==='hline' && d.source==='ai' && d.points[0].time===Date.parse('2026-10-07')));
+  assert.equal(drawings[0].id,analysisDrawings(result,k=>k)[0].id);
+  assert.equal(analysisDrawings({...result,setup:null},k=>k).length,0);
+  const short=analysisDrawings({...result,setup:{...result.setup,direction:'bearish',entry_low:110,entry_high:112,invalidation:116,targets:[105,100],risk_reward:1.2}},k=>k);
+  assert.deepEqual(Array.from(short,d=>d.points[0].price),[111,116,105,100]);
+});
