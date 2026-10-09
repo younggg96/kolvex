@@ -58,15 +58,15 @@ export default function AdminPageClient() {
     finally { setBusy(false); }
   }
 
-  if (isLoading) return <DashboardLayout title="管理后台"><p className="mx-auto max-w-[1080px] px-4 py-8 text-muted-foreground md:px-8">加载中…</p></DashboardLayout>;
-  if (!profile?.is_admin) return <DashboardLayout title="管理后台"><p className="mx-auto max-w-[1080px] px-4 py-8 text-muted-foreground md:px-8">需要管理员权限。</p></DashboardLayout>;
+  if (isLoading) return <DashboardLayout title="管理后台"><p className="mx-auto  px-4 py-8 text-muted-foreground md:px-8">加载中…</p></DashboardLayout>;
+  if (!profile?.is_admin) return <DashboardLayout title="管理后台"><p className="mx-auto  px-4 py-8 text-muted-foreground md:px-8">需要管理员权限。</p></DashboardLayout>;
 
   const tableCount = Object.keys(tables).length;
   const recordCount = Object.values(tables).reduce((sum, count) => sum + count, 0);
 
   return (
     <DashboardLayout title="管理后台">
-      <div className="mx-auto min-h-0 w-full max-w-[1080px] flex-1 space-y-8 overflow-y-auto overscroll-contain px-4 pb-8 pt-6 md:px-8 md:pt-8">
+      <div className="mx-auto min-h-0 w-full  flex-1 space-y-8 overflow-y-auto overscroll-contain px-4 pb-8 pt-6 md:px-8 md:pt-8">
         <p className="text-[15px] text-muted-foreground">管理用户与研究数据</p>
 
         <dl className="grid grid-cols-3 border-y border-border">

@@ -11,7 +11,7 @@ function ResearchLoading() {
   const { t } = useTranslation();
   return (
     <ResearchLayout>
-      <div role="status" className="mx-auto w-full max-w-[1080px] space-y-4 px-4 py-8 md:px-8">
+      <div role="status" className="mx-auto w-full  space-y-4 px-4 py-8 md:px-8">
         <span className="sr-only">{t("common.loading")}</span>
         <Skeleton className="h-9 w-48" />
         <Skeleton className="h-5 w-80 max-w-full" />

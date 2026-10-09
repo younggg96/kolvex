@@ -78,8 +78,8 @@ the change summary, AI technical read and creator history. Latest news, the
 newest creator call and the linked position form the right rail on desktop;
 on narrow screens these sections follow the chart. Creator Opinions shows the first
 10 filtered stocks with a full stock directory at `/dashboard/youtube-opinions/stocks`.
-Its right rail orders latest opinions, opinion changes and my holdings; the latest
-section links to the paginated `/dashboard/youtube-opinions/opinions` list. Updates
+Recent opinion changes follow the directory in the left column. Its right rail
+orders latest opinions and my holdings; the latest section links to the paginated `/dashboard/youtube-opinions/opinions` list. Updates
 remains accessible by legacy URL but has no primary navigation tab. Legacy Research URLs redirect
 to the appropriate entry so refresh and saved links keep working.
 

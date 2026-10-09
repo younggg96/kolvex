@@ -94,7 +94,7 @@ export default function PublishedResearch({ page }: { page?: string }) {
       ) : undefined}
     >
       <main className="relative flex-1 overflow-y-auto" aria-busy={loading}>
-        <div className="mx-auto w-full max-w-[1080px] space-y-8 px-4 pb-16 pt-6 md:px-8 md:pt-8">
+        <div className="mx-auto w-full  space-y-8 px-4 pb-16 pt-6 md:px-8 md:pt-8">
           <div>
             <h2 className="text-[28px] font-bold leading-tight md:text-[32px]">
               {t("tradingAnalysis.title")}

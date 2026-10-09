@@ -793,7 +793,7 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
           >
 
             {!inDetail && (
-              <div className={cn("grid min-w-0 gap-10", allStocks ? "mx-auto max-w-[1080px]" : "xl:grid-cols-[minmax(0,1fr)_300px]")}>
+              <div className={cn("grid min-w-0 gap-10", allStocks ? "mx-auto " : "xl:grid-cols-[minmax(0,1fr)_300px]")}>
                 <div className="min-w-0">
                   <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
                     <div>
@@ -903,6 +903,7 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
                       </>
                     )}
                   </div>
+                  {!allStocks && <div className="mt-10">{changeList}</div>}
                 </div>
                 {!allStocks && <aside className="min-w-0 space-y-8 xl:self-start">
                   <section aria-labelledby="creator-latest-opinions-title">
@@ -931,7 +932,6 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
                       </ul>
                     ) : <EmptyLine text={t("youtubeOpinions.noOpinionsYet")} />}
                   </section>
-                  {changeList}
                   <section aria-labelledby="creator-holdings-title">
                     <h2 id="creator-holdings-title" className="text-base font-semibold">{c("My holdings", "我的持仓")}</h2>
                     {held.loading ? loadingBlock : held.error ? (

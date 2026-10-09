@@ -43,7 +43,7 @@ export function PortfolioPageContent() {
   if (isLoading) {
     return (
       <DashboardLayout title={t("portfolio.loadingTitle")}>
-        <div className="mx-auto w-full max-w-[1080px] px-4 pt-6 md:px-8">
+        <div className="mx-auto w-full  px-4 pt-6 md:px-8">
           <PortfolioSkeleton className="!mt-0" />
         </div>
       </DashboardLayout>
@@ -60,7 +60,7 @@ export function PortfolioPageContent() {
       }
     >
       <div className="relative flex-1 overflow-y-auto">
-        <div className="mx-auto w-full min-w-0 max-w-[1080px] px-4 pb-16 pt-6 md:px-8 md:pt-8">
+        <div className="mx-auto w-full min-w-0  px-4 pb-16 pt-6 md:px-8 md:pt-8">
           {user && (
             <PortfolioHoldings
               userId={user.id}

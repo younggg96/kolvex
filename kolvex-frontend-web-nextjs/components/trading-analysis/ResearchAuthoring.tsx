@@ -254,7 +254,7 @@ export default function TradingAnalysisPage({ searchParams }: { searchParams?: {
       }
     >
       <div className="relative flex-1 overflow-y-auto">
-        <div className="mx-auto w-full max-w-[1080px] px-4 pb-16 pt-6 md:px-8 md:pt-8">
+        <div className="mx-auto w-full  px-4 pb-16 pt-6 md:px-8 md:pt-8">
           <div className="space-y-8">
             <div className="flex flex-wrap items-end justify-between gap-4">
               <div className="min-w-0">

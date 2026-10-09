@@ -72,7 +72,7 @@ export default function OpinionList() {
   return (
     <DashboardLayout title={c("All opinions", "全部观点")} headerLeftAction={<HeaderBackButton href="/dashboard/youtube-opinions" label={t("common.back")} />}>
       <main className="min-h-0 flex-1 overflow-y-auto">
-        <div className="mx-auto max-w-[1080px] px-4 pb-16 pt-6 md:px-8 md:pt-8">
+        <div className="mx-auto  px-4 pb-16 pt-6 md:px-8 md:pt-8">
           <header className="mb-6 border-b border-border pb-5">
             <h1 className="text-[28px] font-semibold tracking-tight sm:text-[32px]">{c("All opinions", "全部观点")}</h1>
             <p className="mt-2 text-sm text-muted-foreground">{c("Latest opinions first", "按最新观点排序")}</p>
