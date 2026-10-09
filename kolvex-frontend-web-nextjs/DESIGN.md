@@ -244,8 +244,12 @@ inline guidance and a settings link when keys are missing. The shared authored
 Select owns keyboard selection and a trigger-width, height-bounded popup.
 
 The advanced chart uses the shared `DialogContent` fullscreen layout variant.
-Its visible title and translated close action occupy a dedicated fixed header;
-only its body scrolls. Nested focus dialogs retain their existing draft,
+Its visible title and translated close action occupy a compact fixed header.
+The fullscreen body never scrolls: the chart fills the remaining viewport height,
+with quote/OHLC data and drawing tools above it and time controls below. AI model,
+actions, focus settings and results share a 288px right rail on desktop; only
+that rail scrolls. Below the desktop breakpoint, AI controls and results open
+from a translated toolbar action in a bounded popover. Nested focus dialogs retain their existing draft,
 confirmation and Escape behavior. Default dialog geometry is unchanged.
 
 Written analysis leads with trend, direction and a 16px/28px conclusion.
