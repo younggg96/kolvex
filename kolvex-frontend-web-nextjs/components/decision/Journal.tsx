@@ -47,7 +47,7 @@ export default function Journal() {
                 <div className="flex flex-wrap items-center justify-between gap-3"><Link href={`/dashboard/market/${encodeURIComponent(opinion.ticker)}`} className="font-semibold hover:underline">{opinion.ticker}{heldSet.has(opinion.ticker) && <HeldMark />}</Link><time className="text-xs text-muted-foreground" dateTime={opinion.opinion_date}>{dayLabel(opinion.opinion_date)}</time></div>
                 <Link href={`/dashboard/youtube-opinions?tab=creators&creator=${encodeURIComponent(opinion.channel_id)}`} className="inline-flex items-center gap-2 text-sm hover:underline"><CreatorAvatar name={opinion.channel_title || opinion.channel_id} avatarUrl={opinion.channel_avatar_url} size="xs" />{opinion.channel_title || opinion.channel_id}</Link>
                 <OpinionStrength value={opinion.direction_score} />
-                <p className="max-w-[72ch] whitespace-pre-wrap text-sm leading-6">{opinion.summary || opinion.thesis || c("See source video for details.", "查看原始视频了解详情。")}</p>
+                <p className="whitespace-pre-wrap text-sm leading-6">{opinion.summary || opinion.thesis || c("See source video for details.", "查看原始视频了解详情。")}</p>
                 {!!opinion.risks?.length && <p className="text-sm leading-6 text-muted-foreground">{c("Risks mentioned", "提到的风险")}：{opinion.risks.join(c("; ", "；"))}</p>}
                 <a href={opinion.video_url || `https://www.youtube.com/watch?v=${encodeURIComponent(opinion.video_id)}`} target="_blank" rel="noreferrer" className="inline-block text-xs font-medium underline-offset-4 hover:underline">{c("Watch source video", "查看原始视频")}</a>
               </li>)}</ul> : <Empty>{c("No imported opinions in this view yet.", "此范围内暂时没有已收录的观点。")}</Empty>}

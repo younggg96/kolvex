@@ -137,7 +137,7 @@ export default function AiAnalysisPanel({
 
       {state.status === "done" && result && (
         <div className="mt-4">
-          <p className="max-w-[72ch] text-sm leading-6">{result.summary}</p>
+          <p className="text-sm leading-6">{result.summary}</p>
           <TechnicalFindings result={result} t={t} />
 
           {indicators.length > 0 && (

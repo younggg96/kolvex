@@ -145,7 +145,7 @@ export default function CreatorIntelligence({
               {selected.time_horizon && <div className="flex gap-2"><dt>{c("Time horizon", "时间范围")}</dt><dd className="font-medium text-foreground">{selected.time_horizon}</dd></div>}
               {selected.confidence != null && <div className="flex gap-2"><dt>{c("Confidence", "置信度")}</dt><dd className="font-medium text-foreground tabular-nums">{Math.round(selected.confidence * 100)}%</dd></div>}
             </dl>}
-            <div className="mt-5 max-w-[72ch] space-y-5 text-sm leading-7 [overflow-wrap:anywhere]">
+            <div className="mt-5 space-y-5 text-sm leading-7 [overflow-wrap:anywhere]">
               {selected.summary && <p className="whitespace-pre-wrap">{selected.summary}</p>}
               {selected.thesis && selected.thesis !== selected.summary && <div><h4 className="mb-1 text-xs font-semibold text-muted-foreground">{c("Investment view", "投资判断")}</h4><p className="whitespace-pre-wrap">{selected.thesis}</p></div>}
               {!!selected.key_points?.length && <div><h4 className="text-xs font-semibold text-muted-foreground">{c("Key points", "核心依据")}</h4><ul className="mt-2 list-disc space-y-1 pl-5">{selected.key_points.map((point, index) => <li key={index}>{point}</li>)}</ul></div>}

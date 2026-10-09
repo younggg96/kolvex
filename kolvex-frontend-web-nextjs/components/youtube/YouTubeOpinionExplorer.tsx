@@ -14,11 +14,8 @@ import {
   ArrowUpDown,
   Loader2,
   Search,
-  Upload,
 } from "lucide-react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
-import YouTubeOpinionImporter from "@/components/admin/YouTubeOpinionImporter";
-import { useUserProfileContext } from "@/components/user/UserProfileProvider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -31,13 +28,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { useTranslation } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import {
@@ -151,7 +141,6 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
   const router = useRouter();
   const c = useCopy();
   const { t } = useTranslation();
-  const { profile } = useUserProfileContext();
   const [route, setRoute] = useState<Route>({ tab: "stocks" });
   const [ready, setReady] = useState(false);
   const [catalogue, setCatalogue] = useState<YouTubeOpinionDashboard | null>(
@@ -170,7 +159,6 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
   const [toneFilter, setToneFilter] = useState<DirectoryTone>("all");
   const [sortBy, setSortBy] = useState<DirectorySort>("latest");
   const [revision, setRevision] = useState(0);
-  const [uploadOpen, setUploadOpen] = useState(false);
   const [filters, setFilters] = useState<Filters>(emptyFilters);
   const [scrub, setScrub] = useState<StrengthPoint | null>(null);
   const [historyView, setHistoryView] = useState<HistoryView>("videos");
@@ -763,21 +751,6 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
     <DashboardLayout
       title={t("youtubeOpinions.title")}
       headerLeftAction={allStocks ? <HeaderBackButton href="/dashboard/youtube-opinions" label={t("common.back")} /> : inDetail ? <HeaderBackButton label={t("common.back")} onClick={() => navigate(back)} /> : undefined}
-      headerActions={
-        profile?.is_admin ? (
-          <Button
-            size="sm"
-            variant="outline"
-            className="h-8 w-8 gap-1.5 p-0 sm:w-auto sm:px-3"
-            title={t("youtubeOpinions.uploadJson")}
-            aria-label={t("youtubeOpinions.uploadJson")}
-            onClick={() => setUploadOpen(true)}
-          >
-            <Upload className="h-4 w-4" />
-            <span className="hidden sm:inline">{t("youtubeOpinions.uploadJson")}</span>
-          </Button>
-        ) : undefined
-      }
     >
       <div
         ref={scrollContainer}
@@ -1296,25 +1269,6 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
         </div>
       </div>
 
-      <Dialog
-        open={Boolean(profile?.is_admin && uploadOpen)}
-        onOpenChange={setUploadOpen}
-      >
-        <DialogContent className="max-w-3xl p-4 sm:p-6">
-          <DialogHeader>
-            <DialogTitle>{t("youtubeOpinions.uploadTitle")}</DialogTitle>
-            <DialogDescription>
-              {t("youtubeOpinions.uploadDescription")}
-            </DialogDescription>
-          </DialogHeader>
-          <YouTubeOpinionImporter
-            onImported={() => {
-              setUploadOpen(false);
-              refresh();
-            }}
-          />
-        </DialogContent>
-      </Dialog>
     </DashboardLayout>
   );
 }
