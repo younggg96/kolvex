@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { Loader2, RefreshCw, Trash2 } from "lucide-react";
+import TechnicalFindings from "./TechnicalFindings";
+import { Loader2, RefreshCw, EyeOff } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatPrice, type AiTechnicalAnalysis } from "@/lib/stockApi";
 import { toneText, type StrengthTone } from "../strength";
@@ -40,6 +41,7 @@ function SectionTitle({ children }: { children: string }) {
 
 export default function AiAnalysisPanel({
   state,
+  busy = false,
   interval,
   onRetry,
   onClear,
@@ -48,6 +50,7 @@ export default function AiAnalysisPanel({
   className,
 }: {
   state: AiPanelState;
+  busy?: boolean;
   interval: string;
   onRetry: () => void;
   onClear: () => void;
@@ -73,15 +76,22 @@ export default function AiAnalysisPanel({
     <section
       aria-live="polite"
       aria-label={t("youtubeOpinions.ai.title")}
-      className={cn("min-w-0 rounded-xl border border-border bg-card p-4 text-sm text-card-foreground", className)}
+      className={cn("min-w-0 text-sm text-foreground", className)}
     >
       <header>
         <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
-          <h3 className="text-lg font-semibold leading-6">
-            {result ? t(`youtubeOpinions.ai.trend.${result.trend}`) : t("youtubeOpinions.ai.title")}
-          </h3>
+          <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+            <h3 className="text-lg font-semibold leading-6">
+              {result ? t(`youtubeOpinions.ai.trend.${result.trend}`) : t("youtubeOpinions.ai.title")}
+            </h3>
+            {result && (
+              <p className={cn("text-sm font-medium leading-5", toneText[biasTone[result.bias]])}>
+                {t(`youtubeOpinions.ai.bias.${result.bias}`)}
+              </p>
+            )}
+          </div>
           <div className="flex shrink-0 flex-wrap items-center justify-end gap-1">
-            <button type="button" onClick={onRetry} disabled={loading} className={actionClass}>
+            <button type="button" onClick={onRetry} disabled={loading || busy} className={actionClass}>
               {loading ? (
                 <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
               ) : (
@@ -91,17 +101,12 @@ export default function AiAnalysisPanel({
             </button>
             {result && (
               <button type="button" onClick={onClear} className={actionClass}>
-                <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
-                {t("youtubeOpinions.ai.clear")}
+                <EyeOff className="h-3.5 w-3.5" aria-hidden="true" />
+                {t("youtubeOpinions.ai.hideAnalysis")}
               </button>
             )}
           </div>
         </div>
-        {result && (
-          <p className={cn("mt-0.5 text-sm font-semibold leading-5", toneText[biasTone[result.bias]])}>
-            {t(`youtubeOpinions.ai.bias.${result.bias}`)}
-          </p>
-        )}
         {result && (
           <p className="mt-1.5 flex flex-wrap items-baseline gap-x-2 gap-y-0.5 text-xs leading-4 text-muted-foreground">
             <span>{t(`youtubeOpinions.intervals.${interval}`)}</span>
@@ -132,8 +137,11 @@ export default function AiAnalysisPanel({
 
       {state.status === "done" && result && (
         <div className="mt-4">
+          <p className="max-w-[72ch] text-sm leading-6">{result.summary}</p>
+          <TechnicalFindings result={result} t={t} />
+
           {indicators.length > 0 && (
-            <ul className="flex flex-wrap gap-x-4 gap-y-1 text-[13px] leading-5">
+            <ul className="mt-4 flex flex-wrap gap-x-4 gap-y-1 text-[13px] leading-5">
               {indicators.map((item) => (
                 <li key={item.key} className="whitespace-nowrap">
                   <span className="text-muted-foreground">{indicatorLabel(item.key)}</span>{" "}
@@ -156,7 +164,7 @@ export default function AiAnalysisPanel({
                     >
                       <span
                         className={cn(
-                          "w-[5.5rem] shrink-0 pt-px text-right text-sm font-semibold tabular-nums leading-5",
+                          "w-[5.5rem] shrink-0 pt-px text-sm font-semibold tabular-nums leading-5",
                           toneText[tone],
                         )}
                       >
@@ -201,7 +209,7 @@ export default function AiAnalysisPanel({
             </div>
           )}
 
-          {result.signals.length > 0 && (
+          {!result.findings?.length && result.signals.length > 0 && (
             <div className="mt-5">
               <SectionTitle>{t("youtubeOpinions.ai.signals")}</SectionTitle>
               <ul className="mt-2">
@@ -217,7 +225,6 @@ export default function AiAnalysisPanel({
             </div>
           )}
 
-          <p className="mt-5 max-w-[68ch] border-t border-border pt-4 text-[13px] leading-6">{result.summary}</p>
 
           {result.invalidation && (
             <div className="mt-5 max-w-[68ch]">

@@ -24,7 +24,7 @@ export const validTicker = (ticker: string) =>
   /^[A-Z][A-Z0-9.-]{0,9}$/.test(ticker);
 
 /** One latest opinion per creator, in a defined 30-day window; prolific channels don't dominate. */
-export function creatorEvidence(opinions: YouTubeOpinion[], now = Date.now()) {
+export function latestCreatorOpinions(opinions: YouTubeOpinion[], now = Date.now()) {
   const latest = new Map<string, YouTubeOpinion>();
   for (const opinion of opinions) {
     const date = Date.parse(opinion.opinion_date);
@@ -34,7 +34,11 @@ export function creatorEvidence(opinions: YouTubeOpinion[], now = Date.now()) {
     if (!previous || date > Date.parse(previous.opinion_date))
       latest.set(opinion.channel_id, opinion);
   }
-  const calls = [...latest.values()];
+  return [...latest.values()].sort((a, b) => b.opinion_date.localeCompare(a.opinion_date));
+}
+
+export function creatorEvidence(opinions: YouTubeOpinion[], now = Date.now()) {
+  const calls = latestCreatorOpinions(opinions, now);
   const bullish = calls.filter((x) => x.sentiment === "bullish").length;
   const bearish = calls.filter((x) => x.sentiment === "bearish").length;
   const direction: Direction | null = calls.length

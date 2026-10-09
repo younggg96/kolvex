@@ -5,13 +5,16 @@
 
 import logging
 from fastapi import APIRouter, Depends, Query, HTTPException, Path
-from typing import Optional, List, Any
+from typing import Optional, List, Any, Literal
 from pydantic import BaseModel, Field
 from datetime import datetime
 from enum import Enum
 
 from app.api.dependencies.auth import get_current_user_id
+from app.core.supabase import get_supabase_service
+from app.services.stock_analysis_history import StockAnalysisHistory
 from app.services.technical_analysis import AiNotConfigured, analyze_chart
+from app.services.technical_focus import TechnicalFocus
 from app.services.user_api_keys_service import UserApiKeysService, get_user_api_keys_service
 from app.services.yfinance.client import get_yfinance_service
 
@@ -437,7 +440,7 @@ async def get_history(
         raise HTTPException(status_code=500, detail=f"获取历史数据失败: {str(e)}")
 
 
-class AiTechnicalRequest(BaseModel):
+class AiTechnicalRequest(TechnicalFocus):
     """AI 技术分析请求：与图表相同的取数参数，加上当前可见区间"""
     interval: HistoryInterval = HistoryInterval.ONE_DAY
     period: Optional[HistoryPeriod] = None
@@ -446,6 +449,7 @@ class AiTechnicalRequest(BaseModel):
     view_start: Optional[str] = Field(None, max_length=40)
     view_end: Optional[str] = Field(None, max_length=40)
     locale: str = Field("zh", max_length=10)
+    operation: Literal["analysis", "drawings"] = "analysis"
 
 
 @router.post(
@@ -473,15 +477,23 @@ async def ai_technical_analysis(
     history = [bar for bar in history if None not in (bar["open"], bar["high"], bar["low"], bar["close"])]
 
     try:
-        return await analyze_chart(
+        result = await analyze_chart(
             symbol.upper(),
             body.interval.value,
             history,
             body.view_start,
             body.view_end,
             locale=body.locale,
+            categories=body.categories,
+            custom_scenarios=body.custom_scenarios,
+            operation=body.operation,
             user_api_keys=await api_keys.get_keys_dict(user_id) or None,
         )
+        saved = StockAnalysisHistory(get_supabase_service()).save(
+            user_id, symbol.upper(), result, body.model_dump(mode="json"), history,
+            kind="drawings" if body.operation == "drawings" else "technical",
+        )
+        return {**result, "version_id": saved["id"], "saved_at": saved["created_at"]}
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except AiNotConfigured:
@@ -489,6 +501,58 @@ async def ai_technical_analysis(
     except Exception as e:
         logger.exception("AI technical analysis failed for %s", symbol)
         raise HTTPException(status_code=503, detail=f"AI 技术分析暂不可用: {str(e)[:200]}")
+
+
+class ActivateAnalysisRequest(BaseModel):
+    expected_current_id: Optional[str] = Field(None, pattern=r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$")
+
+
+@router.get("/analysis-history/{symbol}")
+async def stock_analysis_history(
+    symbol: str = Path(..., min_length=1, max_length=20, pattern=r"^[A-Za-z0-9.\-^=]+$"),
+    kind: str = Query("technical", pattern="^(technical|drawings|research)$"),
+    limit: int = Query(10, ge=1, le=50),
+    offset: int = Query(0, ge=0),
+    user_id: str = Depends(get_current_user_id),
+):
+    try:
+        return StockAnalysisHistory(get_supabase_service()).list(user_id, symbol.upper(), kind, limit, offset)
+    except Exception:
+        logger.exception("Stock analysis history unavailable")
+        raise HTTPException(503, "analysis_history_unavailable")
+
+
+@router.get("/analysis-history/{symbol}/{version_id}")
+async def get_stock_analysis_version(
+    symbol: str = Path(..., min_length=1, max_length=20, pattern=r"^[A-Za-z0-9.\-^=]+$"),
+    version_id: str = Path(..., pattern=r"^[0-9a-fA-F-]{36}$"),
+    user_id: str = Depends(get_current_user_id),
+):
+    try:
+        record = StockAnalysisHistory(get_supabase_service()).get(user_id, symbol.upper(), version_id)
+    except Exception:
+        raise HTTPException(503, "analysis_history_unavailable")
+    if not record:
+        raise HTTPException(404, "analysis_not_found")
+    return record
+
+
+@router.patch("/analysis-history/{symbol}/{version_id}/current")
+async def activate_stock_analysis(
+    body: ActivateAnalysisRequest,
+    symbol: str = Path(..., min_length=1, max_length=20, pattern=r"^[A-Za-z0-9.\-^=]+$"),
+    version_id: str = Path(..., pattern=r"^[0-9a-fA-F-]{36}$"),
+    user_id: str = Depends(get_current_user_id),
+):
+    try:
+        return StockAnalysisHistory(get_supabase_service()).activate(user_id, symbol.upper(), version_id, body.expected_current_id)
+    except Exception as exc:
+        if "analysis_not_found" in str(exc):
+            raise HTTPException(404, "analysis_not_found")
+        if "analysis_conflict" in str(exc):
+            raise HTTPException(409, "analysis_conflict")
+        logger.exception("Stock analysis activation failed")
+        raise HTTPException(503, "analysis_history_unavailable")
 
 
 @router.get(

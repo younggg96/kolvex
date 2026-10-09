@@ -13,7 +13,7 @@ const source = ts.transpileModule(fs.readFileSync(file, "utf8"), {
 }).outputText;
 const compiled = new Module(file, module);
 compiled._compile(source, file);
-const { validateThesis, thesisChanges, riskReward, creatorEvidence } =
+const { validateThesis, thesisChanges, riskReward, creatorEvidence, latestCreatorOpinions } =
   compiled.exports;
 const draft = {
   ticker: "NVDA",
@@ -127,4 +127,29 @@ test("creator alignment uses only the latest call per creator inside 30 days", (
     count: 2,
   });
   assert.equal(creatorEvidence([], now).direction, null);
+});
+
+
+test("creator cards use exactly the latest-per-creator set counted in the 30-day split", () => {
+  const now = Date.parse("2026-10-09T12:00:00Z");
+  const opinion = (id, channel_id, sentiment, opinion_date) => ({ id, channel_id, sentiment, opinion_date });
+  const input = [
+    opinion("old-a", "A", "bullish", "2026-10-01"),
+    opinion("latest-a", "A", "bearish", "2026-10-08"),
+    opinion("mixed-b", "B", "mixed", "2026-10-07"),
+    opinion("neutral-c", "C", "neutral", "2026-10-06"),
+    opinion("bullish-d", "D", "bullish", "2026-10-05"),
+    opinion("stale-e", "E", "bearish", "2026-09-01"),
+    opinion("future-f", "F", "bullish", "2026-10-11"),
+    opinion("invalid-g", "G", "neutral", "invalid"),
+  ];
+  const snapshot = input.slice();
+  const latest = latestCreatorOpinions(input, now);
+  assert.deepEqual(latest.map((item) => item.id), ["latest-a", "mixed-b", "neutral-c", "bullish-d"]);
+  const evidence = creatorEvidence(input, now);
+  assert.equal(latest.filter((item) => item.sentiment === "bullish").length, evidence.bullish);
+  assert.equal(latest.filter((item) => item.sentiment === "bearish").length, evidence.bearish);
+  assert.equal(latest.filter((item) => ["neutral", "mixed"].includes(item.sentiment)).length, evidence.neutral);
+  assert.equal(latest.length, evidence.count);
+  assert.deepEqual(input, snapshot);
 });

@@ -1,12 +1,17 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { addDays, differenceInCalendarDays, format, subMonths } from "date-fns";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { getYouTubeStockDetail, type YouTubeOpinion } from "@/lib/youtubeOpinionsApi";
 import type { PriceHistoryParams, AiTechnicalAnalysis } from "@/lib/stockApi";
 import { useSyncedDrawings, type Drawing } from "./chartDrawings";
+import SavedAnalysisData from "@/components/decision/SavedAnalysisData";
+import AnalysisHistory, { useStockHistory } from "@/components/decision/AnalysisHistory";
+import { analysisDrawings } from "./aiDrawings";
 import ChartView from "./chart/ChartView";
+import TechnicalFocusSelector from "./chart/TechnicalFocusSelector";
+import { DEFAULT_TECHNICAL_FOCUS, type TechnicalFocus } from "@/lib/technicalFocus";
 import type { StrengthPoint } from "./StrengthChart";
 
 type Translate = (key: string, params?: Record<string, string>) => string;
@@ -56,6 +61,9 @@ export default function PriceChart({
   formatDate,
   t,
   onAnalysisChange,
+  generationRequest = 0,
+  drawingRequest = 0,
+  onAnalysisBusy,
 }: {
   symbol: string;
   range: PriceRange;
@@ -65,16 +73,72 @@ export default function PriceChart({
   formatDate: (date: string) => string;
   t: Translate;
   onAnalysisChange?: (result: AiTechnicalAnalysis | null) => void;
+  generationRequest?: number;
+  drawingRequest?: number;
+  onAnalysisBusy?: (busy: boolean) => void;
 }) {
   const { drawings, setDrawings: storeDrawings, status: syncStatus } = useSyncedDrawings(symbol);
+  const versions = useStockHistory<AiTechnicalAnalysis>(symbol, "technical");
+  const drawingVersions = useStockHistory<AiTechnicalAnalysis>(symbol, "drawings");
+  const [hiddenAnalysis, setHiddenAnalysis] = useState(false);
+  const [hiddenDrawings, setHiddenDrawings] = useState(false);
+  const [viewingHistory, setViewingHistory] = useState<"analysis" | "drawings">("analysis");
+  const [aiOverrides, setAiOverrides] = useState<Drawing[] | null>(null);
+  const [technicalFocus, setTechnicalFocus] = useState<TechnicalFocus>(DEFAULT_TECHNICAL_FOCUS);
+  const [compactBusy, setCompactBusy] = useState(false);
+  const [advancedBusy, setAdvancedBusy] = useState(false);
+  const analysisBusy = compactBusy || advancedBusy;
+  useEffect(() => { onAnalysisBusy?.(analysisBusy); }, [analysisBusy, onAnalysisBusy]);
+  const selectedId = versions.selected?.id;
+  useEffect(() => { setHiddenAnalysis(false); }, [selectedId]);
+  const selectedDrawingId = drawingVersions.selected?.id;
+  useEffect(() => { setHiddenDrawings(false); setAiOverrides(null); }, [selectedDrawingId]);
+  const savedFocus = versions.selected?.payload;
+  useEffect(() => {
+    if (!savedFocus) return;
+    setTechnicalFocus({
+      categories: savedFocus.categories ?? DEFAULT_TECHNICAL_FOCUS.categories,
+      custom_scenarios: savedFocus.custom_scenarios ?? [],
+    });
+  }, [savedFocus]);
+  const selectedAnalysis = useMemo(() => versions.selected && !hiddenAnalysis
+    ? { ...versions.selected.payload, version_id: versions.selected.id } : null, [versions.selected, hiddenAnalysis]);
+  useEffect(() => { onAnalysisChange?.(selectedAnalysis); }, [selectedAnalysis, onAnalysisChange]);
+  const selectedDrawings = useMemo(() => drawingVersions.selected && !hiddenDrawings
+    ? { ...drawingVersions.selected.payload, version_id: drawingVersions.selected.id } : null, [drawingVersions.selected, hiddenDrawings]);
+  const aiDrawings = useMemo(() => selectedDrawings ? analysisDrawings(selectedDrawings, t) : [], [selectedDrawings, t]);
+  const manualDrawings = drawings.filter(item => item.source !== "ai");
+  const loadVersions = versions.load;
+  const analysisChanged = useCallback((result: AiTechnicalAnalysis | null) => {
+    if (!result) { setHiddenAnalysis(true); return; }
+    setHiddenAnalysis(false);
+    setViewingHistory("analysis");
+    // The endpoint returns only after the immutable snapshot has committed.
+
+    void loadVersions(0, result.version_id);
+  }, [loadVersions]);
+  const loadDrawingVersions = drawingVersions.load;
+  const drawingsChanged = useCallback((result: AiTechnicalAnalysis | null) => {
+    if (!result) { setHiddenDrawings(true); return; }
+    setHiddenDrawings(false); setViewingHistory("drawings");
+    void loadDrawingVersions(0, result.version_id);
+  }, [loadDrawingVersions]);
+  const selectedHistory = viewingHistory === "drawings" ? drawingVersions : versions;
+  const historicalSnapshot = selectedHistory.selected?.id !== selectedHistory.current?.id ? selectedHistory.selected : null;
+  const selectAnalysis = versions.select;
+  const selectDrawings = drawingVersions.select;
+  const analysisHistory = { ...versions, select: async (item: typeof versions.selected) => { await selectAnalysis(item); setViewingHistory("analysis"); } };
+  const drawingHistory = { ...drawingVersions, select: async (item: typeof drawingVersions.selected) => { await selectDrawings(item); setViewingHistory("drawings"); } };
   const [history, setHistory] = useState<Drawing[][]>([]);
   const [events, setEvents] = useState<YouTubeOpinion[]>([]);
   const [advancedOpen, setAdvancedOpen] = useState(false);
+  useEffect(() => { if (!advancedOpen) setAdvancedBusy(false); }, [advancedOpen]);
   const escapeRef = useRef<(() => boolean) | null>(null);
   const params = historyParams(range, from, to, opinions[0]?.date);
 
   useEffect(() => {
     setHistory([]);
+    setTechnicalFocus(DEFAULT_TECHNICAL_FOCUS);
     setAdvancedOpen(false);
   }, [symbol]);
 
@@ -103,21 +167,35 @@ export default function PriceChart({
 
   const shared = {
     symbol,
-    params,
+    params: historicalSnapshot ? { ...params, interval: historicalSnapshot.payload.interval } : params,
     events,
-    drawings,
-    setDrawings,
+    drawings: [...manualDrawings, ...(hiddenDrawings ? [] : aiOverrides || aiDrawings)],
+    setDrawings: (next: Drawing[], recordFrom?: Drawing[] | null) => {
+      // Local edits to AI overlays never mutate the saved analysis snapshot.
+      setAiOverrides(next.filter(item => item.source === "ai"));
+      setDrawings(next.filter(item => item.source !== "ai"), recordFrom?.filter(item => item.source !== "ai"));
+    },
     undo,
     canUndo: history.length > 0,
     syncStatus,
     formatDate,
     t,
-    onAnalysisChange,
+    onAnalysisChange: analysisChanged,
+    onDrawingsChange: drawingsChanged,
+    savedDrawings: selectedDrawings,
+    aiBusy: analysisBusy,
+    savedAnalysis: selectedAnalysis,
+    snapshotBars: historicalSnapshot?.bars,
+    technicalFocus,
   };
 
   return (
     <>
-      <ChartView mode="compact" {...shared} onOpenAdvanced={() => setAdvancedOpen(true)} />
+      <TechnicalFocusSelector value={technicalFocus} onChange={setTechnicalFocus} disabled={analysisBusy} t={t} />
+      <ChartView mode="compact" onAnalysisBusy={setCompactBusy} generationRequest={generationRequest} drawingRequest={drawingRequest} {...shared} onOpenAdvanced={() => setAdvancedOpen(true)} />
+      <AnalysisHistory history={analysisHistory} />
+      <AnalysisHistory history={drawingHistory} drawings />
+      {selectedHistory.selected && <SavedAnalysisData key={selectedHistory.selected.id} version={selectedHistory.selected} />}
       <Dialog open={advancedOpen} onOpenChange={setAdvancedOpen}>
         <DialogContent
           onEscapeKeyDown={(event) => {
@@ -127,7 +205,10 @@ export default function PriceChart({
         >
           <DialogTitle className="sr-only">{t("youtubeOpinions.advancedChartTitle", { symbol })}</DialogTitle>
           <DialogDescription className="sr-only">{t("youtubeOpinions.zoomHint")}</DialogDescription>
-          {advancedOpen && <ChartView mode="advanced" {...shared} escapeRef={escapeRef} />}
+          {advancedOpen && <>
+            <TechnicalFocusSelector value={technicalFocus} onChange={setTechnicalFocus} disabled={analysisBusy} t={t} />
+            <ChartView mode="advanced" onAnalysisBusy={setAdvancedBusy} {...shared} escapeRef={escapeRef} />
+          </>}
         </DialogContent>
       </Dialog>
     </>

@@ -131,6 +131,11 @@ export async function startAnalysis(
 export async function getAnalysis(id: string): Promise<TradingAnalysis> {
   return apiRequest<TradingAnalysis>(`/${id}`);
 }
+export async function startStockAnalysis(ticker: string, tradeDate: string): Promise<TradingAnalysis> {
+  return apiRequest<TradingAnalysis>("/start-stock", {
+    method: "POST", body: JSON.stringify({ ticker, trade_date: tradeDate }),
+  });
+}
 
 export async function getAnalysisHistory(params?: {
   limit?: number;

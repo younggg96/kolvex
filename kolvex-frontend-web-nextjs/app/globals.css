@@ -944,3 +944,10 @@ a {
   .data-summary > :nth-child(3) { border-left: 0; }
   .data-summary > :nth-child(n+3) { border-top: 1px solid rgb(var(--border)); }
 }
+
+/* Sentiment groups respond to the stock content column, including its right rail. */
+@container creator-intelligence (min-width: 42rem) {
+  .creator-opinion-groups {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}

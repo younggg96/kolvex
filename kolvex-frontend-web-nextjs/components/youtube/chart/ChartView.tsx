@@ -1,5 +1,7 @@
 "use client";
 
+import { DEFAULT_TECHNICAL_FOCUS, type TechnicalFocus } from "@/lib/technicalFocus";
+
 import {
   useEffect,
   useMemo,
@@ -190,6 +192,15 @@ export interface ChartViewProps {
   t: Translate;
   onOpenAdvanced?: () => void;
   onAnalysisChange?: (result: AiTechnicalAnalysis | null) => void;
+  onDrawingsChange?: (result: AiTechnicalAnalysis | null) => void;
+  savedDrawings?: AiTechnicalAnalysis | null;
+  drawingRequest?: number;
+  aiBusy?: boolean;
+  savedAnalysis?: AiTechnicalAnalysis | null;
+  snapshotBars?: PriceBar[];
+  generationRequest?: number;
+  technicalFocus?: TechnicalFocus;
+  onAnalysisBusy?: (busy: boolean) => void;
   /** Advanced mode runs inside a dialog that owns Escape; this lets the chart consume it first. */
   escapeRef?: MutableRefObject<(() => boolean) | null>;
 }
@@ -212,12 +223,21 @@ export default function ChartView({
   t,
   onOpenAdvanced,
   onAnalysisChange,
+  onDrawingsChange,
+  savedDrawings,
+  drawingRequest = 0,
+  aiBusy = false,
+  savedAnalysis,
+  snapshotBars,
+  generationRequest = 0,
+  technicalFocus = DEFAULT_TECHNICAL_FOCUS,
+  onAnalysisBusy,
   escapeRef,
 }: ChartViewProps) {
   const advanced = mode === "advanced";
   const [range, setRange] = useState<AdvancedRange>("3M");
   const [interval, setChartInterval] = useState<ChartInterval>(defaultInterval["3M"]);
-  const params = advanced ? advancedHistoryParams(range, interval) : compactParams;
+  const params = advanced && !snapshotBars ? advancedHistoryParams(range, interval) : compactParams;
   const paramsKey = JSON.stringify(params);
   const intraday = isIntraday(params.interval || "1d");
 
@@ -244,6 +264,7 @@ export default function ChartView({
   }>({
     status: "idle",
   });
+  const [drawingAi, setDrawingAi] = useState<{ status: "idle" | "loading" | "done" | "error"; error?: string }>({ status: "idle" });
   const gesture = useRef<Gesture | null>(null);
   const pointers = useRef(new Map<number, { x: number; y: number }>());
   const aiRequest = useRef<AbortController | null>(null);
@@ -256,6 +277,7 @@ export default function ChartView({
     setError(false);
     setActive(null);
     setView(null);
+    if (snapshotBars) { setBars(snapshotBars); return () => controller.abort(); }
     getStockHistory(symbol, JSON.parse(paramsKey), controller.signal)
       .then(setBars)
       .catch((reason) => {
@@ -265,12 +287,13 @@ export default function ChartView({
         }
       });
     return () => controller.abort();
-  }, [symbol, paramsKey, attempt]);
+  }, [symbol, paramsKey, attempt, snapshotBars]);
 
   useEffect(() => {
     setSelectedId(null);
     setDraft(null);
     setAi({ status: "idle" });
+    setDrawingAi({ status: "idle" });
     aiRequest.current?.abort();
   }, [symbol]);
 
@@ -391,6 +414,31 @@ export default function ChartView({
   const vwapAnchor = intraday ? 0 : firstVisible;
   const vwapSeries = useMemo(() => vwap(bars || [], intraday, vwapAnchor), [bars, intraday, vwapAnchor]);
   const lines: Record<"vwap" | "ema5" | "ema20" | "ema50" | "ema200", Series> = { ...series, vwap: vwapSeries };
+
+  useEffect(() => {
+    setAi(savedAnalysis ? { status: "done", result: savedAnalysis } : { status: "idle" });
+  }, [savedAnalysis]);
+  useEffect(() => { setDrawingAi({ status: savedDrawings ? "done" : "idle" }); }, [savedDrawings]);
+  useEffect(() => { onAnalysisBusy?.(ai.status === "loading" || drawingAi.status === "loading"); }, [ai.status, drawingAi.status, onAnalysisBusy]);
+  useEffect(() => () => { aiRequest.current?.abort(); }, []);
+  const handledGeneration = useRef(0);
+  useEffect(() => {
+    if (generationRequest <= handledGeneration.current || !count) return;
+    handledGeneration.current = generationRequest;
+    void runAi("analysis");
+    // The request uses the current visible chart window.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [generationRequest, count]);
+
+
+  const handledDrawing = useRef(0);
+  useEffect(() => {
+    if (drawingRequest <= handledDrawing.current || !count) return;
+    handledDrawing.current = drawingRequest;
+    void runAi("drawings");
+    // Uses the same visible window, independently of text analysis.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [drawingRequest, count]);
 
   const yRange = useMemo(() => {
     if (!bars?.length) return { lo: 0, hi: 1, maxVolume: 1 };
@@ -694,12 +742,13 @@ export default function ChartView({
     event.preventDefault();
   }
 
-  async function runAi() {
-    if (!bars || !count) return;
+  async function runAi(operation: "analysis" | "drawings" = "analysis") {
+    if (!bars || !count || aiBusy || ai.status === "loading" || drawingAi.status === "loading") return;
     aiRequest.current?.abort();
     const controller = new AbortController();
     aiRequest.current = controller;
-    setAi({ status: "loading" });
+    if (operation === "analysis") setAi({ status: "loading" });
+    else setDrawingAi({ status: "loading" });
     const from = bars[Math.max(firstVisible, 0)];
     const to = bars[Math.max(Math.min(lastVisible, count - 1), 0)];
     try {
@@ -707,75 +756,35 @@ export default function ChartView({
         symbol,
         {
           ...params,
+          ...(operation === "analysis" ? technicalFocus : { categories: ["levels", "structure"], custom_scenarios: [] }),
+          operation,
           view_start: from.date,
           view_end: to.date,
           locale: t("common.intlLocale") === "zh-CN" ? "zh" : "en",
         },
         controller.signal,
       );
-      const lastTime = times[count - 1];
-      const aiDrawings: Drawing[] = [
-        ...result.levels.map((level) => ({
-          id: `ai-${newDrawingId()}`,
-          type: "hline" as const,
-          points: [{ time: lastTime, price: level.price }],
-          color: level.kind === "support" ? "rgb(var(--chart-up))" : "rgb(var(--chart-down))",
-          label: t(`youtubeOpinions.ai.${level.kind}`),
-          source: "ai" as const,
-        })),
-        ...result.trendlines.map((line) => ({
-          id: `ai-${newDrawingId()}`,
-          type: "ray" as const,
-          points: [
-            { time: Date.parse(line.start.date), price: line.start.price },
-            { time: Date.parse(line.end.date), price: line.end.price },
-          ],
-          color: line.kind === "support" ? "rgb(var(--chart-up))" : "rgb(var(--chart-down))",
-          label: t(`youtubeOpinions.ai.${line.kind}Line`),
-          source: "ai" as const,
-        })),
-        ...(result.fib
-          ? [
-              {
-                id: `ai-${newDrawingId()}`,
-                type: "fib" as const,
-                points: [
-                  {
-                    time: Date.parse(result.fib.from.date),
-                    price: result.fib.from.price,
-                  },
-                  {
-                    time: Date.parse(result.fib.to.date),
-                    price: result.fib.to.price,
-                  },
-                ],
-                color: "rgb(var(--chart-level))",
-                source: "ai" as const,
-              },
-            ]
-          : []),
-      ];
-      setDrawings([...drawings.filter((item) => item.source !== "ai"), ...aiDrawings]);
-      setAi({ status: "done", result });
-      onAnalysisChange?.(result);
+      if (controller.signal.aborted) return;
+      if (operation === "analysis") {
+        setAi({ status: "done", result });
+        onAnalysisChange?.(result);
+      } else {
+        setDrawingAi({ status: "done" });
+        onDrawingsChange?.(result);
+      }
     } catch (reason) {
       if (controller.signal.aborted) return;
       const status = reason instanceof AiAnalysisError ? reason.status : 0;
       const message = reason instanceof Error ? reason.message : "";
-      setAi({
-        status: "error",
-        error:
-          status === 401
-            ? t("youtubeOpinions.ai.signIn")
-            : message === "ai_not_configured"
-              ? t("youtubeOpinions.ai.notConfigured")
-              : t("youtubeOpinions.ai.failed"),
-      });
+      const error = status === 401 ? t("youtubeOpinions.ai.signIn")
+        : message === "ai_not_configured" ? t("youtubeOpinions.ai.notConfigured")
+        : t(operation === "analysis" ? "youtubeOpinions.ai.failed" : "youtubeOpinions.ai.drawingsFailed");
+      if (operation === "analysis") setAi({ status: "error", error });
+      else setDrawingAi({ status: "error", error });
     }
   }
 
   function clearAi() {
-    setDrawings(drawings.filter((item) => item.source !== "ai"));
     setAi({ status: "idle" });
     onAnalysisChange?.(null);
   }
@@ -956,6 +965,21 @@ export default function ChartView({
         )}
       </div>
 
+      <div className="mt-3 flex flex-wrap gap-2" role="group" aria-label={t("youtubeOpinions.ai.actions")}>
+        <Button size="sm" variant="outline" className="min-w-[104px]" onClick={() => void runAi("analysis")}
+          disabled={!loaded || aiBusy || ai.status === "loading" || drawingAi.status === "loading"}
+          title={t("youtubeOpinions.ai.runAnalysis")}>
+          {ai.status === "loading" ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <ScanSearch className="mr-1.5 h-3.5 w-3.5" />}
+          {t(ai.status === "loading" ? "youtubeOpinions.ai.analysisLoading" : "youtubeOpinions.ai.analysisButton")}
+        </Button>
+        <Button size="sm" variant="outline" className="min-w-[104px]" onClick={() => void runAi("drawings")}
+          disabled={!loaded || aiBusy || ai.status === "loading" || drawingAi.status === "loading"}
+          title={t("youtubeOpinions.ai.runDrawings")}>
+          {drawingAi.status === "loading" ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <GanttChart className="mr-1.5 h-3.5 w-3.5" />}
+          {t(drawingAi.status === "loading" ? "youtubeOpinions.ai.drawingLoading" : "youtubeOpinions.ai.button")}
+        </Button>
+      </div>
+
       <div
         role="toolbar"
         aria-label={t("youtubeOpinions.drawTools")}
@@ -1068,16 +1092,6 @@ export default function ChartView({
             ))}
           </PopoverContent>
         </Popover>
-        <button
-          type="button"
-          onClick={runAi}
-          disabled={!loaded || ai.status === "loading"}
-          title={t("youtubeOpinions.ai.run")}
-          className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full bg-gradient-to-r from-violet-500/15 to-sky-500/15 px-3 text-[13px] font-semibold text-foreground transition-colors hover:from-violet-500/25 hover:to-sky-500/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:opacity-60"
-        >
-          {ai.status === "loading" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ScanSearch className="h-3.5 w-3.5" />}
-          {t("youtubeOpinions.ai.button")}
-        </button>
         <div className="ml-auto flex shrink-0 items-center gap-1">
           <button
             type="button"
@@ -1493,6 +1507,7 @@ export default function ChartView({
                       type="button"
                       role="radio"
                       aria-checked={range === item}
+                      disabled={!!snapshotBars}
                       onClick={() => {
                         setRange(item);
                         if (!rangeIntervals[item].includes(interval)) setChartInterval(defaultInterval[item]);
@@ -1507,12 +1522,12 @@ export default function ChartView({
                 <div className="flex items-center gap-3">
                   <label className="flex items-center gap-2 whitespace-nowrap text-[13px] font-semibold text-foreground">
                     {t("youtubeOpinions.interval")}
-                    <Select value={interval} onValueChange={(value) => setChartInterval(value as ChartInterval)}>
+                    <Select disabled={!!snapshotBars} value={snapshotBars ? compactParams.interval : interval} onValueChange={(value) => setChartInterval(value as ChartInterval)}>
                       <SelectTrigger className="h-8 w-[88px] rounded-full text-[13px]">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        {rangeIntervals[range].map((item) => (
+                        {(snapshotBars && compactParams.interval ? [compactParams.interval] : rangeIntervals[range]).map((item) => (
                           <SelectItem key={item} value={item}>
                             {t(`youtubeOpinions.intervals.${item}`)}
                           </SelectItem>
@@ -1555,17 +1570,24 @@ export default function ChartView({
               </span>
             )}
           </div>
+        {drawingAi.status !== "idle" && <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-muted-foreground" role={drawingAi.status === "error" ? "alert" : "status"}>
+          <span>{drawingAi.status === "loading" ? t("youtubeOpinions.ai.drawingLoading") : drawingAi.status === "error" ? drawingAi.error : t("youtubeOpinions.ai.drawingsReady")}</span>
+          {drawingAi.status === "error" && <Button size="sm" variant="outline" disabled={aiBusy} onClick={() => void runAi("drawings")}>{t("youtubeOpinions.ai.retryDrawings")}</Button>}
+          {drawingAi.status === "done" && <Button size="sm" variant="ghost" disabled={aiBusy} onClick={() => { setDrawingAi({ status: "idle" }); onDrawingsChange?.(null); }}>{t("youtubeOpinions.ai.clear")}</Button>}
+        </div>}
+
         </div>
 
         {ai.status !== "idle" && (
           <AiAnalysisPanel
             state={ai}
+            busy={aiBusy}
             interval={params.interval || "1d"}
-            onRetry={runAi}
+            onRetry={() => void runAi("analysis")}
             onClear={clearAi}
             formatDate={formatDate}
             t={t}
-            className={advanced ? "lg:w-[340px] lg:shrink-0 lg:overflow-y-auto" : "mt-4"}
+            className={advanced ? "pt-6 lg:w-[340px] lg:shrink-0 lg:overflow-y-auto lg:pt-0" : "mt-6"}
           />
         )}
       </div>

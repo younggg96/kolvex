@@ -131,6 +131,26 @@ page animations. Report data and author attribution come from the API; missing
 reports get an empty state, never invented content. The behavioral companion is
 `../docs/decision-workspace.md`.
 
+Stock-page Creator Intelligence is owned by
+`components/decision/CreatorIntelligence.tsx`. Three quiet bordered cards group
+the latest creator calls into bullish, neutral or mixed, and bearish. They retain
+the existing 12px card shape, semantic positive/negative direction colors and
+muted neutral treatment; each group also has a written label and creator count.
+The cards form three columns only when their content container reaches 42rem,
+and stack below that width. Creator rows show real attribution, date and a short
+preview; each group initially shows three creators with an explicit expansion
+control.
+
+A horizontally scrollable date timeline follows the cards, with wrapping creator
+chips for the selected day and an inline reading region below. Selection uses
+muted fills, a border and pressed state rather than color alone. The reader keeps
+full opinion text in document flow with a 72ch maximum measure, including supplied
+supporting points and risks. Card selection focuses and reveals that region;
+timeline and chip buttons retain visible keyboard focus. Loading preserves the
+card geometry, errors offer retry, and empty groups and missing stock opinions
+have explicit translated messages. Preserve the existing Inter/Chinese stack
+and theme tokens throughout this component.
+
 ## Do's and Don'ts
 
 - Keep creator discovery and the former Research overview within Creator Opinions.
@@ -138,4 +158,38 @@ reports get an empty state, never invented content. The behavioral companion is
 - Reuse semantic theme tokens, translated labels and shared UI primitives.
 - Preserve administrator-only authoring and existing backend access checks.
 - Do not restore the former Research or Deep Research navigation entries.
-- Do not add report-generation controls to the reader workflow.
+- The stock workspace offers user-requested private AI analysis generation and version history. The public report library retains its reading workflow.
+
+## Stock analysis history
+
+`components/decision/AnalysisHistory.tsx` owns the shared dated version list,
+pagination, current marker, historical-view notice, retry and current-version
+switching for both technical analysis and private research. Its `useStockHistory`
+hook owns cancellable loads and conflict recovery. Existing Buttons and native
+disclosures retain the established colors, shapes and keyboard behavior.
+
+`PriceChart` reads saved technical snapshots and derives AI drawings from their
+original coordinates. Historical viewing uses captured OHLCV bars and does not
+write the chart-drawing store or the current-version pointer. Manual drawings
+retain their existing sync. Personal research uses the existing background job
+API; completed reports are snapshotted in the database, and the existing shared
+`ResearchReportContent` renders complete saved reports. Missing technical,
+fundamental and news analysis offers an explicit generation action. Generation
+happens only after a click, saves a new version and preserves older versions.
+
+AI chart actions are separate: **AI analysis** produces written interpretation
+and requested technical findings; **AI drawings** produces chart overlays only.
+`PriceChart` owns independent selected/current snapshots for `technical` and
+`drawings`. Updating, clearing or restoring one channel preserves the other.
+Both compact and advanced charts show the two explicitly labelled buttons;
+analysis focus controls apply to the text action. Each channel has a separate
+history disclosure and its own current-version marker.
+
+
+AI analysis focus uses a single disclosure row with a preview of selected topics.
+Expanded controls use the shared Checkbox in a flat two-column mobile/four-column
+wide grid. Optional scenario entry appears only after Add scenario; limited-data
+categories live under More categories with an explicit availability note. The
+written result leads with its summary, then a Technical evidence disclosure;
+unavailable standard topics share one notice. Preserve the existing theme tokens,
+keyboard focus and Inter/Chinese typography rather than adding colored topic pills.

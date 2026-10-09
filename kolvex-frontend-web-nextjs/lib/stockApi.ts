@@ -1,3 +1,4 @@
+import type { TechnicalFocus, TechnicalCategory } from "./technicalFocus";
 // Stock API types and utilities
 
 export interface StockQuote {
@@ -207,6 +208,12 @@ export interface AiChartPoint {
 }
 
 export interface AiTechnicalAnalysis {
+  operation?: "analysis" | "drawings";
+  categories?: TechnicalCategory[];
+  custom_scenarios?: string[];
+  findings?: Array<{ id: string; status: "available" | "unavailable"; explanation: string }>;
+  version_id?: string;
+  saved_at?: string;
   symbol: string;
   interval: string;
   view: { start: string; end: string };
@@ -242,7 +249,7 @@ export class AiAnalysisError extends Error {
 
 export async function getAiTechnicalAnalysis(
   symbol: string,
-  body: PriceHistoryParams & { view_start?: string; view_end?: string; locale?: string },
+  body: PriceHistoryParams & Partial<TechnicalFocus> & { view_start?: string; view_end?: string; locale?: string; operation?: "analysis" | "drawings" },
   signal?: AbortSignal
 ): Promise<AiTechnicalAnalysis> {
   const response = await fetch(`/api/market/ai-technical/${encodeURIComponent(symbol)}`, {

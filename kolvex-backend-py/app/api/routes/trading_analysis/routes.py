@@ -22,10 +22,13 @@ from pydantic import BaseModel, Field
 from supabase import Client
 
 from app.api.dependencies.auth import get_current_user_id
+from app.agent.config import LLM_PROVIDER, LLM_MODEL
+from app.services.technical_analysis import _choose_model
 from app.core.supabase import get_supabase
 from app.services.trading_analysis_service import (
     TRADINGAGENTS_AVAILABLE,
     get_trading_analysis_service,
+    _resolve_api_key,
 )
 from app.services.user_api_keys_service import (
     UserApiKeysService,
@@ -95,6 +98,39 @@ async def start_analysis(
     except Exception as e:
         logger.error(f"Failed to start analysis: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Failed to start analysis: {str(e)}")
+
+
+class StartStockAnalysisRequest(BaseModel):
+    ticker: str = Field(min_length=1, max_length=20, pattern=r"^[A-Za-z0-9.\-^=]+$")
+    trade_date: str = Field(pattern=r"^\d{4}-\d{2}-\d{2}$")
+
+
+@router.post("/start-stock", response_model=AnalysisResponse)
+async def start_stock_analysis(
+    request: StartStockAnalysisRequest,
+    current_user_id: str = Depends(get_current_user_id),
+    api_keys_service: UserApiKeysService = Depends(get_user_api_keys_service),
+):
+    """Explicit private stock-page generation, using the configured model/key."""
+    if not TRADINGAGENTS_AVAILABLE:
+        raise HTTPException(503, "research_unavailable")
+    keys = await api_keys_service.get_keys_dict(current_user_id) or {}
+    provider, model = _choose_model(keys)
+    provider, model = provider or LLM_PROVIDER, model or LLM_MODEL
+    if not _resolve_api_key(provider, keys):
+        raise HTTPException(503, "ai_not_configured")
+    service = get_trading_analysis_service()
+    # Resume an existing in-progress stock job after reload instead of starting
+    # another expensive research run from the same UI.
+    history = await service.list_analyses(current_user_id, limit=100, ticker=request.ticker.upper())
+    running = next((item for item in history["items"] if item["status"] in ("running", "pending")), None)
+    if running:
+        return running
+    return await service.start_analysis(
+        user_id=current_user_id, ticker=request.ticker, trade_date=request.trade_date,
+        provider=provider, deep_think_model=model, quick_think_model=model,
+        user_api_keys=keys or None,
+    )
 
 
 @router.get("/history")
