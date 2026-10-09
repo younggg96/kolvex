@@ -1407,6 +1407,12 @@
       "news": "新闻分析",
       "fundamentals": "基本面"
     },
+    "reader": {
+      "conclusion": "研究结论",
+      "evidence": "分析依据",
+      "discussion": "分歧与风险",
+      "contents": "报告目录"
+    },
     "sections": {
       "investmentPlan": "投资计划",
       "investmentDebate": "投资辩论（多 vs 空）",

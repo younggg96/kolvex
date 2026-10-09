@@ -1,44 +1,31 @@
 "use client";
 
+import HeaderBackButton from "@/components/layout/HeaderBackButton";
 import { useEffect, useState, useCallback } from "react";
-import { useParams, useRouter, useSearchParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import {
-  ArrowLeft,
-  TrendingUp,
   Clock,
   Calendar,
-  BarChart3,
-  Newspaper,
-  Users,
-  DollarSign,
-  Swords,
-  ShieldCheck,
-  CheckCircle2,
   XCircle,
   Globe,
   User,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
 import { useTranslation } from "@/lib/i18n";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { deepResearchPagePath, parseDeepResearchPage } from "@/lib/researchRoutes";
-import { Button } from "@/components/ui/button";
-import { SwitchTab } from "@/components/ui/switch-tab";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import {
   getPublishedAnalysis,
   type TradingAnalysis,
 } from "@/lib/tradingAnalysisApi";
-import { DecisionBadgeLarge } from "@/components/trading-analysis/badges";
-import { ReportCard } from "@/components/trading-analysis/report-card";
-import { DebateCard } from "@/components/trading-analysis/debate-card";
+import { DecisionBadge } from "@/components/trading-analysis/badges";
+import { ResearchReportContent } from "@/components/trading-analysis/ResearchReportContent";
 import { DetailSkeleton } from "@/components/trading-analysis/skeletons";
 import { FullReportActions } from "@/components/trading-analysis/report-actions";
 import CompanyLogo from "@/components/ui/company-logo";
 
 export default function PublishedAnalysisDetailPage() {
   const params = useParams();
-  const router = useRouter();
   const searchParams = useSearchParams();
   const { t, locale } = useTranslation();
   const analysisId = params.id as string;
@@ -46,7 +33,6 @@ export default function PublishedAnalysisDetailPage() {
 
   const [analysis, setAnalysis] = useState<TradingAnalysis | null>(null);
   const [loading, setLoading] = useState(true);
-  const [activeReportTab, setActiveReportTab] = useState("market");
 
   const loadAnalysis = useCallback(async () => {
     try {
@@ -70,24 +56,13 @@ export default function PublishedAnalysisDetailPage() {
     document.title = `${heading} · ${t("sidebar.tradingAnalysis")} — Kolvex`;
   }, [analysis?.ticker, t]);
 
-  useEffect(() => {
-    if (analysis?.status === "completed") {
-      const tabs = [
-        analysis.market_report ? "market" : null,
-        analysis.sentiment_report ? "sentiment" : null,
-        analysis.news_report ? "news" : null,
-        analysis.fundamentals_report ? "fundamentals" : null,
-      ];
-      const first = tabs.find(Boolean) || "market";
-      setActiveReportTab(first);
-    }
-  }, [analysis]);
+  const backAction = <HeaderBackButton href={listPath} label={t("tradingAnalysis.explore.backToExplore")} />;
 
   if (loading) {
     return (
-      <DashboardLayout title={t("tradingAnalysis.explore.title")}>
+      <DashboardLayout title={t("tradingAnalysis.explore.title")} headerLeftAction={backAction}>
         <div className="relative flex-1 overflow-y-auto">
-          <div className="mx-auto w-full max-w-[880px]">
+          <div className="mx-auto w-full max-w-[1120px]">
             <DetailSkeleton />
           </div>
         </div>
@@ -97,95 +72,44 @@ export default function PublishedAnalysisDetailPage() {
 
   if (!analysis) {
     return (
-      <DashboardLayout title={t("tradingAnalysis.explore.title")}>
+      <DashboardLayout title={t("tradingAnalysis.explore.title")} headerLeftAction={backAction}>
         <div className="relative flex-1 overflow-y-auto">
           <div className="flex flex-col items-center justify-center flex-1 min-h-[400px] gap-4">
             <XCircle className="h-10 w-10 text-muted-foreground" />
             <p className="text-muted-foreground">
               {t("tradingAnalysis.notFound")}
             </p>
-            <Button
-              variant="ghost"
-              onClick={() =>
-                router.push(listPath)
-              }
-            >
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              {t("common.back")}
-            </Button>
           </div>
         </div>
       </DashboardLayout>
     );
   }
 
-  const reportTabs = [
-    {
-      key: "market",
-      title: t("tradingAnalysis.tabs.market"),
-      icon: BarChart3,
-      content: analysis.market_report,
-    },
-    {
-      key: "sentiment",
-      title: t("tradingAnalysis.tabs.sentiment"),
-      icon: Users,
-      content: analysis.sentiment_report,
-    },
-    {
-      key: "news",
-      title: t("tradingAnalysis.tabs.news"),
-      icon: Newspaper,
-      content: analysis.news_report,
-    },
-    {
-      key: "fundamentals",
-      title: t("tradingAnalysis.tabs.fundamentals"),
-      icon: DollarSign,
-      content: analysis.fundamentals_report,
-    },
-  ];
-
   return (
     <DashboardLayout
       title={t("tradingAnalysis.pageTitle", { ticker: analysis.ticker })}
-      headerLeftAction={
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() =>
-            router.push(listPath)
-          }
-          className="gap-1"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          <span className="hidden sm:inline">
-            {t("tradingAnalysis.explore.backToExplore")}
-          </span>
-        </Button>
-      }
+      headerLeftAction={backAction}
       headerActions={
         <FullReportActions analysis={analysis} t={t} />
       }
     >
       <div className="relative flex-1 overflow-y-auto">
-        <div className="mx-auto w-full max-w-[880px] space-y-8 px-4 pb-16 pt-6 md:px-8 md:pt-8">
+        <div className="mx-auto w-full max-w-[1120px] space-y-10 px-4 pb-16 pt-6 md:px-8 md:pt-8">
           {/* Header */}
-          <div className="animate-fade-in-up">
+          <div className="border-b border-border pb-6">
             <div>
               <div className="flex flex-wrap items-center gap-3">
                 <CompanyLogo symbol={analysis.ticker} size="lg" />
                 <h1 className="text-[28px] font-bold leading-tight text-foreground md:text-[32px]">
                   {analysis.ticker}
                 </h1>
+                <DecisionBadge decision={analysis.final_decision} t={t} />
                 <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-muted text-muted-foreground">
                   <Globe className="w-3 h-3" />
                   {t("tradingAnalysis.publishedLabel")}
                 </span>
               </div>
-              <div className="mt-5">
-                <DecisionBadgeLarge decision={analysis.final_decision} t={t} />
-              </div>
+
               <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
                 {analysis.author && (
                   <span className="flex items-center gap-1.5">
@@ -197,8 +121,8 @@ export default function PublishedAnalysisDetailPage() {
                         <User className="w-3 h-3" />
                       </AvatarFallback>
                     </Avatar>
-                    <span className="text-xs font-medium text-muted-foreground">
-                      {analysis.author.full_name || analysis.author.username || "User"}
+                    <span className="text-sm font-medium text-muted-foreground">
+                      {analysis.author.full_name || analysis.author.username || t("research.author")}
                     </span>
                   </span>
                 )}
@@ -223,94 +147,7 @@ export default function PublishedAnalysisDetailPage() {
             </div>
           </div>
 
-          {/* Reports */}
-          {reportTabs.map((tab) =>
-            tab.key === activeReportTab ? (
-              <div key={tab.key} className="animate-fade-in-up stagger-1">
-                <ReportCard
-                  title={tab.title}
-                  icon={tab.icon}
-                  content={tab.content}
-                  locale={locale}
-                  t={t}
-                  headerExtra={
-                    <SwitchTab
-                      options={reportTabs.map((rt) => ({
-                        value: rt.key,
-                        label: rt.title,
-                        icon: <rt.icon className="w-3.5 h-3.5" />,
-                        disabled: !rt.content,
-                      }))}
-                      value={activeReportTab}
-                      onValueChange={setActiveReportTab}
-                      className="!w-fit"
-                      size="sm"
-                    />
-                  }
-                />
-              </div>
-            ) : null
-          )}
-
-          <div className="animate-fade-in-up stagger-2">
-            <ReportCard
-              title={t("tradingAnalysis.sections.investmentPlan")}
-              icon={DollarSign}
-              content={analysis.investment_plan}
-              locale={locale}
-              t={t}
-            />
-          </div>
-
-          <div className="animate-fade-in-up stagger-3">
-            <DebateCard
-              title={t("tradingAnalysis.sections.investmentDebate")}
-              icon={Swords}
-              debate={
-                analysis.investment_debate as Record<string, string> | null
-              }
-              bullLabel={t("tradingAnalysis.debate.bullResearcher")}
-              bearLabel={t("tradingAnalysis.debate.bearResearcher")}
-              judgeLabel={t("tradingAnalysis.debate.judgeDecision")}
-              locale={locale}
-              t={t}
-            />
-          </div>
-
-          <div className="animate-fade-in-up stagger-4">
-            <ReportCard
-              title={t("tradingAnalysis.sections.traderPlan")}
-              icon={TrendingUp}
-              content={analysis.trader_plan}
-              locale={locale}
-              t={t}
-            />
-          </div>
-
-          <div className="animate-fade-in-up stagger-5">
-            <DebateCard
-              title={t("tradingAnalysis.sections.riskDebate")}
-              icon={ShieldCheck}
-              debate={
-                analysis.risk_debate as Record<string, string> | null
-              }
-              bullLabel={t("tradingAnalysis.debate.aggressiveAnalyst")}
-              bearLabel={t("tradingAnalysis.debate.conservativeAnalyst")}
-              judgeLabel={t("tradingAnalysis.debate.judgeDecision")}
-              locale={locale}
-              t={t}
-            />
-          </div>
-
-          <div className="animate-fade-in-up stagger-5">
-            <ReportCard
-              title={t("tradingAnalysis.sections.finalSignal")}
-              icon={CheckCircle2}
-              content={analysis.full_signal}
-              locale={locale}
-              t={t}
-            />
-          </div>
+          <ResearchReportContent key={analysis.id} analysis={analysis} locale={locale} t={t} />
         </div>
       </div>
     </DashboardLayout>

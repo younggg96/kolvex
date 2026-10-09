@@ -1,6 +1,5 @@
 import {
   BarChart3,
-  BookOpen,
   PieChart,
   Telescope,
   Youtube,
@@ -47,14 +46,6 @@ export const MAIN_NAV_ITEMS: MainNavItem[] = [
     href: "/dashboard/portfolio",
     type: "link",
     featureId: "portfolio",
-  },
-  {
-    icon: BookOpen,
-    titleKey: "sidebar.journal",
-    shortTitleKey: "tabBar.journal",
-    href: "/dashboard/journal",
-    type: "link",
-    featureId: "journal",
   },
 ];
 export function isNavItemActive(pathname: string, href: string) {

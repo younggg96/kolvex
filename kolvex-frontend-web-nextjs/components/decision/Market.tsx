@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { CandlestickChart } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import CompanyLogo from "@/components/ui/company-logo";
@@ -209,10 +210,14 @@ export default function Market() {
                 <h1 className="sr-only">
                   {c("Markets", "行情")}: {benchmark}
                 </h1>
-                <p className="text-[13px] text-muted-foreground">
+                <Link
+                  href={`/dashboard/market/${benchmark}`}
+                  aria-label={c(`Open ${benchmark} analysis`, `查看 ${benchmark} 分析`)}
+                  className="inline-block cursor-pointer rounded-sm text-[13px] text-muted-foreground hover:text-foreground hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                >
                   <span className="font-semibold text-foreground">{benchmark}</span>{" "}
                   {c(`${benchmarkName.en} ETF`, `${benchmarkName.zh} ETF`)}
-                </p>
+                </Link>
                 <div className="figure mt-1 text-[34px] font-semibold leading-tight tracking-[-0.02em] sm:text-[40px]">
                   {headlineValue === null ? <Skeleton className="h-10 w-44" /> : money(headlineValue)}
                 </div>
@@ -248,7 +253,7 @@ export default function Market() {
                   />
                 )}
               </div>
-              <div className="mt-2 flex items-center justify-between gap-3 border-b border-border pb-4">
+              <div className="mt-2 flex flex-wrap items-center justify-between gap-3 border-b border-border pb-4">
                 <div role="radiogroup" aria-label={c("Chart range", "走势区间")} className="flex gap-1">
                   {RANGES.map((item) => (
                     <button
@@ -263,10 +268,22 @@ export default function Market() {
                     </button>
                   ))}
                 </div>
-                <p className="hidden text-right text-xs text-muted-foreground sm:block">
-                  {c("Quotes may be delayed", "报价可能延迟")}
-                  {checkedAt && c(`, checked ${checkedAt}`, `，${checkedAt} 查询`)}
-                </p>
+                <div className="flex flex-wrap items-center gap-3">
+                  <Button asChild variant="outline" size="xs">
+                    <Link
+                      href={`/dashboard/market/${benchmark}`}
+                      aria-label={c(`Open ${benchmark} candlestick chart and analysis`, `打开 ${benchmark} K 线和分析页`)}
+                      className="cursor-pointer"
+                    >
+                      <CandlestickChart className="h-4 w-4" aria-hidden />
+                      {c("Candlestick view", "K 线模式")}
+                    </Link>
+                  </Button>
+                  <p className="hidden text-right text-xs text-muted-foreground sm:block">
+                    {c("Quotes may be delayed", "报价可能延迟")}
+                    {checkedAt && c(`, checked ${checkedAt}`, `，${checkedAt} 查询`)}
+                  </p>
+                </div>
               </div>
             </section>
 

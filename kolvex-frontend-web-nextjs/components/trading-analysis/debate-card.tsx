@@ -32,58 +32,16 @@ function DebatePanel({
   content: string;
   variant: "bull" | "bear";
 }) {
-  const [expanded, setExpanded] = useState(false);
-  const needsExpand = content.length > 600;
   const isBull = variant === "bull";
-
   return (
-    <div
-      className={cn(
-        "flex-1 min-w-0"
-      )}
-    >
-      <div className="flex items-center gap-2 pb-2">
-        <Icon
-          className={cn(
-            "w-3.5 h-3.5 shrink-0",
-            isBull ? "text-positive" : "text-negative"
-          )}
-        />
-        <span
-          className={cn(
-            "text-[13px] font-semibold",
-            isBull ? "text-positive" : "text-negative"
-          )}
-        >
-          {label}
-        </span>
-      </div>
-      <div>
-        <div
-          className={cn(
-            "overflow-y-auto transition-all duration-300",
-            expanded || !needsExpand ? "max-h-[400px]" : "max-h-[200px]"
-          )}
-        >
-          <MarkdownBody content={content} />
-        </div>
-        {needsExpand && (
-          <button
-            type="button"
-            onClick={() => setExpanded((v) => !v)}
-            className="mt-2 flex items-center gap-1 text-xs font-semibold text-foreground hover:underline"
-          >
-            <ChevronDown
-              className={cn(
-                "w-3 h-3 transition-transform duration-200",
-                expanded && "rotate-180"
-              )}
-            />
-            {expanded ? "Collapse" : "Expand"}
-          </button>
-        )}
-      </div>
-    </div>
+    <details className="group min-w-0 border-t border-border py-4">
+      <summary className="flex min-h-11 cursor-pointer list-none items-center gap-3 rounded-sm text-base font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary [&::-webkit-details-marker]:hidden">
+        <Icon className={cn("h-5 w-5 shrink-0", isBull ? "text-positive" : "text-negative")} />
+        <span className="flex-1">{label}</span>
+        <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform group-open:rotate-180" />
+      </summary>
+      <div className="pt-5"><MarkdownBody content={content} /></div>
+    </details>
   );
 }
 
@@ -132,7 +90,6 @@ export function DebateCard({
   const { showTranslated, isTranslating, toggle, getContent } =
     useDebateTranslation(debate, debateKeys, locale);
 
-  const [judgeExpanded, setJudgeExpanded] = useState(false);
   const [copied, setCopied] = useState(false);
 
   const buildMarkdownText = useCallback(() => {
@@ -193,29 +150,29 @@ export function DebateCard({
   const hasBear = bearKey && debate[bearKey];
   const hasJudge = judgeKey && debate[judgeKey];
   const judgeContent = hasJudge ? getContent(judgeKey!) || "" : "";
-  const judgeNeedsExpand = judgeContent.length > 600;
 
   return (
     <TooltipProvider>
       <div
         className={cn(
-          "border-t border-border pt-4",
+          "min-w-0 border-t border-border pt-6",
           className
         )}
       >
         {/* Header */}
-        <div className="flex items-center gap-2 pb-4">
+        <div className="mb-6 flex flex-wrap items-center gap-3">
           <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />
-          <h3 className="flex-1 text-[17px] font-semibold text-foreground">
+          <h3 className="w-full text-xl font-semibold text-foreground sm:w-auto sm:flex-1">
             {title}
           </h3>
-          <div className="flex items-center gap-0.5">
+          <div className="ml-auto flex items-center gap-0.5">
             <Tooltip>
               <TooltipTrigger asChild>
                 <button
                   type="button"
                   onClick={handleCopy}
-                  className="flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground transition-colors duration-150 hover:bg-muted hover:text-foreground"
+                  aria-label={copied ? t("tradingAnalysis.debate.copied") : t("tradingAnalysis.debate.copyAll")}
+                  className="flex h-10 w-10 items-center justify-center rounded-full text-muted-foreground transition-colors duration-150 hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                 >
                   {copied ? (
                     <Check className="w-3.5 h-3.5 text-positive" />
@@ -238,7 +195,8 @@ export function DebateCard({
                 <button
                   type="button"
                   onClick={handleDownload}
-                  className="flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground transition-colors duration-150 hover:bg-muted hover:text-foreground"
+                  aria-label={t("tradingAnalysis.debate.download")}
+                  className="flex h-10 w-10 items-center justify-center rounded-full text-muted-foreground transition-colors duration-150 hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                 >
                   <Download className="w-3.5 h-3.5" />
                 </button>
@@ -253,7 +211,8 @@ export function DebateCard({
                 <button
                   type="button"
                   onClick={handleShare}
-                  className="flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground transition-colors duration-150 hover:bg-muted hover:text-foreground"
+                  aria-label={t("tradingAnalysis.debate.share")}
+                  className="flex h-10 w-10 items-center justify-center rounded-full text-muted-foreground transition-colors duration-150 hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                 >
                   <Share2 className="w-3.5 h-3.5" />
                 </button>
@@ -272,10 +231,25 @@ export function DebateCard({
           </div>
         </div>
 
+        {/* Judge Verdict */}
+        {hasJudge && (
+          <div className="mb-6">
+            <div className="rounded-xl bg-muted/60 p-5 md:p-6">
+              <div className="mb-2 flex items-center gap-2">
+                <ShieldCheck className="h-4 w-4 shrink-0 text-foreground" />
+                <span className="text-base font-semibold text-foreground">
+                  {judgeLabel}
+                </span>
+              </div>
+              <MarkdownBody content={judgeContent} />
+            </div>
+          </div>
+        )}
+
         {/* Bull vs Bear */}
         {(hasBull || hasBear) && (
           <div>
-            <div className="grid grid-cols-1 items-stretch gap-6 md:grid-cols-2">
+            <div className="space-y-2">
               {hasBull && (
                 <DebatePanel
                   label={bullLabel}
@@ -297,44 +271,6 @@ export function DebateCard({
           </div>
         )}
 
-        {/* Judge Verdict */}
-        {hasJudge && (
-          <div className="mt-6">
-            <div className="rounded-2xl bg-muted px-4 py-4">
-              <div className="mb-2 flex items-center gap-2">
-                <ShieldCheck className="h-4 w-4 shrink-0 text-foreground" />
-                <span className="text-[13px] font-semibold text-foreground">
-                  {judgeLabel}
-                </span>
-              </div>
-              <div
-                className={cn(
-                  "overflow-y-auto transition-all duration-300",
-                  judgeExpanded || !judgeNeedsExpand
-                    ? "max-h-[400px]"
-                    : "max-h-[200px]"
-                )}
-              >
-                <MarkdownBody content={judgeContent} />
-              </div>
-              {judgeNeedsExpand && (
-                <button
-                  type="button"
-                  onClick={() => setJudgeExpanded((v) => !v)}
-                  className="mt-2 flex items-center gap-1 text-xs font-semibold text-foreground hover:underline"
-                >
-                  <ChevronDown
-                    className={cn(
-                      "w-3 h-3 transition-transform duration-200",
-                      judgeExpanded && "rotate-180"
-                    )}
-                  />
-                  {judgeExpanded ? "Collapse" : "Expand"}
-                </button>
-              )}
-            </div>
-          </div>
-        )}
       </div>
     </TooltipProvider>
   );

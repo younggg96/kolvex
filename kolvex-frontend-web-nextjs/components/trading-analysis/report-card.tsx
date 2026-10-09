@@ -20,6 +20,7 @@ export function ReportCard({
   locale,
   t,
   headerExtra,
+  bordered = true,
 }: {
   title: string;
   icon: React.ComponentType<{ className?: string }>;
@@ -28,6 +29,7 @@ export function ReportCard({
   locale: string;
   t: (key: string) => string;
   headerExtra?: React.ReactNode;
+  bordered?: boolean;
 }) {
   const { displayContent, showTranslated, isTranslating, toggle } =
     useContentTranslation(content, locale);
@@ -77,23 +79,21 @@ export function ReportCard({
   if (!content) return null;
   return (
     <TooltipProvider>
-      <section className={cn("border-t border-border pt-4", className)}>
-        <div className="flex flex-wrap items-center gap-2 pb-3">
-          <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />
-          <h3 className="text-[17px] font-semibold text-foreground">
+      <section className={cn("min-w-0", bordered && "border-t border-border pt-6", className)}>
+        {headerExtra && <div className="mb-6 overflow-x-auto pb-1">{headerExtra}</div>}
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
+          <h2 className="flex w-full items-center gap-2 text-xl font-semibold text-foreground sm:w-auto">
+            <Icon className="h-5 w-5 shrink-0 text-muted-foreground" />
             {title}
-          </h3>
-          {headerExtra && (
-            <div className="order-last flex w-full sm:order-none sm:w-auto sm:flex-1 sm:justify-end">{headerExtra}</div>
-          )}
-          {!headerExtra && <div className="flex-1" />}
-          <div className="flex items-center gap-0.5">
+          </h2>
+          <div className="ml-auto flex items-center gap-0.5">
             <Tooltip>
               <TooltipTrigger asChild>
                 <button
                   type="button"
                   onClick={handleCopy}
-                  className="flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground transition-colors duration-150 hover:bg-muted hover:text-foreground"
+                  aria-label={copied ? t("tradingAnalysis.debate.copied") : t("tradingAnalysis.debate.copyAll")}
+                  className="flex h-10 w-10 items-center justify-center rounded-full text-muted-foreground transition-colors duration-150 hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                 >
                   {copied ? (
                     <Check className="w-3.5 h-3.5 text-positive" />
@@ -116,7 +116,8 @@ export function ReportCard({
                 <button
                   type="button"
                   onClick={handleDownload}
-                  className="flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground transition-colors duration-150 hover:bg-muted hover:text-foreground"
+                  aria-label={t("tradingAnalysis.debate.download")}
+                  className="flex h-10 w-10 items-center justify-center rounded-full text-muted-foreground transition-colors duration-150 hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                 >
                   <Download className="w-3.5 h-3.5" />
                 </button>
@@ -131,7 +132,8 @@ export function ReportCard({
                 <button
                   type="button"
                   onClick={handleShare}
-                  className="flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground transition-colors duration-150 hover:bg-muted hover:text-foreground"
+                  aria-label={t("tradingAnalysis.debate.share")}
+                  className="flex h-10 w-10 items-center justify-center rounded-full text-muted-foreground transition-colors duration-150 hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                 >
                   <Share2 className="w-3.5 h-3.5" />
                 </button>

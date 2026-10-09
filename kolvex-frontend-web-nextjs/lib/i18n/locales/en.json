@@ -1407,6 +1407,12 @@
       "news": "News Analysis",
       "fundamentals": "Fundamentals"
     },
+    "reader": {
+      "conclusion": "Research conclusion",
+      "evidence": "Analysis & evidence",
+      "discussion": "Debate & risk",
+      "contents": "Report contents"
+    },
     "sections": {
       "investmentPlan": "Investment Plan",
       "investmentDebate": "Investment Debate (Bull vs Bear)",

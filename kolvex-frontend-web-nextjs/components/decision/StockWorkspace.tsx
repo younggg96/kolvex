@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
+import HeaderBackButton from "@/components/layout/HeaderBackButton";
 import { useCallback, useEffect, useState } from "react";
-import { ArrowLeft, ExternalLink } from "lucide-react";
+import { ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import DashboardLayout from "@/components/layout/DashboardLayout";
@@ -226,18 +227,13 @@ export default function StockWorkspace({ ticker }: { ticker: string }) {
   );
 
   return (
-    <DashboardLayout title={c("Markets", "行情")}>
+    <DashboardLayout
+      title={c("Markets", "行情")}
+      headerLeftAction={<HeaderBackButton href="/dashboard" label={c("Back to Markets", "返回行情")} />}
+    >
       <main className="flex-1 overflow-y-auto">
         <div className="mx-auto px-4 pb-16 pt-4 md:px-8 md:pt-6">
-          <Link
-            href="/dashboard"
-            className="-ml-1 inline-flex items-center gap-1.5 rounded-full px-1 py-1 text-[13px] text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-          >
-            <ArrowLeft className="h-4 w-4" aria-hidden />
-            {c("Markets", "行情")}
-          </Link>
-
-          <div className="mt-4 grid gap-x-12 gap-y-10 xl:grid-cols-[minmax(0,1fr)_320px]">
+          <div className="grid gap-x-12 gap-y-10 xl:grid-cols-[minmax(0,1fr)_320px]">
             <section className="min-w-0 xl:col-start-1 xl:row-start-1" aria-labelledby="stock-title">
               <div className="flex items-center gap-3">
                 <CompanyLogo symbol={ticker} size="md" />

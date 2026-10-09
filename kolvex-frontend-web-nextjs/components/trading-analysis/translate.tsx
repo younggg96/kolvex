@@ -57,10 +57,10 @@ export function TranslateButton({
           aria-label={label}
           aria-pressed={showTranslated}
           className={cn(
-            "flex h-8 w-8 items-center justify-center rounded-full transition-colors duration-150",
+            "flex h-10 w-10 items-center justify-center rounded-full transition-colors duration-150",
             showTranslated
               ? "bg-foreground text-background"
-              : "text-muted-foreground hover:bg-muted hover:text-foreground",
+              : "text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
             isTranslating && "opacity-50 cursor-not-allowed"
           )}
         >

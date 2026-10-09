@@ -1,17 +1,14 @@
 "use client";
 
+import HeaderBackButton from "@/components/layout/HeaderBackButton";
 import { useEffect, useState, useCallback, useRef } from "react";
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import {
-  ArrowLeft,
   Loader2,
-  TrendingUp,
   Clock,
   Calendar,
   BarChart3,
-  Newspaper,
-  Users,
   DollarSign,
   Swords,
   ShieldCheck,
@@ -32,7 +29,6 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { SwitchTab } from "@/components/ui/switch-tab";
 import {
   getAnalysis,
   streamAnalysisProgress,
@@ -43,8 +39,7 @@ import {
 } from "@/lib/tradingAnalysisApi";
 import { toast } from "sonner";
 import { DecisionBadgeLarge } from "@/components/trading-analysis/badges";
-import { ReportCard } from "@/components/trading-analysis/report-card";
-import { DebateCard } from "@/components/trading-analysis/debate-card";
+import { ResearchReportContent } from "@/components/trading-analysis/ResearchReportContent";
 import { DetailSkeleton } from "@/components/trading-analysis/skeletons";
 import { ProgressLog } from "@/components/trading-analysis/progress-log";
 import { FullReportActions } from "@/components/trading-analysis/report-actions";
@@ -99,7 +94,6 @@ function mergeProgressEvents(
 
 export default function TradingAnalysisDetailPage() {
   const params = useParams();
-  const router = useRouter();
   const { t, locale } = useTranslation();
   const analysisId = params.id as string;
 
@@ -108,7 +102,6 @@ export default function TradingAnalysisDetailPage() {
   const [publishing, setPublishing] = useState(false);
   const [progressEvents, setProgressEvents] = useState<ProgressEvent[]>([]);
   const [currentStage, setCurrentStage] = useState("initializing");
-  const [activeReportTab, setActiveReportTab] = useState("market");
   const [isStreamConnected, setIsStreamConnected] = useState(false);
   const [lastActivityAt, setLastActivityAt] = useState(() => Date.now());
   const [now, setNow] = useState(() => Date.now());
@@ -294,24 +287,13 @@ export default function TradingAnalysisDetailPage() {
     0,
   );
 
-  useEffect(() => {
-    if (analysis?.status === "completed") {
-      const tabs = [
-        analysis.market_report ? "market" : null,
-        analysis.sentiment_report ? "sentiment" : null,
-        analysis.news_report ? "news" : null,
-        analysis.fundamentals_report ? "fundamentals" : null,
-      ];
-      const first = tabs.find(Boolean) || "market";
-      setActiveReportTab(first);
-    }
-  }, [analysis]);
+  const backAction = <HeaderBackButton href={RESEARCH_AUTHORING_PATH} label={t("tradingAnalysis.backToList")} />;
 
   if (loading) {
     return (
-      <DashboardLayout title={t("tradingAnalysis.title")}>
+      <DashboardLayout title={t("tradingAnalysis.title")} headerLeftAction={backAction}>
         <div className="relative flex-1 overflow-y-auto">
-          <div className="mx-auto w-full max-w-[880px]">
+          <div className="mx-auto w-full max-w-[1120px]">
             <DetailSkeleton />
           </div>
         </div>
@@ -321,20 +303,13 @@ export default function TradingAnalysisDetailPage() {
 
   if (!analysis) {
     return (
-      <DashboardLayout title={t("tradingAnalysis.title")}>
+      <DashboardLayout title={t("tradingAnalysis.title")} headerLeftAction={backAction}>
         <div className="relative flex-1 overflow-y-auto">
           <div className="flex flex-col items-center justify-center flex-1 min-h-[400px] gap-4">
             <XCircle className="h-10 w-10 text-muted-foreground" />
             <p className="text-muted-foreground">
               {t("tradingAnalysis.notFound")}
             </p>
-            <Button
-              variant="ghost"
-              onClick={() => router.push(RESEARCH_AUTHORING_PATH)}
-            >
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              {t("common.back")}
-            </Button>
           </div>
         </div>
       </DashboardLayout>
@@ -354,52 +329,10 @@ export default function TradingAnalysisDetailPage() {
   );
   const isWaitingForModel = isRunning && activityIdleSeconds >= 20;
 
-  const reportTabs = [
-    {
-      key: "market",
-      title: t("tradingAnalysis.tabs.market"),
-      icon: BarChart3,
-      content: analysis.market_report,
-    },
-    {
-      key: "sentiment",
-      title: t("tradingAnalysis.tabs.sentiment"),
-      icon: Users,
-      content: analysis.sentiment_report,
-    },
-    {
-      key: "news",
-      title: t("tradingAnalysis.tabs.news"),
-      icon: Newspaper,
-      content: analysis.news_report,
-    },
-    {
-      key: "fundamentals",
-      title: t("tradingAnalysis.tabs.fundamentals"),
-      icon: DollarSign,
-      content: analysis.fundamentals_report,
-    },
-  ];
-
-  const firstAvailableTab =
-    reportTabs.find((tab) => !!tab.content)?.key || "market";
-
   return (
     <DashboardLayout
       title={t("tradingAnalysis.pageTitle", { ticker: analysis.ticker })}
-      headerLeftAction={
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => router.push(RESEARCH_AUTHORING_PATH)}
-          className="gap-1"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          <span className="hidden sm:inline">
-            {t("tradingAnalysis.backToList")}
-          </span>
-        </Button>
-      }
+      headerLeftAction={backAction}
       headerActions={
         <>
           <Button
@@ -431,7 +364,7 @@ export default function TradingAnalysisDetailPage() {
       }
     >
       <div className="relative flex-1 overflow-y-auto">
-        <div className="mx-auto w-full max-w-[880px] space-y-8 px-4 pb-16 pt-6 md:px-8 md:pt-8">
+        <div className="mx-auto w-full max-w-[1120px] space-y-8 px-4 pb-16 pt-6 md:px-8 md:pt-8">
           {/* Header */}
           <div className="animate-fade-in-up">
             <div>
@@ -687,107 +620,8 @@ export default function TradingAnalysisDetailPage() {
             </div>
           )}
 
-          {/* Reports */}
-          {isCompleted && (
-            <>
-              <div className="animate-fade-in-up stagger-3">
-                <ReportCard
-                  title={t("tradingAnalysis.sections.investmentPlan")}
-                  icon={DollarSign}
-                  content={analysis.investment_plan}
-                  locale={locale}
-                  t={t}
-                />
-              </div>
-
-              {reportTabs.map((tab) =>
-                tab.key === activeReportTab ? (
-                  <div key={tab.key} className="animate-fade-in-up stagger-1">
-                    <ReportCard
-                      title={tab.title}
-                      icon={tab.icon}
-                      content={tab.content}
-                      locale={locale}
-                      t={t}
-                      headerExtra={
-                        <SwitchTab
-                          options={reportTabs.map((rt) => ({
-                            value: rt.key,
-                            label: rt.title,
-                            icon: <rt.icon className="w-3.5 h-3.5" />,
-                            disabled: !rt.content,
-                          }))}
-                          value={activeReportTab}
-                          onValueChange={setActiveReportTab}
-                          className="!w-fit"
-                          size="sm"
-                        />
-                      }
-                    />
-                  </div>
-                ) : null,
-              )}
-
-              <div className="animate-fade-in-up stagger-4">
-                <ReportCard
-                  title={t("tradingAnalysis.sections.traderPlan")}
-                  icon={TrendingUp}
-                  content={analysis.trader_plan}
-                  locale={locale}
-                  t={t}
-                />
-              </div>
-
-              <div className="animate-fade-in-up stagger-5">
-                <ReportCard
-                  title={t("tradingAnalysis.sections.finalSignal")}
-                  icon={CheckCircle2}
-                  content={analysis.full_signal}
-                  locale={locale}
-                  t={t}
-                />
-              </div>
-              <details className="space-y-4 border-t border-border pt-4">
-                <summary className="cursor-pointer text-sm font-medium">
-                  {locale === "zh"
-                    ? "查看 AI 如何得出结论"
-                    : "See how AI reached this conclusion"}
-                </summary>
-                <div className="animate-fade-in-up stagger-2">
-                  <DebateCard
-                    title={t("tradingAnalysis.sections.investmentDebate")}
-                    icon={Swords}
-                    debate={
-                      analysis.investment_debate as Record<
-                        string,
-                        string
-                      > | null
-                    }
-                    bullLabel={t("tradingAnalysis.debate.bullResearcher")}
-                    bearLabel={t("tradingAnalysis.debate.bearResearcher")}
-                    judgeLabel={t("tradingAnalysis.debate.judgeDecision")}
-                    locale={locale}
-                    t={t}
-                  />
-                </div>
-
-                <div className="animate-fade-in-up stagger-5">
-                  <DebateCard
-                    title={t("tradingAnalysis.sections.riskDebate")}
-                    icon={ShieldCheck}
-                    debate={
-                      analysis.risk_debate as Record<string, string> | null
-                    }
-                    bullLabel={t("tradingAnalysis.debate.aggressiveAnalyst")}
-                    bearLabel={t("tradingAnalysis.debate.conservativeAnalyst")}
-                    judgeLabel={t("tradingAnalysis.debate.judgeDecision")}
-                    locale={locale}
-                    t={t}
-                  />
-                </div>
-              </details>
-            </>
-          )}
+          {/* Completed reports use the same reading order as the published library. */}
+          {isCompleted && <ResearchReportContent key={analysis.id} analysis={analysis} locale={locale} t={t} />}
         </div>
       </div>
     </DashboardLayout>
