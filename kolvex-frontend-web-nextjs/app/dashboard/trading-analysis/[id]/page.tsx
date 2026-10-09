@@ -18,17 +18,10 @@ import {
   Lock,
   Bot,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
 import { useTranslation } from "@/lib/i18n";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { RESEARCH_AUTHORING_PATH } from "@/lib/researchRoutes";
 import { Button } from "@/components/ui/button";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 import {
   getAnalysis,
   streamAnalysisProgress,
@@ -41,7 +34,7 @@ import { toast } from "sonner";
 import { DecisionBadgeLarge } from "@/components/trading-analysis/badges";
 import { ResearchReportContent } from "@/components/trading-analysis/ResearchReportContent";
 import { DetailSkeleton } from "@/components/trading-analysis/skeletons";
-import { ProgressLog } from "@/components/trading-analysis/progress-log";
+import { AnalysisProgress } from "@/components/trading-analysis/analysis-progress";
 import { FullReportActions } from "@/components/trading-analysis/report-actions";
 import CompanyLogo from "@/components/ui/company-logo";
 import { createClient } from "@/lib/supabase/client";
@@ -374,8 +367,8 @@ export default function TradingAnalysisDetailPage() {
                   {analysis.ticker}
                 </h1>
                 {isRunning && (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-foreground/[0.06] px-2.5 py-1 text-xs font-medium text-foreground">
-                    <Loader2 className="w-3 h-3 animate-spin" />
+                  <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+                    <span aria-hidden="true" className="h-1 w-1 rounded-full bg-positive-fill" />
                     {t("tradingAnalysis.statusAnalyzing")}
                   </span>
                 )}
@@ -421,192 +414,17 @@ export default function TradingAnalysisDetailPage() {
           </div>
 
           {/* Progress */}
-          {isRunning &&
-            (() => {
-              const progressPercent = Math.round(
-                (activeStageIdx / (STAGES.length - 1)) * 100,
-              );
-              const activeStage = STAGES[activeStageIdx];
-
-              return (
-                <div className="overflow-hidden rounded-2xl bg-muted/60 animate-fade-in-up stagger-1">
-                  <div className="border-b border-border px-5 py-4">
-                    <div className="flex items-center justify-between mb-2.5">
-                      <div className="flex items-center gap-2">
-                        <Loader2 className="h-4 w-4 animate-spin text-foreground" />
-                        <span className="text-sm font-semibold text-foreground">
-                          {t("tradingAnalysis.analysisInProgress")}
-                        </span>
-                        <span
-                          className={cn(
-                            "inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[10px] font-medium",
-                            isStreamConnected
-                              ? "bg-positive/10 text-positive"
-                              : "bg-warning/10 text-foreground",
-                          )}
-                        >
-                          <span
-                            className={cn(
-                              "h-1.5 w-1.5 rounded-full animate-pulse",
-                              isStreamConnected
-                                ? "bg-positive-fill"
-                                : "bg-warning",
-                            )}
-                          />
-                          {t(
-                            isStreamConnected
-                              ? "tradingAnalysis.liveUpdates"
-                              : "tradingAnalysis.syncingStatus",
-                          )}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-3 text-xs font-medium text-muted-foreground tabular-nums">
-                        <span>
-                          {t("tradingAnalysis.elapsed", {
-                            seconds: String(elapsedSeconds),
-                          })}
-                        </span>
-                        <span>
-                          {t("tradingAnalysis.stage")} {activeStageIdx + 1}/
-                          {STAGES.length}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="h-1 overflow-hidden rounded-full bg-foreground/10">
-                      <div
-                        className="h-full rounded-full bg-primary transition-[width] duration-700 ease-out"
-                        style={{ width: `${Math.max(progressPercent, 5)}%` }}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="p-5 space-y-5">
-                    <TooltipProvider>
-                      <div className="flex items-start">
-                        {STAGES.map((stage, idx) => {
-                          const Icon = stage.icon;
-                          const isActive = idx === activeStageIdx;
-                          const isDone = idx < activeStageIdx;
-                          const stageLabel = t(
-                            `tradingAnalysis.stages.${stage.key}`,
-                          );
-                          const stageDesc = t(
-                            `tradingAnalysis.stageDesc.${stage.key}`,
-                          );
-
-                          return (
-                            <div
-                              key={stage.key}
-                              className="flex items-start flex-1 min-w-0"
-                            >
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <div className="flex flex-col items-center flex-1 cursor-default min-w-0">
-                                    <div className="relative">
-                                      <div
-                                        className={cn(
-                                          "relative flex h-10 w-10 items-center justify-center rounded-full transition-colors duration-200",
-                                          isDone &&
-                                            "bg-primary text-primary-foreground",
-                                          isActive &&
-                                            "bg-foreground text-background",
-                                          !isDone &&
-                                            !isActive &&
-                                            "bg-background text-muted-foreground",
-                                        )}
-                                      >
-                                        {isActive ? (
-                                          <Loader2 className="w-4.5 h-4.5 animate-spin" />
-                                        ) : isDone ? (
-                                          <CheckCircle2 className="w-4.5 h-4.5" />
-                                        ) : (
-                                          <Icon className="w-4 h-4" />
-                                        )}
-                                      </div>
-                                    </div>
-                                    <span
-                                      className={cn(
-                                        "text-[10px] mt-2 font-semibold transition-colors duration-300 text-center",
-                                        isActive && "text-foreground",
-                                        isDone && "text-foreground",
-                                        !isDone &&
-                                          !isActive &&
-                                          "text-muted-foreground",
-                                      )}
-                                    >
-                                      {stageLabel}
-                                    </span>
-                                  </div>
-                                </TooltipTrigger>
-                                <TooltipContent
-                                  side="bottom"
-                                  className="max-w-[180px]"
-                                >
-                                  <p className="text-xs font-medium">
-                                    {stageLabel}
-                                  </p>
-                                  <p className="text-[10px] text-muted-foreground mt-0.5">
-                                    {stageDesc}
-                                  </p>
-                                </TooltipContent>
-                              </Tooltip>
-
-                              {idx < STAGES.length - 1 && (
-                                <div className="flex-shrink-0 w-full max-w-[48px] h-0.5 mt-5 mx-0.5">
-                                  <div className="h-full overflow-hidden rounded-full bg-foreground/10">
-                                    <div
-                                      className={cn(
-                                        "h-full rounded-full transition-all duration-700 ease-out",
-                                        idx < activeStageIdx
-                                          ? "w-full bg-primary"
-                                          : idx === activeStageIdx
-                                            ? "w-1/2 bg-primary/60"
-                                            : "w-0",
-                                      )}
-                                    />
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </TooltipProvider>
-
-                    {activeStage && (
-                      <div className="flex items-center gap-3 rounded-xl bg-background p-3 animate-slide-in">
-                        {(() => {
-                          const ActiveIcon = activeStage.icon;
-                          return (
-                            <ActiveIcon className="h-5 w-5 shrink-0 text-foreground" />
-                          );
-                        })()}
-                        <div className="min-w-0">
-                          <p className="text-[13px] font-semibold text-foreground">
-                            {t(`tradingAnalysis.stages.${activeStage.key}`)}
-                          </p>
-                          <p className="truncate text-xs text-muted-foreground">
-                            {isWaitingForModel
-                              ? t("tradingAnalysis.waitingForModel")
-                              : t(
-                                  `tradingAnalysis.stageDesc.${activeStage.key}`,
-                                )}
-                          </p>
-                        </div>
-                        <Loader2 className="ml-auto h-4 w-4 shrink-0 animate-spin text-muted-foreground" />
-                      </div>
-                    )}
-
-                    {progressEvents.length > 0 && (
-                      <ProgressLog
-                        events={progressEvents}
-                        isLive={isStreamConnected}
-                      />
-                    )}
-                  </div>
-                </div>
-              );
-            })()}
+          {isRunning && (
+            <AnalysisProgress
+              stages={STAGES}
+              activeStageIdx={activeStageIdx}
+              elapsedSeconds={elapsedSeconds}
+              isStreamConnected={isStreamConnected}
+              isWaitingForModel={isWaitingForModel}
+              events={progressEvents}
+              t={t}
+            />
+          )}
 
           {/* Error */}
           {isFailed && analysis.error_message && (

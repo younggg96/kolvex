@@ -25,6 +25,7 @@ import {
 } from "./shared";
 import ScrubChart, { type ScrubPoint } from "./ScrubChart";
 import { useDecisionCommand } from "./CommandLayer";
+import StockLookup from "./StockLookup";
 
 const DEFAULT_STOCKS = ["NVDA", "AAPL", "MSFT", "AMZN", "GOOGL", "META", "TSLA", "AVGO"];
 const BENCHMARKS = [
@@ -187,6 +188,7 @@ export default function Market() {
       <main className="flex-1 overflow-y-auto">
         <div className="mx-auto grid gap-x-12 gap-y-10 px-4 pb-16 pt-6 md:px-8 md:pt-8 xl:grid-cols-[minmax(0,1fr)_320px]">
           <div className="min-w-0 space-y-10">
+            <StockLookup />
             <section aria-label={c("Market benchmark", "大盘参考")}>
               <div role="radiogroup" aria-label={c("Benchmark ETF", "参考 ETF")} className="-mx-1 flex gap-1 overflow-x-auto px-1 pb-1 scrollbar-hide">
                 {BENCHMARKS.map((item) => (
@@ -396,7 +398,7 @@ export default function Market() {
           </div>
 
           <aside className="min-w-0 space-y-10 xl:sticky xl:top-8 xl:self-start">
-            <TextLink href="/dashboard/youtube-opinions?tab=stocks">{c("Browse all stocks", "浏览全部股票")}</TextLink>
+            <TextLink href="/dashboard/youtube-opinions/stocks">{c("Creator-covered stocks", "博主覆盖股票")}</TextLink>
             <Panel
               title={c("Creator updates", "博主新动态")}
               action={<TextLink href="/dashboard/youtube-opinions">{c("Creator opinions", "博主观点")}</TextLink>}

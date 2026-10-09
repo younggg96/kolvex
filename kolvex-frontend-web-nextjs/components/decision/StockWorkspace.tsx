@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import AnalysisSummary from "@/components/youtube/chart/AnalysisSummary";
 import TechnicalFindings from "@/components/youtube/chart/TechnicalFindings";
 import HeaderBackButton from "@/components/layout/HeaderBackButton";
 import { useCallback, useEffect, useState } from "react";
@@ -316,7 +317,7 @@ export default function StockWorkspace({ ticker }: { ticker: string }) {
                 {technical ? (
                   <div className="pt-4">
                     <DirectionBadge direction={technical.bias} />
-                    <p className="mt-2 text-sm leading-6">{technical.summary}</p>
+                    <div className="mt-3"><AnalysisSummary key={technical.summary} text={technical.summary} t={t} /></div>
                     <TechnicalFindings result={technical} t={t} />
                     {!technical.findings?.length && <ul className="mt-3 space-y-2 text-sm">
                       {technical.signals.map((signal) => (

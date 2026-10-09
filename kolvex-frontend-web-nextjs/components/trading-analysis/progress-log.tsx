@@ -1,6 +1,5 @@
 import { useEffect, useRef, useMemo, useState, useCallback } from "react";
 import {
-  Loader2,
   CheckCircle2,
   BarChart3,
   Users,
@@ -15,7 +14,6 @@ import {
   Shield,
   Scale,
   Wrench,
-  Brain,
   FileText,
   ChevronDown,
   type LucideIcon,
@@ -46,37 +44,20 @@ const NODE_AGENT_MAP: Record<string, string> = {
   "Risk Judge": "Risk Judge",
 };
 
-interface AgentTheme {
-  icon: LucideIcon;
-  accent: string;
-  bg: string;
-  border: string;
-  text: string;
-}
-
-const NEUTRAL = {
-  accent: "text-foreground",
-  bg: "bg-foreground/[0.06]",
-  border: "border-foreground/10",
-  text: "text-foreground/80",
+const AGENT_ICONS: Record<string, LucideIcon> = {
+  "Market Analyst": BarChart3,
+  "Social Analyst": Users,
+  "News Analyst": Newspaper,
+  "Fundamentals Analyst": DollarSign,
+  "Bull Researcher": TrendingUp,
+  "Bear Researcher": TrendingDown,
+  "Research Manager": Scale,
+  Trader: Briefcase,
+  "Aggressive Analyst": Zap,
+  "Conservative Analyst": Shield,
+  "Neutral Analyst": Scale,
+  "Risk Judge": ShieldCheck,
 };
-
-const AGENT_THEMES: Record<string, AgentTheme> = {
-  "Market Analyst": { ...NEUTRAL, icon: BarChart3 },
-  "Social Analyst": { ...NEUTRAL, icon: Users },
-  "News Analyst": { ...NEUTRAL, icon: Newspaper },
-  "Fundamentals Analyst": { ...NEUTRAL, icon: DollarSign },
-  "Bull Researcher": { ...NEUTRAL, icon: TrendingUp, accent: "text-positive", border: "border-positive/30" },
-  "Bear Researcher": { ...NEUTRAL, icon: TrendingDown, accent: "text-negative", border: "border-negative/30" },
-  "Research Manager": { ...NEUTRAL, icon: Scale },
-  Trader: { ...NEUTRAL, icon: Briefcase },
-  "Aggressive Analyst": { ...NEUTRAL, icon: Zap },
-  "Conservative Analyst": { ...NEUTRAL, icon: Shield },
-  "Neutral Analyst": { ...NEUTRAL, icon: Scale },
-  "Risk Judge": { ...NEUTRAL, icon: ShieldCheck },
-};
-
-const DEFAULT_THEME: AgentTheme = { ...NEUTRAL, icon: Bot };
 
 interface AgentGroup {
   agentName: string;
@@ -139,66 +120,12 @@ function groupByAgent(events: ProgressEvent[]): AgentGroup[] {
   return groups;
 }
 
-function TypewriterText({
-  text,
-  active,
-  speed = 8,
-}: {
-  text: string;
-  active: boolean;
-  speed?: number;
-}) {
-  const [charIdx, setCharIdx] = useState(0);
-  const prevTextRef = useRef("");
-
-  useEffect(() => {
-    if (!active || !text) {
-      setCharIdx(text?.length || 0);
-      return;
-    }
-
-    const startFrom = text.startsWith(prevTextRef.current)
-      ? prevTextRef.current.length
-      : 0;
-
-    setCharIdx(startFrom);
-
-    let i = startFrom;
-    const timer = setInterval(() => {
-      i += 1;
-      if (i >= text.length) {
-        setCharIdx(text.length);
-        clearInterval(timer);
-        prevTextRef.current = text;
-      } else {
-        setCharIdx(i);
-      }
-    }, speed);
-
-    return () => clearInterval(timer);
-  }, [text, active, speed]);
-
-  if (!text) return null;
-
-  return (
-    <span>
-      {text.slice(0, charIdx)}
-      {active && charIdx < text.length && (
-        <span className="inline-block w-[2px] h-[1em] bg-current align-text-bottom animate-blink-cursor ml-px" />
-      )}
-    </span>
-  );
-}
-
 function AgentStep({
   group,
-  isLast,
 }: {
   group: AgentGroup;
-  isLast: boolean;
 }) {
-  const theme = AGENT_THEMES[group.agentName] || DEFAULT_THEME;
-  const Icon = theme.icon;
+  const Icon = AGENT_ICONS[group.agentName] || Bot;
   const isSystem = group.agentName === "System";
   const [expanded, setExpanded] = useState(true);
 
@@ -213,14 +140,14 @@ function AgentStep({
 
   if (isSystem) {
     return (
-      <div className="space-y-0.5">
+      <div className="space-y-1.5">
         {group.events.map((ev, i) => (
           <div
             key={i}
-            className="flex items-center gap-2 text-xs text-muted-foreground animate-slide-in"
+            className="flex items-start gap-2.5 text-xs leading-5 text-muted-foreground"
           >
-            <CheckCircle2 className="w-3 h-3 text-positive shrink-0" />
-            <span className="truncate">{ev.message || ev.stage}</span>
+            <CheckCircle2 aria-hidden="true" className="mt-1 h-3 w-3 shrink-0 text-muted-foreground" />
+            <span className="min-w-0 break-words">{ev.message || ev.stage}</span>
             {ev.elapsed != null && (
               <span className="ml-auto text-[11px] text-muted-foreground tabular-nums shrink-0">
                 {ev.elapsed}s
@@ -233,126 +160,61 @@ function AgentStep({
   }
 
   return (
-    <div
-      className={cn(
-        "rounded-xl border transition-colors duration-200 animate-slide-in overflow-hidden",
-        group.isActive
-          ? `${theme.border} ${theme.bg}`
-          : "border-transparent bg-transparent"
-      )}
-    >
-      {/* Agent header */}
+    <div className="border-t border-border py-2 first:border-t-0 first:pt-0">
       <button
         type="button"
         onClick={toggleExpanded}
+        disabled={!hasDetail}
+        aria-expanded={hasDetail ? expanded : undefined}
         className={cn(
-          "flex items-center gap-2 w-full px-2.5 py-1.5 text-left",
-          hasDetail && "cursor-pointer hover:bg-foreground/[0.03]"
+          "flex w-full items-center gap-2.5 rounded-sm py-1.5 text-left outline-offset-4",
+          hasDetail && "cursor-pointer hover:bg-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary",
         )}
       >
-        <div
-          className={cn(
-            "w-6 h-6 rounded-full flex items-center justify-center shrink-0",
-            theme.bg
-          )}
-        >
-          {group.isActive ? (
-            <Loader2
-              className={cn("w-3 h-3 animate-spin", theme.accent)}
-            />
-          ) : (
-            <Icon
-              className={cn(
-                "w-3 h-3",
-                theme.accent
-              )}
-            />
-          )}
-        </div>
-        <span
-          className={cn(
-            "text-xs font-semibold truncate",
-            group.isActive ? theme.accent : "text-foreground"
-          )}
-        >
+        <Icon aria-hidden="true" className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+        <span className={cn("min-w-0 truncate text-xs font-medium", group.isActive ? "text-foreground" : "text-muted-foreground")}>
           {group.agentName}
         </span>
-        {group.isActive && (
-          <span className="flex items-center gap-1 ml-1">
-            <span className="w-1 h-1 rounded-full bg-current animate-pulse" />
-            <span
-              className="w-1 h-1 rounded-full bg-current animate-pulse"
-              style={{ animationDelay: "200ms" }}
-            />
-            <span
-              className="w-1 h-1 rounded-full bg-current animate-pulse"
-              style={{ animationDelay: "400ms" }}
-            />
-          </span>
-        )}
         {group.elapsed != null && (
-          <span className="ml-auto text-[11px] text-muted-foreground tabular-nums shrink-0">
+          <span className="ml-auto shrink-0 text-[11px] text-muted-foreground tabular-nums">
             {group.elapsed}s
           </span>
         )}
         {hasDetail && (
           <ChevronDown
+            aria-hidden="true"
             className={cn(
-              "w-3 h-3 text-muted-foreground shrink-0 transition-transform duration-200",
-              expanded && "rotate-180"
+              "h-3 w-3 shrink-0 text-muted-foreground transition-transform duration-200 motion-reduce:transition-none",
+              expanded && "rotate-180",
             )}
           />
         )}
       </button>
 
-      {/* Expanded detail */}
       {expanded && hasDetail && (
-        <div className="px-2.5 pb-2 space-y-1.5 animate-fade-in">
-          {/* Tool calls */}
+        <div className="space-y-3 pb-1 pl-6 pt-1">
           {group.toolCalls.length > 0 && (
-            <div className="space-y-0.5 ml-1">
+            <div className="space-y-1.5">
               {group.toolCalls.map((tc, i) => (
-                <div
-                  key={i}
-                  className="flex items-start gap-1.5 text-[11px] text-muted-foreground font-mono animate-slide-in"
-                  style={{ animationDelay: `${i * 50}ms` }}
-                >
+                <div key={i} className="flex items-start gap-2 text-xs leading-5 text-muted-foreground">
                   {tc.startsWith("→") ? (
-                    <FileText className="w-3 h-3 shrink-0 mt-px" />
+                    <FileText aria-hidden="true" className="mt-1 h-3 w-3 shrink-0" />
                   ) : (
-                    <Wrench className="w-3 h-3 shrink-0 mt-px" />
+                    <Wrench aria-hidden="true" className="mt-1 h-3 w-3 shrink-0" />
                   )}
-                  <span className="break-all">{tc}</span>
+                  <span className="min-w-0 break-words [overflow-wrap:anywhere]">{tc}</span>
                 </div>
               ))}
             </div>
           )}
 
-          {/* Thinking / Report detail */}
           {group.latestDetail && (
-            <div
-              className={cn(
-                "rounded-lg bg-foreground/[0.04] px-2.5 py-1.5 text-xs leading-relaxed",
-                group.isActive ? theme.text : "text-muted-foreground"
-              )}
-            >
-              <div className="flex items-center gap-1 mb-0.5">
-                <Brain className="w-2.5 h-2.5 opacity-60" />
-                <span className="text-[11px] font-medium opacity-70">
-                  {group.latestDetailType === "report_preview"
-                    ? "Report"
-                    : "Thinking"}
-                </span>
-              </div>
-              <div className="line-clamp-4">
-                {group.isActive ? (
-                  <TypewriterText
-                    text={group.latestDetail}
-                    active={group.isActive}
-                  />
-                ) : (
-                  group.latestDetail
-                )}
+            <div className="text-xs leading-6 text-muted-foreground">
+              <p className="mb-1 text-[11px] font-medium">
+                {group.latestDetailType === "report_preview" ? "Report" : "Thinking"}
+              </p>
+              <div className="line-clamp-4 break-words [overflow-wrap:anywhere]">
+                {group.latestDetail}
               </div>
             </div>
           )}
@@ -376,18 +238,18 @@ export function ProgressLog({
     const el = scrollRef.current;
     if (!el) return;
     requestAnimationFrame(() => {
-      el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
+      el.scrollTo({ top: el.scrollHeight, behavior: "auto" });
     });
   }, [groups.length, events.length]);
 
   return (
-    <div className="overflow-hidden rounded-xl bg-background">
-      <div className="flex items-center gap-2 border-b border-border px-3 py-2">
-        <span className="text-xs font-semibold text-foreground">Agent activity</span>
+    <div className="py-4">
+      <div className="mb-3 flex items-center gap-2">
+        <span className="text-xs font-medium text-muted-foreground">Agent activity</span>
         <div className="ml-auto flex items-center gap-1.5" aria-live="polite">
           <span
             className={cn(
-              "h-1.5 w-1.5 rounded-full",
+              "h-1 w-1 rounded-full",
               isLive ? "bg-positive-fill" : "bg-warning"
             )}
           />
@@ -400,13 +262,12 @@ export function ProgressLog({
       {/* Activity feed */}
       <div
         ref={scrollRef}
-        className="p-2.5 space-y-1.5 max-h-80 overflow-y-auto"
+        className="max-h-64 space-y-3 overflow-y-auto pr-2 [scrollbar-gutter:stable]"
       >
         {groups.map((group, i) => (
           <AgentStep
             key={`${group.agentName}-${i}`}
             group={group}
-            isLast={i === groups.length - 1}
           />
         ))}
       </div>

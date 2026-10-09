@@ -73,7 +73,10 @@ horizontal padding on mobile and 32px from the medium breakpoint. Published
 reports stay within 1080px; Creator Opinions retains a wider two-column layout.
 
 Markets, Creator Opinions and AI Research each have one primary navigation entry.
-The stock detail route belongs to Markets. Its existing K-line chart precedes
+The stock detail route belongs to Markets. `StockLookup` at the top of Markets
+uses the shared Input and Button to open any valid ticker, independently of
+creator coverage. Its inline validation and clear action follow the active locale.
+AI generation remains an explicit action on the stock detail page. Its existing K-line chart precedes
 the change summary, AI technical read and creator history. Latest news, the
 newest creator call and the linked position form the right rail on desktop;
 on narrow screens these sections follow the chart. Creator Opinions shows the first
@@ -229,3 +232,38 @@ before the event, tolerance from preceding candles, two consecutive closes for
 confirmation, a ten-bar retest window and a five-bar failed-break window. Wick
 rejection is separate from a close crossing. These are declared detection rules,
 not a guarantee that a future break or retest will occur.
+
+## Chart controls and result reading
+
+`PriceChart` supplies the two focus dialogs to `ChartView`'s AI control region.
+A model field constrained to 240px precedes the primary AI analysis action and
+secondary AI drawings action; both retain a fixed width while generating.
+Focus settings follow on a separate row. Narrow layouts wrap in the same DOM
+order. Generation is unavailable until a configured model is selected, with
+inline guidance and a settings link when keys are missing. The shared authored
+Select owns keyboard selection and a trigger-width, height-bounded popup.
+
+The advanced chart uses the shared `DialogContent` fullscreen layout variant.
+Its visible title and translated close action occupy a dedicated fixed header;
+only its body scrolls. Nested focus dialogs retain their existing draft,
+confirmation and Escape behavior. Default dialog geometry is unchanged.
+
+Written analysis leads with trend, direction and a 16px/28px conclusion.
+`AnalysisSummary` is shared with the stock technical section: long conclusions
+show four lines with an explicit expansion action that retains the full text.
+Invalidation remains visible, followed by key prices; price explanations,
+technical findings and indicator/trendline details use native disclosures.
+Secondary actions follow the report rather than competing with its heading.
+Conditional drawing plans lead with the entry range, stop, targets and ratio in
+a wrapping data strip. Their full rationale and signal detection rules expand
+in document flow. Body explanations use 14px/28px text and a 72ch maximum
+measure; metadata uses 12px/20px. Existing content, attribution, saved history,
+theme tokens and Chinese/English messages remain authoritative.
+
+### Canonical UI Map for chart analysis
+
+| Capability | Canonical owner | Source of truth | Allowed variants | Verification |
+|---|---|---|---|---|
+| Select/Listbox | `components/ui/select.tsx` | DESIGN.md; `lib/aiModels.ts` catalogue | Authored Radix model and interval selectors | Browser keyboard, popup width, collision and bounded scrolling |
+| Overlay | `components/ui/dialog.tsx` | DESIGN.md; `PriceChart` and focus draft behavior | Default dialog; fullscreen chart with a header close action | Browser nested Escape, close, focus restoration and narrow layout |
+| Disclosure | Native details; `AnalysisSummary` | Saved analysis payload | Technical evidence, plan rationale and full conclusion | Browser expand/collapse and long content |

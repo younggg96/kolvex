@@ -84,7 +84,7 @@ export default function CreatorIntelligence({
       ) : error ? (
         <div role="alert"><Empty action={onRetry && <Button variant="outline" size="sm" onClick={onRetry}>{t("common.retry")}</Button>}>{c("Creator opinions could not be loaded.", "暂时无法加载博主观点。")}</Empty></div>
       ) : !history.length ? (
-        <Empty action={<TextLink href="/dashboard/youtube-opinions">{c("Browse creators", "浏览博主观点")}</TextLink>}>{c("No creator opinions for this stock yet.", "这只股票暂时没有博主观点。")}</Empty>
+        <Empty action={<TextLink href="/dashboard/youtube-opinions">{c("Browse creators", "浏览博主观点")}</TextLink>}>{c("No creator opinions for this stock yet. You can still use AI analysis and AI research on this page.", "这只股票暂时没有博主观点，仍可在本页使用 AI 分析和 AI 研究。")}</Empty>
       ) : (
         <>
           <div className="mt-5 creator-opinion-groups grid items-start gap-4">

@@ -2,7 +2,9 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { addDays, differenceInCalendarDays, format, subMonths } from "date-fns";
-import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogClose, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { X } from "lucide-react";
 import { getYouTubeStockDetail, type YouTubeOpinion } from "@/lib/youtubeOpinionsApi";
 import type { PriceHistoryParams, AiTechnicalAnalysis } from "@/lib/stockApi";
 import { useSyncedDrawings, type Drawing } from "./chartDrawings";
@@ -135,6 +137,7 @@ export default function PriceChart({
   const [advancedOpen, setAdvancedOpen] = useState(false);
   useEffect(() => { if (!advancedOpen) setAdvancedBusy(false); }, [advancedOpen]);
   const escapeRef = useRef<(() => boolean) | null>(null);
+  const advancedTriggerRef = useRef<HTMLElement | null>(null);
   const params = historyParams(range, from, to, opinions[0]?.date);
 
   useEffect(() => {
@@ -189,28 +192,46 @@ export default function PriceChart({
     snapshotBars: historicalSnapshot?.bars,
     technicalFocus,
     drawingFocus,
+    focusControls: <>
+      <TechnicalFocusSelector value={technicalFocus} onChange={setTechnicalFocus} disabled={analysisBusy} t={t} />
+      <TechnicalFocusSelector drawings value={drawingFocus} onChange={setDrawingFocus} disabled={analysisBusy} t={t} />
+    </>,
   };
 
   return (
     <>
-      <div className="mb-4 grid gap-x-6 border-b border-border sm:grid-cols-2"><TechnicalFocusSelector value={technicalFocus} onChange={setTechnicalFocus} disabled={analysisBusy} t={t} /><TechnicalFocusSelector drawings value={drawingFocus} onChange={setDrawingFocus} disabled={analysisBusy} t={t} /></div>
-      <ChartView mode="compact" onAnalysisBusy={setCompactBusy} generationRequest={generationRequest} drawingRequest={drawingRequest} {...shared} onOpenAdvanced={() => setAdvancedOpen(true)} />
+      <ChartView mode="compact" onAnalysisBusy={setCompactBusy} generationRequest={generationRequest} drawingRequest={drawingRequest} {...shared} onOpenAdvanced={() => {
+        advancedTriggerRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+        setAdvancedOpen(true);
+      }} />
       <AnalysisHistory history={analysisHistory} />
       <AnalysisHistory history={drawingHistory} drawings />
       {selectedHistory.selected && <SavedAnalysisData key={selectedHistory.selected.id} version={selectedHistory.selected} />}
       <Dialog open={advancedOpen} onOpenChange={setAdvancedOpen}>
         <DialogContent
+          layout="fullscreen"
+          showCloseButton={false}
+          onCloseAutoFocus={(event) => {
+            event.preventDefault();
+            advancedTriggerRef.current?.focus();
+          }}
           onEscapeKeyDown={(event) => {
             if (escapeRef.current?.()) event.preventDefault();
           }}
-          className="left-0 top-0 flex h-[100dvh] max-h-none w-screen max-w-none translate-x-0 translate-y-0 flex-col overflow-y-auto rounded-none px-3 pb-3 pt-4 data-[state=closed]:zoom-out-100 data-[state=open]:zoom-in-100 sm:px-6"
+          className="flex flex-col"
         >
-          <DialogTitle className="sr-only">{t("youtubeOpinions.advancedChartTitle", { symbol })}</DialogTitle>
+          <header className="flex shrink-0 items-center justify-between gap-4 border-b border-border px-4 py-3 sm:px-6">
+            <DialogTitle>{t("youtubeOpinions.advancedChartTitle", { symbol })}</DialogTitle>
+            <DialogClose asChild>
+              <Button type="button" variant="ghost" size="icon" aria-label={t("common.close")}>
+                <X className="h-5 w-5" aria-hidden="true" />
+              </Button>
+            </DialogClose>
+          </header>
           <DialogDescription className="sr-only">{t("youtubeOpinions.zoomHint")}</DialogDescription>
-          {advancedOpen && <>
-            <div className="mb-4 grid gap-x-6 border-b border-border sm:grid-cols-2"><TechnicalFocusSelector value={technicalFocus} onChange={setTechnicalFocus} disabled={analysisBusy} t={t} /><TechnicalFocusSelector drawings value={drawingFocus} onChange={setDrawingFocus} disabled={analysisBusy} t={t} /></div>
+          {advancedOpen && <div className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-6">
             <ChartView mode="advanced" onAnalysisBusy={setAdvancedBusy} {...shared} escapeRef={escapeRef} />
-          </>}
+          </div>}
         </DialogContent>
       </Dialog>
     </>

@@ -24,8 +24,8 @@ logger = logging.getLogger(__name__)
 
 PROVIDER_ORDER = ["openai", "anthropic", "deepseek", "gemini", "qwen", "kimi", "grok"]
 PROVIDER_MODELS = {
-    "openai": "gpt-4o-mini",
-    "anthropic": "claude-haiku-4-5",
+    "openai": "gpt-6-luna",
+    "anthropic": "claude-haiku-5-5",
     **{name: config["default_model"] for name, config in OPENAI_COMPATIBLE_PROVIDERS.items()},
 }
 

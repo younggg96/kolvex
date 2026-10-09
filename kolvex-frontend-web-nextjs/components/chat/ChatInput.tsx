@@ -78,7 +78,7 @@ function ModelSelector({
 
   // Check if a model's provider is available
   const isModelAvailable = (model: AIModelConfig): boolean => {
-    if (!availableProviders) return true; // Still loading → show all as enabled
+    if (!availableProviders) return false; // Wait for user key availability
     const backendId = PROVIDER_NAME_TO_ID[model.provider];
     return backendId ? availableProviders.includes(backendId) : false;
   };
@@ -254,7 +254,7 @@ export function ChatInput({
   onToggleSource,
   showSourceToggle = true,
   inputRef: externalRef,
-  selectedModel = "deepseek-chat",
+  selectedModel = "deepseek-flash",
   onSelectModel,
   showModelSelector = true,
   availableProviders,
@@ -306,7 +306,7 @@ export function ChatInput({
 
   // Check if current model's provider is available
   const isCurrentModelAvailable = (() => {
-    if (!availableProviders) return true; // still loading
+    if (!availableProviders) return false; // still loading
     const currentConfig = MODEL_CONFIGS.find((m) => m.id === selectedModel);
     if (!currentConfig) return false;
     const backendId = PROVIDER_NAME_TO_ID[currentConfig.provider];
@@ -344,12 +344,12 @@ export function ChatInput({
   const isBlocked = availableProviders !== undefined && !hasAnyModel;
 
   // Send is disabled when: empty text, loading, or no available model
-  const isSendDisabled = !value.trim() || isLoading || isBlocked;
+  const isSendDisabled = !value.trim() || isLoading || isBlocked || !isCurrentModelAvailable;
 
   // Block form submit when no API keys
   const handleFormSubmit = (e?: React.FormEvent) => {
     e?.preventDefault();
-    if (isBlocked) return;
+    if (isSendDisabled) return;
     onSubmit(e);
   };
 
@@ -363,7 +363,7 @@ export function ChatInput({
   };
 
   return (
-    <form onSubmit={handleFormSubmit}>
+    <form noValidate onSubmit={handleFormSubmit}>
       {/* Need API key prompt when user has not configured any keys */}
       {availableProviders !== undefined && !hasAnyModel && (
         <div role="status" className="mb-3 rounded-2xl bg-warning/10 px-4 py-3">

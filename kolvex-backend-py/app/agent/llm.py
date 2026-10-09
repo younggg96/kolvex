@@ -32,32 +32,32 @@ OPENAI_COMPATIBLE_PROVIDERS = {
     "deepseek": {
         "base_url": "https://api.deepseek.com/v1",
         "get_api_key": lambda: DEEPSEEK_API_KEY,
-        "default_model": "deepseek-chat",
-        "fast_model": "deepseek-chat",
+        "default_model": "deepseek-v4-pro",
+        "fast_model": "deepseek-flash",
     },
     "qwen": {
         "base_url": "https://dashscope.aliyuncs.com/compatible-mode/v1",
         "get_api_key": lambda: QWEN_API_KEY,
-        "default_model": "qwen-plus",
-        "fast_model": "qwen-turbo",
+        "default_model": "qwen3.8-max",
+        "fast_model": "qwen3.8-flash",
     },
     "gemini": {
         "base_url": "https://generativelanguage.googleapis.com/v1beta/openai/",
         "get_api_key": lambda: GOOGLE_API_KEY,
-        "default_model": "gemini-2.5-pro",
-        "fast_model": "gemini-2.0-flash",
+        "default_model": "gemini-3.8-flash",
+        "fast_model": "gemini-3.8-flash",
     },
     "kimi": {
         "base_url": "https://api.moonshot.cn/v1",
         "get_api_key": lambda: KIMI_API_KEY,
-        "default_model": "moonshot-v1-8k",
-        "fast_model": "moonshot-v1-8k",
+        "default_model": "kimi-k3",
+        "fast_model": "kimi-k3",
     },
     "grok": {
         "base_url": "https://api.x.ai/v1",
         "get_api_key": lambda: GROK_API_KEY,
-        "default_model": "grok-3",
-        "fast_model": "grok-3-fast",
+        "default_model": "grok-4.7",
+        "fast_model": "grok-4.7",
     },
 }
 
@@ -103,15 +103,8 @@ def _create_llm(
     """
     根据 provider 创建对应的 LLM 实例
 
-    支持的 provider:
-    - openai: OpenAI GPT 系列 (gpt-4o, gpt-4o-mini, etc.)
-    - anthropic: Anthropic Claude 系列 (claude-3.5-sonnet, claude-3-haiku, etc.)
-    - ollama: 本地 Ollama 模型 (llama3.1, gemma2, etc.)
-    - deepseek: DeepSeek (deepseek-chat, deepseek-reasoner)
-    - qwen: 阿里通义千问 (qwen-plus, qwen-turbo, qwen-max, etc.)
-    - gemini: Google Gemini (gemini-2.5-pro, gemini-2.0-flash, etc.)
-    - kimi: Moonshot Kimi (moonshot-v1-8k, moonshot-v1-32k, etc.)
-    - grok: xAI Grok (grok-3, grok-3-fast, etc.)
+    支持 OpenAI, Anthropic, Ollama 以及 OPENAI_COMPATIBLE_PROVIDERS。
+    当前用户可选型号统一由 MODEL_TO_PROVIDER 定义。
 
     Args:
         provider: LLM provider 名称
@@ -132,7 +125,7 @@ def _create_llm(
         api_key = _resolve_api_key("openai", user_api_keys) or OPENAI_API_KEY
         return ChatOpenAI(
             model=model,
-            temperature=temperature,
+            temperature=None if model.startswith("gpt-6") else temperature,
             api_key=api_key,
             **kwargs,
         )
@@ -144,7 +137,7 @@ def _create_llm(
         api_key = _resolve_api_key("anthropic", user_api_keys) or ANTHROPIC_API_KEY
         return ChatAnthropic(
             model=model,
-            temperature=temperature,
+            temperature=None if model.startswith("claude-") and model in MODEL_TO_PROVIDER else temperature,
             api_key=api_key,
             **kwargs,
         )
@@ -173,9 +166,15 @@ def _create_llm(
                 f"Please set the corresponding API key in Settings or .env"
             )
 
-        return ChatOpenAI(
+        if provider in {"deepseek", "kimi"}:
+            from app.agent.thinking_chat import ThinkingChatOpenAI
+            chat_class = ThinkingChatOpenAI
+        else:
+            chat_class = ChatOpenAI
+
+        return chat_class(
             model=model,
-            temperature=temperature,
+            temperature=None if provider in {"kimi", "gemini", "grok"} else temperature,
             api_key=api_key,
             base_url=config["base_url"],
             **kwargs,
@@ -272,8 +271,8 @@ def get_fast_llm(
         **kwargs: 额外参数
     """
     fast_models = {
-        "openai": "gpt-4o-mini",
-        "anthropic": "claude-haiku-4-5",
+        "openai": "gpt-6-luna",
+        "anthropic": "claude-haiku-5-5",
         "ollama": LLM_MODEL or "gemma2:2b",
     }
 
@@ -290,9 +289,9 @@ def get_fast_llm(
         logger.warning(f"Fast LLM ({provider}/{model}) creation failed: {e}")
         # Fallback 顺序: deepseek → openai → gemini
         fallback_chain = [
-            ("deepseek", "deepseek-chat", DEEPSEEK_API_KEY),
-            ("openai", "gpt-4o-mini", OPENAI_API_KEY),
-            ("gemini", "gemini-2.0-flash", GOOGLE_API_KEY),
+            ("deepseek", "deepseek-flash", DEEPSEEK_API_KEY),
+            ("openai", "gpt-6-luna", OPENAI_API_KEY),
+            ("gemini", "gemini-3.8-flash", GOOGLE_API_KEY),
         ]
         for fb_provider, fb_model, fb_key in fallback_chain:
             if fb_key and fb_provider != provider:
@@ -305,75 +304,28 @@ def get_fast_llm(
         raise
 
 
-# ==================== Model ID → Provider 解析 ====================
-# 前端传来的 model ID（如 "gpt-4o-mini"）需要解析成 (provider, model) 对
-
+# API model IDs verified against provider documentation on 2026-10-09.
 MODEL_TO_PROVIDER: dict[str, str] = {
-    # OpenAI
-    "gpt-4o": "openai",
-    "gpt-4o-mini": "openai",
-    "gpt-4-turbo": "openai",
-    "o1": "openai",
-    "o1-mini": "openai",
-    "o3-mini": "openai",
-    # Anthropic (current Claude 4.x models)
-    "claude-opus-4-6": "anthropic",
-    "claude-sonnet-4-5": "anthropic",
-    "claude-sonnet-4-5-20250929": "anthropic",
-    "claude-haiku-4-5": "anthropic",
-    "claude-haiku-4-5-20251001": "anthropic",
-    # Anthropic (legacy aliases - 前端可能还在用)
-    "claude-3.5-sonnet": "anthropic",
-    "claude-3.5-haiku": "anthropic",
-    # DeepSeek
-    "deepseek-chat": "deepseek",
-    "deepseek-reasoner": "deepseek",
-    # Qwen
-    "qwen-turbo": "qwen",
-    "qwen-plus": "qwen",
-    "qwen-max": "qwen",
-    # Gemini
-    "gemini-2.5-pro": "gemini",
-    "gemini-2.0-flash": "gemini",
-    "gemini-1.5-pro": "gemini",
-    # Kimi (Moonshot)
-    "moonshot-v1-8k": "kimi",
-    "moonshot-v1-32k": "kimi",
-    "moonshot-v1-128k": "kimi",
-    # Grok (xAI)
-    "grok-3": "grok",
-    "grok-3-fast": "grok",
-}
-
-# Anthropic 的前端 model ID 需要映射为 API 实际模型名
-# 旧名称 → 当前有效的 API 模型名
-_ANTHROPIC_MODEL_MAP = {
-    "claude-3.5-sonnet": "claude-sonnet-4-5",
-    "claude-3.5-haiku": "claude-haiku-4-5",
-    "claude-3-5-sonnet-20241022": "claude-sonnet-4-5",
-    "claude-3-haiku-20240307": "claude-haiku-4-5",
+    "deepseek-flash": "deepseek",
+    "deepseek-v4-pro": "deepseek",
+    "gpt-6-astra": "openai",
+    "gpt-6.1-sol": "openai",
+    "gpt-6-luna": "openai",
+    "claude-fable-5-1": "anthropic",
+    "claude-opus-5-5": "anthropic",
+    "claude-sonnet-5-5": "anthropic",
+    "claude-haiku-5-5": "anthropic",
+    "gemini-3.8-flash": "gemini",
+    "gemini-3.1-pro-preview": "gemini",
+    "qwen3.8-max": "qwen",
+    "qwen3.7-plus": "qwen",
+    "qwen3.8-flash": "qwen",
+    "kimi-k3": "kimi",
+    "grok-4.7": "grok"
 }
 
 
 def resolve_model_id(model_id: Optional[str]) -> tuple[Optional[str], Optional[str]]:
-    """
-    解析前端传来的 model ID，返回 (provider, api_model_name)
-
-    Args:
-        model_id: 前端 model ID（如 "gpt-4o-mini", "deepseek-chat"）
-
-    Returns:
-        (provider, model) 元组。若无法解析，返回 (None, None) 表示使用默认配置
-    """
-    if not model_id:
-        return None, None
-
-    provider = MODEL_TO_PROVIDER.get(model_id)
-    if not provider:
-        logger.warning(f"Unknown model_id: {model_id}, using server default")
-        return None, None
-
-    # Anthropic 前端名 → API 名映射
-    api_model = _ANTHROPIC_MODEL_MAP.get(model_id, model_id)
-
-    return provider, api_model
+    """Resolve current selectable models; retired IDs are no longer accepted."""
+    provider = MODEL_TO_PROVIDER.get(model_id or "")
+    return (provider, model_id) if provider else (None, None)

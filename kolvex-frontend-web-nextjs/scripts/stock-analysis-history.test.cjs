@@ -69,7 +69,8 @@ test('PriceChart keeps text analysis and AI overlays in independent history chan
   const element=(type,props)=>({type,props});
   const h=compile('components/youtube/PriceChart.tsx',{
     react,'react/jsx-runtime':{jsx:element,jsxs:element,Fragment:'fragment'},'date-fns':require('date-fns'),
-    '@/components/ui/dialog':{Dialog:'dialog',DialogContent:'content',DialogDescription:'description',DialogTitle:'title'},
+    '@/components/ui/dialog':{Dialog:'dialog',DialogClose:'close',DialogContent:'content',DialogDescription:'description',DialogTitle:'title'},
+    '@/components/ui/button':{Button:'button'},'lucide-react':{X:'icon'},
     '@/lib/youtubeOpinionsApi':{getYouTubeStockDetail:async()=>({opinions:[]})},
     './chartDrawings':{useSyncedDrawings:()=>({drawings:[],setDrawings:()=>{},status:'synced'})},
     '@/components/decision/SavedAnalysisData':{default:'data'},

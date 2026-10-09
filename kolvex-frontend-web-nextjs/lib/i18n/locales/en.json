@@ -1209,6 +1209,12 @@
     "ai": {
       "button": "AI lines",
       "actions": "AI chart actions",
+      "modelLabel": "AI model",
+      "readMore": "Read full conclusion",
+      "readLess": "Collapse conclusion",
+      "supportingDetails": "Indicators and trendlines",
+      "planReason": "Rationale and trigger conditions",
+      "signalRules": "View signal detection rules",
       "analysisButton": "AI analysis",
       "runAnalysis": "Generate a written analysis of the visible window without drawing overlays",
       "runDrawings": "Generate support, resistance, trendlines and Fibonacci drawings",

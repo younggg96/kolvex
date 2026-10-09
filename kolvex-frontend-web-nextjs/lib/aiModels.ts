@@ -1,112 +1,103 @@
 import type { AIModel, AIModelConfig } from "@/components/chat/types";
 
-// Model configurations
+// API model IDs verified against provider documentation on 2026-10-09.
 export const MODEL_CONFIGS: AIModelConfig[] = [
-  // ---- DeepSeek (默认, 性价比高) ----
   {
-    id: "deepseek-chat",
-    name: "DeepSeek Chat",
-    provider: "DeepSeek",
-    description: "Cost effective, default",
+    "id": "deepseek-flash",
+    "name": "DeepSeek V4.1 Flash",
+    "provider": "DeepSeek",
+    "isPro": false
   },
   {
-    id: "deepseek-reasoner",
-    name: "DeepSeek R1",
-    provider: "DeepSeek",
-    description: "Advanced reasoning",
-    isPro: true,
-  },
-  // ---- OpenAI ----
-  {
-    id: "gpt-4o",
-    name: "GPT-4o",
-    provider: "OpenAI",
-    description: "Most capable OpenAI model",
-    isPro: true,
+    "id": "deepseek-v4-pro",
+    "name": "DeepSeek V4 Pro",
+    "provider": "DeepSeek",
+    "isPro": true
   },
   {
-    id: "gpt-4o-mini",
-    name: "GPT-4o Mini",
-    provider: "OpenAI",
-    description: "Fast and efficient",
-  },
-  // ---- Anthropic (Claude 4.x) ----
-  {
-    id: "claude-opus-4-6",
-    name: "Claude Opus 4.6",
-    provider: "Anthropic",
-    description: "Most intelligent model",
-    isPro: true,
+    "id": "gpt-6-astra",
+    "name": "GPT-6 Astra",
+    "provider": "OpenAI",
+    "isPro": true
   },
   {
-    id: "claude-sonnet-4-5",
-    name: "Claude Sonnet 4.5",
-    provider: "Anthropic",
-    description: "Speed & intelligence balance",
-    isPro: true,
+    "id": "gpt-6.1-sol",
+    "name": "GPT-6.1 Sol",
+    "provider": "OpenAI",
+    "isPro": true
   },
   {
-    id: "claude-haiku-4-5",
-    name: "Claude Haiku 4.5",
-    provider: "Anthropic",
-    description: "Fastest Claude model",
-  },
-  // ---- Google Gemini ----
-  {
-    id: "gemini-2.5-pro",
-    name: "Gemini 2.5 Pro",
-    provider: "Google",
-    description: "Most capable Google model",
-    isPro: true,
+    "id": "gpt-6-luna",
+    "name": "GPT-6 Luna",
+    "provider": "OpenAI",
+    "isPro": false
   },
   {
-    id: "gemini-2.0-flash",
-    name: "Gemini 2.0 Flash",
-    provider: "Google",
-    description: "Fast and latest",
-  },
-  // ---- Qwen ----
-  {
-    id: "qwen-max",
-    name: "Qwen Max",
-    provider: "Qwen",
-    description: "Alibaba's most powerful",
-    isPro: true,
+    "id": "claude-fable-5-1",
+    "name": "Claude Fable 5.1",
+    "provider": "Anthropic",
+    "isPro": true
   },
   {
-    id: "qwen-plus",
-    name: "Qwen Plus",
-    provider: "Qwen",
-    description: "Balanced performance",
-  },
-  // ---- Kimi (Moonshot) ----
-  {
-    id: "moonshot-v1-128k",
-    name: "Kimi 128K",
-    provider: "Kimi",
-    description: "Ultra-long context",
-    isPro: true,
+    "id": "claude-opus-5-5",
+    "name": "Claude Opus 5.5",
+    "provider": "Anthropic",
+    "isPro": true
   },
   {
-    id: "moonshot-v1-8k",
-    name: "Kimi 8K",
-    provider: "Kimi",
-    description: "Fast Kimi model",
-  },
-  // ---- Grok (xAI) ----
-  {
-    id: "grok-3",
-    name: "Grok 3",
-    provider: "xAI",
-    description: "xAI flagship model",
-    isPro: true,
+    "id": "claude-sonnet-5-5",
+    "name": "Claude Sonnet 5.5",
+    "provider": "Anthropic",
+    "isPro": true
   },
   {
-    id: "grok-3-fast",
-    name: "Grok 3 Fast",
-    provider: "xAI",
-    description: "Fast Grok model",
+    "id": "claude-haiku-5-5",
+    "name": "Claude Haiku 5.5",
+    "provider": "Anthropic",
+    "isPro": false
   },
+  {
+    "id": "gemini-3.8-flash",
+    "name": "Gemini 3.8 Flash",
+    "provider": "Google",
+    "isPro": true
+  },
+  {
+    "id": "gemini-3.1-pro-preview",
+    "name": "Gemini 3.1 Pro (Preview)",
+    "provider": "Google",
+    "isPro": true
+  },
+  {
+    "id": "qwen3.8-max",
+    "name": "Qwen 3.8 Max",
+    "provider": "Qwen",
+    "isPro": true
+  },
+  {
+    "id": "qwen3.7-plus",
+    "name": "Qwen 3.7 Plus",
+    "provider": "Qwen",
+    "isPro": false
+  },
+  {
+    "id": "qwen3.8-flash",
+    "name": "Qwen 3.8 Flash",
+    "provider": "Qwen",
+    "isPro": false
+  },
+  {
+    "id": "kimi-k3",
+    "name": "Kimi K3",
+    "provider": "Kimi",
+    "isPro": true
+  },
+  {
+    "id": "grok-4.7",
+    "name": "Grok 4.7",
+    "provider": "xAI",
+    "isPro": true
+  }
 ];
 
 // Map frontend display provider name → backend provider ID

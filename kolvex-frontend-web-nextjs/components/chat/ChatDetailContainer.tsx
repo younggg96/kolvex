@@ -56,7 +56,7 @@ function saveSources(conversationId: string, sources: SearchSource[]) {
 function loadSavedModel(conversationId: string): AIModel | null {
   try {
     const raw = localStorage.getItem(`${PREFS_MODEL_KEY}:${conversationId}`);
-    if (raw) return raw as AIModel;
+    if (raw && MODEL_CONFIGS.some((model) => model.id === raw)) return raw as AIModel;
   } catch {}
   return null;
 }
@@ -135,10 +135,10 @@ export function ChatDetailContainer({
   });
 
   const [selectedModel, setSelectedModel] = useState<AIModel>(() => {
-    if (initialModel) return initialModel as AIModel;
+    if (initialModel && MODEL_CONFIGS.some((model) => model.id === initialModel)) return initialModel as AIModel;
     const saved = loadSavedModel(conversationId);
     if (saved) return saved;
-    return "deepseek-chat";
+    return "deepseek-flash";
   });
   const [activeTools, setActiveTools] = useState<ToolStatus[]>([]);
   const { availableProviders } = useAvailableProviders();

@@ -4,13 +4,13 @@ Kolvex presents creator opinions, market data, AI analysis and linked holdings f
 
 ## Reader flow
 
-1. Browse stock lists in Markets and open a ticker under `/dashboard/market/[ticker]`.
+1. Browse stock lists in Markets or enter a stock code at the top of Markets to open `/dashboard/market/[ticker]`. Lookup trims whitespace, normalizes lowercase codes, and uses the same ticker validation as the detail route. It does not require creator coverage.
 2. Read the K-line chart, change summary, AI technical analysis and chart drawings, then creator distribution and historical views. The right rail contains latest stock news, the latest creator call and the user's linked position.
 3. Browse Creator Opinions for stock and creator directories, weekly changes and creator views on linked holdings. Read published AI Research reports without entering a ticker, selecting a model or supplying an API key.
 4. Open Updates (`/dashboard/journal`, kept for link compatibility) for imported opinion changes and recent opinions. Switch between all stocks and linked equity holdings using buttons.
 5. Portfolio automatically matches available creator updates to existing equity holdings.
 
-Markets, Creator Opinions, AI Research and Updates do not show personal thesis prompts or ticker-entry forms. Ask Kolvex opens from the sidebar, header, or ⌘K. The question is sent as written. Opinions, quotes, and holdings already loaded on the page go to the model as evidence and appear in the composer as a removable label; they are not written into the conversation. Settings, authentication, brokerage linking and admin publishing remain operational controls rather than information-entry requirements for reading research. Existing chat URLs remain accessible.
+Markets, Creator Opinions, AI Research and Updates do not show personal thesis prompts. Markets offers an optional ticker lookup for direct stock navigation. Ask Kolvex opens from the sidebar, header, or ⌘K. The question is sent as written. Opinions, quotes, and holdings already loaded on the page go to the model as evidence and appear in the composer as a removable label; they are not written into the conversation. Settings, authentication, brokerage linking and admin publishing remain operational controls rather than information-entry requirements for reading research. Existing chat URLs remain accessible.
 
 ## Stock-page creator intelligence
 
@@ -46,7 +46,7 @@ expansion controls expose expanded state. The component uses existing translated
 labels, semantic theme tokens and visible keyboard focus. Reduced-motion
 preferences govern the card-to-reader scroll. Loading shows skeletons, a failed
 opinion request shows an error with retry, and missing opinions show a browse
-creators action. Changing the ticker resets this component's selection and
+creators action and explain that AI analysis and research remain available. Changing the ticker resets this component's selection and
 expansion through its keyed mount.
 
 ## Sources and limits

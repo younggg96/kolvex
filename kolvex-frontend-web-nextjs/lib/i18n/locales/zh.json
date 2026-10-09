@@ -1209,6 +1209,12 @@
     "ai": {
       "button": "AI 画线",
       "actions": "AI 图表操作",
+      "modelLabel": "AI 模型",
+      "readMore": "展开完整结论",
+      "readLess": "收起结论",
+      "supportingDetails": "指标与趋势线",
+      "planReason": "计划依据与触发条件",
+      "signalRules": "查看信号判定规则",
       "analysisButton": "AI 分析",
       "runAnalysis": "生成当前可见区间的文字分析和指标解读，不自动画线",
       "runDrawings": "仅生成支撑、阻力、趋势线和斐波那契画线",

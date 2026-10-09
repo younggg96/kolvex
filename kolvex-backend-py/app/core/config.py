@@ -74,7 +74,7 @@ class Settings(BaseSettings):
     # ==================== LangGraph AI Agent 配置 ====================
     # 支持: openai | anthropic | ollama | deepseek | qwen | gemini | kimi | grok
     LLM_PROVIDER: str = os.getenv("LLM_PROVIDER", "openai")
-    LLM_MODEL: str = os.getenv("LLM_MODEL", "gpt-4o-mini")
+    LLM_MODEL: str = os.getenv("LLM_MODEL", "gpt-6-luna")
     LLM_TEMPERATURE: float = float(os.getenv("LLM_TEMPERATURE", "0.7"))
     LLM_FALLBACK_PROVIDER: str = os.getenv("LLM_FALLBACK_PROVIDER", "")
     LLM_FALLBACK_MODEL: str = os.getenv("LLM_FALLBACK_MODEL", "")

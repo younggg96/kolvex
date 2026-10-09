@@ -11,6 +11,7 @@ import {
   useRef,
   useState,
   type ComponentType,
+  type ReactNode,
   type KeyboardEvent,
   type MutableRefObject,
   type PointerEvent,
@@ -108,7 +109,7 @@ const SNAP_PX = 12;
 const MIN_BARS = 8;
 const HEIGHT_CLASS: Record<Mode, string> = {
   compact: "h-[260px] sm:h-[320px]",
-  advanced: "h-[calc(100dvh-210px)] min-h-[320px]",
+  advanced: "h-[calc(100dvh-320px)] min-h-[320px]",
 };
 const defaultIndicators: Record<Mode, IndicatorKey[]> = {
   compact: ["volume"],
@@ -206,6 +207,7 @@ export interface ChartViewProps {
   generationRequest?: number;
   technicalFocus?: TechnicalFocus;
   drawingFocus?: TechnicalFocus;
+  focusControls?: ReactNode;
   onAnalysisBusy?: (busy: boolean) => void;
   /** Advanced mode runs inside a dialog that owns Escape; this lets the chart consume it first. */
   escapeRef?: MutableRefObject<(() => boolean) | null>;
@@ -239,6 +241,7 @@ export default function ChartView({
   technicalFocus = DEFAULT_TECHNICAL_FOCUS,
   drawingFocus = DEFAULT_DRAWING_FOCUS,
   onAnalysisBusy,
+  focusControls,
   escapeRef,
 }: ChartViewProps) {
   const advanced = mode === "advanced";
@@ -916,7 +919,7 @@ export default function ChartView({
   const lastTone = last && last.close >= (bars?.[count - 2]?.close ?? last.open) ? "positive" : "negative";
 
   return (
-    <div className={cn("min-w-0", advanced && "flex h-full flex-col")}>
+    <div className={cn("min-w-0", advanced && "flex flex-col")}>
       {advanced && (
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2 pr-10">
           <h2 className="text-lg font-semibold">{symbol}</h2>
@@ -983,40 +986,53 @@ export default function ChartView({
         )}
       </div>
 
-      <div className="mt-3 flex flex-wrap gap-2" role="group" aria-label={t("youtubeOpinions.ai.actions")}>
-        <Select value={modelReady ? selectedModel : ""} onValueChange={setSelectedModel} onOpenChange={(open) => { if (open) void refreshProviders(); }} disabled={providersLoading || aiBusy || ai.status === "loading" || drawingAi.status === "loading"}>
-          <SelectTrigger aria-label={t("youtubeOpinions.ai.selectModel")} className="h-8 w-[220px] max-w-full text-xs">
-            <SelectValue placeholder={t("youtubeOpinions.ai.selectModel")} />
-          </SelectTrigger>
-          <SelectContent>
-            {MODEL_CONFIGS.map((model) => <SelectItem key={model.id} value={model.id} disabled={!availableProviders?.includes(PROVIDER_NAME_TO_ID[model.provider])}>{model.name}</SelectItem>)}
-          </SelectContent>
-        </Select>
-        <Button size="sm" variant="outline" className="min-w-[104px]" onClick={() => void runAi("analysis")}
-          disabled={!loaded || providersLoading || aiBusy || ai.status === "loading" || drawingAi.status === "loading"}
-          title={t("youtubeOpinions.ai.runAnalysis")}>
-          {ai.status === "loading" ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <ScanSearch className="mr-1.5 h-3.5 w-3.5" />}
-          {t(ai.status === "loading" ? "youtubeOpinions.ai.analysisLoading" : "youtubeOpinions.ai.analysisButton")}
-        </Button>
-        <Button size="sm" variant="outline" className="min-w-[104px]" onClick={() => void runAi("drawings")}
-          disabled={!loaded || providersLoading || aiBusy || ai.status === "loading" || drawingAi.status === "loading"}
-          title={t("youtubeOpinions.ai.runDrawings")}>
-          {drawingAi.status === "loading" ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <GanttChart className="mr-1.5 h-3.5 w-3.5" />}
-          {t(drawingAi.status === "loading" ? "youtubeOpinions.ai.drawingLoading" : "youtubeOpinions.ai.button")}
-        </Button>
+      <div className="mt-4 border-y border-border py-3" role="group" aria-label={t("youtubeOpinions.ai.actions")}>
+        <div className="flex flex-wrap items-end gap-3">
+          <label className="flex w-60 min-w-0 max-w-full flex-col gap-1.5">
+            <span className="text-xs font-medium text-muted-foreground">{t("youtubeOpinions.ai.modelLabel")}</span>
+            <Select value={modelReady ? selectedModel : ""} onValueChange={setSelectedModel}
+              onOpenChange={(open) => { if (open) void refreshProviders(); }}
+              disabled={providersLoading || aiBusy || ai.status === "loading" || drawingAi.status === "loading"}>
+              <SelectTrigger aria-label={t("youtubeOpinions.ai.selectModel")}>
+                <SelectValue placeholder={t("youtubeOpinions.ai.selectModel")} />
+              </SelectTrigger>
+              <SelectContent style={{ width: "var(--radix-select-trigger-width)", maxHeight: "min(20rem, var(--radix-select-content-available-height))" }}>
+                {MODEL_CONFIGS.map((model) => (
+                  <SelectItem key={model.id} value={model.id} disabled={!availableProviders?.includes(PROVIDER_NAME_TO_ID[model.provider])}>
+                    <span className="block break-words">{model.name}</span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </label>
+          <div className="flex flex-wrap gap-2">
+            <Button size="md" className="w-36" onClick={() => void runAi("analysis")} aria-busy={ai.status === "loading"}
+              disabled={!loaded || !modelReady || providersLoading || aiBusy || ai.status === "loading" || drawingAi.status === "loading"}
+              title={t("youtubeOpinions.ai.runAnalysis")}>
+              {ai.status === "loading" ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <ScanSearch className="h-4 w-4" aria-hidden="true" />}
+              {t(ai.status === "loading" ? "youtubeOpinions.ai.analysisLoading" : "youtubeOpinions.ai.analysisButton")}
+            </Button>
+            <Button size="md" variant="outline" className="w-36" onClick={() => void runAi("drawings")} aria-busy={drawingAi.status === "loading"}
+              disabled={!loaded || !modelReady || providersLoading || aiBusy || ai.status === "loading" || drawingAi.status === "loading"}
+              title={t("youtubeOpinions.ai.runDrawings")}>
+              {drawingAi.status === "loading" ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <GanttChart className="h-4 w-4" aria-hidden="true" />}
+              {t(drawingAi.status === "loading" ? "youtubeOpinions.ai.drawingLoading" : "youtubeOpinions.ai.button")}
+            </Button>
+          </div>
+        </div>
+        {focusControls && <div className="mt-3 grid min-w-0 gap-x-4 border-t border-border pt-2 sm:grid-cols-2">{focusControls}</div>}
+        {!providersLoading && !modelReady && (
+          <p className="mt-2 text-xs leading-5 text-muted-foreground">
+            {t(eligibleModels.length ? "youtubeOpinions.ai.selectModel" : "youtubeOpinions.ai.notConfigured")}{" "}
+            {!eligibleModels.length && <Link href="/dashboard/settings?tab=api-keys" className="underline underline-offset-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">{t("youtubeOpinions.ai.openSettings")}</Link>}
+          </p>
+        )}
       </div>
-      {!providersLoading && !modelReady && (
-        <p className="mt-2 text-xs leading-5 text-muted-foreground">
-          {t(eligibleModels.length ? "youtubeOpinions.ai.selectModel" : "youtubeOpinions.ai.notConfigured")}{" "}
-          <Link href="/dashboard/settings?tab=api-keys" className="underline underline-offset-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">{t("youtubeOpinions.ai.openSettings")}</Link>
-        </p>
-      )}
-
 
       <div
         role="toolbar"
         aria-label={t("youtubeOpinions.drawTools")}
-        className="mt-3 flex items-center gap-1 overflow-x-auto border-b border-border pb-2 scrollbar-hide"
+        className="mt-3 flex items-center gap-1 overflow-x-auto border-b border-border pb-2"
       >
         {tools.map((item) => {
           const Icon = item.icon;
@@ -1204,7 +1220,7 @@ export default function ChartView({
         </div>
       </div>
 
-      <div className={cn(advanced && "flex min-h-0 flex-1 flex-col gap-4 lg:flex-row")}>
+      <div className={cn(advanced && "flex flex-col gap-6 lg:flex-row")}>
         <div className="min-w-0 flex-1">
           <div
             ref={setBox}
@@ -1603,18 +1619,22 @@ export default function ChartView({
               </span>
             )}
           </div>
-        {drawingAi.status !== "idle" && <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-muted-foreground" role={drawingAi.status === "error" ? "alert" : "status"}>
-          <span>{drawingAi.status === "loading" ? t("youtubeOpinions.ai.drawingLoading") : drawingAi.status === "error" ? drawingAi.error : t("youtubeOpinions.ai.drawingsReady")}</span>
-          {drawingAi.status === "done" && drawingAi.result?.model && <span>{t("youtubeOpinions.ai.generatedBy", { model: `${drawingAi.result.provider || ""} / ${drawingAi.result.model}` })}</span>}
-          {drawingAi.status === "error" && drawingAi.error === t("youtubeOpinions.ai.notConfigured") && <Link href="/dashboard/settings?tab=api-keys" className="underline underline-offset-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">{t("youtubeOpinions.ai.openSettings")}</Link>}
-          {drawingAi.status === "done" && drawingAi.result?.findings?.some(item => item.status === "unavailable") && <span>
+        {drawingAi.status !== "idle" && <section className="mt-5 min-w-0 border-t border-border pt-4" aria-label={t("youtubeOpinions.ai.button")}>
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="min-w-0 flex-1" role={drawingAi.status === "error" ? "alert" : "status"}>
+              <p className="text-sm font-medium">{drawingAi.status === "loading" ? t("youtubeOpinions.ai.drawingLoading") : drawingAi.status === "error" ? drawingAi.error : t("youtubeOpinions.ai.drawingsReady")}</p>
+              {drawingAi.status === "done" && drawingAi.result?.model && <p className="mt-1 break-words text-xs leading-5 text-muted-foreground">{t("youtubeOpinions.ai.generatedBy", { model: `${drawingAi.result.provider || ""} / ${drawingAi.result.model}` })}</p>}
+              {drawingAi.status === "error" && drawingAi.error === t("youtubeOpinions.ai.notConfigured") && <Link href="/dashboard/settings?tab=api-keys" className="text-sm underline underline-offset-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">{t("youtubeOpinions.ai.openSettings")}</Link>}
+            </div>
+            {drawingAi.status === "error" && <Button size="sm" variant="outline" disabled={aiBusy} onClick={() => void runAi("drawings")}>{t("youtubeOpinions.ai.retryDrawings")}</Button>}
+            {drawingAi.status === "done" && <Button size="sm" variant="ghost" disabled={aiBusy} onClick={() => { setDrawingAi({ status: "idle" }); onDrawingsChange?.(null); }}>{t("youtubeOpinions.ai.clear")}</Button>}
+          </div>
+          {drawingAi.status === "done" && drawingAi.result?.setup && <AiDrawingSetup setup={drawingAi.result.setup} t={t} />}
+          {drawingAi.status === "done" && drawingAi.result && <AiPriceActionSignals result={drawingAi.result} formatDate={formatDate} t={t} />}
+          {drawingAi.status === "done" && drawingAi.result?.findings?.some(item => item.status === "unavailable") && <p className="mt-3 text-xs leading-5 text-muted-foreground">
             {t("youtubeOpinions.ai.focus.unavailable")}：{drawingAi.result.findings.filter(item => item.status === "unavailable").map(item => t(`youtubeOpinions.ai.focus.categories.${item.id}`)).join(" / ")}
-          </span>}
-          {drawingAi.status === "error" && <Button size="sm" variant="outline" disabled={aiBusy} onClick={() => void runAi("drawings")}>{t("youtubeOpinions.ai.retryDrawings")}</Button>}
-          {drawingAi.status === "done" && <Button size="sm" variant="ghost" disabled={aiBusy} onClick={() => { setDrawingAi({ status: "idle" }); onDrawingsChange?.(null); }}>{t("youtubeOpinions.ai.clear")}</Button>}
-        </div>}
-        {drawingAi.status === "done" && drawingAi.result && <AiPriceActionSignals result={drawingAi.result} formatDate={formatDate} t={t} />}
-        {drawingAi.status === "done" && drawingAi.result?.setup && <AiDrawingSetup setup={drawingAi.result.setup} t={t} />}
+          </p>}
+        </section>}
 
         </div>
 
@@ -1627,7 +1647,7 @@ export default function ChartView({
             onClear={clearAi}
             formatDate={formatDate}
             t={t}
-            className={advanced ? "pt-6 lg:w-[340px] lg:shrink-0 lg:overflow-y-auto lg:pt-0" : "mt-6"}
+            className={advanced ? "border-t border-border pt-6 lg:w-[360px] lg:shrink-0 lg:border-l lg:border-t-0 lg:pl-6 lg:pt-3" : "mt-6 border-t border-border pt-6"}
           />
         )}
       </div>

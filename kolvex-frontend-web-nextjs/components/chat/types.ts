@@ -29,21 +29,22 @@ export type SearchSource =
   | "plaid";
 
 export type AIModel =
-  | "gpt-4o"
-  | "gpt-4o-mini"
-  | "claude-opus-4-6"
-  | "claude-sonnet-4-5"
-  | "claude-haiku-4-5"
-  | "gemini-2.5-pro"
-  | "gemini-2.0-flash"
-  | "deepseek-chat"
-  | "deepseek-reasoner"
-  | "qwen-plus"
-  | "qwen-max"
-  | "moonshot-v1-8k"
-  | "moonshot-v1-128k"
-  | "grok-3"
-  | "grok-3-fast";
+  | "deepseek-flash"
+  | "deepseek-v4-pro"
+  | "gpt-6-astra"
+  | "gpt-6.1-sol"
+  | "gpt-6-luna"
+  | "claude-fable-5-1"
+  | "claude-opus-5-5"
+  | "claude-sonnet-5-5"
+  | "claude-haiku-5-5"
+  | "gemini-3.8-flash"
+  | "gemini-3.1-pro-preview"
+  | "qwen3.8-max"
+  | "qwen3.7-plus"
+  | "qwen3.8-flash"
+  | "kimi-k3"
+  | "grok-4.7";
 
 export interface AIModelConfig {
   id: AIModel;

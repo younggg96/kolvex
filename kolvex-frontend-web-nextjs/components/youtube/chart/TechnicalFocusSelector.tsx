@@ -64,7 +64,7 @@ export default function TechnicalFocusSelector({ value: savedValue, onChange: sa
       setOpen(next);
     }}>
       <DialogTrigger asChild>
-        <button type="button" disabled={disabled} className="flex min-h-11 w-full items-center gap-3 rounded text-left text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:opacity-50">
+        <button type="button" disabled={disabled} className="flex min-h-11 w-full cursor-pointer items-center gap-2 rounded-lg px-2 text-left text-sm transition-colors hover:bg-muted active:bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:pointer-events-none disabled:opacity-50">
           <span className="shrink-0 font-medium">{title}</span>
           <span className="min-w-0 flex-1 truncate text-xs text-muted-foreground">
             {preview}{remaining > 0 && `${preview ? " · " : ""}+${remaining}`}

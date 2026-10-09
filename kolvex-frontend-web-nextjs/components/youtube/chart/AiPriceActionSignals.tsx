@@ -1,5 +1,6 @@
 import { formatPrice, type AiTechnicalAnalysis } from "@/lib/stockApi";
 import { cn } from "@/lib/utils";
+import { ChevronDown } from "lucide-react";
 
 const categories = new Set(["breakouts", "retests", "false_breakouts"]);
 
@@ -29,7 +30,13 @@ export default function AiPriceActionSignals({ result, formatDate, t }: {
           </li>
         ))}
       </ul>
-      <p className="mt-2 max-w-prose text-xs leading-5 text-muted-foreground">{t("youtubeOpinions.ai.priceAction.rules")}</p>
+      <details className="group/rules mt-2">
+        <summary className="flex min-h-10 cursor-pointer list-none items-center gap-2 rounded text-xs text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary [&::-webkit-details-marker]:hidden">
+          {t("youtubeOpinions.ai.signalRules")}
+          <ChevronDown className="h-3.5 w-3.5 group-open/rules:rotate-180" aria-hidden="true" />
+        </summary>
+        <p className="max-w-[72ch] pb-2 text-sm leading-6 text-muted-foreground">{t("youtubeOpinions.ai.priceAction.rules")}</p>
+      </details>
     </section>
   );
 }

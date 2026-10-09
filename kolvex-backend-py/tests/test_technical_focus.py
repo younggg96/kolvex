@@ -40,7 +40,7 @@ class FocusAnalysisTests(unittest.TestCase):
         return llm, structured
 
     def analyze(self, **options):
-        options.setdefault("model_id", "deepseek-chat")
+        options.setdefault("model_id", "deepseek-flash")
         options.setdefault("user_api_keys", {"deepseek": "user-test-key"})
         return asyncio.run(ta.analyze_chart("NVDA", "1d", make_bars(), None, None, **options))
 

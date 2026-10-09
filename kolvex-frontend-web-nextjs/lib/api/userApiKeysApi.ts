@@ -3,6 +3,8 @@
  * Client-side API for managing user-provided LLM provider API keys
  */
 
+export const API_KEYS_CHANGED_EVENT = "kolvex:api-keys-changed";
+
 const API_PREFIX = "/api/user-api-keys";
 
 // ===== Types =====
@@ -39,49 +41,49 @@ export const PROVIDER_INFO: Record<string, ProviderInfo> = {
   openai: {
     id: "openai",
     name: "OpenAI",
-    description: "GPT-4o, GPT-4o Mini, o1, o3-mini",
+    description: "GPT-6 Astra, GPT-6.1 Sol, GPT-6 Luna",
     placeholder: "sk-...",
     docsUrl: "https://platform.openai.com/api-keys",
   },
   anthropic: {
     id: "anthropic",
     name: "Anthropic",
-    description: "Claude Opus 4.6, Sonnet 4.5, Haiku 4.5",
+    description: "Claude Fable 5.1, Claude Opus 5.5, Claude Sonnet 5.5, Claude Haiku 5.5",
     placeholder: "sk-ant-...",
     docsUrl: "https://console.anthropic.com/settings/keys",
   },
   deepseek: {
     id: "deepseek",
     name: "DeepSeek",
-    description: "DeepSeek Chat, DeepSeek Reasoner",
+    description: "DeepSeek V4.1 Flash, DeepSeek V4 Pro",
     placeholder: "sk-...",
     docsUrl: "https://platform.deepseek.com/api_keys",
   },
   qwen: {
     id: "qwen",
     name: "Qwen (Alibaba)",
-    description: "Qwen Plus, Qwen Turbo, Qwen Max",
+    description: "Qwen 3.8 Max, Qwen 3.7 Plus, Qwen 3.8 Flash",
     placeholder: "sk-...",
     docsUrl: "https://dashscope.console.aliyun.com/apiKey",
   },
   gemini: {
     id: "gemini",
     name: "Google Gemini",
-    description: "Gemini 2.5 Pro, Gemini 2.0 Flash",
+    description: "Gemini 3.8 Flash, Gemini 3.1 Pro (Preview)",
     placeholder: "AI...",
     docsUrl: "https://aistudio.google.com/apikey",
   },
   kimi: {
     id: "kimi",
     name: "Kimi (Moonshot)",
-    description: "Moonshot v1 8K / 32K / 128K",
+    description: "Kimi K3",
     placeholder: "sk-...",
     docsUrl: "https://platform.moonshot.cn/console/api-keys",
   },
   grok: {
     id: "grok",
     name: "Grok (xAI)",
-    description: "Grok 3, Grok 3 Fast",
+    description: "Grok 4.7",
     placeholder: "xai-...",
     docsUrl: "https://console.x.ai/",
   },
@@ -94,10 +96,10 @@ export interface AvailableProvidersResponse {
 // ===== API Functions =====
 
 /**
- * Get which providers have usable API keys (server or user level)
+ * Get providers with user-configured API keys
  */
 export async function getAvailableProviders(): Promise<AvailableProvidersResponse> {
-  const response = await fetch(`${API_PREFIX}?action=available-providers`);
+  const response = await fetch(`${API_PREFIX}?action=available-providers`, { cache: "no-store" });
 
   if (!response.ok) {
     // Gracefully return empty if endpoint fails (e.g. table not yet created)
@@ -140,7 +142,9 @@ export async function upsertUserApiKey(
     throw new Error(error.error || `Failed to save API key: ${response.status}`);
   }
 
-  return response.json();
+  const result = await response.json();
+  window.dispatchEvent(new Event(API_KEYS_CHANGED_EVENT));
+  return result;
 }
 
 /**
@@ -158,5 +162,7 @@ export async function deleteUserApiKey(
     throw new Error(error.error || `Failed to delete API key: ${response.status}`);
   }
 
-  return response.json();
+  const result = await response.json();
+  window.dispatchEvent(new Event(API_KEYS_CHANGED_EVENT));
+  return result;
 }

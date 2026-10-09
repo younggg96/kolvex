@@ -47,7 +47,7 @@ export function ChatWelcomeContainer({
   ]);
   const [isLoading, setIsLoading] = useState(false);
   const submittingRef = useRef(false);
-  const [selectedModel, setSelectedModel] = useState<AIModel>("deepseek-chat");
+  const [selectedModel, setSelectedModel] = useState<AIModel>("deepseek-flash");
 
   const { createConversation } = useChatHistory();
   const { availableProviders } = useAvailableProviders();
