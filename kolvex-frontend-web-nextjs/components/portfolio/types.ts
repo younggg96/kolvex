@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import type {
   PortfolioConnectionStatus,
   PortfolioHoldings,
@@ -39,6 +40,8 @@ export interface PortfolioHoldingsProps {
   userId?: string;
   isOwner?: boolean;
   onHeaderActionsReady?: (props: PortfolioHeaderActionsProps | null) => void;
+  /** Rendered between the summary and the holdings tabs; receives held equity tickers. */
+  renderAfterSummary?: (tickers: string[]) => ReactNode;
 }
 
 export interface ConnectionStateProps {

@@ -106,6 +106,10 @@ export interface ChatWelcomeProps {
   onSelectModel?: (model: AIModel) => void;
   /** Backend provider IDs with usable keys */
   availableProviders?: string[];
+  /** "compact" drops the page heading and navigation links for use inside a dialog */
+  variant?: "page" | "compact";
+  /** Overrides the default suggested questions */
+  suggestions?: string[];
 }
 
 // ===== Agent Tool Status =====

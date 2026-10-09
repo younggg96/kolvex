@@ -48,6 +48,7 @@ import {
   type YouTubeOpinion,
   type YouTubeUploadCoverage,
 } from "@/lib/youtubeOpinionsApi";
+import CreatorAvatar from "./CreatorAvatar";
 import CreatorProfileDialog from "./CreatorProfileDialog";
 import OpinionDateRangePicker from "./OpinionDateRangePicker";
 import OpinionCard from "./OpinionCard";
@@ -57,6 +58,7 @@ import PriceChart from "./PriceChart";
 import StrengthChart, { type StrengthPoint } from "./StrengthChart";
 import VideoOpinionCard, { groupOpinionsByVideo } from "./VideoOpinionCard";
 import { describeStrength, toneText, type StrengthTone } from "./strength";
+import { HeldMark, useHeldTickers } from "@/components/decision/shared";
 
 type DirectoryTone = "all" | StrengthTone;
 type HistoryView = "videos" | "opinions";
@@ -134,29 +136,14 @@ function Avatar({
   size = "md",
 }: {
   creator: YouTubeCreatorSummary;
-  size?: "md" | "lg";
+  size?: "sm" | "md" | "lg";
 }) {
-  const [failed, setFailed] = useState(false);
-  const title = creator.channel_title || creator.channel_id;
   return (
-    <div
-      aria-hidden="true"
-      className={cn(
-        "relative flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-secondary font-semibold text-muted-foreground",
-        size === "lg" ? "h-14 w-14 text-lg" : "h-10 w-10 text-sm",
-      )}
-    >
-      {title.slice(0, 1).toUpperCase()}
-      {creator.channel_avatar_url && !failed && (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={proxyImageUrl(creator.channel_avatar_url)}
-          alt=""
-          onError={() => setFailed(true)}
-          className="absolute inset-0 h-full w-full object-cover"
-        />
-      )}
-    </div>
+    <CreatorAvatar
+      name={creator.channel_title || creator.channel_id}
+      avatarUrl={creator.channel_avatar_url}
+      size={size}
+    />
   );
 }
 
@@ -179,7 +166,7 @@ export default function YouTubeOpinionExplorer() {
   const [detailError, setDetailError] = useState("");
   const [search, setSearch] = useState("");
   const [toneFilter, setToneFilter] = useState<DirectoryTone>("all");
-  const [sortBy, setSortBy] = useState<DirectorySort>("opinions");
+  const [sortBy, setSortBy] = useState<DirectorySort>("latest");
   const [revision, setRevision] = useState(0);
   const [uploadOpen, setUploadOpen] = useState(false);
   const [filters, setFilters] = useState<Filters>(emptyFilters);
@@ -189,6 +176,7 @@ export default function YouTubeOpinionExplorer() {
   const detailRequest = useRef(0);
   const scrollContainer = useRef<HTMLDivElement>(null);
   const inDetail = Boolean(route.ticker || route.creator);
+  const held = useHeldTickers();
 
   useEffect(() => {
     const sync = () => {
@@ -206,7 +194,7 @@ export default function YouTubeOpinionExplorer() {
   useEffect(() => {
     let active = true;
     setCatalogueError("");
-    getYouTubeOpinionDashboard({ limit: 1 })
+    getYouTubeOpinionDashboard({ limit: 8 })
       .then((result) => {
         if (active) setCatalogue(result);
       })
@@ -500,6 +488,7 @@ export default function YouTubeOpinionExplorer() {
     { value: "1y", label: t("youtubeOpinions.range1y") },
     { value: "all", label: t("common.all") },
   ];
+  const latestVideos = groupOpinionsByVideo(catalogue?.latest ?? []).slice(0, 4);
   const changes = (route.creator ? context?.changes : catalogue?.changes) || [];
   const notableChanges = changes.filter((change) => change.change !== null).slice(0, 8);
 
@@ -535,7 +524,10 @@ export default function YouTubeOpinionExplorer() {
           <div className="flex min-w-0 items-center gap-3">
             <CompanyLogo symbol={item.ticker} size="md" />
             <div className="min-w-0">
-              <p className="text-[15px] font-semibold">{item.ticker}</p>
+              <p className="text-[15px] font-semibold">
+                {item.ticker}
+                {held.tickers.includes(item.ticker) && <HeldMark />}
+              </p>
               <p className="mt-0.5 truncate text-[13px] text-foreground/80">
                 {item.company_name || item.ticker}
               </p>
@@ -836,6 +828,65 @@ export default function YouTubeOpinionExplorer() {
             {!inDetail && (
               <div className="grid min-w-0 gap-10 xl:grid-cols-[minmax(0,1fr)_300px]">
                 <div className="min-w-0">
+                  {route.tab === "stocks" && latestVideos.length > 0 && (
+                    <section className="mb-10 min-w-0" aria-labelledby="latest-videos">
+                      <h2 id="latest-videos" className="text-base font-semibold">
+                        {t("youtubeOpinions.latestVideos")}
+                      </h2>
+                      <ul className="-mx-4 mt-3 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-2 scrollbar-hide sm:mx-0 sm:grid sm:grid-cols-2 sm:overflow-visible sm:px-0 lg:grid-cols-4">
+                        {latestVideos.map((group) => {
+                          const first = group.opinions[0];
+                          const href = first.video_url || `https://www.youtube.com/watch?v=${encodeURIComponent(group.videoId)}`;
+                          return (
+                            <li key={group.videoId} className="w-[68%] shrink-0 snap-start sm:w-auto">
+                              <a
+                                href={href}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="group block rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                              >
+                                <span className="block aspect-video overflow-hidden rounded-xl bg-muted">
+                                  {first.thumbnail_url && (
+                                    // eslint-disable-next-line @next/next/no-img-element
+                                    <img
+                                      src={proxyImageUrl(first.thumbnail_url)}
+                                      alt=""
+                                      loading="lazy"
+                                      referrerPolicy="no-referrer"
+                                      className="h-full w-full object-cover transition-transform duration-200 group-hover:scale-[1.02]"
+                                    />
+                                  )}
+                                </span>
+                                <span className="mt-2 line-clamp-2 text-[13px] font-semibold leading-snug group-hover:underline">
+                                  {first.video_title || group.videoId}
+                                </span>
+                              </a>
+                              <p className="mt-1 flex min-w-0 items-center gap-1.5 text-xs text-foreground/75">
+                                <CreatorAvatar name={first.channel_title || first.channel_id} avatarUrl={first.channel_avatar_url} size="xs" />
+                                <span className="truncate">{first.channel_title || first.channel_id}</span>
+                                <span className="shrink-0 tabular-nums">{formatDay(first.opinion_date)}</span>
+                              </p>
+                              <p className="mt-1.5 flex flex-wrap gap-x-2.5 gap-y-1 text-xs">
+                                {group.opinions.map((opinion) => (
+                                  <ExplorerLink
+                                    key={opinion.id}
+                                    onNavigate={navigate}
+                                    target={{ tab: "stocks", ticker: opinion.ticker }}
+                                    className={cn(
+                                      "rounded-sm font-semibold hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
+                                      toneText[describeStrength(opinion.direction_score, { t }).tone],
+                                    )}
+                                  >
+                                    {opinion.ticker}
+                                  </ExplorerLink>
+                                ))}
+                              </p>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    </section>
+                  )}
                   <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
                     <div>
                       <h2 className="text-[28px] font-semibold leading-tight tracking-[-0.02em]">
@@ -956,11 +1007,18 @@ export default function YouTubeOpinionExplorer() {
                     <div className="flex min-w-0 items-center gap-4">
                       {route.creator && !route.ticker && creator && <Avatar creator={creator} size="lg" />}
                       {route.ticker && (
-                        <CompanyLogo
-                          symbol={route.ticker}
-                          name={stock?.company_name || context?.stocks[0]?.company_name || route.ticker}
-                          size="lg"
-                        />
+                        <span className="relative shrink-0">
+                          <CompanyLogo
+                            symbol={route.ticker}
+                            name={stock?.company_name || context?.stocks[0]?.company_name || route.ticker}
+                            size="lg"
+                          />
+                          {route.creator && creator && (
+                            <span className="absolute -bottom-1.5 -right-1.5 rounded-full ring-2 ring-background">
+                              <Avatar creator={creator} size="sm" />
+                            </span>
+                          )}
+                        </span>
                       )}
                       <div className="min-w-0 flex-1">
                         <h2 className="break-words text-[32px] font-semibold leading-tight tracking-[-0.025em]">

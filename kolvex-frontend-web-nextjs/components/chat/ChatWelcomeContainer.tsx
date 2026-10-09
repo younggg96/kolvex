@@ -8,10 +8,12 @@ import { ChatWelcome } from "./ChatWelcome";
 import { useChatHistory } from "./useChatHistory";
 import { useAvailableProviders } from "@/hooks/useAvailableProviders";
 import { getFirstAvailableModelId } from "./ChatInput";
-import type { AIModel, SearchSource } from "./types";
+import type { AIModel, ChatWelcomeProps, SearchSource } from "./types";
 
 interface ChatWelcomeContainerProps {
   className?: string;
+  variant?: ChatWelcomeProps["variant"];
+  suggestions?: string[];
   decisionContext?: string;
   onSubmitted?: () => void;
   onConversationChange?: (
@@ -24,6 +26,8 @@ interface ChatWelcomeContainerProps {
 
 export function ChatWelcomeContainer({
   className,
+  variant,
+  suggestions,
   onConversationChange,
   decisionContext,
   onSubmitted,
@@ -117,6 +121,8 @@ export function ChatWelcomeContainer({
             selectedModel={selectedModel}
             onSelectModel={setSelectedModel}
             availableProviders={availableProviders}
+            variant={variant}
+            suggestions={suggestions}
           />
         </div>
       </div>

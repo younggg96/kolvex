@@ -1,0 +1,116 @@
+{
+  "title": "行情 / 研究 / 组合 / 日志 / 观点：选一个页面结构",
+  "question": "视觉体系保持不变（白/黑底、绿涨橙跌、细线列表）。这一轮只选五个页面怎么组织。随机抽到「变化优先」，可以保留、换备选，或重抽。",
+  "options": [
+    {
+      "id": "assigned",
+      "label": "变化优先",
+      "kicker": "THE ROLL",
+      "lineage": "券商 App 的「消息/提醒」和 Robinhood 的个股页",
+      "thesis": "每页第一屏只回答一个问题：自上次打开以来，什么变了。",
+      "palette": ["#FFFFFF", "#000000", "#00C805", "#FF5000", "#6B7076"],
+      "materials": ["细线分隔列表", "32–40px 主数字/主判断", "胶囊切换"],
+      "viewport": "行情：SPY 今日涨跌 40px + 一条日内走势，下面「你关注的股票里，今天动得最大的」；研究：本周博主观点变化时间线（转强/转弱/新增）；组合：总值 + 走势，下面「你的持仓里有变化的」；日志：「N 条判断需要复核」；观点：最新视频按日期排列。",
+      "risk": "市场很平静时第一屏会显得空，需要「今天没有变化」的好看空态。",
+      "raised": [
+        { "from": "舞谱（labanotation）", "raise": "个股页的博主观点改成中轴对照：看多在左、看空在右、时间沿中轴向下，一眼看出分歧。" },
+        { "from": "竖屏视频流", "raise": "手机上个股页第一屏只给一只股票：价格、走势、博主共识，其余往下滑。" }
+      ],
+      "wireframe": {
+        "cols": 12, "rows": 10,
+        "regions": [
+          { "label": "侧栏", "x": 0, "y": 0, "w": 2, "h": 10 },
+          { "label": "主数字 / 主判断 40px", "x": 2, "y": 0, "w": 7, "h": 2, "accent": true },
+          { "label": "走势线（可拖动改写主数字）", "x": 2, "y": 2, "w": 7, "h": 3 },
+          { "label": "变化时间线：转强 / 转弱 / 触及价位", "x": 2, "y": 5, "w": 7, "h": 5 },
+          { "label": "与你相关：持仓 / 判断", "x": 9, "y": 0, "w": 3, "h": 10 }
+        ]
+      },
+      "comp": ".impeccable/mocks/decision/surface-assigned.webp"
+    },
+    {
+      "id": "grounded-6",
+      "label": "列表 + 右侧预览",
+      "lineage": "邮件客户端、券商桌面版的自选股 + 个股面板",
+      "thesis": "所有页面都是「左边一张股票列表，右边就地预览选中那只」，不跳页也能看完。",
+      "palette": ["#FFFFFF", "#000000", "#00C805", "#FF5000", "#6B7076"],
+      "materials": ["细线分隔列表", "右侧常驻预览栏", "键盘上下键切换"],
+      "viewport": "桌面：左 60% 是当前页的股票列表（行情=报价，研究=博主覆盖，日志=判断，观点=股票/博主），右 40% 是选中股票的价格、共识、你的持仓与判断；手机：列表点进去才是详情。",
+      "risk": "五个页面会长得非常像，正好撞上你说的「每页都一样」；只靠列表内容区分。",
+      "wireframe": {
+        "cols": 12, "rows": 10,
+        "regions": [
+          { "label": "侧栏", "x": 0, "y": 0, "w": 2, "h": 10 },
+          { "label": "页头 + 列表切换", "x": 2, "y": 0, "w": 6, "h": 1 },
+          { "label": "股票列表", "x": 2, "y": 1, "w": 6, "h": 9 },
+          { "label": "预览：价格 + 共识 + 持仓 + 判断", "x": 8, "y": 0, "w": 4, "h": 10, "accent": true }
+        ]
+      },
+      "comp": ".impeccable/mocks/decision/surface-grounded-6.webp"
+    },
+    {
+      "id": "grounded-3",
+      "label": "以持仓为主线",
+      "lineage": "私人银行的月度持仓报告",
+      "thesis": "每一页都从「你持有的」出发：行情先看持仓，研究先看博主怎么说你的持仓，日志挂在持仓上。",
+      "palette": ["#FFFFFF", "#000000", "#00C805", "#FF5000", "#6B7076"],
+      "materials": ["细线分隔列表", "「持有」标记贯穿所有列表", "持仓 / 关注 两段式"],
+      "viewport": "行情：上半「我的持仓」带当日涨跌和博主共识列，下半「关注」；研究：「博主对你持仓的看法」排第一；日志按「持有中 / 仅关注 / 已结束」分组；观点每行标出你是否持有。",
+      "risk": "没连 Plaid 的用户每页都会先看到一个空段落，需要把「连接账户」做成每页都不突兀的一行。",
+      "wireframe": {
+        "cols": 12, "rows": 10,
+        "regions": [
+          { "label": "侧栏", "x": 0, "y": 0, "w": 2, "h": 10 },
+          { "label": "持仓总值 + 今日变化", "x": 2, "y": 0, "w": 10, "h": 2, "accent": true },
+          { "label": "我的持仓：价格 / 涨跌 / 博主共识 / 判断状态", "x": 2, "y": 2, "w": 10, "h": 4 },
+          { "label": "关注 / 其他", "x": 2, "y": 6, "w": 10, "h": 4 }
+        ]
+      },
+      "comp": ".impeccable/mocks/decision/surface-grounded-3.webp"
+    },
+    {
+      "id": "challenger-labanotation",
+      "label": "舞谱中轴",
+      "verdict": "declined",
+      "lineage": "Labanotation 舞谱",
+      "thesis": "中轴为时间，左右两栏对照。",
+      "palette": ["#FFFFFF", "#000000", "#BFBFBF"],
+      "materials": ["中轴谱线", "填充表示层级"],
+      "viewport": "整页做成竖向谱面。",
+      "risk": "整页用会变成装扮，用户不会看谱。",
+      "case": "整页结构输给清晰度；但对照纪律适合博主分歧。",
+      "kept": "个股页博主观点：看多左、看空右、时间沿中轴。",
+      "hero": "https://impeccable.style/worlds/cards/notation-diagram-systems-labanotation-hero.webp"
+    },
+    {
+      "id": "challenger-vertical-feed",
+      "label": "竖屏单条流",
+      "verdict": "declined",
+      "lineage": "短视频竖屏流",
+      "thesis": "一次只看一条，滑一下换下一条。",
+      "palette": ["#000000", "#FFFFFF"],
+      "materials": ["整屏单项", "右侧操作栏"],
+      "viewport": "观点页一屏一条视频观点。",
+      "risk": "无法扫读和对比，违背「快速扫一眼」原则。",
+      "case": "桌面输掉清晰度；手机个股页可借用。",
+      "kept": "手机个股页第一屏只放一只股票的结论。",
+      "hero": "https://impeccable.style/worlds/cards/pop-culture-shelf-vertical-video-feed-surface-hero.webp"
+    },
+    {
+      "id": "challenger-crouwel",
+      "label": "网格字样",
+      "verdict": "declined",
+      "lineage": "Wim Crouwel 网格海报",
+      "thesis": "层级只靠字号对比。",
+      "palette": ["#FFFFFF", "#000000", "#00C805"],
+      "materials": ["可见网格", "巨型字"],
+      "viewport": "海报式大字。",
+      "risk": "在工作界面上是海报装扮。",
+      "case": "两个维度都输。",
+      "kept": "层级靠字号，不靠加框加色块。"
+    }
+  ],
+  "reroll": true,
+  "buildPath": { "value": "code", "toggle": true },
+  "steer": true
+}

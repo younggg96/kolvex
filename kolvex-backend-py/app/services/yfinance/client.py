@@ -35,6 +35,41 @@ def _safe_int(value, default: int = 0) -> int:
         return default
 
 
+def _optional_number(value, digits: int) -> Optional[float]:
+    """Finite float rounded to `digits`, or None when the source bar has no price."""
+    if value is None:
+        return None
+    try:
+        number = float(value)
+    except (ValueError, TypeError):
+        return None
+    if not math.isfinite(number):
+        return None
+    return round(number, digits)
+
+
+def _optional_volume(value) -> Optional[int]:
+    number = _optional_number(value, 0)
+    if not number:
+        return None
+    return int(number)
+
+
+def _history_point(row) -> Dict[str, Any]:
+    """One OHLCV bar. Incomplete sessions from Yahoo use NaN prices; those stay null."""
+    date_val = row.get("Date") or row.get("Datetime")
+    return {
+        "date": date_val.isoformat() if hasattr(date_val, "isoformat") else str(date_val),
+        "open": _optional_number(row.get("Open"), 2),
+        "high": _optional_number(row.get("High"), 2),
+        "low": _optional_number(row.get("Low"), 2),
+        "close": _optional_number(row.get("Close"), 2),
+        "volume": _optional_volume(row.get("Volume")),
+        "dividends": _optional_number(row.get("Dividends"), 4) or 0.0,
+        "stock_splits": _optional_number(row.get("Stock Splits"), 4) or 0.0,
+    }
+
+
 def _group_session_bars(df, size: int):
     """
     Merge consecutive hourly bars into `size`-hour bars without crossing sessions,
@@ -178,23 +213,7 @@ class YFinanceService:
         if interval == "4h":
             df = _group_session_bars(df, 4)
 
-        df = df.reset_index()
-        result = []
-
-        for _, row in df.iterrows():
-            date_val = row.get("Date") or row.get("Datetime")
-            result.append({
-                "date": date_val.isoformat() if hasattr(date_val, "isoformat") else str(date_val),
-                "open": round(row["Open"], 2) if row["Open"] else None,
-                "high": round(row["High"], 2) if row["High"] else None,
-                "low": round(row["Low"], 2) if row["Low"] else None,
-                "close": round(row["Close"], 2) if row["Close"] else None,
-                "volume": int(row["Volume"]) if row["Volume"] else None,
-                "dividends": round(row.get("Dividends", 0), 4),
-                "stock_splits": round(row.get("Stock Splits", 0), 4),
-            })
-
-        return result
+        return [_history_point(row) for _, row in df.reset_index().iterrows()]
 
     def get_intraday(self, symbol: str, interval: str = "5m") -> List[Dict[str, Any]]:
         """

@@ -6,6 +6,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import CompanyLogo from "@/components/ui/company-logo";
+import CreatorAvatar from "./CreatorAvatar";
 import { useTranslation } from "@/lib/i18n";
 import { getYouTubeCreatorProfile, type YouTubeCreatorSummary } from "@/lib/youtubeOpinionsApi";
 
@@ -20,7 +21,6 @@ export default function CreatorProfileDialog({ creator, onLoaded, compact = fals
   const [loading, setLoading] = useState(false);
   const [profile, setProfile] = useState<YouTubeCreatorSummary | null>(null);
   const [error, setError] = useState("");
-  const [avatarFailed, setAvatarFailed] = useState(false);
   const current = profile || creator;
   const title = current.channel_title || creator.channel_id;
 
@@ -30,7 +30,6 @@ export default function CreatorProfileDialog({ creator, onLoaded, compact = fals
     try {
       const result = await getYouTubeCreatorProfile(creator.channel_id);
       setProfile(result);
-      setAvatarFailed(false);
       onLoaded?.(result);
     } catch {
       setError(t("youtubeOpinions.profile.unavailableExisting"));
@@ -60,13 +59,7 @@ export default function CreatorProfileDialog({ creator, onLoaded, compact = fals
         </DialogHeader>
         <div className="space-y-5 py-5">
           <div className="flex items-center gap-4">
-            <div className="relative flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-full bg-muted text-lg font-medium">
-              {title.slice(0, 1).toUpperCase()}
-              {current.channel_avatar_url?.startsWith("https://") && !avatarFailed && (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={current.channel_avatar_url} alt={title} onError={() => setAvatarFailed(true)} className="absolute inset-0 h-full w-full object-cover" />
-              )}
-            </div>
+            <CreatorAvatar name={title} avatarUrl={current.channel_avatar_url?.startsWith("https://") ? current.channel_avatar_url : null} size="xl" />
             <div className="min-w-0"><p className="break-words text-sm font-medium">{title}</p><p className="mt-1 break-words text-xs text-muted-foreground">{current.channel_handle || creator.channel_id}</p></div>
           </div>
           <div className="flex flex-wrap items-center justify-between gap-3">

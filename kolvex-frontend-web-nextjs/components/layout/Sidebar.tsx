@@ -4,7 +4,9 @@ import Link from "next/link";
 import LogoIcon from "@/components/common/LogoIcon";
 import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
-import { Settings, PanelLeftClose, PanelLeft, ShieldCheck } from "lucide-react";
+import { Settings, PanelLeftClose, PanelLeft, ShieldCheck, Sparkles } from "lucide-react";
+import { useDecisionCommand } from "@/components/decision/CommandLayer";
+import { useCopy } from "@/components/decision/shared";
 import { MAIN_NAV_ITEMS, isNavItemActive } from "./navItems";
 import UserMenu from "@/components/user/UserMenu";
 import { Button } from "@/components/ui/button";
@@ -55,6 +57,8 @@ function AppSidebar({ onNavigate }: AppSidebarProps) {
   } = useSidebar();
   const { profile } = useUserProfileContext();
   const { t } = useTranslation();
+  const c = useCopy();
+  const { openAsk, canAsk } = useDecisionCommand();
 
   // Resolve translated nav items
   const mainNavItems = MAIN_NAV_ITEMS.filter((item) =>
@@ -141,6 +145,24 @@ function AppSidebar({ onNavigate }: AppSidebarProps) {
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
+              {canAsk && (
+                <SidebarMenuItem className="mb-2">
+                  <SidebarMenuButton
+                    onClick={() => {
+                      handleNavigate();
+                      openAsk();
+                    }}
+                    tooltip={c("Ask Kolvex", "询问 Kolvex")}
+                    className="border border-border/70 bg-background/60 text-muted-foreground hover:text-foreground group-data-[collapsible=icon]:border-transparent group-data-[collapsible=icon]:bg-transparent"
+                  >
+                    <Sparkles className="text-primary" />
+                    <span className="flex-1">{c("Ask Kolvex…", "询问 Kolvex…")}</span>
+                    <kbd className="rounded border border-border px-1 font-sans text-[10px] leading-4 text-muted-foreground group-data-[collapsible=icon]:hidden">
+                      ⌘K
+                    </kbd>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              )}
               {mainNavItems.map((item) => {
                 return (
                   <SidebarMenuItem key={item.title}>

@@ -40,7 +40,8 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { cn, proxyImageUrl } from "@/lib/utils";
+import { cn } from "@/lib/utils";
+import CreatorAvatar from "../CreatorAvatar";
 import type { YouTubeOpinion } from "@/lib/youtubeOpinionsApi";
 import {
   AiAnalysisError,
@@ -1441,18 +1442,12 @@ export default function ChartView({
                     <ul className="space-y-2">
                       {activeEvents.slice(0, 4).map((opinion) => (
                         <li key={opinion.id} className="flex min-w-0 gap-2">
-                          <span className="relative mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center overflow-hidden rounded-full bg-secondary text-[10px] font-semibold text-muted-foreground">
-                            {(opinion.channel_title || opinion.channel_id).slice(0, 1).toUpperCase()}
-                            {opinion.channel_avatar_url && (
-                              // eslint-disable-next-line @next/next/no-img-element
-                              <img
-                                src={proxyImageUrl(opinion.channel_avatar_url)}
-                                alt=""
-                                className="absolute inset-0 h-full w-full object-cover"
-                                onError={(event) => (event.currentTarget.style.display = "none")}
-                              />
-                            )}
-                          </span>
+                          <CreatorAvatar
+                            name={opinion.channel_title || opinion.channel_id}
+                            avatarUrl={opinion.channel_avatar_url}
+                            size="xs"
+                            className="mt-0.5"
+                          />
                           <span className="min-w-0">
                             <span className="flex min-w-0 items-baseline gap-1.5">
                               <span className="truncate font-semibold text-foreground">

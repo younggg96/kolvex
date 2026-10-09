@@ -1031,6 +1031,7 @@
     }
   },
   "youtubeOpinions": {
+    "latestVideos": "Latest videos",
     "title": "YouTube Opinion Tracker",
     "refresh": "Refresh",
     "uploadJson": "Upload JSON",

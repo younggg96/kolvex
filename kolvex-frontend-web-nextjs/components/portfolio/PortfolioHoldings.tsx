@@ -32,6 +32,7 @@ export default function PortfolioHoldings({
   userId,
   isOwner = false,
   onHeaderActionsReady,
+  renderAfterSummary,
 }: PortfolioHoldingsProps) {
   const { t } = useTranslation();
   const [disconnectDialogOpen, setDisconnectDialogOpen] = useState(false);
@@ -106,6 +107,18 @@ export default function PortfolioHoldings({
       setExpandedAccounts(new Set(accountsWithPositions));
     }
   }, [holdings?.accounts]);
+
+  const equityTickers = useMemo(
+    () => [
+      ...new Set(
+        (holdings?.accounts ?? [])
+          .flatMap((account) => account.portfolio_positions || [])
+          .filter((position) => position.position_type !== "option")
+          .map((position) => position.symbol.trim().toUpperCase()),
+      ),
+    ],
+    [holdings?.accounts],
+  );
 
   const symbolsKey = useMemo(
     () => portfolioSymbols.sort().join(","),
@@ -288,6 +301,8 @@ export default function PortfolioHoldings({
         }
         showTotalValue={!isOwner || !holdings?.accounts?.length}
       />
+
+      {renderAfterSummary?.(equityTickers)}
 
       {holdings?.accounts && holdings.accounts.length > 0 && (
         <>

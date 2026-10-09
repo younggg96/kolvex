@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { MessageCircle, Briefcase, Youtube, ArrowUpRight } from "lucide-react";
 import Link from "next/link";
 import { ChatInput, MODEL_CONFIGS } from "./ChatInput";
@@ -30,16 +30,25 @@ export function ChatWelcome({
   selectedModel,
   onSelectModel,
   availableProviders,
+  variant = "page",
+  suggestions: suggestionOverrides,
 }: ChatWelcomeProps) {
   const { t } = useTranslation();
   const [query, setQuery] = useState("");
   const [isFocused, setIsFocused] = useState(false);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const compact = variant === "compact";
 
-  const suggestions = suggestionKeys.map((s) => ({
-    text: t(s.key),
-    isChat: s.isChat,
-  }));
+  useEffect(() => {
+    if (compact) inputRef.current?.focus();
+  }, [compact]);
+
+  const suggestions = suggestionOverrides
+    ? suggestionOverrides.map((text) => ({ text, isChat: true }))
+    : suggestionKeys.map((s) => ({
+        text: t(s.key),
+        isChat: s.isChat,
+      }));
 
   // Whether the user has any usable model
   const hasAnyModel =
@@ -68,6 +77,47 @@ export function ChatWelcome({
     }
   };
 
+  const input = (
+    <ChatInput
+      value={query}
+      onChange={setQuery}
+      onSubmit={handleSubmit}
+      isLoading={isLoading}
+      isFocused={isFocused}
+      onFocus={() => setIsFocused(true)}
+      onBlur={() => setIsFocused(false)}
+      activeSources={activeSources}
+      onToggleSource={onToggleSource}
+      showSourceToggle={true}
+      showModelSelector={!!onSelectModel}
+      selectedModel={selectedModel}
+      onSelectModel={onSelectModel}
+      inputRef={inputRef}
+      availableProviders={availableProviders}
+    />
+  );
+
+  if (compact) {
+    return (
+      <div className="flex w-full flex-col gap-3 pt-2">
+        {input}
+        <div className="flex flex-wrap gap-2 px-1">
+          {suggestions.map((suggestion) => (
+            <button
+              key={suggestion.text}
+              type="button"
+              onClick={() => handleSuggestionClick(suggestion)}
+              disabled={isBlocked || isLoading}
+              className="rounded-full border border-border px-3 py-1.5 text-left text-[13px] text-muted-foreground transition-colors duration-150 hover:border-foreground/30 hover:bg-muted/60 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            >
+              {suggestion.text}
+            </button>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-1 flex-col items-center justify-center overflow-y-auto px-5 py-10 md:px-8">
       <div className="mx-auto mb-8 w-full max-w-2xl animate-fade-in">
@@ -90,23 +140,7 @@ export function ChatWelcome({
         className="mx-auto w-full max-w-2xl animate-fade-in-up"
         style={{ animationDelay: "100ms" }}
       >
-        <ChatInput
-          value={query}
-          onChange={setQuery}
-          onSubmit={handleSubmit}
-          isLoading={isLoading}
-          isFocused={isFocused}
-          onFocus={() => setIsFocused(true)}
-          onBlur={() => setIsFocused(false)}
-          activeSources={activeSources}
-          onToggleSource={onToggleSource}
-          showSourceToggle={true}
-          showModelSelector={!!onSelectModel}
-          selectedModel={selectedModel}
-          onSelectModel={onSelectModel}
-          inputRef={inputRef}
-          availableProviders={availableProviders}
-        />
+        {input}
 
         <ul className="mt-6 divide-y divide-border border-y border-border">
           {suggestions.map((suggestion, index) => (

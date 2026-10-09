@@ -181,7 +181,7 @@ export function SectorTable({
                         <div className="flex items-center gap-2">
                           <CompanyLogo
                             symbol={aggPos.displaySymbol}
-                            size="xs"
+                            size="sm"
                             shape="rounded"
                             border="light"
                           />

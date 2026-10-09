@@ -1031,6 +1031,7 @@
     }
   },
   "youtubeOpinions": {
+    "latestVideos": "最新视频",
     "title": "YouTube 观点追踪",
     "refresh": "刷新",
     "uploadJson": "上传 JSON",

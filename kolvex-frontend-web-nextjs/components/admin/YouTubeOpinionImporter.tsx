@@ -219,7 +219,7 @@ export default function YouTubeOpinionImporter({ onImported }: { onImported?: ()
           {preview.superseded.map((item) => <li key={item.index} className="break-words"><span className="font-mono">{videoLabel(item.index)}</span> 与 <span className="font-mono">{videoLabel(item.by)}</span> 是同一视频，将以后者为准。</li>)}
         </ul> : null}
         {preview.videos.map((video) => <div key={video.video_id} className="min-w-0 space-y-2">
-          <h4 className="flex items-center gap-2 text-sm font-medium"><CreatorAvatar name={video.channel_title || "?"} /><span className="min-w-0 break-words">{video.channel_title} · {video.video_title} · {video.count} 条观点</span></h4>
+          <h4 className="flex items-center gap-2 text-sm font-medium"><CreatorAvatar name={video.channel_title || "?"} size="sm" /><span className="min-w-0 break-words">{video.channel_title} · {video.video_title} · {video.count} 条观点</span></h4>
           <div className="max-h-64 min-w-0 overflow-auto"><table className="w-full text-left text-xs"><thead><tr className="border-b"><th className="p-2">股票</th><th className="p-2">观点</th><th className="p-2">分数</th><th className="p-2">日期</th><th className="p-2">摘要</th></tr></thead><tbody>
             {video.opinions.map((row) => <tr key={row.ticker} className="border-b"><td className="p-2 font-medium"><span className="inline-flex items-center gap-2"><span aria-hidden="true"><CompanyLogo symbol={row.ticker} size="xs" /></span>{row.ticker}</span></td><td className="p-2">{{ bullish: "看涨", bearish: "看跌", neutral: "中性", mixed: "分歧" }[row.sentiment]}</td><td className="p-2">{row.direction_score}</td><td className="whitespace-nowrap p-2">{row.opinion_date}</td><td className="min-w-40 break-words p-2">{row.summary}</td></tr>)}
           </tbody></table></div>

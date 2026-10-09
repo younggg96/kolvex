@@ -11,7 +11,7 @@ import { PortfolioSkeleton } from "./PortfolioSkeleton";
 import { useAuth } from "@/hooks";
 import { PortfolioHeaderActions } from "./PortfolioHeaderActions";
 import { useTranslation } from "@/lib/i18n";
-import Journal from "@/components/decision/Journal";
+import PortfolioChanges from "@/components/decision/PortfolioChanges";
 
 export function PortfolioPageContent() {
   const searchParams = useSearchParams();
@@ -62,12 +62,12 @@ export function PortfolioPageContent() {
       <div className="relative flex-1 overflow-y-auto">
         <div className="mx-auto w-full min-w-0 max-w-[1080px] px-4 pb-16 pt-6 md:px-8 md:pt-8">
           {user && (
-            <><Journal embedded />
             <PortfolioHoldings
               userId={user.id}
               isOwner={true}
               onHeaderActionsReady={setHeaderActionsProps}
-            /></>
+              renderAfterSummary={(tickers) => <PortfolioChanges tickers={tickers} />}
+            />
           )}
         </div>
       </div>
