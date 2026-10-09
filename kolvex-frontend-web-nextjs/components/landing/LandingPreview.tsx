@@ -1,302 +1,323 @@
 "use client";
+
 import Link from "next/link";
 import { useState } from "react";
-import { Check, ArrowUpRight, BookOpen } from "lucide-react";
+import { motion, useReducedMotion } from "motion/react";
+import {
+  ArrowUpRight,
+  Check,
+  AudioLines,
+  BookOpen,
+  History,
+  Layers,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useCopy } from "@/components/decision/shared";
+import { LandingReveal, landingEase } from "./LandingMotion";
 
 const prices = [
   184, 186, 182, 185, 189, 187, 192, 190, 194, 191, 196, 198, 195, 199, 197,
   201,
 ];
+
 export default function LandingPreview() {
   const c = useCopy();
-  const [step, setStep] = useState(0);
+  const reduce = useReducedMotion();
+  const [step, setStep] = useState("research");
   const steps = [
-    c("Research", "研究"),
-    c("Validate", "验证"),
-    c("Analysis", "分析"),
-    c("Updates", "动态"),
+    {
+      value: "research",
+      label: c("Research", "研究"),
+      icon: AudioLines,
+      title: c("Start with the whole picture.", "从完整视角开始。"),
+      body: c(
+        "Creator opinions, market context and your position. Understand the stock from more than one angle.",
+        "把博主观点、市场背景和自己的持仓放在一起，从多个角度理解一只股票。",
+      ),
+      items: [
+        [c("Creator outlook", "博主倾向"), c("Bullish", "看多")],
+        [c("Technical structure", "技术结构"), c("Uptrend", "上升趋势")],
+        [c("Key risk", "核心风险"), c("Valuation", "估值")],
+      ],
+      href: "/dashboard/youtube-opinions",
+      action: c("Explore creator opinions", "了解博主观点"),
+    },
+    {
+      value: "validate",
+      label: c("Validate", "验证"),
+      icon: Layers,
+      title: c("Look beyond the conclusion.", "结论之外，还有依据。"),
+      body: c(
+        "Inspect the evidence and the opposing view before forming your own perspective.",
+        "看懂支持观点的证据，也了解不同意见，再形成自己的判断。",
+      ),
+      items: [
+        [c("Price structure", "价格结构"), c("Higher highs", "高点抬升")],
+        [
+          c("Moving averages", "均线"),
+          c("Above EMA20 / 50", "位于 EMA20 / 50 上方"),
+        ],
+        [c("Counterpoint", "不同观点"), c("Valuation risk", "估值风险")],
+      ],
+      href: "/dashboard/market/NVDA",
+      action: c("Explore stock analysis", "了解股票分析"),
+    },
+    {
+      value: "analysis",
+      label: c("Analysis", "分析"),
+      icon: BookOpen,
+      title: c(
+        "Read the reasoning, not just a rating.",
+        "读懂分析，而不只看评级。",
+      ),
+      body: c(
+        "AI research brings the conclusion, analyst evidence and debate into a readable report.",
+        "AI 研究将结论、分析依据与多方讨论整理为一份可阅读的报告。",
+      ),
+      items: [
+        [c("Research focus", "研究重点"), c("AI demand", "AI 需求")],
+        [c("Technical context", "技术背景"), c("Pullback support", "回调支撑")],
+        [c("Risk to inspect", "关注风险"), c("Valuation", "估值")],
+      ],
+      href: "/dashboard/ai-research",
+      action: c("Explore AI research", "了解 AI 研究"),
+    },
+    {
+      value: "updates",
+      label: c("Updates", "动态"),
+      icon: History,
+      title: c("Know when the view changes.", "观点变了，你也看得见。"),
+      body: c(
+        "Compare new opinions with earlier calls and follow the updates related to your holdings.",
+        "对比博主的新旧观点，持续了解与你持仓相关的变化。",
+      ),
+      items: [
+        [c("Earlier opinion", "先前观点"), c("Bullish", "看多")],
+        [c("Latest opinion", "最新观点"), c("Neutral", "中性")],
+        [
+          c("What to read", "查看内容"),
+          c("Reasons and source", "变化原因与来源"),
+        ],
+      ],
+      href: "/dashboard/journal",
+      action: c("Explore updates", "了解变化动态"),
+    },
   ];
   return (
-    <div id="decision-preview" className="landing-width pb-12 md:pb-16">
-      <div className="overflow-hidden rounded-2xl border border-border bg-background shadow-xl shadow-black/5">
-        <div className="flex flex-wrap items-center justify-between gap-4 border-b border-border bg-muted/30 px-5 py-4 md:px-7">
-          <div className="flex items-center gap-3">
-            <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-sm font-bold text-primary">
-              N
-            </span>
-            <div>
-              <p className="font-semibold">
-                NVDA{" "}
-                <span className="ml-2 text-xs font-normal text-muted-foreground">
-                  NVIDIA
-                </span>
-              </p>
-              <p className="text-xs text-muted-foreground">
-                {c("Stock overview", "股票信息总览")}
-              </p>
-            </div>
-          </div>
-          <p className="text-xs text-muted-foreground">
+    <section id="decision-preview" className="landing-preview-section">
+      <div className="landing-width">
+        <LandingReveal className="landing-section-heading">
+          <h2>
+            {c("One stock. A richer perspective.", "一只股票，不止一种视角。")}
+          </h2>
+          <p>
             {c(
-              "Illustrative example · not live market data",
-              "示例数据 · 非实时行情",
+              "Try the preview. Follow the journey from a first look to the latest change.",
+              "点击切换，体验从了解股票到追踪变化的完整过程。",
             )}
           </p>
-        </div>
-        <div
-          className="flex overflow-x-auto border-b border-border px-5 md:px-7"
-          role="tablist"
-          aria-label={c("Stock information preview", "股票信息预览")}
-        >
-          {steps.map((label, index) => (
-            <button
-              key={label}
-              role="tab"
-              id={`preview-tab-${index}`}
-              aria-selected={step === index}
-              aria-controls="preview-panel"
-              onClick={() => setStep(index)}
-              className={`min-w-[100px] border-b-2 px-4 py-3 text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${step === index ? "border-primary text-foreground" : "border-transparent text-muted-foreground"}`}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-        <div className="grid lg:grid-cols-[minmax(0,1.6fr)_minmax(280px,1fr)]">
-          <div className="border-b border-border p-5 lg:border-b-0 lg:border-r md:p-7">
-            <div className="flex justify-between gap-4">
-              <div>
-                <p className="text-3xl font-semibold tabular-nums">$201.00</p>
-                <p className="mt-1 text-xs text-primary">
-                  +7.8% {c("over the example period", "示例区间涨幅")}
-                </p>
-              </div>
-              <div className="text-right">
-                <p className="text-xs text-muted-foreground">
-                  {c("Your position", "我的持仓")}
-                </p>
-                <p className="mt-1 text-sm font-medium">
-                  75 {c("shares", "股")}
-                </p>
-                <p className="text-xs text-muted-foreground">$15,075</p>
-              </div>
-            </div>
-            <svg
-              viewBox="0 0 580 235"
-              role="img"
-              aria-label={c(
-                "Illustrative NVDA candlestick chart with AI reference levels",
-                "NVDA 示例K线，包含入场、失效和目标价位",
-              )}
-              className="mt-7 w-full"
-            >
-              <g stroke="currentColor" className="text-border">
-                {[30, 80, 130, 180].map((y) => (
-                  <line key={y} x1="0" x2="520" y1={y} y2={y} />
-                ))}
-              </g>
-              {prices.map((close, i) => {
-                const open = i === 0 ? 181 : prices[i - 1];
-                const y = (p: number) => 205 - (p - 175) * 6;
-                const up = close >= open;
-                return (
-                  <g
-                    key={i}
-                    stroke={up ? "#00c805" : "#ef6464"}
-                    fill={up ? "#00c805" : "#ef6464"}
-                  >
-                    <line
-                      x1={18 + i * 31}
-                      x2={18 + i * 31}
-                      y1={y(Math.max(open, close) + 2)}
-                      y2={y(Math.min(open, close) - 2)}
-                    />
-                    <rect
-                      x={11 + i * 31}
-                      y={y(Math.max(open, close))}
-                      width="14"
-                      height={Math.max(Math.abs(open - close) * 6, 3)}
-                      rx="1"
-                    />
-                  </g>
-                );
-              })}
-              <g
-                fontSize="11"
-                fill="currentColor"
-                className="text-muted-foreground"
-              >
-                <text x="538" y="30">
-                  $205
-                </text>
-                <text x="538" y="86">
-                  $195
-                </text>
-                <text x="538" y="150">
-                  $185
-                </text>
-                <text x="0" y="232">
-                  {c("Two weeks ago", "两周前")}
-                </text>
-                <text x="440" y="232">
-                  {c("Today", "今天")}
-                </text>
-              </g>
-              <g strokeDasharray="4 4">
-                <line x1="0" x2="520" y1="25" y2="25" stroke="#00c805" />
-                <line x1="0" x2="520" y1="139" y2="139" stroke="#3295ec" />
-                <line x1="0" x2="520" y1="181" y2="181" stroke="#ef6464" />
-              </g>
-            </svg>
-            <div className="mt-3 grid grid-cols-3 gap-3 text-xs">
-              <div>
-                <p className="text-muted-foreground">{c("Entry", "入场")}</p>
-                <p className="mt-1 font-medium">$185–188</p>
-              </div>
-              <div>
-                <p className="text-muted-foreground">
-                  {c("Invalidation", "失效价")}
-                </p>
-                <p className="mt-1 font-medium">$179</p>
-              </div>
-              <div>
-                <p className="text-muted-foreground">{c("Target", "目标")}</p>
-                <p className="mt-1 font-medium">$205</p>
-              </div>
-            </div>
-          </div>
-          <div
-            id="preview-panel"
-            role="tabpanel"
-            aria-labelledby={`preview-tab-${step}`}
-            className="p-5 md:p-7"
-          >
-            {step === 0 && (
-              <>
-                <h3 className="text-lg font-semibold">
-                  {c("What is happening?", "发生了什么？")}
-                </h3>
-                <p className="mt-3 text-sm leading-6 text-muted-foreground">
-                  {c(
-                    "Creator opinions, market context and your position. One view of the stock you're researching.",
-                    "创作者观点、市场环境与自己的持仓，在同一处理解你关注的股票。",
-                  )}
-                </p>
-                <div className="mt-7 space-y-5">
-                  {[
-                    [
-                      c("Creators", "创作者"),
-                      c("Strongly bullish", "强烈看多"),
-                    ],
-                    [
-                      c("AI technical", "AI 技术面"),
-                      c("Pullback structure", "回调结构"),
-                    ],
-                    [
-                      c("Key risk", "核心风险"),
-                      c("$179 support", "$179 支撑位"),
-                    ],
-                  ].map(([label, value]) => (
-                    <div
-                      key={label}
-                      className="flex justify-between gap-3 border-b border-border pb-3 text-sm"
-                    >
-                      <span className="text-muted-foreground">{label}</span>
-                      <span className="font-medium">{value}</span>
-                    </div>
-                  ))}
+        </LandingReveal>
+        <LandingReveal className="landing-preview-frame" delay={0.08}>
+          <Tabs value={step} onValueChange={setStep}>
+            <div className="preview-toolbar">
+              <div className="flex items-center gap-3">
+                <span className="preview-stock-mark">N</span>
+                <div>
+                  <p className="font-semibold">
+                    NVDA{" "}
+                    <span className="ml-2 text-xs font-normal text-muted-foreground">
+                      NVIDIA
+                    </span>
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {c("Stock workspace", "股票工作台")}
+                  </p>
                 </div>
-              </>
-            )}
-            {step === 1 && (
-              <>
-                <h3 className="text-lg font-semibold">
-                  {c("Why does it matter?", "这意味着什么？")}
-                </h3>
-                <ul className="mt-6 space-y-5 text-sm">
-                  {[
-                    c("Higher highs and higher lows", "更高的高点与低点"),
-                    c(
-                      "Price above EMA20 / EMA50",
-                      "价格位于 EMA20 / EMA50 上方",
-                    ),
-                    c("6 bullish creator views", "6 位创作者看多"),
-                    c("Valuation remains a risk", "估值仍是风险"),
-                  ].map((text) => (
-                    <li key={text} className="flex gap-3">
-                      <Check className="h-4 w-4 shrink-0 text-primary" />
-                      {text}
-                    </li>
-                  ))}
-                </ul>
-                <p className="mt-6 text-xs leading-5 text-muted-foreground">
-                  {c(
-                    "Evidence to weigh, with reasons you can inspect.",
-                    "查看分析依据，了解观点背后的理由。",
+              </div>
+              <span className="text-xs text-muted-foreground">
+                {c(
+                  "Illustrative example, not live market data",
+                  "示例数据，非实时行情",
+                )}
+              </span>
+            </div>
+            <div className="preview-body">
+              <div className="preview-chart-panel">
+                <div className="flex items-end justify-between gap-4">
+                  <div>
+                    <p className="text-xs text-muted-foreground">
+                      {c("Example price", "示例价格")}
+                    </p>
+                    <p className="mt-2 text-4xl font-semibold tracking-tight tabular-nums">
+                      $201.00
+                    </p>
+                  </div>
+                  <span className="text-xs text-positive">
+                    {c("Price context", "价格背景")}
+                  </span>
+                </div>
+                <svg
+                  viewBox="0 0 580 265"
+                  role="img"
+                  aria-label={c(
+                    "Illustrative NVDA candlestick chart, from $184 to $201",
+                    "NVDA 示例 K 线，价格从 184 美元到 201 美元",
                   )}
-                </p>
-              </>
-            )}
-            {step === 2 && (
-              <>
-                <BookOpen className="h-6 w-6 text-primary" />
-                <h3 className="mt-4 text-lg font-semibold">
-                  {c("AI research summary", "AI 研究摘要")}
-                </h3>
-                <p className="mt-4 text-sm leading-6">
-                  {c(
-                    "AI infrastructure demand remains strong. The analysis highlights support on a pullback and valuation risk.",
-                    "AI 基础设施需求持续强劲。分析关注回调支撑是否稳固，以及估值风险。",
-                  )}
-                </p>
-                <p className="mt-5 text-xs text-muted-foreground">
-                  {c("Bullish · 1–3 months", "看多 · 1–3个月")}
-                </p>
-                <Button asChild className="mt-7">
-                  <Link href="/dashboard/market/NVDA">
-                    {c("Read stock analysis", "查看股票分析")}
-                  </Link>
-                </Button>
-              </>
-            )}
-            {step === 3 && (
-              <>
-                <h3 className="text-lg font-semibold">
-                  {c("What changed recently?", "最近有什么变化？")}
-                </h3>
-                <p className="mt-4 text-sm leading-6 text-muted-foreground">
-                  {c(
-                    "Two weeks later: new creator opinions shift the overall view.",
-                    "两周后，新的博主观点使整体倾向发生了变化。",
-                  )}
-                </p>
-                <div className="mt-6 space-y-4 text-sm">
-                  <p>
-                    {c("Creators: Bullish → Neutral", "创作者：看多 → 中性")}
-                  </p>
-                  <p>
-                    {c("Price: $186 → $201", "价格：$186 → $201")}
-                  </p>
+                  className="mt-8 w-full"
+                >
+                  <g stroke="currentColor" className="text-border">
+                    {[30, 90, 150, 210].map((y) => (
+                      <line
+                        key={y}
+                        x1="0"
+                        x2="515"
+                        y1={y}
+                        y2={y}
+                        strokeDasharray="3 5"
+                      />
+                    ))}
+                  </g>
+                  {prices.map((close, i) => {
+                    const open = i === 0 ? 181 : prices[i - 1];
+                    const y = (p: number) => 228 - (p - 175) * 6;
+                    return (
+                      <motion.g
+                        key={i}
+                        className={
+                          close >= open ? "text-positive" : "text-negative"
+                        }
+                        stroke="currentColor"
+                        fill="currentColor"
+                        initial={false}
+                        whileInView={
+                          reduce
+                            ? undefined
+                            : { opacity: [0, 1], scaleY: [0.7, 1] }
+                        }
+                        viewport={{ once: true }}
+                        transition={{ delay: i * 0.025, duration: 0.5 }}
+                        style={{ transformOrigin: "center" }}
+                      >
+                        <line
+                          x1={18 + i * 31}
+                          x2={18 + i * 31}
+                          y1={y(Math.max(open, close) + 2)}
+                          y2={y(Math.min(open, close) - 2)}
+                        />
+                        <rect
+                          x={11 + i * 31}
+                          y={y(Math.max(open, close))}
+                          width="13"
+                          height={Math.max(Math.abs(open - close) * 6, 3)}
+                          rx="2"
+                        />
+                      </motion.g>
+                    );
+                  })}
+                  <g
+                    fontSize="11"
+                    fill="currentColor"
+                    className="text-muted-foreground"
+                  >
+                    <text x="533" y="35">
+                      $205
+                    </text>
+                    <text x="533" y="95">
+                      $195
+                    </text>
+                    <text x="533" y="155">
+                      $185
+                    </text>
+                    <text x="533" y="215">
+                      $175
+                    </text>
+                    <text x="0" y="260">
+                      {c("Earlier", "先前")}
+                    </text>
+                    <text x="477" y="260">
+                      {c("Latest", "最近")}
+                    </text>
+                  </g>
+                </svg>
+                <div className="preview-chart-caption">
+                  <Check
+                    size={15}
+                    className="text-positive shrink-0"
+                    aria-hidden="true"
+                  />
                   <p>
                     {c(
-                      "See the latest opinions and source videos.",
-                      "直接查看最新观点和原始视频。",
+                      "Price, opinions and research stay connected to the same stock.",
+                      "行情、观点与研究，始终围绕同一只股票。",
                     )}
                   </p>
                 </div>
-                <Button asChild variant="outline" className="mt-7">
-                  <Link href="/dashboard/journal">
-                    {c("View updates", "查看变化动态")}
-                    <ArrowUpRight className="ml-2 h-4 w-4" />
-                  </Link>
-                </Button>
-              </>
-            )}
-          </div>
-        </div>
+              </div>
+              <div className="preview-insight-panel">
+                <TabsList
+                  aria-label={c("Stock information preview", "股票信息预览")}
+                  className="preview-tabs"
+                >
+                  {steps.map((item) => (
+                    <TabsTrigger value={item.value} key={item.value}>
+                      {item.label}
+                    </TabsTrigger>
+                  ))}
+                </TabsList>
+                {steps.map(
+                  ({ value, icon: Icon, title, body, items, href, action }) => (
+                    <TabsContent
+                      value={value}
+                      key={value}
+                      className="preview-tab-content"
+                    >
+                      <motion.div
+                        key={value}
+                        initial={false}
+                        animate={
+                          reduce ? undefined : { opacity: [0, 1], y: [10, 0] }
+                        }
+                        transition={{ duration: 0.4, ease: landingEase }}
+                      >
+                        <Icon
+                          size={24}
+                          className="text-positive"
+                          aria-hidden="true"
+                        />
+                        <h3 className="mt-5 text-2xl font-semibold tracking-tight">
+                          {title}
+                        </h3>
+                        <p className="mt-3 text-sm leading-7 text-muted-foreground">
+                          {body}
+                        </p>
+                        <dl className="preview-evidence">
+                          {items.map(([label, val]) => (
+                            <div key={label}>
+                              <dt>{label}</dt>
+                              <dd>{val}</dd>
+                            </div>
+                          ))}
+                        </dl>
+                        <Button
+                          variant="ghost"
+                          asChild
+                          className="preview-action"
+                        >
+                          <Link href={href}>
+                            {action}
+                            <ArrowUpRight size={15} className="ml-2" />
+                          </Link>
+                        </Button>
+                      </motion.div>
+                    </TabsContent>
+                  ),
+                )}
+              </div>
+            </div>
+          </Tabs>
+        </LandingReveal>
       </div>
-    </div>
+    </section>
   );
 }

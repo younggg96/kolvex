@@ -1531,6 +1531,7 @@
     "translate": "Translate",
     "showOriginal": "Original",
     "translating": "Translating...",
+    "translationFailed": "Translation failed. Try Translate again.",
     "error": {
       "loadFailed": "Failed to load analysis"
     }

@@ -87,7 +87,7 @@ export function DebateCard({
     [bullKey, bearKey, judgeKey]
   );
 
-  const { showTranslated, isTranslating, toggle, getContent } =
+  const { showTranslated, isTranslating, translationError, toggle, getContent } =
     useDebateTranslation(debate, debateKeys, locale);
 
   const [copied, setCopied] = useState(false);
@@ -231,15 +231,27 @@ export function DebateCard({
           </div>
         </div>
 
+        {translationError && (
+          <p role="alert" className="mb-4 text-sm text-negative">
+            {t("tradingAnalysis.translationFailed")}
+          </p>
+        )}
+
         {/* Judge Verdict */}
         {hasJudge && (
           <div className="mb-6">
             <div className="rounded-xl bg-muted/60 p-5 md:p-6">
-              <div className="mb-2 flex items-center gap-2">
+              <div className="mb-4 flex flex-wrap items-center gap-2">
                 <ShieldCheck className="h-4 w-4 shrink-0 text-foreground" />
-                <span className="text-base font-semibold text-foreground">
+                <span className="flex-1 text-base font-semibold text-foreground">
                   {judgeLabel}
                 </span>
+                <TranslateButton
+                  showTranslated={showTranslated}
+                  isTranslating={isTranslating}
+                  onToggle={toggle}
+                  t={t}
+                />
               </div>
               <MarkdownBody content={judgeContent} />
             </div>

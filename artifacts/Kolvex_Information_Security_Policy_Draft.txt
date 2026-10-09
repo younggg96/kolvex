@@ -1,0 +1,49 @@
+KOLVEX INFORMATION SECURITY POLICY
+
+Version: 1.0 - Draft for review
+Prepared: October 9, 2026
+Effective date: To be set upon approval
+Policy owner: Guanggeng Yang, Founder and Developer
+Contact: yanguanggeng960123@gmail.com
+
+1. PURPOSE AND SCOPE
+This policy establishes security requirements for Kolvex's application, infrastructure, development processes, and user data. It applies to anyone with access to Kolvex systems, including contractors and service providers where applicable.
+
+Kolvex uses Plaid Investments for read-only access to users' investment account holdings and investment transactions. This integration is intended for portfolio tracking and analysis, not to execute trades or transfer funds.
+
+2. SECURITY RESPONSIBILITY AND RISK MANAGEMENT
+The policy owner is responsible for approving this policy, managing access, reviewing security risks, and coordinating incident response. Security risks must be reviewed before significant system changes and at least annually. Identified risks and remediation decisions must be documented and tracked to resolution.
+
+3. ACCESS CONTROL
+Access to production systems and user data must be restricted to authorized individuals based on business need and least privilege. Administrative accounts must use unique credentials and multi-factor authentication where supported. Access must be reviewed periodically and removed promptly when no longer needed. Development and production credentials must be kept separate.
+
+4. DATA AND CREDENTIAL PROTECTION
+Sensitive data must be encrypted in transit using HTTPS/TLS and protected at rest using appropriate encryption. Plaid access tokens must be encrypted before storage and retained on the server side. Plaid secrets, database credentials, and encryption keys must be stored in protected backend configuration or a secrets manager, never in public repositories or client-side code. Encryption keys must be protected separately from encrypted data. Suspected compromised credentials must be revoked or rotated promptly.
+
+Kolvex must not collect or store users' brokerage login passwords. Collection and use of financial data must be limited to the application's stated functionality and user authorization.
+
+5. SECURE DEVELOPMENT AND VULNERABILITY MANAGEMENT
+Changes affecting authentication, authorization, financial data, or secrets must receive security review before release. Dependencies and infrastructure must be kept updated, and known vulnerabilities must be assessed and remediated according to severity. Production errors must not expose secrets or sensitive user data. Security-relevant functionality must be tested before deployment.
+
+6. LOGGING AND MONITORING
+Security-relevant authentication events, application failures, and access errors must be logged and reviewed on a regular schedule defined by the policy owner. Logs must exclude credentials, Plaid access tokens, and unnecessary personal or financial information. Access to logs must be restricted, and suspicious activity must be investigated promptly.
+
+7. INCIDENT RESPONSE
+Suspected incidents must be reported to the policy owner at the contact above. The owner must assess the incident, contain unauthorized access, preserve relevant evidence, revoke or rotate affected credentials, and restore secure operation. Notifications to affected users, Plaid, or other parties must be made as required by applicable obligations. The cause, impact, response, and corrective actions must be documented.
+
+8. DATA RETENTION, DELETION, AND RECOVERY
+User data must be retained only as long as needed for the service or applicable obligations, with retention periods documented. Users must have a way to request account disconnection and data deletion. Unused Plaid Items must be removed through Plaid's Item removal endpoint when appropriate. Deletion must cover associated stored tokens and data, subject to documented retention requirements. Backup retention and expiry must be documented.
+
+Critical application data and configuration must have an appropriate recovery process. Backups must be protected with restricted access and encryption where supported, and restoration must be tested periodically.
+
+9. THIRD-PARTY SERVICES AND PERSONNEL
+Third-party services processing user data must be reviewed for appropriate security controls and granted only necessary access. Anyone with access to Kolvex systems must understand this policy, protect credentials, and report suspected incidents.
+
+10. REVIEW AND APPROVAL
+The policy owner must review this policy at least annually and following significant system changes or security incidents. Exceptions must be documented with their risk, approval, and planned remediation.
+
+Approval status: Draft - not yet approved or confirmed as implemented.
+Approved by: ____________________
+Approval date: __________________
+
+Before adoption, the owner must confirm that these requirements match actual operations, define the review and retention schedules, resolve any gaps, and record approval. This draft is not evidence that the controls are already implemented.

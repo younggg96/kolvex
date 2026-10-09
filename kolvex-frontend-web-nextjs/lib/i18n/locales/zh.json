@@ -1531,6 +1531,7 @@
     "translate": "翻译",
     "showOriginal": "原文",
     "translating": "翻译中...",
+    "translationFailed": "翻译失败，请再次点击翻译重试。",
     "error": {
       "loadFailed": "加载分析记录失败"
     }

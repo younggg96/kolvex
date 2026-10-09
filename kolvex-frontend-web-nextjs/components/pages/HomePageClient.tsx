@@ -1,46 +1,64 @@
 "use client";
 
-import React, { useEffect } from "react";
+import { useEffect } from "react";
+import { MotionConfig } from "motion/react";
 import BaseLayout from "@/components/layout/BaseLayout";
 import LandingHero from "@/components/landing/LandingHero";
+import LandingPreview from "@/components/landing/LandingPreview";
 import LandingHowItWorks from "@/components/landing/LandingHowItWorks";
 import LandingCTA from "@/components/landing/LandingCTA";
+import "@/components/landing/landing.css";
 
 export default function HomePageClient() {
-  // Smooth scroll implementation for anchor links
   useEffect(() => {
-    const handleAnchorClick = (e: MouseEvent) => {
-      const target = e.target as HTMLElement;
-      const anchor = target.closest("a");
-
-      if (anchor && anchor.hash && anchor.origin === window.location.origin) {
-        e.preventDefault();
-        const element = document.querySelector(anchor.hash);
-        if (element) {
-          element.scrollIntoView({
-            behavior: "smooth",
-            block: "start",
-          });
-        }
-      }
+    const handleAnchorClick = (event: MouseEvent) => {
+      if (
+        event.defaultPrevented ||
+        event.button !== 0 ||
+        event.metaKey ||
+        event.ctrlKey ||
+        event.shiftKey ||
+        event.altKey
+      )
+        return;
+      const target = event.target;
+      if (!(target instanceof Element)) return;
+      const anchor = target.closest<HTMLAnchorElement>("a");
+      if (
+        !anchor?.hash ||
+        anchor.origin !== window.location.origin ||
+        anchor.pathname !== window.location.pathname
+      )
+        return;
+      const element = document.getElementById(
+        decodeURIComponent(anchor.hash.slice(1)),
+      );
+      if (!element) return;
+      event.preventDefault();
+      window.history.pushState(null, "", anchor.hash);
+      element.scrollIntoView({
+        behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
+          ? "instant"
+          : "smooth",
+        block: "start",
+      });
+      element.setAttribute("tabindex", "-1");
+      element.focus({ preventScroll: true });
     };
-
-    document.addEventListener("click", handleAnchorClick);
-    return () => document.removeEventListener("click", handleAnchorClick);
+    document.addEventListener("click", handleAnchorClick, true);
+    return () => document.removeEventListener("click", handleAnchorClick, true);
   }, []);
 
   return (
-    <BaseLayout>
-      <div className="flex flex-col w-full">
-        {/* Hero Section - Main attention grabber */}
-        <LandingHero />
-
-        {/* How It Works - Reduce friction */}
-        <LandingHowItWorks />
-
-        {/* CTA Section - Convert visitors */}
-        <LandingCTA />
+    <MotionConfig reducedMotion="user">
+      <div className="landing-page">
+        <BaseLayout>
+          <LandingHero />
+          <LandingPreview />
+          <LandingHowItWorks />
+          <LandingCTA />
+        </BaseLayout>
       </div>
-    </BaseLayout>
+    </MotionConfig>
   );
 }

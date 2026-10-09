@@ -31,7 +31,7 @@ export function ReportCard({
   headerExtra?: React.ReactNode;
   bordered?: boolean;
 }) {
-  const { displayContent, showTranslated, isTranslating, toggle } =
+  const { displayContent, showTranslated, isTranslating, translationError, toggle } =
     useContentTranslation(content, locale);
 
   const [copied, setCopied] = useState(false);
@@ -151,6 +151,11 @@ export function ReportCard({
             />
           </div>
         </div>
+        {translationError && (
+          <p role="alert" className="mb-4 text-sm text-negative">
+            {t("tradingAnalysis.translationFailed")}
+          </p>
+        )}
         <MarkdownBody content={displayContent || ""} />
       </section>
     </TooltipProvider>

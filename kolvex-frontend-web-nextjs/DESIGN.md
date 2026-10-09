@@ -88,13 +88,17 @@ to the appropriate entry so refresh and saved links keep working.
 
 AI Research detail pages lead with the existing final conclusion, then the
 investment plan, analyst evidence and supporting debate. The reading area uses
-16px body text on mobile and 17px on desktop, line height 1.85 and a maximum
-72ch measure. Markdown titles are subordinate to the stock heading; paragraphs
+16px body text on mobile and 17px on desktop, line height 1.85 and fills the
+available reading column. Markdown titles are subordinate to the stock heading; paragraphs
 and sections have distinct spacing. Desktop gets a sticky section directory;
 mobile uses a horizontal text directory. Analyst tabs stay visible as words,
 separate from article actions. Debate verdicts precede native disclosures whose
 expanded text follows document flow, without nested vertical scrolling. Both
 published and completed authoring reports use `ResearchReportContent`.
+Report and debate actions show a labelled Translate / Original toggle; verdicts
+also expose it beside their heading. Translation uses the existing API, retains
+the original on failure with an inline retry hint, and resets when source content
+or the target language changes.
 
 ## Elevation & Depth
 
@@ -271,3 +275,32 @@ theme tokens and Chinese/English messages remain authoritative.
 | Select/Listbox | `components/ui/select.tsx` | DESIGN.md; `lib/aiModels.ts` catalogue | Authored Radix model and interval selectors | Browser keyboard, popup width, collision and bounded scrolling |
 | Overlay | `components/ui/dialog.tsx` | DESIGN.md; `PriceChart` and focus draft behavior | Default dialog; fullscreen chart with a header close action | Browser nested Escape, close, focus restoration and narrow layout |
 | Disclosure | Native details; `AnalysisSummary` | Saved analysis payload | Technical evidence, plan rationale and full conclusion | Browser expand/collapse and long content |
+
+## Marketing landing page
+
+The homepage is a deliberate marketing variant of the quieter stock workspace,
+authorized by the landing redesign brief. `components/landing/landing.css` owns
+its scoped tokens: mist #F8FAF8, white #FFFFFF, forest ink #142019, muted #606C64,
+line #DFE6E0 and the existing #00C805 brand accent. Dark mode uses #080D0A ground,
+#101812 surfaces, #F0F5EF ink and #9DAAA0 secondary text. Text-safe green is
+#008503 in light and #54DD63 in dark; the brand action fill remains unchanged.
+The existing Inter/Chinese stack preserves brand recognition, with tighter,
+larger display typography on the homepage only.
+
+The asymmetric hero pairs a two-line headline with an interactive illustrative
+price chart and opinion/research/holding nodes. The single ambient composition
+communicates that these sources connect to the same stock. Stock buttons change
+the example chart; its values are explicitly illustrative. A pause button stops
+ambient movement and pointer tilt. Source-based evidence, no fabricated creators,
+customer counts or performance claims, remains the marketing content rule.
+
+`LandingMotion` owns shared reveal timing. Motion is isolated in client components:
+chart entry and a traveling signal, pointer tilt and scroll parallax using motion
+values, section reveals, and feature/tab
+transitions. Native scrolling remains in control. Reduced motion removes movement
+and preserves content; narrow screens use a single column. Shared Radix Tabs own
+preview keyboard navigation. Feature disclosures use buttons with expanded state
+and corresponding regions. Existing route targets, section anchors, navigation
+labels, logo, footer/legal content and global application tokens are preserved.
+Buttons remain pills, example panels use 20px corners and their content nodes
+12px corners. Marketing layers are base 0, content 1, diagram notes 2, header 20.

@@ -3,13 +3,37 @@
 import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useTranslation } from "@/lib/i18n";
-import { ScrollReveal } from "@/components/ui/scroll-reveal";
+import { useCopy } from "@/components/decision/shared";
+import { LandingReveal } from "./LandingMotion";
 
 export default function LandingCTA() {
-  const { t } = useTranslation();
-  return <section className="bg-background py-12 md:py-16"><ScrollReveal delay={100} className="landing-width flex flex-col justify-between gap-6 md:flex-row md:items-center">
-    <h2 className="max-w-xl font-display text-3xl font-bold">{t("landing.closing.title")}</h2>
-    <Button asChild size="lg"><Link href="/auth">{t("landing.closing.open")}<ArrowUpRight className="ml-2 h-4 w-4" /></Link></Button>
-  </ScrollReveal></section>;
+  const c = useCopy();
+  return (
+    <section className="landing-closing">
+      <LandingReveal className="landing-width">
+        <div className="landing-closing-panel">
+          <div>
+            <h2>
+              {c(
+                "See your stocks\nin a new light.",
+                "换个视角，\n看你关注的股票。",
+              )}
+            </h2>
+            <p>
+              {c(
+                "Your next research session starts here.",
+                "下一次股票研究，从这里开始。",
+              )}
+            </p>
+          </div>
+          <Button asChild size="lg" className="landing-primary">
+            <Link href="/auth">
+              {c("Open Kolvex", "打开 Kolvex")}
+              <ArrowUpRight className="ml-3 h-4 w-4" />
+            </Link>
+          </Button>
+        </div>
+      </LandingReveal>
+    </section>
+  );
 }

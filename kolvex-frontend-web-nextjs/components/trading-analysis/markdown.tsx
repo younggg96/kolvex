@@ -3,7 +3,7 @@ import remarkGfm from "remark-gfm";
 import { cn } from "@/lib/utils";
 
 export const PROSE_CLASSES = cn(
-  "prose dark:prose-invert break-words text-base leading-[1.85] text-foreground/90 md:text-[17px]",
+  "prose w-full max-w-none dark:prose-invert break-words text-base leading-[1.85] text-foreground/90 md:text-[17px]",
   "prose-headings:mt-10 prose-headings:mb-4 prose-headings:font-semibold prose-headings:leading-snug prose-headings:text-foreground",
   "prose-h1:text-2xl prose-h2:text-xl prose-h3:text-lg prose-h4:text-base",
   "prose-p:my-4 prose-p:leading-[1.85]",
