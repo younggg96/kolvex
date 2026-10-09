@@ -1,22 +1,14 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState, useCallback, useRef } from "react";
 import Link from "next/link";
 import {
-  TrendingUp,
-  TrendingDown,
-  Minus,
   Clock,
-  Search,
-  ArrowLeft,
   User,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
 import { useTranslation } from "@/lib/i18n";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import {
@@ -44,59 +36,44 @@ function ExploreSkeleton() {
 }
 
 export default function ExploreAnalysesPage() {
-  const router = useRouter();
   const { t } = useTranslation();
 
   const [analyses, setAnalyses] = useState<TradingAnalysis[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [searchTicker, setSearchTicker] = useState("");
-  const [appliedTicker, setAppliedTicker] = useState("");
+  const [offset, setOffset] = useState(0);
+  const [error, setError] = useState(false);
+  const requestId = useRef(0);
 
   const loadPublished = useCallback(
-    async (ticker?: string) => {
+    async () => {
+      const currentRequest = ++requestId.current;
       try {
         setLoading(true);
+        setError(false);
         const res = await getPublishedAnalyses({
           limit: 30,
-          ticker: ticker || undefined,
+          offset,
         });
+        if (currentRequest !== requestId.current) return;
         setAnalyses(res.items);
         setTotal(res.total);
       } catch (e) {
-        console.error("Failed to load published analyses:", e);
+        if (currentRequest === requestId.current) setError(true);
       } finally {
-        setLoading(false);
+        if (currentRequest === requestId.current) setLoading(false);
       }
     },
-    []
+    [offset]
   );
 
   useEffect(() => {
-    loadPublished(appliedTicker);
-  }, [loadPublished, appliedTicker]);
-
-  const handleSearch = () => {
-    setAppliedTicker(searchTicker.trim().toUpperCase());
-  };
+    loadPublished();
+    return () => { requestId.current += 1; };
+  }, [loadPublished]);
 
   return (
-    <DashboardLayout
-      title={t("tradingAnalysis.explore.title")}
-      headerLeftAction={
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => router.push("/dashboard/trading-analysis")}
-          className="gap-1"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          <span className="hidden sm:inline">
-            {t("tradingAnalysis.backToList")}
-          </span>
-        </Button>
-      }
-    >
+    <DashboardLayout title={t("tradingAnalysis.explore.title")}>
       <div className="relative flex-1 overflow-y-auto">
         <div className="mx-auto w-full max-w-[1080px] space-y-8 px-4 pb-16 pt-6 md:px-8 md:pt-8">
           <div>
@@ -107,42 +84,6 @@ export default function ExploreAnalysesPage() {
               {t("tradingAnalysis.explore.description")}
             </p>
           </div>
-
-          <form
-            role="search"
-            onSubmit={(e) => {
-              e.preventDefault();
-              handleSearch();
-            }}
-            className="flex max-w-md items-center gap-2"
-          >
-            <div className="relative flex-1">
-              <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                placeholder={t("tradingAnalysis.explore.searchPlaceholder")}
-                value={searchTicker}
-                onChange={(e) => setSearchTicker(e.target.value.toUpperCase())}
-                aria-label={t("tradingAnalysis.explore.searchPlaceholder")}
-                className="h-11 rounded-full pl-10"
-              />
-            </div>
-            <Button type="submit" className="h-11">
-              {t("common.search")}
-            </Button>
-            {appliedTicker && (
-              <Button
-                type="button"
-                variant="ghost"
-                className="h-11"
-                onClick={() => {
-                  setSearchTicker("");
-                  setAppliedTicker("");
-                }}
-              >
-                {t("common.reset")}
-              </Button>
-            )}
-          </form>
 
           <section aria-labelledby="explore-published" className="animate-fade-in-up">
             <h3 id="explore-published" className="border-b border-border pb-3 text-[17px] font-semibold text-foreground">
@@ -156,13 +97,11 @@ export default function ExploreAnalysesPage() {
 
             {loading ? (
               <ExploreSkeleton />
+            ) : error ? (
+              <p role="alert" className="py-8 text-sm text-muted-foreground">{t("common.error")} <Button variant="outline" size="sm" onClick={() => loadPublished()}>{t("common.retry")}</Button></p>
             ) : analyses.length === 0 ? (
               <p className="py-12 text-[15px] text-muted-foreground">
-                {appliedTicker
-                  ? t("tradingAnalysis.explore.noResultsForTicker", {
-                      ticker: appliedTicker,
-                    })
-                  : t("tradingAnalysis.explore.noPublished")}
+                {t("tradingAnalysis.explore.noPublished")}
               </p>
             ) : (
               <ul className="divide-y divide-border">
@@ -211,6 +150,7 @@ export default function ExploreAnalysesPage() {
                 ))}
               </ul>
             )}
+            {!error && total > 30 && <div className="mt-6 flex items-center gap-3"><Button variant="outline" disabled={loading || offset === 0} onClick={() => setOffset((n) => Math.max(0, n - 30))}>{t("common.previous")}</Button><span className="text-sm text-muted-foreground">{Math.floor(offset / 30) + 1} / {Math.ceil(total / 30)}</span><Button variant="outline" disabled={loading || offset + 30 >= total} onClick={() => setOffset((n) => n + 30)}>{t("common.next")}</Button></div>}
           </section>
         </div>
       </div>

@@ -39,7 +39,9 @@
     "timeRange": "Time range",
     "breadcrumb": "Breadcrumb",
     "intlLocale": "en-US",
-    "justNow": "Just now"
+    "justNow": "Just now",
+    "refresh": "Refresh",
+    "previous": "Previous"
   },
   "sidebar": {
     "markets": "Markets",
@@ -61,7 +63,7 @@
     "toggleSidebar": "Toggle Sidebar",
     "home": "Home",
     "research": "Research",
-    "journal": "Journal"
+    "journal": "Updates"
   },
   "tabBar": {
     "markets": "Markets",
@@ -72,7 +74,7 @@
     "more": "More",
     "home": "Home",
     "research": "Research",
-    "journal": "Journal"
+    "journal": "Updates"
   },
   "userMenu": {
     "account": "Account",
@@ -267,10 +269,10 @@
       "signIn": "Sign in"
     },
     "workspaceHero": {
-      "headline": "Know why you own a stock. Know when that reason changes.",
-      "subheadline": "Kolvex brings creator opinions, market structure, AI research, and your portfolio into one investment decision workspace.",
+      "headline": "Understand the stock. See what changed.",
+      "subheadline": "Creator opinions, market data, AI research and holdings, ready to read.",
       "openWorkspace": "Open workspace",
-      "exploreWorkflow": "Explore an NVDA decision",
+      "exploreWorkflow": "Explore the NVDA overview",
       "youtube": "YouTube creator research",
       "portfolio": "Portfolio and trade review"
     },
@@ -292,7 +294,7 @@
       }
     },
     "closing": {
-      "title": "Build a thesis you can come back to.",
+      "title": "Fresh information on the stocks that matter to you.",
       "open": "Open Kolvex"
     }
   },
@@ -1408,7 +1410,7 @@
     "fullReportCopied": "Full report copied to clipboard",
     "explore": {
       "title": "Explore Analyses",
-      "description": "Browse published multi-agent AI analyses shared by the community",
+      "description": "Read published AI research, including conclusions, evidence and risks.",
       "featureCommunity": "Community Shared",
       "featureInsights": "Expert Insights",
       "featureAI": "AI-Powered",

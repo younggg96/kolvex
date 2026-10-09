@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { RefreshCw } from "lucide-react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -16,7 +15,6 @@ import {
   HeldMark,
   Panel,
   TextLink,
-  TickerSearch,
   useCopy,
   useCreatorCatalogue,
   useDayLabel,
@@ -104,17 +102,9 @@ export default function ResearchHome() {
   };
 
   return (
-    <DashboardLayout
-      title={c("Research", "研究")}
-      headerActions={
-        <Button size="sm" variant="ghost" disabled={loading} onClick={() => setAttempt((n) => n + 1)}>
-          <RefreshCw className={cn("mr-2 h-4 w-4", loading && "motion-safe:animate-spin")} />
-          {c("Refresh", "刷新")}
-        </Button>
-      }
-    >
+    <DashboardLayout title={c("Research", "研究")}>
       <main className="flex-1 overflow-y-auto" aria-busy={loading}>
-        <div className="mx-auto max-w-[1200px] px-4 pb-16 pt-6 md:px-8 md:pt-8">
+        <div className="mx-auto px-4 pb-16 pt-6 md:px-8 md:pt-8">
           <section className="flex flex-col gap-6 border-b border-border pb-8 lg:flex-row lg:items-end lg:justify-between">
             <div className="min-w-0" aria-live="polite">
               {loading && !dashboard ? (
@@ -137,9 +127,9 @@ export default function ResearchHome() {
                     {thisWeek.length
                       ? c(
                           `${thisWeek.length} ${thisWeek.length === 1 ? "stock has" : "stocks have"} new creator calls this week`,
-                          `这周有 ${thisWeek.length} 只股票出现新判断`,
+                          `这周有 ${thisWeek.length} 只股票出现新观点`,
                         )
-                      : c("No new creator calls this week", "这周博主还没有新判断")}
+                      : c("No new creator calls this week", "这周博主还没有新观点")}
                   </h1>
                   <p className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
                     {thisWeek.length ? (
@@ -155,7 +145,7 @@ export default function ResearchHome() {
                 </>
               )}
             </div>
-            <TickerSearch className="lg:w-[360px]" placeholder={c("Research a ticker: NVDA, AAPL…", "研究一只股票：NVDA、AAPL…")} />
+            <TextLink href="/dashboard/youtube-opinions?tab=stocks">{c("Browse all stocks", "浏览全部股票")}</TextLink>
           </section>
 
           <div className="mt-10 grid gap-x-12 gap-y-12 xl:grid-cols-[minmax(0,1fr)_320px]">

@@ -1,56 +1,32 @@
-# Kolvex investment decision workspace
+# Kolvex stock information workspace
 
-Kolvex brings creator opinions, market structure, AI research and real holdings into a ticker-based investment decision workspace. The product outcome is: **Know why you own a stock. Know when that reason changes.**
+Kolvex presents creator opinions, market data, AI analysis and linked holdings for users to read. The primary flow requires no personal opinion, plan, price threshold or review entry.
 
-## Information architecture
+## Reader flow
 
-| Destination | Route | User's task |
-| --- | --- | --- |
-| Public home | `/` | Explore one illustrative NVDA decision, from research through review |
-| Markets | `/dashboard` | Default entry: inspect stock quotes and benchmark ETFs; switch between selected stocks, holdings and creator coverage |
-| Research | `/dashboard/research` | Discover stocks through creator coverage, browse creators and compare opinion changes |
-| Deep Research | `/dashboard/trading-analysis` | Configure an AI analysis and review existing reports |
-| Stock workspace | `/dashboard/research/[ticker]` | Inspect market, creator, technical, research and personal evidence together |
-| Portfolio | `/dashboard/portfolio` | Review theses overlapping linked equity holdings, then inspect actual accounts and trades |
-| Journal | `/dashboard/journal` | Review active/closed theses and immutable reasoning history |
-| YouTube Opinions | `/dashboard/youtube-opinions` | Existing creator research experience, retained |
+1. Browse stock lists in Markets or Research and open a ticker.
+2. Read current prices, recent creator calls, source videos, stated risks and available AI technical analysis.
+3. Read published deep research without entering a ticker, selecting a model or supplying an API key. Missing published reports are explicitly marked unavailable.
+4. Open Updates (`/dashboard/journal`, kept for link compatibility) for imported opinion changes and recent opinions. Switch between all stocks and linked equity holdings using buttons.
+5. Portfolio automatically matches available creator updates to existing equity holdings.
 
-AI Chat and Trading Analysis are retained as capabilities. Ask Kolvex opens from the application shell; a question from a stock workspace carries its loaded market, creator, position, technical, research and thesis context. Prior conversations remain accessible there. `/dashboard/chat/*` retains existing conversation URLs. `/dashboard/trading-analysis/*` retains research configuration, published reports and existing report URLs. Research started from a stock workspace pre-fills that ticker. Its conclusion and investment plan come before expandable agent debates.
+Markets, Research and Updates do not show personal thesis prompts or ticker-entry forms. Ask Kolvex opens from the sidebar, header, or ⌘K. The question is sent as written. Opinions, quotes, and holdings already loaded on the page go to the model as evidence and appear in the composer as a removable label; they are not written into the conversation. Settings, authentication, brokerage linking and admin publishing remain operational controls rather than information-entry requirements for reading research. Existing chat URLs remain accessible.
 
-## Decision flow
+## Sources and limits
 
-1. Enter a ticker from Markets or Research, or open a linked equity ticker in Portfolio.
-2. Read source coverage and recent creator calls. The creator direction uses the **latest opinion per creator within 30 days**; missing coverage is not neutral evidence. This is all tracked creators, not a personal following list.
-3. Run chart AI analysis deliberately. The existing chart draws support, resistance, trendlines and Fibonacci levels, and retains creator markers and drawing synchronization.
-4. When grounded in the chart, AI can propose a conditional entry range, invalidation and up to two targets. The backend rejects incoherent or out-of-range plans. Setup Alignment is five equal technical checks: trend, price vs EMA20, EMA20 vs EMA50, RSI momentum and volume. A complete score requires all inputs. It is not a return probability.
-5. Use the setup as an editable draft, or write a thesis manually. Save direction, reasoning, optional price levels and a time horizon.
-6. Return to Portfolio or Journal to compare the current quote and creator direction with saved thresholds/evidence. Run chart analysis in the workspace to compare technical direction. Review, change the reasoning or close the thesis; prior versions remain available.
+- Opinion changes use the existing dashboard's daily average direction score, comparing the most recent covered date against the previous covered date. First opinions are labelled separately. Strength is displayed qualitatively.
+- The Updates feed uses the catalogue's latest imported opinions and changes; it is not a complete event archive. Full opinion history remains in the YouTube explorer.
+- Source dates are visible and each opinion links to its creator and original video.
+- Failed loads display an error, never a healthy-plan status or an invented update.
+- Updates are loaded when the page opens or refreshes. There is no new background monitor or push notification service.
+- Technical analysis retains its chart action and uses the existing analysis endpoint. Published deep research uses the published-report endpoints. No new automatic paid analysis generation is introduced.
 
-## Persistence and deployment
+## Authoring and retained records
 
-The migration `kolvex-backend-py/supabase/migrations/20261008224118_investment_theses.sql` was applied to the production Supabase project `zekbqxpgivgznhnheima` on 2026-10-08. Its filename matches the production migration history. Deploy both frontend and Python backend for the new technical setup response.
+The deep research landing page shows published reports to readers. Existing research configuration and generation are retained for administrators in `components/trading-analysis/ResearchAuthoring.tsx`.
 
-`investment_thesis_versions` stores append-only snapshots. `investment_thesis_current` selects the newest version using an invoker-security view. Authenticated clients can select/insert only their own versions; anonymous clients cannot access either object. Updates/deletes are not granted. API handlers verify the authenticated user and validate plans. An expected-version check plus the unique `(user_id, thesis_id, version)` constraint prevents simultaneous reviews from overwriting one another.
+Personal thesis entry and comparison have been disconnected from the reader UI. Existing thesis API helpers, database records, version history and migrations are retained; no database deletion or migration is required for this change. Legacy individual research and chat routes remain available.
 
-Until the migration is applied, Journal and save actions show explicit unavailable errors. There is no local-only fallback that silently loses account persistence. The journal currently lists up to 500 current theses and up to 500 versions per thesis.
+## Product measure
 
-## Verification
-
-- Production Next.js build succeeds. Existing warnings remain in AuthPageClient and VideoPlayer.
-- `node --test scripts/decision-regressions.test.cjs scripts/chat-regressions.test.cjs` in the frontend: 14 tests pass.
-- `./venv/bin/python -m unittest discover -s tests -p test_technical_analysis.py` in the backend: 15 tests pass.
-- The migration was executed in temporary PGlite/PostgreSQL with test auth roles. Verified current-version selection, immutable history, duplicate-version conflicts, cross-user read/insert isolation, and anonymous denial. Production catalog checks also confirmed RLS ownership predicates, invoker security on the current view, and the intended role grants. No security advisor notices reference the new objects.
-- Public homepage checked at 1440px and 390px, including the interactive decision demo; no horizontal overflow at 390px. Authenticated live end-to-end persistence requires the database migration and a signed-in session.
-
-Reproduce the SQL checks without adding a project dependency:
-
-```sh
-npm install --prefix /tmp/kolvex-db-validation --no-audit --no-fund @electric-sql/pglite
-node kolvex-backend-py/tests/test_thesis_schema.cjs /tmp/kolvex-db-validation/node_modules/@electric-sql/pglite
-```
-
-## Next milestones
-
-The implemented review checks run when a page loads or the user refreshes. They do not yet run as a background monitor or send notifications. A target/invalidation label means the **current quote** crosses the level, not that an intraday historical crossing has been proven. Creator outcomes/accuracy, personal following, calibrated multi-source Consensus, automated thesis change notifications, and AI learning from closed outcomes remain later milestones. Fundamental/news reports stay source text rather than being assigned invented directional scores.
-
-North star: **Weekly Active Theses**, counting unique theses created, viewed, updated, changed or reviewed within a week. Add a dedicated per-user activity stream before reporting this metric; saved-version counts alone cannot measure it. Supporting funnels: creator opinion → ticker workspace → thesis, thesis ↔ holdings overlap, revisit rate, and 7/30-day thesis retention.
+Measure whether users return to read new information: repeat visits to stock pages, creator opinion/source views, published report reading and holdings-related update views. Do not use personal thesis creation as the core product measure. Instrumentation is a separate task; this change does not claim these metrics are already collected.

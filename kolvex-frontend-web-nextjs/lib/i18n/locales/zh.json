@@ -39,7 +39,9 @@
     "timeRange": "时间范围",
     "breadcrumb": "位置",
     "intlLocale": "zh-CN",
-    "justNow": "刚刚"
+    "justNow": "刚刚",
+    "refresh": "刷新",
+    "previous": "上一页"
   },
   "sidebar": {
     "markets": "行情",
@@ -61,7 +63,7 @@
     "toggleSidebar": "切换侧边栏",
     "home": "首页",
     "research": "研究",
-    "journal": "日志"
+    "journal": "变化动态"
   },
   "tabBar": {
     "markets": "行情",
@@ -72,7 +74,7 @@
     "more": "更多",
     "home": "首页",
     "research": "研究",
-    "journal": "日志"
+    "journal": "变化动态"
   },
   "userMenu": {
     "account": "账户",
@@ -267,10 +269,10 @@
       "signIn": "登录"
     },
     "workspaceHero": {
-      "headline": "知道为何持有一只股票，也知道这个理由何时改变。",
-      "subheadline": "Kolvex 将创作者观点、市场结构、AI 研究与真实持仓，汇集到一个投资决策工作台。",
+      "headline": "看懂股票信息，了解最新变化。",
+      "subheadline": "博主观点、市场行情、AI 分析与持仓信息，打开即可查看。",
       "openWorkspace": "进入工作台",
-      "exploreWorkflow": "了解 NVDA 决策流程",
+      "exploreWorkflow": "查看 NVDA 信息示例",
       "youtube": "YouTube 博主观点",
       "portfolio": "持仓与交易分析"
     },
@@ -292,7 +294,7 @@
       }
     },
     "closing": {
-      "title": "建立一条值得持续回顾的投资判断。",
+      "title": "你关心的股票，最新的信息。",
       "open": "打开 Kolvex"
     }
   },
@@ -1408,7 +1410,7 @@
     "fullReportCopied": "完整报告已复制到剪贴板",
     "explore": {
       "title": "探索分析",
-      "description": "浏览社区分享的多智能体 AI 交易分析",
+      "description": "直接阅读已发布的 AI 研究报告，查看结论、依据与风险。",
       "featureCommunity": "社区分享",
       "featureInsights": "专业洞察",
       "featureAI": "AI 驱动",

@@ -1,7 +1,7 @@
 {
-  "name": "Kolvex \u2014 Investment Decision Workspace",
+  "name": "Kolvex \u2014 Stock Information Workspace",
   "short_name": "Kolvex",
-  "description": "Creator opinions, market context, AI research and your portfolio. Build, track and review investment theses.",
+  "description": "Creator opinions, market context, AI research and your portfolio. Read stock analysis and creator opinion changes.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#0a0a0a",
@@ -78,7 +78,7 @@
     {
       "name": "Research",
       "short_name": "Research",
-      "description": "Open a stock decision workspace",
+      "description": "Read stock analysis and creator opinions",
       "url": "/dashboard/research",
       "icons": [
         {

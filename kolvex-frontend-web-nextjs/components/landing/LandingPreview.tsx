@@ -15,8 +15,8 @@ export default function LandingPreview() {
   const steps = [
     c("Research", "研究"),
     c("Validate", "验证"),
-    c("Decide", "决策"),
-    c("Review", "复盘"),
+    c("Analysis", "分析"),
+    c("Updates", "动态"),
   ];
   return (
     <div id="decision-preview" className="landing-width pb-12 md:pb-16">
@@ -34,7 +34,7 @@ export default function LandingPreview() {
                 </span>
               </p>
               <p className="text-xs text-muted-foreground">
-                {c("Decision workspace", "投资决策工作台")}
+                {c("Stock overview", "股票信息总览")}
               </p>
             </div>
           </div>
@@ -48,7 +48,7 @@ export default function LandingPreview() {
         <div
           className="flex overflow-x-auto border-b border-border px-5 md:px-7"
           role="tablist"
-          aria-label={c("Decision workflow", "决策流程")}
+          aria-label={c("Stock information preview", "股票信息预览")}
         >
           {steps.map((label, index) => (
             <button
@@ -70,7 +70,7 @@ export default function LandingPreview() {
               <div>
                 <p className="text-3xl font-semibold tabular-nums">$201.00</p>
                 <p className="mt-1 text-xs text-primary">
-                  +7.8% {c("since thesis entry", "相对判断入场价")}
+                  +7.8% {c("over the example period", "示例区间涨幅")}
                 </p>
               </div>
               <div className="text-right">
@@ -87,7 +87,7 @@ export default function LandingPreview() {
               viewBox="0 0 580 235"
               role="img"
               aria-label={c(
-                "Illustrative NVDA candlestick chart with thesis entry, invalidation and target levels",
+                "Illustrative NVDA candlestick chart with AI reference levels",
                 "NVDA 示例K线，包含入场、失效和目标价位",
               )}
               className="mt-7 w-full"
@@ -138,7 +138,7 @@ export default function LandingPreview() {
                   $185
                 </text>
                 <text x="0" y="232">
-                  {c("Thesis created", "创建判断")}
+                  {c("Two weeks ago", "两周前")}
                 </text>
                 <text x="440" y="232">
                   {c("Today", "今天")}
@@ -196,7 +196,7 @@ export default function LandingPreview() {
                     ],
                     [
                       c("Key risk", "核心风险"),
-                      c("$179 invalidation", "$179 判断失效"),
+                      c("$179 support", "$179 支撑位"),
                     ],
                   ].map(([label, value]) => (
                     <div
@@ -234,7 +234,7 @@ export default function LandingPreview() {
                 <p className="mt-6 text-xs leading-5 text-muted-foreground">
                   {c(
                     "Evidence to weigh, with reasons you can inspect.",
-                    "可检查原因的证据，用于形成自己的判断。",
+                    "查看分析依据，了解观点背后的理由。",
                   )}
                 </p>
               </>
@@ -243,12 +243,12 @@ export default function LandingPreview() {
               <>
                 <BookOpen className="h-6 w-6 text-primary" />
                 <h3 className="mt-4 text-lg font-semibold">
-                  {c("Your thesis", "我的投资判断")}
+                  {c("AI research summary", "AI 研究摘要")}
                 </h3>
                 <p className="mt-4 text-sm leading-6">
                   {c(
-                    "AI infrastructure demand remains strong. I want to see the pullback hold above support before adding exposure.",
-                    "AI 基础设施需求持续强劲。加仓前，我希望看到回调在支撑上方企稳。",
+                    "AI infrastructure demand remains strong. The analysis highlights support on a pullback and valuation risk.",
+                    "AI 基础设施需求持续强劲。分析关注回调支撑是否稳固，以及估值风险。",
                   )}
                 </p>
                 <p className="mt-5 text-xs text-muted-foreground">
@@ -256,7 +256,7 @@ export default function LandingPreview() {
                 </p>
                 <Button asChild className="mt-7">
                   <Link href="/dashboard/research/NVDA">
-                    {c("Create your own thesis", "创建我的判断")}
+                    {c("Read stock analysis", "查看股票分析")}
                   </Link>
                 </Button>
               </>
@@ -264,12 +264,12 @@ export default function LandingPreview() {
             {step === 3 && (
               <>
                 <h3 className="text-lg font-semibold">
-                  {c("Has your thesis changed?", "你的判断改变了吗？")}
+                  {c("What changed recently?", "最近有什么变化？")}
                 </h3>
                 <p className="mt-4 text-sm leading-6 text-muted-foreground">
                   {c(
-                    "Two weeks later: price moved toward your target, while the evidence changed.",
-                    "两周后，价格接近目标，同时证据发生了变化。",
+                    "Two weeks later: new creator opinions shift the overall view.",
+                    "两周后，新的博主观点使整体倾向发生了变化。",
                   )}
                 </p>
                 <div className="mt-6 space-y-4 text-sm">
@@ -277,21 +277,18 @@ export default function LandingPreview() {
                     {c("Creators: Bullish → Neutral", "创作者：看多 → 中性")}
                   </p>
                   <p>
-                    {c(
-                      "Technical: Bullish → Sideways",
-                      "技术结构：看多 → 横盘",
-                    )}
+                    {c("Price: $186 → $201", "价格：$186 → $201")}
                   </p>
                   <p>
                     {c(
-                      "Your original reason is saved.",
-                      "当时的理由已被保存。",
+                      "See the latest opinions and source videos.",
+                      "直接查看最新观点和原始视频。",
                     )}
                   </p>
                 </div>
                 <Button asChild variant="outline" className="mt-7">
                   <Link href="/dashboard/journal">
-                    {c("Open your journal", "打开决策日志")}
+                    {c("View updates", "查看变化动态")}
                     <ArrowUpRight className="ml-2 h-4 w-4" />
                   </Link>
                 </Button>

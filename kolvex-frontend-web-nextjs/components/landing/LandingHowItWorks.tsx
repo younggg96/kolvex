@@ -15,24 +15,24 @@ export default function LandingHowItWorks() {
       c("Analysis", "分析"),
       c("What does it mean?", "这意味着什么？"),
       c(
-        "Validate your idea with technical evidence, deep research and opposing views.",
-        "使用技术证据、深度研究与不同观点，检验自己的想法。",
+        "Read technical evidence, published research and opposing views.",
+        "阅读技术证据、已发布的研究报告与不同观点。",
       ),
     ],
     [
-      c("Decision", "决策"),
-      c("What will I do?", "我准备做什么？"),
+      c("Updates", "变化"),
+      c("What changed?", "有什么变化？"),
       c(
-        "Save your thesis, entry, target and the condition that would change your mind.",
-        "保存投资判断、入场、目标，以及会让自己改变判断的条件。",
+        "See new creator views and how their direction changed from the previous update.",
+        "直接查看博主的新观点，以及相较上一次更新的倾向变化。",
       ),
     ],
     [
-      c("Review", "复盘"),
-      c("Did my reasoning hold?", "我的理由仍然成立吗？"),
+      c("Holdings", "持仓"),
+      c("How does this relate to my holdings?", "与我的持仓有什么关系？"),
       c(
-        "Revisit the evidence alongside your exposure and record what you learned.",
-        "结合持仓重新检查证据，记录自己学到了什么。",
+        "Related creator updates appear alongside your linked brokerage holdings.",
+        "根据已连接的券商持仓，查看相关股票的博主动态。",
       ),
     ],
   ];
@@ -40,7 +40,7 @@ export default function LandingHowItWorks() {
     <section id="workflow" className="border-b border-border py-14 md:py-20">
       <div className="landing-width">
         <h2 className="max-w-2xl text-3xl font-semibold tracking-tight md:text-4xl">
-          {c("A process you can return to.", "一个值得持续回顾的决策过程。")}
+          {c("Information ready to read.", "打开即可查看的股票信息。")}
         </h2>
         <div className="mt-10 grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
           {steps.map(([label, title, description], index) => (

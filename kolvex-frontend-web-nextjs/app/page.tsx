@@ -2,28 +2,28 @@ import { Metadata } from "next";
 import HomePageClient from "@/components/pages/HomePageClient";
 
 export const metadata: Metadata = {
-  title: "Kolvex — Investment Decision Workspace",
+  title: "Kolvex — Stock Information Workspace",
   description:
-    "Know why you own a stock. Know when that reason changes. Creator opinions, market structure, AI research and your portfolio in one investment decision workspace.",
+    "Creator opinions, market data, AI research and holdings. Understand stocks and see the latest changes, ready to read.",
   keywords: [
-    "investment decision workspace",
-    "investment thesis",
+    "stock information workspace",
+    "stock opinion changes",
     "investment account sync",
     "creator stock opinions",
     "stock research",
-    "decision journal",
+    "stock updates",
   ],
   openGraph: {
-    title: "Kolvex — Investment Decision Workspace",
+    title: "Kolvex — Stock Information Workspace",
     description:
-      "Creator opinions, market context, AI research and real holdings. Build, track and review your investment thesis.",
+      "Creator opinions, market context, AI research and real holdings. Read the latest analysis and opinion changes.",
     type: "website",
   },
   twitter: {
     card: "summary",
-    title: "Kolvex — Investment Decision Workspace",
+    title: "Kolvex — Stock Information Workspace",
     description:
-      "Creator opinions, market context, AI research and real holdings. Build, track and review your investment thesis.",
+      "Creator opinions, market context, AI research and real holdings. Read the latest analysis and opinion changes.",
   },
   icons: {
     icon: "/icon.svg",

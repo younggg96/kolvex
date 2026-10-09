@@ -16,13 +16,13 @@ Kolvex turns scattered investment opinion into something an individual can check
 
 - **Markets / 行情** (`/dashboard`): default signed-in entry with stock quotes and changes, SPY/QQQ/DIA benchmark ETFs, and selected-stock, holdings and creator-coverage lists. Quotes may be delayed; rankings apply only to the current list. There is no separate Home navigation entry.
 - **Research / 研究** (`/dashboard/research`): discover stocks and creators through imported YouTube opinions and open a stock decision workspace.
-- **AI Chat** (`/dashboard/chat`, Ask Kolvex in the app shell): a research agent that answers questions about stocks, markets, and the user's portfolio.
-- **Trading Analysis / 深度分析** (`/dashboard/trading-analysis`): multi-agent analysis runs on a ticker that produce a written report with analyst debate and a final decision; past reports can be explored.
+- **AI Chat** (`/dashboard/chat`, Ask Kolvex from the sidebar, header, or ⌘K): a question about the page being read. The transcript keeps the question. Creator opinions, quotes, and holdings already loaded on the page are attached as evidence and shown as a short removable label, never pasted into the message.
+- **Trading Analysis / 深度分析** (`/dashboard/trading-analysis`): readers browse published reports and their evidence; model configuration and report generation are reserved for administrators.
 - **YouTube Opinions / YouTube 观点追踪** (`/dashboard/youtube-opinions`): opinions extracted from finance creators' videos, browsable by stock or by creator, each with sentiment (bullish, bearish, neutral, mixed), a direction score from −100 to +100, confidence, summary, key points, risks, and a link to the source video. The numeric score is never shown to users; strength is expressed qualitatively (轻度 / 中度 / 强烈 + 看涨 / 看跌, 转强 / 转弱 for changes). Admins import opinions as JSON, one video per object and many videos per batch.
 - **Portfolio / 投资组合** (`/dashboard/portfolio`): holdings, options positions, transactions, allocation, performance, and AI portfolio analysis, connected through Plaid Investments.
 - **Settings** and **Admin** (admin-only).
 
-Success means the user can see what creators they trust are saying about a stock, interrogate it with AI, and relate it to what they actually hold, quickly and without noise.
+Success means users can read creator opinions, AI research and changes related to their holdings without entering their own views or plans.
 
 ## Positioning
 
@@ -52,6 +52,13 @@ Kolvex tracks what specific Chinese-language finance creators said about specifi
 
 - Real creator opinion data (e.g. 投资TALK君 on NVDA and MSFT) served by the backend; no fabricated creators, scores, or returns in the UI.
 - No testimonials, customer counts, or performance claims exist; none should be invented.
+
+## Reader Experience
+
+- Users receive information; no personal thesis, entry/target/stop, reasoning or review form is required.
+- Updates (`/dashboard/journal`) displays imported creator opinion changes and recent source-linked opinions, with an optional holdings scope.
+- Markets and stock pages lead with information, not prompts to write a plan.
+- Personal thesis storage is retained for existing records, but is disconnected from the reader interface.
 
 ## Product Principles
 

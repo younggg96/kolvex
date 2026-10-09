@@ -2,23 +2,19 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { RefreshCw } from "lucide-react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import CompanyLogo from "@/components/ui/company-logo";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import OpinionStrength from "@/components/youtube/OpinionStrength";
 import { getStockHistory, type StockQuote } from "@/lib/stockApi";
-import { listTheses, type Thesis } from "@/lib/decision";
 import { cn } from "@/lib/utils";
 import {
   Change,
-  DirectionBadge,
   Empty,
   HeldMark,
   Panel,
   TextLink,
-  TickerSearch,
   money,
   signedMoney,
   useCopy,
@@ -27,7 +23,6 @@ import {
   useHeldTickers,
 } from "./shared";
 import ScrubChart, { type ScrubPoint } from "./ScrubChart";
-import { useChangeLabels, useThesisSignals } from "./ThesisWatch";
 import { useDecisionCommand } from "./CommandLayer";
 
 const DEFAULT_STOCKS = ["NVDA", "AAPL", "MSFT", "AMZN", "GOOGL", "META", "TSLA", "AVGO"];
@@ -49,7 +44,7 @@ type RangeKey = (typeof RANGES)[number]["key"];
 const pill = (active: boolean) =>
   cn(
     "inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full px-3.5 text-[13px] font-semibold transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:opacity-50",
-    active ? "bg-foreground text-background" : "text-foreground/80 hover:bg-muted hover:text-foreground",
+    active ? "bg-primary text-primary-foreground" : "text-foreground/80 hover:bg-muted hover:text-foreground",
   );
 
 export default function Market() {
@@ -68,7 +63,6 @@ export default function Market() {
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
   const [checkedAt, setCheckedAt] = useState<string | null>(null);
-  const [theses, setTheses] = useState<Thesis[]>([]);
 
   const held = useHeldTickers(attempt);
   const catalogue = useCreatorCatalogue(attempt);
@@ -78,18 +72,6 @@ export default function Market() {
     [catalogue.data],
   );
   const heldSet = useMemo(() => new Set(held.tickers), [held.tickers]);
-
-  useEffect(() => {
-    let alive = true;
-    listTheses()
-      .then((data) => alive && setTheses(data.items.filter((item) => item.status === "active")))
-      .catch(() => alive && setTheses([]));
-    return () => {
-      alive = false;
-    };
-  }, [attempt]);
-  const signals = useThesisSignals(theses);
-  const changeLabels = useChangeLabels();
 
   const symbols = universe === "holdings" ? held.tickers : universe === "creators" ? coverage : DEFAULT_STOCKS;
   const sourceLoading = universe === "holdings" ? held.loading : universe === "creators" ? catalogue.loading : false;
@@ -155,7 +137,7 @@ export default function Market() {
     return () => controller.abort();
   }, [benchmark, range, attempt]);
 
-  const context = JSON.stringify({ workspace: "Markets", benchmark, range, universe, quotes, quotesUnavailable: failed, activeTheses: theses.length });
+  const context = JSON.stringify({ workspace: "Markets", benchmark, range, universe, quotes, quotesUnavailable: failed });
   useEffect(() => {
     setContext(context);
     return () => setContext("");
@@ -190,8 +172,6 @@ export default function Market() {
     return sort === "gainers" ? right - left : left - right;
   });
 
-  const flagged = theses.filter((thesis) => signals.changesFor(thesis).length);
-  const watchTheses = [...flagged, ...theses.filter((thesis) => !flagged.includes(thesis))].slice(0, 4);
   const shifts = [...(catalogue.data?.changes ?? [])]
     .sort((a, b) => Number(heldSet.has(b.ticker)) - Number(heldSet.has(a.ticker)) || b.current_date.localeCompare(a.current_date))
     .slice(0, 5);
@@ -202,17 +182,9 @@ export default function Market() {
   ] as const;
 
   return (
-    <DashboardLayout
-      title={c("Markets", "行情")}
-      headerActions={
-        <Button size="sm" variant="ghost" disabled={loading} onClick={() => setAttempt((n) => n + 1)}>
-          <RefreshCw className={cn("mr-2 h-4 w-4", loading && "motion-safe:animate-spin")} />
-          {c("Refresh", "刷新")}
-        </Button>
-      }
-    >
+    <DashboardLayout title={c("Markets", "行情")}>
       <main className="flex-1 overflow-y-auto">
-        <div className="mx-auto grid max-w-[1200px] gap-x-12 gap-y-10 px-4 pb-16 pt-6 md:px-8 md:pt-8 xl:grid-cols-[minmax(0,1fr)_320px]">
+        <div className="mx-auto grid gap-x-12 gap-y-10 px-4 pb-16 pt-6 md:px-8 md:pt-8 xl:grid-cols-[minmax(0,1fr)_320px]">
           <div className="min-w-0 space-y-10">
             <section aria-label={c("Market benchmark", "大盘参考")}>
               <div role="radiogroup" aria-label={c("Benchmark ETF", "参考 ETF")} className="-mx-1 flex gap-1 overflow-x-auto px-1 pb-1 scrollbar-hide">
@@ -228,7 +200,7 @@ export default function Market() {
                     {c(item.en, item.zh)}
                     <Change
                       value={quotes[item.symbol]?.changePercent}
-                      className={cn("text-xs", benchmark === item.symbol && "text-background/80")}
+                      className={cn("text-xs", benchmark === item.symbol && "text-primary-foreground/80")}
                     />
                   </button>
                 ))}
@@ -332,7 +304,7 @@ export default function Market() {
                   >
                     {c(item.en, item.zh)}
                     {item.key === "holdings" && held.tickers.length > 0 && (
-                      <span className={cn("tabular-nums text-xs", universe === item.key ? "text-background/70" : "text-muted-foreground")}>
+                      <span className={cn("tabular-nums text-xs", universe === item.key ? "text-primary-foreground/70" : "text-muted-foreground")}>
                         {held.tickers.length}
                       </span>
                     )}
@@ -341,7 +313,7 @@ export default function Market() {
               </div>
               {failed && !loading && (
                 <p role="status" className="pb-2 text-[13px] text-muted-foreground">
-                  {c("Some quotes are unavailable. Refresh to retry.", "部分报价暂不可用，请刷新重试。")}
+                  {c("Some quotes are unavailable.", "部分报价暂不可用。")}
                 </p>
               )}
               <div aria-busy={loading || sourceLoading}>
@@ -407,53 +379,7 @@ export default function Market() {
           </div>
 
           <aside className="min-w-0 space-y-10 xl:sticky xl:top-8 xl:self-start">
-            <TickerSearch className="max-w-none" />
-            <Panel
-              title={c("Your theses", "你的判断")}
-              action={<TextLink href="/dashboard/journal">{c("Journal", "日志")}</TextLink>}
-            >
-              {watchTheses.length ? (
-                <ul className="divide-y divide-border">
-                  {watchTheses.map((thesis) => {
-                    const changes = signals.changesFor(thesis);
-                    const source = signals.data[thesis.ticker];
-                    return (
-                      <li key={thesis.thesis_id}>
-                        <Link
-                          href={`/dashboard/research/${encodeURIComponent(thesis.ticker)}`}
-                          className="-mx-2 flex items-center justify-between gap-3 rounded-lg px-2 py-3 hover:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-                        >
-                          <span className="min-w-0">
-                            <span className="flex items-center gap-2">
-                              <span className="font-semibold">{thesis.ticker}</span>
-                              <DirectionBadge direction={thesis.direction} className="text-xs" />
-                            </span>
-                            <span className={cn("mt-0.5 block truncate text-xs", changes.length ? "font-semibold text-warning" : "text-muted-foreground")}>
-                              {changes.length
-                                ? changes.map((key) => changeLabels[key]).join(c(", ", "，"))
-                                : source
-                                  ? c("Within plan", "仍在计划内")
-                                  : c("Checking…", "检查中…")}
-                            </span>
-                          </span>
-                          <span className="shrink-0 text-right text-[13px]">
-                            <span className="figure block font-medium">{money(source?.quote?.price)}</span>
-                            <Change value={source?.quote?.changePercent} className="text-xs" />
-                          </span>
-                        </Link>
-                      </li>
-                    );
-                  })}
-                </ul>
-              ) : (
-                <Empty>
-                  {c(
-                    "Open a stock and write down why you're interested. Kolvex will tell you when price or creator views cross your plan.",
-                    "打开一只股票，写下你关注它的理由。价格或博主观点越过你的计划时，这里会提醒你。",
-                  )}
-                </Empty>
-              )}
-            </Panel>
+            <TextLink href="/dashboard/youtube-opinions?tab=stocks">{c("Browse all stocks", "浏览全部股票")}</TextLink>
             <Panel
               title={c("Creator updates", "博主新动态")}
               action={<TextLink href="/dashboard/research">{c("Research", "研究")}</TextLink>}

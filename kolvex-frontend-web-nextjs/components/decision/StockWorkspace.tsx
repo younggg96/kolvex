@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
-import { RefreshCw, ArrowLeft, ExternalLink } from "lucide-react";
+import { ArrowLeft, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import DashboardLayout from "@/components/layout/DashboardLayout";
@@ -21,17 +21,11 @@ import {
 } from "@/lib/youtubeOpinionsApi";
 import { getMyHoldings } from "@/lib/portfolioApi";
 import {
-  getAnalysisHistory,
+  getPublishedAnalyses,
   type TradingAnalysis,
 } from "@/lib/tradingAnalysisApi";
 import type { PortfolioPosition } from "@/lib/supabase/database.types";
-import {
-  creatorEvidence,
-  listTheses,
-  riskReward,
-  thesisChanges,
-  type Thesis,
-} from "@/lib/decision";
+import { creatorEvidence } from "@/lib/decision";
 import { useTranslation } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import {
@@ -39,13 +33,11 @@ import {
   Empty,
   HeldMark,
   Panel,
-  PriceLadder,
   TextLink,
   money,
   signedMoney,
   useCopy,
 } from "./shared";
-import ThesisEditor from "./ThesisEditor";
 import { useDecisionCommand } from "./CommandLayer";
 
 type Side = "bullish" | "bearish" | "neutral";
@@ -60,9 +52,7 @@ export default function StockWorkspace({ ticker }: { ticker: string }) {
   const [opinions, setOpinions] = useState<YouTubeOpinion[]>([]);
   const [positions, setPositions] = useState<PortfolioPosition[]>([]);
   const [research, setResearch] = useState<TradingAnalysis | null>(null);
-  const [theses, setTheses] = useState<Thesis[]>([]);
   const [technical, setTechnical] = useState<AiTechnicalAnalysis | null>(null);
-  const [editing, setEditing] = useState<Thesis | "new" | null>(null);
   const [loading, setLoading] = useState(true);
   const [errors, setErrors] = useState<string[]>([]);
   const [refresh, setRefresh] = useState(0);
@@ -75,11 +65,10 @@ export default function StockWorkspace({ ticker }: { ticker: string }) {
       getStockQuote(ticker),
       getYouTubeStockDetail(ticker),
       getMyHoldings(),
-      getAnalysisHistory({ ticker, limit: 20 }),
-      listTheses(ticker),
+      getPublishedAnalyses({ ticker, limit: 20 }),
     ]).then((results) => {
       if (!alive) return;
-      const [q, o, p, r, th] = results;
+      const [q, o, p, r] = results;
       setQuote(q.status === "fulfilled" && q.value.price > 0 ? q.value : null);
       setOpinions(o.status === "fulfilled" ? o.value.opinions : []);
       setPositions(
@@ -94,11 +83,10 @@ export default function StockWorkspace({ ticker }: { ticker: string }) {
           ? (r.value.items.find((x) => x.status === "completed") ?? null)
           : null,
       );
-      setTheses(th.status === "fulfilled" ? th.value.items : []);
       setErrors(
         results.flatMap((result, index) =>
           result.status === "rejected"
-            ? [[c("Market", "行情"), c("Creators", "博主观点"), c("Portfolio", "持仓"), c("Research", "深度研究"), c("Journal", "日志")][index]]
+            ? [[c("Market", "行情"), c("Creators", "博主观点"), c("Portfolio", "持仓"), c("Research", "深度研究")][index]]
             : [],
         ),
       );
@@ -114,14 +102,6 @@ export default function StockWorkspace({ ticker }: { ticker: string }) {
     [],
   );
   const creators = creatorEvidence(opinions);
-  const evidence = {
-    technical: technical?.bias ?? null,
-    creators: creators.direction,
-  };
-  const current = theses.find((thesis) => thesis.status === "active");
-  const changes = current
-    ? thesisChanges(current, quote?.price ?? null, evidence)
-    : [];
   const commandContext = JSON.stringify({
     ticker,
     quote,
@@ -138,7 +118,6 @@ export default function StockWorkspace({ ticker }: { ticker: string }) {
         thesis,
         risks,
       })),
-    thesis: current,
     deepResearch: research
       ? {
           date: research.trade_date,
@@ -164,15 +143,8 @@ export default function StockWorkspace({ ticker }: { ticker: string }) {
   const date = (value: string) =>
     new Date(value).toLocaleDateString(t("common.intlLocale"));
   const completedAt = research?.completed_at || research?.created_at;
-  const changeLabels = {
-    invalidation: c("Price reached your invalidation", "价格已触及失效价"),
-    target: c("Price reached your target", "价格已触及目标价"),
-    technical: c("Technical bias changed since your last save", "技术倾向较上次保存发生变化"),
-    creators: c("Creator sentiment changed since your last save", "博主观点较上次保存发生变化"),
-  };
   const sorted = [...opinions].sort((a, b) => b.opinion_date.localeCompare(a.opinion_date));
   const shownOpinions = showAllOpinions ? sorted.slice(0, 30) : sorted.slice(0, 8);
-  const rr = current ? riskReward(current) : null;
   const up = (quote?.changePercent ?? 0) >= 0;
 
   const evidenceItems = [
@@ -239,17 +211,9 @@ export default function StockWorkspace({ ticker }: { ticker: string }) {
   );
 
   return (
-    <DashboardLayout
-      title={c("Research", "研究")}
-      headerActions={
-        <Button size="sm" variant="ghost" onClick={() => setRefresh((n) => n + 1)} disabled={loading}>
-          <RefreshCw className={cn("mr-2 h-4 w-4", loading && "motion-safe:animate-spin")} />
-          {c("Refresh", "刷新")}
-        </Button>
-      }
-    >
+    <DashboardLayout title={c("Research", "研究")}>
       <main className="flex-1 overflow-y-auto">
-        <div className="mx-auto max-w-[1200px] px-4 pb-16 pt-4 md:px-8 md:pt-6">
+        <div className="mx-auto px-4 pb-16 pt-4 md:px-8 md:pt-6">
           <Link
             href="/dashboard/research"
             className="-ml-1 inline-flex items-center gap-1.5 rounded-full px-1 py-1 text-[13px] text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
@@ -285,22 +249,11 @@ export default function StockWorkspace({ ticker }: { ticker: string }) {
                     <span className="text-muted-foreground">{c("Today", "今天")}</span>
                   </p>
                 )}
-                {!!changes.length && (
-                  <a
-                    href="#thesis"
-                    className="mt-3 inline-flex max-w-full items-center gap-2 rounded-full bg-warning/10 px-3 py-1.5 text-[13px] font-semibold text-warning hover:bg-warning/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-                  >
-                    <span aria-hidden className="h-1.5 w-1.5 shrink-0 rounded-full bg-warning" />
-                    <span className="truncate">
-                      {c("Since you saved: ", "自你上次保存以来：")}
-                      {changes.map((change) => changeLabels[change]).join(c("; ", "；"))}
-                    </span>
-                  </a>
-                )}
+
               </div>
               {!!errors.length && (
                 <p role="alert" className="mt-3 text-[13px] text-muted-foreground">
-                  {c("Some sources could not be loaded", "部分数据源未能加载")}：{errors.join(c(", ", "、"))}。{c("Refresh to retry.", "请刷新重试。")}
+                  {c("Some sources could not be loaded", "部分数据源未能加载")}：{errors.join(c(", ", "、"))}。
                 </p>
               )}
               <div className="mt-6">
@@ -356,58 +309,17 @@ export default function StockWorkspace({ ticker }: { ticker: string }) {
                 )}
               </section>
 
-              <Panel
-                id="thesis"
-                title={c("Your thesis", "你的判断")}
-                action={
-                  <Button size="sm" className="rounded-full" onClick={() => setEditing(current || "new")}>
-                    {current ? c("Review", "复盘") : c("Write thesis", "写下判断")}
-                  </Button>
-                }
-              >
-                {current ? (
-                  <div className="pt-4">
-                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                      <DirectionBadge direction={current.direction} />
-                      <span className="text-xs text-muted-foreground">
-                        {[current.horizon, `v${current.version}`, date(current.created_at)].join(c(", ", "，"))}
-                      </span>
-                    </div>
-                    <p className="mt-3 line-clamp-6 whitespace-pre-wrap text-sm leading-6">{current.reasoning}</p>
-                    <PriceLadder
-                      direction={current.direction}
-                      invalidation={current.invalidation}
-                      entryLow={current.entry_low}
-                      entryHigh={current.entry_high}
-                      target={current.target}
-                      price={quote?.price}
-                    />
-                    {rr && (
-                      <p className="mt-3 flex justify-between border-t border-border pt-3 text-[13px]">
-                        <span className="text-muted-foreground">{c("Risk / reward", "风险收益比")}</span>
-                        <span className="figure font-semibold">1 : {rr.toFixed(2)}</span>
-                      </p>
-                    )}
-                    {!!changes.length && (
-                      <div className="mt-4 rounded-xl bg-warning/10 px-4 py-3 text-[13px] text-warning">
-                        {changes.map((change) => (
-                          <p key={change}>{changeLabels[change]}</p>
-                        ))}
-                        <p className="mt-1.5 font-semibold">{c("Has your thesis changed?", "你的判断改变了吗？")}</p>
-                      </div>
-                    )}
+              <Panel title={c("Latest creator update", "博主最新观点")}>
+                {sorted[0] ? (
+                  <div className="space-y-3 pt-4">
+                    <p className="text-xs text-muted-foreground">{date(sorted[0].opinion_date)} · {sorted[0].channel_title || sorted[0].channel_id}</p>
+                    <DirectionBadge direction={sideOf(sorted[0])} />
+                    <p className="text-sm leading-6">{sorted[0].summary || sorted[0].thesis || c("Read the source for details.", "查看原始视频了解详情。")}</p>
+                    {!!sorted[0].risks?.length && <div className="border-t border-border pt-3"><h3 className="text-xs font-semibold text-muted-foreground">{c("Risks mentioned", "提到的风险")}</h3><ul className="mt-2 space-y-2 text-sm">{sorted[0].risks.map((risk, index) => <li key={index}>{risk}</li>)}</ul></div>}
+                    <a className="inline-block text-sm font-medium underline-offset-4 hover:underline" href={sorted[0].video_url || `https://www.youtube.com/watch?v=${encodeURIComponent(sorted[0].video_id)}`} target="_blank" rel="noreferrer">{c("Watch source video", "查看原始视频")}</a>
                   </div>
-                ) : (
-                  <Empty>
-                    {c(
-                      "Write down why you're interested, your entry and target, and what would prove you wrong.",
-                      "写下为什么关注、入场与目标价，以及什么会证明你错了。",
-                    )}
-                  </Empty>
-                )}
-                <TextLink href="/dashboard/journal" className="mt-3 inline-block text-[13px]">
-                  {c("All theses", "全部判断")}
-                </TextLink>
+                ) : <Empty>{loading ? c("Loading…", "加载中…") : c("No creator coverage yet.", "暂时没有博主观点。")}</Empty>}
+                <TextLink href="/dashboard/journal" className="mt-4 inline-block">{c("All updates", "全部变化动态")}</TextLink>
               </Panel>
 
               {technical?.setup && (
@@ -448,9 +360,7 @@ export default function StockWorkspace({ ticker }: { ticker: string }) {
                         ))}
                       </ul>
                     </details>
-                    <Button size="sm" variant="outline" className="mt-4 rounded-full" onClick={() => setEditing("new")}>
-                      {c("Use as thesis draft", "用于判断草稿")}
-                    </Button>
+
                   </div>
                 </Panel>
               )}
@@ -568,11 +478,6 @@ export default function StockWorkspace({ ticker }: { ticker: string }) {
               <Panel
                 title={c("Deep research", "深度研究")}
                 description={research && completedAt ? `${c("Last completed", "最近完成")}：${date(completedAt)}` : undefined}
-                action={
-                  <TextLink href={`/dashboard/trading-analysis?ticker=${ticker}`}>
-                    {research ? c("Run again", "重新研究") : c("Run deep research", "运行深度研究")}
-                  </TextLink>
-                }
               >
                 {research ? (
                   <div className="pt-5">
@@ -615,7 +520,7 @@ export default function StockWorkspace({ ticker }: { ticker: string }) {
                           <MarkdownBody content={research.investment_debate.bear_history} />
                         )}
                       </div>
-                      <TextLink className="mt-4 inline-block" href={`/dashboard/trading-analysis/${research.id}`}>
+                      <TextLink className="mt-4 inline-block" href={`/dashboard/trading-analysis/explore/${research.id}`}>
                         {c("Full research report", "完整研究报告")}
                       </TextLink>
                     </details>
@@ -623,8 +528,8 @@ export default function StockWorkspace({ ticker }: { ticker: string }) {
                 ) : (
                   <Empty>
                     {c(
-                      "Check the idea against technicals, news and fundamentals. Configure your AI provider in Settings before running research.",
-                      "用技术面、新闻与基本面检验这个想法。运行前请先在设置中配置 AI 服务。",
+                      "No published research for this stock yet.",
+                      "这只股票暂时没有已发布的研究报告。",
                     )}
                   </Empty>
                 )}
@@ -633,19 +538,6 @@ export default function StockWorkspace({ ticker }: { ticker: string }) {
           </div>
         </div>
       </main>
-      {editing && (
-        <ThesisEditor
-          ticker={ticker}
-          existing={editing === "new" ? undefined : editing}
-          evidence={evidence}
-          setup={technical?.setup}
-          onClose={() => setEditing(null)}
-          onSaved={(saved) => {
-            setTheses((previous) => [saved, ...previous.filter((x) => x.thesis_id !== saved.thesis_id)]);
-            setEditing(null);
-          }}
-        />
-      )}
     </DashboardLayout>
   );
 }
