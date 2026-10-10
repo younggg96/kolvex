@@ -78,6 +78,34 @@ class ChannelProfileTests(unittest.TestCase):
                 self.assertNotIn("key", get.call_args.kwargs["params"])
         asyncio.run(exercise())
 
+    def test_publication_lookup_batches_and_caches_owner_and_timestamp(self):
+        async def exercise():
+            service = YouTubeChannelProfiles(api_key="test-key")
+            get = AsyncMock(return_value=httpx.Response(200, json={"items": [
+                {"id": "abcdefghijk", "snippet": {"channelId": CHANNEL_ID, "publishedAt": "2026-10-09T02:42:56Z"}},
+                {"id": "bbbbbbbbbbb", "snippet": {"channelId": CHANNEL_ID, "publishedAt": "2026-10-09T23:07:18Z"}},
+            ]}))
+            with patch("httpx.AsyncClient.get", get):
+                result = await service.publications_for_videos(["abcdefghijk", "bbbbbbbbbbb", "abcdefghijk"])
+                again = await service.publications_for_videos(["abcdefghijk"])
+                self.assertEqual(await service.channel_id_for_video("abcdefghijk"), CHANNEL_ID)
+            self.assertEqual(result["abcdefghijk"], "2026-10-09T02:42:56+00:00")
+            self.assertEqual(again["abcdefghijk"], result["abcdefghijk"])
+            get.assert_awaited_once()
+            self.assertEqual(get.await_args.kwargs["params"]["id"], "abcdefghijk,bbbbbbbbbbb")
+            self.assertNotIn("key", get.await_args.kwargs["params"])
+        asyncio.run(exercise())
+
+    def test_publication_lookup_cannot_fabricate_dates_on_api_failure(self):
+        async def exercise():
+            service = YouTubeChannelProfiles(api_key="test-key")
+            get = AsyncMock(return_value=httpx.Response(403, json={"error": "quota"}))
+            with patch("httpx.AsyncClient.get", get):
+                self.assertEqual(await service.publications_for_videos(["abcdefghijk"]), {})
+                self.assertEqual(await service.publications_for_videos(["abcdefghijk"]), {})
+            get.assert_awaited_once()
+        asyncio.run(exercise())
+
     def test_latest_uploads_skip_private_videos_and_keep_the_key_out_of_the_url(self):
         async def exercise():
             service = YouTubeChannelProfiles(api_key="test-key")

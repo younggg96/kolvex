@@ -52,6 +52,42 @@ class YouTubeImportTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "timezone"):
             self.service.validate_payload(payload)
 
+    def test_preview_derives_new_york_day_instead_of_analyzer_opinion_date(self):
+        for published, expected in (("2026-10-09T02:42:56Z", "2026-10-08"),
+                                    ("2026-01-09T04:42:56Z", "2026-01-08"),
+                                    ("2026-10-09T23:07:18Z", "2026-10-09")):
+            payload = sample_payload()
+            payload["video"]["published_at"] = published
+            payload["opinions"][0]["opinion_date"] = "2026-10-10"
+            self.assertEqual(self.service.validate_payload(payload)["opinions"][0]["opinion_date"], expected)
+
+    def test_upload_corrects_all_stock_dates_before_writing(self):
+        payload = sample_payload()
+        payload["video"]["id"] = "abcdefghijk"
+        payload["opinions"].append({**payload["opinions"][0], "ticker": "TSLA"})
+        actual = "2026-10-09T02:42:56+00:00"
+        self.client.table.return_value.upsert.return_value.execute.return_value = SimpleNamespace(data=[])
+        with patch("app.services.youtube_stock_opinions.channel_profiles.publications_for_videos", AsyncMock(return_value={"abcdefghijk": actual})), \
+             patch.object(self.service, "correct_channel_ids", AsyncMock(return_value=[])), \
+             patch.object(self.service, "_fill_missing_avatars", AsyncMock()):
+            asyncio.run(self.service.upload_import(payload))
+        for row in self.client.table.return_value.upsert.call_args.args[0]:
+            self.assertEqual(row["video_published_at"], actual)
+            self.assertEqual(row["opinion_date"], "2026-10-08")
+            self.assertEqual(row["raw_payload"]["video"]["published_at"], actual)
+            self.assertEqual(row["raw_payload"]["opinions"][0]["opinion_date"], "2026-10-08")
+        self.assertEqual(payload["video"]["published_at"], "2026-10-05T15:00:00Z")
+
+    def test_unverified_publication_prevents_entire_batch_write(self):
+        payload = sample_payload()
+        payload["video"]["id"] = "abcdefghijk"
+        other = deepcopy(payload)
+        other["video"]["id"] = "bbbbbbbbbbb"
+        with patch("app.services.youtube_stock_opinions.channel_profiles.publications_for_videos", AsyncMock(return_value={"abcdefghijk": "2026-10-09T23:07:18Z"})):
+            with self.assertRaisesRegex(ValueError, "bbbbbbbbbbb"):
+                asyncio.run(self.service.upload_import([payload, other]))
+        self.client.table.assert_not_called()
+
     def test_score_uses_declared_hundred_point_scale(self):
         payload = sample_payload()
         payload["opinions"][0]["direction_score"] = 1
@@ -138,6 +174,7 @@ class YouTubeImportTests(unittest.TestCase):
         payload["channel"].update({"id": "UC_UNKNOWN_CHANNEL_ID", "handle": "@invented"})
         real = "UC0-5GJAXNt3Bg0Gz6kvghYQ"
         profiles = Mock()
+        profiles.publications_for_videos = AsyncMock(return_value={"9tZvLw7z75E": "2026-10-07T22:41:58Z"})
         profiles.channel_id_for_video = AsyncMock(return_value=real)
         profiles.get_profile = AsyncMock(return_value={
             "profile_status": "available", "channel_title": "老A聊美股",
@@ -159,6 +196,7 @@ class YouTubeImportTests(unittest.TestCase):
         payload = sample_payload()
         payload["video"]["id"] = "9tZvLw7z75E"
         profiles = Mock()
+        profiles.publications_for_videos = AsyncMock(return_value={"9tZvLw7z75E": "2026-10-07T22:41:58Z"})
         profiles.channel_id_for_video = AsyncMock(return_value=None)
         profiles.get_profile = AsyncMock(return_value={"profile_status": "unavailable"})
         table = self.client.table.return_value

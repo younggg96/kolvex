@@ -86,6 +86,18 @@ class OpinionAdminServiceTests(unittest.TestCase):
         self.assertEqual(written["summary"], "需求放缓")
         self.assertEqual(result["opinion"]["ticker"], "AAPL")
 
+    def test_publication_sets_market_day_and_date_edits_use_new_york_midnight(self):
+        self.table.insert.return_value.execute.return_value.data = []
+        for published, expected_day, expected_instant in (
+            ("2026-10-09T02:42:56Z", "2026-10-08", "2026-10-09T02:42:56+00:00"),
+            ("2026-10-09", "2026-10-09", "2026-10-09T00:00:00-04:00"),
+            ("2026-01-09", "2026-01-09", "2026-01-09T00:00:00-05:00"),
+        ):
+            self.service.create_opinion(CHANNEL_ID, payload(video_published_at=published))
+            row = self.table.insert.call_args.args[0]
+            self.assertEqual(row["opinion_date"], expected_day)
+            self.assertEqual(row["video_published_at"], expected_instant)
+
     def test_rejects_profile_edits_and_invalid_opinion(self):
         for values in [
             {**payload(), "channel_title": "改名"},

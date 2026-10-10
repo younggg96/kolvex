@@ -5,19 +5,7 @@ import CompanyLogo from "@/components/ui/company-logo";
 import CreatorAvatar from "./CreatorAvatar";
 import type { YouTubeOpinion } from "@/lib/youtubeOpinionsApi";
 import OpinionStrength from "./OpinionStrength";
-
-function formatDate(value: string | null | undefined, intlLocale: string) {
-  if (!value) return "";
-  try {
-    return new Intl.DateTimeFormat(intlLocale, {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    }).format(new Date(value));
-  } catch {
-    return value.slice(0, 10);
-  }
-}
+import { formatOpinionDate } from "@/lib/opinionDates";
 
 function displayList(value?: unknown[]) {
   if (!Array.isArray(value)) return [];
@@ -75,10 +63,10 @@ export default function OpinionCard({
               </button>
             )}
             <time
-              dateTime={opinion.video_published_at || opinion.opinion_date}
+              dateTime={opinion.opinion_date || opinion.video_published_at || undefined}
               className="text-xs text-muted-foreground tabular-nums"
             >
-              {formatDate(opinion.video_published_at || opinion.opinion_date, t("common.intlLocale"))}
+              {formatOpinionDate(opinion.opinion_date || opinion.video_published_at, t("common.intlLocale"))}
             </time>
           </div>
           <div className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1">

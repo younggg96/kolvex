@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { formatOpinionDate } from "@/lib/opinionDates";
 import { useRouter } from "next/navigation";
 import HeaderBackButton from "@/components/layout/HeaderBackButton";
 import {
@@ -427,15 +428,8 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
       : root;
   const rowClass =
     "group grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-4 border-b border-border py-3.5 transition-colors duration-150 hover:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary sm:-mx-3 sm:rounded-xl sm:border-transparent sm:px-3";
-  const dateFormatter = new Intl.DateTimeFormat(t("common.intlLocale"), {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
   const formatDay = (value?: string | null) => {
-    if (!value) return "";
-    const parsed = new Date(value.length === 10 ? `${value}T00:00:00` : value);
-    return Number.isNaN(parsed.getTime()) ? value.slice(0, 10) : dateFormatter.format(parsed);
+    return formatOpinionDate(value, t("common.intlLocale"));
   };
   const lastUpdated = (value?: string | null) => {
     const date = formatDay(value);

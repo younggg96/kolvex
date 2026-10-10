@@ -6,6 +6,7 @@ import CompanyLogo from "@/components/ui/company-logo";
 import { cn, proxyImageUrl } from "@/lib/utils";
 import type { OpinionSentiment, YouTubeOpinion } from "@/lib/youtubeOpinionsApi";
 import OpinionStrength from "./OpinionStrength";
+import { formatOpinionDate } from "@/lib/opinionDates";
 
 export type VideoOpinionGroup = {
   videoId: string;
@@ -35,19 +36,6 @@ export function groupOpinionsByVideo(opinions: YouTubeOpinion[]) {
 function shortTitle(title: string) {
   const clause = title.split(/[？?！!。｜|]/)[0]?.trim();
   return clause && clause.length >= 4 ? clause : title;
-}
-
-function formatDate(value: string | null | undefined, intlLocale: string) {
-  if (!value) return "";
-  try {
-    return new Intl.DateTimeFormat(intlLocale, {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    }).format(new Date(value));
-  } catch {
-    return value.slice(0, 10);
-  }
 }
 
 function thumbnailFor(opinion: YouTubeOpinion) {
@@ -98,7 +86,7 @@ export default function VideoOpinionCard({
   const [expanded, setExpanded] = useState(false);
   const video = group.opinions[0];
   const title = video.video_title || t("youtubeOpinions.untitledVideo");
-  const published = video.video_published_at || video.opinion_date;
+  const published = video.opinion_date || video.video_published_at || undefined;
   const opinions = [...group.opinions].sort(
     (a, b) => Math.abs(b.direction_score) - Math.abs(a.direction_score),
   );
@@ -150,7 +138,7 @@ export default function VideoOpinionCard({
             <h3 title={title}>{heading}</h3>
           )}
           <p className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px] text-muted-foreground tabular-nums">
-            <time dateTime={published}>{formatDate(published, t("common.intlLocale"))}</time>
+            <time dateTime={published}>{formatOpinionDate(published, t("common.intlLocale"))}</time>
             <span>{t("youtubeOpinions.videoStockCount", { count: String(opinions.length) })}</span>
             {tally.map((item) => (
               <span key={item.sentiment} className={cn("font-semibold", item.className)}>

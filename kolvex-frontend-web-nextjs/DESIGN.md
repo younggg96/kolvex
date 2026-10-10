@@ -169,6 +169,14 @@ and theme tokens throughout this component.
 
 ## Stock analysis history
 
+Creator opinions use `America/New_York` calendar dates across cards, filters,
+daily summaries and price-chart annotations. `lib/opinionDates.ts` owns their
+display formatting; date-only values remain calendar labels in every viewer's
+timezone. The backend verifies imported YouTube publication instants against
+the YouTube Data API, stores the UTC instant, and derives `opinion_date` in New
+York. Admin publication edits use New York calendar dates and preserve the full
+original timestamp when unchanged.
+
 `components/decision/AnalysisHistory.tsx` owns the shared dated version list,
 pagination, current marker, historical-view notice, retry and current-version
 switching for both technical analysis and private research. Its `useStockHistory`

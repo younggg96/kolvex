@@ -178,6 +178,55 @@ class YouTubeChannelProfiles:
                 self._cache.popitem(last=False)
             return channel_id
 
+    async def publications_for_videos(self, video_ids):
+        """Fetch authoritative publication timestamps in batches of 50 videos."""
+        ids = list(dict.fromkeys(video_id for video_id in video_ids
+                                 if re.fullmatch(r"[A-Za-z0-9_-]{11}", video_id or "")))
+        if not ids or not self.api_key:
+            return {}
+        publications = {}
+        async with self._lock:
+            now = monotonic()
+            pending = []
+            for video_id in ids:
+                cached = self._cache.get(("publication", video_id))
+                if cached and cached[0] > now:
+                    publications[video_id] = cached[1]
+                    self._cache.move_to_end(("publication", video_id))
+                else:
+                    pending.append(video_id)
+            if pending and now < self._retry_after:
+                return publications
+            try:
+                async with httpx.AsyncClient(timeout=8) as client:
+                    for start in range(0, len(pending), 50):
+                        response = await client.get(
+                            "https://www.googleapis.com/youtube/v3/videos",
+                            params={"part": "snippet", "id": ",".join(pending[start:start + 50])},
+                            headers={"X-Goog-Api-Key": self.api_key},
+                        )
+                        if response.status_code != 200:
+                            if response.status_code in {400, 401, 403, 429}:
+                                self._retry_after = now + 300
+                            break
+                        for item in response.json().get("items", []):
+                            video_id = item.get("id")
+                            snippet = item.get("snippet") or {}
+                            published = snippet.get("publishedAt")
+                            parsed = parse_youtube_time(published)
+                            if video_id not in ids or not parsed:
+                                continue
+                            publications[video_id] = parsed.astimezone(timezone.utc).isoformat()
+                            self._cache[("publication", video_id)] = (monotonic() + 21600, publications[video_id])
+                            owner = snippet.get("channelId")
+                            if re.fullmatch(r"UC[A-Za-z0-9_-]{22}", owner or ""):
+                                self._cache[("video", video_id)] = (monotonic() + 21600, {"youtube_channel_id": owner})
+            except (httpx.HTTPError, ValueError, KeyError, TypeError, AttributeError):
+                pass
+            while len(self._cache) > 128:
+                self._cache.popitem(last=False)
+        return publications
+
     async def latest_uploads(self, cutoffs, page_size=50, max_pages=2):
         """Uploads published after each channel's cutoff, newest first.
 

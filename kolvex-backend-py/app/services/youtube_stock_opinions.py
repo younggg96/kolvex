@@ -19,6 +19,7 @@ from statistics import mean
 from typing import Any, Dict, Iterable, List, Optional
 from urllib.parse import parse_qs, urlparse
 from uuid import uuid4
+from zoneinfo import ZoneInfo
 
 logger = logging.getLogger(__name__)
 
@@ -32,6 +33,7 @@ from app.services.youtube_channel_profiles import (
 
 
 TABLE_NAME = "youtube_stock_opinions"
+OPINION_TIMEZONE = ZoneInfo("America/New_York")
 MAX_IMPORT_VIDEOS = 50
 SENTIMENT_ALIASES = {
     "bull": "bullish",
@@ -227,6 +229,7 @@ class YouTubeStockOpinionService:
             for video in checked["videos"]
             for row in self._rows_from_payload(payloads[video["index"]], uploaded_by=uploaded_by)
         ]
+        await self.correct_publication_times(rows)
         corrected_channels = await self.correct_channel_ids(rows)
         await self._fill_missing_avatars(rows)
         result = self.supabase.table(TABLE_NAME).upsert(
@@ -262,6 +265,31 @@ class YouTubeStockOpinionService:
             "corrected_channels": corrected_channels,
             "rows": written_rows,
         }
+
+    async def correct_publication_times(self, rows: List[Dict[str, Any]]) -> None:
+        """Never persist analyzer-generated timestamps for a real YouTube video."""
+        video_ids = list(dict.fromkeys(row["video_id"] for row in rows
+                                      if _youtube_video_id(row.get("video_id"))))
+        if not video_ids:
+            return
+        publications = await channel_profiles.publications_for_videos(video_ids)
+        missing = [video_id for video_id in video_ids if not parse_youtube_time(publications.get(video_id))]
+        if missing:
+            raise ValueError("无法核实 YouTube 视频发布时间，请稍后重试：" + ", ".join(missing))
+        for row in rows:
+            published = publications.get(row["video_id"])
+            if not published:
+                continue
+            row["video_published_at"] = published
+            row["opinion_date"] = _date_from_values(published)
+            raw = row.get("raw_payload") or {}
+            video = raw.get("video") or {}
+            row["raw_payload"] = {
+                **raw,
+                "video": {**video, "imported_published_at": video.get("imported_published_at", video.get("published_at")),
+                          "published_at": published},
+                "opinions": [{**opinion, "opinion_date": row["opinion_date"]} for opinion in raw.get("opinions", [])],
+            }
 
     async def correct_channel_ids(self, rows: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """Replace imported channel identity with the real owner of each YouTube video.
@@ -757,7 +785,7 @@ class YouTubeStockOpinionService:
                     "price_targets": _ensure_list(
                         opinion.get("price_targets") or opinion.get("price_target")
                     ),
-                    "opinion_date": opinion.get("opinion_date") or opinion_date,
+                    "opinion_date": opinion_date,
                     "analyzed_at": _to_iso_datetime(analyzed_at),
                     "source_model": _first_text(
                         payload, video, "model", "source_model", "ai_model"
@@ -1109,7 +1137,7 @@ def _clean_opinion_input(values: Dict[str, Any]) -> Dict[str, Any]:
     ):
         raise ValueError("置信度必须在 0 到 1 之间。")
     confidence = None if confidence is None else round(float(confidence), 3)
-    opinion_date = values.get("opinion_date") or date.today().isoformat()
+    opinion_date = values.get("opinion_date") or datetime.now(OPINION_TIMEZONE).date().isoformat()
     if not isinstance(opinion_date, str):
         raise ValueError("观点日期必须是 YYYY-MM-DD。")
     try:
@@ -1127,7 +1155,10 @@ def _clean_opinion_input(values: Dict[str, Any]) -> Dict[str, Any]:
     elif not isinstance(published, str) or not _parsed_datetime(published):
         raise ValueError("视频发布时间格式不正确。")
     else:
+        if len(published) == 10:
+            published = datetime.fromisoformat(published).replace(tzinfo=OPINION_TIMEZONE).isoformat()
         published = _to_iso_datetime(published)
+        opinion_date = _date_from_values(published)
     return {
         "ticker": ticker,
         "company_name": _clean_text(values.get("company_name"), 200, "公司名称"),
@@ -1402,12 +1433,14 @@ def _date_from_values(*values: Optional[str]) -> str:
             continue
         try:
             parsed = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+            if parsed.tzinfo is not None:
+                parsed = parsed.astimezone(OPINION_TIMEZONE)
             return parsed.date().isoformat()
         except Exception:
             text = str(value)
             if len(text) >= 10:
                 return text[:10]
-    return date.today().isoformat()
+    return datetime.now(OPINION_TIMEZONE).date().isoformat()
 
 
 def _stable_id(prefix: str, *values: Optional[str]) -> str:

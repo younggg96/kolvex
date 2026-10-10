@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import CreatorAvatar from "@/components/youtube/CreatorAvatar";
 import { cn } from "@/lib/utils";
+import { opinionDay } from "@/lib/opinionDates";
 import {
   createCreatorOpinion, deleteYouTubeOpinion, getAdminYouTubeCreators, getCreatorOpinions, updateYouTubeOpinion,
   type OpinionSentiment, type YouTubeCreatorSummary, type YouTubeOpinion, type YouTubeOpinionWrite,
@@ -38,7 +39,7 @@ type Draft = {
 };
 
 function today() {
-  return new Date().toISOString().slice(0, 10);
+  return opinionDay(new Date().toISOString());
 }
 
 function emptyDraft(): Draft {
@@ -69,7 +70,7 @@ function draftFrom(opinion: YouTubeOpinion): Draft {
     opinion_date: (opinion.opinion_date || today()).slice(0, 10),
     video_title: opinion.video_title || "",
     video_url: opinion.video_url || "",
-    video_published_at: published.slice(0, 10),
+    video_published_at: opinionDay(published),
     published_original: published,
     price_targets: (opinion.price_targets || []).flatMap((item) => {
       if (!item || typeof item !== "object" || Array.isArray(item)) return [];
@@ -87,7 +88,7 @@ function toPayload(draft: Draft): YouTubeOpinionWrite {
   const score = Number(draft.direction_score);
   const confidence = draft.confidence.trim() ? Number(draft.confidence) / 100 : null;
   const published = draft.video_published_at
-    ? draft.published_original.startsWith(draft.video_published_at) ? draft.published_original : `${draft.video_published_at}T00:00:00Z`
+    ? opinionDay(draft.published_original) === draft.video_published_at ? draft.published_original : draft.video_published_at
     : null;
   return {
     ticker: draft.ticker.trim().toUpperCase(),
@@ -321,7 +322,7 @@ export default function YouTubeCreatorManager() {
                   <Input id="opinion-confidence" type="number" min={0} max={100} step="1" value={draft.confidence} disabled={saving} placeholder="85"
                     onChange={(event) => setDraft((current) => ({ ...current, confidence: event.target.value }))} />
                 </Field>
-                <Field label="观点日期" id="opinion-date">
+                <Field label="观点日期" id="opinion-date" hint="美东日期；有视频发布时间时自动同步">
                   <Input id="opinion-date" type="date" required value={draft.opinion_date} disabled={saving}
                     onChange={(event) => setDraft((current) => ({ ...current, opinion_date: event.target.value }))} />
                 </Field>
@@ -329,7 +330,7 @@ export default function YouTubeCreatorManager() {
                   <Input id="opinion-horizon" value={draft.time_horizon} maxLength={80} disabled={saving} placeholder="3-6 months"
                     onChange={(event) => setDraft((current) => ({ ...current, time_horizon: event.target.value }))} />
                 </Field>
-                <Field label="视频发布时间" id="opinion-published">
+                <Field label="视频发布日期" id="opinion-published" hint="美东日期；未修改时保留原始发布时刻">
                   <Input id="opinion-published" type="date" value={draft.video_published_at} disabled={saving}
                     onChange={(event) => setDraft((current) => ({ ...current, video_published_at: event.target.value }))} />
                 </Field>
