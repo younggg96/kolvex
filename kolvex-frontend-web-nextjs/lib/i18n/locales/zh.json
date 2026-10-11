@@ -1248,6 +1248,8 @@
     "ai": {
       "button": "AI 画线",
       "actions": "AI 图表操作",
+      "chartSettings": "AI 设置",
+      "chartSettingsHint": "选择模型、调整分析和画线内容，或切换已保存的画线版本。设置用于下一次生成。",
       "modelLabel": "AI 模型",
       "readMore": "展开完整结论",
       "readLess": "收起结论",

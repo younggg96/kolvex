@@ -11,16 +11,19 @@ import { TECHNICAL_CATEGORIES, DEFAULT_TECHNICAL_FOCUS, DEFAULT_DRAWING_FOCUS, D
 type Translate = (key: string, params?: Record<string, string>) => string;
 const limitedCategories = new Set(["timeframes", "score", "historical"]);
 
-export default function TechnicalFocusSelector({ value: savedValue, onChange: saveValue, disabled, t, drawings = false }: {
+export default function TechnicalFocusSelector({ value: savedValue, onChange: saveValue, disabled, t, drawings = false, inline = false }: {
   value: TechnicalFocus;
   onChange: (value: TechnicalFocus) => void;
   disabled: boolean;
   t: Translate;
   drawings?: boolean;
+  inline?: boolean;
 }) {
   const id = useId();
   const [open, setOpen] = useState(false);
-  const [value, onChange] = useState(savedValue);
+  const [draftValue, setDraftValue] = useState(savedValue);
+  const value = inline ? savedValue : draftValue;
+  const onChange = inline ? saveValue : setDraftValue;
   const defaults = drawings ? DEFAULT_DRAWING_FOCUS : DEFAULT_TECHNICAL_FOCUS;
   const title = t(drawings ? "youtubeOpinions.ai.focus.drawingTitle" : "youtubeOpinions.ai.focus.title");
   const addButton = useRef<HTMLButtonElement>(null);
@@ -58,25 +61,7 @@ export default function TechnicalFocusSelector({ value: savedValue, onChange: sa
     });
   }
 
-  return (
-    <Dialog open={open} onOpenChange={next => {
-      if (next) { onChange({ categories: [...savedValue.categories], custom_scenarios: [...savedValue.custom_scenarios] }); setDraft(""); setAdding(false); setError(false); }
-      setOpen(next);
-    }}>
-      <DialogTrigger asChild>
-        <button type="button" disabled={disabled} className="flex min-h-11 w-full cursor-pointer items-center gap-2 rounded-lg px-2 text-left text-sm transition-colors hover:bg-muted active:bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:pointer-events-none disabled:opacity-50">
-          <span className="shrink-0 font-medium">{title}</span>
-          <span className="min-w-0 flex-1 truncate text-xs text-muted-foreground">
-            {preview}{remaining > 0 && `${preview ? " · " : ""}+${remaining}`}
-          </span>
-          <SlidersHorizontal className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
-        </button>
-      </DialogTrigger>
-      <DialogContent className="max-w-xl" onEscapeKeyDown={event => event.stopPropagation()}>
-        <DialogHeader>
-          <DialogTitle>{title}</DialogTitle>
-          <DialogDescription>{t(drawings ? "youtubeOpinions.ai.focus.drawingHint" : "youtubeOpinions.ai.focus.hint")}</DialogDescription>
-        </DialogHeader>
+  const editor = (
       <fieldset disabled={disabled} className="min-w-0 pb-4 pt-1">
         <legend className="sr-only">{title}</legend>
         <div className="grid grid-cols-2 gap-x-4 sm:grid-cols-3">{categoryOptions(false)}</div>
@@ -142,6 +127,34 @@ export default function TechnicalFocusSelector({ value: savedValue, onChange: sa
           </Button>
         </div>
       </fieldset>
+  );
+
+  if (inline) return <section className="min-w-0">
+    <h3 className="text-sm font-medium">{title}</h3>
+    <p className="mt-1 text-xs leading-5 text-muted-foreground">{t(drawings ? "youtubeOpinions.ai.focus.drawingHint" : "youtubeOpinions.ai.focus.hint")}</p>
+    {editor}
+  </section>;
+
+  return (
+    <Dialog open={open} onOpenChange={next => {
+      if (next) { onChange({ categories: [...savedValue.categories], custom_scenarios: [...savedValue.custom_scenarios] }); setDraft(""); setAdding(false); setError(false); }
+      setOpen(next);
+    }}>
+      <DialogTrigger asChild>
+        <button type="button" disabled={disabled} className="flex min-h-11 w-full cursor-pointer items-center gap-2 rounded-lg px-2 text-left text-sm transition-colors hover:bg-muted active:bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:pointer-events-none disabled:opacity-50">
+          <span className="shrink-0 font-medium">{title}</span>
+          <span className="min-w-0 flex-1 truncate text-xs text-muted-foreground">
+            {preview}{remaining > 0 && `${preview ? " · " : ""}+${remaining}`}
+          </span>
+          <SlidersHorizontal className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+        </button>
+      </DialogTrigger>
+      <DialogContent className="max-w-xl" onEscapeKeyDown={event => event.stopPropagation()}>
+        <DialogHeader>
+          <DialogTitle>{title}</DialogTitle>
+          <DialogDescription>{t(drawings ? "youtubeOpinions.ai.focus.drawingHint" : "youtubeOpinions.ai.focus.hint")}</DialogDescription>
+        </DialogHeader>
+      {editor}
       <DialogFooter className="gap-2 border-t border-border">
         <Button type="button" variant="ghost" onClick={() => setOpen(false)}>{t("common.cancel")}</Button>
         <Button type="button" disabled={disabled || count === 0} onClick={() => { saveValue(value); setOpen(false); }}>{t("youtubeOpinions.ai.focus.apply")}</Button>

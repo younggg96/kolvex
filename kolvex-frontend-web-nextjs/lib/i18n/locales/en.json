@@ -1248,6 +1248,8 @@
     "ai": {
       "button": "AI lines",
       "actions": "AI chart actions",
+      "chartSettings": "AI settings",
+      "chartSettingsHint": "Choose a model, adjust analysis and drawing topics, or switch saved drawings. Settings apply to the next generation.",
       "modelLabel": "AI model",
       "readMore": "Read full conclusion",
       "readLess": "Collapse conclusion",

@@ -35,6 +35,7 @@ import {
   RotateCcw,
   Ruler,
   ScanSearch,
+  SlidersHorizontal,
   Slash,
   Trash2,
   Undo2,
@@ -46,6 +47,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import CreatorAvatar from "../CreatorAvatar";
 import type { YouTubeOpinion } from "@/lib/youtubeOpinionsApi";
@@ -276,6 +278,7 @@ export default function ChartView({
   }>({
     status: "idle",
   });
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [selectedModel, setSelectedModel] = useState("");
   const { availableProviders, loading: providersLoading, refresh: refreshProviders } = useAvailableProviders();
   const eligibleModels = MODEL_CONFIGS.filter((model) => availableProviders?.includes(PROVIDER_NAME_TO_ID[model.provider]));
@@ -921,25 +924,50 @@ export default function ChartView({
   const lastTone = last && last.close >= (bars?.[count - 2]?.close ?? last.open) ? "positive" : "negative";
 
   const aiControls = (
-    <div className={advanced ? "min-w-0" : "mt-4 border-y border-border py-3"} role="group" aria-label={t("youtubeOpinions.ai.actions")}>
-        <div className="flex flex-wrap items-end gap-3">
-          <label className={cn("flex min-w-0 max-w-full flex-col gap-1.5", advanced ? "w-full" : "w-60")}>
-            <span className="text-xs font-medium text-muted-foreground">{t("youtubeOpinions.ai.modelLabel")}</span>
-            <Select value={modelReady ? selectedModel : ""} onValueChange={setSelectedModel}
-              onOpenChange={(open) => { if (open) void refreshProviders(); }}
-              disabled={providersLoading || aiBusy || ai.status === "loading" || drawingAi.status === "loading"}>
-              <SelectTrigger aria-label={t("youtubeOpinions.ai.selectModel")}>
-                <SelectValue placeholder={t("youtubeOpinions.ai.selectModel")} />
-              </SelectTrigger>
-              <SelectContent style={{ width: "var(--radix-select-trigger-width)", maxHeight: "min(20rem, var(--radix-select-content-available-height))" }}>
-                {MODEL_CONFIGS.map((model) => (
-                  <SelectItem key={model.id} value={model.id} disabled={!availableProviders?.includes(PROVIDER_NAME_TO_ID[model.provider])}>
-                    <span className="block break-words">{model.name}</span>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </label>
+    <div className={advanced ? "min-w-0" : "mt-3 border-t border-border pt-3"} role="group" aria-label={t("youtubeOpinions.ai.actions")}>
+        <div className="flex flex-wrap items-center gap-2">
+          <Dialog open={settingsOpen} onOpenChange={(open) => { setSettingsOpen(open); if (open) void refreshProviders(); }}>
+            <DialogTrigger asChild>
+              <Button type="button" size="md" variant="outline" className={cn("gap-2", advanced && "w-full")}>
+                <SlidersHorizontal className="h-4 w-4" aria-hidden="true" />
+                {t("youtubeOpinions.ai.chartSettings")}
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-xl" onEscapeKeyDown={(event) => event.stopPropagation()}>
+              <DialogHeader>
+                <DialogTitle>{t("youtubeOpinions.ai.chartSettings")}</DialogTitle>
+                <DialogDescription>{t("youtubeOpinions.ai.chartSettingsHint")}</DialogDescription>
+              </DialogHeader>
+              <div className="mt-4 min-w-0">
+                <label className="flex min-w-0 w-full flex-col gap-1.5">
+                  <span className="text-xs font-medium text-muted-foreground">{t("youtubeOpinions.ai.modelLabel")}</span>
+                  <Select value={modelReady ? selectedModel : ""} onValueChange={setSelectedModel}
+                    onOpenChange={(open) => { if (open) void refreshProviders(); }}
+                    disabled={providersLoading || aiBusy || ai.status === "loading" || drawingAi.status === "loading"}>
+                    <SelectTrigger aria-label={t("youtubeOpinions.ai.selectModel")}>
+                      <SelectValue placeholder={t("youtubeOpinions.ai.selectModel")} />
+                    </SelectTrigger>
+                    <SelectContent style={{ width: "var(--radix-select-trigger-width)", maxHeight: "min(20rem, var(--radix-select-content-available-height))" }}>
+                      {MODEL_CONFIGS.map((model) => (
+                        <SelectItem key={model.id} value={model.id} disabled={!availableProviders?.includes(PROVIDER_NAME_TO_ID[model.provider])}>
+                          <span className="block break-words">{model.name}</span>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </label>
+                {!providersLoading && !modelReady && <p className="mt-2 text-xs leading-5 text-muted-foreground">
+                  {t(eligibleModels.length ? "youtubeOpinions.ai.selectModel" : "youtubeOpinions.ai.notConfigured")}{" "}
+                  {!eligibleModels.length && <Link href="/dashboard/settings?tab=api-keys" className="underline underline-offset-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">{t("youtubeOpinions.ai.openSettings")}</Link>}
+                </p>}
+                {focusControls}
+                {drawingVersionControls}
+              </div>
+              <DialogFooter className="border-t border-border">
+                <DialogClose asChild><Button type="button">{t("common.close")}</Button></DialogClose>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
           <div className={cn("flex flex-wrap gap-2", advanced && "w-full")}>
             <Button size="md" className={advanced ? "min-w-0 flex-1" : "w-36"} onClick={() => void runAi("analysis")} aria-busy={ai.status === "loading"}
               disabled={!loaded || !modelReady || providersLoading || aiBusy || ai.status === "loading" || drawingAi.status === "loading"}
@@ -955,14 +983,7 @@ export default function ChartView({
             </Button>
           </div>
         </div>
-        {focusControls && <div className={cn("mt-3 grid min-w-0 gap-x-4 border-t border-border pt-2", !advanced && "sm:grid-cols-2")}>{focusControls}</div>}
-        {drawingVersionControls}
-        {!providersLoading && !modelReady && (
-          <p className="mt-2 text-xs leading-5 text-muted-foreground">
-            {t(eligibleModels.length ? "youtubeOpinions.ai.selectModel" : "youtubeOpinions.ai.notConfigured")}{" "}
-            {!eligibleModels.length && <Link href="/dashboard/settings?tab=api-keys" className="underline underline-offset-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">{t("youtubeOpinions.ai.openSettings")}</Link>}
-          </p>
-        )}
+
       </div>
   );
   const aiResults = (<>

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { addDays, differenceInCalendarDays, format, subMonths } from "date-fns";
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { X } from "lucide-react";
 import { getYouTubeStockDetail, type YouTubeOpinion } from "@/lib/youtubeOpinionsApi";
@@ -197,11 +198,19 @@ export default function PriceChart({
     snapshotBars: historicalSnapshot?.bars,
     technicalFocus,
     drawingFocus,
-    drawingVersionControls: <DrawingVersionSelector history={drawingHistory} hidden={hiddenDrawings} disabled={analysisBusy} />,
-    focusControls: <>
-      <TechnicalFocusSelector value={technicalFocus} onChange={setTechnicalFocus} disabled={analysisBusy} t={t} />
-      <TechnicalFocusSelector drawings value={drawingFocus} onChange={setDrawingFocus} disabled={analysisBusy} t={t} />
-    </>,
+    focusControls: <Tabs defaultValue="analysis" className="mt-4">
+      <TabsList>
+        <TabsTrigger value="analysis">{t("youtubeOpinions.ai.focus.title")}</TabsTrigger>
+        <TabsTrigger value="drawings">{t("youtubeOpinions.ai.focus.drawingTitle")}</TabsTrigger>
+      </TabsList>
+      <TabsContent value="analysis" className="mt-4">
+        <TechnicalFocusSelector inline value={technicalFocus} onChange={setTechnicalFocus} disabled={analysisBusy} t={t} />
+      </TabsContent>
+      <TabsContent value="drawings" className="mt-4">
+        <TechnicalFocusSelector inline drawings value={drawingFocus} onChange={setDrawingFocus} disabled={analysisBusy} t={t} />
+        <DrawingVersionSelector history={drawingHistory} hidden={hiddenDrawings} disabled={analysisBusy} />
+      </TabsContent>
+    </Tabs>,
   };
 
   return (

@@ -324,12 +324,16 @@ not a guarantee that a future break or retest will occur.
 
 ## Chart controls and result reading
 
-`PriceChart` supplies the two focus dialogs to `ChartView`'s AI control region.
-A model field constrained to 240px precedes the primary AI analysis action and
-secondary AI drawings action; both retain a fixed width while generating.
-Focus settings follow on a separate row. Narrow layouts wrap in the same DOM
-order. Generation is unavailable until a configured model is selected, with
-inline guidance and a settings link when keys are missing. The shared authored
+`ChartView` keeps one AI settings button beside the primary AI analysis action
+and secondary AI drawings action; generation buttons retain their fixed width
+while generating. The shared Radix dialog contains the model selector and
+`PriceChart`'s analysis/drawing tabs. `TechnicalFocusSelector` reuses its topic
+editor inline in each tab, with immediate settings updates for the next generation;
+its standalone dialog variant retains draft/apply/cancel behavior. Saved drawing
+versions appear inside the drawing tab. No model field, focus summary rows or
+version dropdown sit above the chart. Narrow layouts wrap the same three buttons.
+Generation is unavailable until a configured model is selected, with guidance
+and the API Keys settings link inside the settings dialog. The shared authored
 Select owns keyboard selection and a trigger-width, height-bounded popup.
 
 The advanced chart uses the shared `DialogContent` fullscreen layout variant.

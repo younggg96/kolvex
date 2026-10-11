@@ -96,7 +96,7 @@ test('PriceChart keeps text analysis and AI overlays in independent history chan
   const h=compile('components/youtube/PriceChart.tsx',{
     react,'react/jsx-runtime':{jsx:element,jsxs:element,Fragment:'fragment'},'date-fns':require('date-fns'),
     '@/components/ui/dialog':{Dialog:'dialog',DialogClose:'close',DialogContent:'content',DialogDescription:'description',DialogTitle:'title'},
-    '@/components/ui/button':{Button:'button'},'lucide-react':{X:'icon'},
+    '@/components/ui/button':{Button:'button'},'@/components/ui/tabs':{Tabs:'tabs',TabsList:'tablist',TabsTrigger:'tabtrigger',TabsContent:'tabcontent'},'lucide-react':{X:'icon'},
     '@/lib/youtubeOpinionsApi':{getYouTubeStockDetail:async()=>({opinions:[]})},
     './chartDrawings':{useSyncedDrawings:()=>({drawings:[],setDrawings:()=>{},status:'synced'})},
     '@/components/decision/SavedAnalysisData':{default:'data'},
@@ -117,11 +117,12 @@ test('PriceChart keeps text analysis and AI overlays in independent history chan
   await chart.props.onDrawingsChange(null);const cleared=render().props.children.find(node=>node?.type==='chart');
   assert.equal(cleared.props.drawings.length,0);
   assert.equal(cleared.props.savedAnalysis.summary,'text');
-  assert.equal(cleared.props.drawingVersionControls.props.hidden,true);
-  await cleared.props.drawingVersionControls.props.history.select(drawn);
+  const drawingSelector = chart => chart.props.focusControls.props.children[2].props.children[1];
+  assert.equal(drawingSelector(cleared).props.hidden,true);
+  await drawingSelector(cleared).props.history.select(drawn);
   const restored=render().props.children.find(node=>node?.type==='chart');
   assert.equal(restored.props.drawings[0].points[0].price,200);
-  assert.equal(restored.props.drawingVersionControls.props.hidden,false);
+  assert.equal(drawingSelector(restored).props.hidden,false);
   assert.equal(restored.props.savedAnalysis.summary,'text');
 });
 
