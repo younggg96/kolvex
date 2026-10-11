@@ -1,8 +1,4 @@
-/* Authentication shares the application's surfaces and controls. */
-.auth-page > div > .bg-grid {
-  opacity: 0.12;
-  animation: none;
-}
+/* Keep BaseLayout's animated grid; only the form's entry stays still. */
 .auth-page main {
   animation: none;
 }

@@ -13,6 +13,7 @@ import {
 } from "react";
 import {
   ArrowUpDown,
+  LineChart,
   Loader2,
   Search,
 } from "lucide-react";
@@ -765,11 +766,20 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
                 <div className="min-w-0">
                   <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
                     <div>
-                      <h2 className="text-[28px] font-semibold leading-tight tracking-[-0.02em]">
-                        {route.tab === "stocks"
-                          ? t("youtubeOpinions.stocksDiscussedTitle")
-                          : t("youtubeOpinions.trackedCreators")}
-                      </h2>
+                      <div className="flex flex-wrap items-center gap-3">
+                        <h2 className="text-[28px] font-semibold leading-tight tracking-[-0.02em]">
+                          {route.tab === "stocks"
+                            ? t("youtubeOpinions.stocksDiscussedTitle")
+                            : t("youtubeOpinions.trackedCreators")}
+                        </h2>
+                        {route.tab === "stocks" && !allStocks && (
+                          <Button variant="outline" size="sm" asChild>
+                            <Link href="/dashboard/youtube-opinions/stocks">
+                              {c("View all stocks", "查看全部股票")}
+                            </Link>
+                          </Button>
+                        )}
+                      </div>
                       {catalogue && (
                         <p className="mt-1 text-sm text-foreground/80 tabular-nums">
                           {t("youtubeOpinions.catalogueSummary", {
@@ -853,11 +863,6 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
                       <>
                         <TabsContent value="stocks" className="mt-0">
                           {stockRows}
-                          {!allStocks && (
-                            <Link href="/dashboard/youtube-opinions/stocks" className="mt-5 inline-block rounded-sm text-sm font-semibold underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
-                              {c("View all stocks", "查看全部股票")}
-                            </Link>
-                          )}
                         </TabsContent>
                         <TabsContent value="creators" className="mt-0">
                           {creatorRows(visibleCreators)}
@@ -976,10 +981,24 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
                         </p>
                         {route.creator && coverageNote(route.creator)}
                       </div>
-                      {creator && <div className="flex w-full shrink-0 flex-wrap items-center gap-2 sm:w-auto">
-                        <CreatorShare key={creator.channel_id} creator={creator} />
-                        <CreatorProfileDialog creator={creator} compact />
-                      </div>}
+                      {(route.ticker || creator) && (
+                        <div className="flex w-full shrink-0 flex-wrap items-center gap-2 sm:w-auto">
+                          {route.ticker && (
+                            <Button variant="outline" size="sm" asChild>
+                              <Link href={`/dashboard/market/${encodeURIComponent(route.ticker)}`}>
+                                <LineChart className="h-4 w-4" aria-hidden="true" />
+                                {c("View market data", "查看行情")}
+                              </Link>
+                            </Button>
+                          )}
+                          {creator && (
+                            <>
+                              <CreatorShare key={creator.channel_id} creator={creator} />
+                              <CreatorProfileDialog creator={creator} compact />
+                            </>
+                          )}
+                        </div>
+                      )}
                     </div>
 
                     {contextError ? (

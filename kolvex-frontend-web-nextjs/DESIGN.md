@@ -88,7 +88,7 @@ to the appropriate entry so refresh and saved links keep working.
 
 AI Research detail pages lead with the existing final conclusion, then the
 investment plan, analyst evidence and supporting debate. The reading area uses
-16px body text on mobile and 17px on desktop, line height 1.85 and fills the
+16px body text on mobile and 17px on desktop, line height 1.85 and a maximum measure of 72ch within the
 available reading column. Markdown titles are subordinate to the stock heading; paragraphs
 and sections have distinct spacing. Desktop gets a sticky section directory;
 mobile uses a horizontal text directory. Analyst tabs stay visible as words,
@@ -166,8 +166,10 @@ column capped at 440px, with 16px outer horizontal space and 24px card padding
 on phones, increasing card padding to 32px from the small breakpoint. The card
 has 12px corners and no static shadow. Its heading is 30px semibold; supporting
 copy is 14px with 24px line height. The page scrolls with the document, and the
-localized heading also supplies the browser title. `auth.css` only quiets the
-inherited grid and entry animations; runtime tokens remain the color authority.
+localized heading also supplies the browser title. Authentication retains
+BaseLayout's animated grid background and its reduced-motion fallback.
+`auth.css` disables only the form's entry animation; runtime tokens remain the
+color authority.
 
 **The Shared Auth Controls Rule.** Auth forms use the shared Input's `auth`
 variant for aligned 48px controls with 12px corners, semantic borders, muted
@@ -369,11 +371,47 @@ customer counts or performance claims, remains the marketing content rule.
 chart entry and a traveling signal, pointer tilt and scroll parallax using motion
 values, section reveals, and feature/tab
 transitions. Native scrolling remains in control. Reduced motion removes movement
-and preserves content; narrow screens use a single column. Shared Radix Tabs own
-preview keyboard navigation. Feature disclosures use buttons with expanded state
+and preserves content; narrow screens use a single column.
+
+The stock research dossier replaces the repeated price chart in the preview.
+A vertical shared Radix Tabs list switches between creator opinions, technical
+analysis and AI research. Each reading panel groups illustrative reasoning, a
+counterpoint or invalidation condition, and a follow-up question; it makes no
+live-data or source-attribution claim. The bordered sidebar and reading column
+stack on phones. Shared Radix Tabs own preview keyboard navigation.
+Feature disclosures use buttons with expanded state
 and corresponding regions. Existing route targets, section anchors, navigation
 labels, logo, footer/legal content and global application tokens are preserved.
 Buttons use the shared pill variants, including their colors and hover/pressed
 feedback. Example panels and content nodes use the dashboard’s 12px corners and
 quiet borders without static shadows. Marketing layers are base 0, content 1,
 diagram notes 2, header 20.
+
+### Landing motion coverage
+
+`LandingMotionProvider` is the homepage-only motion owner. It coordinates the
+existing scene pause control, system reduced-motion preference and finite
+IntersectionObserver/Web Animations entrances for header, source notes, feature
+links, dossier sidebar, workflow rows, closing actions and footer. HTML remains
+visible before hydration and without animation support. Each entrance plays once;
+small sibling delays are capped at 195ms. `LandingReveal` uses a bounded crop for
+large example frames and short arrivals for headings. The illustrative chart is
+the focal sequence; its ambient signal stops offscreen and in hidden tabs.
+Dossier evidence follows reading order when its tab changes; workflow nodes and
+connectors arrive in source-to-context order. Hover, focus and pressed feedback
+use the same short easing and preserve native semantics. Pausing removes spatial
+feedback and settles the composition; reduced motion retains visible state and
+content. No additional dependencies or animation of document scroll ownership.
+
+## Stock research reading
+
+Stock detail research reuses `ReportCard` for the investment thesis, evidence and
+bull/bear discussion. The same translation hook, visible Translate/Show original
+action and inline failure recovery apply to published and saved versions.
+Translations are requested explicitly, keyed to source content and locale, and
+never replace the saved report. Evidence is arranged vertically so long Chinese
+and English reports retain a comfortable measure on desktop and phone.
+`components/trading-analysis/markdown.tsx` owns report typography: 72ch maximum
+measure, 1.85 line height, separated paragraphs, semantic Markdown headings,
+lists, emphasis and horizontally scrollable tables/code. It uses the existing
+global theme tokens and font stack.

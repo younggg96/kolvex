@@ -1,16 +1,16 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   motion,
   useMotionValue,
   useSpring,
-  useReducedMotion,
+  useInView,
   AnimatePresence,
 } from "motion/react";
 import { AudioLines, Sparkles, Wallet, Pause, Play } from "lucide-react";
 import { useCopy } from "@/components/decision/shared";
-import { landingEase } from "./LandingMotion";
+import { landingEase, useLandingMotion } from "./LandingMotion";
 
 // Illustrative series only. No network quotes or investment claims are implied.
 const series = {
@@ -31,9 +31,9 @@ type Symbol = keyof typeof series;
 
 export default function LandingMarketScene() {
   const c = useCopy();
-  const reduce = useReducedMotion();
+  const { disabled: reduce, paused, setPaused } = useLandingMotion();
   const [ticker, setTicker] = useState<Symbol>("NVDA");
-  const [paused, setPaused] = useState(false);
+  const [visible, setVisible] = useState(true);
   const scene = useRef<HTMLDivElement>(null);
   const x = useMotionValue(0);
   const y = useMotionValue(0);
@@ -43,7 +43,14 @@ export default function LandingMarketScene() {
   const path = values
     .map((v, i) => `${i === 0 ? "M" : "L"} ${30 + i * 32} ${260 - v * 2.1}`)
     .join(" ");
-  const moving = !reduce && !paused;
+  const inView = useInView(scene, { amount: 0.1 });
+  const moving = !reduce && inView && visible;
+  useEffect(() => {
+    const update = () => setVisible(!document.hidden);
+    update();
+    document.addEventListener("visibilitychange", update);
+    return () => document.removeEventListener("visibilitychange", update);
+  }, []);
 
   return (
     <div
@@ -67,7 +74,7 @@ export default function LandingMarketScene() {
         className="signal-chart"
         style={{ rotateX: moving ? rotateX : 0, rotateY: moving ? rotateY : 0 }}
         initial={false}
-        animate={reduce ? undefined : { opacity: [0, 1], y: [25, 0] }}
+        animate={reduce ? { opacity: 1, y: 0 } : { opacity: [0, 1], y: [25, 0] }}
         transition={{ duration: 1, ease: landingEase }}
       >
         <div className="flex items-start justify-between gap-3 px-6 pt-6">
@@ -98,8 +105,8 @@ export default function LandingMarketScene() {
             aria-pressed={paused}
             aria-label={
               paused
-                ? c("Play ambient animation", "播放背景动画")
-                : c("Pause ambient animation", "暂停背景动画")
+                ? c("Play page animations", "播放页面动效")
+                : c("Pause page animations", "暂停页面动效")
             }
             onClick={() => setPaused(!paused)}
           >

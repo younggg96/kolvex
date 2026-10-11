@@ -14,7 +14,8 @@ import { ResearchReportContent } from "@/components/trading-analysis/ResearchRep
 import AnalysisHistory from "./AnalysisHistory";
 import { useStockResearch } from "./useStockResearch";
 import CreatorIntelligence from "./CreatorIntelligence";
-import { MarkdownBody } from "@/components/trading-analysis/markdown";
+import { ReportCard } from "@/components/trading-analysis/report-card";
+import { BarChart3, DollarSign, Newspaper, Swords, Users } from "lucide-react";
 import {
   getStockQuote,
   getStockNews,
@@ -407,44 +408,37 @@ export default function StockWorkspace({ ticker }: { ticker: string }) {
                 <AnalysisHistory history={personalResearch.history} />
                 {research ? (
                   <div className="pt-5">
-                    <h3 className="mb-3 text-sm font-semibold">
-                      {c("Investment thesis and what could change it", "投资判断与可能改变判断的因素")}
-                    </h3>
-                    <div className="">
-                      <MarkdownBody content={research.investment_plan || research.trader_plan || research.market_report || ""} />
-                    </div>
+                    <ReportCard
+                      key={`${research.id}-thesis`}
+                      title={c("Investment thesis and what could change it", "投资判断与可能改变判断的因素")}
+                      icon={DollarSign}
+                      content={research.investment_plan || research.trader_plan || research.market_report}
+                      locale={locale}
+                      t={t}
+                      bordered={false}
+                    />
                     <details className="mt-5 border-t border-border pt-4">
                       <summary className="cursor-pointer text-sm font-semibold">
                         {c("Why Kolvex sees it this way", "为什么得出这样的判断")}
                       </summary>
-                      <div className="mt-4 grid gap-6 md:grid-cols-2">
+                      <div className="mt-6 space-y-8">
                         {[
-                          [c("Technical", "技术面"), research.market_report],
-                          [c("Fundamental", "基本面"), research.fundamentals_report],
-                          [c("News", "新闻"), research.news_report],
-                          [c("Social context", "社交环境"), research.sentiment_report],
-                        ].map(
-                          ([label, report]) =>
-                            report && (
-                              <section key={label}>
-                                <h4 className="mb-2 font-medium">{label}</h4>
-                                <MarkdownBody content={report} />
-                              </section>
-                            ),
-                        )}
+                          { label: c("Technical", "技术面"), icon: BarChart3, report: research.market_report, key: "market" },
+                          { label: c("Fundamental", "基本面"), icon: DollarSign, report: research.fundamentals_report, key: "fundamentals" },
+                          { label: c("News", "新闻"), icon: Newspaper, report: research.news_report, key: "news" },
+                          { label: c("Social context", "社交环境"), icon: Users, report: research.sentiment_report, key: "sentiment" },
+                        ].map(({ label, icon, report, key }) => (
+                          <ReportCard key={`${research.id}-${key}`} title={label} icon={icon} content={report} locale={locale} t={t} />
+                        ))}
                       </div>
                     </details>
                     <details className="mt-4 border-t border-border pt-4">
                       <summary className="cursor-pointer text-sm">
                         {c("See how AI reached this conclusion", "查看 AI 的推理过程")}
                       </summary>
-                      <div className="mt-4 space-y-4">
-                        {research.investment_debate?.bull_history && (
-                          <MarkdownBody content={research.investment_debate.bull_history} />
-                        )}
-                        {research.investment_debate?.bear_history && (
-                          <MarkdownBody content={research.investment_debate.bear_history} />
-                        )}
+                      <div className="mt-6 space-y-8">
+                        <ReportCard key={`${research.id}-bull`} title={t("tradingAnalysis.debate.bullResearcher")} icon={Swords} content={research.investment_debate?.bull_history} locale={locale} t={t} />
+                        <ReportCard key={`${research.id}-bear`} title={t("tradingAnalysis.debate.bearResearcher")} icon={Swords} content={research.investment_debate?.bear_history} locale={locale} t={t} />
                       </div>
                       {!personalResearch.history.selected && <TextLink className="mt-4 inline-block" href={`/dashboard/trading-analysis/explore/${research.id}`}>
                         {c("Full research report", "完整研究报告")}

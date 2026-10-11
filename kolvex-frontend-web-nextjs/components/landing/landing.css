@@ -352,79 +352,167 @@
   font-size: 17px;
   font-weight: 700;
 }
-.preview-body {
-  display: grid;
-  grid-template-columns: 1.3fr 1fr;
+.dossier-heading .dossier-eyebrow {
+  margin: 0 0 16px;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  font-weight: 600;
+  color: var(--landing-accent-text);
 }
-.preview-chart-panel {
-  padding: 35px 32px;
+.dossier-body {
+  display: grid;
+  grid-template-columns: 310px minmax(0, 1fr);
+}
+.dossier-sidebar {
+  padding: 32px 20px;
   border-right: 1px solid var(--landing-line);
 }
-.preview-chart-caption {
-  display: flex;
-  align-items: center;
-  gap: 10px;
+.dossier-sidebar-label {
+  padding-inline: 12px;
+  font-size: 11px;
   color: var(--landing-muted);
-  font-size: 12px;
-  line-height: 1.7;
-  margin-top: 24px;
-  padding-top: 18px;
-  border-top: 1px solid var(--landing-line);
+  letter-spacing: 0.06em;
 }
-.preview-insight-panel {
+.landing-page .dossier-tabs {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+  margin-top: 22px;
+  border: 0;
+  overflow: visible;
+}
+.landing-page .dossier-trigger {
+  justify-content: flex-start;
+  gap: 14px;
+  margin: 0;
+  padding: 18px 12px;
+  white-space: normal;
+  text-align: left;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  color: var(--landing-muted);
+}
+.dossier-trigger span {
+  flex: 1;
   min-width: 0;
-  padding: 20px 30px 28px;
+}
+.dossier-trigger strong {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+}
+.dossier-trigger small {
+  display: block;
+  margin-top: 5px;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.6;
+}
+.landing-page .dossier-trigger:hover {
+  background: var(--landing-wash);
+  color: var(--landing-ink);
+}
+.landing-page .dossier-trigger[data-state="active"] {
+  border-color: var(--landing-line);
+  background: var(--landing-wash);
+  color: var(--landing-ink);
+}
+.dossier-trigger[data-state="active"] > svg:first-child {
+  color: var(--landing-accent-text);
+}
+.dossier-tab-arrow {
+  opacity: 0;
+}
+.dossier-trigger[data-state="active"] .dossier-tab-arrow {
+  opacity: 1;
+}
+.dossier-source-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin: 40px 12px 0;
+  padding-top: 20px;
+  border-top: 1px solid var(--landing-line);
+  font-size: 12px;
+  line-height: 1.8;
+  color: var(--landing-muted);
+}
+.dossier-source-note svg {
+  flex-shrink: 0;
+  margin-top: 3px;
+}
+.dossier-reader {
+  min-width: 0;
+  padding: 38px 44px 30px;
   background: var(--landing-ground);
 }
-.landing-page .preview-tabs {
-  justify-content: space-between;
-  gap: 16px;
-  border-color: var(--landing-line);
-  scrollbar-width: thin;
+.dossier-panel {
+  min-height: 465px;
 }
-.landing-page .preview-tabs::-webkit-scrollbar {
-  display: block;
-  height: 5px;
-}
-.preview-tabs button {
-  padding-bottom: 13px;
-  padding-top: 8px;
+.dossier-category {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.09em;
   color: var(--landing-muted);
 }
-.landing-page .preview-tabs button[data-state="active"] {
-  color: var(--landing-ink);
-  border-color: var(--landing-accent);
+.dossier-panel h3 {
+  margin-top: 16px;
+  font-size: clamp(23px, 2.2vw, 30px);
+  font-weight: 600;
+  letter-spacing: -0.035em;
+  line-height: 1.4;
+  text-wrap: balance;
 }
-.preview-tab-content {
-  min-height: 370px;
-  padding-top: 28px;
+.dossier-summary {
+  max-width: 62ch;
+  margin-top: 14px;
+  color: var(--landing-muted);
+  font-size: 14px;
+  line-height: 1.9;
 }
-.preview-evidence {
-  margin-block: 24px 12px;
-  font-size: 13px;
+.dossier-evidence {
+  margin-top: 28px;
 }
-.preview-evidence > div {
-  display: flex;
-  justify-content: space-between;
-  gap: 18px;
-  padding-block: 10px;
+.dossier-evidence > div {
+  display: grid;
+  grid-template-columns: 120px minmax(0, 1fr);
+  gap: 20px;
+  padding-block: 18px;
+  border-top: 1px solid var(--landing-line);
 }
-.preview-evidence dt {
+.dossier-evidence dt {
+  font-size: 12px;
+  line-height: 1.8;
   color: var(--landing-muted);
 }
-.preview-evidence dd {
+.dossier-evidence dd strong {
+  font-size: 14px;
   font-weight: 500;
-  text-align: right;
 }
-.landing-page .preview-action {
-  padding-left: 0;
-  min-height: 40px;
-  color: var(--landing-accent-text);
-  background: transparent;
+.dossier-evidence dd p {
+  margin-top: 5px;
+  font-size: 12px;
+  line-height: 1.8;
+  color: var(--landing-muted);
 }
-.landing-page .preview-action:hover {
-  background: transparent;
-  text-decoration: underline;
+.dossier-question {
+  border-left: 2px solid var(--landing-accent);
+  padding: 2px 0 2px 16px;
+  margin-top: 22px;
+}
+.dossier-question span {
+  font-size: 10px;
+  letter-spacing: 0.07em;
+  color: var(--landing-muted);
+}
+.dossier-question p {
+  font-size: 14px;
+  line-height: 1.8;
+  margin-top: 6px;
+}
+.dossier-action {
+  margin-top: 22px;
 }
 .landing-workflow-section {
   border-top: 1px solid var(--landing-line);
@@ -714,7 +802,6 @@
     font-size: 14px;
     max-width: 35ch;
   }
-  .preview-body,
   .landing-workflow-grid {
     grid-template-columns: 1fr;
   }
@@ -726,22 +813,37 @@
   .preview-toolbar > span {
     font-size: 10px;
   }
-  .preview-chart-panel {
-    padding: 26px 20px;
+  .dossier-body {
+    grid-template-columns: 1fr;
+  }
+  .dossier-sidebar {
+    padding: 22px 16px;
     border-right: 0;
     border-bottom: 1px solid var(--landing-line);
   }
-  .preview-chart-panel > svg {
-    margin-top: 20px;
+  .dossier-sidebar-label {
+    padding-inline: 4px;
   }
-  .preview-chart-caption {
-    margin-top: 16px;
+  .landing-page .dossier-tabs {
+    margin-top: 14px;
+    gap: 4px;
   }
-  .preview-insight-panel {
-    padding: 16px 20px 24px;
+  .landing-page .dossier-trigger {
+    padding: 12px;
   }
-  .preview-tab-content {
-    min-height: 365px;
+  .dossier-source-note {
+    margin: 20px 4px 0;
+    padding-top: 16px;
+  }
+  .dossier-reader {
+    padding: 28px 20px;
+  }
+  .dossier-panel {
+    min-height: 520px;
+  }
+  .dossier-evidence > div {
+    grid-template-columns: 1fr;
+    gap: 6px;
   }
   .landing-workflow-grid {
     gap: 30px;
@@ -797,5 +899,124 @@
   .signal-price-chart,
   .landing-page .text-positive {
     color: LinkText;
+  }
+}
+
+/* Motion follows information: sources arrive, evidence reads in order,
+   and connector arrows carry the workflow from one node to the next. */
+.landing-page {
+  --landing-motion-ease: cubic-bezier(0.16, 1, 0.3, 1);
+}
+.landing-page :is(a, button) {
+  transition: color 160ms ease, background-color 160ms ease,
+    border-color 160ms ease, transform 220ms var(--landing-motion-ease);
+}
+.landing-page :is(a, button):not(:disabled):active {
+  transform: scale(0.97);
+}
+.landing-page button:disabled {
+  cursor: default;
+}
+.landing-page header nav a,
+.landing-page footer nav a {
+  position: relative;
+}
+.landing-page :is(header, footer) nav a::after {
+  content: "";
+  position: absolute;
+  inset: auto 0 -5px;
+  height: 1px;
+  background: currentColor;
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 220ms var(--landing-motion-ease);
+}
+.landing-page :is(header, footer) nav a:is(:hover, :focus-visible)::after {
+  transform: scaleX(1);
+}
+.landing-page .landing-primary svg {
+  transition: transform 220ms var(--landing-motion-ease);
+}
+.landing-page .landing-primary:is(:hover, :focus-visible) svg {
+  transform: translate(3px, -3px);
+}
+@media (hover: hover) and (pointer: fine) {
+  .landing-feature-nav a > svg:first-child,
+  .dossier-trigger > svg:first-child,
+  .workflow-item h3 button > svg:first-child,
+  .scene-pause svg,
+  .landing-page footer a svg {
+    transition: transform 220ms var(--landing-motion-ease);
+  }
+  .landing-feature-nav a:hover > svg:first-child,
+  .dossier-trigger:hover > svg:first-child,
+  .workflow-item h3 button:hover > svg:first-child {
+    transform: translateY(-2px);
+  }
+  .scene-pause:hover svg,
+  .landing-page footer a:hover svg {
+    transform: scale(1.1);
+  }
+}
+.dossier-tab-arrow {
+  transform: translate(-4px, 4px);
+  transition: opacity 180ms ease, transform 250ms var(--landing-motion-ease);
+}
+.dossier-trigger[data-state="active"] .dossier-tab-arrow {
+  transform: translate(0, 0);
+}
+@keyframes landing-evidence-arrive {
+  from { opacity: 0.55; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes landing-connector-arrive {
+  from { opacity: 0.2; transform: translateX(-6px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+@keyframes landing-orbit-arrive {
+  from { opacity: 0.15; transform: scale(0.93) rotate(-8deg); }
+  to { transform: scale(1) rotate(0); }
+}
+.landing-page[data-motion-paused="false"] .signal-orbit {
+  animation: landing-orbit-arrive 1.2s var(--landing-motion-ease) both;
+}
+.landing-page[data-motion-paused="false"] .signal-orbit-inner {
+  animation-delay: 120ms;
+}
+.landing-page[data-motion-paused="false"] .dossier-panel[data-state="active"] :is(.dossier-category, h3, .dossier-summary, .dossier-evidence > div, .dossier-question, .dossier-action) {
+  animation: landing-evidence-arrive 360ms var(--landing-motion-ease) backwards;
+}
+.dossier-panel h3 { animation-delay: 35ms !important; }
+.dossier-summary { animation-delay: 65ms !important; }
+.dossier-evidence > div:nth-child(1) { animation-delay: 95ms !important; }
+.dossier-evidence > div:nth-child(2) { animation-delay: 130ms !important; }
+.dossier-question { animation-delay: 165ms !important; }
+.dossier-action { animation-delay: 195ms !important; }
+.landing-page[data-motion-paused="false"] .workflow-item-body:not([hidden]) {
+  animation: landing-evidence-arrive 280ms var(--landing-motion-ease);
+}
+.landing-page[data-motion-paused="false"] .workflow-node-arrow {
+  animation: landing-connector-arrive 400ms var(--landing-motion-ease) 120ms backwards;
+}
+.landing-page[data-motion-paused="false"] .workflow-node-wrap:nth-child(2) .workflow-node-arrow {
+  animation-delay: 210ms;
+}
+.landing-page[data-motion-paused="false"] .workflow-diagram-content > p {
+  animation: landing-evidence-arrive 350ms var(--landing-motion-ease) 240ms backwards;
+}
+.landing-page[data-motion-paused="true"] *,
+.landing-page[data-motion-paused="true"] *::before,
+.landing-page[data-motion-paused="true"] *::after {
+  animation: none !important;
+  transition-duration: 0s !important;
+}
+.landing-page[data-motion-paused="true"] :is(a, button):active,
+.landing-page[data-motion-paused="true"] :is(a, button):hover svg {
+  transform: none !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  .landing-page :is(a, button):active,
+  .landing-page :is(a, button):hover svg {
+    transform: none !important;
   }
 }

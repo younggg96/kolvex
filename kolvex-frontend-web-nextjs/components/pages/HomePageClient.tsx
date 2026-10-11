@@ -6,6 +6,7 @@ import BaseLayout from "@/components/layout/BaseLayout";
 import LandingHero from "@/components/landing/LandingHero";
 import LandingPreview from "@/components/landing/LandingPreview";
 import LandingHowItWorks from "@/components/landing/LandingHowItWorks";
+import { LandingMotionProvider } from "@/components/landing/LandingMotion";
 import LandingCTA from "@/components/landing/LandingCTA";
 import "@/components/landing/landing.css";
 
@@ -51,14 +52,14 @@ export default function HomePageClient() {
 
   return (
     <MotionConfig reducedMotion="user">
-      <div className="landing-page">
+      <LandingMotionProvider>
         <BaseLayout>
           <LandingHero />
           <LandingPreview />
           <LandingHowItWorks />
           <LandingCTA />
         </BaseLayout>
-      </div>
+      </LandingMotionProvider>
     </MotionConfig>
   );
 }

@@ -3,10 +3,10 @@ import remarkGfm from "remark-gfm";
 import { cn } from "@/lib/utils";
 
 export const PROSE_CLASSES = cn(
-  "prose w-full max-w-none dark:prose-invert break-words text-base leading-[1.85] text-foreground/90 md:text-[17px]",
+  "prose w-full max-w-[72ch] dark:prose-invert break-words text-base leading-[1.85] text-foreground/90 md:text-[17px]",
   "prose-headings:mt-10 prose-headings:mb-4 prose-headings:font-semibold prose-headings:leading-snug prose-headings:text-foreground",
   "prose-h1:text-2xl prose-h2:text-xl prose-h3:text-lg prose-h4:text-base",
-  "prose-p:my-4 prose-p:leading-[1.85]",
+  "prose-p:my-5 prose-p:leading-[1.85]",
   "prose-ul:my-5 prose-ul:pl-6 prose-li:my-2 prose-li:leading-[1.85]",
   "prose-ol:my-5 prose-ol:pl-6 prose-hr:my-10",
   "prose-strong:text-foreground prose-strong:font-semibold",
@@ -14,6 +14,8 @@ export const PROSE_CLASSES = cn(
   "prose-pre:bg-muted prose-pre:rounded-lg prose-pre:text-sm",
   "prose-table:my-0 prose-table:text-sm prose-th:px-3 prose-th:py-3 prose-td:px-3 prose-td:py-3",
   "prose-a:text-foreground prose-a:underline-offset-4 prose-blockquote:font-normal prose-blockquote:not-italic",
+  "prose-blockquote:border-l-border prose-blockquote:bg-muted/50 prose-blockquote:py-1 prose-blockquote:pr-4",
+  "prose-em:text-foreground/90 prose-pre:overflow-x-auto [overflow-wrap:anywhere]",
   "[&>*:first-child]:mt-0 [&>*:last-child]:mb-0"
 );
 

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import { AnimatePresence, motion } from "motion/react";
 import {
   ArrowRight,
   ArrowUpRight,
@@ -18,12 +18,12 @@ import {
   Link2,
 } from "lucide-react";
 import { useCopy } from "@/components/decision/shared";
-import { LandingReveal, landingEase } from "./LandingMotion";
+import { LandingReveal, landingEase, useLandingMotion } from "./LandingMotion";
 import LogoIcon from "@/components/common/LogoIcon";
 
 export default function LandingHowItWorks() {
   const c = useCopy();
-  const reduce = useReducedMotion();
+  const { disabled: reduce } = useLandingMotion();
   const [active, setActive] = useState(0);
   const [expanded, setExpanded] = useState(true);
   const features = [
@@ -177,13 +177,20 @@ export default function LandingHowItWorks() {
                 initial={reduce ? false : { opacity: 0, y: 14 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0 }}
-                transition={{ duration: 0.25, ease: landingEase }}
+                transition={{ duration: reduce ? 0 : 0.25, ease: landingEase }}
               >
                 <div className="workflow-nodes">
                   {feature.nodes.map((node, i) => {
                     const Icon = feature.nodeIcons[i];
                     return (
-                      <div key={node} className="workflow-node-wrap">
+                      <motion.div
+                        key={node}
+                        className="workflow-node-wrap"
+                        initial={false}
+                        whileInView={reduce ? { opacity: 1, x: 0 } : { opacity: [0.5, 1], x: [-12, 0] }}
+                        viewport={{ once: true, amount: 0.2 }}
+                        transition={{ duration: 0.4, delay: i * 0.09, ease: landingEase }}
+                      >
                         <div className="workflow-node">
                           <Icon size={26} strokeWidth={1.5} />
                           <span>{node}</span>
@@ -195,7 +202,7 @@ export default function LandingHowItWorks() {
                             aria-hidden="true"
                           />
                         )}
-                      </div>
+                      </motion.div>
                     );
                   })}
                 </div>

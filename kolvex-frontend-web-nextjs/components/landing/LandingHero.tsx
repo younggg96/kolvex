@@ -12,7 +12,6 @@ import {
 } from "lucide-react";
 import {
   motion,
-  useReducedMotion,
   useScroll,
   useTransform,
 } from "motion/react";
@@ -20,12 +19,12 @@ import { Button } from "@/components/ui/button";
 import { useCopy } from "@/components/decision/shared";
 import { useTranslation } from "@/lib/i18n";
 import LandingMarketScene from "./LandingMarketScene";
-import { landingEase } from "./LandingMotion";
+import { landingEase, useLandingMotion } from "./LandingMotion";
 
 export default function LandingHero() {
   const c = useCopy();
   const { t } = useTranslation();
-  const reduce = useReducedMotion();
+  const { disabled: reduce } = useLandingMotion();
   const hero = useRef<HTMLElement>(null);
   const { scrollYProgress } = useScroll({
     target: hero,
@@ -61,7 +60,7 @@ export default function LandingHero() {
           <motion.p
             className="landing-eyebrow"
             initial={false}
-            animate={reduce ? undefined : { opacity: [0, 1], y: [12, 0] }}
+            animate={reduce ? { opacity: 1, y: 0 } : { opacity: [0, 1], y: [12, 0] }}
             transition={{ duration: 0.7 }}
           >
             {c("YOUR STOCK RESEARCH, CONNECTED", "连接观点、研究与持仓")}
@@ -69,7 +68,7 @@ export default function LandingHero() {
           <h1 className="landing-headline">
             <motion.span
               initial={false}
-              animate={reduce ? undefined : { opacity: [0, 1], y: [35, 0] }}
+              animate={reduce ? { opacity: 1, y: 0 } : { opacity: [0, 1], y: [35, 0] }}
               transition={{ duration: 0.85, ease: landingEase }}
             >
               {c("Less noise.", "让观点汇聚，")}
@@ -77,7 +76,7 @@ export default function LandingHero() {
             <motion.span
               className="landing-headline-accent"
               initial={false}
-              animate={reduce ? undefined : { opacity: [0, 1], y: [35, 0] }}
+              animate={reduce ? { opacity: 1, y: 0 } : { opacity: [0, 1], y: [35, 0] }}
               transition={{ duration: 0.85, delay: 0.12, ease: landingEase }}
             >
               {c("More perspective.", "让判断清晰。")}
@@ -85,7 +84,7 @@ export default function LandingHero() {
           </h1>
           <motion.div
             initial={false}
-            animate={reduce ? undefined : { opacity: [0, 1], y: [20, 0] }}
+            animate={reduce ? { opacity: 1, y: 0 } : { opacity: [0, 1], y: [20, 0] }}
             transition={{ duration: 0.85, delay: 0.25, ease: landingEase }}
           >
             <p className="landing-hero-description">
