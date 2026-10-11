@@ -2,12 +2,14 @@
 
 import ForgotPasswordForm from "@/components/auth/ForgotPasswordForm";
 import AuthLayout from "./AuthLayout";
+import { useTranslation } from "@/lib/i18n";
 
 export default function ForgotPasswordPageClient() {
+  const { t } = useTranslation();
   return (
     <AuthLayout
-      title="Forgot Password"
-      subtitle="Enter your email and we'll send you instructions to reset your password."
+      title={t("auth.forgotPasswordTitle")}
+      subtitle={t("auth.forgotPasswordSubtitle")}
     >
       <ForgotPasswordForm />
     </AuthLayout>

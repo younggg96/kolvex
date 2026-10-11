@@ -1,5 +1,8 @@
-import { ReactNode } from "react";
+"use client";
+
+import { ReactNode, useEffect } from "react";
 import BaseLayout from "@/components/layout/BaseLayout";
+import "./auth.css";
 
 interface AuthLayoutProps {
   children: ReactNode;
@@ -12,23 +15,32 @@ export default function AuthLayout({
   title,
   subtitle,
 }: AuthLayoutProps) {
+  useEffect(() => {
+    document.title = `${title} | Kolvex`;
+  }, [title]);
   return (
-    <BaseLayout hasFooter={false}>
-      <div className="relative z-10 flex flex-1 items-start justify-center px-4 py-12 md:py-16">
-        <div className="w-full max-w-[420px]">
-          <div className="flex flex-col gap-7">
-            <div className="flex flex-col gap-3 text-left">
-              <h1 className="rh-enter text-3xl font-medium text-foreground">
+    <div className="auth-page">
+      <BaseLayout hasFooter={false}>
+        <div className="relative flex flex-1 items-start justify-center px-4 py-10 sm:py-12">
+          <section
+            className="w-full max-w-[440px] rounded-xl border border-border bg-card p-6 sm:p-8"
+            aria-labelledby="auth-title"
+          >
+            <div className="mb-7">
+              <h1
+                id="auth-title"
+                className="text-3xl font-semibold leading-tight tracking-tight text-foreground"
+              >
                 {title}
               </h1>
-              <p className="text-sm leading-relaxed text-muted-foreground">
+              <p className="mt-3 text-sm leading-6 text-muted-foreground">
                 {subtitle}
               </p>
             </div>
             {children}
-          </div>
+          </section>
         </div>
-      </div>
-    </BaseLayout>
+      </BaseLayout>
+    </div>
   );
 }

@@ -158,6 +158,44 @@ card geometry, errors offer retry, and empty groups and missing stock opinions
 have explicit translated messages. Preserve the existing Inter/Chinese stack
 and theme tokens throughout this component.
 
+### Authentication
+
+Login, signup, forgotten password and reset password share the existing theme,
+Inter/Chinese stack and one flat bordered card. `AuthLayout` centers a reading
+column capped at 440px, with 16px outer horizontal space and 24px card padding
+on phones, increasing card padding to 32px from the small breakpoint. The card
+has 12px corners and no static shadow. Its heading is 30px semibold; supporting
+copy is 14px with 24px line height. The page scrolls with the document, and the
+localized heading also supplies the browser title. `auth.css` only quiets the
+inherited grid and entry animations; runtime tokens remain the color authority.
+
+**The Shared Auth Controls Rule.** Auth forms use the shared Input's `auth`
+variant for aligned 48px controls with 12px corners, semantic borders, muted
+fill, 16px text and visible focus. Password visibility augments this same Input.
+Shared pill Buttons provide full-width primary and outline actions; shared Radix
+tabs provide two equal underlined login/signup choices with visible keyboard
+focus. Labels, hints, validation messages and status copy follow the active
+Chinese or English locale. Invalid fields expose their associated description
+and semantic negative border; submission focuses the first invalid field.
+
+#### Canonical UI Map for authentication
+
+| Capability | Canonical owner | Source of truth | Allowed variants | Verification |
+|---|---|---|---|---|
+| Input/Text field | `components/ui/input.tsx` | Runtime semantic tokens and shared Input | Default; `auth` for 48px authentication fields | Captured light/dark layouts and empty-form focus/errors; invalid border uses `aria-[invalid=true]` selectors |
+| Password visibility | `components/ui/password-input.tsx` | Shared Input and `lib/i18n/locales/{zh,en}.json` | Same Input variants; localized show/hide button | Keyboard Enter toggles type and accessible name; preserves autocomplete and paste |
+| Tabs | `components/ui/tabs.tsx` | Shared Radix tabs | Default scrolling list; `auth` two-column list without scroll clipping | ArrowLeft/ArrowRight mode switching and visible focus |
+| Label/Button | `components/ui/label.tsx`; `components/ui/button.tsx` | Shared label and pill button variants | Auth uses labelled fields and large primary/outline actions | Captured alignment and keyboard focus |
+| Field descriptions, validation and feedback | `components/auth/AuthUI.tsx` with the owning form | Locale messages and local form state | Field hint/error; alert/status; busy submit; recovery back link | Empty login/signup/recovery and invalid reset captured; API busy/success/failure presentation checked in source |
+| Auth shell | `components/auth/AuthLayout.tsx` | Runtime theme; localized route title/subtitle | Login/signup at `/auth`; `/auth/forgot-password`; `/auth/reset-password` | Desktop/light and 390px mobile/dark captures; document width and scrolling |
+
+The presentation retains the backend-defined six-character password minimum
+and existing authentication services and redirect handling. Browser verification
+covered local validation and the invalid recovery-link state; it did not complete
+real sign-in, account creation, OAuth, reset-email delivery or password updates.
+The valid reset form and service result states were checked in source. English
+copy was checked statically, without an English runtime capture.
+
 ## Do's and Don'ts
 
 - Keep creator discovery and the former Research overview within Creator Opinions.

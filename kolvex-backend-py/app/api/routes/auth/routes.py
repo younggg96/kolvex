@@ -269,9 +269,9 @@ async def sign_out(
         
         supabase = get_supabase()
         
-        # 尝试登出（Supabase 会使 token 失效）
+        # 撤销当前请求用户的会话，不依赖客户端中可能存在的其他用户会话。
         try:
-            supabase.auth.sign_out()
+            supabase.auth.admin.sign_out(token)
         except Exception:
             # 即使登出失败，我们也返回成功（客户端会清除本地存储）
             pass

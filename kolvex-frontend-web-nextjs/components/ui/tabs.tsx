@@ -8,13 +8,18 @@ const Tabs = TabsPrimitive.Root;
 
 const TabsList = React.forwardRef<
   React.ElementRef<typeof TabsPrimitive.List>,
-  React.ComponentPropsWithoutRef<typeof TabsPrimitive.List>
->(({ className, ...props }, ref) => (
+  React.ComponentPropsWithoutRef<typeof TabsPrimitive.List> & {
+    variant?: "default" | "auth";
+  }
+>(({ className, variant = "default", ...props }, ref) => (
   <TabsPrimitive.List
     ref={ref}
     className={cn(
-      "inline-flex min-h-11 w-full items-center justify-start gap-5 overflow-x-auto border-b border-border text-muted-foreground scrollbar-hide",
-      className
+      "min-h-11 w-full items-center justify-start border-b border-border text-muted-foreground",
+      variant === "auth"
+        ? "grid grid-cols-2 gap-0 overflow-visible"
+        : "inline-flex gap-5 overflow-x-auto scrollbar-hide",
+      className,
     )}
     {...props}
   />
@@ -29,7 +34,7 @@ const TabsTrigger = React.forwardRef<
     ref={ref}
     className={cn(
       "-mb-px inline-flex min-h-11 shrink-0 items-center justify-center whitespace-nowrap border-b-2 border-transparent text-sm font-semibold transition-colors duration-150 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary data-[state=active]:border-primary data-[state=active]:text-foreground",
-      className
+      className,
     )}
     {...props}
   />
@@ -44,7 +49,7 @@ const TabsContent = React.forwardRef<
     ref={ref}
     className={cn(
       "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background",
-      className
+      className,
     )}
     {...props}
   />

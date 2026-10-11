@@ -1,23 +1,28 @@
 "use client";
 
-import { useState, FormEvent } from "react";
+import { useState, useRef, type FormEvent } from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
-import {
-  signUp,
-  signIn,
-  signInWithGoogle,
-  getErrorMessage,
-} from "@/lib/supabase/auth";
+import Image from "next/image";
+import { useSearchParams } from "next/navigation";
+import { getAuthRedirect } from "@/lib/supabase/redirect";
+import { signUp, signIn, signInWithGoogle } from "@/lib/supabase/auth";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
-import Image from "next/image";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useTranslation } from "@/lib/i18n";
+import {
+  AuthField,
+  AuthFeedback,
+  AuthSubmitButton,
+  authDescription,
+  localizedAuthError,
+  validateAuthEmail,
+} from "./AuthUI";
 
 type AuthMode = "login" | "signup";
-
+type FieldErrors = { email?: string; password?: string; name?: string };
 interface AuthFormProps {
   mode: AuthMode;
   onModeChange: (mode: AuthMode) => void;
@@ -25,290 +30,260 @@ interface AuthFormProps {
 
 export default function AuthForm({ mode, onModeChange }: AuthFormProps) {
   const { t } = useTranslation();
-  const router = useRouter();
   const searchParams = useSearchParams();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
+  const [errors, setErrors] = useState<FieldErrors>({});
+  const [feedback, setFeedback] = useState<{
+    message: string;
+    tone: "error" | "success";
+  } | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const busyRef = useRef(false);
+  const busy = isLoading || isGoogleLoading;
+  const redirectTo = getAuthRedirect(searchParams.get("redirectTo"));
+  const emailId = `email-${mode}`;
+  const passwordId = `password-${mode}`;
 
-  // Get redirect URL from query params, default to /dashboard
-  const redirectTo = searchParams.get("redirectTo") || "/dashboard";
+  function changeMode(value: string) {
+    if (busyRef.current) return;
+    setErrors({});
+    setFeedback(null);
+    onModeChange(value as AuthMode);
+  }
+  function clearError(field: keyof FieldErrors) {
+    setErrors((current) => ({ ...current, [field]: undefined }));
+    setFeedback(null);
+  }
 
-  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (busyRef.current) return;
+    const next: FieldErrors = { email: validateAuthEmail(email, t) };
+    if (mode === "signup" && !name.trim()) next.name = t("auth.enterName");
+    if (!password) next.password = t("auth.passwordRequired");
+    else if (mode === "signup" && password.length < 6)
+      next.password = t("auth.passwordMinimum");
+    setErrors(next);
+    setFeedback(null);
+    const first =
+      mode === "signup" && next.name
+        ? "name"
+        : next.email
+          ? emailId
+          : next.password
+            ? passwordId
+            : null;
+    if (first) {
+      document.getElementById(first)?.focus();
+      return;
+    }
+    busyRef.current = true;
     setIsLoading(true);
-
-    // Basic validation
-    if (!email || !password) {
-      toast.error(t("auth.fillAllFields"));
-      setIsLoading(false);
-      return;
-    }
-
-    if (mode === "signup" && !name) {
-      toast.error(t("auth.enterName"));
-      setIsLoading(false);
-      return;
-    }
-
-    // Call Supabase Auth
-    if (mode === "login") {
-      // Sign in
-      const result = await signIn({ email, password });
-
-      if (result.success) {
+    let redirecting = false;
+    try {
+      const result =
+        mode === "login"
+          ? await signIn({ email: email.trim(), password })
+          : await signUp({ email: email.trim(), password, name: name.trim() });
+      if (!result.success)
+        setFeedback({
+          message: localizedAuthError(result.error, t),
+          tone: "error",
+        });
+      else if (mode === "login") {
         toast.success(t("auth.loginSuccess"));
-        setTimeout(() => {
-          router.push(redirectTo);
-        }, 1000);
-      } else {
-        toast.error(getErrorMessage(result.error));
-      }
-      setIsLoading(false);
-    } else {
-      // Sign up
-      const result = await signUp({ email, password, name });
-
-      if (result.success) {
-        toast.success(t("auth.accountCreated"));
-        setIsLoading(false);
-      } else {
-        toast.error(getErrorMessage(result.error));
+        redirecting = true;
+        // Fetch a fresh document with the new cookies, bypassing routes cached
+        // before login (including their unauthenticated redirects).
+        window.location.replace(redirectTo);
+      } else
+        setFeedback({ message: t("auth.accountCreated"), tone: "success" });
+    } catch {
+      setFeedback({ message: t("auth.authError"), tone: "error" });
+    } finally {
+      if (!redirecting) {
+        busyRef.current = false;
         setIsLoading(false);
       }
     }
-  };
+  }
 
-  const handleGoogleSignIn = async () => {
+  async function handleGoogleSignIn() {
+    if (busyRef.current) return;
+    busyRef.current = true;
     setIsGoogleLoading(true);
+    setFeedback(null);
     try {
       const result = await signInWithGoogle(redirectTo);
-
       if (!result.success) {
-        toast.error(getErrorMessage(result.error));
+        setFeedback({
+          message: localizedAuthError(result.error, t),
+          tone: "error",
+        });
+        busyRef.current = false;
         setIsGoogleLoading(false);
       }
-      // If successful, the user will be redirected to Google's OAuth page
-      // No need to reset loading state as the page will redirect
-    } catch (error: any) {
-      toast.error(t("auth.googleSignInFailed"));
+    } catch {
+      setFeedback({ message: t("auth.googleSignInFailed"), tone: "error" });
+      busyRef.current = false;
       setIsGoogleLoading(false);
     }
-  };
+  }
 
   return (
-    <div className="w-full animate-fade-in-up">
-      <div className="auth-motion relative border-t border-border pt-6">
-
-        <div className="relative z-10">
-          {/* Mode Toggle */}
-          <div className="relative mb-7 flex gap-2 rounded-md border border-border bg-muted p-1.5">
-            {/* Sliding Background Indicator */}
-            <div
-              className={`absolute top-1.5 bottom-1.5 w-[calc(50%-10px)] bg-card rounded transition-all duration-200 ${
-                mode === "login" ? "left-1.5" : "left-[calc(50%+4px)]"
-              }`}
-            ></div>
-
-            <Button
-              variant="ghost"
-              type="button"
-              onClick={() => onModeChange("login")}
-              aria-pressed={mode === "login"}
-              className={`flex-1 py-2.5 px-4 rounded text-sm font-semibold relative z-10 hover:!bg-transparent ${
-                mode === "login"
-                  ? "text-foreground"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              Login
-            </Button>
-            <Button
-              variant="ghost"
-              type="button"
-              onClick={() => onModeChange("signup")}
-              aria-pressed={mode === "signup"}
-              className={`flex-1 py-2.5 px-4 rounded text-sm font-semibold relative z-10 hover:!bg-transparent ${
-                mode === "signup"
-                  ? "text-foreground"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              Sign Up
-            </Button>
-          </div>
-
-          {/* Form */}
-          <form
-            onSubmit={handleSubmit}
-            className="flex flex-col gap-4 transition-all duration-300"
-          >
-            {/* Login Email & Password */}
-            {mode === "login" && (
-              <>
-                <div className="flex flex-col gap-2">
-                  <label
-                    htmlFor="email-login"
-                    className="text-gray-800 dark:text-white/90 text-sm font-medium text-left"
-                  >
-                    Email Address
-                  </label>
-                  <Input
-                    id="email-login"
-                    name="email-login"
-                    type="email"
-                    autoComplete="username email"
-                    className="h-12 bg-gray-50 dark:bg-black/30 hover:border-gray-400 dark:hover:border-white/20 transition-all duration-300"
-                    placeholder="Enter your email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                  />
-                </div>
-
-                <div className="flex flex-col gap-2">
-                  <label
-                    htmlFor="password-login"
-                    className="text-gray-800 dark:text-white/90 text-sm font-medium text-left"
-                  >
-                    Password
-                  </label>
-                  <PasswordInput
-                    id="password-login"
-                    name="password-login"
-                    autoComplete="current-password"
-                    className="h-12 bg-gray-50 dark:bg-black/30 hover:border-gray-400 dark:hover:border-white/20 transition-all duration-300"
-                    placeholder="Enter your password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                  />
-                </div>
-              </>
-            )}
-
-            {/* Signup Email & Password */}
-            {mode === "signup" && (
-              <>
-                <div className="flex flex-col gap-2">
-                  <div className="flex flex-col gap-2">
-                    <label
-                      htmlFor="name"
-                      className="text-gray-800 dark:text-white/90 text-sm font-medium text-left"
-                    >
-                      Full Name
-                    </label>
-                    <Input
-                      id="name"
-                      name="name"
-                      type="text"
-                      autoComplete="name"
-                      className="h-12 bg-gray-50 dark:bg-black/30 hover:border-gray-400 dark:hover:border-white/20 transition-all duration-300"
-                      placeholder="Enter your full name"
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                    />
-                  </div>
-                  <label
-                    htmlFor="email-signup"
-                    className="text-gray-800 dark:text-white/90 text-sm font-medium text-left"
-                  >
-                    Email Address
-                  </label>
-                  <Input
-                    id="email-signup"
-                    name="email-signup"
-                    type="email"
-                    autoComplete="email"
-                    className="h-12 bg-gray-50 dark:bg-black/30 hover:border-gray-400 dark:hover:border-white/20 transition-all duration-300"
-                    placeholder="Enter your email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                  />
-                </div>
-
-                <div className="flex flex-col gap-2">
-                  <label
-                    htmlFor="password-signup"
-                    className="text-gray-800 dark:text-white/90 text-sm font-medium text-left"
-                  >
-                    Password
-                  </label>
-                  <PasswordInput
-                    id="password-signup"
-                    name="password-signup"
-                    autoComplete="new-password"
-                    className="h-12 bg-gray-50 dark:bg-black/30 hover:border-gray-400 dark:hover:border-white/20 transition-all duration-300"
-                    placeholder="Create a password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                  />
-                </div>
-              </>
-            )}
-
-            <div
-              className={`transition-all duration-300 overflow-hidden ${
-                mode === "login" ? "max-h-8 opacity-100" : "max-h-0 opacity-0"
-              }`}
-            >
-              <div className="flex justify-end">
-                <Link
-                  href="/auth/forgot-password"
-                  className="text-primary text-xs hover:text-primary/80 transition-all duration-200 hover:underline"
-                >
-                  Forgot password?
-                </Link>
-              </div>
-            </div>
-
-            <Button
-              type="submit"
-              size="lg"
-              disabled={isLoading}
-              className="w-full hover:scale-[1.02] active:scale-[0.98] motion-reduce:transform-none"
-            >
-              {isLoading
-                ? "Processing..."
-                : mode === "login"
-                ? "Login"
-                : "Create Account"}
-            </Button>
-          </form>
-
-          {/* Divider */}
-          <div className="flex items-center gap-4 my-6">
-            <div className="flex-1 h-px bg-gradient-to-r from-transparent via-gray-300 dark:via-white/10 to-transparent"></div>
-            <span className="text-gray-500 dark:text-white/40 text-xs font-medium">
-              OR
-            </span>
-            <div className="flex-1 h-px bg-gradient-to-r from-transparent via-gray-300 dark:via-white/10 to-transparent"></div>
-          </div>
-
-          {/* Social Login */}
-          <div className="flex flex-col gap-3">
-            <Button
-              type="button"
-              variant="outline"
-              size="lg"
-              onClick={handleGoogleSignIn}
-              disabled={isGoogleLoading || isLoading}
-              className="w-full gap-2 hover:scale-[1.02] active:scale-[0.98] disabled:hover:scale-100 motion-reduce:transform-none"
-            >
-              <Image
-                src="/logo/google.svg"
-                alt="Google"
-                width={24}
-                height={24}
-                className="object-contain w-5 h-5"
+    <Tabs value={mode} onValueChange={changeMode}>
+      <TabsList
+        aria-label={t("auth.modeLabel")}
+        variant="auth"
+        className="mb-6"
+      >
+        <TabsTrigger
+          value="login"
+          disabled={busy}
+          className="py-3 disabled:opacity-50"
+        >
+          {t("auth.signIn")}
+        </TabsTrigger>
+        <TabsTrigger
+          value="signup"
+          disabled={busy}
+          className="py-3 disabled:opacity-50"
+        >
+          {t("auth.signUp")}
+        </TabsTrigger>
+      </TabsList>
+      <TabsContent value={mode} className="outline-none">
+        <form
+          noValidate
+          onSubmit={handleSubmit}
+          className="flex flex-col gap-5"
+          aria-busy={isLoading}
+        >
+          {mode === "signup" && (
+            <AuthField id="name" label={t("auth.name")} error={errors.name}>
+              <Input
+                variant="auth"
+                id="name"
+                name="name"
+                type="text"
+                autoComplete="name"
+                required
+                disabled={busy}
+                placeholder={t("auth.namePlaceholder")}
+                value={name}
+                onChange={(event) => {
+                  setName(event.target.value);
+                  clearError("name");
+                }}
+                aria-invalid={!!errors.name}
+                aria-describedby={authDescription("name", errors.name)}
               />
-              <span>
-                {isGoogleLoading ? "Connecting..." : "Continue with Google"}
-              </span>
-            </Button>
-          </div>
+            </AuthField>
+          )}
+          <AuthField id={emailId} label={t("auth.email")} error={errors.email}>
+            <Input
+              variant="auth"
+              id={emailId}
+              name={emailId}
+              type="email"
+              autoComplete={mode === "login" ? "username" : "email"}
+              autoCapitalize="none"
+              spellCheck={false}
+              required
+              disabled={busy}
+              placeholder={t("auth.emailPlaceholder")}
+              value={email}
+              onChange={(event) => {
+                setEmail(event.target.value);
+                clearError("email");
+              }}
+              aria-invalid={!!errors.email}
+              aria-describedby={authDescription(emailId, errors.email)}
+            />
+          </AuthField>
+          <AuthField
+            id={passwordId}
+            label={t("auth.password")}
+            error={errors.password}
+            hint={mode === "signup" ? t("auth.passwordMinimum") : undefined}
+          >
+            <PasswordInput
+              key={passwordId}
+              variant="auth"
+              id={passwordId}
+              name={passwordId}
+              autoComplete={
+                mode === "login" ? "current-password" : "new-password"
+              }
+              required
+              minLength={mode === "signup" ? 6 : undefined}
+              disabled={busy}
+              placeholder={t(
+                mode === "login"
+                  ? "auth.passwordPlaceholder"
+                  : "auth.newPasswordPlaceholder",
+              )}
+              value={password}
+              onChange={(event) => {
+                setPassword(event.target.value);
+                clearError("password");
+              }}
+              aria-invalid={!!errors.password}
+              aria-describedby={authDescription(
+                passwordId,
+                errors.password,
+                mode === "signup",
+              )}
+            />
+          </AuthField>
+          {mode === "login" && (
+            <Link
+              href="/auth/forgot-password"
+              className="-mt-2 self-end rounded-sm text-sm font-medium text-positive underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/60"
+            >
+              {t("auth.forgotPassword")}
+            </Link>
+          )}
+          {feedback && <AuthFeedback {...feedback} />}
+          <AuthSubmitButton
+            busy={isLoading}
+            disabled={isGoogleLoading}
+            busyLabel={t(
+              mode === "login" ? "auth.signingIn" : "auth.signingUp",
+            )}
+          >
+            {t(mode === "login" ? "auth.signIn" : "auth.createAccount")}
+          </AuthSubmitButton>
+        </form>
+        <div className="my-6 flex items-center gap-4" aria-hidden="true">
+          <div className="h-px flex-1 bg-border" />
+          <span className="text-xs text-muted-foreground">{t("auth.or")}</span>
+          <div className="h-px flex-1 bg-border" />
         </div>
-      </div>
-    </div>
+        <Button
+          type="button"
+          variant="outline"
+          size="lg"
+          onClick={handleGoogleSignIn}
+          disabled={busy}
+          aria-busy={isGoogleLoading}
+          className="w-full gap-3"
+        >
+          <Image
+            src="/logo/google.svg"
+            alt=""
+            width={20}
+            height={20}
+            className="h-5 w-5"
+          />
+          <span role={isGoogleLoading ? "status" : undefined}>
+            {t(isGoogleLoading ? "auth.connecting" : "auth.continueWithGoogle")}
+          </span>
+        </Button>
+      </TabsContent>
+    </Tabs>
   );
 }

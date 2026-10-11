@@ -2,29 +2,29 @@
 Supabase 配置和客户端
 """
 from supabase import create_client, Client
+from supabase.client import ClientOptions
 from app.core.config import settings
 from typing import Optional
 
 
 class SupabaseClient:
-    """Supabase 客户端单例"""
+    """独立的请求认证客户端和共享的服务客户端。"""
     
-    _instance: Optional[Client] = None
     _service_instance: Optional[Client] = None
     
     @classmethod
     def get_client(cls) -> Client:
-        """获取 Supabase 客户端实例（使用 anon key，用于验证 JWT）"""
-        if cls._instance is None:
-            if not settings.SUPABASE_URL or not settings.SUPABASE_KEY:
-                raise ValueError("Supabase URL 和 Key 未配置")
-            
-            cls._instance = create_client(
-                settings.SUPABASE_URL,
-                settings.SUPABASE_KEY
-            )
-        
-        return cls._instance
+        """每次创建独立客户端；用户会话只由浏览器持久化和自动续期。"""
+        if not settings.SUPABASE_URL or not settings.SUPABASE_KEY:
+            raise ValueError("Supabase URL 和 Key 未配置")
+
+        # 登录会修改客户端的会话及 Authorization header，不能跨用户共享。
+        # 后台续期会轮换浏览器仍在使用的 refresh token，导致意外掉线。
+        return create_client(
+            settings.SUPABASE_URL,
+            settings.SUPABASE_KEY,
+            options=ClientOptions(auto_refresh_token=False, persist_session=False),
+        )
     
     @classmethod
     def get_service_client(cls) -> Client:
@@ -40,7 +40,8 @@ class SupabaseClient:
             
             cls._service_instance = create_client(
                 settings.SUPABASE_URL,
-                key
+                key,
+                options=ClientOptions(auto_refresh_token=False, persist_session=False),
             )
         
         return cls._service_instance
@@ -48,7 +49,6 @@ class SupabaseClient:
     @classmethod
     def reset_client(cls):
         """重置客户端（用于测试）"""
-        cls._instance = None
         cls._service_instance = None
 
 

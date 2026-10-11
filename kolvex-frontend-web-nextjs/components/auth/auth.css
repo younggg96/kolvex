@@ -1,0 +1,8 @@
+/* Authentication shares the application's surfaces and controls. */
+.auth-page > div > .bg-grid {
+  opacity: 0.12;
+  animation: none;
+}
+.auth-page main {
+  animation: none;
+}

@@ -1,97 +1,56 @@
-import { createServerClient, type CookieOptions } from "@supabase/ssr";
+import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { supabaseUrl, supabaseAnonKey } from "./config";
+import { getAuthRedirect } from "./redirect";
 
-// Routes that require authentication
 const protectedRoutes = ["/dashboard", "/config"];
 
-// Routes that should redirect to dashboard if user is already authenticated
-const authRoutes = ["/auth"];
-
-// Public routes that don't require authentication
-const publicRoutes = ["/", "/privacy", "/terms", "/contact"];
-
 export async function updateSession(request: NextRequest) {
-  let response = NextResponse.next({
-    request: {
-      headers: request.headers,
-    },
-  });
+  let response = NextResponse.next({ request: { headers: request.headers } });
 
   const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
     cookies: {
-      get(name: string) {
-        return request.cookies.get(name)?.value;
+      getAll() {
+        return request.cookies.getAll();
       },
-      set(name: string, value: string, options: CookieOptions) {
-        request.cookies.set({
-          name,
-          value,
-          ...options,
-        });
-        response = NextResponse.next({
-          request: {
-            headers: request.headers,
-          },
-        });
-        response.cookies.set({
-          name,
-          value,
-          ...options,
-        });
-      },
-      remove(name: string, options: CookieOptions) {
-        request.cookies.set({
-          name,
-          value: "",
-          ...options,
-        });
-        response = NextResponse.next({
-          request: {
-            headers: request.headers,
-          },
-        });
-        response.cookies.set({
-          name,
-          value: "",
-          ...options,
-        });
+      setAll(cookiesToSet) {
+        cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
+        const previousCookies = response.cookies.getAll();
+        response = NextResponse.next({ request: { headers: request.headers } });
+        previousCookies.forEach((cookie) => response.cookies.set(cookie));
+        cookiesToSet.forEach(({ name, value, options }) =>
+          response.cookies.set(name, value, options)
+        );
+        response.headers.set("Cache-Control", "private, no-store");
       },
     },
   });
 
-  // Refresh session if expired - required for Server Components
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
+  // Validate the user with Auth; never authorize from an unverified session cookie.
+  const { data: { user } } = await supabase.auth.getUser();
   const { pathname } = request.nextUrl;
-
-  // Check if the current route is protected
   const isProtectedRoute = protectedRoutes.some(
     (route) => pathname === route || pathname.startsWith(`${route}/`)
   );
 
-  // Check if the current route is an auth route (login/signup)
-  const isAuthRoute = authRoutes.some(
-    (route) => pathname === route || pathname.startsWith(`${route}/`)
-  );
+  // Redirects must carry every refreshed cookie, including chunked tokens.
+  const redirectWithSession = (url: URL) => {
+    const redirect = NextResponse.redirect(url);
+    response.cookies.getAll().forEach((cookie) => redirect.cookies.set(cookie));
+    redirect.headers.set("Cache-Control", "private, no-store");
+    return redirect;
+  };
 
-  // If user is not authenticated and trying to access a protected route
   if (!user && isProtectedRoute) {
     const redirectUrl = new URL("/auth", request.url);
-    // Store the original URL (including query params) to redirect back after login
-    const originalUrl = pathname + request.nextUrl.search;
-    redirectUrl.searchParams.set("redirectTo", originalUrl);
-    return NextResponse.redirect(redirectUrl);
+    redirectUrl.searchParams.set("redirectTo", pathname + request.nextUrl.search);
+    return redirectWithSession(redirectUrl);
   }
 
-  // If user is authenticated and trying to access auth routes, redirect to dashboard
-  if (user && isAuthRoute) {
-    // Check if there's a redirectTo parameter
-    const redirectTo = request.nextUrl.searchParams.get("redirectTo");
-    const targetUrl = redirectTo || "/dashboard";
-    return NextResponse.redirect(new URL(targetUrl, request.url));
+  // Callback and password recovery routes must remain accessible with a session.
+  if (user && pathname === "/auth") {
+    const target = getAuthRedirect(request.nextUrl.searchParams.get("redirectTo"));
+    return redirectWithSession(new URL(target, request.url));
   }
 
   return response;

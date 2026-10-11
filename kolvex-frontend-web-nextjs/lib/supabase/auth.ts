@@ -32,14 +32,16 @@ interface SessionData {
  */
 async function setSupabaseSession(session: SessionData): Promise<void> {
   if (!session.access_token || !session.refresh_token) {
-    return;
+    throw new Error("Authentication did not return a complete session");
   }
 
   const supabase = createClient();
-  await supabase.auth.setSession({
+  const { data, error } = await supabase.auth.setSession({
     access_token: session.access_token,
     refresh_token: session.refresh_token,
   });
+  if (error) throw error;
+  if (!data.session) throw new Error("Unable to establish the login session");
 }
 
 /**
@@ -119,9 +121,7 @@ export async function signIn(data: SignInData): Promise<AuthResponse> {
     }
 
     // Set session in Supabase client
-    if (result.session) {
-      await setSupabaseSession(result.session);
-    }
+    await setSupabaseSession(result.session || {});
 
     return {
       success: true,

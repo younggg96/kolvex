@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import AuthForm from "@/components/auth/AuthForm";
 import AuthLayout from "@/components/auth/AuthLayout";
 import { createClient } from "@/lib/supabase/client";
+import { getAuthRedirect } from "@/lib/supabase/redirect";
 import { useTranslation } from "@/lib/i18n";
 
 type AuthMode = "login" | "signup";
@@ -17,6 +18,25 @@ export default function AuthPageClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const hasProcessedHash = useRef(false);
+
+  // A cached login page can mount after a session has already been established.
+  useEffect(() => {
+    if (window.location.hash || searchParams.get("error") || searchParams.get("error_code")) return;
+    const supabase = createClient();
+    let redirectTimer: ReturnType<typeof setTimeout> | undefined;
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "INITIAL_SESSION" && session) {
+        // Run navigation outside the auth callback's session lock.
+        redirectTimer = setTimeout(() => {
+          window.location.replace(getAuthRedirect(searchParams.get("redirectTo")));
+        }, 0);
+      }
+    });
+    return () => {
+      subscription.unsubscribe();
+      if (redirectTimer !== undefined) clearTimeout(redirectTimer);
+    };
+  }, [searchParams]);
 
   // Handle OAuth hash callback - runs only once on mount
   useEffect(() => {
@@ -72,9 +92,9 @@ export default function AuthPageClient() {
               ?.split("=")[1];
 
             // Use window.location for a full page navigation
-            window.location.href = redirectTo
-              ? decodeURIComponent(redirectTo)
-              : "/dashboard";
+            window.location.replace(getAuthRedirect(
+              searchParams.get("redirectTo") || (redirectTo ? decodeURIComponent(redirectTo) : null)
+            ));
           } else {
             toast.error(t("auth.signInFailed"));
             setIsProcessingOAuth(false);
@@ -103,7 +123,7 @@ export default function AuthPageClient() {
       }
       window.history.replaceState(null, "", window.location.pathname);
     }
-  }, []); // Empty dependency - only run once on mount
+  }, [router, searchParams, t]);
 
   // Handle URL query param errors
   useEffect(() => {
@@ -126,7 +146,7 @@ export default function AuthPageClient() {
 
       router.replace("/auth");
     }
-  }, [searchParams, router]);
+  }, [searchParams, router, t]);
 
   // Show loading state while processing OAuth
   if (isProcessingOAuth) {
