@@ -180,8 +180,15 @@ original timestamp when unchanged.
 `CreatorOpinionShare` adds Share image beside the creator profile action. Its
 shared Radix dialog fetches every stock summary from the newest imported video,
 independently of screen filters and pagination. `lib/creatorShareImage.ts` draws
-1080 × 1440 PNGs with the existing candlestick mark, warm white background,
-Inter/Chinese font stack and written sentiment labels. Full summaries continue
+1080 × 1440 PNGs using a snapshot of the preview's inherited CSS color tokens,
+computed website font family and `rounded-xl` radius. `app/globals.css` remains
+the color owner, including light and dark themes; the renderer maintains no
+separate palette. `lib/brandAssets.ts` owns the candlestick path and existing
+logo color consumed by both `LogoIcon` and the renderer. The image shares the
+website's Kolvex wordmark, flat bordered card and row separators, and calls
+`describeStrength` for the same translated label and three-step meter as
+`OpinionStrength`. Theme changes invalidate and regenerate the preview.
+Full summaries continue
 onto numbered pages; source title and link remain visible. The preview and
 loading region share a 3:4 aspect ratio. Desktop and mobile readers can save each
 image, while supported devices can explicitly open native file sharing. PNGs

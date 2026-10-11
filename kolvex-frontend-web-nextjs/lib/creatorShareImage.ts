@@ -1,13 +1,57 @@
 import type { CreatorLatestVideo, OpinionSentiment } from "./youtubeOpinionsApi";
 import { formatOpinionDate } from "./opinionDates";
+import { KOLVEX_LOGO_COLOR, KOLVEX_LOGO_PATH } from "./brandAssets";
+import { describeStrength, type StrengthDescription } from "../components/youtube/strength";
 
 export const SHARE_WIDTH = 1080;
 export const SHARE_HEIGHT = 1440;
-const FONT = 'Inter, "PingFang SC", "Microsoft YaHei", sans-serif';
 const TOP = 392;
 const BOTTOM = 1260;
-const LINE_HEIGHT = 46;
+const LINE_HEIGHT = 54;
 const TEXT_WIDTH = 912;
+
+export type ShareAppearance = {
+  mode: "light" | "dark";
+  fontFamily: string;
+  radius: number;
+  background: string;
+  foreground: string;
+  card: string;
+  cardForeground: string;
+  muted: string;
+  mutedForeground: string;
+  border: string;
+  positive: string;
+  positiveFill: string;
+  negative: string;
+  negativeFill: string;
+  warning: string;
+  inactiveStrength: string;
+  neutralStrength: string;
+};
+
+/** Snapshot the actual website styles; the export owns no independent palette. */
+export function readCreatorShareAppearance(element: HTMLElement): ShareAppearance {
+  const style = getComputedStyle(element);
+  const color = (token: string, alpha?: number) => {
+    const channels = style.getPropertyValue(`--${token}`).trim().split(/\s+/).map(Number);
+    if (channels.length !== 3 || channels.some((channel) => !Number.isFinite(channel) || channel < 0 || channel > 255)) {
+      throw new Error(`Missing website color token: ${token}`);
+    }
+    return alpha === undefined ? `rgb(${channels.join(", ")})` : `rgba(${channels.join(", ")}, ${alpha})`;
+  };
+  return {
+    mode: style.colorScheme.includes("dark") ? "dark" : "light",
+    fontFamily: style.fontFamily,
+    radius: parseFloat(style.borderTopLeftRadius) * 3,
+    background: color("background"), foreground: color("foreground"),
+    card: color("card"), cardForeground: color("card-foreground"),
+    muted: color("muted"), mutedForeground: color("muted-foreground"), border: color("border"),
+    positive: color("positive"), positiveFill: color("positive-fill"),
+    negative: color("negative"), negativeFill: color("negative-fill"),
+    warning: color("warning"), inactiveStrength: color("foreground", 0.15), neutralStrength: color("foreground", 0.75),
+  };
+}
 
 export type ShareFragment = {
   ticker: string;
@@ -15,6 +59,7 @@ export type ShareFragment = {
   lines: string[];
   continued: boolean;
   y: number;
+  strength: StrengthDescription;
 };
 export type CreatorShareDocument = {
   creator: string;
@@ -24,6 +69,8 @@ export type CreatorShareDocument = {
   videoId: string;
   locale: "zh" | "en";
   pages: ShareFragment[][];
+  appearance: ShareAppearance;
+  mixedLabel: string;
 };
 type MeasureContext = Pick<CanvasRenderingContext2D, "font" | "measureText">;
 
@@ -50,11 +97,12 @@ function clipShareText(ctx: MeasureContext, text: string, width: number): string
   return characters.join("") + "…";
 }
 
-export function planCreatorShare(data: CreatorLatestVideo, locale: "zh" | "en", ctx: MeasureContext): CreatorShareDocument {
+export function planCreatorShare(data: CreatorLatestVideo, locale: "zh" | "en", ctx: MeasureContext,
+  appearance: ShareAppearance, t: (key: string, params?: Record<string, string>) => string): CreatorShareDocument {
   if (!data.creator || !data.video || !data.opinions.length) throw new Error("No creator opinions");
   const pages: ShareFragment[][] = [[]];
   let y = TOP;
-  ctx.font = `400 30px ${FONT}`;
+  ctx.font = `400 36px ${appearance.fontFamily}`;
   // Preserve the API's complete video set; do not inherit screen filters or pagination.
   for (const opinion of data.opinions) {
     const text = opinion.summary?.trim() || opinion.thesis?.trim() || opinion.key_points?.join("\n") ||
@@ -70,7 +118,8 @@ export function planCreatorShare(data: CreatorLatestVideo, locale: "zh" | "en", 
       }
       const count = Math.min(room, lines.length - cursor);
       pages[pages.length - 1].push({ ticker: opinion.ticker, sentiment: opinion.sentiment,
-        lines: lines.slice(cursor, cursor + count), continued: cursor > 0, y });
+        lines: lines.slice(cursor, cursor + count), continued: cursor > 0, y,
+        strength: describeStrength(opinion.direction_score, { t }) });
       y += 100 + count * LINE_HEIGHT;
       cursor += count;
     }
@@ -82,7 +131,7 @@ export function planCreatorShare(data: CreatorLatestVideo, locale: "zh" | "en", 
     source: /^https:\/\/(www\.)?youtube\.com\//.test(data.video.video_url || "") || /^https:\/\/youtu\.be\//.test(data.video.video_url || "")
       ? data.video.video_url! : /^[\w-]{11}$/.test(data.video.video_id) ? `https://www.youtube.com/watch?v=${data.video.video_id}` : "",
     videoId: data.video.video_id,
-    locale, pages,
+    locale, pages, appearance, mixedLabel: t("youtubeOpinions.mixed"),
   };
 }
 
@@ -90,60 +139,74 @@ export function drawCreatorSharePage(ctx: CanvasRenderingContext2D, doc: Creator
   const page = doc.pages[index];
   if (!page) throw new Error("Invalid share page");
   const zh = doc.locale === "zh";
+  const appearance = doc.appearance;
   ctx.textBaseline = "alphabetic";
   ctx.textAlign = "left";
-  ctx.fillStyle = "#FAFAF9";
+  ctx.fillStyle = appearance.background;
   ctx.fillRect(0, 0, SHARE_WIDTH, SHARE_HEIGHT);
-  ctx.fillStyle = "#FFFFFF";
-  ctx.fillRect(0, 366, SHARE_WIDTH, 922);
-  const text = (value: string, x: number, y: number, size: number, color = "#000000", weight = 400) => {
-    ctx.font = `${weight} ${size}px ${FONT}`;
+  ctx.beginPath();
+  ctx.roundRect(48, 366, 984, 922, appearance.radius);
+  ctx.fillStyle = appearance.card;
+  ctx.fill();
+  ctx.strokeStyle = appearance.border;
+  ctx.lineWidth = 3;
+  ctx.stroke();
+  const text = (value: string, x: number, y: number, size: number, color = appearance.foreground, weight = 400) => {
+    ctx.font = `${weight} ${size}px ${appearance.fontFamily}`;
     ctx.fillStyle = color;
     ctx.fillText(value, x, y);
   };
-  const rule = (y: number) => { ctx.fillStyle = "#E4E3DF"; ctx.fillRect(72, y, TEXT_WIDTH, 2); };
+  const rule = (y: number) => { ctx.fillStyle = appearance.border; ctx.fillRect(84, y, TEXT_WIDTH, 3); };
 
   // The existing Kolvex candlestick mark, drawn directly to avoid image/CORS failures.
   ctx.save();
   ctx.translate(60, 112);
   ctx.scale(0.075, 0.075);
-  ctx.fillStyle = "#00C805";
-  ctx.fill(new Path2D("M280-160v-90h-80v-460h80v-90h60v90h80v460h-80v90h-60Zm-20-150h100v-340H260v340Zm360 150v-210h-80v-260h80v-170h60v170h80v260h-80v210h-60Zm-20-270h100v-140H600v140Z"));
+  ctx.fillStyle = KOLVEX_LOGO_COLOR;
+  ctx.fill(new Path2D(KOLVEX_LOGO_PATH));
   ctx.restore();
-  text("KOLVEX", 144, 83, 30, "#000000", 700);
+  text("Kolvex", 144, 91, 51, appearance.foreground, 700);
   ctx.textAlign = "right";
-  text(zh ? "博主最新观点" : "LATEST CREATOR OPINIONS", 984, 83, 24, "#5C5F63", 500);
+  text(zh ? "博主最新观点" : "Latest creator opinions", 996, 83, 26, appearance.mutedForeground, 500);
   ctx.textAlign = "left";
   rule(128);
-  ctx.font = `600 52px ${FONT}`;
-  text(clipShareText(ctx, doc.creator, TEXT_WIDTH), 72, 200, 52, "#000000", 600);
-  text(`${doc.date}  ·  ${zh ? "美东日期" : "New York date"}`, 72, 247, 24, "#5C5F63");
-  ctx.font = `400 26px ${FONT}`;
+  ctx.font = `600 64px ${appearance.fontFamily}`;
+  text(clipShareText(ctx, doc.creator, TEXT_WIDTH), 84, 200, 64, appearance.foreground, 600);
+  text(`${doc.date}  ·  ${zh ? "美东日期" : "New York date"}`, 84, 247, 28, appearance.mutedForeground);
+  ctx.font = `400 26px ${appearance.fontFamily}`;
   const title = wrapShareText(ctx, doc.title, TEXT_WIDTH);
-  text(title[0] || "", 72, 300, 26, "#5C5F63");
-  if (title[1]) text(title.length > 2 ? clipShareText(ctx, title[1] + "…", TEXT_WIDTH) : title[1], 72, 336, 26, "#5C5F63");
-
-  const labels: Record<OpinionSentiment, string> = zh
-    ? { bullish: "看多", bearish: "看空", neutral: "中性", mixed: "分歧" }
-    : { bullish: "Bullish", bearish: "Bearish", neutral: "Neutral", mixed: "Mixed" };
+  text(title[0] || "", 84, 300, 26, appearance.mutedForeground);
+  if (title[1]) text(title.length > 2 ? clipShareText(ctx, title[1] + "…", TEXT_WIDTH) : title[1], 84, 336, 26, appearance.mutedForeground);
   for (const fragment of page) {
-    const color = fragment.sentiment === "bullish" ? "#008503" : fragment.sentiment === "bearish" ? "#D63A00" : "#5C5F63";
-    text(fragment.ticker + (fragment.continued ? zh ? "（续）" : " (continued)" : ""), 72, fragment.y + 40, 38, "#000000", 600);
+    const color = fragment.strength.tone === "positive" ? appearance.positive : fragment.strength.tone === "negative" ? appearance.negative : appearance.neutralStrength;
+    const fill = fragment.strength.tone === "positive" ? appearance.positiveFill : fragment.strength.tone === "negative" ? appearance.negativeFill : appearance.mutedForeground;
+    const ticker = fragment.ticker + (fragment.continued ? zh ? "（续）" : " (continued)" : "");
+    text(ticker, 84, fragment.y + 40, 38, appearance.cardForeground, 600);
+    if (fragment.sentiment === "mixed") text(doc.mixedLabel, 84 + ctx.measureText(ticker).width + 24, fragment.y + 38, 26, appearance.warning, 600);
+    ctx.font = `600 30px ${appearance.fontFamily}`;
+    const meterX = 996 - ctx.measureText(fragment.strength.label).width - 72;
+    for (let step = 1; step <= 3; step++) {
+      ctx.fillStyle = step <= fragment.strength.level ? fill : appearance.inactiveStrength;
+      ctx.beginPath();
+      const height = (4 + step * 3) * 3;
+      ctx.roundRect(meterX + (step - 1) * 18, fragment.y + 43 - height, 9, height, 4.5);
+      ctx.fill();
+    }
     ctx.textAlign = "right";
-    text(labels[fragment.sentiment], 984, fragment.y + 38, 26, color, 600);
+    text(fragment.strength.label, 996, fragment.y + 38, 30, color, 600);
     ctx.textAlign = "left";
-    fragment.lines.forEach((line, i) => text(line, 72, fragment.y + 93 + i * LINE_HEIGHT, 30, "#333638"));
-    rule(fragment.y + 100 + fragment.lines.length * LINE_HEIGHT - 22);
+    fragment.lines.forEach((line, i) => text(line, 84, fragment.y + 93 + i * LINE_HEIGHT, 36, appearance.mutedForeground));
+    if (fragment !== page[page.length - 1]) rule(fragment.y + 100 + fragment.lines.length * LINE_HEIGHT - 22);
   }
   rule(1308);
-  ctx.font = `400 21px ${FONT}`;
-  text(clipShareText(ctx, doc.source.replace(/^https:\/\/(www\.)?/, ""), 740), 72, 1350, 21, "#5C5F63");
+  ctx.font = `400 21px ${appearance.fontFamily}`;
+  text(clipShareText(ctx, doc.source.replace(/^https:\/\/(www\.)?/, ""), 740), 84, 1350, 21, appearance.mutedForeground);
   ctx.textAlign = "right";
-  text(`${index + 1} / ${doc.pages.length}`, 984, 1350, 22, "#5C5F63");
+  text(`${index + 1} / ${doc.pages.length}`, 996, 1350, 22, appearance.mutedForeground);
   ctx.textAlign = "left";
-  text(zh ? "观点摘要 · 完整内容见原视频" : "Opinion summaries · See the source video for full context", 72, 1398, 21, "#5C5F63");
+  text(zh ? "观点摘要 · 完整内容见原视频" : "Opinion summaries · See the source video for full context", 84, 1398, 21, appearance.mutedForeground);
   ctx.textAlign = "right";
-  text("kolvex.app", 984, 1398, 21, "#000000", 500);
+  text("kolvex.app", 996, 1398, 21, appearance.foreground, 500);
   ctx.textAlign = "left";
 }
 

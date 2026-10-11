@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useId, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
+import { useTheme } from "next-themes";
 import { ChevronLeft, ChevronRight, Download, ImagePlus, Loader2, Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -19,7 +20,9 @@ function canShareFile(file?: File) {
 
 export default function CreatorOpinionShare({ creator }: { creator: YouTubeCreatorSummary }) {
   const c = useCopy();
-  const { locale } = useTranslation();
+  const { locale, t } = useTranslation();
+  const { resolvedTheme } = useTheme();
+  const appearanceRef = useRef<HTMLDivElement>(null);
   const transcriptId = useId();
   const [open, setOpen] = useState(false);
   const [revision, setRevision] = useState(0);
@@ -53,7 +56,9 @@ export default function CreatorOpinionShare({ creator }: { creator: YouTubeCreat
         if (!data.creator || !data.video || !data.opinions.length) { setEmpty(true); return; }
         const ctx = document.createElement("canvas").getContext("2d");
         if (!ctx) throw new Error("Canvas is unavailable");
-        setDoc(image.planCreatorShare(data, locale === "zh" ? "zh" : "en", ctx));
+        if (!appearanceRef.current) throw new Error("Share preview is unavailable");
+        const appearance = image.readCreatorShareAppearance(appearanceRef.current);
+        setDoc(image.planCreatorShare(data, locale === "zh" ? "zh" : "en", ctx, appearance, t));
       } catch {
         if (!controller.signal.aborted) setError(locale === "zh" ? "图片生成失败，请重试。" : "Could not generate the images. Please retry.");
       } finally {
@@ -62,7 +67,7 @@ export default function CreatorOpinionShare({ creator }: { creator: YouTubeCreat
     }
     void load();
     return () => controller.abort();
-  }, [open, creator.channel_id, locale, revision]);
+  }, [open, creator.channel_id, locale, revision, resolvedTheme, t]);
 
   useEffect(() => {
     if (!open || !doc) return;
@@ -86,7 +91,7 @@ export default function CreatorOpinionShare({ creator }: { creator: YouTubeCreat
     return () => { disposed = true; if (url) URL.revokeObjectURL(url); };
   }, [open, doc, page, locale]);
 
-  const ready = open && doc && preview?.document === doc && preview.page === page ? preview : null;
+  const ready = open && doc && doc.appearance.mode === (resolvedTheme === "dark" ? "dark" : "light") && preview?.document === doc && preview.page === page ? preview : null;
   function changeOpen(next: boolean) {
     setOpen(next);
     setDoc(null);
@@ -125,7 +130,7 @@ export default function CreatorOpinionShare({ creator }: { creator: YouTubeCreat
           <DialogTitle>{c("Share the latest opinions", "分享博主最新观点")}</DialogTitle>
           <DialogDescription>{c("All stock summaries from the latest imported video. Long content is split across images.", "生成最新一期已收录视频的全部股票观点摘要，内容较多时自动分图。")}</DialogDescription>
         </DialogHeader>
-        <div className="mt-5 space-y-4">
+        <div ref={appearanceRef} className="mt-5 space-y-4 rounded-xl font-sans">
           {(loading || (doc && !ready && !error)) && (
             <div role="status" className="mx-auto flex aspect-[3/4] w-full max-w-[360px] items-center justify-center gap-2 text-sm text-muted-foreground">
               <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" aria-hidden="true" />
@@ -136,7 +141,7 @@ export default function CreatorOpinionShare({ creator }: { creator: YouTubeCreat
           {error && <div role="alert" className="space-y-3 py-8 text-center"><p className="text-sm text-muted-foreground">{error}</p><Button variant="outline" onClick={() => setRevision((value) => value + 1)}>{c("Retry", "重试")}</Button></div>}
           {ready && doc && (
             <>
-              <figure className="mx-auto max-w-[360px] overflow-hidden rounded-xl border border-border bg-white">
+              <figure className="mx-auto max-w-[360px] overflow-hidden rounded-xl border border-border bg-background">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={ready.url} width={1080} height={1440} alt={c(`${doc.creator}, latest opinions, image ${page + 1} of ${doc.pages.length}`, `${doc.creator}最新观点，第 ${page + 1} / ${doc.pages.length} 张`)} aria-describedby={transcriptId} className="block h-auto w-full" />
               </figure>

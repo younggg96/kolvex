@@ -14,8 +14,12 @@ function fixture() {
   const doc = { creator: '真实博主', source: 'https://www.youtube.com/watch?v=abcdefghijk', pages: [[{ ticker: 'NVDA', sentiment: 'bullish', lines: ['增长'] }]] };
   let shared = 0;
   let cancel = false;
+  let theme = 'light';
+  let generated = 0;
+  const t = (key) => key;
   const react = {
     useId: () => 'transcript',
+    useRef: () => ({ current: {} }),
     useState(initial) { const i = cursor++; if (!(i in slots)) slots[i] = initial; return [slots[i], (next) => slots[i] = typeof next === 'function' ? next(slots[i]) : next]; },
     useEffect(effect, deps) {
       const i = cursor++;
@@ -29,10 +33,11 @@ function fixture() {
     react, 'react/jsx-runtime': { jsx: (type, props) => ({ type, props }), jsxs: (type, props) => ({ type, props }) },
     'lucide-react': {}, '@/components/ui/button': { Button: 'button' },
     '@/components/ui/dialog': { Dialog: 'dialog', DialogContent: 'content', DialogDescription: 'description', DialogHeader: 'header', DialogTitle: 'title', DialogTrigger: 'trigger' },
-    '@/lib/i18n': { useTranslation: () => ({ locale: 'zh' }) },
+    '@/lib/i18n': { useTranslation: () => ({ locale: 'zh', t }) },
+    'next-themes': { useTheme: () => ({ resolvedTheme: theme }) },
     '@/components/decision/shared': { useCopy: () => (en, zh) => zh },
     '@/lib/youtubeOpinionsApi': { getCreatorLatestVideo: (id, signal) => { calls.push({ id, signal }); return request.promise; } },
-    '@/lib/creatorShareImage': { planCreatorShare: () => doc, renderCreatorSharePage: async () => new Blob(['png'], { type: 'image/png' }), creatorShareFilename: () => 'share.png' },
+    '@/lib/creatorShareImage': { readCreatorShareAppearance: () => ({ mode: theme }), planCreatorShare: (_, locale, ctx, appearance) => ({ ...doc, appearance }), renderCreatorSharePage: async () => { generated++; return new Blob(['png'], { type: 'image/png' }); }, creatorShareFilename: () => 'share.png' },
   };
   const module = { exports: {} };
   vm.runInNewContext(ts.transpileModule(fs.readFileSync(path.join(__dirname, '../components/youtube/CreatorOpinionShare.tsx'), 'utf8'), {
@@ -46,7 +51,7 @@ function fixture() {
   return {
     render() { cursor = 0; return module.exports.default({ creator: { channel_id: 'creator1' } }); },
     effects() { pending.splice(0).forEach((effect) => effect()); },
-    request, calls, revoked, doc, get shared() { return shared; }, cancel() { cancel = true; },
+    request, calls, revoked, doc, get shared() { return shared; }, get generated() { return generated; }, cancel() { cancel = true; }, theme(mode) { theme = mode; },
   };
 }
 function nodes(tree, predicate) {
@@ -79,5 +84,19 @@ test('prepared PNG shares directly on click, cancellation is quiet, and close re
   await tick();
   assert.equal(nodes(h.render(), (node) => node.props?.role === 'status').at(-1).props.children, '');
   h.render().props.onOpenChange(false); h.render(); h.effects();
+  assert.deepEqual(h.revoked, ['blob:preview']);
+});
+
+test('changing website theme invalidates the previous image and regenerates it', async () => {
+  const h = fixture();
+  h.render().props.onOpenChange(true); h.render(); h.effects();
+  h.request.resolve({ creator: {}, video: {}, opinions: [{}] }); await tick();
+  h.render(); h.effects(); await tick();
+  assert.equal(nodes(h.render(), (node) => node.type === 'img').length, 1);
+  h.theme('dark');
+  assert.equal(nodes(h.render(), (node) => node.type === 'img').length, 0);
+  h.effects(); await tick(); h.render(); h.effects(); await tick();
+  assert.equal(nodes(h.render(), (node) => node.type === 'img').length, 1);
+  assert.equal(h.generated, 2);
   assert.deepEqual(h.revoked, ['blob:preview']);
 });
