@@ -9,7 +9,7 @@ function load(file, getComputedStyle) {
   const module = { exports: {} };
   vm.runInNewContext(ts.transpileModule(fs.readFileSync(filename, 'utf8'), {
     compilerOptions: { module: ts.ModuleKind.CommonJS },
-  }).outputText, { exports: module.exports, Date, Intl, getComputedStyle, Path2D: class {},
+  }).outputText, { exports: module.exports, Date, Intl, URL, URLSearchParams, getComputedStyle, Path2D: class {},
     require: (name) => load(path.relative(path.join(__dirname, '../lib'), path.resolve(path.dirname(filename), name)), getComputedStyle) });
   return module.exports;
 }

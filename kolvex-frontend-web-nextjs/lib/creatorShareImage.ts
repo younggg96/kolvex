@@ -1,5 +1,6 @@
 import type { CreatorLatestVideo, OpinionSentiment } from "./youtubeOpinionsApi";
 import { formatOpinionDate } from "./opinionDates";
+import { sourceVideoUrl } from "./creatorSharing";
 import { KOLVEX_LOGO_COLOR, KOLVEX_LOGO_PATH } from "./brandAssets";
 import { describeStrength, type StrengthDescription } from "../components/youtube/strength";
 
@@ -128,8 +129,7 @@ export function planCreatorShare(data: CreatorLatestVideo, locale: "zh" | "en", 
     creator: data.creator.channel_title || data.creator.channel_handle || data.creator.channel_id,
     date: formatOpinionDate(data.video.opinion_date || data.video.video_published_at, locale === "zh" ? "zh-CN" : "en-US"),
     title: data.video.video_title || (locale === "zh" ? "最新视频观点" : "Latest video opinions"),
-    source: /^https:\/\/(www\.)?youtube\.com\//.test(data.video.video_url || "") || /^https:\/\/youtu\.be\//.test(data.video.video_url || "")
-      ? data.video.video_url! : /^[\w-]{11}$/.test(data.video.video_id) ? `https://www.youtube.com/watch?v=${data.video.video_id}` : "",
+    source: sourceVideoUrl(data.video),
     videoId: data.video.video_id,
     locale, pages, appearance, mixedLabel: t("youtubeOpinions.mixed"),
   };

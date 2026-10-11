@@ -177,9 +177,15 @@ the YouTube Data API, stores the UTC instant, and derives `opinion_date` in New
 York. Admin publication edits use New York calendar dates and preserve the full
 original timestamp when unchanged.
 
-`CreatorOpinionShare` adds Share image beside the creator profile action. Its
-shared Radix dialog fetches every stock summary from the newest imported video,
-independently of screen filters and pagination. `lib/creatorShareImage.ts` draws
+`CreatorShare` adds one Share action beside the creator profile action. Its
+shared Radix dialog opens on Link & social: copy the public link or complete
+share text, open X/Facebook/WhatsApp/email composers, or explicitly invoke the
+native share menu. `/share/creators/[channelId]` reads the same public latest-video
+API without forwarding reader credentials and shows every stock summary without
+requiring sign-in. The link follows the newest imported video, independently of
+screen filters and pagination; publication remains the reader's explicit action.
+Image is a tab inside this same flow; canvas/fonts load only when selected.
+`lib/creatorShareImage.ts` draws
 1080 × 1440 PNGs using a snapshot of the preview's inherited CSS color tokens,
 computed website font family and `rounded-xl` radius. `app/globals.css` remains
 the color owner, including light and dark themes; the renderer maintains no
