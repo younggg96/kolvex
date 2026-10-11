@@ -71,27 +71,41 @@ export default function CreatorShare({ creator }: { creator: CreatorShareIdentit
     return () => controller.abort();
   }, [open, mode, creator.channel_id, locale, revision, resolvedTheme, t]);
 
+  // The displayed preview owns its URL until a replacement is committed or closed.
+  useEffect(() => {
+    if (!preview) return;
+    return () => URL.revokeObjectURL(preview.url);
+  }, [preview]);
+
   useEffect(() => {
     if (!open || mode !== "image" || !doc) return;
     let disposed = false;
     let url = "";
-    setPreview(null); setError(""); setStatus("");
+    let committed = false;
+    setError(""); setStatus("");
     async function render() {
       try {
         const image = await import("@/lib/creatorShareImage");
         const blob = await image.renderCreatorSharePage(doc!, page);
         if (disposed) return;
         url = URL.createObjectURL(blob);
+        const decoded = new Image();
+        decoded.src = url;
+        await decoded.decode();
+        if (disposed) return;
+        committed = true;
         setPreview({ url, file: new File([blob], image.creatorShareFilename(doc!, page), { type: "image/png" }), page, document: doc!, height: image.creatorSharePageHeight(doc!, page) });
       } catch {
+        if (!disposed && url && !committed) { URL.revokeObjectURL(url); url = ""; }
         if (!disposed) setError(locale === "zh" ? "图片导出失败，请重试。" : "Could not export the image. Please retry.");
       }
     }
     void render();
-    return () => { disposed = true; if (url) URL.revokeObjectURL(url); };
+    return () => { disposed = true; if (url && !committed) URL.revokeObjectURL(url); };
   }, [open, mode, doc, page, locale]);
 
-  const ready = open && mode === "image" && doc && doc.appearance.mode === (resolvedTheme === "dark" ? "dark" : "light") && preview?.document === doc && preview.page === page ? preview : null;
+  const visible = open && mode === "image" && doc && doc.appearance.mode === (resolvedTheme === "dark" ? "dark" : "light") && preview?.document === doc ? preview : null;
+  const ready = visible?.page === page ? visible : null;
   function changeOpen(next: boolean) {
     setOpen(next); setMode("link"); setData(null); setDoc(null); setPreview(null);
     setLoading(next); setEmpty(false); setError(""); setStatus(""); setPage(0);
@@ -138,15 +152,16 @@ export default function CreatorShare({ creator }: { creator: CreatorShareIdentit
             {loading && <p role="status" className="text-xs text-muted-foreground">{c("Loading the latest opinions…", "正在加载最新观点…")}</p>}
           </>}</TabsContent>
           <TabsContent value="image" className="mt-3 space-y-3">{mode === "image" && <>
-            {(loading || (doc && !ready && !error)) && <div role="status" className="mx-auto flex h-[min(45dvh,440px)] w-full items-center justify-center gap-2 text-sm text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" aria-hidden="true" />{c("Generating the image…", "正在生成图片…")}</div>}
+            {(loading || (doc && !visible && !error)) && <div role="status" className="mx-auto flex h-[min(45dvh,440px)] w-full items-center justify-center gap-2 text-sm text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" aria-hidden="true" />{c("Generating the image…", "正在生成图片…")}</div>}
             {empty && <p className="py-12 text-center text-sm text-muted-foreground">{c("This creator has no imported opinions yet.", "这位博主暂无已收录观点。")}</p>}
-            {ready && doc && <><figure className="mx-auto flex h-[min(45dvh,440px)] w-full items-center justify-center">
+            {visible && doc && <><figure aria-busy={!ready && !error} className="relative mx-auto flex h-[min(45dvh,440px)] w-full items-center justify-center">
+              {!ready && !error && <span role="status" className="absolute right-2 top-2 rounded-full bg-background p-2 text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" aria-hidden="true" /><span className="sr-only">{c("Generating the image…", "正在生成图片…")}</span></span>}
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={ready.url} width={1080} height={ready.height} alt={c(`${doc.creator}, opinions, image ${page + 1} of ${doc.pages.length}`, `${doc.creator}观点，第 ${page + 1} / ${doc.pages.length} 张`)} aria-describedby={transcriptId} className="block max-h-full max-w-full h-auto w-auto rounded-xl border border-border bg-background" />
-            </figure><div id={transcriptId} className="sr-only">{doc.pages[page].map((fragment, index) => <p key={index}>{fragment.ticker} · {fragment.strength.label} · {fragment.lines.join("")}</p>)}</div></>}
+              <img src={visible.url} width={1080} height={visible.height} alt={c(`${doc.creator}, opinions, image ${visible.page + 1} of ${doc.pages.length}`, `${doc.creator}观点，第 ${visible.page + 1} / ${doc.pages.length} 张`)} aria-describedby={transcriptId} className="block max-h-full max-w-full h-auto w-auto rounded-xl border border-border bg-background" />
+            </figure><div id={transcriptId} className="sr-only">{doc.pages[visible.page].map((fragment, index) => <p key={index}>{fragment.ticker} · {fragment.strength.label} · {fragment.lines.join("")}</p>)}</div></>}
             {doc && doc.pages.length > 1 && <div className="flex items-center justify-center gap-4"><Button variant="ghost" size="icon" aria-label={c("Previous image", "上一张图片")} disabled={page === 0 || sharing} onClick={() => setPage((value) => value - 1)}><ChevronLeft className="h-4 w-4" /></Button><span role="status" className="text-sm tabular-nums">{page + 1} / {doc.pages.length}</span><Button variant="ghost" size="icon" aria-label={c("Next image", "下一张图片")} disabled={page === doc.pages.length - 1 || sharing} onClick={() => setPage((value) => value + 1)}><ChevronRight className="h-4 w-4" /></Button></div>}
-            {ready && <div className="flex flex-wrap justify-center gap-2"><Button asChild className="gap-2"><a href={ready.url} download={ready.file.name} onClick={() => setStatus(c("Image download started.", "已开始下载图片。"))}><Download className="h-4 w-4" aria-hidden="true" />{c("Save image", "保存图片")}</a></Button>{canShareFile(ready.file) && <Button variant="outline" disabled={sharing} onClick={() => void share(true)} className="gap-2"><Share2 className="h-4 w-4" aria-hidden="true" />{c("Share image", "分享图片")}</Button>}</div>}
-            {ready && <p className="text-center text-xs text-muted-foreground">{c("Save each image or press and hold it, then attach it to your social post.", "可逐张保存或长按图片，添加到社交媒体帖子。")}</p>}
+            {visible && <div className="flex flex-wrap justify-center gap-2"><Button asChild disabled={!ready} className="gap-2"><a href={ready?.url} download={ready?.file.name} aria-disabled={!ready} onClick={(event) => { if (!ready) { event.preventDefault(); return; } setStatus(c("Image download started.", "已开始下载图片。")); }}><Download className="h-4 w-4" aria-hidden="true" />{c("Save image", "保存图片")}</a></Button>{canShareFile(visible.file) && <Button variant="outline" disabled={sharing || !ready} onClick={() => void share(true)} className="gap-2"><Share2 className="h-4 w-4" aria-hidden="true" />{c("Share image", "分享图片")}</Button>}</div>}
+            {visible && <p className="text-center text-xs text-muted-foreground">{c("Save each image or press and hold it, then attach it to your social post.", "可逐张保存或长按图片，添加到社交媒体帖子。")}</p>}
             {sourceVideoUrl(data?.video) && <p className="text-center text-xs"><a href={sourceVideoUrl(data?.video)} target="_blank" rel="noopener noreferrer" className="text-muted-foreground underline underline-offset-4 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">{c("View source video", "查看原视频")}</a></p>}
           </>}</TabsContent>
         </Tabs>

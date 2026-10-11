@@ -266,8 +266,16 @@ and requested technical findings; **AI drawings** produces chart overlays only.
 `PriceChart` owns independent selected/current snapshots for `technical` and
 `drawings`. Updating, clearing or restoring one channel preserves the other.
 Both compact and advanced charts show the two explicitly labelled buttons;
-analysis focus controls apply to the text action. Each channel has a separate
-history disclosure and its own current-version marker.
+analysis focus controls apply to the text action. Each channel has separate
+history controls and its own current-version marker.
+
+AI drawings expose the shared `DrawingVersionSelector` in both charts' AI control
+regions, using the authored Select. Options show saved time, model and the current
+marker. Generation retains immutable older versions; viewing does not change the
+saved current pointer. Loading older versions preserves the viewed version.
+Hide only removes overlays from view; selecting any saved version restores them,
+including the same version. Returning to current and setting a historical version
+as current remain explicit actions. Text analysis retains its history disclosure.
 
 
 AI analysis focus uses a single disclosure row with a preview of selected topics.

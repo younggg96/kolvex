@@ -24,7 +24,7 @@ function fixture(api) {
     useEffect(fn,deps){const i=index++;if(!slots[i]||!equal(slots[i].deps,deps)){const old=slots[i];slots[i]={deps};pending.push(()=>{old?.cleanup?.();slots[i].cleanup=fn()})}},
   };
   const module=compile('components/decision/AnalysisHistory.tsx',{'react':react,'react/jsx-runtime':{},'@/components/ui/button':{},'@/lib/i18n':{},'./shared':{},'@/lib/stockAnalysisHistory':{...api,HistoryError}});
-  return {render(ticker='NVDA'){index=0;return module.useStockHistory(ticker,'technical')},effects(){pending.splice(0).forEach(fn=>fn())}};
+  return {render(ticker='NVDA',kind='technical'){index=0;return module.useStockHistory(ticker,kind)},effects(){pending.splice(0).forEach(fn=>fn())}};
 }
 const version=(id,extra={})=>({id,ticker:'NVDA',kind:'technical',created_at:'2026-10-09T00:00:00Z',payload:{summary:id},request:{},bars:[],...extra});
 
@@ -50,6 +50,32 @@ test('activation conflict reloads the current pointer and leaves the old version
 test('failed history refresh keeps the last saved analysis available',async()=>{
   let fail=false;const old=version('saved');const h=fixture({getStockAnalysisHistory:async()=>{if(fail)throw new HistoryError(503);return {items:[old],current:old,total:1}}});
   h.render();h.effects();await tick();fail=true;await h.render().load();const state=h.render();assert.equal(state.selected.id,'saved');assert.equal(state.error,503);assert.equal(state.busy,false);
+});
+test('returning to a loaded drawing snapshot cancels an older detail request',async()=>{
+  const slow=deferred(),current=version('current'),old=version('old',{bars:undefined});
+  const h=fixture({getStockAnalysisHistory:async()=>({items:[current,old],current,total:2}),getStockAnalysisVersion:()=>slow.promise});
+  h.render();h.effects();await tick();
+  const pending=h.render().select(old);
+  await h.render().select(current);
+  slow.resolve(version('old'));await pending;
+  assert.equal(h.render().selected.id,'current');
+  assert.equal(h.render().busy,false);
+});
+test('drawing generation keeps previous versions switchable and paging preserves the selection',async()=>{
+  const old=version('old',{kind:'drawings'}),fresh=version('fresh',{kind:'drawings'}),older=version('older',{kind:'drawings'});
+  let generated=false,writes=0;
+  const h=fixture({getStockAnalysisHistory:async(ticker,kind,offset)=>{
+    assert.equal(kind,'drawings');
+    return {items:offset?[older]:generated?[fresh,old]:[old],current:generated?fresh:old,total:generated?3:1};
+  },activateStockAnalysis:async()=>{writes++;return old}});
+  const render=()=>h.render('NVDA','drawings');
+  render();h.effects();await tick();
+  generated=true;await render().load(0,'fresh');
+  assert.deepEqual(Array.from(render().items,item=>item.id),['fresh','old']);
+  await render().select(old);await render().load(2);
+  assert.equal(render().selected.id,'old');assert.equal(render().current.id,'fresh');assert.equal(writes,0);
+  assert.deepEqual(Array.from(render().items,item=>item.id),['fresh','old','older']);
+  await render().activate();assert.equal(render().current.id,'old');assert.equal(writes,1);
 });
 test('old drawings retain original time/price coordinates and stable identifiers',()=>{
   const {analysisDrawings}=compile('components/youtube/aiDrawings.ts',{});
@@ -91,6 +117,12 @@ test('PriceChart keeps text analysis and AI overlays in independent history chan
   await chart.props.onDrawingsChange(null);const cleared=render().props.children.find(node=>node?.type==='chart');
   assert.equal(cleared.props.drawings.length,0);
   assert.equal(cleared.props.savedAnalysis.summary,'text');
+  assert.equal(cleared.props.drawingVersionControls.props.hidden,true);
+  await cleared.props.drawingVersionControls.props.history.select(drawn);
+  const restored=render().props.children.find(node=>node?.type==='chart');
+  assert.equal(restored.props.drawings[0].points[0].price,200);
+  assert.equal(restored.props.drawingVersionControls.props.hidden,false);
+  assert.equal(restored.props.savedAnalysis.summary,'text');
 });
 
 

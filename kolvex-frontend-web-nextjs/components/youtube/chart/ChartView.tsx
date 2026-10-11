@@ -208,6 +208,7 @@ export interface ChartViewProps {
   technicalFocus?: TechnicalFocus;
   drawingFocus?: TechnicalFocus;
   focusControls?: ReactNode;
+  drawingVersionControls?: ReactNode;
   onAnalysisBusy?: (busy: boolean) => void;
   /** Advanced mode runs inside a dialog that owns Escape; this lets the chart consume it first. */
   escapeRef?: MutableRefObject<(() => boolean) | null>;
@@ -242,6 +243,7 @@ export default function ChartView({
   drawingFocus = DEFAULT_DRAWING_FOCUS,
   onAnalysisBusy,
   focusControls,
+  drawingVersionControls,
   escapeRef,
 }: ChartViewProps) {
   const advanced = mode === "advanced";
@@ -954,6 +956,7 @@ export default function ChartView({
           </div>
         </div>
         {focusControls && <div className={cn("mt-3 grid min-w-0 gap-x-4 border-t border-border pt-2", !advanced && "sm:grid-cols-2")}>{focusControls}</div>}
+        {drawingVersionControls}
         {!providersLoading && !modelReady && (
           <p className="mt-2 text-xs leading-5 text-muted-foreground">
             {t(eligibleModels.length ? "youtubeOpinions.ai.selectModel" : "youtubeOpinions.ai.notConfigured")}{" "}

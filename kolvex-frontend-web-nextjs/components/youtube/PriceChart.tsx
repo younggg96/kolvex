@@ -9,7 +9,7 @@ import { getYouTubeStockDetail, type YouTubeOpinion } from "@/lib/youtubeOpinion
 import type { PriceHistoryParams, AiTechnicalAnalysis } from "@/lib/stockApi";
 import { useSyncedDrawings, type Drawing } from "./chartDrawings";
 import SavedAnalysisData from "@/components/decision/SavedAnalysisData";
-import AnalysisHistory, { useStockHistory } from "@/components/decision/AnalysisHistory";
+import AnalysisHistory, { DrawingVersionSelector, useStockHistory } from "@/components/decision/AnalysisHistory";
 import { analysisDrawings } from "./aiDrawings";
 import ChartView from "./chart/ChartView";
 import TechnicalFocusSelector from "./chart/TechnicalFocusSelector";
@@ -131,7 +131,12 @@ export default function PriceChart({
   const selectAnalysis = versions.select;
   const selectDrawings = drawingVersions.select;
   const analysisHistory = { ...versions, select: async (item: typeof versions.selected) => { await selectAnalysis(item); setViewingHistory("analysis"); } };
-  const drawingHistory = { ...drawingVersions, select: async (item: typeof drawingVersions.selected) => { await selectDrawings(item); setViewingHistory("drawings"); } };
+  const drawingHistory = { ...drawingVersions, select: async (item: typeof drawingVersions.selected) => {
+    await selectDrawings(item);
+    setHiddenDrawings(false);
+    setAiOverrides(null);
+    setViewingHistory("drawings");
+  } };
   const [history, setHistory] = useState<Drawing[][]>([]);
   const [events, setEvents] = useState<YouTubeOpinion[]>([]);
   const [advancedOpen, setAdvancedOpen] = useState(false);
@@ -192,6 +197,7 @@ export default function PriceChart({
     snapshotBars: historicalSnapshot?.bars,
     technicalFocus,
     drawingFocus,
+    drawingVersionControls: <DrawingVersionSelector history={drawingHistory} hidden={hiddenDrawings} disabled={analysisBusy} />,
     focusControls: <>
       <TechnicalFocusSelector value={technicalFocus} onChange={setTechnicalFocus} disabled={analysisBusy} t={t} />
       <TechnicalFocusSelector drawings value={drawingFocus} onChange={setDrawingFocus} disabled={analysisBusy} t={t} />
@@ -205,7 +211,6 @@ export default function PriceChart({
         setAdvancedOpen(true);
       }} />
       <AnalysisHistory history={analysisHistory} />
-      <AnalysisHistory history={drawingHistory} drawings />
       {selectedHistory.selected && <SavedAnalysisData key={selectedHistory.selected.id} version={selectedHistory.selected} />}
       <Dialog open={advancedOpen} onOpenChange={setAdvancedOpen}>
         <DialogContent
