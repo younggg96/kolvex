@@ -7,6 +7,13 @@ import DashboardLayout from "@/components/layout/DashboardLayout";
 import CompanyLogo from "@/components/ui/company-logo";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import OpinionStrength from "@/components/youtube/OpinionStrength";
 import { getStockHistory, type StockQuote } from "@/lib/stockApi";
 import { cn } from "@/lib/utils";
@@ -296,19 +303,24 @@ export default function Market() {
                 "只在你选的列表内排序，不是全市场排行。",
               )}
               action={
-                <label className="flex items-center gap-2 text-[13px] text-muted-foreground">
-                  <span className="sr-only">{c("Sort stocks", "股票排序")}</span>
-                  <select
-                    value={sort}
-                    onChange={(event) => setSort(event.target.value as Sort)}
-                    className="h-8 rounded-full bg-muted px-3 text-[13px] font-semibold text-foreground outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                <Select value={sort} onValueChange={(value) => setSort(value as Sort)}>
+                  <SelectTrigger
+                    aria-label={c("Sort stocks", "股票排序")}
+                    className="h-9 w-[148px] shrink-0 rounded-full px-4 text-[13px] font-semibold focus-visible:!outline-none focus-visible:ring-2 focus-visible:ring-foreground/40 focus-visible:ring-offset-2 focus-visible:ring-offset-background data-[state=open]:bg-secondary"
                   >
-                    <option value="move">{c("Biggest move", "变动最大")}</option>
-                    <option value="gainers">{c("Top gainers", "涨幅最大")}</option>
-                    <option value="losers">{c("Top losers", "跌幅最大")}</option>
-                    <option value="default">{c("List order", "列表顺序")}</option>
-                  </select>
-                </label>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent
+                    align="end"
+                    sideOffset={4}
+                    className="w-[var(--radix-select-trigger-width)] min-w-0 max-h-[var(--radix-select-content-available-height)] motion-reduce:animate-none"
+                  >
+                    <SelectItem value="move" className="min-h-10 text-[13px] focus-visible:!outline-none focus:bg-secondary data-[state=checked]:bg-muted data-[state=checked]:font-semibold">{c("Biggest move", "变动最大")}</SelectItem>
+                    <SelectItem value="gainers" className="min-h-10 text-[13px] focus-visible:!outline-none focus:bg-secondary data-[state=checked]:bg-muted data-[state=checked]:font-semibold">{c("Top gainers", "涨幅最大")}</SelectItem>
+                    <SelectItem value="losers" className="min-h-10 text-[13px] focus-visible:!outline-none focus:bg-secondary data-[state=checked]:bg-muted data-[state=checked]:font-semibold">{c("Top losers", "跌幅最大")}</SelectItem>
+                    <SelectItem value="default" className="min-h-10 text-[13px] focus-visible:!outline-none focus:bg-secondary data-[state=checked]:bg-muted data-[state=checked]:font-semibold">{c("List order", "列表顺序")}</SelectItem>
+                  </SelectContent>
+                </Select>
               }
             >
               <div role="radiogroup" aria-label={c("Stock list", "股票列表")} className="-mx-1 flex gap-1 overflow-x-auto px-1 py-3 scrollbar-hide">

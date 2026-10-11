@@ -171,7 +171,7 @@ export default function VideoOpinionCard({
                 <span className="hidden h-6 items-center sm:flex">
                   <OpinionStrength value={opinion.direction_score} />
                 </span>
-                <span className="col-span-2 row-start-2 max-w-[68ch] text-sm leading-6 text-muted-foreground transition-colors duration-150 group-hover:text-foreground sm:col-span-1 sm:col-start-3 sm:row-start-1">
+                <span className="col-span-2 row-start-2 text-sm leading-6 text-muted-foreground transition-colors duration-150 group-hover:text-foreground sm:col-span-1 sm:col-start-3 sm:row-start-1">
                   {opinion.sentiment === "mixed" && (
                     <span className="mr-1.5 font-semibold text-warning">{t("youtubeOpinions.mixed")}</span>
                   )}

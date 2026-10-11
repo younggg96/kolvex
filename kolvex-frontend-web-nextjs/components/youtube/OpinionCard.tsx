@@ -85,13 +85,13 @@ export default function OpinionCard({
       </header>
 
       {(opinion.summary || opinion.thesis) && (
-        <p className="mt-4 max-w-[68ch] text-[15px] leading-7 text-foreground">
+        <p className="mt-4 text-[15px] leading-7 text-foreground">
           {opinion.summary || opinion.thesis}
         </p>
       )}
 
       {(keyPoints.length > 0 || risks.length > 0) && (
-        <div className={`mt-4 grid max-w-[68ch] gap-x-8 gap-y-4 ${keyPoints.length > 0 && risks.length > 0 ? "md:grid-cols-2" : ""}`}>
+        <div className={`mt-4 grid gap-x-8 gap-y-4 ${keyPoints.length > 0 && risks.length > 0 ? "md:grid-cols-2" : ""}`}>
           {keyPoints.length > 0 && (
             <div>
               <h3 className="text-xs font-semibold text-muted-foreground">
