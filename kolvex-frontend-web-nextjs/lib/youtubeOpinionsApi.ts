@@ -216,6 +216,16 @@ export function getYouTubeCreatorProfile(channelId: string) {
   return apiRequest<YouTubeCreatorSummary>(`/creators/${encodeURIComponent(channelId)}/profile`);
 }
 
+export interface CreatorLatestVideo {
+  creator: Pick<YouTubeCreatorSummary, "channel_id" | "channel_title" | "channel_handle" | "channel_avatar_url" | "channel_url"> | null;
+  video: Pick<YouTubeOpinion, "video_id" | "video_title" | "video_url" | "video_published_at" | "opinion_date"> | null;
+  opinions: YouTubeOpinion[];
+}
+
+export function getCreatorLatestVideo(channelId: string, signal?: AbortSignal) {
+  return apiRequest<CreatorLatestVideo>(`/creators/${encodeURIComponent(channelId)}/latest-video`, { signal });
+}
+
 export type YouTubeCreatorUpdate = Pick<YouTubeCreatorSummary, "channel_title" | "channel_handle" | "channel_url" | "channel_avatar_url">;
 
 export function getAdminYouTubeCreators() {

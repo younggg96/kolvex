@@ -144,6 +144,14 @@ async def get_youtube_stock_detail(
         )
 
 
+@router.get("/creators/{channel_id}/latest-video")
+async def get_creator_latest_video(
+    channel_id: str,
+    service: YouTubeStockOpinionService = Depends(get_service),
+):
+    return service.get_creator_latest_video(channel_id)
+
+
 @router.get("/creators/{channel_id}/opinions")
 async def list_creator_opinions(
     channel_id: str,

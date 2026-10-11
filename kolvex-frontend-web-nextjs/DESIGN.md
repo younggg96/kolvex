@@ -177,6 +177,17 @@ the YouTube Data API, stores the UTC instant, and derives `opinion_date` in New
 York. Admin publication edits use New York calendar dates and preserve the full
 original timestamp when unchanged.
 
+`CreatorOpinionShare` adds Share image beside the creator profile action. Its
+shared Radix dialog fetches every stock summary from the newest imported video,
+independently of screen filters and pagination. `lib/creatorShareImage.ts` draws
+1080 × 1440 PNGs with the existing candlestick mark, warm white background,
+Inter/Chinese font stack and written sentiment labels. Full summaries continue
+onto numbered pages; source title and link remain visible. The preview and
+loading region share a 3:4 aspect ratio. Desktop and mobile readers can save each
+image, while supported devices can explicitly open native file sharing. PNGs
+are prepared before the share click and remain local; object URLs are revoked
+on page changes and close. Empty/error/retry states retain the same dialog.
+
 `components/decision/AnalysisHistory.tsx` owns the shared dated version list,
 pagination, current marker, historical-view notice, retry and current-version
 switching for both technical analysis and private research. Its `useStockHistory`

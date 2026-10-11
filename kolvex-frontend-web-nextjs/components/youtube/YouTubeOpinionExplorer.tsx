@@ -48,6 +48,7 @@ import OpinionStrength from "./OpinionStrength";
 import PriceChart from "./PriceChart";
 import StrengthChart, { type StrengthPoint } from "./StrengthChart";
 import VideoOpinionCard, { groupOpinionsByVideo } from "./VideoOpinionCard";
+import CreatorOpinionShare from "./CreatorOpinionShare";
 import { describeStrength, toneText, type StrengthTone } from "./strength";
 import { HeldMark, useHeldTickers, useCopy } from "@/components/decision/shared";
 
@@ -946,7 +947,7 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
                   )}
                 >
                   <div className="min-w-0 xl:col-start-1">
-                    <div className="flex min-w-0 items-center gap-4">
+                    <div className="flex min-w-0 flex-wrap items-center gap-4">
                       {route.creator && !route.ticker && creator && <Avatar creator={creator} size="lg" />}
                       {route.ticker && (
                         <span className="relative shrink-0">
@@ -975,7 +976,10 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
                         </p>
                         {route.creator && coverageNote(route.creator)}
                       </div>
-                      {creator && <CreatorProfileDialog creator={creator} compact />}
+                      {creator && <div className="flex w-full shrink-0 flex-wrap items-center gap-2 sm:w-auto">
+                        <CreatorOpinionShare key={creator.channel_id} creator={creator} />
+                        <CreatorProfileDialog creator={creator} compact />
+                      </div>}
                     </div>
 
                     {contextError ? (

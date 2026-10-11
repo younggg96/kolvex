@@ -99,6 +99,24 @@ class YouTubeStockOpinionService:
             raise LookupError("Creator not found")
         return {"opinions": [_public_opinion(row) for row in rows]}
 
+    def get_creator_latest_video(self, channel_id: str) -> Dict[str, Any]:
+        """Return every stock in the newest imported video, independently of UI filters."""
+        rows = self._fetch_rows(channel_id=channel_id)
+        if not rows:
+            return {"creator": None, "video": None, "opinions": []}
+
+        def published(row):
+            return parse_youtube_time(row.get("video_published_at") or row.get("opinion_date")) or datetime.min.replace(tzinfo=timezone.utc)
+
+        newest = max(rows, key=lambda row: (published(row), str(row.get("video_id") or "")))
+        video_rows = sorted((row for row in rows if row.get("video_id") == newest.get("video_id")),
+                            key=lambda row: (str(row.get("ticker") or ""), str(row.get("id") or "")))
+        return {
+            "creator": {key: newest.get(key) for key in ("channel_id", "channel_title", "channel_handle", "channel_avatar_url", "channel_url")},
+            "video": {key: newest.get(key) for key in ("video_id", "video_title", "video_url", "video_published_at", "opinion_date")},
+            "opinions": [_public_opinion(row) for row in video_rows],
+        }
+
     def create_opinion(
         self,
         channel_id: str,

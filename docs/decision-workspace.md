@@ -55,6 +55,7 @@ expansion through its keyed mount.
 - The Updates feed uses the catalogue's latest imported opinions and changes; it is not a complete event archive. Full opinion history remains in the YouTube explorer.
 - Source dates are visible and each opinion links to its creator and original video.
 - Creator opinion dates use `America/New_York` across cards, date filters, timelines and chart markers. The shared formatter is `lib/opinionDates.ts`. Publication instants come from the YouTube Data API; calendar labels never shift with the viewer's timezone.
+- The creator-page Share image action generates source-attributed PNGs from the latest imported video's complete set of stock summaries. Long summaries continue across numbered images. Readers preview and save each image or explicitly open device sharing; opening the preview does not publish anything.
 - Failed loads display an error, never a healthy-plan status or an invented update.
 - Updates are loaded when the page opens or refreshes. There is no new background monitor or push notification service.
 - Technical analysis retains its chart action and uses the existing analysis endpoint. Latest stock news uses the yfinance market endpoint and links to its publisher. Published AI Research uses the published-report endpoints. No new automatic paid analysis generation is introduced.

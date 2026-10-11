@@ -2,6 +2,9 @@ import asyncio
 import unittest
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, Mock, patch
+from fastapi import FastAPI
+from fastapi.testclient import TestClient
+from app.api.routes.youtube_opinions import get_service, router
 
 from app.services.youtube_stock_opinions import YouTubeStockOpinionService
 
@@ -14,6 +17,36 @@ def opinion(index):
 
 
 class ExplorerTests(unittest.TestCase):
+    def test_share_reads_complete_latest_video_by_publication_not_import_time(self):
+        service = YouTubeStockOpinionService(Mock())
+        latest = [{**opinion(i), "video_id": "newest", "video_published_at": "2026-10-09T23:07:18Z",
+                   "raw_payload": {"private": "not public"}, "uploaded_by": "admin"} for i in range(125)]
+        older = {**opinion(200), "video_id": "older", "video_published_at": "2026-10-08T23:00:00Z", "created_at": "2026-10-10T23:00:00Z"}
+        service._fetch_rows = Mock(return_value=[older, *latest])
+        result = service.get_creator_latest_video("creator1")
+        self.assertEqual(result["video"]["video_id"], "newest")
+        self.assertEqual(len(result["opinions"]), 125)
+        self.assertTrue(all(row["video_id"] == "newest" for row in result["opinions"]))
+        self.assertNotIn("raw_payload", result["opinions"][0])
+        self.assertNotIn("uploaded_by", result["opinions"][0])
+        service._fetch_rows.assert_called_once_with(channel_id="creator1")
+
+    def test_share_has_an_explicit_empty_result(self):
+        service = YouTubeStockOpinionService(Mock())
+        service._fetch_rows = Mock(return_value=[])
+        self.assertEqual(service.get_creator_latest_video("missing"), {"creator": None, "video": None, "opinions": []})
+
+    def test_latest_video_route_is_read_only_and_public_like_the_dashboard(self):
+        service = YouTubeStockOpinionService(Mock())
+        service._fetch_rows = Mock(return_value=[opinion(0)])
+        app = FastAPI()
+        app.include_router(router)
+        app.dependency_overrides[get_service] = lambda: service
+        response = TestClient(app).get("/youtube-opinions/creators/creator0/latest-video")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["creator"]["channel_id"], "creator0")
+        service.supabase.table.assert_not_called()
+
     def test_directory_is_not_truncated_by_opinion_pagination(self):
         service = YouTubeStockOpinionService(Mock())
         service._fetch_rows = Mock(return_value=[opinion(i) for i in range(85)])
