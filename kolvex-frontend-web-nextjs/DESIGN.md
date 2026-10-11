@@ -226,7 +226,7 @@ requiring sign-in. The link follows the newest imported video, independently of
 screen filters and pagination; publication remains the reader's explicit action.
 Image is a tab inside this same flow; canvas/fonts load only when selected.
 `lib/creatorShareImage.ts` draws
-1080 × 1440 PNGs using a snapshot of the preview's inherited CSS color tokens,
+1080px-wide PNGs with content-fitted height up to 1440px using a snapshot of the preview's inherited CSS color tokens,
 computed website font family and `rounded-xl` radius. `app/globals.css` remains
 the color owner, including light and dark themes; the renderer maintains no
 separate palette. `lib/brandAssets.ts` owns the candlestick path and existing
@@ -235,8 +235,13 @@ website's Kolvex wordmark, flat bordered card and row separators, and calls
 `describeStrength` for the same translated label and three-step meter as
 `OpinionStrength`. Theme changes invalidate and regenerate the preview.
 Full summaries continue
-onto numbered pages; source title and link remain visible. The preview and
-loading region share a 3:4 aspect ratio. Desktop and mobile readers can save each
+onto numbered pages; opinions that fit on a new page remain together. Source
+title and link remain visible. Every image includes the creator's circular avatar
+beside the name/date; unavailable avatars use the name initial. The existing
+same-origin image proxy owns YouTube CDN loading for canvas export. The preview
+and loading region share a viewport-bounded frame (45dvh, up to 440px), with the
+complete image contained inside it. Card and footer height follow the content so
+short pages do not retain a large blank area. Desktop and mobile readers can save each
 image, while supported devices can explicitly open native file sharing. PNGs
 are prepared before the share click and remain local; object URLs are revoked
 on page changes and close. Empty/error/retry states retain the same dialog.

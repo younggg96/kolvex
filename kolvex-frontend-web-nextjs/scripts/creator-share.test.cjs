@@ -20,7 +20,7 @@ function websiteStyles(mode) {
   return { colorScheme: mode, fontFamily: '"Website Inter", "PingFang SC", sans-serif', borderTopLeftRadius: '12px', getPropertyValue: (name) => tokens[name] || '' };
 }
 let style = websiteStyles('light');
-const { planCreatorShare, wrapShareText, creatorShareFilename, readCreatorShareAppearance, drawCreatorSharePage } = load('creatorShareImage', () => style);
+const { planCreatorShare, wrapShareText, creatorShareFilename, readCreatorShareAppearance, drawCreatorSharePage, creatorSharePageHeight } = load('creatorShareImage', () => style);
 const appearance = readCreatorShareAppearance({});
 const dict = require('../lib/i18n/locales/zh.json');
 const t = (key, params = {}) => Object.entries(params).reduce((text, [name, value]) => text.replace(`{${name}}`, value), key.split('.').reduce((value, part) => value?.[part], dict) || key);
@@ -41,7 +41,7 @@ test('share pagination preserves every Chinese character and every stock', () =>
   assert.equal(fragments.filter((f) => f.ticker === 'STK0').flatMap((f) => f.lines).join(''), summary.replace(/\n/g, ''));
   assert.equal(new Set(fragments.map((f) => f.ticker)).size, 29);
   assert.ok(fragments.some((f) => f.continued));
-  assert.ok(fragments.every((f) => f.y + 100 + f.lines.length * 54 <= 1260));
+  assert.ok(fragments.every((f) => f.y + 88 + f.lines.length * 50 <= 1260));
   assert.equal(doc.date, '2026年10月8日');
   assert.equal(doc.source, 'https://www.youtube.com/watch?v=l2Knyw23HgU');
 });
@@ -88,4 +88,34 @@ test('export uses live website theme tokens and the real font, including custom 
   assert.equal(drawn.find((entry) => entry.text === t('youtubeOpinions.strength.label', { level: t('youtubeOpinions.strength.strong'), direction: t('youtubeOpinions.strength.bullish') })).color, custom.positive);
   assert.ok(drawn.filter((entry) => entry.text).every((entry) => entry.font.includes('Website Inter')));
   style = websiteStyles('light');
+});
+
+
+test('short exports fit content and preserve avatar attribution', () => {
+  const data = fixture([{ ticker: 'NVDA', sentiment: 'bullish', summary: '增长' }]);
+  data.creator.channel_avatar_url = 'https://yt3.googleusercontent.com/avatar';
+  const doc = plan(data, 'zh', ctx);
+  assert.equal(doc.avatarUrl, data.creator.channel_avatar_url);
+  assert.ok(creatorSharePageHeight(doc, 0) < 800);
+  assert.throws(() => creatorSharePageHeight(doc, 1));
+});
+
+test('a complete opinion moves to a fresh page instead of splitting into a short remainder', () => {
+  const doc = plan(fixture([
+    { ticker: 'FIRST', sentiment: 'bullish', summary: '甲'.repeat(30 * 10) },
+    { ticker: 'SECOND', sentiment: 'bullish', summary: '乙'.repeat(30 * 5) },
+  ]), 'zh', ctx);
+  assert.equal(doc.pages.length, 2);
+  assert.equal(doc.pages[0].length, 1);
+  assert.equal(doc.pages[1].length, 1);
+  assert.equal(doc.pages[1][0].continued, false);
+});
+
+
+test('Chinese closing punctuation stays with the previous character when wrapping', () => {
+  const text = '观点增长，趋势确认。';
+  const lines = wrapShareText(ctx, text, 120);
+  assert.equal(lines.join(''), text);
+  assert.ok(lines.every((line) => !/^[，。]/.test(line)));
+  assert.ok(lines.every((line) => ctx.measureText(line).width <= 120));
 });

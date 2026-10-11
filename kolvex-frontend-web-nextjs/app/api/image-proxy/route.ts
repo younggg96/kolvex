@@ -11,6 +11,7 @@ const ALLOWED_DOMAINS = [
   "upload.wikimedia.org",
   "i.ytimg.com",
   "yt3.ggpht.com",
+  "yt3.googleusercontent.com",
 ];
 
 export async function GET(request: NextRequest) {

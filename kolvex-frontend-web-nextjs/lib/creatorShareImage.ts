@@ -5,10 +5,10 @@ import { KOLVEX_LOGO_COLOR, KOLVEX_LOGO_PATH } from "./brandAssets";
 import { describeStrength, type StrengthDescription } from "../components/youtube/strength";
 
 export const SHARE_WIDTH = 1080;
-export const SHARE_HEIGHT = 1440;
 const TOP = 392;
 const BOTTOM = 1260;
-const LINE_HEIGHT = 54;
+const LINE_HEIGHT = 50;
+const ROW_PADDING = 88;
 const TEXT_WIDTH = 912;
 
 export type ShareAppearance = {
@@ -64,6 +64,7 @@ export type ShareFragment = {
 };
 export type CreatorShareDocument = {
   creator: string;
+  avatarUrl?: string | null;
   date: string;
   title: string;
   source: string;
@@ -82,8 +83,16 @@ export function wrapShareText(ctx: MeasureContext, text: string, width: number):
     let line = "";
     for (const character of Array.from(paragraph)) {
       if (line && ctx.measureText(line + character).width > width) {
-        lines.push(line);
-        line = character;
+        // Keep closing punctuation off the beginning of a wrapped line.
+        const previous = Array.from(line);
+        if (/[，。；：！？、）】》,.!?;:%)]/.test(character) && previous.length > 1) {
+          const last = previous.pop()!;
+          lines.push(previous.join(""));
+          line = last + character;
+        } else {
+          lines.push(line);
+          line = character;
+        }
       } else line += character;
     }
     lines.push(line);
@@ -103,7 +112,7 @@ export function planCreatorShare(data: CreatorLatestVideo, locale: "zh" | "en", 
   if (!data.creator || !data.video || !data.opinions.length) throw new Error("No creator opinions");
   const pages: ShareFragment[][] = [[]];
   let y = TOP;
-  ctx.font = `400 36px ${appearance.fontFamily}`;
+  ctx.font = `400 34px ${appearance.fontFamily}`;
   // Preserve the API's complete video set; do not inherit screen filters or pagination.
   for (const opinion of data.opinions) {
     const text = opinion.summary?.trim() || opinion.thesis?.trim() || opinion.key_points?.join("\n") ||
@@ -111,22 +120,26 @@ export function planCreatorShare(data: CreatorLatestVideo, locale: "zh" | "en", 
     const lines = wrapShareText(ctx, text, TEXT_WIDTH);
     let cursor = 0;
     while (cursor < lines.length) {
-      let room = Math.floor((BOTTOM - y - 100) / LINE_HEIGHT);
-      if (room < Math.min(2, lines.length - cursor)) {
+      let room = Math.floor((BOTTOM - y - ROW_PADDING) / LINE_HEIGHT);
+      const remaining = lines.length - cursor;
+      const fullPageRoom = Math.floor((BOTTOM - TOP - ROW_PADDING) / LINE_HEIGHT);
+      // Keep a complete opinion together when it fits on a fresh page.
+      if (room < Math.min(2, remaining) || (remaining > room && remaining <= fullPageRoom)) {
         pages.push([]);
         y = TOP;
-        room = Math.floor((BOTTOM - y - 100) / LINE_HEIGHT);
+        room = Math.floor((BOTTOM - y - ROW_PADDING) / LINE_HEIGHT);
       }
       const count = Math.min(room, lines.length - cursor);
       pages[pages.length - 1].push({ ticker: opinion.ticker, sentiment: opinion.sentiment,
         lines: lines.slice(cursor, cursor + count), continued: cursor > 0, y,
         strength: describeStrength(opinion.direction_score, { t }) });
-      y += 100 + count * LINE_HEIGHT;
+      y += ROW_PADDING + count * LINE_HEIGHT;
       cursor += count;
     }
   }
   return {
     creator: data.creator.channel_title || data.creator.channel_handle || data.creator.channel_id,
+    avatarUrl: data.creator.channel_avatar_url,
     date: formatOpinionDate(data.video.opinion_date || data.video.video_published_at, locale === "zh" ? "zh-CN" : "en-US"),
     title: data.video.video_title || (locale === "zh" ? "最新视频观点" : "Latest video opinions"),
     source: sourceVideoUrl(data.video),
@@ -135,17 +148,26 @@ export function planCreatorShare(data: CreatorLatestVideo, locale: "zh" | "en", 
   };
 }
 
-export function drawCreatorSharePage(ctx: CanvasRenderingContext2D, doc: CreatorShareDocument, index: number): void {
+export function creatorSharePageHeight(doc: CreatorShareDocument, index: number): number {
+  const page = doc.pages[index];
+  if (!page?.length) throw new Error("Invalid share page");
+  const last = page[page.length - 1];
+  return last.y + ROW_PADDING + last.lines.length * LINE_HEIGHT + 176;
+}
+
+export function drawCreatorSharePage(ctx: CanvasRenderingContext2D, doc: CreatorShareDocument, index: number, avatar?: HTMLImageElement | null): void {
   const page = doc.pages[index];
   if (!page) throw new Error("Invalid share page");
+  const height = creatorSharePageHeight(doc, index);
+  const cardBottom = height - 152;
   const zh = doc.locale === "zh";
   const appearance = doc.appearance;
   ctx.textBaseline = "alphabetic";
   ctx.textAlign = "left";
   ctx.fillStyle = appearance.background;
-  ctx.fillRect(0, 0, SHARE_WIDTH, SHARE_HEIGHT);
+  ctx.fillRect(0, 0, SHARE_WIDTH, height);
   ctx.beginPath();
-  ctx.roundRect(48, 366, 984, 922, appearance.radius);
+  ctx.roundRect(48, 366, 984, cardBottom - 366, appearance.radius);
   ctx.fillStyle = appearance.card;
   ctx.fill();
   ctx.strokeStyle = appearance.border;
@@ -170,9 +192,25 @@ export function drawCreatorSharePage(ctx: CanvasRenderingContext2D, doc: Creator
   text(zh ? "博主最新观点" : "Latest creator opinions", 996, 83, 26, appearance.mutedForeground, 500);
   ctx.textAlign = "left";
   rule(128);
-  ctx.font = `600 64px ${appearance.fontFamily}`;
-  text(clipShareText(ctx, doc.creator, TEXT_WIDTH), 84, 200, 64, appearance.foreground, 600);
-  text(`${doc.date}  ·  ${zh ? "美东日期" : "New York date"}`, 84, 247, 28, appearance.mutedForeground);
+  // Keep attribution beside the creator name on every exported page.
+  ctx.save();
+  ctx.beginPath();
+  ctx.roundRect(84, 164, 88, 88, 44);
+  ctx.fillStyle = appearance.muted;
+  ctx.fill();
+  if (avatar) {
+    ctx.clip();
+    const side = Math.min(avatar.naturalWidth, avatar.naturalHeight);
+    ctx.drawImage(avatar, (avatar.naturalWidth - side) / 2, (avatar.naturalHeight - side) / 2, side, side, 84, 164, 88, 88);
+  } else {
+    ctx.textAlign = "center";
+    text(Array.from(doc.creator.trim().replace(/^@/, ""))[0]?.toUpperCase() || "?", 128, 221, 40, appearance.foreground, 600);
+  }
+  ctx.restore();
+  ctx.textAlign = "left";
+  ctx.font = `600 54px ${appearance.fontFamily}`;
+  text(clipShareText(ctx, doc.creator, TEXT_WIDTH - 116), 200, 205, 54, appearance.foreground, 600);
+  text(`${doc.date}  ·  ${zh ? "美东日期" : "New York date"}`, 200, 248, 28, appearance.mutedForeground);
   ctx.font = `400 26px ${appearance.fontFamily}`;
   const title = wrapShareText(ctx, doc.title, TEXT_WIDTH);
   text(title[0] || "", 84, 300, 26, appearance.mutedForeground);
@@ -195,28 +233,47 @@ export function drawCreatorSharePage(ctx: CanvasRenderingContext2D, doc: Creator
     ctx.textAlign = "right";
     text(fragment.strength.label, 996, fragment.y + 38, 30, color, 600);
     ctx.textAlign = "left";
-    fragment.lines.forEach((line, i) => text(line, 84, fragment.y + 93 + i * LINE_HEIGHT, 36, appearance.mutedForeground));
-    if (fragment !== page[page.length - 1]) rule(fragment.y + 100 + fragment.lines.length * LINE_HEIGHT - 22);
+    fragment.lines.forEach((line, i) => text(line, 84, fragment.y + 86 + i * LINE_HEIGHT, 34, appearance.mutedForeground));
+    if (fragment !== page[page.length - 1]) rule(fragment.y + ROW_PADDING + fragment.lines.length * LINE_HEIGHT - 12);
   }
-  rule(1308);
+  rule(height - 132);
   ctx.font = `400 21px ${appearance.fontFamily}`;
-  text(clipShareText(ctx, doc.source.replace(/^https:\/\/(www\.)?/, ""), 740), 84, 1350, 21, appearance.mutedForeground);
+  text(clipShareText(ctx, doc.source.replace(/^https:\/\/(www\.)?/, ""), 740), 84, height - 90, 21, appearance.mutedForeground);
   ctx.textAlign = "right";
-  text(`${index + 1} / ${doc.pages.length}`, 996, 1350, 22, appearance.mutedForeground);
+  text(`${index + 1} / ${doc.pages.length}`, 996, height - 90, 22, appearance.mutedForeground);
   ctx.textAlign = "left";
-  text(zh ? "观点摘要 · 完整内容见原视频" : "Opinion summaries · See the source video for full context", 84, 1398, 21, appearance.mutedForeground);
+  text(zh ? "观点摘要 · 完整内容见原视频" : "Opinion summaries · See the source video for full context", 84, height - 42, 21, appearance.mutedForeground);
   ctx.textAlign = "right";
-  text("kolvex.app", 996, 1398, 21, appearance.foreground, 500);
+  text("kolvex.app", 996, height - 42, 21, appearance.foreground, 500);
   ctx.textAlign = "left";
+}
+
+async function loadCreatorAvatar(url?: string | null): Promise<HTMLImageElement | null> {
+  if (!url) return null;
+  return new Promise((resolve) => {
+    const avatar = new Image();
+    const timeout = window.setTimeout(() => finish(null), 5000);
+    function finish(result: HTMLImageElement | null) {
+      window.clearTimeout(timeout);
+      avatar.onload = null;
+      avatar.onerror = null;
+      resolve(result);
+    }
+    avatar.crossOrigin = "anonymous";
+    avatar.onload = () => finish(avatar);
+    avatar.onerror = () => finish(null);
+    // The existing same-origin proxy makes YouTube CDN avatars safe for PNG export.
+    avatar.src = `/api/image-proxy?url=${encodeURIComponent(url)}`;
+  });
 }
 
 export async function renderCreatorSharePage(doc: CreatorShareDocument, index: number): Promise<Blob> {
   const canvas = document.createElement("canvas");
   canvas.width = SHARE_WIDTH;
-  canvas.height = SHARE_HEIGHT;
+  canvas.height = creatorSharePageHeight(doc, index);
   const ctx = canvas.getContext("2d");
   if (!ctx) throw new Error("Canvas is unavailable");
-  drawCreatorSharePage(ctx, doc, index);
+  drawCreatorSharePage(ctx, doc, index, await loadCreatorAvatar(doc.avatarUrl));
   return new Promise((resolve, reject) => canvas.toBlob((blob) => {
     if (blob) resolve(blob);
     else reject(new Error("Image export failed"));

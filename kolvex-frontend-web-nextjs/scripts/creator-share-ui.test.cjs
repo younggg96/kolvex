@@ -51,7 +51,7 @@ function fixture() {
     'next-themes': { useTheme: () => ({ resolvedTheme: theme }) },
     '@/components/decision/shared': { useCopy: () => (en, zh) => zh },
     '@/lib/youtubeOpinionsApi': { getCreatorLatestVideo: (id, signal) => { calls.push({ id, signal }); return request.promise; } },
-    '@/lib/creatorShareImage': { readCreatorShareAppearance: () => ({ mode: theme }), planCreatorShare: (_, locale, ctx, appearance) => ({ ...doc, appearance }), renderCreatorSharePage: async () => { generated++; return new Blob(['png'], { type: 'image/png' }); }, creatorShareFilename: () => 'share.png' },
+    '@/lib/creatorShareImage': { readCreatorShareAppearance: () => ({ mode: theme }), planCreatorShare: (_, locale, ctx, appearance) => ({ ...doc, appearance }), creatorSharePageHeight: () => 800, renderCreatorSharePage: async () => { generated++; return new Blob(['png'], { type: 'image/png' }); }, creatorShareFilename: () => 'share.png' },
   };
   const module = { exports: {} };
   vm.runInNewContext(ts.transpileModule(fs.readFileSync(path.join(__dirname, '../components/youtube/CreatorShare.tsx'), 'utf8'), {

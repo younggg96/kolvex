@@ -14,7 +14,7 @@ import { getCreatorLatestVideo, type CreatorLatestVideo } from "@/lib/youtubeOpi
 import { creatorEmailLink, creatorShareContent, creatorSocialLinks, sourceVideoUrl, type CreatorShareIdentity } from "@/lib/creatorSharing";
 import type { CreatorShareDocument } from "@/lib/creatorShareImage";
 
-type Preview = { url: string; file: File; page: number; document: CreatorShareDocument };
+type Preview = { url: string; file: File; page: number; document: CreatorShareDocument; height: number };
 const canNativeShare = () => typeof navigator !== "undefined" && typeof navigator.share === "function";
 function canShareFile(file?: File) {
   try { return Boolean(file && canNativeShare() && navigator.canShare?.({ files: [file] })); }
@@ -82,7 +82,7 @@ export default function CreatorShare({ creator }: { creator: CreatorShareIdentit
         const blob = await image.renderCreatorSharePage(doc!, page);
         if (disposed) return;
         url = URL.createObjectURL(blob);
-        setPreview({ url, file: new File([blob], image.creatorShareFilename(doc!, page), { type: "image/png" }), page, document: doc! });
+        setPreview({ url, file: new File([blob], image.creatorShareFilename(doc!, page), { type: "image/png" }), page, document: doc!, height: image.creatorSharePageHeight(doc!, page) });
       } catch {
         if (!disposed) setError(locale === "zh" ? "图片导出失败，请重试。" : "Could not export the image. Please retry.");
       }
@@ -124,9 +124,9 @@ export default function CreatorShare({ creator }: { creator: CreatorShareIdentit
 
   return <Dialog open={open} onOpenChange={changeOpen}>
     <DialogTrigger asChild><Button variant="outline" size="sm" className="shrink-0 gap-1.5"><Share2 className="h-4 w-4" aria-hidden="true" />{c("Share", "分享")}</Button></DialogTrigger>
-    <DialogContent className="max-w-xl">
+    <DialogContent className="max-w-xl pb-5 pt-8">
       <DialogHeader><DialogTitle>{c("Share creator opinions", "分享博主观点")}</DialogTitle><DialogDescription>{c("Share a public link, prepare a social post, or save images of the latest imported opinions.", "通过公开链接、社交媒体或图片，分享最新一期已收录观点。")}</DialogDescription></DialogHeader>
-      <div ref={appearanceRef} className="mt-5 space-y-4 rounded-xl font-sans">
+      <div ref={appearanceRef} className="mt-3 space-y-3 rounded-xl font-sans">
         <Tabs value={mode} onValueChange={(value) => { if (!sharing) { setMode(value === "image" ? "image" : "link"); setStatus(""); } }}>
           <TabsList><TabsTrigger value="link" disabled={sharing}>{c("Link & social", "链接与社交")}</TabsTrigger><TabsTrigger value="image" disabled={sharing}>{c("Image", "图片")}</TabsTrigger></TabsList>
           <TabsContent value="link" className="mt-5 space-y-5">{mode === "link" && <>
@@ -137,12 +137,12 @@ export default function CreatorShare({ creator }: { creator: CreatorShareIdentit
             <p className="text-xs leading-relaxed text-muted-foreground">{c("For WeChat, Xiaohongshu and other apps, paste the link or text, or switch to Image and save a share card.", "微信、小红书等应用可粘贴链接或文案，也可切换到「图片」保存分享卡片。")}</p>
             {loading && <p role="status" className="text-xs text-muted-foreground">{c("Loading the latest opinions…", "正在加载最新观点…")}</p>}
           </>}</TabsContent>
-          <TabsContent value="image" className="mt-5 space-y-4">{mode === "image" && <>
-            {(loading || (doc && !ready && !error)) && <div role="status" className="mx-auto flex aspect-[3/4] w-full max-w-[360px] items-center justify-center gap-2 text-sm text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" aria-hidden="true" />{c("Generating the image…", "正在生成图片…")}</div>}
+          <TabsContent value="image" className="mt-3 space-y-3">{mode === "image" && <>
+            {(loading || (doc && !ready && !error)) && <div role="status" className="mx-auto flex h-[min(45dvh,440px)] w-full items-center justify-center gap-2 text-sm text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" aria-hidden="true" />{c("Generating the image…", "正在生成图片…")}</div>}
             {empty && <p className="py-12 text-center text-sm text-muted-foreground">{c("This creator has no imported opinions yet.", "这位博主暂无已收录观点。")}</p>}
-            {ready && doc && <><figure className="mx-auto max-w-[360px] overflow-hidden rounded-xl border border-border bg-background">
+            {ready && doc && <><figure className="mx-auto flex h-[min(45dvh,440px)] w-full items-center justify-center">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={ready.url} width={1080} height={1440} alt={c(`${doc.creator}, opinions, image ${page + 1} of ${doc.pages.length}`, `${doc.creator}观点，第 ${page + 1} / ${doc.pages.length} 张`)} aria-describedby={transcriptId} className="block h-auto w-full" />
+              <img src={ready.url} width={1080} height={ready.height} alt={c(`${doc.creator}, opinions, image ${page + 1} of ${doc.pages.length}`, `${doc.creator}观点，第 ${page + 1} / ${doc.pages.length} 张`)} aria-describedby={transcriptId} className="block max-h-full max-w-full h-auto w-auto rounded-xl border border-border bg-background" />
             </figure><div id={transcriptId} className="sr-only">{doc.pages[page].map((fragment, index) => <p key={index}>{fragment.ticker} · {fragment.strength.label} · {fragment.lines.join("")}</p>)}</div></>}
             {doc && doc.pages.length > 1 && <div className="flex items-center justify-center gap-4"><Button variant="ghost" size="icon" aria-label={c("Previous image", "上一张图片")} disabled={page === 0 || sharing} onClick={() => setPage((value) => value - 1)}><ChevronLeft className="h-4 w-4" /></Button><span role="status" className="text-sm tabular-nums">{page + 1} / {doc.pages.length}</span><Button variant="ghost" size="icon" aria-label={c("Next image", "下一张图片")} disabled={page === doc.pages.length - 1 || sharing} onClick={() => setPage((value) => value + 1)}><ChevronRight className="h-4 w-4" /></Button></div>}
             {ready && <div className="flex flex-wrap justify-center gap-2"><Button asChild className="gap-2"><a href={ready.url} download={ready.file.name} onClick={() => setStatus(c("Image download started.", "已开始下载图片。"))}><Download className="h-4 w-4" aria-hidden="true" />{c("Save image", "保存图片")}</a></Button>{canShareFile(ready.file) && <Button variant="outline" disabled={sharing} onClick={() => void share(true)} className="gap-2"><Share2 className="h-4 w-4" aria-hidden="true" />{c("Share image", "分享图片")}</Button>}</div>}
@@ -151,7 +151,7 @@ export default function CreatorShare({ creator }: { creator: CreatorShareIdentit
           </>}</TabsContent>
         </Tabs>
         {error && <div role="alert" className="space-y-3"><p className="text-sm text-muted-foreground">{error}</p><Button variant="outline" onClick={() => setRevision((value) => value + 1)}>{c("Retry", "重试")}</Button></div>}
-        <p role="status" aria-live="polite" className="min-h-5 text-center text-xs text-muted-foreground">{status}</p>
+        <p role="status" aria-live="polite" className={status ? "text-center text-xs text-muted-foreground" : "sr-only"}>{status}</p>
       </div>
     </DialogContent>
   </Dialog>;
