@@ -101,6 +101,7 @@ test('PriceChart keeps text analysis and AI overlays in independent history chan
     './chartDrawings':{useSyncedDrawings:()=>({drawings:[],setDrawings:()=>{},status:'synced'})},
     '@/components/decision/SavedAnalysisData':{default:'data'},
     '@/components/decision/AnalysisHistory':{default:'history',useStockHistory:(_,kind)=>state(kind)},
+    '@/hooks/useChartAiJobs':{useChartAiJobs:()=>({analysis:{status:'idle'},drawings:{status:'idle'},busy:false,clear:()=>{}})},
     './aiDrawings':drawingModule,'./chart/ChartView':{default:'chart'},'./chart/TechnicalFocusSelector':{default:'focus'},
     '@/lib/technicalFocus':{DEFAULT_TECHNICAL_FOCUS:{categories:['levels'],custom_scenarios:[]}},
   });

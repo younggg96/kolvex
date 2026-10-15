@@ -7,6 +7,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 import logging
+import asyncio
+import os
 
 # 导入路由和配置
 from app.api.routes import api_router
@@ -40,9 +42,17 @@ async def lifespan(app: FastAPI):
     # 清理上次残留的 running 状态分析
     from app.services.trading_analysis_service import get_trading_analysis_service
     get_trading_analysis_service().cleanup_stale_analyses()
-
-
-    yield
+    from app.services.stock_chart_jobs import run_worker
+    worker = asyncio.create_task(run_worker()) if os.getenv("CHART_WORKER_ENABLED", "true").lower() == "true" else None
+    try:
+        yield
+    finally:
+        if worker:
+            worker.cancel()
+            try:
+                await worker
+            except asyncio.CancelledError:
+                pass
 
     # 关闭时执行
     await close_redis()

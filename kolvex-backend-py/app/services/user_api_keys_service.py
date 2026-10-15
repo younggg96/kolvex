@@ -3,6 +3,7 @@ User API Keys Service
 Manage user-provided LLM API keys stored in Supabase
 """
 
+import asyncio
 import logging
 from typing import Optional
 from supabase import Client
@@ -67,12 +68,12 @@ class UserApiKeysService:
         Used internally for LLM creation — returns plain text keys.
         """
         try:
-            response = (
+            query = (
                 self.supabase.table(self.table)
                 .select("provider, api_key")
                 .eq("user_id", user_id)
-                .execute()
             )
+            response = await asyncio.to_thread(query.execute)
         except Exception as e:
             logger.warning(f"Failed to query user_api_keys (table may not exist): {e}")
             return {}

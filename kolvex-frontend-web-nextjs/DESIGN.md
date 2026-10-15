@@ -81,6 +81,10 @@ the change summary, AI technical read and creator history. Latest news, the
 newest creator call and the linked position form the right rail on desktop;
 on narrow screens these sections follow the chart. Creator Opinions shows the first
 10 filtered stocks with a full stock directory at `/dashboard/youtube-opinions/stocks`.
+Creator detail pages order the latest video opinions, opinion history, then most
+discussed stocks in one reading column on all screen sizes. The stock list sorts
+by opinion count, initially shows at most five stocks, and offers a labelled
+expansion to the full searchable list and a collapse action.
 Recent opinion changes follow the directory in the left column. Its right rail
 orders latest opinions and my holdings; the latest section links to the paginated `/dashboard/youtube-opinions/opinions` list. Updates
 remains accessible by legacy URL but has no primary navigation tab. Legacy Research URLs redirect
@@ -324,17 +328,32 @@ not a guarantee that a future break or retest will occur.
 
 ## Chart controls and result reading
 
-`ChartView` keeps one AI settings button beside the primary AI analysis action
-and secondary AI drawings action; generation buttons retain their fixed width
-while generating. The shared Radix dialog contains the model selector and
+`ChartView` places the primary AI analysis and secondary AI drawings actions
+first, with a quiet AI settings action aligned right. Phones keep the two
+generation actions and icon settings action on one row with 44px minimum touch
+targets. Desktop uses compact 36px controls. The shared Radix dialog's `sheet`
+variant anchors settings to the phone's bottom safe area and centers it on
+desktop; only its body scrolls, keeping the close action reachable. It contains the model selector and
 `PriceChart`'s analysis/drawing tabs. `TechnicalFocusSelector` reuses its topic
 editor inline in each tab, with immediate settings updates for the next generation;
 its standalone dialog variant retains draft/apply/cancel behavior. Saved drawing
 versions appear inside the drawing tab. No model field, focus summary rows or
-version dropdown sit above the chart. Narrow layouts wrap the same three buttons.
-Generation is unavailable until a configured model is selected, with guidance
+version dropdown sit above the chart. Common focus topics stay visible; more
+technical topics use a native disclosure that shows the selected count. On phones,
+manual drawing tools use a labelled popover, color selection uses a swatch popover,
+and zoom/edit actions occupy a second row without overflowing the page.
+Selecting generation before choosing a model opens settings, with guidance
 and the API Keys settings link inside the settings dialog. The shared authored
 Select owns keyboard selection and a trigger-width, height-bounded popup.
+
+`useChartAiJobs` in `PriceChart` owns background job state shared by compact and
+fullscreen charts. Queued/running status and safe localized errors appear beside
+the AI controls; the fullscreen mobile status remains visible outside its AI
+popover. Status failures offer Check status rather than another generation.
+Pending jobs disable duplicate generation, survive navigation and resume polling
+on return. A successful job reloads the saved version; failure retains the previous
+saved analysis and drawing pointers. Uncertain submission retries reuse the same
+idempotency key. No task runs simply by opening the chart.
 
 The advanced chart uses the shared `DialogContent` fullscreen layout variant.
 Its visible title and translated close action occupy a compact fixed header.
@@ -362,7 +381,7 @@ theme tokens and Chinese/English messages remain authoritative.
 | Capability | Canonical owner | Source of truth | Allowed variants | Verification |
 |---|---|---|---|---|
 | Select/Listbox | `components/ui/select.tsx` | DESIGN.md; `lib/aiModels.ts` catalogue | Authored Radix model and interval selectors | Browser keyboard, popup width, collision and bounded scrolling |
-| Overlay | `components/ui/dialog.tsx` | DESIGN.md; `PriceChart` and focus draft behavior | Default dialog; fullscreen chart with a header close action | Browser nested Escape, close, focus restoration and narrow layout |
+| Overlay | `components/ui/dialog.tsx` | DESIGN.md; `PriceChart` and focus draft behavior | Default dialog; fullscreen chart; mobile sheet/desktop dialog for AI settings | Browser nested Escape, close, focus restoration and narrow layout |
 | Disclosure | Native details; `AnalysisSummary` | Saved analysis payload | Technical evidence, plan rationale and full conclusion | Browser expand/collapse and long content |
 
 ## Marketing landing page
@@ -432,3 +451,15 @@ and English reports retain a comfortable measure on desktop and phone.
 measure, 1.85 line height, separated paragraphs, semantic Markdown headings,
 lists, emphasis and horizontally scrollable tables/code. It uses the existing
 global theme tokens and font stack.
+
+## Creator detail loading
+
+Creator Opinions keeps the current page readable while preparing an internal
+detail navigation, then commits the route and its data together. A compact
+status sits above the content without moving it. Cold loads use the existing
+Loader2/status treatment rather than large skeleton blocks; missing creator
+names use a localized page label, never a raw channel ID.
+`lib/youtubeOpinionsApi.ts` owns a bounded 30-second in-memory dashboard cache
+and concurrent-request reuse. Context and first-page opinions share a request
+when their filters match. Refresh and successful admin edits invalidate it;
+failed requests are not cached and requests time out after 20 seconds.

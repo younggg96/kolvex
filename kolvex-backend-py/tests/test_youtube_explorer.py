@@ -86,6 +86,46 @@ class ExplorerTests(unittest.TestCase):
         query.eq.assert_any_call("channel_id", "creator1")
         query.order.assert_any_call("id")
 
+    def test_filtered_stock_lists_count_all_creators_across_pages(self):
+        query = Mock()
+        for method in ("select", "in_", "order", "range"):
+            getattr(query, method).return_value = query
+        client = Mock()
+        client.table.return_value = query
+        service = YouTubeStockOpinionService(client)
+        rows = [{**opinion(i), "ticker": "NVDA", "channel_id": "creator1"} for i in range(3)]
+        service._fetch_rows = Mock(return_value=rows)
+        service._fill_missing_avatars = AsyncMock()
+        # A repeated creator on different pages counts once; empty ids do not count.
+        pages = [SimpleNamespace(data=[{"ticker": "NVDA", "channel_id": channel} for channel in channels], count=5)
+                 for channels in (("creator1", "creator1"), ("creator2", "creator1"), (None,))]
+        for filters in ({"channel_id": "creator1"}, {"sentiment": "bullish"},
+                        {"date_from": "2026-10-01", "date_to": "2026-10-07"}):
+            with self.subTest(filters=filters):
+                query.reset_mock()
+                query.execute.side_effect = pages
+                result = asyncio.run(service.get_dashboard(**filters, limit=1))
+                self.assertEqual(result["stocks"][0]["creator_count"], 2)
+                self.assertEqual(result["stocks"][0]["total_opinions"], 3)
+                self.assertEqual(result["summary"]["total_creators"], 1)
+                self.assertEqual(len(result["latest"]), 1)
+                query.select.assert_called_with("ticker,channel_id", count="exact")
+                query.in_.assert_called_with("ticker", ["NVDA"])
+                self.assertEqual([call.args for call in query.range.call_args_list],
+                                 [(0, 999), (2, 1001), (4, 1003)])
+
+    def test_unfiltered_stock_counts_are_deduplicated_without_extra_query(self):
+        service = YouTubeStockOpinionService(Mock())
+        service._fetch_rows = Mock(return_value=[
+            {**opinion(i), "ticker": "NVDA", "channel_id": channel}
+            for i, channel in enumerate(("creator1", "creator1", "creator2"))
+        ])
+        service._fill_missing_avatars = AsyncMock()
+        result = asyncio.run(service.get_dashboard(limit=1))
+        self.assertEqual(result["stocks"][0]["creator_count"], 2)
+        self.assertEqual(result["stocks"][0]["total_opinions"], 3)
+        service.supabase.table.assert_not_called()
+
     def test_missing_avatars_are_filled_from_youtube_and_stored(self):
         client = Mock()
         update = client.table.return_value.update.return_value

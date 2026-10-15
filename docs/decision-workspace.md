@@ -107,6 +107,23 @@ Measure whether users return to read new information: repeat visits to stock pag
 
 ## User-requested stock analysis and history
 
+Chart AI analysis and drawing requests now submit durable, user-owned jobs through
+`/market/chart-jobs/{ticker}` and return 202 immediately. A backend worker claims
+queued jobs atomically, loads that user's configured provider key at execution time,
+and saves the immutable result, current history pointer and completed job in one
+transaction. The queue contains request settings and safe error codes, never API
+keys or access tokens. Same-request retries and concurrent submissions on one
+user/ticker reuse the existing job. Each user may have at most three active tickers.
+
+The frontend restores pending jobs on entry and polls only while a task is pending;
+focus/reconnection also refreshes status. Closing the chart stops polling without
+cancelling the server task. Submission, queue, running, timeout, interruption and
+configuration failures have visible localized feedback near the chart controls.
+A status outage retains the pending state and offers Check status. Failed jobs are
+terminal and require an explicit retry; a worker restart never silently repeats a
+possibly billed model request. Running jobs expire after ten minutes, queued jobs
+after twenty minutes, and model generation has an eight-minute deadline.
+
 The October 9 request adds private analysis generation to the stock workspace.
 It is an explicit exception to the earlier reading-only stock-page contract;
 public report publishing and the administrator report-management UI retain

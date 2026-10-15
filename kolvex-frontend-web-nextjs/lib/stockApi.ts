@@ -259,6 +259,41 @@ export class AiAnalysisError extends Error {
   }
 }
 
+export type AiChartRequest = PriceHistoryParams & Partial<TechnicalFocus> & {
+  view_start?: string; view_end?: string; locale?: string;
+  model: string; operation: "analysis" | "drawings";
+};
+export interface AiChartJob {
+  id: string;
+  ticker: string;
+  operation: "analysis" | "drawings";
+  status: "queued" | "running" | "completed" | "failed";
+  error_code?: string | null;
+  result?: AiTechnicalAnalysis | null;
+  created_at: string;
+}
+
+async function chartJobRequest<T>(path: string, options: RequestInit = {}): Promise<T> {
+  const response = await fetch(`/api/market/chart-jobs/${path}`, {
+    ...options, cache: "no-store",
+    headers: { "Content-Type": "application/json" },
+    signal: options.signal ? AbortSignal.any([options.signal, AbortSignal.timeout(25_000)]) : AbortSignal.timeout(25_000),
+  });
+  const data = await response.json();
+  if (!response.ok) throw new AiAnalysisError(data.error || "ai_jobs_unavailable", response.status);
+  return data as T;
+}
+
+export function submitAiChartJob(symbol: string, body: AiChartRequest, requestId: string, signal?: AbortSignal) {
+  return chartJobRequest<AiChartJob>(encodeURIComponent(symbol), {
+    method: "POST", body: JSON.stringify({ ...body, request_id: requestId }), signal,
+  });
+}
+
+export function getAiChartJobs(symbol: string, signal?: AbortSignal) {
+  return chartJobRequest<{ items: AiChartJob[] }>(encodeURIComponent(symbol), { signal });
+}
+
 export async function getAiTechnicalAnalysis(
   symbol: string,
   body: PriceHistoryParams & Partial<TechnicalFocus> & { view_start?: string; view_end?: string; locale?: string; model: string; operation?: "analysis" | "drawings" },

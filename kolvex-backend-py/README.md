@@ -146,3 +146,37 @@ python -m unittest discover -s tests -p 'test_*.py'
 不再注册 Robinhood、IBKR、旧 Twitter／小红书 KOL、独立新闻聚合、超级投资者持仓、量化策略及回测、股票追踪、用户关注、通知及定时预警、期权异动及独立期权 AI 分析接口。当前启动流程没有启用旧 Finnhub WebSocket 监控或通知调度。
 
 历史 SQL、依赖、配置或残留辅助文件不代表这些功能仍可用。普通期权链、Plaid 连接和共享投资组合功能仍保留；Next.js 中的联系邮件接口已禁用。
+# Background chart analysis and drawings
+
+Apply `supabase/migrations/20261014072138_stock_chart_jobs.sql` after the existing
+stock analysis history migrations before releasing the new frontend. The queue
+and its RPCs are service-role-only. No API keys are stored in queued requests.
+
+The FastAPI lifespan starts one chart worker per API process by default, so the
+existing Railway start command needs no change. Database claims use `FOR UPDATE
+SKIP LOCKED` to avoid duplicate processing across replicas. Blocking market and
+database calls run outside the API event loop. For a separate worker service, set
+`CHART_WORKER_ENABLED=false` on the API and run:
+
+```sh
+python -m app.services.stock_chart_jobs
+```
+
+Use the same backend environment and Supabase service key. The worker reads each
+user's configured provider key just before generation.
+Jobs run once: shutdown/crash/timeout produces a terminal failure, and retry is
+an explicit user action. An expired job cannot save a result or advance history.
+The completion RPC commits the snapshot and job together, making completion retries
+safe. Queued jobs expire after 20 minutes; running jobs after 10 minutes, with an
+8-minute generation timeout. Monitor failed jobs and worker logs; submit only
+authenticated user requests. The original synchronous endpoint remains for legacy
+clients; the new chart UI uses only the job endpoints.
+
+Validation (without paid provider calls):
+
+```sh
+python -m unittest discover -s tests -p 'test_stock_chart_jobs.py'
+```
+
+Run `supabase/tests/stock_chart_jobs.sql` in a test database with the migrations
+and a test auth user. Its queue/history fixtures roll back.

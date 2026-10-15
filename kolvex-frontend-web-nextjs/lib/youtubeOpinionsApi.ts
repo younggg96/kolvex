@@ -129,6 +129,12 @@ export interface YouTubeOpinionDashboardParams {
 }
 
 const API_PREFIX = "/api/youtube-opinions";
+const dashboardCache = new Map<string, { expires: number; data?: YouTubeOpinionDashboard; request: Promise<YouTubeOpinionDashboard> }>();
+const dashboardCacheMs = 30_000;
+
+export function clearYouTubeDashboardCache() {
+  dashboardCache.clear();
+}
 
 async function apiRequest<T>(
   endpoint: string,
@@ -148,12 +154,11 @@ async function apiRequest<T>(
     throw new Error(data.error || data.detail || `API error: ${response.status}`);
   }
 
+  if (options.method && options.method.toUpperCase() !== "GET") clearYouTubeDashboardCache();
   return data as T;
 }
 
-export async function getYouTubeOpinionDashboard(
-  params: YouTubeOpinionDashboardParams = {}
-): Promise<YouTubeOpinionDashboard> {
+function dashboardEndpoint(params: YouTubeOpinionDashboardParams) {
   const searchParams = new URLSearchParams();
   if (params.ticker) searchParams.set("ticker", params.ticker);
   if (params.channel_id) searchParams.set("channel_id", params.channel_id);
@@ -161,10 +166,39 @@ export async function getYouTubeOpinionDashboard(
   if (params.date_from) searchParams.set("date_from", params.date_from);
   if (params.date_to) searchParams.set("date_to", params.date_to);
   if (params.limit) searchParams.set("limit", String(params.limit));
-  if (params.offset !== undefined) searchParams.set("offset", String(params.offset));
+  if (params.offset) searchParams.set("offset", String(params.offset));
 
   const qs = searchParams.toString();
-  return apiRequest<YouTubeOpinionDashboard>(`/dashboard${qs ? `?${qs}` : ""}`);
+  return `/dashboard${qs ? `?${qs}` : ""}`;
+}
+
+export function getCachedYouTubeOpinionDashboard(params: YouTubeOpinionDashboardParams = {}) {
+  const entry = dashboardCache.get(dashboardEndpoint(params));
+  return entry && entry.expires > Date.now() ? entry.data : undefined;
+}
+
+export function getYouTubeOpinionDashboard(
+  params: YouTubeOpinionDashboardParams = {}
+): Promise<YouTubeOpinionDashboard> {
+  const key = dashboardEndpoint(params);
+  const cached = dashboardCache.get(key);
+  if (cached && cached.expires > Date.now()) return cached.request;
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 20_000);
+  const request = apiRequest<YouTubeOpinionDashboard>(key, { signal: controller.signal }).then((data) => {
+    const entry = dashboardCache.get(key);
+    if (entry?.request === request) {
+      entry.data = data;
+      entry.expires = Date.now() + dashboardCacheMs;
+    }
+    return data;
+  }).catch((error) => {
+    if (dashboardCache.get(key)?.request === request) dashboardCache.delete(key);
+    throw error;
+  }).finally(() => clearTimeout(timeout));
+  if (dashboardCache.size >= 40) dashboardCache.delete(dashboardCache.keys().next().value!);
+  dashboardCache.set(key, { expires: Date.now() + dashboardCacheMs, request });
+  return request;
 }
 
 export interface YouTubeStockDetail {

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { MODEL_CONFIGS, PROVIDER_NAME_TO_ID } from "@/lib/aiModels";
 import { useAvailableProviders } from "@/hooks/useAvailableProviders";
+import type { useChartAiJobs } from "@/hooks/useChartAiJobs";
 import { DEFAULT_TECHNICAL_FOCUS, DEFAULT_DRAWING_FOCUS, type TechnicalFocus } from "@/lib/technicalFocus";
 
 import {
@@ -18,6 +19,7 @@ import {
 } from "react";
 import {
   Activity,
+  AlertCircle,
   Cloud,
   CloudOff,
   Eye,
@@ -52,11 +54,9 @@ import { cn } from "@/lib/utils";
 import CreatorAvatar from "../CreatorAvatar";
 import type { YouTubeOpinion } from "@/lib/youtubeOpinionsApi";
 import {
-  AiAnalysisError,
   formatChangePercent,
   formatPrice,
   formatVolume,
-  getAiTechnicalAnalysis,
   getStockHistory,
   type AiTechnicalAnalysis,
   type PriceBar,
@@ -204,6 +204,9 @@ export interface ChartViewProps {
   savedDrawings?: AiTechnicalAnalysis | null;
   drawingRequest?: number;
   aiBusy?: boolean;
+  aiJobs: ReturnType<typeof useChartAiJobs>;
+  selectedModel: string;
+  onModelChange: (model: string) => void;
   savedAnalysis?: AiTechnicalAnalysis | null;
   snapshotBars?: PriceBar[];
   generationRequest?: number;
@@ -238,6 +241,9 @@ export default function ChartView({
   savedDrawings,
   drawingRequest = 0,
   aiBusy = false,
+  aiJobs,
+  selectedModel,
+  onModelChange,
   savedAnalysis,
   snapshotBars,
   generationRequest = 0,
@@ -271,7 +277,7 @@ export default function ChartView({
   const [draft, setDraft] = useState<Draft | null>(null);
   const [showCalls, setShowCalls] = useState(true);
   const [indicators, setIndicators] = useState<IndicatorKey[]>(defaultIndicators[mode]);
-  const [ai, setAi] = useState<{
+  const [localAi, setAi] = useState<{
     status: "idle" | "loading" | "done" | "error";
     result?: AiTechnicalAnalysis;
     error?: string;
@@ -279,14 +285,24 @@ export default function ChartView({
     status: "idle",
   });
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [selectedModel, setSelectedModel] = useState("");
   const { availableProviders, loading: providersLoading, refresh: refreshProviders } = useAvailableProviders();
   const eligibleModels = MODEL_CONFIGS.filter((model) => availableProviders?.includes(PROVIDER_NAME_TO_ID[model.provider]));
   const modelReady = eligibleModels.some((model) => model.id === selectedModel);
-  const [drawingAi, setDrawingAi] = useState<{ status: "idle" | "loading" | "done" | "error"; error?: string; result?: AiTechnicalAnalysis }>({ status: "idle" });
+  const [localDrawingAi, setDrawingAi] = useState<{ status: "idle" | "loading" | "done" | "error"; error?: string; result?: AiTechnicalAnalysis }>({ status: "idle" });
+  const jobError = (code?: string, operation: "analysis" | "drawings" = "analysis") => {
+    const keys: Record<string, string> = {
+      Unauthorized: "signIn", ai_not_configured: "notConfigured",
+      ai_analysis_timeout: "timeout", ai_job_expired: "jobExpired",
+      ai_job_interrupted: "jobInterrupted", ai_insufficient_bars: "insufficientBars",
+      ai_job_limit: "jobLimit", ai_jobs_unavailable: "jobsUnavailable",
+      ai_submission_unknown: "submissionUnknown",
+    };
+    return t(`youtubeOpinions.ai.${keys[code || ""] || (operation === "analysis" ? "failed" : "drawingsFailed")}`);
+  };
+  const ai = aiJobs.analysis.status === "idle" ? localAi : { ...aiJobs.analysis, error: jobError(aiJobs.analysis.errorCode) };
+  const drawingAi = aiJobs.drawings.status === "idle" ? localDrawingAi : { ...aiJobs.drawings, error: jobError(aiJobs.drawings.errorCode, "drawings") };
   const gesture = useRef<Gesture | null>(null);
   const pointers = useRef(new Map<number, { x: number; y: number }>());
-  const aiRequest = useRef<AbortController | null>(null);
 
   useEffect(() => setIndicators(readIndicators(mode)), [mode]);
 
@@ -313,7 +329,6 @@ export default function ChartView({
     setDraft(null);
     setAi({ status: "idle" });
     setDrawingAi({ status: "idle" });
-    aiRequest.current?.abort();
   }, [symbol]);
 
   useEffect(() => {
@@ -439,25 +454,24 @@ export default function ChartView({
   }, [savedAnalysis]);
   useEffect(() => { setDrawingAi(savedDrawings ? { status: "done", result: savedDrawings } : { status: "idle" }); }, [savedDrawings]);
   useEffect(() => { onAnalysisBusy?.(ai.status === "loading" || drawingAi.status === "loading"); }, [ai.status, drawingAi.status, onAnalysisBusy]);
-  useEffect(() => () => { aiRequest.current?.abort(); }, []);
   const handledGeneration = useRef(0);
   useEffect(() => {
-    if (generationRequest <= handledGeneration.current || !count) return;
+    if (generationRequest <= handledGeneration.current || !count || aiBusy) return;
     handledGeneration.current = generationRequest;
     void runAi("analysis");
     // The request uses the current visible chart window.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [generationRequest, count]);
+  }, [generationRequest, count, aiBusy]);
 
 
   const handledDrawing = useRef(0);
   useEffect(() => {
-    if (drawingRequest <= handledDrawing.current || !count) return;
+    if (drawingRequest <= handledDrawing.current || !count || aiBusy) return;
     handledDrawing.current = drawingRequest;
     void runAi("drawings");
     // Uses the same visible window, independently of text analysis.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [drawingRequest, count]);
+  }, [drawingRequest, count, aiBusy]);
 
   const yRange = useMemo(() => {
     if (!bars?.length) return { lo: 0, hi: 1, maxVolume: 1 };
@@ -769,16 +783,11 @@ export default function ChartView({
       else setDrawingAi({ status: "error", error });
       return;
     }
-    aiRequest.current?.abort();
-    const controller = new AbortController();
-    aiRequest.current = controller;
-    if (operation === "analysis") setAi({ status: "loading" });
-    else setDrawingAi({ status: "loading" });
     const from = bars[Math.max(firstVisible, 0)];
     const to = bars[Math.max(Math.min(lastVisible, count - 1), 0)];
-    try {
-      const result = await getAiTechnicalAnalysis(
-        symbol,
+    if (operation === "analysis") setAi({ status: "idle" });
+    else setDrawingAi({ status: "idle" });
+    await aiJobs.submit(
         {
           ...params,
           ...(operation === "analysis" ? technicalFocus : drawingFocus),
@@ -788,36 +797,18 @@ export default function ChartView({
           view_end: to.date,
           locale: t("common.intlLocale") === "zh-CN" ? "zh" : "en",
         },
-        controller.signal,
       );
-      if (controller.signal.aborted) return;
-      if (operation === "analysis") {
-        setAi({ status: "done", result });
-        onAnalysisChange?.(result);
-      } else {
-        setDrawingAi({ status: "done", result });
-        onDrawingsChange?.(result);
-      }
-    } catch (reason) {
-      if (controller.signal.aborted) return;
-      const status = reason instanceof AiAnalysisError ? reason.status : 0;
-      const message = reason instanceof Error ? reason.message : "";
-      const error = status === 401 ? t("youtubeOpinions.ai.signIn")
-        : message === "ai_not_configured" ? t("youtubeOpinions.ai.notConfigured")
-        : t(operation === "analysis" ? "youtubeOpinions.ai.failed" : "youtubeOpinions.ai.drawingsFailed");
-      if (operation === "analysis") setAi({ status: "error", error });
-      else setDrawingAi({ status: "error", error });
-    }
   }
 
   function clearAi() {
+    aiJobs.clear("analysis");
     setAi({ status: "idle" });
     onAnalysisChange?.(null);
   }
 
   const iconButton = (isActive: boolean) =>
     cn(
-      "inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:pointer-events-none disabled:opacity-40",
+      "inline-flex h-11 w-11 sm:h-8 sm:w-8 shrink-0 items-center justify-center rounded-full transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:pointer-events-none disabled:opacity-40",
       isActive ? "bg-foreground text-background" : "text-muted-foreground hover:bg-muted hover:text-foreground",
     );
   const stat = (label: string, value: string, tone?: string) => (
@@ -925,23 +916,28 @@ export default function ChartView({
 
   const aiControls = (
     <div className={advanced ? "min-w-0" : "mt-3 border-t border-border pt-3"} role="group" aria-label={t("youtubeOpinions.ai.actions")}>
-        <div className="flex flex-wrap items-center gap-2">
+        <div className={cn("grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] items-center gap-2", !advanced && "sm:flex")}>
           <Dialog open={settingsOpen} onOpenChange={(open) => { setSettingsOpen(open); if (open) void refreshProviders(); }}>
             <DialogTrigger asChild>
-              <Button type="button" size="md" variant="outline" className={cn("gap-2", advanced && "w-full")}>
+              <Button type="button" size="sm" variant="ghost" aria-label={t("youtubeOpinions.ai.chartSettings")} title={t("youtubeOpinions.ai.chartSettings")} className={cn("order-3 min-h-11 w-11 p-0 sm:min-h-9", !advanced && "sm:ml-auto sm:w-auto sm:px-3")}>
                 <SlidersHorizontal className="h-4 w-4" aria-hidden="true" />
-                {t("youtubeOpinions.ai.chartSettings")}
+                <span className={advanced ? "sr-only" : "hidden sm:inline"}>{t("youtubeOpinions.ai.chartSettings")}</span>
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-xl" onEscapeKeyDown={(event) => event.stopPropagation()}>
+            <DialogContent layout="sheet" showCloseButton={false} className="flex flex-col" onEscapeKeyDown={(event) => event.stopPropagation()}>
               <DialogHeader>
                 <DialogTitle>{t("youtubeOpinions.ai.chartSettings")}</DialogTitle>
                 <DialogDescription>{t("youtubeOpinions.ai.chartSettingsHint")}</DialogDescription>
               </DialogHeader>
-              <div className="mt-4 min-w-0">
+              <DialogClose asChild>
+                <Button type="button" variant="ghost" size="icon" className="absolute right-2 top-2 min-h-11 min-w-11" aria-label={t("common.close")}>
+                  <X className="h-4 w-4" aria-hidden="true" />
+                </Button>
+              </DialogClose>
+              <div className="mt-2 min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-contain pb-2">
                 <label className="flex min-w-0 w-full flex-col gap-1.5">
                   <span className="text-xs font-medium text-muted-foreground">{t("youtubeOpinions.ai.modelLabel")}</span>
-                  <Select value={modelReady ? selectedModel : ""} onValueChange={setSelectedModel}
+                  <Select value={modelReady ? selectedModel : ""} onValueChange={onModelChange}
                     onOpenChange={(open) => { if (open) void refreshProviders(); }}
                     disabled={providersLoading || aiBusy || ai.status === "loading" || drawingAi.status === "loading"}>
                     <SelectTrigger aria-label={t("youtubeOpinions.ai.selectModel")}>
@@ -956,46 +952,64 @@ export default function ChartView({
                     </SelectContent>
                   </Select>
                 </label>
-                {!providersLoading && !modelReady && <p className="mt-2 text-xs leading-5 text-muted-foreground">
-                  {t(eligibleModels.length ? "youtubeOpinions.ai.selectModel" : "youtubeOpinions.ai.notConfigured")}{" "}
-                  {!eligibleModels.length && <Link href="/dashboard/settings?tab=api-keys" className="underline underline-offset-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">{t("youtubeOpinions.ai.openSettings")}</Link>}
+                {!providersLoading && !modelReady && !eligibleModels.length && <p className="mt-2 text-xs leading-5 text-muted-foreground">
+                  {t("youtubeOpinions.ai.notConfigured")}{" "}
+                  <Link href="/dashboard/settings?tab=api-keys" className="underline underline-offset-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">{t("youtubeOpinions.ai.openSettings")}</Link>
                 </p>}
                 {focusControls}
                 {drawingVersionControls}
               </div>
-              <DialogFooter className="border-t border-border">
+              <DialogFooter className="shrink-0 border-t border-border">
                 <DialogClose asChild><Button type="button">{t("common.close")}</Button></DialogClose>
               </DialogFooter>
             </DialogContent>
           </Dialog>
-          <div className={cn("flex flex-wrap gap-2", advanced && "w-full")}>
-            <Button size="md" className={advanced ? "min-w-0 flex-1" : "w-36"} onClick={() => void runAi("analysis")} aria-busy={ai.status === "loading"}
-              disabled={!loaded || !modelReady || providersLoading || aiBusy || ai.status === "loading" || drawingAi.status === "loading"}
+            <Button size="sm" className="order-1 min-h-11 min-w-0 px-3 sm:min-h-9" onClick={() => modelReady ? void runAi("analysis") : setSettingsOpen(true)} aria-busy={ai.status === "loading"}
+              disabled={!loaded || providersLoading || aiBusy || ai.status === "loading" || drawingAi.status === "loading"}
               title={t("youtubeOpinions.ai.runAnalysis")}>
               {ai.status === "loading" ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <ScanSearch className="h-4 w-4" aria-hidden="true" />}
-              {t(ai.status === "loading" ? "youtubeOpinions.ai.analysisLoading" : "youtubeOpinions.ai.analysisButton")}
+              {t("youtubeOpinions.ai.analysisButton")}
             </Button>
-            <Button size="md" variant="outline" className={advanced ? "min-w-0 flex-1" : "w-36"} onClick={() => void runAi("drawings")} aria-busy={drawingAi.status === "loading"}
-              disabled={!loaded || !modelReady || providersLoading || aiBusy || ai.status === "loading" || drawingAi.status === "loading"}
+            <Button size="sm" variant="outline" className="order-2 min-h-11 min-w-0 px-3 sm:min-h-9" onClick={() => modelReady ? void runAi("drawings") : setSettingsOpen(true)} aria-busy={drawingAi.status === "loading"}
+              disabled={!loaded || providersLoading || aiBusy || ai.status === "loading" || drawingAi.status === "loading"}
               title={t("youtubeOpinions.ai.runDrawings")}>
               {drawingAi.status === "loading" ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <GanttChart className="h-4 w-4" aria-hidden="true" />}
-              {t(drawingAi.status === "loading" ? "youtubeOpinions.ai.drawingLoading" : "youtubeOpinions.ai.button")}
+              {t("youtubeOpinions.ai.button")}
             </Button>
-          </div>
         </div>
 
       </div>
   );
+  const activeJob = aiJobs.analysis.status === "loading" ? aiJobs.analysis : aiJobs.drawings.status === "loading" ? aiJobs.drawings : null;
+  const failedOperation = ai.status === "error" ? "analysis" : drawingAi.status === "error" ? "drawings" : null;
+  const aiStatus = aiJobs.monitorError ? (
+    <div role="alert" className="mt-3 flex flex-wrap items-center gap-2 text-sm leading-6 text-warning">
+      <AlertCircle className="h-4 w-4 shrink-0" aria-hidden="true" />
+      <span className="min-w-0 flex-1">{t("youtubeOpinions.ai.statusUnavailable")}</span>
+      <Button size="sm" variant="ghost" onClick={aiJobs.refresh}>{t("youtubeOpinions.ai.checkStatus")}</Button>
+    </div>
+  ) : activeJob ? (
+    <div role="status" className="mt-3 flex items-start gap-2 text-sm leading-6 text-muted-foreground">
+      <Loader2 className="mt-1 h-4 w-4 shrink-0 animate-spin" aria-hidden="true" />
+      <p>{t(`youtubeOpinions.ai.${activeJob.phase === "submitting" ? "submitting" : activeJob.phase === "queued" ? "queued" : "backgroundRunning"}`)}</p>
+    </div>
+  ) : failedOperation ? (
+    <div role="alert" className="mt-3 flex flex-wrap items-start gap-2 text-sm leading-6 text-negative">
+      <AlertCircle className="mt-1 h-4 w-4 shrink-0" aria-hidden="true" />
+      <p className="min-w-0 flex-1">{failedOperation === "analysis" ? ai.error : drawingAi.error}</p>
+      <Button size="sm" variant="outline" disabled={aiBusy} onClick={() => modelReady ? void runAi(failedOperation) : setSettingsOpen(true)}>
+        {t(modelReady ? "common.retry" : "youtubeOpinions.ai.chartSettings")}
+      </Button>
+    </div>
+  ) : null;
   const aiResults = (<>
-    {drawingAi.status !== "idle" && <section className="mt-5 min-w-0 border-t border-border pt-4" aria-label={t("youtubeOpinions.ai.button")}>
+    {drawingAi.status === "done" && <section className="mt-5 min-w-0 border-t border-border pt-4" aria-label={t("youtubeOpinions.ai.button")}>
           <div className="flex flex-wrap items-start justify-between gap-3">
-            <div className="min-w-0 flex-1" role={drawingAi.status === "error" ? "alert" : "status"}>
-              <p className="text-sm font-medium">{drawingAi.status === "loading" ? t("youtubeOpinions.ai.drawingLoading") : drawingAi.status === "error" ? drawingAi.error : t("youtubeOpinions.ai.drawingsReady")}</p>
-              {drawingAi.status === "done" && drawingAi.result?.model && <p className="mt-1 break-words text-xs leading-5 text-muted-foreground">{t("youtubeOpinions.ai.generatedBy", { model: `${drawingAi.result.provider || ""} / ${drawingAi.result.model}` })}</p>}
-              {drawingAi.status === "error" && drawingAi.error === t("youtubeOpinions.ai.notConfigured") && <Link href="/dashboard/settings?tab=api-keys" className="text-sm underline underline-offset-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">{t("youtubeOpinions.ai.openSettings")}</Link>}
+            <div className="min-w-0 flex-1" role="status">
+              <p className="text-sm font-medium">{t("youtubeOpinions.ai.drawingsReady")}</p>
+              {drawingAi.result?.model && <p className="mt-1 break-words text-xs leading-5 text-muted-foreground">{t("youtubeOpinions.ai.generatedBy", { model: `${drawingAi.result.provider || ""} / ${drawingAi.result.model}` })}</p>}
             </div>
-            {drawingAi.status === "error" && <Button size="sm" variant="outline" disabled={aiBusy} onClick={() => void runAi("drawings")}>{t("youtubeOpinions.ai.retryDrawings")}</Button>}
-            {drawingAi.status === "done" && <Button size="sm" variant="ghost" disabled={aiBusy} onClick={() => { setDrawingAi({ status: "idle" }); onDrawingsChange?.(null); }}>{t("youtubeOpinions.ai.clear")}</Button>}
+            {drawingAi.status === "done" && <Button size="sm" variant="ghost" disabled={aiBusy} onClick={() => { aiJobs.clear("drawings"); setDrawingAi({ status: "idle" }); onDrawingsChange?.(null); }}>{t("youtubeOpinions.ai.clear")}</Button>}
           </div>
           {drawingAi.status === "done" && drawingAi.result?.setup && <AiDrawingSetup setup={drawingAi.result.setup} t={t} />}
           {drawingAi.status === "done" && drawingAi.result && <AiPriceActionSignals result={drawingAi.result} formatDate={formatDate} t={t} />}
@@ -1003,7 +1017,7 @@ export default function ChartView({
             {t("youtubeOpinions.ai.focus.unavailable")}：{drawingAi.result.findings.filter(item => item.status === "unavailable").map(item => t(`youtubeOpinions.ai.focus.categories.${item.id}`)).join(" / ")}
           </p>}
         </section>}
-    {ai.status !== "idle" && (
+    {ai.status === "done" && (
           <AiAnalysisPanel
             state={ai}
             busy={aiBusy}
@@ -1039,6 +1053,8 @@ export default function ChartView({
           </div>
         </div>
       )}
+
+      {advanced && <div className="lg:hidden">{aiStatus}</div>}
 
       <div className={cn("flex shrink-0 items-start gap-3", advanced && "mt-1")}>
         <div
@@ -1094,14 +1110,31 @@ export default function ChartView({
         )}
       </div>
 
-      {!advanced && aiControls}
+      {!advanced && <>{aiControls}{aiStatus}</>}
 
       <div
         role="toolbar"
         aria-label={t("youtubeOpinions.drawTools")}
-        className={cn("flex shrink-0 items-center gap-1 overflow-x-auto border-b border-border", advanced ? "mt-1 pb-1" : "mt-3 pb-2")}
+        className={cn("flex shrink-0 flex-wrap items-center gap-1 overflow-x-auto border-b border-border sm:flex-nowrap", advanced ? "mt-1 pb-1" : "mt-3 pb-2")}
       >
-        {tools.map((item) => {
+        <Popover>
+          <PopoverTrigger asChild>
+            <button type="button" aria-label={t("youtubeOpinions.drawTools")} title={t("youtubeOpinions.drawTools")} className={cn(iconButton(drawing), "sm:hidden")}>
+              {(() => { const Icon = tools.find(item => item.value === tool)?.icon || MousePointer2; return <Icon className="h-4 w-4" />; })()}
+            </button>
+          </PopoverTrigger>
+          <PopoverContent align="start" className="grid w-64 max-w-[calc(100vw-32px)] grid-cols-2 gap-1 p-2">
+            {tools.map(item => {
+              const Icon = item.icon;
+              return <button key={item.value} type="button" aria-pressed={tool === item.value}
+                className={cn("flex min-h-11 items-center gap-2 rounded-lg px-2 text-left text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary", tool === item.value ? "bg-muted font-semibold" : "hover:bg-muted")}
+                onClick={() => { setTool(item.value); setDraft(null); if (item.value !== "cursor") setSelectedId(null); }}>
+                <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />{t(`youtubeOpinions.${item.label}`)}
+              </button>;
+            })}
+          </PopoverContent>
+        </Popover>
+        <div className="hidden items-center gap-1 sm:flex">{tools.map((item) => {
           const Icon = item.icon;
           return (
             <button
@@ -1120,9 +1153,16 @@ export default function ChartView({
               <Icon className="h-4 w-4" />
             </button>
           );
-        })}
-        <span className="mx-1 h-5 w-px shrink-0 bg-border" aria-hidden="true" />
-        <div role="radiogroup" aria-label={t("youtubeOpinions.drawColor")} className="flex shrink-0 items-center gap-0.5">
+        })}</div>
+        <span className="mx-1 hidden h-5 w-px shrink-0 bg-border sm:block" aria-hidden="true" />
+        <Popover>
+          <PopoverTrigger asChild>
+            <button type="button" aria-label={t("youtubeOpinions.drawColor")} title={t("youtubeOpinions.drawColor")} className={iconButton(false)}>
+              <span className="h-4 w-4 rounded-full ring-1 ring-inset ring-foreground/20" style={{ backgroundColor: selected?.color ?? color }} />
+            </button>
+          </PopoverTrigger>
+          <PopoverContent align="start" className="w-auto p-2">
+        <div role="radiogroup" aria-label={t("youtubeOpinions.drawColor")} className="flex shrink-0 items-center gap-1">
           {drawingColors.map((value, index) => {
             const isCurrent = (selected?.color ?? color) === value;
             return (
@@ -1133,7 +1173,7 @@ export default function ChartView({
                 aria-checked={isCurrent}
                 aria-label={`${t("youtubeOpinions.drawColor")} ${index + 1}`}
                 onClick={() => pickColor(value)}
-                className="inline-flex h-8 w-6 items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                className="inline-flex h-11 w-11 items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
               >
                 <span
                   className={cn(
@@ -1146,7 +1186,9 @@ export default function ChartView({
             );
           })}
         </div>
-        <span className="mx-1 h-5 w-px shrink-0 bg-border" aria-hidden="true" />
+          </PopoverContent>
+        </Popover>
+        <span className="mx-1 hidden h-5 w-px shrink-0 bg-border sm:block" aria-hidden="true" />
         <button
           type="button"
           title={t("youtubeOpinions.magnet")}
@@ -1208,7 +1250,7 @@ export default function ChartView({
             ))}
           </PopoverContent>
         </Popover>
-        <div className="ml-auto flex shrink-0 items-center gap-1">
+        <div className="ml-auto flex w-full shrink-0 items-center justify-end gap-1 sm:w-auto">
           <button
             type="button"
             title={t("youtubeOpinions.zoomIn")}
@@ -1692,7 +1734,7 @@ export default function ChartView({
       </div>
       </div>
       {advanced && <aside aria-label={t("youtubeOpinions.ai.actions")} className="hidden min-h-0 w-72 shrink-0 overflow-y-auto overscroll-contain border-l border-border pl-4 lg:block">
-        {aiControls}{aiResults}
+        {aiControls}{aiStatus}{aiResults}
       </aside>}
     </div>
   );

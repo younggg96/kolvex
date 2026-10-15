@@ -482,9 +482,17 @@ class YouTubeStockOpinionService:
         )
         await self._fill_missing_avatars(rows)
 
+        stocks = self._build_stock_summaries(rows)
+        if stocks and (channel_id or sentiment or date_from or date_to):
+            # Participation is a stock-wide count, even inside one creator's
+            # stock list. Opinion totals and scores still describe the filters.
+            creator_counts = self._stock_creator_counts([stock["ticker"] for stock in stocks])
+            for stock in stocks:
+                stock["creator_count"] = creator_counts.get(stock["ticker"], 0)
+
         return {
             "summary": self._build_summary(rows),
-            "stocks": self._build_stock_summaries(rows),
+            "stocks": stocks,
             "creators": self._build_creator_summaries(rows),
             "daily": self._build_daily_summaries(rows),
             "changes": self._build_daily_changes(rows),
@@ -852,6 +860,29 @@ class YouTubeStockOpinionService:
             if result.count is None and len(page) < 1000:
                 break
         return rows
+
+    def _stock_creator_counts(self, tickers: List[str]) -> Dict[str, int]:
+        creators: Dict[str, set] = defaultdict(set)
+        offset = 0
+        while tickers:
+            result = (
+                self.supabase.table(TABLE_NAME)
+                .select("ticker,channel_id", count="exact")
+                .in_("ticker", tickers)
+                .order("id")
+                .range(offset, offset + 999)
+                .execute()
+            )
+            page = result.data or []
+            for row in page:
+                if row.get("channel_id"):
+                    creators[row["ticker"]].add(row["channel_id"])
+            offset += len(page)
+            if not page or (result.count is not None and offset >= result.count):
+                break
+            if result.count is None and len(page) < 1000:
+                break
+        return {ticker: len(channels) for ticker, channels in creators.items()}
 
     def _build_summary(self, rows: List[Dict[str, Any]]) -> Dict[str, Any]:
         tickers = {row["ticker"] for row in rows if row.get("ticker")}

@@ -1,7 +1,7 @@
 "use client";
 
 import { useId, useRef, useState } from "react";
-import { SlidersHorizontal, Plus, X } from "lucide-react";
+import { SlidersHorizontal, Plus, X, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
@@ -25,6 +25,8 @@ export default function TechnicalFocusSelector({ value: savedValue, onChange: sa
   const value = inline ? savedValue : draftValue;
   const onChange = inline ? saveValue : setDraftValue;
   const defaults = drawings ? DEFAULT_DRAWING_FOCUS : DEFAULT_TECHNICAL_FOCUS;
+  const commonCategories = new Set<string>(drawings ? DEFAULT_DRAWING_FOCUS.categories : ["trend", "momentum", "levels", "structure", "volume", "volatility", "scenarios", "invalidation"]);
+  const extraCount = value.categories.filter(key => !commonCategories.has(key)).length;
   const title = t(drawings ? "youtubeOpinions.ai.focus.drawingTitle" : "youtubeOpinions.ai.focus.title");
   const addButton = useRef<HTMLButtonElement>(null);
   const [draft, setDraft] = useState("");
@@ -48,11 +50,11 @@ export default function TechnicalFocusSelector({ value: savedValue, onChange: sa
     requestAnimationFrame(() => addButton.current?.focus());
   }
 
-  function categoryOptions(limited: boolean) {
-    return (drawings ? DRAWING_CATEGORIES : TECHNICAL_CATEGORIES).filter(key => limitedCategories.has(key) === limited).map(key => {
+  function categoryOptions(group: "common" | "extra" | "limited") {
+    return (drawings ? DRAWING_CATEGORIES : TECHNICAL_CATEGORIES).filter(key => group === "common" ? commonCategories.has(key) : group === "limited" ? limitedCategories.has(key) : !commonCategories.has(key) && !limitedCategories.has(key)).map(key => {
       const selected = value.categories.includes(key);
       return (
-        <label key={key} htmlFor={`${id}-${key}`} className="flex min-h-10 min-w-0 cursor-pointer items-center gap-2.5 py-1 text-sm text-foreground has-[:disabled]:cursor-default has-[:disabled]:opacity-50">
+        <label key={key} htmlFor={`${id}-${key}`} className="flex min-h-11 min-w-0 cursor-pointer items-center gap-2.5 py-1 text-sm text-foreground has-[:disabled]:cursor-default has-[:disabled]:opacity-50">
           <Checkbox id={`${id}-${key}`} checked={selected} disabled={disabled || (selected && count === 1)}
             onCheckedChange={() => onChange({ ...value, categories: selected ? value.categories.filter(item => item !== key) : [...value.categories, key] })} />
           <span>{t(`youtubeOpinions.ai.focus.categories.${key}`)}</span>
@@ -64,14 +66,19 @@ export default function TechnicalFocusSelector({ value: savedValue, onChange: sa
   const editor = (
       <fieldset disabled={disabled} className="min-w-0 pb-4 pt-1">
         <legend className="sr-only">{title}</legend>
-        <div className="grid grid-cols-2 gap-x-4 sm:grid-cols-3">{categoryOptions(false)}</div>
-        {!drawings && <div className="mt-5 border-t border-border pt-4">
-          <h4 className="mb-2 text-sm font-medium">
-            {t("youtubeOpinions.ai.focus.more")}
-          </h4>
-          <p className="mb-1 text-xs leading-5 text-muted-foreground">{t("youtubeOpinions.ai.focus.limits")}</p>
-          <div className="grid grid-cols-2 gap-x-4 sm:grid-cols-3">{categoryOptions(true)}</div>
-        </div>}
+        <div className="grid grid-cols-2 gap-x-4 sm:grid-cols-3">{categoryOptions("common")}</div>
+        <details className="group/topics mt-3 border-t border-border">
+          <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary [&::-webkit-details-marker]:hidden">
+            {t("youtubeOpinions.ai.focus.moreTopics")}
+            {extraCount > 0 && <span className="text-xs font-normal text-muted-foreground">{t("youtubeOpinions.ai.focus.selectedTopics", { count: String(extraCount) })}</span>}
+            <ChevronDown className="ml-auto h-4 w-4 text-muted-foreground group-open/topics:rotate-180" aria-hidden="true" />
+          </summary>
+          <div className="grid grid-cols-2 gap-x-4 sm:grid-cols-3">{categoryOptions("extra")}</div>
+          {!drawings && <div className="mt-3 border-t border-border pt-3">
+            <p className="mb-1 text-xs leading-5 text-muted-foreground">{t("youtubeOpinions.ai.focus.limits")}</p>
+            <div className="grid grid-cols-2 gap-x-4 sm:grid-cols-3">{categoryOptions("limited")}</div>
+          </div>}
+        </details>
         {!drawings && value.custom_scenarios.length > 0 && (
           <ul className="mt-3 space-y-1">
             {value.custom_scenarios.map((text, index) => (
@@ -129,8 +136,7 @@ export default function TechnicalFocusSelector({ value: savedValue, onChange: sa
       </fieldset>
   );
 
-  if (inline) return <section className="min-w-0">
-    <h3 className="text-sm font-medium">{title}</h3>
+  if (inline) return <section className="min-w-0" aria-label={title}>
     <p className="mt-1 text-xs leading-5 text-muted-foreground">{t(drawings ? "youtubeOpinions.ai.focus.drawingHint" : "youtubeOpinions.ai.focus.hint")}</p>
     {editor}
   </section>;

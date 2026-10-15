@@ -20,7 +20,6 @@ import {
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Skeleton } from "@/components/ui/skeleton";
 import CompanyLogo from "@/components/ui/company-logo";
 import {
   Select,
@@ -34,6 +33,8 @@ import { useTranslation } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import {
   getYouTubeOpinionDashboard,
+  getCachedYouTubeOpinionDashboard,
+  clearYouTubeDashboardCache,
   getYouTubeUploadCoverage,
   type YouTubeCreatorSummary,
   type YouTubeOpinionDashboard,
@@ -44,6 +45,7 @@ import CreatorAvatar from "./CreatorAvatar";
 import CreatorProfileDialog from "./CreatorProfileDialog";
 import OpinionDateRangePicker from "./OpinionDateRangePicker";
 import OpinionCard from "./OpinionCard";
+import OtherCreatorOpinions from "./OtherCreatorOpinions";
 import OpinionDistribution from "./OpinionDistribution";
 import OpinionStrength from "./OpinionStrength";
 import PriceChart from "./PriceChart";
@@ -159,6 +161,8 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
   const [moreLoading, setMoreLoading] = useState(false);
   const [detailError, setDetailError] = useState("");
   const [search, setSearch] = useState("");
+  const [showAllCreatorStocks, setShowAllCreatorStocks] = useState(false);
+  const creatorOverview = Boolean(route.creator && !route.ticker);
   const [toneFilter, setToneFilter] = useState<DirectoryTone>("all");
   const [sortBy, setSortBy] = useState<DirectorySort>("latest");
   const [revision, setRevision] = useState(0);
@@ -167,21 +171,30 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
   const [historyView, setHistoryView] = useState<HistoryView>("videos");
   const [chartView, setChartView] = useState<ChartView>("price");
   const detailRequest = useRef(0);
+  const navigationRequest = useRef(0);
+  const [navigating, setNavigating] = useState(false);
   const scrollContainer = useRef<HTMLDivElement>(null);
   const inDetail = Boolean(route.ticker || route.creator);
   const held = useHeldTickers();
 
   useEffect(() => {
+    const invalidateNavigation = () => { navigationRequest.current++; };
     const sync = () => {
+      navigationRequest.current++;
+      setNavigating(false);
       setRoute(allStocks ? { tab: "stocks" } : readRoute());
       setFilters(emptyFilters);
       setSearch("");
+      setShowAllCreatorStocks(false);
       scrollContainer.current?.scrollTo({ top: 0 });
     };
     sync();
     setReady(true);
     window.addEventListener("popstate", sync);
-    return () => window.removeEventListener("popstate", sync);
+    return () => {
+      invalidateNavigation();
+      window.removeEventListener("popstate", sync);
+    };
   }, [allStocks]);
 
   useEffect(() => {
@@ -226,7 +239,7 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
   useEffect(() => {
     let active = true;
     if (lastContextKey.current !== contextKey) {
-      setContext(null);
+      setContext(getCachedYouTubeOpinionDashboard({ ticker: route.ticker, channel_id: route.creator, limit: pageSize }) || null);
       lastContextKey.current = contextKey;
     }
     setContextError("");
@@ -236,7 +249,7 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
       channel_id: route.creator,
       date_from: filters.from || undefined,
       date_to: filters.to || undefined,
-      limit: 1,
+      limit: pageSize,
     })
       .then((result) => {
         if (active) setContext(result);
@@ -252,15 +265,23 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
   useEffect(() => {
     const request = ++detailRequest.current;
     let active = true;
-    setDetail(null);
-    setOpinions([]);
+    const cached = getCachedYouTubeOpinionDashboard({
+      ticker: route.ticker,
+      channel_id: route.creator,
+      sentiment: filters.sentiment === "all" ? undefined : filters.sentiment,
+      date_from: filters.from || undefined,
+      date_to: filters.to || undefined,
+      limit: pageSize,
+    });
+    setDetail(cached || null);
+    setOpinions(cached?.latest || []);
     setDetailError("");
     setMoreLoading(false);
     if (!ready || !inDetail) {
       setLoading(false);
       return;
     }
-    setLoading(true);
+    setLoading(!cached);
     getYouTubeOpinionDashboard({
       ticker: route.ticker,
       channel_id: route.creator,
@@ -290,19 +311,33 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
     };
   }, [ready, inDetail, route.ticker, route.creator, filters, revision]);
 
-  function navigate(next: Route) {
+  async function navigate(next: Route) {
+    const request = ++navigationRequest.current;
+    if (next.creator || next.ticker) {
+      setNavigating(true);
+      try {
+        await getYouTubeOpinionDashboard({ ticker: next.ticker, channel_id: next.creator, limit: pageSize });
+      } catch {
+        // Open the destination with its normal inline retry state on failure.
+      }
+      if (request !== navigationRequest.current) return;
+    }
+    setNavigating(false);
     if (allStocks) {
       router.push(routeHref(next));
       return;
     }
     detailRequest.current++;
-    setDetail(null);
-    setContext(null);
-    setOpinions([]);
-    setLoading(Boolean(next.creator || next.ticker));
+    const prepared = getCachedYouTubeOpinionDashboard({ ticker: next.ticker, channel_id: next.creator, limit: pageSize });
+    setDetail(prepared || null);
+    setContext(prepared || null);
+    lastContextKey.current = `${next.ticker || ""}|${next.creator || ""}`;
+    setOpinions(prepared?.latest || []);
+    setLoading(!prepared && Boolean(next.creator || next.ticker));
     window.history.pushState(null, "", routeHref(next));
     setRoute(next);
     setSearch("");
+    setShowAllCreatorStocks(false);
     setToneFilter("all");
     if (next.tab === "creators" && sortBy === "creators") setSortBy("opinions");
     setFilters(emptyFilters);
@@ -352,7 +387,7 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
     catalogue?.stocks.find((item) => item.ticker === route.ticker) ||
     context?.stocks.find((item) => item.ticker === route.ticker);
   const title = route.creator
-    ? creator?.channel_title || route.creator
+    ? creator?.channel_title || creator?.channel_handle || c("Creator opinions", "博主观点")
     : route.ticker;
   const query = search.trim().toLocaleLowerCase();
   const stocks = (route.creator ? context?.stocks : catalogue?.stocks) || [];
@@ -422,7 +457,10 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
   const hasMore =
     detail?.pagination?.has_more ??
     Boolean(detail && opinions.length < detail.summary.total_opinions);
-  const refresh = () => setRevision((value) => value + 1);
+  const refresh = () => {
+    clearYouTubeDashboardCache();
+    setRevision((value) => value + 1);
+  };
   const root: Route = { tab: route.tab };
   const back =
     route.creator && route.ticker
@@ -500,7 +538,12 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
         : "text-foreground/80 hover:text-foreground",
     );
 
-  const shownStocks = !inDetail && !allStocks ? visibleStocks.slice(0, 10) : visibleStocks;
+  const shownStocks = creatorOverview && !showAllCreatorStocks
+    ? visibleStocks.slice(0, 5)
+    : !inDetail && !allStocks ? visibleStocks.slice(0, 10) : visibleStocks;
+  const latestCreatorVideo = creatorOverview
+    ? groupOpinionsByVideo(context?.latest || [])[0]
+    : undefined;
 
   const stockRows = (
     <div className="min-w-0">
@@ -583,6 +626,13 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
     </div>
   );
 
+  const loadingBlock = (
+    <div role="status" className="flex min-h-20 items-center gap-2 py-6 text-sm text-muted-foreground">
+      <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" aria-hidden="true" />
+      <span>{t("common.loadingStatus")}</span>
+    </div>
+  );
+
   const changeList = (
     <section className="min-w-0">
       <h2 className="text-base font-semibold">
@@ -591,7 +641,7 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
       <p className="mt-1 text-xs text-foreground/75">
         {t("youtubeOpinions.comparedWithPrevious")}
       </p>
-      {catalogueError ? <EmptyLine text={t("youtubeOpinions.directoryLoadFailed")} action={{ label: t("common.retry"), onClick: refresh }} alert /> : !catalogue ? <Skeleton className="mt-3 h-20 w-full" /> : !notableChanges.length ? <EmptyLine text={c("No opinion changes yet", "暂无观点变化")} /> : <ul className="mt-3">
+      {catalogueError ? <EmptyLine text={t("youtubeOpinions.directoryLoadFailed")} action={{ label: t("common.retry"), onClick: refresh }} alert /> : !catalogue ? loadingBlock : !notableChanges.length ? <EmptyLine text={c("No opinion changes yet", "暂无观点变化")} /> : <ul className="mt-3">
         {notableChanges.map((change) => (
           <li key={change.ticker}>
             <ExplorerLink
@@ -618,20 +668,6 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
         ))}
       </ul>}
     </section>
-  );
-
-  const loadingBlock = (
-    <div role="status" className="space-y-3 py-6" aria-label={t("common.loadingStatus")}>
-      {[0, 1, 2, 3, 4].map((index) => (
-        <div key={index} className="flex items-center justify-between gap-4 py-2">
-          <div className="space-y-2">
-            <Skeleton className="h-4 w-20" />
-            <Skeleton className="h-3 w-36" />
-          </div>
-          <Skeleton className="h-4 w-24" />
-        </div>
-      ))}
-    </div>
   );
 
   const tabSwitcher = (
@@ -750,8 +786,17 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
     >
       <div
         ref={scrollContainer}
-        className="min-h-0 min-w-0 flex-1 overflow-y-auto"
+        className="relative min-h-0 min-w-0 flex-1 overflow-y-auto"
+        aria-busy={navigating}
       >
+        {navigating && (
+          <div role="status" className="sticky top-0 z-20 flex h-0 justify-end overflow-visible px-4 md:px-8">
+            <span className="mt-2 inline-flex items-center gap-2 rounded-full border border-border bg-background px-3 py-1.5 text-xs text-muted-foreground shadow-sm">
+              <Loader2 className="h-3.5 w-3.5 animate-spin motion-reduce:animate-none" aria-hidden="true" />
+              {t("common.loadingStatus")}
+            </span>
+          </div>
+        )}
         <div className="mx-auto w-full min-w-0 px-4 pb-16 pt-5 md:px-8 md:pt-7">
           {!inDetail && !allStocks && (
             <div className="mb-5 min-w-0 sm:mb-6">{tabSwitcher}</div>
@@ -947,7 +992,8 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
               <TabsContent value={route.tab} className="mt-0 min-w-0">
                 <div
                   className={cn(
-                    "grid min-w-0 gap-x-12 xl:grid-cols-[minmax(0,1fr)_300px] xl:grid-rows-[auto_1fr]",
+                    "grid min-w-0 gap-x-12",
+                    !creatorOverview && "xl:grid-cols-[minmax(0,1fr)_300px] xl:grid-rows-[auto_1fr]",
                     focused ? "gap-y-8" : "gap-y-10",
                   )}
                 >
@@ -1008,11 +1054,7 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
                         alert
                       />
                     ) : !context ? (
-                      <div className="mt-6 space-y-4" role="status" aria-label={t("common.loadingStatus")}>
-                        <Skeleton className={focused ? "h-6 w-48" : "h-8 w-40"} />
-                        {!focused && <Skeleton className="h-4 w-56" />}
-                        {!focused && <Skeleton className="h-[150px] w-full sm:h-[190px]" />}
-                      </div>
+                      loadingBlock
                     ) : focused ? (
                       <div className="mt-4 flex flex-wrap items-baseline gap-x-3 gap-y-1" aria-live="polite">
                         <p className={cn("text-xl font-semibold tracking-[-0.01em]", toneText[headline.tone])}>
@@ -1121,71 +1163,16 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
                     )}
                   </div>
 
-                  <aside
-                    className={cn(
-                      "min-w-0 space-y-10 xl:col-start-2 xl:row-span-2 xl:row-start-1 xl:sticky xl:top-6 xl:self-start",
-                      focused && "order-last space-y-8 border-t border-border pt-8 xl:order-none xl:border-0 xl:pt-1",
-                    )}
-                  >
-                    {focused && context && (
-                      <>
-                        <section className="min-w-0">
-                          <h2 className="text-sm font-semibold">{t("youtubeOpinions.strengthTrend")}</h2>
-                          {chartPoints.length > 1 ? (
-                            <div className="mt-3">
-                              <StrengthChart
-                                compact
-                                points={chartPoints}
-                                tone={overallTone}
-                                label={t("youtubeOpinions.chartLabel")}
-                                formatDate={formatDay}
-                                onScrub={setScrub}
-                              />
-                            </div>
-                          ) : (
-                            <p className="mt-2 text-[13px] leading-5 text-foreground/75">
-                              {t("youtubeOpinions.trendNeedsMore")}
-                            </p>
-                          )}
-                          <div className="mt-3">{rangeControls(true)}</div>
-                        </section>
-                        {overview && overview.total_opinions > 0 && (
-                          <OpinionDistribution summary={overview} compact />
-                        )}
-                      </>
-                    )}
-                    {route.creator && !route.ticker && (
-                      <section className="min-w-0">
-                        <h2 className="text-base font-semibold">
-                          {t("youtubeOpinions.stocksDiscussed")}
-                        </h2>
-                        {(context?.stocks.length || 0) > 6 && (
-                          <div className="relative mt-3">
-                            <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                            <Input
-                              aria-label={t("youtubeOpinions.searchStocks")}
-                              value={search}
-                              onChange={(event) => setSearch(event.target.value)}
-                              placeholder={t("youtubeOpinions.searchTicker")}
-                              className="h-10 rounded-full pl-10 text-base sm:text-sm"
-                            />
-                          </div>
-                        )}
-                        <div className="mt-2">{context ? stockRows : loadingBlock}</div>
-                      </section>
-                    )}
-                    {!route.creator && (
-                      <section className="min-w-0">
-                        <h2 className="text-base font-semibold">
-                          {t("youtubeOpinions.creatorsDiscussing")}
-                        </h2>
-                        <div className="mt-2">
-                          {context ? creatorRows(context.creators) : loadingBlock}
-                        </div>
-                      </section>
-                    )}
-                    {route.creator && !route.ticker && changeList}
-                  </aside>
+                  {creatorOverview && (
+                    <section className="min-w-0" aria-labelledby="creator-detail-latest-title">
+                      <h2 id="creator-detail-latest-title" className="text-lg font-semibold">{c("Latest opinions", "最新观点")}</h2>
+                      {contextError ? (
+                        <EmptyLine text={t("youtubeOpinions.opinionsLoadFailed")} action={{ label: t("common.retry"), onClick: refresh }} alert />
+                      ) : !context ? loadingBlock : latestCreatorVideo ? (
+                        <VideoOpinionCard key={latestCreatorVideo.videoId} group={latestCreatorVideo} t={t} onStock={onStock} />
+                      ) : <EmptyLine text={t("youtubeOpinions.noOpinionsYet")} />}
+                    </section>
+                  )}
 
                   <section className="min-w-0 xl:col-start-1">
                     <div className="flex flex-col gap-3 border-b border-border pb-3 sm:flex-row sm:items-center sm:justify-between">
@@ -1278,7 +1265,98 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
                         )}
                       </>
                     )}
+                    {route.ticker && route.creator && (
+                      <OtherCreatorOpinions
+                        key={`${route.ticker}:${route.creator}`}
+                        ticker={route.ticker}
+                        currentCreator={route.creator}
+                        onCreator={(channelId) => navigate({ tab: "creators", creator: channelId, ticker: route.ticker })}
+                      />
+                    )}
                   </section>
+                  <aside
+                    className={cn(
+                      "min-w-0 space-y-10",
+                      !creatorOverview && "xl:col-start-2 xl:row-span-2 xl:row-start-1 xl:sticky xl:top-6 xl:self-start",
+                      focused && "order-last space-y-8 border-t border-border pt-8 xl:order-none xl:border-0 xl:pt-1",
+                    )}
+                  >
+                    {focused && context && (
+                      <>
+                        <section className="min-w-0">
+                          <h2 className="text-sm font-semibold">{t("youtubeOpinions.strengthTrend")}</h2>
+                          {chartPoints.length > 1 ? (
+                            <div className="mt-3">
+                              <StrengthChart
+                                compact
+                                points={chartPoints}
+                                tone={overallTone}
+                                label={t("youtubeOpinions.chartLabel")}
+                                formatDate={formatDay}
+                                onScrub={setScrub}
+                              />
+                            </div>
+                          ) : (
+                            <p className="mt-2 text-[13px] leading-5 text-foreground/75">
+                              {t("youtubeOpinions.trendNeedsMore")}
+                            </p>
+                          )}
+                          <div className="mt-3">{rangeControls(true)}</div>
+                        </section>
+                        {overview && overview.total_opinions > 0 && (
+                          <OpinionDistribution summary={overview} compact />
+                        )}
+                      </>
+                    )}
+                    {route.creator && !route.ticker && (
+                      <section className="min-w-0">
+                        <h2 className="text-base font-semibold">
+                          {c("Most discussed stocks", "讨论最多的股票")}
+                        </h2>
+                        {showAllCreatorStocks && (
+                          <div className="relative mt-3">
+                            <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                            <Input
+                              aria-label={t("youtubeOpinions.searchStocks")}
+                              value={search}
+                              onChange={(event) => setSearch(event.target.value)}
+                              placeholder={t("youtubeOpinions.searchTicker")}
+                              className="h-10 rounded-full pl-10 text-base sm:text-sm"
+                            />
+                          </div>
+                        )}
+                        <div id="creator-discussed-stocks" className="mt-2">{context ? stockRows : loadingBlock}</div>
+                        {(context?.stocks.length || 0) > 5 && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="mt-4"
+                            aria-expanded={showAllCreatorStocks}
+                            aria-controls="creator-discussed-stocks"
+                            onClick={() => {
+                              setShowAllCreatorStocks((previous) => !previous);
+                              setSearch("");
+                            }}
+                          >
+                            {showAllCreatorStocks
+                              ? c("Show top 5", "收起，仅显示前 5 只")
+                              : c("View all stocks", "查看全部股票")}
+                          </Button>
+                        )}
+                      </section>
+                    )}
+                    {!route.creator && (
+                      <section className="min-w-0">
+                        <h2 className="text-base font-semibold">
+                          {t("youtubeOpinions.creatorsDiscussing")}
+                        </h2>
+                        <div className="mt-2">
+                          {context ? creatorRows(context.creators) : loadingBlock}
+                        </div>
+                      </section>
+                    )}
+                    {route.creator && !route.ticker && changeList}
+                  </aside>
                 </div>
               </TabsContent>
             )}

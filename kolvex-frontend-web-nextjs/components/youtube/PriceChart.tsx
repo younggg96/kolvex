@@ -15,6 +15,7 @@ import { analysisDrawings } from "./aiDrawings";
 import ChartView from "./chart/ChartView";
 import TechnicalFocusSelector from "./chart/TechnicalFocusSelector";
 import { DEFAULT_TECHNICAL_FOCUS, DEFAULT_DRAWING_FOCUS, type TechnicalFocus } from "@/lib/technicalFocus";
+import { useChartAiJobs } from "@/hooks/useChartAiJobs";
 import type { StrengthPoint } from "./StrengthChart";
 
 type Translate = (key: string, params?: Record<string, string>) => string;
@@ -89,10 +90,7 @@ export default function PriceChart({
   const [aiOverrides, setAiOverrides] = useState<Drawing[] | null>(null);
   const [drawingFocus, setDrawingFocus] = useState<TechnicalFocus>(DEFAULT_DRAWING_FOCUS);
   const [technicalFocus, setTechnicalFocus] = useState<TechnicalFocus>(DEFAULT_TECHNICAL_FOCUS);
-  const [compactBusy, setCompactBusy] = useState(false);
-  const [advancedBusy, setAdvancedBusy] = useState(false);
-  const analysisBusy = compactBusy || advancedBusy;
-  useEffect(() => { onAnalysisBusy?.(analysisBusy); }, [analysisBusy, onAnalysisBusy]);
+  const [selectedModel, setSelectedModel] = useState("");
   const selectedId = versions.selected?.id;
   useEffect(() => { setHiddenAnalysis(false); }, [selectedId]);
   const selectedDrawingId = drawingVersions.selected?.id;
@@ -127,6 +125,19 @@ export default function PriceChart({
     setHiddenDrawings(false); setViewingHistory("drawings");
     void loadDrawingVersions(0, result.version_id);
   }, [loadDrawingVersions]);
+  const jobCompleted = useCallback((operation: "analysis" | "drawings", result: AiTechnicalAnalysis) => {
+    if (operation === "analysis") analysisChanged(result);
+    else drawingsChanged(result);
+  }, [analysisChanged, drawingsChanged]);
+  const aiJobs = useChartAiJobs(symbol, jobCompleted);
+  const analysisBusy = aiJobs.busy;
+  useEffect(() => { onAnalysisBusy?.(analysisBusy); }, [analysisBusy, onAnalysisBusy]);
+  useEffect(() => {
+    if (aiJobs.analysis.status === "done" && aiJobs.analysis.result?.version_id === selectedId) aiJobs.clear("analysis");
+    if (aiJobs.drawings.status === "done" && aiJobs.drawings.result?.version_id === selectedDrawingId) aiJobs.clear("drawings");
+    // Once history owns the saved result, its version selector owns rendering.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedId, selectedDrawingId, aiJobs.analysis.result?.version_id, aiJobs.drawings.result?.version_id]);
   const selectedHistory = viewingHistory === "drawings" ? drawingVersions : versions;
   const historicalSnapshot = selectedHistory.selected?.id !== selectedHistory.current?.id ? selectedHistory.selected : null;
   const selectAnalysis = versions.select;
@@ -141,7 +152,6 @@ export default function PriceChart({
   const [history, setHistory] = useState<Drawing[][]>([]);
   const [events, setEvents] = useState<YouTubeOpinion[]>([]);
   const [advancedOpen, setAdvancedOpen] = useState(false);
-  useEffect(() => { if (!advancedOpen) setAdvancedBusy(false); }, [advancedOpen]);
   const escapeRef = useRef<(() => boolean) | null>(null);
   const advancedTriggerRef = useRef<HTMLElement | null>(null);
   const params = historyParams(range, from, to, opinions[0]?.date);
@@ -194,6 +204,9 @@ export default function PriceChart({
     onDrawingsChange: drawingsChanged,
     savedDrawings: selectedDrawings,
     aiBusy: analysisBusy,
+    aiJobs,
+    selectedModel,
+    onModelChange: setSelectedModel,
     savedAnalysis: selectedAnalysis,
     snapshotBars: historicalSnapshot?.bars,
     technicalFocus,
@@ -215,7 +228,7 @@ export default function PriceChart({
 
   return (
     <>
-      <ChartView mode="compact" onAnalysisBusy={setCompactBusy} generationRequest={generationRequest} drawingRequest={drawingRequest} {...shared} onOpenAdvanced={() => {
+      <ChartView mode="compact" generationRequest={generationRequest} drawingRequest={drawingRequest} {...shared} onOpenAdvanced={() => {
         advancedTriggerRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
         setAdvancedOpen(true);
       }} />
@@ -244,7 +257,7 @@ export default function PriceChart({
           </header>
           <DialogDescription className="sr-only">{t("youtubeOpinions.zoomHint")}</DialogDescription>
           {advancedOpen && <div className="min-h-0 flex-1 overflow-hidden p-3 sm:px-4">
-            <ChartView mode="advanced" onAnalysisBusy={setAdvancedBusy} {...shared} escapeRef={escapeRef} />
+            <ChartView mode="advanced" {...shared} escapeRef={escapeRef} />
           </div>}
         </DialogContent>
       </Dialog>

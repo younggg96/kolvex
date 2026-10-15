@@ -9,10 +9,13 @@ from typing import Optional, List, Any, Literal
 from pydantic import BaseModel, Field
 from datetime import datetime
 from enum import Enum
+import asyncio
+from uuid import UUID
 
 from app.api.dependencies.auth import get_current_user_id
 from app.core.supabase import get_supabase_service
 from app.services.stock_analysis_history import StockAnalysisHistory
+from app.services.stock_chart_jobs import StockChartJobs
 from app.services.technical_analysis import AiNotConfigured, analyze_chart
 from app.services.technical_focus import TechnicalFocus
 from app.services.user_api_keys_service import UserApiKeysService, get_user_api_keys_service
@@ -508,6 +511,58 @@ async def ai_technical_analysis(
 
 class ActivateAnalysisRequest(BaseModel):
     expected_current_id: Optional[str] = Field(None, pattern=r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$")
+
+
+class AiChartJobRequest(AiTechnicalRequest):
+    request_id: UUID
+    model: str = Field(min_length=1, max_length=100)
+
+
+@router.post("/chart-jobs/{symbol}", status_code=202)
+async def submit_chart_job(
+    body: AiChartJobRequest,
+    symbol: str = Path(..., min_length=1, max_length=20, pattern=r"^[A-Za-z0-9.\-^=]+$"),
+    user_id: str = Depends(get_current_user_id),
+    api_keys: UserApiKeysService = Depends(get_user_api_keys_service),
+):
+    from app.services.technical_analysis import _choose_user_model
+    try:
+        _choose_user_model(body.model, await api_keys.get_keys_dict(user_id))
+        jobs = StockChartJobs(get_supabase_service())
+        return await asyncio.to_thread(jobs.enqueue, user_id, symbol.upper(), body.model_dump(mode="json"))
+    except AiNotConfigured:
+        raise HTTPException(503, "ai_not_configured")
+    except Exception as exc:
+        if "ai_job_limit" in str(exc):
+            raise HTTPException(429, "ai_job_limit")
+        logger.warning("Chart job submission unavailable (%s)", type(exc).__name__)
+        raise HTTPException(503, "ai_jobs_unavailable")
+
+
+@router.get("/chart-jobs/{symbol}")
+async def latest_chart_jobs(
+    symbol: str = Path(..., min_length=1, max_length=20, pattern=r"^[A-Za-z0-9.\-^=]+$"),
+    user_id: str = Depends(get_current_user_id),
+):
+    try:
+        return await asyncio.to_thread(StockChartJobs(get_supabase_service()).latest, user_id, symbol.upper())
+    except Exception:
+        raise HTTPException(503, "ai_jobs_unavailable")
+
+
+@router.get("/chart-jobs/{symbol}/{job_id}")
+async def chart_job_status(
+    symbol: str = Path(..., min_length=1, max_length=20, pattern=r"^[A-Za-z0-9.\-^=]+$"),
+    job_id: UUID = Path(...),
+    user_id: str = Depends(get_current_user_id),
+):
+    try:
+        job = await asyncio.to_thread(StockChartJobs(get_supabase_service()).get, user_id, symbol.upper(), str(job_id))
+    except Exception:
+        raise HTTPException(503, "ai_jobs_unavailable")
+    if not job:
+        raise HTTPException(404, "ai_job_not_found")
+    return job
 
 
 @router.get("/analysis-history/{symbol}")
