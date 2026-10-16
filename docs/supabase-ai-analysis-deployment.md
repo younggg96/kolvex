@@ -32,6 +32,32 @@ filenames have been aligned with their actual remote migration versions:
 This confirms the database portion only. It does not publish Next.js or Python
 application code; those use their existing hosting/deployment workflows.
 
+## Chart job incident — 2026-10-16
+
+The deployed chart-job API returned HTTP 503 because the database migration for
+`stock_chart_jobs` and its queue RPCs had not been applied. Railway's running
+worker also repeatedly logged `Chart worker unavailable (APIError)`.
+
+Applied the existing `stock_chart_jobs` migration to the configured project.
+The remote migration version is `20261016172845`; the local filename now matches
+that recorded version without changing its SQL.
+
+Verification:
+
+- The repository SQL assertion suite passed in a rolled-back transaction with
+  unique fixture tickers: request deduplication, concurrent operation reuse,
+  claiming, atomic result persistence, completion retries, expiry, and permissions.
+- Queue RPCs and table reads succeeded under `service_role`.
+- A signed-in production browser visit to NVDA triggered
+  `GET /api/v1/market/chart-jobs/NVDA`, which returned HTTP 200 at
+  `2026-10-16T17:29:22Z` (previous requests returned 503).
+- The page's unavailable-status warning was absent and both AI action buttons
+  were enabled. No paid model request was submitted during verification.
+- The security advisor's new informational `rls_enabled_no_policy` finding is
+  expected: this table deliberately permits only backend service-role access,
+  with all anonymous/authenticated table and queue-function grants revoked.
+  Existing unrelated security warnings below remain unchanged.
+
 ## Existing advisor findings outside this change
 
 No security advisor finding referenced the new analysis tables or functions.
