@@ -36,7 +36,7 @@ export default function MobileTabBar() {
                   className="h-[22px] w-[22px]"
                   strokeWidth={active ? 2.25 : 1.75}
                 />
-                <span>{t(item.shortTitleKey)}</span>
+                <span className="max-w-full px-1 text-center text-[10px] leading-3 sm:text-[11px]">{t(item.shortTitleKey)}</span>
               </Link>
             </li>
           );

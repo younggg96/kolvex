@@ -23,3 +23,21 @@ Supabase 新表迁移已应用；查询确认 RLS 开启、anon 不可读、auth
 全站 premium strict 审计的 3 项既存问题：设置页原生 select 所有权未声明、一个按钮无操作、全局滚动条样式审计命中；新增文件无命中。审计输出位于 /tmp/kolvex-brief-ui-audit.json。
 
 样例兼容修复后共 9 项测试通过，新增完整样例及格式化指数校验。`evening-2026-10-17` 已通过数据库连接保存（并非浏览器导入），共 3 个章节、5 条新闻；本次原文导入未另行核验新闻事实，未发布到读者页面。前后端代码仍待部署。
+
+## Reader tab
+
+`GET /api/v1/briefs?page=1&type=morning` returns ten editorial summaries per page;
+`GET /api/v1/briefs/{id}` returns the validated article. Both require a verified
+user session, without requiring an administrator role. There are no reader write
+routes. Direct browser database access remains denied by the existing RLS/grants;
+no database permission migration is needed. Importer audit fields are not selected
+by reader APIs. Admin and reader queries share `list_saved_briefs` and
+`read_saved_brief`.
+
+The independent primary navigation entry uses `/dashboard/briefs` and
+`/dashboard/briefs/{id}`. Query parameters preserve type and page on return.
+Saved imports offer a link to the reader; the library links administrators to
+`/dashboard/admin?tab=briefs`. This supersedes the original admin-preview-only
+scope.
+
+Reader tests: `venv/bin/python -m unittest discover -s tests -p test_brief_reader.py`.

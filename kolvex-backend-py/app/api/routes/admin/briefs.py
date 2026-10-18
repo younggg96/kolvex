@@ -7,7 +7,7 @@ from postgrest.exceptions import APIError
 from supabase import Client
 from app.api.dependencies.auth import verify_admin
 from app.core.supabase import get_supabase_service
-from app.services.daily_briefs import Envelope
+from app.services.daily_briefs import Envelope, list_saved_briefs, read_saved_brief
 
 router = APIRouter(prefix="/briefs")
 logger = logging.getLogger(__name__)
@@ -55,8 +55,7 @@ async def save(request: Request, admin_id: str = Depends(verify_admin), db: Clie
 @router.get("")
 async def listing(page: int = Query(1, ge=1), admin_id: str = Depends(verify_admin), db: Client = Depends(get_supabase_service)):
     try:
-        result = db.table("daily_briefs").select("id,brief_date,brief_type,title,headline,created_at", count="exact").order("brief_date", desc=True).order("id").range((page - 1) * 10, page * 10 - 1).execute()
-        return {"items": result.data, "total": result.count or 0}
+        return list_saved_briefs(db, page)
     except APIError as exc:
         logger.exception("Brief list failed")
         raise HTTPException(503, "读取失败，请确认早晚报数据库迁移已应用后重试。") from exc
@@ -65,10 +64,9 @@ async def listing(page: int = Query(1, ge=1), admin_id: str = Depends(verify_adm
 @router.get("/{brief_id}")
 async def detail(brief_id: str, admin_id: str = Depends(verify_admin), db: Client = Depends(get_supabase_service)):
     try:
-        result = db.table("daily_briefs").select("payload").eq("id", brief_id).limit(1).execute()
-    except APIError as exc:
+        return read_saved_brief(db, brief_id)
+    except LookupError as exc:
+        raise HTTPException(404, "简报不存在") from exc
+    except (APIError, ValidationError) as exc:
         logger.exception("Brief read failed")
         raise HTTPException(503, "读取失败，请稍后重试。") from exc
-    if not result.data:
-        raise HTTPException(404, "简报不存在")
-    return {"payload": result.data[0]["payload"]}

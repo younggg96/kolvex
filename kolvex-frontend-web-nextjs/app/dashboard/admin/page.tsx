@@ -6,6 +6,6 @@ export const metadata: Metadata = {
   description: "Admin dashboard for Kolvex platform management",
 };
 
-export default function AdminPage() {
-  return <AdminPageClient />;
+export default function AdminPage({ searchParams }: { searchParams?: { tab?: string } }) {
+  return <AdminPageClient initialTab={searchParams?.tab} />;
 }

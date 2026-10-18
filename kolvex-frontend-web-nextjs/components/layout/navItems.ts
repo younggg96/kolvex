@@ -1,6 +1,7 @@
 import {
   BarChart3,
   PieChart,
+  Newspaper,
   Telescope,
   Youtube,
   type LucideIcon,
@@ -38,6 +39,14 @@ export const MAIN_NAV_ITEMS: MainNavItem[] = [
     href: "/dashboard/ai-research",
     type: "link",
     featureId: "tradingAnalysis",
+  },
+  {
+    icon: Newspaper,
+    titleKey: "sidebar.briefs",
+    shortTitleKey: "tabBar.briefs",
+    href: "/dashboard/briefs",
+    type: "link",
+    featureId: "briefs",
   },
   {
     icon: PieChart,

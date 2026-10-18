@@ -19,7 +19,7 @@ async function request<T>(url: string, init?: RequestInit): Promise<T> {
   return result;
 }
 
-export default function AdminPageClient() {
+export default function AdminPageClient({ initialTab }: { initialTab?: string }) {
   const { profile, isLoading } = useUserProfileContext();
   const [tables, setTables] = useState<Record<string, number>>({});
   const [users, setUsers] = useState<AdminUser[]>([]);
@@ -85,7 +85,7 @@ export default function AdminPageClient() {
 
         {error && <p role="alert" className="rounded-2xl bg-negative/10 px-4 py-3 text-sm text-foreground">{error}</p>}
 
-        <Tabs defaultValue="database">
+        <Tabs defaultValue={initialTab === "briefs" ? "briefs" : "database"}>
           <TabsList>
             <TabsTrigger value="database">数据库</TabsTrigger>
             <TabsTrigger value="users">用户</TabsTrigger>

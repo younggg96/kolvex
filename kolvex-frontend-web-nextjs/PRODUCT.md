@@ -20,6 +20,7 @@ Kolvex turns scattered investment opinion into something an individual can check
 - **AI Research / AI 研究** (`/dashboard/ai-research`): a separate entry for published AI reports and evidence. Administrators can open Manage reports (`?view=authoring`) for model configuration and report generation. Legacy research and trading-analysis URLs redirect to the current entry; existing report detail URLs remain supported.
 - Creator opinions extracted from finance videos retain sentiment, direction, confidence, summary, key points, risks and source video links. The numeric score is not displayed; strength uses qualitative wording. Admin JSON import remains available.
 - **Portfolio / 投资组合** (`/dashboard/portfolio`): holdings, options positions, transactions, allocation, performance, and AI portfolio analysis, connected through Plaid Investments.
+- **Daily Briefs / 早晚报** (`/dashboard/briefs`): signed-in readers browse imported morning/evening issues, filter by type and open full articles. An administrator import makes the issue available immediately.
 - **Settings** and **Admin** (admin-only).
 
 Success means users can read creator opinions, AI research and changes related to their holdings without entering their own views or plans.

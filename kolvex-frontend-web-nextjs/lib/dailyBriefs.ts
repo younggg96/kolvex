@@ -37,3 +37,29 @@ export async function briefRequest<T>(query = "", body?: string, signal?: AbortS
   if (!response.ok) throw new Error(data.error || "请求失败，请重试。");
   return data;
 }
+
+export interface BriefSummary extends SavedBrief {
+  summary?: DailyBrief["brief"];
+}
+export interface BriefList { items: BriefSummary[]; total: number }
+export type BriefFilter = "all" | "morning" | "evening";
+export interface BriefSearchParams { type?: string; page?: string }
+
+export function briefFilters(params?: BriefSearchParams) {
+  const type: BriefFilter = params?.type === "morning" || params?.type === "evening" ? params.type : "all";
+  const value = Number(params?.page || 1);
+  const page = Number.isSafeInteger(value) && value > 0 && value <= 1000000 ? value : 1;
+  return { type, page };
+}
+export function briefLibraryHref(type: BriefFilter = "all", page = 1) {
+  const params = new URLSearchParams();
+  if (type !== "all") params.set("type", type);
+  if (page !== 1) params.set("page", String(page));
+  return `/dashboard/briefs${params.size ? `?${params}` : ""}`;
+}
+export function briefArticleHref(id: string, type: BriefFilter = "all", page = 1) {
+  return `/dashboard/briefs/${encodeURIComponent(id)}${briefLibraryHref(type, page).replace("/dashboard/briefs", "")}`;
+}
+export function formatBriefDate(date: string, locale: string) {
+  return new Intl.DateTimeFormat(locale, { year: "numeric", month: "short", day: "numeric", timeZone: "UTC" }).format(new Date(`${date}T12:00:00Z`));
+}

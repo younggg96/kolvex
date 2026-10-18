@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { FileJson, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -74,7 +75,7 @@ export default function DailyBriefImporter() {
     if (page !== 1) setPage(1); else await refresh();
   }
   return <div className="min-w-0 space-y-8">
-    <div className="space-y-2"><h2 className="text-xl font-semibold">早晚报 JSON 导入</h2><p id="brief-help" className="text-sm leading-6 text-muted-foreground">支持 kolvex-brief/1.0，单份 JSON 最大 2 MB。上传文件或粘贴内容，校验预览后保存。已导入内容仅供管理员查看。</p></div>
+    <div className="space-y-2"><h2 className="text-xl font-semibold">早晚报 JSON 导入</h2><p id="brief-help" className="text-sm leading-6 text-muted-foreground">支持 kolvex-brief/1.0，单份 JSON 最大 2 MB。上传文件或粘贴内容，校验预览后保存。保存后将显示在「早晚报」，所有登录用户可阅读。</p></div>
     <div className="space-y-2"><label htmlFor="brief-file" className="flex items-center gap-2 text-sm font-medium"><FileJson className="h-4 w-4" />选择 JSON 文件</label><Input id="brief-file" type="file" accept=".json,application/json" disabled={busy} aria-describedby="brief-help" onChange={event => {
       const file = event.target.files?.[0]; event.target.value = "";
       if (!file) return;
@@ -93,7 +94,7 @@ export default function DailyBriefImporter() {
       {busy && <span role="status" className="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" />处理中…</span>}
     </div>
     {error && <p id="brief-error" role="alert" className="rounded-xl bg-negative/10 p-4 text-sm leading-6">{error}</p>}
-    {message && <p role="status" className="rounded-xl bg-positive/10 p-4 text-sm">{message}</p>}
+    {message && <div role="status" className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-positive/10 p-4 text-sm"><p>{message}</p>{preview && <Link href={`/dashboard/briefs/${encodeURIComponent(preview.brief.id)}`} className="font-semibold underline underline-offset-4">在早晚报中查看</Link>}</div>}
     {preview && <div className="space-y-5 rounded-xl border border-border bg-card p-4 sm:p-6"><div className="flex flex-wrap items-center justify-between gap-2 border-b border-border pb-4"><h2 className="font-semibold">简报预览</h2><span className="break-all text-xs text-muted-foreground">{preview.brief.id} · {preview.sections.length} 个章节</span></div><BriefContent document={preview} /></div>}
     <section className="space-y-4 border-t border-border pt-6" aria-busy={listBusy}>
       <div className="flex items-center justify-between gap-3"><h2 className="text-lg font-semibold">已导入简报</h2><Button variant="ghost" size="sm" disabled={listBusy} onClick={() => void refresh()}>刷新列表</Button></div>

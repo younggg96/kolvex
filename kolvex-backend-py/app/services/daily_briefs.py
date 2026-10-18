@@ -156,3 +156,26 @@ class Envelope(Content):
         if len({s.section_id for s in sections}) != len(sections):
             raise ValueError("section_id 不得重复")
         return sorted(sections, key=lambda s: s.order)
+
+
+def list_saved_briefs(db, page: int, brief_type: str | None = None):
+    """Project editorial metadata only; never expose import actor/account fields."""
+    query = db.table("daily_briefs").select(
+        "id,brief_date,brief_type,title,headline,created_at,summary:payload->brief",
+        count="exact",
+    )
+    if brief_type:
+        query = query.eq("brief_type", brief_type)
+    result = query.order("brief_date", desc=True).order("id").range(
+        (page - 1) * 10, page * 10 - 1
+    ).execute()
+    return {"items": result.data or [], "total": result.count or 0}
+
+
+def read_saved_brief(db, brief_id: str):
+    result = db.table("daily_briefs").select("payload").eq("id", brief_id).limit(1).execute()
+    if not result.data:
+        raise LookupError("Brief not found")
+    # Revalidate stored documents so legacy formatted numbers and new defaults
+    # are handled identically in the admin preview and the reader.
+    return {"payload": Envelope.model_validate(result.data[0]["payload"]).model_dump(mode="json")}

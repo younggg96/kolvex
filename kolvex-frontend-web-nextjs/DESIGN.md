@@ -463,3 +463,31 @@ names use a localized page label, never a raw channel ID.
 and concurrent-request reuse. Context and first-page opinions share a request
 when their filters match. Refresh and successful admin edits invalidate it;
 failed requests are not cached and requests time out after 20 seconds.
+
+## Daily Briefs
+
+Daily Briefs is a primary route at `/dashboard/briefs`, shared by the desktop
+sidebar and five-item mobile navigation. The route is readable by signed-in
+users; only administrators import content. Importing makes the issue visible
+immediately, as requested in the reader-flow extension.
+
+The library uses the existing 1080px reading width, 16/32px page padding,
+Inter/Chinese stack and semantic light/dark tokens. Latest-issue photography
+sits beside a left-aligned headline on desktop and above it on phones. Older
+issues form quiet divided rows rather than promotional metric cards. Supplied
+image credits remain visible. No new colors, fonts or token values are added.
+
+All/Morning/Evening are shared pill Button links with `aria-current`; filters
+and pagination live in the URL. The API returns ten issues per page. Each issue
+has a durable detail URL; header/footer return actions preserve the originating
+filter and page. `HeaderBackButton` owns the icon return control.
+`BriefContent` owns the article in both admin preview and the reader, and
+`BriefImage` owns images, captions, credit links and failed-image placeholders.
+Long text wraps; article disclosures remain in document flow.
+
+`useBriefData` owns bounded, cancellable reads, stale-response protection and
+focus/reconnection refresh. Loading uses the existing Loader2/status treatment.
+Empty, missing, expired-session and retryable error states are localized.
+Imported article text remains in its source language. `app/globals.css` remains
+the theme and scrollbar owner; the page's established content scroller owns
+vertical scrolling.

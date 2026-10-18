@@ -63,7 +63,8 @@
     "toggleSidebar": "切换侧边栏",
     "home": "首页",
     "research": "研究",
-    "journal": "变化动态"
+    "journal": "变化动态",
+    "briefs": "早晚报"
   },
   "tabBar": {
     "markets": "行情",
@@ -74,7 +75,8 @@
     "more": "更多",
     "home": "首页",
     "research": "研究",
-    "journal": "变化动态"
+    "journal": "变化动态",
+    "briefs": "早晚报"
   },
   "userMenu": {
     "account": "账户",
@@ -1647,5 +1649,44 @@
     "valuation": "估值",
     "growth": "成长性",
     "risk": "风险"
+  },
+  "briefs": {
+    "title": "早晚报",
+    "description": "开盘前看交易计划，收盘后读市场复盘。",
+    "morning": "早报",
+    "evening": "晚报",
+    "filterLabel": "筛选早晚报",
+    "import": "导入简报",
+    "latest": "最新一期",
+    "read": "阅读全文",
+    "imageCredit": "图片来源：",
+    "archive": "历史简报",
+    "empty": "第一份简报，敬请期待",
+    "emptyFiltered": "暂无符合筛选的简报",
+    "emptyDetail": "简报导入后会显示在这里，可稍后刷新查看。",
+    "showAll": "查看全部简报",
+    "firstPage": "返回第一页",
+    "pagination": "第 {page} 页，共 {total} 期",
+    "paginationLabel": "简报分页",
+    "nextPage": "下一页",
+    "back": "返回早晚报",
+    "notFound": "未找到这期简报",
+    "notFoundDetail": "这期简报可能尚未导入，请返回列表查看其他期刊。",
+    "signInRequired": "登录后阅读简报",
+    "signInDetail": "登录状态已失效，请重新登录后继续。",
+    "signIn": "登录",
+    "loadError": "暂时无法加载简报",
+    "loadErrorDetail": "请检查网络连接，稍后重试。",
+    "previousClose": "前收盘",
+    "gainers": "领涨",
+    "losers": "领跌",
+    "shortTerm": "短期影响",
+    "positioning": "定位应对",
+    "longTerm": "长期影响",
+    "priceRange": "预计价格变动",
+    "weekend": "周末·周复盘",
+    "tradingDay": "交易日",
+    "generatedAt": "生成时间（美西）：",
+    "viewSaved": "在早晚报中查看"
   }
 }

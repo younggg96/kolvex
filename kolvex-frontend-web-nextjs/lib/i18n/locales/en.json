@@ -63,7 +63,8 @@
     "toggleSidebar": "Toggle Sidebar",
     "home": "Home",
     "research": "Research",
-    "journal": "Updates"
+    "journal": "Updates",
+    "briefs": "Daily Briefs"
   },
   "tabBar": {
     "markets": "Markets",
@@ -74,7 +75,8 @@
     "more": "More",
     "home": "Home",
     "research": "Research",
-    "journal": "Updates"
+    "journal": "Updates",
+    "briefs": "Briefs"
   },
   "userMenu": {
     "account": "Account",
@@ -1647,5 +1649,44 @@
     "valuation": "Valuation",
     "growth": "Growth",
     "risk": "Risk"
+  },
+  "briefs": {
+    "title": "Daily Briefs",
+    "description": "Trading plans before the open. Market recaps after the close.",
+    "morning": "Morning",
+    "evening": "Evening",
+    "filterLabel": "Filter briefs",
+    "import": "Import brief",
+    "latest": "Latest issue",
+    "read": "Read the full brief",
+    "imageCredit": "Image credit:",
+    "archive": "Previous issues",
+    "empty": "The first brief is on its way",
+    "emptyFiltered": "No briefs match this filter",
+    "emptyDetail": "Imported briefs appear here. Check back or refresh later.",
+    "showAll": "View all briefs",
+    "firstPage": "Back to page one",
+    "pagination": "Page {page}, {total} issues",
+    "paginationLabel": "Brief pagination",
+    "nextPage": "Next",
+    "back": "Back to briefs",
+    "notFound": "Brief not found",
+    "notFoundDetail": "This issue may not have been imported yet. Return to the list to read another issue.",
+    "signInRequired": "Sign in to read briefs",
+    "signInDetail": "Your session has expired. Sign in again to continue.",
+    "signIn": "Sign in",
+    "loadError": "Briefs are temporarily unavailable",
+    "loadErrorDetail": "Check your connection and try again.",
+    "previousClose": "Previous close",
+    "gainers": "Gainers",
+    "losers": "Losers",
+    "shortTerm": "Short-term impact",
+    "positioning": "Positioning",
+    "longTerm": "Long-term impact",
+    "priceRange": "Expected price range",
+    "weekend": "Weekend review",
+    "tradingDay": "Trading day",
+    "generatedAt": "Generated (Pacific):",
+    "viewSaved": "Read in Daily Briefs"
   }
 }

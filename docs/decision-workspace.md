@@ -176,3 +176,14 @@ preserves earlier combined snapshots in both histories, and maps each former
 current snapshot to a current drawing snapshot. Existing snapshot IDs and text
 analysis history remain intact. Save and restore operate on one kind at a time,
 so generating or restoring analysis cannot replace the current drawing version.
+
+## Daily briefing reader
+
+The follow-up request adds Daily Briefs to the primary desktop/mobile navigation.
+Administrator imports now become readable immediately by signed-in users at
+`/dashboard/briefs`; writing remains administrator-only. The date/type library
+and immutable `/dashboard/briefs/{id}` articles reuse the same stored documents
+and `BriefContent` as admin preview. Type and page remain in URL state, and
+return navigation restores them. The reader API selects editorial metadata and
+payload only, requires verified authentication, and exposes no write routes.
+Database browser grants remain unchanged.
