@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
+import DailyBriefImporter from "@/components/admin/DailyBriefImporter";
 import YouTubeOpinionImporter from "@/components/admin/YouTubeOpinionImporter";
 import YouTubeCreatorManager from "@/components/admin/YouTubeCreatorManager";
 import { useUserProfileContext } from "@/components/user/UserProfileProvider";
@@ -90,6 +91,7 @@ export default function AdminPageClient() {
             <TabsTrigger value="users">用户</TabsTrigger>
             <TabsTrigger value="creators">博主观点</TabsTrigger>
             <TabsTrigger value="youtube">YouTube 导入</TabsTrigger>
+            <TabsTrigger value="briefs">早晚报导入</TabsTrigger>
           </TabsList>
 
           <TabsContent value="database" className="mt-6">
@@ -162,6 +164,9 @@ export default function AdminPageClient() {
             </div>
           </TabsContent>
 
+          <TabsContent value="briefs" className="mt-6">
+            <DailyBriefImporter />
+          </TabsContent>
           <TabsContent value="youtube" className="mt-6">
             <YouTubeOpinionImporter onImported={() => void refresh()} />
           </TabsContent>

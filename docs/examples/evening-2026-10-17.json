@@ -1,0 +1,237 @@
+{
+  "schema_version": "kolvex-brief/1.0",
+  "brief": {
+    "id": "evening-2026-10-17",
+    "type": "evening",
+    "date": "2026-10-17",
+    "title": "美股晚报",
+    "headline": "纳指创6月底以来最差单周，道指逆势二连涨",
+    "subtitle": "美股周末休市，本期为 10 月 12–16 日当周复盘：资金在科技与防御之间做了全周最大的切换。",
+    "generated_at_pt": "2026-10-17T12:30:00-07:00",
+    "market_status": "weekend",
+    "hero_image": {
+      "url": "https://mix.noworrybehappy.com/wp-content/uploads/sites/7/2025/12/New_York_Stock_Exchange_busy_trading_floor_1766812909264.jpeg",
+      "caption": "纽交所交易大厅",
+      "credit": "noworrybehappy.com",
+      "source_page": "https://mix.noworrybehappy.com/sp-500-%ec%a7%80%ec%88%98-7000-%eb%8f%8c%ed%8c%8c-%ec%8b%9c%eb%8f%84%ec%99%80-2026%eb%85%84-%eb%af%b8%ea%b5%ad-%ec%a6%9d%ec%8b%9c-%ec%a0%84%eb%a7%9d-%ec%b4%9d%ec%a0%95%eb%a6%ac/"
+    }
+  },
+  "sections": [
+    {
+      "section_id": "market_recap",
+      "order": 1,
+      "title": "当日复盘",
+      "subtitle": "道指涨、纳指跌的极致分化",
+      "narrative": "周初市场还算温和，周三 9 月 CPI 3.7% 超预期引爆利率恐慌，10 年期美债收益率一度冲上 5.33%；随后 AI 基建“借债烧钱”的叙事被 CoreWeave 债券崩盘点燃，恐慌从芯片蔓延到周五的软件板块。周五道指早盘一度涨超 1%，收盘小跌 0.34%，全靠医疗、必需消费和银行撑住；纳指周五 -2.1%、标普 -1.1%，把整周跌幅坐实。一句话总结：钱没有离开股市，只是从科技搬去了防御。",
+      "indices": [
+        { "name": "道琼斯", "prev_close": "51,654.95", "close": "52,002.41", "change_pct": "+0.67%", "note": "二连周涨" },
+        { "name": "标普500", "prev_close": "7,811.54", "close": "7,659.44", "change_pct": "-1.95%", "note": "6 月以来最差单周" },
+        { "name": "纳斯达克", "prev_close": "27,366.17", "close": "26,140.03", "change_pct": "-4.48%", "note": "终结四周连涨，6 月底以来最差单周" },
+        { "name": "罗素2000", "prev_close": null, "close": "2,721.37", "change_pct": "-3.05%", "note": null },
+        { "name": "费城半导体指数", "prev_close": null, "close": "11,137.29", "change_pct": "-11.41%", "note": "8连跌" },
+        { "name": "VIX", "prev_close": "14.84", "close": "19.99", "change_pct": null, "note": "7 月 29 日以来最高" }
+      ],
+      "movers_up": [
+        { "name": "防御板块", "detail": "医疗保健 (XLV) 本周创历史新高；资金涌入可口可乐、沃尔玛、宝洁等必需消费股" },
+        { "name": "苹果", "detail": "市值突破 5 万亿美元大关，成为周内少数高光时刻；另有报道称 Apple Intelligence 计划 12 月登陆中国" },
+        { "name": "欧洲股市", "detail": "STOXX 600 本周 +1.4%（8 月以来最好一周），富时 100 +3.13%、DAX +2.13%——全球资金也在“逃离美股科技”" },
+        { "name": "亚洲周五反弹", "detail": "韩国 Kospi 周五 +2%、台股 +0.3% 收 47,111 点（但 Kospi 周中一度因芯片抛售触发熔断）" }
+      ],
+      "movers_down": [
+        { "name": "CoreWeave (CRWV)", "detail": "本周“震中”。2032 年到期无抵押债跌破 80 美分（公认的财务困境线），收益率飙过 15%；周三股价 -15%、盘后再跌，CEO 发备忘录称市场“误解和非理性”，公司紧急宣布 20 亿美元可转债融资" },
+        { "name": "芯片链", "detail": "SOXX 本周 -10%+（周五单日 -4.14%）；周五 AMD -5.96%、英特尔 -5.79%、美光 -5.63%；韩国三星周中 -5.29%、SK 海力士 -8.36%，日经周四 -4.9%" },
+        { "name": "软件板块", "detail": "周五“投降”：Twilio 周五 -10.6%（标普 500 当天最大跌幅），软件 ETF 周五 -4.8%、全周 -7.4%；CrowdStrike、Snowflake 本周各约 -17%，Palo Alto、Cloudflare 各约 -18%" }
+      ],
+      "commodities": [
+        { "name": "WTI 原油", "detail": "周 +10.41% 收 $101.41" },
+        { "name": "布伦特原油", "detail": "周 +4.91% 收 $109.86" },
+        { "name": "黄金", "detail": "周约 -0.5% 至 $4,180 一带" },
+        { "name": "白银", "detail": "周 -4.38% 至 $57.51" },
+        { "name": "美元指数", "detail": "周 -0.36% 至 101.84" },
+        { "name": "10 年期美债收益率", "detail": "收 5.098%（周降 15bp）" }
+      ]
+    },
+    {
+      "section_id": "news_to_action",
+      "order": 2,
+      "title": "新闻到操作",
+      "subtitle": "5 条决定下周的新闻",
+      "items": [
+        {
+          "id": "news-1",
+          "order": 1,
+          "kicker": "通胀",
+          "title": "通胀双超预期：CPI 3.7% + PPI 6.3%，12 月加息几乎板上钉钉",
+          "summary": "9 月 CPI 同比 3.7%（预期 3.6%）、核心 CPI 环比 0.3%（预期 0.2%）；PPI 同比 6.3%（预期 5.3%，2022 年 12 月以来最高）、环比 1.3%（预期 0.5%），其中能源 +10.8%；进口价格同比 8.1%（2022 年 7 月以来最大）。波士顿联储主席 Collins 称年底前利率可能还要“再上调一点”。花旗已将预期从年内不再加息改为 12 月加息 25bp。",
+          "key_stats": [
+            { "label": "CPI 同比", "value": "3.7%（预期 3.6%）" },
+            { "label": "核心 CPI 环比", "value": "0.3%（预期 0.2%）" },
+            { "label": "PPI 同比", "value": "6.3%（预期 5.3%）" },
+            { "label": "PPI 环比", "value": "1.3%（预期 0.5%）" },
+            { "label": "12 月加息概率", "value": "约 89–95%" },
+            { "label": "10 年期美债收益率", "value": "5.098%" }
+          ],
+          "image": {
+            "url": "https://mcusercontent.com/6d306036c17f619a8af7173a5/images/e5c055c5-2f0d-98ab-0c05-46b32915e85b.png",
+            "caption": "市场每日评论配图：通胀与利率",
+            "credit": "mctrade (mailchi.mp)",
+            "source_page": "https://mailchi.mp/mctrade/mct-daily-market-commentary-6274901"
+          },
+          "sources": [
+            { "name": "London Insider", "url": "https://londoninsider.co.uk/surging-ppi-data-signals-fed-rate-hike-still-on-the-table-economists-warn/" },
+            { "name": "InvestingLive（花旗12月加息预期）", "url": "https://investinglive.com/central-banks/icymi-citi-now-expects-a-december-fed-rate-hike-after-hotter-september-us-inflation/" },
+            { "name": "HafidWatch（PPI 与 PCE 测算）", "url": "https://hafidwatch.com/hot-ppi-pce-estimates-fed-hike-risk/" }
+          ],
+          "related_tickers": ["TLT", "SHY", "UUP"],
+          "impact": {
+            "short_term": "成长股估值天花板被钉死，科技反弹空间受限；10 年期美债收益率维持 5.0%–5.3% 高位震荡。",
+            "long_term": "通胀黏性是实锤，加息只是推迟不是取消——12 月加息概率 89%。只要能源不降温，美联储就没有降息空间。",
+            "price_range": "标普 7,600–7,850 区间拉锯；纳指若跌破 26,000 可能加速。",
+            "positioning": "不追科技反弹；保留防御仓和现金；债券买短久期不买长久期。"
+          }
+        },
+        {
+          "id": "news-2",
+          "order": 2,
+          "kicker": "AI 基建",
+          "title": "CoreWeave 债券崩盘：AI“借债烧钱”叙事破裂",
+          "summary": "CoreWeave 2032 年到期无抵押债跌破 80 美分、收益率超 15%，公司紧急宣布 20 亿美元可转债融资（可增至 23 亿）；数据显示其负债近 500 亿美元，Q2 利息支出约 6.4 亿美元。CDS 利差一度冲上 1,000–1,200bp，隐含 5 年违约概率约 60%。Gartner 警告 neocloud 商业模式风险，恐慌蔓延至 Nebius、IREN、Oracle 等 AI 基建链。",
+          "key_stats": [
+            { "label": "2032 无抵押债价格", "value": "跌破 80 美分" },
+            { "label": "债券收益率", "value": "超 15%" },
+            { "label": "总负债", "value": "近 500 亿美元" },
+            { "label": "CDS 利差", "value": "1,000–1,200bp（纪录高位）" },
+            { "label": "紧急融资", "value": "20 亿美元可转债" }
+          ],
+          "image": {
+            "url": "https://revistacloud.com/wp-content/uploads/2025/04/coreweave-data-center-gpu-gb-200-1024x544.jpg",
+            "caption": "CoreWeave 数据中心 GPU 集群",
+            "credit": "revistacloud.com",
+            "source_page": "https://revistacloud.com/coreweave-revalida-platinum-clustermax/"
+          },
+          "sources": [
+            { "name": "Particle News", "url": "https://particle.news/story/coreweave-bonds-trade-like-distressed-debt-as-stock-and-options-crash" },
+            { "name": "Telegraph", "url": "https://telegraph.com/ai-bubble-coreweave-bond-market/" },
+            { "name": "Crypto Briefing", "url": "https://cryptobriefing.com/coreweave-debt-stress-private-credit-ai/" }
+          ],
+          "related_tickers": ["CRWV", "NBIS", "IREN", "ORCL", "DELL"],
+          "impact": {
+            "short_term": "高负债 AI 基建股继续承压，芯片股估值修复被推迟；信用市场波动可能外溢。",
+            "long_term": "市场对 AI 资本开支的态度从“无脑买单”转向“挑着买单”——有真实现金流的（台积电、超大规模云厂商）和靠借债扩张的将被区别对待。",
+            "price_range": "neocloud 类股票继续 -10%~-20% 寻底；SOXX 在较 10 月 5 日高点 -12%~-15% 区间磨底。",
+            "positioning": "回避高负债 AI 基建股；芯片仓等放量止跌阳线再考虑分批，不抄底、不加杠杆。"
+          }
+        },
+        {
+          "id": "news-3",
+          "order": 3,
+          "kicker": "财报",
+          "title": "台积电六连纪录财报救不了股价：杀的是估值不是逻辑",
+          "summary": "台积电 Q3 净利约 235.5 亿美元（同比 +69%，超预期）、营收 467.2 亿美元（超指引上限近 10 亿），连续第六个季度创纪录、连续第十一个季度增长；Q4 指引 523–543 亿美元（环比 +14%、同比 +58%），全年营收增速上调至约 44%；2nm 已占晶圆收入 8%，CEO 称 AI 需求“大于供给”。ASML 称客户已在为 2029–2030 年下订单。财报后 TSM 美股仍跌。",
+          "key_stats": [
+            { "label": "Q3 营收", "value": "467.2 亿美元（+50.9% YoY）" },
+            { "label": "Q3 净利", "value": "约 235.5 亿美元（+69% YoY）" },
+            { "label": "毛利率", "value": "66.4%" },
+            { "label": "Q4 指引", "value": "523–543 亿美元" },
+            { "label": "全年增速指引", "value": "约 44%" },
+            { "label": "2nm 收入占比", "value": "8%" }
+          ],
+          "image": {
+            "url": "https://headquartersoffice.com/wp-content/uploads/2025/10/TSMC_Fab_15_in_Taiwan.png",
+            "caption": "台积电台湾 Fab 15 晶圆厂",
+            "credit": "headquartersoffice.com",
+            "source_page": "https://headquartersoffice.com/tsmc/"
+          },
+          "sources": [
+            { "name": "Crypto Briefing", "url": "https://cryptobriefing.com/tsmc-q4-revenue-forecast-record-q3-profit/" },
+            { "name": "Motley Fool（财报电话会实录）", "url": "https://www.fool.com/earnings/call-transcripts/2026/10/15/tsmc-tsm-q3-2026-earnings-call-transcript/" },
+            { "name": "Seoul Economic Daily（路透）", "url": "https://en.sedaily.com/international/2026/10/15/tsmc-third-quarter-profit-jumps-69-percent-as-margins-narrow" }
+          ],
+          "related_tickers": ["TSM", "NVDA", "ASML", "SOXX", "AMD"],
+          "impact": {
+            "short_term": "需求端毫无问题，跌的是“利率杀估值 + 融资质疑”，超卖后技术性反弹随时可能出现，但持续性存疑。",
+            "long_term": "AI 芯片真实需求 intact，这轮是杀估值不是杀逻辑。等利率预期稳定，芯片仍是第一批修复的板块。",
+            "price_range": "TSM $400–425 是关键观察区；NVDA $210–225。",
+            "positioning": "基本面最硬的拿住，不跟随恐慌；加仓等 SOXX 企稳信号。"
+          }
+        },
+        {
+          "id": "news-4",
+          "order": 4,
+          "kicker": "美联储",
+          "title": "Warsh 曼谷“装傻”：10 月加息基本没戏，美联储进入静默期",
+          "summary": "美联储主席 Warsh 在曼谷 IMF 会议上拒绝给出任何前瞻指引——“我不预判会议，这是美联储的新篇章，我们不做这套了”。市场解读为鸽派：10 月 28 日加息概率从约 28% 骤降至 15–17%，按兵不动概率超 85%。他同时称 AI 是“我有生以来对经济最重要的技术变革”，并指出全球央行正在“同步紧缩”、没有搭便车者。美联储今日起进入静默期，直到 10 月 27–28 日 FOMC。",
+          "key_stats": [
+            { "label": "10 月加息概率", "value": "15–17%（讲话前约 28%）" },
+            { "label": "12 月加息概率", "value": "约 89%" },
+            { "label": "联邦基金利率区间", "value": "3.75%–4.00%" },
+            { "label": "下次 FOMC", "value": "10 月 27–28 日" }
+          ],
+          "image": {
+            "url": "https://img.inddist.com/mindful/im/workspaces/default/uploads/2026/07/ap26168677639149.i6KejLDHX5.jpg?ar=16x9&auto=format%2Ccompress&crop=focalpoint&fit=crop&fp-x=0.51&fp-y=0.41&q=70&w=700",
+            "caption": "美联储主席 Kevin Warsh（美联社照片）",
+            "credit": "AP / inddist.com",
+            "source_page": "https://www.inddist.com/economy/news/22970234/fed-officials-deeply-divided-over-the-path-of-us-inflation"
+          },
+          "sources": [
+            { "name": "Barron's", "url": "https://www.barrons.com/articles/fed-rates-warsh-markets-inflation-6078e221" },
+            { "name": "ActionForex", "url": "https://www.actionforex.com/live-comments/657672-feds-warsh-declines-october-rate-signal-says-fed-will-no-longer-preview-decisions/" },
+            { "name": "Metapress", "url": "https://metapress.net/world/2026/10/16/feds-warsh-withholds-rate-signal-praises-recent-global-tightening-with-no-free-riders/" }
+          ],
+          "related_tickers": ["SPY", "QQQ", "TLT"],
+          "impact": {
+            "short_term": "加息恐慌缓解，利好情绪修复，资金从美债回流风险资产可期。",
+            "long_term": "别被麻痹——12 月加息概率仍 89%，且有经济学家指出美联储不想在 11 月 3 日中期选举前 6 天加息“显得政治化”，10 月不动不等于转向。",
+            "price_range": "FOMC 前市场偏震荡修复，标普 7,650–7,850。",
+            "positioning": "把 10/27–28 FOMC 当作下一个关键事件；12 月措辞比 10 月决议更重要。"
+          }
+        },
+        {
+          "id": "news-5",
+          "order": 5,
+          "kicker": "轮动",
+          "title": "极致轮动 + 苹果 5 万亿：钱在投票，不在逃跑",
+          "summary": "道指 +0.67% 对纳指 -4.48%，两者差距超 5 个百分点——资金从科技搬向医疗、必需消费、银行和欧洲股市。苹果 10 月 14 日收盘市值突破 5 万亿美元（收 $342.96），成为继英伟达之后第二家；iPhone 18 Pro 需求强劲、Apple Intelligence 计划 12 月登陆中国。周五软件板块补跌说明：连之前被当作“安全角落”的软件也开始被抛售，恐慌进入扩散阶段。",
+          "key_stats": [
+            { "label": "苹果收盘市值", "value": "约 $5.005 万亿（10/14）" },
+            { "label": "苹果收盘价", "value": "$342.96（历史新高）" },
+            { "label": "道指 vs 纳指周涨跌差", "value": "超 5 个百分点" },
+            { "label": "英伟达市值", "value": "约 $5.3 万亿（仍第一）" }
+          ],
+          "image": {
+            "url": "https://cdn.modlar.com/photos/9829/img/s_480_x/apple_nyc_flagship_store_evening_59c81a1775533.png",
+            "caption": "苹果纽约旗舰店夜景",
+            "credit": "modlar.com",
+            "source_page": "http://www.modlar.com/photos/9829/apple-nyc-flagship-store-evening/"
+          },
+          "sources": [
+            { "name": "The Evergreen Edit", "url": "https://theevergreenedit.money/investing/apple-5-trillion-market-cap-october-2026" },
+            { "name": "Stocktwits", "url": "https://stocktwits.com/news-articles/markets/equity/apple-closes-in-on-world-s-most-valuable-company-crown-i-phone-duo-preorders-china-ai-rollout-in-focus/cZxhbHARBre" },
+            { "name": "Motley Fool", "url": "https://www.fool.com/investing/2026/10/16/2026-beyond-apple-most-valuable-company/?source=iedfolrf0000001" }
+          ],
+          "related_tickers": ["AAPL", "NVDA", "XLV"],
+          "impact": {
+            "short_term": "轮动行情延续，防御和价值短期占优；科技股任何反弹都先被当作减仓机会。",
+            "long_term": "牛市四周年（始于 2022 年 10 月 12 日，标普已翻倍）之后，市场进入“挑剔期”——仍然相信 AI，但只给值得的公司付钱。",
+            "price_range": "防御板块相对强势延续 1–2 周；科技需等财报验证。",
+            "positioning": "防御仓（医疗/必需消费/短债）作为组合稳定器保留；科技仓等财报一个一个过，不提前下注。"
+          }
+        }
+      ]
+    },
+    {
+      "section_id": "outlook",
+      "order": 4,
+      "title": "下周展望",
+      "takeaway": "本周是“杀估值”的一周，下周是“验成色”的一周——Netflix 和 Tesla 先交卷，决定科技股是止跌还是继续探底。",
+      "strategy_line": "防御打底、现金留足，芯片等企稳信号，财报一个一个过。",
+      "events": [
+        { "date_label": "周二 10/20 盘后", "title": "奈飞 (NFLX) 财报", "detail": "换帅 + 裁员 6% 后的第一份答卷，看订阅和指引" },
+        { "date_label": "周三 10/21 盘后", "title": "特斯拉 (TSLA) 财报", "detail": "预期 EPS $0.45 / 营收 $279 亿；期权定价 ±5.1%；另有 IBM" },
+        { "date_label": "10/27–28", "title": "FOMC 会议", "detail": "10 月加息概率仅 ~15%，重点看 12 月措辞；距 11/3 中期选举仅 6 天" },
+        { "date_label": "10/28–29", "title": "财报高峰", "detail": "Alphabet、Meta、微软（10/28），亚马逊、英特尔（10/29）" }
+      ]
+    }
+  ],
+  "disclaimer": "数据截至美西时间 10/17 周六中午（本周收盘数据），周末无盘后交易。仅供参考，不构成投资建议。"
+}

@@ -8,7 +8,10 @@ from app.api.dependencies.auth import verify_admin
 from app.core.supabase import get_supabase_service
 
 logger = logging.getLogger(__name__)
+from .briefs import router as briefs_router
+
 router = APIRouter()
+router.include_router(briefs_router)
 BUSINESS_TABLES = (
     "user_profiles", "user_api_keys", "chat_conversations", "chat_messages",
     "trading_analyses", "youtube_stock_opinions", "portfolio_connections",
