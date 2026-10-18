@@ -54,6 +54,17 @@ export function briefFilters(params?: BriefSearchParams, now = new Date()) {
   const date = params?.date && isBriefDate(params.date) ? params.date : pacificBriefToday(now);
   return { type, page, date };
 }
+
+/** US equities close at 13:00 Pacific; explicit edition selection always wins. */
+export function briefReadingFilters(params?: BriefSearchParams, now = new Date()) {
+  const { date } = briefFilters(params, now);
+  const hour = Number(new Intl.DateTimeFormat("en-US", {
+    hour: "2-digit", hourCycle: "h23", timeZone: "America/Los_Angeles",
+  }).format(now));
+  const type: "morning" | "evening" = params?.type === "morning" || params?.type === "evening"
+    ? params.type : hour < 13 ? "morning" : "evening";
+  return { date, type, id: `${type}-${date}` };
+}
 export function briefLibraryHref(type: BriefFilter = "all", page = 1, date?: string) {
   const params = new URLSearchParams();
   if (type !== "all") params.set("type", type);

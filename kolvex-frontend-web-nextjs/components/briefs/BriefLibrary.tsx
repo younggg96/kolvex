@@ -1,88 +1,64 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Moon, Sun, RefreshCw, ChevronLeft, ChevronRight } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { CalendarDays, ChevronDown, ChevronLeft, ChevronRight, Moon, RefreshCw, Sun } from "lucide-react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useTranslation } from "@/lib/i18n";
-import { briefArticleHref, briefFilters, briefLibraryHref, formatBriefDate, shiftBriefDate, type BriefFilter, type BriefList, type BriefSearchParams, type BriefSummary } from "@/lib/dailyBriefs";
-import { BriefImageMedia } from "./BriefImage";
-import BriefState from "./BriefState";
+import { briefLibraryHref, briefReadingFilters, formatBriefDate, shiftBriefDate, type BriefSearchParams, type DailyBrief } from "@/lib/dailyBriefs";
 import BriefCalendar from "./BriefCalendar";
+import BriefContent from "./BriefContent";
+import BriefState from "./BriefState";
 import { useBriefData } from "./useBriefData";
-
-function IssueMeta({ issue }: { issue: BriefSummary }) {
-  const { t, locale } = useTranslation();
-  const Icon = issue.brief_type === "morning" ? Sun : Moon;
-  return <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-muted-foreground">
-    <span className="inline-flex items-center gap-1.5"><Icon className="h-3.5 w-3.5" aria-hidden="true" />{t(`briefs.${issue.brief_type}`)}</span>
-    <time dateTime={issue.brief_date}>{formatBriefDate(issue.brief_date, locale)}</time>
-    {issue.summary?.market_status === "weekend" && <span>{t("briefs.weekend")}</span>}
-  </div>;
-}
 
 export default function BriefLibrary({ searchParams }: { searchParams?: BriefSearchParams }) {
   const { t, locale } = useTranslation();
-  const { type, page, date } = briefFilters(searchParams);
-  const query = new URLSearchParams({ page: String(page), date });
-  if (type !== "all") query.set("type", type);
-  const { data, loading, error, retry } = useBriefData<BriefList>(`?${query}`);
-  useEffect(() => { document.title = `${t("briefs.title")} | Kolvex`; }, [t, type, page, date, data, error]);
-  const featured = page === 1 ? data?.items[0] : undefined;
-  const archive = featured ? data!.items.slice(1) : data?.items ?? [];
-  const image = featured?.summary?.hero_image;
-  const filters: BriefFilter[] = ["all", "morning", "evening"];
+  const router = useRouter();
+  const [calendarOpen, setCalendarOpen] = useState(false);
+  const { type, date, id } = briefReadingFilters(searchParams);
+  const { data, loading, error, retry } = useBriefData<{ payload: DailyBrief }>(`?id=${encodeURIComponent(id)}`);
+  useEffect(() => { document.title = `${data?.payload.brief.headline || t("briefs.title")} | Kolvex`; }, [data, t]);
 
   return <DashboardLayout title={t("briefs.title")}>
     <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-10 pt-6 md:px-8 md:pt-8">
-      <div className="mx-auto max-w-[1080px] space-y-8">
-        <div className="grid items-start gap-6 lg:grid-cols-[296px_minmax(0,1fr)] lg:gap-8">
-          <BriefCalendar date={date} type={type} />
-          <div className="min-w-0 space-y-6">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <h2 className="text-xl font-semibold">{formatBriefDate(date, locale)}</h2>
-              <nav aria-label={t("briefs.dateNavigation")} className="flex gap-2">
-                <Button asChild size="icon" variant="outline" title={t("briefs.previousDay")}><Link href={briefLibraryHref(type, 1, shiftBriefDate(date, -1))} aria-label={t("briefs.previousDay")}><ChevronLeft className="h-4 w-4" aria-hidden="true" /></Link></Button>
-                <Button asChild size="icon" variant="outline" title={t("briefs.nextDay")}><Link href={briefLibraryHref(type, 1, shiftBriefDate(date, 1))} aria-label={t("briefs.nextDay")}><ChevronRight className="h-4 w-4" aria-hidden="true" /></Link></Button>
-              </nav>
-            </div>
-            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border pb-4">
-              <nav aria-label={t("briefs.filterLabel")} className="flex gap-1">
-                {filters.map(value => <Button key={value} asChild size="sm" variant={type === value ? "secondary" : "ghost"}><Link href={briefLibraryHref(value, 1, date)} aria-current={type === value ? "page" : undefined}>{t(value === "all" ? "common.all" : `briefs.${value}`)}</Link></Button>)}
-              </nav>
-              <Button variant="ghost" size="sm" disabled={loading} onClick={retry}><RefreshCw className="mr-1 h-3.5 w-3.5" aria-hidden="true" />{t("common.refresh")}</Button>
-            </div>
-            {loading || error ? <BriefState loading={loading} error={error} retry={retry} /> : !data?.items.length ? <div className="space-y-3 rounded-xl border border-border px-6 py-12 text-center">
-              <h2 className="text-xl font-semibold">{t("briefs.emptyDate")}</h2>
-              <p className="text-sm leading-6 text-muted-foreground">{t("briefs.emptyDetail")}</p>
-              {type !== "all" && <Button asChild variant="outline"><Link href={briefLibraryHref("all", 1, date)}>{t("briefs.showAll")}</Link></Button>}
-              {page > 1 && <Button asChild variant="outline"><Link href={briefLibraryHref(type, 1, date)}>{t("briefs.firstPage")}</Link></Button>}
-            </div> : <>
-              {featured && <article className="border-b border-border pb-8">
-                <Link href={briefArticleHref(featured.id, type, page, date)} className="group grid items-center gap-6 rounded-xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary">
-                  {image && <div className="overflow-hidden rounded-xl"><BriefImageMedia key={image.url} image={image} /></div>}
-                  <div className="space-y-4">
-                    <p className="text-xs font-medium text-positive">{t("briefs.selectedIssue")}</p>
-                    <IssueMeta issue={featured} />
-                    <h2 className="text-2xl font-semibold leading-[1.45] tracking-tight group-hover:underline group-hover:underline-offset-4 sm:text-[30px]">{featured.headline}</h2>
-                    {featured.summary?.subtitle && <p className="max-w-prose text-sm leading-7 text-muted-foreground">{featured.summary.subtitle}</p>}
-                    <span className="inline-block text-sm font-semibold underline underline-offset-4">{t("briefs.read")}</span>
-                  </div>
-                </Link>
-                {image && <p className="mt-3 text-xs text-muted-foreground">{t("briefs.imageCredit")} <a href={image.source_page} target="_blank" rel="noopener noreferrer" className="underline underline-offset-4">{image.credit}</a></p>}
-              </article>}
-              {archive.length > 0 && <section aria-label={t("briefs.sameDateIssues")}><h2 className="mb-3 text-lg font-semibold">{t("briefs.sameDateIssues")}</h2><ul className="divide-y divide-border">{archive.map(issue => <li key={issue.id}><Link href={briefArticleHref(issue.id, type, page, date)} className="group block space-y-2 rounded-xl px-3 py-5 transition-colors hover:bg-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"><IssueMeta issue={issue} /><h3 className="text-lg font-semibold leading-8 group-hover:underline group-hover:underline-offset-4">{issue.headline}</h3>{issue.summary?.subtitle && <p className="text-sm leading-7 text-muted-foreground">{issue.summary.subtitle}</p>}</Link></li>)}</ul></section>}
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <p className="text-xs text-muted-foreground">{t("briefs.pagination", { page: String(page), total: String(data.total) })}</p>
-                <nav aria-label={t("briefs.paginationLabel")} className="flex gap-2">
-                  {page > 1 && <Button asChild size="sm" variant="outline"><Link href={briefLibraryHref(type, page - 1, date)}>{t("common.previous")}</Link></Button>}
-                  {page * 10 < data.total && <Button asChild size="sm" variant="outline"><Link href={briefLibraryHref(type, page + 1, date)}>{t("briefs.nextPage")}</Link></Button>}
-                </nav>
-              </div>
-            </>}
-          </div>
+      <div className="mx-auto max-w-[1080px] space-y-6">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
+            <PopoverTrigger asChild>
+              <Button variant="outline" aria-label={`${t("briefs.chooseDate")}：${formatBriefDate(date, locale)}`}>
+                <CalendarDays className="mr-2 h-4 w-4" aria-hidden="true" />
+                {formatBriefDate(date, locale)}
+                <ChevronDown className="ml-2 h-4 w-4" aria-hidden="true" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent align="start" collisionPadding={16} aria-label={t("briefs.calendarLabel")} className="max-h-[var(--radix-popover-content-available-height)] max-w-[calc(100vw-2rem)] overflow-y-auto p-0">
+              <BriefCalendar date={date} type={type} onSelectDate={() => setCalendarOpen(false)} />
+            </PopoverContent>
+          </Popover>
+          <nav aria-label={t("briefs.dateNavigation")} className="flex gap-2">
+            <Button asChild size="icon" variant="outline" title={t("briefs.previousDay")}><Link href={briefLibraryHref(type, 1, shiftBriefDate(date, -1))} aria-label={t("briefs.previousDay")}><ChevronLeft className="h-4 w-4" aria-hidden="true" /></Link></Button>
+            <Button asChild size="icon" variant="outline" title={t("briefs.nextDay")}><Link href={briefLibraryHref(type, 1, shiftBriefDate(date, 1))} aria-label={t("briefs.nextDay")}><ChevronRight className="h-4 w-4" aria-hidden="true" /></Link></Button>
+          </nav>
         </div>
+        <Tabs value={type} onValueChange={value => router.push(briefLibraryHref(value === "morning" ? "morning" : "evening", 1, date))}>
+          <div className="mb-6 flex items-center gap-4 border-b border-border">
+            <TabsList aria-label={t("briefs.filterLabel")} className="min-w-0 flex-1 border-0">
+              <TabsTrigger value="morning"><Sun className="mr-2 h-4 w-4" aria-hidden="true" />{t("briefs.morning")}</TabsTrigger>
+              <TabsTrigger value="evening"><Moon className="mr-2 h-4 w-4" aria-hidden="true" />{t("briefs.evening")}</TabsTrigger>
+            </TabsList>
+            <Button variant="ghost" size="sm" disabled={loading} onClick={retry}><RefreshCw className="mr-1 h-3.5 w-3.5" aria-hidden="true" />{t("common.refresh")}</Button>
+          </div>
+          <TabsContent value={type}>
+            {loading || (error && error !== 404) ? <BriefState loading={loading} error={error} retry={retry} /> : error === 404 ? <div className="space-y-3 py-12 text-center">
+              <h2 className="text-xl font-semibold">{t("briefs.emptyEdition", { edition: t(`briefs.${type}`) })}</h2>
+              <p className="text-sm leading-6 text-muted-foreground">{t("briefs.emptyEditionDetail")}</p>
+            </div> : data && <BriefContent key={id} document={data.payload} />}
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   </DashboardLayout>;

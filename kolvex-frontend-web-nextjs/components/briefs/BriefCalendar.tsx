@@ -27,7 +27,7 @@ function BriefDay(props: DayContentProps) {
   </span>;
 }
 
-export default function BriefCalendar({ date, type }: { date: string; type: BriefFilter }) {
+export default function BriefCalendar({ date, type, onSelectDate }: { date: string; type: BriefFilter; onSelectDate?: () => void }) {
   const { t, locale } = useTranslation();
   const router = useRouter();
   const [month, setMonth] = useState(() => briefCalendarDate(date));
@@ -36,19 +36,21 @@ export default function BriefCalendar({ date, type }: { date: string; type: Brie
   const { data, loading, error, retry } = useBriefData<BriefCalendarData>(`?calendar=1&month=${monthKey}`);
   const available = useMemo<Availability>(() => new Map(data?.days.map(day => [day.date, day.types]) ?? []), [data]);
   const today = pacificBriefToday();
-  return <aside aria-label={t("briefs.calendarLabel")} className="self-start rounded-xl border border-border bg-card p-4 lg:sticky lg:top-0">
+  return <aside aria-label={t("briefs.calendarLabel")} className="rounded-xl border border-border bg-card p-4">
     <div className="mb-4 flex items-center justify-between gap-3">
       <h2 className="text-sm font-semibold">{t("briefs.calendarLabel")}</h2>
     </div>
     <CalendarAvailability.Provider value={available}>
       <Calendar
         mode="single"
+        required
+        initialFocus
         locale={locale === "zh" ? zhCN : enUS}
         month={month}
         onMonthChange={setMonth}
         today={briefCalendarDate(today)}
         selected={briefCalendarDate(date)}
-        onSelect={value => { if (value) router.push(briefLibraryHref(type, 1, briefDateKey(value))); }}
+        onSelect={value => { if (value) { router.push(briefLibraryHref(type, 1, briefDateKey(value))); onSelectDate?.(); } }}
         showOutsideDays={false}
         fixedWeeks
         className="mx-auto w-fit"
@@ -71,6 +73,6 @@ export default function BriefCalendar({ date, type }: { date: string; type: Brie
     <div className="mt-3 min-h-5 text-center text-xs leading-5 text-muted-foreground" aria-live="polite">
       {loading ? t("briefs.loadingDates") : error ? <span>{t("briefs.calendarError")} <button type="button" onClick={retry} className="cursor-pointer underline underline-offset-4 focus-visible:outline focus-visible:outline-2">{t("common.retry")}</button></span> : t("briefs.pacificDates")}
     </div>
-    <Button asChild variant="outline" size="sm" className="mt-3 w-full"><Link href={briefLibraryHref(type, 1, today)}>{t("briefs.today")}</Link></Button>
+    <Button asChild variant="outline" size="sm" className="mt-3 w-full"><Link href={briefLibraryHref(type, 1, today)} onClick={onSelectDate}>{t("briefs.today")}</Link></Button>
   </aside>;
 }

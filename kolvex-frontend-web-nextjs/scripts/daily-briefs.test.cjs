@@ -10,7 +10,7 @@ const exportsObject = {};
 vm.runInNewContext(ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020 } }).outputText, {
   exports: exportsObject, URLSearchParams, Intl, Date, Number,
 });
-const { briefFilters, briefLibraryHref, briefArticleHref, formatBriefDate, briefDateKey, briefCalendarDate, shiftBriefDate, pacificBriefToday } = exportsObject;
+const { briefReadingFilters, briefFilters, briefLibraryHref, briefArticleHref, formatBriefDate, briefDateKey, briefCalendarDate, shiftBriefDate, pacificBriefToday } = exportsObject;
 
 test("article and return links retain the reader's filter and page", () => {
   assert.equal(briefLibraryHref("evening", 2), "/dashboard/briefs?type=evening&page=2");
@@ -78,5 +78,27 @@ test("reader entry defaults to only today in Pacific time, even with no publishe
     assert.equal(briefFilters({ type: "morning" }, now).date, expected);
     assert.equal(briefFilters({ date: "2026-10-16" }, now).date, "2026-10-16");
     assert.equal(briefLibraryHref(entry.type, entry.page, entry.date), `/dashboard/briefs?date=${expected}`);
+  }
+});
+
+test("direct reader chooses morning before Pacific close and evening afterwards", () => {
+  for (const [instant, expected, date] of [
+    ["2026-10-18T07:00:00Z", "morning", "2026-10-18"],
+    ["2026-10-18T19:59:59Z", "morning", "2026-10-18"],
+    ["2026-10-18T20:00:00Z", "evening", "2026-10-18"],
+    ["2026-10-19T06:59:59Z", "evening", "2026-10-18"],
+    ["2026-12-18T20:59:59Z", "morning", "2026-12-18"],
+    ["2026-12-18T21:00:00Z", "evening", "2026-12-18"],
+  ]) {
+    const now = new Date(instant);
+    const result = briefReadingFilters(undefined, now);
+    assert.equal(result.date, date);
+    assert.equal(result.type, expected);
+    assert.equal(result.id, `${expected}-${date}`);
+    assert.equal(briefReadingFilters({ type: "all" }, now).type, expected);
+    for (const type of ["morning", "evening"]) {
+      const selected = briefReadingFilters({ type, date: "2026-10-17" }, now);
+      assert.equal(selected.id, `${type}-2026-10-17`);
+    }
   }
 });

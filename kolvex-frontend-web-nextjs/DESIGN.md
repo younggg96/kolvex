@@ -471,16 +471,19 @@ sidebar and five-item mobile navigation. The route is readable by signed-in
 users; only administrators import content. Importing makes the issue visible
 immediately, as requested in the reader-flow extension.
 
-The library uses the existing 1080px reading width, 16/32px page padding,
-Inter/Chinese stack and semantic light/dark tokens. Latest-issue photography
-sits beside a left-aligned headline on desktop and above it on phones. Older
-issues form quiet divided rows rather than promotional metric cards. Supplied
-image credits remain visible. No new colors, fonts or token values are added.
+The reader uses the existing 1080px reading width, 16/32px page padding,
+Inter/Chinese stack and semantic light/dark tokens. It renders the selected
+issue's full `BriefContent` immediately, with no summary card or read-more step.
+Supplied image credits remain visible; no new design tokens are introduced.
 
-All/Morning/Evening are shared pill Button links with `aria-current`; filters
-and pagination live in the URL. The API returns ten issues per page. Each issue
-has a durable detail URL; header/footer return actions preserve the originating
-filter and page. `HeaderBackButton` owns the icon return control.
+Shared Radix Tabs owns Morning/Evening selection and keyboard navigation. There
+is no All tab. Opening without an explicit edition chooses Morning before
+13:00 America/Los_Angeles and Evening from 13:00 onward, including weekends;
+this is an editorial time rule, not an exchange holiday/early-close schedule.
+Explicit type/date URL selection always wins. The reader requests the unique
+`{type}-{date}` detail directly, and a missing issue shows an edition-specific
+empty state without switching to another date or edition. Legacy article URLs
+remain supported; Admin import and preview remain unchanged.
 `BriefContent` owns the article in both admin preview and the reader, and
 `BriefImage` owns images, captions, credit links and failed-image placeholders.
 Long text wraps; article disclosures remain in document flow.
@@ -494,8 +497,10 @@ vertical scrolling.
 
 ### Brief calendar
 
-The library pairs a 296px monthly calendar with the issue list on desktop;
-phones stack the same calendar above the list. The introductory sentence and
+The date button opens the monthly calendar in the shared Radix Popover.
+It is closed initially on desktop and phones; selection closes it and restores
+focus to the trigger. Escape and outside click dismiss it. Collision-aware
+placement and bounded internal scrolling keep the popup within the viewport. The introductory sentence and
 import action are absent from the reader, per the follow-up request. Importing
 remains in Admin. Calendar owns dates, not financial events or a generated
 market schedule.
@@ -507,10 +512,9 @@ day labels. Selected dates use existing foreground/background tokens for contras
 The calendar queries only its displayed month, at most 62 issue records. Marker
 loading/failure has its own retry without blocking reading.
 
-`date=YYYY-MM-DD` is stored with type/page in URLs; changing the date or edition
-resets paging and retains the other filter. Article return links retain all
-three. Opening the reader without a valid date selects today in America/Los_Angeles
-and requests only that date’s morning/evening issues. Empty days show an empty
+`date=YYYY-MM-DD` and `type=morning|evening` live in URLs; date and edition
+changes retain the other choice. Opening without a valid date selects today
+in America/Los_Angeles and requests only that date’s selected edition. Empty days show an empty
 state, never an older latest issue. There is no All dates mode. Today returns
 to the current Pacific date; previous/next day cross month and year boundaries.
 Dates remain calendar labels in every reader timezone.

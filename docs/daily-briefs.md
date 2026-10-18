@@ -63,6 +63,16 @@ The existing ID constraint permits at most two records per date, so a bounded
 The reader opens on today in America/Los_Angeles and requests only that date,
 even when no issue has been published. It never falls back to a historical issue.
 The localized calendar, Today and previous/next day select one date at a time;
-All/Morning/Evening filters editions within that selected date. Article links and return actions preserve date/type/page.
+Morning/Evening tabs switch the full article within that selected date. Article links and return actions preserve date/type/page.
 It does not display the intro sentence or an import control; Admin still owns
 importing. Empty dates remain selectable and show an explicit empty state.
+
+## Direct daily reader
+
+The main reader fetches `GET /api/briefs?id={type}-{date}` and displays full
+`BriefContent`, with only Morning/Evening tabs. Default date is Pacific today;
+default edition is Morning before 13:00 Pacific and Evening afterwards. Explicit
+URL selections take precedence. Missing editions show an empty state and never
+fall back to historical content. The date button opens the shared Popover and
+Calendar; selecting a date or Today closes it. The list API and durable article
+URLs remain available for compatibility and Admin. Import remains Admin-only.
