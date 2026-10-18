@@ -27,11 +27,11 @@ function BriefDay(props: DayContentProps) {
   </span>;
 }
 
-export default function BriefCalendar({ date, type }: { date?: string; type: BriefFilter }) {
+export default function BriefCalendar({ date, type }: { date: string; type: BriefFilter }) {
   const { t, locale } = useTranslation();
   const router = useRouter();
-  const [month, setMonth] = useState(() => briefCalendarDate(date || pacificBriefToday()));
-  useEffect(() => { if (date) setMonth(briefCalendarDate(date)); }, [date]);
+  const [month, setMonth] = useState(() => briefCalendarDate(date));
+  useEffect(() => { setMonth(briefCalendarDate(date)); }, [date]);
   const monthKey = briefDateKey(month).slice(0, 7);
   const { data, loading, error, retry } = useBriefData<BriefCalendarData>(`?calendar=1&month=${monthKey}`);
   const available = useMemo<Availability>(() => new Map(data?.days.map(day => [day.date, day.types]) ?? []), [data]);
@@ -39,7 +39,6 @@ export default function BriefCalendar({ date, type }: { date?: string; type: Bri
   return <aside aria-label={t("briefs.calendarLabel")} className="self-start rounded-xl border border-border bg-card p-4 lg:sticky lg:top-0">
     <div className="mb-4 flex items-center justify-between gap-3">
       <h2 className="text-sm font-semibold">{t("briefs.calendarLabel")}</h2>
-      <Button asChild size="xs" variant={date ? "ghost" : "secondary"}><Link href={briefLibraryHref(type)} aria-current={!date ? "page" : undefined}>{t("briefs.allDates")}</Link></Button>
     </div>
     <CalendarAvailability.Provider value={available}>
       <Calendar
@@ -48,7 +47,7 @@ export default function BriefCalendar({ date, type }: { date?: string; type: Bri
         month={month}
         onMonthChange={setMonth}
         today={briefCalendarDate(today)}
-        selected={date ? briefCalendarDate(date) : undefined}
+        selected={briefCalendarDate(date)}
         onSelect={value => { if (value) router.push(briefLibraryHref(type, 1, briefDateKey(value))); }}
         showOutsideDays={false}
         fixedWeeks

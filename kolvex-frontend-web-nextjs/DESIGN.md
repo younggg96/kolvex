@@ -509,5 +509,8 @@ loading/failure has its own retry without blocking reading.
 
 `date=YYYY-MM-DD` is stored with type/page in URLs; changing the date or edition
 resets paging and retains the other filter. Article return links retain all
-three. Previous/next day cross month and year boundaries; All dates removes only
-the date filter. Dates remain calendar labels in every reader timezone.
+three. Opening the reader without a valid date selects today in America/Los_Angeles
+and requests only that date’s morning/evening issues. Empty days show an empty
+state, never an older latest issue. There is no All dates mode. Today returns
+to the current Pacific date; previous/next day cross month and year boundaries.
+Dates remain calendar labels in every reader timezone.

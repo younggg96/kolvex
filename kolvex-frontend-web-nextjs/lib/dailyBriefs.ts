@@ -46,11 +46,12 @@ export type BriefFilter = "all" | "morning" | "evening";
 export interface BriefSearchParams { type?: string; page?: string; date?: string }
 export interface BriefCalendarData { month: string; days: { date: string; types: ("morning" | "evening")[] }[] }
 
-export function briefFilters(params?: BriefSearchParams) {
+export function briefFilters(params?: BriefSearchParams, now = new Date()) {
   const type: BriefFilter = params?.type === "morning" || params?.type === "evening" ? params.type : "all";
   const value = Number(params?.page || 1);
   const page = Number.isSafeInteger(value) && value > 0 && value <= 1000000 ? value : 1;
-  const date = isBriefDate(params?.date) ? params!.date : undefined;
+  // Opening the reader always shows one Pacific date, including empty days.
+  const date = params?.date && isBriefDate(params.date) ? params.date : pacificBriefToday(now);
   return { type, page, date };
 }
 export function briefLibraryHref(type: BriefFilter = "all", page = 1, date?: string) {

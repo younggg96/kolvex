@@ -60,7 +60,9 @@ in that month, grouped for calendar markers; authentication is unchanged.
 The existing ID constraint permits at most two records per date, so a bounded
 62-row query covers any month. Dates are the imported Pacific issue dates.
 
-The reader shows a localized calendar, All dates, Today, previous/next day and
-All/Morning/Evening. Article links and return actions preserve date/type/page.
+The reader opens on today in America/Los_Angeles and requests only that date,
+even when no issue has been published. It never falls back to a historical issue.
+The localized calendar, Today and previous/next day select one date at a time;
+All/Morning/Evening filters editions within that selected date. Article links and return actions preserve date/type/page.
 It does not display the intro sentence or an import control; Admin still owns
 importing. Empty dates remain selectable and show an explicit empty state.

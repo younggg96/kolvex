@@ -45,7 +45,7 @@ test("calendar filters survive type changes, article links and returns", () => {
   assert.equal(parsed.date, "2026-10-17");
   assert.equal(briefLibraryHref(parsed.type, parsed.page, parsed.date), "/dashboard/briefs?type=evening&page=2&date=2026-10-17");
   assert.equal(briefArticleHref("evening-2026-10-17", parsed.type, parsed.page, parsed.date), "/dashboard/briefs/evening-2026-10-17?type=evening&page=2&date=2026-10-17");
-  for (const date of ["2026-02-30", "2026-13-01", "invalid", "2026-1-1"]) assert.equal(briefFilters({ date }).date, undefined);
+  for (const date of ["2026-02-30", "2026-13-01", "invalid", "2026-1-1"]) assert.equal(briefFilters({ date }, new Date("2026-10-18T12:00:00Z")).date, "2026-10-18");
 });
 
 test("calendar day changes handle leap days, month/year boundaries and DST", () => {
@@ -62,4 +62,21 @@ test("calendar day changes handle leap days, month/year boundaries and DST", () 
       assert.equal(pacificBriefToday(new Date("2026-12-18T07:00:00Z")), "2026-12-17");
     }
   } finally { if (original === undefined) delete process.env.TZ; else process.env.TZ = original; }
+});
+
+test("reader entry defaults to only today in Pacific time, even with no published issue", () => {
+  for (const [instant, expected] of [
+    ["2026-10-18T06:59:59Z", "2026-10-17"],
+    ["2026-10-18T07:00:00Z", "2026-10-18"],
+    ["2026-12-18T07:59:59Z", "2026-12-17"],
+    ["2026-12-18T08:00:00Z", "2026-12-18"],
+  ]) {
+    const now = new Date(instant);
+    const entry = briefFilters(undefined, now);
+    assert.equal(entry.date, expected);
+    assert.equal(entry.type, "all");
+    assert.equal(briefFilters({ type: "morning" }, now).date, expected);
+    assert.equal(briefFilters({ date: "2026-10-16" }, now).date, "2026-10-16");
+    assert.equal(briefLibraryHref(entry.type, entry.page, entry.date), `/dashboard/briefs?date=${expected}`);
+  }
 });
