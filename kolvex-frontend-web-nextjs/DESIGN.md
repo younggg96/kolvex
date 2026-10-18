@@ -491,3 +491,23 @@ Empty, missing, expired-session and retryable error states are localized.
 Imported article text remains in its source language. `app/globals.css` remains
 the theme and scrollbar owner; the page's established content scroller owns
 vertical scrolling.
+
+### Brief calendar
+
+The library pairs a 296px monthly calendar with the issue list on desktop;
+phones stack the same calendar above the list. The introductory sentence and
+import action are absent from the reader, per the follow-up request. Importing
+remains in Admin. Calendar owns dates, not financial events or a generated
+market schedule.
+
+`components/ui/calendar.tsx` (React Day Picker) owns date-grid keyboard behavior.
+`BriefCalendar` is its editorial variant: localized months/weekdays/labels,
+Pacific today, filled/outlined morning/evening markers and matching accessible
+day labels. Selected dates use existing foreground/background tokens for contrast.
+The calendar queries only its displayed month, at most 62 issue records. Marker
+loading/failure has its own retry without blocking reading.
+
+`date=YYYY-MM-DD` is stored with type/page in URLs; changing the date or edition
+resets paging and retains the other filter. Article return links retain all
+three. Previous/next day cross month and year boundaries; All dates removes only
+the date filter. Dates remain calendar labels in every reader timezone.

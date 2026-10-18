@@ -31,7 +31,7 @@ class BriefReaderTests(unittest.TestCase):
         self.query.select.return_value.eq.return_value.single.return_value.execute.return_value.data = {"is_admin": False}
 
     def test_anonymous_cannot_read(self):
-        for url in ["/briefs", "/briefs/evening-2026-10-17"]:
+        for url in ["/briefs", "/briefs/evening-2026-10-17", "/briefs/calendar?month=2026-10"]:
             self.assertEqual(self.client.get(url).status_code, 401)
         self.db.table.assert_not_called()
 
@@ -76,3 +76,37 @@ class BriefReaderTests(unittest.TestCase):
             response = self.client.get(path)
             self.assertEqual(response.status_code, 503)
             self.assertNotIn("private database failure", response.text)
+
+
+    def test_date_and_type_filters_are_combined(self):
+        self.login()
+        filtered = self.query.select.return_value.eq.return_value.eq.return_value
+        filtered.order.return_value.order.return_value.range.return_value.execute.return_value = SimpleNamespace(data=[], count=0)
+        response = self.client.get("/briefs?type=evening&date=2026-10-17")
+        self.assertEqual(response.status_code, 200)
+        self.query.select.return_value.eq.assert_called_once_with("brief_type", "evening")
+        self.query.select.return_value.eq.return_value.eq.assert_called_once_with("brief_date", "2026-10-17")
+        for value in ["2026-02-30", "2026-13-01", "not-a-date"]:
+            self.assertEqual(self.client.get(f"/briefs?date={value}").status_code, 422)
+
+    def test_calendar_marks_both_editions_and_limits_month(self):
+        self.login()
+        execute = self.query.select.return_value.gte.return_value.lt.return_value.order.return_value.limit.return_value.execute
+        execute.return_value = SimpleNamespace(data=[
+            {"brief_date": "2026-10-17", "brief_type": "morning"},
+            {"brief_date": "2026-10-17", "brief_type": "evening"},
+            {"brief_date": "2026-10-16", "brief_type": "evening"},
+        ])
+        response = self.client.get("/briefs/calendar?month=2026-10")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), {"month": "2026-10", "days": [
+            {"date": "2026-10-16", "types": ["evening"]},
+            {"date": "2026-10-17", "types": ["evening", "morning"]},
+        ]})
+        self.query.select.return_value.gte.assert_called_with("brief_date", "2026-10-01")
+        self.query.select.return_value.gte.return_value.lt.assert_called_with("brief_date", "2026-11-01")
+        self.query.select.return_value.gte.return_value.lt.return_value.order.return_value.limit.assert_called_with(62)
+        for month in ["2026-13", "2026-1", "0000-01", "9999-12", "bad"]:
+            self.assertEqual(self.client.get(f"/briefs/calendar?month={month}").status_code, 422)
+        self.client.get("/briefs/calendar?month=2026-12")
+        self.query.select.return_value.gte.return_value.lt.assert_called_with("brief_date", "2027-01-01")

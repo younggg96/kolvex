@@ -13,8 +13,8 @@ import { useBriefData } from "./useBriefData";
 
 export default function BriefReader({ id, searchParams }: { id: string; searchParams?: BriefSearchParams }) {
   const { t } = useTranslation();
-  const { type, page } = briefFilters(searchParams);
-  const back = briefLibraryHref(type, page);
+  const { type, page, date } = briefFilters(searchParams);
+  const back = briefLibraryHref(type, page, date);
   const { data, loading, error, retry } = useBriefData<{ payload: DailyBrief }>(`?id=${encodeURIComponent(id)}`);
   useEffect(() => { document.title = `${data?.payload.brief.headline || t("briefs.title")} | Kolvex`; }, [data, t]);
   return <DashboardLayout title={t("briefs.title")} headerLeftAction={<HeaderBackButton href={back} label={t("briefs.back")} />}>

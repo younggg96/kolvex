@@ -11,9 +11,13 @@ export async function GET(request: NextRequest) {
     if (!session?.access_token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     const params = request.nextUrl.searchParams;
     const id = params.get("id");
-    const url = new URL(`${API}/api/v1/briefs${id ? `/${encodeURIComponent(id)}` : ""}`);
-    if (!id) {
+    const calendar = params.get("calendar") === "1";
+    const url = new URL(`${API}/api/v1/briefs${calendar ? "/calendar" : id ? `/${encodeURIComponent(id)}` : ""}`);
+    if (calendar) {
+      url.searchParams.set("month", params.get("month") || "");
+    } else if (!id) {
       url.searchParams.set("page", params.get("page") || "1");
+      if (params.has("date")) url.searchParams.set("date", params.get("date")!);
       if (params.has("type")) url.searchParams.set("type", params.get("type")!);
     }
     const response = await fetch(url, {

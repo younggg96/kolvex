@@ -51,3 +51,16 @@ and the complete saved evening article. Production browser checks confirmed the
 primary navigation, filtered empty state, article sections/disclaimer, preserved
 return filter, missing-issue recovery, and 390px mobile layout (scrollWidth equals
 viewport width). A browser-found title reset on filter navigation was corrected.
+
+## Date calendar
+
+`GET /api/v1/briefs?date=2026-10-17&type=evening` combines date and edition
+filters. `GET /api/v1/briefs/calendar?month=2026-10` returns only dates/types
+in that month, grouped for calendar markers; authentication is unchanged.
+The existing ID constraint permits at most two records per date, so a bounded
+62-row query covers any month. Dates are the imported Pacific issue dates.
+
+The reader shows a localized calendar, All dates, Today, previous/next day and
+All/Morning/Evening. Article links and return actions preserve date/type/page.
+It does not display the intro sentence or an import control; Admin still owns
+importing. Empty dates remain selectable and show an explicit empty state.

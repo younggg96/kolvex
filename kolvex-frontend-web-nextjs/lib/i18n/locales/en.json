@@ -1663,7 +1663,7 @@
     "archive": "Previous issues",
     "empty": "The first brief is on its way",
     "emptyFiltered": "No briefs match this filter",
-    "emptyDetail": "Imported briefs appear here. Check back or refresh later.",
+    "emptyDetail": "Choose another date or edition, or check back later for a new brief.",
     "showAll": "View all briefs",
     "firstPage": "Back to page one",
     "pagination": "Page {page}, {total} issues",
@@ -1687,6 +1687,21 @@
     "weekend": "Weekend review",
     "tradingDay": "Trading day",
     "generatedAt": "Generated (Pacific):",
-    "viewSaved": "Read in Daily Briefs"
+    "viewSaved": "Read in Daily Briefs",
+    "calendarLabel": "Brief calendar",
+    "allDates": "All dates",
+    "previousMonth": "Previous month",
+    "nextMonth": "Next month",
+    "noIssue": "No brief",
+    "loadingDates": "Loading issue dates…",
+    "calendarError": "Issue markers unavailable.",
+    "pacificDates": "Dates follow Pacific time",
+    "today": "Today",
+    "dateNavigation": "Change issue date",
+    "previousDay": "Previous day",
+    "nextDay": "Next day",
+    "emptyDate": "No matching briefs for this date",
+    "selectedIssue": "Selected date",
+    "sameDateIssues": "Other briefs on this date"
   }
 }

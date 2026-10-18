@@ -158,7 +158,7 @@ class Envelope(Content):
         return sorted(sections, key=lambda s: s.order)
 
 
-def list_saved_briefs(db, page: int, brief_type: str | None = None):
+def list_saved_briefs(db, page: int, brief_type: str | None = None, brief_date: str | None = None):
     """Project editorial metadata only; never expose import actor/account fields."""
     query = db.table("daily_briefs").select(
         "id,brief_date,brief_type,title,headline,created_at,summary:payload->brief",
@@ -166,6 +166,8 @@ def list_saved_briefs(db, page: int, brief_type: str | None = None):
     )
     if brief_type:
         query = query.eq("brief_type", brief_type)
+    if brief_date:
+        query = query.eq("brief_date", brief_date)
     result = query.order("brief_date", desc=True).order("id").range(
         (page - 1) * 10, page * 10 - 1
     ).execute()
@@ -179,3 +181,16 @@ def read_saved_brief(db, brief_id: str):
     # Revalidate stored documents so legacy formatted numbers and new defaults
     # are handled identically in the admin preview and the reader.
     return {"payload": Envelope.model_validate(result.data[0]["payload"]).model_dump(mode="json")}
+
+
+def list_brief_calendar(db, month: str):
+    """At most two immutable issues per day; query one bounded calendar month."""
+    first = date.fromisoformat(f"{month}-01")
+    next_month = date(first.year + 1, 1, 1) if first.month == 12 else date(first.year, first.month + 1, 1)
+    result = (db.table("daily_briefs").select("brief_date,brief_type")
+              .gte("brief_date", first.isoformat()).lt("brief_date", next_month.isoformat())
+              .order("brief_date").limit(62).execute())
+    days = {}
+    for row in result.data or []:
+        days.setdefault(row["brief_date"], set()).add(row["brief_type"])
+    return {"month": month, "days": [{"date": key, "types": sorted(types)} for key, types in sorted(days.items())]}

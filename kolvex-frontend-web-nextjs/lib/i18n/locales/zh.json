@@ -1663,7 +1663,7 @@
     "archive": "历史简报",
     "empty": "第一份简报，敬请期待",
     "emptyFiltered": "暂无符合筛选的简报",
-    "emptyDetail": "简报导入后会显示在这里，可稍后刷新查看。",
+    "emptyDetail": "可切换其他日期或类型，稍后刷新查看新简报。",
     "showAll": "查看全部简报",
     "firstPage": "返回第一页",
     "pagination": "第 {page} 页，共 {total} 期",
@@ -1687,6 +1687,21 @@
     "weekend": "周末·周复盘",
     "tradingDay": "交易日",
     "generatedAt": "生成时间（美西）：",
-    "viewSaved": "在早晚报中查看"
+    "viewSaved": "在早晚报中查看",
+    "calendarLabel": "简报日历",
+    "allDates": "全部日期",
+    "previousMonth": "上个月",
+    "nextMonth": "下个月",
+    "noIssue": "暂无简报",
+    "loadingDates": "正在读取简报日期…",
+    "calendarError": "日期标记加载失败。",
+    "pacificDates": "日期按美西时间显示",
+    "today": "今天",
+    "dateNavigation": "切换简报日期",
+    "previousDay": "前一天",
+    "nextDay": "后一天",
+    "emptyDate": "这一天暂无符合筛选的简报",
+    "selectedIssue": "当日简报",
+    "sameDateIssues": "当日其他简报"
   }
 }
