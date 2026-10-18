@@ -29,7 +29,7 @@ export default function BriefLibrary({ searchParams }: { searchParams?: BriefSea
   const query = new URLSearchParams({ page: String(page) });
   if (type !== "all") query.set("type", type);
   const { data, loading, error, retry } = useBriefData<BriefList>(`?${query}`);
-  useEffect(() => { document.title = `${t("briefs.title")} | Kolvex`; }, [t]);
+  useEffect(() => { document.title = `${t("briefs.title")} | Kolvex`; }, [t, type, page, data, error]);
   const featured = page === 1 ? data?.items[0] : undefined;
   const archive = featured ? data!.items.slice(1) : data?.items ?? [];
   const image = featured?.summary?.hero_image;

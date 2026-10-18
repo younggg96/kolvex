@@ -41,3 +41,13 @@ Saved imports offer a link to the reader; the library links administrators to
 scope.
 
 Reader tests: `venv/bin/python -m unittest discover -s tests -p test_brief_reader.py`.
+
+Reader verification: 14 backend tests and 3 Node navigation/date tests passed;
+TypeScript, lint/build and DESIGN.md lint passed (existing orphaned-token warnings).
+The strict premium audit still lists the same three pre-existing settings/global
+scrollbar findings; none references the new reader files. Read-only checks using
+the real Supabase client confirmed the summary projection, empty morning filter
+and the complete saved evening article. Production browser checks confirmed the
+primary navigation, filtered empty state, article sections/disclaimer, preserved
+return filter, missing-issue recovery, and 390px mobile layout (scrollWidth equals
+viewport width). A browser-found title reset on filter navigation was corrected.
