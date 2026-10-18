@@ -15,9 +15,11 @@ type Availability = Map<string, string[]>;
 const CalendarAvailability = createContext<Availability>(new Map());
 
 function BriefDay(props: DayContentProps) {
+  const { t, locale } = useTranslation();
   const available = useContext(CalendarAvailability).get(briefDateKey(props.date)) ?? [];
   return <span className="relative flex h-full w-full items-center justify-center pb-1">
-    <DayContent {...props} />
+    <span aria-hidden="true"><DayContent {...props} /></span>
+    <span className="sr-only">{formatBriefDate(briefDateKey(props.date), locale)}，{available.length ? available.map(kind => t(`briefs.${kind}`)).join(" / ") : t("briefs.noIssue")}</span>
     <span aria-hidden="true" className="absolute bottom-1 left-0 flex w-full justify-center gap-1">
       {available.includes("morning") && <span className="h-1 w-1 rounded-full bg-current" />}
       {available.includes("evening") && <span className="h-1 w-1 rounded-full border border-current" />}
@@ -60,11 +62,6 @@ export default function BriefCalendar({ date, type }: { date?: string; type: Bri
           labelPrevious: () => t("briefs.previousMonth"),
           labelNext: () => t("briefs.nextMonth"),
           labelWeekday: value => new Intl.DateTimeFormat(t("common.intlLocale"), { weekday: "long" }).format(value),
-          labelDay: value => {
-            const key = briefDateKey(value);
-            const types = available.get(key) ?? [];
-            return `${formatBriefDate(key, locale)}，${types.length ? types.map(kind => t(`briefs.${kind}`)).join(" / ") : t("briefs.noIssue")}`;
-          },
         }}
       />
     </CalendarAvailability.Provider>
