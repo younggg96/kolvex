@@ -7,7 +7,7 @@ import { useTranslation } from "@/lib/i18n";
 import type { BriefSection, DailyBrief } from "@/lib/dailyBriefs";
 
 function Markdown({ children }: { children: string }) {
-  return <div className="max-w-[72ch] space-y-3 break-words text-[15px] leading-7 [&_a]:underline [&_ul]:list-inside [&_ul]:list-disc"><ReactMarkdown skipHtml allowedElements={["p", "strong", "em", "ul", "ol", "li", "br", "a", "blockquote"]} components={{ a: ({ children, href }) => <a href={href} target="_blank" rel="noopener noreferrer" className="underline">{children}</a> }}>{children}</ReactMarkdown></div>;
+  return <div className="space-y-3 break-words text-[15px] leading-7 [&_a]:underline [&_ul]:list-inside [&_ul]:list-disc"><ReactMarkdown skipHtml allowedElements={["p", "strong", "em", "ul", "ol", "li", "br", "a", "blockquote"]} components={{ a: ({ children, href }) => <a href={href} target="_blank" rel="noopener noreferrer" className="underline">{children}</a> }}>{children}</ReactMarkdown></div>;
 }
 function DetailsList({ items }: { items: { name: string; detail: string }[] }) {
   return <ul className="space-y-3">{items.map((item, i) => <li key={i}><p className="font-medium">{item.name}</p><Markdown>{item.detail}</Markdown></li>)}</ul>;
