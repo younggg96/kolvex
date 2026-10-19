@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { publicStockPath } from "@/lib/publicRoutes";
 import LogoIcon from "@/components/common/LogoIcon";
 import { Button } from "@/components/ui/button";
 import { useCopy } from "@/components/decision/shared";
@@ -27,6 +28,7 @@ export default function PublicCreatorShareView({ data }: { data: CreatorLatestVi
       </div>
     </header>
     <main className="mx-auto max-w-3xl space-y-8 px-5 py-8 sm:px-8 sm:py-12">
+      <nav aria-label={c("Public reading", "公开阅读")} className="flex flex-wrap gap-6 text-sm text-muted-foreground"><Link href="/creators" className="py-2 hover:underline">{c("Creator opinions", "博主观点")}</Link><Link href="/research" className="py-2 hover:underline">{c("Stock research", "股票研究")}</Link></nav>
       <div className="space-y-4">
         <div className="flex items-center gap-4"><CreatorAvatar name={name} avatarUrl={creator.channel_avatar_url} size="lg" /><div className="min-w-0"><h1 className="break-words text-3xl font-semibold tracking-tight">{name}</h1><p className="mt-1 text-sm text-muted-foreground">{c("Latest imported video opinions", "最新一期已收录视频观点")}</p></div></div>
         <p className="text-sm text-muted-foreground"><time dateTime={data.video.opinion_date}>{formatOpinionDate(data.video.opinion_date || data.video.video_published_at, t("common.intlLocale"))}</time> · {c("New York date", "美东日期")} · {data.opinions.length} {c("stocks", "只股票")}</p>
@@ -35,7 +37,7 @@ export default function PublicCreatorShareView({ data }: { data: CreatorLatestVi
       </div>
       <div className="rounded-xl border border-border bg-card px-5 sm:px-6">
         {data.opinions.map((opinion) => <article key={opinion.id} className="space-y-3 border-b border-border py-6 last:border-0">
-          <div className="flex flex-wrap items-center justify-between gap-3"><h3 className="text-lg font-semibold">{opinion.ticker}{opinion.company_name && <span className="ml-3 text-sm font-normal text-muted-foreground">{opinion.company_name}</span>}</h3><OpinionStrength value={opinion.direction_score} /></div>
+          <div className="flex flex-wrap items-center justify-between gap-3"><h3 className="text-lg font-semibold"><Link href={publicStockPath(opinion.ticker)} className="underline-offset-4 hover:underline">{opinion.ticker}</Link>{opinion.company_name && <span className="ml-3 text-sm font-normal text-muted-foreground">{opinion.company_name}</span>}</h3><OpinionStrength value={opinion.direction_score} /></div>
           {opinion.sentiment === "mixed" && <p className="text-sm font-semibold text-warning">{t("youtubeOpinions.mixed")}</p>}
           <p className="whitespace-pre-wrap break-words text-[15px] leading-7 text-muted-foreground">{opinion.summary || opinion.thesis || opinion.key_points?.join("\n") || c("No written summary. See the source video.", "暂无文字摘要，可查看原视频。")}</p>
         </article>)}

@@ -34,7 +34,7 @@ export default function LandingHowItWorks() {
         "See who said what, about which stock, and when. Follow the original video to understand the full context.",
         "谁在什么时候，对哪只股票说了什么。观点保留原始视频来源，方便回看完整背景。",
       ),
-      href: "/dashboard/youtube-opinions",
+      href: "/creators",
       link: c("Explore creator opinions", "了解博主观点"),
       nodes: [
         c("Source video", "来源视频"),
@@ -54,7 +54,7 @@ export default function LandingHowItWorks() {
         "Read technical evidence, published AI research and opposing views together. Make room for more than one interpretation.",
         "结合技术证据、AI 研究与不同观点，了解结论背后的理由，保留多角度的判断空间。",
       ),
-      href: "/dashboard/ai-research",
+      href: "/research",
       link: c("Explore AI research", "了解 AI 研究"),
       nodes: [
         c("Evidence", "分析依据"),

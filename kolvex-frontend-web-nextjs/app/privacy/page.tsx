@@ -1,10 +1,11 @@
-import { Metadata } from "next";
+import { publicPageMetadata } from "@/lib/seo";
 import Link from "next/link";
 
-export const metadata: Metadata = {
-  title: "Privacy Policy - Kolvex",
-  description: "Privacy Policy for Kolvex AI-powered investment platform",
-};
+export const metadata = publicPageMetadata(
+  "Privacy Policy — Kolvex",
+  "Learn how Kolvex collects, uses and protects your information when you use the stock research workspace.",
+  "/privacy",
+);
 
 export default function PrivacyPage() {
   return (

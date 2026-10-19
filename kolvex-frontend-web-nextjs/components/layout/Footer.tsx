@@ -9,6 +9,8 @@ export default function Footer() {
   return <footer className="border-t border-border py-8"><div className="landing-width flex flex-wrap items-center justify-between gap-6">
     <span className="text-sm font-semibold">Kolvex <span className="ml-3 font-normal text-muted-foreground">© {new Date().getFullYear()}</span></span>
     <nav aria-label={t("footer.nav")} className="flex flex-wrap items-center gap-5 text-xs text-muted-foreground">
+      <Link href="/research" className="hover:text-foreground">{t("sidebar.tradingAnalysis")}</Link>
+      <Link href="/creators" className="hover:text-foreground">{t("landing.nav.creatorResearch")}</Link>
       <Link href="/privacy" className="hover:text-foreground">{t("footer.privacy")}</Link>
       <Link href="/terms" className="hover:text-foreground">{t("footer.terms")}</Link>
       <Link href="/contact" className="hover:text-foreground">{t("footer.contact")}</Link>

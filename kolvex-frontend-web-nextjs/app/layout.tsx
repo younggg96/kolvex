@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { SITE_URL, SITE_TITLE, SITE_DESCRIPTION, publicPageMetadata } from "@/lib/seo";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
@@ -17,9 +18,9 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Kolvex — Investment Decision Workspace",
-  description:
-    "Creator opinions, market context, AI research and your portfolio in one investment decision workspace.",
+  ...publicPageMetadata(SITE_TITLE, SITE_DESCRIPTION, "/"),
+  alternates: {},
+  metadataBase: new URL(SITE_URL),
   icons: {
     icon: [{ url: "/icon.svg", type: "image/svg+xml" }],
     apple: [
@@ -35,16 +36,6 @@ export const metadata: Metadata = {
   },
   formatDetection: {
     telephone: false,
-  },
-  openGraph: {
-    title: "Kolvex — Investment Decision Workspace",
-    description: "Know why you own a stock. Know when that reason changes.",
-    type: "website",
-  },
-  twitter: {
-    card: "summary",
-    title: "Kolvex — Investment Decision Workspace",
-    description: "Know why you own a stock. Know when that reason changes.",
   },
 };
 

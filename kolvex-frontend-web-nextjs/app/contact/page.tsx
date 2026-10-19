@@ -1,12 +1,13 @@
-import { Metadata } from "next";
+import { publicPageMetadata } from "@/lib/seo";
 import Link from "next/link";
 import Footer from "@/components/layout/Footer";
 import ContactForm from "@/components/contact/ContactForm";
 
-export const metadata: Metadata = {
-  title: "Contact Us - Kolvex",
-  description: "Get in touch with the Kolvex team",
-};
+export const metadata = publicPageMetadata(
+  "Contact Kolvex — Support & Feedback",
+  "Contact the Kolvex team for product support, stock research workspace questions, and feedback.",
+  "/contact",
+);
 
 export default function ContactPage() {
   return (

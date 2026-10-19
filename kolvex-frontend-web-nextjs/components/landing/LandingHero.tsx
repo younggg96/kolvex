@@ -35,7 +35,7 @@ export default function LandingHero() {
     {
       icon: AudioLines,
       label: t("landing.nav.creatorResearch"),
-      href: "/dashboard/youtube-opinions",
+      href: "/creators",
     },
     {
       icon: LineChart,
@@ -45,7 +45,7 @@ export default function LandingHero() {
     {
       icon: Sparkles,
       label: t("sidebar.tradingAnalysis"),
-      href: "/dashboard/ai-research",
+      href: "/research",
     },
     {
       icon: Wallet,

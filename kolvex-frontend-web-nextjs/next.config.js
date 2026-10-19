@@ -246,6 +246,13 @@ const nextConfig = {
           },
         ],
       },
+      // Include redirects and API responses in indexing controls.
+      ...["/dashboard/:path*", "/auth/:path*", "/config", "/api/:path*"].map(
+        (source) => ({
+          source,
+          headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }],
+        }),
+      ),
       // 站点级 CSP
       {
         source: "/:path*",

@@ -1,10 +1,11 @@
-import { Metadata } from "next";
+import { publicPageMetadata } from "@/lib/seo";
 import Link from "next/link";
 
-export const metadata: Metadata = {
-  title: "Terms of Service - Kolvex",
-  description: "Terms of Service for Kolvex AI-powered investment platform",
-};
+export const metadata = publicPageMetadata(
+  "Terms of Service — Kolvex",
+  "Read the terms governing your use of Kolvex, including stock research tools, account responsibilities and service limitations.",
+  "/terms",
+);
 
 export default function TermsPage() {
   return (

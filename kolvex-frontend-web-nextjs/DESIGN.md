@@ -518,3 +518,32 @@ in America/Los_Angeles and requests only that date’s selected edition. Empty d
 state, never an older latest issue. There is no All dates mode. Today returns
 to the current Pacific date; previous/next day cross month and year boundaries.
 Dates remain calendar labels in every reader timezone.
+
+
+## Public research reading
+
+The anonymous content library lives at `/research`, `/research/[id]`, `/creators`,
+`/stocks` and `/stocks/[ticker]`. Existing `/share/creators/[channelId]` URLs remain
+canonical for each creator's latest imported video; no competing creator detail
+URL is introduced. Homepage research links lead to these public reading routes.
+Authenticated authoring, portfolios, accounts and daily briefs keep their existing
+access rules.
+
+Public library copy is Chinese-first, with `lang="zh-CN"` on its reading shell;
+report bodies retain their supplied language. The shell has crawlable text
+navigation, document scrolling, 16/32px padding, 1120px outer width and the
+existing shared Button, logo and semantic light/dark tokens. Stock identifiers,
+source names and New York opinion dates carry hierarchy; no promotional metrics
+or independent color palette are introduced. Report bodies reuse `MarkdownBody`.
+All supplied report sections appear in server HTML, including native discussion
+disclosures. Public pages do not request translations or trigger AI generation.
+
+Lists use 20-item numbered URL pages with real previous/next links, explicit
+empty states and retryable route errors. Navigation waits for server content
+without a streaming loading boundary so missing pages retain real HTTP 404 status. Each page has its own
+canonical URL. Missing and unpublished reports return not-found; backend failures
+remain errors. Publication is checked on every request without persistent content
+caching. Dynamic sitemap discovery reads public endpoints only, includes all
+published report batches and public opinion directories, and fails visibly if
+its data source fails. Full access and testing details live in
+`../docs/public-reading.md`.

@@ -1,58 +1,38 @@
-import { Metadata } from "next";
 import HomePageClient from "@/components/pages/HomePageClient";
+import { SITE_URL, SITE_TITLE, SITE_DESCRIPTION, publicPageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
-  title: "Kolvex — Stock Information Workspace",
-  description:
-    "Creator opinions, market data, AI research and holdings. Understand stocks and see the latest changes, ready to read.",
-  keywords: [
-    "stock information workspace",
-    "stock opinion changes",
-    "investment account sync",
-    "creator stock opinions",
-    "stock research",
-    "stock updates",
+export const metadata = publicPageMetadata(SITE_TITLE, SITE_DESCRIPTION, "/");
+
+const structuredData = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Organization",
+      "@id": `${SITE_URL}/#organization`,
+      name: "Kolvex",
+      url: SITE_URL,
+      logo: `${SITE_URL}/icons/icon-512x512.png`,
+    },
+    {
+      "@type": "WebSite",
+      "@id": `${SITE_URL}/#website`,
+      name: "Kolvex",
+      url: SITE_URL,
+      description: SITE_DESCRIPTION,
+      inLanguage: "en",
+      publisher: { "@id": `${SITE_URL}/#organization` },
+    },
   ],
-  openGraph: {
-    title: "Kolvex — Stock Information Workspace",
-    description:
-      "Creator opinions, market context, AI research and real holdings. Read the latest analysis and opinion changes.",
-    type: "website",
-  },
-  twitter: {
-    card: "summary",
-    title: "Kolvex — Stock Information Workspace",
-    description:
-      "Creator opinions, market context, AI research and real holdings. Read the latest analysis and opinion changes.",
-  },
-  icons: {
-    icon: "/icon.svg",
-  },
-  manifest: "/manifest.json",
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: "default",
-    title: "Kolvex",
-  },
-  formatDetection: {
-    telephone: false,
-  },
-  robots: {
-    index: true,
-    follow: true,
-  },
-  alternates: {
-    canonical: "https://kolvex.app",
-  },
-  category: "finance",
-  creator: "Kolvex",
-  publisher: "Kolvex",
-  authors: {
-    name: "Kolvex",
-  },
-  metadataBase: new URL("https://kolvex.app"),
 };
 
 export default function Home() {
-  return <HomePageClient />;
+  return (
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData).replace(/</g, "\\u003c") }}
+      />
+      <HomePageClient />
+    </>
+  );
 }

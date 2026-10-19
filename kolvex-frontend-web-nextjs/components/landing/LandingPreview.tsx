@@ -53,7 +53,7 @@ export default function LandingPreview() {
         "What changed in the creator’s latest view?",
         "博主的最新观点，和之前有什么不同？",
       ),
-      href: "/dashboard/youtube-opinions",
+      href: "/creators",
       action: c("Read creator opinions", "查看博主观点"),
     },
     {
@@ -128,7 +128,7 @@ export default function LandingPreview() {
         "Which assumptions does the conclusion depend on?",
         "这份结论，依赖哪些关键假设？",
       ),
-      href: "/dashboard/ai-research",
+      href: "/research",
       action: c("Read AI research", "查看 AI 研究"),
     },
   ];
