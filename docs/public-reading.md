@@ -74,3 +74,27 @@ engine; no rank or traffic result is implied by these technical checks.
   alter those unrelated settings/scrollbar implementations.
 
 These are local checks; deployment and Search Console submission are separate.
+
+
+## Shared visual system
+
+Public research now uses the same `ResearchSummaryCard` as the authenticated
+published library, including logos, qualitative decisions, metadata and grid
+breakpoints. Creator/stock directories use the workspace's compact hover rows and
+shared avatar/logo components. `StrengthIndicator` supplies the same qualitative
+opinion styling to the workspace and public pages. `reader-styles.ts` centralizes
+the contents grid, conclusion surface and link styling for both report readers.
+The public header uses active route underlines, shared pill buttons and a localized
+version of the existing theme toggle. Source data, publication checks, full server
+HTML, canonical URLs and anonymous access remain unchanged.
+
+
+Visual parity verification (2026-10-19): production build and 16 public-reading /
+creator-sharing regression tests passed. Desktop and 390px mobile layouts were
+inspected in both themes; header theme controls, keyboard route navigation and
+native disclosures worked. Production browser checks recorded no console errors
+or page-width overflow. Anonymous HTTP checks retained indexable canonical
+metadata, full report HTML, valid pagination and 404 behavior. The sitemap still
+contained 207 unique URLs. The Impeccable detector returned no findings for the
+changed UI; the project-wide audit retains the previously documented three
+unrelated settings/scrollbar findings. No deployment was performed.

@@ -4,6 +4,7 @@ import { useId, useState } from "react";
 import { BarChart3, CheckCircle2, DollarSign, Newspaper, ShieldCheck, Swords, TrendingUp, Users } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import type { TradingAnalysis } from "@/lib/tradingAnalysisApi";
+import { REPORT_READER_GRID, REPORT_READER_CONCLUSION, REPORT_READER_NAV } from "./reader-styles";
 import { ReportCard } from "./report-card";
 import { DebateCard } from "./debate-card";
 
@@ -32,11 +33,11 @@ export function ResearchReportContent({ analysis, locale, t }: {
   if (!sections.length) return null;
 
   return (
-    <div className="grid min-w-0 gap-8 lg:grid-cols-[168px_minmax(0,1fr)] lg:gap-12">
+    <div className={REPORT_READER_GRID}>
       <nav aria-label={t("tradingAnalysis.reader.contents")} className="min-w-0 lg:sticky lg:top-6 lg:self-start">
         <div className="flex gap-1 overflow-x-auto border-b border-border pb-3 lg:flex-col lg:gap-2 lg:border-b-0 lg:pb-0">
           {sections.map((section) => (
-            <a key={section.key} href={`#${id}-${section.key}`} className="flex min-h-11 shrink-0 items-center rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
+            <a key={section.key} href={`#${id}-${section.key}`} className={REPORT_READER_NAV}>
               {section.label}
             </a>
           ))}
@@ -45,7 +46,7 @@ export function ResearchReportContent({ analysis, locale, t }: {
 
       <div className="min-w-0 space-y-12">
         {analysis.full_signal && (
-          <div id={`${id}-conclusion`} className="scroll-mt-6 rounded-xl bg-muted/60 p-5 md:p-8">
+          <div id={`${id}-conclusion`} className={REPORT_READER_CONCLUSION}>
             <ReportCard title={t("tradingAnalysis.reader.conclusion")} icon={CheckCircle2} content={analysis.full_signal} locale={locale} t={t} bordered={false} />
           </div>
         )}

@@ -3,23 +3,17 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import {
-  Clock,
-  User,
-} from "lucide-react";
 import { useTranslation } from "@/lib/i18n";
 import ResearchLayout from "@/components/decision/ResearchLayout";
 import { useUserProfileContext } from "@/components/user/UserProfileProvider";
 import { RESEARCH_AUTHORING_PATH, deepResearchPagePath, parseDeepResearchPage } from "@/lib/researchRoutes";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import {
   getPublishedAnalyses,
   type TradingAnalysis,
 } from "@/lib/tradingAnalysisApi";
-import { DecisionBadge } from "@/components/trading-analysis/badges";
-import CompanyLogo from "@/components/ui/company-logo";
+import { ResearchSummaryCard } from "./ResearchSummaryCard";
 
 function ExploreSkeleton() {
   return (
@@ -126,51 +120,12 @@ export default function PublishedResearch({ page }: { page?: string }) {
               <ul className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {analyses.map((item) => (
                   <li key={item.id} className="min-w-0">
-                    <Link
+                    <ResearchSummaryCard
+                      analysis={item}
+                      headingLevel="h4"
                       href={`/dashboard/trading-analysis/explore/${item.id}${currentPage > 1 ? `?page=${currentPage}` : ""}`}
-                      className="flex h-full min-w-0 flex-col gap-6 rounded-xl border border-border bg-card p-5 transition-colors hover:border-foreground/25 hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-                    >
-                      <div className="flex min-w-0 items-center gap-3">
-                        <CompanyLogo symbol={item.ticker} size="md" />
-                        <span className="min-w-0 flex-1 break-words text-lg font-semibold text-foreground">
-                          {item.ticker}
-                        </span>
-                        <span className="shrink-0">
-                          <DecisionBadge decision={item.final_decision} t={t} />
-                        </span>
-                      </div>
-                      <div className="mt-auto space-y-3 border-t border-border pt-4 text-xs text-muted-foreground">
-                        {item.author && (
-                          <span className="flex min-w-0 items-center gap-2">
-                            <Avatar className="h-5 w-5 shrink-0">
-                              {item.author.avatar_url && (
-                                <AvatarImage src={item.author.avatar_url} alt="" />
-                              )}
-                              <AvatarFallback className="bg-muted text-[8px]">
-                                <User className="h-2.5 w-2.5" />
-                              </AvatarFallback>
-                            </Avatar>
-                            <span className="truncate">
-                              {item.author.full_name || item.author.username || t("research.author")}
-                            </span>
-                          </span>
-                        )}
-                        <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-                          <span className="figure">{item.trade_date}</span>
-                          {item.duration_seconds && (
-                            <span className="flex items-center gap-1">
-                              <Clock className="h-3 w-3" />
-                              {t("tradingAnalysis.durationSeconds", {
-                                seconds: String(Math.round(item.duration_seconds)),
-                              })}
-                            </span>
-                          )}
-                          {item.llm_provider && (
-                            <span className="capitalize">{item.llm_provider}</span>
-                          )}
-                        </div>
-                      </div>
-                    </Link>
+                      t={t}
+                    />
                   </li>
                 ))}
               </ul>

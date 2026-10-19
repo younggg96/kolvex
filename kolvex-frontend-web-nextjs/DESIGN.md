@@ -547,3 +547,32 @@ caching. Dynamic sitemap discovery reads public endpoints only, includes all
 published report batches and public opinion directories, and fails visibly if
 its data source fails. Full access and testing details live in
 `../docs/public-reading.md`.
+
+
+### Public and workspace presentation parity
+
+Public reading uses the workspace's 28/32px headings, 15px directory identifiers,
+12px metadata, 16/32px page padding and semantic surfaces. The public header uses
+the same compact header rhythm, shared theme toggle and pill Buttons, with active
+underline route navigation; it retains document scrolling and anonymous access.
+
+`ResearchSummaryCard` owns report presentation in both `PublishedResearch` and
+public `ResearchList`: company logo and decision above author/date metadata,
+12px corners, quiet border and no static shadow. Public lists use the same
+one/two/three-column breakpoints. Related reports in a stock sidebar use the
+single-column variant of that same card. `ReadingDirectories` uses the existing
+creator avatar, company logo and quiet hover-row treatment for public directories.
+
+`StrengthIndicator` owns the qualitative word/meter presentation. The existing
+`OpinionStrength` supplies the active workspace translation; public reading
+supplies its documented fixed Chinese copy. Stock opinion rows and creator share
+pages reuse that presentation, avatar sizes, 15px/28px text and source-video icon.
+Creator shares use `ReadingLayout`, preserving their existing sharing actions.
+
+`reader-styles.ts` owns the report grid, conclusion panel and directory-link
+recipes for public reports and `ResearchReportContent`. Public report bodies keep
+all evidence in server HTML while matching the workspace's sticky desktop
+contents, horizontally scrolling mobile contents, conclusion surface and shared
+`MarkdownBody` typography. Access rules, content, URLs and SEO metadata stay under
+their existing owners; visual parity does not introduce authenticated app shell
+providers or hide the public body behind tabs.

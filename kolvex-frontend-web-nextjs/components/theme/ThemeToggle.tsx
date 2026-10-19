@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { Sun, Moon, SunMoon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-export default function ThemeToggle() {
+export default function ThemeToggle({ labels }: { labels?: { light: string; dark: string } } = {}) {
   const [mounted, setMounted] = useState(false);
   const { theme, setTheme } = useTheme();
 
@@ -22,12 +22,15 @@ export default function ThemeToggle() {
     );
   }
 
+  const label = theme === "dark" ? labels?.light || "Switch to light mode" : labels?.dark || "Switch to dark mode";
+
   return (
     <Button
       variant="ghost"
       size="icon"
       onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-      title={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
+      title={label}
+      aria-label={label}
     >
       {theme === "dark" ? (
         <Sun className="w-5 h-5 text-warning" />
