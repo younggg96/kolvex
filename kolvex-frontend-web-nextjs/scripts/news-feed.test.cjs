@@ -13,62 +13,91 @@ function load(file, deps = {}, globals = {}) {
   return exports;
 }
 const feed = load('lib/newsFeed.ts');
-const article = (title, time, link = `https://news.example/${title}`) => ({title, link, publish_time: time, publisher: 'Publisher'});
-
-test('symbols are bounded, normalized and validated', () => {
-  assert.equal(feed.parseNewsSymbols(' aapl, AAPL,nvda ').join(','), 'AAPL,NVDA');
-  for (const value of ['', 'AAPL,', '../news', 'A,B,C,D,E', '<script>', 'AAPL?x=1']) assert.equal(feed.parseNewsSymbols(value), null);
+const article = (id, title, time = 100, symbols = []) => ({id, title, symbols, link:`https://www.financialjuice.com/News/${id}/story.aspx`, publish_time:time, publisher:'FinancialJuice'});
+test('updates preserve reading position and buffer each new headline once', () => {
+  const old = article('1', 'Original');
+  const corrected = article('1', 'Correction');
+  const fresh = article('2', 'New', 200);
+  let state = feed.receiveNews(feed.EMPTY_FEED, [old]);
+  state = feed.receiveNews(feed.receiveNews(state, [fresh, corrected]), [fresh, corrected]);
+  assert.equal(state.articles.length, 1);
+  assert.equal(state.articles[0].title, 'Correction');
+  assert.equal(state.pending.length, 1);
+  state = feed.revealNews(state);
+  assert.equal(state.articles.map(a => a.id).join(','), '2,1');
+  assert.equal(feed.receiveNews(state, [fresh, corrected]).pending.length, 0);
 });
-
-test('cross-symbol duplicates merge and unsafe URLs or malformed news are dropped', () => {
-  const a = feed.normalizeNews([article('A', 100, 'https://news.example/a?utm_source=stock#top'), article('B', 200), article('bad', 300, 'javascript:alert(1)'), null, {title:'No link'}, article('bad', 300, 'https://user:pass@news.example')], 'AAPL');
-  const b = feed.normalizeNews([article('A', 100, 'https://news.example/a')], 'NVDA');
-  const merged = feed.mergeNews(a, b);
-  assert.equal(merged.length, 2);
-  assert.equal(merged[0].title, 'B');
-  assert.equal(merged[1].symbols.join(','), 'AAPL,NVDA');
-  assert.equal(feed.normalizeNews([article('bad-time', Infinity)], 'SPY')[0].publish_time, null);
+test('rolling window remains bounded', () => {
+  let state = feed.receiveNews(feed.EMPTY_FEED, [article('0', 'First')]);
+  state = feed.receiveNews(state, Array.from({length:400}, (_,i) => article(String(i+1), 'New', i+200)));
+  assert.equal(state.pending.length, 300);
+  assert.equal(feed.revealNews(state).articles.length, 300);
 });
-
-test('polling buffers new items without moving existing rows; repeated polls do not inflate count', () => {
-  const old = feed.normalizeNews([article('old', 100)], 'SPY');
-  const fresh = feed.normalizeNews([article('new', 200), article('old', 100)], 'SPY');
-  const initial = feed.receiveNews(feed.EMPTY_FEED, old);
-  const refreshed = feed.receiveNews(feed.receiveNews(initial, fresh), fresh);
-  assert.equal(refreshed.articles.length, 1);
-  assert.equal(refreshed.articles[0].title, 'old');
-  assert.equal(refreshed.pending.length, 1);
-  const shown = feed.revealNews(refreshed);
-  assert.equal(shown.articles.map(a => a.title).join(','), 'new,old');
-  assert.equal(shown.pending.length, 0);
-  assert.equal(feed.receiveNews(shown, fresh).pending.length, 0);
+test('local categories may overlap; explicit ticker and focus filters work', () => {
+  const macro = article('1', 'CPI inflation pushes Treasury yields and dollar higher');
+  const stock = article('2', '$AMZN reports earnings', 200, ['AMZN']);
+  const crypto = article('3', '$BTC bitcoin price', 200, ['BTC']);
+  assert.equal(feed.articleCategories(macro).join(','), 'macro,bonds,forex');
+  assert.equal(feed.articleCategories(crypto).join(','), 'crypto');
+  assert.equal(feed.filterNews([macro, stock], 'equities', 'amzn', true, true, ['2'])[0].id, '2');
+  assert.equal(feed.filterNews([macro, stock], 'all', '', false, true, []).length, 0);
+  assert.equal(feed.isFocusHeadline(crypto), false);
 });
-
 function route(fetch) {
-  return load('app/api/news/route.ts', { '@/lib/newsFeed': feed, 'next/server': { NextResponse: { json: (body, options = {}) => ({ body, status: options.status || 200, headers: options.headers }) } } }, { fetch });
+  return load('app/api/news/route.ts', {'next/server': {NextResponse:{json:(body, options={}) => ({body, status:options.status || 200, headers:options.headers})}}}, {fetch});
 }
-
-test('invalid requests never reach upstream', async () => {
-  const result = await route(() => { throw new Error('must not fetch'); }).GET({url:'https://kolvex.app/api/news?symbols=A,B,C,D,E'});
-  assert.equal(result.status, 400);
-});
-
-test('partial failures retain successful headlines and name unavailable symbols', async () => {
-  const result = await route(async url => {
-    if (url.endsWith('NVDA')) throw new Error('timeout');
-    return { ok: true, json: async () => ({news:[article('Headline', 100)]}) };
-  }).GET({url:'https://kolvex.app/api/news?symbols=AAPL,NVDA'});
-  assert.equal(result.status, 200);
-  assert.equal(result.body.articles.length, 1);
-  assert.equal(result.body.unavailable.join(','), 'NVDA');
+test('proxy preserves delayed/stale source metadata and disables caching', async () => {
+  const payload = {articles:[article('1','Headline')], fetched_at:'2026-10-20T12:00:00Z', delivery:'delayed', stale:true, source:'FinancialJuice RSS'};
+  const result = await route(async (url, options) => {
+    assert.equal(url, 'http://localhost:8080/api/v1/news/feed');
+    assert.equal(options.cache, 'no-store');
+    return {ok:true,json:async()=>payload};
+  }).GET();
+  assert.equal(result.body, payload);
   assert.equal(result.headers['Cache-Control'], 'no-store');
 });
+test('provider failure and malformed response fail; valid empty feed succeeds', async () => {
+  for (const fetch of [async()=>{throw Error('offline')}, async()=>({ok:false}), async()=>({ok:true,json:async()=>({articles:[]})})]) {
+    assert.equal((await route(fetch).GET()).status, 502);
+  }
+  assert.equal((await route(async()=>({ok:true,json:async()=>({articles:[],fetched_at:'2026-10-20T12:00:00Z'})})).GET()).status, 200);
+});
 
-test('total provider failure returns 502, while a valid empty feed returns 200', async () => {
-  const request = {url:'https://kolvex.app/api/news?symbols=AAPL'};
-  assert.equal((await route(async () => ({ok:false})).GET(request)).status, 502);
-  assert.equal((await route(async () => ({ok:true,json:async()=>({unexpected:[]})})).GET(request)).status, 502);
-  const empty = await route(async () => ({ok:true,json:async()=>({news:[]})})).GET(request);
-  assert.equal(empty.status, 200);
-  assert.equal(empty.body.articles.length, 0);
+function hookHarness() {
+  let slots = [], cursor = 0, effects = [], scheduled = [], result;
+  const timers = new Map(), events = new Map(), responses = [], requests = [];
+  let timerId = 0;
+  const document = {hidden:false, addEventListener:(name, fn)=>events.set(name,fn), removeEventListener:name=>events.delete(name)};
+  const react = {
+    useState(initial) { const i=cursor++; if (!(i in slots)) slots[i]=initial; return [slots[i], value=>{slots[i]=typeof value==='function'?value(slots[i]):value;}]; },
+    useRef(initial) {const i=cursor++; if (!(i in slots)) slots[i]={current:initial}; return slots[i];},
+    useEffect(fn, deps) {const i=cursor++; const previous=effects[i]; if (!previous || deps.some((d,n)=>d!==previous.deps[n])) scheduled.push(()=>{previous?.cleanup?.(); effects[i]={deps,cleanup:fn()};});},
+  };
+  const hooks = load('components/news/useNewsTerminal.ts', {react, '@/lib/newsFeed':feed}, {
+    AbortController, document, window:document,
+    setInterval:fn=>{timers.set(++timerId,fn);return timerId;}, clearInterval:id=>timers.delete(id),
+    fetch:(_url, options)=>{requests.push(options); return new Promise(resolve=>responses.push(resolve));},
+  });
+  function render() {cursor=0; result=hooks.useNewsTerminal(); const pending=scheduled;scheduled=[];pending.forEach(fn=>fn());return result;}
+  return {render, document, requests, events,
+    tick:()=>timers.forEach(fn=>fn()),
+    respond:async articles=>{responses.shift()({ok:true,json:async()=>({articles,fetched_at:'2026-10-20T12:00:00Z',source:'FinancialJuice RSS',delivery:'delayed',stale:false})});await new Promise(setImmediate);},
+    unmount:()=>effects.forEach(effect=>effect?.cleanup?.()),
+  };
+}
+test('polling pauses in hidden tabs or on Pause, resumes and aborts on unmount', async () => {
+  const h=hookHarness(); h.render();
+  assert.equal(h.requests.length,1);
+  h.tick(); assert.equal(h.requests.length,1, 'no overlapping request');
+  await h.respond([article('1','First')]);
+  let state=h.render();
+  h.document.hidden=true;h.tick();assert.equal(h.requests.length,1);
+  h.document.hidden=false;state.togglePause();state=h.render();
+  h.tick();h.events.get('online')();assert.equal(h.requests.length,1);
+  state.togglePause();h.render();assert.equal(h.requests.length,2);
+  await h.respond([article('2','Second',200),article('1','First')]);
+  state=h.render();assert.equal(state.feed.pending.length,1);
+  state.refresh();h.render();assert.equal(h.requests.length,3);
+  h.unmount();assert.equal(h.requests[2].signal.aborted,true);
+  h.tick();assert.equal(h.requests.length,3);
 });
