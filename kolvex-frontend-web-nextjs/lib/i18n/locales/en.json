@@ -67,6 +67,7 @@
     "briefs": "Daily Briefs"
   },
   "tabBar": {
+    "news": "News",
     "markets": "Markets",
     "chat": "Chat",
     "tradingAnalysis": "AI Research",

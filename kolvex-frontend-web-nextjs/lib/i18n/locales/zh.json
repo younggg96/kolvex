@@ -67,6 +67,7 @@
     "briefs": "早晚报"
   },
   "tabBar": {
+    "news": "新闻",
     "markets": "行情",
     "chat": "对话",
     "tradingAnalysis": "AI 研究",
