@@ -199,6 +199,7 @@ export interface ChartViewProps {
   formatDate: (date: string) => string;
   t: Translate;
   onOpenAdvanced?: () => void;
+  headerActions?: ReactNode;
   onAnalysisChange?: (result: AiTechnicalAnalysis | null) => void;
   onDrawingsChange?: (result: AiTechnicalAnalysis | null) => void;
   savedDrawings?: AiTechnicalAnalysis | null;
@@ -236,6 +237,7 @@ export default function ChartView({
   formatDate,
   t,
   onOpenAdvanced,
+  headerActions,
   onAnalysisChange,
   onDrawingsChange,
   savedDrawings,
@@ -1043,13 +1045,16 @@ export default function ChartView({
               <span className={rangeChange >= 0 ? "text-positive" : "text-negative"}>{formatChangePercent(rangeChange)}</span>
             </span>
           )}
-          <div className="ml-auto lg:hidden">
-            <Popover>
-              <PopoverTrigger asChild><Button size="sm" variant="outline">{t("youtubeOpinions.ai.actions")}</Button></PopoverTrigger>
-              <PopoverContent align="end" className="max-h-[70dvh] w-80 max-w-[calc(100vw-32px)] overflow-y-auto overscroll-contain p-4">
-                {aiControls}{aiResults}
-              </PopoverContent>
-            </Popover>
+          <div className="ml-auto flex shrink-0 items-center gap-2">
+            <div className="lg:hidden">
+              <Popover>
+                <PopoverTrigger asChild><Button size="sm" variant="outline">{t("youtubeOpinions.ai.actions")}</Button></PopoverTrigger>
+                <PopoverContent align="end" className="max-h-[70dvh] w-80 max-w-[calc(100vw-32px)] overflow-y-auto overscroll-contain p-4">
+                  {aiControls}{aiResults}
+                </PopoverContent>
+              </Popover>
+            </div>
+            {headerActions}
           </div>
         </div>
       )}

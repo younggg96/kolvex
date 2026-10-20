@@ -247,17 +247,16 @@ export default function PriceChart({
           }}
           className="flex flex-col"
         >
-          <header className="flex shrink-0 items-center justify-between gap-4 border-b border-border px-4 py-1.5">
-            <DialogTitle>{t("youtubeOpinions.advancedChartTitle", { symbol })}</DialogTitle>
-            <DialogClose asChild>
-              <Button type="button" variant="ghost" size="icon" aria-label={t("common.close")}>
-                <X className="h-5 w-5" aria-hidden="true" />
-              </Button>
-            </DialogClose>
-          </header>
+          <DialogTitle className="sr-only">{t("youtubeOpinions.advancedChartTitle", { symbol })}</DialogTitle>
           <DialogDescription className="sr-only">{t("youtubeOpinions.zoomHint")}</DialogDescription>
           {advancedOpen && <div className="min-h-0 flex-1 overflow-hidden p-3 sm:px-4">
-            <ChartView mode="advanced" {...shared} escapeRef={escapeRef} />
+            <ChartView mode="advanced" {...shared} escapeRef={escapeRef} headerActions={
+              <DialogClose asChild>
+                <Button type="button" variant="ghost" size="icon" className="shrink-0" aria-label={t("common.close")} title={t("common.close")}>
+                  <X className="h-5 w-5" aria-hidden="true" />
+                </Button>
+              </DialogClose>
+            } />
           </div>}
         </DialogContent>
       </Dialog>
