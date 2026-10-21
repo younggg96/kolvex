@@ -165,3 +165,26 @@ test('identical headline text shares one translation request', async () => {
   await h.respond(0,'同一标题');assert.equal(h.render(articles).translations.Same,'同一标题');
   h.unmount();
 });
+
+function translationRoute(fetch) {
+  return load('app/api/translate/route.ts', {'next/server': {NextResponse:{json:(body, options={})=>({body,status:options.status||200})}}}, {fetch});
+}
+
+test('translation API retries a failed cached response without caching and preserves Chinese output', async () => {
+  const calls=[];
+  const route=translationRoute(async (_url,options)=>{
+    calls.push(options);
+    return calls.length===1 ? {ok:true,json:async()=>[null]} : {ok:true,json:async()=>[[['英国核心CPI同比实际2.8%']]]};
+  });
+  const response=await route.POST({json:async()=>({q:'UK Core CPI YoY Actual 2.8%',tl:'zh-CN'})});
+  assert.equal(response.status,200);assert.equal(response.body.translated,'英国核心CPI同比实际2.8%');
+  assert.equal(calls.length,2);assert.equal(calls[0].next.revalidate,86400);
+  assert.equal(calls[1].cache,'no-store');assert.ok(calls[1].signal);
+});
+
+test('translation API retry is bounded and does not accept empty output', async () => {
+  let calls=0;
+  const route=translationRoute(async()=>{calls++;return {ok:true,json:async()=>[[[null]]]};});
+  const response=await route.POST({json:async()=>({q:'Headline',tl:'zh-CN'})});
+  assert.equal(response.status,500);assert.equal(calls,2);
+});
