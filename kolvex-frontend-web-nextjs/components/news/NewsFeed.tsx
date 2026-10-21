@@ -1,8 +1,10 @@
 "use client";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ArrowUp, Bookmark, Clock3, Newspaper, Pause, Play, Radio, RefreshCw, Search, SlidersHorizontal } from "lucide-react";
+import { useSearchParams } from "next/navigation";
+import { ArrowUp, Bookmark, Clock3, Newspaper, Pause, Play, Radio, RefreshCw, Search, SlidersHorizontal, X } from "lucide-react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useCopy } from "@/components/decision/shared";
@@ -18,10 +20,23 @@ export default function NewsFeed() {
   const { locale } = useTranslation();
   const terminal = useNewsTerminal();
   const bookmarks = useNewsBookmarks();
-  const [category, setCategory] = useState<NewsCategory>("all");
-  const [query, setQuery] = useState("");
-  const [focus, setFocus] = useState(false);
-  const [savedOnly, setSavedOnly] = useState(false);
+  const params = useSearchParams();
+  const category: NewsCategory = NEWS_CATEGORIES.find(item => item.id === params.get("category"))?.id ?? "all";
+  const query = params.get("q") ?? "";
+  const focus = params.get("focus") === "1";
+  const savedOnly = params.get("saved") === "1";
+  const searchInput = useRef<HTMLInputElement>(null);
+  const updateFilters = (changes: Record<string, string | null>) => {
+    const next = new URLSearchParams(params.toString());
+    for (const [key, value] of Object.entries(changes)) {
+      if (value) next.set(key, value); else next.delete(key);
+    }
+    window.history.replaceState(null, "", `${window.location.pathname}${next.size ? `?${next}` : ""}`);
+  };
+  const setFocus = (value: boolean) => updateFilters({ focus: value ? "1" : null });
+  const setSavedOnly = (value: boolean) => updateFilters({ saved: value ? "1" : null });
+  const pageTitle = `${c("News terminal", "新闻终端")} | Kolvex`;
+  useEffect(() => { document.title = pageTitle; }, [pageTitle]);
   const [selected, setSelected] = useState<FeedArticle | null>(null);
   const [wide, setWide] = useState(false);
   const [limit, setLimit] = useState(40);
@@ -43,8 +58,8 @@ export default function NewsFeed() {
   const selectedArticle = terminal.feed.articles.find(a => a.id === selected?.id) ?? selected;
   const status = terminal.error || terminal.meta?.stale ? c("Update unavailable", "更新异常") : terminal.paused ? c("Paused", "已暂停") : c("Auto · 60s", "自动更新 · 60秒");
   const time = terminal.meta ? new Date(terminal.meta.fetched_at).toLocaleTimeString(locale === "zh" ? "zh-CN" : "en-US", {hour:"2-digit",minute:"2-digit",hour12:false}) : "—";
-  const selectCategory = (id: NewsCategory) => { setCategory(id); setSavedOnly(false); };
-  const reset = () => { setCategory("all"); setQuery(""); setFocus(false); setSavedOnly(false); };
+  const selectCategory = (id: NewsCategory) => updateFilters({ category: id === "all" ? null : id, saved: null });
+  const reset = () => updateFilters({ category: null, q: null, focus: null, saved: null });
   const detail = selectedArticle && <NewsDetail article={selectedArticle} saved={bookmarks.saved.includes(selectedArticle.id)} onSave={() => bookmarks.toggle(selectedArticle.id)} />;
   return <DashboardLayout title={c("News terminal", "新闻终端")} noTransition>
     <div className="flex min-h-0 flex-1 flex-col bg-background">
@@ -59,14 +74,14 @@ export default function NewsFeed() {
       <div className="flex min-h-0 flex-1">
         <nav aria-label={c("News categories", "新闻分类")} className="hidden w-44 shrink-0 flex-col border-r border-border px-3 py-5 xl:flex">
           <p className="mb-3 px-2 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">{c("Feeds", "新闻分类")}</p>
-          {NEWS_CATEGORIES.map(item => <button key={item.id} type="button" aria-pressed={category === item.id && !savedOnly} onClick={() => selectCategory(item.id)} className={cn("mb-1 flex min-h-10 items-center justify-between gap-2 rounded px-2 text-left text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary", category === item.id && !savedOnly ? "bg-primary/10 font-medium text-primary" : "text-muted-foreground hover:bg-muted")}><span>{c(item.en, item.zh)}</span><span className="font-mono text-[11px] tabular-nums">{counts[item.id] ?? 0}</span></button>)}
-          <div className="mt-5 border-t border-border pt-4"><Button variant={savedOnly ? "secondary" : "ghost"} size="sm" className="w-full justify-start" aria-pressed={savedOnly} onClick={() => { setSavedOnly(!savedOnly); setCategory("all"); }}><Bookmark className="mr-2 h-4 w-4" />{c("Saved", "已收藏")}</Button></div>
+          {NEWS_CATEGORIES.map(item => <button key={item.id} type="button" aria-pressed={category === item.id && !savedOnly} onClick={() => selectCategory(item.id)} className={cn("mb-1 flex min-h-10 items-center justify-between gap-2 rounded px-2 text-left text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary", category === item.id && !savedOnly ? "bg-primary/10 font-medium text-positive dark:text-primary" : "text-muted-foreground hover:bg-muted")}><span>{c(item.en, item.zh)}</span><span className="font-mono text-[11px] tabular-nums">{counts[item.id] ?? 0}</span></button>)}
+          <div className="mt-5 border-t border-border pt-4"><Button variant={savedOnly ? "secondary" : "ghost"} size="sm" className="w-full justify-start" aria-pressed={savedOnly} onClick={() => { updateFilters({ saved: savedOnly ? null : "1", category: null }); }}><Bookmark className="mr-2 h-4 w-4" />{c("Saved", "已收藏")}</Button></div>
           <p className="mt-auto px-2 pt-6 text-[11px] leading-relaxed text-muted-foreground">{c("Categories and focus labels use Kolvex keyword rules. They are not FinancialJuice editorial tags.", "分类与重点标签由 Kolvex 关键词规则生成，不是 FinancialJuice 官方标签。")}</p>
         </nav>
         <section className="flex min-w-0 flex-1 flex-col" aria-label={c("Headlines", "快讯列表")}>
           <div className="space-y-3 border-b border-border px-4 py-3">
             <div className="flex flex-wrap gap-2">
-              <div className="relative min-w-0 flex-1 basis-40"><Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" aria-hidden /><input type="search" aria-label={c("Search loaded headlines or symbols", "搜索已加载新闻或股票代码")} value={query} onChange={e => setQuery(e.target.value)} placeholder={c("Search headlines, $ticker…", "搜索快讯、$股票代码…")} className="h-10 w-full rounded border border-input bg-background pl-9 pr-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary" /></div>
+              <div className="relative min-w-0 flex-1 basis-40"><Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" aria-hidden /><Input ref={searchInput} type="search" aria-label={c("Search loaded headlines or symbols", "搜索已加载新闻或股票代码")} value={query} onChange={e => updateFilters({ q: e.target.value || null })} placeholder={c("Search headlines, $ticker…", "搜索快讯、$股票代码…")} className="h-10 w-full rounded border border-input bg-background pl-9 pr-10 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary [&::-webkit-search-cancel-button]:appearance-none" />{query && <Button type="button" variant="ghost" size="icon" aria-label={c("Clear search", "清除搜索")} className="absolute right-0 top-0 h-10 w-10" onClick={() => { updateFilters({ q: null }); searchInput.current?.focus(); }}><X className="h-4 w-4" /></Button>}</div>
               <Button variant={focus ? "secondary" : "outline"} aria-pressed={focus} onClick={() => setFocus(!focus)}><SlidersHorizontal className="mr-1.5 h-3.5 w-3.5" />{c("Focus · rules", "重点 · 规则")}</Button>
               <Button variant={savedOnly ? "secondary" : "outline"} className="xl:hidden" size="icon" aria-label={c("Show saved headlines", "查看收藏")} aria-pressed={savedOnly} onClick={() => setSavedOnly(!savedOnly)}><Bookmark className="h-4 w-4" /></Button>
             </div>
@@ -91,7 +106,7 @@ export default function NewsFeed() {
       </div>
     </div>
     <Sheet open={!!selected && !wide} onOpenChange={open => { if (!open) setSelected(null); }}>
-      <SheetContent className="w-full overflow-y-auto sm:max-w-md" onCloseAutoFocus={event => { event.preventDefault(); trigger.current?.focus(); }}>
+      <SheetContent closeLabel={c("Close", "关闭")} className="w-full overflow-y-auto sm:max-w-md" onCloseAutoFocus={event => { event.preventDefault(); trigger.current?.focus(); }}>
         <SheetTitle className="px-5 pt-5 text-sm">{c("Headline details", "新闻详情")}</SheetTitle>
         <SheetDescription className="sr-only">{c("Source, classifications and related symbols", "来源、分类与相关股票")}</SheetDescription>
         {detail}

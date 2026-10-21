@@ -21,6 +21,7 @@ Kolvex turns scattered investment opinion into something an individual can check
 - Creator opinions extracted from finance videos retain sentiment, direction, confidence, summary, key points, risks and source video links. The numeric score is not displayed; strength uses qualitative wording. Admin JSON import remains available.
 - **Portfolio / 投资组合** (`/dashboard/portfolio`): holdings, options positions, transactions, allocation, performance, and AI portfolio analysis, connected through Plaid Investments.
 - **Daily Briefs / 早晚报** (`/dashboard/briefs`): signed-in readers browse imported morning/evening issues, filter by type and open full articles. An administrator import makes the issue available immediately.
+- **News terminal / 新闻终端** (`/dashboard/news`): a native, delayed FinancialJuice RSS headline feed with keyword categories, focus filtering, device-local bookmarks and links to the stock workspace. Source text stays in its original language.
 - **Settings** and **Admin** (admin-only).
 
 Success means users can read creator opinions, AI research and changes related to their holdings without entering their own views or plans.
@@ -39,7 +40,7 @@ Kolvex tracks what specific Chinese-language finance creators said about specifi
 
 - Next.js 14 App Router, React 18, Tailwind CSS 3, Radix UI primitives, lucide-react icons, recharts and chart.js, next-themes, Supabase auth.
 - Bilingual zh/en via `lib/i18n`; Chinese is the primary locale.
-- Feature set is defined in `lib/productFeatures.ts`; retired features (KOL tracker, news, options flow, stock screener, alerts, and others) are gone and must not reappear in navigation.
+- Feature set is defined in `lib/productFeatures.ts`; retired features (KOL tracker, options flow, stock screener, alerts, and others) are gone and must not reappear in navigation.
 - Light and dark themes must both be supported.
 
 ## Brand Commitments

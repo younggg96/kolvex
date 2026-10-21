@@ -16,7 +16,7 @@ export default function NewsDetail({ article, saved, onSave }: { article: FeedAr
       <Button variant="ghost" size="sm" aria-pressed={saved} onClick={onSave}><Bookmark className="mr-1.5 h-4 w-4" fill={saved ? "currentColor" : "none"} />{saved ? c("Saved", "已收藏") : c("Save", "收藏")}</Button>
     </div>
     <div>
-      <h3 className="text-lg font-semibold leading-relaxed">{article.title}</h3>
+      <h3 className="break-words text-lg font-semibold leading-relaxed">{article.title}</h3>
       <p className="mt-3 text-xs text-muted-foreground">{article.publish_time ? new Date(article.publish_time * 1000).toLocaleString(locale === "zh" ? "zh-CN" : "en-US") : c("Publication time unavailable", "发布时间未知")}</p>
     </div>
     {categories.length > 0 && <div>

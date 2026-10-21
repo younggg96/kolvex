@@ -29,6 +29,8 @@ headline workflow. It uses Kolvex components, themes, localization and navigatio
   Smaller screens: horizontal filters and an accessible details drawer.
 - Categories and Focus are local English keyword rules, explicitly labelled as
   such, and can overlap. They are not FinancialJuice editorial tags or predictions.
+- Search, category, Focus and saved-only filters persist in URL parameters across
+  refresh/navigation. Search has a localized clear button that restores input focus.
 - Searches cover loaded titles, publisher and explicit tickers. Bookmarks store
   up to 500 IDs on the current device; saved filtering covers the loaded window,
   not an independently persisted article archive.
@@ -54,12 +56,28 @@ headline workflow. It uses Kolvex components, themes, localization and navigatio
   source normalization, hostile links/XML, limits, concurrent cache access,
   retry cooldown, stale fallback and expiration. Requires existing `httpx`.
 - `npx tsc --noEmit` and targeted `next lint` for the news files.
-- The backend service fetched and parsed live public RSS during development
-  (100 items, delayed delivery, non-stale response). The connected browser could
-  not reach the development server (connection refused), so visual and signed-in
-  end-to-end verification remain pending. A deployment
-  smoke test should verify the authenticated dashboard at desktop/mobile widths,
-  real backend connectivity, theme switching and drawer keyboard focus.
+- Continuation validation (2026-10-20, America/Los_Angeles): restored local runtime
+  using `npm ci --include=optional`; the former connection refusal was caused by a
+  missing macOS ARM SWC dependency. No dependency manifest or lockfile changes.
+- Full FastAPI application served the new route on localhost:8080 (lifespan
+  disabled to avoid starting unrelated background workers). Both FastAPI and the
+  actual Next.js `/api/news` proxy returned 100 real RSS headlines, delayed and
+  non-stale. This verifies backend registration, provider parsing and proxy wiring.
+- All 12 news regression tests, `npx tsc --noEmit`, targeted lint and full
+  `npm run lint` passed. Lint retains an existing VideoPlayer img warning.
+- `npm run build` passed in an isolated source copy using the installed locked
+  dependencies and local environment. Existing Supabase Edge Runtime and
+  Browserslist warnings remain. DESIGN.md lint: zero errors, seven existing
+  unused-token warnings.
+- Premium strict static audit remains blocked by three existing findings outside
+  the news flow: undecided native select and an actionless button in Settings,
+  plus opt-in scrollbar styling in globals.css. Report: the same three findings
+  already recorded in `kolvex-frontend-web-nextjs/premium-audit.json`.
+- Chrome now reaches the local auth page. Authenticated desktop/mobile visual
+  verification is pending user account selection in the Google sign-in page.
+  No auth bypass or test account was added. Remaining checks: headline/detail
+  rendering, URL filter restoration, bookmarks, pause/resume, themes, narrow
+  viewport, drawer Escape/focus restoration and deployment smoke testing.
 
 This replaces the earlier draft's Yahoo symbol aggregation. The existing stock
 news API is unaffected. No embedded widget, private endpoint, account token or

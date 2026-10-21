@@ -23,9 +23,9 @@ export default function NewsRows({ articles, selectedId, saved, onSelect, onSave
         <button type="button" onClick={event => onSelect(article, event.currentTarget)} aria-pressed={selectedId === article.id} className="flex min-w-0 flex-1 gap-3 rounded text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
           <time dateTime={article.publish_time ? new Date(article.publish_time * 1000).toISOString() : undefined} className="w-11 shrink-0 pt-0.5 font-mono text-xs tabular-nums text-muted-foreground">{article.publish_time ? format(article.publish_time, false) : "—"}</time>
           <span className="min-w-0 flex-1">
-            <span className="block text-sm leading-relaxed">{article.title}</span>
+            <span className="block break-words text-sm leading-relaxed">{article.title}</span>
             <span className="mt-2 flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
-              {focused && <span className="font-semibold text-primary">{c("FOCUS · RULE", "重点 · 规则")}</span>}
+              {focused && <span className="font-semibold text-positive dark:text-primary">{c("FOCUS · RULE", "重点 · 规则")}</span>}
               {article.symbols.map(s => <span key={s} className="rounded border border-border px-1.5 py-0.5 font-mono">{s}</span>)}
               <span>FinancialJuice</span>
             </span>
