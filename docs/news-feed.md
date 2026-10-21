@@ -28,6 +28,9 @@ header, with pause/resume and refresh. No bookmark controls or storage hook.
 - Headlines automatically follow the active application language. English uses
   source titles; Chinese translates displayed titles with the existing
   `translateText` client and `/api/translate` service, without individual actions.
+  The translation service validates upstream output and retries failures once
+  with no-store to bypass invalid cached responses; each attempt times out at
+  10 seconds.
 - `useNewsTranslations` limits concurrency to three, deduplicates identical text,
   and caches at most 1000 translations in memory. Cache keys use exact source
   text. Corrections and locale changes cancel old work; late results cannot
@@ -52,7 +55,7 @@ header, with pause/resume and refresh. No bookmark controls or storage hook.
   and ignored late results.
 - `npx tsc --noEmit`, targeted Next lint and production build verify integration.
 - Backend parser/cache tests remain in `tests/test_news_feed.py`; backend source
-  and the existing translation API are unchanged.
+  is unchanged; the translation API has bounded fresh retry for failed output.
 - Production smoke should confirm automatic Chinese with no Translate/Save
   controls, immediate English source display on language change, Chinese cache
   reuse, readable fallback/retry and 390px layout without horizontal overflow.

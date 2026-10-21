@@ -9,14 +9,27 @@ async function translateChunk(
   const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${encodeURIComponent(
     targetLang
   )}&dt=t&q=${encodeURIComponent(text)}`;
-  const res = await fetch(url, { next: { revalidate: 86400 } });
-
-  if (!res.ok) {
-    throw new Error(`Translation service error: ${res.status}`);
+  // A malformed upstream response can be cached as HTTP 200. Retry once
+  // without the data cache so automatic news translation can recover.
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const res = await fetch(url, {
+        ...(attempt === 0 ? { next: { revalidate: 86400 } } : { cache: "no-store" as const }),
+        signal: AbortSignal.timeout(10_000),
+      });
+      if (!res.ok) throw new Error(`Translation service error: ${res.status}`);
+      const data = await res.json();
+      if (!Array.isArray(data?.[0])) throw new Error("Invalid translation response");
+      const translated = data[0].map((item: unknown) =>
+        Array.isArray(item) && typeof item[0] === "string" ? item[0] : ""
+      ).join("");
+      if (!translated.trim()) throw new Error("Empty translation response");
+      return translated;
+    } catch (error) {
+      if (attempt === 1) throw error;
+    }
   }
-
-  const data = await res.json();
-  return (data[0] as Array<[string]>).map((item) => item[0]).join("");
+  throw new Error("Translation failed");
 }
 
 function splitIntoChunks(text: string, maxLen: number): string[] {
