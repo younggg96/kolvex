@@ -576,3 +576,21 @@ contents, horizontally scrolling mobile contents, conclusion surface and shared
 `MarkdownBody` typography. Access rules, content, URLs and SEO metadata stay under
 their existing owners; visual parity does not introduce authenticated app shell
 providers or hide the public body behind tabs.
+
+
+## News terminal
+
+The user-requested `/dashboard/news` restores News as a primary navigation entry.
+`NewsFeed` reuses DashboardLayout, the shared Input and pill Buttons, semantic
+theme tokens and the existing content scroller. Desktop shows keyword categories,
+a dense timestamped feed and details; below 1280px categories scroll horizontally
+and the shared Radix Sheet owns modal details, focus trapping and Escape dismissal.
+Sheet accepts a localized close label and returns focus to the headline trigger.
+
+`../docs/news-feed.md` owns source and behavior details. Search, category, Focus
+and saved-only selection persist in the URL; search clearing returns focus to
+the Input. Only the loaded RSS window is searchable. News timestamps use the
+reader's local time and active Chinese/English locale. RSS headlines remain
+source text; local rule labels and delayed-source status are explicit. Small
+green text uses `positive` in light mode and `primary` in dark mode. No palette,
+font, elevation or shared navigation shape changes.

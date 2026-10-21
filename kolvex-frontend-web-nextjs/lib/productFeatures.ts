@@ -5,6 +5,7 @@ export type ProductFeatureId =
   | "tradingAnalysis"
   | "youtubeOpinions"
   | "briefs"
+  | "news"
   | "portfolio"
   | "settings"
   | "admin";
@@ -20,6 +21,7 @@ export interface ProductFeature {
 }
 
 export const PRODUCT_FEATURES = [
+  { id: "news", label: "News", enabled: true, routePrefixes: ["/dashboard/news"], apiPrefixes: ["/api/news"], componentDirs: ["components/news"], libFiles: ["lib/newsFeed.ts"] },
   { id: "home", label: "Markets", enabled: true, routePrefixes: ["/dashboard", "/dashboard/market"] },
   { id: "journal", label: "Updates", enabled: true, routePrefixes: ["/dashboard/journal"], apiPrefixes: ["/api/theses"] },
   {
@@ -98,7 +100,6 @@ export const RETIRED_PRODUCT_ROUTE_PREFIXES = [
   "/dashboard/analytics",
   "/dashboard/investors",
   "/dashboard/kol",
-  "/dashboard/news",
   "/dashboard/notifications",
   "/dashboard/options-flow",
   "/dashboard/social",
