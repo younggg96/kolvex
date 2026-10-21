@@ -21,7 +21,7 @@ Kolvex turns scattered investment opinion into something an individual can check
 - Creator opinions extracted from finance videos retain sentiment, direction, confidence, summary, key points, risks and source video links. The numeric score is not displayed; strength uses qualitative wording. Admin JSON import remains available.
 - **Portfolio / 投资组合** (`/dashboard/portfolio`): holdings, options positions, transactions, allocation, performance, and AI portfolio analysis, connected through Plaid Investments.
 - **Daily Briefs / 早晚报** (`/dashboard/briefs`): signed-in readers browse imported morning/evening issues, filter by type and open full articles. An administrator import makes the issue available immediately.
-- **News terminal / 新闻终端** (`/dashboard/news`): a single-column delayed headline feed with device-local bookmarks and explicit per-headline Chinese translation/original toggles. Headlines link directly to the source; no categories, search, Focus rules, details pane or related-symbol section.
+- **News terminal / 新闻终端** (`/dashboard/news`): a single-column delayed headline feed that automatically follows the active interface language (Chinese translations or the English source), without bookmark or per-headline translation controls. Headlines link directly to the source; no categories, search, Focus rules, details pane or related-symbol section.
 - **Settings** and **Admin** (admin-only).
 
 Success means users can read creator opinions, AI research and changes related to their holdings without entering their own views or plans.

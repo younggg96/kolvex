@@ -50,23 +50,3 @@ export function useNewsTerminal() {
     reveal: () => setFeed(revealNews),
   };
 }
-
-const STORAGE_KEY = "kolvex.news.bookmarks.v1";
-export function useNewsBookmarks() {
-  const [saved, setSaved] = useState<string[]>([]);
-  const [ready, setReady] = useState(false);
-  const [storageError, setStorageError] = useState(false);
-  useEffect(() => {
-    try {
-      const value = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "[]");
-      if (Array.isArray(value)) setSaved(value.filter(v => typeof v === "string").slice(0, 500));
-    } catch { setStorageError(true); }
-    setReady(true);
-  }, []);
-  function toggle(id: string) {
-    const next = saved.includes(id) ? saved.filter(value => value !== id) : [id, ...saved].slice(0, 500);
-    setSaved(next);
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(next)); } catch { setStorageError(true); }
-  }
-  return { saved, ready, storageError, toggle };
-}

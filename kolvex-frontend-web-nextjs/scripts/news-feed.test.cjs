@@ -97,64 +97,71 @@ function translationHarness() {
   let cursor = 0, pendingEffects = [];
   const react = {
     useState(initial) { const i = cursor++; if (!(i in slots)) slots[i] = initial; return [slots[i], value => { slots[i] = typeof value === 'function' ? value(slots[i]) : value; }]; },
-    useRef(initial) { const i = cursor++; if (!(i in slots)) slots[i] = { current: initial }; return slots[i]; },
-    useCallback(fn) { return fn; },
     useEffect(fn, deps) { const i = cursor++; const previous = effects[i]; if (!previous || deps.some((d, n) => d !== previous.deps[n])) pendingEffects.push(() => { previous?.cleanup?.(); effects[i] = { deps, cleanup: fn() }; }); },
   };
-  const { useContentTranslation } = load('components/trading-analysis/hooks.ts', {
+  const { useNewsTranslations } = load('components/news/useNewsTranslations.ts', {
     react,
-    './translate': { translateText: (text, language, signal) => new Promise((resolve, reject) => requests.push({text, language, signal, resolve, reject})) },
+    '@/components/trading-analysis/translate': { translateText: (text, language, signal) => new Promise((resolve, reject) => requests.push({text, language, signal, resolve, reject})) },
   }, { AbortController, setTimeout, clearTimeout });
   return {
     requests,
-    render(text = 'Original headline', locale = 'zh') { cursor = 0; const result = useContentTranslation(text, locale); const pending = pendingEffects; pendingEffects = []; pending.forEach(fn => fn()); return result; },
+    render(articles, locale = 'zh') { cursor = 0; const result = useNewsTranslations(articles, locale); const pending = pendingEffects; pendingEffects = []; pending.forEach(fn => fn()); return result; },
+    async respond(i, value) { requests[i].resolve(value); await new Promise(setImmediate); },
+    async fail(i) { requests[i].reject(Error('offline')); await new Promise(setImmediate); },
     unmount() { effects.forEach(effect => effect?.cleanup?.()); },
   };
 }
 
-test('headline translation is explicit, preserves the source and reuses translation when toggling', async () => {
+test('Chinese automatically translates displayed headlines with at most three concurrent requests; English uses originals', async () => {
   const h = translationHarness();
-  assert.equal(h.render().displayContent, 'Original headline');
-  assert.equal(h.requests.length, 0);
-  const work = h.render().toggle();
-  assert.equal(h.render().isTranslating, true);
-  assert.equal(h.render().displayContent, 'Original headline');
-  assert.equal(h.requests[0].language, 'zh');
-  h.requests[0].resolve('新闻译文'); await work;
-  assert.equal(h.render().displayContent, '新闻译文');
-  await h.render().toggle();
-  assert.equal(h.render().displayContent, 'Original headline');
-  await h.render().toggle();
-  assert.equal(h.render().displayContent, '新闻译文');
-  assert.equal(h.requests.length, 1);
+  const articles = Array.from({length:4},(_,i)=>article(String(i), `Headline ${i}`));
+  h.render(articles, 'en'); assert.equal(h.requests.length,0);
+  h.render(articles); assert.equal(h.requests.length,3);
+  assert.equal(h.requests[0].language,'zh');
+  assert.equal(h.render(articles).pending,4);
+  await h.respond(0,'译文0'); assert.equal(h.requests.length,4);
+  await h.respond(1,'译文1'); await h.respond(2,'译文2'); await h.respond(3,'译文3');
+  assert.equal(h.render(articles).pending,0);
+  assert.equal(h.render(articles).translations['Headline 0'],'译文0');
+  const english=h.render(articles,'en');
+  assert.equal(Object.keys(english.translations).length,0);
+  assert.equal(english.pending,0);
+  h.render(articles); assert.equal(h.requests.length,4, 'cached translations are reused');
   h.unmount();
 });
 
-test('failed headline translation retains the original and supports explicit retry', async () => {
-  const h = translationHarness();
-  const work = h.render().toggle();
-  h.requests[0].reject(Error('offline')); await work;
-  assert.equal(h.render().translationError, true);
-  assert.equal(h.render().displayContent, 'Original headline');
-  const retry = h.render().toggle();
-  h.requests[1].resolve('重试成功'); await retry;
-  assert.equal(h.render().translationError, false);
-  assert.equal(h.render().displayContent, '重试成功');
+test('failed automatic translations retain originals and retry only failed headlines', async () => {
+  const h=translationHarness(), articles=[article('1','First'),article('2','Second')];
+  h.render(articles);
+  await h.respond(0,'第一条'); await h.fail(1);
+  const state=h.render(articles);
+  assert.equal(state.failed,1); assert.equal(state.translations.First,'第一条');
+  assert.equal(state.translations.Second,undefined, 'reader falls back to the source');
+  state.retry();h.render(articles);
+  assert.equal(h.requests.length,3);assert.equal(h.requests[2].text,'Second');
+  await h.respond(2,'第二条');
+  assert.equal(h.render(articles).failed,0);assert.equal(h.render(articles).translations.Second,'第二条');
   h.unmount();
 });
 
-test('headline corrections abort translations and ignore late results from previous text', async () => {
-  const h = translationHarness();
-  const old = h.render().toggle();
-  assert.equal(h.render('Corrected headline').displayContent, 'Corrected headline');
-  assert.equal(h.requests[0].signal.aborted, true);
-  const current = h.render('Corrected headline').toggle();
-  h.requests[0].resolve('过期译文'); await old;
-  assert.equal(h.render('Corrected headline').displayContent, 'Corrected headline');
-  h.requests[1].resolve('更正后的译文'); await current;
-  assert.equal(h.render('Corrected headline').displayContent, '更正后的译文');
-  const next = h.render('Third headline').toggle();
+test('locale changes and corrections abort old requests and cannot overwrite the selected language', async () => {
+  const h=translationHarness(), original=[article('1','Original')], corrected=[article('1','Corrected')];
+  h.render(original); h.render(corrected);
+  assert.equal(h.requests[0].signal.aborted,true);
+  await h.respond(0,'过期');
+  assert.equal(h.render(corrected).translations.Original,undefined);
+  h.render(corrected,'en'); assert.equal(h.requests[1].signal.aborted,true);
+  await h.respond(1,'过期更正');
+  assert.equal(Object.keys(h.render(corrected,'en').translations).length,0);
+  h.render(corrected);assert.equal(h.requests.length,3);
+  await h.respond(2,'更正');assert.equal(h.render(corrected).translations.Corrected,'更正');
+  h.render([article('2','Next')]);h.unmount();assert.equal(h.requests[3].signal.aborted,true);
+  await h.respond(3,'卸载后');
+});
+
+test('identical headline text shares one translation request', async () => {
+  const h=translationHarness(), articles=[article('1','Same'),article('2','Same')];
+  h.render(articles);assert.equal(h.requests.length,1);
+  await h.respond(0,'同一标题');assert.equal(h.render(articles).translations.Same,'同一标题');
   h.unmount();
-  assert.equal(h.requests[2].signal.aborted, true);
-  h.requests[2].resolve('卸载后译文'); await next;
 });

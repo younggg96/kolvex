@@ -581,20 +581,21 @@ providers or hide the public body behind tabs.
 ## News terminal
 
 `/dashboard/news` is a single-column reading feed. DashboardLayout owns its only
-header: title, delayed-headline notice, device-local saved filter, update status,
-pause/resume and refresh. Date separators and local timestamps introduce plain
-headline links. There are no source tags, category rails, search, Focus rules,
-selected-row chevrons, details panes/drawers or related-symbol chips.
+header: title, delayed-headline notice, update status, pause/resume and refresh.
+Date separators and local timestamps introduce plain headline links. There are
+no row actions, bookmarks, source tags, category rails, search, Focus rules,
+details panes/drawers or related-symbol chips.
 
-Each row reuses `useContentTranslation` and `TranslateButton` from AI Research.
-Translation is explicit and switches between Chinese and source text without
-changing saved articles. Requests have the shared cancellation, timeout,
-source/language invalidation and failure recovery behavior. Translation errors
-keep the original readable and explain how to retry. Headline links open the
-original source in a new tab. Actions follow the headline on phones and align
-beside it on desktop. The source remains documented in `../docs/news-feed.md`.
+Headlines follow the active application locale automatically. English uses the
+English RSS source; Chinese translates the displayed rows without a manual
+button. `useNewsTranslations` reuses the existing `translateText` client/API,
+limits concurrency to three, deduplicates title text and retains up to 1000
+translations in memory. Switching language or correcting source text cancels
+outdated work. A pass times out after 45 seconds. Pending/failed translations
+retain readable originals; one page status and retry action handles failures.
+Translations are display-only and never replace the source article.
 
 Shared pill Buttons, Inter/Chinese typography, semantic themes and the existing
 content scroller remain canonical. Feed updates stay buffered behind an explicit
-reveal button; source failures preserve readable headlines. Rendering starts at
-40 rows and expands explicitly. No new colors, fonts or shared shell changes.
+reveal button. Rendering starts at 40 rows and expands explicitly; only displayed
+rows are translated. The source remains documented in `../docs/news-feed.md`.
