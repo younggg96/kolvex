@@ -1,39 +1,54 @@
 "use client";
-import { Bookmark, ChevronRight } from "lucide-react";
-import { useCopy } from "@/components/decision/shared";
-import { cn } from "@/lib/utils";
-import { isFocusHeadline, type FeedArticle } from "@/lib/newsFeed";
 
-export default function NewsRows({ articles, selectedId, saved, onSelect, onSave, locale }: {
-  articles: FeedArticle[]; selectedId?: string; saved: string[]; locale: string;
-  onSelect: (article: FeedArticle, trigger: HTMLButtonElement) => void; onSave: (id: string) => void;
+import { Bookmark } from "lucide-react";
+import { useCopy } from "@/components/decision/shared";
+import { Button } from "@/components/ui/button";
+import { useTranslation } from "@/lib/i18n";
+import { useContentTranslation } from "@/components/trading-analysis/hooks";
+import { TranslateButton } from "@/components/trading-analysis/translate";
+import type { FeedArticle } from "@/lib/newsFeed";
+
+function NewsRow({ article, saved, onSave, locale }: {
+  article: FeedArticle; saved: boolean; onSave: (id: string) => void; locale: string;
 }) {
   const c = useCopy();
-  const format = (timestamp: number, dateOnly: boolean) => new Date(timestamp * 1000).toLocaleString(locale === "zh" ? "zh-CN" : "en-US", dateOnly ? {year:"numeric",month:"short",day:"numeric"} : {hour:"2-digit",minute:"2-digit",hour12:false});
+  const { t } = useTranslation();
+  const { displayContent, showTranslated, isTranslating, translationError, toggle } = useContentTranslation(article.title, locale);
+  const time = article.publish_time ? new Date(article.publish_time * 1000) : null;
+
+  return <div className="grid grid-cols-[2.75rem_minmax(0,1fr)] items-start gap-x-3 gap-y-1 px-4 py-3 hover:bg-muted/30 sm:grid-cols-[2.75rem_minmax(0,1fr)_auto] lg:px-8">
+    <time dateTime={time?.toISOString()} className="pt-2 font-mono text-xs tabular-nums text-muted-foreground">
+      {time ? time.toLocaleTimeString(locale === "zh" ? "zh-CN" : "en-US", { hour: "2-digit", minute: "2-digit", hour12: false }) : "—"}
+    </time>
+    <div className="min-w-0 pt-1">
+      <a href={article.link} target="_blank" rel="noopener noreferrer" lang={showTranslated ? "zh-CN" : undefined} className="block break-words rounded text-sm leading-relaxed text-foreground underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
+        {displayContent}<span className="sr-only">{c(" (original source, new tab)", "（原文，新标签页）")}</span>
+      </a>
+      {translationError && <p role="alert" className="mt-2 text-xs text-negative">{c("Translation failed. Original retained; select Translate to retry.", "翻译失败，已保留原文；点击翻译重试。")}</p>}
+    </div>
+    <div className="col-start-2 flex items-center sm:col-start-3 sm:row-start-1">
+      <div className="w-36 shrink-0 [&_button]:w-full"><TranslateButton showTranslated={showTranslated} isTranslating={isTranslating} onToggle={toggle} t={t} /></div>
+      <Button type="button" variant="ghost" size="icon" aria-label={saved ? c("Remove bookmark", "取消收藏") : c("Bookmark headline", "收藏新闻")} aria-pressed={saved} onClick={() => onSave(article.id)} className="h-10 w-10 text-muted-foreground">
+        <Bookmark aria-hidden className="h-3.5 w-3.5" fill={saved ? "currentColor" : "none"} />
+      </Button>
+    </div>
+  </div>;
+}
+
+export default function NewsRows({ articles, saved, onSave, locale }: {
+  articles: FeedArticle[]; saved: string[]; onSave: (id: string) => void; locale: string;
+}) {
+  const c = useCopy();
   let previousDay = "";
   return <ol className="divide-y divide-border/70">{articles.map(article => {
-    const day = article.publish_time ? format(article.publish_time, true) : c("Undated", "日期未知");
+    const day = article.publish_time
+      ? new Date(article.publish_time * 1000).toLocaleDateString(locale === "zh" ? "zh-CN" : "en-US", { year: "numeric", month: "short", day: "numeric" })
+      : c("Undated", "日期未知");
     const showDay = day !== previousDay;
     previousDay = day;
-    const focused = isFocusHeadline(article);
-    const bookmarked = saved.includes(article.id);
     return <li key={article.id}>
-      {showDay && <div className="border-b border-border/70 bg-muted/40 px-4 py-2 text-xs font-medium text-muted-foreground">{day}</div>}
-      <div className={cn("group flex items-start gap-1 px-3 py-3 transition-colors hover:bg-muted/40", selectedId === article.id && "bg-primary/5 ring-1 ring-inset ring-primary/30")}>
-        <button type="button" onClick={event => onSelect(article, event.currentTarget)} aria-pressed={selectedId === article.id} className="flex min-w-0 flex-1 gap-3 rounded text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
-          <time dateTime={article.publish_time ? new Date(article.publish_time * 1000).toISOString() : undefined} className="w-11 shrink-0 pt-0.5 font-mono text-xs tabular-nums text-muted-foreground">{article.publish_time ? format(article.publish_time, false) : "—"}</time>
-          <span className="min-w-0 flex-1">
-            <span className="block break-words text-sm leading-relaxed">{article.title}</span>
-            <span className="mt-2 flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
-              {focused && <span className="font-semibold text-positive dark:text-primary">{c("FOCUS · RULE", "重点 · 规则")}</span>}
-              {article.symbols.map(s => <span key={s} className="rounded border border-border px-1.5 py-0.5 font-mono">{s}</span>)}
-              <span>FinancialJuice</span>
-            </span>
-          </span>
-          <ChevronRight aria-hidden className="mt-1 hidden h-3.5 w-3.5 shrink-0 text-muted-foreground sm:block" />
-        </button>
-        <button type="button" aria-label={bookmarked ? c("Remove bookmark", "取消收藏") : c("Bookmark headline", "收藏新闻")} aria-pressed={bookmarked} onClick={() => onSave(article.id)} className="flex h-9 w-9 shrink-0 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"><Bookmark className="h-3.5 w-3.5" fill={bookmarked ? "currentColor" : "none"} /></button>
-      </div>
+      {showDay && <div className="border-b border-border/70 bg-muted/40 px-4 py-2 text-xs font-medium text-muted-foreground lg:px-8">{day}</div>}
+      <NewsRow article={article} saved={saved.includes(article.id)} locale={locale} onSave={onSave} />
     </li>;
   })}</ol>;
 }

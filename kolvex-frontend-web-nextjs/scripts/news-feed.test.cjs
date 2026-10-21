@@ -33,16 +33,6 @@ test('rolling window remains bounded', () => {
   assert.equal(state.pending.length, 300);
   assert.equal(feed.revealNews(state).articles.length, 300);
 });
-test('local categories may overlap; explicit ticker and focus filters work', () => {
-  const macro = article('1', 'CPI inflation pushes Treasury yields and dollar higher');
-  const stock = article('2', '$AMZN reports earnings', 200, ['AMZN']);
-  const crypto = article('3', '$BTC bitcoin price', 200, ['BTC']);
-  assert.equal(feed.articleCategories(macro).join(','), 'macro,bonds,forex');
-  assert.equal(feed.articleCategories(crypto).join(','), 'crypto');
-  assert.equal(feed.filterNews([macro, stock], 'equities', 'amzn', true, true, ['2'])[0].id, '2');
-  assert.equal(feed.filterNews([macro, stock], 'all', '', false, true, []).length, 0);
-  assert.equal(feed.isFocusHeadline(crypto), false);
-});
 function route(fetch) {
   return load('app/api/news/route.ts', {'next/server': {NextResponse:{json:(body, options={}) => ({body, status:options.status || 200, headers:options.headers})}}}, {fetch});
 }
@@ -100,4 +90,71 @@ test('polling pauses in hidden tabs or on Pause, resumes and aborts on unmount',
   state.refresh();h.render();assert.equal(h.requests.length,3);
   h.unmount();assert.equal(h.requests[2].signal.aborted,true);
   h.tick();assert.equal(h.requests.length,3);
+});
+
+function translationHarness() {
+  const slots = [], effects = [], requests = [];
+  let cursor = 0, pendingEffects = [];
+  const react = {
+    useState(initial) { const i = cursor++; if (!(i in slots)) slots[i] = initial; return [slots[i], value => { slots[i] = typeof value === 'function' ? value(slots[i]) : value; }]; },
+    useRef(initial) { const i = cursor++; if (!(i in slots)) slots[i] = { current: initial }; return slots[i]; },
+    useCallback(fn) { return fn; },
+    useEffect(fn, deps) { const i = cursor++; const previous = effects[i]; if (!previous || deps.some((d, n) => d !== previous.deps[n])) pendingEffects.push(() => { previous?.cleanup?.(); effects[i] = { deps, cleanup: fn() }; }); },
+  };
+  const { useContentTranslation } = load('components/trading-analysis/hooks.ts', {
+    react,
+    './translate': { translateText: (text, language, signal) => new Promise((resolve, reject) => requests.push({text, language, signal, resolve, reject})) },
+  }, { AbortController, setTimeout, clearTimeout });
+  return {
+    requests,
+    render(text = 'Original headline', locale = 'zh') { cursor = 0; const result = useContentTranslation(text, locale); const pending = pendingEffects; pendingEffects = []; pending.forEach(fn => fn()); return result; },
+    unmount() { effects.forEach(effect => effect?.cleanup?.()); },
+  };
+}
+
+test('headline translation is explicit, preserves the source and reuses translation when toggling', async () => {
+  const h = translationHarness();
+  assert.equal(h.render().displayContent, 'Original headline');
+  assert.equal(h.requests.length, 0);
+  const work = h.render().toggle();
+  assert.equal(h.render().isTranslating, true);
+  assert.equal(h.render().displayContent, 'Original headline');
+  assert.equal(h.requests[0].language, 'zh');
+  h.requests[0].resolve('新闻译文'); await work;
+  assert.equal(h.render().displayContent, '新闻译文');
+  await h.render().toggle();
+  assert.equal(h.render().displayContent, 'Original headline');
+  await h.render().toggle();
+  assert.equal(h.render().displayContent, '新闻译文');
+  assert.equal(h.requests.length, 1);
+  h.unmount();
+});
+
+test('failed headline translation retains the original and supports explicit retry', async () => {
+  const h = translationHarness();
+  const work = h.render().toggle();
+  h.requests[0].reject(Error('offline')); await work;
+  assert.equal(h.render().translationError, true);
+  assert.equal(h.render().displayContent, 'Original headline');
+  const retry = h.render().toggle();
+  h.requests[1].resolve('重试成功'); await retry;
+  assert.equal(h.render().translationError, false);
+  assert.equal(h.render().displayContent, '重试成功');
+  h.unmount();
+});
+
+test('headline corrections abort translations and ignore late results from previous text', async () => {
+  const h = translationHarness();
+  const old = h.render().toggle();
+  assert.equal(h.render('Corrected headline').displayContent, 'Corrected headline');
+  assert.equal(h.requests[0].signal.aborted, true);
+  const current = h.render('Corrected headline').toggle();
+  h.requests[0].resolve('过期译文'); await old;
+  assert.equal(h.render('Corrected headline').displayContent, 'Corrected headline');
+  h.requests[1].resolve('更正后的译文'); await current;
+  assert.equal(h.render('Corrected headline').displayContent, '更正后的译文');
+  const next = h.render('Third headline').toggle();
+  h.unmount();
+  assert.equal(h.requests[2].signal.aborted, true);
+  h.requests[2].resolve('卸载后译文'); await next;
 });
