@@ -580,17 +580,21 @@ providers or hide the public body behind tabs.
 
 ## News terminal
 
-The user-requested `/dashboard/news` restores News as a primary navigation entry.
-`NewsFeed` reuses DashboardLayout, the shared Input and pill Buttons, semantic
-theme tokens and the existing content scroller. Desktop shows keyword categories,
-a dense timestamped feed and details; below 1280px categories scroll horizontally
-and the shared Radix Sheet owns modal details, focus trapping and Escape dismissal.
-Sheet accepts a localized close label and returns focus to the headline trigger.
+`/dashboard/news` is a single-column reading feed. DashboardLayout owns its only
+header: title, delayed-headline notice, device-local saved filter, update status,
+pause/resume and refresh. Date separators and local timestamps introduce plain
+headline links. There are no source tags, category rails, search, Focus rules,
+selected-row chevrons, details panes/drawers or related-symbol chips.
 
-`../docs/news-feed.md` owns source and behavior details. Search, category, Focus
-and saved-only selection persist in the URL; search clearing returns focus to
-the Input. Only the loaded RSS window is searchable. News timestamps use the
-reader's local time and active Chinese/English locale. RSS headlines remain
-source text; local rule labels and delayed-source status are explicit. Small
-green text uses `positive` in light mode and `primary` in dark mode. No palette,
-font, elevation or shared navigation shape changes.
+Each row reuses `useContentTranslation` and `TranslateButton` from AI Research.
+Translation is explicit and switches between Chinese and source text without
+changing saved articles. Requests have the shared cancellation, timeout,
+source/language invalidation and failure recovery behavior. Translation errors
+keep the original readable and explain how to retry. Headline links open the
+original source in a new tab. Actions follow the headline on phones and align
+beside it on desktop. The source remains documented in `../docs/news-feed.md`.
+
+Shared pill Buttons, Inter/Chinese typography, semantic themes and the existing
+content scroller remain canonical. Feed updates stay buffered behind an explicit
+reveal button; source failures preserve readable headlines. Rendering starts at
+40 rows and expands explicitly. No new colors, fonts or shared shell changes.
