@@ -1,132 +1,63 @@
 "use client";
 
 import Link from "next/link";
-import { useRef } from "react";
-import {
-  ArrowRight,
-  ArrowUpRight,
-  AudioLines,
-  LineChart,
-  Sparkles,
-  Wallet,
-} from "lucide-react";
-import {
-  motion,
-  useScroll,
-  useTransform,
-} from "motion/react";
+import { ArrowRight, ArrowUpRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useCopy } from "@/components/decision/shared";
-import { useTranslation } from "@/lib/i18n";
-import LandingMarketScene from "./LandingMarketScene";
-import { landingEase, useLandingMotion } from "./LandingMotion";
+import { LandingParallax } from "./LandingScrollEffects";
+import LandingStockBrief from "./LandingStockBrief";
 
 export default function LandingHero() {
   const c = useCopy();
-  const { t } = useTranslation();
-  const { disabled: reduce } = useLandingMotion();
-  const hero = useRef<HTMLElement>(null);
-  const { scrollYProgress } = useScroll({
-    target: hero,
-    offset: ["start start", "end start"],
-  });
-  const sceneY = useTransform(scrollYProgress, [0, 1], [0, -60]);
-  const features = [
-    {
-      icon: AudioLines,
-      label: t("landing.nav.creatorResearch"),
-      href: "/creators",
-    },
-    {
-      icon: LineChart,
-      label: c("Market context", "市场行情"),
-      href: "/dashboard",
-    },
-    {
-      icon: Sparkles,
-      label: t("sidebar.tradingAnalysis"),
-      href: "/research",
-    },
-    {
-      icon: Wallet,
-      label: c("Your holdings", "我的持仓"),
-      href: "/dashboard/portfolio",
-    },
-  ];
   return (
-    <section ref={hero} className="landing-hero">
-      <div className="landing-width landing-hero-grid">
-        <div className="landing-hero-copy">
-          <motion.p
-            className="landing-eyebrow"
-            initial={false}
-            animate={reduce ? { opacity: 1, y: 0 } : { opacity: [0, 1], y: [12, 0] }}
-            transition={{ duration: 0.7 }}
-          >
-            {c("YOUR STOCK RESEARCH, CONNECTED", "连接观点、研究与持仓")}
-          </motion.p>
-          <h1 className="landing-headline">
-            <motion.span
-              initial={false}
-              animate={reduce ? { opacity: 1, y: 0 } : { opacity: [0, 1], y: [35, 0] }}
-              transition={{ duration: 0.85, ease: landingEase }}
-            >
-              {c("Less noise.", "让观点汇聚，")}
-            </motion.span>
-            <motion.span
-              className="landing-headline-accent"
-              initial={false}
-              animate={reduce ? { opacity: 1, y: 0 } : { opacity: [0, 1], y: [35, 0] }}
-              transition={{ duration: 0.85, delay: 0.12, ease: landingEase }}
-            >
-              {c("More perspective.", "让判断清晰。")}
-            </motion.span>
-          </h1>
-          <motion.div
-            initial={false}
-            animate={reduce ? { opacity: 1, y: 0 } : { opacity: [0, 1], y: [20, 0] }}
-            transition={{ duration: 0.85, delay: 0.25, ease: landingEase }}
-          >
-            <p className="landing-hero-description">
+    <section
+      className="landing-hero landing-hero-focus"
+      aria-labelledby="landing-title"
+    >
+      <div className="landing-width">
+        <div className="focus-intro">
+          <LandingParallax className="focus-headline" distance={-28} hero>
+            <h1 id="landing-title">
+              {c("The market is loud.", "市场很吵。")}
+              <span>{c("Your view is clear.", "重点，很清晰。")}</span>
+            </h1>
+          </LandingParallax>
+          <div className="focus-proposition">
+            <p>
               {c(
-                "Creator opinions, market context and AI research. See how it all connects to the stocks you own.",
-                "博主观点、市场行情与 AI 研究，在一处看清你关注的股票。",
+                "Kolvex connects the news, creator opinions and research around your stocks. Get the context before you have to ask.",
+                "Kolvex 围绕你关注的股票，把新闻、博主观点与研究连起来。有用的背景，先于你的提问。",
               )}
             </p>
-            <div className="mt-8 flex flex-wrap items-center gap-4">
+            <div className="landing-actions">
               <Button asChild size="lg" className="landing-primary">
                 <Link href="/auth">
-                  {t("landing.workspaceHero.openWorkspace")}
-                  <ArrowUpRight className="ml-3 h-4 w-4" />
+                  {c("Start using Kolvex", "开始使用 Kolvex")}
+                  <ArrowUpRight size={17} aria-hidden />
                 </Link>
               </Button>
-              <Link href="#decision-preview" className="landing-text-link">
-                {c("Explore the workspace", "看看它如何工作")}
-                <ArrowRight size={16} />
-              </Link>
+              <a href="#product" className="landing-text-link">
+                {c("Explore the product", "了解产品")}
+                <ArrowRight size={16} aria-hidden />
+              </a>
             </div>
-          </motion.div>
+          </div>
         </div>
-        <motion.div className="min-w-0" style={{ y: reduce ? 0 : sceneY }}>
-          <LandingMarketScene />
-        </motion.div>
+        <LandingParallax className="focus-stage" distance={64} hero>
+          <LandingStockBrief />
+        </LandingParallax>
+        <p className="focus-hero-caption">
+          <span>
+            {c("One stock. Every perspective.", "一只股票，连接多重视角。")}
+          </span>
+          <span>
+            {c(
+              "The context comes first. No prompt required.",
+              "先看背景，不必先提问。",
+            )}
+          </span>
+        </p>
       </div>
-      <nav
-        className="landing-width landing-feature-nav"
-        aria-label={c("Explore Kolvex features", "了解 Kolvex 功能")}
-      >
-        {features.map(({ icon: Icon, label, href }) => (
-          <Link href={href} key={href}>
-            <Icon size={20} aria-hidden="true" />
-            <span>{label}</span>
-            <ArrowUpRight
-              size={16}
-              className="feature-nav-arrow"
-              aria-hidden="true"
-            />
-          </Link>
-        ))}
-      </nav>
     </section>
   );
 }

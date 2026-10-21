@@ -1,16 +1,17 @@
 "use client";
 
 import { useEffect } from "react";
-import { MotionConfig } from "motion/react";
+import { useTranslation } from "@/lib/i18n";
 import BaseLayout from "@/components/layout/BaseLayout";
 import LandingHero from "@/components/landing/LandingHero";
 import LandingPreview from "@/components/landing/LandingPreview";
-import LandingHowItWorks from "@/components/landing/LandingHowItWorks";
-import { LandingMotionProvider } from "@/components/landing/LandingMotion";
+import LandingIntelligence from "@/components/landing/LandingIntelligence";
+import LandingScrollEffects from "@/components/landing/LandingScrollEffects";
 import LandingCTA from "@/components/landing/LandingCTA";
 import "@/components/landing/landing.css";
 
 export default function HomePageClient() {
+  const { locale } = useTranslation();
   useEffect(() => {
     const handleAnchorClick = (event: MouseEvent) => {
       if (
@@ -51,15 +52,14 @@ export default function HomePageClient() {
   }, []);
 
   return (
-    <MotionConfig reducedMotion="user">
-      <LandingMotionProvider>
-        <BaseLayout>
-          <LandingHero />
-          <LandingPreview />
-          <LandingHowItWorks />
-          <LandingCTA />
-        </BaseLayout>
-      </LandingMotionProvider>
-    </MotionConfig>
+    <div className="landing-page" lang={locale === "zh" ? "zh-CN" : "en"}>
+      <LandingScrollEffects />
+      <BaseLayout>
+        <LandingHero />
+        <LandingPreview />
+        <LandingIntelligence />
+        <LandingCTA />
+      </BaseLayout>
+    </div>
   );
 }

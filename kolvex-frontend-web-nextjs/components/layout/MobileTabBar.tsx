@@ -10,8 +10,11 @@ import { MAIN_NAV_ITEMS, isNavItemActive } from "./navItems";
 export default function MobileTabBar() {
   const pathname = usePathname();
   const { t } = useTranslation();
-  const items = MAIN_NAV_ITEMS.filter((item) =>
-    isProductFeatureEnabled(item.featureId),
+  const items = MAIN_NAV_ITEMS.filter(
+    (item) =>
+      isProductFeatureEnabled(item.featureId) &&
+      item.featureId !== "tradingAnalysis" &&
+      item.featureId !== "portfolio",
   );
 
   return (

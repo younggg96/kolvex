@@ -3,7 +3,6 @@
 import Link from "next/link";
 import Image from "next/image";
 import ThemeToggle from "@/components/theme/ThemeToggle";
-import UserMenu from "@/components/user/UserMenu";
 import LogoIcon from "@/components/common/LogoIcon";
 import { usePathname, useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
@@ -11,9 +10,11 @@ import { useAuth, useUserProfile } from "@/hooks";
 import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
 import { useTranslation } from "@/lib/i18n";
+import { useCopy } from "@/components/decision/shared";
 
 export default function LandingHeader() {
-  const { t } = useTranslation();
+  const { t, locale, setLocale } = useTranslation();
+  const c = useCopy();
   const { theme } = useTheme();
   const { user, isAuthenticated, isLoading } = useAuth();
   const { profile } = useUserProfile();
@@ -48,79 +49,105 @@ export default function LandingHeader() {
   return (
     <header className="relative z-10 border-b border-border bg-background">
       <div className="landing-width flex min-h-[72px] items-center justify-between gap-4 py-3">
-      <Link
-        href="/"
-        className="flex items-center gap-1.5 sm:gap-2 group transition-all"
-      >
-        <LogoIcon
-          size={24}
-          className="h-7 w-7 text-primary transition-transform duration-200 group-hover:scale-110 motion-reduce:transform-none"
-        />
-        <span
-          className={`${textColorClass} text-xl font-extrabold`}
+        <Link
+          href="/"
+          className="flex items-center gap-1.5 sm:gap-2 group transition-all"
         >
-          Kolvex
-        </span>
-      </Link>
-      <nav className="hidden items-center gap-7 text-sm text-muted-foreground md:flex" aria-label="Main navigation">
-        <Link href="/#workflow" className="hover:text-foreground">{t("landing.nav.workflow")}</Link>
-        <Link href="/creators" className="hover:text-foreground">{t("landing.nav.creatorResearch")}</Link>
-        <Link href="/research" className="hover:text-foreground">{t("sidebar.tradingAnalysis")}</Link>
-      </nav>
-      <div className="flex items-center gap-3 sm:gap-4">
-        {isLoading ? (
-          // Loading state - use same Button structure to prevent layout shift
+          <LogoIcon
+            size={24}
+            className="h-7 w-7 text-primary transition-transform duration-200 group-hover:scale-110 motion-reduce:transform-none"
+          />
+          <span className={`${textColorClass} text-xl font-extrabold`}>
+            Kolvex
+          </span>
+        </Link>
+        <nav
+          className="hidden items-center gap-7 text-sm text-muted-foreground md:flex"
+          aria-label="Main navigation"
+        >
+          <Link href="/#product" className="hover:text-foreground">
+            {c("Product", "产品")}
+          </Link>
+          <Link href="/#features" className="hover:text-foreground">
+            {c("Features", "功能")}
+          </Link>
+          <Link href="/research" className="hover:text-foreground">
+            {t("sidebar.tradingAnalysis")}
+          </Link>
+        </nav>
+        <div className="flex items-center gap-3 sm:gap-4">
+          {isLoading ? (
+            // Loading state - use same Button structure to prevent layout shift
+            <Button
+              variant="ghost"
+              size="icon"
+              disabled
+              className="flex items-center gap-2 cursor-default"
+            >
+              <div className="w-6 h-6 rounded-full bg-gray-200 dark:bg-gray-700 animate-pulse" />
+            </Button>
+          ) : (
+            <>
+              {isAuthenticated ? (
+                <>
+                  {/* Mobile: Simple avatar button to go to dashboard */}
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={handleAvatarClick}
+                    className="flex items-center gap-2 hover:opacity-80 transition-opacity dark:hover:!bg-transparent"
+                    title={c("Open workspace", "打开工作台")}
+                    aria-label={c("Open workspace", "打开工作台")}
+                  >
+                    {profile?.avatar_url ? (
+                      <div className="relative w-6 h-6 rounded-full overflow-hidden ring-2 ring-primary/20 hover:ring-primary/40 transition-all">
+                        <Image
+                          src={profile.avatar_url}
+                          alt="Profile"
+                          fill
+                          className="object-cover"
+                          sizes="24px"
+                        />
+                      </div>
+                    ) : (
+                      <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center text-white text-xs font-semibold ring-2 ring-primary/20 hover:ring-primary/40 transition-all">
+                        {getInitials()}
+                      </div>
+                    )}
+                  </Button>
+                </>
+              ) : (
+                !isAuthRoute && (
+                  <Link
+                    href="/auth"
+                    className="landing-sign-in rounded-full px-3 py-2 text-sm font-medium transition-colors hover:bg-muted"
+                  >
+                    {t("landing.nav.signIn")}
+                  </Link>
+                )
+              )}
+            </>
+          )}
+          {!isAuthRoute && (
+            <Button asChild className="landing-nav-cta">
+              <Link href={isAuthenticated ? "/dashboard" : "/auth"}>
+                {isAuthenticated
+                  ? c("Open workspace", "打开工作台")
+                  : c("Get started", "开始使用")}
+              </Link>
+            </Button>
+          )}
           <Button
             variant="ghost"
             size="icon"
-            disabled
-            className="flex items-center gap-2 cursor-default"
+            onClick={() => setLocale(locale === "zh" ? "en" : "zh")}
+            aria-label={locale === "zh" ? "Switch to English" : "切换为中文"}
+            className="text-xs font-semibold"
           >
-            <div className="w-6 h-6 rounded-full bg-gray-200 dark:bg-gray-700 animate-pulse" />
+            {locale === "zh" ? "EN" : "中"}
           </Button>
-        ) : (
-          <>
-            {isAuthenticated ? (
-              <>
-                {/* Mobile: Simple avatar button to go to dashboard */}
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={handleAvatarClick}
-                  className="flex items-center gap-2 hover:opacity-80 transition-opacity dark:hover:!bg-transparent"
-                  title="Go to Dashboard"
-                >
-                  {profile?.avatar_url ? (
-                    <div className="relative w-6 h-6 rounded-full overflow-hidden ring-2 ring-primary/20 hover:ring-primary/40 transition-all">
-                      <Image
-                        src={profile.avatar_url}
-                        alt="Profile"
-                        fill
-                        className="object-cover"
-                        sizes="24px"
-                      />
-                    </div>
-                  ) : (
-                    <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center text-white text-xs font-semibold ring-2 ring-primary/20 hover:ring-primary/40 transition-all">
-                      {getInitials()}
-                    </div>
-                  )}
-                </Button>
-              </>
-            ) : (
-              !isAuthRoute && (
-                <Link
-                  href="/auth"
-                  className="rounded-full border border-primary px-5 py-2 text-sm text-primary transition-colors hover:bg-primary/10"
-                >
-                  {t("landing.nav.signIn")}
-                </Link>
-              )
-            )}
-          </>
-        )}
-        <ThemeToggle />
-      </div>
+          <ThemeToggle />
+        </div>
       </div>
     </header>
   );

@@ -467,7 +467,9 @@ failed requests are not cached and requests time out after 20 seconds.
 ## Daily Briefs
 
 Daily Briefs is a primary route at `/dashboard/briefs`, shared by the desktop
-sidebar and five-item mobile navigation. The route is readable by signed-in
+sidebar and mobile navigation. Mobile tabs show Markets, Creator Opinions,
+Daily Briefs and News; AI Research and Portfolio remain in the desktop sidebar
+but do not appear in mobile tabs. The route is readable by signed-in
 users; only administrators import content. Importing makes the issue visible
 immediately, as requested in the reader-flow extension.
 
@@ -599,3 +601,41 @@ Shared pill Buttons, Inter/Chinese typography, semantic themes and the existing
 content scroller remain canonical. Feed updates stay buffered behind an explicit
 reveal button. Rendering starts at 40 rows and expands explicitly; only displayed
 rows are translated. The source remains documented in `../docs/news-feed.md`.
+
+
+## Public landing page
+
+The public `/` surface extends the established product system through
+`components/pages/HomePageClient.tsx` and `components/landing/landing.css`.
+Semantic runtime colors, the Inter/Chinese stack, flat 12px bordered containers
+and shared pill Buttons remain authoritative; no global token changes are
+introduced. The surface brief is `.impeccable/surfaces/app-page-tsx.md`.
+
+An editorial introduction sits above a full-width interactive stock reader.
+NVDA, TSLA and AMD tabs change the identity, example move, evidence, research
+summary, watch-next context and stock link together. A large ticker sits left,
+news/voices/technical evidence center and synthesized research right on desktop.
+Functional intelligence-layer tabs, four curated stock themes, portfolio
+relevance, a source ledger and native research disclosures follow. Figures and
+interpretations are explicitly labelled examples, not a live feed. Actual
+`CompanyLogo`, `DirectionBadge`, `OpinionDistribution`, `TechnicalFindings`
+and shared Radix Tabs carry the product vocabulary. Landing tabs use selected
+text and neutral fill without an underline or selected dot. Brand/company marks
+and functional arrows remain; narrative decoration does not supply meaning.
+
+Hero type scales 52–80px on desktop (64px at 1100px and below, 51px at 800px
+and below) and 40–62px on phones; section headings retain the 30–44px scale.
+Content width caps at 1200px. At 800px the hero stock identity spans the reader
+width, supporting intelligence tabs become horizontal and curated stocks become
+two columns. At 640px the introduction, evidence/research reader and supporting
+paired sections stack with 20px page gutters. These are surface-specific choices,
+not replacement rules for authenticated pages.
+
+The English/Chinese control and theme toggle remain in the header. Native
+disclosures stay in document flow; same-page links focus their destination.
+Scroll parallax moves the hero headline down by up to 28px and reader up by
+up to 64px, with 30% travel on phones. Stock evidence enters over 600ms with
+75ms staggering; synthesis enters over 700ms after 130ms. Supporting content
+retains bounded reveals and parallax. Reduced motion disables spatial movement,
+reveals, transitions and smooth scrolling. Public/authentication routes, footer
+links, metadata, JSON-LD and existing analytics retain their owners.
