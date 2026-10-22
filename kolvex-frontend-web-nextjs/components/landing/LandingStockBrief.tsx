@@ -95,7 +95,7 @@ export default function LandingStockBrief() {
         <div className="focus-market-line"><strong className={stock.move.startsWith("−") ? "text-negative" : "text-positive"}>{stock.move}</strong><span>{c(stock.theme[0], stock.theme[1])}</span></div>
       </div>
       <div className="focus-reading">
-        <h3>{c(stock.title[0], stock.title[1])}</h3>
+        <h3>{c(stock.title[0], stock.title[1]).replace(/\n/g, " ")}</h3>
         <Tabs value={source} onValueChange={setSource} className="focus-evidence">
           <TabsList className="focus-source-tabs" aria-label={c("Explore the evidence", "查看依据")}>
             {sources.map(item => <TabsTrigger key={item.key} value={item.key}>{item.label}</TabsTrigger>)}

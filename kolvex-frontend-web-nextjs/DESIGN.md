@@ -641,3 +641,14 @@ up to 64px, with 30% travel on phones. Stock evidence enters over 600ms with
 retains bounded reveals and parallax. Reduced motion disables spatial movement,
 reveals, transitions and smooth scrolling. Public/authentication routes, footer
 links, metadata, JSON-LD and existing analytics retain their owners.
+
+
+### Landing stock reader density
+
+The stock example uses a compact two-column reader capped at 1040px, with a
+35% identity column. Tickers use 40px on desktop, 36px on tablets and 32px on
+phones; the research heading uses 22px (20px on phones) and wraps naturally.
+Padding is 24–32px, moves use 18px, and the research arrow sits beside its
+label. Existing semantic themes, demo disclosure and shared Radix tabs remain.
+At 640px the columns stack. These values supersede the oversized ticker
+presentation above for this reader only.
