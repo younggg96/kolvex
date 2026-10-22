@@ -613,7 +613,10 @@ fonts, shared pill Buttons, navigation labels and public URLs remain canonical.
 The landing page is a marketing surface with stronger motion than the workspace.
 
 The hero is a centered overlay composition: stock-research copy and two links
-sit over a full-width animated green signal-field background. A theme-aware
+sit over a fixed, viewport-filling green signal-field background, owned by
+`LandingBackground`. It continues behind the feature links while scrolling.
+The shared page shell is transparent on the landing route; header fill is
+translucent. Waves uses a narrow edge fade so it fills the screen. A theme-aware
 radial veil softens the field behind the text for contrast. The former pause control is removed at the user’s request; a short caption
 remains at the bottom of the hero.
 The former closing CTA section is removed, including its accompanying text,
@@ -641,6 +644,9 @@ hidden-document states suspend its timer. The primary CTA responds to mouse
 proximity, and feature links reveal once on entry. The hero's primary link opens `/auth`; its secondary link opens
 `/research`. Product navigation anchors the hero. Existing feature links retain their routes, portfolio visibility switch and content owners.
 
+The three feature destinations form a compact row capped at 920px, using
+16px headings, 12px descriptions and 16px arrows with 24/32px section padding.
+They stack with compact spacing on phones and retain at least 44px click targets.
 The composition remains centered at every breakpoint, with 20px phone gutters. Desktop display type
 scales from 44 to 72px; phone type scales from 36 to 54px. Both light and dark
 modes use existing theme colors, with green as the only accent. The hero reserves a responsive minimum height to prevent layout shifts.

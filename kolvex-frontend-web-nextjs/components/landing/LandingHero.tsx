@@ -1,25 +1,13 @@
 "use client";
 
-import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
 import { motion, useInView, useMotionValue, useSpring } from "motion/react";
 import { Button } from "@/components/ui/button";
 import { useCopy } from "@/components/decision/shared";
-import Waves from "./react-bits/Waves";
+import { useLandingReducedMotion } from "./useLandingReducedMotion";
 import { useTranslation, type Locale } from "@/lib/i18n";
-
-const motionPreference = "(prefers-reduced-motion: reduce)";
-function subscribeToMotionPreference(callback: () => void) {
-  const query = window.matchMedia(motionPreference);
-  query.addEventListener("change", callback);
-  return () => query.removeEventListener("change", callback);
-}
-// The server snapshot keeps the heading and control identical during hydration.
-function useHeroReducedMotion() {
-  return useSyncExternalStore(subscribeToMotionPreference,
-    () => window.matchMedia(motionPreference).matches, () => false);
-}
 
 const headlines = {
   zh: [
@@ -39,7 +27,7 @@ const headlines = {
 } as const;
 
 function TypewriterHeadline({ locale }: { locale: Locale }) {
-  const reduce = useHeroReducedMotion();
+  const reduce = useLandingReducedMotion();
   const heading = useRef<HTMLHeadingElement>(null);
   const inView = useInView(heading, { amount: 0.1 });
   const phrases = headlines[locale];
@@ -91,7 +79,7 @@ function TypewriterHeadline({ locale }: { locale: Locale }) {
 
 export default function LandingHero() {
   const c = useCopy();
-  const reduce = useHeroReducedMotion();
+  const reduce = useLandingReducedMotion();
   const { locale } = useTranslation();
   const x = useMotionValue(0);
   const y = useMotionValue(0);
@@ -125,14 +113,6 @@ export default function LandingHero() {
           </div>
         </div>
         <div className="hero-art">
-          <div className="hero-signal-field" aria-hidden="true">
-            <Waves
-              lineColor="#00a904" accentColor="#00c805" spacing={9} lineWidth={1}
-              rotation={-38} amplitude={85} scale={0.7} twist={1.5} speed={0.55}
-              mouseRadius={160} mouseStrength={1.8} fade={0.65} opacity={0.8}
-              paused={reduce} mouseInteraction={!reduce} clickRipple={!reduce} dpr={1.5}
-            />
-          </div>
           <div className="hero-art-caption">
             <span>{c("Find the signal in the noise.", "让信息，汇成判断。")}</span>
           </div>

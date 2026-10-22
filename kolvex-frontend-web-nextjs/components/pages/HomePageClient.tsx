@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { useTranslation } from "@/lib/i18n";
 import BaseLayout from "@/components/layout/BaseLayout";
+import LandingBackground from "@/components/landing/LandingBackground";
 import LandingHero from "@/components/landing/LandingHero";
 import LandingIntelligence from "@/components/landing/LandingIntelligence";
 import LandingScrollEffects from "@/components/landing/LandingScrollEffects";
@@ -51,6 +52,7 @@ export default function HomePageClient() {
 
   return (
     <div className="landing-page" lang={locale === "zh" ? "zh-CN" : "en"}>
+      <LandingBackground />
       <LandingScrollEffects />
       <BaseLayout>
         <LandingHero />
