@@ -9,8 +9,11 @@ import { useTheme } from "next-themes";
 import { useAuth, useUserProfile } from "@/hooks";
 import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
+import { ArrowUpRight, Menu } from "lucide-react";
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { useTranslation } from "@/lib/i18n";
 import { useCopy } from "@/components/decision/shared";
+import { landingNavigation } from "@/components/landing/landingNavigation";
 
 export default function LandingHeader() {
   const { t, locale, setLocale } = useTranslation();
@@ -20,7 +23,9 @@ export default function LandingHeader() {
   const { profile } = useUserProfile();
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
-  const isAuthRoute = usePathname() === "/auth";
+  const pathname = usePathname();
+  const isAuthRoute = pathname === "/auth";
+  const [navigationOpen, setNavigationOpen] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -61,21 +66,26 @@ export default function LandingHeader() {
             Kolvex
           </span>
         </Link>
-        <nav
-          className="hidden items-center gap-7 text-sm text-muted-foreground md:flex"
-          aria-label="Main navigation"
-        >
-          <Link href="/#product" className="hover:text-foreground">
-            {c("Product", "产品")}
-          </Link>
-          <Link href="/#features" className="hover:text-foreground">
-            {c("Features", "功能")}
-          </Link>
-          <Link href="/research" className="hover:text-foreground">
-            {t("sidebar.tradingAnalysis")}
-          </Link>
-        </nav>
-        <div className="flex items-center gap-3 sm:gap-4">
+        <div className="flex items-center gap-1 sm:gap-4">
+          <DropdownMenu open={navigationOpen} onOpenChange={setNavigationOpen}>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="min-h-10 gap-2 px-2 sm:px-3" aria-label={c("Navigation", "导航")}>
+                <Menu size={18} aria-hidden="true" />
+                <span className="hidden sm:inline">{c("Navigation", "导航")}</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" sideOffset={12}>
+              {landingNavigation.map((item) => (
+                <DropdownMenuItem key={item.href} asChild>
+                  <Link href={item.href} className="min-h-11 justify-between gap-8"
+                    onClick={() => setNavigationOpen(false)}
+                  >
+                    {c(item.label[0], item.label[1])}<ArrowUpRight size={15} aria-hidden="true" />
+                  </Link>
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
           {isLoading ? (
             // Loading state - use same Button structure to prevent layout shift
             <Button

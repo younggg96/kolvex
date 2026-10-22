@@ -6,7 +6,6 @@ import BaseLayout from "@/components/layout/BaseLayout";
 import LandingHero from "@/components/landing/LandingHero";
 import LandingIntelligence from "@/components/landing/LandingIntelligence";
 import LandingScrollEffects from "@/components/landing/LandingScrollEffects";
-import LandingCTA from "@/components/landing/LandingCTA";
 import "@/components/landing/landing.css";
 
 export default function HomePageClient() {
@@ -56,7 +55,6 @@ export default function HomePageClient() {
       <BaseLayout>
         <LandingHero />
         <LandingIntelligence />
-        <LandingCTA />
       </BaseLayout>
     </div>
   );

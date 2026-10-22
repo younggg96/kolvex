@@ -98,7 +98,7 @@ export default function LandingScrollEffects() {
     );
     page
       .querySelectorAll(
-        ".landing-section-heading, .curated-stocks, .portfolio-copy, .source-ledger, .landing-closing-panel",
+        ".simple-features > a, .landing-closing-panel",
       )
       .forEach((element) => observer.observe(element));
     const finishOnFocus = () =>

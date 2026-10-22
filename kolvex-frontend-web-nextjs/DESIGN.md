@@ -607,51 +607,49 @@ rows are translated. The source remains documented in `../docs/news-feed.md`.
 
 ## Public landing page
 
-The public `/` surface extends the established product system through
-`components/pages/HomePageClient.tsx` and `components/landing/landing.css`.
-Semantic runtime colors, the Inter/Chinese stack, flat 12px bordered containers
-and shared pill Buttons remain authoritative; no global token changes are
-introduced. The surface brief is `.impeccable/surfaces/app-page-tsx.md`.
+The public `/` surface uses `components/pages/HomePageClient.tsx` and
+`components/landing/landing.css`. Existing semantic theme tokens, Inter/Chinese
+fonts, shared pill Buttons, navigation labels and public URLs remain canonical.
+The landing page is a marketing surface with stronger motion than the workspace.
 
-An editorial introduction sits above a full-width interactive stock reader.
-NVDA, TSLA and AMD tabs change the identity, example move, evidence, research
-summary, watch-next context and stock link together. A large ticker sits left,
-news/voices/technical evidence center and synthesized research right on desktop.
-Functional intelligence-layer tabs, four curated stock themes, portfolio
-relevance, a source ledger and native research disclosures follow. Figures and
-interpretations are explicitly labelled examples, not a live feed. Actual
-`CompanyLogo`, `DirectionBadge`, `OpinionDistribution`, `TechnicalFindings`
-and shared Radix Tabs carry the product vocabulary. Landing tabs use selected
-text and neutral fill without an underline or selected dot. Brand/company marks
-and functional arrows remain; narrative decoration does not supply meaning.
+The hero is a centered overlay composition: stock-research copy and two links
+sit over a full-width animated green signal-field background. A theme-aware
+radial veil softens the field behind the text for contrast. The former pause control is removed at the user’s request; a short caption
+remains at the bottom of the hero.
+The former closing CTA section is removed, including its accompanying text,
+as requested. The feature links lead directly into the existing footer.
+Header destinations are grouped in the shared Radix dropdown behind a single
+Navigation button. Both that menu and the feature links use the shared
+`components/landing/landingNavigation.ts` destinations in this order:
+Stock research / 股票研究 (`/research`), Creator opinions / 博主观点
+(`/creators`), Stock directory / 股票目录 (`/stocks`).
+On phones the trigger is an accessibly labelled menu icon; the redundant
+header signup CTA is hidden while the hero signup action remains available.
+Selecting a destination closes the menu and opens its public route. The artwork has no central
+Logo disc or circular frame. The previous
+NVDA/TSLA/AMD stock reader is removed from the homepage. The signal field is
+abstract brand artwork, not a chart or a representation of market data.
+React Bits Waves is vendored under `components/landing/react-bits/`, alongside
+its license; it uses native WebGL2 without adding a runtime dependency. The artwork is decorative; navigation and copy remain usable without WebGL.
 
-Hero type scales 52–80px on desktop (64px at 1100px and below, 51px at 800px
-and below) and 40–62px on phones; section headings retain the 30–44px scale.
-Content width caps at 1200px. At 800px the hero stock identity spans the reader
-width, supporting intelligence tabs become horizontal and curated stocks become
-two columns. At 640px the introduction, evidence/research reader and supporting
-paired sections stack with 20px page gutters. These are surface-specific choices,
-not replacement rules for authenticated pages.
+The headline cycles through five localized two-line phrases using typing,
+reading pauses and deletion, with a blinking caret. Both line heights are reserved
+so the actions do not move during a cycle. Initial HTML contains the complete
+first phrase, which also remains the stable accessible heading; animated text
+is hidden from screen readers. Locale changes reset the cycle, and offscreen or
+hidden-document states suspend its timer. The primary CTA responds to mouse
+proximity, and feature links reveal once on entry. The hero's primary link opens `/auth`; its secondary link opens
+`/research`. Product navigation anchors the hero. Existing feature links retain their routes, portfolio visibility switch and content owners.
 
-The English/Chinese control and theme toggle remain in the header. Native
-disclosures stay in document flow; same-page links focus their destination.
-Scroll parallax moves the hero headline down by up to 28px and reader up by
-up to 64px, with 30% travel on phones. Stock evidence enters over 600ms with
-75ms staggering; synthesis enters over 700ms after 130ms. Supporting content
-retains bounded reveals and parallax. Reduced motion disables spatial movement,
-reveals, transitions and smooth scrolling. Public/authentication routes, footer
-links, metadata, JSON-LD and existing analytics retain their owners.
+The composition remains centered at every breakpoint, with 20px phone gutters. Desktop display type
+scales from 44 to 72px; phone type scales from 36 to 54px. Both light and dark
+modes use existing theme colors, with green as the only accent. The hero reserves a responsive minimum height to prevent layout shifts.
 
-
-### Landing stock reader density
-
-The stock example uses a compact two-column reader capped at 1040px, with a
-35% identity column. Tickers use 40px on desktop, 36px on tablets and 32px on
-phones; the research heading uses 22px (20px on phones) and wraps naturally.
-Padding is 24–32px, moves use 18px, and the research arrow sits beside its
-label. Existing semantic themes, demo disclosure and shared Radix tabs remain.
-At 640px the columns stack. These values supersede the oversized ticker
-presentation above for this reader only.
+System reduced motion makes the field static, removes pointer/click responses,
+disables magnetic movement and shows the complete first headline without a caret
+or typing timer. Waves suspends drawing while
+outside the viewport or when the document is hidden. Supporting reveals retain
+keyboard-focus handling and reduced-motion behavior. No global tokens, metadata, JSON-LD or authenticated workspace behavior change.
 
 
 ### Portfolio visibility
