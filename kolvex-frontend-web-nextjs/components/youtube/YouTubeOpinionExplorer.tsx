@@ -1,5 +1,7 @@
 "use client";
 
+import { isProductFeatureEnabled } from "@/lib/productFeatures";
+
 import Link from "next/link";
 import { formatOpinionDate } from "@/lib/opinionDates";
 import { useRouter } from "next/navigation";
@@ -50,7 +52,8 @@ import OpinionDistribution from "./OpinionDistribution";
 import OpinionStrength from "./OpinionStrength";
 import PriceChart from "./PriceChart";
 import StrengthChart, { type StrengthPoint } from "./StrengthChart";
-import VideoOpinionCard, { groupOpinionsByVideo } from "./VideoOpinionCard";
+import VideoOpinionCard from "./VideoOpinionCard";
+import { videoHistory } from "@/lib/youtubeVideoHistory";
 import CreatorShare from "./CreatorShare";
 import { describeStrength, toneText, type StrengthTone } from "./strength";
 import { HeldMark, useHeldTickers, useCopy } from "@/components/decision/shared";
@@ -169,6 +172,7 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
   const [filters, setFilters] = useState<Filters>(emptyFilters);
   const [scrub, setScrub] = useState<StrengthPoint | null>(null);
   const [historyView, setHistoryView] = useState<HistoryView>("videos");
+  const [showUntrackedVideos, setShowUntrackedVideos] = useState(false);
   const [chartView, setChartView] = useState<ChartView>("price");
   const detailRequest = useRef(0);
   const navigationRequest = useRef(0);
@@ -177,6 +181,10 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
   const opinionHistory = useRef<HTMLElement>(null);
   const inDetail = Boolean(route.ticker || route.creator);
   const held = useHeldTickers();
+
+  useEffect(() => {
+    setShowUntrackedVideos(false);
+  }, [route.creator]);
 
   useEffect(() => {
     const invalidateNavigation = () => { navigationRequest.current++; };
@@ -698,6 +706,17 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
 
   const groupByVideo = Boolean(route.creator && !route.ticker);
   const videoView = groupByVideo && historyView === "videos";
+  const creatorCoverage = route.creator ? coverage[route.creator] : undefined;
+  const historyVideos = videoHistory(
+    opinions,
+    creatorCoverage?.status === "available" && filters.sentiment === "all"
+      ? creatorCoverage.untracked
+      : [],
+    filters.from,
+    filters.to,
+  );
+  const untrackedVideoCount = historyVideos.filter((group) => !group.opinions.length).length;
+  const visibleVideos = historyVideos.filter((group) => showUntrackedVideos || group.opinions.length > 0);
   const historySwitcher = groupByVideo && (
     <div
       role="radiogroup"
@@ -949,7 +968,7 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
                       </ul>
                     ) : <EmptyLine text={t("youtubeOpinions.noOpinionsYet")} />}
                   </section>
-                  <section aria-labelledby="creator-holdings-title">
+                  {isProductFeatureEnabled("portfolio") && <section aria-labelledby="creator-holdings-title">
                     <h2 id="creator-holdings-title" className="text-base font-semibold">{c("My holdings", "我的持仓")}</h2>
                     {held.loading ? loadingBlock : held.error ? (
                       <EmptyLine text={t("research.holdingsUnavailable")} />
@@ -982,7 +1001,7 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
                         )}
                       </>
                     )}
-                  </section>
+                  </section>}
                 </aside>}
               </div>
             )}
@@ -1236,7 +1255,17 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
                             alert
                           />
                         )}
-                        {!detailError && !opinions.length && (
+                        {videoView && untrackedVideoCount > 0 && (
+                          <button
+                            type="button"
+                            aria-pressed={showUntrackedVideos}
+                            onClick={() => setShowUntrackedVideos((value) => !value)}
+                            className="mt-4 inline-flex min-h-8 items-center rounded-full px-3 text-[13px] font-semibold text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                          >
+                            {t(showUntrackedVideos ? "youtubeOpinions.hideUntrackedVideos" : "youtubeOpinions.showUntrackedVideos", { count: String(untrackedVideoCount) })}
+                          </button>
+                        )}
+                        {!detailError && !(videoView ? visibleVideos.length : opinions.length) && (
                           <EmptyLine
                             text={
                               filters.sentiment !== "all" || filters.range !== "all"
@@ -1252,7 +1281,7 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
                         )}
                         <div className="min-w-0">
                           {videoView
-                            ? groupOpinionsByVideo(opinions).map((group) => (
+                            ? visibleVideos.map((group) => (
                                 <VideoOpinionCard
                                   key={group.videoId}
                                   group={group}

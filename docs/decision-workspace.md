@@ -55,6 +55,10 @@ expansion through its keyed mount.
 - The Updates feed uses the catalogue's latest imported opinions and changes; it is not a complete event archive. Full opinion history remains in the YouTube explorer.
 - Source dates are visible and each opinion links to its creator and original video.
 - Creator opinion dates use `America/New_York` across cards, date filters, timelines and chart markers. The shared formatter is `lib/opinionDates.ts`. Publication instants come from the YouTube Data API; calendar labels never shift with the viewer's timezone.
+- Creator history's video view includes the latest untracked uploads from coverage.
+  Videos without opinions are hidden by default and can be revealed with the labelled
+  count control. They show source metadata without opinion rows or stock counts.
+  Date filters apply to uploads; sentiment filters show only videos with matching opinions.
 - The creator-page Share action opens one dialog for public links, complete share text, social platform composers, email and native sharing. Public `/share/creators/[channelId]` links require no sign-in and follow the latest imported video. Images are a tab within this flow, generating source-attributed PNGs from that video's complete set of stock summaries. Long summaries continue across numbered images. Readers preview and save each image or explicitly open device sharing; opening the dialog does not publish anything.
 - Share images follow the active website theme. The image renderer snapshots inherited CSS tokens and computed typography from the preview, shares LogoIcon's brand asset, and uses the same qualitative strength labels and three-step meter as opinion rows. Switching light/dark mode regenerates the image.
 - Failed loads display an error, never a healthy-plan status or an invented update.

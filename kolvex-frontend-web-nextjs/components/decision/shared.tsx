@@ -1,5 +1,7 @@
 "use client";
 
+import { isProductFeatureEnabled } from "@/lib/productFeatures";
+
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, ReactNode, useEffect, useState } from "react";
@@ -290,6 +292,10 @@ export function useHeldTickers(attempt = 0) {
     error: false,
   });
   useEffect(() => {
+    if (!isProductFeatureEnabled("portfolio")) {
+      setState({ tickers: [], loading: false, error: false });
+      return;
+    }
     let alive = true;
     setState((previous) => ({ ...previous, loading: true }));
     loadHeld(attempt > 0)

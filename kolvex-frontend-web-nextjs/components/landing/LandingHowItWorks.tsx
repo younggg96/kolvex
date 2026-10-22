@@ -1,5 +1,7 @@
 "use client";
 
+import { isProductFeatureEnabled } from "@/lib/productFeatures";
+
 import { useState } from "react";
 import Link from "next/link";
 import { AnimatePresence, motion } from "motion/react";
@@ -87,7 +89,7 @@ export default function LandingHowItWorks() {
         "保留历史，理解变化。",
       ),
     },
-    {
+    ...(isProductFeatureEnabled("portfolio") ? [{
       icon: Wallet,
       title: c("Relevant to what you own.", "与你的持仓，建立关联。"),
       body: c(
@@ -106,7 +108,7 @@ export default function LandingHowItWorks() {
         "The information that matters to your portfolio.",
         "找到与你的投资组合相关的信息。",
       ),
-    },
+    }] : []),
   ];
   const feature = features[active];
   return (

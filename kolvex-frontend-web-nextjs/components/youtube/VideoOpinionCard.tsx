@@ -4,14 +4,10 @@ import { useState } from "react";
 import { ChevronDown, PlayCircle } from "lucide-react";
 import CompanyLogo from "@/components/ui/company-logo";
 import { cn, proxyImageUrl } from "@/lib/utils";
-import type { OpinionSentiment, YouTubeOpinion } from "@/lib/youtubeOpinionsApi";
+import type { OpinionSentiment } from "@/lib/youtubeOpinionsApi";
 import OpinionStrength from "./OpinionStrength";
 import { formatOpinionDate } from "@/lib/opinionDates";
-
-export type VideoOpinionGroup = {
-  videoId: string;
-  opinions: YouTubeOpinion[];
-};
+import type { VideoOpinionGroup } from "@/lib/youtubeVideoHistory";
 
 const collapsedRows = 3;
 const tallyOrder: Array<{ sentiment: OpinionSentiment; className: string }> = [
@@ -21,24 +17,13 @@ const tallyOrder: Array<{ sentiment: OpinionSentiment; className: string }> = [
   { sentiment: "mixed", className: "text-warning" },
 ];
 
-export function groupOpinionsByVideo(opinions: YouTubeOpinion[]) {
-  const groups = new Map<string, VideoOpinionGroup>();
-  for (const opinion of opinions) {
-    const key = opinion.video_id || opinion.id;
-    const group = groups.get(key);
-    if (group) group.opinions.push(opinion);
-    else groups.set(key, { videoId: key, opinions: [opinion] });
-  }
-  return Array.from(groups.values());
-}
-
 /** First clause only. Full titles are long ticker lists; the link still carries the original. */
 function shortTitle(title: string) {
   const clause = title.split(/[？?！!。｜|]/)[0]?.trim();
   return clause && clause.length >= 4 ? clause : title;
 }
 
-function thumbnailFor(opinion: YouTubeOpinion) {
+function thumbnailFor(opinion: VideoOpinionGroup["video"]) {
   const url =
     opinion.thumbnail_url ||
     (/^[\w-]{11}$/.test(opinion.video_id)
@@ -84,7 +69,7 @@ export default function VideoOpinionCard({
   onStock?: (ticker: string) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
-  const video = group.opinions[0];
+  const video = group.video;
   const title = video.video_title || t("youtubeOpinions.untitledVideo");
   const published = video.opinion_date || video.video_published_at || undefined;
   const opinions = [...group.opinions].sort(
@@ -139,7 +124,11 @@ export default function VideoOpinionCard({
           )}
           <p className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px] text-muted-foreground tabular-nums">
             <time dateTime={published}>{formatOpinionDate(published, t("common.intlLocale"))}</time>
-            <span>{t("youtubeOpinions.videoStockCount", { count: String(opinions.length) })}</span>
+            {opinions.length > 0 ? (
+              <span>{t("youtubeOpinions.videoStockCount", { count: String(opinions.length) })}</span>
+            ) : (
+              <span>{t("youtubeOpinions.untrackedVideo")}</span>
+            )}
             {tally.map((item) => (
               <span key={item.sentiment} className={cn("font-semibold", item.className)}>
                 {t(`youtubeOpinions.${item.sentiment}`)} {item.count}
@@ -149,7 +138,7 @@ export default function VideoOpinionCard({
         </div>
       </header>
 
-      <ul className="mt-5 min-w-0">
+      {opinions.length > 0 && <ul className="mt-5 min-w-0">
         {shown.map((opinion) => {
           const confidence =
             opinion.confidence === null || opinion.confidence === undefined
@@ -192,7 +181,7 @@ export default function VideoOpinionCard({
             </li>
           );
         })}
-      </ul>
+      </ul>}
 
       {hidden > 0 && (
         <button

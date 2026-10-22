@@ -1,5 +1,7 @@
 "use client";
 
+import { isProductFeatureEnabled } from "@/lib/productFeatures";
+
 import Link from "next/link";
 import AnalysisSummary from "@/components/youtube/chart/AnalysisSummary";
 import TechnicalFindings from "@/components/youtube/chart/TechnicalFindings";
@@ -83,7 +85,7 @@ export default function StockWorkspace({ ticker }: { ticker: string }) {
     Promise.allSettled([
       getStockQuote(ticker),
       getYouTubeStockDetail(ticker),
-      getMyHoldings(),
+      isProductFeatureEnabled("portfolio") ? getMyHoldings() : Promise.resolve({ accounts: [] }),
       getPublishedAnalyses({ ticker, limit: 20 }),
       getStockNews(ticker),
     ]).then((results) => {
@@ -507,7 +509,7 @@ export default function StockWorkspace({ ticker }: { ticker: string }) {
                 <TextLink href="/dashboard/journal" className="mt-4 inline-block">{c("All updates", "全部变化动态")}</TextLink>
               </Panel>
 
-              <section aria-labelledby="position-title">
+              {isProductFeatureEnabled("portfolio") && <section aria-labelledby="position-title">
                 <h2 id="position-title" className="text-[13px] font-semibold text-muted-foreground">
                   {c("Your position", "你的仓位")}
                 </h2>
@@ -536,7 +538,7 @@ export default function StockWorkspace({ ticker }: { ticker: string }) {
                     {loading ? "…" : c("You don't hold this stock in a linked account.", "已连接账户中没有这只股票。")}
                   </p>
                 )}
-              </section>
+              </section>}
             </aside>
           </div>
         </div>

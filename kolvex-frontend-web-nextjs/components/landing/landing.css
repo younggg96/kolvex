@@ -49,7 +49,7 @@
 .focus-evidence p { font-size: 14px; color: var(--landing-muted); line-height: 1.8; }
 .focus-stock-link { display: inline-flex; gap: 8px; align-items: center; font-size: 13px; font-weight: 500; min-height: 44px; margin-top: 4px; }
 .focus-stock-link:hover { color: rgb(var(--positive)); }
-.simple-features { display: grid; grid-template-columns: repeat(3, 1fr); gap: 60px; padding-block: 88px 96px; scroll-margin-top: 44px; }
+.simple-features { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 60px; padding-block: 88px 96px; scroll-margin-top: 44px; }
 .simple-features a { padding-block: 12px; }
 .simple-features h2 { display: flex; justify-content: space-between; align-items: center; gap: 14px; font-size: 23px; font-weight: 500; letter-spacing: -.025em; }
 .simple-features p { color: var(--landing-muted); font-size: 13px; line-height: 1.8; margin-top: 12px; }

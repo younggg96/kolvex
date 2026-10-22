@@ -1,5 +1,7 @@
 "use client";
 
+import { isProductFeatureEnabled } from "@/lib/productFeatures";
+
 import Link from "next/link";
 import { CandlestickChart } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
@@ -324,7 +326,7 @@ export default function Market() {
               }
             >
               <div role="radiogroup" aria-label={c("Stock list", "股票列表")} className="-mx-1 flex gap-1 overflow-x-auto px-1 py-3 scrollbar-hide">
-                {universeOptions.map((item) => (
+                {universeOptions.filter((item) => item.key !== "holdings" || isProductFeatureEnabled("portfolio")).map((item) => (
                   <button
                     key={item.key}
                     type="button"

@@ -25,7 +25,7 @@ export default function OpenGraphImage() {
             connected.
           </div>
           <div style={{ fontSize: 28, marginTop: 30, color: "#bdc8c1" }}>
-            Creator opinions · AI research · Your portfolio
+            Creator opinions · Market context · AI research
           </div>
         </div>
         <div style={{ fontSize: 24, color: "#bdc8c1" }}>kolvex.app</div>

@@ -4,7 +4,7 @@ import type { Metadata } from "next";
 export const SITE_URL = "https://kolvex.app";
 export const SITE_TITLE = "Kolvex — AI Stock Research & Creator Insights";
 export const SITE_DESCRIPTION =
-  "Connect creator stock opinions, market context, AI research and your portfolio in one workspace. Trace ideas to their sources and follow what changes.";
+  "Connect creator stock opinions, market context and AI research in one workspace. Trace ideas to their sources and follow what changes.";
 
 export function publicPageMetadata(
   title: string,

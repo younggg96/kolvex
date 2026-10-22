@@ -62,7 +62,7 @@ export const PRODUCT_FEATURES = [
   {
     id: "portfolio",
     label: "Portfolio",
-    enabled: true,
+    enabled: false,
     routePrefixes: ["/dashboard/portfolio"],
     apiPrefixes: [
       "/api/portfolio",
@@ -108,7 +108,12 @@ export const RETIRED_PRODUCT_ROUTE_PREFIXES = [
   "/dashboard/stocks",
 ] as const;
 
-export const DISABLED_PRODUCT_ROUTE_PREFIXES = RETIRED_PRODUCT_ROUTE_PREFIXES;
+export const DISABLED_PRODUCT_ROUTE_PREFIXES: readonly string[] = [
+  ...RETIRED_PRODUCT_ROUTE_PREFIXES,
+  ...PRODUCT_FEATURES.filter((feature) => !feature.enabled).flatMap(
+    (feature) => [...feature.routePrefixes],
+  ),
+];
 
 export const DISABLED_PRODUCT_REDIRECT = "/dashboard";
 

@@ -652,3 +652,11 @@ Padding is 24–32px, moves use 18px, and the research arrow sits beside its
 label. Existing semantic themes, demo disclosure and shared Radix tabs remain.
 At 640px the columns stack. These values supersede the oversized ticker
 presentation above for this reader only.
+
+
+### Portfolio visibility
+
+Portfolio is temporarily hidden through `lib/productFeatures.ts`. Navigation,
+landing promotions, holdings filters and position panels follow this switch.
+Disabled portfolio URLs redirect to Markets; account and holdings data are retained.
+The homepage feature grid adapts to the number of visible entries.
