@@ -4,7 +4,6 @@ import { useEffect } from "react";
 import { useTranslation } from "@/lib/i18n";
 import BaseLayout from "@/components/layout/BaseLayout";
 import LandingHero from "@/components/landing/LandingHero";
-import LandingPreview from "@/components/landing/LandingPreview";
 import LandingIntelligence from "@/components/landing/LandingIntelligence";
 import LandingScrollEffects from "@/components/landing/LandingScrollEffects";
 import LandingCTA from "@/components/landing/LandingCTA";
@@ -56,7 +55,6 @@ export default function HomePageClient() {
       <LandingScrollEffects />
       <BaseLayout>
         <LandingHero />
-        <LandingPreview />
         <LandingIntelligence />
         <LandingCTA />
       </BaseLayout>

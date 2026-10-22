@@ -1,13 +1,12 @@
 "use client";
-
 import { useState } from "react";
 import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
 import CompanyLogo from "@/components/ui/company-logo";
-import { DirectionBadge, useCopy } from "@/components/decision/shared";
+import { useCopy } from "@/components/decision/shared";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
-/** Labeled demonstration fixtures. These are not current prices or live research. */
+/** Illustrative examples, not current market data. */
 const examples = [
   {
     symbol: "NVDA",
@@ -30,11 +29,6 @@ const examples = [
       "Demand builds the case.\nValuation sets the risk.",
       "需求支撑趋势，\n估值决定风险。",
     ],
-    summary: [
-      "Momentum is constructive, but expectations are high. Watch whether infrastructure spending translates into sustained earnings.",
-      "动能保持积极，但市场预期已经不低。接下来，关注基础设施支出能否转化为持续盈利。",
-    ],
-    watch: ["Earnings quality & order conversion", "盈利质量与订单转化"],
   },
   {
     symbol: "TSLA",
@@ -57,11 +51,6 @@ const examples = [
       "Volume tells one story.\nMargins tell another.",
       "销量是一面，\n利润是另一面。",
     ],
-    summary: [
-      "Delivery growth alone does not settle the investment case. Read pricing, margins and execution alongside the longer-term opportunity.",
-      "交付增长并不能回答所有问题。把定价、利润率与执行力放在一起，再看长期机会。",
-    ],
-    watch: ["Pricing discipline & operating margins", "定价策略与营业利润率"],
   },
   {
     symbol: "AMD",
@@ -84,103 +73,37 @@ const examples = [
       "The opportunity is big.\nExecution makes it real.",
       "机会足够大，\n兑现才是关键。",
     ],
-    summary: [
-      "An expanding market supports the growth case. Watch product delivery and revenue conversion before treating potential as proven earnings.",
-      "市场扩张支撑增长逻辑，但潜力不等于已实现的盈利。关注产品交付与收入兑现。",
-    ],
-    watch: ["Product delivery & revenue conversion", "产品交付与收入兑现"],
   },
 ] as const;
 
 export default function LandingStockBrief() {
   const c = useCopy();
   const [symbol, setSymbol] = useState("NVDA");
-  return (
-    <Tabs value={symbol} onValueChange={setSymbol} className="focus-reader">
-      <div className="focus-reader-bar">
-        <TabsList
-          className="focus-stock-tabs"
-          aria-label={c("Choose a stock example", "选择股票示例")}
-        >
-          {examples.map((stock) => (
-            <TabsTrigger value={stock.symbol} key={stock.symbol}>
-              {stock.symbol}
-            </TabsTrigger>
-          ))}
-        </TabsList>
-        <span className="focus-sample-label">
-          {c(
-            "Illustrative product example · Not live data",
-            "产品内容示例 · 非实时数据",
-          )}
-        </span>
+  const [source, setSource] = useState("news");
+  const sources = [{ key: "news", label: c("News", "新闻") }, { key: "voices", label: c("Voices", "博主观点") }, { key: "technical", label: c("Technicals", "技术信号") }] as const;
+  return <Tabs value={symbol} onValueChange={setSymbol} className="focus-reader">
+    <div className="focus-reader-bar">
+      <TabsList className="focus-stock-tabs" aria-label={c("Choose a stock", "选择股票")}>
+        {examples.map(stock => <TabsTrigger key={stock.symbol} value={stock.symbol}>{stock.symbol}</TabsTrigger>)}
+      </TabsList>
+      <span className="focus-sample-label">{c("Demo · Not live data", "演示 · 非实时数据")}</span>
+    </div>
+    {examples.map(stock => <TabsContent key={stock.symbol} value={stock.symbol} className="focus-stock-view">
+      <div className="focus-stock-identity">
+        <div className="focus-company"><CompanyLogo symbol={stock.symbol} name={stock.name} size="sm" /><span>{stock.name}</span><span className="focus-exchange">NASDAQ</span></div>
+        <h2>{stock.symbol}</h2>
+        <div className="focus-market-line"><strong className={stock.move.startsWith("−") ? "text-negative" : "text-positive"}>{stock.move}</strong><span>{c(stock.theme[0], stock.theme[1])}</span></div>
       </div>
-      {examples.map((stock) => (
-        <TabsContent
-          value={stock.symbol}
-          key={stock.symbol}
-          className="focus-stock-view"
-        >
-          <div className="focus-stock-identity">
-            <div className="focus-company">
-              <CompanyLogo symbol={stock.symbol} name={stock.name} size="sm" />
-              <span>{stock.name}</span>
-              <span className="focus-exchange">NASDAQ</span>
-            </div>
-            <div className="focus-symbol-row">
-              <h2>{stock.symbol}</h2>
-              <div
-                className={
-                  stock.move.startsWith("−") ? "text-negative" : "text-positive"
-                }
-              >
-                <strong>{stock.move}</strong>
-                <span>{c("Example move", "示例涨跌")}</span>
-              </div>
-            </div>
-            <p className="focus-theme">{c(stock.theme[0], stock.theme[1])}</p>
-          </div>
-          <div className="focus-intelligence">
-            <div className="focus-inputs">
-              <div className="focus-input-row">
-                <span>{c("News", "市场新闻")}</span>
-                <p>{c(stock.news[0], stock.news[1])}</p>
-              </div>
-              <div className="focus-input-row">
-                <span>{c("Market voices", "博主观点")}</span>
-                <p>{c(stock.voices[0], stock.voices[1])}</p>
-              </div>
-              <div className="focus-input-row">
-                <span>{c("Technicals", "技术背景")}</span>
-                <p className="focus-technical-data">
-                  {c(stock.technical[0], stock.technical[1])}
-                </p>
-              </div>
-            </div>
-            <div className="focus-synthesis">
-              <div className="focus-synthesis-label">
-                <span>{c("THE CONNECTED VIEW", "综合解读")}</span>
-                <DirectionBadge
-                  direction={stock.symbol === "TSLA" ? "neutral" : "bullish"}
-                />
-              </div>
-              <h3>{c(stock.title[0], stock.title[1])}</h3>
-              <p>{c(stock.summary[0], stock.summary[1])}</p>
-              <div className="focus-watch">
-                <span>{c("Watch next", "接下来关注")}</span>
-                <strong>{c(stock.watch[0], stock.watch[1])}</strong>
-              </div>
-              <Link
-                href={`/stocks/${stock.symbol}`}
-                className="focus-stock-link"
-              >
-                {c("Explore this stock", "查看这只股票")}
-                <ArrowUpRight size={16} aria-hidden />
-              </Link>
-            </div>
-          </div>
-        </TabsContent>
-      ))}
-    </Tabs>
-  );
+      <div className="focus-reading">
+        <h3>{c(stock.title[0], stock.title[1])}</h3>
+        <Tabs value={source} onValueChange={setSource} className="focus-evidence">
+          <TabsList className="focus-source-tabs" aria-label={c("Explore the evidence", "查看依据")}>
+            {sources.map(item => <TabsTrigger key={item.key} value={item.key}>{item.label}</TabsTrigger>)}
+          </TabsList>
+          {sources.map(item => <TabsContent key={item.key} value={item.key}><p>{c(stock[item.key][0], stock[item.key][1])}</p></TabsContent>)}
+        </Tabs>
+        <Link href={`/stocks/${stock.symbol}`} className="focus-stock-link">{c("Open research", "查看研究")}<ArrowUpRight size={17} aria-hidden /></Link>
+      </div>
+    </TabsContent>)}
+  </Tabs>;
 }

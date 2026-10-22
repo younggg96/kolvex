@@ -174,6 +174,7 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
   const navigationRequest = useRef(0);
   const [navigating, setNavigating] = useState(false);
   const scrollContainer = useRef<HTMLDivElement>(null);
+  const opinionHistory = useRef<HTMLElement>(null);
   const inDetail = Boolean(route.ticker || route.creator);
   const held = useHeldTickers();
 
@@ -247,8 +248,8 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
     getYouTubeOpinionDashboard({
       ticker: route.ticker,
       channel_id: route.creator,
-      date_from: filters.from || undefined,
-      date_to: filters.to || undefined,
+      date_from: creatorOverview ? undefined : filters.from || undefined,
+      date_to: creatorOverview ? undefined : filters.to || undefined,
       limit: pageSize,
     })
       .then((result) => {
@@ -260,7 +261,7 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
     return () => {
       active = false;
     };
-  }, [ready, inDetail, contextKey, route.ticker, route.creator, filters.from, filters.to, revision]);
+  }, [ready, inDetail, contextKey, route.ticker, route.creator, creatorOverview, filters.from, filters.to, revision]);
 
   useEffect(() => {
     const request = ++detailRequest.current;
@@ -541,9 +542,7 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
   const shownStocks = creatorOverview && !showAllCreatorStocks
     ? visibleStocks.slice(0, 5)
     : !inDetail && !allStocks ? visibleStocks.slice(0, 10) : visibleStocks;
-  const latestCreatorVideo = creatorOverview
-    ? groupOpinionsByVideo(context?.latest || [])[0]
-    : undefined;
+  const latestCreatorOpinions = creatorOverview ? (context?.latest || []).slice(0, 5) : [];
 
   const stockRows = (
     <div className="min-w-0">
@@ -1165,19 +1164,37 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
 
                   {creatorOverview && (
                     <section className="min-w-0" aria-labelledby="creator-detail-latest-title">
-                      <h2 id="creator-detail-latest-title" className="text-lg font-semibold">{c("Latest opinions", "最新观点")}</h2>
+                      <div className="flex flex-wrap items-center justify-between gap-3">
+                        <h2 id="creator-detail-latest-title" className="text-lg font-semibold">{c("Latest opinions", "最新观点")}</h2>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setFilters(emptyFilters);
+                            setHistoryView("opinions");
+                            opinionHistory.current?.focus({ preventScroll: true });
+                            opinionHistory.current?.scrollIntoView({ block: "start" });
+                          }}
+                        >
+                          {c("View all opinions", "查看所有观点")}
+                        </Button>
+                      </div>
                       {contextError ? (
                         <EmptyLine text={t("youtubeOpinions.opinionsLoadFailed")} action={{ label: t("common.retry"), onClick: refresh }} alert />
-                      ) : !context ? loadingBlock : latestCreatorVideo ? (
-                        <VideoOpinionCard key={latestCreatorVideo.videoId} group={latestCreatorVideo} t={t} onStock={onStock} />
+                      ) : !context ? loadingBlock : latestCreatorOpinions.length ? (
+                        <div className="mt-4">
+                          {latestCreatorOpinions.map((opinion) => (
+                            <OpinionCard key={opinion.id} opinion={opinion} t={t} showCreator={false} onStock={onStock} />
+                          ))}
+                        </div>
                       ) : <EmptyLine text={t("youtubeOpinions.noOpinionsYet")} />}
                     </section>
                   )}
 
-                  <section className="min-w-0 xl:col-start-1">
+                  <section ref={opinionHistory} tabIndex={-1} aria-labelledby="opinion-history-title" className="min-w-0 scroll-mt-6 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary xl:col-start-1">
                     <div className="flex flex-col gap-3 border-b border-border pb-3 sm:flex-row sm:items-center sm:justify-between">
                       <div className="flex min-w-0 flex-wrap items-center gap-x-4 gap-y-2">
-                        <h2 className="text-lg font-semibold">
+                        <h2 id="opinion-history-title" className="text-lg font-semibold">
                           {t("youtubeOpinions.opinionHistory")}
                           {detail && (
                             <span className="ml-2 text-sm font-normal text-foreground/75 tabular-nums">

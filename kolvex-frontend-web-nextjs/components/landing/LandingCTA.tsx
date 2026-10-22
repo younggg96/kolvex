@@ -10,15 +10,9 @@ export default function LandingCTA() {
     <section className="landing-closing">
       <div className="landing-width landing-closing-panel">
         <h2>
-          {c("Less noise.\nMore perspective.", "少一些噪音，\n多一份洞察。")}
+          {c("Ready when you are.", "从你的自选股开始。")}
         </h2>
         <div>
-          <p>
-            {c(
-              "Your stocks. Their context. One place to understand it.",
-              "你关注的股票，值得了解的背景，在一处看清。",
-            )}
-          </p>
           <Button asChild size="lg" className="landing-primary">
             <Link href="/auth">
               {c("Start using Kolvex", "开始使用 Kolvex")}

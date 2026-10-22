@@ -1,0 +1,112 @@
+{
+  "channels": [
+    "https://www.youtube.com/channel/UCH60IM5V3OO2LrNIDueG26Q/videos",
+    "https://www.youtube.com/channel/UC0-5GJAXNt3Bg0Gz6kvghYQ/videos",
+    "https://www.youtube.com/channel/UCFhJ8ZFg9W4kLwFTBBNIjOw/videos",
+    "https://www.youtube.com/channel/UC2I5em6UyBpQiO-8ZW0nV3w/videos",
+    "https://www.youtube.com/channel/UCGpj3DO_5_TUDCNUgS9mjiQ/videos",
+    "https://www.youtube.com/channel/UCFQsi7WaF5X41tcuOryDk8w/videos",
+    "https://www.youtube.com/channel/UCfAcqaaxkb6LJkeOcKlbSJQ/videos",
+    "https://www.youtube.com/channel/UC70ctfuYBZLMymSZpEMo0xQ/videos",
+    "https://www.youtube.com/channel/UC8IgF8HyfgT4gPcVwrZagKg/videos",
+    "https://www.youtube.com/channel/UCo2gxyermsLBSCxFHvJs0Zg/videos",
+    "https://www.youtube.com/channel/UCRBrH2qS7yKGMNSmjnj8gcw/videos",
+    "https://www.youtube.com/channel/UCGDMLMZtjCd5P4fhTCetwsw/videos",
+    "https://www.youtube.com/channel/UCjuvy7VvwUGPtTnbpfYY1QQ/videos",
+    "https://www.youtube.com/channel/UCBUH38E0ngqvmTqdchWunwQ/videos"
+  ],
+  "keywords": [],
+  "exclude_keywords": [],
+  "since": null,
+  "until": null,
+  "limit": 5,
+  "scan_limit": 20,
+  "_source": "https://kolvex.app/dashboard/youtube-opinions?tab=creators",
+  "_synced_at": "2026-10-22T04:25:25.744369+00:00",
+  "_creators": [
+    {
+      "channel_id": "UCH60IM5V3OO2LrNIDueG26Q",
+      "channel_title": "小左第一视角",
+      "channel_handle": "@小左第一视角",
+      "channel_url": "https://www.youtube.com/channel/UCH60IM5V3OO2LrNIDueG26Q"
+    },
+    {
+      "channel_id": "UC0-5GJAXNt3Bg0Gz6kvghYQ",
+      "channel_title": "老A聊美股",
+      "channel_handle": "@acestockpicks",
+      "channel_url": "https://www.youtube.com/channel/UC0-5GJAXNt3Bg0Gz6kvghYQ"
+    },
+    {
+      "channel_id": "UCFhJ8ZFg9W4kLwFTBBNIjOw",
+      "channel_title": "NaNa说美股",
+      "channel_handle": "@nanashuomeigu",
+      "channel_url": "https://www.youtube.com/channel/UCFhJ8ZFg9W4kLwFTBBNIjOw"
+    },
+    {
+      "channel_id": "UC2I5em6UyBpQiO-8ZW0nV3w",
+      "channel_title": "阳光财经",
+      "channel_handle": "@sunnyfinance",
+      "channel_url": "https://www.youtube.com/channel/UC2I5em6UyBpQiO-8ZW0nV3w"
+    },
+    {
+      "channel_id": "UCGpj3DO_5_TUDCNUgS9mjiQ",
+      "channel_title": "美投侃新闻",
+      "channel_handle": "@meitounews",
+      "channel_url": "https://www.youtube.com/channel/UCGpj3DO_5_TUDCNUgS9mjiQ"
+    },
+    {
+      "channel_id": "UCFQsi7WaF5X41tcuOryDk8w",
+      "channel_title": "视野环球财经",
+      "channel_handle": "@rhinofinance",
+      "channel_url": "https://www.youtube.com/channel/UCFQsi7WaF5X41tcuOryDk8w"
+    },
+    {
+      "channel_id": "UCfAcqaaxkb6LJkeOcKlbSJQ",
+      "channel_title": "StockTalkwithJay美股",
+      "channel_handle": "@stocktalkjay",
+      "channel_url": "https://www.youtube.com/channel/UCfAcqaaxkb6LJkeOcKlbSJQ"
+    },
+    {
+      "channel_id": "UC70ctfuYBZLMymSZpEMo0xQ",
+      "channel_title": "Sam谈美股",
+      "channel_handle": "@sam_tan_mei_gu",
+      "channel_url": "https://www.youtube.com/channel/UC70ctfuYBZLMymSZpEMo0xQ"
+    },
+    {
+      "channel_id": "UC8IgF8HyfgT4gPcVwrZagKg",
+      "channel_title": "明日走势—美股BTC量化交易",
+      "channel_handle": "@mrzsquant",
+      "channel_url": "https://www.youtube.com/channel/UC8IgF8HyfgT4gPcVwrZagKg"
+    },
+    {
+      "channel_id": "UCo2gxyermsLBSCxFHvJs0Zg",
+      "channel_title": "老李玩钱",
+      "channel_handle": "@老李玩钱",
+      "channel_url": "https://www.youtube.com/channel/UCo2gxyermsLBSCxFHvJs0Zg"
+    },
+    {
+      "channel_id": "UCRBrH2qS7yKGMNSmjnj8gcw",
+      "channel_title": "投资TALK君",
+      "channel_handle": "@yttalkjun",
+      "channel_url": "https://www.youtube.com/channel/UCRBrH2qS7yKGMNSmjnj8gcw"
+    },
+    {
+      "channel_id": "UCGDMLMZtjCd5P4fhTCetwsw",
+      "channel_title": "股市咖啡屋 Stock Cafe",
+      "channel_handle": "@stockcafe",
+      "channel_url": "https://www.youtube.com/channel/UCGDMLMZtjCd5P4fhTCetwsw"
+    },
+    {
+      "channel_id": "UCjuvy7VvwUGPtTnbpfYY1QQ",
+      "channel_title": "XTrader猫姐美股",
+      "channel_handle": "@catstocktrading",
+      "channel_url": "https://www.youtube.com/channel/UCjuvy7VvwUGPtTnbpfYY1QQ"
+    },
+    {
+      "channel_id": "UCBUH38E0ngqvmTqdchWunwQ",
+      "channel_title": "美投讲美股",
+      "channel_handle": "@meitoujun",
+      "channel_url": "https://www.youtube.com/channel/UCBUH38E0ngqvmTqdchWunwQ"
+    }
+  ]
+}

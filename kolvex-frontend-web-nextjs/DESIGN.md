@@ -81,7 +81,9 @@ the change summary, AI technical read and creator history. Latest news, the
 newest creator call and the linked position form the right rail on desktop;
 on narrow screens these sections follow the chart. Creator Opinions shows the first
 10 filtered stocks with a full stock directory at `/dashboard/youtube-opinions/stocks`.
-Creator detail pages order the latest video opinions, opinion history, then most
+Creator detail pages show the creator’s five latest individual opinions across
+all dates, with a View all opinions button that clears history filters and focuses
+the full opinion history below. They order latest opinions, opinion history, then most
 discussed stocks in one reading column on all screen sizes. The stock list sorts
 by opinion count, initially shows at most five stocks, and offers a labelled
 expansion to the full searchable list and a collapse action.
