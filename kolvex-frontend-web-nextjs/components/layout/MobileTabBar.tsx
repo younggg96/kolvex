@@ -18,7 +18,6 @@ export default function MobileTabBar() {
   const items = MAIN_NAV_ITEMS.filter(
     (item) =>
       isProductFeatureEnabled(item.featureId) &&
-      item.featureId !== "tradingAnalysis" &&
       item.featureId !== "portfolio",
   );
 

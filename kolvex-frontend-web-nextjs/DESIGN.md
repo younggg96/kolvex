@@ -478,9 +478,9 @@ failed requests are not cached and requests time out after 20 seconds.
 ## Daily Briefs
 
 Daily Briefs is a primary route at `/dashboard/briefs`, shared by the desktop
-sidebar and mobile navigation. Mobile tabs show Markets, Creator Opinions,
-Daily Briefs and News; AI Research and Portfolio remain in the desktop sidebar
-but do not appear in mobile tabs. The route is readable by signed-in
+sidebar and mobile navigation. Primary navigation follows Markets / 行情, Daily Briefs / 日报, News / 新闻,
+KOL Opinions / KOL 观点, then Research / 研究 on desktop and mobile. Mobile
+retains its menu control; Portfolio remains excluded from the mobile tabs. The route is readable by signed-in
 users; only administrators import content. Importing makes the issue visible
 immediately, as requested in the reader-flow extension.
 
@@ -688,3 +688,27 @@ card/background/border tokens, 12px corners, tabular figures and semantic
 green/orange direction colors. Missing data keeps card geometry and offers
 retry; dates come from chart data. Other market lists and analysis routes retain
 their existing owners.
+
+Market overview cards link as a whole to the corresponding index detail route.
+`lib/marketBenchmarks.ts` owns the five supported index symbols; the market
+route accepts that allowlist alongside ordinary tickers. Index detail headings
+show localized index names and point values without a currency prefix. Card
+retry buttons remain separate from the link, with independent keyboard focus.
+
+
+### Market activity lists
+
+The market movers section retains flat rows and existing text/direction colors.
+A 160px wrapper bounds the shared Select so its default full width cannot expand
+the header. List filters sit below the heading; a muted column header precedes
+80px rows with quiet separators and aligned 160/104/88px desktop data columns.
+On phones, price and daily change stack together and creator consensus is hidden.
+The creator updates rail aligns its heading with the movers heading, uses 80px
+rows and places its stock-directory link after the updates. A thin divider
+separates the rail on desktop. All entries retain their existing detail routes,
+shared logos, opinion-strength presentation and keyboard focus treatment.
+
+The shared primary navigation order is Markets, Daily Briefs, News, KOL Opinions,
+then Research. Chinese navigation labels are 行情、日报、新闻、KOL 观点、研究.
+`components/layout/navItems.ts` owns this order for the sidebar and mobile tabs;
+existing destination routes and active-state matching remain canonical.

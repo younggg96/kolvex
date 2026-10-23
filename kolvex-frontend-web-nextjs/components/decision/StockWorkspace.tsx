@@ -38,6 +38,7 @@ import type { PortfolioPosition } from "@/lib/supabase/database.types";
 import { creatorEvidence } from "@/lib/decision";
 import { useTranslation } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
+import { BENCHMARKS, indexValue } from "@/lib/marketBenchmarks";
 import {
   DirectionBadge,
   Empty,
@@ -56,6 +57,13 @@ const sideOf = (opinion: YouTubeOpinion): Side =>
 
 export default function StockWorkspace({ ticker }: { ticker: string }) {
   const c = useCopy();
+  const benchmark = BENCHMARKS.find((item) => item.symbol === ticker);
+  const priceLabel = (value: number | undefined) => benchmark
+    ? value === undefined || !Number.isFinite(value) ? "—" : indexValue(value)
+    : money(value);
+  const changeLabel = (value: number) => benchmark
+    ? `${value >= 0 ? "+" : "−"}${indexValue(Math.abs(value))}`
+    : signedMoney(value);
   const { t, locale } = useTranslation();
   const { setContext } = useDecisionCommand();
   const [quote, setQuote] = useState<StockQuote | null>(null);
@@ -228,7 +236,7 @@ export default function StockWorkspace({ ticker }: { ticker: string }) {
                     {positions.length > 0 && <HeldMark />}
                   </h1>
                   <p className="truncate text-[13px] text-muted-foreground">
-                    {quote?.name || (loading ? "" : c("Stock workspace", "股票工作台"))}
+                    {benchmark ? c(benchmark.en, benchmark.zh) : quote?.name || (loading ? "" : c("Stock workspace", "股票工作台"))}
                   </p>
                 </div>
                 <div className="ml-auto">
@@ -237,12 +245,12 @@ export default function StockWorkspace({ ticker }: { ticker: string }) {
               </div>
               <div className="mt-4" aria-live="polite">
                 <div className="figure text-[34px] font-semibold leading-tight tracking-[-0.02em] sm:text-[40px]">
-                  {loading && !quote ? <Skeleton className="h-10 w-40" /> : money(quote?.price)}
+                  {loading && !quote ? <Skeleton className="h-10 w-40" /> : priceLabel(quote?.price)}
                 </div>
                 {quote && (
                   <p className="mt-1 flex flex-wrap items-baseline gap-x-2 text-sm">
                     <span className={cn("figure font-semibold", up ? "text-positive" : "text-negative")}>
-                      {signedMoney(quote.change)} ({up ? "+" : "−"}
+                      {changeLabel(quote.change)} ({up ? "+" : "−"}
                       {Math.abs(quote.changePercent).toFixed(2)}%)
                     </span>
                     <span className="text-muted-foreground">{c("Today", "今天")}</span>
@@ -284,7 +292,7 @@ export default function StockWorkspace({ ticker }: { ticker: string }) {
                   <div>
                     <p className="text-xs text-muted-foreground">{c("Market today", "今日行情")}</p>
                     <p className="figure mt-1 text-sm font-semibold">
-                      {quote ? `${signedMoney(quote.change)} (${quote.changePercent >= 0 ? "+" : ""}${quote.changePercent.toFixed(2)}%)` : "—"}
+                      {quote ? `${changeLabel(quote.change)} (${quote.changePercent >= 0 ? "+" : ""}${quote.changePercent.toFixed(2)}%)` : "—"}
                     </p>
                   </div>
                   <div>

@@ -51,10 +51,10 @@
     "stocks": "股票",
     "stockScreener": "AI 选股器",
     "optionsFlow": "期权异动",
-    "tradingAnalysis": "AI 研究",
+    "tradingAnalysis": "研究",
     "superinvestors": "超级投资者",
     "news": "新闻",
-    "youtubeOpinions": "博主观点",
+    "youtubeOpinions": "KOL 观点",
     "portfolio": "投资组合",
     "community": "社区",
     "notifications": "通知",
@@ -64,20 +64,20 @@
     "home": "首页",
     "research": "研究",
     "journal": "变化动态",
-    "briefs": "早晚报"
+    "briefs": "日报"
   },
   "tabBar": {
     "news": "新闻",
     "markets": "行情",
     "chat": "对话",
-    "tradingAnalysis": "AI 研究",
-    "youtubeOpinions": "博主观点",
+    "tradingAnalysis": "研究",
+    "youtubeOpinions": "KOL 观点",
     "portfolio": "组合",
     "more": "更多",
     "home": "首页",
     "research": "研究",
     "journal": "变化动态",
-    "briefs": "早晚报"
+    "briefs": "日报"
   },
   "userMenu": {
     "account": "账户",

@@ -3,6 +3,7 @@
 import { isProductFeatureEnabled } from "@/lib/productFeatures";
 
 import Link from "next/link";
+import { ArrowUpRight } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import CompanyLogo from "@/components/ui/company-logo";
@@ -18,6 +19,7 @@ import {
 import OpinionStrength from "@/components/youtube/OpinionStrength";
 import { getStockHistory, type StockQuote } from "@/lib/stockApi";
 import { cn } from "@/lib/utils";
+import { BENCHMARKS, indexValue } from "@/lib/marketBenchmarks";
 import {
   Change,
   Empty,
@@ -35,13 +37,6 @@ import { useDecisionCommand } from "./CommandLayer";
 import StockLookup from "./StockLookup";
 
 const DEFAULT_STOCKS = ["NVDA", "AAPL", "MSFT", "AMZN", "GOOGL", "META", "TSLA", "AVGO"];
-const BENCHMARKS = [
-  { symbol: "^GSPC", en: "S&P 500", zh: "标普 500" },
-  { symbol: "^IXIC", en: "NASDAQ", zh: "纳斯达克" },
-  { symbol: "^DJI", en: "Dow Jones", zh: "道琼斯" },
-  { symbol: "^RUT", en: "Russell 2000", zh: "罗素 2000" },
-  { symbol: "^VIX", en: "VIX", zh: "VIX" },
-] as const;
 const RANGES = [
   { key: "1D", period: "1d", interval: "5m", en: "1D", zh: "1天" },
   { key: "1W", period: "5d", interval: "30m", en: "1W", zh: "1周" },
@@ -57,9 +52,6 @@ const pill = (active: boolean) =>
     "inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full px-3.5 text-[13px] font-semibold transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:opacity-50",
     active ? "bg-primary text-primary-foreground" : "text-foreground/80 hover:bg-muted hover:text-foreground",
   );
-
-const indexValue = (value: number) =>
-  new Intl.NumberFormat("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value);
 
 function BenchmarkCard({ benchmark, quote, quoteLoading, range, attempt, onRetry }: {
   benchmark: (typeof BENCHMARKS)[number];
@@ -110,39 +102,56 @@ function BenchmarkCard({ benchmark, quote, quoteLoading, range, attempt, onRetry
   const spec = RANGES.find((item) => item.key === range)!;
 
   return (
-    <article className="min-w-0 overflow-hidden rounded-xl border border-border bg-card p-4">
-      <div className="flex min-h-6 flex-wrap items-baseline gap-x-2">
-        <h2 className="text-base font-semibold">{c(benchmark.en, benchmark.zh)}</h2>
-        <time dateTime={date} className="figure text-xs text-muted-foreground">{date ? `${date.slice(5, 7)}/${date.slice(8, 10)}` : "—"}</time>
-      </div>
-      <p className="mt-0.5 text-xs text-muted-foreground">{benchmark.symbol}</p>
-      <div className="figure mt-2 min-h-8 text-2xl font-semibold tracking-tight">
-        {value === undefined && quoteLoading ? <Skeleton className="h-8 w-28" /> : value === undefined ? "—" : indexValue(value)}
-      </div>
-      <p className={cn("figure mt-0.5 min-h-5 text-xs font-medium", change === undefined ? "text-muted-foreground" : positive ? "text-positive" : "text-negative")}>
-        {change !== undefined && percent !== undefined
-          ? `${positive ? "+" : "−"}${indexValue(Math.abs(change))} (${positive ? "+" : "−"}${Math.abs(percent).toFixed(2)}%)`
-          : c("Change unavailable", "暂无涨跌数据")}
-        <span className="sr-only"> · {c(spec.en, spec.zh)}</span>
-      </p>
-      <div className="mt-2 h-24" aria-busy={seriesState === "loading"}>
-        {seriesState === "loading" ? (
-          <Skeleton className="h-full w-full" />
-        ) : seriesState === "error" ? (
-          <div role="status" className="flex h-full flex-col items-center justify-center gap-1 text-xs text-muted-foreground">
-            <span>{c("Chart unavailable", "走势暂不可用")}</span>
-            <Button size="xs" variant="ghost" onClick={onRetry}>{c("Retry", "重试")}</Button>
-          </div>
-        ) : (
-          <ScrubChart
-            data={series}
-            positive={positive}
-            height={96}
-            onScrub={setScrub}
-            label={c(`${benchmark.en} index, ${spec.en}`, `${benchmark.zh}指数走势，${spec.zh}`)}
-          />
-        )}
-      </div>
+    <article className="relative min-w-0 overflow-hidden rounded-xl border border-border bg-card transition-colors hover:border-foreground/30">
+      <Link
+        href={`/dashboard/market/${encodeURIComponent(benchmark.symbol)}`}
+        aria-label={c(`Open ${benchmark.en} market details`, `查看${benchmark.zh}行情详情`)}
+        className="block cursor-pointer rounded-xl p-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary"
+      >
+        <div className="flex min-h-6 flex-wrap items-baseline gap-x-2">
+          <h2 className="text-base font-semibold">{c(benchmark.en, benchmark.zh)}</h2>
+          <time dateTime={date} className="figure text-xs text-muted-foreground">{date ? `${date.slice(5, 7)}/${date.slice(8, 10)}` : "—"}</time>
+        </div>
+        <p className="mt-0.5 text-xs text-muted-foreground">{benchmark.symbol}</p>
+        <div className="figure mt-2 min-h-8 text-2xl font-semibold tracking-tight">
+          {value === undefined && quoteLoading ? <Skeleton className="h-8 w-28" /> : value === undefined ? "—" : indexValue(value)}
+        </div>
+        <p className={cn("figure mt-0.5 min-h-5 text-xs font-medium", change === undefined ? "text-muted-foreground" : positive ? "text-positive" : "text-negative")}>
+          {change !== undefined && percent !== undefined
+            ? `${positive ? "+" : "−"}${indexValue(Math.abs(change))} (${positive ? "+" : "−"}${Math.abs(percent).toFixed(2)}%)`
+            : c("Change unavailable", "暂无涨跌数据")}
+          <span className="sr-only"> · {c(spec.en, spec.zh)}</span>
+        </p>
+        <div className="mt-2 h-24" aria-busy={seriesState === "loading"}>
+          {seriesState === "loading" ? (
+            <Skeleton className="h-full w-full" />
+          ) : seriesState === "error" ? (
+            <div role="status" className="flex h-full flex-col items-center justify-center gap-1 text-xs text-muted-foreground">
+              <span>{c("Chart unavailable", "走势暂不可用")}</span>
+              <span aria-hidden className="h-7" />
+            </div>
+          ) : (
+            <ScrubChart
+              data={series}
+              positive={positive}
+              height={96}
+              onScrub={setScrub}
+              label={c(`${benchmark.en} index, ${spec.en}`, `${benchmark.zh}指数走势，${spec.zh}`)}
+            />
+          )}
+        </div>
+      </Link>
+      {seriesState === "error" && (
+        <Button
+          size="xs"
+          variant="ghost"
+          className="absolute bottom-5 left-1/2 -translate-x-1/2"
+          aria-label={c(`Retry ${benchmark.en} chart`, `重试${benchmark.zh}走势`)}
+          onClick={onRetry}
+        >
+          {c("Retry", "重试")}
+        </Button>
+      )}
     </article>
   );
 }
@@ -238,7 +247,7 @@ export default function Market() {
   return (
     <DashboardLayout title={c("Markets", "行情")}>
       <main className="flex-1 overflow-y-auto">
-        <div className="mx-auto grid gap-x-12 gap-y-10 px-4 pb-16 pt-6 md:px-8 md:pt-8 xl:grid-cols-[minmax(0,1fr)_320px]">
+        <div className="mx-auto grid gap-x-8 gap-y-10 px-4 pb-16 pt-6 md:px-8 md:pt-8 xl:grid-cols-[minmax(0,1fr)_320px]">
           <div className="min-w-0 xl:col-span-2">
             <StockLookup />
             <section aria-labelledby="market-overview-heading" className="mt-6">
@@ -290,34 +299,37 @@ export default function Market() {
                 "Ranked within the list you pick, not the whole market.",
                 "只在你选的列表内排序，不是全市场排行。",
               )}
+              id="market-movers"
+              className="[&>header]:items-center"
               action={
-                <Select value={sort} onValueChange={(value) => setSort(value as Sort)}>
-                  <SelectTrigger
-                    aria-label={c("Sort stocks", "股票排序")}
-                    className="h-9 w-[148px] shrink-0 rounded-full px-4 text-[13px] font-semibold focus-visible:!outline-none focus-visible:ring-2 focus-visible:ring-foreground/40 focus-visible:ring-offset-2 focus-visible:ring-offset-background data-[state=open]:bg-secondary"
-                  >
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent
-                    align="end"
-                    sideOffset={4}
-                    className="w-[var(--radix-select-trigger-width)] min-w-0 max-h-[var(--radix-select-content-available-height)] motion-reduce:animate-none"
-                  >
-                    <SelectItem value="move" className="min-h-10 text-[13px] focus-visible:!outline-none focus:bg-secondary data-[state=checked]:bg-muted data-[state=checked]:font-semibold">{c("Biggest move", "变动最大")}</SelectItem>
-                    <SelectItem value="gainers" className="min-h-10 text-[13px] focus-visible:!outline-none focus:bg-secondary data-[state=checked]:bg-muted data-[state=checked]:font-semibold">{c("Top gainers", "涨幅最大")}</SelectItem>
-                    <SelectItem value="losers" className="min-h-10 text-[13px] focus-visible:!outline-none focus:bg-secondary data-[state=checked]:bg-muted data-[state=checked]:font-semibold">{c("Top losers", "跌幅最大")}</SelectItem>
-                    <SelectItem value="default" className="min-h-10 text-[13px] focus-visible:!outline-none focus:bg-secondary data-[state=checked]:bg-muted data-[state=checked]:font-semibold">{c("List order", "列表顺序")}</SelectItem>
-                  </SelectContent>
-                </Select>
+                <div className="w-40 shrink-0">
+                  <Select value={sort} onValueChange={(value) => setSort(value as Sort)}>
+                    <SelectTrigger
+                      aria-label={c("Sort stocks", "股票排序")}
+                      className="!h-10 !rounded-full !border-border !bg-transparent hover:!bg-muted px-4 text-[13px] font-semibold focus-visible:!outline-none focus-visible:ring-2 focus-visible:ring-foreground/40 focus-visible:ring-offset-2 focus-visible:ring-offset-background data-[state=open]:!bg-secondary"
+                    >
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent
+                      align="end"
+                      sideOffset={4}
+                      className="w-[var(--radix-select-trigger-width)] min-w-0 max-h-[var(--radix-select-content-available-height)] motion-reduce:animate-none"
+                    >
+                      <SelectItem value="move" className="min-h-10 text-[13px] focus-visible:!outline-none focus:bg-secondary data-[state=checked]:bg-muted data-[state=checked]:font-semibold">{c("Biggest move", "变动最大")}</SelectItem>
+                      <SelectItem value="gainers" className="min-h-10 text-[13px] focus-visible:!outline-none focus:bg-secondary data-[state=checked]:bg-muted data-[state=checked]:font-semibold">{c("Top gainers", "涨幅最大")}</SelectItem>
+                      <SelectItem value="losers" className="min-h-10 text-[13px] focus-visible:!outline-none focus:bg-secondary data-[state=checked]:bg-muted data-[state=checked]:font-semibold">{c("Top losers", "跌幅最大")}</SelectItem>
+                      <SelectItem value="default" className="min-h-10 text-[13px] focus-visible:!outline-none focus:bg-secondary data-[state=checked]:bg-muted data-[state=checked]:font-semibold">{c("List order", "列表顺序")}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               }
             >
-              <div role="radiogroup" aria-label={c("Stock list", "股票列表")} className="-mx-1 flex gap-1 overflow-x-auto px-1 py-3 scrollbar-hide">
+              <div role="group" aria-label={c("Stock list", "股票列表")} className="flex flex-wrap items-center gap-1 py-4">
                 {universeOptions.filter((item) => item.key !== "holdings" || isProductFeatureEnabled("portfolio")).map((item) => (
                   <button
                     key={item.key}
                     type="button"
-                    role="radio"
-                    aria-checked={universe === item.key}
+                    aria-pressed={universe === item.key}
                     onClick={() => setUniverse(item.key)}
                     className={pill(universe === item.key)}
                   >
@@ -336,15 +348,15 @@ export default function Market() {
                 </p>
               )}
               <div aria-busy={loading || sourceLoading}>
-                <div className="grid grid-cols-[minmax(0,1fr)_88px_72px] gap-3 border-b border-border pb-2 text-xs text-muted-foreground sm:grid-cols-[minmax(0,1fr)_140px_104px_80px]">
+                <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-4 rounded-lg bg-muted/60 px-3 py-3 text-xs text-muted-foreground sm:grid-cols-[minmax(0,1fr)_160px_104px_88px]">
                   <span>{c("Stock", "股票")}</span>
                   <span className="hidden sm:block">{c("Creators", "博主共识")}</span>
-                  <span className="text-right">{c("Price", "价格")}</span>
-                  <span className="text-right">{c("Today", "今日")}</span>
+                  <span className="text-right"><span className="sm:hidden">{c("Price / Today", "价格 / 今日")}</span><span className="hidden sm:inline">{c("Price", "价格")}</span></span>
+                  <span className="hidden text-right sm:block">{c("Today", "今日")}</span>
                 </div>
-                {(loading || sourceLoading) && !visible.length
+                {(loading && !Object.keys(quotes).length) || sourceLoading
                   ? [0, 1, 2, 3, 4].map((row) => (
-                      <div key={row} className="flex items-center justify-between border-b border-border py-4">
+                      <div key={row} className="flex min-h-20 items-center justify-between gap-4 border-b border-border/60 px-3 py-4">
                         <Skeleton className="h-8 w-40" />
                         <Skeleton className="h-4 w-24" />
                       </div>
@@ -355,7 +367,7 @@ export default function Market() {
                         <Link
                           key={symbol}
                           href={`/dashboard/market/${encodeURIComponent(symbol)}`}
-                          className="-mx-3 grid grid-cols-[minmax(0,1fr)_88px_72px] items-center gap-3 rounded-xl px-3 py-3.5 transition-colors duration-150 hover:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary sm:grid-cols-[minmax(0,1fr)_140px_104px_80px]"
+                          className="grid min-h-20 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 border-b border-border/60 px-3 py-4 transition-colors duration-150 hover:bg-muted/50 focus-visible:rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary sm:grid-cols-[minmax(0,1fr)_160px_104px_88px]"
                         >
                           <div className="flex min-w-0 items-center gap-3">
                             <span aria-hidden="true">
@@ -366,7 +378,7 @@ export default function Market() {
                                 {symbol}
                                 {universe !== "holdings" && heldSet.has(symbol) && <HeldMark />}
                               </p>
-                              <p className="truncate text-[13px] text-muted-foreground">{quotes[symbol]?.name || stock?.company_name || "—"}</p>
+                              <p className="mt-1 truncate text-xs text-muted-foreground">{quotes[symbol]?.name || stock?.company_name || "—"}</p>
                             </div>
                           </div>
                           <span className="hidden min-w-0 sm:block">
@@ -376,8 +388,11 @@ export default function Market() {
                               <span className="text-[13px] text-muted-foreground/70">{c("No coverage", "暂无观点")}</span>
                             )}
                           </span>
-                          <span className="figure text-right text-[15px] font-medium">{money(quotes[symbol]?.price)}</span>
-                          <Change value={quotes[symbol]?.changePercent} className="text-right text-[15px] font-semibold" />
+                          <span className="min-w-0 text-right">
+                            <span className="figure block text-[15px] font-medium">{money(quotes[symbol]?.price)}</span>
+                            <Change value={quotes[symbol]?.changePercent} className="mt-1 block text-xs font-semibold sm:hidden" />
+                          </span>
+                          <Change value={quotes[symbol]?.changePercent} className="hidden text-right text-[15px] font-semibold sm:block" />
                         </Link>
                       );
                     })}
@@ -397,36 +412,41 @@ export default function Market() {
             </Panel>
           </div>
 
-          <aside className="min-w-0 space-y-10 xl:sticky xl:top-8 xl:self-start">
-            <TextLink href="/dashboard/youtube-opinions/stocks">{c("Creator-covered stocks", "博主覆盖股票")}</TextLink>
+          <aside className="min-w-0 xl:sticky xl:top-8 xl:self-start xl:border-l xl:border-border xl:pl-6">
             <Panel
               title={c("Creator updates", "博主新动态")}
-              action={<TextLink href="/dashboard/youtube-opinions">{c("Creator opinions", "博主观点")}</TextLink>}
+              id="market-creator-updates"
+              className="[&>header]:items-center"
+              action={<TextLink href="/dashboard/youtube-opinions" className="inline-flex min-h-10 items-center gap-1 !text-xs !font-medium text-muted-foreground hover:text-foreground">{c("View all", "全部观点")}<ArrowUpRight className="h-3.5 w-3.5" aria-hidden /></TextLink>}
             >
               {catalogue.loading && !catalogue.data ? (
-                <div className="space-y-3 py-3">
-                  {[0, 1, 2].map((row) => <Skeleton key={row} className="h-9 w-full" />)}
+                <div className="space-y-4 py-4" aria-busy="true">
+                  {[0, 1, 2].map((row) => <Skeleton key={row} className="h-12 w-full" />)}
                 </div>
+              ) : catalogue.error && !catalogue.data ? (
+                <Empty action={<Button size="sm" variant="outline" onClick={() => setAttempt((n) => n + 1)}>{c("Retry", "重试")}</Button>}>
+                  {c("Creator updates could not be loaded.", "暂时无法加载博主动态。")}
+                </Empty>
               ) : shifts.length ? (
-                <ul className="divide-y divide-border">
+                <ul className="divide-y divide-border/60">
                   {shifts.map((shift) => (
                     <li key={shift.ticker}>
                       <Link
                         href={`/dashboard/market/${encodeURIComponent(shift.ticker)}`}
-                        className="-mx-2 flex items-center justify-between gap-3 rounded-lg px-2 py-3 hover:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                        className="-mx-2 flex min-h-20 items-center justify-between gap-3 rounded-lg px-2 py-4 transition-colors duration-150 hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary"
                       >
                         <span className="flex min-w-0 items-center gap-2.5">
                           <span aria-hidden><CompanyLogo symbol={shift.ticker} size="sm" /></span>
                           <span className="min-w-0">
-                            <span className="block font-semibold">
+                            <span className="block text-sm font-semibold">
                               {shift.ticker}
                               {heldSet.has(shift.ticker) && <HeldMark />}
                             </span>
-                            <span className="block text-xs text-muted-foreground">{dayLabel(shift.current_date)}</span>
+                            <span className="mt-1 block text-xs text-muted-foreground">{dayLabel(shift.current_date)}</span>
                           </span>
                         </span>
                         {shift.change == null ? (
-                          <span className="text-right text-xs">
+                          <span className="shrink-0 text-right text-xs">
                             <span className="block text-muted-foreground">{c("New opinion", "新观点")}</span>
                             <OpinionStrength value={shift.current_score} className="text-xs" />
                           </span>
@@ -440,6 +460,13 @@ export default function Market() {
               ) : (
                 <Empty>{c("No creator updates yet.", "暂时没有博主新动态。")}</Empty>
               )}
+              <Link
+                href="/dashboard/youtube-opinions/stocks"
+                className="mt-2 flex min-h-11 items-center justify-between gap-3 rounded-lg border border-border px-3 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+              >
+                {c("Explore creator-covered stocks", "查看博主覆盖股票")}
+                <ArrowUpRight className="h-4 w-4 shrink-0" aria-hidden />
+              </Link>
             </Panel>
           </aside>
         </div>
