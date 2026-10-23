@@ -19,6 +19,7 @@ export default function ScrubChart({
   height = 220,
   onScrub,
   label,
+  tone = "direction",
 }: {
   data: ScrubPoint[];
   baseline?: number | null;
@@ -26,8 +27,9 @@ export default function ScrubChart({
   height?: number;
   onScrub: (point: ScrubPoint | null) => void;
   label: string;
+  tone?: "direction" | "neutral";
 }) {
-  const stroke = positive ? POSITIVE : NEGATIVE;
+  const stroke = tone === "neutral" ? "rgb(var(--foreground) / 0.7)" : positive ? POSITIVE : NEGATIVE;
   const domain = useMemo(() => {
     const values = data.map((point) => point.value);
     if (typeof baseline === "number" && Number.isFinite(baseline)) values.push(baseline);

@@ -91,6 +91,7 @@ services:
       TAVILY_API_KEY: ${TAVILY_API_KEY:-}
       # Finnhub 股票数据 API
       FINNHUB_API_KEY: ${FINNHUB_API_KEY:-}
+      ECONOMIC_INDICATORS_WORKER_ENABLED: ${ECONOMIC_INDICATORS_WORKER_ENABLED:-true}
       # Benzinga 新闻 API
       BENZINGA_API_KEY: ${BENZINGA_API_KEY:-}
       # Twilio (用于 WhatsApp 通知)

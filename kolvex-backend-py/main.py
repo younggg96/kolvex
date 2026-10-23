@@ -44,9 +44,17 @@ async def lifespan(app: FastAPI):
     get_trading_analysis_service().cleanup_stale_analyses()
     from app.services.stock_chart_jobs import run_worker
     worker = asyncio.create_task(run_worker()) if os.getenv("CHART_WORKER_ENABLED", "true").lower() == "true" else None
+    from app.services.economic_indicators import run_economic_indicators_worker
+    indicators_worker = asyncio.create_task(run_economic_indicators_worker()) if settings.ECONOMIC_INDICATORS_WORKER_ENABLED else None
     try:
         yield
     finally:
+        if indicators_worker:
+            indicators_worker.cancel()
+            try:
+                await indicators_worker
+            except asyncio.CancelledError:
+                pass
         if worker:
             worker.cancel()
             try:

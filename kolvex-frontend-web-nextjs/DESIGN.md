@@ -682,8 +682,9 @@ as five equal index cards above the stock list and desktop rail. Each card group
 its trading date, index symbol, point value, signed change and a 96px chart.
 Index points have no currency prefix; the data uses the actual index symbols
 (^GSPC, ^IXIC, ^DJI, ^RUT, ^VIX), rather than ETF proxy prices.
-The shared range controls update every chart. Cards reflow by available content
-width with a 180px minimum and stack on narrow screens. They retain existing
+The shared range controls update every chart. Cards stay at 272 × 244px in a single horizontal row on every viewport.
+The overview scrolls horizontally with a visible themed scrollbar, native touch
+and keyboard scrolling, and proximity scroll snapping; cards never shrink or wrap. They retain existing
 card/background/border tokens, 12px corners, tabular figures and semantic
 green/orange direction colors. Missing data keeps card geometry and offers
 retry; dates come from chart data. Other market lists and analysis routes retain
@@ -712,3 +713,33 @@ The shared primary navigation order is Markets, Daily Briefs, News, KOL Opinions
 then Research. Chinese navigation labels are 行情、日报、新闻、KOL 观点、研究.
 `components/layout/navItems.ts` owns this order for the sidebar and mobile tabs;
 existing destination routes and active-state matching remain canonical.
+
+### Macro indicators in Markets
+
+Markets uses the shared Radix Tabs primitive for Market overview and Macro indicators.
+`/dashboard?tab=macro` restores the selected tab on refresh; other query parameters
+are preserved. StockLookup remains above both tabs. Each panel mounts its own data
+requests and Ask Kolvex context, so macro figures do not mix with intraday quotes.
+
+Macro indicators uses native cards with the existing card/border tokens, 12px
+corners, tabular figures and shared ScrubChart. A responsive grid uses a 260px
+minimum card width and collapses to one column on phones. Eight cards cover
+Treasury yields, the 10Y−2Y yield spread, CPI/core CPI YoY, unemployment, monthly
+nonfarm jobs added and real GDP annualized quarterly growth. Shared 1Y/3Y/5Y
+controls change every chart, with 3Y selected initially. Rates are daily, inflation
+and employment monthly, and GDP quarterly; each card states its observation
+period and calculation method instead of implying all data is from today.
+
+ScrubChart's neutral tone uses the foreground token rather than stock direction
+colors: rising inflation or unemployment is not a positive investment return.
+Its default direction tone remains unchanged for market prices. Hovered points
+show their own historical value/date and suppress the latest-period delta until
+hover ends. A native Recent values disclosure provides keyboard-accessible
+dates and values for the latest 12 observations. Every card links to its source
+series, with government-origin attribution and retrieval time below the grid.
+
+The allowlisted public-domain Federal Reserve, BLS and BEA series are retrieved
+through FRED public CSV/ZIP downloads, without a paid key. Checks are cached for
+six hours and failures retry hourly. Missing values stay as dashes; cached old
+values are marked delayed. Loading, empty, partial, stale and expired-session
+states have explicit bilingual copy and retry/sign-in actions.

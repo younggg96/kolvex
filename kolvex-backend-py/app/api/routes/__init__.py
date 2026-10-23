@@ -16,6 +16,7 @@ from app.api.routes.plaid import router as plaid_router
 from app.api.routes.youtube_opinions import router as youtube_opinions_router
 from app.api.routes.chart_drawings import router as chart_drawings_router
 from app.api.routes.briefs import router as briefs_router
+from app.api.routes.economic_indicators import router as economic_indicators_router
 
 # Create API router
 api_router = APIRouter()
@@ -27,6 +28,7 @@ api_router.include_router(auth_router)
 api_router.include_router(upload_router)
 api_router.include_router(users.router)
 api_router.include_router(market_data.router)
+api_router.include_router(economic_indicators_router)
 api_router.include_router(portfolio_router)
 api_router.include_router(chat_router)
 api_router.include_router(admin_router, prefix="/admin", tags=["Admin"])

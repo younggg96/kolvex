@@ -153,6 +153,26 @@ class RedisService:
             logger.warning(f"Redis JSON 解析失败 [{key}]")
             return None
 
+    async def acquire_lock(self, key: str, token: str, ttl: int = 300) -> bool:
+        """A bounded lease shared by workers; caller owns the unique token."""
+        if not self.is_connected:
+            return False
+        try:
+            return bool(await self._client.set(self._make_key(key), token, nx=True, ex=ttl))
+        except Exception:
+            return False
+
+    async def release_lock(self, key: str, token: str) -> None:
+        if not self.is_connected:
+            return
+        try:
+            await self._client.eval(
+                "if redis.call('get', KEYS[1]) == ARGV[1] then return redis.call('del', KEYS[1]) else return 0 end",
+                1, self._make_key(key), token,
+            )
+        except Exception:
+            logger.warning("Redis lease release failed [%s]", key)
+
     async def set(
         self,
         key: str,

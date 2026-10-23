@@ -3,12 +3,14 @@
 import { isProductFeatureEnabled } from "@/lib/productFeatures";
 
 import Link from "next/link";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { ArrowUpRight } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import CompanyLogo from "@/components/ui/company-logo";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Select,
   SelectContent,
@@ -35,6 +37,7 @@ import {
 import ScrubChart, { type ScrubPoint } from "./ScrubChart";
 import { useDecisionCommand } from "./CommandLayer";
 import StockLookup from "./StockLookup";
+import MacroIndicators from "./MacroIndicators";
 
 const DEFAULT_STOCKS = ["NVDA", "AAPL", "MSFT", "AMZN", "GOOGL", "META", "TSLA", "AVGO"];
 const RANGES = [
@@ -102,11 +105,11 @@ function BenchmarkCard({ benchmark, quote, quoteLoading, range, attempt, onRetry
   const spec = RANGES.find((item) => item.key === range)!;
 
   return (
-    <article className="relative min-w-0 overflow-hidden rounded-xl border border-border bg-card transition-colors hover:border-foreground/30">
+    <article className="relative h-[244px] w-[272px] shrink-0 snap-start overflow-hidden rounded-xl border border-border bg-card transition-colors hover:border-foreground/30">
       <Link
         href={`/dashboard/market/${encodeURIComponent(benchmark.symbol)}`}
         aria-label={c(`Open ${benchmark.en} market details`, `查看${benchmark.zh}行情详情`)}
-        className="block cursor-pointer rounded-xl p-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary"
+        className="block h-full cursor-pointer rounded-xl p-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary"
       >
         <div className="flex min-h-6 flex-wrap items-baseline gap-x-2">
           <h2 className="text-base font-semibold">{c(benchmark.en, benchmark.zh)}</h2>
@@ -156,7 +159,7 @@ function BenchmarkCard({ benchmark, quote, quoteLoading, range, attempt, onRetry
   );
 }
 
-export default function Market() {
+function MarketOverview() {
   const c = useCopy();
   const dayLabel = useDayLabel();
   const { setContext } = useDecisionCommand();
@@ -245,12 +248,9 @@ export default function Market() {
   ] as const;
 
   return (
-    <DashboardLayout title={c("Markets", "行情")}>
-      <main className="flex-1 overflow-y-auto">
-        <div className="mx-auto grid gap-x-8 gap-y-10 px-4 pb-16 pt-6 md:px-8 md:pt-8 xl:grid-cols-[minmax(0,1fr)_320px]">
+        <div className="mx-auto grid gap-x-8 gap-y-10 pt-6 xl:grid-cols-[minmax(0,1fr)_320px]">
           <div className="min-w-0 xl:col-span-2">
-            <StockLookup />
-            <section aria-labelledby="market-overview-heading" className="mt-6">
+            <section aria-labelledby="market-overview-heading">
               <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
                 <h1 id="market-overview-heading" className="text-xl font-semibold tracking-tight">
                   {c("Market overview", "市场概览")}
@@ -269,7 +269,12 @@ export default function Market() {
                   ))}
                 </div>
               </div>
-              <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,180px),1fr))] gap-4">
+              <div
+                role="region"
+                aria-label={c("Market indices, scroll horizontally", "市场指数，可横向滚动")}
+                tabIndex={0}
+                className="flex snap-x snap-proximity gap-4 overflow-x-auto overscroll-x-contain pb-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+              >
                 {BENCHMARKS.map((item) => (
                   <BenchmarkCard
                     key={item.symbol}
@@ -469,6 +474,37 @@ export default function Market() {
               </Link>
             </Panel>
           </aside>
+        </div>
+  );
+}
+
+export default function Market() {
+  const c = useCopy();
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const tab = searchParams.get("tab") === "macro" ? "macro" : "overview";
+
+  function selectTab(value: string) {
+    const params = new URLSearchParams(searchParams.toString());
+    if (value === "macro") params.set("tab", "macro");
+    else params.delete("tab");
+    router.replace(`${pathname}${params.size ? `?${params.toString()}` : ""}`, { scroll: false });
+  }
+
+  return (
+    <DashboardLayout title={c("Markets", "行情")}>
+      <main className="min-w-0 flex-1 overflow-y-auto">
+        <div className="mx-auto min-w-0 px-4 pb-16 pt-6 md:px-8 md:pt-8">
+          <StockLookup />
+          <Tabs value={tab} onValueChange={selectTab} className="mt-6 min-w-0">
+            <TabsList aria-label={c("Market views", "行情视图")}>
+              <TabsTrigger value="overview">{c("Market overview", "市场概览")}</TabsTrigger>
+              <TabsTrigger value="macro">{c("Macro indicators", "宏观指标")}</TabsTrigger>
+            </TabsList>
+            <TabsContent value="overview"><MarketOverview /></TabsContent>
+            <TabsContent value="macro"><MacroIndicators /></TabsContent>
+          </Tabs>
         </div>
       </main>
     </DashboardLayout>

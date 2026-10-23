@@ -62,6 +62,9 @@ class Settings(BaseSettings):
     
     # Finnhub API (实时股票数据)
     FINNHUB_API_KEY: str = os.getenv("FINNHUB_API_KEY", "")
+
+    # Free public government economic statistics.
+    ECONOMIC_INDICATORS_WORKER_ENABLED: bool = True
     
     # OpenAI API (AI 分析，可选)
     OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY", "")
