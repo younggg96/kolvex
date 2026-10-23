@@ -215,7 +215,6 @@ export default function StockWorkspace({ ticker }: { ticker: string }) {
   return (
     <DashboardLayout
       title={c("Markets", "行情")}
-      headerLeftAction={<HeaderBackButton href="/dashboard" label={c("Back to Markets", "返回行情")} />}
     >
       <main className="flex-1 overflow-y-auto">
         <div className="mx-auto px-4 pb-16 pt-4 md:px-8 md:pt-6">
@@ -231,6 +230,9 @@ export default function StockWorkspace({ ticker }: { ticker: string }) {
                   <p className="truncate text-[13px] text-muted-foreground">
                     {quote?.name || (loading ? "" : c("Stock workspace", "股票工作台"))}
                   </p>
+                </div>
+                <div className="ml-auto">
+                  <HeaderBackButton href="/dashboard" label={c("Back to Markets", "返回行情")} />
                 </div>
               </div>
               <div className="mt-4" aria-live="polite">
@@ -260,6 +262,7 @@ export default function StockWorkspace({ ticker }: { ticker: string }) {
                 <PriceChart
                   key={ticker}
                   symbol={ticker}
+                  layout="workspace"
                   range="3m"
                   from=""
                   to=""

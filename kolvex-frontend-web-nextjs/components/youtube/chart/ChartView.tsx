@@ -187,6 +187,7 @@ function CallMarker({ direction, count, x, y }: { direction: "up" | "down" | "do
 
 export interface ChartViewProps {
   mode: Mode;
+  compactLayout?: "compact" | "workspace";
   symbol: string;
   /** Compact mode loads this window; advanced mode picks its own range and interval. */
   params: PriceHistoryParams;
@@ -226,6 +227,7 @@ export interface ChartViewProps {
  */
 export default function ChartView({
   mode,
+  compactLayout = "compact",
   symbol,
   params: compactParams,
   events,
@@ -257,6 +259,9 @@ export default function ChartView({
   escapeRef,
 }: ChartViewProps) {
   const advanced = mode === "advanced";
+  const heightClass = !advanced && compactLayout === "workspace"
+    ? "h-[360px] sm:h-[clamp(480px,60vh,760px)]"
+    : HEIGHT_CLASS[mode];
   const [range, setRange] = useState<AdvancedRange>("3M");
   const [interval, setChartInterval] = useState<ChartInterval>(defaultInterval["3M"]);
   const params = advanced && !snapshotBars ? advancedHistoryParams(range, interval) : compactParams;
@@ -495,7 +500,7 @@ export default function ChartView({
   if (error) {
     return (
       <div
-        className={cn("flex flex-wrap items-center justify-center gap-3 text-sm text-muted-foreground", HEIGHT_CLASS[mode])}
+        className={cn("flex flex-wrap items-center justify-center gap-3 text-sm text-muted-foreground", heightClass)}
         role="alert"
       >
         <span>{t("youtubeOpinions.priceUnavailable")}</span>
@@ -1365,7 +1370,7 @@ export default function ChartView({
             onBlur={() => setActive(null)}
             className={cn(
               "relative mt-3 select-none overflow-hidden rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-4 focus-visible:ring-offset-background",
-              HEIGHT_CLASS[mode],
+              heightClass,
               drawing ? "cursor-crosshair" : gesture.current?.kind === "pan" ? "cursor-grabbing" : "cursor-crosshair",
               drawing || selectedId || advanced ? "touch-none" : "touch-pan-y",
             )}

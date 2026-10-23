@@ -80,22 +80,23 @@ export default function PublishedResearch({ page }: { page?: string }) {
   }, [loadPublished]);
 
   return (
-    <ResearchLayout
-      headerActions={profile?.is_admin ? (
-        <Button asChild variant="outline" size="sm">
-          <Link href={RESEARCH_AUTHORING_PATH}>{t("research.manageReports")}</Link>
-        </Button>
-      ) : undefined}
-    >
+    <ResearchLayout>
       <main className="relative flex-1 overflow-y-auto" aria-busy={loading}>
         <div className="mx-auto w-full  space-y-8 px-4 pb-16 pt-6 md:px-8 md:pt-8">
-          <div>
-            <h2 className="text-[28px] font-bold leading-tight md:text-[32px]">
-              {t("tradingAnalysis.title")}
-            </h2>
-            <p className="mt-2 max-w-[60ch] text-[15px] leading-relaxed text-muted-foreground">
-              {t("tradingAnalysis.explore.description")}
-            </p>
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <h1 className="text-[28px] font-bold leading-tight md:text-[32px]">
+                {t("tradingAnalysis.title")}
+              </h1>
+              <p className="mt-2 max-w-[60ch] text-[15px] leading-relaxed text-muted-foreground">
+                {t("tradingAnalysis.explore.description")}
+              </p>
+            </div>
+            {profile?.is_admin && (
+              <Button asChild variant="outline" size="sm">
+                <Link href={RESEARCH_AUTHORING_PATH}>{t("research.manageReports")}</Link>
+              </Button>
+            )}
           </div>
 
           <section aria-labelledby="explore-published" className="animate-fade-in-up">

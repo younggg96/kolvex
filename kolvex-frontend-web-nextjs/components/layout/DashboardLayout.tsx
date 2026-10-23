@@ -1,16 +1,10 @@
 "use client";
 
 import { ReactNode } from "react";
-import Header from "./Header";
 
 interface DashboardLayoutProps {
   children: ReactNode;
   title?: string;
-  showTitle?: boolean;
-  showHeader?: boolean;
-  /** Tailwind CSS classes for responsive header visibility, e.g. "lg:hidden" */
-  headerClassName?: string;
-  hasSidebarTrigger?: boolean;
   headerLeftAction?: ReactNode;
   headerExtra?: ReactNode;
   headerActions?: ReactNode;
@@ -18,47 +12,38 @@ interface DashboardLayoutProps {
   noTransition?: boolean;
 }
 
-/**
- * Page-level layout wrapper that renders the header and content area.
- * The sidebar is provided by the parent Next.js layout (AppShell).
- */
+/** Page content and optional inline actions; AppShell owns navigation. */
 export default function DashboardLayout({
   children,
-  title = "Dashboard",
-  showTitle = true,
-  showHeader = true,
-  headerClassName,
-  hasSidebarTrigger = true,
+  title,
   headerLeftAction,
   headerExtra,
   headerActions,
   noTransition = false,
 }: DashboardLayoutProps) {
+  const hasActions = Boolean(headerLeftAction || headerExtra || headerActions);
+
   return (
-    <>
-      {showHeader && (
-        <div className={headerClassName}>
-          <Header
-            title={showTitle ? title : undefined}
-            hasSidebarTrigger={hasSidebarTrigger}
-            leftAction={headerLeftAction}
-            actions={headerActions}
-            extra={headerExtra}
-          />
-        </div>
-      )}
+    <section aria-label={title} className="relative flex min-w-0 flex-1 flex-col overflow-hidden">
+      <div aria-hidden className="pointer-events-none absolute inset-0 bg-grid opacity-[0.12] dark:opacity-90" />
       <div
-        className="relative flex min-w-0 flex-1 flex-col overflow-hidden"
+        className={`dashboard-content relative flex min-w-0 flex-1 flex-col overflow-hidden ${
+          noTransition ? "" : "animate-page-enter"
+        }`}
       >
-        <div aria-hidden className="pointer-events-none absolute inset-0 bg-grid opacity-[0.12] dark:opacity-90" />
-        <div
-          className={`dashboard-content relative flex min-w-0 flex-col flex-1 overflow-hidden ${
-            noTransition ? "" : "animate-page-enter"
-          }`}
-        >
-          {children}
-        </div>
+        {hasActions && (
+          <div className="flex shrink-0 flex-wrap items-center gap-2 px-4 pt-4 md:px-8">
+            {headerLeftAction}
+            {headerExtra}
+            {headerActions && (
+              <div className="ml-auto flex min-w-0 max-w-full flex-wrap items-center gap-2 [&>*]:shrink-0">
+                {headerActions}
+              </div>
+            )}
+          </div>
+        )}
+        {children}
       </div>
-    </>
+    </section>
   );
 }

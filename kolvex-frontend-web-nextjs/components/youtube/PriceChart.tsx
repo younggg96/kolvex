@@ -68,6 +68,7 @@ export default function PriceChart({
   generationRequest = 0,
   drawingRequest = 0,
   onAnalysisBusy,
+  layout = "compact",
 }: {
   symbol: string;
   range: PriceRange;
@@ -80,6 +81,7 @@ export default function PriceChart({
   generationRequest?: number;
   drawingRequest?: number;
   onAnalysisBusy?: (busy: boolean) => void;
+  layout?: "compact" | "workspace";
 }) {
   const { drawings, setDrawings: storeDrawings, status: syncStatus } = useSyncedDrawings(symbol);
   const versions = useStockHistory<AiTechnicalAnalysis>(symbol, "technical");
@@ -228,7 +230,7 @@ export default function PriceChart({
 
   return (
     <>
-      <ChartView mode="compact" generationRequest={generationRequest} drawingRequest={drawingRequest} {...shared} onOpenAdvanced={() => {
+      <ChartView mode="compact" compactLayout={layout} generationRequest={generationRequest} drawingRequest={drawingRequest} {...shared} onOpenAdvanced={() => {
         advancedTriggerRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
         setAdvancedOpen(true);
       }} />

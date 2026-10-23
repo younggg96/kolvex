@@ -68,7 +68,10 @@ and allow descriptions to wrap.
 ## Layout
 
 AppShell owns the viewport, desktop sidebar and mobile navigation. DashboardLayout
-owns the header. Pages retain their established content scroller and use 16px
+has no top header or duplicate page title. Optional return/actions render as an
+unbordered content row only when supplied; the AI Research management action
+sits beside its content heading. Mobile navigation includes a menu button to
+keep sidebar routes, settings and account controls reachable. Pages retain their established content scroller and use 16px
 horizontal padding on mobile and 32px from the medium breakpoint. Published
 reports stay within 1080px; Creator Opinions retains a wider two-column layout.
 
@@ -137,6 +140,12 @@ Detail-page return navigation lives in `DashboardLayout.headerLeftAction` and us
 `components/layout/HeaderBackButton.tsx`: a ghost icon button with only a Lucide
 arrow, a translated accessible label and tooltip, and the existing return target.
 Keep it available in loading and missing-report states.
+
+The stock workspace places that same return control at the right of the stock
+identity row, per the requested layout. Its `PriceChart` workspace variant reserves
+360px for the plot on phones and `clamp(480px, 60vh, 760px)` from the small breakpoint,
+including loading and error states. Creator-opinion compact charts and the advanced
+dialog retain their existing sizing. The page retains natural content scrolling.
 
 Lucide outline icons accompany visible labels except for these return controls. Hover/focus must reveal no
 otherwise inaccessible actions. Global reduced-motion rules apply to existing
@@ -584,8 +593,8 @@ providers or hide the public body behind tabs.
 
 ## News terminal
 
-`/dashboard/news` is a single-column reading feed. DashboardLayout owns its only
-header: title, delayed-headline notice, update status, pause/resume and refresh.
+`/dashboard/news` is a single-column reading feed. DashboardLayout renders its
+inline action row: delayed-headline notice, update status, pause/resume and refresh.
 Date separators and local timestamps introduce plain headline links. There are
 no row actions, bookmarks, source tags, category rails, search, Focus rules,
 details panes/drawers or related-symbol chips.
