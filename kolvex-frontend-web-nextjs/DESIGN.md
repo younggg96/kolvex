@@ -730,11 +730,23 @@ controls change every chart, with 3Y selected initially. Rates are daily, inflat
 and employment monthly, and GDP quarterly; each card states its observation
 period and calculation method instead of implying all data is from today.
 
-ScrubChart's neutral tone uses the foreground token rather than stock direction
-colors: rising inflation or unemployment is not a positive investment return.
-Its default direction tone remains unchanged for market prices. Hovered points
+The selected tab provides the visible section title; the content heading is
+screen-reader-only and the redundant introductory subtitle is omitted. The compact
+toolbar contains only range controls and refresh. Empty status messages reserve
+no visual block between it and the cards. Card headings lead, with the publication
+frequency alongside them rather than a repeated category eyebrow.
+
+Macro curves use green/orange for the selected range's first-to-last movement;
+signed changes use the previous observation's direction. These encode increases
+and decreases, not economic desirability or investment returns. Macro chart fill
+roles locally map to the contrast-safe `positive`/`negative` text tokens, preserving
+existing market chart colors. A short footer explains the two comparison periods.
+Hovered points
 show their own historical value/date and suppress the latest-period delta until
-hover ends. A native Recent values disclosure provides keyboard-accessible
+hover ends. A native Recent values disclosure sits below the source link as its
+own full-width block, with a full-width summary, rotating chevron and fixed-layout
+table. Date row headings align left and tabular numeric values align right without
+wrapping; expanding it never inherits the source link's remaining width. It provides keyboard-accessible
 dates and values for the latest 12 observations. Every card links to its source
 series, with government-origin attribution and retrieval time below the grid.
 
