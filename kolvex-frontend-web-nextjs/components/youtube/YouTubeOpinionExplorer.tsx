@@ -54,6 +54,8 @@ import PriceChart from "./PriceChart";
 import StrengthChart, { type StrengthPoint } from "./StrengthChart";
 import VideoOpinionCard from "./VideoOpinionCard";
 import { videoHistory } from "@/lib/youtubeVideoHistory";
+import { formatPrice } from "@/lib/stockApi";
+import { useStockPerformance } from "@/hooks/useStockPerformance";
 import CreatorShare from "./CreatorShare";
 import { describeStrength, toneText, type StrengthTone } from "./strength";
 import { HeldMark, useHeldTickers, useCopy } from "@/components/decision/shared";
@@ -178,6 +180,7 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
   const navigationRequest = useRef(0);
   const [navigating, setNavigating] = useState(false);
   const scrollContainer = useRef<HTMLDivElement>(null);
+  const [performanceLimit, setPerformanceLimit] = useState(24);
   const opinionHistory = useRef<HTMLElement>(null);
   const inDetail = Boolean(route.ticker || route.creator);
   const held = useHeldTickers();
@@ -476,7 +479,26 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
       ? { tab: "creators" as const, creator: route.creator }
       : root;
   const rowClass =
-    "group grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-4 border-b border-border py-3.5 transition-colors duration-150 hover:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary sm:-mx-3 sm:rounded-xl sm:border-transparent sm:px-3";
+    "group grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-2 border-b border-border py-3.5 transition-colors duration-150 hover:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary sm:-mx-3 sm:rounded-xl sm:border-transparent sm:px-3";
+  const stockRowClass = cn(rowClass, "md:grid-cols-[minmax(0,1fr)_auto_auto]");
+  const formatPercent = (value?: number | null) =>
+    typeof value === "number" && Number.isFinite(value)
+      ? `${value > 0 ? "+" : ""}${value.toFixed(2)}%`
+      : "—";
+  const percentTone = (value?: number | null) =>
+    typeof value === "number" && value > 0
+      ? "text-positive"
+      : typeof value === "number" && value < 0
+        ? "text-negative"
+        : "text-foreground/70";
+  /** Non-US listings quote in their own currency; `$` would be wrong for them. */
+  const nonUsListed = (symbol: string) =>
+    /\.(KS|KQ|HK|TW|T|L|DE|F|PA|AS|MC|MI|SW|VI|TO|V|AX|NZ|SI|SA|MX|JO|TA|IS|BK|JK|KL|NS|BO|SS|SZ|ST|HE|CO|OL|IR|BR|LS)$/i.test(symbol) ||
+    /^[=^]/.test(symbol);
+  const localPrice = (symbol: string, price: number) =>
+    nonUsListed(symbol)
+      ? new Intl.NumberFormat(t("common.intlLocale"), { maximumFractionDigits: 2 }).format(price)
+      : formatPrice(price);
   const formatDay = (value?: string | null) => {
     return formatOpinionDate(value, t("common.intlLocale"));
   };
@@ -551,10 +573,108 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
     ? visibleStocks.slice(0, 5)
     : !inDetail && !allStocks ? visibleStocks.slice(0, 10) : visibleStocks;
   const latestCreatorOpinions = creatorOverview ? (context?.latest || []).slice(0, 5) : [];
+  const performanceListed =
+    (!inDetail && route.tab === "stocks") ||
+    (inDetail && Boolean(route.creator) && !route.ticker);
+  // Fetch actual moves for the rows in view first, then extend as the reader
+  // scrolls: one yfinance bulk download per batch keeps every request short.
+  const performanceListKey = `${route.tab}|${route.ticker || ""}|${route.creator || ""}|${inDetail ? "detail" : "list"}`;
+  useEffect(() => {
+    setPerformanceLimit(24);
+  }, [performanceListKey]);
+  const performanceTickers = performanceListed
+    ? shownStocks.slice(0, performanceLimit).map((item) => item.ticker)
+    : [];
+  const { performance, loading: performanceLoading } = useStockPerformance(performanceTickers);
+  // Once a batch lands, keep extending while the reader is still at the bottom.
+  useEffect(() => {
+    if (!performanceListed || performanceLoading) return;
+    const element = scrollContainer.current;
+    if (!element) return;
+    if (
+      element.scrollHeight - element.scrollTop - element.clientHeight < 900 &&
+      performanceLimit < shownStocks.length
+    ) {
+      setPerformanceLimit((current) => Math.min(current + 24, shownStocks.length));
+    }
+  }, [performanceLoading, performanceListed, performanceLimit, shownStocks.length]);
+  const loadMorePerformance = () => {
+    if (!performanceListed || performanceLoading) return;
+    const element = scrollContainer.current;
+    if (!element) return;
+    if (element.scrollHeight - element.scrollTop - element.clientHeight < 900) {
+      setPerformanceLimit((current) =>
+        current >= shownStocks.length ? current : Math.min(current + 24, shownStocks.length),
+      );
+    }
+  };
+
+  const performanceCell = (ticker: string, requested: boolean) => {
+    const entry = performance[ticker];
+    const cellClass =
+      "order-3 col-span-2 min-w-0 border-t border-border/70 pt-2 md:order-none md:col-span-1 md:border-0 md:pt-0";
+    if (entry) {
+      const ariaLabel = t("youtubeOpinions.performanceAria", {
+        price: localPrice(ticker, entry.price),
+        day: formatPercent(entry.change_1d_percent),
+        week: formatPercent(entry.change_5d_percent),
+        month: formatPercent(entry.change_1mo_percent),
+      });
+      return (
+        <div
+          className={cn(cellClass, "text-left md:text-right")}
+          role="group"
+          aria-label={ariaLabel}
+          title={t("youtubeOpinions.performanceNote", { date: entry.as_of })}
+        >
+          <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 md:flex-col md:items-end md:gap-y-1">
+            <p className="whitespace-nowrap tabular-nums">
+              <span className="text-[11px] font-medium text-foreground/55">
+                {t("youtubeOpinions.actualPerformance")}
+              </span>
+              <span className="ml-1.5 text-[13px] font-semibold text-foreground">
+                {localPrice(ticker, entry.price)}
+              </span>
+            </p>
+            <p className="flex flex-wrap items-baseline gap-x-3 gap-y-1 md:justify-end">
+              {([
+                ["youtubeOpinions.price1d", entry.change_1d_percent],
+                ["youtubeOpinions.price5d", entry.change_5d_percent],
+                ["youtubeOpinions.price1mo", entry.change_1mo_percent],
+              ] as const).map(([key, value]) => (
+                <span key={key} className="inline-flex items-baseline gap-1 whitespace-nowrap">
+                  <span className="text-[11px] text-foreground/55">{t(key)}</span>
+                  <span className={cn("text-xs font-semibold tabular-nums", percentTone(value))}>
+                    {formatPercent(value)}
+                  </span>
+                </span>
+              ))}
+            </p>
+          </div>
+        </div>
+      );
+    }
+    return (
+      <div
+        className={cn(cellClass, "flex min-h-4 items-center gap-2 text-left md:justify-end md:text-right")}
+        title={performanceLoading ? undefined : t("youtubeOpinions.performanceUnavailable")}
+      >
+        {performanceLoading || !requested ? (
+          <>
+            <span aria-hidden="true" className="h-3 w-16 animate-pulse rounded bg-muted motion-reduce:animate-none" />
+            <span aria-hidden="true" className="h-3 w-24 animate-pulse rounded bg-muted motion-reduce:animate-none" />
+            <span className="sr-only">{t("common.loadingStatus")}</span>
+          </>
+        ) : (
+          <span aria-label={t("youtubeOpinions.performanceUnavailable")} className="text-xs text-foreground/55">—</span>
+        )}
+      </div>
+    );
+  };
 
   const stockRows = (
     <div className="min-w-0">
-      {shownStocks.map((item) => (
+      {shownStocks.map((item, index) => (
         <ExplorerLink
           onNavigate={navigate}
           key={item.ticker}
@@ -563,7 +683,7 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
             ticker: item.ticker,
             creator: route.creator,
           }}
-          className={rowClass}
+          className={stockRowClass}
           label={`${t("youtubeOpinions.viewStock")}: ${item.ticker}`}
         >
           <div className="flex min-w-0 items-center gap-3">
@@ -578,6 +698,7 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
               </p>
             </div>
           </div>
+          {performanceCell(item.ticker, index < performanceLimit)}
           <div className="flex min-w-0 flex-col items-end gap-0.5 text-right">
             <OpinionStrength value={item.avg_score} />
             <p className="text-xs text-foreground/75 tabular-nums">
@@ -806,6 +927,7 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
         ref={scrollContainer}
         className="relative min-h-0 min-w-0 flex-1 overflow-y-auto"
         aria-busy={navigating}
+        onScroll={loadMorePerformance}
       >
         {navigating && (
           <div role="status" className="sticky top-0 z-20 flex h-0 justify-end overflow-visible px-4 md:px-8">

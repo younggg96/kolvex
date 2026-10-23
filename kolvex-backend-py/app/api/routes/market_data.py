@@ -14,6 +14,7 @@ from uuid import UUID
 
 from app.api.dependencies.auth import get_current_user_id
 from app.core.supabase import get_supabase_service
+from app.services.market_performance import TooManySymbolsError, get_stock_performance
 from app.services.stock_analysis_history import StockAnalysisHistory
 from app.services.stock_chart_jobs import StockChartJobs
 from app.services.technical_analysis import AiNotConfigured, analyze_chart
@@ -407,6 +408,24 @@ def get_multiple_quotes(
         return service.get_multiple_quotes(symbols)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"批量获取报价失败: {str(e)}")
+
+
+@router.get(
+    "/performance",
+    summary="批量获取近期涨跌表现",
+    description="批量返回最近 1 个交易日、5 个交易日和 1 个月的价格涨跌幅，用于股票目录对比博主情绪与真实走势；最多 80 个代码",
+)
+async def get_market_performance(
+    symbols: List[str] = Query(..., description="股票代码，支持逗号分隔或重复参数"),
+):
+    """批量获取近期涨跌表现（yfinance 为阻塞调用，放到线程池执行）"""
+    try:
+        return await asyncio.to_thread(get_stock_performance, symbols)
+    except TooManySymbolsError:
+        raise HTTPException(status_code=400, detail="Too many symbols (max 80)")
+    except Exception as error:
+        logger.exception("Failed to compute market performance")
+        raise HTTPException(status_code=502, detail="Market performance unavailable") from error
 
 
 @router.get(
