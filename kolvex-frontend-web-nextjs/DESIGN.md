@@ -673,3 +673,18 @@ Portfolio is temporarily hidden through `lib/productFeatures.ts`. Navigation,
 landing promotions, holdings filters and position panels follow this switch.
 Disabled portfolio URLs redirect to Markets; account and holdings data are retained.
 The homepage feature grid adapts to the number of visible entries.
+
+
+## Market overview
+
+Markets presents S&P 500, NASDAQ Composite, Dow Jones, Russell 2000 and VIX
+as five equal index cards above the stock list and desktop rail. Each card groups
+its trading date, index symbol, point value, signed change and a 96px chart.
+Index points have no currency prefix; the data uses the actual index symbols
+(^GSPC, ^IXIC, ^DJI, ^RUT, ^VIX), rather than ETF proxy prices.
+The shared range controls update every chart. Cards reflow by available content
+width with a 180px minimum and stack on narrow screens. They retain existing
+card/background/border tokens, 12px corners, tabular figures and semantic
+green/orange direction colors. Missing data keeps card geometry and offers
+retry; dates come from chart data. Other market lists and analysis routes retain
+their existing owners.

@@ -31,9 +31,6 @@ export default function StockLookup() {
 
   return (
     <form noValidate onSubmit={openStock} className="space-y-2" aria-label={c("Open a stock", "查看股票")}>
-      <label htmlFor="market-stock-code" className="block text-sm font-semibold">
-        {c("Look up any stock", "查看任意股票")}
-      </label>
       <div className="flex items-center gap-2">
         <div className="relative min-w-0 flex-1">
           <Input
