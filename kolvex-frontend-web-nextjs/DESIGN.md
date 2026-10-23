@@ -697,6 +697,21 @@ show localized index names and point values without a currency prefix. Card
 retry buttons remain separate from the link, with independent keyboard focus.
 
 
+CNN Fear & Greed follows VIX as a sixth card in the same scrolling row. It shows
+CNN's 0–100 score, the supplied sentiment rating, the original observation time
+in New York, previous-close point change and a linear position marker. Fear uses
+the existing orange role, greed uses green, and neutral stays muted. The card
+opens the CNN source in a new tab; it is a sentiment measure, not an OHLC index.
+Numerical display is off by default: until CNN display rights are confirmed, the
+card is a source entry and no CNN data request is made. Set the server-only
+`CNN_FEAR_GREED_DISPLAY_ENABLED=true` after authorization. When enabled,
+the server route authenticates viewers, coalesces requests and caches successful
+readings for 15 minutes per process. Failed refreshes may retain explicitly marked
+last-available readings for at most 24 hours. A blocked or invalid source yields an
+honest unavailable state and source link; no generated score or crypto substitute.
+CNN's website data endpoint is an external dependency, not a guaranteed public API.
+
+
 ### Market activity lists
 
 The market movers section retains flat rows and existing text/direction colors.

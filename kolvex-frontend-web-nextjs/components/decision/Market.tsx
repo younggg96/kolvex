@@ -38,6 +38,7 @@ import ScrubChart, { type ScrubPoint } from "./ScrubChart";
 import { useDecisionCommand } from "./CommandLayer";
 import StockLookup from "./StockLookup";
 import MacroIndicators from "./MacroIndicators";
+import FearGreedCard from "./FearGreedCard";
 
 const DEFAULT_STOCKS = ["NVDA", "AAPL", "MSFT", "AMZN", "GOOGL", "META", "TSLA", "AVGO"];
 const RANGES = [
@@ -268,7 +269,7 @@ function MarketOverview() {
               </div>
               <div
                 role="region"
-                aria-label={c("Market indices, scroll horizontally", "市场指数，可横向滚动")}
+                aria-label={c("Market indices and sentiment, scroll horizontally", "市场指数与情绪，可横向滚动")}
                 tabIndex={0}
                 className="flex snap-x snap-proximity gap-4 overflow-x-auto overscroll-x-contain pb-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
               >
@@ -283,6 +284,7 @@ function MarketOverview() {
                     onRetry={() => setAttempt((n) => n + 1)}
                   />
                 ))}
+                <FearGreedCard />
               </div>
               <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
                 <p>{c("Index values · Quotes may be delayed", "指数点位 · 报价可能延迟")}{checkedAt && c(`, checked ${checkedAt}`, `，${checkedAt} 查询`)}</p>
