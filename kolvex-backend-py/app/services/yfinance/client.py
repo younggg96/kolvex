@@ -4,6 +4,7 @@ YFinance 客户端服务
 """
 
 import math
+from concurrent.futures import ThreadPoolExecutor, wait
 
 import pandas as pd
 import yfinance as yf
@@ -12,6 +13,9 @@ from datetime import datetime, timedelta
 from functools import lru_cache
 import json
 
+
+_QUOTE_EXECUTOR = ThreadPoolExecutor(max_workers=6, thread_name_prefix="market-quotes")
+_QUOTE_BATCH_TIMEOUT = 12
 
 def _safe_float(value, default: float = 0.0) -> float:
     """Convert a value to float, handling NaN/Inf/None from pandas."""
@@ -671,12 +675,19 @@ class YFinanceService:
         """
         批量获取多个股票的报价
         """
+        symbols = list(dict.fromkeys(symbol.strip().upper() for symbol in symbols if symbol.strip()))
+        futures = {symbol: _QUOTE_EXECUTOR.submit(self.get_quote, symbol) for symbol in symbols}
+        done, _ = wait(futures.values(), timeout=_QUOTE_BATCH_TIMEOUT)
         result = {}
-        for symbol in symbols:
+        for symbol, future in futures.items():
+            if future not in done:
+                future.cancel()
+                result[symbol] = {"error": "Quote timed out"}
+                continue
             try:
-                result[symbol.upper()] = self.get_quote(symbol)
-            except Exception as e:
-                result[symbol.upper()] = {"error": str(e)}
+                result[symbol] = future.result()
+            except Exception as error:
+                result[symbol] = {"error": str(error)}
         return result
 
     def download_data(

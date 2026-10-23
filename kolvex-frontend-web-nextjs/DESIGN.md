@@ -697,28 +697,28 @@ show localized index names and point values without a currency prefix. Card
 retry buttons remain separate from the link, with independent keyboard focus.
 
 
-CNN Fear & Greed follows VIX as a sixth card in the same scrolling row. It shows
-CNN's 0–100 score, the supplied sentiment rating, the original observation time
-in New York, previous-close point change and a linear position marker. Fear uses
-the existing orange role, greed uses green, and neutral stays muted. The card
-opens the CNN source in a new tab; it is a sentiment measure, not an OHLC index.
-Numerical display is off by default: until CNN display rights are confirmed, the
-card is a source entry and no CNN data request is made. Set the server-only
-`CNN_FEAR_GREED_DISPLAY_ENABLED=true` after authorization. When enabled,
-the server route authenticates viewers, coalesces requests and caches successful
-readings for 15 minutes per process. Failed refreshes may retain explicitly marked
-last-available readings for at most 24 hours. A blocked or invalid source yields an
-honest unavailable state and source link; no generated score or crypto substitute.
-CNN's website data endpoint is an external dependency, not a guaranteed public API.
-
-
 ### Market activity lists
 
 The market movers section retains flat rows and existing text/direction colors.
+Creator coverage quotes load in batches of five with at most three requests in
+flight. Successful batches render immediately; pending prices show skeletons,
+and a partial failure keeps valid quotes and exposes a quote retry action. The
+proxy preserves cached successes and never turns failures into zero prices.
+The backend bounds quote workers and batch wait time so an unavailable symbol
+cannot block the full catalogue or the server event loop.
+
 A 160px wrapper bounds the shared Select so its default full width cannot expand
 the header. List filters sit below the heading; a muted column header precedes
-80px rows with quiet separators and aligned 160/104/88px desktop data columns.
-On phones, price and daily change stack together and creator consensus is hidden.
+80px rows with quiet separators. A passive sparkline sits between creator consensus
+and price, following the shared 1D/1W/1M/3M range. Desktop fixed columns are
+120px consensus, 88px trend, 88px price and 72px change. On phones, the trend
+keeps a 72px column; price and daily change stack in an 80px column and creator
+consensus is hidden. Row links include the trend and still open the K-line page.
+Trends use actual close observations, with green/orange based on range endpoints
+and a muted line for no net change. SVG previews contain no interactive elements.
+They load within 200px of the viewport, queue at most three history requests,
+reuse successful results for five minutes, and cancel on range/list changes.
+Missing history is shown as a dash, never as a synthetic curve.
 The creator updates rail aligns its heading with the movers heading, uses 80px
 rows and places its stock-directory link after the updates. A thin divider
 separates the rail on desktop. All entries retain their existing detail routes,

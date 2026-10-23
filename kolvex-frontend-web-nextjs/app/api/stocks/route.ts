@@ -60,6 +60,7 @@ export const runtime = "nodejs";
 
 // Force dynamic to ensure fresh cache checks
 export const dynamic = "force-dynamic";
+export const maxDuration = 30;
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
@@ -132,7 +133,7 @@ export async function GET(request: NextRequest) {
             { status: 400 }
           );
         }
-        const symbolArray = symbols.split(",").filter(Boolean);
+        const symbolArray = [...new Set(symbols.split(",").map(symbol => symbol.trim().toUpperCase()).filter(Boolean))];
         if (symbolArray.length === 0) {
           return NextResponse.json([], { status: 200 });
         }
@@ -145,7 +146,7 @@ export async function GET(request: NextRequest) {
           const cacheKey = getCacheKey("quote", sym);
           const cached =
             quoteCache.get<ReturnType<typeof transformQuote>>(cacheKey);
-          if (cached) {
+          if (cached && Number.isFinite(cached.price) && cached.price > 0) {
             cachedQuotes.push(cached);
           } else {
             symbolsToFetch.push(sym);
@@ -173,6 +174,7 @@ export async function GET(request: NextRequest) {
             {
               method: "POST",
               headers: { "Content-Type": "application/json" },
+              signal: AbortSignal.timeout(20000),
             }
           );
           if (!quotesResponse.ok) {
@@ -182,7 +184,7 @@ export async function GET(request: NextRequest) {
           const quotesData: Record<string, BackendQuote> =
             await quotesResponse.json();
           const transformedQuotes = Object.values(quotesData)
-            .filter((q) => !("error" in q))
+            .filter((q) => q && !("error" in q) && symbolsToFetch.includes(q.symbol) && typeof q.current_price === "number" && Number.isFinite(q.current_price) && q.current_price > 0)
             .map((q) => {
               const transformed = transformQuote(q);
               // 存入缓存
@@ -193,25 +195,21 @@ export async function GET(request: NextRequest) {
 
           // 合并缓存的和新获取的
           const allQuotes = [...cachedQuotes, ...transformedQuotes];
+          const complete = allQuotes.length === symbolArray.length;
 
           return NextResponse.json(allQuotes, {
             headers: {
               "Cache-Control":
-                "public, s-maxage=60, stale-while-revalidate=120",
+                complete ? "public, s-maxage=60, stale-while-revalidate=120" : "no-store",
               "X-Cache": cachedQuotes.length > 0 ? "PARTIAL" : "MISS",
             },
           });
         } catch (error) {
           console.error("Failed to fetch multiple quotes from backend:", error);
-          // Fallback: return empty data for each symbol
-          const fallbackQuotes = symbolArray.map((sym) => ({
-            symbol: sym,
-            name: sym,
-            price: 0,
-            change: 0,
-            changePercent: 0,
-          }));
-          return NextResponse.json(fallbackQuotes, { status: 200 });
+          // Preserve successful cached prices; never fabricate zero-price quotes.
+          return cachedQuotes.length
+            ? NextResponse.json(cachedQuotes, { headers: { "Cache-Control": "no-store", "X-Cache": "PARTIAL" } })
+            : NextResponse.json({ error: "Quotes unavailable" }, { status: 503, headers: { "Cache-Control": "no-store" } });
         }
 
       case "chart":

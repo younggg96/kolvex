@@ -21,6 +21,7 @@ import {
 import OpinionStrength from "@/components/youtube/OpinionStrength";
 import { getStockHistory, type StockQuote } from "@/lib/stockApi";
 import { cn } from "@/lib/utils";
+import { loadMarketQuotes } from "@/lib/marketQuotes";
 import { BENCHMARKS, indexValue } from "@/lib/marketBenchmarks";
 import {
   Change,
@@ -38,7 +39,7 @@ import ScrubChart, { type ScrubPoint } from "./ScrubChart";
 import { useDecisionCommand } from "./CommandLayer";
 import StockLookup from "./StockLookup";
 import MacroIndicators from "./MacroIndicators";
-import FearGreedCard from "./FearGreedCard";
+import StockTrend from "./StockTrend";
 
 const DEFAULT_STOCKS = ["NVDA", "AAPL", "MSFT", "AMZN", "GOOGL", "META", "TSLA", "AVGO"];
 const RANGES = [
@@ -47,6 +48,8 @@ const RANGES = [
   { key: "1M", period: "1mo", interval: "1d", en: "1M", zh: "1月" },
   { key: "3M", period: "3mo", interval: "1d", en: "3M", zh: "3月" },
 ] as const;
+const STOCK_GRID = "grid grid-cols-[minmax(0,1fr)_72px_80px] gap-x-3 sm:grid-cols-[minmax(0,1fr)_120px_88px_88px_72px] sm:gap-x-4";
+
 type Universe = "featured" | "holdings" | "creators";
 type Sort = "move" | "gainers" | "losers" | "default";
 type RangeKey = (typeof RANGES)[number]["key"];
@@ -165,6 +168,7 @@ function MarketOverview() {
   const dayLabel = useDayLabel();
   const { setContext } = useDecisionCommand();
   const [attempt, setAttempt] = useState(0);
+  const [quoteAttempt, setQuoteAttempt] = useState(0);
   const [range, setRange] = useState<RangeKey>("1D");
   const [universe, setUniverse] = useState<Universe>("featured");
   const [sort, setSort] = useState<Sort>("move");
@@ -186,31 +190,18 @@ function MarketOverview() {
   const sourceLoading = universe === "holdings" ? held.loading : universe === "creators" ? catalogue.loading : false;
   const sourceError = universe === "holdings" ? held.error : universe === "creators" ? catalogue.error : false;
   const symbolsKey = symbols.join(",");
+  const trendRange = RANGES.find(item => item.key === range)!;
 
   useEffect(() => {
     const controller = new AbortController();
     setLoading(true);
     setFailed(false);
     async function load() {
-      const requested = [...new Set([...BENCHMARKS.map((item) => item.symbol), ...symbolsKey.split(",").filter(Boolean)])];
-      const result: Record<string, StockQuote> = {};
-      let unavailable = false;
-      // Bound each request so large portfolios do not create an unbounded batch.
-      for (let offset = 0; offset < requested.length; offset += 20) {
-        const batch = requested.slice(offset, offset + 20);
-        try {
-          const response = await fetch(`/api/stocks?action=multiple&symbols=${encodeURIComponent(batch.join(","))}`, { signal: controller.signal });
-          const data: unknown = await response.json();
-          if (!response.ok || !Array.isArray(data)) throw new Error("Quotes unavailable");
-          for (const quote of data as StockQuote[]) {
-            if (batch.includes(quote.symbol) && Number.isFinite(quote.price) && quote.price > 0) result[quote.symbol] = quote;
-          }
-          if (batch.some((symbol) => !result[symbol])) unavailable = true;
-        } catch {
-          if (controller.signal.aborted) return;
-          unavailable = true;
-        }
-      }
+      const { quotes: result, unavailable } = await loadMarketQuotes(
+        [...BENCHMARKS.map(item => item.symbol), ...symbolsKey.split(",")],
+        controller.signal,
+        batch => setQuotes(previous => ({ ...previous, ...batch })),
+      );
       if (!controller.signal.aborted) {
         setQuotes(result);
         setFailed(unavailable);
@@ -220,7 +211,7 @@ function MarketOverview() {
     }
     load();
     return () => controller.abort();
-  }, [symbolsKey, attempt]);
+  }, [symbolsKey, attempt, quoteAttempt]);
 
   const context = JSON.stringify({ workspace: "Markets", benchmarks: BENCHMARKS.map((item) => item.symbol), range, universe, quotes, quotesUnavailable: failed });
   useEffect(() => {
@@ -269,7 +260,7 @@ function MarketOverview() {
               </div>
               <div
                 role="region"
-                aria-label={c("Market indices and sentiment, scroll horizontally", "市场指数与情绪，可横向滚动")}
+                aria-label={c("Market indices, scroll horizontally", "市场指数，可横向滚动")}
                 tabIndex={0}
                 className="flex snap-x snap-proximity gap-4 overflow-x-auto overscroll-x-contain pb-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
               >
@@ -284,7 +275,6 @@ function MarketOverview() {
                     onRetry={() => setAttempt((n) => n + 1)}
                   />
                 ))}
-                <FearGreedCard />
               </div>
               <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
                 <p>{c("Index values · Quotes may be delayed", "指数点位 · 报价可能延迟")}{checkedAt && c(`, checked ${checkedAt}`, `，${checkedAt} 查询`)}</p>
@@ -347,14 +337,16 @@ function MarketOverview() {
                 ))}
               </div>
               {failed && !loading && (
-                <p role="status" className="pb-2 text-[13px] text-muted-foreground">
-                  {c("Some quotes are unavailable.", "部分报价暂不可用。")}
-                </p>
+                <div role="status" className="flex flex-wrap items-center gap-2 pb-2 text-[13px] text-muted-foreground">
+                  <span>{c("Some quotes are unavailable.", "部分报价暂不可用。")}</span>
+                  <Button size="xs" variant="ghost" onClick={() => setQuoteAttempt(value => value + 1)}>{c("Retry quotes", "重试报价")}</Button>
+                </div>
               )}
               <div aria-busy={loading || sourceLoading}>
-                <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-4 rounded-lg bg-muted/60 px-3 py-3 text-xs text-muted-foreground sm:grid-cols-[minmax(0,1fr)_160px_104px_88px]">
+                <div className={cn(STOCK_GRID, "rounded-lg bg-muted/60 px-3 py-3 text-xs text-muted-foreground")}>
                   <span>{c("Stock", "股票")}</span>
                   <span className="hidden sm:block">{c("Creators", "博主共识")}</span>
+                  <span className="text-center">{c(`Trend · ${trendRange.en}`, `走势 · ${trendRange.zh}`)}</span>
                   <span className="text-right"><span className="sm:hidden">{c("Price / Today", "价格 / 今日")}</span><span className="hidden sm:inline">{c("Price", "价格")}</span></span>
                   <span className="hidden text-right sm:block">{c("Today", "今日")}</span>
                 </div>
@@ -371,14 +363,14 @@ function MarketOverview() {
                         <Link
                           key={symbol}
                           href={`/dashboard/market/${encodeURIComponent(symbol)}`}
-                          className="grid min-h-20 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 border-b border-border/60 px-3 py-4 transition-colors duration-150 hover:bg-muted/50 focus-visible:rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary sm:grid-cols-[minmax(0,1fr)_160px_104px_88px]"
+                          className={cn(STOCK_GRID, "min-h-20 items-center border-b border-border/60 px-3 py-4 transition-colors duration-150 hover:bg-muted/50 focus-visible:rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary")}
                         >
                           <div className="flex min-w-0 items-center gap-3">
-                            <span aria-hidden="true">
+                            <span aria-hidden="true" className="shrink-0">
                               <CompanyLogo symbol={symbol} size="md" />
                             </span>
                             <div className="min-w-0">
-                              <p className="text-[15px] font-semibold">
+                              <p className="truncate text-[15px] font-semibold">
                                 {symbol}
                                 {universe !== "holdings" && heldSet.has(symbol) && <HeldMark />}
                               </p>
@@ -392,11 +384,12 @@ function MarketOverview() {
                               <span className="text-[13px] text-muted-foreground/70">{c("No coverage", "暂无观点")}</span>
                             )}
                           </span>
+                          <StockTrend symbol={symbol} period={trendRange.period} interval={trendRange.interval} rangeLabel={c(trendRange.en, trendRange.zh)} />
                           <span className="min-w-0 text-right">
-                            <span className="figure block text-[15px] font-medium">{money(quotes[symbol]?.price)}</span>
+                            {loading && !quotes[symbol] ? <Skeleton className="ml-auto h-5 w-16" /> : <span className="figure block text-[15px] font-medium">{money(quotes[symbol]?.price)}</span>}
                             <Change value={quotes[symbol]?.changePercent} className="mt-1 block text-xs font-semibold sm:hidden" />
                           </span>
-                          <Change value={quotes[symbol]?.changePercent} className="hidden text-right text-[15px] font-semibold sm:block" />
+                          {loading && !quotes[symbol] ? <Skeleton className="ml-auto hidden h-5 w-14 sm:block" /> : <Change value={quotes[symbol]?.changePercent} className="hidden text-right text-[15px] font-semibold sm:block" />}
                         </Link>
                       );
                     })}

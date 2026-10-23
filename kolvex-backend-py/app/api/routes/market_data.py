@@ -398,7 +398,7 @@ async def get_quote(
     summary="批量获取报价",
     description="批量获取多个股票的实时报价"
 )
-async def get_multiple_quotes(
+def get_multiple_quotes(
     symbols: List[str] = Query(..., description="股票代码列表")
 ):
     """批量获取股票报价"""
@@ -415,7 +415,7 @@ async def get_multiple_quotes(
     summary="获取历史行情",
     description="获取股票的历史K线数据"
 )
-async def get_history(
+def get_history(
     symbol: str = Path(..., description="股票代码"),
     period: HistoryPeriod = Query(HistoryPeriod.ONE_MONTH, description="时间范围"),
     interval: HistoryInterval = Query(HistoryInterval.ONE_DAY, description="K线间隔"),

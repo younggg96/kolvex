@@ -9,11 +9,11 @@ function fixture(fetch) {
   vm.runInNewContext(ts.transpileModule(fs.readFileSync(path.join(__dirname, '../app/api/market/history/[symbol]/route.ts'), 'utf8'), {
     compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020 },
   }).outputText, {
-    module, exports: module.exports, fetch, console,
+    module, exports: module.exports, fetch, console, AbortSignal,
     process: { env: { NEXT_PUBLIC_BACKEND_API_URL: 'https://backend.example' } },
     require: () => ({ NextResponse: Response }),
   });
-  return (symbol, query = 'period=3mo&interval=1d') => module.exports.GET({ nextUrl: new URL(`https://kolvex.example/api?${query}`) }, { params: Promise.resolve({ symbol }) });
+  return (symbol, query = 'period=3mo&interval=1d') => module.exports.GET({ signal: new AbortController().signal, nextUrl: new URL(`https://kolvex.example/api?${query}`) }, { params: Promise.resolve({ symbol }) });
 }
 test('all five index symbols forward once encoded and preserve the OHLC candles and range', async () => {
   for (const symbol of ['^GSPC', '^IXIC', '^DJI', '^RUT', '^VIX']) {

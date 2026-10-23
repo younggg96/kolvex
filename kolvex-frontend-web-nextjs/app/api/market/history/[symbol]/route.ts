@@ -5,6 +5,8 @@
 
 import { NextRequest, NextResponse } from "next/server";
 
+export const maxDuration = 30;
+
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_BACKEND_API_URL || "http://localhost:8080";
 
@@ -31,6 +33,7 @@ export async function GET(
     const response = await fetch(url, {
       headers: { "Content-Type": "application/json" },
       next: { revalidate: 300 },
+      signal: AbortSignal.any([request.signal, AbortSignal.timeout(20000)]),
     });
 
     if (!response.ok) {
