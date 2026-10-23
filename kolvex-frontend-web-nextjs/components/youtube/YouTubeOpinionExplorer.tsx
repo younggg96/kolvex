@@ -835,14 +835,7 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
                             ? t("youtubeOpinions.stocksDiscussedTitle")
                             : t("youtubeOpinions.trackedCreators")}
                         </h2>
-                        {route.tab === "stocks" && !allStocks && (
-                          <Button variant="outline" size="sm" asChild>
-                            <Link href="/dashboard/youtube-opinions/stocks">
-                              {c("View all stocks", "查看全部股票")}
-                            </Link>
-                          </Button>
-                        )}
-                      </div>
+
                       {catalogue && (
                         <p className="mt-1 text-sm text-foreground/80 tabular-nums">
                           {t("youtubeOpinions.catalogueSummary", {
@@ -852,6 +845,7 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
                           })}
                         </p>
                       )}
+                      </div>
                     </div>
                     <div className="relative w-full sm:max-w-xs">
                       <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />

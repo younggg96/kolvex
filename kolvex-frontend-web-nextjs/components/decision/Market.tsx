@@ -252,9 +252,6 @@ function MarketOverview() {
           <div className="min-w-0 xl:col-span-2">
             <section aria-labelledby="market-overview-heading">
               <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-                <h1 id="market-overview-heading" className="text-xl font-semibold tracking-tight">
-                  {c("Market overview", "市场概览")}
-                </h1>
                 <div role="group" aria-label={c("Chart range", "走势区间")} className="flex gap-1">
                   {RANGES.map((item) => (
                     <button

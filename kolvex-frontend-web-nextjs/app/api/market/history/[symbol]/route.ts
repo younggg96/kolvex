@@ -13,7 +13,16 @@ export async function GET(
   { params }: { params: Promise<{ symbol: string }> }
 ) {
   try {
-    const { symbol } = await params;
+    const { symbol: rawSymbol } = await params;
+    let symbol: string;
+    try {
+      symbol = decodeURIComponent(rawSymbol).toUpperCase();
+    } catch {
+      return NextResponse.json({ error: "Invalid symbol" }, { status: 400 });
+    }
+    if (!/^[A-Z0-9.\-^=]{1,20}$/.test(symbol)) {
+      return NextResponse.json({ error: "Invalid symbol" }, { status: 400 });
+    }
     const searchParams = request.nextUrl.searchParams.toString();
     const url = `${API_BASE_URL}/api/v1/market/history/${encodeURIComponent(symbol)}${
       searchParams ? `?${searchParams}` : ""
