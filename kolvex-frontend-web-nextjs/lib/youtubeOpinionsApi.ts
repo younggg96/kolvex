@@ -22,6 +22,14 @@ export interface YouTubeStockSummary {
   avg_score: number;
   avg_confidence?: number | null;
   latest_opinion_at?: string | null;
+  creator_distribution?: { bullish: number; neutral: number; bearish: number; total: number; from: string; to: string };
+  discussion_heat?: { recent: number; previous: number; from: string; to: string };
+  latest_evidence?: {
+    id: string; channel_id?: string | null; channel_title?: string | null;
+    video_id?: string | null; video_url?: string | null; video_published_at?: string | null;
+    opinion_date?: string | null; summary?: string | null; thesis?: string | null;
+    sentiment?: OpinionSentiment | null;
+  };
 }
 
 export interface YouTubeCreatorSummary {

@@ -12,7 +12,7 @@ import asyncio
 import logging
 import re
 from collections import defaultdict
-from datetime import datetime, date, timezone
+from datetime import datetime, date, timezone, timedelta
 from hashlib import sha256
 from math import isfinite
 from statistics import mean
@@ -907,6 +907,7 @@ class YouTubeStockOpinionService:
             grouped[row["ticker"]].append(row)
 
         summaries = []
+        today = datetime.now(OPINION_TIMEZONE).date()
         for ticker, stock_rows in grouped.items():
             scores = [_score(row) for row in stock_rows]
             creators = {row["channel_id"] for row in stock_rows if row.get("channel_id")}
@@ -914,6 +915,25 @@ class YouTubeStockOpinionService:
                 stock_rows,
                 key=lambda row: row.get("video_published_at") or row.get("created_at") or "",
             )
+            recent_creators = {}
+            recent_count = previous_count = 0
+            for row in stock_rows:
+                try:
+                    day = date.fromisoformat(str(row.get("opinion_date") or "")[:10])
+                except ValueError:
+                    continue
+                age = (today - day).days
+                if 0 <= age < 7:
+                    recent_count += 1
+                elif 7 <= age < 14:
+                    previous_count += 1
+                channel = row.get("channel_id")
+                if channel and 0 <= age < 30:
+                    previous = recent_creators.get(channel)
+                    order = (str(row.get("opinion_date") or ""), str(row.get("video_published_at") or ""), str(row.get("id") or ""))
+                    if previous is None or order > previous[0]:
+                        recent_creators[channel] = (order, row)
+            calls = [entry[1] for entry in recent_creators.values()]
             summaries.append(
                 {
                     "ticker": ticker,
@@ -928,6 +948,23 @@ class YouTubeStockOpinionService:
                     "avg_confidence": _average_confidence(stock_rows),
                     "latest_opinion_at": latest.get("video_published_at")
                     or latest.get("created_at"),
+                    "creator_distribution": {
+                        "bullish": _sentiment_count(calls, "bullish"),
+                        "bearish": _sentiment_count(calls, "bearish"),
+                        "neutral": len(calls) - _sentiment_count(calls, "bullish") - _sentiment_count(calls, "bearish"),
+                        "total": len(calls),
+                        "from": (today - timedelta(days=29)).isoformat(),
+                        "to": today.isoformat(),
+                    },
+                    "discussion_heat": {
+                        "recent": recent_count, "previous": previous_count,
+                        "from": (today - timedelta(days=6)).isoformat(),
+                        "to": today.isoformat(),
+                    },
+                    "latest_evidence": {key: latest.get(key) for key in (
+                        "id", "channel_id", "channel_title", "video_id", "video_url",
+                        "video_published_at", "opinion_date", "summary", "thesis", "sentiment",
+                    )},
                 }
             )
 

@@ -442,14 +442,12 @@ function MarketOverview() {
                             <span className="mt-1 block text-xs text-muted-foreground">{dayLabel(shift.current_date)}</span>
                           </span>
                         </span>
-                        {shift.change == null ? (
-                          <span className="shrink-0 text-right text-xs">
-                            <span className="block text-muted-foreground">{c("New opinion", "新观点")}</span>
-                            <OpinionStrength value={shift.current_score} className="text-xs" />
-                          </span>
-                        ) : (
-                          <OpinionStrength value={shift.change} change className="text-xs" />
-                        )}
+                        <span className="flex shrink-0 flex-col items-end gap-1 text-right text-xs">
+                          <OpinionStrength value={consensus.get(shift.ticker)?.avg_score} className="text-xs" />
+                          {shift.change == null
+                            ? <span className="text-muted-foreground">{c("First coverage", "首次覆盖")}</span>
+                            : <OpinionStrength value={shift.change} change className="text-xs" />}
+                        </span>
                       </Link>
                     </li>
                   ))}

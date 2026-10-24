@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import HeaderBackButton from "@/components/layout/HeaderBackButton";
 import {
   useEffect,
+  useMemo,
   useRef,
   useState,
   type MouseEvent,
@@ -18,6 +19,7 @@ import {
   LineChart,
   Loader2,
   Search,
+  X,
 } from "lucide-react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
@@ -50,6 +52,9 @@ import OpinionCard from "./OpinionCard";
 import OtherCreatorOpinions from "./OtherCreatorOpinions";
 import OpinionDistribution from "./OpinionDistribution";
 import OpinionStrength from "./OpinionStrength";
+import StockDirectoryRow from "./StockDirectoryRow";
+import OpinionChange from "./OpinionChange";
+import { useLocalStockWatchlist } from "@/hooks/useLocalStockWatchlist";
 import PriceChart from "./PriceChart";
 import StrengthChart, { type StrengthPoint } from "./StrengthChart";
 import VideoOpinionCard from "./VideoOpinionCard";
@@ -63,7 +68,8 @@ import { HeldMark, useHeldTickers, useCopy } from "@/components/decision/shared"
 type DirectoryTone = "all" | StrengthTone;
 type HistoryView = "videos" | "opinions";
 type ChartView = "price" | "opinions";
-type DirectorySort = "opinions" | "creators" | "latest" | "bullish" | "bearish" | "name";
+type DirectorySort = "opinions" | "creators" | "latest" | "bullish" | "bearish" | "name" | "heat" | "strengthening" | "weakening" | "first";
+type StockScope = "all" | "watched" | "holdings";
 
 type Route = { tab: "stocks" | "creators"; ticker?: string; creator?: string };
 type Range = "1m" | "3m" | "6m" | "1y" | "all" | "custom";
@@ -183,7 +189,11 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
   const [performanceLimit, setPerformanceLimit] = useState(24);
   const opinionHistory = useRef<HTMLElement>(null);
   const inDetail = Boolean(route.ticker || route.creator);
-  const held = useHeldTickers();
+  const held = useHeldTickers(revision);
+  const watchlist = useLocalStockWatchlist();
+  const [stockScope, setStockScope] = useState<StockScope>("all");
+  const [directoryLimit, setDirectoryLimit] = useState(40);
+  const searchInput = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     setShowUntrackedVideos(false);
@@ -196,7 +206,14 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
       setNavigating(false);
       setRoute(allStocks ? { tab: "stocks" } : readRoute());
       setFilters(emptyFilters);
-      setSearch("");
+      const params = new URLSearchParams(window.location.search);
+      setSearch(params.get("q") || "");
+      const scope = params.get("scope");
+      setStockScope(scope === "watched" || (scope === "holdings" && isProductFeatureEnabled("portfolio")) ? scope : "all");
+      const sort = params.get("sort") || "latest";
+      setSortBy((["opinions", "creators", "latest", "bullish", "bearish", "name", "heat", "strengthening", "weakening", "first"].includes(sort) ? sort : "latest") as DirectorySort);
+      const tone = params.get("tone");
+      setToneFilter(tone === "positive" || tone === "negative" || tone === "neutral" ? tone : "all");
       setShowAllCreatorStocks(false);
       scrollContainer.current?.scrollTo({ top: 0 });
     };
@@ -208,6 +225,17 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
       window.removeEventListener("popstate", sync);
     };
   }, [allStocks]);
+
+  useEffect(() => {
+    if (!ready || inDetail) return;
+    const url = new URL(window.location.href);
+    for (const [key, value, fallback] of [["q", search, ""], ["sort", sortBy, "latest"], ["tone", toneFilter, "all"], ["scope", stockScope, "all"]]) {
+      if (value === fallback) url.searchParams.delete(key); else url.searchParams.set(key, value);
+    }
+    window.history.replaceState(null, "", url);
+  }, [ready, inDetail, search, sortBy, toneFilter, stockScope]);
+
+  useEffect(() => { setDirectoryLimit(40); }, [search, sortBy, toneFilter, stockScope]);
 
   useEffect(() => {
     let active = true;
@@ -403,6 +431,8 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
     : route.ticker;
   const query = search.trim().toLocaleLowerCase();
   const stocks = (route.creator ? context?.stocks : catalogue?.stocks) || [];
+  const changes = useMemo(() => (route.creator ? context?.changes : catalogue?.changes) || [], [route.creator, context?.changes, catalogue?.changes]);
+  const changesByTicker = useMemo(() => new Map(changes.map(change => [change.ticker, change])), [changes]);
   const directoryActive = !inDetail;
   const matchesTone = (score: number) =>
     !directoryActive || toneFilter === "all" || describeStrength(score, { t }).tone === toneFilter;
@@ -435,7 +465,19 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
         `${item.ticker} ${item.company_name || ""}`.toLocaleLowerCase().includes(query) &&
         matchesTone(item.avg_score),
     )
-    .sort((a, b) => compareBy(a, b, (item) => item.ticker, (item) => item.creator_count));
+    .filter(item => !directoryActive || stockScope === "all" ||
+      (stockScope === "watched" ? watchlist.tickers : held.tickers).includes(item.ticker))
+    .sort((a, b) => {
+      if (activeSort === "heat") return (b.discussion_heat?.recent ?? -1) - (a.discussion_heat?.recent ?? -1) || b.total_opinions - a.total_opinions;
+      if (activeSort === "first") return Number(changesByTicker.get(b.ticker)?.previous_date === null) - Number(changesByTicker.get(a.ticker)?.previous_date === null) || latestTime(b.latest_opinion_at) - latestTime(a.latest_opinion_at);
+      if (activeSort === "strengthening" || activeSort === "weakening") {
+        const left = changesByTicker.get(a.ticker)?.change;
+        const right = changesByTicker.get(b.ticker)?.change;
+        if (left == null || right == null) return left == null ? right == null ? 0 : 1 : -1;
+        return activeSort === "strengthening" ? right - left : left - right;
+      }
+      return compareBy(a, b, (item) => item.ticker, (item) => item.creator_count);
+    });
   const creators = catalogue?.creators || [];
   const visibleCreators = creators
     .filter(
@@ -445,10 +487,11 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
           .includes(query) && matchesTone(item.avg_score),
     )
     .sort((a, b) => compareBy(a, b, (item) => item.channel_title || item.channel_id));
-  const filtering = Boolean(query) || (directoryActive && toneFilter !== "all");
+  const filtering = Boolean(query) || (directoryActive && (toneFilter !== "all" || stockScope !== "all"));
   const clearFilters = () => {
     setSearch("");
     setToneFilter("all");
+    setStockScope("all");
   };
   const toneOptions: Array<{ value: DirectoryTone; label: string }> = [
     { value: "all", label: t("common.all") },
@@ -459,7 +502,11 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
   const sortOptions: Array<{ value: DirectorySort; label: string }> = [
     { value: "opinions", label: t("youtubeOpinions.mostOpinions") },
     ...(route.tab === "stocks"
-      ? [{ value: "creators" as const, label: t("youtubeOpinions.mostCreators") }]
+      ? [{ value: "creators" as const, label: t("youtubeOpinions.mostCreators") },
+        { value: "heat" as const, label: t("youtubeOpinions.directory.hottest") },
+        { value: "strengthening" as const, label: t("youtubeOpinions.directory.strengthening") },
+        { value: "weakening" as const, label: t("youtubeOpinions.directory.weakening") },
+        { value: "first" as const, label: t("youtubeOpinions.directory.firstCoverageFirst") }]
       : []),
     { value: "latest", label: t("youtubeOpinions.mostRecent") },
     { value: "bullish", label: t("youtubeOpinions.mostBullish") },
@@ -480,7 +527,7 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
       : root;
   const rowClass =
     "group grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-2 border-b border-border py-3.5 transition-colors duration-150 hover:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary sm:-mx-3 sm:rounded-xl sm:border-transparent sm:px-3";
-  const stockRowClass = cn(rowClass, "md:grid-cols-[minmax(0,1fr)_auto_auto]");
+  const stockRowClass = cn(rowClass, "grid-cols-[minmax(0,1fr)_auto] gap-x-3 sm:grid-cols-[minmax(0,1fr)_110px_160px] sm:gap-x-4");
   const formatPercent = (value?: number | null) =>
     typeof value === "number" && Number.isFinite(value)
       ? `${value > 0 ? "+" : ""}${value.toFixed(2)}%`
@@ -547,7 +594,6 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
     { value: "1y", label: t("youtubeOpinions.range1y") },
     { value: "all", label: t("common.all") },
   ];
-  const changes = (route.creator ? context?.changes : catalogue?.changes) || [];
   const notableChanges = changes.filter((change) => change.change != null).slice(0, 8);
   const holdingsWithCoverage = held.tickers.flatMap((ticker) => {
     const stock = catalogue?.stocks.find((item) => item.ticker === ticker);
@@ -571,7 +617,7 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
 
   const shownStocks = creatorOverview && !showAllCreatorStocks
     ? visibleStocks.slice(0, 5)
-    : !inDetail && !allStocks ? visibleStocks.slice(0, 10) : visibleStocks;
+    : !inDetail ? visibleStocks.slice(0, allStocks ? directoryLimit : 10) : visibleStocks;
   const latestCreatorOpinions = creatorOverview ? (context?.latest || []).slice(0, 5) : [];
   const performanceListed =
     (!inDetail && route.tab === "stocks") ||
@@ -609,10 +655,20 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
     }
   };
 
-  const performanceCell = (ticker: string, requested: boolean) => {
+  const performanceCell = (ticker: string, requested: boolean, compact = false) => {
     const entry = performance[ticker];
+    if (compact) {
+      return <div className="figure min-h-10 text-right sm:col-start-2 sm:row-start-1">
+        {entry ? <>
+          <p className="text-[14px] font-semibold">{localPrice(ticker, entry.price)}</p>
+          <p className={cn("mt-1 text-xs font-semibold", percentTone(entry.change_1d_percent))}>
+            <span className="mr-1 font-normal text-muted-foreground">{t("youtubeOpinions.price1d")}</span>{formatPercent(entry.change_1d_percent)}
+          </p>
+        </> : <span className="text-xs text-muted-foreground" aria-label={t(performanceLoading || !requested ? "common.loadingStatus" : "youtubeOpinions.performanceUnavailable")}>{performanceLoading || !requested ? "…" : "—"}</span>}
+      </div>;
+    }
     const cellClass =
-      "order-3 col-span-2 min-w-0 border-t border-border/70 pt-2 md:order-none md:col-span-1 md:border-0 md:pt-0";
+      "min-w-0";
     if (entry) {
       const ariaLabel = t("youtubeOpinions.performanceAria", {
         price: localPrice(ticker, entry.price),
@@ -630,12 +686,13 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
           <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 md:flex-col md:items-end md:gap-y-1">
             <p className="whitespace-nowrap tabular-nums">
               <span className="text-[11px] font-medium text-foreground/55">
-                {t("youtubeOpinions.actualPerformance")}
+                {t("youtubeOpinions.directory.currentPrice")}
               </span>
               <span className="ml-1.5 text-[13px] font-semibold text-foreground">
                 {localPrice(ticker, entry.price)}
               </span>
             </p>
+            <p className="text-[11px] text-muted-foreground">{t("youtubeOpinions.directory.asOf", { date: formatDay(entry.as_of) })}</p>
             <p className="flex flex-wrap items-baseline gap-x-3 gap-y-1 md:justify-end">
               {([
                 ["youtubeOpinions.price1d", entry.change_1d_percent],
@@ -675,6 +732,7 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
   const stockRows = (
     <div className="min-w-0">
       {shownStocks.map((item, index) => (
+        <StockDirectoryRow key={item.ticker} stock={item} performance={performanceCell(item.ticker, index < performanceLimit)} change={changesByTicker.get(item.ticker)} watched={watchlist.tickers.includes(item.ticker)} watchReady={watchlist.ready} onWatch={() => watchlist.toggle(item.ticker)}>
         <ExplorerLink
           onNavigate={navigate}
           key={item.ticker}
@@ -698,8 +756,8 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
               </p>
             </div>
           </div>
-          {performanceCell(item.ticker, index < performanceLimit)}
-          <div className="flex min-w-0 flex-col items-end gap-0.5 text-right">
+          {performanceCell(item.ticker, index < performanceLimit, true)}
+          <div className="col-span-2 flex min-w-0 flex-wrap items-center justify-between gap-x-3 gap-y-1 text-right sm:col-span-1 sm:flex-col sm:items-end sm:justify-center" title={t("youtubeOpinions.directory.historicalConsensus")}>
             <OpinionStrength value={item.avg_score} />
             <p className="text-xs text-foreground/75 tabular-nums">
               {t("youtubeOpinions.creatorOpinionCount", {
@@ -707,11 +765,12 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
                 opinions: String(item.total_opinions),
               })}
             </p>
-            {lastUpdated(item.latest_opinion_at)}
           </div>
         </ExplorerLink>
+        </StockDirectoryRow>
       ))}
-      {!visibleStocks.length && (
+      {allStocks && shownStocks.length < visibleStocks.length && <div className="flex justify-center py-5"><Button variant="outline" onClick={() => setDirectoryLimit(value => value + 40)}>{c("Load more stocks", "加载更多股票")} · {shownStocks.length}/{visibleStocks.length}</Button></div>}
+      {!visibleStocks.length && !(directoryActive && stockScope === "holdings" && (held.loading || held.error)) && (
         <EmptyLine
           text={filtering ? t("youtubeOpinions.noStocksMatch") : t("youtubeOpinions.noData")}
           action={filtering ? { label: t("common.clearFilters"), onClick: clearFilters } : undefined}
@@ -790,7 +849,7 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
                   </span>
                 </span>
               </span>
-              <OpinionStrength value={change.change} change />
+              <OpinionChange value={change} />
             </ExplorerLink>
           </li>
         ))}
@@ -972,6 +1031,7 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
                     <div className="relative w-full sm:max-w-xs">
                       <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                       <Input
+                        ref={searchInput}
                         aria-label={t("common.search")}
                         placeholder={
                           route.tab === "stocks"
@@ -980,8 +1040,9 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
                         }
                         value={search}
                         onChange={(event) => setSearch(event.target.value)}
-                        className="h-10 rounded-full pl-10 text-base sm:text-sm"
+                        className="h-10 rounded-full pl-10 pr-10 text-base sm:text-sm"
                       />
+                      {search && <button type="button" aria-label={t("common.clearFilters")} className="absolute right-1 top-1 flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary" onClick={() => { setSearch(""); searchInput.current?.focus(); }}><X className="h-4 w-4" aria-hidden="true" /></button>}
                     </div>
                   </div>
                   <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-b border-border pb-3">
@@ -1030,6 +1091,15 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
                     </div>
                   </div>
                   <div className="mt-1">
+                    {route.tab === "stocks" && <div className="flex flex-wrap items-center gap-2 py-3">
+                      <div className="flex flex-wrap gap-1" role="group" aria-label={t("youtubeOpinions.directory.allStocks")}>
+                        {([["all", "allStocks"], ["watched", "watchedOnly"], ...(isProductFeatureEnabled("portfolio") ? [["holdings", "holdingsOnly"] as const] : [])] as const).map(([value, label]) => <button key={value} type="button" aria-pressed={stockScope === value} className={pill(stockScope === value)} onClick={() => setStockScope(value)}>{t(`youtubeOpinions.directory.${label}`)}</button>)}
+                      </div>
+                      <p className="text-xs text-muted-foreground">{t("youtubeOpinions.directory.localOnly")}</p>
+                      {watchlist.error && <p role="alert" className="w-full text-xs text-negative">{t("youtubeOpinions.directory.watchError")}</p>}
+                      {stockScope === "holdings" && held.loading && <p role="status" className="text-xs text-muted-foreground">{t("common.loadingStatus")}</p>}
+                      {stockScope === "holdings" && held.error && <div role="alert" className="flex items-center gap-2 text-xs text-negative">{c("Holdings could not be loaded.", "暂时无法加载持仓。")}<Button size="xs" variant="outline" onClick={refresh}>{t("common.retry")}</Button></div>}
+                    </div>}
                     {catalogueError ? (
                       <EmptyLine
                         text={t("youtubeOpinions.directoryLoadFailed")}

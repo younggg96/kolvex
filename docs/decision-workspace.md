@@ -51,6 +51,33 @@ expansion through its keyed mount.
 
 ## Sources and limits
 
+The creator stock directory pairs each stock's latest source-attributed thesis or
+summary with price data, the existing historical opinion average, and recent
+evidence. Rows default to a compact summary with a separate, labelled disclosure.
+Each row independently expands to full source reasoning, price periods and
+evidence; expanding does not navigate or start a history request. Source/watch
+actions and the post-opinion performance disclosure live inside the expansion.
+The API adds a creator distribution using each channel's latest call in
+the 30 New York calendar days ending today. Neutral and mixed share one bucket;
+invalid, future and older opinion dates do not count. Seven-day discussion heat
+counts opinions by publication day, compared with the preceding seven calendar
+days. A first covered date is distinct from a score change. Daily average changes
+do not claim that the same creator changed their mind.
+
+Directory readers can sort by heat, strengthening, weakening and first coverage.
+Search, direction, scope and sort persist in the URL. The full stock directory
+loads 40 rows at a time. Watch actions are explicitly browser-local and persist
+in versioned local storage; this does not create an account subscription or send
+notifications. Holdings filtering remains subject to the existing portfolio
+feature flag and uses the shared holdings loader.
+
+Performance since publication is an explicit, cancellable disclosure for the
+latest opinion only (one sample), for US stocks and ETFs. It loads adjusted daily history on demand,
+uses the first session strictly after the New York publication day as its open
+baseline, and ends at the latest completed session before today. Dates and the
+method remain visible. Missing data and no completed sessions show an unavailable
+state; no zero return, win rate or aggregate creator accuracy is inferred.
+
 - Opinion changes use the existing dashboard's daily average direction score, comparing the most recent covered date against the previous covered date. First opinions are labelled separately. Strength is displayed qualitatively.
 - The Updates feed uses the catalogue's latest imported opinions and changes; it is not a complete event archive. Full opinion history remains in the YouTube explorer.
 - Source dates are visible and each opinion links to its creator and original video.

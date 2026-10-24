@@ -1,5 +1,6 @@
 import asyncio
 import unittest
+from datetime import datetime
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, Mock, patch
 from fastapi import FastAPI
@@ -17,6 +18,34 @@ def opinion(index):
 
 
 class ExplorerTests(unittest.TestCase):
+    def test_directory_evidence_uses_latest_creator_calls_and_publication_windows(self):
+        service = YouTubeStockOpinionService(Mock())
+        rows = [
+            {**opinion(0), "ticker": "NVDA", "channel_id": "a", "opinion_date": "2026-10-20", "video_published_at": "2026-10-20T12:00:00Z", "sentiment": "bearish", "direction_score": -60},
+            {**opinion(1), "ticker": "NVDA", "channel_id": "a", "opinion_date": "2026-10-22", "video_published_at": "2026-10-22T12:00:00Z", "sentiment": "bullish", "direction_score": 70, "summary": "Latest sourced reason", "raw_payload": {"private": True}},
+            {**opinion(2), "ticker": "NVDA", "channel_id": "b", "opinion_date": "2026-10-12", "sentiment": "mixed"},
+            {**opinion(3), "ticker": "NVDA", "channel_id": "old", "opinion_date": "2026-09-01"},
+            {**opinion(4), "ticker": "NVDA", "channel_id": "future", "opinion_date": "2026-10-24"},
+            {**opinion(5), "ticker": "NVDA", "channel_id": "bad", "opinion_date": "invalid"},
+        ]
+        with patch("app.services.youtube_stock_opinions.datetime") as clock:
+            clock.now.return_value = datetime(2026, 10, 23)
+            stock = service._build_stock_summaries(list(reversed(rows)))[0]
+        self.assertEqual(stock["creator_distribution"], {"bullish": 1, "bearish": 0, "neutral": 1, "total": 2, "from": "2026-09-24", "to": "2026-10-23"})
+        self.assertEqual(stock["discussion_heat"], {"recent": 2, "previous": 1, "from": "2026-10-17", "to": "2026-10-23"})
+        self.assertEqual(stock["latest_evidence"]["summary"], "Latest sourced reason")
+        self.assertNotIn("raw_payload", stock["latest_evidence"])
+
+    def test_directory_windows_include_boundaries_but_not_future_or_stale_calls(self):
+        service = YouTubeStockOpinionService(Mock())
+        days = ["2026-10-23", "2026-10-17", "2026-10-16", "2026-10-10", "2026-10-09", "2026-09-24", "2026-09-23", "2026-10-24"]
+        with patch("app.services.youtube_stock_opinions.datetime") as clock:
+            clock.now.return_value = datetime(2026, 10, 23)
+            stock = service._build_stock_summaries([{**opinion(i), "ticker": "NVDA", "opinion_date": day} for i, day in enumerate(days)])[0]
+        self.assertEqual(stock["creator_distribution"]["total"], 6)
+        self.assertEqual(stock["discussion_heat"]["recent"], 2)
+        self.assertEqual(stock["discussion_heat"]["previous"], 2)
+
     def test_share_reads_complete_latest_video_by_publication_not_import_time(self):
         service = YouTubeStockOpinionService(Mock())
         latest = [{**opinion(i), "video_id": "newest", "video_published_at": "2026-10-09T23:07:18Z",
