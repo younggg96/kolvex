@@ -1025,7 +1025,7 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
                 <div className="min-w-0">
                   <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
                     <div>
-                      <div className="flex flex-wrap items-center gap-3">
+                      <div className="flex flex-col flex-wrap gap-3">
                         <h2 className="text-[28px] font-semibold leading-tight tracking-[-0.02em]">
                           {route.tab === "stocks"
                             ? t("youtubeOpinions.stocksDiscussedTitle")
