@@ -1,6 +1,6 @@
 "use client";
 
-import { Star, ArrowUpRight } from "lucide-react";
+import { ArrowUpRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTranslation } from "@/lib/i18n";
 import type { YouTubeStockSummary, YouTubeDailyChange } from "@/lib/youtubeOpinionsApi";
@@ -8,9 +8,8 @@ import OpinionChange from "./OpinionChange";
 import OpinionAfterPerformance from "./OpinionAfterPerformance";
 import { supportsOpinionPerformance } from "@/lib/opinionPerformance";
 
-export default function StockDirectoryContext({ stock, change, watched, watchReady, onWatch }: {
+export default function StockDirectoryContext({ stock, change }: {
   stock: YouTubeStockSummary; change?: YouTubeDailyChange;
-  watched: boolean; watchReady: boolean; onWatch: () => void;
 }) {
   const { t } = useTranslation();
   const distribution = stock.creator_distribution;
@@ -45,10 +44,6 @@ export default function StockDirectoryContext({ stock, change, watched, watchRea
     <div className="flex min-w-0 flex-col items-start gap-1 lg:items-end">
       <div className="flex flex-wrap items-center gap-1">
         {source && <Button asChild variant="ghost" size="xs"><a href={source} target="_blank" rel="noopener noreferrer">{t("youtubeOpinions.directory.source")}<ArrowUpRight className="ml-1 h-3 w-3" aria-hidden="true" /></a></Button>}
-        <Button variant="ghost" size="xs" disabled={!watchReady} aria-pressed={watched} aria-label={t(watched ? "youtubeOpinions.directory.unwatchAria" : "youtubeOpinions.directory.watchAria", { ticker: stock.ticker })} onClick={onWatch}>
-          <Star className="mr-1 h-3.5 w-3.5" fill={watched ? "currentColor" : "none"} aria-hidden="true" />
-          {t(watched ? "youtubeOpinions.directory.watched" : "youtubeOpinions.directory.watch")}
-        </Button>
       </div>
       {evidence?.opinion_date && (supportsOpinionPerformance(stock.ticker)
         ? <OpinionAfterPerformance ticker={stock.ticker} published={evidence.video_published_at || evidence.opinion_date} />

@@ -132,7 +132,7 @@ one truncated reason and a labelled Expand/Collapse control. The overview link
 and disclosure button are separate keyboard targets. Each row independently
 expands through the shared Radix Collapsible, revealing the full attributed
 reason, dated price periods, 30-day creator distribution, dated opinion change,
-7-day heat, source, browser-local watch and post-opinion performance actions.
+7-day heat, source and post-opinion performance actions.
 Expanded content stays in document flow and long reasons remain readable.
 `OpinionChange`, `StockDirectoryContext`
 and `OpinionAfterPerformance` own these evidence treatments; qualitative

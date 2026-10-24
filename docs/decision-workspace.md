@@ -55,7 +55,7 @@ The creator stock directory pairs each stock's latest source-attributed thesis o
 summary with price data, the existing historical opinion average, and recent
 evidence. Rows default to a compact summary with a separate, labelled disclosure.
 Each row independently expands to full source reasoning, price periods and
-evidence; expanding does not navigate or start a history request. Source/watch
+evidence; expanding does not navigate or start a history request. Source
 actions and the post-opinion performance disclosure live inside the expansion.
 The API adds a creator distribution using each channel's latest call in
 the 30 New York calendar days ending today. Neutral and mixed share one bucket;
@@ -66,9 +66,7 @@ do not claim that the same creator changed their mind.
 
 Directory readers can sort by heat, strengthening, weakening and first coverage.
 Search, direction, scope and sort persist in the URL. The full stock directory
-loads 40 rows at a time. Watch actions are explicitly browser-local and persist
-in versioned local storage; this does not create an account subscription or send
-notifications. Holdings filtering remains subject to the existing portfolio
+loads 40 rows at a time. Holdings filtering remains subject to the existing portfolio
 feature flag and uses the shared holdings loader.
 
 Performance since publication is an explicit, cancellable disclosure for the

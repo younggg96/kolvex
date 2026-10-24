@@ -9,15 +9,12 @@ import { formatOpinionDate } from "@/lib/opinionDates";
 import type { YouTubeStockSummary, YouTubeDailyChange } from "@/lib/youtubeOpinionsApi";
 import StockDirectoryContext from "./StockDirectoryContext";
 
-/** The overview remains a link; disclosure and source/watch actions are sibling controls. */
-export default function StockDirectoryRow({ stock, children, performance, change, watched, watchReady, onWatch }: {
+/** The overview remains a link; disclosure and source actions are sibling controls. */
+export default function StockDirectoryRow({ stock, children, performance, change }: {
   stock: YouTubeStockSummary;
   children: ReactNode;
   performance: ReactNode;
   change?: YouTubeDailyChange;
-  watched: boolean;
-  watchReady: boolean;
-  onWatch: () => void;
 }) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
@@ -54,7 +51,7 @@ export default function StockDirectoryRow({ stock, children, performance, change
               </div>
               {performance}
             </div>
-            <StockDirectoryContext stock={stock} change={change} watched={watched} watchReady={watchReady} onWatch={onWatch} />
+            <StockDirectoryContext stock={stock} change={change} />
           </div>
         </CollapsibleContent>
       </article>
