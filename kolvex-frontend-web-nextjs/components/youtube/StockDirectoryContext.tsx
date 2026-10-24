@@ -5,8 +5,6 @@ import { Button } from "@/components/ui/button";
 import { useTranslation } from "@/lib/i18n";
 import type { YouTubeStockSummary, YouTubeDailyChange } from "@/lib/youtubeOpinionsApi";
 import OpinionChange from "./OpinionChange";
-import OpinionAfterPerformance from "./OpinionAfterPerformance";
-import { supportsOpinionPerformance } from "@/lib/opinionPerformance";
 
 export default function StockDirectoryContext({ stock, change }: {
   stock: YouTubeStockSummary; change?: YouTubeDailyChange;
@@ -45,9 +43,6 @@ export default function StockDirectoryContext({ stock, change }: {
       <div className="flex flex-wrap items-center gap-1">
         {source && <Button asChild variant="ghost" size="xs"><a href={source} target="_blank" rel="noopener noreferrer">{t("youtubeOpinions.directory.source")}<ArrowUpRight className="ml-1 h-3 w-3" aria-hidden="true" /></a></Button>}
       </div>
-      {evidence?.opinion_date && (supportsOpinionPerformance(stock.ticker)
-        ? <OpinionAfterPerformance ticker={stock.ticker} published={evidence.video_published_at || evidence.opinion_date} />
-        : <p className="text-xs text-muted-foreground">{t("youtubeOpinions.directory.afterUsOnly")}</p>)}
     </div>
   </div>;
 }
