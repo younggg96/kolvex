@@ -616,6 +616,14 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
   const shownStocks = creatorOverview && !showAllCreatorStocks
     ? visibleStocks.slice(0, 5)
     : !inDetail ? visibleStocks.slice(0, allStocks ? directoryLimit : 10) : visibleStocks;
+  const hasMorePreviewStocks = !inDetail && !allStocks && shownStocks.length < visibleStocks.length;
+  const stockDirectoryParams = new URLSearchParams();
+  if (search) stockDirectoryParams.set("q", search);
+  if (sortBy !== "latest") stockDirectoryParams.set("sort", sortBy);
+  if (toneFilter !== "all") stockDirectoryParams.set("tone", toneFilter);
+  if (stockScope !== "all") stockDirectoryParams.set("scope", stockScope);
+  const stockDirectoryQuery = stockDirectoryParams.toString();
+  const stockDirectoryHref = `/dashboard/youtube-opinions/stocks${stockDirectoryQuery ? `?${stockDirectoryQuery}` : ""}`;
   const latestCreatorOpinions = creatorOverview ? (context?.latest || []).slice(0, 5) : [];
   const performanceListed =
     (!inDetail && route.tab === "stocks") ||
@@ -767,6 +775,15 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
         </ExplorerLink>
         </StockDirectoryRow>
       ))}
+      {hasMorePreviewStocks && (
+        <div className="flex justify-center py-5">
+          <Button variant="outline" asChild>
+            <Link href={stockDirectoryHref}>
+              {c("View all stocks", "查看全部股票")} · {shownStocks.length}/{visibleStocks.length}
+            </Link>
+          </Button>
+        </div>
+      )}
       {allStocks && shownStocks.length < visibleStocks.length && <div className="flex justify-center py-5"><Button variant="outline" onClick={() => setDirectoryLimit(value => value + 40)}>{c("Load more stocks", "加载更多股票")} · {shownStocks.length}/{visibleStocks.length}</Button></div>}
       {!visibleStocks.length && !(directoryActive && stockScope === "holdings" && (held.loading || held.error)) && (
         <EmptyLine
@@ -1066,9 +1083,16 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
                       {catalogue && (
                         <span className="shrink-0 whitespace-nowrap text-[13px] text-foreground/75 tabular-nums">
                           {t("youtubeOpinions.shownCount", {
-                            count: String(route.tab === "stocks" ? shownStocks.length : visibleCreators.length),
+                            count: route.tab === "stocks"
+                              ? `${shownStocks.length}/${visibleStocks.length}`
+                              : String(visibleCreators.length),
                           })}
                         </span>
+                      )}
+                      {route.tab === "stocks" && hasMorePreviewStocks && (
+                        <Button variant="ghost" size="sm" asChild>
+                          <Link href={stockDirectoryHref}>{c("View all", "查看全部")}</Link>
+                        </Button>
                       )}
                       <Select value={sortBy} onValueChange={(value) => setSortBy(value as DirectorySort)}>
                         <SelectTrigger
