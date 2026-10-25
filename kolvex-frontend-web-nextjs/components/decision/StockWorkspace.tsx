@@ -219,7 +219,7 @@ export default function StockWorkspace({ ticker }: { ticker: string }) {
     >
       <main className="flex-1 overflow-y-auto">
         <div className="mx-auto px-4 pb-16 pt-4 md:px-8 md:pt-6">
-          <div className="grid gap-x-12 gap-y-10 xl:grid-cols-[minmax(0,1fr)_320px]">
+          <div className="grid gap-x-12 gap-y-10">
             <section className="min-w-0 xl:col-start-1 xl:row-start-1" aria-labelledby="stock-title">
               <div className="flex items-center gap-3">
                 <CompanyLogo symbol={ticker} size="md" />
@@ -467,52 +467,6 @@ export default function StockWorkspace({ ticker }: { ticker: string }) {
                 )}
               </Panel>
             </div>
-
-            <aside className="min-w-0 space-y-10 xl:col-start-2 xl:row-span-2 xl:row-start-1 xl:self-start">
-              <Panel title={c("Latest creator update", "博主最新观点")}>
-                {sorted[0] ? (
-                  <div className="space-y-3 pt-4">
-                    <p className="text-xs text-muted-foreground">{date(sorted[0].opinion_date)} · {sorted[0].channel_title || sorted[0].channel_id}</p>
-                    <DirectionBadge direction={sideOf(sorted[0])} />
-                    <p className="text-sm leading-6">{sorted[0].summary || sorted[0].thesis || c("Read the source for details.", "查看原始视频了解详情。")}</p>
-                    {!!sorted[0].risks?.length && <div className="border-t border-border pt-3"><h3 className="text-xs font-semibold text-muted-foreground">{c("Risks mentioned", "提到的风险")}</h3><ul className="mt-2 space-y-2 text-sm">{sorted[0].risks.map((risk, index) => <li key={index}>{risk}</li>)}</ul></div>}
-                    <a className="inline-block text-sm font-medium underline-offset-4 hover:underline" href={sorted[0].video_url || `https://www.youtube.com/watch?v=${encodeURIComponent(sorted[0].video_id)}`} target="_blank" rel="noreferrer">{c("Watch source video", "查看原始视频")}</a>
-                  </div>
-                ) : <Empty>{loading ? c("Loading…", "加载中…") : c("No creator coverage yet.", "暂时没有博主观点。")}</Empty>}
-                <TextLink href="/dashboard/journal" className="mt-4 inline-block">{c("All updates", "全部变化动态")}</TextLink>
-              </Panel>
-
-              {isProductFeatureEnabled("portfolio") && <section aria-labelledby="position-title">
-                <h2 id="position-title" className="text-[13px] font-semibold text-muted-foreground">
-                  {c("Your position", "你的仓位")}
-                </h2>
-                {positionsError ? (
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    {c("Holdings could not be loaded. Retry above.", "持仓暂时无法加载，请在上方重试。")}
-                  </p>
-                ) : positions.length ? (
-                  <>
-                    <p className="figure mt-1 text-2xl font-semibold">{money(positionValue)}</p>
-                    <p className="mt-0.5 text-[13px] text-muted-foreground">
-                      <span className="tabular-nums">{shares}</span> {c("shares across linked accounts", "股，来自已连接账户")}
-                      {positionPnl !== null && (
-                        <>
-                          {c(", ", "，")}
-                          <span className={cn("figure font-semibold", positionPnl >= 0 ? "text-positive" : "text-negative")}>
-                            {signedMoney(positionPnl)}
-                          </span>{" "}
-                          {c("unrealized", "浮动盈亏")}
-                        </>
-                      )}
-                    </p>
-                  </>
-                ) : (
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    {loading ? "…" : c("You don't hold this stock in a linked account.", "已连接账户中没有这只股票。")}
-                  </p>
-                )}
-              </section>}
-            </aside>
           </div>
         </div>
       </main>
