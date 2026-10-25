@@ -4,6 +4,12 @@ YFinance 客户端服务
 """
 
 import math
+import logging
+from email.utils import parsedate_to_datetime
+from urllib.parse import urlsplit
+from xml.etree import ElementTree
+
+import httpx
 from concurrent.futures import ThreadPoolExecutor, wait
 
 import pandas as pd
@@ -125,22 +131,84 @@ class YFinanceService:
 
     def get_news(self, symbol: str, limit: int = 8) -> List[Dict[str, Any]]:
         """Return source-linked stock news in a stable shape for the stock page."""
-        try:
-            articles = self.get_ticker(symbol).get_news(count=limit) or []
-        except Exception:
-            articles = []
-        if not articles:
-            articles = yf.Search(symbol.upper(), news_count=limit, include_research=False, timeout=8).news or []
+        symbol = symbol.upper()
+        failures = []
+        for source, fetch in (
+            ("ticker", lambda: self.get_ticker(symbol).get_news(count=limit)),
+            ("search", lambda: yf.Search(symbol, news_count=limit, include_research=False, timeout=4).news),
+            ("rss", lambda: self._get_news_rss(symbol)),
+        ):
+            try:
+                articles = fetch()
+                if not isinstance(articles, list):
+                    raise ValueError("Invalid news response")
+                news = self._normalize_news(articles, symbol, limit)
+            except Exception as error:
+                failures.append(error)
+                logging.getLogger(__name__).warning("Stock news %s failed for %s: %s", source, symbol, type(error).__name__)
+                continue
+            logging.getLogger(__name__).info("Stock news %s for %s: %d raw, %d usable", source, symbol, len(articles), len(news))
+            if news:
+                return news
+        if failures:
+            raise RuntimeError("Stock news sources unavailable") from failures[-1]
+        return []
+
+    @staticmethod
+    def _get_news_rss(symbol: str) -> List[Dict[str, Any]]:
+        """Yahoo's public symbol feed, independent of its ticker/search JSON APIs."""
+        with httpx.Client(timeout=4, follow_redirects=True) as client:
+            response = client.get(
+                "https://feeds.finance.yahoo.com/rss/2.0/headline",
+                params={"s": symbol, "region": "US", "lang": "en-US"},
+            )
+            response.raise_for_status()
+        payload = response.content
+        if len(payload) > 1_000_000 or b"<!DOCTYPE" in payload.upper() or b"<!ENTITY" in payload.upper():
+            raise ValueError("Invalid news feed")
+        root = ElementTree.fromstring(payload.decode("utf-8-sig"))
+        channel = root.find("channel")
+        if root.tag != "rss" or channel is None:
+            raise ValueError("Invalid news feed")
+        articles = []
+        for item in channel.findall("item")[:50]:
+            published = None
+            try:
+                published = int(parsedate_to_datetime(item.findtext("pubDate") or "").timestamp())
+            except (ValueError, TypeError, OverflowError):
+                pass
+            articles.append({
+                "uuid": item.findtext("guid"), "title": item.findtext("title"),
+                "link": item.findtext("link"), "providerPublishTime": published,
+                "publisher": item.findtext("source"),
+            })
+        return articles
+
+    @staticmethod
+    def _normalize_news(articles: list, symbol: str, limit: int) -> List[Dict[str, Any]]:
+        # Alphabet's share classes refer to the same company's news.
+        aliases = {"GOOG", "GOOGL"} if symbol in {"GOOG", "GOOGL"} else {symbol}
+        seen = set()
         news: List[Dict[str, Any]] = []
         for article in articles:
+            if not isinstance(article, dict):
+                continue
             content = article.get("content") or article
+            if not isinstance(content, dict):
+                continue
             related = content.get("relatedTickers") or article.get("relatedTickers") or []
-            if related and symbol.upper() not in {str(item).upper() for item in related}:
+            related = {str(item.get("symbol", "") if isinstance(item, dict) else item).upper() for item in related}
+            if related and not aliases.intersection(related):
                 continue
             links = (content.get("canonicalUrl"), content.get("clickThroughUrl"), content.get("link"))
             candidates = [value.get("url", "") if isinstance(value, dict) else value for value in links]
             link = next((value for value in candidates if isinstance(value, str) and value.startswith(("https://", "http://"))), None)
-            if not link:
+            if not link or link in seen:
+                continue
+            try:
+                if not urlsplit(link).hostname:
+                    continue
+            except ValueError:
                 continue
             title = content.get("title")
             if not isinstance(title, str) or not title.strip():
@@ -156,6 +224,7 @@ class YFinanceService:
                     publish_time = int(datetime.fromisoformat(published.replace("Z", "+00:00")).timestamp())
                 except ValueError:
                     pass
+            seen.add(link)
             news.append({
                 "uuid": str(article.get("id") or article.get("uuid") or link),
                 "title": title.strip(),

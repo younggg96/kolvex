@@ -1291,7 +1291,6 @@
       "runDrawings": "仅生成支撑、阻力、趋势线和斐波那契画线",
       "analysisLoading": "正在分析…",
       "drawingLoading": "正在画线…",
-      "drawingsReady": "AI 画线版本已生成并保存",
       "drawingsFailed": "AI 画线暂不可用，请稍后重试。",
       "retryDrawings": "重新画线",
       "hideAnalysis": "隐藏分析",

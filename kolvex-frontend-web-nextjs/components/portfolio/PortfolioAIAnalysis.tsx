@@ -555,9 +555,6 @@ export function PortfolioAIAnalysis({ className }: PortfolioAIAnalysisProps) {
                                 </span>
                                 <span>{new Date(analysis.analyzed_at).toLocaleString()}</span>
                             </div>
-                            <p className="text-[10px] text-muted-foreground/60 mt-2 leading-relaxed">
-                                {t("portfolio.ai.disclaimer")}
-                            </p>
                         </footer>
                     </div>
                 )}

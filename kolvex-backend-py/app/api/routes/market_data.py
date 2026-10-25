@@ -365,7 +365,7 @@ class NewsResponse(BaseModel):
 @router.get("/news/{symbol}", response_model=NewsResponse, summary="获取股票最新新闻")
 async def get_stock_news(symbol: str = Path(..., description="股票代码")):
     try:
-        items = get_yfinance_service().get_news(symbol)
+        items = await asyncio.to_thread(get_yfinance_service().get_news, symbol)
         return NewsResponse(symbol=symbol.upper(), news=[NewsItem(**item) for item in items], count=len(items))
     except Exception as error:
         logger.exception("Failed to fetch news for %s", symbol)

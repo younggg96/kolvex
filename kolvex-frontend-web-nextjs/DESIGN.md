@@ -107,8 +107,11 @@ to the appropriate entry so refresh and saved links keep working.
 
 AI Research detail pages lead with the existing final conclusion, then the
 investment plan, analyst evidence and supporting debate. The reading area uses
-16px body text on mobile and 17px on desktop, line height 1.85 and a maximum measure of 72ch within the
-available reading column. Markdown titles are subordinate to the stock heading; paragraphs
+16px body text on mobile and 17px on desktop, line height 1.85 and full available
+reading-column width (`w-full min-w-0 max-w-none` overrides Typography's default cap).
+Markdown titles are subordinate to the stock heading; major sections use quiet
+top dividers, numbered lists retain visible markers, and tables scroll within
+keyboard-focusable bordered regions. Paragraphs
 and sections have distinct spacing. Desktop gets a sticky section directory;
 mobile uses a horizontal text directory. Analyst tabs stay visible as words,
 separate from article actions. Debate verdicts precede native disclosures whose

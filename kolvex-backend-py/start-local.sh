@@ -1,66 +1,45 @@
-#!/bin/bash
+#!/usr/bin/env bash
+set -euo pipefail
 
-# 本地开发环境启动脚本（不使用 Docker）
+# Resolve configuration and venv relative to this script, even from the repo root.
+cd "$(dirname "$0")"
 
-echo "🐍 Kolvex Backend - 本地开发模式"
-echo "================================"
-
-# 检查 Python
-if ! command -v python3 &> /dev/null; then
-    echo "❌ 未找到 Python 3"
+if ! command -v python3 >/dev/null 2>&1; then
+    echo "Python 3.11+ is required."
     exit 1
 fi
 
-# 检查环境变量文件
 if [ ! -f .env ]; then
-    echo "📝 创建 .env 文件..."
     cp .env.example .env
-    # 修改为使用 localhost
-    sed -i.bak 's/@db:/@localhost:/g' .env
-    rm .env.bak
-    echo "✅ 已创建 .env 文件"
+    echo "Created .env. Configure SUPABASE_URL, SUPABASE_KEY and SUPABASE_SERVICE_KEY, then run again."
+    exit 1
 fi
 
-# 创建虚拟环境
-if [ ! -d "venv" ]; then
-    echo "📦 创建虚拟环境..."
+if [ ! -x venv/bin/python ]; then
     python3 -m venv venv
 fi
 
-# 激活虚拟环境
-echo "🔄 激活虚拟环境..."
-source venv/bin/activate
+# A moved/deleted venv can leave an old server running with missing package metadata.
+# Always start a new process using the interpreter inside this project.
+venv/bin/python -m ensurepip --upgrade >/dev/null
+venv/bin/python -m pip install -r requirements.txt
+venv/bin/python -m pip check
+venv/bin/python - <<'PY'
+import sys
+from importlib.metadata import version
+from app.core.config import settings
+from pydantic import TypeAdapter, EmailStr
 
-# 升级 pip
-pip install --upgrade pip -q
+if sys.version_info < (3, 11):
+    raise SystemExit("Python 3.11+ is required.")
+missing = [key for key in ("SUPABASE_URL", "SUPABASE_KEY") if not getattr(settings, key)]
+if missing:
+    raise SystemExit("Configure .env: " + ", ".join(missing))
+TypeAdapter(EmailStr).validate_python("local-check@example.com")
+print("Auth dependency check passed (email-validator " + version("email-validator") + ").")
+PY
 
-# 安装依赖
-echo "📥 安装依赖..."
-pip install -r requirements.txt -q
-
-echo ""
-echo "⚠️  数据库提示："
-echo "   本地模式需要 PostgreSQL 数据库"
-echo ""
-echo "   如果你有 Docker，可以只启动数据库："
-echo "   $ docker-compose up -d db"
-echo ""
-echo "   或者安装本地 PostgreSQL："
-echo "   macOS: brew install postgresql@15"
-echo "   Ubuntu: sudo apt install postgresql"
-echo ""
-
-read -p "数据库已准备好？继续启动服务？(y/n): " continue
-
-if [ "$continue" = "y" ] || [ "$continue" = "Y" ]; then
-    echo ""
-    echo "🚀 启动开发服务器..."
-    echo "📍 API: http://localhost:8000"
-    echo "📖 文档: http://localhost:8000/docs"
-    echo ""
-    python main.py
-else
-    echo "已取消启动"
-    exit 1
-fi
-
+echo "API: http://127.0.0.1:8080"
+echo "Docs: http://127.0.0.1:8080/docs"
+echo "Authentication uses the Supabase project configured in .env."
+exec venv/bin/python -m uvicorn main:app --host 127.0.0.1 --port 8080 --reload

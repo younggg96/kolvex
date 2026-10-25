@@ -1013,7 +1013,6 @@ export default function ChartView({
     {drawingAi.status === "done" && <section className="mt-5 min-w-0 border-t border-border pt-4" aria-label={t("youtubeOpinions.ai.button")}>
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="min-w-0 flex-1" role="status">
-              <p className="text-sm font-medium">{t("youtubeOpinions.ai.drawingsReady")}</p>
               {drawingAi.result?.model && <p className="mt-1 break-words text-xs leading-5 text-muted-foreground">{t("youtubeOpinions.ai.generatedBy", { model: `${drawingAi.result.provider || ""} / ${drawingAi.result.model}` })}</p>}
             </div>
             {drawingAi.status === "done" && <Button size="sm" variant="ghost" disabled={aiBusy} onClick={() => { aiJobs.clear("drawings"); setDrawingAi({ status: "idle" }); onDrawingsChange?.(null); }}>{t("youtubeOpinions.ai.clear")}</Button>}

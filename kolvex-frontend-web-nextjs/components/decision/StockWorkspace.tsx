@@ -18,7 +18,6 @@ import { useStockResearch } from "./useStockResearch";
 import CreatorIntelligence from "./CreatorIntelligence";
 import StockNews from "./StockNews";
 import { ReportCard } from "@/components/trading-analysis/report-card";
-import { BarChart3, DollarSign, Newspaper, Swords, Users } from "lucide-react";
 import {
   getStockQuote,
   type StockQuote,
@@ -633,7 +632,6 @@ export default function StockWorkspace({ ticker }: { ticker: string }) {
                         "Investment thesis and what could change it",
                         "投资判断与可能改变判断的因素",
                       )}
-                      icon={DollarSign}
                       content={
                         research.investment_plan ||
                         research.trader_plan ||
@@ -654,33 +652,28 @@ export default function StockWorkspace({ ticker }: { ticker: string }) {
                         {[
                           {
                             label: c("Technical", "技术面"),
-                            icon: BarChart3,
                             report: research.market_report,
                             key: "market",
                           },
                           {
                             label: c("Fundamental", "基本面"),
-                            icon: DollarSign,
                             report: research.fundamentals_report,
                             key: "fundamentals",
                           },
                           {
                             label: c("News", "新闻"),
-                            icon: Newspaper,
                             report: research.news_report,
                             key: "news",
                           },
                           {
                             label: c("Social context", "社交环境"),
-                            icon: Users,
                             report: research.sentiment_report,
                             key: "sentiment",
                           },
-                        ].map(({ label, icon, report, key }) => (
+                        ].map(({ label, report, key }) => (
                           <ReportCard
                             key={`${research.id}-${key}`}
                             title={label}
-                            icon={icon}
                             content={report}
                             locale={locale}
                             t={t}
@@ -699,7 +692,6 @@ export default function StockWorkspace({ ticker }: { ticker: string }) {
                         <ReportCard
                           key={`${research.id}-bull`}
                           title={t("tradingAnalysis.debate.bullResearcher")}
-                          icon={Swords}
                           content={research.investment_debate?.bull_history}
                           locale={locale}
                           t={t}
@@ -707,7 +699,6 @@ export default function StockWorkspace({ ticker }: { ticker: string }) {
                         <ReportCard
                           key={`${research.id}-bear`}
                           title={t("tradingAnalysis.debate.bearResearcher")}
-                          icon={Swords}
                           content={research.investment_debate?.bear_history}
                           locale={locale}
                           t={t}

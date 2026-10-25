@@ -121,7 +121,6 @@ export default function AiAnalysisPanel({ state, busy = false, interval, onRetry
             </div>}
           </div>
         </details>}
-        <p className="mt-4  text-xs leading-5 text-muted-foreground">{t("youtubeOpinions.ai.disclaimer")}</p>
       </div>}
 
       <footer className="mt-4 flex flex-wrap items-center gap-2 border-t border-border pt-3">

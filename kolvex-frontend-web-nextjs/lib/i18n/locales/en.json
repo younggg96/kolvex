@@ -1291,7 +1291,6 @@
       "runDrawings": "Generate support, resistance, trendlines and Fibonacci drawings",
       "analysisLoading": "Analyzing…",
       "drawingLoading": "Drawing…",
-      "drawingsReady": "AI drawing version generated and saved",
       "drawingsFailed": "AI drawings are unavailable. Please retry.",
       "retryDrawings": "Retry drawings",
       "hideAnalysis": "Hide analysis",

@@ -47,12 +47,12 @@ export function ResearchReportContent({ analysis, locale, t }: {
       <div className="min-w-0 space-y-12">
         {analysis.full_signal && (
           <div id={`${id}-conclusion`} className={REPORT_READER_CONCLUSION}>
-            <ReportCard title={t("tradingAnalysis.reader.conclusion")} icon={CheckCircle2} content={analysis.full_signal} locale={locale} t={t} bordered={false} />
+            <ReportCard title={t("tradingAnalysis.reader.conclusion")} content={analysis.full_signal} locale={locale} t={t} bordered={false} />
           </div>
         )}
         {analysis.investment_plan && (
           <div id={`${id}-investment`} className="scroll-mt-6">
-            <ReportCard title={t("tradingAnalysis.sections.investmentPlan")} icon={DollarSign} content={analysis.investment_plan} locale={locale} t={t} />
+            <ReportCard title={t("tradingAnalysis.sections.investmentPlan")} content={analysis.investment_plan} locale={locale} t={t} />
           </div>
         )}
         {!!reports.length && (
@@ -70,7 +70,7 @@ export function ResearchReportContent({ analysis, locale, t }: {
               </div>
               {reports.map((report) => (
                 <TabsContent key={report.key} value={report.key} className="mt-0">
-                  <ReportCard title={report.title} icon={report.icon} content={report.content} locale={locale} t={t} bordered={false} />
+                  <ReportCard title={report.title} content={report.content} locale={locale} t={t} bordered={false} />
                 </TabsContent>
               ))}
             </Tabs>
@@ -78,7 +78,7 @@ export function ResearchReportContent({ analysis, locale, t }: {
         )}
         {analysis.trader_plan && (
           <div id={`${id}-trader`} className="scroll-mt-6">
-            <ReportCard title={t("tradingAnalysis.sections.traderPlan")} icon={TrendingUp} content={analysis.trader_plan} locale={locale} t={t} />
+            <ReportCard title={t("tradingAnalysis.sections.traderPlan")} content={analysis.trader_plan} locale={locale} t={t} />
           </div>
         )}
         {(analysis.investment_debate || analysis.risk_debate) && (

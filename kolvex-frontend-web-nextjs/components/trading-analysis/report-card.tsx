@@ -14,7 +14,6 @@ import { toast } from "sonner";
 
 export function ReportCard({
   title,
-  icon: Icon,
   content,
   className,
   locale,
@@ -23,7 +22,6 @@ export function ReportCard({
   bordered = true,
 }: {
   title: string;
-  icon: React.ComponentType<{ className?: string }>;
   content: string | null | undefined;
   className?: string;
   locale: string;
@@ -83,7 +81,6 @@ export function ReportCard({
         {headerExtra && <div className="mb-6 overflow-x-auto pb-1">{headerExtra}</div>}
         <div className="mb-6 flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
           <h2 className="flex w-full items-center gap-2 text-xl font-semibold text-foreground sm:w-auto">
-            <Icon className="h-5 w-5 shrink-0 text-muted-foreground" />
             {title}
           </h2>
           <div className="ml-auto flex items-center gap-0.5">
