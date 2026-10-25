@@ -8,6 +8,7 @@ import TechnicalFindings from "@/components/youtube/chart/TechnicalFindings";
 import HeaderBackButton from "@/components/layout/HeaderBackButton";
 import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import PriceChart from "@/components/youtube/PriceChart";
@@ -234,7 +235,7 @@ export default function StockWorkspace({ ticker }: { ticker: string }) {
       label: c("Fundamental", "基本面"),
       direction: null,
       detail: research?.fundamentals_report
-        ? c("In AI research below", "见下方 AI 研究")
+        ? c("In the AI research tab", "见 AI 研究标签")
         : c("Needs AI research", "需要 AI 研究"),
     },
     {
@@ -242,7 +243,7 @@ export default function StockWorkspace({ ticker }: { ticker: string }) {
       label: c("News", "新闻"),
       direction: null,
       detail: research?.news_report
-        ? c("In AI research below", "见下方 AI 研究")
+        ? c("In the AI research tab", "见 AI 研究标签")
         : c("Needs AI research", "需要 AI 研究"),
     },
   ];
@@ -250,10 +251,10 @@ export default function StockWorkspace({ ticker }: { ticker: string }) {
   return (
     <DashboardLayout title={c("Markets", "行情")}>
       <main className="flex-1 overflow-y-auto">
-        <div className="mx-auto px-4 pb-16 pt-4 md:px-8 md:pt-6">
-          <div className="grid gap-x-12 gap-y-10">
+        <div className="mx-auto max-w-[1800px] px-4 pb-16 pt-4 md:px-8 md:pt-6">
+          <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_360px] 2xl:grid-cols-[minmax(0,1fr)_400px]">
             <section
-              className="min-w-0 xl:col-start-1 xl:row-start-1"
+              className="min-w-0 xl:col-span-2"
               aria-labelledby="stock-title"
             >
               <div className="flex items-center gap-3">
@@ -324,7 +325,9 @@ export default function StockWorkspace({ ticker }: { ticker: string }) {
                   </Button>
                 </div>
               )}
-              <div className="mt-6">
+            </section>
+            <section className="min-w-0" aria-label={c("Price chart and AI drawings", "K 线图与 AI 画线")}>
+              <div>
                 <PriceChart
                   key={ticker}
                   symbol={ticker}
@@ -343,11 +346,16 @@ export default function StockWorkspace({ ticker }: { ticker: string }) {
               </div>
             </section>
 
-            <div className="min-w-0 space-y-12 xl:col-start-1 xl:row-start-2">
-              <StockNews key={ticker} ticker={ticker} />
-
-              <Panel title={c("What changed · Summary", "变化摘要")}>
-                <div className="grid gap-4 pt-4 sm:grid-cols-3">
+            <aside className="min-w-0 rounded-xl border border-border bg-card p-4" aria-label={c("Analysis beside the chart", "图表分析")}>
+              <Tabs key={`analysis-${ticker}`} defaultValue="summary">
+                <TabsList className="grid grid-cols-3 gap-2 overflow-visible" aria-label={c("Stock analysis", "个股分析")}>
+                  <TabsTrigger value="summary">{c("Summary", "变化摘要")}</TabsTrigger>
+                  <TabsTrigger value="technical">{c("Technicals", "技术分析")}</TabsTrigger>
+                  <TabsTrigger value="setup">{c("Setup", "条件计划")}</TabsTrigger>
+                </TabsList>
+                <TabsContent value="summary" forceMount className="pt-5 data-[state=inactive]:hidden">
+              <Panel>
+                <div className="grid gap-4 sm:grid-cols-3 xl:grid-cols-1">
                   <div>
                     <p className="text-xs text-muted-foreground">
                       {c("Market today", "今日行情")}
@@ -392,7 +400,7 @@ export default function StockWorkspace({ ticker }: { ticker: string }) {
                     )}
                   </div>
                 </div>
-                <dl className="mt-6 grid grid-cols-2 gap-x-6 gap-y-5 border-t border-border pt-5 sm:grid-cols-4">
+                <dl className="mt-6 grid grid-cols-2 gap-x-6 gap-y-5 border-t border-border pt-5 sm:grid-cols-4 xl:grid-cols-2">
                   {evidenceItems.map((item) => (
                     <div key={item.label} className="min-w-0">
                       <dt className="text-[13px] text-muted-foreground">
@@ -445,8 +453,10 @@ export default function StockWorkspace({ ticker }: { ticker: string }) {
                 </dl>
               </Panel>
 
-              <Panel title={c("AI Technical Analysis", "AI 技术分析")}>
-                <div className="flex flex-wrap gap-2 pt-4">
+                </TabsContent>
+                <TabsContent value="technical" forceMount className="pt-5 data-[state=inactive]:hidden">
+              <Panel>
+                <div className="flex flex-wrap gap-2">
                   <Button
                     variant="outline"
                     size="sm"
@@ -505,9 +515,11 @@ export default function StockWorkspace({ ticker }: { ticker: string }) {
                 )}
               </Panel>
 
-              {technical?.setup && (
-                <Panel title={c("AI setup", "AI 条件计划")}>
-                  <div className="pt-4">
+                </TabsContent>
+                <TabsContent value="setup" forceMount className="pt-5 data-[state=inactive]:hidden">
+              {technical?.setup ? (
+                <Panel>
+                  <div>
                     <h3 className="font-semibold">{technical.setup.name}</h3>
                     <p className="mt-1.5 text-sm leading-6 text-muted-foreground">
                       {technical.setup.reason}
@@ -568,8 +580,29 @@ export default function StockWorkspace({ ticker }: { ticker: string }) {
                     </details>
                   </div>
                 </Panel>
+              ) : (
+                <Panel title={c("AI setup", "AI 条件计划")}>
+                  <Empty>{c("Generate technical analysis to see entry conditions, invalidation and targets when a setup is available.", "生成技术分析后，若有适用的条件计划，将在这里显示入场条件、失效价与目标。")}</Empty>
+                  <Button variant="outline" size="sm" disabled={technicalBusy} onClick={() => setGenerationRequest((value) => value + 1)}>
+                    {technicalBusy ? c("Analyzing…", "正在分析…") : c("Generate analysis", "生成分析")}
+                  </Button>
+                </Panel>
               )}
+                </TabsContent>
+              </Tabs>
+            </aside>
+            <section className="min-w-0 border-t border-border pt-4 xl:col-span-2" aria-label={c("News and research", "资讯与研究")}>
+              <Tabs key={`evidence-${ticker}`} defaultValue="news">
+                <TabsList className="sticky top-0 z-10 flex flex-wrap gap-x-6 overflow-visible bg-background" aria-label={c("Stock evidence", "个股资讯")}>
+                  <TabsTrigger value="news">{c("Latest news", "最新相关新闻")}</TabsTrigger>
+                  <TabsTrigger value="creators">{c("Creator intelligence", "博主情报")}</TabsTrigger>
+                  <TabsTrigger value="research">{c("AI research", "AI 研究")}</TabsTrigger>
+                </TabsList>
+                <TabsContent value="news" forceMount className="min-w-0 pt-6 data-[state=inactive]:hidden">
+              <StockNews key={ticker} ticker={ticker} />
 
+                </TabsContent>
+                <TabsContent value="creators" forceMount className="min-w-0 pt-6 data-[state=inactive]:hidden">
               <CreatorIntelligence
                 key={ticker}
                 ticker={ticker}
@@ -579,6 +612,9 @@ export default function StockWorkspace({ ticker }: { ticker: string }) {
                 onRetry={() => setRefresh((value) => value + 1)}
               />
 
+
+                </TabsContent>
+                <TabsContent value="research" forceMount className="min-w-0 pt-6 data-[state=inactive]:hidden">
               <Panel
                 title={c("AI research", "AI 研究")}
                 description={
@@ -738,7 +774,9 @@ export default function StockWorkspace({ ticker }: { ticker: string }) {
                   </Empty>
                 )}
               </Panel>
-            </div>
+                </TabsContent>
+              </Tabs>
+            </section>
           </div>
         </div>
       </main>

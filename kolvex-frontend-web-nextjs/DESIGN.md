@@ -79,16 +79,22 @@ Markets, Creator Opinions and AI Research each have one primary navigation entry
 The stock detail route belongs to Markets. `StockLookup` at the top of Markets
 uses the shared Input and Button to open any valid ticker, independently of
 creator coverage. Its inline validation and clear action follow the active locale.
-AI generation remains an explicit action on the stock detail page. Its existing K-line chart precedes
-the latest related news, change summary, AI technical read and creator history.
-`components/decision/StockNews.tsx` owns the news section below the chart on all
-screen sizes. It loads independently, shows five source-linked articles with
-publisher, local publication time and available source summaries, and expands
-to all returned articles. Titles reuse the news terminal's Chinese translation
-hook; English restores source titles. It refreshes every five minutes while
-visible, offers manual refresh/retry and retains articles when an update fails.
-The newest creator call and linked position form the right rail on desktop;
-on narrow screens these sections follow the main content. Creator Opinions shows the first
+AI generation remains an explicit action on the stock detail page. The stock
+identity and quote span the workspace. At xl and wider, the K-line chart occupies
+the flexible main column beside a 360px analysis rail (400px at 2xl). The rail uses
+shared Radix tabs for change summary, technical analysis and conditional setup.
+At smaller widths the same DOM order stacks naturally. No nested vertical scroller
+or fixed-height report region is introduced. The page is capped at 1800px.
+
+A full-width evidence region below uses shared tabs for latest news, creator
+intelligence and AI research. News is the default. Panels remain mounted but
+inactive panels are hidden, preserving reading state across switches. Tab selection
+resets for a new ticker. AI generation hooks and the chart stay mounted outside
+evidence tabs; switching tabs does not start analysis. The setup tab stays discoverable
+when no setup exists and explains how to generate analysis. News retains its independent
+refresh, retry, translation and source links. Long research stays in the full-width
+reading region. The runtime theme, typography and shared controls are unchanged.
+Creator Opinions shows the first
 10 filtered stocks with a full stock directory at `/dashboard/youtube-opinions/stocks`.
 The count shows displayed/filtered totals. When more stocks match, View all links
 beside the count and below the preview open that directory with search, sentiment,

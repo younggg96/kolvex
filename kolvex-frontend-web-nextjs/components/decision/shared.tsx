@@ -136,7 +136,7 @@ export function Panel({
   className = "",
   id,
 }: {
-  title: string;
+  title?: string;
   children: ReactNode;
   action?: ReactNode;
   description?: ReactNode;
@@ -145,11 +145,13 @@ export function Panel({
 }) {
   return (
     <section id={id} aria-labelledby={id ? `${id}-title` : undefined} className={cn("min-w-0", className)}>
-      <header className="flex flex-wrap items-end justify-between gap-x-4 gap-y-2 border-b border-border pb-3">
+      <header className={cn("flex flex-wrap items-end justify-between gap-x-4 gap-y-2", title ? "border-b border-border pb-3" : "")}>
         <div className="min-w-0">
-          <h2 id={id ? `${id}-title` : undefined} className="text-xl font-semibold tracking-[-0.01em]">
-            {title}
-          </h2>
+          {title && (
+            <h2 id={id ? `${id}-title` : undefined} className="text-xl font-semibold tracking-[-0.01em]">
+              {title}
+            </h2>
+          )}
           {description && (
             <p className="mt-1 text-[13px] leading-5 text-muted-foreground">{description}</p>
           )}

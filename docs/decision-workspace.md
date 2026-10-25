@@ -209,3 +209,15 @@ and `BriefContent` as admin preview. Type and page remain in URL state, and
 return navigation restores them. The reader API selects editorial metadata and
 payload only, requires verified authentication, and exposes no write routes.
 Database browser grants remain unchanged.
+
+## Stock workspace layout
+
+The stock header spans the page. At xl desktop widths a flexible chart column sits
+beside a 360px analysis rail (400px at 2xl); below xl these stack in DOM order.
+The rail has Summary / Technicals / Setup Radix tabs. Setup remains available
+with an explicit empty state when there is no generated setup.
+The full-width region below has News / Creator intelligence / AI research tabs.
+Panels stay mounted and inactive panels use display:none to retain reader state.
+The chart and generation hooks remain outside tabs. Selection resets per ticker.
+The existing main element owns vertical scrolling; reports have natural height.
+All tab labels and empty-state actions support Chinese and English.

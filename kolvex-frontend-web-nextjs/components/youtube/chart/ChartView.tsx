@@ -1738,7 +1738,14 @@ export default function ChartView({
             )}
           </div>
 
-          {!advanced && aiResults}
+          {!advanced && (compactLayout === "workspace" ? (
+            (ai.status === "done" || drawingAi.status === "done") && <details className="mt-4 border-t border-border pt-3">
+              <summary className="cursor-pointer rounded text-sm font-medium text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
+                {t("youtubeOpinions.ai.title")}
+              </summary>
+              {aiResults}
+            </details>
+          ) : aiResults)}
         </div>
       </div>
       </div>
