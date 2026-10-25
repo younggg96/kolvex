@@ -80,9 +80,15 @@ The stock detail route belongs to Markets. `StockLookup` at the top of Markets
 uses the shared Input and Button to open any valid ticker, independently of
 creator coverage. Its inline validation and clear action follow the active locale.
 AI generation remains an explicit action on the stock detail page. Its existing K-line chart precedes
-the change summary, AI technical read and creator history. Latest news, the
-newest creator call and the linked position form the right rail on desktop;
-on narrow screens these sections follow the chart. Creator Opinions shows the first
+the latest related news, change summary, AI technical read and creator history.
+`components/decision/StockNews.tsx` owns the news section below the chart on all
+screen sizes. It loads independently, shows five source-linked articles with
+publisher, local publication time and available source summaries, and expands
+to all returned articles. Titles reuse the news terminal's Chinese translation
+hook; English restores source titles. It refreshes every five minutes while
+visible, offers manual refresh/retry and retains articles when an update fails.
+The newest creator call and linked position form the right rail on desktop;
+on narrow screens these sections follow the main content. Creator Opinions shows the first
 10 filtered stocks with a full stock directory at `/dashboard/youtube-opinions/stocks`.
 The count shows displayed/filtered totals. When more stocks match, View all links
 beside the count and below the preview open that directory with search, sentiment,

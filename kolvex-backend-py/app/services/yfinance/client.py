@@ -159,6 +159,7 @@ class YFinanceService:
             news.append({
                 "uuid": str(article.get("id") or article.get("uuid") or link),
                 "title": title.strip(),
+                "summary": content.get("summary") if isinstance(content.get("summary"), str) else None,
                 "publisher": publisher if isinstance(publisher, str) else None,
                 "link": link,
                 "publish_time": publish_time,

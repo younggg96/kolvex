@@ -346,6 +346,7 @@ class NewsItem(BaseModel):
     """新闻条目"""
     uuid: Optional[str] = None
     title: Optional[str] = None
+    summary: Optional[str] = None
     publisher: Optional[str] = None
     link: Optional[str] = None
     publish_time: Optional[int] = None

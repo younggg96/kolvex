@@ -13,12 +13,14 @@ export async function GET(
   try {
     const response = await fetch(
       `${BACKEND_API_URL}/api/v1/market/news/${encodeURIComponent(symbol)}`,
-      { next: { revalidate: 300 } },
+      { cache: "no-store", signal: AbortSignal.timeout(15_000) },
     );
     if (!response.ok) {
       return NextResponse.json({ error: "News unavailable" }, { status: response.status });
     }
-    return NextResponse.json(await response.json());
+    const data = await response.json();
+    if (!Array.isArray(data.news)) throw new Error("Invalid news response");
+    return NextResponse.json(data, { headers: { "Cache-Control": "no-store" } });
   } catch {
     return NextResponse.json({ error: "News unavailable" }, { status: 502 });
   }

@@ -15,6 +15,7 @@ class StockNewsTests(unittest.TestCase):
                 "id": "older",
                 "content": {
                     "title": "Earlier report",
+                    "summary": "Company announced its latest results.",
                     "provider": {"displayName": "Publisher A"},
                     "canonicalUrl": {"url": "https://example.com/earlier"},
                     "pubDate": "2026-10-07T12:00:00Z",
@@ -46,6 +47,8 @@ class StockNewsTests(unittest.TestCase):
         self.assertEqual([item["uuid"] for item in news], ["newer", "older"])
         self.assertEqual(news[0]["related_tickers"], ["NVDA"])
         self.assertEqual(news[1]["publisher"], "Publisher A")
+        self.assertEqual(news[1]["summary"], "Company announced its latest results.")
+        self.assertIsNone(news[0]["summary"])
         ticker.get_news.assert_called_once_with(count=4)
 
     @patch("app.services.yfinance.client.yf.Search")

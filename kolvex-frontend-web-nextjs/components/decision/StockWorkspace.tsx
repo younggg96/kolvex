@@ -16,13 +16,12 @@ import { ResearchReportContent } from "@/components/trading-analysis/ResearchRep
 import AnalysisHistory from "./AnalysisHistory";
 import { useStockResearch } from "./useStockResearch";
 import CreatorIntelligence from "./CreatorIntelligence";
+import StockNews from "./StockNews";
 import { ReportCard } from "@/components/trading-analysis/report-card";
 import { BarChart3, DollarSign, Newspaper, Swords, Users } from "lucide-react";
 import {
   getStockQuote,
-  getStockNews,
   type StockQuote,
-  type StockNewsItem,
   type AiTechnicalAnalysis,
 } from "@/lib/stockApi";
 import {
@@ -74,8 +73,6 @@ export default function StockWorkspace({ ticker }: { ticker: string }) {
   const [drawingRequest, setDrawingRequest] = useState(0);
   const [technicalBusy, setTechnicalBusy] = useState(false);
   const [publishedResearch, setResearch] = useState<TradingAnalysis | null>(null);
-  const [news, setNews] = useState<StockNewsItem[]>([]);
-  const [newsError, setNewsError] = useState(false);
   const [opinionsError, setOpinionsError] = useState(false);
   const [positionsError, setPositionsError] = useState(false);
   const [technical, setTechnical] = useState<AiTechnicalAnalysis | null>(null);
@@ -87,7 +84,6 @@ export default function StockWorkspace({ ticker }: { ticker: string }) {
     let alive = true;
     setLoading(true);
     setErrors([]);
-    setNewsError(false);
     setOpinionsError(false);
     setPositionsError(false);
     Promise.allSettled([
@@ -95,10 +91,9 @@ export default function StockWorkspace({ ticker }: { ticker: string }) {
       getYouTubeStockDetail(ticker),
       isProductFeatureEnabled("portfolio") ? getMyHoldings() : Promise.resolve({ accounts: [] }),
       getPublishedAnalyses({ ticker, limit: 20 }),
-      getStockNews(ticker),
     ]).then((results) => {
       if (!alive) return;
-      const [q, o, p, r, n] = results;
+      const [q, o, p, r] = results;
       setQuote(q.status === "fulfilled" && q.value.price > 0 ? q.value : null);
       setOpinions(o.status === "fulfilled" ? o.value.opinions : []);
       setOpinionsError(o.status === "rejected");
@@ -114,13 +109,11 @@ export default function StockWorkspace({ ticker }: { ticker: string }) {
           ? (r.value.items.find((x) => x.status === "completed") ?? null)
           : null,
       );
-      setNews(n.status === "fulfilled" ? n.value : []);
-      setNewsError(n.status === "rejected");
       setPositionsError(p.status === "rejected");
       setErrors(
         results.flatMap((result, index) =>
           result.status === "rejected"
-            ? [[c("Market", "行情"), c("Creators", "博主观点"), c("Portfolio", "持仓"), c("AI research", "AI 研究"), c("News", "新闻")][index]]
+            ? [[c("Market", "行情"), c("Creators", "博主观点"), c("Portfolio", "持仓"), c("AI research", "AI 研究")][index]]
             : [],
         ),
       );
@@ -287,6 +280,8 @@ export default function StockWorkspace({ ticker }: { ticker: string }) {
             </section>
 
             <div className="min-w-0 space-y-12 xl:col-start-1 xl:row-start-2">
+              <StockNews key={ticker} ticker={ticker} />
+
               <Panel title={c("What changed · Summary", "变化摘要")}>
                 <div className="grid gap-4 pt-4 sm:grid-cols-3">
                   <div>
@@ -474,39 +469,6 @@ export default function StockWorkspace({ ticker }: { ticker: string }) {
             </div>
 
             <aside className="min-w-0 space-y-10 xl:col-start-2 xl:row-span-2 xl:row-start-1 xl:self-start">
-              <Panel title={c("Latest news", "最新新闻")}>
-                {loading && !news.length ? (
-                  <div className="space-y-3 py-4">
-                    {[0, 1, 2].map((item) => <Skeleton key={item} className="h-12 w-full" />)}
-                  </div>
-                ) : news.length ? (
-                  <ul className="divide-y divide-border">
-                    {news.slice(0, 5).map((item) => (
-                      <li key={item.uuid}>
-                        <a
-                          href={item.link}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="-mx-2 block rounded-lg px-2 py-3 hover:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-                        >
-                          <span className="line-clamp-2 text-sm font-medium leading-5">{item.title}</span>
-                          <span className="mt-1 block text-xs text-muted-foreground">
-                            {item.publisher || c("News", "新闻")}
-                            {item.publish_time ? ` · ${date(new Date(item.publish_time * 1000).toISOString())}` : ""}
-                          </span>
-                        </a>
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <Empty>
-                    {newsError
-                      ? c("News could not be loaded. Retry above.", "新闻暂时无法加载，请在上方重试。")
-                      : c("No recent stock news is available.", "暂时没有这只股票的最新新闻。")}
-                  </Empty>
-                )}
-              </Panel>
-
               <Panel title={c("Latest creator update", "博主最新观点")}>
                 {sorted[0] ? (
                   <div className="space-y-3 pt-4">

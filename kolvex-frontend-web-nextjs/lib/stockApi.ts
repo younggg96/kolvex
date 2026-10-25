@@ -36,13 +36,22 @@ export interface StockNewsItem {
   publisher: string | null;
   link: string;
   publish_time: number | null;
+  summary?: string | null;
 }
 
-export async function getStockNews(symbol: string): Promise<StockNewsItem[]> {
-  const response = await fetch(`/api/market/news/${encodeURIComponent(symbol)}`);
+export async function getStockNews(symbol: string, signal?: AbortSignal): Promise<StockNewsItem[]> {
+  const response = await fetch(`/api/market/news/${encodeURIComponent(symbol)}`, { signal, cache: "no-store" });
   if (!response.ok) throw new Error("Stock news unavailable");
   const data = await response.json();
-  return Array.isArray(data.news) ? data.news : [];
+  if (!Array.isArray(data.news)) throw new Error("Invalid stock news response");
+  const seen = new Set<string>();
+  return (data.news as StockNewsItem[]).filter(item => {
+    if (!item || typeof item.title !== "string" || !item.title.trim() || typeof item.link !== "string") return false;
+    try { if (!["http:", "https:"].includes(new URL(item.link).protocol)) return false; } catch { return false; }
+    if (seen.has(item.link)) return false;
+    seen.add(item.link);
+    return true;
+  }).sort((a, b) => (b.publish_time ?? 0) - (a.publish_time ?? 0)).slice(0, 30);
 }
 
 export interface MarketIndex {
