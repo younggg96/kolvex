@@ -8,6 +8,7 @@ import re
 import shutil
 import subprocess
 import sys
+from datetime import datetime, timezone
 from urllib.parse import parse_qs, urlparse
 from urllib.request import Request, urlopen
 
@@ -98,7 +99,10 @@ def fetch_transcript(url, folder, update):
     info = json.loads(ytdlp('--dump-single-json', '--skip-download', url))
     if info.get('is_live') or not info.get('duration') or info['duration'] > MAX_DURATION:
         raise ValueError('请选择已结束、时长不超过 3 小时的视频。')
-    metadata = {k: info.get(k) for k in ('title', 'duration', 'channel', 'id')}
+    metadata = {k: info.get(k) for k in ('title', 'duration', 'channel', 'id', 'channel_id',
+                'channel_url', 'uploader_id', 'webpage_url', 'upload_date', 'timestamp')}
+    if isinstance(metadata.get('timestamp'), (int, float)):
+        metadata['published_at'] = datetime.fromtimestamp(metadata['timestamp'], timezone.utc).isoformat().replace('+00:00', 'Z')
     update(metadata=metadata)
     warnings = []
     for _, _, _, language, kind in caption_candidates(info):
@@ -249,7 +253,10 @@ def atomic_json(path, data):
 
 def run_job(job, folder, update):
     metadata, language, segments, source, warnings = fetch_transcript(job['url'], folder, update)
-    result = {'title': metadata['title'], 'url': job['url'], 'language': language,
+    result = {'id': metadata.get('id'), 'title': metadata['title'], 'url': job['url'],
+              'channel': metadata.get('channel'), 'channel_id': metadata.get('channel_id'),
+              'channel_url': metadata.get('channel_url'), 'channel_handle': metadata.get('uploader_id'),
+              'published_at': metadata.get('published_at'), 'language': language,
               'duration': metadata['duration'], 'source': source, 'segments': segments, 'summary': None}
     atomic_json(folder / 'result.json', result)
     update(has_result=True, warnings=warnings)

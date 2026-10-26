@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect } from "react";
+import { useCachedResource } from "@/hooks/useCachedResource";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTranslation } from "@/lib/i18n";
@@ -11,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   getPublishedAnalyses,
-  type TradingAnalysis,
+  publishedAnalysesKey,
 } from "@/lib/tradingAnalysisApi";
 import { ResearchSummaryCard } from "./ResearchSummaryCard";
 
@@ -42,42 +43,15 @@ export default function PublishedResearch({ page }: { page?: string }) {
   const currentPage = parseDeepResearchPage(page);
   const offset = (currentPage - 1) * 30;
 
-  const [analyses, setAnalyses] = useState<TradingAnalysis[]>([]);
-  const [total, setTotal] = useState(0);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
-  const requestId = useRef(0);
-
-  const loadPublished = useCallback(
-    async () => {
-      const currentRequest = ++requestId.current;
-      try {
-        setLoading(true);
-        setError(false);
-        const res = await getPublishedAnalyses({
-          limit: 30,
-          offset,
-        });
-        if (currentRequest !== requestId.current) return;
-        if (res.total > 0 && currentPage > Math.ceil(res.total / 30)) {
-          router.replace(deepResearchPagePath(Math.ceil(res.total / 30)));
-          return;
-        }
-        setAnalyses(res.items);
-        setTotal(res.total);
-      } catch (e) {
-        if (currentRequest === requestId.current) setError(true);
-      } finally {
-        if (currentRequest === requestId.current) setLoading(false);
-      }
-    },
-    [currentPage, offset, router]
-  );
-
+  const resource = useCachedResource(publishedAnalysesKey({ limit: 30, offset }), () => getPublishedAnalyses({ limit: 30, offset }), { ttl: 60_000 });
+  const analyses = resource.data?.items ?? [];
+  const total = resource.data?.total ?? 0;
+  const loading = resource.loading;
+  const error = Boolean(resource.error);
+  const loadPublished = resource.refresh;
   useEffect(() => {
-    loadPublished();
-    return () => { requestId.current += 1; };
-  }, [loadPublished]);
+    if (total > 0 && currentPage > Math.ceil(total / 30)) router.replace(deepResearchPagePath(Math.ceil(total / 30)));
+  }, [currentPage, total, router]);
 
   return (
     <ResearchLayout>
@@ -109,9 +83,10 @@ export default function PublishedResearch({ page }: { page?: string }) {
               )}
             </h3>
 
+            {error && resource.data && <p role="alert" className="py-3 text-sm text-muted-foreground">{t("common.error")} <Button variant="outline" size="sm" onClick={loadPublished}>{t("common.retry")}</Button></p>}
             {loading ? (
               <ExploreSkeleton />
-            ) : error ? (
+            ) : error && !resource.data ? (
               <p role="alert" className="py-8 text-sm text-muted-foreground">{t("common.error")} <Button variant="outline" size="sm" onClick={() => loadPublished()}>{t("common.retry")}</Button></p>
             ) : analyses.length === 0 ? (
               <p className="py-12 text-[15px] text-muted-foreground">

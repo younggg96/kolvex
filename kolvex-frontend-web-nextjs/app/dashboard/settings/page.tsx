@@ -175,7 +175,7 @@ function SettingsContent() {
   // API Keys state
   const [apiKeys, setApiKeys] = useState<UserApiKey[]>([]);
   const [supportedProviders, setSupportedProviders] = useState<string[]>([]);
-  const [apiKeysLoading, setApiKeysLoading] = useState(false);
+  const [apiKeysLoading, setApiKeysLoading] = useState(true);
   const [apiKeySaving, setApiKeySaving] = useState<string | null>(null); // provider being saved
   const [apiKeyDeleting, setApiKeyDeleting] = useState<string | null>(null);
   const [apiKeyInputs, setApiKeyInputs] = useState<Record<string, string>>({});

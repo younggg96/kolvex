@@ -31,6 +31,20 @@ ollama pull qwen2.5:7b
 
 ## 批量使用
 
+### 只处理网站最新未追踪视频（推荐）
+
+使用网站黄色提示对应的覆盖接口，只选择各博主上次已追踪视频之后、尚未导入的上传，不扫描每个频道最近 N 条视频：
+
+```bash
+./start.sh batch untracked
+./start.sh batch run batches/kolvex-untracked.json --transcript-only
+./start.sh combine batches/kolvex-untracked.json --output output/combined_untracked_latest.json
+```
+
+第一步只保存清单，不下载音频、不调用 AI。清单按发布时间从新到旧排序，使用公开接口，无需登录或数据库密钥。`run` 开始前会重新核对网站，移除已被导入的视频并纳入最新未追踪视频；仍未追踪的条目保留本地处理状态，已完成字幕不会重复处理。网站接口失败或任一博主状态无法确认时停止，不使用旧清单继续转写。查询范围截断时会提示本批次只包含已确认的未追踪视频。
+
+该命令使用专用清单，不混入以前 `batch discover` 累积的历史视频，也不会覆盖普通批次。字幕和股票观点导入是两个步骤：本地字幕完成但尚未导入网站时，视频仍会显示“未追踪”。如果想生成中文笔记而不是仅获取原文字幕，可省略 `--transcript-only`，这需要启动 Ollama。
+
 ### 1. 同步博主名单
 
 ```bash
@@ -105,6 +119,31 @@ ollama pull qwen2.5:7b
 
 也可以直接运行 `.venv/bin/python youtube_transcribe.py URL`、`.venv/bin/python batch.py …`、`.venv/bin/python sync_kolvex.py …`。
 
+## 整合视频数据为 JSON
+
+直接整合已有任务、视频元数据和字幕，格式与 `output/combined_jobs_zh.json` 一致。整合步骤只读取文件，不调用 Ollama，不分析股票观点。
+
+```bash
+# 整合这批 15 个视频
+./start.sh combine data/kolvex-untracked-2026-10-22.zip \
+  --output output/combined_jobs_zh_2026-10-22.json
+
+# 整合现有输出目录的全部 job.json + zh.txt
+./start.sh combine output --output output/combined_jobs_zh.json
+```
+
+也支持批次目录或 `manifest.json`。输出顶层字段为 `generated_at`、`source_directory`、`task_count`、`with_zh_count`、`items`；每条保留 `task_directory`、`job`、`zh`、`missing_files`。ZIP 中没有单独的 job.json 时，使用清单中的原任务记录并附上已获取的 metadata。未提供 zh.txt 的中文原始字幕可以直接使用；其他语言保留在 original 字段，zh 为 null，缺失文件会明确记录，不做翻译或推断。
+
+后续新视频可以按以下顺序获取数据再整合，全流程无需语言模型：
+
+```bash
+./start.sh batch discover --config channels.kolvex.json --output batches/kolvex.json
+./start.sh batch run batches/kolvex.json --transcript-only
+./start.sh combine batches/kolvex.json --output output/combined_jobs_latest.json
+```
+
+字幕获取和原有可选翻译/摘要命令仍可独立使用；此工作流只整合数据。
+
 ## 输出
 
 结果位于 `output/<video-id>/<时间-唯一标识>/`，每次尝试独立保存：
@@ -136,16 +175,16 @@ ollama pull qwen2.5:7b
 - 某些视频需要 JavaScript runtime；程序会启用可找到的 Node.js，但版本也要符合 yt-dlp 要求。遇到 runtime 警告可安装 Deno：`brew install deno`。
 - MLX 转写仅支持 Apple Silicon；已有字幕路径不依赖 MLX。音频下载上限 500MB，视频时长上限 3 小时。
 - 各批次内部串行；同一清单有进程锁，不同清单之间没有全局 GPU 锁。CLI 中断后，已经保存的结果仍保留；重新运行可恢复清单，失败项使用 `--retry-failed`。
-- 所有结果仅保存本地；未实现自动导入 Kolvex 的股票观点 schema。
+- 所有结果仅保存本地；整合 JSON 保留视频原始数据，不生成股票观点或自动上传。
 - 自动字幕、翻译与摘要均可能出错；引用和重要信息应核对原视频。只处理有权使用的内容。
 
 ## 验证
 
 ```bash
 .venv/bin/python -m unittest discover -s tests -v
-.venv/bin/python -m compileall -q pipeline.py youtube_transcribe.py batch.py sync_kolvex.py server.py whisper_worker.py
+.venv/bin/python -m compileall -q pipeline.py youtube_transcribe.py batch.py combine.py sync_kolvex.py server.py whisper_worker.py
 ```
 
-测试覆盖 URL/频道边界、字幕解析、导出格式、分批翻译与摘要、发现筛选和去重、失败继续、跳过已完成与重试，以及可选 API。外部语言模型通过模拟验证管线，不能证明实际摘要质量或 MLX 转写性能。真实字幕抓取和频道列表发现另行执行烟雾验证。
+测试覆盖 URL/频道边界、字幕解析、导出格式、分批翻译与摘要、发现筛选和去重、失败继续、跳过已完成与重试，以及可选 API。整合命令另用现有输出目录和 15 视频 ZIP 验证数据完整性。
 
 参考：[yt-dlp](https://github.com/yt-dlp/yt-dlp)、[MLX Whisper](https://github.com/ml-explore/mlx-examples/tree/main/whisper)、[Ollama Chat API](https://docs.ollama.com/api/chat)。

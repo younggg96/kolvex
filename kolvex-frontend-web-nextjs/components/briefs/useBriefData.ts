@@ -1,42 +1,25 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useEffect } from "react";
+import { useCachedResource } from "@/hooks/useCachedResource";
 
-interface Resource<T> { path: string; data: T | null; loading: boolean; error: number | null }
+class BriefRequestError extends Error {
+  constructor(public status: number) { super("Brief unavailable"); }
+}
 
-/** No persistent cache: newly imported briefs appear on entry, focus and refresh. */
+/** Recent briefs survive navigation; focus revalidates only after the freshness window. */
 export function useBriefData<T>(path: string) {
-  const [state, setState] = useState<Resource<T>>({ path, data: null, loading: true, error: null });
-  const [revision, setRevision] = useState(0);
-  const retry = useCallback(() => setRevision(value => value + 1), []);
-
+  const resource = useCachedResource<T>(`/api/briefs${path}`, async signal => {
+    const response = await fetch(`/api/briefs${path}`, { cache: "no-store", signal });
+    if (!response.ok) throw new BriefRequestError(response.status);
+    return response.json();
+  }, { ttl: 60_000, timeout: 20_000 });
+  const revalidate = resource.revalidate;
   useEffect(() => {
-    const controller = new AbortController();
-    let active = true;
-    const timeout = setTimeout(() => controller.abort(), 30000);
-    setState({ path, data: null, loading: true, error: null });
-    void (async () => {
-      try {
-        const response = await fetch(`/api/briefs${path}`, { cache: "no-store", signal: controller.signal });
-        if (!response.ok) {
-          if (active) setState({ path, data: null, loading: false, error: response.status });
-          return;
-        }
-        const data = await response.json() as T;
-        if (active) setState({ path, data, loading: false, error: null });
-      } catch {
-        if (active) setState({ path, data: null, loading: false, error: 503 });
-      } finally { clearTimeout(timeout); }
-    })();
-    return () => { active = false; controller.abort(); clearTimeout(timeout); };
-  }, [path, revision]);
-
-  useEffect(() => {
-    const refresh = () => { if (document.visibilityState === "visible") retry(); };
+    const refresh = () => { if (document.visibilityState === "visible") revalidate(); };
     window.addEventListener("online", refresh);
     window.addEventListener("focus", refresh);
     return () => { window.removeEventListener("online", refresh); window.removeEventListener("focus", refresh); };
-  }, [retry]);
-
-  return { ...(state.path === path ? state : { data: null, loading: true, error: null }), retry };
+  }, [revalidate]);
+  return { data: resource.data ?? null, loading: resource.loading, error: resource.error ? resource.error instanceof BriefRequestError ? resource.error.status : 503 : null, retry: resource.refresh };
 }

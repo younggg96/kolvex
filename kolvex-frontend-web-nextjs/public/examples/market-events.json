@@ -1,0 +1,25 @@
+{
+  "schema_version": "kolvex-market-events/1.0",
+  "timezone": "America/New_York",
+  "events": [
+    {
+      "id": "example-earnings-2026-10-28",
+      "title": "示例公司财报（请替换为已核实事件）",
+      "title_en": "Example earnings — replace with verified event",
+      "category": "earnings",
+      "event_date": "2026-10-28",
+      "starts_at": null,
+      "timing": "after_close",
+      "importance": "high",
+      "is_hot": true,
+      "status": "draft",
+      "summary": "仅用于展示 JSON 格式，并非真实事件安排。请核实日期、公司和来源后发布。",
+      "summary_en": "Format example only; verify the date, company and source before publishing.",
+      "tickers": [
+        "DEMO"
+      ],
+      "source_name": "",
+      "source_url": null
+    }
+  ]
+}

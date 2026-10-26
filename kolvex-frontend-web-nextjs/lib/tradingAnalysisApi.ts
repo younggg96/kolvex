@@ -1,3 +1,5 @@
+import { invalidateClientCache } from "./clientCache";
+
 /**
  * Trading Analysis API Client
  * Multi-agent trading analysis (TradingAgents integration)
@@ -109,11 +111,13 @@ async function apiRequest<T>(
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
-    throw new Error(
-      errorData.error || errorData.detail || `API error: ${response.status}`
-    );
+    throw Object.assign(new Error(errorData.error || errorData.detail || `API error: ${response.status}`), { status: response.status });
   }
 
+  if (options.method && options.method.toUpperCase() !== "GET") {
+    invalidateClientCache(API_PREFIX);
+    invalidateClientCache("/api/market/analysis-history/");
+  }
   return response.json();
 }
 
@@ -177,26 +181,23 @@ export async function unpublishAnalysis(
   });
 }
 
-export async function getPublishedAnalyses(params?: {
-  limit?: number;
-  offset?: number;
-  ticker?: string;
-}): Promise<TradingAnalysisListResponse> {
-  const searchParams = new URLSearchParams();
-  if (params?.limit) searchParams.append("limit", String(params.limit));
-  if (params?.offset) searchParams.append("offset", String(params.offset));
-  if (params?.ticker) searchParams.append("ticker", params.ticker);
+export function publishedAnalysesKey(params?: { limit?: number; offset?: number; ticker?: string }) {
+  const query = new URLSearchParams();
+  if (params?.limit) query.set("limit", String(params.limit));
+  if (params?.offset) query.set("offset", String(params.offset));
+  if (params?.ticker) query.set("ticker", params.ticker);
+  return `${API_PREFIX}/published/list${query.size ? `?${query}` : ""}`;
+}
 
-  const qs = searchParams.toString();
-  return apiRequest<TradingAnalysisListResponse>(
-    `/published/list${qs ? `?${qs}` : ""}`
-  );
+export async function getPublishedAnalyses(params?: { limit?: number; offset?: number; ticker?: string }): Promise<TradingAnalysisListResponse> {
+  return apiRequest<TradingAnalysisListResponse>(publishedAnalysesKey(params).slice(API_PREFIX.length));
 }
 
 export async function getPublishedAnalysis(
-  id: string
+  id: string,
+  signal?: AbortSignal
 ): Promise<TradingAnalysis> {
-  return apiRequest<TradingAnalysis>(`/published/${id}`);
+  return apiRequest<TradingAnalysis>(`/published/${id}`, { signal });
 }
 
 /**

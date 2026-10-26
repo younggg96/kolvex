@@ -1,4 +1,5 @@
 "use client";
+import { loadClientCache, peekClientCache } from "@/lib/clientCache";
 
 import { isProductFeatureEnabled } from "@/lib/productFeatures";
 
@@ -23,7 +24,7 @@ import { type StockQuote } from "@/lib/stockApi";
 import { cn } from "@/lib/utils";
 import { loadStockTrend } from "@/lib/stockTrends";
 import { MARKET_RANGES, marketRangeBaseline, observationRange, type MarketObservation } from "@/lib/marketObservations";
-import { loadMarketQuotes } from "@/lib/marketQuotes";
+import { loadMarketQuotes, getCachedMarketQuotes } from "@/lib/marketQuotes";
 import { BENCHMARKS, MARKET_GROUPS, isMarketIndex, indexValue, type MarketInstrument } from "@/lib/marketBenchmarks";
 import {
   Change,
@@ -41,6 +42,7 @@ import ScrubChart, { type ScrubPoint } from "./ScrubChart";
 import { useDecisionCommand } from "./CommandLayer";
 import StockLookup from "./StockLookup";
 import MacroIndicators from "./MacroIndicators";
+import MarketEventCalendar from "./MarketEventCalendar";
 import StockTrend from "./StockTrend";
 import MarketComparison from "./MarketComparison";
 
@@ -86,20 +88,22 @@ function MarketInstrumentCard({ benchmark, quote, quoteLoading, range, attempt, 
     observer.observe(host.current);
     return () => observer.disconnect();
   }, []);
-  const [series, setSeries] = useState<ScrubPoint[]>([]);
-  const [seriesState, setSeriesState] = useState<"loading" | "ready" | "error">("loading");
+  const seriesKey = `/market-series/${benchmark.symbol}/${range}`;
+  const [series, setSeries] = useState<ScrubPoint[]>(() => peekClientCache<ScrubPoint[]>(seriesKey) ?? []);
+  const [seriesState, setSeriesState] = useState<"loading" | "ready" | "error">((peekClientCache<ScrubPoint[]>(seriesKey)?.length ?? 0) > 1 ? "ready" : "loading");
   const [scrub, setScrub] = useState<ScrubPoint | null>(null);
 
   useEffect(() => {
     const controller = new AbortController();
     const spec = RANGES.find((item) => item.key === range)!;
-    setSeriesState("loading");
-    setSeries([]);
+    const saved = peekClientCache<ScrubPoint[]>(seriesKey);
+    setSeriesState(saved?.length ? "ready" : "loading");
+    setSeries(saved ?? []);
     setScrub(null);
     if (!near) return () => controller.abort();
-    async function load(): Promise<MarketObservation[]> {
+    async function load(signal: AbortSignal): Promise<MarketObservation[]> {
       if (benchmark.source === "fred") {
-        const response = await fetch(`/api/market/observations/${benchmark.symbol}`, { signal: controller.signal });
+        const response = await fetch(`/api/market/observations/${benchmark.symbol}`, { signal });
         if (!response.ok) throw new Error("Observations unavailable");
         const data = await response.json();
         if (!Array.isArray(data.history)) throw new Error("Invalid observations");
@@ -107,11 +111,13 @@ function MarketInstrumentCard({ benchmark, quote, quoteLoading, range, attempt, 
       }
       return loadStockTrend(benchmark.symbol, benchmark.daily
         ? { period: range === "1D" ? "5d" : spec.period, interval: "1d" }
-        : { period: spec.period, interval: spec.interval }, controller.signal);
+        : { period: spec.period, interval: spec.interval }, signal, attempt > 0);
     }
-    load().then((history) => {
+    loadClientCache(seriesKey, async signal => {
+      const history = await load(signal);
+      return benchmark.daily || ["1Y", "QTD", "YTD"].includes(range) ? observationRange(history, range) : history;
+    }, { ttl: benchmark.daily ? 5 * 60_000 : 60_000, maxAge: 5 * 60_000, force: attempt > 0, signal: controller.signal }).then((points) => {
         if (controller.signal.aborted) return;
-        const points = benchmark.daily || ["1Y", "QTD", "YTD"].includes(range) ? observationRange(history, range) : history;
         setSeries(points);
         setSeriesState(points.length > 1 ? "ready" : "error");
       })
@@ -119,7 +125,7 @@ function MarketInstrumentCard({ benchmark, quote, quoteLoading, range, attempt, 
         if (!controller.signal.aborted) setSeriesState("error");
       });
     return () => controller.abort();
-  }, [benchmark.symbol, benchmark.source, benchmark.daily, range, attempt, near]);
+  }, [benchmark.symbol, benchmark.source, benchmark.daily, range, attempt, near, seriesKey]);
 
   const value = scrub?.value ?? (benchmark.daily ? series.at(-1)?.value : (range === "1D" ? quote?.price : undefined) ?? series.at(-1)?.value);
   const baseline = range === "1D" && !benchmark.daily
@@ -138,7 +144,7 @@ function MarketInstrumentCard({ benchmark, quote, quoteLoading, range, attempt, 
             ? `${positive ? "+" : "−"}${indexValue(Math.abs(change) * 100)} bp`
             : change !== undefined && percent !== undefined
               ? `${positive ? "+" : "−"}${indexValue(Math.abs(change))} (${positive ? "+" : "−"}${Math.abs(percent).toFixed(2)}%)`
-              : c("Change unavailable", "暂无涨跌数据")}
+              : quoteLoading || seriesState === "loading" ? <Skeleton className="inline-block h-4 w-32 align-middle" /> : c("Change unavailable", "暂无涨跌数据")}
           {benchmark.daily && range === "1D" && <span className="ml-1 text-muted-foreground">{c("vs. prior observation", "较前次观测")}</span>}
           <span className="sr-only"> · {c(spec.en, spec.zh)}</span></>);
   const chartDisplay = (<>{seriesState === "loading" ? (
@@ -176,9 +182,9 @@ function MarketInstrumentCard({ benchmark, quote, quoteLoading, range, attempt, 
         <div className="figure mt-2 min-h-8 text-2xl font-semibold tracking-tight">
           {valueDisplay}
         </div>
-        <p className={cn("figure mt-0.5 min-h-5 truncate text-xs font-medium", change === undefined ? "text-muted-foreground" : positive ? "text-positive" : "text-negative")}>
+        <div className={cn("figure mt-0.5 min-h-5 truncate text-xs font-medium", change === undefined ? "text-muted-foreground" : positive ? "text-positive" : "text-negative")}>
           {changeDisplay}
-        </p>
+        </div>
         <div className="mt-2 h-24" aria-busy={seriesState === "loading"}>
           {chartDisplay}
         </div>
@@ -281,7 +287,7 @@ function MarketCharts({ groups, quotes, loading, range, setRange, attempt, onRet
 
 function MarketTrends({ range, setRange, view, setView }: { range: RangeKey; setRange: (range: RangeKey) => void; view: MarketView; setView: (view: MarketView) => void }) {
   const { setContext } = useDecisionCommand();
-  const [quotes, setQuotes] = useState<Record<string, StockQuote>>({});
+  const [quotes, setQuotes] = useState<Record<string, StockQuote>>(() => getCachedMarketQuotes(TREND_QUOTE_SYMBOLS));
   const [loading, setLoading] = useState(true);
   const [attempt, setAttempt] = useState(0);
   const [checkedAt, setCheckedAt] = useState<string | null>(null);
@@ -291,7 +297,7 @@ function MarketTrends({ range, setRange, view, setView }: { range: RangeKey; set
     setLoading(true);
     loadMarketQuotes(TREND_QUOTE_SYMBOLS, controller.signal, batch => {
       setQuotes(previous => ({ ...previous, ...batch }));
-    }).then(({ quotes: result }) => {
+    }, attempt > 0).then(({ quotes: result }) => {
       if (controller.signal.aborted) return;
       setQuotes(result);
       setCheckedAt(new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }));
@@ -317,7 +323,7 @@ function MarketOverview({ range, setRange, view, setView }: { range: RangeKey; s
   const [quoteAttempt, setQuoteAttempt] = useState(0);
   const [universe, setUniverse] = useState<Universe>("featured");
   const [sort, setSort] = useState<Sort>("move");
-  const [quotes, setQuotes] = useState<Record<string, StockQuote>>({});
+  const [quotes, setQuotes] = useState<Record<string, StockQuote>>(() => getCachedMarketQuotes([...BENCHMARKS.map(item => item.symbol), ...DEFAULT_STOCKS]));
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
   const [checkedAt, setCheckedAt] = useState<string | null>(null);
@@ -346,6 +352,7 @@ function MarketOverview({ range, setRange, view, setView }: { range: RangeKey; s
         [...BENCHMARKS.map(item => item.symbol), ...symbolsKey.split(",")],
         controller.signal,
         batch => setQuotes(previous => ({ ...previous, ...batch })),
+        attempt > 0 || quoteAttempt > 0,
       );
       if (!controller.signal.aborted) {
         setQuotes(result);
@@ -480,13 +487,15 @@ function MarketOverview({ range, setRange, view, setView }: { range: RangeKey; s
                               <p className="mt-1 truncate text-xs text-muted-foreground">{quotes[symbol]?.name || stock?.company_name || "—"}</p>
                             </div>
                           </div>
-                          <span className="hidden min-w-0 sm:block">
+                          <div className="hidden min-w-0 sm:block">
                             {stock ? (
                               <OpinionStrength value={stock.avg_score} className="text-[13px]" />
+                            ) : catalogue.loading ? (
+                              <Skeleton className="h-4 w-16" />
                             ) : (
-                              <span className="text-[13px] text-muted-foreground/70">{c("No coverage", "暂无观点")}</span>
+                              <span className="text-[13px] text-muted-foreground/70">{catalogue.error ? c("Coverage unavailable", "观点暂不可用") : c("No coverage", "暂无观点")}</span>
                             )}
-                          </span>
+                          </div>
                           <StockTrend symbol={symbol} period={trendRange.period} interval={trendRange.interval} rangeLabel={c(trendRange.en, trendRange.zh)} rangeKey={range} />
                           <span className="min-w-0 text-right">
                             {loading && !quotes[symbol] ? <Skeleton className="ml-auto h-5 w-16" /> : <span className="figure block text-[15px] font-medium">{money(quotes[symbol]?.price)}</span>}
@@ -577,7 +586,7 @@ export default function Market() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const requestedTab = searchParams.get("tab");
-  const tab = requestedTab === "macro" || requestedTab === "trends" ? requestedTab : "overview";
+  const tab = requestedTab === "calendar" || requestedTab === "macro" || requestedTab === "trends" ? requestedTab : "overview";
   const [range, setRange] = useState<RangeKey>("1D");
   const [view, setViewState] = useState<MarketView>("card");
   useEffect(() => {
@@ -594,7 +603,7 @@ export default function Market() {
 
   function selectTab(value: string) {
     const params = new URLSearchParams(searchParams.toString());
-    if (value === "macro" || value === "trends") params.set("tab", value);
+    if (value === "calendar" || value === "macro" || value === "trends") params.set("tab", value);
     else params.delete("tab");
     router.replace(`${pathname}${params.size ? `?${params.toString()}` : ""}`, { scroll: false });
   }
@@ -608,10 +617,12 @@ export default function Market() {
             <TabsList aria-label={c("Market views", "行情视图")}>
               <TabsTrigger value="overview">{c("Market overview", "市场概览")}</TabsTrigger>
               <TabsTrigger value="trends">{c("Market trends", "市场走势")}</TabsTrigger>
+              <TabsTrigger value="calendar">{c("Event calendar", "事件日历")}</TabsTrigger>
               <TabsTrigger value="macro">{c("Macro indicators", "宏观指标")}</TabsTrigger>
             </TabsList>
             <TabsContent value="overview"><MarketOverview range={range} setRange={setRange} view={view} setView={setView} /></TabsContent>
             <TabsContent value="trends"><MarketTrends range={range} setRange={setRange} view={view} setView={setView} /></TabsContent>
+            <TabsContent value="calendar"><MarketEventCalendar /></TabsContent>
             <TabsContent value="macro"><MacroIndicators /></TabsContent>
           </Tabs>
         </div>

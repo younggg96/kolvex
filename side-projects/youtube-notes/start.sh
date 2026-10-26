@@ -8,6 +8,7 @@ fi
 case "${1:-}" in
   batch) shift; exec .venv/bin/python batch.py "$@" ;;
   sync) shift; exec .venv/bin/python sync_kolvex.py "$@" ;;
+  combine) shift; exec .venv/bin/python combine.py "$@" ;;
   api) shift; exec .venv/bin/python server.py "$@" ;;
   *) exec .venv/bin/python youtube_transcribe.py "$@" ;;
 esac

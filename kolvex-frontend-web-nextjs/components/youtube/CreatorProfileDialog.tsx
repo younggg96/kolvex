@@ -1,9 +1,11 @@
 "use client";
 
 import { useState } from "react";
+import { loadClientCache, peekClientCache } from "@/lib/clientCache";
 import { ExternalLink, Loader2, UserRound } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import CompanyLogo from "@/components/ui/company-logo";
 import CreatorAvatar from "./CreatorAvatar";
 import { useTranslation } from "@/lib/i18n";
@@ -18,7 +20,8 @@ export default function CreatorProfileDialog({ creator, onLoaded, compact = fals
   const intlLocale = t("common.intlLocale");
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [profile, setProfile] = useState<YouTubeCreatorSummary | null>(null);
+  const profileKey = `/api/youtube-opinions/creators/${encodeURIComponent(creator.channel_id)}/profile`;
+  const [profile, setProfile] = useState<YouTubeCreatorSummary | null>(peekClientCache<YouTubeCreatorSummary>(profileKey) ?? null);
   const [error, setError] = useState("");
   const current = profile || creator;
   const title = current.channel_title || creator.channel_id;
@@ -27,7 +30,7 @@ export default function CreatorProfileDialog({ creator, onLoaded, compact = fals
     setLoading(true);
     setError("");
     try {
-      const result = await getYouTubeCreatorProfile(creator.channel_id);
+      const result = await loadClientCache(profileKey, () => getYouTubeCreatorProfile(creator.channel_id), { ttl: 5 * 60_000 });
       setProfile(result);
       onLoaded?.(result);
     } catch {
@@ -68,9 +71,9 @@ export default function CreatorProfileDialog({ creator, onLoaded, compact = fals
           {loading && <div role="status" className="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" />{t("youtubeOpinions.profile.loading")}</div>}
           {(error || (profile && profile.profile_status !== "available")) && <p role="status" className="text-sm text-muted-foreground">{error || t("youtubeOpinions.profile.unavailableImported")}</p>}
           <div className="grid grid-cols-2 gap-x-5 gap-y-6 border-y border-border py-5 sm:grid-cols-4">
-            {statistics.map(([label, value]) => <div key={label}><p className="text-xs text-muted-foreground">{label}</p><p className="mt-2 text-xl font-medium tabular-nums">{value}</p></div>)}
+            {statistics.map(([label, value]) => <div key={label}><p className="text-xs text-muted-foreground">{label}</p><div className="mt-2 text-xl font-medium tabular-nums" aria-busy={loading && !profile}>{loading && !profile ? <Skeleton className="h-7 w-16" /> : value}</div></div>)}
           </div>
-          <div className="space-y-2"><h3 className="text-sm font-medium">{t("youtubeOpinions.profile.about")}</h3><p className="max-h-48 overflow-y-auto whitespace-pre-wrap break-words text-sm leading-relaxed text-muted-foreground">{current.description || t("youtubeOpinions.profile.noDescription")}</p></div>
+          <div className="space-y-2"><h3 className="text-sm font-medium">{t("youtubeOpinions.profile.about")}</h3>{loading && !current.description ? <Skeleton className="h-16 w-full" /> : <p className="max-h-48 overflow-y-auto whitespace-pre-wrap break-words text-sm leading-relaxed text-muted-foreground">{current.description || t("youtubeOpinions.profile.noDescription")}</p>}</div>
           <div className="flex flex-wrap gap-x-5 gap-y-2 text-xs text-muted-foreground">
             {current.country && <span>{t("youtubeOpinions.profile.country")}: {current.country}</span>}
             {current.channel_published_at && Number.isFinite(Date.parse(current.channel_published_at)) && <span>{t("youtubeOpinions.profile.created")}: {new Intl.DateTimeFormat(intlLocale, { dateStyle: "medium" }).format(new Date(current.channel_published_at))}</span>}

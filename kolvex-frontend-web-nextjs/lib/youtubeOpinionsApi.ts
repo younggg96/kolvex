@@ -1,3 +1,5 @@
+import { invalidateClientCache, subscribeClientCache } from "./clientCache";
+
 export type OpinionSentiment = "bullish" | "bearish" | "neutral" | "mixed";
 
 export interface YouTubeOpinionSummary {
@@ -138,10 +140,12 @@ export interface YouTubeOpinionDashboardParams {
 
 const API_PREFIX = "/api/youtube-opinions";
 const dashboardCache = new Map<string, { expires: number; data?: YouTubeOpinionDashboard; request: Promise<YouTubeOpinionDashboard> }>();
-const dashboardCacheMs = 30_000;
+const dashboardCacheMs = 60_000;
+subscribeClientCache(prefix => { if (!prefix) dashboardCache.clear(); });
 
 export function clearYouTubeDashboardCache() {
   dashboardCache.clear();
+  invalidateClientCache(API_PREFIX);
 }
 
 async function apiRequest<T>(
@@ -182,7 +186,7 @@ function dashboardEndpoint(params: YouTubeOpinionDashboardParams) {
 
 export function getCachedYouTubeOpinionDashboard(params: YouTubeOpinionDashboardParams = {}) {
   const entry = dashboardCache.get(dashboardEndpoint(params));
-  return entry && entry.expires > Date.now() ? entry.data : undefined;
+  return entry && entry.expires + 14 * 60_000 > Date.now() ? entry.data : undefined;
 }
 
 export function getYouTubeOpinionDashboard(

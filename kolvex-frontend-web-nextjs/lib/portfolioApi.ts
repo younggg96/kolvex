@@ -1,3 +1,5 @@
+import { invalidateClientCache } from "./clientCache";
+
 /**
  * Portfolio API Module
  * Client-side API calls for portfolio sharing functionality
@@ -31,9 +33,10 @@ async function apiRequest<T>(
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({}));
-    throw new Error(error.error || `Request failed: ${response.status}`);
+    throw Object.assign(new Error(error.error || `Request failed: ${response.status}`), { status: response.status });
   }
 
+  if (options.method && options.method.toUpperCase() !== "GET") invalidateClientCache(API_PREFIX);
   return response.json();
 }
 
@@ -48,8 +51,8 @@ export async function getConnectionStatus(): Promise<PortfolioConnectionStatus> 
 /**
  * Get current user's holdings data
  */
-export async function getMyHoldings(): Promise<PortfolioHoldings> {
-  return apiRequest<PortfolioHoldings>("/holdings");
+export async function getMyHoldings(signal?: AbortSignal): Promise<PortfolioHoldings> {
+  return apiRequest<PortfolioHoldings>("/holdings", { signal });
 }
 
 /**

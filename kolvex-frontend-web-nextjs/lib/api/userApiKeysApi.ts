@@ -98,13 +98,11 @@ export interface AvailableProvidersResponse {
 /**
  * Get providers with user-configured API keys
  */
-export async function getAvailableProviders(): Promise<AvailableProvidersResponse> {
-  const response = await fetch(`${API_PREFIX}?action=available-providers`, { cache: "no-store" });
+export async function getAvailableProviders(signal?: AbortSignal): Promise<AvailableProvidersResponse> {
+  const response = await fetch(`${API_PREFIX}?action=available-providers`, { cache: "no-store", signal });
 
   if (!response.ok) {
-    // Gracefully return empty if endpoint fails (e.g. table not yet created)
-    console.warn("Failed to fetch available providers, defaulting to empty");
-    return { available_providers: [] };
+    throw Object.assign(new Error("Failed to fetch available providers"), { status: response.status });
   }
 
   return response.json();

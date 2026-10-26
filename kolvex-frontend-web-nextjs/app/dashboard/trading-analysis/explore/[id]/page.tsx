@@ -1,7 +1,9 @@
 "use client";
 
 import HeaderBackButton from "@/components/layout/HeaderBackButton";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect } from "react";
+import { useCachedResource } from "@/hooks/useCachedResource";
+import { Button } from "@/components/ui/button";
 import { useParams, useSearchParams } from "next/navigation";
 import {
   Clock,
@@ -16,7 +18,6 @@ import { deepResearchPagePath, parseDeepResearchPage } from "@/lib/researchRoute
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import {
   getPublishedAnalysis,
-  type TradingAnalysis,
 } from "@/lib/tradingAnalysisApi";
 import { DecisionBadge } from "@/components/trading-analysis/badges";
 import { ResearchReportContent } from "@/components/trading-analysis/ResearchReportContent";
@@ -31,23 +32,9 @@ export default function PublishedAnalysisDetailPage() {
   const analysisId = params.id as string;
   const listPath = deepResearchPagePath(parseDeepResearchPage(searchParams.get("page")));
 
-  const [analysis, setAnalysis] = useState<TradingAnalysis | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  const loadAnalysis = useCallback(async () => {
-    try {
-      const data = await getPublishedAnalysis(analysisId);
-      setAnalysis(data);
-    } catch (e) {
-      console.error("Failed to load published analysis:", e);
-    } finally {
-      setLoading(false);
-    }
-  }, [analysisId]);
-
-  useEffect(() => {
-    loadAnalysis();
-  }, [loadAnalysis]);
+  const resource = useCachedResource(`/api/trading-analysis/published/${encodeURIComponent(analysisId)}`, signal => getPublishedAnalysis(analysisId, signal), { ttl: 60_000 });
+  const analysis = resource.data ?? null;
+  const loading = resource.loading;
 
   useEffect(() => {
     const heading = analysis?.ticker
@@ -77,8 +64,9 @@ export default function PublishedAnalysisDetailPage() {
           <div className="flex flex-col items-center justify-center flex-1 min-h-[400px] gap-4">
             <XCircle className="h-10 w-10 text-muted-foreground" />
             <p className="text-muted-foreground">
-              {t("tradingAnalysis.notFound")}
+              {resource.error ? t("common.error") : t("tradingAnalysis.notFound")}
             </p>
+            {Boolean(resource.error) && <Button variant="outline" onClick={resource.refresh}>{t("common.retry")}</Button>}
           </div>
         </div>
       </DashboardLayout>

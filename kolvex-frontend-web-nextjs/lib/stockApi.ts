@@ -23,8 +23,8 @@ export interface StockQuote {
   updatedAt?: string;
 }
 
-export async function getStockQuote(symbol: string): Promise<StockQuote> {
-  const response = await fetch(`/api/stocks?action=quote&symbol=${encodeURIComponent(symbol)}`);
+export async function getStockQuote(symbol: string, signal?: AbortSignal): Promise<StockQuote> {
+  const response = await fetch(`/api/stocks?action=quote&symbol=${encodeURIComponent(symbol)}`, { signal });
   const data = await response.json();
   if (!response.ok || !Number.isFinite(data.price) || data.price <= 0) throw new Error("Market price unavailable");
   return data as StockQuote;

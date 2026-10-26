@@ -1,4 +1,5 @@
 "use client";
+import { invalidateClientCache } from "@/lib/clientCache";
 
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -70,6 +71,7 @@ export default function DailyBriefImporter() {
   async function save() {
     if (!preview || !validated) return;
     const result = await briefRequest<{ id: string; already_exists: boolean }>("", JSON.stringify(preview));
+    invalidateClientCache("/api/briefs");
     setMessage(result.already_exists ? `${result.id} 已保存，无需重复导入。` : `已保存 ${result.id}。`);
     setValidated(false);
     if (page !== 1) setPage(1); else await refresh();

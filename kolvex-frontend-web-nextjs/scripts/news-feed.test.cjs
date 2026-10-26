@@ -6,8 +6,9 @@ const path = require('node:path');
 const ts = require('typescript');
 function load(file, deps = {}, globals = {}) {
   const exports = {};
+  const clientCache = require("./helpers/client-cache.cjs")();
   vm.runInNewContext(ts.transpileModule(fs.readFileSync(path.join(__dirname, '..', file), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020 } }).outputText, {
-    exports, require: name => { if (name in deps) return deps[name]; throw new Error(name); },
+    exports, require: name => { if (name === "@/lib/clientCache") return clientCache; if (name in deps) return deps[name]; throw new Error(name); },
     URL, AbortSignal, process: { env: {} }, ...globals,
   });
   return exports;
@@ -88,7 +89,7 @@ test('polling pauses in hidden tabs or on Pause, resumes and aborts on unmount',
   await h.respond([article('2','Second',200),article('1','First')]);
   state=h.render();assert.equal(state.feed.pending.length,1);
   state.refresh();h.render();assert.equal(h.requests.length,3);
-  h.unmount();assert.equal(h.requests[2].signal.aborted,true);
+  h.unmount();assert.equal(h.requests.length,3, 'unmounted reader may finish warming the shared cache');
   h.tick();assert.equal(h.requests.length,3);
 });
 

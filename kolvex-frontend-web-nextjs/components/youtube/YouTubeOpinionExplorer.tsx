@@ -158,9 +158,7 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
   const { t } = useTranslation();
   const [route, setRoute] = useState<Route>({ tab: "stocks" });
   const [ready, setReady] = useState(false);
-  const [catalogue, setCatalogue] = useState<YouTubeOpinionDashboard | null>(
-    null,
-  );
+  const [catalogue, setCatalogue] = useState<YouTubeOpinionDashboard | null>(() => getCachedYouTubeOpinionDashboard({ limit: 8 }) ?? null);
   const [coverage, setCoverage] = useState<Record<string, YouTubeUploadCoverage>>({});
   const [catalogueError, setCatalogueError] = useState("");
   const [detail, setDetail] = useState<YouTubeOpinionDashboard | null>(null);
@@ -350,16 +348,7 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
   }, [ready, inDetail, route.ticker, route.creator, filters, revision]);
 
   async function navigate(next: Route) {
-    const request = ++navigationRequest.current;
-    if (next.creator || next.ticker) {
-      setNavigating(true);
-      try {
-        await getYouTubeOpinionDashboard({ ticker: next.ticker, channel_id: next.creator, limit: pageSize });
-      } catch {
-        // Open the destination with its normal inline retry state on failure.
-      }
-      if (request !== navigationRequest.current) return;
-    }
+    navigationRequest.current++;
     setNavigating(false);
     if (allStocks) {
       router.push(routeHref(next));
@@ -1032,7 +1021,7 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
                             : t("youtubeOpinions.trackedCreators")}
                         </h2>
 
-                      {catalogue && (
+                      {catalogue && !(route.tab === "stocks" && stockScope === "holdings" && (held.loading || held.error)) && (
                         <p className="mt-1 text-sm text-foreground/80 tabular-nums">
                           {t("youtubeOpinions.catalogueSummary", {
                             stocks: String(catalogue.summary.total_stocks),

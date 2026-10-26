@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
+import MarketEventManager from "@/components/admin/MarketEventManager";
 import DailyBriefImporter from "@/components/admin/DailyBriefImporter";
 import YouTubeOpinionImporter from "@/components/admin/YouTubeOpinionImporter";
 import YouTubeCreatorManager from "@/components/admin/YouTubeCreatorManager";
@@ -85,12 +86,13 @@ export default function AdminPageClient({ initialTab }: { initialTab?: string })
 
         {error && <p role="alert" className="rounded-2xl bg-negative/10 px-4 py-3 text-sm text-foreground">{error}</p>}
 
-        <Tabs defaultValue={initialTab === "briefs" ? "briefs" : "database"}>
-          <TabsList>
+        <Tabs defaultValue={initialTab === "events" ? "events" : initialTab === "briefs" ? "briefs" : "database"}>
+          <TabsList className="max-w-full flex-wrap h-auto">
             <TabsTrigger value="database">数据库</TabsTrigger>
             <TabsTrigger value="users">用户</TabsTrigger>
             <TabsTrigger value="creators">博主观点</TabsTrigger>
             <TabsTrigger value="youtube">YouTube 导入</TabsTrigger>
+            <TabsTrigger value="events">重大事件</TabsTrigger>
             <TabsTrigger value="briefs">早晚报导入</TabsTrigger>
           </TabsList>
 
@@ -164,6 +166,7 @@ export default function AdminPageClient({ initialTab }: { initialTab?: string })
             </div>
           </TabsContent>
 
+          <TabsContent value="events" forceMount className="mt-6 data-[state=inactive]:hidden"><MarketEventManager /></TabsContent>
           <TabsContent value="briefs" className="mt-6">
             <DailyBriefImporter />
           </TabsContent>

@@ -1,0 +1,175 @@
+{
+  "$defs": {
+    "Event": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_-]{0,99}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "title": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Title",
+          "type": "string"
+        },
+        "title_en": {
+          "default": "",
+          "maxLength": 200,
+          "title": "Title En",
+          "type": "string"
+        },
+        "category": {
+          "enum": [
+            "earnings",
+            "fed",
+            "economic",
+            "other"
+          ],
+          "title": "Category",
+          "type": "string"
+        },
+        "event_date": {
+          "format": "date",
+          "title": "Event Date",
+          "type": "string"
+        },
+        "starts_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Starts At"
+        },
+        "timing": {
+          "default": "tbd",
+          "enum": [
+            "scheduled",
+            "before_open",
+            "after_close",
+            "all_day",
+            "tbd"
+          ],
+          "title": "Timing",
+          "type": "string"
+        },
+        "importance": {
+          "default": "high",
+          "enum": [
+            "high",
+            "medium",
+            "low"
+          ],
+          "title": "Importance",
+          "type": "string"
+        },
+        "is_hot": {
+          "default": false,
+          "title": "Is Hot",
+          "type": "boolean"
+        },
+        "status": {
+          "default": "draft",
+          "enum": [
+            "draft",
+            "published",
+            "cancelled"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "summary": {
+          "default": "",
+          "maxLength": 4000,
+          "title": "Summary",
+          "type": "string"
+        },
+        "summary_en": {
+          "default": "",
+          "maxLength": 4000,
+          "title": "Summary En",
+          "type": "string"
+        },
+        "tickers": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 30,
+          "title": "Tickers",
+          "type": "array"
+        },
+        "source_name": {
+          "default": "",
+          "maxLength": 200,
+          "title": "Source Name",
+          "type": "string"
+        },
+        "source_url": {
+          "anyOf": [
+            {
+              "format": "uri",
+              "maxLength": 2083,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Source Url"
+        }
+      },
+      "required": [
+        "id",
+        "title",
+        "category",
+        "event_date"
+      ],
+      "title": "Event",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "kolvex-market-events/1.0",
+      "enum": [
+        "kolvex-market-events/1.0"
+      ],
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "timezone": {
+      "const": "America/New_York",
+      "enum": [
+        "America/New_York"
+      ],
+      "title": "Timezone",
+      "type": "string"
+    },
+    "events": {
+      "items": {
+        "$ref": "#/$defs/Event"
+      },
+      "maxItems": 200,
+      "minItems": 1,
+      "title": "Events",
+      "type": "array"
+    }
+  },
+  "required": [
+    "schema_version",
+    "timezone",
+    "events"
+  ],
+  "title": "Envelope",
+  "type": "object"
+}

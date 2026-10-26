@@ -1,4 +1,5 @@
 "use client";
+import { loadClientCache, peekClientCache, subscribeClientCache, invalidateClientCache } from "@/lib/clientCache";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -25,50 +26,62 @@ export function useStockHistory<T>(ticker: string, kind: "technical" | "drawings
   const { user } = useAuth();
   const userId = user?.id;
   const [scope, setScope] = useState<"all" | "mine">("all");
-  const [items, setItems] = useState<AnalysisVersion<T>[]>([]);
-  const [selected, setSelected] = useState<AnalysisVersion<T> | null>(null);
-  const [current, setCurrent] = useState<AnalysisVersion<T> | null>(null);
-  const [total, setTotal] = useState(0);
-  const [busy, setBusy] = useState(false);
+  const historyKey = `/api/market/analysis-history/${encodeURIComponent(ticker)}?kind=${kind}&limit=10&offset=0&scope=${scope}`;
+  const cached = peekClientCache<{ items: AnalysisVersion<T>[]; current: AnalysisVersion<T> | null; total: number }>(historyKey);
+  const [items, setItems] = useState<AnalysisVersion<T>[]>(() => cached?.items ?? []);
+  const [selected, setSelected] = useState<AnalysisVersion<T> | null>(() => cached?.current ?? null);
+  const [current, setCurrent] = useState<AnalysisVersion<T> | null>(() => cached?.current ?? null);
+  const [total, setTotal] = useState(cached?.total ?? 0);
+  const [busy, setBusy] = useState(!cached);
+  const resourceKey = JSON.stringify([ticker, kind, scope, userId]);
+  const [loadedKey, setLoadedKey] = useState<string | null>(cached ? resourceKey : null);
   const [error, setError] = useState<number | null>(null);
   const controller = useRef<AbortController | null>(null);
   const generation = useRef(0);
-  const load = useCallback(async (offset = 0, selectId?: string) => {
+  const loadVersion = useCallback((id: string, signal: AbortSignal) => loadClientCache(
+    `/api/market/analysis-history/${encodeURIComponent(ticker)}/${encodeURIComponent(id)}`,
+    requestSignal => getStockAnalysisVersion<T>(ticker, id, requestSignal),
+    { ttl: 5 * 60_000, signal },
+  ), [ticker]);
+  const load = useCallback(async (offset = 0, selectId?: string, force = true) => {
     controller.current?.abort();
     if (scope === "mine" && !userId) {
-      setItems([]); setSelected(null); setCurrent(null); setTotal(0); setBusy(false); setError(null);
+      setItems([]); setSelected(null); setCurrent(null); setTotal(0); setBusy(false); setError(null); setLoadedKey(resourceKey);
       return;
     }
     const abort = new AbortController();
     controller.current = abort;
     setBusy(true); setError(null);
     try {
-      const data = await getStockAnalysisHistory<T>(ticker, kind, offset, abort.signal, scope);
+      const key = historyKey.replace("offset=0", `offset=${offset}`);
+      const data = await loadClientCache(key, signal => getStockAnalysisHistory<T>(ticker, kind, offset, signal, scope), { ttl: 60_000, force, signal: abort.signal });
       if (abort.signal.aborted) return;
       setItems(previous => offset ? [...previous, ...data.items.filter(item => !previous.some(old => old.id === item.id))] : data.items);
       setCurrent(data.current); setTotal(data.total);
       if (!offset) {
         let next = data.current?.id === selectId ? data.current : data.items.find(item => item.id === selectId) || data.current;
-        if (next && kind !== "research" && !next.bars) next = await getStockAnalysisVersion<T>(ticker, next.id, abort.signal);
+        if (next && kind !== "research" && !next.bars) next = await loadVersion(next.id, abort.signal);
         if (!abort.signal.aborted) setSelected(next);
       }
     } catch (reason) {
       if (!abort.signal.aborted) setError(reason instanceof HistoryError ? reason.status : 0);
-    } finally { if (!abort.signal.aborted) setBusy(false); }
-  }, [ticker, kind, scope, userId]);
+    } finally { if (!abort.signal.aborted) { setBusy(false); setLoadedKey(resourceKey); } }
+  }, [ticker, kind, scope, userId, resourceKey, historyKey, loadVersion]);
   useEffect(() => {
     generation.current += 1;
-    setItems([]); setSelected(null); setCurrent(null); setTotal(0);
-    void load();
+    const saved = peekClientCache<{ items: AnalysisVersion<T>[]; current: AnalysisVersion<T> | null; total: number }>(historyKey);
+    setItems(saved?.items ?? []); setSelected(saved?.current ?? null); setCurrent(saved?.current ?? null); setTotal(saved?.total ?? 0);
+    void load(0, undefined, false);
     return () => { generation.current += 1; controller.current?.abort(); };
-  }, [load]);
+  }, [load, historyKey]);
+  useEffect(() => subscribeClientCache(prefix => { if (historyKey.startsWith(prefix)) void load(); }), [historyKey, load]);
   async function activate() {
     if (!selected?.is_owner || busy) return;
     const token = generation.current;
     setBusy(true); setError(null);
     try {
       const result = await activateStockAnalysis<T>(ticker, selected.id, current?.is_owner ? current.id : null);
-      if (token === generation.current) setCurrent(result);
+      if (token === generation.current) { setCurrent(result); invalidateClientCache(`/api/market/analysis-history/${encodeURIComponent(ticker)}`); }
     } catch (reason) {
       if (token !== generation.current) return;
       const status = reason instanceof HistoryError ? reason.status : 0;
@@ -88,13 +101,14 @@ export function useStockHistory<T>(ticker: string, kind: "technical" | "drawings
     controller.current = abort;
     setBusy(true); setError(null);
     try {
-      const detail = await getStockAnalysisVersion<T>(ticker, item.id, abort.signal);
+      const detail = await loadVersion(item.id, abort.signal);
       if (!abort.signal.aborted) setSelected(detail);
     } catch (reason) {
       if (!abort.signal.aborted) setError(reason instanceof HistoryError ? reason.status : 0);
     } finally { if (!abort.signal.aborted) setBusy(false); }
-  }, [ticker, kind]);
-  return { items, selected, current, total, busy, error, load, select, activate, scope, setScope };
+  }, [kind, loadVersion]);
+  const pendingResource = loadedKey !== resourceKey;
+  return { items: pendingResource ? cached?.items ?? [] : items, selected: pendingResource ? cached?.current ?? null : selected, current: pendingResource ? cached?.current ?? null : current, total: pendingResource ? cached?.total ?? 0 : total, busy: busy || (pendingResource && !cached), error: pendingResource ? null : error, load, select, activate, scope, setScope };
 }
 export type StockHistoryState<T> = ReturnType<typeof useStockHistory<T>>;
 
@@ -113,12 +127,12 @@ export function DrawingVersionSelector({ history, hidden, disabled = false }: {
     if (item && !options.some(option => option.id === item.id)) options.push(item);
   }
   return <div className="mt-3 min-w-0 border-t border-border pt-3">
-    <p className="mb-2 text-sm font-medium">{c("Saved AI drawings", "已保存的 AI 画线")} ({history.total})</p>
+    <p className="mb-2 text-sm font-medium">{c("Saved AI drawings", "已保存的 AI 画线")}{!history.busy && ` (${history.total})`}</p>
     <HistoryScope history={history} />
     <Select value={hidden ? "" : history.selected?.id || ""} disabled={blocked || !options.length}
       onValueChange={id => { const item = options.find(option => option.id === id); if (item) void history.select(item); }}>
       <SelectTrigger aria-label={c("Switch AI drawing version", "切换 AI 画线版本")} className="w-full">
-        <SelectValue placeholder={hidden ? c("Drawings hidden · select a version to show", "画线已隐藏，选择版本重新显示") : c("No saved drawings yet", "暂无已保存的画线")} />
+        <SelectValue placeholder={history.busy ? c("Loading drawings…", "正在加载画线…") : history.error !== null ? c("Drawings could not be loaded", "画线加载失败") : hidden ? c("Drawings hidden · select a version to show", "画线已隐藏，选择版本重新显示") : c("No saved drawings yet", "暂无已保存的画线")} />
       </SelectTrigger>
       <SelectContent style={{ width: "var(--radix-select-trigger-width)", maxHeight: "min(20rem, var(--radix-select-content-available-height))" }}>
         {options.map(item => <SelectItem key={item.id} value={item.id}>
@@ -152,7 +166,7 @@ export default function AnalysisHistory<T>({ history, drawings = false, title }:
     {history.selected && <p className="mt-1 text-xs text-muted-foreground">{c("Generated by", "生成者")} · {authorLabel(history.selected, c)}</p>}
     {history.selected && history.selected.id !== history.current?.id && <p role="status" className="mt-3 text-sm text-muted-foreground">{drawings ? c("Viewing historical drawings", "正在查看历史画线") : c("Viewing a historical analysis", "正在查看历史分析")} · {new Date(history.selected.created_at).toLocaleString(t("common.intlLocale"))}</p>}
     <details className="group/disclosure mt-4 border-t border-border pt-3">
-    <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 rounded text-sm font-medium hover:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary [&::-webkit-details-marker]:hidden"><span>{title || (drawings ? c("AI drawing history", "AI 画线历史") : c("Analysis history", "分析历史"))} ({history.total})</span><ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground group-open/disclosure:rotate-180" aria-hidden="true" /></summary>
+    <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 rounded text-sm font-medium hover:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary [&::-webkit-details-marker]:hidden"><span>{title || (drawings ? c("AI drawing history", "AI 画线历史") : c("Analysis history", "分析历史"))}{!history.busy && ` (${history.total})`}</span><ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground group-open/disclosure:rotate-180" aria-hidden="true" /></summary>
     <HistoryScope history={history} />
     <p className="mt-2 text-xs leading-5 text-muted-foreground">{drawings ? c("Viewing a version does not change current drawings. Updating drawings keeps previous versions.", "查看历史不会修改当前画线；更新画线会保留旧版本。") : c("Viewing a version does not change the current analysis. New analyses keep previous versions.", "查看历史不会修改当前分析；更新分析会保留旧版本。")}</p>
     {history.error !== null && <div role="alert" className="mt-3 text-sm">

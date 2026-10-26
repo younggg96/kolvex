@@ -1,4 +1,5 @@
 "use client";
+import { useCachedResource } from "@/hooks/useCachedResource";
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
@@ -69,23 +70,11 @@ export default function MacroIndicators() {
   const c = useCopy();
   const { locale } = useTranslation();
   const { setContext } = useDecisionCommand();
-  const [snapshot, setSnapshot] = useState<EconomicSnapshot | null>(null);
-  const [error, setError] = useState<number | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [attempt, setAttempt] = useState(0);
+  const resource = useCachedResource("/api/market/indicators", getEconomicIndicators, { ttl: 5 * 60_000, timeout: 30_000 });
+  const snapshot = resource.data ?? null;
+  const error = resource.error ? resource.error instanceof EconomicRequestError ? resource.error.status : 503 : null;
+  const loading = resource.loading;
   const [years, setYears] = useState<number>(3);
-
-  useEffect(() => {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 50000);
-    let active = true;
-    setLoading(true);
-    setError(null);
-    getEconomicIndicators(controller.signal).then((data) => { if (active) setSnapshot(data); }).catch((reason) => {
-      if (active) setError(reason instanceof EconomicRequestError ? reason.status : 503);
-    }).finally(() => { clearTimeout(timer); if (active) setLoading(false); });
-    return () => { active = false; clearTimeout(timer); controller.abort(); };
-  }, [attempt]);
 
   const context = JSON.stringify({ workspace: "Markets / Economic indicators", snapshot, requestFailed: error !== null });
   useEffect(() => { setContext(context); return () => setContext(""); }, [context, setContext]);
@@ -98,7 +87,7 @@ export default function MacroIndicators() {
       <header className="flex justify-end">
         <div className="flex flex-wrap items-center gap-3">
           <div role="group" aria-label={c("Indicator history range", "指标走势区间")} className="flex gap-1">{RANGES.map((range) => <button key={range} type="button" aria-pressed={years === range} onClick={() => setYears(range)} className={cn("inline-flex h-9 items-center rounded-full px-3.5 text-[13px] font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary", years === range ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted hover:text-foreground")}>{c(`${range}Y`, `${range}年`)}</button>)}</div>
-          <Button variant="outline" size="sm" className="rounded-full" disabled={loading} onClick={() => setAttempt((value) => value + 1)}><RefreshCw className={cn("mr-2 h-3.5 w-3.5", loading && "animate-spin motion-reduce:animate-none")} aria-hidden />{c("Refresh", "刷新")}</Button>
+          <Button variant="outline" size="sm" className="rounded-full" disabled={resource.refreshing} onClick={resource.refresh}><RefreshCw className={cn("mr-2 h-3.5 w-3.5", resource.refreshing && "animate-spin motion-reduce:animate-none")} aria-hidden />{c("Refresh", "刷新")}</Button>
         </div>
       </header>
       <div aria-live="polite" aria-atomic="true" className={notice ? "mt-4 text-sm leading-6 text-muted-foreground" : "sr-only"}>{notice && <p>{notice}</p>}{loading && !snapshot && <p>{c("Loading official economic indicators", "正在加载官方宏观指标")}</p>}</div>

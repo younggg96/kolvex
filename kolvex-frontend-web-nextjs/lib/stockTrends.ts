@@ -22,9 +22,10 @@ export function trendPoints(bars: PriceBar[], singleSession: boolean): TrendPoin
 }
 
 /** Passive list previews: viewport-driven, cancellable, cached, and three requests at most. */
-export function loadStockTrend(symbol: string, params: PriceHistoryParams, signal: AbortSignal): Promise<TrendPoint[]> {
+export function loadStockTrend(symbol: string, params: PriceHistoryParams, signal: AbortSignal, force = false): Promise<TrendPoint[]> {
   const key = JSON.stringify([symbol, params.period, params.interval]);
   if (signal.aborted) return Promise.reject(new DOMException("Cancelled", "AbortError"));
+  if (force) cache.delete(key);
   const saved = cache.get(key);
   if (saved && saved.expires > Date.now()) return Promise.resolve(saved.points);
   if (saved) cache.delete(key);

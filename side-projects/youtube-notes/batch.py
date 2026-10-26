@@ -9,11 +9,87 @@ from pathlib import Path
 import re
 import sys
 from urllib.parse import urlparse
+from urllib.request import Request, urlopen
 
 from pipeline import DEFAULT_MODEL, MAX_DURATION, atomic_json, normalize_url, ytdlp
 from youtube_transcribe import process_video, require_environment
 
 ROOT = Path(__file__).parent
+
+
+def kolvex_public_json(endpoint):
+    request = Request('https://kolvex.app/api/youtube-opinions/' + endpoint,
+                      headers={'Accept': 'application/json', 'User-Agent': 'Tingji-local-batch/1.0'})
+    with urlopen(request, timeout=45) as response:
+        raw = response.read(5_000_001)
+    if len(raw) > 5_000_000:
+        raise ValueError('Kolvex 返回数据过大，未更新清单。')
+    return json.loads(raw)
+
+
+def discover_untracked(manifest_path):
+    """Replace the active selection with the website's latest missing uploads only."""
+    report = kolvex_public_json('coverage')
+    if not isinstance(report, dict) or report.get('status') != 'available' or not isinstance(report.get('creators'), list):
+        raise ValueError('无法确认网站未追踪视频，未更新清单；请稍后重试。')
+    dashboard = kolvex_public_json('dashboard?limit=1')
+    if not isinstance(dashboard, dict) or not isinstance(dashboard.get('creators'), list):
+        raise ValueError('无法读取博主身份，未更新清单。')
+    creators = {item['channel_id']: item for item in dashboard['creators'] if isinstance(item, dict) and isinstance(item.get('channel_id'), str)}
+    selection, warnings = {}, []
+    for coverage in report['creators']:
+        if not isinstance(coverage, dict) or not isinstance(coverage.get('channel_id'), str):
+            raise ValueError('视频覆盖数据格式错误，未更新清单。')
+        identity = coverage['channel_id']
+        if coverage.get('status') != 'available':
+            raise ValueError(f'无法确认博主 {identity} 的未追踪视频，未更新清单。')
+        videos = coverage.get('untracked')
+        if not isinstance(videos, list):
+            raise ValueError('未追踪视频列表格式错误，未更新清单。')
+        if coverage.get('truncated'):
+            warnings.append(f'{identity} 的查询范围被截断；本批次只包含接口已确认的未追踪视频。')
+        creator = creators.get(identity, {})
+        for video in videos:
+            if not isinstance(video, dict) or not isinstance(video.get('video_id'), str) or not re.fullmatch(r'[A-Za-z0-9_-]{11}', video['video_id']):
+                raise ValueError('未追踪视频 ID 格式错误，未更新清单。')
+            published = video.get('published_at')
+            if not isinstance(published, str):
+                raise ValueError('未追踪视频缺少发布时间，未更新清单。')
+            instant = datetime.fromisoformat(published.replace('Z', '+00:00'))
+            if instant.tzinfo is None:
+                raise ValueError('视频发布时间缺少时区，未更新清单。')
+            cutoff = coverage.get('since')
+            if not isinstance(cutoff, str):
+                raise ValueError('博主缺少上次追踪时间，未更新清单。')
+            previous = datetime.fromisoformat(cutoff.replace('Z', '+00:00'))
+            if previous.tzinfo is None or instant <= previous:
+                raise ValueError('接口包含非最新的未追踪视频，未更新清单。')
+            video_id = video['video_id']
+            selection.setdefault(video_id, {
+                'id': video_id, 'url': normalize_url('https://www.youtube.com/watch?v=' + video_id),
+                'title': video.get('title') or video_id, 'channel': creator.get('channel_title') or identity,
+                'channel_id': identity, 'channel_url': creator.get('channel_url'),
+                'published_at': instant.astimezone(timezone.utc).isoformat().replace('+00:00', 'Z'),
+                'upload_date': None, 'duration': None, 'status': 'pending', 'attempts': 0,
+            })
+    path = Path(manifest_path).resolve()
+    with manifest_lock(path):
+        old = json.loads(path.read_text()) if path.exists() else {}
+        if old and old.get('source') != 'kolvex_untracked':
+            raise ValueError('此路径已有其他类型的批次，请为未追踪视频选择新的 --output 路径。')
+        known = {item['id']: item for item in old.get('videos', [])}
+        videos = []
+        for video_id, item in selection.items():
+            # Keep resumable local work only for IDs still missing on the website.
+            videos.append(known.get(video_id, {}) | item | {
+                key: known[video_id][key] for key in ('status', 'attempts', 'mode', 'output_dir', 'stage', 'error')
+                if video_id in known and key in known[video_id]
+            })
+        videos.sort(key=lambda item: item['published_at'], reverse=True)
+        manifest = {'version': 1, 'source': 'kolvex_untracked', 'updated_at': datetime.now(timezone.utc).isoformat(),
+                    'videos': videos, 'latest_matches': [item['id'] for item in videos], 'discovery_errors': [], 'warnings': warnings}
+        atomic_json(path, manifest)
+    return manifest
 
 
 def channel_url(value):
@@ -132,8 +208,11 @@ def discover(config, manifest_path):
                     count += 1
                     item = known.get(video_id)
                     if item is None:
+                        published = entry.get('timestamp')
                         item = {'id': video_id, 'url': url, 'title': title, 'channel': payload.get('channel') or payload.get('title') or channel,
-                                'channel_url': channel, 'upload_date': uploaded, 'duration': duration, 'status': 'pending', 'attempts': 0}
+                                'channel_id': payload.get('channel_id'), 'channel_url': payload.get('channel_url') or channel,
+                                'published_at': datetime.fromtimestamp(published, timezone.utc).isoformat().replace('+00:00', 'Z') if isinstance(published, (int, float)) else None,
+                                'upload_date': uploaded, 'duration': duration, 'status': 'pending', 'attempts': 0}
                         known[video_id] = item
                         manifest['videos'].append(item)
                     found.append(video_id)
@@ -148,8 +227,13 @@ def discover(config, manifest_path):
 
 def run_batch(manifest_path, output, model, transcript_only=False, retry_failed=False):
     manifest_path = Path(manifest_path).resolve()
+    if json.loads(manifest_path.read_text()).get('source') == 'kolvex_untracked':
+        # Fail closed if the website cannot be checked; never silently run an old selection.
+        discover_untracked(manifest_path)
     with manifest_lock(manifest_path):
         manifest = json.loads(manifest_path.read_text())
+        if not manifest['videos']:
+            return manifest, 0
         require_environment(model, transcript_only)
         failed = 0
         for index, item in enumerate(manifest['videos']):
@@ -167,6 +251,11 @@ def run_batch(manifest_path, output, model, transcript_only=False, retry_failed=
             def progress(folder, job):
                 item['output_dir'] = str(folder)
                 item['stage'] = job.get('stage')
+                metadata = job.get('metadata', {})
+                for source, target in (('title', 'title'), ('channel', 'channel'), ('channel_id', 'channel_id'),
+                                       ('channel_url', 'channel_url'), ('published_at', 'published_at')):
+                    if metadata.get(source):
+                        item[target] = metadata[source]
                 atomic_json(manifest_path, manifest)
             try:
                 folder = process_video(item['url'], output, model, transcript_only, progress)
@@ -196,6 +285,8 @@ def main(argv=None):
     scan.add_argument('--limit', type=int, help='每个频道最多匹配条数，默认 10')
     scan.add_argument('--scan-limit', type=int, help='每频道扫描最近上传数，默认 50，最多 500')
     scan.add_argument('--output', type=Path, default=ROOT / 'batches/latest.json', help='保存清单路径；重复发现时按视频 ID 合并')
+    missing = commands.add_parser('untracked', help='只读取 Kolvex 标记的最新未追踪视频，不扫描频道、不下载音频')
+    missing.add_argument('--output', type=Path, default=ROOT / 'batches/kolvex-untracked.json')
     run = commands.add_parser('run', help='批量处理清单；跳过已完成项，失败项继续后续任务')
     run.add_argument('manifest', type=Path)
     run.add_argument('--output', type=Path, default=ROOT / 'output')
@@ -215,6 +306,14 @@ def main(argv=None):
             if manifest['discovery_errors']:
                 print(f'有 {len(manifest["discovery_errors"])} 项发现错误，详情已写入清单。', file=sys.stderr)
                 return 1
+        elif args.command == 'untracked':
+            manifest = discover_untracked(args.output)
+            print(f'最新未追踪视频 {len(manifest["videos"])} 个：')
+            for item in manifest['videos']:
+                print(f'  {item["channel"]} · {item["title"]}\n    {item["url"]}')
+            for warning in manifest['warnings']:
+                print(warning, file=sys.stderr)
+            print(f'清单：{args.output.resolve()}')
         else:
             manifest, failed = run_batch(args.manifest, args.output, args.model, args.transcript_only, args.retry_failed)
             done = sum(item['status'] == 'done' for item in manifest['videos'])

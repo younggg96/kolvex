@@ -1,5 +1,6 @@
 "use client";
 
+import { useCachedResource } from "@/hooks/useCachedResource";
 import { isProductFeatureEnabled } from "@/lib/productFeatures";
 
 import Link from "next/link";
@@ -12,7 +13,7 @@ import { cn } from "@/lib/utils";
 import { getMyHoldings } from "@/lib/portfolioApi";
 import {
   getYouTubeOpinionDashboard,
-  type YouTubeOpinionDashboard,
+  clearYouTubeDashboardCache,
 } from "@/lib/youtubeOpinionsApi";
 import { validTicker, type Direction } from "@/lib/decision";
 
@@ -254,79 +255,21 @@ export const money = (value: number | null | undefined) =>
 export const signedMoney = (value: number) =>
   `${value >= 0 ? "+" : "−"}${money(Math.abs(value))}`;
 
-/* Shared, short-lived caches so moving between tabs does not refetch the same sources. */
-const CACHE_MS = 60_000;
-type Cached<T> = { at: number; promise: Promise<T> };
-let holdingsCache: Cached<string[]> | null = null;
-let catalogueCache: Cached<YouTubeOpinionDashboard> | null = null;
-
-function loadHeld(force = false) {
-  if (!force && holdingsCache && Date.now() - holdingsCache.at < CACHE_MS) return holdingsCache.promise;
-  const promise = getMyHoldings().then((portfolio) => [
-    ...new Set(
-      portfolio.accounts
-        .flatMap((account) => account.portfolio_positions || [])
-        .filter((position) => position.position_type !== "option")
-        .map((position) => position.symbol.trim().toUpperCase()),
-    ),
-  ]);
-  holdingsCache = { at: Date.now(), promise };
-  promise.catch(() => {
-    holdingsCache = null;
-  });
-  return promise;
-}
-
-function loadCatalogue(force = false) {
-  if (!force && catalogueCache && Date.now() - catalogueCache.at < CACHE_MS) return catalogueCache.promise;
-  const promise = getYouTubeOpinionDashboard({ limit: 12 });
-  catalogueCache = { at: Date.now(), promise };
-  promise.catch(() => {
-    catalogueCache = null;
-  });
-  return promise;
-}
-
+/** Shared resources paint cached data immediately and only block on a cold visit. */
 export function useHeldTickers(attempt = 0) {
-  const [state, setState] = useState<{ tickers: string[]; loading: boolean; error: boolean }>({
-    tickers: [],
-    loading: true,
-    error: false,
-  });
-  useEffect(() => {
-    if (!isProductFeatureEnabled("portfolio")) {
-      setState({ tickers: [], loading: false, error: false });
-      return;
-    }
-    let alive = true;
-    setState((previous) => ({ ...previous, loading: true }));
-    loadHeld(attempt > 0)
-      .then((tickers) => alive && setState({ tickers, loading: false, error: false }))
-      .catch(() => alive && setState({ tickers: [], loading: false, error: true }));
-    return () => {
-      alive = false;
-    };
-  }, [attempt]);
-  return state;
+  const enabled = isProductFeatureEnabled("portfolio");
+  const resource = useCachedResource("/api/portfolio/holdings", signal => enabled ? getMyHoldings(signal) : Promise.resolve({ accounts: [], is_connected: false, is_public: false }), { ttl: 30_000, maxAge: 60_000 });
+  const tickers = [...new Set((resource.data?.accounts ?? []).flatMap(account => account.portfolio_positions || []).filter(position => position.position_type !== "option").map(position => position.symbol.trim().toUpperCase()))];
+  const refresh = resource.refresh;
+  useEffect(() => { if (attempt > 0) refresh(); }, [attempt, refresh]);
+  return { tickers, loading: enabled && resource.loading, error: Boolean(resource.error) };
 }
 
 export function useCreatorCatalogue(attempt = 0) {
-  const [state, setState] = useState<{
-    data: YouTubeOpinionDashboard | null;
-    loading: boolean;
-    error: boolean;
-  }>({ data: null, loading: true, error: false });
-  useEffect(() => {
-    let alive = true;
-    setState((previous) => ({ ...previous, loading: true, error: false }));
-    loadCatalogue(attempt > 0)
-      .then((data) => alive && setState({ data, loading: false, error: false }))
-      .catch(() => alive && setState({ data: null, loading: false, error: true }));
-    return () => {
-      alive = false;
-    };
-  }, [attempt]);
-  return state;
+  const resource = useCachedResource("/api/youtube-opinions/dashboard?limit=12", () => getYouTubeOpinionDashboard({ limit: 12 }), { ttl: 60_000 });
+  const refresh = resource.refresh;
+  useEffect(() => { if (attempt > 0) { clearYouTubeDashboardCache(); refresh(); } }, [attempt, refresh]);
+  return { data: resource.data ?? null, loading: resource.loading, error: Boolean(resource.error) };
 }
 
 /** Calendar-day label relative to today: 今天 / 昨天 / 10月6日. */

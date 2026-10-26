@@ -6,12 +6,14 @@ const vm = require('node:vm');
 const ts = require('typescript');
 function load(file, fetch, cache = new Map()) {
   const module = { exports: {} };
+  const clientCache = require("./helpers/client-cache.cjs")();
   vm.runInNewContext(ts.transpileModule(fs.readFileSync(path.join(__dirname, '..', file), 'utf8'), {
     compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020 },
   }).outputText, {
     module, exports: module.exports, fetch, AbortSignal, console: { error() {} },
     process: { env: { NEXT_PUBLIC_BACKEND_API_URL: 'https://backend.example' } },
     require(name) {
+      if (name === "./clientCache") return clientCache;
       if (name === 'next/server') return { NextResponse: Response };
       if (name === '@/lib/cache') return { quoteCache: cache, CACHE_TTL: { QUOTE: 60 }, getCacheKey: (...parts) => parts.join(':') };
       throw Error(name);
@@ -87,4 +89,22 @@ test('an upstream outage preserves cached prices, with 503 when there are none',
     assert.equal(response.status, cached ? 200 : 503);
     if (cached) assert.deepEqual(await response.json(), [quote('NVDA')]);
   }
+});
+
+test('returning to a market list reuses fresh per-symbol prices; manual refresh still reaches the network', async () => {
+  let calls = 0;
+  const api = load('lib/marketQuotes.ts', async url => {
+    calls++;
+    const symbols = new URL(url, 'https://kolvex.example').searchParams.get('symbols').split(',');
+    return Response.json(symbols.map(quote));
+  });
+  const signal = new AbortController().signal;
+  await api.loadMarketQuotes(['NVDA', 'AAPL'], signal, () => {});
+  assert.equal(calls, 1);
+  let painted;
+  await api.loadMarketQuotes(['AAPL'], signal, batch => { painted = batch; });
+  assert.equal(calls, 1);
+  assert.equal(painted.AAPL.price, 100);
+  await api.loadMarketQuotes(['AAPL'], signal, () => {}, true);
+  assert.equal(calls, 2);
 });

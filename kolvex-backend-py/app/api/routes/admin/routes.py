@@ -13,7 +13,7 @@ from .briefs import router as briefs_router
 router = APIRouter()
 router.include_router(briefs_router)
 BUSINESS_TABLES = (
-    "user_profiles", "user_api_keys", "chat_conversations", "chat_messages",
+    "market_events", "user_profiles", "user_api_keys", "chat_conversations", "chat_messages",
     "trading_analyses", "youtube_stock_opinions", "portfolio_connections",
     "portfolio_accounts", "portfolio_positions", "portfolio_snapshots",
 )

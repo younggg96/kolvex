@@ -1,3 +1,4 @@
+import { subscribeClientCache } from "@/lib/clientCache";
 import { useState, useCallback, useEffect, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
 
@@ -131,6 +132,7 @@ interface CacheEntry {
 
 /** Global cache map: keyed by "userId-period" */
 const globalCache = new Map<string, CacheEntry>();
+subscribeClientCache(prefix => { if (!prefix || prefix.startsWith("/api/portfolio")) globalCache.clear(); });
 
 function getCachedSnapshots(key: string): SnapshotRow[] | null {
   const entry = globalCache.get(key);
@@ -227,7 +229,7 @@ export function usePortfolioHistory(
   const [period, setPeriod] = useState<PerformancePeriod>("1W");
   const [data, setData] = useState<PerformanceDataPoint[]>([]);
   const [summary, setSummary] = useState<PerformanceSummary | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [hasRealData, setHasRealData] = useState(false);
   const [firstSnapshotDate, setFirstSnapshotDate] = useState<string | null>(null);
@@ -289,6 +291,7 @@ export function usePortfolioHistory(
       setData([]);
       setSummary(null);
       setHasRealData(false);
+      setLoading(false);
       return;
     }
 
@@ -298,6 +301,7 @@ export function usePortfolioHistory(
     const cached = getCachedSnapshots(cacheKey);
     if (cached) {
       processSnapshots(cached, period);
+      setLoading(false);
       return;
     }
 
@@ -333,8 +337,10 @@ export function usePortfolioHistory(
 
   // Handle period change
   const handleSetPeriod = useCallback((newPeriod: PerformancePeriod) => {
+    if (newPeriod === period) return;
+    setLoading(Boolean(userId));
     setPeriod(newPeriod);
-  }, []);
+  }, [period, userId]);
 
   // Refresh data (bypasses global cache)
   const refresh = useCallback(async () => {

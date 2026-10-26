@@ -8,8 +8,9 @@ const source = ts.transpileModule(fs.readFileSync(require('node:path').join(__di
 }).outputText;
 function fixture(fetch) {
   const exports = {};
+  const cache = require("./helpers/client-cache.cjs")();
   let now = 0;
-  vm.runInNewContext(source, { exports, fetch, URLSearchParams, AbortController, setTimeout, clearTimeout, Date: { now: () => now } });
+  vm.runInNewContext(source, { exports, require: () => cache, fetch, URLSearchParams, AbortController, setTimeout, clearTimeout, Date: { now: () => now } });
   return { api: exports, advance: (ms) => { now += ms; } };
 }
 const response = (data) => ({ ok: true, json: async () => data });
@@ -48,8 +49,8 @@ test('expired responses and failed requests are fetched again', async () => {
   });
   await assert.rejects(api.getYouTubeOpinionDashboard(), /offline/);
   await api.getYouTubeOpinionDashboard();
-  advance(30_001);
-  assert.equal(api.getCachedYouTubeOpinionDashboard(), undefined);
+  advance(60_001);
+  assert.equal(api.getCachedYouTubeOpinionDashboard().version, 2, "stale data remains readable while revalidating");
   await api.getYouTubeOpinionDashboard();
   assert.equal(calls, 3);
 });

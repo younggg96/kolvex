@@ -44,7 +44,7 @@ export default function NewsFeed() {
     </>}>
       <section className="flex min-h-0 flex-1 flex-col bg-background" aria-label={c("Headlines", "快讯列表")}>
         <div className="flex flex-wrap justify-between gap-x-4 gap-y-1 border-b border-border px-4 py-2.5 text-xs text-muted-foreground lg:px-8">
-          <span>{c(`${articles.length} loaded headlines`, `${articles.length} 条快讯`)}</span>
+          <span>{terminal.loading && !terminal.meta ? c("Loading headlines…", "正在加载快讯…") : c(`${articles.length} loaded headlines`, `${articles.length} 条快讯`)}</span>
           <span>{c("Updated", "更新于")} {time} · {c("Local time", "本地时间")}</span>
         </div>
         {(terminal.error || terminal.meta?.stale) && <p role="alert" className="border-b border-border bg-muted px-4 py-3 text-sm lg:px-8">

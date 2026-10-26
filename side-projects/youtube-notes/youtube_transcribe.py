@@ -71,7 +71,10 @@ def process_video(url, output_root, model=DEFAULT_MODEL, transcript_only=False, 
         update(message='开始处理视频…')
         if transcript_only:
             metadata, language, segments, source, warnings = fetch_transcript(url, folder, update)
-            atomic_json(folder / 'result.json', {'title': metadata['title'], 'url': url,
+            atomic_json(folder / 'result.json', {'id': metadata.get('id'), 'title': metadata['title'], 'url': url,
+                        'channel': metadata.get('channel'), 'channel_id': metadata.get('channel_id'),
+                        'channel_url': metadata.get('channel_url'), 'channel_handle': metadata.get('uploader_id'),
+                        'published_at': metadata.get('published_at'),
                         'language': language, 'duration': metadata['duration'], 'source': source,
                         'segments': segments, 'summary': None})
             update(status='done', stage='done', message='原文字幕已生成。', warnings=warnings)

@@ -1,3 +1,4 @@
+import { invalidateClientCache, subscribeClientCache } from "@/lib/clientCache";
 import { useState, useEffect, useCallback } from "react";
 import {
   usePlaidLink,
@@ -89,6 +90,7 @@ function writeCache<T>(key: string, data: T) {
 }
 
 function clearPortfolioCache(userId?: string) {
+  invalidateClientCache("/api/portfolio");
   const scope = `${PORTFOLIO_CACHE_PREFIX}:`;
   const userNeedle = userId ? `:${userId}:` : "";
   for (const key of Array.from(memoryCache.keys())) {
@@ -106,6 +108,8 @@ function clearPortfolioCache(userId?: string) {
     }
   } catch {}
 }
+
+subscribeClientCache(prefix => { if (!prefix) clearPortfolioCache(); });
 
 export function usePortfolioData({ userId, isOwner }: UsePortfolioDataOptions) {
   const [status, setStatus] = useState<PortfolioConnectionStatus | null>(null);
@@ -210,6 +214,7 @@ export function usePortfolioData({ userId, isOwner }: UsePortfolioDataOptions) {
       setStatus(cachedRoot.status);
       setHoldings(cachedRoot.holdings);
       setPlaidStatus(cachedRoot.plaidStatus);
+      setLoadingTransactions(Boolean(isOwner && cachedRoot.plaidStatus?.is_connected));
       setLoading(false);
       if (isOwner && cachedRoot.plaidStatus?.is_connected) {
         await loadTransactions(true, 0, forceRefresh);

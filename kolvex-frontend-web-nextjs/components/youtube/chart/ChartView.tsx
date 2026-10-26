@@ -1,4 +1,5 @@
 "use client";
+import { loadClientCache, peekClientCache } from "@/lib/clientCache";
 
 import Link from "next/link";
 import { createPortal } from "react-dom";
@@ -274,11 +275,12 @@ export default function ChartView({
   const [interval, setChartInterval] = useState<ChartInterval>(defaultInterval["3M"]);
   const params = advanced && !snapshotBars ? advancedHistoryParams(range, interval) : compactParams;
   const paramsKey = JSON.stringify(params);
+  const chartCacheKey = `/api/market/history/${encodeURIComponent(symbol)}?${new URLSearchParams(Object.entries(params).filter(([, value]) => value != null && value !== "").map(([key, value]) => [key, String(value)]))}`;
   const intraday = isIntraday(params.interval || "1d");
 
   const [box, setBox] = useState<HTMLDivElement | null>(null);
   const [size, setSize] = useState({ width: 0, height: 0 });
-  const [bars, setBars] = useState<PriceBar[] | null>(null);
+  const [bars, setBars] = useState<PriceBar[] | null>(() => snapshotBars ?? peekClientCache<PriceBar[]>(chartCacheKey) ?? null);
   const [error, setError] = useState(false);
   const [attempt, setAttempt] = useState(0);
   const [view, setView] = useState<View | null>(null);
@@ -327,13 +329,13 @@ export default function ChartView({
 
   useEffect(() => {
     const controller = new AbortController();
-    setBars(null);
+    setBars(snapshotBars ?? peekClientCache<PriceBar[]>(chartCacheKey) ?? null);
     setError(false);
     setActive(null);
     setView(null);
     if (snapshotBars) { setBars(snapshotBars); return () => controller.abort(); }
-    getStockHistory(symbol, JSON.parse(paramsKey), controller.signal)
-      .then(setBars)
+    loadClientCache(chartCacheKey, signal => getStockHistory(symbol, JSON.parse(paramsKey), signal), { ttl: 60_000, maxAge: 5 * 60_000, force: attempt > 0, signal: controller.signal })
+      .then(data => { if (!controller.signal.aborted) setBars(data); })
       .catch((reason) => {
         if (!controller.signal.aborted) {
           console.error("Failed to load price history:", reason);
@@ -341,7 +343,7 @@ export default function ChartView({
         }
       });
     return () => controller.abort();
-  }, [symbol, paramsKey, attempt, snapshotBars]);
+  }, [symbol, paramsKey, chartCacheKey, attempt, snapshotBars]);
 
   useEffect(() => {
     setSelectedId(null);

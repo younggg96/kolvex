@@ -920,3 +920,32 @@ while the first instrument column stays pinned. On phones all comparison columns
 remain available without shrinking the figures. Native row/column/group headings,
 per-row dates, detail/source links and separate failure retry buttons remain
 keyboard accessible. Card styling and its seven time ranges remain unchanged.
+
+## Client data caching
+
+`lib/clientCache.ts` owns bounded browser memory snapshots and in-flight request
+sharing. `hooks/useCachedResource.ts` owns initial loading versus background
+refresh. Returning to a cached route paints the snapshot synchronously; stale
+snapshots revalidate without replacing readable content with a skeleton. Explicit
+refresh bypasses freshness, and successful writes invalidate the related URL
+namespace. The auth client clears snapshots and aborts requests when account
+identity changes. Cached data and provider availability are never shared by SSR;
+API key values are excluded. Detailed policies and verification are recorded in
+`../docs/frontend-data-cache.md`.
+
+### Market event calendar
+
+Markets adds Event calendar between Market trends and Macro indicators; URL state
+uses `tab=calendar`. Shared Radix Tabs own the outer view and the three week
+selectors. The server fixes the window to last/current/next Monday-based weeks
+in America/New_York, including DST. Only published high-impact or hot events
+appear. Day sections use existing card/border/rounded-xl tokens, 16px padding,
+semantic headings and written impact labels; mobile keeps one reading column.
+Chinese/English dates and labels use useCopy, with explicit Eastern-time context.
+Loading skeletons, empty weeks, error/retry and refresh use shared primitives.
+The calendar refreshes its date window when the tab resumes and each minute.
+Admin's Major events section reuses Input, Textarea and Button for JSON import,
+validation preview, upsert and loading saved events for editing. Drafts stay
+mounted across admin tab switches; dirty edits disable replacement by a file or
+another event. Textarea owns typed JSON dates and timestamps; no date-picker
+popup is introduced. Business/schema/permissions are in docs/market-events.md.

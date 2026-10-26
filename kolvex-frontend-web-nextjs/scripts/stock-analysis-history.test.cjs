@@ -9,8 +9,9 @@ const tick = () => new Promise(resolve => setImmediate(resolve));
 class HistoryError extends Error { constructor(status){super('history error');this.status=status;} }
 function compile(file, mocks) {
   const m = {exports:{}};
+  const clientCache = require("./helpers/client-cache.cjs")();
   vm.runInNewContext(ts.transpileModule(fs.readFileSync(path.join(__dirname,'..',file),'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,jsx:ts.JsxEmit.ReactJSX,target:ts.ScriptTarget.ES2020}}).outputText,
-    {module:m,exports:m.exports,require:key=>mocks[key],AbortController,Date,console});
+    {module:m,exports:m.exports,URLSearchParams,require:key=>key === "@/lib/clientCache" ? clientCache : key === "@/hooks/useCachedResource" ? {useCachedResource:()=>({data:undefined, loading:true, error:null, refresh(){}})} : mocks[key],AbortController,Date,console});
   return m.exports;
 }
 function fixture(api) {
@@ -27,6 +28,47 @@ function fixture(api) {
   return {render(ticker='NVDA',kind='technical'){index=0;return module.useStockHistory(ticker,kind)},effects(){pending.splice(0).forEach(fn=>fn())}};
 }
 const version=(id,extra={})=>({id,user_id:'me',is_owner:true,ticker:'NVDA',kind:'technical',created_at:'2026-10-09T00:00:00Z',payload:{summary:id},request:{},bars:[],...extra});
+
+test('history stays pending from the first render until an empty response has settled', async () => {
+  const pending = deferred();
+  const h = fixture({getStockAnalysisHistory: () => pending.promise});
+  assert.equal(h.render().busy, true);
+  h.effects();
+  assert.equal(h.render().busy, true);
+  pending.resolve({items: [], current: null, total: 0});
+  await tick();
+  assert.equal(h.render().busy, false);
+  assert.equal(h.render().total, 0);
+  assert.equal(h.render().error, null);
+});
+
+test('switching ticker or author scope is pending before effects run, without showing previous results', async () => {
+  const pending = deferred();
+  const current = version('saved');
+  const h = fixture({getStockAnalysisHistory: ticker => ticker === 'NVDA'
+    ? Promise.resolve({items: [current], current, total: 1}) : pending.promise});
+  h.render(); h.effects(); await tick();
+  assert.equal(h.render().selected.id, 'saved');
+  const next = h.render('AAPL');
+  assert.equal(next.busy, true);
+  assert.equal(next.selected, null);
+  assert.equal(next.items.length, 0);
+  h.effects();
+  pending.resolve({items: [], current: null, total: 0}); await tick();
+  const loaded = h.render('AAPL');
+  assert.equal(loaded.busy, false);
+  loaded.setScope('mine');
+  assert.equal(h.render('AAPL').busy, true);
+});
+
+test('failed initial history request exits loading with an error instead of a successful empty state', async () => {
+  const h = fixture({getStockAnalysisHistory: async () => { throw new HistoryError(503); }});
+  h.render(); h.effects(); await tick();
+  const state = h.render();
+  assert.equal(state.busy, false);
+  assert.equal(state.error, 503);
+  assert.equal(state.selected, null);
+});
 
 test('refresh loads the saved current version, selecting old versions does not write the head', async()=>{
   const current=version('new'),old=version('old');let writes=0;

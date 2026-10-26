@@ -12,14 +12,15 @@ import { briefCalendarDate, briefDateKey, briefLibraryHref, formatBriefDate, pac
 import { useBriefData } from "./useBriefData";
 
 type Availability = Map<string, string[]>;
-const CalendarAvailability = createContext<Availability>(new Map());
+const CalendarAvailability = createContext<{ days: Availability; status: "loading" | "error" | "ready" }>({ days: new Map(), status: "loading" });
 
 function BriefDay(props: DayContentProps) {
   const { t, locale } = useTranslation();
-  const available = useContext(CalendarAvailability).get(briefDateKey(props.date)) ?? [];
+  const { days, status } = useContext(CalendarAvailability);
+  const available = days.get(briefDateKey(props.date)) ?? [];
   return <span className="relative flex h-full w-full items-center justify-center pb-1">
     <span aria-hidden="true"><DayContent {...props} /></span>
-    <span className="sr-only">{formatBriefDate(briefDateKey(props.date), locale)}，{available.length ? available.map(kind => t(`briefs.${kind}`)).join(" / ") : t("briefs.noIssue")}</span>
+    <span className="sr-only">{formatBriefDate(briefDateKey(props.date), locale)}，{status === "loading" ? t("briefs.loadingDates") : status === "error" ? t("common.error") : available.length ? available.map(kind => t(`briefs.${kind}`)).join(" / ") : t("briefs.noIssue")}</span>
     <span aria-hidden="true" className="absolute bottom-1 left-0 flex w-full justify-center gap-1">
       {available.includes("morning") && <span className="h-1 w-1 rounded-full bg-current" />}
       {available.includes("evening") && <span className="h-1 w-1 rounded-full border border-current" />}
@@ -40,7 +41,7 @@ export default function BriefCalendar({ date, type, onSelectDate }: { date: stri
     <div className="mb-4 flex items-center justify-between gap-3">
       <h2 className="text-sm font-semibold">{t("briefs.calendarLabel")}</h2>
     </div>
-    <CalendarAvailability.Provider value={available}>
+    <CalendarAvailability.Provider value={{ days: available, status: loading ? "loading" : error ? "error" : "ready" }}>
       <Calendar
         mode="single"
         required

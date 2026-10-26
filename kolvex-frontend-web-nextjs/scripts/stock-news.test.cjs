@@ -7,9 +7,10 @@ const ts = require('typescript');
 
 function load(file, deps = {}, globals = {}) {
   const exports = {};
+  const clientCache = require("./helpers/client-cache.cjs")();
   vm.runInNewContext(ts.transpileModule(fs.readFileSync(path.join(__dirname, '..', file), 'utf8'), {
     compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020 },
-  }).outputText, { exports, require: name => {
+  }).outputText, { exports, require: name => { if (name === "@/lib/clientCache") return clientCache;
     if (name in deps) return deps[name];
     throw Error(name);
   }, URL, AbortSignal, AbortController, process: { env: {} }, ...globals });
@@ -81,9 +82,9 @@ function harness() {
 }
 const settle = () => new Promise(setImmediate);
 
-test('ticker changes abort old requests and ignore their late results', async () => {
+test('ticker changes detach old readers and ignore their late results', async () => {
   const h = harness(); h.render(); h.render('AAPL');
-  assert.equal(h.requests[0].signal.aborted, true);
+  assert.equal(h.requests[0].signal.aborted, false, "shared request can finish warming the cache");
   h.requests[1].resolve([article('apple')]); await settle();
   h.requests[0].resolve([article('nvidia')]); await settle();
   assert.equal(h.render('AAPL').articles[0].uuid, 'apple');

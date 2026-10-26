@@ -71,11 +71,16 @@ class PipelineTests(unittest.TestCase):
             return {'overview': '一段问候。', 'key_points': ['向世界问好。']}
         with tempfile.TemporaryDirectory() as temp:
             folder = Path(temp)
-            with patch.object(p, 'fetch_transcript', return_value=({'title': 'Test', 'duration': 3}, 'en', segments, 'manual_captions', [])), patch.object(p, 'generate', side_effect=fake_generate):
+            metadata = {'id': 'abcdefghijk', 'title': 'Test', 'duration': 3, 'channel': 'Creator',
+                        'channel_id': 'UC_TEST', 'channel_url': 'https://www.youtube.com/@creator',
+                        'uploader_id': '@creator', 'published_at': '2026-10-22T17:22:21Z'}
+            with patch.object(p, 'fetch_transcript', return_value=(metadata, 'en', segments, 'manual_captions', [])), patch.object(p, 'generate', side_effect=fake_generate):
                 p.run_job({'url': 'https://youtu.be/dQw4w9WgXcQ', 'model': 'test'}, folder, lambda **kw: calls.append(kw))
             result = json.loads((folder / 'result.json').read_text())
             self.assertEqual(result['segments'][0]['zh'], '你好，世界。')
             self.assertEqual(result['summary']['overview'], '一段问候。')
+            self.assertEqual(result['channel_id'], 'UC_TEST')
+            self.assertEqual(result['published_at'], '2026-10-22T17:22:21Z')
             self.assertEqual(calls[-1]['status'], 'done')
 
     def test_failed_summary_preserves_completed_chinese_subtitles(self):

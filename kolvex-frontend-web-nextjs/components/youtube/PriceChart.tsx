@@ -1,4 +1,5 @@
 "use client";
+import { useCachedResource } from "@/hooks/useCachedResource";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
@@ -136,7 +137,8 @@ export default function PriceChart({
   }, [analysisChanged, drawingsChanged]);
   const aiJobs = useChartAiJobs(symbol, jobCompleted);
   const analysisBusy = aiJobs.busy;
-  useEffect(() => { onAnalysisBusy?.(analysisBusy); }, [analysisBusy, onAnalysisBusy]);
+  const analysisPending = analysisBusy || versions.busy;
+  useEffect(() => { onAnalysisBusy?.(analysisPending); }, [analysisPending, onAnalysisBusy]);
   useEffect(() => {
     if (aiJobs.analysis.status === "done" && aiJobs.analysis.result?.version_id === selectedId) aiJobs.clear("analysis");
     if (aiJobs.drawings.status === "done" && aiJobs.drawings.result?.version_id === selectedDrawingId) aiJobs.clear("drawings");
@@ -155,7 +157,11 @@ export default function PriceChart({
     setViewingHistory("drawings");
   } };
   const [history, setHistory] = useState<Drawing[][]>([]);
-  const [events, setEvents] = useState<YouTubeOpinion[]>([]);
+  const opinionQuery = new URLSearchParams();
+  if (from) opinionQuery.set("date_from", from);
+  if (to) opinionQuery.set("date_to", to);
+  const opinionResource = useCachedResource(`/api/youtube-opinions/stocks/${encodeURIComponent(symbol)}${opinionQuery.size ? `?${opinionQuery}` : ""}`, signal => getYouTubeStockDetail(symbol, { date_from: from || undefined, date_to: to || undefined }, signal), { ttl: 60_000 });
+  const events = opinionResource.data?.opinions ?? [];
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const escapeRef = useRef<(() => boolean) | null>(null);
   const advancedTriggerRef = useRef<HTMLElement | null>(null);
@@ -167,16 +173,6 @@ export default function PriceChart({
     setAdvancedOpen(false);
   }, [symbol]);
 
-  useEffect(() => {
-    const controller = new AbortController();
-    setEvents([]);
-    getYouTubeStockDetail(symbol, { date_from: from || undefined, date_to: to || undefined }, controller.signal)
-      .then((detail) => setEvents(detail.opinions || []))
-      .catch((reason) => {
-        if (!controller.signal.aborted) console.error("Failed to load opinion markers:", reason);
-      });
-    return () => controller.abort();
-  }, [symbol, from, to]);
 
   function setDrawings(next: Drawing[], recordFrom: Drawing[] | null = drawings) {
     if (recordFrom) setHistory((previous) => [...previous.slice(-49), recordFrom]);

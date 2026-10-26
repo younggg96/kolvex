@@ -20,7 +20,8 @@ export default function BriefReader({ id, searchParams }: { id: string; searchPa
   return <DashboardLayout title={t("briefs.title")} headerLeftAction={<HeaderBackButton href={back} label={t("briefs.back")} />}>
     <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-10 pt-6 md:px-8 md:pt-8">
       <div className="mx-auto max-w-[1080px]">
-        {loading || error ? <><BriefState loading={loading} error={error} retry={retry} />{error === 404 && <Button asChild variant="outline" className="mt-4"><Link href={back}>{t("briefs.back")}</Link></Button>}</> : data && <>
+        {loading || (error && !data) ? <><BriefState loading={loading} error={error} retry={retry} />{error === 404 && <Button asChild variant="outline" className="mt-4"><Link href={back}>{t("briefs.back")}</Link></Button>}</> : data && <>
+          {error && <p role="alert" className="mb-4 text-sm text-muted-foreground">{t("common.error")} <Button variant="outline" size="sm" onClick={retry}>{t("common.retry")}</Button></p>}
           <BriefContent key={id} document={data.payload} />
           <div className="mt-10 border-t border-border pt-6"><Button asChild variant="outline"><Link href={back}>{t("briefs.back")}</Link></Button></div>
         </>}

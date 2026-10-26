@@ -1,5 +1,6 @@
 "use client";
 
+import { useCachedResource } from "@/hooks/useCachedResource";
 import { isProductFeatureEnabled } from "@/lib/productFeatures";
 
 import Link from "next/link";
@@ -19,7 +20,6 @@ import StockNews from "./StockNews";
 import { ReportCard } from "@/components/trading-analysis/report-card";
 import {
   getStockQuote,
-  type StockQuote,
   type AiTechnicalAnalysis,
 } from "@/lib/stockApi";
 import {
@@ -29,9 +29,8 @@ import {
 import { getMyHoldings } from "@/lib/portfolioApi";
 import {
   getPublishedAnalyses,
-  type TradingAnalysis,
+  publishedAnalysesKey,
 } from "@/lib/tradingAnalysisApi";
-import type { PortfolioPosition } from "@/lib/supabase/database.types";
 import { creatorEvidence } from "@/lib/decision";
 import { useTranslation } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
@@ -71,80 +70,33 @@ export default function StockWorkspace({ ticker }: { ticker: string }) {
       : signedMoney(value);
   const { t, locale } = useTranslation();
   const { setContext } = useDecisionCommand();
-  const [quote, setQuote] = useState<StockQuote | null>(null);
-  const [opinions, setOpinions] = useState<YouTubeOpinion[]>([]);
-  const [positions, setPositions] = useState<PortfolioPosition[]>([]);
+  const quoteResource = useCachedResource(`/api/stocks?action=quote&symbol=${encodeURIComponent(ticker)}`, signal => getStockQuote(ticker, signal), { ttl: 15_000, maxAge: 60_000 });
+  const opinionsResource = useCachedResource(`/api/youtube-opinions/stocks/${encodeURIComponent(ticker)}`, signal => getYouTubeStockDetail(ticker, {}, signal), { ttl: 60_000 });
+  const positionsResource = useCachedResource("/api/portfolio/holdings", signal => isProductFeatureEnabled("portfolio") ? getMyHoldings(signal) : Promise.resolve({ accounts: [], is_connected: false, is_public: false }), { ttl: 30_000, maxAge: 60_000 });
+  const publishedResource = useCachedResource(publishedAnalysesKey({ ticker, limit: 20 }), () => getPublishedAnalyses({ ticker, limit: 20 }), { ttl: 60_000 });
+  const quote = quoteResource.data ?? null;
+  const opinions = opinionsResource.data?.opinions ?? [];
+  const positions = (positionsResource.data?.accounts ?? []).flatMap(account => account.portfolio_positions || []).filter(position => position.symbol === ticker && position.position_type !== "option");
   const personalResearch = useStockResearch(ticker);
   const [generationRequest, setGenerationRequest] = useState(0);
   const [drawingRequest, setDrawingRequest] = useState(0);
-  const [technicalBusy, setTechnicalBusy] = useState(false);
+  const [technicalBusy, setTechnicalBusy] = useState(true);
   const [technicalContainer, setTechnicalContainer] = useState<HTMLDivElement | null>(null);
-  const [publishedResearch, setResearch] = useState<TradingAnalysis | null>(
-    null,
-  );
-  const [opinionsError, setOpinionsError] = useState(false);
-  const [positionsError, setPositionsError] = useState(false);
   const [technical, setTechnical] = useState<AiTechnicalAnalysis | null>(null);
-  const research =
-    personalResearch.history.selected?.payload || publishedResearch;
-  const [loading, setLoading] = useState(true);
-  const [errors, setErrors] = useState<string[]>([]);
-  const [refresh, setRefresh] = useState(0);
-  useEffect(() => {
-    let alive = true;
-    setLoading(true);
-    setErrors([]);
-    setOpinionsError(false);
-    setPositionsError(false);
-    Promise.allSettled([
-      getStockQuote(ticker),
-      getYouTubeStockDetail(ticker),
-      isProductFeatureEnabled("portfolio")
-        ? getMyHoldings()
-        : Promise.resolve({ accounts: [] }),
-      getPublishedAnalyses({ ticker, limit: 20 }),
-    ]).then((results) => {
-      if (!alive) return;
-      const [q, o, p, r] = results;
-      setQuote(q.status === "fulfilled" && q.value.price > 0 ? q.value : null);
-      setOpinions(o.status === "fulfilled" ? o.value.opinions : []);
-      setOpinionsError(o.status === "rejected");
-      setPositions(
-        p.status === "fulfilled"
-          ? p.value.accounts
-              .flatMap((a) => a.portfolio_positions || [])
-              .filter(
-                (p) => p.symbol === ticker && p.position_type !== "option",
-              )
-          : [],
-      );
-      setResearch(
-        r.status === "fulfilled"
-          ? (r.value.items.find((x) => x.status === "completed") ?? null)
-          : null,
-      );
-      setPositionsError(p.status === "rejected");
-      setErrors(
-        results.flatMap((result, index) =>
-          result.status === "rejected"
-            ? [
-                [
-                  c("Market", "行情"),
-                  c("Creators", "博主观点"),
-                  c("Portfolio", "持仓"),
-                  c("AI research", "AI 研究"),
-                ][index],
-              ]
-            : [],
-        ),
-      );
-      setLoading(false);
-    });
-    return () => {
-      alive = false;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ticker, refresh]);
+  const publishedResearch = publishedResource.data?.items.find(item => item.status === "completed") ?? null;
+  const research = personalResearch.history.selected?.payload || publishedResearch;
+  const loading = quoteResource.loading;
+  const opinionsError = Boolean(opinionsResource.error);
+  const positionsError = Boolean(positionsResource.error);
+  const errors = [
+    quoteResource.error && c("Market", "行情"),
+    opinionsResource.error && c("Creators", "博主观点"),
+    positionsResource.error && c("Portfolio", "持仓"),
+    publishedResource.error && c("AI research", "AI 研究"),
+  ].filter(Boolean) as string[];
+  const refreshSources = () => {
+    quoteResource.refresh(); opinionsResource.refresh(); positionsResource.refresh(); publishedResource.refresh();
+  };
   const onAnalysis = useCallback(
     (value: AiTechnicalAnalysis | null) => setTechnical(value),
     [],
@@ -200,6 +152,7 @@ export default function StockWorkspace({ ticker }: { ticker: string }) {
   const date = (value: string) =>
     new Date(value).toLocaleDateString(t("common.intlLocale"));
   const completedAt = research?.completed_at || research?.created_at;
+  const researchLoading = publishedResource.loading || personalResearch.history.busy;
 
   useEffect(() => {
     document.title = `${ticker} · ${locale === "zh" ? "行情" : "Markets"} — Kolvex`;
@@ -211,6 +164,7 @@ export default function StockWorkspace({ ticker }: { ticker: string }) {
 
   const evidenceItems = [
     {
+      loading: technicalBusy && !technical,
       action: !technical ? "technical" : null,
       label: c("Technical", "技术面"),
       direction: technical?.bias,
@@ -219,6 +173,7 @@ export default function StockWorkspace({ ticker }: { ticker: string }) {
         : c("Run AI analysis on the chart", "在图表上运行 AI 分析"),
     },
     {
+      loading: opinionsResource.loading && !creators.count,
       action: !creators.count ? "creators" : null,
       label: c("Creators", "博主"),
       direction: creators.direction,
@@ -230,6 +185,7 @@ export default function StockWorkspace({ ticker }: { ticker: string }) {
         : c("No calls in 30 days", "近 30 天无观点"),
     },
     {
+      loading: researchLoading && !research?.fundamentals_report,
       action: !research?.fundamentals_report ? "research" : null,
       label: c("Fundamental", "基本面"),
       direction: null,
@@ -239,6 +195,7 @@ export default function StockWorkspace({ ticker }: { ticker: string }) {
         : c("Needs AI research", "需要 AI 研究"),
     },
     {
+      loading: researchLoading && !research?.news_report,
       action: !research?.news_report ? "research" : null,
       label: c("News", "新闻"),
       direction: null,
@@ -320,7 +277,7 @@ export default function StockWorkspace({ ticker }: { ticker: string }) {
                   <Button
                     size="sm"
                     variant="outline"
-                    onClick={() => setRefresh((value) => value + 1)}
+                    onClick={refreshSources}
                   >
                     {c("Retry", "重试")}
                   </Button>
@@ -365,32 +322,32 @@ export default function StockWorkspace({ ticker }: { ticker: string }) {
                     <p className="text-xs text-muted-foreground">
                       {c("Market today", "今日行情")}
                     </p>
-                    <p className="figure mt-1 text-sm font-semibold">
-                      {quote
+                    <div className="figure mt-1 text-sm font-semibold" aria-busy={loading && !quote}>
+                      {loading && !quote ? <Skeleton className="h-5 w-32" /> : quote
                         ? `${changeLabel(quote.change)} (${quote.changePercent >= 0 ? "+" : ""}${quote.changePercent.toFixed(2)}%)`
                         : "—"}
-                    </p>
+                    </div>
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground">
                       {c("Latest creator call", "最新博主观点")}
                     </p>
-                    <p className="mt-1 text-sm font-semibold">
-                      {sorted[0]
+                    <div className="mt-1 text-sm font-semibold" aria-busy={opinionsResource.loading && !sorted[0]}>
+                      {opinionsResource.loading && !sorted[0] ? <Skeleton className="h-5 w-40" /> : sorted[0]
                         ? `${sorted[0].channel_title || sorted[0].channel_id} · ${date(sorted[0].opinion_date)}`
                         : c("No coverage yet", "暂无观点")}
-                    </p>
+                    </div>
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground">
                       {c("Latest AI research", "最近 AI 研究")}
                     </p>
-                    <p className="mt-1 text-sm font-semibold">
-                      {completedAt
+                    <div className="mt-1 text-sm font-semibold" aria-busy={researchLoading && !completedAt}>
+                      {researchLoading && !completedAt ? <Skeleton className="h-5 w-28" /> : completedAt
                         ? date(completedAt)
                         : c("No AI research yet", "暂无 AI 研究")}
-                    </p>
-                    {!research && (
+                    </div>
+                    {!researchLoading && !research && (
                       <Button
                         size="sm"
                         variant="outline"
@@ -407,12 +364,12 @@ export default function StockWorkspace({ ticker }: { ticker: string }) {
                 </div>
                 <dl className="mt-6 grid grid-cols-2 gap-x-6 gap-y-5 border-t border-border pt-5 sm:grid-cols-4">
                   {evidenceItems.map((item) => (
-                    <div key={item.label} className="min-w-0">
+                    <div key={item.label} className="min-w-0" aria-busy={item.loading}>
                       <dt className="text-[13px] text-muted-foreground">
                         {item.label}
                       </dt>
                       <dd className="mt-1">
-                        {item.assessed ? (
+                        {item.loading ? <Skeleton className="h-5 w-16" /> : item.assessed ? (
                           <span className="inline-flex items-center rounded-full border border-border px-2 py-0.5 text-xs font-medium text-foreground">
                             {c("Assessed", "已评估")}
                           </span>
@@ -421,9 +378,9 @@ export default function StockWorkspace({ ticker }: { ticker: string }) {
                         )}
                       </dd>
                       <dd className="mt-1 text-xs leading-5 text-muted-foreground">
-                        {item.detail}
+                        {item.loading ? <Skeleton className="h-5 w-32" /> : item.detail}
                       </dd>
-                      {item.action === "creators" ? (
+                      {item.loading ? null : item.action === "creators" ? (
                         <dd className="mt-2">
                           <Button asChild size="sm" variant="outline">
                             <Link href="/dashboard/youtube-opinions">
@@ -480,7 +437,13 @@ export default function StockWorkspace({ ticker }: { ticker: string }) {
 
                 </TabsContent>
                 <TabsContent value="setup" forceMount className="stock-tab-panel pt-2 data-[state=inactive]:hidden">
-              {technical?.setup ? (
+              {technicalBusy && !technical ? (
+                <div role="status" className="space-y-4 py-4">
+                  <span className="sr-only">{c("Loading technical analysis…", "正在加载技术分析…")}</span>
+                  <Skeleton className="h-5 w-40" />
+                  <Skeleton className="h-24 w-full" />
+                </div>
+              ) : technical?.setup ? (
                 <Panel>
                   <div>
                     <h3 className="font-semibold">{technical.setup.name}</h3>
@@ -561,9 +524,9 @@ export default function StockWorkspace({ ticker }: { ticker: string }) {
                 key={ticker}
                 ticker={ticker}
                 opinions={opinions}
-                loading={loading}
+                loading={opinionsResource.loading}
                 error={opinionsError}
-                onRetry={() => setRefresh((value) => value + 1)}
+                onRetry={refreshSources}
               />
 
 
@@ -582,7 +545,7 @@ export default function StockWorkspace({ ticker }: { ticker: string }) {
                     variant="outline"
                     size="sm"
                     disabled={
-                      personalResearch.busy || personalResearch.history.busy
+                      personalResearch.busy || researchLoading
                     }
                     onClick={() => void personalResearch.generate()}
                   >
@@ -718,6 +681,12 @@ export default function StockWorkspace({ ticker }: { ticker: string }) {
                         </div>
                       </details>
                     )}
+                  </div>
+                ) : researchLoading ? (
+                  <div role="status" className="space-y-4 py-4">
+                    <span className="sr-only">{c("Loading AI research…", "正在加载 AI 研究…")}</span>
+                    <Skeleton className="h-5 w-40" />
+                    <Skeleton className="h-24 w-full" />
                   </div>
                 ) : (
                   <Empty>
