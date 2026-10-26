@@ -90,11 +90,10 @@ export async function GET(
 ) {
   try {
     const authHeader = await getAuthHeader();
+    const { path } = await params;
     if (!authHeader) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-
-    const { path } = await params;
     const searchParams = request.nextUrl.searchParams.toString();
     const url = buildUrl(path, searchParams);
 
@@ -103,7 +102,7 @@ export async function GET(
     const response = await fetch(url, {
       headers: {
         "Content-Type": "application/json",
-        Authorization: authHeader,
+        ...(authHeader ? { Authorization: authHeader } : {}),
       },
       cache: "no-store",
     });

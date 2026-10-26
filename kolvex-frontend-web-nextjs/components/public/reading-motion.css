@@ -1,0 +1,62 @@
+/* Only anonymous directory surfaces opt in; shared workspace cards stay unchanged. */
+.reading-shell {
+  --reading-ease: var(--ease-out-quint);
+}
+.reading-shell [data-reading-pending] { opacity: 0; }
+.reading-shell :is(a, button) { -webkit-tap-highlight-color: transparent; }
+.reading-shell [data-reading-item] > a {
+  transition: transform 500ms var(--reading-ease), background-color 300ms var(--reading-ease), border-color 300ms var(--reading-ease);
+}
+.reading-shell [data-reading-item] > a:active { transform: scale(.99); }
+.reading-shell [data-reading-item] > a:focus-visible { outline: 2px solid rgb(var(--positive)); outline-offset: 4px; }
+.reading-shell [data-reading-item="row"] > a > svg:last-child {
+  transition: transform 500ms var(--reading-ease), color 300ms var(--reading-ease);
+}
+.reading-shell [data-reading-item="card"] > a > div:first-child > :first-child {
+  transition: transform 500ms var(--reading-ease);
+}
+.reading-nav-link { position: relative; border-bottom-color: transparent; }
+.reading-nav-link::after {
+  position: absolute;
+  content: "";
+  height: 2px;
+  inset-inline: 4px;
+  bottom: 0;
+  background: currentColor;
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 500ms var(--reading-ease), opacity 300ms var(--reading-ease);
+  opacity: 0;
+}
+.reading-nav-link[aria-current="page"]::after { transform: scaleX(1); opacity: 1; }
+.reading-nav-link:focus-visible::after { transform: scaleX(1); opacity: .6; }
+.reading-shell .reading-header a, .reading-shell .reading-header button,
+.reading-shell .reading-pagination a {
+  transition: transform 500ms var(--reading-ease), background-color 300ms var(--reading-ease), color 300ms var(--reading-ease);
+}
+.reading-shell .reading-header :is(a, button):active,
+.reading-shell .reading-pagination a:active { transform: scale(.97); }
+@media (hover: hover) and (pointer: fine) {
+  .reading-shell [data-reading-item="card"] > a:hover { transform: translateY(-4px); }
+  .reading-shell [data-reading-item="card"] > a:hover > div:first-child > :first-child { transform: scale(1.06); }
+  .reading-shell [data-reading-item="row"] > a:hover { transform: translateX(4px); }
+  .reading-shell [data-reading-item="row"] > a:hover > svg:last-child { transform: translateX(4px); color: rgb(var(--positive)); }
+  .reading-nav-link:hover::after { transform: scaleX(1); opacity: .5; }
+  .reading-nav-link[aria-current="page"]:hover::after { opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .reading-shell [data-reading-pending] { opacity: 1; }
+  .reading-shell *, .reading-shell *::before, .reading-shell *::after {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+  .reading-shell [data-reading-item] > a,
+  .reading-shell [data-reading-item] > a > div:first-child > :first-child,
+  .reading-shell [data-reading-item="row"] > a > svg:last-child,
+  .reading-shell .reading-header :is(a, button),
+  .reading-shell .reading-pagination a { transform: none !important; }
+}
+@media print {
+  .reading-shell [data-reading-pending] { opacity: 1; }
+}

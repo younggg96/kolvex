@@ -13,14 +13,14 @@ import type { TradingAnalysis } from "@/lib/tradingAnalysisApi";
 import type { YouTubeOpinion } from "@/lib/youtubeOpinionsApi";
 
 export function ReadingHeading({ title, children, icon }: { title: string; children?: React.ReactNode; icon?: React.ReactNode }) {
-  return <div className="mb-8 max-w-[72ch]">
+  return <div data-reading-reveal className="mb-8 max-w-[72ch]">
     <div className="flex min-w-0 items-center gap-3">{icon}<h1 className="min-w-0 break-words text-[28px] font-bold leading-tight tracking-[-0.025em] md:text-[32px]">{title}</h1></div>
     {children && <p className="mt-2 max-w-[60ch] text-[15px] leading-relaxed text-muted-foreground">{children}</p>}
   </div>;
 }
 
 export function ReadingSectionHeading({ title, count, id }: { title: string; count?: number; id?: string }) {
-  return <h2 id={id} className="mb-4 border-b border-border pb-3 text-[17px] font-semibold text-foreground">{title}{count !== undefined && <span className="figure ml-2 text-sm font-normal text-muted-foreground">{count}</span>}</h2>;
+  return <h2 data-reading-reveal id={id} className="mb-4 border-b border-border pb-3 text-[17px] font-semibold text-foreground">{title}{count !== undefined && <span className="figure ml-2 text-sm font-normal text-muted-foreground">{count}</span>}</h2>;
 }
 
 export function ReadingDate({ value }: { value?: string | null }) {
@@ -30,7 +30,7 @@ export function ReadingDate({ value }: { value?: string | null }) {
 export function ReadingPagination({ page, total, size, path }: { page: number; total: number; size: number; path: string }) {
   const pages = Math.ceil(total / size);
   if (pages <= 1) return null;
-  return <nav aria-label="分页" className="mt-6 flex flex-wrap items-center gap-3 text-sm">
+  return <nav aria-label="分页" className="reading-pagination mt-6 flex flex-wrap items-center gap-3 text-sm">
     {page > 1 ? <Button asChild variant="outline" size="sm"><Link rel="prev" href={publicPagePath(path, page - 1)}><ChevronLeft className="h-4 w-4" aria-hidden="true" />上一页</Link></Button> : <Button variant="outline" size="sm" disabled><ChevronLeft className="h-4 w-4" aria-hidden="true" />上一页</Button>}
     <span aria-current="page" className="figure text-muted-foreground">第 {page} / {pages} 页</span>
     {page < pages ? <Button asChild variant="outline" size="sm"><Link rel="next" href={publicPagePath(path, page + 1)}>下一页<ChevronRight className="h-4 w-4" aria-hidden="true" /></Link></Button> : <Button variant="outline" size="sm" disabled>下一页<ChevronRight className="h-4 w-4" aria-hidden="true" /></Button>}
@@ -38,7 +38,7 @@ export function ReadingPagination({ page, total, size, path }: { page: number; t
 }
 
 export function ResearchList({ items, layout = "grid" }: { items: TradingAnalysis[]; layout?: "grid" | "stack" }) {
-  return <ul className={layout === "grid" ? "grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3" : "grid min-w-0 grid-cols-1 gap-4"}>{items.map((report) => <li key={report.id} className="min-w-0"><ResearchSummaryCard analysis={report} href={publicResearchPath(report.id)} t={publicCopy} /></li>)}</ul>;
+  return <ul className={layout === "grid" ? "grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3" : "grid min-w-0 grid-cols-1 gap-4"}>{items.map((report) => <li key={report.id} data-reading-reveal data-reading-item="card" className="min-w-0"><ResearchSummaryCard analysis={report} href={publicResearchPath(report.id)} t={publicCopy} /></li>)}</ul>;
 }
 
 export function OpinionList({ opinions }: { opinions: YouTubeOpinion[] }) {

@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTranslation } from "@/lib/i18n";
 import type { AiTechnicalAnalysis } from "@/lib/stockApi";
@@ -12,8 +13,8 @@ export default function SavedAnalysisData({ version }: { version: AnalysisVersio
   const [shown, setShown] = useState(20);
   const bars = version.bars || [];
   const number = new Intl.NumberFormat(t("common.intlLocale"), { maximumFractionDigits: 4 });
-  return <details className="mt-3 border-t border-border pt-3">
-    <summary className="cursor-pointer text-sm font-medium">{c("Saved analysis data", "分析时的数据")}</summary>
+  return <details className="group/disclosure mt-3 border-t border-border pt-3">
+    <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 rounded text-sm font-medium hover:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary [&::-webkit-details-marker]:hidden"><span>{c("Saved analysis data", "分析时的数据")}</span><ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground group-open/disclosure:rotate-180" aria-hidden="true" /></summary>
     <p className="mt-2 text-xs text-muted-foreground">{version.payload.interval} · {version.payload.view.start} – {version.payload.view.end}</p>
     <dl className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
       {Object.entries(version.payload.indicators).map(([key, value]) => <div key={key}>

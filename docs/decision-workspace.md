@@ -146,7 +146,7 @@ terminal and require an explicit retry; a worker restart never silently repeats 
 possibly billed model request. Running jobs expire after ten minutes, queued jobs
 after twenty minutes, and model generation has an eight-minute deadline.
 
-The October 9 request adds private analysis generation to the stock workspace.
+The October 9 request adds explicit analysis generation to the stock workspace.
 It is an explicit exception to the earlier reading-only stock-page contract;
 public report publishing and the administrator report-management UI retain
 their existing behavior. No analysis runs just by opening a stock.
@@ -169,8 +169,8 @@ if the original job record is deleted. Missing creator evidence offers a link
 to the existing creator directory rather than generating source opinions.
 
 Database ownership: `stock_analysis_versions` holds immutable, user-owned
-technical/research snapshots; `stock_analysis_heads` holds one current pointer
-per user, stock and kind. Both enable RLS with own-user read policies. Browser
+technical/drawings/research snapshots; `stock_analysis_heads` holds one current pointer
+per user, stock and kind. Snapshots enable signed-in shared read RLS; current pointers retain own-user read policies. Browser
 clients cannot write snapshots or invoke switching RPCs directly. Authenticated
 backend routes derive owner identity from the verified session, and switching
 functions verify stock and owner. Save and switch are atomic database operations.
@@ -212,12 +212,29 @@ Database browser grants remain unchanged.
 
 ## Stock workspace layout
 
-The stock header spans the page. At xl desktop widths a flexible chart column sits
-beside a 360px analysis rail (400px at 2xl); below xl these stack in DOM order.
-The rail has Summary / Technicals / Setup Radix tabs. Setup remains available
-with an explicit empty state when there is no generated setup.
-The full-width region below has News / Creator intelligence / AI research tabs.
+The stock workspace uses one reading column at every viewport: header, chart,
+then one unified insight panel. Its shared Radix tab list contains Summary,
+Technicals, Setup, News, Creator intelligence and AI research. Setup remains
+available with an explicit empty state when there is no generated setup.
 Panels stay mounted and inactive panels use display:none to retain reader state.
 The chart and generation hooks remain outside tabs. Selection resets per ticker.
 The existing main element owns vertical scrolling; reports have natural height.
 All tab labels and empty-state actions support Chinese and English.
+
+### Shared AI results (October 25)
+
+All saved technical analysis, AI drawings and completed AI research results,
+including existing versions, are readable by every signed-in user. The stock history service
+returns author profile names and a server-derived `is_owner` flag. History is
+server-paginated (10 per page), newest first, with Everyone / Mine filters.
+Default selection uses the viewer's current pointer, then their newest snapshot,
+then the newest snapshot from any author. Filters reset pagination and cancel
+stale requests. Explicitly generated results become the viewer's current version.
+
+Read-only viewing of another user's result never changes their pointer. Only an
+owner can generate, restore their own version, or manage their research jobs.
+The database continues to restrict writing snapshots and calling mutation RPCs
+to the backend. Job status, original manual drawings and current pointers retain
+their existing access rules. Legacy published research URLs now list all completed
+research, regardless of the old publish flag; the publish/unpublish toggle is
+removed, and the unpublish endpoint rejects attempts to make shared results private.

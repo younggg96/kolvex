@@ -14,7 +14,7 @@ Chinese-speaking individual investors in US equities. They follow Chinese-langua
 
 Kolvex turns scattered investment opinion into something an individual can check against their own book:
 
-- **Markets / 行情** (`/dashboard`, `/dashboard/market/[ticker]`): default signed-in entry with quotes, benchmark ETFs and stock lists. Opening a stock stays in Markets. Its stock identity and quote precede a chart-led workspace. Desktop pairs the K-line chart and AI drawings with a tabbed summary, technical-analysis and conditional-setup rail. A full-width lower region switches between latest news, creator intelligence and AI research; smaller screens stack chart, analysis and evidence in that order. News retains source links, publication times, translation, refresh and expansion.
+- **Markets / 行情** (`/dashboard`, `/dashboard/market/[ticker]`): default signed-in entry with quotes, benchmark ETFs and stock lists. Opening a stock stays in Markets. Its stock identity and quote precede a chart-led workspace. Every viewport follows one reading order: K-line chart and AI drawings, then one unified tab panel for change summary, technical analysis, conditional setup, latest news, creator intelligence and AI research. News retains source links, publication times, translation, refresh and expansion.
   The **Macro indicators / 宏观指标** tab (`/dashboard?tab=macro`) displays eight free government statistics: 2-/10-year Treasury yields, the 10Y−2Y spread, headline/core CPI YoY, unemployment, monthly nonfarm jobs added, and real GDP annualized quarterly growth. Native cards include 1-/3-/5-year charts, actual observation periods, previous-period changes, recent-value disclosures and source links. The allowlisted Federal Reserve/BLS/BEA series use FRED public downloads without an API key; sources are checked every six hours.
 - **Creator Opinions / 博主观点** (`/dashboard/youtube-opinions`): combines the former Research overview with the existing YouTube explorer. Its stock and creator directories, opinion history, weekly changes and creator views on linked holdings share one entry.
 - **AI Chat** (`/dashboard/chat`, Ask Kolvex from the sidebar, header, or ⌘K): a question about the page being read. The transcript keeps the question. Creator opinions, quotes, and holdings already loaded on the page are attached as evidence and shown as a short removable label, never pasted into the message.
@@ -70,3 +70,10 @@ Kolvex tracks what specific Chinese-language finance creators said about specifi
 3. Relate opinion to the user's own holdings rather than presenting it in isolation.
 4. Calm and fast over flashy: users check this often, sometimes late at night, and need to scan, not be entertained.
 5. Chinese-first reading: copy, density, and type must read well in Chinese.
+
+
+AI result visibility: all saved technical analyses, AI drawings and completed
+research are shared with all signed-in users, including previously generated results.
+The stock workspace prioritizes the current user's result and otherwise opens
+the latest result from any user. History identifies authors and supports
+Everyone / Mine filters. Generation and modifications remain owner-controlled.

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ChevronDown, Loader2, RefreshCw, EyeOff } from "lucide-react";
+import { ChevronDown, Loader2, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { formatPrice, type AiTechnicalAnalysis } from "@/lib/stockApi";
@@ -28,12 +28,11 @@ function indicatorLabel(key: string) {
   return key.toUpperCase();
 }
 
-export default function AiAnalysisPanel({ state, busy = false, interval, onRetry, onClear, formatDate, t, className }: {
+export default function AiAnalysisPanel({ state, busy = false, interval, onRetry, formatDate, t, className }: {
   state: AiPanelState;
   busy?: boolean;
   interval: string;
   onRetry: () => void;
-  onClear: () => void;
   formatDate: (date: string) => string;
   t: Translate;
   className?: string;
@@ -67,11 +66,13 @@ export default function AiAnalysisPanel({ state, busy = false, interval, onRetry
         {state.error === t("youtubeOpinions.ai.notConfigured") && <Link href="/dashboard/settings?tab=api-keys" className="font-medium underline underline-offset-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">{t("youtubeOpinions.ai.openSettings")}</Link>}
       </p>}
 
-      {state.status === "done" && result && <div className="mt-4 ">
-        <AnalysisSummary key={result.summary} text={result.summary} t={t} />
+      {state.status === "done" && result && <div className="mt-5">
+        <div className="max-w-[85ch]">
+          <AnalysisSummary key={result.summary} text={result.summary} t={t} />
+        </div>
         {result.invalidation && <div className="mt-4  rounded-xl bg-muted/60 p-4">
           <h4 className="text-sm font-semibold text-warning">{t("youtubeOpinions.ai.invalidation")}</h4>
-          <p className="mt-1 whitespace-pre-line break-words text-sm leading-7">{result.invalidation}</p>
+          <p className="mt-2 max-w-[90ch] whitespace-pre-line break-words text-sm leading-7">{result.invalidation}</p>
         </div>}
 
         {levels.length > 0 && <section className="mt-6" aria-label={t("youtubeOpinions.ai.levels")}>
@@ -81,8 +82,8 @@ export default function AiAnalysisPanel({ state, busy = false, interval, onRetry
               <details className="group/level">
                 <summary className={cn(disclosureClass, "gap-2 py-2")}>
                   <span className={cn("shrink-0 text-base font-semibold tabular-nums", toneText[level.kind === "support" ? "positive" : "negative"])}>{formatPrice(level.price)}</span>
-                  <span className="ml-auto text-sm">{t(`youtubeOpinions.ai.${level.kind}`)}</span>
-                  <span className="text-xs font-normal text-muted-foreground">{t(`youtubeOpinions.ai.strength.${level.strength}`)}</span>
+                  <span className="ml-2 text-sm">{t(`youtubeOpinions.ai.${level.kind}`)}</span>
+                  <span className="ml-auto text-xs font-normal text-muted-foreground">{t(`youtubeOpinions.ai.strength.${level.strength}`)}</span>
                   <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground group-open/level:rotate-180" aria-hidden="true" />
                 </summary>
                 <p className=" break-words pb-3 text-sm leading-7 text-muted-foreground">{level.reason}</p>
@@ -127,9 +128,6 @@ export default function AiAnalysisPanel({ state, busy = false, interval, onRetry
         <Button type="button" size="sm" variant="outline" onClick={onRetry} disabled={loading || busy} aria-busy={loading}>
           <RefreshCw className="h-3.5 w-3.5" aria-hidden="true" />{t("youtubeOpinions.ai.rerun")}
         </Button>
-        {result && <Button type="button" size="sm" variant="ghost" onClick={onClear} disabled={loading || busy} className="text-muted-foreground">
-          <EyeOff className="h-3.5 w-3.5" aria-hidden="true" />{t("youtubeOpinions.ai.hideAnalysis")}
-        </Button>}
       </footer>
     </section>
   );

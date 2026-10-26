@@ -21,7 +21,7 @@
     {
       "category": "violation",
       "file": "app/globals.css",
-      "line": 233,
+      "line": 248,
       "message": "Base scrollbar theming is activated by an opt-in class.",
       "remediation": "Apply base scrollbar tokens globally; reserve classes for geometry or semantic exceptions.",
       "ruleId": "scrollbar.opt-in-base",

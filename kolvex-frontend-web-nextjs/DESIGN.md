@@ -80,20 +80,27 @@ The stock detail route belongs to Markets. `StockLookup` at the top of Markets
 uses the shared Input and Button to open any valid ticker, independently of
 creator coverage. Its inline validation and clear action follow the active locale.
 AI generation remains an explicit action on the stock detail page. The stock
-identity and quote span the workspace. At xl and wider, the K-line chart occupies
-the flexible main column beside a 360px analysis rail (400px at 2xl). The rail uses
-shared Radix tabs for change summary, technical analysis and conditional setup.
-At smaller widths the same DOM order stacks naturally. No nested vertical scroller
-or fixed-height report region is introduced. The page is capped at 1800px.
+workspace uses one reading column at every viewport: identity and quote, K-line
+chart, then one unified insight panel. The panel sits directly below the chart and
+uses a single shared Radix tab list for change summary, technical analysis,
+conditional setup, latest news, creator intelligence and AI research. Its flat
+rounded-xl bordered card uses 16px padding, increasing to 20px from sm. The tab
+bar uses two rows of three equal columns on phones and a wrapping left-aligned row
+from sm. No nested vertical scroller or fixed-height report region is introduced.
+The page is capped at 1800px.
 
-A full-width evidence region below uses shared tabs for latest news, creator
-intelligence and AI research. News is the default. Panels remain mounted but
-inactive panels are hidden, preserving reading state across switches. Tab selection
-resets for a new ticker. AI generation hooks and the chart stay mounted outside
-evidence tabs; switching tabs does not start analysis. The setup tab stays discoverable
-when no setup exists and explains how to generate analysis. News retains its independent
-refresh, retry, translation and source links. Long research stays in the full-width
-reading region. The runtime theme, typography and shared controls are unchanged.
+Repeated section headings inside the news, creator and research panels remain
+available to screen readers but are visually hidden; descriptions and actions
+remain visible. Panels stay mounted while inactive panels are hidden, preserving
+reader state across switches. Active panels enter with a 180ms opacity and 6px
+vertical transition; the global reduced-motion preference removes that movement.
+Tab selection resets for a new ticker. AI generation hooks and the chart stay
+mounted outside the panel; switching tabs does not start analysis. Written AI
+technical results render only in the Technicals tab, while AI drawings remain on
+the chart. The setup tab stays discoverable when no setup exists and explains how
+to generate analysis. News retains its independent refresh, retry, translation and
+source links. Long research uses the panel's full width. The runtime theme,
+typography and shared controls are unchanged.
 Creator Opinions shows the first
 10 filtered stocks with a full stock directory at `/dashboard/youtube-opinions/stocks`.
 The count shows displayed/filtered totals. When more stocks match, View all links
@@ -253,7 +260,7 @@ copy was checked statically, without an English runtime capture.
 - Reuse semantic theme tokens, translated labels and shared UI primitives.
 - Preserve administrator-only authoring and existing backend access checks.
 - Do not restore the former Research or Deep Research navigation entries.
-- The stock workspace offers user-requested private AI analysis generation and version history. The public report library retains its reading workflow.
+- The stock workspace offers user-requested shared AI analysis generation and version history. The public report library retains its reading workflow.
 
 ## Stock analysis history
 
@@ -296,7 +303,7 @@ on page changes and close. Empty/error/retry states retain the same dialog.
 
 `components/decision/AnalysisHistory.tsx` owns the shared dated version list,
 pagination, current marker, historical-view notice, retry and current-version
-switching for both technical analysis and private research. Its `useStockHistory`
+switching for both technical analysis and shared research. Its `useStockHistory`
 hook owns cancellable loads and conflict recovery. Existing Buttons and native
 disclosures retain the established colors, shapes and keyboard behavior.
 
@@ -595,6 +602,27 @@ its data source fails. Full access and testing details live in
 `../docs/public-reading.md`.
 
 
+
+### Public directory motion
+
+`ReadingMotion` and `components/public/reading-motion.css` add progressive
+animation to `/research`, `/creators` and `/stocks`. The existing reading layout,
+font stack, colors and card recipes remain authoritative. Headings and list items
+enter once per route or URL page with a 500ms opacity and 12px upward reveal;
+visible items stagger by 40ms, capped at 160ms. An IntersectionObserver reveals
+later items as they enter, with at most 150ms stagger per batch. No scroll handler,
+new animation dependency, data request or layout sizing is introduced.
+
+On fine pointers, report cards lift 4px and their logos scale to 1.06; directory
+rows and their arrow move 4px. Press feedback uses scale .99, while header and
+pagination controls use .97. The navigation underline grows from its leading
+edge. All motion uses the existing `--ease-out-quint` token, with 300ms color
+transitions and 500ms transforms. Hover movement is disabled on touch devices.
+Keyboard focus remains visible and immediately reveals its target. Reduced motion,
+print, absent browser APIs and JavaScript-disabled reading retain visible content;
+active animations and observers are cleaned up on navigation. No fonts or
+heading gradients are added by this motion update.
+
 ### Public and workspace presentation parity
 
 Public reading uses the workspace's 28/32px headings, 15px directory identifiers,
@@ -715,7 +743,7 @@ as five equal index cards above the stock list and desktop rail. Each card group
 its trading date, index symbol, point value, signed change and a 96px chart.
 Index points have no currency prefix; the data uses the actual index symbols
 (^GSPC, ^IXIC, ^DJI, ^RUT, ^VIX), rather than ETF proxy prices.
-The shared range controls update every chart. Cards stay at 272 × 244px in a single horizontal row on every viewport.
+The shared range controls update every chart. Cards stay at 272 × 272px in a single horizontal row on every viewport.
 The overview scrolls horizontally with a visible themed scrollbar, native touch
 and keyboard scrolling, and proximity scroll snapping; cards never shrink or wrap. They retain existing
 card/background/border tokens, 12px corners, tabular figures and semantic
@@ -764,7 +792,15 @@ existing destination routes and active-state matching remain canonical.
 
 ### Macro indicators in Markets
 
-Markets uses the shared Radix Tabs primitive for Market overview and Macro indicators.
+Markets uses the shared Radix Tabs primitive in this order: Market overview,
+Market trends, Macro indicators. Market trends is the second tab and owns the 27 added cards (sectors, styles
+and cross-assets) and their range controls. The five major index cards remain
+in Market overview above the stock list.
+`/dashboard?tab=trends` restores it on refresh. Market overview retains index cards, stock
+movers and creator updates, with range controls shared by indices and stock previews. The
+selected chart range is shared across overview and trends while switching tabs.
+Each tab loads only its own quotes/context; visiting overview does not request
+all market instrument quotes.
 `/dashboard?tab=macro` restores the selected tab on refresh; other query parameters
 are preserved. StockLookup remains above both tabs. Each panel mounts its own data
 requests and Ask Kolvex context, so macro figures do not mix with intraday quotes.
@@ -803,3 +839,84 @@ through FRED public CSV/ZIP downloads, without a paid key. Checks are cached for
 six hours and failures retry hourly. Missing values stay as dashes; cached old
 values are marked delayed. Loading, empty, partial, stale and expired-session
 states have explicit bilingual copy and retry/sign-in actions.
+
+
+### Shared AI result history
+
+AnalysisHistory and DrawingVersionSelector use the shared Button and Select
+primitives for Everyone / Mine filtering, author labels, and version selection.
+All generated results are visible to all signed-in users. The initial result is the viewer's
+current version when available, otherwise their latest result, otherwise the
+newest result from any user. Server-derived ownership controls restoration;
+viewing another author's version is read-only and never changes their data.
+The research detail header states public visibility without a publishing toggle.
+Existing disclosure layout, tokens and bilingual copy remain canonical.
+
+The 32 reference instruments are split between five overview indices and
+27 instruments in the Market trends tab, grouped into sectors, investment styles
+and cross-assets. `lib/marketBenchmarks.ts` owns the catalogue;
+ETFs stay separate from the five-index route allowlist. Sector coverage includes
+banks, utilities, REITs, technology, healthcare, defense, insurance, semiconductors
+and software. Style cards use IWD, IWF, MAGS (explicitly an equal-weight ETF), RSP
+(ETF proxy for the equal-weight index) and SPHB (high-beta ETF).
+
+Both market and sector/style cards share 272 × 272px geometry, fixed single-line
+headings, an actual observation date, a 96px chart and a short unit/method caption.
+All four groups scroll horizontally with the established visible scrollbar,
+keyboard focus and touch behavior. Shared 1D/1W/1M/3M/1Y/QTD/YTD controls update all groups and stock-list previews.
+The controls wrap on narrow screens. QTD and YTD follow the current New York
+calendar quarter/year and include the preceding close as their return baseline.
+1Y uses the latest observation’s one-year anniversary, with a prior close.
+Two years of daily history retain these boundary values; missing pre-period
+history leaves the full-period change unavailable. Daily series with no release
+in the current quarter/year do not show the previous period’s return.
+History loads near the viewport and reuses the three-worker cached stock-trend
+queue. Missing data remains unavailable with retry, never a fabricated curve.
+
+Cross-assets cover the dollar index, 2-/10-year Treasury yields, TLT, MOVE,
+high-yield OAS, gold futures, WTI futures and bitcoin. Index values are points,
+prices are USD, yields/spreads are percentages with changes in basis points.
+Gold is USD per troy ounce; WTI is USD per barrel. Treasury yields and ICE BofA
+high-yield OAS use allowlisted FRED CSV observations via
+`/api/market/observations/[series]`, cached for six hours with source attribution.
+These series remain distinct from the government-only macro snapshot service.
+Daily cards show actual release dates; 1D compares the last two observations.
+MOVE also uses daily history. Source cards link to FRED or Yahoo; tradable ETF
+and crypto cards retain their market-detail links. Futures and index data are
+not relabelled as ETFs. Ask Kolvex context lists all four instrument groups.
+
+### Market display preference
+
+Market overview indices and Market trends share a Cards / List segmented control
+beside the toolbar. Cards remain the default. The chosen display is stored
+locally under `kolvex:market-view`, validated on load, and retained across tabs
+and refreshes; unavailable browser storage does not disable the control.
+
+List mode is a comparison matrix matching the supplied market-performance table:
+one row per instrument, latest daily close/observation, then 1D, 1W, 1M, 1Y,
+QTD and YTD side by side. It replaces the range controls with a comparison label;
+returning to cards preserves the selected chart range. The groups and tab ownership
+remain unchanged: indices in overview; sectors, styles and cross-assets in trends.
+
+`MarketComparison` owns the native table and per-row viewport loading.
+`lib/marketComparison.ts` owns the tested calendar/return calculations. A single
+two-year daily history per instrument feeds every column, reusing the cached
+three-worker stock-history queue or allowlisted FRED observations. Price performance follows the existing adjusted-history source. All columns
+use that row's same dated closing observation, never an intraday quote mixed with
+old history. Active daily candles are excluded: US asset days are conservatively
+complete at 17:00 New York, crypto at UTC midnight; published FRED observations
+retain their own release dates. Rolling periods use the last close on/before their calendar target;
+QTD/YTD use the close before the current New York quarter/year. Missing baselines,
+large source gaps, newly listed assets or no current-period release show dashes.
+Prices show percentage returns; Treasury yields and credit spreads show percentage
+point changes (pp); MOVE shows point changes. Positive/negative cells use semantic
+green/orange signed text with very faint number-sized tints (2.5% in light,
+6% in dark), rather than whole-cell heatmap fills. Neutral cell surfaces and
+quiet horizontal hairlines lead the table; rounded zero is neutral. Source and
+unit notes distinguish ETF proxies, futures and rates.
+
+The table scrolls horizontally in its own focusable region with a visible scrollbar,
+while the first instrument column stays pinned. On phones all comparison columns
+remain available without shrinking the figures. Native row/column/group headings,
+per-row dates, detail/source links and separate failure retry buttons remain
+keyboard accessible. Card styling and its seven time ranges remain unchanged.

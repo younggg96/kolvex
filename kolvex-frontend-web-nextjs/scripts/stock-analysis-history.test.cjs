@@ -23,10 +23,10 @@ function fixture(api) {
     useCallback(fn,deps){const i=index++;if(!slots[i]||!equal(slots[i].deps,deps))slots[i]={deps,fn};return slots[i].fn},
     useEffect(fn,deps){const i=index++;if(!slots[i]||!equal(slots[i].deps,deps)){const old=slots[i];slots[i]={deps};pending.push(()=>{old?.cleanup?.();slots[i].cleanup=fn()})}},
   };
-  const module=compile('components/decision/AnalysisHistory.tsx',{'react':react,'react/jsx-runtime':{},'@/components/ui/button':{},'@/lib/i18n':{},'./shared':{},'@/lib/stockAnalysisHistory':{...api,HistoryError}});
+  const module=compile('components/decision/AnalysisHistory.tsx',{'react':react,'@/hooks/useAuth':{useAuth:()=>({user:{id:'me'}})},'react/jsx-runtime':{},'@/components/ui/button':{},'@/lib/i18n':{},'./shared':{},'@/lib/stockAnalysisHistory':{...api,HistoryError}});
   return {render(ticker='NVDA',kind='technical'){index=0;return module.useStockHistory(ticker,kind)},effects(){pending.splice(0).forEach(fn=>fn())}};
 }
-const version=(id,extra={})=>({id,ticker:'NVDA',kind:'technical',created_at:'2026-10-09T00:00:00Z',payload:{summary:id},request:{},bars:[],...extra});
+const version=(id,extra={})=>({id,user_id:'me',is_owner:true,ticker:'NVDA',kind:'technical',created_at:'2026-10-09T00:00:00Z',payload:{summary:id},request:{},bars:[],...extra});
 
 test('refresh loads the saved current version, selecting old versions does not write the head', async()=>{
   const current=version('new'),old=version('old');let writes=0;
@@ -154,4 +154,20 @@ test('entry stop and target overlays keep saved prices and calculated risk rewar
   assert.equal(analysisDrawings({...result,setup:null},k=>k).length,0);
   const short=analysisDrawings({...result,setup:{...result.setup,direction:'bearish',entry_low:110,entry_high:112,invalidation:116,targets:[105,100],risk_reward:1.2}},k=>k);
   assert.deepEqual(Array.from(short,d=>d.points[0].price),[111,116,105,100]);
+});
+
+
+test('shared results are readable but cannot activate another author version', async()=>{
+  const shared=version('shared',{user_id:'other',is_owner:false}); let writes=0;
+  const h=fixture({getStockAnalysisHistory:async()=>({items:[shared],current:shared,total:1}),activateStockAnalysis:async()=>{writes++}});
+  h.render();h.effects();await tick();let state=h.render();assert.equal(state.selected.id,'shared');
+  await state.activate();assert.equal(writes,0);
+});
+test('mine filter resets paging and cannot be replaced by an old all-users response', async()=>{
+  const all=deferred(); let calls=[];
+  const mine=version('mine');
+  const h=fixture({getStockAnalysisHistory:async(t,k,offset,signal,scope)=>{calls.push({offset,scope});return scope==='mine'?{items:[mine],current:mine,total:1}:all.promise;}});
+  h.render();h.effects();h.render().setScope('mine');h.render();h.effects();await tick();
+  all.resolve({items:[version('other')],current:version('other'),total:1});await tick();
+  assert.equal(h.render().selected.id,'mine');assert.deepEqual(calls.map(c=>c.scope),['all','mine']);assert.equal(calls[1].offset,0);
 });

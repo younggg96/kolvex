@@ -15,7 +15,6 @@ import {
   CheckCircle2,
   XCircle,
   Globe,
-  Lock,
   Bot,
 } from "lucide-react";
 import { useTranslation } from "@/lib/i18n";
@@ -25,8 +24,6 @@ import { Button } from "@/components/ui/button";
 import {
   getAnalysis,
   streamAnalysisProgress,
-  publishAnalysis,
-  unpublishAnalysis,
   type TradingAnalysis,
   type ProgressEvent,
 } from "@/lib/tradingAnalysisApi";
@@ -92,7 +89,6 @@ export default function TradingAnalysisDetailPage() {
 
   const [analysis, setAnalysis] = useState<TradingAnalysis | null>(null);
   const [loading, setLoading] = useState(true);
-  const [publishing, setPublishing] = useState(false);
   const [progressEvents, setProgressEvents] = useState<ProgressEvent[]>([]);
   const [currentStage, setCurrentStage] = useState("initializing");
   const [isStreamConnected, setIsStreamConnected] = useState(false);
@@ -153,36 +149,6 @@ export default function TradingAnalysisDetailPage() {
       setLoading(false);
     }
   }, [analysisId, t]);
-
-  const handlePublishToggle = useCallback(async () => {
-    if (!analysis || publishing) return;
-    setPublishing(true);
-    try {
-      if (analysis.is_published) {
-        await unpublishAnalysis(analysisId);
-        setAnalysis((prev) =>
-          prev ? { ...prev, is_published: false, published_at: null } : prev,
-        );
-        toast.success(t("tradingAnalysis.unpublished"));
-      } else {
-        await publishAnalysis(analysisId);
-        setAnalysis((prev) =>
-          prev
-            ? {
-                ...prev,
-                is_published: true,
-                published_at: new Date().toISOString(),
-              }
-            : prev,
-        );
-        toast.success(t("tradingAnalysis.published"));
-      }
-    } catch (e: any) {
-      toast.error(e.message || t("tradingAnalysis.publishFailed"));
-    } finally {
-      setPublishing(false);
-    }
-  }, [analysis, publishing, analysisId, t]);
 
   useEffect(() => {
     let cancelled = false;
@@ -328,24 +294,7 @@ export default function TradingAnalysisDetailPage() {
       headerLeftAction={backAction}
       headerActions={
         <>
-          <Button
-            variant={analysis.is_published ? "default" : "outline"}
-            size="sm"
-            onClick={handlePublishToggle}
-            disabled={publishing}
-            className="gap-1.5"
-          >
-            {publishing ? (
-              <Loader2 className="w-3.5 h-3.5 animate-spin" />
-            ) : analysis.is_published ? (
-              <Globe className="w-3.5 h-3.5" />
-            ) : (
-              <Lock className="w-3.5 h-3.5" />
-            )}
-            {analysis.is_published
-              ? t("tradingAnalysis.publishedLabel")
-              : t("tradingAnalysis.publish")}
-          </Button>
+          {isCompleted && <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground"><Globe className="h-3.5 w-3.5" aria-hidden="true" />{locale === "zh" ? "所有已登录用户可见" : "Visible to all signed-in users"}</span>}
 
           <Button asChild variant="outline" size="sm">
             <Link href={`/dashboard/market/${analysis.ticker}`}>
@@ -378,12 +327,7 @@ export default function TradingAnalysisDetailPage() {
                     {t("tradingAnalysis.statusFailed")}
                   </span>
                 )}
-                {analysis.is_published && (
-                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-muted text-muted-foreground">
-                    <Globe className="w-3 h-3" />
-                    {t("tradingAnalysis.publishedLabel")}
-                  </span>
-                )}
+
               </div>
               {isCompleted && (
                 <div className="mt-5">

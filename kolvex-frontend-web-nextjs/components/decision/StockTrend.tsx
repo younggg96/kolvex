@@ -3,9 +3,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { loadStockTrend, trendPath, type TrendPoint } from "@/lib/stockTrends";
+import { observationRange } from "@/lib/marketObservations";
 import { useCopy } from "./shared";
 
-export default function StockTrend({ symbol, period, interval, rangeLabel }: { symbol: string; period: string; interval: string; rangeLabel: string }) {
+export default function StockTrend({ symbol, period, interval, rangeLabel, rangeKey }: { symbol: string; period: string; interval: string; rangeLabel: string; rangeKey?: string }) {
   const c = useCopy();
   const host = useRef<HTMLSpanElement>(null);
   const [near, setNear] = useState(false);
@@ -26,10 +27,10 @@ export default function StockTrend({ symbol, period, interval, rangeLabel }: { s
     if (!near) return;
     const controller = new AbortController();
     loadStockTrend(symbol, { period, interval }, controller.signal)
-      .then(data => { if (!controller.signal.aborted) setPoints(data); })
+      .then(data => { if (!controller.signal.aborted) setPoints(rangeKey && ["1Y", "QTD", "YTD"].includes(rangeKey) ? observationRange(data, rangeKey) : data); })
       .catch(() => { if (!controller.signal.aborted) setFailed(true); });
     return () => controller.abort();
-  }, [symbol, period, interval, near]);
+  }, [symbol, period, interval, near, rangeKey]);
   const path = useMemo(() => trendPath(points ?? []), [points]);
   const change = points && points.length > 1 ? points[points.length - 1].value - points[0].value : 0;
   const label = c(`${symbol} ${rangeLabel} price trend`, `${symbol} ${rangeLabel}价格走势`);

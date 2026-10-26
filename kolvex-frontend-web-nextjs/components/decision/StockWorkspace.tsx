@@ -3,8 +3,6 @@
 import { isProductFeatureEnabled } from "@/lib/productFeatures";
 
 import Link from "next/link";
-import AnalysisSummary from "@/components/youtube/chart/AnalysisSummary";
-import TechnicalFindings from "@/components/youtube/chart/TechnicalFindings";
 import HeaderBackButton from "@/components/layout/HeaderBackButton";
 import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -80,6 +78,7 @@ export default function StockWorkspace({ ticker }: { ticker: string }) {
   const [generationRequest, setGenerationRequest] = useState(0);
   const [drawingRequest, setDrawingRequest] = useState(0);
   const [technicalBusy, setTechnicalBusy] = useState(false);
+  const [technicalContainer, setTechnicalContainer] = useState<HTMLDivElement | null>(null);
   const [publishedResearch, setResearch] = useState<TradingAnalysis | null>(
     null,
   );
@@ -234,16 +233,18 @@ export default function StockWorkspace({ ticker }: { ticker: string }) {
       action: !research?.fundamentals_report ? "research" : null,
       label: c("Fundamental", "基本面"),
       direction: null,
+      assessed: Boolean(research?.fundamentals_report?.trim()),
       detail: research?.fundamentals_report
-        ? c("In the AI research tab", "见 AI 研究标签")
+        ? `${research.trade_date} · ${c("In the AI research tab", "见 AI 研究标签")}`
         : c("Needs AI research", "需要 AI 研究"),
     },
     {
       action: !research?.news_report ? "research" : null,
       label: c("News", "新闻"),
       direction: null,
+      assessed: Boolean(research?.news_report?.trim()),
       detail: research?.news_report
-        ? c("In the AI research tab", "见 AI 研究标签")
+        ? `${research.trade_date} · ${c("In the AI research tab", "见 AI 研究标签")}`
         : c("Needs AI research", "需要 AI 研究"),
     },
   ];
@@ -252,9 +253,9 @@ export default function StockWorkspace({ ticker }: { ticker: string }) {
     <DashboardLayout title={c("Markets", "行情")}>
       <main className="flex-1 overflow-y-auto">
         <div className="mx-auto max-w-[1800px] px-4 pb-16 pt-4 md:px-8 md:pt-6">
-          <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_360px] 2xl:grid-cols-[minmax(0,1fr)_400px]">
+          <div className="grid items-start gap-6">
             <section
-              className="min-w-0 xl:col-span-2"
+              className="min-w-0"
               aria-labelledby="stock-title"
             >
               <div className="flex items-center gap-3">
@@ -332,6 +333,7 @@ export default function StockWorkspace({ ticker }: { ticker: string }) {
                   key={ticker}
                   symbol={ticker}
                   layout="workspace"
+                  resultsContainer={technicalContainer}
                   range="3m"
                   from=""
                   to=""
@@ -346,16 +348,19 @@ export default function StockWorkspace({ ticker }: { ticker: string }) {
               </div>
             </section>
 
-            <aside className="min-w-0 rounded-xl border border-border bg-card p-4" aria-label={c("Analysis beside the chart", "图表分析")}>
-              <Tabs key={`analysis-${ticker}`} defaultValue="summary">
-                <TabsList className="grid grid-cols-3 gap-2 overflow-visible" aria-label={c("Stock analysis", "个股分析")}>
+            <section className="min-w-0 rounded-xl border border-border bg-card p-4 sm:p-5" aria-label={c("Stock insights", "个股洞察")}>
+              <Tabs key={`insights-${ticker}`} defaultValue="summary">
+                <TabsList className="sticky top-0 z-10 grid grid-cols-3 gap-2 overflow-visible bg-card sm:flex sm:flex-wrap sm:gap-8" aria-label={c("Stock insights", "个股洞察")}>
                   <TabsTrigger value="summary">{c("Summary", "变化摘要")}</TabsTrigger>
                   <TabsTrigger value="technical">{c("Technicals", "技术分析")}</TabsTrigger>
                   <TabsTrigger value="setup">{c("Setup", "条件计划")}</TabsTrigger>
+                  <TabsTrigger value="news">{c("Latest news", "最新相关新闻")}</TabsTrigger>
+                  <TabsTrigger value="creators">{c("Creator intelligence", "博主情报")}</TabsTrigger>
+                  <TabsTrigger value="research">{c("AI research", "AI 研究")}</TabsTrigger>
                 </TabsList>
-                <TabsContent value="summary" forceMount className="pt-5 data-[state=inactive]:hidden">
+                <TabsContent value="summary" forceMount className="stock-tab-panel pt-2 data-[state=inactive]:hidden">
               <Panel>
-                <div className="grid gap-4 sm:grid-cols-3 xl:grid-cols-1">
+                <div className="grid gap-4 sm:grid-cols-3">
                   <div>
                     <p className="text-xs text-muted-foreground">
                       {c("Market today", "今日行情")}
@@ -383,7 +388,7 @@ export default function StockWorkspace({ ticker }: { ticker: string }) {
                     <p className="mt-1 text-sm font-semibold">
                       {completedAt
                         ? date(completedAt)
-                        : c("No published report", "暂无已发布报告")}
+                        : c("No AI research yet", "暂无 AI 研究")}
                     </p>
                     {!research && (
                       <Button
@@ -400,14 +405,20 @@ export default function StockWorkspace({ ticker }: { ticker: string }) {
                     )}
                   </div>
                 </div>
-                <dl className="mt-6 grid grid-cols-2 gap-x-6 gap-y-5 border-t border-border pt-5 sm:grid-cols-4 xl:grid-cols-2">
+                <dl className="mt-6 grid grid-cols-2 gap-x-6 gap-y-5 border-t border-border pt-5 sm:grid-cols-4">
                   {evidenceItems.map((item) => (
                     <div key={item.label} className="min-w-0">
                       <dt className="text-[13px] text-muted-foreground">
                         {item.label}
                       </dt>
                       <dd className="mt-1">
-                        <DirectionBadge direction={item.direction} />
+                        {item.assessed ? (
+                          <span className="inline-flex items-center rounded-full border border-border px-2 py-0.5 text-xs font-medium text-foreground">
+                            {c("Assessed", "已评估")}
+                          </span>
+                        ) : (
+                          <DirectionBadge direction={item.direction} />
+                        )}
                       </dd>
                       <dd className="mt-1 text-xs leading-5 text-muted-foreground">
                         {item.detail}
@@ -454,58 +465,10 @@ export default function StockWorkspace({ ticker }: { ticker: string }) {
               </Panel>
 
                 </TabsContent>
-                <TabsContent value="technical" forceMount className="pt-5 data-[state=inactive]:hidden">
+                <TabsContent value="technical" forceMount className="stock-tab-panel pt-2 data-[state=inactive]:hidden">
               <Panel>
-                <div className="flex flex-wrap gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={technicalBusy}
-                    onClick={() => setGenerationRequest((value) => value + 1)}
-                  >
-                    {c("AI analysis", "AI 分析")}
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={technicalBusy}
-                    onClick={() => setDrawingRequest((value) => value + 1)}
-                  >
-                    {c("AI drawings", "AI 画线")}
-                  </Button>
-                </div>
-                {technical ? (
-                  <div className="pt-4">
-                    <DirectionBadge direction={technical.bias} />
-                    <div className="mt-3">
-                      <AnalysisSummary
-                        key={technical.summary}
-                        text={technical.summary}
-                        t={t}
-                      />
-                    </div>
-                    <TechnicalFindings result={technical} t={t} />
-                    {!technical.findings?.length && (
-                      <ul className="mt-3 space-y-2 text-sm">
-                        {technical.signals.map((signal) => (
-                          <li key={signal} className="flex gap-2.5">
-                            <span
-                              aria-hidden
-                              className="mt-2 h-1 w-1 shrink-0 rounded-full bg-foreground/50"
-                            />
-                            {signal}
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                    {technical.invalidation && (
-                      <p className="mt-3 text-sm text-muted-foreground">
-                        {c("What changes the view", "什么会改变判断")}：
-                        {technical.invalidation}
-                      </p>
-                    )}
-                  </div>
-                ) : (
+                <div ref={setTechnicalContainer} className="flex min-w-0 flex-col" />
+                {!technical && !technicalBusy && (
                   <Empty>
                     {c(
                       "Use AI analysis for a written interpretation, or AI drawings for support, resistance, trendlines and Fibonacci levels.",
@@ -516,7 +479,7 @@ export default function StockWorkspace({ ticker }: { ticker: string }) {
               </Panel>
 
                 </TabsContent>
-                <TabsContent value="setup" forceMount className="pt-5 data-[state=inactive]:hidden">
+                <TabsContent value="setup" forceMount className="stock-tab-panel pt-2 data-[state=inactive]:hidden">
               {technical?.setup ? (
                 <Panel>
                   <div>
@@ -589,20 +552,11 @@ export default function StockWorkspace({ ticker }: { ticker: string }) {
                 </Panel>
               )}
                 </TabsContent>
-              </Tabs>
-            </aside>
-            <section className="min-w-0 border-t border-border pt-4 xl:col-span-2" aria-label={c("News and research", "资讯与研究")}>
-              <Tabs key={`evidence-${ticker}`} defaultValue="news">
-                <TabsList className="sticky top-0 z-10 flex flex-wrap gap-x-6 overflow-visible bg-background" aria-label={c("Stock evidence", "个股资讯")}>
-                  <TabsTrigger value="news">{c("Latest news", "最新相关新闻")}</TabsTrigger>
-                  <TabsTrigger value="creators">{c("Creator intelligence", "博主情报")}</TabsTrigger>
-                  <TabsTrigger value="research">{c("AI research", "AI 研究")}</TabsTrigger>
-                </TabsList>
-                <TabsContent value="news" forceMount className="min-w-0 pt-6 data-[state=inactive]:hidden">
+                <TabsContent value="news" forceMount className="stock-tab-panel min-w-0 pt-2 data-[state=inactive]:hidden [&>section>header]:border-0 [&>section>header>div>h2]:sr-only">
               <StockNews key={ticker} ticker={ticker} />
 
                 </TabsContent>
-                <TabsContent value="creators" forceMount className="min-w-0 pt-6 data-[state=inactive]:hidden">
+                <TabsContent value="creators" forceMount className="stock-tab-panel min-w-0 pt-2 data-[state=inactive]:hidden [&>section>header]:border-0 [&>section>header>div>h2]:sr-only">
               <CreatorIntelligence
                 key={ticker}
                 ticker={ticker}
@@ -614,7 +568,7 @@ export default function StockWorkspace({ ticker }: { ticker: string }) {
 
 
                 </TabsContent>
-                <TabsContent value="research" forceMount className="min-w-0 pt-6 data-[state=inactive]:hidden">
+                <TabsContent value="research" forceMount className="stock-tab-panel min-w-0 pt-2 data-[state=inactive]:hidden [&>section>header]:border-0 [&>section>header>div>h2]:sr-only">
               <Panel
                 title={c("AI research", "AI 研究")}
                 description={
@@ -623,7 +577,7 @@ export default function StockWorkspace({ ticker }: { ticker: string }) {
                     : undefined
                 }
               >
-                <div className="pt-4">
+                <div>
                   <Button
                     variant="outline"
                     size="sm"

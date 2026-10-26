@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { createPortal } from "react-dom";
 import { MODEL_CONFIGS, PROVIDER_NAME_TO_ID } from "@/lib/aiModels";
 import { useAvailableProviders } from "@/hooks/useAvailableProviders";
 import type { useChartAiJobs } from "@/hooks/useChartAiJobs";
@@ -21,6 +22,7 @@ import {
   Activity,
   AlertCircle,
   Cloud,
+  ChevronDown,
   CloudOff,
   Eye,
   EyeOff,
@@ -186,6 +188,7 @@ function CallMarker({ direction, count, x, y }: { direction: "up" | "down" | "do
 }
 
 export interface ChartViewProps {
+  resultsContainer?: HTMLElement | null;
   mode: Mode;
   compactLayout?: "compact" | "workspace";
   symbol: string;
@@ -204,6 +207,8 @@ export interface ChartViewProps {
   onAnalysisChange?: (result: AiTechnicalAnalysis | null) => void;
   onDrawingsChange?: (result: AiTechnicalAnalysis | null) => void;
   savedDrawings?: AiTechnicalAnalysis | null;
+  drawingsHidden?: boolean;
+  onDrawingVisibilityChange?: (hidden: boolean) => void;
   drawingRequest?: number;
   aiBusy?: boolean;
   aiJobs: ReturnType<typeof useChartAiJobs>;
@@ -226,6 +231,7 @@ export interface ChartViewProps {
  * drawing tools and AI-drawn levels. Compact mode sits in the page; advanced mode fills a dialog.
  */
 export default function ChartView({
+  resultsContainer,
   mode,
   compactLayout = "compact",
   symbol,
@@ -243,6 +249,8 @@ export default function ChartView({
   onAnalysisChange,
   onDrawingsChange,
   savedDrawings,
+  drawingsHidden = false,
+  onDrawingVisibilityChange,
   drawingRequest = 0,
   aiBusy = false,
   aiJobs,
@@ -292,6 +300,10 @@ export default function ChartView({
     status: "idle",
   });
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [hideDrawingsOpen, setHideDrawingsOpen] = useState(false);
+  const hideDrawingTriggerRef = useRef<HTMLButtonElement>(null);
+  const cancelHideRef = useRef<HTMLButtonElement>(null);
+  const drawingButtonRef = useRef<HTMLButtonElement>(null);
   const { availableProviders, loading: providersLoading, refresh: refreshProviders } = useAvailableProviders();
   const eligibleModels = MODEL_CONFIGS.filter((model) => availableProviders?.includes(PROVIDER_NAME_TO_ID[model.provider]));
   const modelReady = eligibleModels.some((model) => model.id === selectedModel);
@@ -807,11 +819,6 @@ export default function ChartView({
       );
   }
 
-  function clearAi() {
-    aiJobs.clear("analysis");
-    setAi({ status: "idle" });
-    onAnalysisChange?.(null);
-  }
 
   const iconButton = (isActive: boolean) =>
     cn(
@@ -921,14 +928,57 @@ export default function ChartView({
   };
   const lastTone = last && last.close >= (bars?.[count - 2]?.close ?? last.open) ? "positive" : "negative";
 
+  const hideDrawingsControl = (
+            <Dialog open={hideDrawingsOpen} onOpenChange={setHideDrawingsOpen}>
+              {drawingAi.status === "done" && (drawingsHidden ? <Button ref={hideDrawingTriggerRef} type="button" size="sm" variant="outline" aria-pressed={false} className="min-h-11 min-w-[136px] px-3 sm:min-h-9" disabled={aiBusy} onClick={() => onDrawingVisibilityChange?.(false)}>
+                <Eye className="h-4 w-4" aria-hidden="true" />{t("youtubeOpinions.ai.showDrawings")}
+              </Button> : <DialogTrigger asChild>
+                <Button ref={hideDrawingTriggerRef} type="button" size="sm" variant="ghost" aria-pressed={true} className="min-h-11 min-w-[136px] px-3 text-red-600 hover:bg-red-500/10 hover:text-red-600 dark:text-red-400 dark:hover:text-red-400 sm:min-h-9" disabled={aiBusy}>
+                  <EyeOff className="h-4 w-4" aria-hidden="true" />
+                  {t("youtubeOpinions.ai.clear")}
+                </Button>
+              </DialogTrigger>)}
+              <DialogContent showCloseButton={false}
+                onEscapeKeyDown={(event) => event.stopPropagation()}
+                onOpenAutoFocus={(event) => { event.preventDefault(); cancelHideRef.current?.focus(); }}
+                onCloseAutoFocus={(event) => { event.preventDefault(); (hideDrawingTriggerRef.current || drawingButtonRef.current)?.focus({ preventScroll: true }); }}>
+                <DialogHeader>
+                  <DialogTitle>{t("youtubeOpinions.ai.hideDrawingsTitle")}</DialogTitle>
+                  <DialogDescription>{t("youtubeOpinions.ai.hideDrawingsDescription")}</DialogDescription>
+                </DialogHeader>
+                <DialogFooter className="gap-2 sm:space-x-0">
+                  <DialogClose asChild><Button ref={cancelHideRef} type="button" variant="outline">{t("common.cancel")}</Button></DialogClose>
+                  <Button type="button" variant="destructive" className="bg-red-600 text-white" disabled={aiBusy || drawingAi.status !== "done"} onClick={() => {
+                    onDrawingVisibilityChange?.(true);
+                    setHideDrawingsOpen(false);
+                  }}>{t("youtubeOpinions.ai.confirmHideDrawings")}</Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+  );
   const aiControls = (
     <div className={advanced ? "min-w-0" : "mt-3 border-t border-border pt-3"} role="group" aria-label={t("youtubeOpinions.ai.actions")}>
-        <div className={cn("grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] items-center gap-2", !advanced && "sm:flex")}>
+        <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <Button size="sm" className="min-h-11 min-w-[112px] px-3 sm:min-h-9" onClick={() => modelReady ? void runAi("analysis") : setSettingsOpen(true)} aria-busy={ai.status === "loading"}
+              disabled={!loaded || providersLoading || aiBusy || ai.status === "loading" || drawingAi.status === "loading"}
+              title={t("youtubeOpinions.ai.runAnalysis")}>
+              {ai.status === "loading" ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <ScanSearch className="h-4 w-4" aria-hidden="true" />}
+              {t("youtubeOpinions.ai.analysisButton")}
+            </Button>
+            <Button ref={drawingButtonRef} size="sm" variant="outline" className="min-h-11 min-w-[112px] px-3 sm:min-h-9" onClick={() => modelReady ? void runAi("drawings") : setSettingsOpen(true)} aria-busy={drawingAi.status === "loading"}
+              disabled={!loaded || providersLoading || aiBusy || ai.status === "loading" || drawingAi.status === "loading"}
+              title={t("youtubeOpinions.ai.runDrawings")}>
+              {drawingAi.status === "loading" ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <GanttChart className="h-4 w-4" aria-hidden="true" />}
+              {t("youtubeOpinions.ai.button")}
+            </Button>
+          </div>
+          <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
           <Dialog open={settingsOpen} onOpenChange={(open) => { setSettingsOpen(open); if (open) void refreshProviders(); }}>
             <DialogTrigger asChild>
-              <Button type="button" size="sm" variant="ghost" aria-label={t("youtubeOpinions.ai.chartSettings")} title={t("youtubeOpinions.ai.chartSettings")} className={cn("order-3 min-h-11 w-11 p-0 sm:min-h-9", !advanced && "sm:ml-auto sm:w-auto sm:px-3")}>
+              <Button type="button" size="sm" variant="ghost" aria-label={t("youtubeOpinions.ai.chartSettings")} title={t("youtubeOpinions.ai.chartSettings")} className="min-h-11 px-3 text-muted-foreground hover:text-foreground sm:min-h-9">
                 <SlidersHorizontal className="h-4 w-4" aria-hidden="true" />
-                <span className={advanced ? "sr-only" : "hidden sm:inline"}>{t("youtubeOpinions.ai.chartSettings")}</span>
+                <span>{t("youtubeOpinions.ai.chartSettings")}</span>
               </Button>
             </DialogTrigger>
             <DialogContent layout="sheet" showCloseButton={false} className="flex flex-col" onEscapeKeyDown={(event) => event.stopPropagation()}>
@@ -971,18 +1021,8 @@ export default function ChartView({
               </DialogFooter>
             </DialogContent>
           </Dialog>
-            <Button size="sm" className="order-1 min-h-11 min-w-0 px-3 sm:min-h-9" onClick={() => modelReady ? void runAi("analysis") : setSettingsOpen(true)} aria-busy={ai.status === "loading"}
-              disabled={!loaded || providersLoading || aiBusy || ai.status === "loading" || drawingAi.status === "loading"}
-              title={t("youtubeOpinions.ai.runAnalysis")}>
-              {ai.status === "loading" ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <ScanSearch className="h-4 w-4" aria-hidden="true" />}
-              {t("youtubeOpinions.ai.analysisButton")}
-            </Button>
-            <Button size="sm" variant="outline" className="order-2 min-h-11 min-w-0 px-3 sm:min-h-9" onClick={() => modelReady ? void runAi("drawings") : setSettingsOpen(true)} aria-busy={drawingAi.status === "loading"}
-              disabled={!loaded || providersLoading || aiBusy || ai.status === "loading" || drawingAi.status === "loading"}
-              title={t("youtubeOpinions.ai.runDrawings")}>
-              {drawingAi.status === "loading" ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <GanttChart className="h-4 w-4" aria-hidden="true" />}
-              {t("youtubeOpinions.ai.button")}
-            </Button>
+            {hideDrawingsControl}
+          </div>
         </div>
 
       </div>
@@ -1010,29 +1050,27 @@ export default function ChartView({
     </div>
   ) : null;
   const aiResults = (<>
-    {drawingAi.status === "done" && <section className="mt-5 min-w-0 border-t border-border pt-4" aria-label={t("youtubeOpinions.ai.button")}>
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div className="min-w-0 flex-1" role="status">
-              {drawingAi.result?.model && <p className="mt-1 break-words text-xs leading-5 text-muted-foreground">{t("youtubeOpinions.ai.generatedBy", { model: `${drawingAi.result.provider || ""} / ${drawingAi.result.model}` })}</p>}
-            </div>
-            {drawingAi.status === "done" && <Button size="sm" variant="ghost" disabled={aiBusy} onClick={() => { aiJobs.clear("drawings"); setDrawingAi({ status: "idle" }); onDrawingsChange?.(null); }}>{t("youtubeOpinions.ai.clear")}</Button>}
-          </div>
+    {drawingAi.status === "done" && drawingAi.result && (drawingAi.result.model || drawingAi.result.setup || drawingAi.result.findings?.some(item => item.status === "unavailable") || drawingAi.result.overlays?.some(item => ["breakouts", "retests", "false_breakouts"].includes(item.category) && item.detected_at && typeof item.level === "number")) && <details className={cn("group/drawings min-w-0 border-t border-border pt-3", compactLayout === "workspace" && !advanced ? "order-2 mt-6" : "mt-5")}>
+          <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 rounded text-sm font-medium hover:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary [&::-webkit-details-marker]:hidden">
+            {t("youtubeOpinions.ai.button")}
+            <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground group-open/drawings:rotate-180" aria-hidden="true" />
+          </summary>
+          {drawingAi.result?.model && <p className="mt-1 break-words text-xs leading-5 text-muted-foreground">{t("youtubeOpinions.ai.generatedBy", { model: `${drawingAi.result.provider || ""} / ${drawingAi.result.model}` })}</p>}
           {drawingAi.status === "done" && drawingAi.result?.setup && <AiDrawingSetup setup={drawingAi.result.setup} t={t} />}
           {drawingAi.status === "done" && drawingAi.result && <AiPriceActionSignals result={drawingAi.result} formatDate={formatDate} t={t} />}
           {drawingAi.status === "done" && drawingAi.result?.findings?.some(item => item.status === "unavailable") && <p className="mt-3 text-xs leading-5 text-muted-foreground">
             {t("youtubeOpinions.ai.focus.unavailable")}：{drawingAi.result.findings.filter(item => item.status === "unavailable").map(item => t(`youtubeOpinions.ai.focus.categories.${item.id}`)).join(" / ")}
           </p>}
-        </section>}
+        </details>}
     {ai.status === "done" && (
           <AiAnalysisPanel
             state={ai}
             busy={aiBusy}
             interval={params.interval || "1d"}
             onRetry={() => void runAi("analysis")}
-            onClear={clearAi}
             formatDate={formatDate}
             t={t}
-            className="mt-6 border-t border-border pt-4"
+            className={compactLayout === "workspace" && !advanced ? "order-first mt-6" : "mt-6 border-t border-border pt-4"}
           />
         )}
   </>);
@@ -1738,14 +1776,8 @@ export default function ChartView({
             )}
           </div>
 
-          {!advanced && (compactLayout === "workspace" ? (
-            (ai.status === "done" || drawingAi.status === "done") && <details className="mt-4 border-t border-border pt-3">
-              <summary className="cursor-pointer rounded text-sm font-medium text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
-                {t("youtubeOpinions.ai.title")}
-              </summary>
-              {aiResults}
-            </details>
-          ) : aiResults)}
+          {!advanced && compactLayout !== "workspace" && aiResults}
+          {!advanced && compactLayout === "workspace" && resultsContainer && createPortal(aiResults, resultsContainer)}
         </div>
       </div>
       </div>

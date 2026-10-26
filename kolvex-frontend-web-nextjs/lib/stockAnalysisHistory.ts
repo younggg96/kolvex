@@ -1,9 +1,12 @@
 import type { AiTechnicalAnalysis } from "./stockApi";
 import type { PriceBar } from "./stockApi";
-import type { TradingAnalysis } from "./tradingAnalysisApi";
+import type { TradingAnalysis, AnalysisAuthor } from "./tradingAnalysisApi";
 export type AnalysisPayload = AiTechnicalAnalysis | TradingAnalysis;
 export interface AnalysisVersion<T = AnalysisPayload> {
   id: string;
+  user_id: string;
+  is_owner: boolean;
+  author?: AnalysisAuthor;
   ticker: string;
   kind: "technical" | "drawings" | "research";
   created_at: string;
@@ -24,8 +27,8 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
   if (!response.ok) throw new HistoryError(response.status);
   return response.json();
 }
-export function getStockAnalysisHistory<T>(ticker: string, kind: string, offset = 0, signal?: AbortSignal) {
-  return request<AnalysisHistory<T>>(`${encodeURIComponent(ticker)}?kind=${kind}&limit=10&offset=${offset}`, { signal });
+export function getStockAnalysisHistory<T>(ticker: string, kind: string, offset = 0, signal?: AbortSignal, scope: "all" | "mine" = "all") {
+  return request<AnalysisHistory<T>>(`${encodeURIComponent(ticker)}?kind=${kind}&limit=10&offset=${offset}&scope=${scope}`, { signal });
 }
 export function activateStockAnalysis<T>(ticker: string, id: string, currentId: string | null) {
   return request<AnalysisVersion<T>>(`${encodeURIComponent(ticker)}/${encodeURIComponent(id)}/current`, {

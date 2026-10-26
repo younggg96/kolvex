@@ -42,10 +42,11 @@ do $$ declare u uuid; a jsonb; b jsonb; c jsonb; begin
   assert (select count(*) from public.stock_analysis_versions where user_id=u and ticker='SPLITTEST')=3;
   assert not has_function_privilege('authenticated','public.save_stock_chart_result(uuid,text,text,jsonb,jsonb,jsonb)','EXECUTE');
 end $$;
+select set_config('test.expected_analysis_count',(select count(*)::text from public.stock_analysis_versions),true);
 select set_config('request.jwt.claim.sub',(select id::text from auth.users limit 1),true);
 set local role authenticated;
 do $$ begin
-  assert not exists(select 1 from public.stock_analysis_versions where user_id<>auth.uid());
+  assert (select count(*) from public.stock_analysis_versions)=current_setting('test.expected_analysis_count')::int;
   assert not exists(select 1 from public.stock_analysis_heads where user_id<>auth.uid());
   assert not has_table_privilege('authenticated','public.stock_analysis_versions','INSERT');
   assert not has_table_privilege('authenticated','public.stock_analysis_versions','UPDATE');
@@ -53,6 +54,10 @@ do $$ begin
 end $$;
 reset role;
 set local role anon;
-do $$ begin assert not has_table_privilege('anon','public.stock_analysis_versions','SELECT'); end $$;
+do $$ begin
+  assert not has_table_privilege('anon','public.stock_analysis_versions','SELECT');
+  assert not has_table_privilege('anon','public.stock_analysis_versions','INSERT');
+  assert not has_function_privilege('anon','public.activate_stock_analysis(uuid,text,uuid,uuid)','EXECUTE');
+end $$;
 rollback;
 select 'All stock analysis history assertions passed; test writes rolled back' as result;

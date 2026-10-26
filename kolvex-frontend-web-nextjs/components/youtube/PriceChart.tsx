@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { addDays, differenceInCalendarDays, format, subMonths } from "date-fns";
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -69,6 +70,7 @@ export default function PriceChart({
   drawingRequest = 0,
   onAnalysisBusy,
   layout = "compact",
+  resultsContainer,
 }: {
   symbol: string;
   range: PriceRange;
@@ -82,6 +84,7 @@ export default function PriceChart({
   drawingRequest?: number;
   onAnalysisBusy?: (busy: boolean) => void;
   layout?: "compact" | "workspace";
+  resultsContainer?: HTMLElement | null;
 }) {
   const { drawings, setDrawings: storeDrawings, status: syncStatus } = useSyncedDrawings(symbol);
   const versions = useStockHistory<AiTechnicalAnalysis>(symbol, "technical");
@@ -108,8 +111,8 @@ export default function PriceChart({
   const selectedAnalysis = useMemo(() => versions.selected && !hiddenAnalysis
     ? { ...versions.selected.payload, version_id: versions.selected.id } : null, [versions.selected, hiddenAnalysis]);
   useEffect(() => { onAnalysisChange?.(selectedAnalysis); }, [selectedAnalysis, onAnalysisChange]);
-  const selectedDrawings = useMemo(() => drawingVersions.selected && !hiddenDrawings
-    ? { ...drawingVersions.selected.payload, version_id: drawingVersions.selected.id } : null, [drawingVersions.selected, hiddenDrawings]);
+  const selectedDrawings = useMemo(() => drawingVersions.selected
+    ? { ...drawingVersions.selected.payload, version_id: drawingVersions.selected.id } : null, [drawingVersions.selected]);
   const aiDrawings = useMemo(() => selectedDrawings ? analysisDrawings(selectedDrawings, t) : [], [selectedDrawings, t]);
   const manualDrawings = drawings.filter(item => item.source !== "ai");
   const loadVersions = versions.load;
@@ -205,6 +208,8 @@ export default function PriceChart({
     onAnalysisChange: analysisChanged,
     onDrawingsChange: drawingsChanged,
     savedDrawings: selectedDrawings,
+    drawingsHidden: hiddenDrawings,
+    onDrawingVisibilityChange: setHiddenDrawings,
     aiBusy: analysisBusy,
     aiJobs,
     selectedModel,
@@ -230,12 +235,17 @@ export default function PriceChart({
 
   return (
     <>
-      <ChartView mode="compact" compactLayout={layout} generationRequest={generationRequest} drawingRequest={drawingRequest} {...shared} onOpenAdvanced={() => {
+      <ChartView mode="compact" compactLayout={layout} resultsContainer={resultsContainer} generationRequest={generationRequest} drawingRequest={drawingRequest} {...shared} onOpenAdvanced={() => {
         advancedTriggerRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
         setAdvancedOpen(true);
       }} />
-      <AnalysisHistory history={analysisHistory} />
-      {selectedHistory.selected && <SavedAnalysisData key={selectedHistory.selected.id} version={selectedHistory.selected} />}
+      {layout === "workspace" ? resultsContainer && createPortal(<div className="order-last mt-6 min-w-0 border-t border-border pt-1 [&>details]:mt-0 [&>details]:min-w-0 [&>details]:border-0 [&>details]:py-3">
+        <AnalysisHistory history={analysisHistory} />
+        {selectedHistory.selected && <SavedAnalysisData key={selectedHistory.selected.id} version={selectedHistory.selected} />}
+      </div>, resultsContainer) : <>
+        <AnalysisHistory history={analysisHistory} />
+        {selectedHistory.selected && <SavedAnalysisData key={selectedHistory.selected.id} version={selectedHistory.selected} />}
+      </>}
       <Dialog open={advancedOpen} onOpenChange={setAdvancedOpen}>
         <DialogContent
           layout="fullscreen"

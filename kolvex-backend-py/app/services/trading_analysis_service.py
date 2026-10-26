@@ -788,7 +788,7 @@ class TradingAnalysisService:
         offset: int = 0,
         ticker: Optional[str] = None,
     ) -> dict[str, Any]:
-        """List all published analyses (public, no auth required)."""
+        """List all completed research results (legacy published route)."""
         select_fields = (
             "id, user_id, ticker, trade_date, status, selected_analysts, "
             "llm_provider, final_decision, duration_seconds, "
@@ -797,9 +797,8 @@ class TradingAnalysisService:
         query = (
             self._supabase.table(TABLE)
             .select(select_fields)
-            .eq("is_published", True)
             .eq("status", "completed")
-            .order("published_at", desc=True)
+            .order("created_at", desc=True).order("id", desc=True)
         )
 
         if ticker:
@@ -808,7 +807,6 @@ class TradingAnalysisService:
         count_q = (
             self._supabase.table(TABLE)
             .select("id", count="exact")
-            .eq("is_published", True)
             .eq("status", "completed")
         )
         if ticker:
@@ -829,13 +827,13 @@ class TradingAnalysisService:
         }
 
     async def get_published_analysis(self, analysis_id: str) -> Optional[dict[str, Any]]:
-        """Get a single published analysis (public access, no user_id check)."""
+        """Get completed research regardless of the legacy publishing flag."""
         try:
             result = (
                 self._supabase.table(TABLE)
                 .select("*")
                 .eq("id", analysis_id)
-                .eq("is_published", True)
+                .eq("status", "completed")
                 .maybe_single()
                 .execute()
             )

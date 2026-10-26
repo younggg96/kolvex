@@ -111,7 +111,7 @@ async def start_stock_analysis(
     current_user_id: str = Depends(get_current_user_id),
     api_keys_service: UserApiKeysService = Depends(get_user_api_keys_service),
 ):
-    """Explicit private stock-page generation, using the configured model/key."""
+    """Explicit stock-page generation, using the configured model/key."""
     if not TRADINGAGENTS_AVAILABLE:
         raise HTTPException(503, "research_unavailable")
     keys = await api_keys_service.get_keys_dict(current_user_id) or {}
@@ -152,11 +152,12 @@ async def list_analyses(
 
 @router.get("/published/list")
 async def list_published_analyses(
+    current_user_id: str = Depends(get_current_user_id),
     limit: int = Query(default=20, ge=1, le=100),
     offset: int = Query(default=0, ge=0),
     ticker: Optional[str] = Query(default=None),
 ):
-    """List all published analyses (public, no auth required)."""
+    """List all published analyses (all signed-in users)."""
     service = get_trading_analysis_service()
     return await service.list_published_analyses(
         limit=limit,
@@ -166,8 +167,8 @@ async def list_published_analyses(
 
 
 @router.get("/published/{analysis_id}")
-async def get_published_analysis(analysis_id: str):
-    """Get a single published analysis (public, no auth required)."""
+async def get_published_analysis(analysis_id: str, current_user_id: str = Depends(get_current_user_id)):
+    """Get a single published analysis (all signed-in users)."""
     service = get_trading_analysis_service()
     record = await service.get_published_analysis(analysis_id)
     if not record:
@@ -294,12 +295,8 @@ async def unpublish_analysis(
     analysis_id: str,
     current_user_id: str = Depends(get_current_user_id),
 ):
-    """Unpublish an analysis, making it private again."""
-    service = get_trading_analysis_service()
-    record = await service.unpublish_analysis(analysis_id, current_user_id)
-    if not record:
-        raise HTTPException(status_code=404, detail="Analysis not found")
-    return record
+    """Completed results are public under the shared-results contract."""
+    raise HTTPException(status_code=409, detail="research_results_are_public")
 
 
 @router.delete("/{analysis_id}")

@@ -4,8 +4,8 @@ import { isProductFeatureEnabled } from "@/lib/productFeatures";
 
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { ArrowUpRight } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { ArrowUpRight, LayoutGrid, List } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import CompanyLogo from "@/components/ui/company-logo";
 import { Button } from "@/components/ui/button";
@@ -19,10 +19,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import OpinionStrength from "@/components/youtube/OpinionStrength";
-import { getStockHistory, type StockQuote } from "@/lib/stockApi";
+import { type StockQuote } from "@/lib/stockApi";
 import { cn } from "@/lib/utils";
+import { loadStockTrend } from "@/lib/stockTrends";
+import { MARKET_RANGES, marketRangeBaseline, observationRange, type MarketObservation } from "@/lib/marketObservations";
 import { loadMarketQuotes } from "@/lib/marketQuotes";
-import { BENCHMARKS, indexValue } from "@/lib/marketBenchmarks";
+import { BENCHMARKS, MARKET_GROUPS, isMarketIndex, indexValue, type MarketInstrument } from "@/lib/marketBenchmarks";
 import {
   Change,
   Empty,
@@ -40,18 +42,20 @@ import { useDecisionCommand } from "./CommandLayer";
 import StockLookup from "./StockLookup";
 import MacroIndicators from "./MacroIndicators";
 import StockTrend from "./StockTrend";
+import MarketComparison from "./MarketComparison";
 
+const OVERVIEW_GROUPS = MARKET_GROUPS.filter(group => group.key === "indices");
+const TREND_GROUPS = MARKET_GROUPS.filter(group => group.key !== "indices");
+const TREND_QUOTE_SYMBOLS = TREND_GROUPS.flatMap(group => group.instruments.filter(item => item.source !== "fred").map(item => item.symbol));
 const DEFAULT_STOCKS = ["NVDA", "AAPL", "MSFT", "AMZN", "GOOGL", "META", "TSLA", "AVGO"];
-const RANGES = [
-  { key: "1D", period: "1d", interval: "5m", en: "1D", zh: "1天" },
-  { key: "1W", period: "5d", interval: "30m", en: "1W", zh: "1周" },
-  { key: "1M", period: "1mo", interval: "1d", en: "1M", zh: "1月" },
-  { key: "3M", period: "3mo", interval: "1d", en: "3M", zh: "3月" },
-] as const;
+const RANGES = MARKET_RANGES;
 const STOCK_GRID = "grid grid-cols-[minmax(0,1fr)_72px_80px] gap-x-3 sm:grid-cols-[minmax(0,1fr)_120px_88px_88px_72px] sm:gap-x-4";
 
 type Universe = "featured" | "holdings" | "creators";
 type Sort = "move" | "gainers" | "losers" | "default";
+type MarketView = "card" | "list";
+const MARKET_VIEW_KEY = "kolvex:market-view";
+
 type RangeKey = (typeof RANGES)[number]["key"];
 
 const pill = (active: boolean) =>
@@ -60,8 +64,8 @@ const pill = (active: boolean) =>
     active ? "bg-primary text-primary-foreground" : "text-foreground/80 hover:bg-muted hover:text-foreground",
   );
 
-function BenchmarkCard({ benchmark, quote, quoteLoading, range, attempt, onRetry }: {
-  benchmark: (typeof BENCHMARKS)[number];
+function MarketInstrumentCard({ benchmark, quote, quoteLoading, range, attempt, onRetry }: {
+  benchmark: MarketInstrument;
   quote?: StockQuote;
   quoteLoading: boolean;
   range: RangeKey;
@@ -69,6 +73,19 @@ function BenchmarkCard({ benchmark, quote, quoteLoading, range, attempt, onRetry
   onRetry: () => void;
 }) {
   const c = useCopy();
+  const isIndex = isMarketIndex(benchmark.symbol);
+  const unit = benchmark.unit ?? (isIndex ? "points" : "usd");
+  const host = useRef<HTMLElement>(null);
+  const [near, setNear] = useState(false);
+  useEffect(() => {
+    if (!host.current) return;
+    if (!("IntersectionObserver" in window)) { setNear(true); return; }
+    const observer = new IntersectionObserver(entries => {
+      if (entries.some(entry => entry.isIntersecting)) { setNear(true); observer.disconnect(); }
+    }, { rootMargin: "200px" });
+    observer.observe(host.current);
+    return () => observer.disconnect();
+  }, []);
   const [series, setSeries] = useState<ScrubPoint[]>([]);
   const [seriesState, setSeriesState] = useState<"loading" | "ready" | "error">("loading");
   const [scrub, setScrub] = useState<ScrubPoint | null>(null);
@@ -79,58 +96,52 @@ function BenchmarkCard({ benchmark, quote, quoteLoading, range, attempt, onRetry
     setSeriesState("loading");
     setSeries([]);
     setScrub(null);
-    getStockHistory(benchmark.symbol, { period: spec.period, interval: spec.interval }, controller.signal)
-      .then((bars) => {
+    if (!near) return () => controller.abort();
+    async function load(): Promise<MarketObservation[]> {
+      if (benchmark.source === "fred") {
+        const response = await fetch(`/api/market/observations/${benchmark.symbol}`, { signal: controller.signal });
+        if (!response.ok) throw new Error("Observations unavailable");
+        const data = await response.json();
+        if (!Array.isArray(data.history)) throw new Error("Invalid observations");
+        return data.history;
+      }
+      return loadStockTrend(benchmark.symbol, benchmark.daily
+        ? { period: range === "1D" ? "5d" : spec.period, interval: "1d" }
+        : { period: spec.period, interval: spec.interval }, controller.signal);
+    }
+    load().then((history) => {
         if (controller.signal.aborted) return;
-        let points = bars.map((bar) => ({ date: bar.date, value: bar.close }));
-        if (range === "1D" && points.length) {
-          const lastDay = points[points.length - 1].date.slice(0, 10);
-          points = points.filter((point) => point.date.slice(0, 10) === lastDay);
-        }
+        const points = benchmark.daily || ["1Y", "QTD", "YTD"].includes(range) ? observationRange(history, range) : history;
         setSeries(points);
-        setSeriesState(points.length ? "ready" : "error");
+        setSeriesState(points.length > 1 ? "ready" : "error");
       })
       .catch(() => {
         if (!controller.signal.aborted) setSeriesState("error");
       });
     return () => controller.abort();
-  }, [benchmark.symbol, range, attempt]);
+  }, [benchmark.symbol, benchmark.source, benchmark.daily, range, attempt, near]);
 
-  const value = scrub?.value ?? quote?.price ?? series[series.length - 1]?.value;
-  const baseline = range === "1D"
+  const value = scrub?.value ?? (benchmark.daily ? series.at(-1)?.value : (range === "1D" ? quote?.price : undefined) ?? series.at(-1)?.value);
+  const baseline = range === "1D" && !benchmark.daily
     ? quote?.previousClose ?? (quote ? quote.price - quote.change : undefined)
-    : series[0]?.value;
-  const change = value !== undefined && baseline ? value - baseline : undefined;
-  const percent = change !== undefined && baseline ? change / baseline * 100 : undefined;
+    : marketRangeBaseline(series, range);
+  const change = value !== undefined && baseline !== undefined ? value - baseline : undefined;
+  const percent = change !== undefined && baseline ? change / Math.abs(baseline) * 100 : undefined;
   const positive = (change ?? quote?.change ?? 0) >= 0;
   const pointDate = (scrub ?? series[series.length - 1])?.date;
   // Use the trading date supplied by the data, rather than the viewer's local day.
   const date = pointDate?.slice(0, 10);
   const spec = RANGES.find((item) => item.key === range)!;
 
-  return (
-    <article className="relative h-[244px] w-[272px] shrink-0 snap-start overflow-hidden rounded-xl border border-border bg-card transition-colors hover:border-foreground/30">
-      <Link
-        href={`/dashboard/market/${encodeURIComponent(benchmark.symbol)}`}
-        aria-label={c(`Open ${benchmark.en} market details`, `查看${benchmark.zh}行情详情`)}
-        className="block h-full cursor-pointer rounded-xl p-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary"
-      >
-        <div className="flex min-h-6 flex-wrap items-baseline gap-x-2">
-          <h2 className="text-base font-semibold">{c(benchmark.en, benchmark.zh)}</h2>
-          <time dateTime={date} className="figure text-xs text-muted-foreground">{date ? `${date.slice(5, 7)}/${date.slice(8, 10)}` : "—"}</time>
-        </div>
-        <p className="mt-0.5 text-xs text-muted-foreground">{benchmark.symbol}</p>
-        <div className="figure mt-2 min-h-8 text-2xl font-semibold tracking-tight">
-          {value === undefined && quoteLoading ? <Skeleton className="h-8 w-28" /> : value === undefined ? "—" : indexValue(value)}
-        </div>
-        <p className={cn("figure mt-0.5 min-h-5 text-xs font-medium", change === undefined ? "text-muted-foreground" : positive ? "text-positive" : "text-negative")}>
-          {change !== undefined && percent !== undefined
-            ? `${positive ? "+" : "−"}${indexValue(Math.abs(change))} (${positive ? "+" : "−"}${Math.abs(percent).toFixed(2)}%)`
-            : c("Change unavailable", "暂无涨跌数据")}
-          <span className="sr-only"> · {c(spec.en, spec.zh)}</span>
-        </p>
-        <div className="mt-2 h-24" aria-busy={seriesState === "loading"}>
-          {seriesState === "loading" ? (
+  const valueDisplay = (<>{value === undefined && (quoteLoading || seriesState === "loading") ? <Skeleton className="h-8 w-28" /> : value === undefined ? "—" : unit === "percent" ? `${indexValue(value)}%` : unit === "points" ? indexValue(value) : money(value)}</>);
+  const changeDisplay = (<>{change !== undefined && unit === "percent"
+            ? `${positive ? "+" : "−"}${indexValue(Math.abs(change) * 100)} bp`
+            : change !== undefined && percent !== undefined
+              ? `${positive ? "+" : "−"}${indexValue(Math.abs(change))} (${positive ? "+" : "−"}${Math.abs(percent).toFixed(2)}%)`
+              : c("Change unavailable", "暂无涨跌数据")}
+          {benchmark.daily && range === "1D" && <span className="ml-1 text-muted-foreground">{c("vs. prior observation", "较前次观测")}</span>}
+          <span className="sr-only"> · {c(spec.en, spec.zh)}</span></>);
+  const chartDisplay = (<>{seriesState === "loading" ? (
             <Skeleton className="h-full w-full" />
           ) : seriesState === "error" ? (
             <div role="status" className="flex h-full flex-col items-center justify-center gap-1 text-xs text-muted-foreground">
@@ -143,16 +154,43 @@ function BenchmarkCard({ benchmark, quote, quoteLoading, range, attempt, onRetry
               positive={positive}
               height={96}
               onScrub={setScrub}
-              label={c(`${benchmark.en} index, ${spec.en}`, `${benchmark.zh}指数走势，${spec.zh}`)}
+              label={c(`${benchmark.en} trend, ${spec.en}`, `${benchmark.zh}走势，${spec.zh}`)}
             />
-          )}
+          )}</>);
+
+
+  return (
+    <article ref={host} className="relative h-[272px] w-[272px] shrink-0 snap-start overflow-hidden rounded-xl border border-border bg-card transition-colors hover:border-foreground/30">
+      <Link
+        href={benchmark.sourceUrl ?? `/dashboard/market/${encodeURIComponent(benchmark.symbol)}`}
+        target={benchmark.sourceUrl ? "_blank" : undefined}
+        rel={benchmark.sourceUrl ? "noopener noreferrer" : undefined}
+        aria-label={c(`Open ${benchmark.en} market details`, `查看${benchmark.zh}行情详情`)}
+        className="block h-full cursor-pointer rounded-xl p-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary"
+      >
+        <div className="flex h-6 min-w-0 items-baseline gap-x-2">
+          <h3 className="min-w-0 truncate text-base font-semibold" title={c(benchmark.en, benchmark.zh)}>{c(benchmark.en, benchmark.zh)}</h3>
+          <time dateTime={date} className="figure shrink-0 text-xs text-muted-foreground">{date ? `${date.slice(5, 7)}/${date.slice(8, 10)}` : "—"}</time>
         </div>
+        <p className="mt-0.5 truncate text-xs text-muted-foreground">{benchmark.symbol}{benchmark.daily && c(" · Daily", " · 日度")}</p>
+        <div className="figure mt-2 min-h-8 text-2xl font-semibold tracking-tight">
+          {valueDisplay}
+        </div>
+        <p className={cn("figure mt-0.5 min-h-5 truncate text-xs font-medium", change === undefined ? "text-muted-foreground" : positive ? "text-positive" : "text-negative")}>
+          {changeDisplay}
+        </p>
+        <div className="mt-2 h-24" aria-busy={seriesState === "loading"}>
+          {chartDisplay}
+        </div>
+        <p className="mt-2 truncate text-[11px] text-muted-foreground" title={benchmark.note ? c(benchmark.note.en, benchmark.note.zh) : undefined}>
+          {benchmark.note ? c(benchmark.note.en, benchmark.note.zh) : unit === "percent" ? c("FRED · Yield in %", "FRED · 收益率 %") : unit === "points" ? c("Index points", "指数点位") : c("USD price", "美元价格")}
+        </p>
       </Link>
       {seriesState === "error" && (
         <Button
           size="xs"
           variant="ghost"
-          className="absolute bottom-5 left-1/2 -translate-x-1/2"
+          className="absolute bottom-12 left-1/2 -translate-x-1/2"
           aria-label={c(`Retry ${benchmark.en} chart`, `重试${benchmark.zh}走势`)}
           onClick={onRetry}
         >
@@ -163,13 +201,120 @@ function BenchmarkCard({ benchmark, quote, quoteLoading, range, attempt, onRetry
   );
 }
 
-function MarketOverview() {
+function MarketRangeControls({ range, setRange, view, setView }: { range: RangeKey; setRange: (range: RangeKey) => void; view: MarketView; setView: (view: MarketView) => void }) {
+  const c = useCopy();
+  return (
+              <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+                {view === "card" ? <div role="group" aria-label={c("Chart range", "走势区间")} className="flex flex-wrap gap-1">
+                  {RANGES.map((item) => (
+                    <button
+                      key={item.key}
+                      type="button"
+                      aria-pressed={range === item.key}
+                      aria-label={item.key === "QTD" ? c("QTD, quarter to date", "QTD，本季度至今") : item.key === "YTD" ? c("YTD, year to date", "YTD，今年至今") : undefined}
+                      title={item.key === "QTD" ? c("Quarter to date", "本季度至今") : item.key === "YTD" ? c("Year to date", "今年至今") : undefined}
+                      onClick={() => setRange(item.key)}
+                      className={pill(range === item.key)}
+                    >
+                      {c(item.en, item.zh)}
+                    </button>
+                  ))}
+                </div> : <p className="text-[13px] text-muted-foreground">{c("Compare all periods", "多区间表现对比")}</p>}
+                <div role="group" aria-label={c("Display mode", "显示方式")} className="flex shrink-0 gap-1 rounded-full border border-border p-1">
+                  <button type="button" aria-pressed={view === "card"} onClick={() => setView("card")} className={pill(view === "card")}><LayoutGrid className="h-3.5 w-3.5" aria-hidden />{c("Cards", "卡片")}</button>
+                  <button type="button" aria-pressed={view === "list"} onClick={() => setView("list")} className={pill(view === "list")}><List className="h-3.5 w-3.5" aria-hidden />{c("List", "列表")}</button>
+                </div>
+              </div>
+  );
+}
+
+function MarketCharts({ groups, quotes, loading, range, setRange, attempt, onRetry, checkedAt, view, setView }: {
+  groups: readonly (typeof MARKET_GROUPS)[number][];
+  view: MarketView;
+  setView: (view: MarketView) => void;
+  quotes: Record<string, StockQuote>;
+  loading: boolean;
+  range: RangeKey;
+  setRange: (range: RangeKey) => void;
+  attempt: number;
+  onRetry: () => void;
+  checkedAt: string | null;
+}) {
+  const c = useCopy();
+  return (
+            <section aria-label={groups.length === 1 ? c("Market indices", "市场指数") : c("Market trends", "市场走势")}>
+              <MarketRangeControls range={range} setRange={setRange} view={view} setView={setView} />
+              {view === "list" ? <MarketComparison groups={groups} attempt={attempt} /> : groups.map(group => (
+                <section key={group.key} aria-labelledby={`market-${group.key}-heading`} className="mt-6 first:mt-0">
+                  <h2 id={`market-${group.key}-heading`} className="mb-4 text-base font-semibold">{c(group.en, group.zh)}</h2>
+                  <div
+                    role="region"
+                    aria-label={c(`${group.en}, scroll horizontally`, `${group.zh}，可横向滚动`)}
+                    tabIndex={0}
+                    className="flex snap-x snap-proximity gap-4 overflow-x-auto overscroll-x-contain pb-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                  >
+                    {group.instruments.map(item => (
+                      <MarketInstrumentCard
+                        key={item.symbol}
+                        benchmark={item}
+                        quote={quotes[item.symbol]}
+                        quoteLoading={loading}
+                        range={range}
+                        attempt={attempt}
+                        onRetry={onRetry}
+                      />
+                    ))}
+                  </div>
+                </section>
+              ))}
+              <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
+                <p>{view === "list" ? c("Daily closes · Price performance uses adjusted history · Yahoo Finance / FRED (Federal Reserve & ICE BofA) · Price changes in %; yields/spreads in pp; MOVE in points · QTD: quarter to date; YTD: year to date · Missing baselines: —", "日度收盘或观测值 · 价格表现使用复权日线 · 来源：Yahoo Finance / FRED（美联储、ICE BofA）· 价格为涨跌幅 %，收益率及利差为百分点 pp，MOVE 为点数 · QTD：本季度至今，YTD：今年至今 · 基准数据不足显示 —") : groups.length === 1 ? c("Index points · Quotes may be delayed", "指数点位 · 报价可能延迟") : c("Quotes may be delayed · Daily series use published observations · Yield/spread changes in bp (1 bp = 0.01 percentage point)", "报价可能延迟 · 日度指标以实际观测日为准 · 收益率及利差变动以基点计（1 bp = 0.01个百分点）")}{checkedAt && c(`, checked ${checkedAt}`, `，${checkedAt} 查询`)}</p>
+                {view === "card" && !loading && groups.some(group => group.instruments.some(item => item.source !== "fred" && !quotes[item.symbol])) && (
+                  <Button size="xs" variant="ghost" onClick={onRetry}>
+                    {c("Retry missing quotes", "重试缺失报价")}
+                  </Button>
+                )}
+              </div>
+            </section>
+  );
+}
+
+function MarketTrends({ range, setRange, view, setView }: { range: RangeKey; setRange: (range: RangeKey) => void; view: MarketView; setView: (view: MarketView) => void }) {
+  const { setContext } = useDecisionCommand();
+  const [quotes, setQuotes] = useState<Record<string, StockQuote>>({});
+  const [loading, setLoading] = useState(true);
+  const [attempt, setAttempt] = useState(0);
+  const [checkedAt, setCheckedAt] = useState<string | null>(null);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    setLoading(true);
+    loadMarketQuotes(TREND_QUOTE_SYMBOLS, controller.signal, batch => {
+      setQuotes(previous => ({ ...previous, ...batch }));
+    }).then(({ quotes: result }) => {
+      if (controller.signal.aborted) return;
+      setQuotes(result);
+      setCheckedAt(new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }));
+      setLoading(false);
+    });
+    return () => controller.abort();
+  }, [attempt]);
+
+  const context = JSON.stringify({ workspace: "Markets / Market trends", instruments: TREND_GROUPS.map(group => ({ group: group.en, symbols: group.instruments.map(item => item.symbol) })), range, quotes });
+  useEffect(() => {
+    setContext(context);
+    return () => setContext("");
+  }, [context, setContext]);
+
+  return <div className="min-w-0 pt-6"><MarketCharts view={view} setView={setView} groups={TREND_GROUPS} quotes={quotes} loading={loading} range={range} setRange={setRange} attempt={attempt} onRetry={() => setAttempt(value => value + 1)} checkedAt={checkedAt} /></div>;
+}
+
+function MarketOverview({ range, setRange, view, setView }: { range: RangeKey; setRange: (range: RangeKey) => void; view: MarketView; setView: (view: MarketView) => void }) {
   const c = useCopy();
   const dayLabel = useDayLabel();
   const { setContext } = useDecisionCommand();
   const [attempt, setAttempt] = useState(0);
   const [quoteAttempt, setQuoteAttempt] = useState(0);
-  const [range, setRange] = useState<RangeKey>("1D");
   const [universe, setUniverse] = useState<Universe>("featured");
   const [sort, setSort] = useState<Sort>("move");
   const [quotes, setQuotes] = useState<Record<string, StockQuote>>({});
@@ -213,7 +358,7 @@ function MarketOverview() {
     return () => controller.abort();
   }, [symbolsKey, attempt, quoteAttempt]);
 
-  const context = JSON.stringify({ workspace: "Markets", benchmarks: BENCHMARKS.map((item) => item.symbol), range, universe, quotes, quotesUnavailable: failed });
+  const context = JSON.stringify({ workspace: "Markets / Market overview", benchmarks: BENCHMARKS.map(item => item.symbol), range, universe, quotes, quotesUnavailable: failed });
   useEffect(() => {
     setContext(context);
     return () => setContext("");
@@ -242,49 +387,7 @@ function MarketOverview() {
   return (
         <div className="mx-auto grid gap-x-8 gap-y-10 pt-6 xl:grid-cols-[minmax(0,1fr)_320px]">
           <div className="min-w-0 xl:col-span-2">
-            <section aria-labelledby="market-overview-heading">
-              <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-                <div role="group" aria-label={c("Chart range", "走势区间")} className="flex gap-1">
-                  {RANGES.map((item) => (
-                    <button
-                      key={item.key}
-                      type="button"
-                      aria-pressed={range === item.key}
-                      onClick={() => setRange(item.key)}
-                      className={pill(range === item.key)}
-                    >
-                      {c(item.en, item.zh)}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <div
-                role="region"
-                aria-label={c("Market indices, scroll horizontally", "市场指数，可横向滚动")}
-                tabIndex={0}
-                className="flex snap-x snap-proximity gap-4 overflow-x-auto overscroll-x-contain pb-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-              >
-                {BENCHMARKS.map((item) => (
-                  <BenchmarkCard
-                    key={item.symbol}
-                    benchmark={item}
-                    quote={quotes[item.symbol]}
-                    quoteLoading={loading}
-                    range={range}
-                    attempt={attempt}
-                    onRetry={() => setAttempt((n) => n + 1)}
-                  />
-                ))}
-              </div>
-              <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
-                <p>{c("Index values · Quotes may be delayed", "指数点位 · 报价可能延迟")}{checkedAt && c(`, checked ${checkedAt}`, `，${checkedAt} 查询`)}</p>
-                {!loading && BENCHMARKS.some((item) => !quotes[item.symbol]) && (
-                  <Button size="xs" variant="ghost" onClick={() => setAttempt((n) => n + 1)}>
-                    {c("Retry missing quotes", "重试缺失报价")}
-                  </Button>
-                )}
-              </div>
-            </section>
+            <MarketCharts view={view} setView={setView} groups={OVERVIEW_GROUPS} quotes={quotes} loading={loading} range={range} setRange={setRange} attempt={attempt} onRetry={() => setAttempt(value => value + 1)} checkedAt={checkedAt} />
           </div>
           <div className="min-w-0 space-y-10">
             <Panel
@@ -384,7 +487,7 @@ function MarketOverview() {
                               <span className="text-[13px] text-muted-foreground/70">{c("No coverage", "暂无观点")}</span>
                             )}
                           </span>
-                          <StockTrend symbol={symbol} period={trendRange.period} interval={trendRange.interval} rangeLabel={c(trendRange.en, trendRange.zh)} />
+                          <StockTrend symbol={symbol} period={trendRange.period} interval={trendRange.interval} rangeLabel={c(trendRange.en, trendRange.zh)} rangeKey={range} />
                           <span className="min-w-0 text-right">
                             {loading && !quotes[symbol] ? <Skeleton className="ml-auto h-5 w-16" /> : <span className="figure block text-[15px] font-medium">{money(quotes[symbol]?.price)}</span>}
                             <Change value={quotes[symbol]?.changePercent} className="mt-1 block text-xs font-semibold sm:hidden" />
@@ -473,11 +576,25 @@ export default function Market() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const tab = searchParams.get("tab") === "macro" ? "macro" : "overview";
+  const requestedTab = searchParams.get("tab");
+  const tab = requestedTab === "macro" || requestedTab === "trends" ? requestedTab : "overview";
+  const [range, setRange] = useState<RangeKey>("1D");
+  const [view, setViewState] = useState<MarketView>("card");
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(MARKET_VIEW_KEY);
+      if (saved === "card" || saved === "list") setViewState(saved);
+    } catch { /* Keep the default when storage is unavailable. */ }
+  }, []);
+  function setView(value: MarketView) {
+    setViewState(value);
+    try { localStorage.setItem(MARKET_VIEW_KEY, value); } catch { /* The toggle still works without storage. */ }
+  }
+
 
   function selectTab(value: string) {
     const params = new URLSearchParams(searchParams.toString());
-    if (value === "macro") params.set("tab", "macro");
+    if (value === "macro" || value === "trends") params.set("tab", value);
     else params.delete("tab");
     router.replace(`${pathname}${params.size ? `?${params.toString()}` : ""}`, { scroll: false });
   }
@@ -490,9 +607,11 @@ export default function Market() {
           <Tabs value={tab} onValueChange={selectTab} className="mt-6 min-w-0">
             <TabsList aria-label={c("Market views", "行情视图")}>
               <TabsTrigger value="overview">{c("Market overview", "市场概览")}</TabsTrigger>
+              <TabsTrigger value="trends">{c("Market trends", "市场走势")}</TabsTrigger>
               <TabsTrigger value="macro">{c("Macro indicators", "宏观指标")}</TabsTrigger>
             </TabsList>
-            <TabsContent value="overview"><MarketOverview /></TabsContent>
+            <TabsContent value="overview"><MarketOverview range={range} setRange={setRange} view={view} setView={setView} /></TabsContent>
+            <TabsContent value="trends"><MarketTrends range={range} setRange={setRange} view={view} setView={setView} /></TabsContent>
             <TabsContent value="macro"><MacroIndicators /></TabsContent>
           </Tabs>
         </div>

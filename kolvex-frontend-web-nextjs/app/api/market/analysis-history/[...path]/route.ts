@@ -10,7 +10,7 @@ async function proxy(request: NextRequest, context: { params: { path: string[] }
     const path = context.params.path.map(encodeURIComponent).join("/");
     const response = await fetch(`${backend}/api/v1/market/analysis-history/${path}${request.nextUrl.search}`, {
       method: request.method,
-      headers: { Authorization: `Bearer ${session.access_token}`, "Content-Type": "application/json" },
+      headers: { ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}), "Content-Type": "application/json" },
       body: request.method === "PATCH" ? await request.text() : undefined,
       cache: "no-store",
     });

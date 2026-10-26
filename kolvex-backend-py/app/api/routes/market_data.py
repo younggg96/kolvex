@@ -591,10 +591,11 @@ async def stock_analysis_history(
     kind: str = Query("technical", pattern="^(technical|drawings|research)$"),
     limit: int = Query(10, ge=1, le=50),
     offset: int = Query(0, ge=0),
+    scope: Literal["all", "mine"] = Query("all"),
     user_id: str = Depends(get_current_user_id),
 ):
     try:
-        return StockAnalysisHistory(get_supabase_service()).list(user_id, symbol.upper(), kind, limit, offset)
+        return StockAnalysisHistory(get_supabase_service()).list(user_id, symbol.upper(), kind, limit, offset, scope)
     except Exception:
         logger.exception("Stock analysis history unavailable")
         raise HTTPException(503, "analysis_history_unavailable")
