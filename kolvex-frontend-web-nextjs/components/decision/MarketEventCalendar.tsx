@@ -16,6 +16,8 @@ export default function MarketEventCalendar() {
   const c = useCopy();
   const english = c("en", "zh") === "en";
   const [week, setWeek] = useState("1");
+  const [view, setView] = useState<"calendar" | "list">("calendar");
+  const isCalendar = view === "calendar";
   const [data, setData] = useState<MarketCalendar | null>(null);
   const [error, setError] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -73,14 +75,36 @@ export default function MarketEventCalendar() {
             )}
           </p>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          disabled={loading}
-          onClick={() => setAttempt((n) => n + 1)}
-        >
-          {c("Refresh", "刷新")}
-        </Button>
+        <div className="flex flex-wrap items-center gap-3">
+          <div
+            role="group"
+            aria-label={c("Event view", "事件视图")}
+            className="inline-flex gap-1 rounded-full border border-border p-1"
+          >
+            {(["calendar", "list"] as const).map((mode) => (
+              <Button
+                key={mode}
+                type="button"
+                variant={view === mode ? "secondary" : "ghost"}
+                size="sm"
+                aria-pressed={view === mode}
+                onClick={() => setView(mode)}
+              >
+                {mode === "calendar"
+                  ? c("Calendar", "日历")
+                  : c("List", "列表")}
+              </Button>
+            ))}
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={loading}
+            onClick={() => setAttempt((n) => n + 1)}
+          >
+            {c("Refresh", "刷新")}
+          </Button>
+        </div>
       </div>
       {error ? (
         <div
@@ -135,7 +159,7 @@ export default function MarketEventCalendar() {
                   {days[0]} ~ {days[6]} · {events.length}{" "}
                   {c("events", "个事件")}
                 </p>
-                {!events.length ? (
+                {!events.length && !isCalendar ? (
                   <p
                     role="status"
                     className="rounded-xl border border-border p-6 text-sm text-muted-foreground"
@@ -146,105 +170,166 @@ export default function MarketEventCalendar() {
                     )}
                   </p>
                 ) : (
-                  days.map((day) => {
-                    const items = events
-                      .filter((event) => event.event_date === day)
-                      .sort(
-                        (a, b) =>
-                          eventOrder(a) - eventOrder(b) ||
-                          a.id.localeCompare(b.id),
-                      );
-                    if (!items.length) return null;
-                    return (
-                      <section
-                        key={day}
-                        className="rounded-xl border border-border bg-card p-4"
-                      >
-                        <h3 className="figure mb-4 text-sm font-semibold">
-                          <time dateTime={day}>
-                            {new Intl.DateTimeFormat(
-                              english ? "en-US" : "zh-CN",
-                              {
-                                timeZone: "UTC",
-                                month: "short",
-                                day: "numeric",
-                                weekday: "short",
-                              },
-                            ).format(new Date(`${day}T12:00:00Z`))}
-                          </time>
-                          {day === data.today && (
-                            <span className="ml-2 text-positive">
-                              {c("Today", "今天")}
-                            </span>
-                          )}
-                        </h3>
-                        <ul className="divide-y divide-border">
-                          {items.map((event) => (
-                            <li
-                              key={event.id}
-                              className="py-4 first:pt-0 last:pb-0"
-                            >
-                              <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                                <span className="figure">
-                                  {eventTime(event, english)} ET
+                  <div
+                    role={isCalendar ? "region" : undefined}
+                    aria-label={
+                      isCalendar
+                        ? c(
+                            "Weekly event calendar, scroll horizontally to see all days",
+                            "每周事件日历，可横向滚动查看全部日期",
+                          )
+                        : undefined
+                    }
+                    tabIndex={isCalendar ? 0 : undefined}
+                    className={
+                      isCalendar
+                        ? "overflow-x-auto rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                        : undefined
+                    }
+                  >
+                    <div
+                      className={
+                        isCalendar
+                          ? "grid min-w-[70rem] grid-cols-7 items-stretch gap-2"
+                          : "space-y-4"
+                      }
+                    >
+                      {days.map((day) => {
+                        const items = events
+                          .filter((event) => event.event_date === day)
+                          .sort(
+                            (a, b) =>
+                              eventOrder(a) - eventOrder(b) ||
+                              a.id.localeCompare(b.id),
+                          );
+                        if (!items.length && !isCalendar) return null;
+                        return (
+                          <section
+                            key={day}
+                            aria-label={day}
+                            className={`min-w-0 rounded-xl border bg-card p-4 ${day === data.today ? "border-positive" : "border-border"}`}
+                          >
+                            <h3 className="figure mb-4 flex flex-wrap items-center gap-2 text-sm font-semibold">
+                              <time
+                                dateTime={day}
+                                aria-current={
+                                  day === data.today ? "date" : undefined
+                                }
+                              >
+                                {new Intl.DateTimeFormat(
+                                  english ? "en-US" : "zh-CN",
+                                  {
+                                    timeZone: "UTC",
+                                    month: "short",
+                                    day: "numeric",
+                                    weekday: "short",
+                                  },
+                                ).format(new Date(`${day}T12:00:00Z`))}
+                              </time>
+                              {day === data.today && (
+                                <span className="text-positive">
+                                  {c("Today", "今天")}
                                 </span>
-                                <span>
-                                  {c(
-                                    EVENT_CATEGORIES[event.category][0],
-                                    EVENT_CATEGORIES[event.category][1],
-                                  )}
-                                </span>
-                                {event.importance === "high" && (
-                                  <span className="rounded-full bg-muted px-2 py-1 text-foreground">
-                                    {c("High impact", "重大")}
-                                  </span>
-                                )}
-                                {event.is_hot && (
-                                  <span className="rounded-full bg-negative/10 px-2 py-1 text-negative">
-                                    {c("Trending", "热门")}
-                                  </span>
-                                )}
-                              </div>
-                              <h4 className="mt-2 break-words text-base font-semibold">
-                                {english
-                                  ? event.title_en || event.title
-                                  : event.title}
-                              </h4>
-                              {(english
-                                ? event.summary_en || event.summary
-                                : event.summary) && (
-                                <p className="mt-2 whitespace-pre-line break-words text-sm leading-6 text-muted-foreground">
-                                  {english
-                                    ? event.summary_en || event.summary
-                                    : event.summary}
-                                </p>
                               )}
-                              <div className="mt-2 flex flex-wrap items-center gap-3 text-xs">
-                                {event.tickers.map((ticker) => (
-                                  <span
-                                    key={ticker}
-                                    className="figure rounded-full bg-muted px-2 py-1"
-                                  >
-                                    {ticker}
-                                  </span>
-                                ))}
-                                {event.source_url && (
-                                  <a
-                                    href={event.source_url}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="rounded underline underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-                                  >
-                                    {event.source_name || c("Source", "来源")} ↗
-                                  </a>
-                                )}
-                              </div>
-                            </li>
-                          ))}
-                        </ul>
-                      </section>
-                    );
-                  })
+                            </h3>
+                            {!items.length && (
+                              <p className="py-4 text-sm text-muted-foreground">
+                                {c("No major events", "暂无重点事件")}
+                              </p>
+                            )}
+                            <ul
+                              className={
+                                isCalendar
+                                  ? "space-y-3"
+                                  : "divide-y divide-border"
+                              }
+                            >
+                              {items.map((event) => (
+                                <li
+                                  key={event.id}
+                                  className={
+                                    isCalendar
+                                      ? "rounded-lg border border-border bg-background p-3"
+                                      : "py-4 first:pt-0 last:pb-0"
+                                  }
+                                >
+                                  <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                                    <span className="figure">
+                                      {eventTime(event, english)} ET
+                                    </span>
+                                    <span>
+                                      {c(
+                                        EVENT_CATEGORIES[event.category][0],
+                                        EVENT_CATEGORIES[event.category][1],
+                                      )}
+                                    </span>
+                                    {event.importance === "high" && (
+                                      <span className="rounded-full bg-muted px-2 py-1 text-foreground">
+                                        {c("High impact", "重大")}
+                                      </span>
+                                    )}
+                                    {event.is_hot && (
+                                      <span className="rounded-full bg-negative/10 px-2 py-1 text-negative">
+                                        {c("Trending", "热门")}
+                                      </span>
+                                    )}
+                                  </div>
+                                  <h4 className="mt-2 break-words text-base font-semibold">
+                                    {english
+                                      ? event.title_en || event.title
+                                      : event.title}
+                                  </h4>
+                                  {(english
+                                    ? event.summary_en || event.summary
+                                    : event.summary) &&
+                                    (isCalendar ? (
+                                      <details className="mt-2 text-sm text-muted-foreground">
+                                        <summary className="cursor-pointer rounded hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
+                                          {c("Event details", "事件详情")}
+                                        </summary>
+                                        <p className="mt-2 whitespace-pre-line break-words leading-6">
+                                          {english
+                                            ? event.summary_en || event.summary
+                                            : event.summary}
+                                        </p>
+                                      </details>
+                                    ) : (
+                                      <p className="mt-2 whitespace-pre-line break-words text-sm leading-6 text-muted-foreground">
+                                        {english
+                                          ? event.summary_en || event.summary
+                                          : event.summary}
+                                      </p>
+                                    ))}
+                                  <div className="mt-2 flex flex-wrap items-center gap-3 text-xs">
+                                    {event.tickers.map((ticker) => (
+                                      <span
+                                        key={ticker}
+                                        className="figure rounded-full bg-muted px-2 py-1"
+                                      >
+                                        {ticker}
+                                      </span>
+                                    ))}
+                                    {event.source_url && (
+                                      <a
+                                        href={event.source_url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="rounded underline underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                                      >
+                                        {event.source_name ||
+                                          c("Source", "来源")}{" "}
+                                        ↗
+                                      </a>
+                                    )}
+                                  </div>
+                                </li>
+                              ))}
+                            </ul>
+                          </section>
+                        );
+                      })}
+                    </div>
+                  </div>
                 )}
               </TabsContent>
             );

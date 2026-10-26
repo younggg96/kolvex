@@ -940,7 +940,13 @@ uses `tab=calendar`. Shared Radix Tabs own the outer view and the three week
 selectors. The server fixes the window to last/current/next Monday-based weeks
 in America/New_York, including DST. Only published high-impact or hot events
 appear. Day sections use existing card/border/rounded-xl tokens, 16px padding,
-semantic headings and written impact labels; mobile keeps one reading column.
+semantic headings and written impact labels. A labelled Calendar / List button
+group switches presentation without changing the selected week or fetching data.
+Calendar is the default: seven equal Monday-to-Sunday columns, including empty
+days, with today's border highlighted and event summaries in native disclosures.
+The calendar region scrolls horizontally on narrow screens and is keyboard
+focusable. List preserves one reading column with full summaries and hides empty
+days. Both views retain event ordering, tickers and source links.
 Chinese/English dates and labels use useCopy, with explicit Eastern-time context.
 Loading skeletons, empty weeks, error/retry and refresh use shared primitives.
 The calendar refreshes its date window when the tab resumes and each minute.
