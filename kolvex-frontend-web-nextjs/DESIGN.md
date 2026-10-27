@@ -944,8 +944,10 @@ semantic headings and written impact labels. A labelled Calendar / List button
 group switches presentation without changing the selected week or fetching data.
 Calendar is the default: seven equal Monday-to-Sunday columns, including empty
 days, with today's border highlighted and event summaries in native disclosures.
-The calendar region scrolls horizontally on narrow screens and is keyboard
-focusable. List preserves one reading column with full summaries and hides empty
+Calendar columns retain a minimum width of 18rem (288px), with 12px gaps;
+the seven-column grid has a 132rem minimum width. The calendar region is
+constrained to the content width and scrolls horizontally, with a visible scroll
+hint and keyboard focus. Long source names wrap within their event card. List preserves one reading column with full summaries and hides empty
 days. Both views retain event ordering, tickers and source links.
 Chinese/English dates and labels use useCopy, with explicit Eastern-time context.
 Loading skeletons, empty weeks, error/retry and refresh use shared primitives.

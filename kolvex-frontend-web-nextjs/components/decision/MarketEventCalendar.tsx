@@ -59,7 +59,7 @@ export default function MarketEventCalendar() {
   }, [attempt]);
   return (
     <section
-      className="space-y-6 pt-6"
+      className="min-w-0 max-w-full space-y-6 pt-6"
       aria-labelledby="events-heading"
       aria-busy={loading}
     >
@@ -136,7 +136,7 @@ export default function MarketEventCalendar() {
           ))}
         </div>
       ) : (
-        <Tabs value={week} onValueChange={setWeek}>
+        <Tabs value={week} onValueChange={setWeek} className="min-w-0">
           <TabsList aria-label={c("Calendar week", "日历周")}>
             {[
               c("Last week", "上周"),
@@ -154,11 +154,25 @@ export default function MarketEventCalendar() {
               days.includes(event.event_date),
             );
             return (
-              <TabsContent key={w} value={String(w)} className="mt-4 space-y-4">
-                <p className="figure text-sm text-muted-foreground">
-                  {days[0]} ~ {days[6]} · {events.length}{" "}
-                  {c("events", "个事件")}
-                </p>
+              <TabsContent
+                key={w}
+                value={String(w)}
+                className="mt-4 min-w-0 space-y-4"
+              >
+                <div className="flex flex-wrap items-center justify-between gap-2 text-sm text-muted-foreground">
+                  <p className="figure">
+                    {days[0]} ~ {days[6]} · {events.length}{" "}
+                    {c("events", "个事件")}
+                  </p>
+                  {isCalendar && (
+                    <p>
+                      {c(
+                        "Scroll horizontally to see all days",
+                        "左右滑动查看全部日期",
+                      )}
+                    </p>
+                  )}
+                </div>
                 {!events.length && !isCalendar ? (
                   <p
                     role="status"
@@ -183,14 +197,14 @@ export default function MarketEventCalendar() {
                     tabIndex={isCalendar ? 0 : undefined}
                     className={
                       isCalendar
-                        ? "overflow-x-auto rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                        ? "w-full min-w-0 max-w-full overscroll-x-contain overflow-x-auto rounded-xl pb-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                         : undefined
                     }
                   >
                     <div
                       className={
                         isCalendar
-                          ? "grid min-w-[70rem] grid-cols-7 items-stretch gap-2"
+                          ? "grid min-w-[132rem] grid-cols-7 items-stretch gap-3"
                           : "space-y-4"
                       }
                     >
@@ -314,7 +328,7 @@ export default function MarketEventCalendar() {
                                         href={event.source_url}
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        className="rounded underline underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                                        className="min-w-0 break-words [overflow-wrap:anywhere] rounded underline underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                                       >
                                         {event.source_name ||
                                           c("Source", "来源")}{" "}
