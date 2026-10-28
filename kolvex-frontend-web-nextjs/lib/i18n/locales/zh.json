@@ -1749,8 +1749,10 @@
     "sameDateIssues": "当日其他简报"
   },
   "redditOpinions": {
+    "mobileMentions": "提及 / 24h",
+    "details": "排名变化和获赞数",
     "header": "博主观点 · Reddit",
-    "title": "Reddit 股票讨论热度",
+    "title": "Reddit 热度榜",
     "description": "汇集股票类 Reddit 社区过去 24 小时的热门代码，对比提及次数与排名变化。",
     "refresh": "刷新",
     "source": "数据来源：ApeWisdom",

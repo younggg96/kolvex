@@ -84,8 +84,18 @@ bundle and does not imply a fresh provider fetch. Search filters only the loaded
 top-100 ticker/name results. Mention change compares current and previous 24-hour
 counts; zero or missing prior mentions have no percentage baseline. Missing prior
 rank is labelled new, and rank movement compares the previous rank with today's.
-Upvotes remain a separate provider count. The page links to ApeWisdom and its
-methodology; activity is not an investment direction or recommendation.
+Upvotes remain a separate provider count. The compact footer links to ApeWisdom's
+methodology and shows the actual fetch date/time; activity is not an investment
+direction or recommendation.
+
+Below md, the ranking uses native `details` rows: rank, shared company logo,
+ticker, truncated company name, mentions and signed percentage change remain
+visible. Touch or keyboard expansion reveals the full company name, rank
+movement and upvotes. From md, all fields appear in the table. Missing percentage
+baselines display an em dash. The page starts with a short title, an accessible
+icon-only refresh action and ticker/name search; repeated descriptions, coverage
+counts and the long explanatory note are absent. Chinese/English formatting and
+data semantics are shared across both layouts.
 
 Initial loading, unavailable data, an empty provider list and no search matches
 have separate feedback. A failed refresh retains the previous ranking and its

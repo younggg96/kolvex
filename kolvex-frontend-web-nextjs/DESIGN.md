@@ -194,12 +194,17 @@ identity row, per the requested layout. Its `PriceChart` workspace variant reser
 including loading and error states. Creator-opinion compact charts and the advanced
 dialog retain their existing sizing. The page retains natural content scrolling.
 
-Reddit rankings reuse the existing 28/32px heading, semantic surfaces, shared
-Input/Button/Table and quiet 12px bordered container. Numeric columns align
-right; rank movement uses words and mention change uses signed percentages,
-without treating activity as bullish/bearish color. The table scrolls horizontally
-in a labelled keyboard-focusable region on narrow screens. Keep source/fetch
-metadata, retry feedback and distinct empty/search-empty states in document flow.
+Reddit rankings use a short 24/32px heading, an icon-only Refresh button with a
+localized accessible label, and the shared search Input. The page scroller uses
+`bg-background` to cover the shell's decorative grid. Below md, flat native
+`details` rows show rank, the shared 32px company logo, ticker, truncated company
+name and right-aligned mentions with signed percentage change beneath. Touch or
+keyboard expansion reveals the full name, rank movement and upvotes. From md,
+the full shared Table retains its quiet 12px bordered container and labelled
+keyboard-focusable horizontal scroll region. Activity stays neutral in color.
+Keep the ApeWisdom methodology link and actual fetch date/time in a compact
+footer, with retry and distinct empty/search-empty states in document flow.
+Repeated descriptions, coverage counts and explanatory notes are omitted.
 
 Lucide outline icons accompany visible labels except for these return controls. Hover/focus must reveal no
 otherwise inaccessible actions. Global reduced-motion rules apply to existing

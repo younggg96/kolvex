@@ -1749,8 +1749,10 @@
     "sameDateIssues": "Other briefs on this date"
   },
   "redditOpinions": {
+    "mobileMentions": "Mentions / 24h",
+    "details": "Rank change and upvotes",
     "header": "Creator Opinions · Reddit",
-    "title": "Reddit stock mentions",
+    "title": "Reddit trending stocks",
     "description": "The most discussed tickers across stock-focused Reddit communities over the past 24 hours. Compare mentions and rankings with the previous period.",
     "refresh": "Refresh",
     "source": "Source: ApeWisdom",
