@@ -8,7 +8,7 @@ import { usePathname } from "next/navigation";
 import { useTranslation } from "@/lib/i18n";
 import { isProductFeatureEnabled } from "@/lib/productFeatures";
 import { cn } from "@/lib/utils";
-import { MAIN_NAV_ITEMS, isNavItemActive } from "./navItems";
+import { MAIN_NAV_ITEMS, isMainNavItemActive } from "./navItems";
 
 export default function MobileTabBar() {
   const pathname = usePathname();
@@ -40,7 +40,7 @@ export default function MobileTabBar() {
           </button>
         </li>
         {items.map((item) => {
-          const active = isNavItemActive(pathname, item.href);
+          const active = isMainNavItemActive(pathname, item);
           return (
             <li key={item.href}>
               <Link

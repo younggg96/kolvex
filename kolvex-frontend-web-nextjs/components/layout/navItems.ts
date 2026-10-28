@@ -4,6 +4,7 @@ import {
   Newspaper,
   Radio,
   Telescope,
+  MessageSquareText,
   Youtube,
   type LucideIcon,
 } from "lucide-react";
@@ -15,7 +16,13 @@ export interface MainNavItem {
   href: string;
   type: "link";
   featureId: ProductFeatureId;
+  children?: { title: string; href: string; icon: LucideIcon }[];
 }
+export const OPINION_SOURCES = [
+  { title: "YouTube", href: "/dashboard/youtube-opinions", icon: Youtube },
+  { title: "Reddit", href: "/dashboard/reddit-opinions", icon: MessageSquareText },
+];
+
 export const MAIN_NAV_ITEMS: MainNavItem[] = [
   {
     icon: BarChart3,
@@ -42,7 +49,8 @@ export const MAIN_NAV_ITEMS: MainNavItem[] = [
     featureId: "news",
   },
   {
-    icon: Youtube,
+    icon: MessageSquareText,
+    children: OPINION_SOURCES,
     titleKey: "sidebar.youtubeOpinions",
     shortTitleKey: "tabBar.youtubeOpinions",
     href: "/dashboard/youtube-opinions",
@@ -71,4 +79,8 @@ export function isNavItemActive(pathname: string, href: string) {
   if (href === "/dashboard/ai-research" &&
     (pathname === "/dashboard/trading-analysis" || pathname.startsWith("/dashboard/trading-analysis/"))) return true;
   return pathname === href || pathname.startsWith(`${href}/`);
+}
+
+export function isMainNavItemActive(pathname: string, item: MainNavItem) {
+  return isNavItemActive(pathname, item.href) || Boolean(item.children?.some((child) => isNavItemActive(pathname, child.href)));
 }

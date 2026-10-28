@@ -76,6 +76,12 @@ horizontal padding on mobile and 32px from the medium breakpoint. Published
 reports stay within 1080px; Creator Opinions retains a wider two-column layout.
 
 Markets, Creator Opinions and AI Research each have one primary navigation entry.
+Creator Opinions contains YouTube and Reddit child links in the sidebar. Both
+sources keep the parent active in shared desktop/mobile navigation. Below the
+large breakpoint, `DashboardLayout` owns the shared `OpinionSourceNav` beneath
+the header on either source and its nested routes: flat text links, a green
+active underline, `aria-current` and visible keyboard focus. Source switching
+uses route links rather than in-page tabs.
 The stock detail route belongs to Markets. `StockLookup` at the top of Markets
 uses the shared Input and Button to open any valid ticker, independently of
 creator coverage. Its inline validation and clear action follow the active locale.
@@ -172,6 +178,7 @@ is introduced.
 | Buttons and focus | `components/ui/button.tsx` | Pill variants; neutral navigation actions use `asChild` links |
 | AI Research routes | `lib/researchRoutes.ts` | AI Research list, authoring and report return links |
 | Route navigation | `components/layout/navItems.ts` | Markets, Creator Opinions and AI Research; `aria-current`, visible keyboard focus |
+| Opinion source links | `components/layout/OpinionSourceNav.tsx` and `navItems.ts` | Sidebar child links; shared mobile source row in `DashboardLayout` |
 | In-page tabs | `components/ui/tabs.tsx` | Radix tabs for peer report panels; not a replacement for route links |
 | Loading and data states | `components/ui/skeleton.tsx` and the owning list | Existing skeleton geometry, explicit empty/error states and retry |
 | Scrollbars | `app/globals.css` | Global standards properties and WebKit fallback; new scrollers need no opt-in class |
@@ -186,6 +193,13 @@ identity row, per the requested layout. Its `PriceChart` workspace variant reser
 360px for the plot on phones and `clamp(480px, 60vh, 760px)` from the small breakpoint,
 including loading and error states. Creator-opinion compact charts and the advanced
 dialog retain their existing sizing. The page retains natural content scrolling.
+
+Reddit rankings reuse the existing 28/32px heading, semantic surfaces, shared
+Input/Button/Table and quiet 12px bordered container. Numeric columns align
+right; rank movement uses words and mention change uses signed percentages,
+without treating activity as bullish/bearish color. The table scrolls horizontally
+in a labelled keyboard-focusable region on narrow screens. Keep source/fetch
+metadata, retry feedback and distinct empty/search-empty states in document flow.
 
 Lucide outline icons accompany visible labels except for these return controls. Hover/focus must reveal no
 otherwise inaccessible actions. Global reduced-motion rules apply to existing

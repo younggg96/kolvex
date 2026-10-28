@@ -1,6 +1,7 @@
 "use client";
 
 import { ReactNode } from "react";
+import OpinionSourceNav from "./OpinionSourceNav";
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -31,6 +32,7 @@ export default function DashboardLayout({
           noTransition ? "" : "animate-page-enter"
         }`}
       >
+        <OpinionSourceNav />
         {hasActions && (
           <div className="flex shrink-0 flex-wrap items-center gap-2 px-4 pt-4 md:px-8">
             {headerLeftAction}

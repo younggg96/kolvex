@@ -7,7 +7,7 @@ import { usePathname } from "next/navigation";
 import { Settings, PanelLeftClose, PanelLeft, ShieldCheck, MessageSquareText } from "lucide-react";
 import { useDecisionCommand } from "@/components/decision/CommandLayer";
 import { useCopy } from "@/components/decision/shared";
-import { MAIN_NAV_ITEMS, isNavItemActive } from "./navItems";
+import { MAIN_NAV_ITEMS, isNavItemActive, isMainNavItemActive } from "./navItems";
 import UserMenu from "@/components/user/UserMenu";
 import { Button } from "@/components/ui/button";
 import {
@@ -21,6 +21,9 @@ import {
   SidebarMenu,
   SidebarMenuItem,
   SidebarMenuButton,
+  SidebarMenuSub,
+  SidebarMenuSubItem,
+  SidebarMenuSubButton,
   useSidebar,
 } from "@/components/ui/sidebar";
 import { useBreakpoints } from "@/hooks";
@@ -164,7 +167,7 @@ function AppSidebar({ onNavigate }: AppSidebarProps) {
                 </SidebarMenuItem>
               )}
               {mainNavItems.map((item) => {
-                const active = isActive(item.href);
+                const active = isMainNavItemActive(pathname, item);
                 return (
                   <SidebarMenuItem key={item.title}>
                     <SidebarMenuButton
@@ -172,11 +175,25 @@ function AppSidebar({ onNavigate }: AppSidebarProps) {
                       isActive={active}
                       onClick={handleNavigate}
                     >
-                      <Link href={item.href} aria-current={active ? "page" : undefined}>
+                      <Link href={item.href} aria-current={!item.children && active ? "page" : undefined}>
                         {item.icon && <item.icon />}
                         <span>{item.title}</span>
                       </Link>
                     </SidebarMenuButton>
+                    {item.children && (
+                      <SidebarMenuSub className="ml-5 border-l border-border pl-3" aria-label={item.title}>
+                        {item.children.map((child) => (
+                          <SidebarMenuSubItem key={child.href}>
+                            <SidebarMenuSubButton asChild isActive={isActive(child.href)} onClick={handleNavigate}>
+                              <Link href={child.href} aria-current={isActive(child.href) ? "page" : undefined}>
+                                <child.icon aria-hidden="true" />
+                                <span>{child.title}</span>
+                              </Link>
+                            </SidebarMenuSubButton>
+                          </SidebarMenuSubItem>
+                        ))}
+                      </SidebarMenuSub>
+                    )}
                   </SidebarMenuItem>
                 );
               })}

@@ -69,6 +69,30 @@ Search, direction, scope and sort persist in the URL. The full stock directory
 loads 40 rows at a time. Holdings filtering remains subject to the existing portfolio
 feature flag and uses the shared holdings loader.
 
+### Reddit discussion ranking
+
+The Creator Opinions entry has YouTube and Reddit child routes defined once in
+`components/layout/navItems.ts`. `DashboardLayout` supplies the mobile source
+links through `OpinionSourceNav`, including on nested YouTube routes. Reddit
+keeps the same parent navigation item active at `/dashboard/reddit-opinions`.
+
+`app/api/reddit-opinions/route.ts` requests ApeWisdom's `all-stocks/page/1`
+ranking through a same-origin endpoint. `lib/redditOpinions.ts` validates and
+normalizes rows, preserving absent history. The server caches rows and their
+actual `fetchedAt` together for five minutes; Refresh can return this cached
+bundle and does not imply a fresh provider fetch. Search filters only the loaded
+top-100 ticker/name results. Mention change compares current and previous 24-hour
+counts; zero or missing prior mentions have no percentage baseline. Missing prior
+rank is labelled new, and rank movement compares the previous rank with today's.
+Upvotes remain a separate provider count. The page links to ApeWisdom and its
+methodology; activity is not an investment direction or recommendation.
+
+Initial loading, unavailable data, an empty provider list and no search matches
+have separate feedback. A failed refresh retains the previous ranking and its
+fetch time with an error and retry action.
+
+### Creator and market sources
+
 - Opinion changes use the existing dashboard's daily average direction score, comparing the most recent covered date against the previous covered date. First opinions are labelled separately. Strength is displayed qualitatively.
 - The Updates feed uses the catalogue's latest imported opinions and changes; it is not a complete event archive. Full opinion history remains in the YouTube explorer.
 - Source dates are visible and each opinion links to its creator and original video.
