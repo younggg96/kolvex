@@ -163,7 +163,7 @@ async function apiRequest<T>(
   const data = await response.json().catch(() => ({}));
 
   if (!response.ok) {
-    throw new Error(data.error || data.detail || `API error: ${response.status}`);
+    throw Object.assign(new Error(data.error || data.detail || `API error: ${response.status}`), { status: response.status });
   }
 
   if (options.method && options.method.toUpperCase() !== "GET") clearYouTubeDashboardCache();

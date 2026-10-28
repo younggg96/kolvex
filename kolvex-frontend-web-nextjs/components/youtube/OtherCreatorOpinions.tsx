@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useCachedResource } from "@/hooks/useCachedResource";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useTranslation } from "@/lib/i18n";
@@ -17,46 +18,31 @@ export default function OtherCreatorOpinions({
   onCreator: (channelId: string) => void;
 }) {
   const { t } = useTranslation();
-  const [opinions, setOpinions] = useState<YouTubeOpinion[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [failed, setFailed] = useState(false);
-  const [revision, setRevision] = useState(0);
   const [visibleCount, setVisibleCount] = useState(3);
-
-  useEffect(() => {
-    const controller = new AbortController();
-    setLoading(true);
-    setFailed(false);
-    setOpinions([]);
-    setVisibleCount(3);
-
-    getYouTubeStockDetail(ticker, {}, controller.signal)
-      .then((result) => {
-        if (controller.signal.aborted) return;
-        // The stock endpoint supplies the complete archive; take each creator's
-        // latest call, even when one prolific creator dominates recent history.
-        const latest = new Map<string, YouTubeOpinion>();
-        const sorted = [...result.opinions].sort((a, b) =>
-          b.opinion_date.localeCompare(a.opinion_date) ||
-          (b.video_published_at || "").localeCompare(a.video_published_at || "") ||
-          b.created_at.localeCompare(a.created_at) || a.id.localeCompare(b.id),
-        );
-        for (const opinion of sorted) {
-          if (opinion.channel_id !== currentCreator && !latest.has(opinion.channel_id)) {
-            latest.set(opinion.channel_id, opinion);
-          }
-        }
-        setOpinions([...latest.values()]);
-      })
-      .catch(() => {
-        if (!controller.signal.aborted) setFailed(true);
-      })
-      .finally(() => {
-        if (!controller.signal.aborted) setLoading(false);
-      });
-
-    return () => controller.abort();
-  }, [ticker, currentCreator, revision]);
+  const resource = useCachedResource(
+    `/api/youtube-opinions/stocks/${encodeURIComponent(ticker)}`,
+    signal => getYouTubeStockDetail(ticker, {}, signal),
+    { ttl: 60_000 },
+  );
+  const loading = resource.loading;
+  const failed = Boolean(resource.error) && !resource.data;
+  // The complete archive is shared with the stock workspace. Changing the
+  // excluded creator only filters that snapshot; it does not fetch it again.
+  const opinions = useMemo(() => {
+    const latest = new Map<string, YouTubeOpinion>();
+    const sorted = [...(resource.data?.opinions ?? [])].sort((a, b) =>
+      b.opinion_date.localeCompare(a.opinion_date) ||
+      (b.video_published_at || "").localeCompare(a.video_published_at || "") ||
+      b.created_at.localeCompare(a.created_at) || a.id.localeCompare(b.id),
+    );
+    for (const opinion of sorted) {
+      if (opinion.channel_id !== currentCreator && !latest.has(opinion.channel_id)) {
+        latest.set(opinion.channel_id, opinion);
+      }
+    }
+    return [...latest.values()];
+  }, [resource.data, currentCreator]);
+  useEffect(() => setVisibleCount(3), [ticker, currentCreator]);
 
   return (
     <section className="mt-10 min-w-0" aria-labelledby="other-creator-opinions-heading">
@@ -86,7 +72,7 @@ export default function OtherCreatorOpinions({
       ) : failed ? (
         <div role="alert" className="flex flex-wrap items-center gap-3 py-8 text-sm text-muted-foreground">
           <span>{t("youtubeOpinions.otherCreatorOpinionsFailed")}</span>
-          <Button size="sm" variant="outline" onClick={() => setRevision((value) => value + 1)}>
+          <Button size="sm" variant="outline" onClick={resource.refresh}>
             {t("common.retry")}
           </Button>
         </div>

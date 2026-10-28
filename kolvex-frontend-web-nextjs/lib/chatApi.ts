@@ -1,3 +1,5 @@
+import { invalidateClientCache, loadClientCache } from "./clientCache";
+
 /**
  * Chat History API Module
  * Client-side API calls for chat history functionality
@@ -40,20 +42,26 @@ async function apiRequest<T>(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<T> {
-  const response = await fetch(`${API_PREFIX}${endpoint}`, {
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      ...options.headers,
-    },
+  const read = (options.method ?? "GET").toUpperCase() === "GET";
+  const request = async (signal?: AbortSignal): Promise<T> => {
+    const response = await fetch(`${API_PREFIX}${endpoint}`, {
+      ...options,
+      signal,
+      headers: { "Content-Type": "application/json", ...options.headers },
+    });
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      throw Object.assign(new Error(error.error || `Request failed: ${response.status}`), { status: response.status });
+    }
+    const data = await response.json();
+    if (!read) invalidateClientCache(API_PREFIX);
+    return data;
+  };
+  // Chat contents remain tab-local and are cleared by the shared account boundary.
+  if (read) return loadClientCache(`${API_PREFIX}${endpoint}`, request, {
+    ttl: 30_000, maxAge: 60_000, signal: options.signal ?? undefined,
   });
-
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({}));
-    throw new Error(error.error || `Request failed: ${response.status}`);
-  }
-
-  return response.json();
+  return request(options.signal ?? undefined);
 }
 
 // ===== Conversation Operations =====
@@ -235,6 +243,8 @@ export async function streamAgentMessage(
   options?: AgentRequestOptions,
   signal?: AbortSignal
 ): Promise<Response> {
+  // A stream can commit messages even if the client disconnects before "done".
+  invalidateClientCache(API_PREFIX);
   const response = await fetch(
     `${API_PREFIX}/conversations/${conversationId}/stream`,
     {
@@ -264,7 +274,7 @@ export async function streamAgentMessage(
  * Consume an SSE response without assuming network chunks align to lines or
  * events. Browsers may split a JSON payload anywhere in the byte stream.
  */
-export async function readAgentStream(
+async function consumeAgentStream(
   response: Response,
   onEvent: (event: AgentStreamEvent) => void | Promise<void>
 ): Promise<void> {
@@ -302,5 +312,17 @@ export async function readAgentStream(
 
   if (buffer.trim()) {
     await processEventBlock(buffer);
+  }
+}
+
+/** Discard any history read while a stream was writing, including partial writes. */
+export async function readAgentStream(
+  response: Response,
+  onEvent: (event: AgentStreamEvent) => void | Promise<void>,
+): Promise<void> {
+  try {
+    await consumeAgentStream(response, onEvent);
+  } finally {
+    invalidateClientCache(API_PREFIX);
   }
 }

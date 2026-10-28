@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import { loadClientCache, peekClientCache } from "@/lib/clientCache";
+import { loadMarketObservations } from "@/lib/marketObservationsApi";
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -15,8 +17,9 @@ function ComparisonRow({ instrument, attempt }: { instrument: MarketInstrument; 
   const c = useCopy();
   const host = useRef<HTMLTableRowElement>(null);
   const [near, setNear] = useState(false);
-  const [history, setHistory] = useState<MarketObservation[]>([]);
-  const [state, setState] = useState<"loading" | "ready" | "error">("loading");
+  const cacheKey = `/market-comparison/${instrument.symbol}`;
+  const [history, setHistory] = useState<MarketObservation[]>(() => peekClientCache<MarketObservation[]>(cacheKey) ?? []);
+  const [state, setState] = useState<"loading" | "ready" | "error">(history.length ? "ready" : "loading");
   const [retry, setRetry] = useState(0);
 
   useEffect(() => {
@@ -29,35 +32,40 @@ function ComparisonRow({ instrument, attempt }: { instrument: MarketInstrument; 
     return () => observer.disconnect();
   }, []);
 
+  const lastAttempt = useRef([attempt, retry]);
   useEffect(() => {
     if (!near) return;
+    const force = lastAttempt.current[0] !== attempt || lastAttempt.current[1] !== retry;
+    lastAttempt.current = [attempt, retry];
     const controller = new AbortController();
-    setState("loading");
-    async function load(): Promise<MarketObservation[]> {
+    const saved = peekClientCache<MarketObservation[]>(cacheKey);
+    setHistory(saved ?? []);
+    setState(saved?.length ? "ready" : "loading");
+    async function load(signal: AbortSignal): Promise<MarketObservation[]> {
       if (instrument.source === "fred") {
-        const response = await fetch(`/api/market/observations/${instrument.symbol}`, { signal: controller.signal });
-        if (!response.ok) throw new Error("Daily observations unavailable");
-        const data = await response.json();
-        if (!Array.isArray(data.history)) throw new Error("Invalid observations");
-        return data.history;
+        return loadMarketObservations(instrument.symbol, signal, force);
       }
-      return loadStockTrend(instrument.symbol, { period: "2y", interval: "1d" }, controller.signal);
+      return loadStockTrend(instrument.symbol, { period: "2y", interval: "1d" }, signal, force);
     }
-    load().then(points => {
+    loadClientCache(cacheKey, async signal => {
+      const points = await load(signal);
+      if (!points.length) throw new Error("No history");
+      return points;
+    }, { ttl: 5 * 60_000, maxAge: 15 * 60_000, force, signal: controller.signal }).then(points => {
       if (controller.signal.aborted) return;
       if (!points.length) throw new Error("No history");
       setHistory(points);
       setState("ready");
     }).catch(() => { if (!controller.signal.aborted) setState("error"); });
     return () => controller.abort();
-  }, [instrument.source, instrument.symbol, attempt, retry, near]);
+  }, [instrument.source, instrument.symbol, attempt, retry, near, cacheKey]);
 
   const completedThrough = completedComparisonDate(instrument);
   const result = comparisonSnapshot(history.filter(point => point.date.slice(0, 10) <= completedThrough), instrument);
   const valueUnit = instrument.unit ?? (isMarketIndex(instrument.symbol) ? "points" : "usd");
   const name = c(instrument.en, instrument.zh);
   const unitLabel = result.unit === "pp" ? c("pp change", "百分点变化") : result.unit === "points" ? c("point change", "点数变化") : c("% change", "涨跌幅 %");
-  const showValues = state === "ready";
+  const showValues = history.length > 0;
   return (
     <tr ref={host} aria-busy={state === "loading"} className="group transition-colors hover:bg-muted/30">
       <th scope="row" className="sticky left-0 z-10 border-b border-border/40 bg-card px-3 py-2 text-left align-middle font-normal group-hover:bg-muted">

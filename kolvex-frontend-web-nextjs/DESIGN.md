@@ -970,7 +970,9 @@ hint and keyboard focus. Long source names wrap within their event card. List pr
 days. Both views retain event ordering, tickers and source links.
 Chinese/English dates and labels use useCopy, with explicit Eastern-time context.
 Loading skeletons, empty weeks, error/retry and refresh use shared primitives.
-The calendar refreshes its date window when the tab resumes and each minute.
+The calendar checks cache freshness when the tab resumes, reconnects and each minute.
+Fresh responses are reused for one minute; recent snapshots remain visible during
+background refresh and recoverable refresh failures. Manual refresh bypasses freshness.
 Admin's Major events section reuses Input, Textarea and Button for JSON import,
 validation preview, upsert and loading saved events for editing. Drafts stay
 mounted across admin tab switches; dirty edits disable replacement by a file or

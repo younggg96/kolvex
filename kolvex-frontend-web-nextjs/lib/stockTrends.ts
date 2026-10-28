@@ -23,7 +23,7 @@ export function trendPoints(bars: PriceBar[], singleSession: boolean): TrendPoin
 
 /** Passive list previews: viewport-driven, cancellable, cached, and three requests at most. */
 export function loadStockTrend(symbol: string, params: PriceHistoryParams, signal: AbortSignal, force = false): Promise<TrendPoint[]> {
-  const key = JSON.stringify([symbol, params.period, params.interval]);
+  const key = JSON.stringify([symbol.trim().toUpperCase(), params.period, params.interval, params.start, params.end]);
   if (signal.aborted) return Promise.reject(new DOMException("Cancelled", "AbortError"));
   if (force) cache.delete(key);
   const saved = cache.get(key);
@@ -43,7 +43,7 @@ export function loadStockTrend(symbol: string, params: PriceHistoryParams, signa
       start: () => {
         started = true;
         signal.removeEventListener("abort", cancel);
-        getStockHistory(symbol, params, signal).then(bars => {
+        getStockHistory(symbol, params, signal, force).then(bars => {
           if (signal.aborted) throw new DOMException("Cancelled", "AbortError");
           const points = trendPoints(bars, params.period === "1d");
           if (cache.size >= 500) cache.delete(cache.keys().next().value!);

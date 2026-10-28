@@ -1,5 +1,6 @@
 "use client";
-import { loadClientCache, peekClientCache } from "@/lib/clientCache";
+import { peekClientCache } from "@/lib/clientCache";
+import { stockHistoryKey } from "@/lib/stockApi";
 
 import Link from "next/link";
 import { createPortal } from "react-dom";
@@ -275,7 +276,7 @@ export default function ChartView({
   const [interval, setChartInterval] = useState<ChartInterval>(defaultInterval["3M"]);
   const params = advanced && !snapshotBars ? advancedHistoryParams(range, interval) : compactParams;
   const paramsKey = JSON.stringify(params);
-  const chartCacheKey = `/api/market/history/${encodeURIComponent(symbol)}?${new URLSearchParams(Object.entries(params).filter(([, value]) => value != null && value !== "").map(([key, value]) => [key, String(value)]))}`;
+  const chartCacheKey = stockHistoryKey(symbol, params);
   const intraday = isIntraday(params.interval || "1d");
 
   const [box, setBox] = useState<HTMLDivElement | null>(null);
@@ -327,14 +328,17 @@ export default function ChartView({
 
   useEffect(() => setIndicators(readIndicators(mode)), [mode]);
 
+  const lastHistoryAttempt = useRef(attempt);
   useEffect(() => {
+    const force = lastHistoryAttempt.current !== attempt;
+    lastHistoryAttempt.current = attempt;
     const controller = new AbortController();
     setBars(snapshotBars ?? peekClientCache<PriceBar[]>(chartCacheKey) ?? null);
     setError(false);
     setActive(null);
     setView(null);
     if (snapshotBars) { setBars(snapshotBars); return () => controller.abort(); }
-    loadClientCache(chartCacheKey, signal => getStockHistory(symbol, JSON.parse(paramsKey), signal), { ttl: 60_000, maxAge: 5 * 60_000, force: attempt > 0, signal: controller.signal })
+    getStockHistory(symbol, JSON.parse(paramsKey), controller.signal, force)
       .then(data => { if (!controller.signal.aborted) setBars(data); })
       .catch((reason) => {
         if (!controller.signal.aborted) {

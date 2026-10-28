@@ -10,7 +10,7 @@ function load(file, deps = {}, globals = {}) {
   const clientCache = require("./helpers/client-cache.cjs")();
   vm.runInNewContext(ts.transpileModule(fs.readFileSync(path.join(__dirname, '..', file), 'utf8'), {
     compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020 },
-  }).outputText, { exports, require: name => { if (name === "@/lib/clientCache") return clientCache;
+  }).outputText, { exports, require: name => { if (name === "@/lib/clientCache" || name === "./clientCache") return clientCache;
     if (name in deps) return deps[name];
     throw Error(name);
   }, URL, AbortSignal, AbortController, process: { env: {} }, ...globals });

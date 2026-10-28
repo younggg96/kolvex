@@ -11,7 +11,10 @@ changes. Closing or fully reloading the tab clears the new memory cache.
 | --- | --- | --- |
 | Stock quotes, market quote batches | 15 seconds | 60 seconds |
 | Price chart bars, daily market charts | 60 seconds | 5 minutes |
-| Daily macro source charts | 5 minutes | 5 minutes |
+| Daily macro source history shared by cards and comparison tables | 5 minutes | 15 minutes |
+| Market comparison snapshots | 5 minutes | 15 minutes |
+| Market event calendar | 60 seconds | 5 minutes |
+| Chat lists, conversation details and messages | 30 seconds | 60 seconds |
 | Creator opinions, directory, research lists and published reports | 60 seconds | 15 minutes |
 | Saved analysis metadata | 60 seconds | 15 minutes |
 | Saved version payloads, creator profiles | 5 minutes | 15 minutes |
@@ -57,3 +60,47 @@ mounts, stale refresh, request deduplication, forced refresh, cancellation, time
 account isolation and late replies. Market quote tests verify per-symbol reuse
 across different lists and network access after explicit refresh. Network request
 counts are tested; no production latency percentage is claimed without traces.
+
+
+## Cache coverage and refresh corrections
+
+The calendar now uses the shared resource hook. Re-entering it within one minute
+reuses its response; visibility/online events check freshness instead of forcing a
+request. The visible calendar still checks its window every minute. Expired
+snapshots refresh in the background and a failed refresh preserves readable data
+with a localized status. Manual refresh bypasses freshness.
+
+Raw FRED observations are keyed by source symbol, independently of derived chart
+ranges. Cards and comparison rows share the same request. Comparison rows also
+retain their assembled snapshot, so returning to list mode can paint immediately.
+Raw OHLCV history caching now lives in `getStockHistory`, shared by price charts,
+preview workers and any other history consumer. Its keys normalize symbols and
+parameter order while retaining explicit start/end windows. The existing viewport
+queue and its three-worker limit remain in place.
+
+Market card/chart refresh attempts and overview quote retries are consumed once.
+A previous refresh no longer makes every subsequent range or universe change
+bypass fresh cache entries. Comparison retries now bypass the underlying trend
+or FRED cache as well as the row cache. Fresh shared-hook mounts never advertise
+a background refresh when no network request is needed.
+
+Chat GETs share in-flight requests and retain responses in browser memory only.
+Successful create/rename/delete/message writes invalidate the chat namespace.
+Starting a stream and finishing its consumption (including parsing errors) also
+invalidate it, preventing partial history from being retained after generation.
+SSE requests themselves remain uncached. The existing account boundary clears
+these private snapshots.
+
+The related-creator opinion panel now shares the stock workspace cache. Changing
+the excluded creator filters the same archive locally rather than refetching it.
+YouTube API errors carry HTTP status so revoked/missing resources clear snapshots.
+
+Existing caching was confirmed for creator dashboards/details, research lists,
+analysis history, brief lists/calendars, stock quotes/news, macro indicators and
+provider availability. Credential reads/writes, job status polling, SSE and remote
+drawing synchronization retain their existing behavior. No blanket HTTP caching
+was added to authenticated API routes.
+
+This is a navigation/re-entry cache, not persistent offline storage: a full browser
+reload still clears memory. First visits and expired entries still depend on the
+upstream API. No production latency reduction is claimed without runtime traces.

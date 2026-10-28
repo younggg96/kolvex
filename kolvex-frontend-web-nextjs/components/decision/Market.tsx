@@ -1,4 +1,5 @@
 "use client";
+import { loadMarketObservations } from "@/lib/marketObservationsApi";
 import { loadClientCache, peekClientCache } from "@/lib/clientCache";
 
 import { isProductFeatureEnabled } from "@/lib/productFeatures";
@@ -93,6 +94,7 @@ function MarketInstrumentCard({ benchmark, quote, quoteLoading, range, attempt, 
   const [seriesState, setSeriesState] = useState<"loading" | "ready" | "error">((peekClientCache<ScrubPoint[]>(seriesKey)?.length ?? 0) > 1 ? "ready" : "loading");
   const [scrub, setScrub] = useState<ScrubPoint | null>(null);
 
+  const seriesAttempt = useRef(attempt);
   useEffect(() => {
     const controller = new AbortController();
     const spec = RANGES.find((item) => item.key === range)!;
@@ -101,22 +103,20 @@ function MarketInstrumentCard({ benchmark, quote, quoteLoading, range, attempt, 
     setSeries(saved ?? []);
     setScrub(null);
     if (!near) return () => controller.abort();
+    const forceRefresh = seriesAttempt.current !== attempt;
+    seriesAttempt.current = attempt;
     async function load(signal: AbortSignal): Promise<MarketObservation[]> {
       if (benchmark.source === "fred") {
-        const response = await fetch(`/api/market/observations/${benchmark.symbol}`, { signal });
-        if (!response.ok) throw new Error("Observations unavailable");
-        const data = await response.json();
-        if (!Array.isArray(data.history)) throw new Error("Invalid observations");
-        return data.history;
+        return loadMarketObservations(benchmark.symbol, signal, forceRefresh);
       }
       return loadStockTrend(benchmark.symbol, benchmark.daily
         ? { period: range === "1D" ? "5d" : spec.period, interval: "1d" }
-        : { period: spec.period, interval: spec.interval }, signal, attempt > 0);
+        : { period: spec.period, interval: spec.interval }, signal, forceRefresh);
     }
     loadClientCache(seriesKey, async signal => {
       const history = await load(signal);
       return benchmark.daily || ["1Y", "QTD", "YTD"].includes(range) ? observationRange(history, range) : history;
-    }, { ttl: benchmark.daily ? 5 * 60_000 : 60_000, maxAge: 5 * 60_000, force: attempt > 0, signal: controller.signal }).then((points) => {
+    }, { ttl: benchmark.daily ? 5 * 60_000 : 60_000, maxAge: 5 * 60_000, force: forceRefresh, signal: controller.signal }).then((points) => {
         if (controller.signal.aborted) return;
         setSeries(points);
         setSeriesState(points.length > 1 ? "ready" : "error");
@@ -343,7 +343,10 @@ function MarketOverview({ range, setRange, view, setView }: { range: RangeKey; s
   const symbolsKey = symbols.join(",");
   const trendRange = RANGES.find(item => item.key === range)!;
 
+  const lastQuoteAttempt = useRef([attempt, quoteAttempt]);
   useEffect(() => {
+    const forceRefresh = lastQuoteAttempt.current[0] !== attempt || lastQuoteAttempt.current[1] !== quoteAttempt;
+    lastQuoteAttempt.current = [attempt, quoteAttempt];
     const controller = new AbortController();
     setLoading(true);
     setFailed(false);
@@ -352,7 +355,7 @@ function MarketOverview({ range, setRange, view, setView }: { range: RangeKey; s
         [...BENCHMARKS.map(item => item.symbol), ...symbolsKey.split(",")],
         controller.signal,
         batch => setQuotes(previous => ({ ...previous, ...batch })),
-        attempt > 0 || quoteAttempt > 0,
+        forceRefresh,
       );
       if (!controller.signal.aborted) {
         setQuotes(result);

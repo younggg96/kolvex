@@ -1,3 +1,4 @@
+import { loadClientCache } from "./clientCache";
 import type { TechnicalFocus, TechnicalCategory } from "./technicalFocus";
 // Stock API types and utilities
 
@@ -184,31 +185,36 @@ export interface PriceHistoryParams {
 /**
  * Daily (or weekly) OHLCV bars; the backend needs both start and end for a date window.
  */
-export async function getStockHistory(
-  symbol: string,
-  params: PriceHistoryParams = {},
-  signal?: AbortSignal
-): Promise<PriceBar[]> {
+export function stockHistoryKey(symbol: string, params: PriceHistoryParams = {}): string {
   const searchParams = new URLSearchParams();
-  for (const [key, value] of Object.entries(params)) {
+  for (const [key, value] of Object.entries(params).sort(([a], [b]) => a.localeCompare(b))) {
     if (value) searchParams.set(key, value);
   }
   const qs = searchParams.toString();
-  const response = await fetch(
-    `/api/market/history/${encodeURIComponent(symbol)}${qs ? `?${qs}` : ""}`,
-    { signal }
-  );
-  const data = await response.json().catch(() => ({}));
-  if (!response.ok) {
-    throw new Error(data.error || `API error: ${response.status}`);
-  }
-  return ((data.data || []) as Array<Partial<PriceBar>>).filter(
-    (bar): bar is PriceBar =>
-      typeof bar.date === "string" &&
-      [bar.open, bar.high, bar.low, bar.close].every(
-        (value) => typeof value === "number" && Number.isFinite(value)
-      )
-  );
+  return `/api/market/history/${encodeURIComponent(symbol.trim().toUpperCase())}${qs ? `?${qs}` : ""}`;
+}
+
+export async function getStockHistory(
+  symbol: string,
+  params: PriceHistoryParams = {},
+  signal?: AbortSignal,
+  force = false,
+): Promise<PriceBar[]> {
+  const key = stockHistoryKey(symbol, params);
+  return loadClientCache(key, async requestSignal => {
+    const response = await fetch(key, { signal: requestSignal });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw Object.assign(new Error(data.error || `API error: ${response.status}`), { status: response.status });
+    }
+    return ((data.data || []) as Array<Partial<PriceBar>>).filter(
+      (bar): bar is PriceBar =>
+        typeof bar.date === "string" &&
+        [bar.open, bar.high, bar.low, bar.close].every(
+          (value) => typeof value === "number" && Number.isFinite(value)
+        )
+    );
+  }, { ttl: 60_000, maxAge: 5 * 60_000, signal, force });
 }
 
 export interface AiChartPoint {

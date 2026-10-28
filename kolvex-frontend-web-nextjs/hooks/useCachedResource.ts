@@ -28,6 +28,11 @@ export function useCachedResource<T>(key: string, loader: (signal: AbortSignal) 
     const data = peekClientCache<T>(key);
     const forceRefresh = force.current;
     force.current = false;
+    const fresh = forceRefresh ? undefined : peekClientCache<T>(key, true);
+    if (fresh !== undefined) {
+      setState({ key, data: fresh, loading: false, refreshing: false, error: null });
+      return () => controller.abort();
+    }
     setState(previous => {
       const available = data ?? (previous.key === key ? previous.data : undefined);
       return { key, data: available, loading: available === undefined, refreshing: true, error: null };

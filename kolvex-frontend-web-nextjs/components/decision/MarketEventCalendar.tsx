@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import { useCachedResource } from "@/hooks/useCachedResource";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -18,45 +19,27 @@ export default function MarketEventCalendar() {
   const [week, setWeek] = useState("1");
   const [view, setView] = useState<"calendar" | "list">("calendar");
   const isCalendar = view === "calendar";
-  const [data, setData] = useState<MarketCalendar | null>(null);
-  const [error, setError] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [attempt, setAttempt] = useState(0);
+  const { data, error, loading, refreshing, refresh, revalidate } = useCachedResource<MarketCalendar>(
+    "/api/market/events",
+    async signal => {
+      const response = await fetch("/api/market/events", { signal, cache: "no-store" });
+      if (!response.ok) throw Object.assign(new Error("Calendar unavailable"), { status: response.status });
+      return response.json();
+    },
+    { ttl: 60_000, maxAge: 5 * 60_000 },
+  );
   useEffect(() => {
-    let controller = new AbortController();
-    async function load() {
-      controller.abort();
-      controller = new AbortController();
-      const signal = controller.signal;
-      setLoading(true);
-      setError(false);
-      try {
-        const response = await fetch("/api/market/events", {
-          signal,
-          cache: "no-store",
-        });
-        if (!response.ok) throw new Error();
-        const result: MarketCalendar = await response.json();
-        if (!signal.aborted) setData(result);
-      } catch {
-        if (!signal.aborted) setError(true);
-      } finally {
-        if (!signal.aborted) setLoading(false);
-      }
-    }
-    void load();
-    // Refresh the server-defined window after a sleeping tab resumes or the date rolls over.
-    const refresh = () => {
-      if (document.visibilityState === "visible") void load();
-    };
-    document.addEventListener("visibilitychange", refresh);
-    const timer = setInterval(refresh, 60_000);
+    // Recheck freshness on resume; keep the server-defined calendar window current.
+    const resume = () => { if (!document.hidden) revalidate(); };
+    document.addEventListener("visibilitychange", resume);
+    window.addEventListener("online", resume);
+    const timer = setInterval(resume, 60_000);
     return () => {
-      controller.abort();
       clearInterval(timer);
-      document.removeEventListener("visibilitychange", refresh);
+      document.removeEventListener("visibilitychange", resume);
+      window.removeEventListener("online", resume);
     };
-  }, [attempt]);
+  }, [revalidate]);
   return (
     <section
       className="min-w-0 max-w-full space-y-6 pt-6"
@@ -99,14 +82,19 @@ export default function MarketEventCalendar() {
           <Button
             variant="outline"
             size="sm"
-            disabled={loading}
-            onClick={() => setAttempt((n) => n + 1)}
+            disabled={loading || refreshing}
+            onClick={refresh}
           >
             {c("Refresh", "刷新")}
           </Button>
         </div>
       </div>
-      {error ? (
+      {Boolean(error) && data && (
+        <p role="status" className="text-sm text-muted-foreground">
+          {c("Refresh failed. Showing the previous calendar.", "刷新失败，正在显示上次的日历。")}
+        </p>
+      )}
+      {error && !data ? (
         <div
           role="alert"
           className="space-y-3 rounded-xl border border-border p-4"
@@ -120,7 +108,7 @@ export default function MarketEventCalendar() {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => setAttempt((n) => n + 1)}
+            onClick={refresh}
           >
             {c("Retry", "重试")}
           </Button>

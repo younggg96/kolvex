@@ -91,3 +91,19 @@ test('account changes remove visible snapshots before loading the new account', 
   next.resolve('account-b');await tick();
   assert.equal(h.render('/private',loader).data,'account-b');h.unmount();
 });
+
+
+test('fresh visits never enter a refreshing state, including false and zero payloads', async () => {
+  for (const value of [false, 0, [], 'cached']) {
+    const cache = createCache();
+    await cache.loadClientCache('/fresh', async () => value);
+    const h = harness(cache);
+    const loader = () => { throw Error('Fresh reads must skip the network'); };
+    h.render('/fresh', loader); h.effects();
+    const state = h.render('/fresh', loader);
+    assert.equal(state.data, value);
+    assert.equal(state.refreshing, false);
+    assert.equal(state.loading, false);
+    h.unmount();
+  }
+});
