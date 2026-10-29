@@ -70,7 +70,8 @@ export default function StockObservationList({ range, catalogue, held, onRetry }
 
   const update = useCallback((next: StockObservationState) => {
     const params = writeStockObservationState(new URLSearchParams(window.location.search), next);
-    window.history.replaceState(window.history.state, "", `${pathname}?${params}`);
+    // Next copies its router state itself; passing __NA would skip URL synchronization.
+    window.history.replaceState(null, "", `${pathname}?${params}`);
     try {
       const preference = writeStockObservationState(new URLSearchParams(), { ...next, rows: STOCK_PAGE_SIZE });
       localStorage.setItem(STOCK_PREFERENCE_KEY, preference.toString());

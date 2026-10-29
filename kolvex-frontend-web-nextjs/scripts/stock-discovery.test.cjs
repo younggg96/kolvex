@@ -3,6 +3,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const Module = require('node:module');
+const vm = require('node:vm');
 const ts = require('typescript');
 function load(relative, mocks = {}) {
   const file = path.join(__dirname, '..', relative);
@@ -72,4 +73,52 @@ test('list state round trips without overwriting other market tabs and normalize
 test('detail return cannot navigate outside the market list', () => {
   for (const target of ['https://example.com', '//example.com', '/dashboard/admin', '/dashboard#x', '/dashboard\\evil', '/dashboard?x=1\n']) assert.equal(stockObservationReturnHref(target), '/dashboard');
   assert.equal(stockObservationReturnHref('/dashboard?stocks=creators&stockRows=20'), '/dashboard?stocks=creators&stockRows=20');
+});
+
+test('scope controls update Next App Router search params without bypassing its native history adapter', () => {
+  // Exercise the installed framework adapter rather than a preview's popstate shim.
+  const router = fs.readFileSync(require.resolve('next/dist/client/components/app-router.js'), 'utf8');
+  const copyState = router.match(/function copyNextJsInternalHistoryState\(data\)[\s\S]*?\n}/)?.[0];
+  const adapter = router.match(/window\.history\.replaceState = function replaceState[\s\S]*?\n        };/)?.[0];
+  assert.ok(copyState && adapter, 'Next native history integration must remain covered');
+  let synchronizedUrl, writtenState;
+  const window = { location: { search: '' }, history: { state: { __NA: true, __PRIVATE_NEXTJS_INTERNALS_TREE: ['market'] } } };
+  vm.runInNewContext(`${copyState}\n${adapter}`, {
+    window,
+    applyUrlFromHistoryPushReplace: url => { synchronizedUrl = url; },
+    originalReplaceState: (data) => { writtenState = data; window.history.state = data; },
+  });
+  const module = { exports: {} };
+  const element = (type, props) => ({ type, props });
+  const copy = (en, zh) => zh;
+  const mocks = {
+    react: { useMemo: fn => fn(), useCallback: fn => fn, useEffect() {}, useRef: current => ({ current }), useState: value => [typeof value === 'function' ? value() : value, () => {}] },
+    'react/jsx-runtime': { jsx: element, jsxs: element },
+    'next/navigation': { usePathname: () => '/dashboard', useSearchParams: () => new URLSearchParams() },
+    '@/components/ui/button': { Button: 'button' },
+    '@/lib/productFeatures': { isProductFeatureEnabled: () => false },
+    '@/lib/i18n': { useTranslation: () => ({ locale: 'zh' }) },
+    '@/lib/stockDiscovery': discovery,
+    '@/lib/opinionDates': load('lib/opinionDates.ts'),
+    '@/lib/marketObservations': { MARKET_RANGES: [{ key: '1D', en: '1D', zh: '1天' }] },
+    '@/lib/utils': { cn: (...values) => values.filter(Boolean).join(' ') },
+    './shared': { useCopy: () => copy },
+  };
+  const componentSource = fs.readFileSync(path.join(__dirname, '../components/decision/StockObservationList.tsx'), 'utf8');
+  vm.runInNewContext(ts.transpileModule(componentSource, {
+    compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX, target: ts.ScriptTarget.ES2022 },
+  }).outputText, { module, exports: module.exports, Date, URLSearchParams, window, localStorage: { setItem() {} }, require: name => mocks[name] ?? {} });
+  const tree = module.exports.default({ range: '1D', catalogue: { data: null, loading: true }, held: { tickers: [], loading: false }, onRetry() {} });
+  function find(node) {
+    if (node == null || typeof node !== 'object') return;
+    if (Array.isArray(node)) return node.map(find).find(Boolean);
+    if (node.type === 'button' && node.props.children === '博主关注') return node;
+    return find(node.props?.children);
+  }
+  const button = find(tree);
+  assert.ok(button);
+  button.props.onClick();
+  assert.equal(synchronizedUrl, '/dashboard?stocks=creators&stockSort=heat');
+  assert.equal(writtenState.__NA, true, 'Next retains its private state itself');
+  assert.deepEqual(writtenState.__PRIVATE_NEXTJS_INTERNALS_TREE, ['market']);
 });
