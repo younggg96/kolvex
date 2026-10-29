@@ -1753,7 +1753,7 @@
   },
   "redditOpinions": {
     "mobileMentions": "Mentions / 24h",
-    "details": "Rank change and upvotes",
+    "details": "View details and follow actions",
     "header": "Creator Opinions · Reddit",
     "title": "Reddit trending stocks",
     "description": "The most discussed tickers across stock-focused Reddit communities over the past 24 hours. Compare mentions and rankings with the previous period.",
@@ -1779,7 +1779,30 @@
     "unchanged": "Unchanged",
     "noResults": "No matching tickers. Try another ticker or company name.",
     "empty": "No rankings are available right now. Try refreshing later.",
-    "note": "ApeWisdom aggregates stock-focused Reddit communities. This list shows up to 100 provider-ranked tickers; search covers this list only. Data is cached for 5 minutes. Changes compare with the provider’s 24h-ago fields. Missing or zero mention baselines have no percentage change. Names and tickers are supplied by the source and are not independently verified. Discussion activity does not measure bullish or bearish sentiment.",
-    "methodology": "Read methodology"
+    "note": "ApeWisdom aggregates discussion in the selected Reddit community. This list shows up to 100 provider-ranked tickers; search, sorting and follows cover this list only. Data is cached for 5 minutes. Changes compare with the provider’s 24h-ago fields. Missing or zero mention baselines have no percentage change; missing comparison values sort last. Names and tickers are supplied by the source and are not independently verified. Discussion activity does not measure bullish or bearish sentiment.",
+    "methodology": "Read methodology",
+    "allCommunities": "All stock communities",
+    "community": "Community",
+    "sort": "Sort by",
+    "sortOptions": {
+      "mentions": "Most mentions",
+      "mentionChange": "Highest mention growth",
+      "rankChange": "Biggest rank gain",
+      "upvotes": "Most upvotes"
+    },
+    "onlyWatchlist": "Following only",
+    "follow": "Follow {ticker}",
+    "unfollow": "Unfollow {ticker}",
+    "followAction": "Follow",
+    "following": "Following",
+    "scopeNote": "{community} · Top 100 tickers · Past 24 hours",
+    "resultCount": "Showing {count} / {total}",
+    "watchlistNote": "Follows are saved in this browser. Only followed tickers in the current community ranking appear here.",
+    "watchlistEmpty": "No followed tickers yet. Use a star in the ranking to add one.",
+    "watchlistNoResults": "No followed tickers match this community ranking and search. Your other follows are still saved.",
+    "storageUnavailable": "Browser storage is unavailable. Follows will only last for this page session.",
+    "clearFilters": "Clear search and follow filter",
+    "dataNotes": "About this data",
+    "clearSearch": "Clear search"
   }
 }

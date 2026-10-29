@@ -1753,7 +1753,7 @@
   },
   "redditOpinions": {
     "mobileMentions": "提及 / 24h",
-    "details": "排名变化和获赞数",
+    "details": "查看详情与关注操作",
     "header": "博主观点 · Reddit",
     "title": "Reddit 热度榜",
     "description": "汇集股票类 Reddit 社区过去 24 小时的热门代码，对比提及次数与排名变化。",
@@ -1779,7 +1779,30 @@
     "unchanged": "持平",
     "noResults": "没有匹配的代码，请尝试其他代码或公司名称。",
     "empty": "数据来源暂未提供排名，请稍后刷新。",
-    "note": "ApeWisdom 汇总股票类 Reddit 社区的讨论。本页展示来源排名前 100 个代码，搜索仅覆盖当前榜单。数据缓存 5 分钟，变化对比来源提供的 24 小时前数据。提及量基数缺失或为零时不计算百分比。代码与名称按来源展示，未作独立证券身份核验。讨论热度不代表看涨或看跌情绪。",
-    "methodology": "查看统计方法"
+    "note": "ApeWisdom 汇总所选 Reddit 社区的讨论。本页展示来源排名前 100 个代码，搜索、排序和关注筛选仅覆盖当前榜单。数据缓存 5 分钟，变化对比来源提供的 24 小时前数据。提及量基数缺失或为零时不计算百分比；排序时无对比值的代码置后。代码与名称按来源展示，未作独立证券身份核验。讨论热度不代表看涨或看跌情绪。",
+    "methodology": "查看统计方法",
+    "allCommunities": "全部股票社区",
+    "community": "社区",
+    "sort": "排序",
+    "sortOptions": {
+      "mentions": "提及量最多",
+      "mentionChange": "提及量增幅最大",
+      "rankChange": "排名升幅最大",
+      "upvotes": "获赞数最多"
+    },
+    "onlyWatchlist": "仅关注",
+    "follow": "关注 {ticker}",
+    "unfollow": "取消关注 {ticker}",
+    "followAction": "关注",
+    "following": "已关注",
+    "scopeNote": "{community} · 当前榜单前 100 个代码 · 过去 24 小时",
+    "resultCount": "显示 {count} / {total}",
+    "watchlistNote": "关注保存在此浏览器中；这里只显示当前社区榜单内的关注代码。",
+    "watchlistEmpty": "还没有关注的代码。点击榜单中的星标即可添加。",
+    "watchlistNoResults": "当前社区榜单和搜索条件下没有关注代码，其他关注仍会保留。",
+    "storageUnavailable": "浏览器存储不可用，关注暂时仅在本次页面中保留。",
+    "clearFilters": "清除搜索和关注筛选",
+    "dataNotes": "数据说明",
+    "clearSearch": "清除搜索"
   }
 }

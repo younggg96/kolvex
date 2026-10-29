@@ -97,30 +97,68 @@ The Creator Opinions entry has YouTube and Reddit child routes defined once in
 links through `OpinionSourceNav`, including on nested YouTube routes. Reddit
 keeps the same parent navigation item active at `/dashboard/reddit-opinions`.
 
-`app/api/reddit-opinions/route.ts` requests ApeWisdom's `all-stocks/page/1`
-ranking through a same-origin endpoint. `lib/redditOpinions.ts` validates and
-normalizes rows, preserving absent history. The server caches rows and their
-actual `fetchedAt` together for five minutes; Refresh can return this cached
-bundle and does not imply a fresh provider fetch. Search filters only the loaded
-top-100 ticker/name results. Mention change compares current and previous 24-hour
-counts; zero or missing prior mentions have no percentage baseline. Missing prior
-rank is labelled new, and rank movement compares the previous rank with today's.
-Upvotes remain a separate provider count. The compact footer links to ApeWisdom's
-methodology and shows the actual fetch date/time; activity is not an investment
-direction or recommendation.
+`app/api/reddit-opinions/route.ts` requests ApeWisdom's first stock-ranking page
+through a same-origin endpoint. The `community` query accepts only `all-stocks`
+(default), `wallstreetbets`, `stocks`, `investing` and `options`; unsupported
+values return 400 before any provider request. `lib/redditOpinions.ts` validates
+and normalizes rows, preserving absent history. The server caches each community's
+rows, community identifier and actual `fetchedAt` together for five minutes.
+`hooks/useCachedResource.ts` uses a separate `reddit:ranking:${community}` browser
+cache entry, a five-minute freshness period and one-hour maximum cache age. A
+community change never displays another community's rows. Refresh bypasses browser
+freshness but can return the server-cached bundle, so it does not imply a fresh
+provider fetch.
+
+Search trims whitespace, ignores case and accepts an optional leading `$`,
+filtering only the loaded top-100 ticker/name results. Its localized clear action
+returns focus to the search input. Sorts use descending mentions, mention
+percentage growth, rank gain or upvotes, breaking ties by source rank without
+renumbering the rows. Missing comparison baselines sort after every numeric
+comparison, including declines. Mention change compares current and previous
+24-hour counts; zero or missing prior mentions have no percentage baseline.
+Missing prior rank is labelled new, and rank movement compares the previous rank
+with today's. Upvotes remain a separate provider count. These snapshots do not
+provide a historical time series.
+
+`hooks/useRedditWatchlist.ts` saves followed tickers in browser localStorage under
+`kolvex:reddit-watchlist`, validates stored values and syncs storage events across
+tabs. The following-only filter intersects saved tickers with the current
+community's loaded ranking and search; leaving that ranking does not remove a
+saved ticker. The toolbar count is the total saved ticker count, not the count
+currently visible. Follows are device/browser-local, separate from brokerage
+holdings and account sync. If storage is unavailable, follows remain usable for
+the page session and a localized notice explains the limit. Search, sort,
+community and following-only state are intentionally transient page state;
+only followed tickers persist.
 
 Below md, the ranking uses native `details` rows: rank, shared company logo,
 ticker, truncated company name, mentions and signed percentage change remain
 visible. Touch or keyboard expansion reveals the full company name, rank
-movement and upvotes. From md, all fields appear in the table. Missing percentage
-baselines display an em dash. The page starts with a short title, an accessible
-icon-only refresh action and ticker/name search; repeated descriptions, coverage
-counts and the long explanatory note are absent. Chinese/English formatting and
-data semantics are shared across both layouts.
+movement, upvotes and follow action. From md, all fields and per-row follow
+controls appear in the table. Missing percentage baselines display an em dash.
+The short title and accessible icon-only refresh action precede the shared Input,
+community and sort Selects, and following-only Button. On phones search spans
+the toolbar width, community and sort share two columns, and following-only sits
+below. From md search occupies a full row above the three filters; from xl all
+controls share one row. Scope and showing/total result counts explain what the
+filters include. The compact footer links to ApeWisdom's methodology and shows
+the actual fetch date/time; a closed native data disclosure explains the 24-hour
+comparison and activity limits. Discussion activity uses neutral colors and is
+not an investment direction or recommendation. Chinese/English formatting,
+accessible action labels and data semantics are shared across both layouts.
 
-Initial loading, unavailable data, an empty provider list and no search matches
-have separate feedback. A failed refresh retains the previous ranking and its
-fetch time with an error and retry action.
+Initial loading, unavailable data, an empty provider list, no search matches,
+no saved follows and no followed matches have distinct feedback. Empty filtered
+results offer a clear-filters action. A failed refresh retains the previous
+ranking and its fetch time with an error and retry action.
+
+Verification: from `kolvex-frontend-web-nextjs`, run `node --test
+scripts/reddit-opinions.test.cjs scripts/cached-resource.test.cjs`. These cover
+provider normalization, baseline and sort semantics, search/follow intersections,
+storage parsing, community validation/cache separation, source navigation and
+shared cache loading/error behavior. Implementation and browser verification
+evidence is recorded in `artifacts/reddit-features-20261029/documentation.md` at
+the repository root.
 
 ### Creator and market sources
 
