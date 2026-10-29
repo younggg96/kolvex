@@ -127,11 +127,42 @@ class Brief(Content):
         return self
 
 
+class LocalizedBrief(Content):
+    title: str = Field(min_length=1)
+    headline: str = Field(min_length=1)
+    subtitle: str = ""
+    sections: list[Section] = Field(min_length=1, max_length=50)
+    disclaimer: str = ""
+    hero_image: Image | None = None
+
+    @field_validator("sections")
+    @classmethod
+    def unique_sections(cls, sections):
+        if len({s.section_id for s in sections}) != len(sections):
+            raise ValueError("section_id 不得重复")
+        return sorted(sections, key=lambda s: s.order)
+
+    @model_validator(mode="before")
+    @classmethod
+    def no_identity_override(cls, value):
+        if isinstance(value, dict) and {"brief", "id", "type", "date", "generated_at_pt", "market_status"}.intersection(value):
+            raise ValueError("translations 只接受译文内容，不可覆盖期次、日期或 ID")
+        return value
+
+
 class Envelope(Content):
     schema_version: Literal["kolvex-brief/1.0"]
     brief: Brief
+    language: Literal["zh", "en"] = "zh"
+    translations: dict[Literal["zh", "en"], LocalizedBrief] = Field(default_factory=dict)
     sections: list[Section] = Field(min_length=1, max_length=50)
     disclaimer: str = ""
+
+    @model_validator(mode="after")
+    def distinct_languages(self):
+        if self.language in self.translations:
+            raise ValueError("translations 仅填写另一种语言，原文由 language 标识")
+        return self
 
     @model_validator(mode="before")
     @classmethod
@@ -178,12 +209,12 @@ def list_saved_briefs(db, page: int, brief_type: str | None = None, brief_date: 
 
 
 def read_saved_brief(db, brief_id: str):
-    result = db.table("daily_briefs").select("payload").eq("id", brief_id).limit(1).execute()
+    result = db.table("daily_briefs").select("payload,revision").eq("id", brief_id).limit(1).execute()
     if not result.data:
         raise LookupError("Brief not found")
     # Revalidate stored documents so legacy formatted numbers and new defaults
     # are handled identically in the admin preview and the reader.
-    return {"payload": Envelope.model_validate(result.data[0]["payload"]).model_dump(mode="json")}
+    return {"payload": Envelope.model_validate(result.data[0]["payload"]).model_dump(mode="json"), "revision": str(result.data[0].get("revision", 1))}
 
 
 def list_brief_calendar(db, month: str):

@@ -1,13 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { Languages, Loader2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { useBriefTranslation } from "./useBriefTranslation";
 import ReactMarkdown from "react-markdown";
 import ImageContent from "./BriefImage";
 import { useTranslation } from "@/lib/i18n";
-import type { BriefSection, DailyBrief } from "@/lib/dailyBriefs";
+import { localizedBrief, type BriefSection, type DailyBrief } from "@/lib/dailyBriefs";
 
 function Markdown({ children }: { children: string }) {
   return <div className="space-y-3 break-words text-[15px] leading-7 [&_a]:underline [&_ul]:list-inside [&_ul]:list-disc"><ReactMarkdown skipHtml allowedElements={["p", "strong", "em", "ul", "ol", "li", "br", "a", "blockquote"]} components={{ a: ({ children, href }) => <a href={href} target="_blank" rel="noopener noreferrer" className="underline">{children}</a> }}>{children}</ReactMarkdown></div>;
@@ -46,22 +43,11 @@ function SectionBody({ section }: { section: BriefSection }) {
   </div>;
 }
 export default function BriefContent({ document: original }: { document: DailyBrief }) {
-  const { t, locale, setLocale } = useTranslation();
-  const translation = useBriefTranslation(original, locale);
-  const document = translation.document;
+  const { t, locale } = useTranslation();
+  const document = localizedBrief(original, locale);
   const { brief } = document;
-  return <article lang={translation.displayLanguage === "zh" ? "zh-CN" : "en"} aria-busy={translation.pending} className="mx-auto max-w-[1080px] space-y-10 break-words">
+  return <article lang={(document.language ?? "zh") === "zh" ? "zh-CN" : "en"} className="mx-auto max-w-[1080px] space-y-10 break-words">
     <header className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div role="group" aria-label={t("briefs.languageLabel")} className="flex items-center gap-2">
-          <Languages className="mr-1 h-4 w-4 text-muted-foreground" aria-hidden="true" />
-          {([ ["zh", "中文"], ["en", "English"] ] as const).map(([language, label]) => <Button key={language} type="button" size="sm" variant={locale === language ? "default" : "outline"} aria-pressed={locale === language} onClick={() => setLocale(language)}>{label}</Button>)}
-        </div>
-        <div className="min-h-5 text-xs text-muted-foreground" role="status" aria-live="polite">
-          {translation.pending ? <span className="flex items-center gap-2"><Loader2 className="h-3.5 w-3.5 animate-spin motion-reduce:animate-none" aria-hidden="true" />{t("briefs.translating")}</span> : null}
-        </div>
-      </div>
-      {translation.error && <div role="alert" className="flex flex-wrap items-center gap-3 rounded-xl border border-border p-3 text-sm"><p>{t("briefs.translationError")}</p><Button type="button" size="sm" variant="outline" onClick={translation.retry}>{t("common.retry")}</Button></div>}
       {brief.hero_image && <ImageContent key={brief.hero_image.url} image={brief.hero_image} />}
       <div className="flex flex-wrap gap-2 text-xs text-muted-foreground"><span>{brief.date}</span><span>{t(brief.market_status === "weekend" ? "briefs.weekend" : "briefs.tradingDay")}</span><span>{t(`briefs.${brief.type}`)}</span></div>
       <p className="text-sm font-medium">{brief.title}</p><h1 className="text-2xl font-semibold leading-tight sm:text-[32px]">{brief.headline}</h1><p className="text-sm leading-6 text-muted-foreground">{brief.subtitle}</p>

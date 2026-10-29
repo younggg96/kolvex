@@ -1,0 +1,39 @@
+{
+  "schema_version": "kolvex-brief/1.0",
+  "language": "zh",
+  "brief": {
+    "id": "intraday-2026-10-29",
+    "type": "intraday",
+    "date": "2026-10-29",
+    "title": "美股盘中日报",
+    "headline": "盘中市场动态",
+    "subtitle": "格式示例，不含真实行情",
+    "generated_at_pt": "2026-10-29T10:00:00-07:00",
+    "market_status": "trading_day"
+  },
+  "sections": [
+    {
+      "section_id": "intraday",
+      "order": 1,
+      "title": "盘中概览",
+      "narrative": "这里填写中文正文。"
+    }
+  ],
+  "disclaimer": "仅供参考，不构成投资建议。",
+  "translations": {
+    "en": {
+      "title": "US market intraday brief",
+      "headline": "Intraday market update",
+      "subtitle": "Format example; no live market data",
+      "sections": [
+        {
+          "section_id": "intraday",
+          "order": 1,
+          "title": "Intraday overview",
+          "narrative": "Place your uploaded English content here."
+        }
+      ],
+      "disclaimer": "For information only. Not investment advice."
+    }
+  }
+}

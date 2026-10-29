@@ -17,8 +17,12 @@ async function forward(request: NextRequest) {
       path += params.has("id") ? `/${encodeURIComponent(params.get("id")!)}` : `?page=${encodeURIComponent(params.get("page") || "1")}`;
     }
     if (method === "GET" && !params.has("id") && params.has("type")) path += `&type=${encodeURIComponent(params.get("type")!)}`;
+    if (method === "PUT" || method === "DELETE") {
+      if (!params.get("id")) return NextResponse.json({ error: "缺少简报 ID。" }, { status: 400 });
+      path += `/${encodeURIComponent(params.get("id")!)}`;
+    }
     let body: string | undefined;
-    if (method === "POST") {
+    if (method === "POST" || method === "PUT") {
       const chunks: Uint8Array[] = [];
       let size = 0;
       const reader = request.body?.getReader();
@@ -36,7 +40,7 @@ async function forward(request: NextRequest) {
       body = Buffer.concat(chunks).toString("utf8");
     }
     const response = await fetch(`${API}${path}`, {
-      method, headers: { Authorization: `Bearer ${session.access_token}`, "Content-Type": "application/json" },
+      method, headers: { Authorization: `Bearer ${session.access_token}`, "Content-Type": "application/json", ...(request.headers.has("If-Match") ? { "If-Match": request.headers.get("If-Match")! } : {}) },
       body, cache: "no-store", signal: AbortSignal.timeout(25000),
     });
     const data = await response.json();
@@ -48,3 +52,6 @@ async function forward(request: NextRequest) {
 }
 export const GET = forward;
 export const POST = forward;
+
+export const PUT = forward;
+export const DELETE = forward;

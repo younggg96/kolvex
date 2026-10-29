@@ -6,17 +6,17 @@ import { Button } from "@/components/ui/button";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import HeaderBackButton from "@/components/layout/HeaderBackButton";
 import { useTranslation } from "@/lib/i18n";
-import { briefFilters, briefLibraryHref, type BriefSearchParams, type DailyBrief } from "@/lib/dailyBriefs";
+import { localizedBrief, briefFilters, briefLibraryHref, type BriefSearchParams, type DailyBrief } from "@/lib/dailyBriefs";
 import BriefContent from "./BriefContent";
 import BriefState from "./BriefState";
 import { useBriefData } from "./useBriefData";
 
 export default function BriefReader({ id, searchParams }: { id: string; searchParams?: BriefSearchParams }) {
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
   const { type, page, date } = briefFilters(searchParams);
   const back = briefLibraryHref(type, page, date);
   const { data, loading, error, retry } = useBriefData<{ payload: DailyBrief }>(`?id=${encodeURIComponent(id)}`);
-  useEffect(() => { document.title = `${data?.payload.brief.headline || t("briefs.title")} | Kolvex`; }, [data, t]);
+  useEffect(() => { document.title = `${(data ? localizedBrief(data.payload, locale).brief.headline : t("briefs.title"))} | Kolvex`; }, [data, locale, t]);
   return <DashboardLayout title={t("briefs.title")} headerLeftAction={<HeaderBackButton href={back} label={t("briefs.back")} />}>
     <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-10 pt-6 md:px-8 md:pt-8">
       <div className="mx-auto max-w-[1080px]">

@@ -1000,16 +1000,33 @@ idempotent retries, and the shared reader-cache invalidation. No new theme token
 
 ### Brief content language
 
-`BriefContent`, shared by the daily reader, durable article and admin preview,
-places visible 中文 / English shared Buttons at the top, with an accessible group
-label and pressed state. They use the existing persisted application locale.
-The article translates editorial copy to that locale through the existing
-`translateText` API. Its source remains immutable; admin saves the original JSON.
-IDs, ticker symbols, timestamps, numeric values, statistic values, URLs and source
-attribution stay unchanged. Switching back to the detected source language renders
-the original immediately. Translation is limited to four parallel requests,
-deduplicates repeated copy and caches by exact text/target language within the
-mounted article. A new source resets that cache. Locale/source changes cancel old
-work; stale work cannot replace the current edition. Pending and failed work keep
-the complete original readable, with a status or inline retry. Articles expose
-the language actually displayed with `lang`; controls remain usable while pending.
+Daily Briefs displays administrator-uploaded Chinese/English content according to
+the existing saved user language preference. There is no article language control
+and no automatic translation or translation API request. `localizedBrief` selects
+the uploaded `translations[locale]` without modifying the stored envelope.
+`language` identifies the base content (legacy default: zh); translations supplies
+only the other language's title, headline, subtitle, full sections and disclaimer.
+Date, type, ID and generation time are shared. Hero images fall back to the source
+image when the localized copy has none. Missing languages show the original.
+`BriefContent` owns this rule for the reader and admin preview; page titles use
+the same selection. Backend validates nested sections and URLs; translations
+cannot override identity. Admin saves both languages in the existing JSONB payload.
+
+### Admin daily brief CRUD
+
+The Daily Briefs admin tab is labelled 日报管理. It reuses shared Button, Select,
+Textarea and Dialog. The existing importer is the create/edit form; list rows
+have explicit View, Edit and Delete actions. View opens a read-only Dialog and
+does not overwrite a draft. Edit loads the full original bilingual JSON into the
+editor. Existing IDs, dates and edition types cannot be changed by an edit.
+Validation gates each save. A discard Dialog protects unsaved content when
+resetting, replacing a file or opening another record; page unload uses the narrow
+beforeunload mechanism. Save preserves entered JSON on failure.
+
+Delete uses the shared modal Dialog, initially focusing Cancel, naming the issue
+and warning that both languages are permanently removed. Failure remains in the
+dialog with retry; success focuses the list heading and clamps pagination.
+Admin GET detail supplies a revision token; PUT/DELETE require If-Match and
+compare that revision atomically in the database. A stale edit/delete returns 409.
+Successful create/edit/delete invalidates the shared reader and calendar cache.
+Browser database access remains denied; verify_admin owns all write operations.

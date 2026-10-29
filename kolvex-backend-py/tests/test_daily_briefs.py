@@ -42,6 +42,29 @@ class SchemaTests(unittest.TestCase):
                 self.assertEqual(actual[key], value)
         self.assertEqual(Envelope.model_validate(parsed).model_dump(mode="json"), parsed)
 
+    def test_uploaded_bilingual_content_is_validated_and_preserved(self):
+        value = sample()
+        value["language"] = "zh"
+        value["translations"] = {"en": {"title": "Evening brief", "headline": "Market recap", "sections": [{"section_id": "outlook", "order": 2, "title": "Outlook", "narrative": "Uploaded English copy"}, {"section_id": "market_recap", "order": 1, "title": "Recap"}], "disclaimer": "Information only"}}
+        parsed = Envelope.model_validate(value).model_dump(mode="json")
+        self.assertEqual(parsed["brief"]["id"], value["brief"]["id"])
+        self.assertEqual(parsed["translations"]["en"]["headline"], "Market recap")
+        self.assertEqual(parsed["translations"]["en"]["sections"][0]["order"], 1)
+        self.assertEqual(parsed["sections"][0]["title"], "复盘")
+        for patch in [{"sections": []}, {"id": "override"}, {"sections": [{"section_id": "x", "order": 1, "title": "one"}, {"section_id": "x", "order": 2, "title": "two"}]}, {"hero_image": {"url": "javascript:bad", "caption": "x", "credit": "x", "source_page": "https://example.com"}}, {"accounts": []}]:
+            invalid = copy.deepcopy(value)
+            invalid["translations"]["en"].update(patch)
+            with self.subTest(patch=patch), self.assertRaises(ValidationError):
+                Envelope.model_validate(invalid)
+        for language in ["zh", "fr"]:
+            invalid = copy.deepcopy(value)
+            invalid["translations"] = {language: value["translations"]["en"]}
+            with self.assertRaises(ValidationError):
+                Envelope.model_validate(invalid)
+        value["language"] = "en"
+        value["translations"] = {"zh": value["translations"]["en"]}
+        self.assertEqual(Envelope.model_validate(value).language, "en")
+
     def test_formatted_index_values(self):
         for supplied, expected in [("52,002.41", 52002.41), ("+0.67%", 0.67), ("-11.41%", -11.41), ("0%", 0), (None, None), (4.5, 4.5)]:
             self.assertEqual(Index(name="test", change_pct=supplied).change_pct, expected)
@@ -109,6 +132,73 @@ class RoutesTests(unittest.TestCase):
                 self.assertEqual(self.client.post(path, json=sample()).status_code, expected)
         self.db.table.return_value.insert.assert_not_called()
 
+    def test_update_and_delete_are_admin_only(self):
+        for admin, expected in [(None, 401), (False, 403)]:
+            if admin is not None:
+                self.login(admin)
+            for method in ["put", "delete"]:
+                response = getattr(self.client, method)("/briefs/evening-2026-10-17", headers={"If-Match": "test"}, **({"json": sample()} if method == "put" else {}))
+                self.assertEqual(response.status_code, expected)
+        self.db.table.return_value.update.assert_not_called()
+        self.db.table.return_value.delete.assert_not_called()
+
+    def test_update_bilingual_copy_and_atomic_version_guard(self):
+        self.login()
+        original = Envelope.model_validate(sample()).model_dump(mode="json")
+        query = self.db.table.return_value
+        query.select.return_value.eq.return_value.limit.return_value.execute.return_value.data = [{"payload": original}]
+        changed = copy.deepcopy(original)
+        changed["brief"]["headline"] = "Updated headline"
+        changed["translations"] = {"en": {"title": "Brief", "headline": "Uploaded English", "sections": [{"section_id": "outlook", "order": 1, "title": "Outlook"}]}}
+        query.update.return_value.eq.return_value.eq.return_value.execute.return_value.data = [{"id": original["brief"]["id"]}]
+        headers = {"If-Match": "1"}
+        response = self.client.put("/briefs/evening-2026-10-17", headers=headers, json=changed)
+        self.assertEqual(response.status_code, 200)
+        written = query.update.call_args.args[0]
+        self.assertEqual(written["headline"], "Updated headline")
+        self.assertEqual(written["payload"]["translations"]["en"]["headline"], "Uploaded English")
+        self.assertEqual(response.json()["revision"], "2")
+        self.assertEqual(query.update.return_value.eq.return_value.eq.call_args.args[0], "revision")
+        self.assertEqual(query.update.return_value.eq.return_value.eq.call_args.args[1], 1)
+        # A write that loses the race after the initial read also fails.
+        query.update.return_value.eq.return_value.eq.return_value.execute.return_value.data = []
+        self.assertEqual(self.client.put("/briefs/evening-2026-10-17", headers=headers, json=changed).status_code, 409)
+
+    def test_update_rejects_stale_missing_identity_and_invalid_payload(self):
+        self.login()
+        original = Envelope.model_validate(sample()).model_dump(mode="json")
+        query = self.db.table.return_value
+        lookup = query.select.return_value.eq.return_value.limit.return_value.execute
+        lookup.return_value.data = [{"payload": original}]
+        url = "/briefs/evening-2026-10-17"
+        self.assertEqual(self.client.put(url, json=sample()).status_code, 422)
+        self.assertEqual(self.client.put(url, headers={"If-Match": "stale"}, json=sample()).status_code, 409)
+        changed = sample(); changed["brief"].update(id="morning-2026-10-17", type="morning")
+        self.assertEqual(self.client.put(url, headers={"If-Match": "test"}, json=changed).status_code, 422)
+        self.assertEqual(self.client.put(url, headers={"If-Match": "test"}, content="{").status_code, 422)
+        lookup.return_value.data = []
+        self.assertEqual(self.client.put(url, headers={"If-Match": "test"}, json=sample()).status_code, 404)
+        query.update.assert_not_called()
+
+    def test_delete_and_stale_delete(self):
+        self.login()
+        original = Envelope.model_validate(sample()).model_dump(mode="json")
+        query = self.db.table.return_value
+        lookup = query.select.return_value.eq.return_value.limit.return_value.execute
+        lookup.return_value.data = [{"payload": original}]
+        url = "/briefs/evening-2026-10-17"
+        self.assertEqual(self.client.delete(url).status_code, 422)
+        self.assertEqual(self.client.delete(url, headers={"If-Match": "stale"}).status_code, 409)
+        query.delete.assert_not_called()
+        query.delete.return_value.eq.return_value.eq.return_value.execute.return_value.data = [{"id": original["brief"]["id"]}]
+        headers = {"If-Match": "1"}
+        self.assertTrue(self.client.delete(url, headers=headers).json()["deleted"])
+        self.assertEqual(query.delete.return_value.eq.return_value.eq.call_args.args[1], 1)
+        query.delete.return_value.eq.return_value.eq.return_value.execute.return_value.data = []
+        self.assertEqual(self.client.delete(url, headers=headers).status_code, 409)
+        lookup.return_value.data = []
+        self.assertEqual(self.client.delete(url, headers=headers).status_code, 404)
+
     def test_validate_does_not_save_and_errors_do_not_save(self):
         self.login()
         response = self.client.post("/briefs/validate", json=sample())
@@ -137,6 +227,22 @@ class RoutesTests(unittest.TestCase):
         self.assertEqual(self.client.get("/briefs?type=intraday").status_code, 200)
         self.db.table.return_value.select.return_value.eq.assert_called_with("brief_type", "intraday")
         self.assertEqual(self.client.get("/briefs?type=invalid").status_code, 422)
+
+    def test_bilingual_save_and_legacy_retry(self):
+        self.login()
+        value = sample()
+        value["language"] = "zh"
+        value["translations"] = {"en": {"title": "Brief", "headline": "Recap", "sections": [{"section_id": "outlook", "order": 1, "title": "Outlook"}]}}
+        self.assertEqual(self.client.post("/briefs", json=value).status_code, 200)
+        saved = self.db.table.return_value.insert.call_args.args[0]
+        self.assertEqual(saved["payload"]["translations"]["en"]["headline"], "Recap")
+        self.db.table.return_value.insert.return_value.execute.side_effect = APIError({"code": "23505", "message": "duplicate", "details": "", "hint": ""})
+        legacy = Envelope.model_validate(sample()).model_dump(mode="json")
+        del legacy["language"]
+        del legacy["translations"]
+        lookup = self.db.table.return_value.select.return_value.eq.return_value.single.return_value.execute
+        lookup.side_effect = [Mock(data={"is_admin": True}), Mock(data={"payload": legacy})]
+        self.assertTrue(self.client.post("/briefs", json=sample()).json()["already_exists"])
 
     def test_save_identical_retry_and_conflict(self):
         self.login()

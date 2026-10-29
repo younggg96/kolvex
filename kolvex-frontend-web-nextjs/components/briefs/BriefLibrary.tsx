@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useTranslation } from "@/lib/i18n";
-import { BRIEF_TYPES, isBriefType, briefLibraryHref, briefReadingFilters, formatBriefDate, shiftBriefDate, type BriefSearchParams, type DailyBrief } from "@/lib/dailyBriefs";
+import { localizedBrief, BRIEF_TYPES, isBriefType, briefLibraryHref, briefReadingFilters, formatBriefDate, shiftBriefDate, type BriefSearchParams, type DailyBrief } from "@/lib/dailyBriefs";
 import BriefCalendar from "./BriefCalendar";
 import BriefContent from "./BriefContent";
 import BriefState from "./BriefState";
@@ -21,7 +21,7 @@ export default function BriefLibrary({ searchParams }: { searchParams?: BriefSea
   const [calendarOpen, setCalendarOpen] = useState(false);
   const { type, date, id } = briefReadingFilters(searchParams);
   const { data, loading, error, retry } = useBriefData<{ payload: DailyBrief }>(`?id=${encodeURIComponent(id)}`);
-  useEffect(() => { document.title = `${data?.payload.brief.headline || t("briefs.title")} | Kolvex`; }, [data, t]);
+  useEffect(() => { document.title = `${(data ? localizedBrief(data.payload, locale).brief.headline : t("briefs.title"))} | Kolvex`; }, [data, locale, t]);
 
   return <DashboardLayout title={t("briefs.title")}>
     <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-10 pt-6 md:px-8 md:pt-8">

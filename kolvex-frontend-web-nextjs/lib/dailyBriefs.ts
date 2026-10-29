@@ -25,18 +25,44 @@ export function isBriefType(value?: string): value is BriefType {
   return BRIEF_TYPES.some(type => type === value);
 }
 
+export type BriefLanguage = "zh" | "en";
+export interface LocalizedBrief {
+  title: string;
+  headline: string;
+  subtitle?: string;
+  sections: BriefSection[];
+  disclaimer?: string;
+  hero_image?: BriefImage | null;
+}
 export interface DailyBrief {
   schema_version: "kolvex-brief/1.0";
+  language?: BriefLanguage;
+  translations?: Partial<Record<BriefLanguage, LocalizedBrief>>;
   brief: { id: string; type: BriefType; date: string; title: string; headline: string; subtitle: string; generated_at_pt: string; market_status: "trading_day" | "weekend"; hero_image?: BriefImage | null };
   sections: BriefSection[];
   disclaimer?: string;
 }
+/** Display uploaded copy only; never translate or mutate the stored envelope. */
+export function localizedBrief(document: DailyBrief, locale: BriefLanguage): DailyBrief {
+  const language = document.language ?? "zh";
+  const copy = locale !== language ? document.translations?.[locale] : undefined;
+  if (!copy) return document;
+  return {
+    ...document,
+    language: locale,
+    brief: { ...document.brief, title: copy.title, headline: copy.headline,
+      subtitle: copy.subtitle ?? "", hero_image: copy.hero_image ?? document.brief.hero_image },
+    sections: copy.sections,
+    disclaimer: copy.disclaimer ?? "",
+  };
+}
+
 export interface SavedBrief { id: string; brief_date: string; brief_type: BriefType; title: string; headline: string }
 
-export async function briefRequest<T>(query = "", body?: string, signal?: AbortSignal): Promise<T> {
+export async function briefRequest<T>(query = "", body?: string, signal?: AbortSignal, mutation?: { method: "PUT" | "DELETE"; revision: string }): Promise<T> {
   const response = await fetch(`/api/admin/briefs${query}`, {
-    method: body === undefined ? "GET" : "POST",
-    headers: body === undefined ? undefined : { "Content-Type": "application/json" },
+    method: mutation?.method ?? (body === undefined ? "GET" : "POST"),
+    headers: { ...(body === undefined ? {} : { "Content-Type": "application/json" }), ...(mutation ? { "If-Match": mutation.revision } : {}) },
     body, signal: signal ?? AbortSignal.timeout(30000),
   });
   const data = await response.json();

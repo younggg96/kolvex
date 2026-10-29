@@ -1694,9 +1694,6 @@
     "risk": "Risk"
   },
   "briefs": {
-    "languageLabel": "Brief language",
-    "translating": "Translating; showing the original…",
-    "translationError": "Translation could not finish. The original is shown. Please retry.",
     "title": "Daily Briefs",
     "description": "Trading plans before the open. Market recaps after the close.",
     "morning": "Pre-market 1h",

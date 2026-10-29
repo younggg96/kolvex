@@ -107,16 +107,57 @@ static audit reports only the same three existing settings/scrollbar findings.
 Browser verification could not run: local Next server listen failed with EPERM.
 Application code still needs deployment; the database migration is applied.
 
-## Chinese / English reading
+## Uploaded Chinese / English editions
 
-No JSON changes are required. The shared `BriefContent` renders explicit 中文 /
-English buttons that use the saved site language and translate editorial copy via
-the existing `/api/translate` service. Preview and saved reader share this behavior;
-translations are display-only, and saves still submit the original envelope.
-Identity, symbols, financial values, time/URL fields and source attribution are
-preserved. Source language is detected from the title/headline/subtitle. The full
-original stays readable while translating or on failure, with retry. Exact-copy
-translations are cached for the mounted source; four workers, cancellation and a
-90-second timeout bound a translation pass. Corrected sources cannot reuse stale
-translated copy. Run `node --test scripts/brief-translation.test.cjs` for coverage
-of copy selection, data preservation, concurrency, caching, retry and cancellation.
+The administrator uploads both languages in one envelope. The reader uses the
+existing saved user language preference. No article language button or translation
+request exists. The base content uses `language: "zh"` (legacy default) or `"en"`.
+`translations` contains only the other language, not an override of the base.
+
+For a Chinese original, keep the existing `brief`, `sections`, and `disclaimer`,
+then add `translations.en` with `title`, `headline`, optional `subtitle`, the full
+English `sections`, optional `disclaimer`, and optional `hero_image`. For an English
+original use `language: "en"` and `translations.zh` instead. All localized sections
+are validated with the same schema/order/unique-ID rules; unsafe URLs and forbidden
+account/portfolio fields are rejected in either language. Localized content cannot
+supply `brief`, `id`, `type`, `date`, `generated_at_pt` or `market_status`.
+
+Complete, valid import example: `docs/examples/bilingual-intraday-2026-10-29.json`.
+The same structure applies to morning and evening with matching shared IDs.
+Missing localized text renders the full base edition, never a partially mixed
+article. Shared hero images are reused when no localized image exists. Reader
+page titles and admin previews select content identically. The existing JSONB
+column stores both languages; no table migration is needed. POST keeps duplicate protection; use Admin Edit to update an existing edition or add the other language.
+Legacy identical retries compare normalized payloads so the new defaults do not
+cause false conflicts.
+
+## Admin CRUD (supersedes the original immutable-only workflow)
+
+- POST /api/v1/admin/briefs creates an issue; identical retries are idempotent.
+- GET /api/v1/admin/briefs/{id} returns the bilingual payload and revision token.
+- PUT /api/v1/admin/briefs/{id} replaces validated content with If-Match: <revision>.
+  ID/date/type remain fixed. Title/headline summary columns update with the JSON.
+- DELETE /api/v1/admin/briefs/{id} requires the same If-Match token and removes both
+  languages. The frontend always presents a destructive confirmation first.
+
+All writes use verify_admin, including direct API calls. Ordinary readers cannot
+modify content. Updates increment the bigint revision; update/delete filter the
+same revision in a single statement, returning 409 on stale edits or a lost race,
+404 on missing records, and 422 on invalid JSON or identity changes. The revision
+filter stays short even for 2 MB payloads. Browser roles remain denied by grants
+and RLS; backend service_role has UPDATE/DELETE privileges.
+
+The frontend proxy forwards PUT/DELETE and If-Match. List actions offer view in a
+read-only modal, edit in the JSON form, and delete in a confirmation modal. Drafts
+require explicit discard before replacement, resets or opening another edit.
+Successful mutations invalidate the reader/calendar cache and refresh the list;
+deleting the last item on a page clamps it to a valid page. Existing records and
+legacy bilingual compatibility remain intact. Migrations:
+20261029075924_daily_briefs_admin_crud_grants.sql and
+20261029075951_daily_briefs_content_revision.sql.
+
+CRUD verification: 24 backend tests and 9 Node tests passed; TypeScript, lint
+and production build passed. Static premium audit retains three existing
+settings/global-scrollbar findings. Database migrations are applied and permissions
+were read back; real browser CRUD verification has not been completed because
+the local server port is blocked by environment permissions. App deployment is pending.
