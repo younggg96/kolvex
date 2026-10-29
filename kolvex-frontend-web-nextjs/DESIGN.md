@@ -997,3 +997,19 @@ The admin importer uses the shared Select for edition selection and list filteri
 Auto uses the JSON edition; an explicit selection must match the validated JSON.
 Changing edition invalidates preview/save state. Saving preserves immutable IDs,
 idempotent retries, and the shared reader-cache invalidation. No new theme tokens.
+
+### Brief content language
+
+`BriefContent`, shared by the daily reader, durable article and admin preview,
+places visible 中文 / English shared Buttons at the top, with an accessible group
+label and pressed state. They use the existing persisted application locale.
+The article translates editorial copy to that locale through the existing
+`translateText` API. Its source remains immutable; admin saves the original JSON.
+IDs, ticker symbols, timestamps, numeric values, statistic values, URLs and source
+attribution stay unchanged. Switching back to the detected source language renders
+the original immediately. Translation is limited to four parallel requests,
+deduplicates repeated copy and caches by exact text/target language within the
+mounted article. A new source resets that cache. Locale/source changes cancel old
+work; stale work cannot replace the current edition. Pending and failed work keep
+the complete original readable, with a status or inline retry. Articles expose
+the language actually displayed with `lang`; controls remain usable while pending.

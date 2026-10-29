@@ -106,3 +106,17 @@ production build passed. Remote constraint was read back successfully. Premium
 static audit reports only the same three existing settings/scrollbar findings.
 Browser verification could not run: local Next server listen failed with EPERM.
 Application code still needs deployment; the database migration is applied.
+
+## Chinese / English reading
+
+No JSON changes are required. The shared `BriefContent` renders explicit 中文 /
+English buttons that use the saved site language and translate editorial copy via
+the existing `/api/translate` service. Preview and saved reader share this behavior;
+translations are display-only, and saves still submit the original envelope.
+Identity, symbols, financial values, time/URL fields and source attribution are
+preserved. Source language is detected from the title/headline/subtitle. The full
+original stays readable while translating or on failure, with retry. Exact-copy
+translations are cached for the mounted source; four workers, cancellation and a
+90-second timeout bound a translation pass. Corrected sources cannot reuse stale
+translated copy. Run `node --test scripts/brief-translation.test.cjs` for coverage
+of copy selection, data preservation, concurrency, caching, retry and cancellation.

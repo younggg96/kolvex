@@ -1694,6 +1694,9 @@
     "risk": "风险"
   },
   "briefs": {
+    "languageLabel": "日报语言",
+    "translating": "正在翻译，暂时显示原文…",
+    "translationError": "翻译未完成，已保留原文。请重试。",
     "title": "日报",
     "description": "盘前 1 小时看计划，盘中跟踪动态，盘后 1 小时读复盘。",
     "morning": "盘前 1 小时",
