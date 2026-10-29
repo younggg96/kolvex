@@ -55,7 +55,7 @@ const sideOf = (opinion: YouTubeOpinion): Side =>
       ? "bearish"
       : "neutral";
 
-export default function StockWorkspace({ ticker }: { ticker: string }) {
+export default function StockWorkspace({ ticker, returnHref = "/dashboard", initialInsight }: { ticker: string; returnHref?: string; initialInsight?: "creators" }) {
   const c = useCopy();
   const benchmark = BENCHMARKS.find((item) => item.symbol === ticker);
   const priceLabel = (value: number | undefined) =>
@@ -217,7 +217,7 @@ export default function StockWorkspace({ ticker }: { ticker: string }) {
             >
               <div className="flex items-center gap-3">
                 <HeaderBackButton
-                  href="/dashboard"
+                  href={returnHref}
                   label={c("Back to Markets", "返回行情")}
                 />
                 <CompanyLogo symbol={ticker} size="md" />
@@ -305,8 +305,8 @@ export default function StockWorkspace({ ticker }: { ticker: string }) {
               </div>
             </section>
 
-            <section className="min-w-0 rounded-xl border border-border bg-card p-4 sm:p-5" aria-label={c("Stock insights", "个股洞察")}>
-              <Tabs key={`insights-${ticker}`} defaultValue="summary">
+            <section id="stock-insights" className="min-w-0 scroll-mt-4 rounded-xl border border-border bg-card p-4 sm:p-5" aria-label={c("Stock insights", "个股洞察")}>
+              <Tabs key={`insights-${ticker}-${initialInsight ?? "summary"}`} defaultValue={initialInsight ?? "summary"}>
                 <TabsList className="sticky top-0 z-10 grid grid-cols-3 gap-2 overflow-visible bg-card sm:flex sm:flex-wrap sm:gap-8" aria-label={c("Stock insights", "个股洞察")}>
                   <TabsTrigger value="summary">{c("Summary", "变化摘要")}</TabsTrigger>
                   <TabsTrigger value="technical">{c("Technicals", "技术分析")}</TabsTrigger>

@@ -12,6 +12,39 @@ Kolvex presents creator opinions, market data, AI analysis and linked holdings f
 
 Markets, Creator Opinions, AI Research and Updates do not show personal thesis prompts. Markets offers an optional ticker lookup for direct stock navigation. Ask Kolvex opens from the sidebar, header, or ⌘K. The question is sent as written. Opinions, quotes, and holdings already loaded on the page go to the model as evidence and appear in the composer as a removable label; they are not written into the conversation. Settings, authentication, brokerage linking and admin publishing remain operational controls rather than information-entry requirements for reading research. Existing chat URLs remain accessible.
 
+## Markets stock observation
+
+`StockObservationList` replaces the fixed eight-stock Popular section with a
+maintained 25-company cross-sector list and Creator activity. Core sectors and
+the allowed sort modes are owned by `lib/stockDiscovery.ts`. Both modes rank
+within their declared scope. Holdings remains behind its existing feature flag.
+Creator activity defaults to positive opinion counts in the current seven-day
+New York calendar window. Counts describe opinion records, not distinct creators.
+Latest opinion includes history and uses source publication time or opinion date,
+never the imported `latest_opinion_at` fallback; invalid/future dates and symbols
+unsupported by stock detail routes are excluded. No disagreement ranking or
+individual creator reversal is inferred from average scores.
+
+The initial list has ten rows and explicit Load more. Sector changes, scope changes
+and sorting reset that count. `stocks`, `sector`, `stockSort`, and `stockRows`
+preserve list state in the URL while retaining unrelated market query parameters.
+The browser remembers only scope/sector/sort for a new visit. Quote batches finish
+before committing their sorted snapshot; recent/latest discovery requests quotes
+only for displayed rows, while price ranking needs the entire selected universe.
+Missing prices stay unavailable and quote retry retains usable cached prices.
+Creator errors, a confirmed empty recent window, and missing source dates have
+distinct feedback and recovery. Cold source loads use the existing skeletons.
+
+Stock identity and its creator evidence are sibling links. Both carry an internal
+market-list `from` URL. The latter adds `insight=creators#stock-insights` to open
+the existing stock-page insight tab; the back control retains the originating
+filters. Session-scoped main-scroll restoration preserves the position and loaded
+row count after returning. No login, authorization, or database policy changes.
+Verification: `node --test scripts/stock-discovery.test.cjs
+scripts/market-index-routes.test.cjs scripts/market-quotes.test.cjs
+scripts/loading-states.test.cjs scripts/decision-regressions.test.cjs
+scripts/opinion-dates.test.cjs`.
+
 ## Stock-page creator intelligence
 
 `StockWorkspace` delegates 博主情报 / Creator Intelligence to

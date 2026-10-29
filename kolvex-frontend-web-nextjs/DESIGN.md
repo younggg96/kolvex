@@ -165,6 +165,18 @@ and report metadata. Route navigation uses an underline and otherwise stays flat
 
 ## Components
 
+Markets' stock observation list uses the existing flat rows, pill Buttons and
+Radix Selects. Core US stocks and Creator activity select the stock universe;
+sector and sorting controls follow those scope buttons, with visible labels.
+Rows show identity and signed daily price change at every width. A separate
+source-dated creator link sits below the identity on phone and desktop, rather
+than hiding creator evidence on phones. Below 400px the decorative sparkline
+yields space to identity, price and evidence. Use ten-row Load more increments,
+explicit loading/error/empty states, and the existing semantic theme tokens.
+Market list state belongs to URL query parameters; local storage remembers the
+last scope/filter/sort. Details retain a validated market return link and creator
+links open the existing Creator Intelligence insight panel.
+
 Creator stock directory rows retain the flat separators and existing semantic
 colors. `StockDirectoryRow` defaults to a compact overview: stock identity,
 latest price, today's move, historical consensus and evidence count, followed by
