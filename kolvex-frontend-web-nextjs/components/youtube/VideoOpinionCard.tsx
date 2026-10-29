@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
+import Link from "next/link";
 import { ChevronDown, PlayCircle } from "lucide-react";
 import CompanyLogo from "@/components/ui/company-logo";
 import { cn, proxyImageUrl } from "@/lib/utils";
@@ -8,20 +9,14 @@ import type { OpinionSentiment } from "@/lib/youtubeOpinionsApi";
 import OpinionStrength from "./OpinionStrength";
 import { formatOpinionDate } from "@/lib/opinionDates";
 import type { VideoOpinionGroup } from "@/lib/youtubeVideoHistory";
+import CreatorAvatar from "./CreatorAvatar";
 
-const collapsedRows = 3;
 const tallyOrder: Array<{ sentiment: OpinionSentiment; className: string }> = [
   { sentiment: "bullish", className: "text-positive" },
   { sentiment: "bearish", className: "text-negative" },
   { sentiment: "neutral", className: "text-muted-foreground" },
   { sentiment: "mixed", className: "text-warning" },
 ];
-
-/** First clause only. Full titles are long ticker lists; the link still carries the original. */
-function shortTitle(title: string) {
-  const clause = title.split(/[？?！!。｜|]/)[0]?.trim();
-  return clause && clause.length >= 4 ? clause : title;
-}
 
 function thumbnailFor(opinion: VideoOpinionGroup["video"]) {
   const url =
@@ -63,15 +58,22 @@ export default function VideoOpinionCard({
   group,
   t,
   onStock,
+  showCreator = false,
+  compact = false,
 }: {
   group: VideoOpinionGroup;
   t: (key: string, params?: Record<string, string>) => string;
   onStock?: (ticker: string) => void;
+  showCreator?: boolean;
+  compact?: boolean;
 }) {
   const [expanded, setExpanded] = useState(false);
+  const opinionsId = useId();
   const video = group.video;
   const title = video.video_title || t("youtubeOpinions.untitledVideo");
-  const published = video.opinion_date || video.video_published_at || undefined;
+  const published = video.video_published_at || video.opinion_date || undefined;
+  const creator = group.opinions[0];
+  const collapsedRows = compact ? 2 : 3;
   const opinions = [...group.opinions].sort(
     (a, b) => Math.abs(b.direction_score) - Math.abs(a.direction_score),
   );
@@ -85,15 +87,24 @@ export default function VideoOpinionCard({
     .filter((item) => item.count > 0);
 
   const heading = (
-    <span className="line-clamp-1 text-base font-semibold leading-6 tracking-[-0.01em]">
-      {shortTitle(title)}
+    <span className="line-clamp-2 text-base font-semibold leading-6 tracking-[-0.01em]">
+      {title}
     </span>
   );
 
   return (
     <article className="min-w-0 border-b border-border py-7 [overflow-wrap:anywhere] first:pt-4 last:border-0">
+      {showCreator && creator && (
+        <Link
+          href={`/dashboard/youtube-opinions?tab=creators&creator=${encodeURIComponent(creator.channel_id)}`}
+          className="mb-3 flex w-fit max-w-full items-center gap-2 rounded-sm text-sm font-semibold hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+        >
+          <CreatorAvatar name={creator.channel_title || creator.channel_id} avatarUrl={creator.channel_avatar_url} size="xs" />
+          <span className="truncate">{creator.channel_title || creator.channel_id}</span>
+        </Link>
+      )}
       <header className="flex min-w-0 items-start gap-4 sm:gap-5">
-        {video.video_url ? (
+        {!compact && (video.video_url ? (
           <a
             href={video.video_url}
             target="_blank"
@@ -106,7 +117,7 @@ export default function VideoOpinionCard({
           </a>
         ) : (
           <Thumbnail src={thumbnailFor(video)} />
-        )}
+        ))}
         <div className="min-w-0 flex-1 sm:pt-0.5">
           {video.video_url ? (
             <a
@@ -129,7 +140,7 @@ export default function VideoOpinionCard({
             ) : (
               <span>{t("youtubeOpinions.untrackedVideo")}</span>
             )}
-            {tally.map((item) => (
+            {!compact && tally.map((item) => (
               <span key={item.sentiment} className={cn("font-semibold", item.className)}>
                 {t(`youtubeOpinions.${item.sentiment}`)} {item.count}
               </span>
@@ -138,7 +149,7 @@ export default function VideoOpinionCard({
         </div>
       </header>
 
-      {opinions.length > 0 && <ul className="mt-5 min-w-0">
+      {opinions.length > 0 && <ul id={opinionsId} className="mt-5 min-w-0">
         {shown.map((opinion) => {
           const confidence =
             opinion.confidence === null || opinion.confidence === undefined
@@ -150,24 +161,24 @@ export default function VideoOpinionCard({
               <button
                 type="button"
                 onClick={() => onStock?.(opinion.ticker)}
-                className="group grid w-full min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-1.5 py-3 text-left transition-colors duration-150 hover:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary sm:-mx-3 sm:w-[calc(100%+1.5rem)] sm:grid-cols-[7rem_7.5rem_minmax(0,1fr)_auto] sm:items-start sm:rounded-xl sm:px-3"
+                className={cn("group grid w-full min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-1.5 py-3 text-left transition-colors duration-150 hover:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary", !compact && "sm:-mx-3 sm:w-[calc(100%+1.5rem)] sm:grid-cols-[7rem_7.5rem_minmax(0,1fr)_auto] sm:items-start sm:rounded-xl sm:px-3")}
               >
-                <span className="flex min-w-0 items-center gap-2.5 sm:h-6">
+                <span className="flex min-w-0 items-center gap-2.5">
                   <CompanyLogo symbol={opinion.ticker} size="xs" />
                   <span className="truncate text-[15px] font-semibold">{opinion.ticker}</span>
-                  <OpinionStrength value={opinion.direction_score} className="ml-1 sm:hidden" />
+                  <OpinionStrength value={opinion.direction_score} className={cn("ml-1", !compact && "sm:hidden")} />
                 </span>
-                <span className="hidden h-6 items-center sm:flex">
+                <span className={cn("hidden h-6 items-center", !compact && "sm:flex")}>
                   <OpinionStrength value={opinion.direction_score} />
                 </span>
-                <span className="col-span-2 row-start-2 text-sm leading-6 text-muted-foreground transition-colors duration-150 group-hover:text-foreground sm:col-span-1 sm:col-start-3 sm:row-start-1">
+                <span className={cn("col-span-2 row-start-2 text-sm leading-6 text-muted-foreground transition-colors duration-150 group-hover:text-foreground", !compact && "sm:col-span-1 sm:col-start-3 sm:row-start-1", compact && !expanded && "line-clamp-2")}>
                   {opinion.sentiment === "mixed" && (
                     <span className="mr-1.5 font-semibold text-warning">{t("youtubeOpinions.mixed")}</span>
                   )}
                   {summary}
                 </span>
                 <span
-                  className="col-start-2 row-start-1 flex items-center justify-end text-xs text-muted-foreground tabular-nums sm:col-start-4 sm:h-6"
+                  className={cn("col-start-2 row-start-1 flex items-center justify-end text-xs text-muted-foreground tabular-nums", !compact && "sm:col-start-4 sm:h-6")}
                   title={t("youtubeOpinions.confidence")}
                 >
                   {confidence !== null && (
@@ -187,13 +198,11 @@ export default function VideoOpinionCard({
         <button
           type="button"
           aria-expanded={expanded}
+          aria-controls={opinionsId}
           onClick={() => setExpanded((value) => !value)}
           className="mt-2 inline-flex h-8 items-center gap-1.5 rounded-full px-3 text-[13px] font-semibold text-muted-foreground transition-colors duration-150 hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary sm:-ml-3"
         >
-          {expanded ? t("youtubeOpinions.showFewerStocks") : t("youtubeOpinions.showMoreStocks")}
-          {!expanded && (
-            <span className="font-medium tabular-nums text-muted-foreground">{hidden}</span>
-          )}
+          {expanded ? t("youtubeOpinions.collapseVideoOpinions") : t("youtubeOpinions.showRemainingVideoOpinions", { count: String(hidden) })}
           <ChevronDown
             className={cn("h-3.5 w-3.5 transition-transform duration-150", expanded && "rotate-180")}
           />

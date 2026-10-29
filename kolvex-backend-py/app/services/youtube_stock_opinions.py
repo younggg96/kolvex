@@ -497,11 +497,60 @@ class YouTubeStockOpinionService:
             "daily": self._build_daily_summaries(rows),
             "changes": self._build_daily_changes(rows),
             "latest": rows[offset:offset + limit],
+            "latest_videos": self._build_video_groups(rows, distinct_creators=True)[:5],
             "pagination": {"offset": offset, "limit": limit, "total": len(rows), "has_more": offset + limit < len(rows)},
             "filters": {
                 "tickers": sorted({row["ticker"] for row in rows if row.get("ticker")}),
                 "creators": self._creator_filter_options(rows),
             },
+        }
+
+    @staticmethod
+    def _build_video_groups(rows: List[Dict[str, Any]], distinct_creators: bool = False) -> List[Dict[str, Any]]:
+        """Group the complete result before paging so a video is never split."""
+        groups: Dict[str, Dict[str, Any]] = {}
+        for row in rows:
+            key = row.get("video_id") or row["id"]
+            if key not in groups:
+                groups[key] = {
+                    "videoId": key,
+                    "video": {field: row.get(field) for field in (
+                        "video_id", "video_title", "video_url", "thumbnail_url",
+                        "video_published_at", "opinion_date",
+                    )},
+                    "opinions": [],
+                }
+            groups[key]["opinions"].append({
+                **_public_opinion(row),
+                **{field: row.get(field) for field in PROFILE_FIELDS},
+            })
+
+        def publication(group):
+            video = group["video"]
+            return parse_youtube_time(video.get("video_published_at") or video.get("opinion_date")) or datetime.min.replace(tzinfo=timezone.utc)
+
+        ordered = sorted(groups.values(), key=lambda group: (publication(group), group["videoId"]), reverse=True)
+        if not distinct_creators:
+            return ordered
+        seen = set()
+        latest = []
+        for group in ordered:
+            creator = group["opinions"][0].get("channel_id") or group["videoId"]
+            if creator not in seen:
+                seen.add(creator)
+                latest.append(group)
+        return latest
+
+    async def get_video_feed(self, limit: int = 20, offset: int = 0) -> Dict[str, Any]:
+        rows = self._fetch_rows()
+        groups = self._build_video_groups(rows)
+        page = groups[offset:offset + limit]
+        # Enrich only the visible videos, rather than every historical channel.
+        visible = [opinion for group in page for opinion in group["opinions"]]
+        await self._fill_missing_avatars(visible)
+        return {
+            "videos": page,
+            "pagination": {"offset": offset, "limit": limit, "total": len(groups), "has_more": offset + limit < len(groups)},
         }
 
     async def get_creator_profile(self, channel_id: str) -> Dict[str, Any]:

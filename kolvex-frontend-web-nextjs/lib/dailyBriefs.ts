@@ -19,13 +19,19 @@ export interface BriefSection {
   takeaway: string; strategy_line: string;
   events: { date_label: string; title: string; detail: string }[];
 }
+export const BRIEF_TYPES = ["morning", "intraday", "evening"] as const;
+export type BriefType = typeof BRIEF_TYPES[number];
+export function isBriefType(value?: string): value is BriefType {
+  return BRIEF_TYPES.some(type => type === value);
+}
+
 export interface DailyBrief {
   schema_version: "kolvex-brief/1.0";
-  brief: { id: string; type: "morning" | "evening"; date: string; title: string; headline: string; subtitle: string; generated_at_pt: string; market_status: "trading_day" | "weekend"; hero_image?: BriefImage | null };
+  brief: { id: string; type: BriefType; date: string; title: string; headline: string; subtitle: string; generated_at_pt: string; market_status: "trading_day" | "weekend"; hero_image?: BriefImage | null };
   sections: BriefSection[];
   disclaimer?: string;
 }
-export interface SavedBrief { id: string; brief_date: string; brief_type: string; title: string; headline: string }
+export interface SavedBrief { id: string; brief_date: string; brief_type: BriefType; title: string; headline: string }
 
 export async function briefRequest<T>(query = "", body?: string, signal?: AbortSignal): Promise<T> {
   const response = await fetch(`/api/admin/briefs${query}`, {
@@ -42,12 +48,12 @@ export interface BriefSummary extends SavedBrief {
   summary?: DailyBrief["brief"];
 }
 export interface BriefList { items: BriefSummary[]; total: number }
-export type BriefFilter = "all" | "morning" | "evening";
+export type BriefFilter = "all" | BriefType;
 export interface BriefSearchParams { type?: string; page?: string; date?: string }
-export interface BriefCalendarData { month: string; days: { date: string; types: ("morning" | "evening")[] }[] }
+export interface BriefCalendarData { month: string; days: { date: string; types: BriefType[] }[] }
 
 export function briefFilters(params?: BriefSearchParams, now = new Date()) {
-  const type: BriefFilter = params?.type === "morning" || params?.type === "evening" ? params.type : "all";
+  const type: BriefFilter = isBriefType(params?.type) ? params.type : "all";
   const value = Number(params?.page || 1);
   const page = Number.isSafeInteger(value) && value > 0 && value <= 1000000 ? value : 1;
   // Opening the reader always shows one Pacific date, including empty days.
@@ -55,14 +61,16 @@ export function briefFilters(params?: BriefSearchParams, now = new Date()) {
   return { type, page, date };
 }
 
-/** US equities close at 13:00 Pacific; explicit edition selection always wins. */
+/** Regular US equities session: 06:30–13:00 Pacific; post-close brief at 14:00. */
 export function briefReadingFilters(params?: BriefSearchParams, now = new Date()) {
   const { date } = briefFilters(params, now);
-  const hour = Number(new Intl.DateTimeFormat("en-US", {
-    hour: "2-digit", hourCycle: "h23", timeZone: "America/Los_Angeles",
-  }).format(now));
-  const type: "morning" | "evening" = params?.type === "morning" || params?.type === "evening"
-    ? params.type : hour < 13 ? "morning" : "evening";
+  const parts = new Intl.DateTimeFormat("en-US", {
+    hour: "2-digit", minute: "2-digit", hourCycle: "h23", timeZone: "America/Los_Angeles",
+  }).formatToParts(now);
+  const minutes = Number(parts.find(part => part.type === "hour")!.value) * 60
+    + Number(parts.find(part => part.type === "minute")!.value);
+  const type: BriefType = isBriefType(params?.type)
+    ? params.type : minutes < 390 ? "morning" : minutes < 840 ? "intraday" : "evening";
   return { date, type, id: `${type}-${date}` };
 }
 export function briefLibraryHref(type: BriefFilter = "all", page = 1, date?: string) {

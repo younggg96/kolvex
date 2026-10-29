@@ -76,3 +76,33 @@ URL selections take precedence. Missing editions show an empty state and never
 fall back to historical content. The date button opens the shared Popover and
 Calendar; selecting a date or Today closes it. The list API and durable article
 URLs remain available for compatibility and Admin. Import remains Admin-only.
+
+## Three daily editions (supersedes the two-edition descriptions above)
+
+| Display | brief.type / ID prefix | Regular-session reference |
+| --- | --- | --- |
+| 盘前 1 小时 | morning | 08:30 ET / 05:30 PT |
+| 盘中 | intraday | During regular trading |
+| 盘后 1 小时 | evening | 17:00 ET / 14:00 PT |
+
+Each date has three independent immutable IDs, e.g. `intraday-2026-10-28`.
+Existing morning/evening IDs and JSON remain valid under kolvex-brief/1.0.
+Import one envelope per edition. Admin's shared Select filters saved issues and,
+when explicitly selected, rejects a JSON edition mismatch without rewriting it.
+The auto option recognizes the edition from JSON. Preview and save revalidate;
+identical retries succeed, conflicting content for the same issue returns 409.
+Both reader and admin lists accept `type=intraday`. The calendar permits 93 rows
+per month and shows three edition markers. Reader defaults to pre-market before
+06:30 PT, intraday from 06:30 until 14:00 PT, and post-market thereafter; explicit
+URL choices take precedence. Holidays/early closes are not scheduled by this
+manual importer, and generation timestamps are not enforced as release times.
+This change does not add automatic report generation or timed publishing.
+
+Migration `20261029061350_daily_briefs_intraday.sql` extends only the type check;
+33 existing records, access grants and RLS are preserved.
+
+Validation: 18 backend tests, 7 Node reader/date tests, TypeScript, lint and
+production build passed. Remote constraint was read back successfully. Premium
+static audit reports only the same three existing settings/scrollbar findings.
+Browser verification could not run: local Next server listen failed with EPERM.
+Application code still needs deployment; the database migration is applied.

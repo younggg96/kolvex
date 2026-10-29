@@ -120,7 +120,15 @@ discussed stocks in one reading column on all screen sizes. The stock list sorts
 by opinion count, initially shows at most five stocks, and offers a labelled
 expansion to the full searchable list and a collapse action.
 Recent opinion changes follow the directory in the left column. Its right rail
-orders latest opinions and my holdings; the latest section links to the paginated `/dashboard/youtube-opinions/opinions` list. Updates
+orders latest creator videos and my holdings. The video preview shows at most five
+different creators, one newest imported video per creator, ordered by publication
+time. All stock opinions from the same video form one group before preview selection
+or pagination. `VideoOpinionCard` owns both the compact rail (two stock summaries
+initially) and the full list (three initially), with explicit expansion, creator
+attribution and source links. The section links to `/dashboard/youtube-opinions/opinions`,
+which pages 20 complete videos at a time, ordered by publication time, with a displayed/total
+video count and retryable Load more. The complete list retains older videos from
+the same creator. No opinion is discarded to diversify the preview. Updates
 remains accessible by legacy URL but has no primary navigation tab. Legacy Research URLs redirect
 to the appropriate entry so refresh and saved links keep working.
 
@@ -548,14 +556,14 @@ Inter/Chinese stack and semantic light/dark tokens. It renders the selected
 issue's full `BriefContent` immediately, with no summary card or read-more step.
 Supplied image credits remain visible; no new design tokens are introduced.
 
-Shared Radix Tabs owns Morning/Evening selection and keyboard navigation. There
-is no All tab. Opening without an explicit edition chooses Morning before
-13:00 America/Los_Angeles and Evening from 13:00 onward, including weekends;
+Shared Radix Tabs owns pre-market/intraday/post-market selection and keyboard navigation. There
+is no All tab. Opening without an explicit edition chooses pre-market before
+06:30 America/Los_Angeles, intraday until 14:00 and post-market thereafter, including weekends;
 this is an editorial time rule, not an exchange holiday/early-close schedule.
 Explicit type/date URL selection always wins. The reader requests the unique
 `{type}-{date}` detail directly, and a missing issue shows an edition-specific
 empty state without switching to another date or edition. Legacy article URLs
-remain supported; Admin import and preview remain unchanged.
+remain supported; Admin import and preview share the three-edition contract.
 `BriefContent` owns the article in both admin preview and the reader, and
 `BriefImage` owns images, captions, credit links and failed-image placeholders.
 Long text wraps; article disclosures remain in document flow.
@@ -579,12 +587,12 @@ market schedule.
 
 `components/ui/calendar.tsx` (React Day Picker) owns date-grid keyboard behavior.
 `BriefCalendar` is its editorial variant: localized months/weekdays/labels,
-Pacific today, filled/outlined morning/evening markers and matching accessible
+Pacific today, filled circle/square/outlined circle pre-market/intraday/post-market markers and matching accessible
 day labels. Selected dates use existing foreground/background tokens for contrast.
-The calendar queries only its displayed month, at most 62 issue records. Marker
+The calendar queries only its displayed month, at most 93 issue records. Marker
 loading/failure has its own retry without blocking reading.
 
-`date=YYYY-MM-DD` and `type=morning|evening` live in URLs; date and edition
+`date=YYYY-MM-DD` and `type=morning|intraday|evening` live in URLs; date and edition
 changes retain the other choice. Opening without a valid date selects today
 in America/Los_Angeles and requests only that date’s selected edition. Empty days show an empty
 state, never an older latest issue. There is no All dates mode. Today returns
@@ -978,3 +986,14 @@ validation preview, upsert and loading saved events for editing. Drafts stay
 mounted across admin tab switches; dirty edits disable replacement by a file or
 another event. Textarea owns typed JSON dates and timestamps; no date-picker
 popup is introduced. Business/schema/permissions are in docs/market-events.md.
+
+### Three daily editions
+
+Daily Briefs uses the shared Radix Tabs for pre-market 1h (`morning`), intraday
+(`intraday`), and post-market 1h (`evening`). Existing IDs and imported content
+remain valid. Default selection follows regular US market hours in Pacific time:
+pre-market before 06:30, intraday until 14:00, then post-market; URL selections win.
+The admin importer uses the shared Select for edition selection and list filtering.
+Auto uses the JSON edition; an explicit selection must match the validated JSON.
+Changing edition invalidates preview/save state. Saving preserves immutable IDs,
+idempotent retries, and the shared reader-cache invalidation. No new theme tokens.

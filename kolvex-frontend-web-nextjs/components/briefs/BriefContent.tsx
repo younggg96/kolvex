@@ -17,7 +17,7 @@ function SectionBody({ section }: { section: BriefSection }) {
   const paragraphs = Array.isArray(section.narrative) ? section.narrative : [section.narrative];
   return <div className="space-y-6">
     {[...paragraphs, ...section.paragraphs].filter(Boolean).map((text, i) => <Markdown key={i}>{text}</Markdown>)}
-    {["market_recap", "premarket"].includes(section.section_id) && <>
+    {["market_recap", "premarket", "intraday", "postmarket"].includes(section.section_id) && <>
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">{section.indices.map((index, i) => <dl key={i} className="rounded-xl border border-border p-4">
         <dt className="font-medium">{index.name}</dt>
         {index.close !== null && <dd className="figure mt-2 text-2xl font-semibold">{index.close.toLocaleString("en-US", { maximumFractionDigits: 2 })}</dd>}

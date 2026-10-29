@@ -3,13 +3,13 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { CalendarDays, ChevronDown, ChevronLeft, ChevronRight, Moon, RefreshCw, Sun } from "lucide-react";
+import { CalendarDays, ChevronDown, ChevronLeft, ChevronRight, RefreshCw } from "lucide-react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useTranslation } from "@/lib/i18n";
-import { briefLibraryHref, briefReadingFilters, formatBriefDate, shiftBriefDate, type BriefSearchParams, type DailyBrief } from "@/lib/dailyBriefs";
+import { BRIEF_TYPES, isBriefType, briefLibraryHref, briefReadingFilters, formatBriefDate, shiftBriefDate, type BriefSearchParams, type DailyBrief } from "@/lib/dailyBriefs";
 import BriefCalendar from "./BriefCalendar";
 import BriefContent from "./BriefContent";
 import BriefState from "./BriefState";
@@ -44,11 +44,10 @@ export default function BriefLibrary({ searchParams }: { searchParams?: BriefSea
             <Button asChild size="icon" variant="outline" title={t("briefs.nextDay")}><Link href={briefLibraryHref(type, 1, shiftBriefDate(date, 1))} aria-label={t("briefs.nextDay")}><ChevronRight className="h-4 w-4" aria-hidden="true" /></Link></Button>
           </nav>
         </div>
-        <Tabs value={type} onValueChange={value => router.push(briefLibraryHref(value === "morning" ? "morning" : "evening", 1, date))}>
-          <div className="mb-6 flex items-center gap-4 border-b border-border">
-            <TabsList aria-label={t("briefs.filterLabel")} className="min-w-0 flex-1 border-0">
-              <TabsTrigger value="morning"><Sun className="mr-2 h-4 w-4" aria-hidden="true" />{t("briefs.morning")}</TabsTrigger>
-              <TabsTrigger value="evening"><Moon className="mr-2 h-4 w-4" aria-hidden="true" />{t("briefs.evening")}</TabsTrigger>
+        <Tabs value={type} onValueChange={value => router.push(briefLibraryHref(isBriefType(value) ? value : "morning", 1, date))}>
+          <div className="mb-6 flex flex-wrap items-center gap-x-4 border-b border-border">
+            <TabsList aria-label={t("briefs.filterLabel")} className="min-w-0 flex-1 gap-3 border-0 sm:gap-5">
+              {BRIEF_TYPES.map(edition => <TabsTrigger key={edition} value={edition}>{t(`briefs.${edition}`)}</TabsTrigger>)}
             </TabsList>
             <Button variant="ghost" size="sm" disabled={loading} onClick={retry}><RefreshCw className="mr-1 h-3.5 w-3.5" aria-hidden="true" />{t("common.refresh")}</Button>
           </div>

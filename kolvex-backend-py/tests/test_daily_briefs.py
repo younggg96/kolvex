@@ -118,6 +118,26 @@ class RoutesTests(unittest.TestCase):
         self.assertEqual(self.client.post("/briefs", content="x" * (2 * 1024 * 1024 + 1)).status_code, 413)
         self.db.table.return_value.insert.assert_not_called()
 
+    def test_three_editions_save_independently_and_filter_admin_list(self):
+        self.login()
+        for edition in ["morning", "intraday", "evening"]:
+            value = sample()
+            value["brief"].update(type=edition, id=f"{edition}-2026-10-17")
+            response = self.client.post("/briefs/validate", json=value)
+            self.assertEqual(response.status_code, 200)
+            response = self.client.post("/briefs", json=value)
+            self.assertEqual(response.status_code, 200)
+            self.assertEqual(response.json()["id"], value["brief"]["id"])
+            saved = self.db.table.return_value.insert.call_args.args[0]
+            self.assertEqual(saved["brief_type"], edition)
+            self.assertEqual(saved["payload"]["brief"]["type"], edition)
+        value["brief"]["type"] = "intraday"
+        self.assertEqual(self.client.post("/briefs", json=value).status_code, 422)
+        self.db.table.return_value.select.return_value.eq.return_value.order.return_value.order.return_value.range.return_value.execute.return_value = Mock(data=[], count=0)
+        self.assertEqual(self.client.get("/briefs?type=intraday").status_code, 200)
+        self.db.table.return_value.select.return_value.eq.assert_called_with("brief_type", "intraday")
+        self.assertEqual(self.client.get("/briefs?type=invalid").status_code, 422)
+
     def test_save_identical_retry_and_conflict(self):
         self.login()
         self.assertEqual(self.client.post("/briefs", json=sample()).json()["already_exists"], False)

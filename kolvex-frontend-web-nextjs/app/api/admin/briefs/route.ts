@@ -16,6 +16,7 @@ async function forward(request: NextRequest) {
     if (method === "GET") {
       path += params.has("id") ? `/${encodeURIComponent(params.get("id")!)}` : `?page=${encodeURIComponent(params.get("page") || "1")}`;
     }
+    if (method === "GET" && !params.has("id") && params.has("type")) path += `&type=${encodeURIComponent(params.get("type")!)}`;
     let body: string | undefined;
     if (method === "POST") {
       const chunks: Uint8Array[] = [];

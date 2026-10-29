@@ -81,14 +81,18 @@ test("reader entry defaults to only today in Pacific time, even with no publishe
   }
 });
 
-test("direct reader chooses morning before Pacific close and evening afterwards", () => {
+test("direct reader selects all three editions at Pacific session boundaries in summer and winter", () => {
   for (const [instant, expected, date] of [
     ["2026-10-18T07:00:00Z", "morning", "2026-10-18"],
-    ["2026-10-18T19:59:59Z", "morning", "2026-10-18"],
-    ["2026-10-18T20:00:00Z", "evening", "2026-10-18"],
+    ["2026-10-18T13:29:59Z", "morning", "2026-10-18"],
+    ["2026-10-18T13:30:00Z", "intraday", "2026-10-18"],
+    ["2026-10-18T20:59:59Z", "intraday", "2026-10-18"],
+    ["2026-10-18T21:00:00Z", "evening", "2026-10-18"],
+    ["2026-12-18T21:59:59Z", "intraday", "2026-12-18"],
+    ["2026-12-18T22:00:00Z", "evening", "2026-12-18"],
     ["2026-10-19T06:59:59Z", "evening", "2026-10-18"],
-    ["2026-12-18T20:59:59Z", "morning", "2026-12-18"],
-    ["2026-12-18T21:00:00Z", "evening", "2026-12-18"],
+    ["2026-12-18T14:29:59Z", "morning", "2026-12-18"],
+    ["2026-12-18T14:30:00Z", "intraday", "2026-12-18"],
   ]) {
     const now = new Date(instant);
     const result = briefReadingFilters(undefined, now);
@@ -96,7 +100,7 @@ test("direct reader chooses morning before Pacific close and evening afterwards"
     assert.equal(result.type, expected);
     assert.equal(result.id, `${expected}-${date}`);
     assert.equal(briefReadingFilters({ type: "all" }, now).type, expected);
-    for (const type of ["morning", "evening"]) {
+    for (const type of ["morning", "intraday", "evening"]) {
       const selected = briefReadingFilters({ type, date: "2026-10-17" }, now);
       assert.equal(selected.id, `${type}-2026-10-17`);
     }

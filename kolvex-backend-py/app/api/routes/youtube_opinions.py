@@ -123,6 +123,19 @@ async def get_youtube_opinions_dashboard(
         )
 
 
+@router.get("/videos")
+async def get_youtube_video_feed(
+    limit: int = Query(default=20, ge=1, le=40),
+    offset: int = Query(default=0, ge=0),
+    service: YouTubeStockOpinionService = Depends(get_service),
+):
+    """Page complete videos by publication time, including every stock opinion."""
+    try:
+        return await service.get_video_feed(limit=limit, offset=offset)
+    except Exception:
+        raise HTTPException(status_code=500, detail="Failed to load video opinions")
+
+
 @router.get("/stocks/{ticker}")
 async def get_youtube_stock_detail(
     ticker: str,

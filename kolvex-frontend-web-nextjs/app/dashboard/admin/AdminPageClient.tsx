@@ -93,7 +93,7 @@ export default function AdminPageClient({ initialTab }: { initialTab?: string })
             <TabsTrigger value="creators">博主观点</TabsTrigger>
             <TabsTrigger value="youtube">YouTube 导入</TabsTrigger>
             <TabsTrigger value="events">重大事件</TabsTrigger>
-            <TabsTrigger value="briefs">早晚报导入</TabsTrigger>
+            <TabsTrigger value="briefs">日报导入</TabsTrigger>
           </TabsList>
 
           <TabsContent value="database" className="mt-6">

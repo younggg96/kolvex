@@ -1,4 +1,5 @@
 import { invalidateClientCache, subscribeClientCache } from "./clientCache";
+import type { VideoOpinionGroup } from "./youtubeVideoHistory";
 
 export type OpinionSentiment = "bullish" | "bearish" | "neutral" | "mixed";
 
@@ -124,6 +125,7 @@ export interface YouTubeOpinionDashboard {
   daily: YouTubeDailySummary[];
   changes: YouTubeDailyChange[];
   latest: YouTubeOpinion[];
+  latest_videos?: VideoOpinionGroup[];
   filters: YouTubeOpinionFilters;
   pagination?: { offset: number; limit: number; total: number; has_more: boolean };
 }
@@ -139,6 +141,21 @@ export interface YouTubeOpinionDashboardParams {
 }
 
 const API_PREFIX = "/api/youtube-opinions";
+
+export interface YouTubeVideoFeed {
+  videos: VideoOpinionGroup[];
+  pagination: { offset: number; limit: number; total: number; has_more: boolean };
+}
+
+export function getYouTubeVideoFeed(limit = 20, offset = 0, signal?: AbortSignal) {
+  const controller = new AbortController();
+  const abort = () => controller.abort();
+  if (signal?.aborted) abort();
+  signal?.addEventListener("abort", abort, { once: true });
+  const timeout = setTimeout(abort, 20_000);
+  return apiRequest<YouTubeVideoFeed>(`/videos?limit=${limit}&offset=${offset}`, { signal: controller.signal })
+    .finally(() => { clearTimeout(timeout); signal?.removeEventListener("abort", abort); });
+}
 const dashboardCache = new Map<string, { expires: number; data?: YouTubeOpinionDashboard; request: Promise<YouTubeOpinionDashboard> }>();
 const dashboardCacheMs = 60_000;
 subscribeClientCache(prefix => { if (!prefix) dashboardCache.clear(); });

@@ -23,6 +23,7 @@ function BriefDay(props: DayContentProps) {
     <span className="sr-only">{formatBriefDate(briefDateKey(props.date), locale)}，{status === "loading" ? t("briefs.loadingDates") : status === "error" ? t("common.error") : available.length ? available.map(kind => t(`briefs.${kind}`)).join(" / ") : t("briefs.noIssue")}</span>
     <span aria-hidden="true" className="absolute bottom-1 left-0 flex w-full justify-center gap-1">
       {available.includes("morning") && <span className="h-1 w-1 rounded-full bg-current" />}
+      {available.includes("intraday") && <span className="h-1 w-1 rounded-sm bg-current" />}
       {available.includes("evening") && <span className="h-1 w-1 rounded-full border border-current" />}
     </span>
   </span>;
@@ -67,8 +68,9 @@ export default function BriefCalendar({ date, type, onSelectDate }: { date: stri
         }}
       />
     </CalendarAvailability.Provider>
-    <div className="mt-4 flex items-center justify-center gap-5 text-xs text-muted-foreground">
+    <div className="mt-4 flex flex-wrap items-center justify-center gap-x-3 gap-y-2 text-xs text-muted-foreground">
       <span className="flex items-center gap-2"><span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-current" />{t("briefs.morning")}</span>
+      <span className="flex items-center gap-2"><span aria-hidden="true" className="h-1.5 w-1.5 rounded-sm bg-current" />{t("briefs.intraday")}</span>
       <span className="flex items-center gap-2"><span aria-hidden="true" className="h-1.5 w-1.5 rounded-full border border-current" />{t("briefs.evening")}</span>
     </div>
     <div className="mt-3 min-h-5 text-center text-xs leading-5 text-muted-foreground" aria-live="polite">

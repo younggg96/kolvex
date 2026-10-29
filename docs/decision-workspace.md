@@ -49,6 +49,27 @@ opinion request shows an error with retry, and missing opinions show a browse
 creators action and explain that AI analysis and research remain available. Changing the ticker resets this component's selection and
 expansion through its keyed mount.
 
+## Latest creator video feed
+
+The YouTube overview's 博主最新视频 preview uses `latest_videos` from the dashboard
+API: select each creator's newest imported video from the complete dataset, sort
+by source publication time and show at most five creators. A video containing
+many stock opinions occupies one entry. Publication time, rather than import time,
+controls order; a missing instant falls back to the opinion's calendar date.
+
+`GET /youtube-opinions/videos` returns complete video groups and video-count
+pagination. The existing `/dashboard/youtube-opinions/opinions` route consumes
+20 videos per request. Grouping precedes slicing, so every stock from a video
+remains available even if that video contains more opinions than a page size.
+This full list includes each creator's older videos. `VideoOpinionCard` owns
+creator/source attribution, compact/full layouts, stock navigation and explicit
+expansion. Existing ticker and creator history APIs retain individual-opinion
+pagination. Deploy the backend feed and dashboard field before the frontend.
+
+Verification: backend `python -m unittest discover -s tests -p test_youtube_video_feed.py`
+covers complete large videos, distinct creators, source-time order, empty pages,
+public read access and pagination validation.
+
 ## Sources and limits
 
 The creator stock directory pairs each stock's latest source-attributed thesis or

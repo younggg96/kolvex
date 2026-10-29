@@ -1139,28 +1139,18 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
                 {!allStocks && <aside className="min-w-0 space-y-8 xl:self-start">
                   <section aria-labelledby="creator-latest-opinions-title">
                     <div className="flex flex-wrap items-baseline justify-between gap-2">
-                      <h2 id="creator-latest-opinions-title" className="text-base font-semibold">{c("Latest opinions", "最新观点")}</h2>
+                      <h2 id="creator-latest-opinions-title" className="text-base font-semibold">{c("Latest creator videos", "博主最新视频")}</h2>
                       <Link href="/dashboard/youtube-opinions/opinions" className="rounded-sm text-xs font-medium underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
                         {c("View all opinions", "查看全部观点")}
                       </Link>
                     </div>
-                    {catalogueError ? <EmptyLine text={t("youtubeOpinions.directoryLoadFailed")} action={{ label: t("common.retry"), onClick: refresh }} alert /> : !catalogue ? loadingBlock : catalogue.latest.length ? (
-                      <ul className="mt-3 divide-y divide-border">
-                        {catalogue.latest.slice(0, 5).map((opinion) => (
-                          <li key={opinion.id} className="py-3">
-                            <ExplorerLink onNavigate={navigate} target={{ tab: "stocks", ticker: opinion.ticker }} className="flex items-center justify-between gap-3 rounded-sm text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
-                              <span className="font-semibold">{opinion.ticker}</span>
-                              <OpinionStrength value={opinion.direction_score} className="text-xs" />
-                            </ExplorerLink>
-                            <ExplorerLink onNavigate={navigate} target={{ tab: "creators", creator: opinion.channel_id }} className="mt-2 flex min-w-0 items-center gap-2 rounded-sm text-xs hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
-                              <CreatorAvatar name={opinion.channel_title || opinion.channel_id} avatarUrl={opinion.channel_avatar_url} size="xs" />
-                              <span className="truncate">{opinion.channel_title || opinion.channel_id}</span>
-                            </ExplorerLink>
-                            <p className="mt-2 line-clamp-3 text-sm leading-6">{opinion.summary || opinion.thesis}</p>
-                            <time dateTime={opinion.opinion_date} className="mt-1 block text-xs text-muted-foreground">{formatDay(opinion.opinion_date)}</time>
-                          </li>
+                    <p className="mt-2 text-xs text-muted-foreground">{c("Each creator’s latest video, with stock opinions grouped together", "每位博主仅展示最新一期，合并同视频内的股票观点")}</p>
+                    {catalogueError ? <EmptyLine text={t("youtubeOpinions.directoryLoadFailed")} action={{ label: t("common.retry"), onClick: refresh }} alert /> : !catalogue ? loadingBlock : catalogue.latest_videos?.length ? (
+                      <div className="mt-3">
+                        {catalogue.latest_videos.map((group) => (
+                          <VideoOpinionCard key={group.videoId} group={group} t={t} showCreator compact onStock={(ticker) => navigate({ tab: "stocks", ticker })} />
                         ))}
-                      </ul>
+                      </div>
                     ) : <EmptyLine text={t("youtubeOpinions.noOpinionsYet")} />}
                   </section>
                   {isProductFeatureEnabled("portfolio") && <section aria-labelledby="creator-holdings-title">

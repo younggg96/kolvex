@@ -79,3 +79,27 @@ test('late responses cannot restore an invalidated or replaced cache entry', asy
   await old;
   assert.equal(api.getCachedYouTubeOpinionDashboard().version, 2);
 });
+
+test('video feed forwards video pagination and preserves complete groups', async () => {
+  const data = { videos: [{ videoId: 'one', opinions: Array.from({ length: 45 }, (_, i) => ({ id: String(i) })) }], pagination: { total: 1, has_more: false } };
+  let requested;
+  const { api } = fixture(async (url) => { requested = url; return response(data); });
+  const result = await api.getYouTubeVideoFeed(20, 40);
+  assert.equal(requested, '/api/youtube-opinions/videos?limit=20&offset=40');
+  assert.equal(result.videos[0].opinions.length, 45);
+});
+
+test('video feed aborts with its consumer and failures remain retryable', async () => {
+  let attempt = 0;
+  const { api } = fixture((url, options) => {
+    attempt++;
+    if (attempt > 1) return Promise.resolve(response({ videos: [] }));
+    return new Promise((resolve, reject) => options.signal.addEventListener('abort', () => reject(new Error('aborted'))));
+  });
+  const controller = new AbortController();
+  const request = api.getYouTubeVideoFeed(20, 0, controller.signal);
+  controller.abort();
+  await assert.rejects(request, /aborted/);
+  await api.getYouTubeVideoFeed();
+  assert.equal(attempt, 2);
+});

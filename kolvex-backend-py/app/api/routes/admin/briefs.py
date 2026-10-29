@@ -7,7 +7,7 @@ from postgrest.exceptions import APIError
 from supabase import Client
 from app.api.dependencies.auth import verify_admin
 from app.core.supabase import get_supabase_service
-from app.services.daily_briefs import Envelope, list_saved_briefs, read_saved_brief
+from app.services.daily_briefs import BriefType, Envelope, list_saved_briefs, read_saved_brief
 
 router = APIRouter(prefix="/briefs")
 logger = logging.getLogger(__name__)
@@ -49,16 +49,16 @@ async def save(request: Request, admin_id: str = Depends(verify_admin), db: Clie
                 return {"id": meta["id"], "already_exists": True}
             raise HTTPException(409, "同一 ID 已有不同内容，未覆盖原简报。") from exc
         logger.exception("Brief save failed")
-        raise HTTPException(503, "保存失败，请确认早晚报数据库迁移已应用后重试。") from exc
+        raise HTTPException(503, "保存失败，请确认日报数据库迁移已应用后重试。") from exc
 
 
 @router.get("")
-async def listing(page: int = Query(1, ge=1), admin_id: str = Depends(verify_admin), db: Client = Depends(get_supabase_service)):
+async def listing(page: int = Query(1, ge=1), brief_type: BriefType | None = Query(None, alias="type"), admin_id: str = Depends(verify_admin), db: Client = Depends(get_supabase_service)):
     try:
-        return list_saved_briefs(db, page)
+        return list_saved_briefs(db, page, brief_type)
     except APIError as exc:
         logger.exception("Brief list failed")
-        raise HTTPException(503, "读取失败，请确认早晚报数据库迁移已应用后重试。") from exc
+        raise HTTPException(503, "读取失败，请确认日报数据库迁移已应用后重试。") from exc
 
 
 @router.get("/{brief_id}")

@@ -6,13 +6,17 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { FileJson, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useTranslation } from "@/lib/i18n";
 import { Textarea } from "@/components/ui/textarea";
 import BriefContent from "@/components/briefs/BriefContent";
-import { briefRequest, type DailyBrief, type SavedBrief } from "@/lib/dailyBriefs";
+import { BRIEF_TYPES, briefRequest, type BriefType, type DailyBrief, type SavedBrief } from "@/lib/dailyBriefs";
 
 const MAX_BYTES = 2 * 1024 * 1024;
 
 export default function DailyBriefImporter() {
+  const { t } = useTranslation();
+  const [edition, setEdition] = useState<"auto" | BriefType>("auto");
   const [text, setText] = useState("");
   const [preview, setPreview] = useState<DailyBrief | null>(null);
   const [validated, setValidated] = useState(false);
@@ -36,7 +40,7 @@ export default function DailyBriefImporter() {
     setListBusy(true);
     setListError("");
     try {
-      const data = await briefRequest<{ items: SavedBrief[]; total: number }>(`?page=${page}`, undefined, controller.signal);
+      const data = await briefRequest<{ items: SavedBrief[]; total: number }>(`?page=${page}${edition === "auto" ? "" : `&type=${edition}`}`, undefined, controller.signal);
       if (!controller.signal.aborted) { setItems(data.items); setTotal(data.total); }
     } catch (e) {
       if (listRequest.current === controller) setListError(e instanceof Error && e.name !== "AbortError" ? e.message : "读取超时，请重试。");
@@ -44,7 +48,7 @@ export default function DailyBriefImporter() {
       clearTimeout(timeout);
       if (listRequest.current === controller) setListBusy(false);
     }
-  }, [page]);
+  }, [page, edition]);
   useEffect(() => { void refresh(); return () => { listRequest.current?.abort(); listRequest.current = null; }; }, [refresh]);
 
   function update(value: string) {
@@ -65,6 +69,9 @@ export default function DailyBriefImporter() {
       try { parsed = JSON.parse(text.replace(/^\uFEFF/, "")); }
       catch { throw new Error("JSON 格式错误，请检查引号、逗号和括号。"); }
       const data = await briefRequest<{ payload: DailyBrief }>("?validate=1", JSON.stringify(parsed));
+      if (edition !== "auto" && data.payload.brief.type !== edition) {
+        throw new Error(`所选期次为${t(`briefs.${edition}`)}，JSON 为${t(`briefs.${data.payload.brief.type}`)}。请修改 brief.type 和 brief.id 后重新校验。`);
+      }
       setPreview(data.payload); setValidated(true);
     } catch (e) { editor.current?.focus(); throw e; }
   }
@@ -77,7 +84,8 @@ export default function DailyBriefImporter() {
     if (page !== 1) setPage(1); else await refresh();
   }
   return <div className="min-w-0 space-y-8">
-    <div className="space-y-2"><h2 className="text-xl font-semibold">早晚报 JSON 导入</h2><p id="brief-help" className="text-sm leading-6 text-muted-foreground">支持 kolvex-brief/1.0，单份 JSON 最大 2 MB。上传文件或粘贴内容，校验预览后保存。保存后将显示在「早晚报」，所有登录用户可阅读。</p></div>
+    <div className="space-y-2"><h2 className="text-xl font-semibold">日报 JSON 导入</h2><p id="brief-help" className="text-sm leading-6 text-muted-foreground">支持 kolvex-brief/1.0，单份 JSON 最大 2 MB。每日支持盘前 1 小时、盘中、盘后 1 小时各一份。常规交易日参考美东 08:30、交易时段内、17:00（美西 05:30、交易时段内、14:00）。上传文件或粘贴内容，校验预览后保存。保存后将显示在「日报」，所有登录用户可阅读。</p></div>
+    <div className="max-w-sm space-y-2"><label id="brief-edition-label" htmlFor="brief-edition" className="text-sm font-medium">上传期次 / 列表筛选</label><Select value={edition} disabled={busy} onValueChange={value => { setEdition(value as "auto" | BriefType); setPage(1); setPreview(null); setValidated(false); setError(""); setMessage(""); }}><SelectTrigger id="brief-edition" aria-labelledby="brief-edition-label"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="auto">按 JSON 识别 / 全部期次</SelectItem>{BRIEF_TYPES.map(type => <SelectItem key={type} value={type}>{t(`briefs.${type}`)}</SelectItem>)}</SelectContent></Select><p className="text-xs leading-5 text-muted-foreground">brief.type：morning / intraday / evening；brief.id：类型-YYYY-MM-DD。同一天各期独立保存，同一期不同内容不会覆盖。</p></div>
     <div className="space-y-2"><label htmlFor="brief-file" className="flex items-center gap-2 text-sm font-medium"><FileJson className="h-4 w-4" />选择 JSON 文件</label><Input id="brief-file" type="file" accept=".json,application/json" disabled={busy} aria-describedby="brief-help" onChange={event => {
       const file = event.target.files?.[0]; event.target.value = "";
       if (!file) return;
@@ -96,11 +104,11 @@ export default function DailyBriefImporter() {
       {busy && <span role="status" className="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" />处理中…</span>}
     </div>
     {error && <p id="brief-error" role="alert" className="rounded-xl bg-negative/10 p-4 text-sm leading-6">{error}</p>}
-    {message && <div role="status" className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-positive/10 p-4 text-sm"><p>{message}</p>{preview && <Link href={`/dashboard/briefs/${encodeURIComponent(preview.brief.id)}`} className="font-semibold underline underline-offset-4">在早晚报中查看</Link>}</div>}
+    {message && <div role="status" className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-positive/10 p-4 text-sm"><p>{message}</p>{preview && <Link href={`/dashboard/briefs/${encodeURIComponent(preview.brief.id)}`} className="font-semibold underline underline-offset-4">在日报中查看</Link>}</div>}
     {preview && <div className="space-y-5 rounded-xl border border-border bg-card p-4 sm:p-6"><div className="flex flex-wrap items-center justify-between gap-2 border-b border-border pb-4"><h2 className="font-semibold">简报预览</h2><span className="break-all text-xs text-muted-foreground">{preview.brief.id} · {preview.sections.length} 个章节</span></div><BriefContent document={preview} /></div>}
     <section className="space-y-4 border-t border-border pt-6" aria-busy={listBusy}>
       <div className="flex items-center justify-between gap-3"><h2 className="text-lg font-semibold">已导入简报</h2><Button variant="ghost" size="sm" disabled={listBusy} onClick={() => void refresh()}>刷新列表</Button></div>
-      {listError ? <p role="alert" className="text-sm leading-6 text-negative">{listError}</p> : listBusy ? <p role="status" className="text-sm text-muted-foreground">加载中…</p> : !items.length ? <p className="text-sm text-muted-foreground">暂无简报。导入第一份早报或晚报后，会显示在这里。</p> : <ul className="divide-y divide-border">{items.map(item => <li key={item.id} className="flex items-start justify-between gap-4 py-4"><div className="min-w-0"><p className="text-xs text-muted-foreground">{item.brief_date} · {item.brief_type === "morning" ? "早报" : "晚报"}</p><h3 className="mt-1 break-words text-sm font-semibold">{item.headline}</h3><p className="mt-1 text-xs text-muted-foreground">{item.title}</p></div><Button size="sm" variant="outline" disabled={busy} onClick={() => void run(async () => {
+      {listError ? <p role="alert" className="text-sm leading-6 text-negative">{listError}</p> : listBusy ? <p role="status" className="text-sm text-muted-foreground">加载中…</p> : !items.length ? <p className="text-sm text-muted-foreground">暂无简报。导入盘前、盘中或盘后简报后，会显示在这里。</p> : <ul className="divide-y divide-border">{items.map(item => <li key={item.id} className="flex items-start justify-between gap-4 py-4"><div className="min-w-0"><p className="text-xs text-muted-foreground">{item.brief_date} · {t(`briefs.${item.brief_type}`)}</p><h3 className="mt-1 break-words text-sm font-semibold">{item.headline}</h3><p className="mt-1 text-xs text-muted-foreground">{item.title}</p></div><Button size="sm" variant="outline" disabled={busy} onClick={() => void run(async () => {
         const result = await briefRequest<{ payload: DailyBrief }>(`?id=${encodeURIComponent(item.id)}`);
         const checked = await briefRequest<{ payload: DailyBrief }>("?validate=1", JSON.stringify(result.payload));
         setPreview(checked.payload); setValidated(false);

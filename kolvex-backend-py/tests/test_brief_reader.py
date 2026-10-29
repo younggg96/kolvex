@@ -62,6 +62,17 @@ class BriefReaderTests(unittest.TestCase):
         for query in ["page=0", "page=-1", "page=x", "type=invalid"]:
             self.assertEqual(self.client.get(f"/briefs?{query}").status_code, 422)
 
+    def test_intraday_list_and_article(self):
+        self.login()
+        self.query.select.return_value.eq.return_value.order.return_value.order.return_value.range.return_value.execute.return_value = SimpleNamespace(data=[], count=0)
+        self.assertEqual(self.client.get("/briefs?type=intraday").status_code, 200)
+        self.query.select.return_value.eq.assert_called_with("brief_type", "intraday")
+        self.document["brief"].update(id="intraday-2026-10-17", type="intraday")
+        self.query.select.return_value.eq.return_value.limit.return_value.execute.return_value.data = [{"payload": self.document}]
+        response = self.client.get("/briefs/intraday-2026-10-17")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["payload"]["brief"]["type"], "intraday")
+
     def test_empty_list_and_missing_issue(self):
         self.login()
         self.query.select.return_value.order.return_value.order.return_value.range.return_value.execute.return_value = SimpleNamespace(data=[], count=0)
@@ -89,11 +100,12 @@ class BriefReaderTests(unittest.TestCase):
         for value in ["2026-02-30", "2026-13-01", "not-a-date"]:
             self.assertEqual(self.client.get(f"/briefs?date={value}").status_code, 422)
 
-    def test_calendar_marks_both_editions_and_limits_month(self):
+    def test_calendar_marks_three_editions_and_limits_month(self):
         self.login()
         execute = self.query.select.return_value.gte.return_value.lt.return_value.order.return_value.limit.return_value.execute
         execute.return_value = SimpleNamespace(data=[
             {"brief_date": "2026-10-17", "brief_type": "morning"},
+            {"brief_date": "2026-10-17", "brief_type": "intraday"},
             {"brief_date": "2026-10-17", "brief_type": "evening"},
             {"brief_date": "2026-10-16", "brief_type": "evening"},
         ])
@@ -101,11 +113,11 @@ class BriefReaderTests(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json(), {"month": "2026-10", "days": [
             {"date": "2026-10-16", "types": ["evening"]},
-            {"date": "2026-10-17", "types": ["evening", "morning"]},
+            {"date": "2026-10-17", "types": ["evening", "intraday", "morning"]},
         ]})
         self.query.select.return_value.gte.assert_called_with("brief_date", "2026-10-01")
         self.query.select.return_value.gte.return_value.lt.assert_called_with("brief_date", "2026-11-01")
-        self.query.select.return_value.gte.return_value.lt.return_value.order.return_value.limit.assert_called_with(62)
+        self.query.select.return_value.gte.return_value.lt.return_value.order.return_value.limit.assert_called_with(93)
         for month in ["2026-13", "2026-1", "0000-01", "9999-12", "bad"]:
             self.assertEqual(self.client.get(f"/briefs/calendar?month={month}").status_code, 422)
         self.client.get("/briefs/calendar?month=2026-12")

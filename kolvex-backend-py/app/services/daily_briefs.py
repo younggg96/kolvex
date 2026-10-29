@@ -1,4 +1,4 @@
-"""Versioned, portfolio-free morning/evening briefing contract."""
+"""Versioned, portfolio-free pre-market/intraday/post-market briefing contract."""
 import re
 from datetime import date, datetime
 from typing import Any, Literal
@@ -100,9 +100,12 @@ class Section(Content):
     events: list[Event] = Field(default_factory=list)
 
 
+BriefType = Literal["morning", "intraday", "evening"]
+
+
 class Brief(Content):
     id: str
-    type: Literal["morning", "evening"]
+    type: BriefType
     date: str
     title: str = Field(min_length=1)
     headline: str = Field(min_length=1)
@@ -138,7 +141,7 @@ class Envelope(Content):
                 for key, item in node.items():
                     current = f"{path}.{key}"
                     if key in {"holdings", "positions", "accounts", "portfolio", "account_id", "account", "holding", "portfolio_positions", "portfolio_accounts"}:
-                        raise ValueError(f"{current}: 早晚报不接受持仓或账户字段")
+                        raise ValueError(f"{current}: 日报不接受持仓或账户字段")
                     if key in {"url", "source_page"} and item is not None:
                         parsed = urlsplit(item) if isinstance(item, str) else None
                         if not parsed or parsed.scheme not in {"http", "https"} or not parsed.hostname or parsed.username or parsed.password:
@@ -184,12 +187,12 @@ def read_saved_brief(db, brief_id: str):
 
 
 def list_brief_calendar(db, month: str):
-    """At most two immutable issues per day; query one bounded calendar month."""
+    """At most three immutable issues per day; query one bounded calendar month."""
     first = date.fromisoformat(f"{month}-01")
     next_month = date(first.year + 1, 1, 1) if first.month == 12 else date(first.year, first.month + 1, 1)
     result = (db.table("daily_briefs").select("brief_date,brief_type")
               .gte("brief_date", first.isoformat()).lt("brief_date", next_month.isoformat())
-              .order("brief_date").limit(62).execute())
+              .order("brief_date").limit(93).execute())
     days = {}
     for row in result.data or []:
         days.setdefault(row["brief_date"], set()).add(row["brief_type"])
