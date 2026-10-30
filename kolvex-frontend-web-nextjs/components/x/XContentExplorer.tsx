@@ -9,7 +9,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useTranslation } from "@/lib/i18n";
 import { xRequest, type XCreator, type XFeed } from "@/lib/xContentApi";
-import XContentImporter from "./XContentImporter";
 
 export default function XContentExplorer() {
   const { locale } = useTranslation();
@@ -106,7 +105,6 @@ export default function XContentExplorer() {
       <div className="flex-1 overflow-y-auto px-4 py-8 md:px-8">
         <h1 className="sr-only">{c("X creator posts", "X 博主内容")}</h1>
         <div className="mx-auto max-w-6xl space-y-6">
-          <XContentImporter onSaved={() => setRevision((value) => value + 1)} />
           <div className="grid gap-6 lg:grid-cols-[16rem_minmax(0,1fr)]">
             <aside className="min-w-0">
               <h2 className="mb-3 text-base font-semibold">

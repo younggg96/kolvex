@@ -6,7 +6,7 @@
 
 1. 在目标 Supabase 数据库执行 `kolvex-backend-py/migrations/20261030022953_x_creator_content.sql`。迁移新增 `x_creators`、`x_posts` 和事务导入函数，不改动旧 Twitter 表。
 2. 后端配置 `SUPABASE_URL` 和 `SUPABASE_SERVICE_KEY`，前端配置 `NEXT_PUBLIC_BACKEND_API_URL`，按仓库说明启动或部署前后端。
-3. 管理员登录后打开 X 页面，展开「管理博主与导入推文」。保存博主用户名、名称和简介；保存相同用户名会更新其资料。
+3. 管理员登录后打开「管理员 → X 内容」（`/dashboard/admin?tab=x`）。保存博主用户名、名称和简介；保存相同用户名会更新其资料。X 阅读页不再展示管理表单。
 4. 选择 JSON 文件，查看校验预览，再点击「导入推文」。导入会自动添加文件内缺失的博主资料，已有资料保持不变。之后可按用户名保存显示名称和简介。
 
 迁移已应用至 Kolvex 的 Supabase 项目；自动采集首轮已写入数据。线上展示需要同时发布前端页面与后端 API，数据库迁移与应用部署是独立步骤。

@@ -1060,8 +1060,11 @@ validation is explicit on submit, with a localized clear action and inline error
 New requests cancel old ones, time out, and retain a retry action. No-results
 and first-use empty states explain how to recover.
 
-Administrator controls use the existing UserProfileProvider permission state;
-the backend verifies permissions independently. Profile saves are explicit and
+Administrator controls live exclusively under `/dashboard/admin?tab=x` in the
+X content tab, using `components/admin/XContentManager` and the existing
+UserProfileProvider permission state; the backend verifies permissions independently.
+The reader has no management form. The manager opens directly without a nested
+collapsible wrapper. Profile saves are explicit and
 imports follow file selection, validation preview, then import. Input and preview
 state remain transient on this page; no draft or file is persisted in browser
 storage. Imported IDs are skipped on conflicts, making retries safe. Source text

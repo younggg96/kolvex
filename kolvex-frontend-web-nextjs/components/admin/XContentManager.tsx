@@ -7,7 +7,7 @@ import { useUserProfileContext } from "@/components/user/UserProfileProvider";
 import { useTranslation } from "@/lib/i18n";
 import { xRequest, type XPreview } from "@/lib/xContentApi";
 
-export default function XContentImporter({ onSaved }: { onSaved: () => void }) {
+export default function XContentManager({ onSaved }: { onSaved: () => void }) {
   const { profile } = useUserProfileContext();
   const { locale } = useTranslation();
   const c = (en: string, zh: string) => (locale === "zh" ? zh : en);
@@ -137,11 +137,8 @@ export default function XContentImporter({ onSaved }: { onSaved: () => void }) {
   }
 
   return (
-    <details className="rounded-xl border border-border bg-card p-4">
-      <summary className="w-fit cursor-pointer rounded-sm text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
-        {c("Manage creators and import posts", "管理博主与导入推文")}
-      </summary>
-      <div className="mt-4 space-y-6" aria-busy={busy}>
+    <section aria-label={c("Manage creators and import posts", "管理博主与导入推文")} className="rounded-xl border border-border bg-card p-4">
+      <div className="space-y-6" aria-busy={busy}>
         <form noValidate onSubmit={saveCreator} className="space-y-3">
           <h2 className="text-base font-semibold">
             {c("Save creator profile", "保存博主资料")}
@@ -311,6 +308,6 @@ export default function XContentImporter({ onSaved }: { onSaved: () => void }) {
           </p>
         )}
       </div>
-    </details>
+    </section>
   );
 }
