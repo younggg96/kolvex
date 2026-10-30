@@ -1799,7 +1799,7 @@
     "following": "Following",
     "scopeNote": "{community} · Top 100 tickers · Past 24 hours",
     "resultCount": "Showing {count} / {total}",
-    "watchlistNote": "Follows are saved in this browser. Only followed tickers in the current community ranking appear here.",
+    "watchlistNote": "Follows are synced to your account. Only followed tickers in the current community ranking appear here.",
     "watchlistEmpty": "No followed tickers yet. Use a star in the ranking to add one.",
     "watchlistNoResults": "No followed tickers match this community ranking and search. Your other follows are still saved.",
     "storageUnavailable": "Browser storage is unavailable. Follows will only last for this page session.",

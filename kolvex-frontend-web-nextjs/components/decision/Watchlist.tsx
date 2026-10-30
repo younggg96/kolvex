@@ -18,13 +18,14 @@ import { CORE_STOCKS } from "@/lib/stockDiscovery";
 import type { StockQuote } from "@/lib/stockApi";
 import { Change, money, useCopy } from "./shared";
 import WatchlistButton from "./WatchlistButton";
+import WatchlistStatus from "./WatchlistStatus";
 
 const names = new Map<string, string>(CORE_STOCKS.map(stock => [stock.symbol, stock.name]));
 const PAGE_SIZE = 20;
 
 export default function Watchlist() {
   const c = useCopy();
-  const { watchlist, ready, add, storageUnavailable } = useWatchlist();
+  const { watchlist, ready, add, canEdit, pending, error, userId } = useWatchlist();
   const params = useSearchParams();
   const query = params.get("q") ?? "";
   const sort = ["gainers", "losers", "symbol"].includes(params.get("sort") ?? "") ? params.get("sort")! : "added";
@@ -68,17 +69,19 @@ export default function Watchlist() {
     setRows(PAGE_SIZE);
   }
   const clear = () => { setDraft(""); update(""); search.current?.focus(); };
-  function addTicker(event: FormEvent) {
+  async function addTicker(event: FormEvent) {
     event.preventDefault();
-    if (tickerComposing.current) return;
+    if (tickerComposing.current || !canEdit) return;
     const symbol = normalizeWatchlistTicker(ticker);
     if (!symbol) { setInvalid(true); tickerInput.current?.focus(); return; }
     if (watchlist.includes(symbol)) {
       toast(c(`${symbol} is already in your Watchlist`, `${symbol} 已在自选股中`));
       tickerInput.current?.focus(); return;
     }
-    const result = add(symbol); setTicker(""); setInvalid(false); clear();
-    toast(result?.storageUnavailable ? c(`${symbol} added for this session only`, `已添加 ${symbol}，仅在本次会话保留`) : c(`${symbol} added to Watchlist`, `已将 ${symbol} 加入自选股`));
+    const success = await add(symbol);
+    if (!success) return;
+    setTicker(""); setInvalid(false); clear();
+    toast(c(`${symbol} added to Watchlist`, `已将 ${symbol} 加入自选股`));
     tickerInput.current?.focus();
   }
   const filtered = useMemo(() => {
@@ -105,16 +108,16 @@ export default function Watchlist() {
         <form noValidate onSubmit={addTicker} aria-label={c("Add a stock", "添加自选股")} className="space-y-2">
           <label htmlFor="watchlist-ticker" className="block text-sm font-medium">{c("Add a stock", "添加股票")}</label>
           <div className="flex gap-2">
-            <div className="relative min-w-0 flex-1"><Input ref={tickerInput} id="watchlist-ticker" value={ticker} onChange={event => { setTicker(event.target.value); setInvalid(false); }} placeholder={c("Stock symbol, e.g. AAPL or BRK-B", "输入股票代码，如 AAPL、BRK-B")} maxLength={20} autoComplete="off" autoCapitalize="characters" spellCheck={false} aria-invalid={invalid} aria-describedby="watchlist-ticker-help" className="h-11 pr-11"
+            <div className="relative min-w-0 flex-1"><Input ref={tickerInput} id="watchlist-ticker" disabled={pending} value={ticker} onChange={event => { setTicker(event.target.value); setInvalid(false); }} placeholder={c("Stock symbol, e.g. AAPL or BRK-B", "输入股票代码，如 AAPL、BRK-B")} maxLength={20} autoComplete="off" autoCapitalize="characters" spellCheck={false} aria-invalid={invalid} aria-describedby="watchlist-ticker-help" className="h-11 pr-11"
               onCompositionStart={() => { tickerComposing.current = true; }} onCompositionEnd={() => { tickerComposing.current = false; }} onKeyDown={event => { if (event.key === "Enter" && (event.nativeEvent.isComposing || tickerComposing.current || event.keyCode === 229)) event.preventDefault(); }} />
               {ticker && <Button type="button" variant="ghost" size="icon" className="absolute right-0 top-0 h-11 w-11" aria-label={c("Clear stock symbol", "清空股票代码")} onClick={() => { setTicker(""); setInvalid(false); tickerInput.current?.focus(); }}><X className="h-4 w-4" aria-hidden="true" /></Button>}
             </div>
-            <Button type="submit" disabled={!ready} className="h-11 shrink-0"><Plus className="mr-2 h-4 w-4" aria-hidden="true" />{c("Add", "添加")}</Button>
+            <Button type="submit" disabled={!canEdit} aria-busy={pending} className="h-11 shrink-0"><Plus className="mr-2 h-4 w-4" aria-hidden="true" />{c("Add", "添加")}</Button>
           </div>
-          <p id="watchlist-ticker-help" role={invalid ? "alert" : undefined} className={`text-xs ${invalid ? "text-negative" : "text-muted-foreground"}`}>{invalid ? c("Enter a valid symbol, e.g. AAPL or BRK-B.", "请输入有效的股票代码，如 AAPL、BRK-B。") : c("Saved in this browser, shared with your Reddit follows. No account sync.", "保存在当前浏览器，与 Reddit 关注共用，不会同步到其他设备。")}</p>
+          <p id="watchlist-ticker-help" role={invalid ? "alert" : undefined} className={`text-xs ${invalid ? "text-negative" : "text-muted-foreground"}`}>{invalid ? c("Enter a valid symbol, e.g. AAPL or BRK-B.", "请输入有效的股票代码，如 AAPL、BRK-B。") : c("Shared with your Reddit follows and synced to your account.", "与 Reddit 关注共用，登录后同步到账号。")}</p>
         </form>
-        {storageUnavailable && <p role="alert" className="text-sm text-negative">{c("Browser storage is unavailable. Changes last for this session only.", "浏览器存储不可用，当前修改仅在本次会话保留。")}</p>}
-        {!ready ? <div role="status" aria-label={c("Loading Watchlist", "正在加载自选股")} className="space-y-4">{[0, 1, 2].map(row => <Skeleton key={row} className="h-20 w-full" />)}</div> : !watchlist.length ? <div className="rounded-xl border border-border py-16 text-center">
+        <WatchlistStatus />
+        {!ready ? <div role="status" aria-label={c("Loading Watchlist", "正在加载自选股")} className="space-y-4">{[0, 1, 2].map(row => <Skeleton key={row} className="h-20 w-full" />)}</div> : (!userId || error) && !watchlist.length ? null : !watchlist.length ? <div className="rounded-xl border border-border py-16 text-center">
           <Star className="mx-auto h-8 w-8 text-muted-foreground" aria-hidden="true" /><h2 className="mt-4 text-lg font-semibold">{c("Your Watchlist starts here", "从第一只自选股开始")}</h2><p className="mx-auto mt-2 max-w-sm px-4 text-sm leading-6 text-muted-foreground">{c("Add a symbol above, or use the star beside a stock in Markets.", "在上方输入代码，或点击行情列表中股票旁的星标。")}</p><Button asChild variant="outline" className="mt-6"><Link href="/dashboard">{c("Browse Markets", "浏览行情")}</Link></Button>
         </div> : <section aria-label={c("Saved stocks", "已添加的股票")} className="space-y-4">
           <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_12rem]">

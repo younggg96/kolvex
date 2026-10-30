@@ -1094,3 +1094,28 @@ controls wrap to fit narrow screens without shrinking their 44px touch targets.
 Stock insight tabs stay in one horizontally scrollable row on phones, retaining
 Radix keyboard navigation and the active underline. Summary facts use separated
 rows on phones and the existing three-column layout on larger screens.
+
+### Account Watchlist persistence
+
+`/dashboard/watchlist`, stock stars and Reddit follows share `useWatchlist` and
+one account-scoped memory store. `/api/watchlist` verifies the cookie-backed user
+and uses that user's Supabase client; database RLS owns row isolation. Stocks are
+individual `(user_id, ticker)` rows, ordered by their server creation time.
+Adds/removes are idempotent and show success only after database acknowledgement.
+Pending writes disable shared star controls. Failed writes retain the list and
+input, explain uncertain completion and provide refresh/retry. Loading failures
+must not present an empty Watchlist as a successful result.
+
+`WatchlistStatus` owns localized loading, signed-out, saving, saved and retry
+feedback for Watchlist and Reddit. Existing Button/Input, 44px targets, page
+spacing and semantic tokens remain canonical; no new visual tokens. Reddit stars
+reuse `WatchlistButton`. Other devices revalidate on focus, visibility, reconnect
+and every 30 seconds while visible. Account changes immediately clear memory;
+stale reads and writes cannot restore another account's data.
+
+Legacy global/Reddit browser lists import once per browser source and account,
+merging with cloud rows without replacing existing stocks. An atomic server
+receipt prevents retrying a migration from restoring previously removed stocks.
+Local legacy keys are removed only after acknowledgement; a browser ownership
+marker prevents another account claiming a failed import. Ordinary changes never
+write a local-only Watchlist. See `../docs/watchlist-sync.md` for the data contract.

@@ -1,0 +1,64 @@
+{
+  "commit": "adf8239957e9cefb9533b9cee224bd8ea8a1d789",
+  "environment": "Production",
+  "url": "https://kolvex.app/dashboard",
+  "deploymentId": 7425773312,
+  "checks": [
+    {
+      "check": "home",
+      "http": 200,
+      "title": "Kolvex — AI Stock Research &amp; Creator Insights",
+      "releaseAssetsChanged": false
+    },
+    {
+      "check": "market",
+      "http": 200,
+      "expectedLoginRedirect": true
+    },
+    {
+      "check": "quotes",
+      "http": 200,
+      "quotes": 5,
+      "validPrices": true
+    },
+    {
+      "check": "creatorCoverage",
+      "http": 200,
+      "stocks": 236,
+      "recentWindowFields": true
+    },
+    {
+      "check": "marketBundle",
+      "error": "HTTP Error 404: Not Found"
+    }
+  ],
+  "deploymentUrl": "https://kolvex-6x51rftl8-guanggengyang.vercel.app",
+  "state": "success",
+  "productionStyles": [
+    {
+      "path": "/_next/static/css/a1387403abb7d2db.css",
+      "http": 200,
+      "newObservationGrid": false,
+      "newEvidenceWidth": false
+    },
+    {
+      "path": "/_next/static/css/1ec585bd3726171e.css",
+      "http": 200,
+      "newObservationGrid": true,
+      "newEvidenceWidth": true
+    },
+    {
+      "path": "/_next/static/css/507c1a2e8db055e8.css",
+      "http": 200,
+      "newObservationGrid": false,
+      "newEvidenceWidth": false
+    },
+    {
+      "path": "/_next/static/css/3ae8644e73044558.css",
+      "http": 200,
+      "newObservationGrid": false,
+      "newEvidenceWidth": false
+    }
+  ],
+  "bundleProbeNote": "Local and Vercel build asset hashes differ; a local chunk filename is not a production lookup contract."
+}

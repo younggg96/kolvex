@@ -1799,7 +1799,7 @@
     "following": "已关注",
     "scopeNote": "{community} · 当前榜单前 100 个代码 · 过去 24 小时",
     "resultCount": "显示 {count} / {total}",
-    "watchlistNote": "关注保存在此浏览器中；这里只显示当前社区榜单内的关注代码。",
+    "watchlistNote": "关注保存在账号中，可跨设备同步；这里只显示当前社区榜单内的关注代码。",
     "watchlistEmpty": "还没有关注的代码。点击榜单中的星标即可添加。",
     "watchlistNoResults": "当前社区榜单和搜索条件下没有关注代码，其他关注仍会保留。",
     "storageUnavailable": "浏览器存储不可用，关注暂时仅在本次页面中保留。",

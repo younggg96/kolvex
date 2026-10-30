@@ -6,6 +6,8 @@ import DashboardLayout from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import WatchlistButton from "@/components/decision/WatchlistButton";
+import WatchlistStatus from "@/components/decision/WatchlistStatus";
 import CompanyLogo from "@/components/ui/company-logo";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useTranslation } from "@/lib/i18n";
@@ -20,7 +22,7 @@ export default function RedditOpinionsPage() {
   const [onlyWatchlist, setOnlyWatchlist] = useState(false);
   const [query, setQuery] = useState("");
   const searchInput = useRef<HTMLInputElement>(null);
-  const { watchlist, ready, toggle, storageUnavailable } = useRedditWatchlist();
+  const { watchlist, ready } = useRedditWatchlist();
   const { data, loading, refreshing, error, refresh } = useCachedResource<RedditRanking>(
     `reddit:ranking:${community}`,
     async signal => {
@@ -54,15 +56,7 @@ export default function RedditOpinionsPage() {
     dateStyle: "medium", timeStyle: "short",
   }).format(new Date(data.fetchedAt)) : "";
   const communityLabel = (value: RedditCommunity) => value === "all-stocks" ? t("redditOpinions.allCommunities") : `r/${value}`;
-  const watchButton = (row: RedditStock, compact = false) => {
-    const saved = watchlist.includes(row.ticker);
-    const label = t(saved ? "redditOpinions.unfollow" : "redditOpinions.follow", { ticker: row.ticker });
-    return <Button variant="ghost" size={compact ? "icon" : "sm"} disabled={!ready} aria-pressed={saved}
-      aria-label={label} title={label} onClick={() => toggle(row.ticker)} className={compact ? "h-10 w-10" : "-ml-3 mt-3"}>
-      <Star className={`h-4 w-4 ${saved ? "fill-current" : "text-muted-foreground"}`} aria-hidden="true" />
-      {!compact && <span>{t(saved ? "redditOpinions.following" : "redditOpinions.followAction")}</span>}
-    </Button>;
-  };
+  const watchButton = (row: RedditStock, compact = false) => <WatchlistButton ticker={row.ticker} showLabel={!compact} />;
 
   return (
     <DashboardLayout title={t("redditOpinions.header")}>
@@ -108,7 +102,7 @@ export default function RedditOpinionsPage() {
           </div>
 
           {onlyWatchlist && <p className="mb-4 text-xs leading-5 text-muted-foreground">{t("redditOpinions.watchlistNote")}</p>}
-          {storageUnavailable && <p role="status" className="mb-4 text-sm text-muted-foreground">{t("redditOpinions.storageUnavailable")}</p>}
+          <div className="mb-4"><WatchlistStatus /></div>
 
           {Boolean(error) && <div role="alert" className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border p-4 text-sm">
             <p>{t(data ? "redditOpinions.staleError" : "redditOpinions.error")}</p>
