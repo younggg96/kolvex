@@ -130,6 +130,6 @@ export function selectObservationSymbols(
 
 /** Stock details only accept a return to the owning market list. */
 export function stockObservationReturnHref(value?: string | null) {
-  if (!value || !/^\/dashboard(?:\?|$)/.test(value) || value.includes("#") || /[\\\r\n]/.test(value)) return "/dashboard";
+  if (!value || !/^\/dashboard(?:\/watchlist)?(?:\?|$)/.test(value) || value.includes("#") || /[\\\r\n]/.test(value)) return "/dashboard";
   return value;
 }

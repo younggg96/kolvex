@@ -17,6 +17,7 @@ import AnalysisHistory from "./AnalysisHistory";
 import { useStockResearch } from "./useStockResearch";
 import CreatorIntelligence from "./CreatorIntelligence";
 import StockNews from "./StockNews";
+import WatchlistButton from "./WatchlistButton";
 import { ReportCard } from "@/components/trading-analysis/report-card";
 import {
   getStockQuote,
@@ -210,7 +211,7 @@ export default function StockWorkspace({ ticker, returnHref = "/dashboard", init
     <DashboardLayout title={c("Markets", "行情")}>
       <main className="flex-1 overflow-y-auto">
         <div className="mx-auto max-w-[1800px] px-4 pb-16 pt-4 md:px-8 md:pt-6">
-          <div className="grid items-start gap-6">
+          <div className="grid min-w-0 items-start gap-4 sm:gap-6">
             <section
               className="min-w-0"
               aria-labelledby="stock-title"
@@ -218,7 +219,7 @@ export default function StockWorkspace({ ticker, returnHref = "/dashboard", init
               <div className="flex items-center gap-3">
                 <HeaderBackButton
                   href={returnHref}
-                  label={c("Back to Markets", "返回行情")}
+                  label={returnHref.startsWith("/dashboard/watchlist") ? c("Back to Watchlist", "返回自选股") : c("Back to Markets", "返回行情")}
                 />
                 <CompanyLogo symbol={ticker} size="md" />
                 <div className="min-w-0">
@@ -236,6 +237,7 @@ export default function StockWorkspace({ ticker, returnHref = "/dashboard", init
                         (loading ? "" : c("Stock workspace", "股票工作台"))}
                   </p>
                 </div>
+                <div className="ml-auto"><WatchlistButton ticker={ticker} showLabel /></div>
               </div>
               <div className="mt-4" aria-live="polite">
                 <div className="figure text-[34px] font-semibold leading-tight tracking-[-0.02em] sm:text-[40px]">
@@ -284,7 +286,7 @@ export default function StockWorkspace({ ticker, returnHref = "/dashboard", init
                 </div>
               )}
             </section>
-            <section className="min-w-0 rounded-xl border border-border bg-card p-4 sm:p-5" aria-label={c("Price chart and AI drawings", "K 线图与 AI 画线")}>
+            <section className="-mx-4 min-w-0 border-y border-border bg-card px-4 py-4 sm:mx-0 sm:rounded-xl sm:border sm:p-5" aria-label={c("Price chart and AI drawings", "K 线图与 AI 画线")}>
               <div>
                 <PriceChart
                   key={ticker}
@@ -307,7 +309,7 @@ export default function StockWorkspace({ ticker, returnHref = "/dashboard", init
 
             <section id="stock-insights" className="min-w-0 scroll-mt-4 rounded-xl border border-border bg-card p-4 sm:p-5" aria-label={c("Stock insights", "个股洞察")}>
               <Tabs key={`insights-${ticker}-${initialInsight ?? "summary"}`} defaultValue={initialInsight ?? "summary"}>
-                <TabsList className="sticky top-0 z-10 grid grid-cols-3 gap-2 overflow-visible bg-card sm:flex sm:flex-wrap sm:gap-8" aria-label={c("Stock insights", "个股洞察")}>
+                <TabsList className="sticky top-0 z-10 flex max-w-full flex-nowrap gap-6 overflow-x-auto bg-card sm:flex-wrap sm:gap-8" aria-label={c("Stock insights", "个股洞察")}>
                   <TabsTrigger value="summary">{c("Summary", "变化摘要")}</TabsTrigger>
                   <TabsTrigger value="technical">{c("Technicals", "技术分析")}</TabsTrigger>
                   <TabsTrigger value="setup">{c("Setup", "条件计划")}</TabsTrigger>
@@ -317,7 +319,7 @@ export default function StockWorkspace({ ticker, returnHref = "/dashboard", init
                 </TabsList>
                 <TabsContent value="summary" forceMount className="stock-tab-panel pt-2 data-[state=inactive]:hidden">
               <Panel>
-                <div className="grid gap-4 sm:grid-cols-3">
+                <div className="grid gap-4 divide-y divide-border sm:grid-cols-3 sm:divide-y-0 [&>div+div]:pt-4 sm:[&>div+div]:pt-0">
                   <div>
                     <p className="text-xs text-muted-foreground">
                       {c("Market today", "今日行情")}

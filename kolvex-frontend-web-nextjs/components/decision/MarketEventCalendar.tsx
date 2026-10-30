@@ -4,6 +4,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useCachedResource } from "@/hooks/useCachedResource";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import StockBadge from "@/components/ui/stock-badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   calendarDays,
@@ -350,6 +351,13 @@ export default function MarketEventCalendar() {
                                       </span>
                                     )}
                                   </div>
+                                  {event.tickers.length > 0 && (
+                                    <div className="mt-3 flex flex-wrap gap-2">
+                                      {event.tickers.map((ticker) => (
+                                        <StockBadge key={ticker} symbol={ticker} />
+                                      ))}
+                                    </div>
+                                  )}
                                   <h4 className="mt-2 break-words text-base font-semibold">
                                     {english
                                       ? event.title_en || event.title
@@ -377,14 +385,6 @@ export default function MarketEventCalendar() {
                                       </p>
                                     ))}
                                   <div className="mt-2 flex flex-wrap items-center gap-3 text-xs">
-                                    {event.tickers.map((ticker) => (
-                                      <span
-                                        key={ticker}
-                                        className="figure rounded-full bg-muted px-2 py-1"
-                                      >
-                                        {ticker}
-                                      </span>
-                                    ))}
                                     {event.source_url && (
                                       <a
                                         href={event.source_url}

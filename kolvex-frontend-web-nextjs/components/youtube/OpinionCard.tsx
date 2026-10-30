@@ -58,7 +58,7 @@ export default function OpinionCard({
                 className="inline-flex items-center gap-2 text-[15px] font-semibold hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                 onClick={() => onStock?.(opinion.ticker)}
               >
-                <span aria-hidden="true"><CompanyLogo symbol={opinion.ticker} size="xs" /></span>
+                <span aria-hidden="true"><CompanyLogo symbol={opinion.ticker} size="sm" /></span>
                 <span>{opinion.ticker}</span>
               </button>
             )}

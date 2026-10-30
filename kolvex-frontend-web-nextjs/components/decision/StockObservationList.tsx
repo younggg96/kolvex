@@ -23,6 +23,7 @@ import { cn } from "@/lib/utils";
 import { MARKET_RANGES } from "@/lib/marketObservations";
 import { Change, Empty, HeldMark, Panel, TextLink, money, useCopy, useCreatorCatalogue, useHeldTickers } from "./shared";
 import StockTrend from "./StockTrend";
+import WatchlistButton from "./WatchlistButton";
 
 const ROW_GRID = "grid grid-cols-[minmax(0,1fr)_80px] gap-x-3 min-[400px]:grid-cols-[minmax(0,1fr)_60px_80px] sm:grid-cols-[minmax(0,1fr)_100px_100px] sm:gap-x-4";
 const scopes: { key: StockScope; en: string; zh: string }[] = [
@@ -211,7 +212,7 @@ export default function StockObservationList({ range, catalogue, held, onRetry }
       </div>}
       {state.scope === "core" && catalogue.error && <p role="status" className="mb-3 text-xs text-muted-foreground">{c("Creator insights are temporarily unavailable. Quotes remain available.", "博主线索暂不可用，仍可查看行情。")}</p>}
       <div aria-busy={blocking || quoteLoading}>
-        <div className={cn(ROW_GRID, "rounded-lg bg-muted/60 px-2 py-3 text-xs text-muted-foreground")} aria-hidden="true">
+        <div className={cn(ROW_GRID, "mr-12 rounded-lg bg-muted/60 px-2 py-3 text-xs text-muted-foreground")} aria-hidden="true">
           <span>{c("Stock", "股票")}</span>
           <span className="hidden text-center min-[400px]:block">{c(`Trend · ${trend.en}`, `走势 · ${trend.zh}`)}</span>
           <span className="text-right">{c("Price / Today", "价格 / 今日")}</span>
@@ -223,8 +224,8 @@ export default function StockObservationList({ range, catalogue, held, onRetry }
             const stock = coverage.get(symbol);
             const detailParams = new URLSearchParams({ from: returnHref });
             const href = `/dashboard/market/${encodeURIComponent(symbol)}`;
-            return <li key={symbol}>
-              <Link href={`${href}?${detailParams}`} onClick={rememberScroll} className={cn(ROW_GRID, "min-h-20 items-center rounded-lg px-2 py-4 transition-colors hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary")}>
+            return <li key={symbol} className="flex items-center gap-1">
+              <Link href={`${href}?${detailParams}`} onClick={rememberScroll} className={cn(ROW_GRID, "min-h-20 min-w-0 flex-1 items-center rounded-lg px-2 py-4 transition-colors hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary")}>
                 <span className="flex min-w-0 items-center gap-2.5">
                   <span aria-hidden="true" className="shrink-0"><CompanyLogo symbol={symbol} size="sm" /></span>
                   <span className="min-w-0"><span className="block truncate text-[15px] font-semibold">{symbol}{state.scope !== "holdings" && held.tickers.includes(symbol) && <HeldMark />}</span><span className="mt-1 block truncate text-xs text-muted-foreground">{quotes[symbol]?.name || stock?.company_name || coreNames.get(symbol) || symbol}</span></span>
@@ -232,6 +233,7 @@ export default function StockObservationList({ range, catalogue, held, onRetry }
                 <span className="hidden min-[400px]:block"><StockTrend symbol={symbol} period={trend.period} interval={trend.interval} rangeLabel={c(trend.en, trend.zh)} rangeKey={range} /></span>
                 <span className="min-w-0 text-right">{quoteLoading && !quotes[symbol] ? <Skeleton className="ml-auto h-10 w-20" /> : <><span className="figure block text-[15px] font-medium">{money(quotes[symbol]?.price)}</span><Change value={quotes[symbol]?.changePercent} className="mt-1 block text-xs font-semibold" /></>}</span>
               </Link>
+              <WatchlistButton ticker={symbol} />
             </li>;
           })}
         </ul>}

@@ -167,6 +167,16 @@ and report metadata. Route navigation uses an underline and otherwise stays flat
 
 ## Components
 
+Stock identity always pairs a company logo with its ticker in structured stock
+references. `components/ui/company-logo.tsx` owns logo loading, its white image
+surface and the symbol fallback. Use at least the 32px `sm` size for stock tags
+and opinion identities. `components/ui/stock-badge.tsx` owns the bordered,
+wrapping logo/ticker link used by event calendars, daily briefs and X cashtags;
+calendar badges sit above the event title, separately from source attribution.
+Every company in a multi-stock event gets its own badge. Existing stock lists
+and detail headings retain their shared logo treatment. Broad market events
+without tickers do not invent a company identity.
+
 Markets' stock observation list uses the existing flat rows, pill Buttons and
 Radix Selects. Core US stocks and Creator activity select the stock universe;
 The shared Input searches the current list by ticker or company name, accepting
@@ -1071,3 +1081,16 @@ storage. Imported IDs are skipped on conflicts, making retries safe. Source text
 wraps naturally, quoted text uses a muted surface, and source/media links open X.
 Dates and numbers follow the active Chinese/English locale and reader timezone.
 Unknown engagement counts are omitted rather than rendered as zero.
+
+
+### Stock workspace on phones
+
+The stock chart uses the full page width below 640px, with a single inset for
+controls and the plotting area. AI analysis and AI drawings share one row with
+an accessible icon-only settings button. Manual drawing tools expand on demand
+on phones; the visibility action remains beside that disclosure. Full-screen
+advanced charts and desktop charts keep their tools visible. Expanded editing
+controls wrap to fit narrow screens without shrinking their 44px touch targets.
+Stock insight tabs stay in one horizontally scrollable row on phones, retaining
+Radix keyboard navigation and the active underline. Summary facts use separated
+rows on phones and the existing three-column layout on larger screens.

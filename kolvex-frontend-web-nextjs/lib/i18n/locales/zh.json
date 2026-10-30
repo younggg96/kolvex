@@ -44,6 +44,7 @@
     "previous": "上一页"
   },
   "sidebar": {
+    "watchlist": "自选股",
     "markets": "行情",
     "chat": "AI 对话",
     "analytics": "数据分析",
@@ -67,6 +68,7 @@
     "briefs": "日报"
   },
   "tabBar": {
+    "watchlist": "自选股",
     "news": "新闻",
     "markets": "行情",
     "chat": "对话",

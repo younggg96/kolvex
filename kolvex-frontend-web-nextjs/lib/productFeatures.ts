@@ -1,5 +1,6 @@
 export type ProductFeatureId =
   | "home"
+  | "watchlist"
   | "journal"
   | "chat"
   | "tradingAnalysis"
@@ -21,6 +22,7 @@ export interface ProductFeature {
 }
 
 export const PRODUCT_FEATURES = [
+  { id: "watchlist", label: "Watchlist", enabled: true, routePrefixes: ["/dashboard/watchlist"] },
   { id: "news", label: "News", enabled: true, routePrefixes: ["/dashboard/news"], apiPrefixes: ["/api/news"], componentDirs: ["components/news"], libFiles: ["lib/newsFeed.ts"] },
   { id: "home", label: "Markets", enabled: true, routePrefixes: ["/dashboard", "/dashboard/market"] },
   { id: "journal", label: "Updates", enabled: true, routePrefixes: ["/dashboard/journal"], apiPrefixes: ["/api/theses"] },

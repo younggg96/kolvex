@@ -164,7 +164,7 @@ export default function VideoOpinionCard({
                 className={cn("group grid w-full min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-1.5 py-3 text-left transition-colors duration-150 hover:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary", !compact && "sm:-mx-3 sm:w-[calc(100%+1.5rem)] sm:grid-cols-[7rem_7.5rem_minmax(0,1fr)_auto] sm:items-start sm:rounded-xl sm:px-3")}
               >
                 <span className="flex min-w-0 items-center gap-2.5">
-                  <CompanyLogo symbol={opinion.ticker} size="xs" />
+                  <CompanyLogo symbol={opinion.ticker} size="sm" />
                   <span className="truncate text-[15px] font-semibold">{opinion.ticker}</span>
                   <OpinionStrength value={opinion.direction_score} className={cn("ml-1", !compact && "sm:hidden")} />
                 </span>

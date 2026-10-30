@@ -78,7 +78,7 @@ export default function CreatorProfileDialog({ creator, onLoaded, compact = fals
             {current.country && <span>{t("youtubeOpinions.profile.country")}: {current.country}</span>}
             {current.channel_published_at && Number.isFinite(Date.parse(current.channel_published_at)) && <span>{t("youtubeOpinions.profile.created")}: {new Intl.DateTimeFormat(intlLocale, { dateStyle: "medium" }).format(new Date(current.channel_published_at))}</span>}
           </div>
-          <div className="flex flex-wrap gap-2">{current.top_tickers.map(stock => <Badge variant="secondary" key={stock.ticker} className="gap-2"><span aria-hidden="true"><CompanyLogo symbol={stock.ticker} size="xs" /></span>{stock.ticker}</Badge>)}</div>
+          <div className="flex flex-wrap gap-2">{current.top_tickers.map(stock => <Badge variant="secondary" key={stock.ticker} className="gap-2"><span aria-hidden="true"><CompanyLogo symbol={stock.ticker} size="sm" /></span>{stock.ticker}</Badge>)}</div>
           {current.profile_source === "youtube" && <p className="text-xs text-muted-foreground">{t("youtubeOpinions.profile.subscriberNote")}</p>}
         </div>
       </DialogContent>

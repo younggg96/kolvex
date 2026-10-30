@@ -1,5 +1,6 @@
 import {
   BarChart3,
+  Star,
   PieChart,
   Newspaper,
   Radio,
@@ -32,6 +33,14 @@ export const MAIN_NAV_ITEMS: MainNavItem[] = [
     href: "/dashboard",
     type: "link",
     featureId: "home",
+  },
+  {
+    icon: Star,
+    titleKey: "sidebar.watchlist",
+    shortTitleKey: "tabBar.watchlist",
+    href: "/dashboard/watchlist",
+    type: "link",
+    featureId: "watchlist",
   },
   {
     icon: Newspaper,

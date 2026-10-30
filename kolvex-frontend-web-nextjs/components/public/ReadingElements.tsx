@@ -51,7 +51,7 @@ export function OpinionList({ opinions }: { opinions: YouTubeOpinion[] }) {
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
             <Link href={creatorSharePath(opinion.channel_id)} className="rounded-sm text-sm font-semibold hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">{name}</Link>
-            <h3><Link href={publicStockPath(opinion.ticker)} className="inline-flex items-center gap-2 rounded-sm text-[15px] font-semibold hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"><CompanyLogo symbol={opinion.ticker} size="xs" /><span>{opinion.ticker}</span></Link></h3>
+            <h3><Link href={publicStockPath(opinion.ticker)} className="inline-flex items-center gap-2 rounded-sm text-[15px] font-semibold hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"><CompanyLogo symbol={opinion.ticker} size="sm" /><span>{opinion.ticker}</span></Link></h3>
             <span className="text-xs text-muted-foreground"><ReadingDate value={opinion.opinion_date || opinion.video_published_at} />（美东日期）</span>
           </div>
           <div className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1"><StrengthIndicator value={opinion.direction_score} t={publicCopy} />{opinion.sentiment === "mixed" && <span className="text-xs font-medium text-warning">分歧</span>}</div>

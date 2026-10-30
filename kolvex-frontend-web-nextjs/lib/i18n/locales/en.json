@@ -44,6 +44,7 @@
     "previous": "Previous"
   },
   "sidebar": {
+    "watchlist": "Watchlist",
     "markets": "Markets",
     "chat": "Chat",
     "analytics": "Analytics",
@@ -67,6 +68,7 @@
     "briefs": "Daily Briefs"
   },
   "tabBar": {
+    "watchlist": "Watchlist",
     "news": "News",
     "markets": "Markets",
     "chat": "Chat",

@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import StockBadge from "@/components/ui/stock-badge";
 import ReactMarkdown from "react-markdown";
 import ImageContent from "./BriefImage";
 import { useTranslation } from "@/lib/i18n";
@@ -35,7 +35,7 @@ function SectionBody({ section }: { section: BriefSection }) {
       {item.key_stats.length > 0 && <dl className="grid grid-cols-2 gap-3 sm:grid-cols-3">{item.key_stats.map((stat, j) => <div key={j} className="min-w-0 rounded-xl bg-muted p-3"><dt className="text-xs text-muted-foreground">{stat.label}</dt><dd className="figure mt-1 break-words text-lg font-semibold">{stat.value}</dd></div>)}</dl>}
       {item.impact && <div className="grid gap-3 sm:grid-cols-2">{([['short_term', 'shortTerm'], ['positioning', 'positioning'], ['long_term', 'longTerm'], ['price_range', 'priceRange']] as const).map(([key, title]) => item.impact?.[key] ? <details key={key} open={key === "short_term" || key === "positioning"} className="rounded-xl bg-muted p-4"><summary className="cursor-pointer text-sm font-medium focus-visible:outline focus-visible:outline-2">{t(`briefs.${title}`)}</summary><div className="mt-3"><Markdown>{item.impact[key]}</Markdown></div></details> : null)}</div>}
       <div className="flex flex-wrap gap-3 text-xs">{item.sources.map((source, j) => <a key={j} href={source.url} target="_blank" rel="noopener noreferrer" className="break-all underline underline-offset-4">{source.name} <span className="text-muted-foreground">{new URL(source.url).hostname}</span></a>)}</div>
-      <div className="flex flex-wrap gap-2">{item.related_tickers.map((ticker, j) => /^[A-Za-z^][A-Za-z0-9.^=-]{0,14}$/.test(ticker) ? <Link key={j} href={`/dashboard/market/${encodeURIComponent(ticker.toUpperCase())}`} className="rounded-full border border-border px-3 py-1 text-xs font-semibold hover:bg-muted focus-visible:outline focus-visible:outline-2">{ticker}</Link> : <span key={j} className="text-xs">{ticker}</span>)}</div>
+      <div className="flex flex-wrap gap-2">{item.related_tickers.map((ticker, j) => /^[A-Za-z^][A-Za-z0-9.^=-]{0,14}$/.test(ticker) ? <StockBadge key={j} symbol={ticker} /> : <span key={j} className="text-xs">{ticker}</span>)}</div>
     </article>)}
     {section.takeaway && <blockquote className="border-l-2 border-primary pl-5 text-xl font-semibold leading-9">{section.takeaway}</blockquote>}
     {section.strategy_line && <div className="rounded-xl bg-positive/10 p-4"><Markdown>{section.strategy_line}</Markdown></div>}

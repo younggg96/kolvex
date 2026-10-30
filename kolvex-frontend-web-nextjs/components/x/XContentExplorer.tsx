@@ -7,6 +7,7 @@ import { ExternalLink } from "lucide-react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import StockBadge from "@/components/ui/stock-badge";
 import { useTranslation } from "@/lib/i18n";
 import { xRequest, type XCreator, type XFeed } from "@/lib/xContentApi";
 
@@ -345,13 +346,11 @@ export default function XContentExplorer() {
                       {post.cashtags.length > 0 && (
                         <div className="mt-4 flex flex-wrap gap-2">
                           {post.cashtags.map((tag) => (
-                            <Link
+                            <StockBadge
                               key={tag}
+                              symbol={tag}
                               href={href({ ticker: tag })}
-                              className={`${focusClass} bg-muted px-2 py-1 text-xs font-semibold`}
-                            >
-                              ${tag}
-                            </Link>
+                            />
                           ))}
                         </div>
                       )}
