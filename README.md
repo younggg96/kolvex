@@ -39,6 +39,8 @@ kolvex/
 
 ## 本地启动
 
+管理员还可通过 MCP 查询和修改日报、YouTube 创作者与观点、市场事件。独立服务支持 stdio / Streamable HTTP，见[内容管理 MCP](docs/mcp-content-admin.md)。
+
 需要 Node.js 18.17+、Python 3.11+ 和已配置的 Supabase 项目。Redis 用于缓存与分析进度；Ollama 用于本地模型功能。
 
 ### 后端

@@ -1,0 +1,6 @@
+# Standalone MCP adapter; does not need the backend's market/LLM/database packages.
+# Keep the SDK on its supported v1 line (v2 changes the server API).
+mcp>=1.28.1,<2
+httpx>=0.28.1,<1
+python-dotenv>=1.0.1,<2
+uvicorn>=0.32,<1

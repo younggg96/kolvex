@@ -26,6 +26,7 @@ wheels/
 # Environment
 .env
 .venv
+.venv-mcp/
 .env.local
 .env.*.local
 

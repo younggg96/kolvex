@@ -25,6 +25,7 @@ venv/
 ENV/
 env/
 .venv/
+.venv-mcp/
 path/
 
 # Environment files
@@ -32,6 +33,8 @@ path/
 .env.local
 .env.development
 .env.production
+.env.*
+*_cookies.json
 
 # IDE
 .idea/

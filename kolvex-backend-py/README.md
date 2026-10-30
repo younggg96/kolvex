@@ -66,6 +66,10 @@ kolvex-backend-py/
 
 ## 本地启动
 
+### 管理员 MCP
+
+可以通过独立 MCP 服务管理日报、YouTube 创作者与观点，以及市场事件。支持 stdio 和带独立 Bearer 认证的 Streamable HTTP；复用本后端的管理员校验和日报版本检查。安装时使用独立的 `requirements-mcp.txt` 和虚拟环境，详见[内容管理 MCP 使用说明](../docs/mcp-content-admin.md)。
+
 使用 Python 3.11+，先配置 Supabase 项目及所需业务表。
 
 ```bash

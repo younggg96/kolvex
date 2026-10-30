@@ -1,0 +1,11 @@
+# Separate Railway service; root directory: /kolvex-backend-py
+# Config file path: /kolvex-backend-py/railway.mcp.toml
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile.mcp"
+
+[deploy]
+healthcheckPath = "/health"
+healthcheckTimeout = 60
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 3

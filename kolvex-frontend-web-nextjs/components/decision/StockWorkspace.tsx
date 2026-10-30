@@ -509,7 +509,7 @@ export default function StockWorkspace({ ticker, returnHref = "/dashboard", init
                   </div>
                 </Panel>
               ) : (
-                <Panel title={c("AI setup", "AI 条件计划")}>
+                <Panel>
                   <Empty>{c("Generate technical analysis to see entry conditions, invalidation and targets when a setup is available.", "生成技术分析后，若有适用的条件计划，将在这里显示入场条件、失效价与目标。")}</Empty>
                   <Button variant="outline" size="sm" disabled={technicalBusy} onClick={() => setGenerationRequest((value) => value + 1)}>
                     {technicalBusy ? c("Analyzing…", "正在分析…") : c("Generate analysis", "生成分析")}

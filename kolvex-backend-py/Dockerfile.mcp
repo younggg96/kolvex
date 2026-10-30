@@ -1,0 +1,10 @@
+FROM python:3.11-slim
+WORKDIR /app
+ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1
+COPY requirements-mcp.txt .
+RUN pip install --no-cache-dir -r requirements-mcp.txt
+COPY mcp_server ./mcp_server
+RUN useradd --create-home mcp
+USER mcp
+EXPOSE 8081
+CMD ["python", "-m", "mcp_server", "--transport", "streamable-http", "--host", "0.0.0.0"]
