@@ -42,6 +42,7 @@ export default function MarketEventCalendar() {
   }, [revalidate]);
   return (
     <section
+      ref={calendarRoot}
       className="min-w-0 max-w-full space-y-6 pt-6"
       aria-labelledby="events-heading"
       aria-busy={loading}
@@ -153,12 +154,44 @@ export default function MarketEventCalendar() {
                     {c("events", "个事件")}
                   </p>
                   {isCalendar && (
-                    <p>
-                      {c(
-                        "Scroll horizontally to see all days",
-                        "左右滑动查看全部日期",
-                      )}
-                    </p>
+                    <div className="flex items-center gap-3">
+                      <p>
+                        {c("Scroll to see all days", "左右滑动查看全部日期")}
+                      </p>
+                      <div
+                        role="group"
+                        aria-label={c("Scroll calendar", "滚动日历")}
+                        className="flex gap-2"
+                      >
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="icon"
+                          className="h-11 w-11"
+                          disabled={!scrollBounds.left}
+                          onClick={() => scrollDay(-1)}
+                          aria-label={c("Scroll left one day", "向左滚动一天")}
+                          title={c("Scroll left one day", "向左滚动一天")}
+                        >
+                          <ChevronLeft className="h-4 w-4" aria-hidden="true" />
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="icon"
+                          className="h-11 w-11"
+                          disabled={!scrollBounds.right}
+                          onClick={() => scrollDay(1)}
+                          aria-label={c("Scroll right one day", "向右滚动一天")}
+                          title={c("Scroll right one day", "向右滚动一天")}
+                        >
+                          <ChevronRight
+                            className="h-4 w-4"
+                            aria-hidden="true"
+                          />
+                        </Button>
+                      </div>
+                    </div>
                   )}
                 </div>
                 {!events.length && !isCalendar ? (
@@ -173,6 +206,7 @@ export default function MarketEventCalendar() {
                   </p>
                 ) : (
                   <div
+                    data-calendar-scroll={isCalendar ? "" : undefined}
                     role={isCalendar ? "region" : undefined}
                     aria-label={
                       isCalendar
