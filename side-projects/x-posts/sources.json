@@ -1,0 +1,6 @@
+{
+  "usernames": ["MentoviaX"],
+  "include_database_creators": true,
+  "max_posts_per_creator": 500,
+  "max_scrolls_per_creator": 60
+}

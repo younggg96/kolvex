@@ -76,7 +76,7 @@ horizontal padding on mobile and 32px from the medium breakpoint. Published
 reports stay within 1080px; Creator Opinions retains a wider two-column layout.
 
 Markets, Creator Opinions and AI Research each have one primary navigation entry.
-Creator Opinions contains YouTube and Reddit child links in the sidebar. Both
+Creator Opinions contains YouTube, Reddit and X child links in the sidebar. All
 sources keep the parent active in shared desktop/mobile navigation. Below the
 large breakpoint, `DashboardLayout` owns the shared `OpinionSourceNav` beneath
 the header on either source and its nested routes: flat text links, a green
@@ -1044,3 +1044,23 @@ Admin GET detail supplies a revision token; PUT/DELETE require If-Match and
 compare that revision atomically in the database. A stale edit/delete returns 409.
 Successful create/edit/delete invalidates the shared reader and calendar cache.
 Browser database access remains denied; verify_admin owns all write operations.
+
+## X creator content
+
+`/dashboard/x-opinions` uses DashboardLayout and OpinionSourceNav, with the
+existing semantic tokens and shared Button/Input controls. Desktop places the
+creator directory beside a single chronological feed; mobile stacks the directory
+above it. The page title is screen-reader-only, with no visible introductory
+heading or description. Author, stock ticker and page are committed URL filters. Stock filter
+validation is explicit on submit, with a localized clear action and inline error.
+New requests cancel old ones, time out, and retain a retry action. No-results
+and first-use empty states explain how to recover.
+
+Administrator controls use the existing UserProfileProvider permission state;
+the backend verifies permissions independently. Profile saves are explicit and
+imports follow file selection, validation preview, then import. Input and preview
+state remain transient on this page; no draft or file is persisted in browser
+storage. Imported IDs are skipped on conflicts, making retries safe. Source text
+wraps naturally, quoted text uses a muted surface, and source/media links open X.
+Dates and numbers follow the active Chinese/English locale and reader timezone.
+Unknown engagement counts are omitted rather than rendered as zero.

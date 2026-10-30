@@ -14,6 +14,7 @@ from app.api.routes.user_api_keys import router as user_api_keys_router
 from app.api.routes.trading_analysis import router as trading_analysis_router
 from app.api.routes.plaid import router as plaid_router
 from app.api.routes.youtube_opinions import router as youtube_opinions_router
+from app.api.routes.x_content import router as x_content_router
 from app.api.routes.chart_drawings import router as chart_drawings_router
 from app.api.routes.briefs import router as briefs_router
 from app.api.routes.market_events import router as market_events_router
@@ -37,6 +38,7 @@ api_router.include_router(user_api_keys_router)
 api_router.include_router(trading_analysis_router)
 api_router.include_router(plaid_router)
 api_router.include_router(youtube_opinions_router)
+api_router.include_router(x_content_router)
 api_router.include_router(chart_drawings_router)
 api_router.include_router(briefs_router)
 api_router.include_router(market_events_router)

@@ -1,5 +1,6 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useCachedResource } from "@/hooks/useCachedResource";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -19,6 +20,8 @@ export default function MarketEventCalendar() {
   const [week, setWeek] = useState("1");
   const [view, setView] = useState<"calendar" | "list">("calendar");
   const isCalendar = view === "calendar";
+  const calendarRoot = useRef<HTMLElement>(null);
+  const [scrollBounds, setScrollBounds] = useState({ left: false, right: false });
   const { data, error, loading, refreshing, refresh, revalidate } = useCachedResource<MarketCalendar>(
     "/api/market/events",
     async signal => {
@@ -40,6 +43,43 @@ export default function MarketEventCalendar() {
       window.removeEventListener("online", resume);
     };
   }, [revalidate]);
+  useEffect(() => {
+    const scroller = calendarRoot.current?.querySelector<HTMLElement>("[data-calendar-scroll]");
+    if (!scroller) {
+      setScrollBounds({ left: false, right: false });
+      return;
+    }
+    const measure = () => {
+      const next = {
+        left: scroller.scrollLeft > 1,
+        right: scroller.scrollLeft + scroller.clientWidth < scroller.scrollWidth - 1,
+      };
+      setScrollBounds(previous => previous.left === next.left && previous.right === next.right ? previous : next);
+    };
+    measure();
+    scroller.addEventListener("scroll", measure, { passive: true });
+    const resize = new ResizeObserver(measure);
+    resize.observe(scroller);
+    if (scroller.firstElementChild) resize.observe(scroller.firstElementChild);
+    return () => {
+      scroller.removeEventListener("scroll", measure);
+      resize.disconnect();
+    };
+  }, [data, isCalendar, week]);
+
+  function scrollDay(direction: -1 | 1) {
+    const scroller = calendarRoot.current?.querySelector<HTMLElement>("[data-calendar-scroll]");
+    if (!scroller) return;
+    const grid = scroller.firstElementChild as HTMLElement | null;
+    const day = grid?.firstElementChild as HTMLElement | null;
+    const gap = grid ? parseFloat(getComputedStyle(grid).columnGap) || 0 : 0;
+    const distance = day ? day.offsetWidth + gap : scroller.clientWidth;
+    scroller.scrollBy({
+      left: direction * distance,
+      behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
+    });
+  }
+
   return (
     <section
       ref={calendarRoot}

@@ -46,9 +46,9 @@ export const PRODUCT_FEATURES = [
     id: "youtubeOpinions",
     label: "Creator Opinions",
     enabled: true,
-    routePrefixes: ["/dashboard/youtube-opinions", "/dashboard/reddit-opinions"],
-    apiPrefixes: ["/api/youtube-opinions", "/api/reddit-opinions"],
-    libFiles: ["lib/youtubeOpinionsApi.ts"],
+    routePrefixes: ["/dashboard/youtube-opinions", "/dashboard/reddit-opinions", "/dashboard/x-opinions"],
+    apiPrefixes: ["/api/youtube-opinions", "/api/reddit-opinions", "/api/x-content"],
+    libFiles: ["lib/youtubeOpinionsApi.ts", "lib/xContentApi.ts"],
   },
   {
     id: "briefs",

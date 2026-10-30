@@ -21,6 +21,7 @@ export interface MainNavItem {
 export const OPINION_SOURCES = [
   { title: "YouTube", href: "/dashboard/youtube-opinions", icon: Youtube },
   { title: "Reddit", href: "/dashboard/reddit-opinions", icon: MessageSquareText },
+  { title: "X", href: "/dashboard/x-opinions", icon: MessageSquareText },
 ];
 
 export const MAIN_NAV_ITEMS: MainNavItem[] = [
