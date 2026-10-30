@@ -284,7 +284,7 @@ export default function StockWorkspace({ ticker, returnHref = "/dashboard", init
                 </div>
               )}
             </section>
-            <section className="min-w-0" aria-label={c("Price chart and AI drawings", "K 线图与 AI 画线")}>
+            <section className="min-w-0 rounded-xl border border-border bg-card p-4 sm:p-5" aria-label={c("Price chart and AI drawings", "K 线图与 AI 画线")}>
               <div>
                 <PriceChart
                   key={ticker}

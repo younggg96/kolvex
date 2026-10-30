@@ -87,7 +87,9 @@ uses the shared Input and Button to open any valid ticker, independently of
 creator coverage. Its inline validation and clear action follow the active locale.
 AI generation remains an explicit action on the stock detail page. The stock
 workspace uses one reading column at every viewport: identity and quote, K-line
-chart, then one unified insight panel. The panel sits directly below the chart and
+chart, then one unified insight panel. The chart, AI actions and drawing toolbar
+share a rounded-xl bordered bg-card surface with 16px padding, increasing to 20px
+from sm, matching the insight panel. The panel sits directly below the chart and
 uses a single shared Radix tab list for change summary, technical analysis,
 conditional setup, latest news, creator intelligence and AI research. Its flat
 rounded-xl bordered card uses 16px padding, increasing to 20px from sm. The tab
