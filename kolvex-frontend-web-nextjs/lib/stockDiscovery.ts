@@ -52,6 +52,7 @@ export interface StockObservationState {
   sector: StockSector;
   sort: StockSort;
   rows: number;
+  search?: string;
 }
 export const STOCK_PAGE_SIZE = 10;
 export const STOCK_PREFERENCE_KEY = "kolvex:stock-observation";
@@ -67,7 +68,9 @@ export function readStockObservationState(params: URLSearchParams, holdingsEnabl
   const sorts = stockSorts(scope);
   const requestedSort = params.get("stockSort") as StockSort;
   const requestedRows = Number(params.get("stockRows"));
+  const search = (params.get("stockSearch") ?? "").trim().slice(0, 100);
   return { scope, sector, sort: sorts.includes(requestedSort) ? requestedSort : sorts[0],
+    ...(search ? { search } : {}),
     rows: Number.isSafeInteger(requestedRows) && requestedRows >= STOCK_PAGE_SIZE ? Math.min(requestedRows, 1000) : STOCK_PAGE_SIZE };
 }
 
@@ -79,6 +82,8 @@ export function writeStockObservationState(params: URLSearchParams, state: Stock
   else next.delete("sector");
   if (state.rows > STOCK_PAGE_SIZE) next.set("stockRows", String(state.rows));
   else next.delete("stockRows");
+  if (state.search?.trim()) next.set("stockSearch", state.search.trim().slice(0, 100));
+  else next.delete("stockSearch");
   return next;
 }
 
@@ -110,7 +115,10 @@ export function selectObservationSymbols(
   const symbols: string[] = state.scope === "core" ? CORE_STOCKS.filter(stock => state.sector === "all" || stock.sector === state.sector).map(stock => stock.symbol)
     : state.scope === "holdings" ? [...new Set(holdings)]
     : stocks.filter(stock => validTicker(stock.ticker) && (state.sort === "latest" ? latestStockOpinionDate(stock, now) !== null : (recentStockOpinionCount(stock, now) ?? 0) > 0)).map(stock => stock.ticker);
-  return symbols.sort((a, b) => {
+  const search = (state.search ?? "").trim().replace(/^\$/, "").toLocaleLowerCase();
+  const matching = search ? symbols.filter(symbol => [symbol, CORE_STOCKS.find(stock => stock.symbol === symbol)?.name, coverage.get(symbol)?.company_name, quotes[symbol]?.name]
+    .some(value => value?.toLocaleLowerCase().includes(search))) : symbols;
+  return matching.sort((a, b) => {
     if (state.sort === "default") return 0;
     if (state.sort === "heat") return (recentStockOpinionCount(coverage.get(b), now) ?? 0) - (recentStockOpinionCount(coverage.get(a), now) ?? 0) || (latestStockOpinionDate(coverage.get(b), now) ?? "").localeCompare(latestStockOpinionDate(coverage.get(a), now) ?? "") || a.localeCompare(b);
     if (state.sort === "latest") return Date.parse(latestStockOpinionDate(coverage.get(b), now)!) - Date.parse(latestStockOpinionDate(coverage.get(a), now)!) || a.localeCompare(b);

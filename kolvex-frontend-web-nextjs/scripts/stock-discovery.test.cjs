@@ -122,3 +122,19 @@ test('scope controls update Next App Router search params without bypassing its 
   assert.equal(writtenState.__NA, true, 'Next retains its private state itself');
   assert.deepEqual(writtenState.__PRIVATE_NEXTJS_INTERNALS_TREE, ['market']);
 });
+
+test('search matches current-list tickers and company names before pagination', () => {
+  assert.deepEqual(selectObservationSymbols(state({ scope: 'core', sort: 'default', search: '  $nvda  ' }), [], [], {}, now), ['NVDA']);
+  assert.deepEqual(selectObservationSymbols(state({ scope: 'core', sort: 'default', search: 'Micro' }), [], [], {}, now), ['MSFT', 'AMD']);
+  assert.deepEqual(selectObservationSymbols(state({ scope: 'core', sector: 'energy', search: 'NVDA' }), [], [], {}, now), []);
+  assert.deepEqual(selectObservationSymbols(state({ search: '摩根' }), [{ ...inputs[1], company_name: '摩根大通' }], [], {}, now), ['JPM']);
+  assert.deepEqual(selectObservationSymbols(state({ scope: 'holdings', search: 'Costco' }), [], ['COST'], { COST: { name: 'Costco Wholesale' } }, now), ['COST']);
+});
+test('stock search round trips, resets cleanly and preserves other URL state', () => {
+  const next = state({ search: '$NVDA', rows: 20 });
+  const params = writeStockObservationState(new URLSearchParams('tab=overview'), next);
+  assert.deepEqual(readStockObservationState(params), next);
+  assert.equal(params.get('tab'), 'overview');
+  assert.equal(writeStockObservationState(params, state()).has('stockSearch'), false);
+  assert.equal(readStockObservationState(new URLSearchParams('stockSearch=' + 'a'.repeat(120))).search.length, 100);
+});

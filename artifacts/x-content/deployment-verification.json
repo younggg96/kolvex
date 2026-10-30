@@ -1,0 +1,31 @@
+{
+  "commit": "c6831e8156dcb5eaa319f391c1bef8073644f1a3",
+  "environment": "production",
+  "frontend": {
+    "status": "READY",
+    "deployment_id": "dpl_6Ecp9DAvMNWTs1FaJBJxLQrwJ8op",
+    "url": "https://kolvex.app/dashboard/x-opinions",
+    "build_seconds": 91
+  },
+  "backend": {
+    "status": "success",
+    "deployment_id": "a43365f8-1715-4ec7-a309-116351ba5843",
+    "health_status": 200
+  },
+  "checks": {
+    "post_total": 150,
+    "TSLA_total": 40,
+    "unauthenticated_upload": 401,
+    "mobile_width": 390,
+    "mobile_scroll_width": 390,
+    "browser_errors": 0,
+    "calendar_scroll_left_after_right_click": 295
+  },
+  "tests": {
+    "backend": 18,
+    "collector": 10,
+    "extractor": 4,
+    "source_navigation_regression": 12
+  },
+  "runtime_log_scan": "Unavailable through connected platform tools; HTTP and browser smoke checks completed"
+}
