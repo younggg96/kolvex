@@ -123,6 +123,7 @@ export interface APICompanyProfile {
 
 export interface APIFinancials {
   symbol: string;
+  financial_currency?: string | null;
   pe_ratio: number;
   forward_pe: number;
   peg_ratio: number | null;

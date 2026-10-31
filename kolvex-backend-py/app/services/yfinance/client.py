@@ -385,6 +385,7 @@ class YFinanceService:
 
         return {
             "symbol": symbol.upper(),
+            "financial_currency": info.get("financialCurrency"),
             # 估值指标
             "pe_ratio": info.get("trailingPE"),
             "forward_pe": info.get("forwardPE"),

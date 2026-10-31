@@ -271,7 +271,7 @@ export default function ChartView({
 }: ChartViewProps) {
   const advanced = mode === "advanced";
   const heightClass = !advanced && compactLayout === "workspace"
-    ? "h-[360px] sm:h-[clamp(480px,60vh,760px)]"
+    ? "h-[320px] sm:h-[420px]"
     : HEIGHT_CLASS[mode];
   const drawingToolbarId = useId();
   const [mobileToolsOpen, setMobileToolsOpen] = useState(false);

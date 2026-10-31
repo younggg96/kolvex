@@ -86,29 +86,46 @@ The stock detail route belongs to Markets. `StockLookup` at the top of Markets
 uses the shared Input and Button to open any valid ticker, independently of
 creator coverage. Its inline validation and clear action follow the active locale.
 AI generation remains an explicit action on the stock detail page. The stock
-workspace uses one reading column at every viewport: identity and quote, K-line
-chart, then one unified insight panel. The chart, AI actions and drawing toolbar
-share a rounded-xl bordered bg-card surface with 16px padding, increasing to 20px
-from sm, matching the insight panel. The panel sits directly below the chart and
-uses a single shared Radix tab list for change summary, technical analysis,
-conditional setup, latest news, creator intelligence and AI research. Its flat
-rounded-xl bordered card uses 16px padding, increasing to 20px from sm. The tab
-bar uses two rows of three equal columns on phones and a wrapping left-aligned row
-from sm. No nested vertical scroller or fixed-height report region is introduced.
-The page is capped at 1800px.
+workspace is capped at 1800px, uses the existing page gutters and presents company
+identity, exchange/currency and regular/available after-hours quotes before a single
+sticky horizontal Radix research tab bar. The bar scrolls horizontally on phones;
+all labels remain full text. The `tab` query parameter restores the selected module
+without losing the Markets return filter or legacy creator deep links. Indices retain
+the chart/research modules without stock-only financial tabs.
 
-Repeated section headings inside the news, creator and research panels remain
-available to screen readers but are visually hidden; descriptions and actions
-remain visible. Panels stay mounted while inactive panels are hidden, preserving
-reader state across switches. Active panels enter with a 180ms opacity and 6px
-vertical transition; the global reduced-motion preference removes that movement.
-Tab selection resets for a new ticker. AI generation hooks and the chart stay
-mounted outside the panel; switching tabs does not start analysis. Written AI
-technical results render only in the Technicals tab, while AI drawings remain on
-the chart. The setup tab stays discoverable when no setup exists and explains how
-to generate analysis. News retains its independent refresh, retry, translation and
-source links. Long research uses the panel's full width. The runtime theme,
-typography and shared controls are unchanged.
+Overview, Technicals and Setup share the mounted K-line chart and AI drawing tools.
+Its workspace plot is 320px on phones and 420px from sm; advanced/fullscreen views
+retain their existing sizing. Financials, Earnings, Multicharts, Target price, Profile,
+News, Creators and Research show their own content directly below navigation. The
+chart remains mounted but hidden for these views, preserving overlays and jobs.
+Overview orders the chart, source-backed growth indicators, three grouped financial
+fact lists (one column on phones, three on wide screens), then research signals.
+New chart modules load on demand; visited modules stay mounted while hidden,
+preserving local report frequency and metric selections. Switching tabs does not
+start AI generation. The technical portal remains mounted while hidden.
+
+Financial statements use a semantic table, sticky first column and header, and a
+keyboard-focusable scroll region. Report category and annual/quarterly controls use
+labelled button groups. Columns show actual fiscal ending dates; unsupported history
+ranges and invented TTM columns do not appear. CSV exports raw numeric values,
+protects text cells against formula injection and preserves missing data. Multi-metric
+charts use a two-column grid on large screens and one column on phones, support
+bar/line and annual/quarterly switches, and permit adding/removing metrics through
+the shared authored Select and Buttons. Theme colors resolve through the existing
+`rgb(var(--...))` runtime tokens; chart marks use the text-safe positive color in
+both themes. EPS actuals and estimates have named legends and an accompanying table.
+Analyst target differences are relative to the source-supplied price and are labelled
+as estimates, with no claim that the stock is objectively undervalued.
+
+All modules retain localized loading, empty, retry and partial-data states. Missing
+numbers use an em dash and missing values are not converted to zero. Market currency
+and available financial reporting currency are distinguished. Profile source links
+accept only HTTP(S). Existing news, creator, research, holdings and AI history behavior
+remains available. Repeated headings inside the news, creator and research panels
+remain visually hidden but available to screen readers. Active panels retain the
+existing short transition and global reduced-motion behavior. Shared typography,
+light/dark themes and controls retain the Kolvex identity.
+
 Creator Opinions shows the first
 10 filtered stocks with a full stock directory at `/dashboard/youtube-opinions/stocks`.
 The count shows displayed/filtered totals. When more stocks match, View all links

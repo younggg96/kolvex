@@ -4,6 +4,7 @@ import { useCachedResource } from "@/hooks/useCachedResource";
 import { isProductFeatureEnabled } from "@/lib/productFeatures";
 
 import Link from "next/link";
+import { usePathname, useSearchParams } from "next/navigation";
 import HeaderBackButton from "@/components/layout/HeaderBackButton";
 import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -17,12 +18,14 @@ import AnalysisHistory from "./AnalysisHistory";
 import { useStockResearch } from "./useStockResearch";
 import CreatorIntelligence from "./CreatorIntelligence";
 import StockNews from "./StockNews";
+import dynamic from "next/dynamic";
+import StockFundamentalOverview, {
+  StockCompanyProfile,
+} from "./StockFundamentalOverview";
+import { finite, getStockOverview } from "@/lib/stockFundamentals";
 import WatchlistButton from "./WatchlistButton";
 import { ReportCard } from "@/components/trading-analysis/report-card";
-import {
-  getStockQuote,
-  type AiTechnicalAnalysis,
-} from "@/lib/stockApi";
+import { getStockQuote, type AiTechnicalAnalysis } from "@/lib/stockApi";
 import {
   getYouTubeStockDetail,
   type YouTubeOpinion,
@@ -43,10 +46,16 @@ import {
   Panel,
   TextLink,
   money,
-  signedMoney,
   useCopy,
 } from "./shared";
 import { useDecisionCommand } from "./CommandLayer";
+
+const StockFinancials = dynamic(() => import("./StockFinancials"));
+const StockMulticharts = dynamic(() =>
+  import("./StockFinancials").then((module) => module.StockMulticharts),
+);
+const StockEarnings = dynamic(() => import("./StockEarnings"));
+const StockAnalyst = dynamic(() => import("./StockAnalyst"));
 
 type Side = "bullish" | "bearish" | "neutral";
 const sideOf = (opinion: YouTubeOpinion): Side =>
@@ -56,36 +65,123 @@ const sideOf = (opinion: YouTubeOpinion): Side =>
       ? "bearish"
       : "neutral";
 
-export default function StockWorkspace({ ticker, returnHref = "/dashboard", initialInsight }: { ticker: string; returnHref?: string; initialInsight?: "creators" }) {
+export default function StockWorkspace({
+  ticker,
+  returnHref = "/dashboard",
+  initialInsight,
+}: {
+  ticker: string;
+  returnHref?: string;
+  initialInsight?: "creators";
+}) {
   const c = useCopy();
+  const { t, locale } = useTranslation();
   const benchmark = BENCHMARKS.find((item) => item.symbol === ticker);
   const priceLabel = (value: number | undefined) =>
     benchmark
       ? value === undefined || !Number.isFinite(value)
         ? "—"
         : indexValue(value)
-      : money(value);
+      : !finite(value)
+        ? "—"
+        : new Intl.NumberFormat(locale === "zh" ? "zh-CN" : "en-US", {
+            style: "currency",
+            currency,
+          }).format(value);
   const changeLabel = (value: number) =>
     benchmark
       ? `${value >= 0 ? "+" : "−"}${indexValue(Math.abs(value))}`
-      : signedMoney(value);
-  const { t, locale } = useTranslation();
+      : `${value >= 0 ? "+" : "−"}${priceLabel(Math.abs(value))}`;
   const { setContext } = useDecisionCommand();
-  const quoteResource = useCachedResource(`/api/stocks?action=quote&symbol=${encodeURIComponent(ticker)}`, signal => getStockQuote(ticker, signal), { ttl: 15_000, maxAge: 60_000 });
-  const opinionsResource = useCachedResource(`/api/youtube-opinions/stocks/${encodeURIComponent(ticker)}`, signal => getYouTubeStockDetail(ticker, {}, signal), { ttl: 60_000 });
-  const positionsResource = useCachedResource("/api/portfolio/holdings", signal => isProductFeatureEnabled("portfolio") ? getMyHoldings(signal) : Promise.resolve({ accounts: [], is_connected: false, is_public: false }), { ttl: 30_000, maxAge: 60_000 });
-  const publishedResource = useCachedResource(publishedAnalysesKey({ ticker, limit: 20 }), () => getPublishedAnalyses({ ticker, limit: 20 }), { ttl: 60_000 });
+  const quoteResource = useCachedResource(
+    `/api/stocks?action=quote&symbol=${encodeURIComponent(ticker)}`,
+    (signal) => getStockQuote(ticker, signal),
+    { ttl: 15_000, maxAge: 60_000 },
+  );
+  const opinionsResource = useCachedResource(
+    `/api/youtube-opinions/stocks/${encodeURIComponent(ticker)}`,
+    (signal) => getYouTubeStockDetail(ticker, {}, signal),
+    { ttl: 60_000 },
+  );
+  const positionsResource = useCachedResource(
+    "/api/portfolio/holdings",
+    (signal) =>
+      isProductFeatureEnabled("portfolio")
+        ? getMyHoldings(signal)
+        : Promise.resolve({
+            accounts: [],
+            is_connected: false,
+            is_public: false,
+          }),
+    { ttl: 30_000, maxAge: 60_000 },
+  );
+  const publishedResource = useCachedResource(
+    publishedAnalysesKey({ ticker, limit: 20 }),
+    () => getPublishedAnalyses({ ticker, limit: 20 }),
+    { ttl: 60_000 },
+  );
+  const overviewResource = useCachedResource(
+    `/api/stocks?action=overview&symbol=${encodeURIComponent(ticker)}`,
+    (signal) => getStockOverview(ticker, signal),
+    { ttl: 300_000 },
+  );
+  const overview = overviewResource.data;
   const quote = quoteResource.data ?? null;
+  const searchParams = useSearchParams();
+  const pathname = usePathname();
+  const sections = benchmark
+    ? ["summary", "technical", "setup", "news", "creators", "research"]
+    : [
+        "summary",
+        "financials",
+        "earnings",
+        "multicharts",
+        "analyst",
+        "technical",
+        "setup",
+        "news",
+        "creators",
+        "research",
+        "profile",
+      ];
+  const requestedTab = searchParams.get("tab") || "";
+  const activeTab = sections.includes(requestedTab)
+    ? requestedTab
+    : (initialInsight ?? "summary");
+  const [visitedTabs, setVisitedTabs] = useState(() => new Set([activeTab]));
+  useEffect(() => {
+    setVisitedTabs((previous) =>
+      previous.has(activeTab) ? previous : new Set([...previous, activeTab]),
+    );
+  }, [activeTab]);
+  const setActiveTab = (value: string) => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("tab", value);
+    window.history.replaceState(null, "", `${pathname}?${params}`);
+  };
+  const currency = /^[A-Z]{3}$/.test(overview?.quote.currency ?? "")
+    ? overview!.quote.currency
+    : "USD";
+  const financialCurrency = overview?.financials.financial_currency || currency;
   const opinions = opinionsResource.data?.opinions ?? [];
-  const positions = (positionsResource.data?.accounts ?? []).flatMap(account => account.portfolio_positions || []).filter(position => position.symbol === ticker && position.position_type !== "option");
+  const positions = (positionsResource.data?.accounts ?? [])
+    .flatMap((account) => account.portfolio_positions || [])
+    .filter(
+      (position) =>
+        position.symbol === ticker && position.position_type !== "option",
+    );
   const personalResearch = useStockResearch(ticker);
   const [generationRequest, setGenerationRequest] = useState(0);
   const [drawingRequest, setDrawingRequest] = useState(0);
   const [technicalBusy, setTechnicalBusy] = useState(true);
-  const [technicalContainer, setTechnicalContainer] = useState<HTMLDivElement | null>(null);
+  const [technicalContainer, setTechnicalContainer] =
+    useState<HTMLDivElement | null>(null);
   const [technical, setTechnical] = useState<AiTechnicalAnalysis | null>(null);
-  const publishedResearch = publishedResource.data?.items.find(item => item.status === "completed") ?? null;
-  const research = personalResearch.history.selected?.payload || publishedResearch;
+  const publishedResearch =
+    publishedResource.data?.items.find((item) => item.status === "completed") ??
+    null;
+  const research =
+    personalResearch.history.selected?.payload || publishedResearch;
   const loading = quoteResource.loading;
   const opinionsError = Boolean(opinionsResource.error);
   const positionsError = Boolean(positionsResource.error);
@@ -96,7 +192,11 @@ export default function StockWorkspace({ ticker, returnHref = "/dashboard", init
     publishedResource.error && c("AI research", "AI 研究"),
   ].filter(Boolean) as string[];
   const refreshSources = () => {
-    quoteResource.refresh(); opinionsResource.refresh(); positionsResource.refresh(); publishedResource.refresh();
+    quoteResource.refresh();
+    opinionsResource.refresh();
+    positionsResource.refresh();
+    publishedResource.refresh();
+    overviewResource.refresh();
   };
   const onAnalysis = useCallback(
     (value: AiTechnicalAnalysis | null) => setTechnical(value),
@@ -153,11 +253,12 @@ export default function StockWorkspace({ ticker, returnHref = "/dashboard", init
   const date = (value: string) =>
     new Date(value).toLocaleDateString(t("common.intlLocale"));
   const completedAt = research?.completed_at || research?.created_at;
-  const researchLoading = publishedResource.loading || personalResearch.history.busy;
+  const researchLoading =
+    publishedResource.loading || personalResearch.history.busy;
 
   useEffect(() => {
     document.title = `${ticker} · ${locale === "zh" ? "行情" : "Markets"} — Kolvex`;
-  }, [ticker, locale]);
+  }, [ticker, locale, activeTab]);
   const sorted = [...opinions].sort((a, b) =>
     b.opinion_date.localeCompare(a.opinion_date),
   );
@@ -211,58 +312,104 @@ export default function StockWorkspace({ ticker, returnHref = "/dashboard", init
     <DashboardLayout title={c("Markets", "行情")}>
       <main className="flex-1 overflow-y-auto">
         <div className="mx-auto max-w-[1800px] px-4 pb-16 pt-4 md:px-8 md:pt-6">
-          <div className="grid min-w-0 items-start gap-4 sm:gap-6">
-            <section
-              className="min-w-0"
-              aria-labelledby="stock-title"
-            >
-              <div className="flex items-center gap-3">
+          <div className="min-w-0 space-y-6">
+            <section className="min-w-0" aria-labelledby="stock-title">
+              <nav
+                aria-label={c("Breadcrumb", "面包屑导航")}
+                className="mb-6 flex items-center gap-2 text-sm text-muted-foreground"
+              >
                 <HeaderBackButton
                   href={returnHref}
-                  label={returnHref.startsWith("/dashboard/watchlist") ? c("Back to Watchlist", "返回自选股") : c("Back to Markets", "返回行情")}
+                  label={
+                    returnHref.startsWith("/dashboard/watchlist")
+                      ? c("Back to Watchlist", "返回自选股")
+                      : c("Back to Markets", "返回行情")
+                  }
                 />
+                <Link
+                  href={returnHref}
+                  className="hover:text-foreground focus-visible:ring-2 focus-visible:ring-primary"
+                >
+                  {returnHref.startsWith("/dashboard/watchlist")
+                    ? c("Watchlist", "自选股")
+                    : c("Markets", "行情")}
+                </Link>
+                <span aria-hidden="true">/</span>
+                <span aria-current="page" className="text-foreground">
+                  {ticker}
+                </span>
+              </nav>
+              <div className="flex items-start gap-3">
                 <CompanyLogo symbol={ticker} size="md" />
-                <div className="min-w-0">
+                <div className="min-w-0 flex-1">
                   <h1
                     id="stock-title"
-                    className="text-lg font-semibold leading-tight"
+                    className="text-xl font-semibold leading-tight sm:text-2xl"
                   >
-                    {ticker}
-                    {positions.length > 0 && <HeldMark />}
-                  </h1>
-                  <p className="truncate text-[13px] text-muted-foreground">
                     {benchmark
                       ? c(benchmark.en, benchmark.zh)
-                      : quote?.name ||
-                        (loading ? "" : c("Stock workspace", "股票工作台"))}
+                      : overview?.company.name || quote?.name || ticker}
+                    {positions.length > 0 && <HeldMark />}
+                  </h1>
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    {ticker}
+                    {overview?.quote.exchange &&
+                      ` · ${overview.quote.exchange}`}{" "}
+                    · {currency}
                   </p>
                 </div>
-                <div className="ml-auto"><WatchlistButton ticker={ticker} showLabel /></div>
+                <WatchlistButton ticker={ticker} showLabel />
               </div>
-              <div className="mt-4" aria-live="polite">
-                <div className="figure text-[34px] font-semibold leading-tight tracking-[-0.02em] sm:text-[40px]">
-                  {loading && !quote ? (
-                    <Skeleton className="h-10 w-40" />
-                  ) : (
-                    priceLabel(quote?.price)
-                  )}
-                </div>
-                {quote && (
-                  <p className="mt-1 flex flex-wrap items-baseline gap-x-2 text-sm">
-                    <span
-                      className={cn(
-                        "figure font-semibold",
-                        up ? "text-positive" : "text-negative",
+              <div
+                className="mt-6 flex flex-wrap items-start gap-x-8 gap-y-4"
+                aria-live="polite"
+              >
+                <div>
+                  <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                    <div className="figure text-3xl font-semibold tracking-tight sm:text-4xl">
+                      {loading && !quote ? (
+                        <Skeleton className="h-10 w-40" />
+                      ) : (
+                        priceLabel(quote?.price)
                       )}
-                    >
-                      {changeLabel(quote.change)} ({up ? "+" : "−"}
-                      {Math.abs(quote.changePercent).toFixed(2)}%)
-                    </span>
-                    <span className="text-muted-foreground">
-                      {c("Today", "今天")}
-                    </span>
+                    </div>
+                    {quote && (
+                      <span
+                        className={cn(
+                          "figure text-sm font-semibold",
+                          up ? "text-positive" : "text-negative",
+                        )}
+                      >
+                        {changeLabel(quote.change)} ({up ? "+" : "−"}
+                        {Math.abs(quote.changePercent).toFixed(2)}%)
+                      </span>
+                    )}
+                  </div>
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    {overview?.quote.market_time
+                      ? new Date(
+                          overview.quote.market_time * 1000,
+                        ).toLocaleString(t("common.intlLocale"), {
+                          timeZone: "America/New_York",
+                          timeZoneName: "short",
+                        })
+                      : c("Latest available quote", "最新可用报价")}
                   </p>
-                )}
+                </div>
+                {finite(overview?.quote.post_market_price) &&
+                  overview.quote.post_market_price > 0 && (
+                    <div className="border-border sm:border-l sm:pl-6">
+                      <p className="figure text-2xl font-semibold">
+                        {priceLabel(overview.quote.post_market_price)}
+                      </p>
+                      <p className="mt-2 text-xs text-muted-foreground">
+                        {c(
+                          "After hours · latest from source",
+                          "盘后 · 数据源最新报价",
+                        )}
+                      </p>
+                    </div>
+                  )}
               </div>
               {!!errors.length && (
                 <div
@@ -276,432 +423,642 @@ export default function StockWorkspace({ ticker, returnHref = "/dashboard", init
                     )}
                     ：{errors.join(c(", ", "、"))}。
                   </span>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={refreshSources}
-                  >
+                  <Button size="sm" variant="outline" onClick={refreshSources}>
                     {c("Retry", "重试")}
                   </Button>
                 </div>
               )}
             </section>
-            <section className="-mx-4 min-w-0 border-y border-border bg-card px-4 py-4 sm:mx-0 sm:rounded-xl sm:border sm:p-5" aria-label={c("Price chart and AI drawings", "K 线图与 AI 画线")}>
-              <div>
-                <PriceChart
-                  key={ticker}
-                  symbol={ticker}
-                  layout="workspace"
-                  resultsContainer={technicalContainer}
-                  range="3m"
-                  from=""
-                  to=""
-                  opinions={[]}
-                  formatDate={date}
-                  t={t}
-                  onAnalysisChange={onAnalysis}
-                  generationRequest={generationRequest}
-                  drawingRequest={drawingRequest}
-                  onAnalysisBusy={setTechnicalBusy}
-                />
-              </div>
-            </section>
-
-            <section id="stock-insights" className="min-w-0 scroll-mt-4 rounded-xl border border-border bg-card p-4 sm:p-5" aria-label={c("Stock insights", "个股洞察")}>
-              <Tabs key={`insights-${ticker}-${initialInsight ?? "summary"}`} defaultValue={initialInsight ?? "summary"}>
-                <TabsList className="sticky top-0 z-10 flex max-w-full flex-nowrap gap-6 overflow-x-auto bg-card sm:flex-wrap sm:gap-8" aria-label={c("Stock insights", "个股洞察")}>
-                  <TabsTrigger value="summary">{c("Summary", "变化摘要")}</TabsTrigger>
-                  <TabsTrigger value="technical">{c("Technicals", "技术分析")}</TabsTrigger>
-                  <TabsTrigger value="setup">{c("Setup", "条件计划")}</TabsTrigger>
-                  <TabsTrigger value="news">{c("Latest news", "最新相关新闻")}</TabsTrigger>
-                  <TabsTrigger value="creators">{c("Creator intelligence", "博主情报")}</TabsTrigger>
-                  <TabsTrigger value="research">{c("AI research", "AI 研究")}</TabsTrigger>
-                </TabsList>
-                <TabsContent value="summary" forceMount className="stock-tab-panel pt-2 data-[state=inactive]:hidden">
-              <Panel>
-                <div className="grid gap-4 divide-y divide-border sm:grid-cols-3 sm:divide-y-0 [&>div+div]:pt-4 sm:[&>div+div]:pt-0">
-                  <div>
-                    <p className="text-xs text-muted-foreground">
-                      {c("Market today", "今日行情")}
-                    </p>
-                    <div className="figure mt-1 text-sm font-semibold" aria-busy={loading && !quote}>
-                      {loading && !quote ? <Skeleton className="h-5 w-32" /> : quote
-                        ? `${changeLabel(quote.change)} (${quote.changePercent >= 0 ? "+" : ""}${quote.changePercent.toFixed(2)}%)`
-                        : "—"}
-                    </div>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">
-                      {c("Latest creator call", "最新博主观点")}
-                    </p>
-                    <div className="mt-1 text-sm font-semibold" aria-busy={opinionsResource.loading && !sorted[0]}>
-                      {opinionsResource.loading && !sorted[0] ? <Skeleton className="h-5 w-40" /> : sorted[0]
-                        ? `${sorted[0].channel_title || sorted[0].channel_id} · ${date(sorted[0].opinion_date)}`
-                        : c("No coverage yet", "暂无观点")}
-                    </div>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">
-                      {c("Latest AI research", "最近 AI 研究")}
-                    </p>
-                    <div className="mt-1 text-sm font-semibold" aria-busy={researchLoading && !completedAt}>
-                      {researchLoading && !completedAt ? <Skeleton className="h-5 w-28" /> : completedAt
-                        ? date(completedAt)
-                        : c("No AI research yet", "暂无 AI 研究")}
-                    </div>
-                    {!researchLoading && !research && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="mt-2"
-                        disabled={personalResearch.busy}
-                        onClick={() => void personalResearch.generate()}
-                      >
-                        {personalResearch.busy
-                          ? c("Generating…", "正在生成…")
-                          : c("Generate AI research", "生成 AI 研究")}
-                      </Button>
-                    )}
-                  </div>
+            <Tabs
+              key={`stock-${ticker}`}
+              value={activeTab}
+              onValueChange={setActiveTab}
+            >
+              <TabsList
+                className="sticky top-0 z-30 mb-6 flex max-w-full flex-nowrap gap-6 overflow-x-auto bg-background"
+                aria-label={c("Stock sections", "个股研究导航")}
+              >
+                <TabsTrigger value="summary">
+                  {c("Overview", "概览")}
+                </TabsTrigger>
+                {!benchmark && (
+                  <>
+                    <TabsTrigger value="financials">
+                      {c("Financials", "财务报表")}
+                    </TabsTrigger>
+                    <TabsTrigger value="earnings">
+                      {c("Earnings", "盈利表现")}
+                    </TabsTrigger>
+                    <TabsTrigger value="multicharts">
+                      {c("Multicharts", "多图表")}
+                    </TabsTrigger>
+                    <TabsTrigger value="analyst">
+                      {c("Target price", "分析师目标价")}
+                    </TabsTrigger>
+                  </>
+                )}
+                <TabsTrigger value="technical">
+                  {c("Technicals", "技术分析")}
+                </TabsTrigger>
+                <TabsTrigger value="setup">
+                  {c("Setup", "条件计划")}
+                </TabsTrigger>
+                <TabsTrigger value="news">{c("News", "新闻")}</TabsTrigger>
+                <TabsTrigger value="creators">
+                  {c("Creators", "博主情报")}
+                </TabsTrigger>
+                <TabsTrigger value="research">
+                  {c("AI research", "AI 研究")}
+                </TabsTrigger>
+                {!benchmark && (
+                  <TabsTrigger value="profile">
+                    {c("Profile", "公司资料")}
+                  </TabsTrigger>
+                )}
+              </TabsList>
+              <section
+                hidden={!["summary", "technical", "setup"].includes(activeTab)}
+                className="mb-6 min-w-0 rounded-xl border border-border bg-card p-4 sm:p-5"
+                aria-label={c(
+                  "Price chart and AI drawings",
+                  "K 线图与 AI 画线",
+                )}
+              >
+                <div>
+                  <PriceChart
+                    key={ticker}
+                    symbol={ticker}
+                    layout="workspace"
+                    resultsContainer={technicalContainer}
+                    range="3m"
+                    from=""
+                    to=""
+                    opinions={[]}
+                    formatDate={date}
+                    t={t}
+                    onAnalysisChange={onAnalysis}
+                    generationRequest={generationRequest}
+                    drawingRequest={drawingRequest}
+                    onAnalysisBusy={setTechnicalBusy}
+                  />
                 </div>
-                <dl className="mt-6 grid grid-cols-2 gap-x-6 gap-y-5 border-t border-border pt-5 sm:grid-cols-4">
-                  {evidenceItems.map((item) => (
-                    <div key={item.label} className="min-w-0" aria-busy={item.loading}>
-                      <dt className="text-[13px] text-muted-foreground">
-                        {item.label}
-                      </dt>
-                      <dd className="mt-1">
-                        {item.loading ? <Skeleton className="h-5 w-16" /> : item.assessed ? (
-                          <span className="inline-flex items-center rounded-full border border-border px-2 py-0.5 text-xs font-medium text-foreground">
-                            {c("Assessed", "已评估")}
-                          </span>
-                        ) : (
-                          <DirectionBadge direction={item.direction} />
-                        )}
-                      </dd>
-                      <dd className="mt-1 text-xs leading-5 text-muted-foreground">
-                        {item.loading ? <Skeleton className="h-5 w-32" /> : item.detail}
-                      </dd>
-                      {item.loading ? null : item.action === "creators" ? (
-                        <dd className="mt-2">
-                          <Button asChild size="sm" variant="outline">
-                            <Link href="/dashboard/youtube-opinions">
-                              {c("Browse creators", "查看博主观点")}
-                            </Link>
-                          </Button>
-                        </dd>
-                      ) : (
-                        item.action && (
-                          <dd className="mt-2">
+              </section>
+
+              <section
+                id="stock-insights"
+                className="min-w-0 scroll-mt-16"
+                aria-label={c("Stock insights", "个股洞察")}
+              >
+                <TabsContent
+                  value="financials"
+                  forceMount
+                  className="stock-tab-panel data-[state=inactive]:hidden"
+                >
+                  {(activeTab === "financials" ||
+                    visitedTabs.has("financials")) && (
+                    <>
+                      <StockFinancials
+                        symbol={ticker}
+                        currency={financialCurrency}
+                      />
+                    </>
+                  )}
+                </TabsContent>
+                <TabsContent
+                  value="earnings"
+                  forceMount
+                  className="stock-tab-panel data-[state=inactive]:hidden"
+                >
+                  {(activeTab === "earnings" ||
+                    visitedTabs.has("earnings")) && (
+                    <>
+                      <StockEarnings symbol={ticker} currency={currency} />
+                    </>
+                  )}
+                </TabsContent>
+                <TabsContent
+                  value="multicharts"
+                  forceMount
+                  className="stock-tab-panel data-[state=inactive]:hidden"
+                >
+                  {(activeTab === "multicharts" ||
+                    visitedTabs.has("multicharts")) && (
+                    <>
+                      <StockMulticharts
+                        symbol={ticker}
+                        currency={financialCurrency}
+                      />
+                    </>
+                  )}
+                </TabsContent>
+                <TabsContent
+                  value="analyst"
+                  forceMount
+                  className="stock-tab-panel data-[state=inactive]:hidden"
+                >
+                  {(activeTab === "analyst" || visitedTabs.has("analyst")) && (
+                    <>
+                      <StockAnalyst symbol={ticker} currency={currency} />
+                    </>
+                  )}
+                </TabsContent>
+                <TabsContent
+                  value="profile"
+                  forceMount
+                  className="stock-tab-panel data-[state=inactive]:hidden"
+                >
+                  {(activeTab === "profile" || visitedTabs.has("profile")) && (
+                    <>
+                      <StockCompanyProfile
+                        overview={overview}
+                        loading={overviewResource.loading}
+                        error={Boolean(overviewResource.error)}
+                        retry={overviewResource.refresh}
+                      />
+                    </>
+                  )}
+                </TabsContent>
+                <TabsContent
+                  value="summary"
+                  forceMount
+                  className="stock-tab-panel space-y-6 data-[state=inactive]:hidden"
+                >
+                  {!benchmark && (
+                    <StockFundamentalOverview
+                      overview={overview}
+                      quote={quote}
+                      loading={overviewResource.loading}
+                      error={Boolean(overviewResource.error)}
+                      retry={overviewResource.refresh}
+                    />
+                  )}
+                  <div className="rounded-xl border border-border bg-card p-4 sm:p-6">
+                    <h2 className="mb-4 text-sm font-medium text-muted-foreground">
+                      {c("Research signals", "研究动态")}
+                    </h2>
+                    <Panel>
+                      <div className="grid gap-4 divide-y divide-border sm:grid-cols-3 sm:divide-y-0 [&>div+div]:pt-4 sm:[&>div+div]:pt-0">
+                        <div>
+                          <p className="text-xs text-muted-foreground">
+                            {c("Market today", "今日行情")}
+                          </p>
+                          <div
+                            className="figure mt-1 text-sm font-semibold"
+                            aria-busy={loading && !quote}
+                          >
+                            {loading && !quote ? (
+                              <Skeleton className="h-5 w-32" />
+                            ) : quote ? (
+                              `${changeLabel(quote.change)} (${quote.changePercent >= 0 ? "+" : ""}${quote.changePercent.toFixed(2)}%)`
+                            ) : (
+                              "—"
+                            )}
+                          </div>
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground">
+                            {c("Latest creator call", "最新博主观点")}
+                          </p>
+                          <div
+                            className="mt-1 text-sm font-semibold"
+                            aria-busy={opinionsResource.loading && !sorted[0]}
+                          >
+                            {opinionsResource.loading && !sorted[0] ? (
+                              <Skeleton className="h-5 w-40" />
+                            ) : sorted[0] ? (
+                              `${sorted[0].channel_title || sorted[0].channel_id} · ${date(sorted[0].opinion_date)}`
+                            ) : (
+                              c("No coverage yet", "暂无观点")
+                            )}
+                          </div>
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground">
+                            {c("Latest AI research", "最近 AI 研究")}
+                          </p>
+                          <div
+                            className="mt-1 text-sm font-semibold"
+                            aria-busy={researchLoading && !completedAt}
+                          >
+                            {researchLoading && !completedAt ? (
+                              <Skeleton className="h-5 w-28" />
+                            ) : completedAt ? (
+                              date(completedAt)
+                            ) : (
+                              c("No AI research yet", "暂无 AI 研究")
+                            )}
+                          </div>
+                          {!researchLoading && !research && (
                             <Button
                               size="sm"
                               variant="outline"
-                              disabled={
-                                item.action === "technical"
-                                  ? technicalBusy
-                                  : personalResearch.busy
-                              }
-                              onClick={() =>
-                                item.action === "technical"
-                                  ? setGenerationRequest((value) => value + 1)
-                                  : void personalResearch.generate()
-                              }
+                              className="mt-2"
+                              disabled={personalResearch.busy}
+                              onClick={() => void personalResearch.generate()}
                             >
-                              {item.action === "technical"
-                                ? technicalBusy
-                                  ? c("Analyzing…", "正在分析…")
-                                  : c("Generate analysis", "生成分析")
-                                : personalResearch.busy
-                                  ? c("Generating…", "正在生成…")
-                                  : c("Generate AI research", "生成 AI 研究")}
+                              {personalResearch.busy
+                                ? c("Generating…", "正在生成…")
+                                : c("Generate AI research", "生成 AI 研究")}
                             </Button>
-                          </dd>
-                        )
+                          )}
+                        </div>
+                      </div>
+                      <dl className="mt-6 grid grid-cols-2 gap-x-6 gap-y-5 border-t border-border pt-5 sm:grid-cols-4">
+                        {evidenceItems.map((item) => (
+                          <div
+                            key={item.label}
+                            className="min-w-0"
+                            aria-busy={item.loading}
+                          >
+                            <dt className="text-[13px] text-muted-foreground">
+                              {item.label}
+                            </dt>
+                            <dd className="mt-1">
+                              {item.loading ? (
+                                <Skeleton className="h-5 w-16" />
+                              ) : item.assessed ? (
+                                <span className="inline-flex items-center rounded-full border border-border px-2 py-0.5 text-xs font-medium text-foreground">
+                                  {c("Assessed", "已评估")}
+                                </span>
+                              ) : (
+                                <DirectionBadge direction={item.direction} />
+                              )}
+                            </dd>
+                            <dd className="mt-1 text-xs leading-5 text-muted-foreground">
+                              {item.loading ? (
+                                <Skeleton className="h-5 w-32" />
+                              ) : (
+                                item.detail
+                              )}
+                            </dd>
+                            {item.loading ? null : item.action ===
+                              "creators" ? (
+                              <dd className="mt-2">
+                                <Button asChild size="sm" variant="outline">
+                                  <Link href="/dashboard/youtube-opinions">
+                                    {c("Browse creators", "查看博主观点")}
+                                  </Link>
+                                </Button>
+                              </dd>
+                            ) : (
+                              item.action && (
+                                <dd className="mt-2">
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    disabled={
+                                      item.action === "technical"
+                                        ? technicalBusy
+                                        : personalResearch.busy
+                                    }
+                                    onClick={() =>
+                                      item.action === "technical"
+                                        ? setGenerationRequest(
+                                            (value) => value + 1,
+                                          )
+                                        : void personalResearch.generate()
+                                    }
+                                  >
+                                    {item.action === "technical"
+                                      ? technicalBusy
+                                        ? c("Analyzing…", "正在分析…")
+                                        : c("Generate analysis", "生成分析")
+                                      : personalResearch.busy
+                                        ? c("Generating…", "正在生成…")
+                                        : c(
+                                            "Generate AI research",
+                                            "生成 AI 研究",
+                                          )}
+                                  </Button>
+                                </dd>
+                              )
+                            )}
+                          </div>
+                        ))}
+                      </dl>
+                    </Panel>
+                  </div>
+                </TabsContent>
+                <TabsContent
+                  value="technical"
+                  forceMount
+                  className="stock-tab-panel pt-2 data-[state=inactive]:hidden"
+                >
+                  <Panel>
+                    <div
+                      ref={setTechnicalContainer}
+                      className="flex min-w-0 flex-col"
+                    />
+                    {!technical && !technicalBusy && (
+                      <Empty>
+                        {c(
+                          "Use AI analysis for a written interpretation, or AI drawings for support, resistance, trendlines and Fibonacci levels.",
+                          "点击 AI 分析获取文字解读；点击 AI 画线绘制支撑、阻力、趋势线和斐波那契水平。",
+                        )}
+                      </Empty>
+                    )}
+                  </Panel>
+                </TabsContent>
+                <TabsContent
+                  value="setup"
+                  forceMount
+                  className="stock-tab-panel pt-2 data-[state=inactive]:hidden"
+                >
+                  {technicalBusy && !technical ? (
+                    <div role="status" className="space-y-4 py-4">
+                      <span className="sr-only">
+                        {c("Loading technical analysis…", "正在加载技术分析…")}
+                      </span>
+                      <Skeleton className="h-5 w-40" />
+                      <Skeleton className="h-24 w-full" />
+                    </div>
+                  ) : technical?.setup ? (
+                    <Panel>
+                      <div>
+                        <h3 className="font-semibold">
+                          {technical.setup.name}
+                        </h3>
+                        <p className="mt-1.5 text-sm leading-6 text-muted-foreground">
+                          {technical.setup.reason}
+                        </p>
+                        <dl className="mt-4 grid grid-cols-2 gap-4 text-sm">
+                          {[
+                            [
+                              c("Entry", "入场"),
+                              `${money(technical.setup.entry_low)} – ${money(technical.setup.entry_high)}`,
+                            ],
+                            [
+                              c("Invalidation", "失效价"),
+                              money(technical.setup.invalidation),
+                            ],
+                            [
+                              c("Targets", "目标"),
+                              technical.setup.targets.map(money).join(" / "),
+                            ],
+                            [
+                              c("Risk / reward", "风险收益比"),
+                              `1 : ${technical.setup.risk_reward}`,
+                            ],
+                          ].map(([label, value]) => (
+                            <div key={label}>
+                              <dt className="text-xs text-muted-foreground">
+                                {label}
+                              </dt>
+                              <dd className="figure mt-1 font-medium">
+                                {value}
+                              </dd>
+                            </div>
+                          ))}
+                        </dl>
+                        <p className="mt-4 text-sm font-medium">
+                          {c("Setup alignment", "计划证据一致性")}：
+                          {technical.setup.score === null
+                            ? c("Incomplete evidence", "证据不完整")
+                            : `${technical.setup.score}/100`}
+                        </p>
+                        <details className="mt-2 text-xs text-muted-foreground">
+                          <summary className="cursor-pointer">
+                            {c("How the score works", "评分如何计算")}
+                          </summary>
+                          <p className="mt-2 leading-5">
+                            {c(
+                              "Five equal checks (20 points each): trend alignment, price vs EMA20, EMA20 vs EMA50, RSI momentum, volume confirmation. Evidence alignment, not a probability of returns.",
+                              "5 项等权检查，每项20分：趋势一致性、价格与 EMA20、EMA20 与 EMA50、RSI 动量、成交量确认。代表证据一致性，不代表收益概率。",
+                            )}
+                          </p>
+                          <ul className="mt-2 space-y-1">
+                            {Object.entries(technical.setup.checks).map(
+                              ([name, passed]) => (
+                                <li key={name}>
+                                  {passed === null ? "—" : passed ? "✓" : "△"}{" "}
+                                  {name.replaceAll("_", " ")}
+                                </li>
+                              ),
+                            )}
+                          </ul>
+                        </details>
+                      </div>
+                    </Panel>
+                  ) : (
+                    <Panel>
+                      <Empty>
+                        {c(
+                          "Generate technical analysis to see entry conditions, invalidation and targets when a setup is available.",
+                          "生成技术分析后，若有适用的条件计划，将在这里显示入场条件、失效价与目标。",
+                        )}
+                      </Empty>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={technicalBusy}
+                        onClick={() =>
+                          setGenerationRequest((value) => value + 1)
+                        }
+                      >
+                        {technicalBusy
+                          ? c("Analyzing…", "正在分析…")
+                          : c("Generate analysis", "生成分析")}
+                      </Button>
+                    </Panel>
+                  )}
+                </TabsContent>
+                <TabsContent
+                  value="news"
+                  forceMount
+                  className="stock-tab-panel min-w-0 pt-2 data-[state=inactive]:hidden [&>section>header]:border-0 [&>section>header>div>h2]:sr-only"
+                >
+                  <StockNews key={ticker} ticker={ticker} />
+                </TabsContent>
+                <TabsContent
+                  value="creators"
+                  forceMount
+                  className="stock-tab-panel min-w-0 pt-2 data-[state=inactive]:hidden [&>section>header]:border-0 [&>section>header>div>h2]:sr-only"
+                >
+                  <CreatorIntelligence
+                    key={ticker}
+                    ticker={ticker}
+                    opinions={opinions}
+                    loading={opinionsResource.loading}
+                    error={opinionsError}
+                    onRetry={refreshSources}
+                  />
+                </TabsContent>
+                <TabsContent
+                  value="research"
+                  forceMount
+                  className="stock-tab-panel min-w-0 pt-2 data-[state=inactive]:hidden [&>section>header]:border-0 [&>section>header>div>h2]:sr-only"
+                >
+                  <Panel
+                    title={c("AI research", "AI 研究")}
+                    description={
+                      research && completedAt
+                        ? `${c("Last completed", "最近完成")}：${date(completedAt)}`
+                        : undefined
+                    }
+                  >
+                    <div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={personalResearch.busy || researchLoading}
+                        onClick={() => void personalResearch.generate()}
+                      >
+                        {personalResearch.busy
+                          ? c("Generating research…", "正在生成研究…")
+                          : research
+                            ? c("Update AI research", "更新 AI 研究")
+                            : c("Generate AI research", "生成 AI 研究")}
+                      </Button>
+                      {personalResearch.busy && (
+                        <p
+                          role="status"
+                          className="mt-2 text-sm text-muted-foreground"
+                        >
+                          {c(
+                            "Research is running. You can leave this page and return later.",
+                            "研究正在进行，可以离开页面，稍后返回查看结果。",
+                          )}
+                        </p>
+                      )}
+                      {(personalResearch.error ||
+                        personalResearch.job?.status === "failed") && (
+                        <p role="alert" className="mt-2 text-sm text-negative">
+                          {c(
+                            "Research could not be generated or its status loaded. Retry; your previous analysis is preserved.",
+                            "研究生成或状态加载失败，请重试。之前的分析已保留。",
+                          )}
+                        </p>
                       )}
                     </div>
-                  ))}
-                </dl>
-              </Panel>
-
-                </TabsContent>
-                <TabsContent value="technical" forceMount className="stock-tab-panel pt-2 data-[state=inactive]:hidden">
-              <Panel>
-                <div ref={setTechnicalContainer} className="flex min-w-0 flex-col" />
-                {!technical && !technicalBusy && (
-                  <Empty>
-                    {c(
-                      "Use AI analysis for a written interpretation, or AI drawings for support, resistance, trendlines and Fibonacci levels.",
-                      "点击 AI 分析获取文字解读；点击 AI 画线绘制支撑、阻力、趋势线和斐波那契水平。",
-                    )}
-                  </Empty>
-                )}
-              </Panel>
-
-                </TabsContent>
-                <TabsContent value="setup" forceMount className="stock-tab-panel pt-2 data-[state=inactive]:hidden">
-              {technicalBusy && !technical ? (
-                <div role="status" className="space-y-4 py-4">
-                  <span className="sr-only">{c("Loading technical analysis…", "正在加载技术分析…")}</span>
-                  <Skeleton className="h-5 w-40" />
-                  <Skeleton className="h-24 w-full" />
-                </div>
-              ) : technical?.setup ? (
-                <Panel>
-                  <div>
-                    <h3 className="font-semibold">{technical.setup.name}</h3>
-                    <p className="mt-1.5 text-sm leading-6 text-muted-foreground">
-                      {technical.setup.reason}
-                    </p>
-                    <dl className="mt-4 grid grid-cols-2 gap-4 text-sm">
-                      {[
-                        [
-                          c("Entry", "入场"),
-                          `${money(technical.setup.entry_low)} – ${money(technical.setup.entry_high)}`,
-                        ],
-                        [
-                          c("Invalidation", "失效价"),
-                          money(technical.setup.invalidation),
-                        ],
-                        [
-                          c("Targets", "目标"),
-                          technical.setup.targets.map(money).join(" / "),
-                        ],
-                        [
-                          c("Risk / reward", "风险收益比"),
-                          `1 : ${technical.setup.risk_reward}`,
-                        ],
-                      ].map(([label, value]) => (
-                        <div key={label}>
-                          <dt className="text-xs text-muted-foreground">
-                            {label}
-                          </dt>
-                          <dd className="figure mt-1 font-medium">{value}</dd>
-                        </div>
-                      ))}
-                    </dl>
-                    <p className="mt-4 text-sm font-medium">
-                      {c("Setup alignment", "计划证据一致性")}：
-                      {technical.setup.score === null
-                        ? c("Incomplete evidence", "证据不完整")
-                        : `${technical.setup.score}/100`}
-                    </p>
-                    <details className="mt-2 text-xs text-muted-foreground">
-                      <summary className="cursor-pointer">
-                        {c("How the score works", "评分如何计算")}
-                      </summary>
-                      <p className="mt-2 leading-5">
-                        {c(
-                          "Five equal checks (20 points each): trend alignment, price vs EMA20, EMA20 vs EMA50, RSI momentum, volume confirmation. Evidence alignment, not a probability of returns.",
-                          "5 项等权检查，每项20分：趋势一致性、价格与 EMA20、EMA20 与 EMA50、RSI 动量、成交量确认。代表证据一致性，不代表收益概率。",
-                        )}
-                      </p>
-                      <ul className="mt-2 space-y-1">
-                        {Object.entries(technical.setup.checks).map(
-                          ([name, passed]) => (
-                            <li key={name}>
-                              {passed === null ? "—" : passed ? "✓" : "△"}{" "}
-                              {name.replaceAll("_", " ")}
-                            </li>
-                          ),
-                        )}
-                      </ul>
-                    </details>
-                  </div>
-                </Panel>
-              ) : (
-                <Panel>
-                  <Empty>{c("Generate technical analysis to see entry conditions, invalidation and targets when a setup is available.", "生成技术分析后，若有适用的条件计划，将在这里显示入场条件、失效价与目标。")}</Empty>
-                  <Button variant="outline" size="sm" disabled={technicalBusy} onClick={() => setGenerationRequest((value) => value + 1)}>
-                    {technicalBusy ? c("Analyzing…", "正在分析…") : c("Generate analysis", "生成分析")}
-                  </Button>
-                </Panel>
-              )}
-                </TabsContent>
-                <TabsContent value="news" forceMount className="stock-tab-panel min-w-0 pt-2 data-[state=inactive]:hidden [&>section>header]:border-0 [&>section>header>div>h2]:sr-only">
-              <StockNews key={ticker} ticker={ticker} />
-
-                </TabsContent>
-                <TabsContent value="creators" forceMount className="stock-tab-panel min-w-0 pt-2 data-[state=inactive]:hidden [&>section>header]:border-0 [&>section>header>div>h2]:sr-only">
-              <CreatorIntelligence
-                key={ticker}
-                ticker={ticker}
-                opinions={opinions}
-                loading={opinionsResource.loading}
-                error={opinionsError}
-                onRetry={refreshSources}
-              />
-
-
-                </TabsContent>
-                <TabsContent value="research" forceMount className="stock-tab-panel min-w-0 pt-2 data-[state=inactive]:hidden [&>section>header]:border-0 [&>section>header>div>h2]:sr-only">
-              <Panel
-                title={c("AI research", "AI 研究")}
-                description={
-                  research && completedAt
-                    ? `${c("Last completed", "最近完成")}：${date(completedAt)}`
-                    : undefined
-                }
-              >
-                <div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={
-                      personalResearch.busy || researchLoading
-                    }
-                    onClick={() => void personalResearch.generate()}
-                  >
-                    {personalResearch.busy
-                      ? c("Generating research…", "正在生成研究…")
-                      : research
-                        ? c("Update AI research", "更新 AI 研究")
-                        : c("Generate AI research", "生成 AI 研究")}
-                  </Button>
-                  {personalResearch.busy && (
-                    <p
-                      role="status"
-                      className="mt-2 text-sm text-muted-foreground"
-                    >
-                      {c(
-                        "Research is running. You can leave this page and return later.",
-                        "研究正在进行，可以离开页面，稍后返回查看结果。",
-                      )}
-                    </p>
-                  )}
-                  {(personalResearch.error ||
-                    personalResearch.job?.status === "failed") && (
-                    <p role="alert" className="mt-2 text-sm text-negative">
-                      {c(
-                        "Research could not be generated or its status loaded. Retry; your previous analysis is preserved.",
-                        "研究生成或状态加载失败，请重试。之前的分析已保留。",
-                      )}
-                    </p>
-                  )}
-                </div>
-                <AnalysisHistory history={personalResearch.history} />
-                {research ? (
-                  <div className="pt-5">
-                    <ReportCard
-                      key={`${research.id}-thesis`}
-                      title={c(
-                        "Investment thesis and what could change it",
-                        "投资判断与可能改变判断的因素",
-                      )}
-                      content={
-                        research.investment_plan ||
-                        research.trader_plan ||
-                        research.market_report
-                      }
-                      locale={locale}
-                      t={t}
-                      bordered={false}
-                    />
-                    <details className="mt-5 border-t border-border pt-4">
-                      <summary className="cursor-pointer text-sm font-semibold">
-                        {c(
-                          "Why Kolvex sees it this way",
-                          "为什么得出这样的判断",
-                        )}
-                      </summary>
-                      <div className="mt-6 space-y-8">
-                        {[
-                          {
-                            label: c("Technical", "技术面"),
-                            report: research.market_report,
-                            key: "market",
-                          },
-                          {
-                            label: c("Fundamental", "基本面"),
-                            report: research.fundamentals_report,
-                            key: "fundamentals",
-                          },
-                          {
-                            label: c("News", "新闻"),
-                            report: research.news_report,
-                            key: "news",
-                          },
-                          {
-                            label: c("Social context", "社交环境"),
-                            report: research.sentiment_report,
-                            key: "sentiment",
-                          },
-                        ].map(({ label, report, key }) => (
-                          <ReportCard
-                            key={`${research.id}-${key}`}
-                            title={label}
-                            content={report}
-                            locale={locale}
-                            t={t}
-                          />
-                        ))}
-                      </div>
-                    </details>
-                    <details className="mt-4 border-t border-border pt-4">
-                      <summary className="cursor-pointer text-sm">
-                        {c(
-                          "See how AI reached this conclusion",
-                          "查看 AI 的推理过程",
-                        )}
-                      </summary>
-                      <div className="mt-6 space-y-8">
+                    <AnalysisHistory history={personalResearch.history} />
+                    {research ? (
+                      <div className="pt-5">
                         <ReportCard
-                          key={`${research.id}-bull`}
-                          title={t("tradingAnalysis.debate.bullResearcher")}
-                          content={research.investment_debate?.bull_history}
+                          key={`${research.id}-thesis`}
+                          title={c(
+                            "Investment thesis and what could change it",
+                            "投资判断与可能改变判断的因素",
+                          )}
+                          content={
+                            research.investment_plan ||
+                            research.trader_plan ||
+                            research.market_report
+                          }
                           locale={locale}
                           t={t}
+                          bordered={false}
                         />
-                        <ReportCard
-                          key={`${research.id}-bear`}
-                          title={t("tradingAnalysis.debate.bearResearcher")}
-                          content={research.investment_debate?.bear_history}
-                          locale={locale}
-                          t={t}
-                        />
+                        <details className="mt-5 border-t border-border pt-4">
+                          <summary className="cursor-pointer text-sm font-semibold">
+                            {c(
+                              "Why Kolvex sees it this way",
+                              "为什么得出这样的判断",
+                            )}
+                          </summary>
+                          <div className="mt-6 space-y-8">
+                            {[
+                              {
+                                label: c("Technical", "技术面"),
+                                report: research.market_report,
+                                key: "market",
+                              },
+                              {
+                                label: c("Fundamental", "基本面"),
+                                report: research.fundamentals_report,
+                                key: "fundamentals",
+                              },
+                              {
+                                label: c("News", "新闻"),
+                                report: research.news_report,
+                                key: "news",
+                              },
+                              {
+                                label: c("Social context", "社交环境"),
+                                report: research.sentiment_report,
+                                key: "sentiment",
+                              },
+                            ].map(({ label, report, key }) => (
+                              <ReportCard
+                                key={`${research.id}-${key}`}
+                                title={label}
+                                content={report}
+                                locale={locale}
+                                t={t}
+                              />
+                            ))}
+                          </div>
+                        </details>
+                        <details className="mt-4 border-t border-border pt-4">
+                          <summary className="cursor-pointer text-sm">
+                            {c(
+                              "See how AI reached this conclusion",
+                              "查看 AI 的推理过程",
+                            )}
+                          </summary>
+                          <div className="mt-6 space-y-8">
+                            <ReportCard
+                              key={`${research.id}-bull`}
+                              title={t("tradingAnalysis.debate.bullResearcher")}
+                              content={research.investment_debate?.bull_history}
+                              locale={locale}
+                              t={t}
+                            />
+                            <ReportCard
+                              key={`${research.id}-bear`}
+                              title={t("tradingAnalysis.debate.bearResearcher")}
+                              content={research.investment_debate?.bear_history}
+                              locale={locale}
+                              t={t}
+                            />
+                          </div>
+                          {!personalResearch.history.selected && (
+                            <TextLink
+                              className="mt-4 inline-block"
+                              href={`/dashboard/trading-analysis/explore/${research.id}`}
+                            >
+                              {c("Full research report", "完整研究报告")}
+                            </TextLink>
+                          )}
+                        </details>
+                        {personalResearch.history.selected && (
+                          <details className="mt-4 border-t border-border pt-4">
+                            <summary className="cursor-pointer text-sm font-semibold">
+                              {c(
+                                "Full saved research report",
+                                "完整历史研究报告",
+                              )}
+                            </summary>
+                            <div className="mt-5">
+                              <ResearchReportContent
+                                key={research.id}
+                                analysis={research}
+                                locale={locale}
+                                t={t}
+                              />
+                            </div>
+                          </details>
+                        )}
                       </div>
-                      {!personalResearch.history.selected && (
-                        <TextLink
-                          className="mt-4 inline-block"
-                          href={`/dashboard/trading-analysis/explore/${research.id}`}
-                        >
-                          {c("Full research report", "完整研究报告")}
-                        </TextLink>
-                      )}
-                    </details>
-                    {personalResearch.history.selected && (
-                      <details className="mt-4 border-t border-border pt-4">
-                        <summary className="cursor-pointer text-sm font-semibold">
-                          {c("Full saved research report", "完整历史研究报告")}
-                        </summary>
-                        <div className="mt-5">
-                          <ResearchReportContent
-                            key={research.id}
-                            analysis={research}
-                            locale={locale}
-                            t={t}
-                          />
-                        </div>
-                      </details>
+                    ) : researchLoading ? (
+                      <div role="status" className="space-y-4 py-4">
+                        <span className="sr-only">
+                          {c("Loading AI research…", "正在加载 AI 研究…")}
+                        </span>
+                        <Skeleton className="h-5 w-40" />
+                        <Skeleton className="h-24 w-full" />
+                      </div>
+                    ) : (
+                      <Empty>
+                        {c(
+                          "No AI research for this stock yet. Generate one to assess fundamentals and news.",
+                          "这只股票暂无 AI 研究，点击生成以分析基本面和新闻。",
+                        )}
+                      </Empty>
                     )}
-                  </div>
-                ) : researchLoading ? (
-                  <div role="status" className="space-y-4 py-4">
-                    <span className="sr-only">{c("Loading AI research…", "正在加载 AI 研究…")}</span>
-                    <Skeleton className="h-5 w-40" />
-                    <Skeleton className="h-24 w-full" />
-                  </div>
-                ) : (
-                  <Empty>
-                    {c(
-                      "No AI research for this stock yet. Generate one to assess fundamentals and news.",
-                      "这只股票暂无 AI 研究，点击生成以分析基本面和新闻。",
-                    )}
-                  </Empty>
-                )}
-              </Panel>
+                  </Panel>
                 </TabsContent>
-              </Tabs>
-            </section>
+              </section>
+            </Tabs>
           </div>
         </div>
       </main>

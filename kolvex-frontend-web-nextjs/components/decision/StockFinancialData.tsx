@@ -1,0 +1,82 @@
+"use client";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useTranslation } from "@/lib/i18n";
+import { finite } from "@/lib/stockFundamentals";
+import { useCopy } from "./shared";
+
+export function useFinancialFormat() {
+  const { locale } = useTranslation();
+  const intl = locale === "zh" ? "zh-CN" : "en-US";
+  return {
+    number: (value: unknown, compact = true) =>
+      finite(value)
+        ? new Intl.NumberFormat(intl, {
+            notation: compact ? "compact" : "standard",
+            maximumFractionDigits: 2,
+          }).format(value)
+        : "—",
+    percent: (value: unknown) =>
+      finite(value)
+        ? new Intl.NumberFormat(intl, {
+            style: "percent",
+            maximumFractionDigits: 2,
+          }).format(value)
+        : "—",
+    date: (value: string) =>
+      Number.isFinite(Date.parse(value))
+        ? new Date(value).toLocaleDateString(intl, {
+            timeZone: "UTC",
+            year: "numeric",
+            month: "short",
+            day: "numeric",
+          })
+        : "—",
+  };
+}
+export function FinancialState({
+  loading,
+  error,
+  empty,
+  retry,
+}: {
+  loading: boolean;
+  error: boolean;
+  empty: boolean;
+  retry: () => void;
+}) {
+  const c = useCopy();
+  if (loading)
+    return (
+      <div role="status" className="space-y-4 py-8">
+        <span className="sr-only">
+          {c("Loading financial data", "正在加载财务数据")}
+        </span>
+        <Skeleton className="h-8 w-48" />
+        <Skeleton className="h-64 w-full" />
+      </div>
+    );
+  if (error || empty)
+    return (
+      <div
+        role={error ? "alert" : "status"}
+        className="rounded-xl border border-border px-6 py-12 text-center"
+      >
+        <p className="text-sm text-muted-foreground">
+          {error
+            ? c(
+                "Financial data could not be loaded. Try again.",
+                "财务数据加载失败，请重试。",
+              )
+            : c(
+                "The source has no data for this stock and period.",
+                "数据源暂未提供该股票在此周期的数据。",
+              )}
+        </p>
+        <Button variant="outline" size="sm" className="mt-4" onClick={retry}>
+          {c("Retry", "重试")}
+        </Button>
+      </div>
+    );
+  return null;
+}
