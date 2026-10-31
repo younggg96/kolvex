@@ -1095,27 +1095,28 @@ Stock insight tabs stay in one horizontally scrollable row on phones, retaining
 Radix keyboard navigation and the active underline. Summary facts use separated
 rows on phones and the existing three-column layout on larger screens.
 
-### Account Watchlist persistence
+## Markets overview refinement
 
-`/dashboard/watchlist`, stock stars and Reddit follows share `useWatchlist` and
-one account-scoped memory store. `/api/watchlist` verifies the cookie-backed user
-and uses that user's Supabase client; database RLS owns row isolation. Stocks are
-individual `(user_id, ticker)` rows, ordered by their server creation time.
-Adds/removes are idempotent and show success only after database acknowledgement.
-Pending writes disable shared star controls. Failed writes retain the list and
-input, explain uncertain completion and provide refresh/retry. Loading failures
-must not present an empty Watchlist as a successful result.
+Dashboard reading surfaces use the flat background token without a decorative
+grid. Markets has a centered 1600px maximum content width; direct stock lookup
+is capped at 672px. Main section headings use 20px semibold, with the secondary
+creator rail at 18px. Instrument names and controls use 14px, primary index values
+24px, stock tickers and prices 16px, and metadata 12px. Numeric columns retain
+tabular figures.
 
-`WatchlistStatus` owns localized loading, signed-out, saving, saved and retry
-feedback for Watchlist and Reddit. Existing Button/Input, 44px targets, page
-spacing and semantic tokens remain canonical; no new visual tokens. Reddit stars
-reuse `WatchlistButton`. Other devices revalidate on focus, visibility, reconnect
-and every 30 seconds while visible. Account changes immediately clear memory;
-stale reads and writes cannot restore another account's data.
+Market cards are 240px tall with 64px charts. Five equal columns fill the wide
+desktop overview; smaller screens retain a single horizontally scrollable row
+with 240px cards so the stock list stays close to the overview. The lower grid
+uses a flexible stock list and a 320px secondary rail with matching header height.
+Range and view controls use neutral foreground selection; stock scope selection
+uses the muted surface. Brand green remains on the primary lookup action, active
+navigation and focus indicators, with semantic positive/negative data unchanged.
 
-Legacy global/Reddit browser lists import once per browser source and account,
-merging with cloud rows without replacing existing stocks. An atomic server
-receipt prevents retrying a migration from restoring previously removed stocks.
-Local legacy keys are removed only after acknowledgement; a browser ownership
-marker prevents another account claiming a failed import. Ordinary changes never
-write a local-only Watchlist. See `../docs/watchlist-sync.md` for the data contract.
+The Markets secondary rail leads with a compact Watchlist card above creator
+updates. It uses the shared browser-local watchlist store and quote cache, previews
+the six most recently saved symbols, and groups known stocks by the maintained
+sector catalogue. USD crypto pairs use Crypto; unclassified symbols use Other
+stocks. Native disclosures collapse each group. The header shows displayed/total
+count, refresh and a link to the full Watchlist; empty, loading, partial quote
+failure and session-only storage states remain explicit. Mobile places the rail
+after the stock observation list. No quotes or sector classifications are invented.

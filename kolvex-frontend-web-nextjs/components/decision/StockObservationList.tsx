@@ -161,13 +161,13 @@ export default function StockObservationList({ range, catalogue, held, onRetry }
   const clearSearch = () => { setSearchDraft(""); commitSearch(""); searchRef.current?.focus(); };
 
   return <div ref={listRef}>
-    <Panel title={c("Stock watch", "股票观察")} id="market-movers">
+    <Panel title={c("Stock watch", "股票观察")} id="market-movers" className="[&>header]:min-h-14 [&>header]:items-center">
       <div role="group" aria-label={c("Stock list", "股票列表")} className="flex flex-wrap gap-1 py-4">
-        {scopes.filter(scope => scope.key !== "holdings" || holdingsEnabled).map(scope => <Button key={scope.key} variant={state.scope === scope.key ? "default" : "ghost"} size="sm" className="min-h-11 px-4" aria-pressed={state.scope === scope.key} onClick={() => changeScope(scope.key)}>{c(scope.en, scope.zh)}</Button>)}
+        {scopes.filter(scope => scope.key !== "holdings" || holdingsEnabled).map(scope => <Button key={scope.key} variant="ghost" size="sm" className={cn("min-h-11 rounded-lg px-4 text-sm", state.scope === scope.key ? "bg-muted font-semibold text-foreground hover:bg-secondary" : "font-medium text-muted-foreground")} aria-pressed={state.scope === scope.key} onClick={() => changeScope(scope.key)}>{c(scope.en, scope.zh)}</Button>)}
       </div>
-      <div className={cn("mb-3 grid grid-cols-2 items-end gap-3", state.scope === "core" ? "lg:grid-cols-[minmax(0,1fr)_12rem_12rem]" : "lg:grid-cols-[minmax(0,1fr)_12rem]")}>
+      <div className={cn("mb-3 grid grid-cols-2 items-end gap-3", state.scope === "core" ? "lg:grid-cols-[minmax(0,1fr)_9rem_9rem]" : "lg:grid-cols-[minmax(0,1fr)_10rem]")}>
         <div className="col-span-2 min-w-0 lg:col-span-1">
-          <label htmlFor="stock-search" className="mb-2 block text-xs text-muted-foreground">{c("Search this list", "搜索当前名单")}</label>
+          <label htmlFor="stock-search" className="mb-2 block text-xs font-medium text-muted-foreground">{c("Search this list", "搜索当前名单")}</label>
           <div className="relative">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
             <Input ref={searchRef} id="stock-search" type="text" autoComplete="off" maxLength={100} placeholder={c("Ticker or company name", "股票代码或公司名称")} value={searchDraft}
@@ -178,14 +178,14 @@ export default function StockObservationList({ range, catalogue, held, onRetry }
           </div>
         </div>
         {state.scope === "core" && <div className="min-w-0">
-          <label htmlFor="stock-sector" className="mb-2 block text-xs text-muted-foreground">{c("Sector", "行业")}</label>
+          <label htmlFor="stock-sector" className="mb-2 block text-xs font-medium text-muted-foreground">{c("Sector", "行业")}</label>
           <Select value={state.sector} onValueChange={value => update({ ...state, sector: value as StockSector, rows: STOCK_PAGE_SIZE })}>
             <SelectTrigger id="stock-sector" className="h-11"><SelectValue /></SelectTrigger>
             <SelectContent>{STOCK_SECTORS.map(sector => <SelectItem key={sector.key} value={sector.key} className="min-h-11">{c(sector.en, sector.zh)}</SelectItem>)}</SelectContent>
           </Select>
         </div>}
         <div className={cn("min-w-0", state.scope !== "core" && "col-span-2 lg:col-span-1")}>
-          <label htmlFor="stock-sort" className="mb-2 block text-xs text-muted-foreground">{c("Sort", "排序")}</label>
+          <label htmlFor="stock-sort" className="mb-2 block text-xs font-medium text-muted-foreground">{c("Sort", "排序")}</label>
           <Select value={state.sort} onValueChange={value => update({ ...state, sort: value as StockSort, rows: STOCK_PAGE_SIZE })}>
             <SelectTrigger id="stock-sort" className="h-11"><SelectValue /></SelectTrigger>
             <SelectContent align="end">{stockSorts(state.scope).map(sort => <SelectItem key={sort} value={sort} className="min-h-11">{c(...sortLabels[sort])}</SelectItem>)}</SelectContent>
@@ -212,13 +212,13 @@ export default function StockObservationList({ range, catalogue, held, onRetry }
       </div>}
       {state.scope === "core" && catalogue.error && <p role="status" className="mb-3 text-xs text-muted-foreground">{c("Creator insights are temporarily unavailable. Quotes remain available.", "博主线索暂不可用，仍可查看行情。")}</p>}
       <div aria-busy={blocking || quoteLoading}>
-        <div className={cn(ROW_GRID, "mr-12 rounded-lg bg-muted/60 px-2 py-3 text-xs text-muted-foreground")} aria-hidden="true">
+        <div className={cn(ROW_GRID, "mr-12 border-b border-border px-2 py-3 text-xs text-muted-foreground")} aria-hidden="true">
           <span>{c("Stock", "股票")}</span>
           <span className="hidden text-center min-[400px]:block">{c(`Trend · ${trend.en}`, `走势 · ${trend.zh}`)}</span>
           <span className="text-right">{c("Price / Today", "价格 / 今日")}</span>
         </div>
         {blocking ? <div role="status" aria-label={c("Loading stocks", "正在加载股票")}>
-          {[0, 1, 2, 3, 4].map(row => <div key={row} className="flex min-h-24 items-center justify-between gap-4 border-b border-border px-2 py-4"><Skeleton className="h-10 w-36" /><Skeleton className="h-8 w-20" /></div>)}
+          {[0, 1, 2, 3, 4].map(row => <div key={row} className="flex min-h-20 items-center justify-between gap-4 border-b border-border px-2 py-4"><Skeleton className="h-10 w-36" /><Skeleton className="h-8 w-20" /></div>)}
         </div> : <ul className="divide-y divide-border" aria-label={c("Stock watch", "股票观察")}>
           {visible.map(symbol => {
             const stock = coverage.get(symbol);
@@ -226,12 +226,12 @@ export default function StockObservationList({ range, catalogue, held, onRetry }
             const href = `/dashboard/market/${encodeURIComponent(symbol)}`;
             return <li key={symbol} className="flex items-center gap-1">
               <Link href={`${href}?${detailParams}`} onClick={rememberScroll} className={cn(ROW_GRID, "min-h-20 min-w-0 flex-1 items-center rounded-lg px-2 py-4 transition-colors hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary")}>
-                <span className="flex min-w-0 items-center gap-2.5">
+                <span className="flex min-w-0 items-center gap-3">
                   <span aria-hidden="true" className="shrink-0"><CompanyLogo symbol={symbol} size="sm" /></span>
-                  <span className="min-w-0"><span className="block truncate text-[15px] font-semibold">{symbol}{state.scope !== "holdings" && held.tickers.includes(symbol) && <HeldMark />}</span><span className="mt-1 block truncate text-xs text-muted-foreground">{quotes[symbol]?.name || stock?.company_name || coreNames.get(symbol) || symbol}</span></span>
+                  <span className="min-w-0"><span className="block truncate text-base font-semibold">{symbol}{state.scope !== "holdings" && held.tickers.includes(symbol) && <HeldMark />}</span><span className="mt-1 block truncate text-xs text-muted-foreground">{quotes[symbol]?.name || stock?.company_name || coreNames.get(symbol) || symbol}</span></span>
                 </span>
                 <span className="hidden min-[400px]:block"><StockTrend symbol={symbol} period={trend.period} interval={trend.interval} rangeLabel={c(trend.en, trend.zh)} rangeKey={range} /></span>
-                <span className="min-w-0 text-right">{quoteLoading && !quotes[symbol] ? <Skeleton className="ml-auto h-10 w-20" /> : <><span className="figure block text-[15px] font-medium">{money(quotes[symbol]?.price)}</span><Change value={quotes[symbol]?.changePercent} className="mt-1 block text-xs font-semibold" /></>}</span>
+                <span className="min-w-0 text-right">{quoteLoading && !quotes[symbol] ? <Skeleton className="ml-auto h-10 w-20" /> : <><span className="figure block text-base font-medium">{money(quotes[symbol]?.price)}</span><Change value={quotes[symbol]?.changePercent} className="mt-1 block text-xs font-semibold" /></>}</span>
               </Link>
               <WatchlistButton ticker={symbol} />
             </li>;

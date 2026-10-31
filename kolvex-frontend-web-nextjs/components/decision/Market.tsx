@@ -19,7 +19,6 @@ import { MARKET_RANGES, marketRangeBaseline, observationRange, type MarketObserv
 import { loadMarketQuotes, getCachedMarketQuotes } from "@/lib/marketQuotes";
 import { BENCHMARKS, MARKET_GROUPS, isMarketIndex, indexValue, type MarketInstrument } from "@/lib/marketBenchmarks";
 import {
-  Change,
   Empty,
   HeldMark,
   Panel,
@@ -37,6 +36,7 @@ import MacroIndicators from "./MacroIndicators";
 import MarketEventCalendar from "./MarketEventCalendar";
 import StockObservationList from "./StockObservationList";
 import MarketComparison from "./MarketComparison";
+import MarketWatchlistCard from "./MarketWatchlistCard";
 
 const OVERVIEW_GROUPS = MARKET_GROUPS.filter(group => group.key === "indices");
 const TREND_GROUPS = MARKET_GROUPS.filter(group => group.key !== "indices");
@@ -50,8 +50,8 @@ type RangeKey = (typeof RANGES)[number]["key"];
 
 const pill = (active: boolean) =>
   cn(
-    "inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full px-3.5 text-[13px] font-semibold transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:opacity-50",
-    active ? "bg-primary text-primary-foreground" : "text-foreground/80 hover:bg-muted hover:text-foreground",
+    "inline-flex min-h-10 shrink-0 items-center gap-2 rounded-lg px-2 text-sm font-medium sm:px-3 transition-colors duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:opacity-50",
+    active ? "bg-foreground text-background" : "text-muted-foreground hover:bg-muted hover:text-foreground",
   );
 
 function MarketInstrumentCard({ benchmark, quote, quoteLoading, range, attempt, onRetry }: {
@@ -145,7 +145,7 @@ function MarketInstrumentCard({ benchmark, quote, quoteLoading, range, attempt, 
             <ScrubChart
               data={series}
               positive={positive}
-              height={96}
+              height={64}
               onScrub={setScrub}
               label={c(`${benchmark.en} trend, ${spec.en}`, `${benchmark.zh}走势，${spec.zh}`)}
             />
@@ -153,7 +153,7 @@ function MarketInstrumentCard({ benchmark, quote, quoteLoading, range, attempt, 
 
 
   return (
-    <article ref={host} className="relative h-[272px] w-[272px] shrink-0 snap-start overflow-hidden rounded-xl border border-border bg-card transition-colors hover:border-foreground/30">
+    <article ref={host} className="relative h-60 w-60 shrink-0 snap-start overflow-hidden rounded-xl border border-border bg-card transition-colors duration-200 hover:border-foreground/30 xl:w-auto xl:min-w-0">
       <Link
         href={benchmark.sourceUrl ?? `/dashboard/market/${encodeURIComponent(benchmark.symbol)}`}
         target={benchmark.sourceUrl ? "_blank" : undefined}
@@ -161,21 +161,21 @@ function MarketInstrumentCard({ benchmark, quote, quoteLoading, range, attempt, 
         aria-label={c(`Open ${benchmark.en} market details`, `查看${benchmark.zh}行情详情`)}
         className="block h-full cursor-pointer rounded-xl p-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary"
       >
-        <div className="flex h-6 min-w-0 items-baseline gap-x-2">
-          <h3 className="min-w-0 truncate text-base font-semibold" title={c(benchmark.en, benchmark.zh)}>{c(benchmark.en, benchmark.zh)}</h3>
+        <div className="flex h-6 min-w-0 items-baseline justify-between gap-x-2">
+          <h3 className="min-w-0 truncate text-sm font-medium" title={c(benchmark.en, benchmark.zh)}>{c(benchmark.en, benchmark.zh)}</h3>
           <time dateTime={date} className="figure shrink-0 text-xs text-muted-foreground">{date ? `${date.slice(5, 7)}/${date.slice(8, 10)}` : "—"}</time>
         </div>
         <p className="mt-0.5 truncate text-xs text-muted-foreground">{benchmark.symbol}{benchmark.daily && c(" · Daily", " · 日度")}</p>
-        <div className="figure mt-2 min-h-8 text-2xl font-semibold tracking-tight">
+        <div className="figure mt-3 min-h-8 text-2xl font-semibold tracking-tight">
           {valueDisplay}
         </div>
         <div className={cn("figure mt-0.5 min-h-5 truncate text-xs font-medium", change === undefined ? "text-muted-foreground" : positive ? "text-positive" : "text-negative")}>
           {changeDisplay}
         </div>
-        <div className="mt-2 h-24" aria-busy={seriesState === "loading"}>
+        <div className="mt-2 h-16" aria-busy={seriesState === "loading"}>
           {chartDisplay}
         </div>
-        <p className="mt-2 truncate text-[11px] text-muted-foreground" title={benchmark.note ? c(benchmark.note.en, benchmark.note.zh) : undefined}>
+        <p className="mt-2 truncate text-xs text-muted-foreground" title={benchmark.note ? c(benchmark.note.en, benchmark.note.zh) : undefined}>
           {benchmark.note ? c(benchmark.note.en, benchmark.note.zh) : unit === "percent" ? c("FRED · Yield in %", "FRED · 收益率 %") : unit === "points" ? c("Index points", "指数点位") : c("USD price", "美元价格")}
         </p>
       </Link>
@@ -197,8 +197,8 @@ function MarketInstrumentCard({ benchmark, quote, quoteLoading, range, attempt, 
 function MarketRangeControls({ range, setRange, view, setView }: { range: RangeKey; setRange: (range: RangeKey) => void; view: MarketView; setView: (view: MarketView) => void }) {
   const c = useCopy();
   return (
-              <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-                {view === "card" ? <div role="group" aria-label={c("Chart range", "走势区间")} className="flex flex-wrap gap-1">
+              <div className="flex min-w-0 flex-1 flex-wrap items-center justify-between gap-3">
+                {view === "card" ? <div role="group" aria-label={c("Chart range", "走势区间")} className="flex flex-wrap gap-1 rounded-xl bg-muted/50 p-1">
                   {RANGES.map((item) => (
                     <button
                       key={item.key}
@@ -212,8 +212,8 @@ function MarketRangeControls({ range, setRange, view, setView }: { range: RangeK
                       {c(item.en, item.zh)}
                     </button>
                   ))}
-                </div> : <p className="text-[13px] text-muted-foreground">{c("Compare all periods", "多区间表现对比")}</p>}
-                <div role="group" aria-label={c("Display mode", "显示方式")} className="flex shrink-0 gap-1 rounded-full border border-border p-1">
+                </div> : <p className="text-sm text-muted-foreground">{c("Compare all periods", "多区间表现对比")}</p>}
+                <div role="group" aria-label={c("Display mode", "显示方式")} className="ml-auto flex shrink-0 gap-1 rounded-xl border border-border p-1">
                   <button type="button" aria-pressed={view === "card"} onClick={() => setView("card")} className={pill(view === "card")}><LayoutGrid className="h-3.5 w-3.5" aria-hidden />{c("Cards", "卡片")}</button>
                   <button type="button" aria-pressed={view === "list"} onClick={() => setView("list")} className={pill(view === "list")}><List className="h-3.5 w-3.5" aria-hidden />{c("List", "列表")}</button>
                 </div>
@@ -236,15 +236,18 @@ function MarketCharts({ groups, quotes, loading, range, setRange, attempt, onRet
   const c = useCopy();
   return (
             <section aria-label={groups.length === 1 ? c("Market indices", "市场指数") : c("Market trends", "市场走势")}>
-              <MarketRangeControls range={range} setRange={setRange} view={view} setView={setView} />
+              <div className="mb-4 flex flex-col gap-4 2xl:flex-row 2xl:items-center 2xl:gap-8">
+                {groups.length === 1 && <h2 id="market-indices-heading" className="shrink-0 text-xl font-semibold tracking-tight">{c(groups[0].en, groups[0].zh)}</h2>}
+                <MarketRangeControls range={range} setRange={setRange} view={view} setView={setView} />
+              </div>
               {view === "list" ? <MarketComparison groups={groups} attempt={attempt} /> : groups.map(group => (
                 <section key={group.key} aria-labelledby={`market-${group.key}-heading`} className="mt-6 first:mt-0">
-                  <h2 id={`market-${group.key}-heading`} className="mb-4 text-base font-semibold">{c(group.en, group.zh)}</h2>
+                  {groups.length > 1 && <h2 id={`market-${group.key}-heading`} className="mb-4 text-xl font-semibold tracking-tight">{c(group.en, group.zh)}</h2>}
                   <div
                     role="region"
                     aria-label={c(`${group.en}, scroll horizontally`, `${group.zh}，可横向滚动`)}
                     tabIndex={0}
-                    className="flex snap-x snap-proximity gap-4 overflow-x-auto overscroll-x-contain pb-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                    className="flex snap-x snap-proximity gap-3 overflow-x-auto overscroll-x-contain pb-2 sm:gap-4 xl:grid xl:grid-cols-5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                   >
                     {group.instruments.map(item => (
                       <MarketInstrumentCard
@@ -351,7 +354,7 @@ function MarketOverview({ range, setRange, view, setView }: { range: RangeKey; s
     .sort((a, b) => Number(heldSet.has(b.ticker)) - Number(heldSet.has(a.ticker)) || b.current_date.localeCompare(a.current_date))
     .slice(0, 5);
   return (
-        <div className="mx-auto grid gap-x-8 gap-y-10 pt-6 xl:grid-cols-[minmax(0,1fr)_320px]">
+        <div className="mx-auto grid gap-x-8 gap-y-8 pt-6 xl:grid-cols-[minmax(0,1fr)_320px] 2xl:gap-x-12">
           <div className="min-w-0 xl:col-span-2">
             <MarketCharts view={view} setView={setView} groups={OVERVIEW_GROUPS} quotes={quotes} loading={loading} range={range} setRange={setRange} attempt={attempt} onRetry={() => setAttempt(value => value + 1)} checkedAt={checkedAt} />
           </div>
@@ -359,11 +362,12 @@ function MarketOverview({ range, setRange, view, setView }: { range: RangeKey; s
             <StockObservationList range={range} catalogue={catalogue} held={held} onRetry={() => setAttempt(value => value + 1)} />
           </div>
 
-          <aside className="min-w-0 xl:sticky xl:top-8 xl:self-start xl:border-l xl:border-border xl:pl-6">
+          <aside className="min-w-0 space-y-8 xl:sticky xl:top-8 xl:self-start xl:border-l xl:border-border xl:pl-6">
+            <MarketWatchlistCard />
             <Panel
               title={c("Creator updates", "博主新动态")}
               id="market-creator-updates"
-              className="[&>header]:items-center"
+              className="[&>header]:items-center [&>header]:min-h-14 [&>header_h2]:text-lg"
               action={<TextLink href="/dashboard/youtube-opinions" className="inline-flex min-h-10 items-center gap-1 !text-xs !font-medium text-muted-foreground hover:text-foreground">{c("View all", "全部观点")}<ArrowUpRight className="h-3.5 w-3.5" aria-hidden /></TextLink>}
             >
               {catalogue.loading && !catalogue.data ? (
@@ -380,7 +384,7 @@ function MarketOverview({ range, setRange, view, setView }: { range: RangeKey; s
                     <li key={shift.ticker}>
                       <Link
                         href={`/dashboard/market/${encodeURIComponent(shift.ticker)}`}
-                        className="-mx-2 flex min-h-20 items-center justify-between gap-3 rounded-lg px-2 py-4 transition-colors duration-150 hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary"
+                        className="-mx-2 flex min-h-20 items-center justify-between gap-3 rounded-lg px-2 py-4 transition-colors duration-200 hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary"
                       >
                         <span className="flex min-w-0 items-center gap-2.5">
                           <span aria-hidden><CompanyLogo symbol={shift.ticker} size="sm" /></span>
@@ -449,8 +453,8 @@ export default function Market() {
   return (
     <DashboardLayout title={c("Markets", "行情")}>
       <main className="min-w-0 flex-1 overflow-y-auto">
-        <div className="mx-auto min-w-0 px-4 pb-16 pt-6 md:px-8 md:pt-8">
-          <StockLookup />
+        <div className="mx-auto w-full min-w-0 max-w-[1600px] px-4 pb-16 pt-6 md:px-8 md:pt-8">
+          <div className="max-w-2xl"><StockLookup /></div>
           <Tabs value={tab} onValueChange={selectTab} className="mt-6 min-w-0">
             <TabsList aria-label={c("Market views", "行情视图")}>
               <TabsTrigger value="overview">{c("Market overview", "市场概览")}</TabsTrigger>

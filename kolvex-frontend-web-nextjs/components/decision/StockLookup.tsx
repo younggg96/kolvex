@@ -2,7 +2,7 @@
 
 import { useRef, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import { X } from "lucide-react";
+import { Search, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { validTicker } from "@/lib/decision";
@@ -33,9 +33,11 @@ export default function StockLookup() {
     <form noValidate onSubmit={openStock} className="space-y-2" aria-label={c("Open a stock", "查看股票")}>
       <div className="flex items-center gap-2">
         <div className="relative min-w-0 flex-1">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
           <Input
             ref={input}
             id="market-stock-code"
+            aria-label={c("Stock symbol", "股票代码")}
             value={value}
             placeholder={c("Stock symbol, e.g. AAPL or BRK-B", "输入股票代码，如 AAPL、BRK-B")}
             autoComplete="off"
@@ -44,7 +46,7 @@ export default function StockLookup() {
             maxLength={20}
             aria-invalid={invalid}
             aria-describedby="market-stock-help"
-            className="pr-11"
+            className="h-11 pl-10 pr-11"
             onChange={(event) => { setValue(event.target.value); setInvalid(false); }}
             onCompositionStart={() => { composing.current = true; }}
             onCompositionEnd={() => { composing.current = false; }}
@@ -57,7 +59,7 @@ export default function StockLookup() {
               type="button"
               variant="ghost"
               size="icon"
-              className="absolute right-0 top-0 h-10 w-10"
+              className="absolute right-0 top-0 h-11 w-11"
               aria-label={c("Clear stock symbol", "清空股票代码")}
               onClick={() => { setValue(""); setInvalid(false); input.current?.focus(); }}
             >
@@ -65,7 +67,7 @@ export default function StockLookup() {
             </Button>
           )}
         </div>
-        <Button type="submit" className="shrink-0">{c("View stock", "查看股票")}</Button>
+        <Button type="submit" className="h-11 shrink-0">{c("View stock", "查看股票")}</Button>
       </div>
       <p id="market-stock-help" role={invalid ? "alert" : undefined} className={`min-h-5 text-xs ${invalid ? "text-negative" : "text-muted-foreground"}`}>
         {invalid

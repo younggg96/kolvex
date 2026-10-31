@@ -99,7 +99,7 @@ export default function Watchlist() {
   const returnHref = `/dashboard/watchlist${params.size ? `?${params}` : ""}`;
 
   return <DashboardLayout title={c("Watchlist", "自选股")}>
-    <main className="flex-1 overflow-y-auto bg-background">
+    <main className="flex-1 overflow-y-auto">
       <div className="mx-auto max-w-6xl space-y-6 px-4 pb-16 pt-6 md:px-8 md:pt-8">
         <div className="flex items-start justify-between gap-4">
           <div><h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{c("Watchlist", "自选股")}</h1><p className="mt-2 text-sm text-muted-foreground">{c("Keep the stocks you follow in one place.", "把关注的股票放在一起，随时查看行情。")}</p></div>
