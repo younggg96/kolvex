@@ -17,7 +17,7 @@ function loadHelper(name) {
   return module.exports;
 }
 const { videoHistory } = loadHelper('youtubeVideoHistory');
-const opinion = { id: 'opinion', video_id: 'tracked0001', video_title: 'Tracked', video_published_at: '2026-10-16T15:00:00Z', opinion_date: '2026-10-16' };
+const opinion = { id: 'opinion', ticker: 'NVDA', video_id: 'tracked0001', video_title: 'Tracked', video_published_at: '2026-10-16T15:00:00Z', opinion_date: '2026-10-16' };
 const upload = { video_id: 'newvideo001', title: 'Newest upload', published_at: '2026-10-22T15:00:00Z' };
 
 test('merges newer untracked videos with opinion history without inventing opinions', () => {
@@ -49,4 +49,47 @@ test('missing coverage leaves existing grouped opinions intact', () => {
   const groups = videoHistory([opinion], []);
   assert.equal(groups.length, 1);
   assert.equal(groups[0].opinions[0], opinion);
+});
+
+test('macro analyses stay tracked and retain their summary without inventing stocks', () => {
+  const macro = { ...opinion, ticker: '', video_summary: '通胀与降息分析', channel_id: 'creator' };
+  const groups = videoHistory([macro], [{ ...upload, video_id: macro.video_id }]);
+  assert.equal(groups.length, 1);
+  assert.equal(groups[0].opinions.length, 0);
+  assert.equal(groups[0].analyzed, true);
+  assert.equal(groups[0].creator.channel_id, 'creator');
+  assert.equal(groups[0].video_summary, '通胀与降息分析');
+});
+
+test('video card renders macro analysis with attribution and no stock row', () => {
+  const React = require('react');
+  const { renderToStaticMarkup } = require('react-dom/server');
+  const source = fs.readFileSync(path.join(__dirname, '../components/youtube/VideoOpinionCard.tsx'), 'utf8');
+  const module = { exports: {} };
+  const stub = () => null;
+  const deps = {
+    'react': React,
+    'react/jsx-runtime': require('react/jsx-runtime'),
+    'next/link': { default: ({ children, ...props }) => React.createElement('a', props, children) },
+    'lucide-react': { ChevronDown: stub, PlayCircle: stub },
+    '@/components/ui/company-logo': { default: stub },
+    '@/lib/utils': { cn: (...args) => args.filter(Boolean).join(' '), proxyImageUrl: (url) => url },
+    './OpinionStrength': { default: stub },
+    '@/lib/opinionDates': loadHelper('opinionDates'),
+    './CreatorAvatar': { default: stub },
+  };
+  vm.runInNewContext(ts.transpileModule(source, {
+    compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX },
+  }).outputText, { exports: module.exports, require: (id) => {
+    assert.ok(id in deps, `Unexpected dependency: ${id}`);
+    return deps[id];
+  }, URL });
+  const card = module.exports.default;
+  const groups = videoHistory([{ ...opinion, ticker: '', video_summary: '宏观分析正文', channel_id: 'creator', channel_title: '宏观博主' }], []);
+  const html = renderToStaticMarkup(React.createElement(card, { group: groups[0], t: (key) => key === "common.intlLocale" ? "zh-CN" : key, showCreator: true }));
+  assert.ok(html.includes('宏观分析正文'));
+  assert.ok(html.includes('宏观博主'));
+  assert.ok(html.includes('youtubeOpinions.videoAnalysisOnly'));
+  assert.ok(!html.includes('youtubeOpinions.untrackedVideo'));
+  assert.ok(!html.includes('<ul'));
 });

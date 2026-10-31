@@ -188,6 +188,47 @@ class SharedResearchTests(unittest.IsolatedAsyncioTestCase):
         self.assertIsNone(await service.get_published_analysis("running"))
 
 
+class PublicResearchRoutesTests(unittest.TestCase):
+    def setUp(self):
+        from app.api.routes.trading_analysis import routes
+        from app.services.trading_analysis_service import TradingAnalysisService
+        self.rows = [
+            dict(id="published-old", ticker="NVDA", status="completed", is_published=True, created_at="1"),
+            dict(id="published-new", ticker="NVDA", status="completed", is_published=True, created_at="2"),
+            dict(id="private", ticker="NVDA", status="completed", is_published=False, created_at="3"),
+            dict(id="running", ticker="NVDA", status="running", is_published=True, created_at="4"),
+            dict(id="other-stock", ticker="AAPL", status="completed", is_published=True, created_at="5"),
+        ]
+        service = TradingAnalysisService.__new__(TradingAnalysisService)
+        service._supabase = Mock()
+        service._supabase.table.side_effect = lambda name: MemoryQuery(self.rows if name == "trading_analyses" else [])
+        app = FastAPI()
+        app.include_router(routes.router)
+        self.client = TestClient(app)
+        patcher = patch.object(routes, "get_trading_analysis_service", return_value=service)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
+    def test_anonymous_list_filters_before_counting_and_paginating(self):
+        response = self.client.get("/trading-analysis/public/list?ticker=nvda&limit=1&offset=1")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["total"], 2)
+        self.assertEqual([row["id"] for row in response.json()["items"]], ["published-old"])
+        self.assertEqual(self.client.get("/trading-analysis/public/list?limit=101").status_code, 422)
+        self.assertEqual(self.client.get("/trading-analysis/public/list?offset=-1").status_code, 422)
+
+    def test_anonymous_detail_rechecks_publication(self):
+        self.assertEqual(self.client.get("/trading-analysis/public/published-new").status_code, 200)
+        for report_id in ("private", "running", "missing"):
+            self.assertEqual(self.client.get(f"/trading-analysis/public/{report_id}").status_code, 404)
+        self.rows[1]["is_published"] = False
+        self.assertEqual(self.client.get("/trading-analysis/public/published-new").status_code, 404)
+
+    def test_existing_shared_and_personal_routes_still_require_login(self):
+        for path in ("published/list", "published/private", "history", "private"):
+            self.assertEqual(self.client.get(f"/trading-analysis/{path}").status_code, 401)
+
+
 class StockResearchGenerationTests(unittest.TestCase):
     def setUp(self):
         from app.api.routes.trading_analysis import routes

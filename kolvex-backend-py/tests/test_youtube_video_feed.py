@@ -74,6 +74,26 @@ class VideoFeedTests(unittest.IsolatedAsyncioTestCase):
         self.service._fetch_rows.return_value = self.rows
         self.assertEqual((await self.service.get_video_feed(offset=100))["videos"], [])
 
+    async def test_macro_video_appears_without_affecting_stock_statistics(self):
+        macro = opinion("macro", "macro-creator", "", "2026-10-30T15:00:00Z",
+                        raw_payload={"summary": "通胀仍有不确定性。", "opinions": []})
+        self.service._fetch_rows.return_value = [macro, *self.rows]
+        feed = await self.service.get_video_feed(limit=1)
+        group = feed["videos"][0]
+        self.assertEqual(group["videoId"], "macro")
+        self.assertEqual(group["opinions"], [])
+        self.assertEqual(group["creator"]["channel_id"], "macro-creator")
+        self.assertEqual(group["video_summary"], "通胀仍有不确定性。")
+        self.assertEqual(self.service._build_summary([macro])["total_opinions"], 0)
+        self.assertEqual(self.service._build_stock_summaries([macro]), [])
+        self.assertEqual(self.service._build_daily_summaries([macro]), [])
+        creator = self.service._build_creator_summaries([macro])[0]
+        self.assertEqual(creator["total_opinions"], 0)
+        self.assertEqual(creator["top_tickers"], [])
+        dashboard = await self.service.get_dashboard()
+        self.assertEqual(dashboard["latest_videos"][0]["videoId"], "macro")
+        self.assertEqual(dashboard["latest"][0]["video_summary"], "通胀仍有不确定性。")
+
 
 class VideoFeedRouteTests(unittest.TestCase):
     def test_public_feed_validates_and_forwards_video_pagination(self):

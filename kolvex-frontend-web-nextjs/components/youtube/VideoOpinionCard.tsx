@@ -72,7 +72,7 @@ export default function VideoOpinionCard({
   const video = group.video;
   const title = video.video_title || t("youtubeOpinions.untitledVideo");
   const published = video.video_published_at || video.opinion_date || undefined;
-  const creator = group.opinions[0];
+  const creator = group.creator || group.opinions[0];
   const collapsedRows = compact ? 2 : 3;
   const opinions = [...group.opinions].sort(
     (a, b) => Math.abs(b.direction_score) - Math.abs(a.direction_score),
@@ -138,7 +138,7 @@ export default function VideoOpinionCard({
             {opinions.length > 0 ? (
               <span>{t("youtubeOpinions.videoStockCount", { count: String(opinions.length) })}</span>
             ) : (
-              <span>{t("youtubeOpinions.untrackedVideo")}</span>
+              <span>{t(group.analyzed || group.creator ? "youtubeOpinions.videoAnalysisOnly" : "youtubeOpinions.untrackedVideo")}</span>
             )}
             {!compact && tally.map((item) => (
               <span key={item.sentiment} className={cn("font-semibold", item.className)}>
@@ -148,6 +148,8 @@ export default function VideoOpinionCard({
           </p>
         </div>
       </header>
+
+      {group.video_summary && <p className="mt-4 whitespace-pre-wrap text-sm leading-6 text-muted-foreground">{group.video_summary}</p>}
 
       {opinions.length > 0 && <ul id={opinionsId} className="mt-5 min-w-0">
         {shown.map((opinion) => {

@@ -613,7 +613,7 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
   if (stockScope !== "all") stockDirectoryParams.set("scope", stockScope);
   const stockDirectoryQuery = stockDirectoryParams.toString();
   const stockDirectoryHref = `/dashboard/youtube-opinions/stocks${stockDirectoryQuery ? `?${stockDirectoryQuery}` : ""}`;
-  const latestCreatorOpinions = creatorOverview ? (context?.latest || []).slice(0, 5) : [];
+  const latestCreatorOpinions = creatorOverview ? (context?.latest || []).filter((opinion) => opinion.ticker).slice(0, 5) : [];
   const performanceListed =
     (!inDetail && route.tab === "stocks") ||
     (inDetail && Boolean(route.creator) && !route.ticker);
@@ -899,8 +899,9 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
     filters.from,
     filters.to,
   );
-  const untrackedVideoCount = historyVideos.filter((group) => !group.opinions.length).length;
-  const visibleVideos = historyVideos.filter((group) => showUntrackedVideos || group.opinions.length > 0);
+  const stockOpinions = opinions.filter((opinion) => opinion.ticker);
+  const untrackedVideoCount = historyVideos.filter((group) => !group.analyzed && !group.opinions.length).length;
+  const visibleVideos = historyVideos.filter((group) => showUntrackedVideos || group.analyzed || group.opinions.length > 0);
   const historySwitcher = groupByVideo && (
     <div
       role="radiogroup"
@@ -1450,7 +1451,7 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
                             {t(showUntrackedVideos ? "youtubeOpinions.hideUntrackedVideos" : "youtubeOpinions.showUntrackedVideos", { count: String(untrackedVideoCount) })}
                           </button>
                         )}
-                        {!detailError && !(videoView ? visibleVideos.length : opinions.length) && (
+                        {!detailError && !(videoView ? visibleVideos.length : stockOpinions.length) && (
                           <EmptyLine
                             text={
                               filters.sentiment !== "all" || filters.range !== "all"
@@ -1474,7 +1475,7 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
                                   onStock={onStock}
                                 />
                               ))
-                            : opinions.map((opinion) => (
+                            : stockOpinions.map((opinion) => (
                                 <OpinionCard
                                   key={opinion.id}
                                   opinion={opinion}

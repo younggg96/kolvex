@@ -5,6 +5,9 @@ export type VideoOpinionGroup = {
   videoId: string;
   video: Pick<YouTubeOpinion, "video_id" | "video_title" | "video_url" | "thumbnail_url" | "video_published_at"> & { opinion_date?: string };
   opinions: YouTubeOpinion[];
+  creator?: Pick<YouTubeOpinion, "channel_id" | "channel_title" | "channel_avatar_url">;
+  video_summary?: string | null;
+  analyzed?: boolean;
 };
 
 export function groupOpinionsByVideo(opinions: YouTubeOpinion[]) {
@@ -12,8 +15,12 @@ export function groupOpinionsByVideo(opinions: YouTubeOpinion[]) {
   for (const opinion of opinions) {
     const key = opinion.video_id || opinion.id;
     const group = groups.get(key);
-    if (group) group.opinions.push(opinion);
-    else groups.set(key, { videoId: key, video: opinion, opinions: [opinion] });
+    if (group) {
+      if (opinion.ticker) group.opinions.push(opinion);
+    } else groups.set(key, {
+      videoId: key, video: opinion, opinions: opinion.ticker ? [opinion] : [],
+      creator: opinion, video_summary: opinion.video_summary, analyzed: true,
+    });
   }
   return Array.from(groups.values());
 }

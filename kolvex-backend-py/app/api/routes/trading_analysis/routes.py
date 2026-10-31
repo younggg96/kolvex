@@ -3,8 +3,10 @@ Trading Analysis Routes — TradingAgents multi-agent analysis
 
 POST   /trading-analysis/start              — Start a new analysis
 GET    /trading-analysis/history            — List user's analyses
-GET    /trading-analysis/published/list     — List all published analyses (public)
-GET    /trading-analysis/published/{id}     — Get published analysis detail (public)
+GET    /trading-analysis/published/list     — List completed analyses (signed-in users)
+GET    /trading-analysis/published/{id}     — Get completed analysis (signed-in users)
+GET    /trading-analysis/public/list       — List explicitly published analyses (anonymous)
+GET    /trading-analysis/public/{id}       — Read explicitly published analysis (anonymous)
 GET    /trading-analysis/{id}               — Get analysis detail
 GET    /trading-analysis/{id}/stream        — SSE progress stream
 PATCH  /trading-analysis/{id}/publish       — Publish an analysis
@@ -148,6 +150,29 @@ async def list_analyses(
         offset=offset,
         ticker=ticker,
     )
+
+
+@router.get("/public/list")
+async def list_public_analyses(
+    limit: int = Query(default=20, ge=1, le=100),
+    offset: int = Query(default=0, ge=0),
+    ticker: Optional[str] = Query(default=None),
+):
+    """Public reading pages only expose explicitly published, completed reports."""
+    return await get_trading_analysis_service().list_published_analyses(
+        limit=limit, offset=offset, ticker=ticker, published_only=True,
+    )
+
+
+@router.get("/public/{analysis_id}")
+async def get_public_analysis(analysis_id: str):
+    """Recheck publication on every read so unpublishing revokes public access."""
+    record = await get_trading_analysis_service().get_published_analysis(
+        analysis_id, published_only=True,
+    )
+    if not record:
+        raise HTTPException(status_code=404, detail="Analysis not found or not published")
+    return record
 
 
 @router.get("/published/list")

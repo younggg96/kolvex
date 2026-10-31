@@ -34,7 +34,7 @@ export const getPublicResearchList = cache(async (offset = 0, limit = 20, ticker
     if (!validTicker(ticker)) return { items: [], total: 0, offset, limit } as TradingAnalysisListResponse;
     query.set("ticker", ticker);
   }
-  const data = await readPublic<TradingAnalysisListResponse>(`trading-analysis/published/list?${query}`);
+  const data = await readPublic<TradingAnalysisListResponse>(`trading-analysis/public/list?${query}`);
   if (!data || !Array.isArray(data.items) || !Number.isSafeInteger(data.total) || data.total < 0) {
     throw new Error("Published research is temporarily unavailable");
   }
@@ -47,7 +47,7 @@ function isPublished(data: TradingAnalysis) {
 
 export const getPublicResearch = cache(async (id: string) => {
   if (!validReportId(id)) return null;
-  const data = await readPublic<TradingAnalysis>(`trading-analysis/published/${encodeURIComponent(id)}`);
+  const data = await readPublic<TradingAnalysis>(`trading-analysis/public/${encodeURIComponent(id)}`);
   // Recheck publication on every read so unpublishing revokes the public page.
   return data && isPublished(data) ? data : null;
 });

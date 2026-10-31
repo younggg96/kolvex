@@ -38,6 +38,63 @@ class YouTubeImportTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "duplicates"):
             self.service.validate_payload(payload)
 
+    def test_macro_video_preview_and_upload_preserve_analysis_without_stock_opinions(self):
+        payload = sample_payload()
+        payload["opinions"] = []
+        payload["summary"] = "降息预期与通胀风险并存。"
+        preview = self.service.validate_import(payload)
+        self.assertEqual(preview["errors"], [])
+        self.assertEqual(preview["count"], 0)
+        self.assertEqual(preview["videos"][0]["opinions"], [])
+        self.assertEqual(preview["videos"][0]["video_summary"], payload["summary"])
+        table = self.client.table.return_value
+        rows = self.service._rows_from_payload(payload, "admin")
+        table.upsert.return_value.execute.return_value = SimpleNamespace(data=rows)
+        result = asyncio.run(self.service.upload_import(payload, "admin"))
+        stored = table.upsert.call_args.args[0][0]
+        self.assertEqual(stored["ticker"], "")
+        self.assertEqual(stored["raw_payload"], payload)
+        self.assertEqual(stored["summary"], payload["summary"])
+        self.assertEqual(result["video_count"], 1)
+        self.assertEqual(result["inserted_count"], 0)
+        self.assertEqual(result["videos"][0]["tickers"], [])
+        table.delete.return_value.eq.return_value.not_.in_.assert_called_once_with("ticker", [""])
+
+    def test_macro_video_reimported_with_stocks_replaces_video_analysis_record(self):
+        macro = sample_payload()
+        macro["opinions"] = []
+        table = self.client.table.return_value
+        table.upsert.return_value.execute.return_value = SimpleNamespace(data=[])
+        result = asyncio.run(self.service.upload_import([macro, sample_payload()]))
+        self.assertEqual(result["video_count"], 1)
+        self.assertEqual([row["ticker"] for row in table.upsert.call_args.args[0]], ["NVDA"])
+        table.delete.return_value.eq.return_value.not_.in_.assert_called_once_with("ticker", ["NVDA"])
+
+    def test_macro_analysis_formats_and_mixed_batch(self):
+        for content in ({"video": {**sample_payload()["video"], "summary": "宏观观点"}},
+                        {"analysis": "宏观观点"}, {"analysis": {"summary": "宏观观点", "risks": ["通胀"]}}):
+            payload = {**sample_payload(), "opinions": [], **content}
+            preview = self.service.validate_payload(payload)
+            self.assertEqual(preview["video_summary"], "宏观观点")
+        payload["video"]["id"] = "macro-video-2"
+        preview = self.service.validate_import([sample_payload(), payload])
+        self.assertEqual(preview["errors"], [])
+        self.assertEqual(preview["video_count"], 2)
+        self.assertEqual(preview["count"], 1)
+
+        table = self.client.table.return_value
+        table.upsert.return_value.execute.return_value = SimpleNamespace(data=[])
+        result = asyncio.run(self.service.upload_import([sample_payload(), payload]))
+        self.assertEqual(result["video_count"], 2)
+        self.assertEqual([video["tickers"] for video in result["videos"]], [["NVDA"], []])
+        self.assertEqual([row["ticker"] for row in table.upsert.call_args.args[0]], ["NVDA", ""])
+
+    def test_opinions_still_requires_an_array_and_maximum_200_entries(self):
+        for opinions in (None, {}, "", [sample_payload()["opinions"][0]] * 201):
+            with self.subTest(opinions=type(opinions)):
+                with self.assertRaisesRegex(ValueError, "0 to 200"):
+                    self.service.validate_payload({**sample_payload(), "opinions": opinions})
+
     def test_invalid_fields_rejected(self):
         for field, value in (("sentiment", "unknown"), ("direction_score", 101), ("confidence", 80), ("confidence", True), ("summary", ""), ("risks", "risk"), ("price_targets", [{"value": -1}]), ("opinion_date", "2026-02-30")):
             with self.subTest(field=field, value=value):

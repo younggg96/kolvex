@@ -129,7 +129,10 @@ or pagination. `VideoOpinionCard` owns both the compact rail (two stock summarie
 initially) and the full list (three initially), with explicit expansion, creator
 attribution and source links. The section links to `/dashboard/youtube-opinions/opinions`,
 which pages 20 complete videos at a time, ordered by publication time, with a displayed/total
-video count and retryable Load more. The complete list retains older videos from
+video count and retryable Load more. Imported videos with no stock opinions retain
+their creator and video analysis, display an analyzed status, and remain visible
+when untracked uploads are hidden. They do not render a stock row or affect stock
+sentiment counts. The complete list retains older videos from
 the same creator. No opinion is discarded to diversify the preview. Updates
 remains accessible by legacy URL but has no primary navigation tab. Legacy Research URLs redirect
 to the appropriate entry so refresh and saved links keep working.

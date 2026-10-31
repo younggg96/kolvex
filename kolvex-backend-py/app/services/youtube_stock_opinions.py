@@ -33,6 +33,9 @@ from app.services.youtube_channel_profiles import (
 
 
 TABLE_NAME = "youtube_stock_opinions"
+# An empty ticker stores a video-level analysis without inventing a stock.
+# It uses the existing (video_id, ticker) key and is excluded from stock metrics.
+VIDEO_ANALYSIS_TICKER = ""
 OPINION_TIMEZONE = ZoneInfo("America/New_York")
 MAX_IMPORT_VIDEOS = 50
 SENTIMENT_ALIASES = {
@@ -97,7 +100,7 @@ class YouTubeStockOpinionService:
         rows = self._fetch_rows(channel_id=channel_id)
         if not rows:
             raise LookupError("Creator not found")
-        return {"opinions": [_public_opinion(row) for row in rows]}
+        return {"opinions": [_public_opinion(row) for row in rows if row.get("ticker")]}
 
     def get_creator_latest_video(self, channel_id: str) -> Dict[str, Any]:
         """Return every stock in the newest imported video, independently of UI filters."""
@@ -114,7 +117,7 @@ class YouTubeStockOpinionService:
         return {
             "creator": {key: newest.get(key) for key in ("channel_id", "channel_title", "channel_handle", "channel_avatar_url", "channel_url")},
             "video": {key: newest.get(key) for key in ("video_id", "video_title", "video_url", "video_published_at", "opinion_date")},
-            "opinions": [_public_opinion(row) for row in video_rows],
+            "opinions": [_public_opinion(row) for row in video_rows if row.get("ticker")],
         }
 
     def create_opinion(
@@ -269,7 +272,7 @@ class YouTubeStockOpinionService:
 
         return {
             "success": True,
-            "inserted_count": len(written_rows),
+            "inserted_count": sum(bool(row.get("ticker")) for row in written_rows),
             "video_count": len(checked["videos"]),
             "videos": [
                 {
@@ -425,8 +428,8 @@ class YouTubeStockOpinionService:
         except ValueError:
             raise ValueError("video.published_at must be an ISO timestamp with timezone")
         opinions = payload.get("opinions")
-        if not isinstance(opinions, list) or not 1 <= len(opinions) <= 200:
-            raise ValueError("opinions must contain 1 to 200 stock opinions")
+        if not isinstance(opinions, list) or len(opinions) > 200:
+            raise ValueError("opinions must be an array containing 0 to 200 stock opinions")
         seen = set()
         for index, opinion in enumerate(opinions):
             path = f"opinions[{index}]"
@@ -460,8 +463,9 @@ class YouTubeStockOpinionService:
                     raise ValueError(f"{path}.opinion_date must be YYYY-MM-DD")
         rows = self._rows_from_payload(payload, uploaded_by=None)
         return {"video_id": rows[0]["video_id"], "video_title": rows[0]["video_title"],
-                "channel_title": rows[0]["channel_title"], "count": len(rows),
-                "opinions": [{key: row[key] for key in ("ticker", "sentiment", "direction_score", "confidence", "summary", "opinion_date")} for row in rows]}
+                "channel_title": rows[0]["channel_title"], "count": len(opinions),
+                "video_summary": _video_summary(payload),
+                "opinions": [{key: row[key] for key in ("ticker", "sentiment", "direction_score", "confidence", "summary", "opinion_date")} for row in rows if row.get("ticker")]}
 
     async def get_dashboard(
         self,
@@ -496,7 +500,8 @@ class YouTubeStockOpinionService:
             "creators": self._build_creator_summaries(rows),
             "daily": self._build_daily_summaries(rows),
             "changes": self._build_daily_changes(rows),
-            "latest": rows[offset:offset + limit],
+            "latest": [{**row, "video_summary": _video_summary(row.get("raw_payload") or {})}
+                       for row in rows[offset:offset + limit]],
             "latest_videos": self._build_video_groups(rows, distinct_creators=True)[:5],
             "pagination": {"offset": offset, "limit": limit, "total": len(rows), "has_more": offset + limit < len(rows)},
             "filters": {
@@ -519,11 +524,14 @@ class YouTubeStockOpinionService:
                         "video_published_at", "opinion_date",
                     )},
                     "opinions": [],
+                    "creator": {field: row.get(field) for field in PROFILE_FIELDS},
+                    "video_summary": _video_summary(row.get("raw_payload") or {}),
                 }
-            groups[key]["opinions"].append({
-                **_public_opinion(row),
-                **{field: row.get(field) for field in PROFILE_FIELDS},
-            })
+            if row.get("ticker"):
+                groups[key]["opinions"].append({
+                    **_public_opinion(row),
+                    **{field: row.get(field) for field in PROFILE_FIELDS},
+                })
 
         def publication(group):
             video = group["video"]
@@ -535,7 +543,7 @@ class YouTubeStockOpinionService:
         seen = set()
         latest = []
         for group in ordered:
-            creator = group["opinions"][0].get("channel_id") or group["videoId"]
+            creator = group["creator"].get("channel_id") or group["videoId"]
             if creator not in seen:
                 seen.add(creator)
                 latest.append(group)
@@ -546,7 +554,7 @@ class YouTubeStockOpinionService:
         groups = self._build_video_groups(rows)
         page = groups[offset:offset + limit]
         # Enrich only the visible videos, rather than every historical channel.
-        visible = [opinion for group in page for opinion in group["opinions"]]
+        visible = [identity for group in page for identity in [group["creator"], *group["opinions"]]]
         await self._fill_missing_avatars(visible)
         return {
             "videos": page,
@@ -754,6 +762,9 @@ class YouTubeStockOpinionService:
         channel = _first_dict(payload, "channel", "creator", "author")
         video = _first_dict(payload, "video", "source")
         opinions = _extract_opinions(payload)
+        video_only = payload.get("opinions") == []
+        if video_only:
+            opinions = [{"summary": _video_summary(payload), "sentiment": "neutral"}]
 
         channel_title = _first_text(
             channel,
@@ -792,7 +803,9 @@ class YouTubeStockOpinionService:
         rows: List[Dict[str, Any]] = []
         for opinion in opinions:
             ticker = _normalize_ticker(_first_text(opinion, payload, "ticker", "symbol"))
-            if not ticker:
+            if video_only:
+                ticker = VIDEO_ANALYSIS_TICKER
+            elif not ticker:
                 continue
 
             sentiment = _normalize_sentiment(
@@ -896,7 +909,7 @@ class YouTubeStockOpinionService:
             if channel_id:
                 query = query.eq("channel_id", channel_id)
             if sentiment and normalized_sentiment:
-                query = query.eq("sentiment", normalized_sentiment)
+                query = query.eq("sentiment", normalized_sentiment).neq("ticker", VIDEO_ANALYSIS_TICKER)
             if date_from:
                 query = query.gte("opinion_date", date_from)
             if date_to:
@@ -936,6 +949,8 @@ class YouTubeStockOpinionService:
     def _build_summary(self, rows: List[Dict[str, Any]]) -> Dict[str, Any]:
         tickers = {row["ticker"] for row in rows if row.get("ticker")}
         creators = {row["channel_id"] for row in rows if row.get("channel_id")}
+        latest_at = _max_text(row.get("video_published_at") or row.get("created_at") for row in rows)
+        rows = [row for row in rows if row.get("ticker")]
         scores = [_score(row) for row in rows]
         return {
             "total_opinions": len(rows),
@@ -945,15 +960,14 @@ class YouTubeStockOpinionService:
             "bearish_count": _sentiment_count(rows, "bearish"),
             "neutral_count": _sentiment_count(rows, "neutral") + _sentiment_count(rows, "mixed"),
             "avg_score": round(mean(scores), 2) if scores else 0,
-            "latest_opinion_at": _max_text(
-                row.get("video_published_at") or row.get("created_at") for row in rows
-            ),
+            "latest_opinion_at": latest_at,
         }
 
     def _build_stock_summaries(self, rows: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         grouped: Dict[str, List[Dict[str, Any]]] = defaultdict(list)
         for row in rows:
-            grouped[row["ticker"]].append(row)
+            if row.get("ticker"):
+                grouped[row["ticker"]].append(row)
 
         summaries = []
         today = datetime.now(OPINION_TIMEZONE).date()
@@ -1030,11 +1044,12 @@ class YouTubeStockOpinionService:
 
         summaries = []
         for channel_id, creator_rows in grouped.items():
-            scores = [_score(row) for row in creator_rows]
             latest = max(
                 creator_rows,
                 key=lambda row: row.get("video_published_at") or row.get("created_at") or "",
             )
+            creator_rows = [row for row in creator_rows if row.get("ticker")]
+            scores = [_score(row) for row in creator_rows]
             ticker_counts: Dict[str, int] = defaultdict(int)
             for row in creator_rows:
                 ticker_counts[row["ticker"]] += 1
@@ -1089,6 +1104,8 @@ class YouTubeStockOpinionService:
     def _build_daily_summaries(self, rows: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         grouped: Dict[str, List[Dict[str, Any]]] = defaultdict(list)
         for row in rows:
+            if not row.get("ticker"):
+                continue
             day = str(row.get("opinion_date") or "")[:10]
             if day:
                 grouped[day].append(row)
@@ -1213,6 +1230,7 @@ def _public_opinion(row: Dict[str, Any]) -> Dict[str, Any]:
         "id": row.get("id"),
         "video_id": row.get("video_id"),
         "video_title": row.get("video_title"),
+        "video_summary": _video_summary(row.get("raw_payload") or {}),
         "video_url": row.get("video_url"),
         "thumbnail_url": row.get("thumbnail_url"),
         "video_published_at": str(published) if published else None,
@@ -1427,7 +1445,25 @@ def _first_dict(payload: Dict[str, Any], *keys: str) -> Dict[str, Any]:
     return {}
 
 
+def _video_summary(payload: Dict[str, Any]) -> Optional[str]:
+    """Accept video summaries and common analyzer formats; retain the full raw JSON."""
+    if not isinstance(payload, dict):
+        return None
+    video = payload.get("video")
+    analysis = payload.get("analysis")
+    sources = [video, payload, analysis]
+    for source in sources:
+        if isinstance(source, dict):
+            for key in ("summary", "overall_summary", "market_summary"):
+                value = source.get(key)
+                if isinstance(value, str) and value.strip():
+                    return value.strip()
+    return analysis.strip() if isinstance(analysis, str) and analysis.strip() else None
+
+
 def _extract_opinions(payload: Dict[str, Any]) -> List[Dict[str, Any]]:
+    if payload.get("opinions") == []:
+        return []
     raw = (
         payload.get("opinions")
         or payload.get("stock_opinions")

@@ -83,6 +83,7 @@ export interface YouTubeOpinion {
   id: string;
   video_id: string;
   video_title?: string | null;
+  video_summary?: string | null;
   video_url?: string | null;
   thumbnail_url?: string | null;
   video_published_at?: string | null;
@@ -372,6 +373,7 @@ export interface YouTubeImportVideoPreview {
   index: number;
   video_id: string;
   video_title: string;
+  video_summary?: string | null;
   channel_title: string;
   count: number;
   opinions: Pick<YouTubeOpinion, "ticker" | "sentiment" | "direction_score" | "confidence" | "summary" | "opinion_date">[];

@@ -35,3 +35,18 @@ email addresses, phone numbers or private video statistics.
 Official references:
 - https://developers.google.com/youtube/v3/docs/channels/list
 - https://developers.google.com/youtube/v3/docs/channels
+
+## Video analysis without stock opinions
+
+The import contract accepts an explicit `opinions: []` for macroeconomic or other
+video-level analysis. Put the Chinese analysis in top-level `summary` (also read
+from `video.summary`, `analysis.summary`, or a string `analysis`). The complete
+JSON remains in `raw_payload`, even if no summary is supplied.
+
+A video with no stock opinions is persisted in `youtube_stock_opinions` using an
+empty ticker as the video-level key. This uses the existing unique video/ticker
+constraint without a schema migration or fabricated stock symbol. Reimports
+replace this record and prior stock rows through the same authoritative cleanup.
+Public video groups expose creator metadata and `video_summary` independently
+from their empty `opinions` array. Stock lists, counts, sentiment filters and
+daily aggregates exclude the video-level record.

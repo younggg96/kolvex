@@ -17,10 +17,11 @@ const template = {
   channel: { id: "REPLACE_CHANNEL_ID", title: "REPLACE_CREATOR_NAME", handle: "@creator", url: "https://www.youtube.com/@creator" },
   video: { id: "REPLACE_VIDEO_ID", title: "REPLACE_VIDEO_TITLE", url: "https://www.youtube.com/watch?v=REPLACE_VIDEO_ID", published_at: "2026-10-06T15:00:00Z", analyzed_at: "2026-10-06T16:00:00Z" },
   model: "gemini",
+  summary: "REPLACE_WITH_VIDEO_OR_MACRO_ANALYSIS",
   opinions: [{ ticker: "NVDA", company_name: "NVIDIA", sentiment: "bullish", direction_score: 60, confidence: 0.85, time_horizon: "3-6 months", summary: "REPLACE_WITH_CREATOR_VIEW", thesis: "REPLACE_WITH_REASONING", key_points: ["REPLACE_WITH_KEY_POINT"], risks: ["REPLACE_WITH_RISK"], price_targets: [{ label: "base", value: 165 }] }],
 };
 
-const prompt = `Analyze the supplied YouTube video and extract only stock opinions explicitly expressed by its creator. Return a single JSON object matching the template below, with no Markdown fences. When several videos are supplied, return a JSON array holding one such object per video. Use the actual channel ID/name and video ID/title/URL/publication timestamp. Never invent missing facts: ask for missing required metadata before generating JSON. Use one opinions entry per stock ticker and combine repeated mentions in the same video. sentiment must be bullish, bearish, neutral or mixed. direction_score uses -100 to 100 (bearish negative, bullish positive); confidence uses 0 to 1. Do not infer a directional view from a mere stock mention. Optional facts that are not stated should be omitted; use empty arrays for missing key_points, risks and price_targets. Summaries and reasoning should be in Chinese. Video publication time must use ISO 8601 with timezone; historical views must retain the original publication date. Price targets require a positive numeric value. Return no stock opinions that are not present in the video.\n\n${JSON.stringify(template, null, 2)}`;
+const prompt = `Analyze the supplied YouTube video and extract only stock opinions explicitly expressed by its creator. Return a single JSON object matching the template below, with no Markdown fences. When several videos are supplied, return a JSON array holding one such object per video. Use the actual channel ID/name and video ID/title/URL/publication timestamp. Never invent missing facts: ask for missing required metadata before generating JSON. Use one opinions entry per stock ticker and combine repeated mentions in the same video. sentiment must be bullish, bearish, neutral or mixed. direction_score uses -100 to 100 (bearish negative, bullish positive); confidence uses 0 to 1. Do not infer a directional view from a mere stock mention. Optional facts that are not stated should be omitted; use empty arrays for missing key_points, risks and price_targets. Summaries and reasoning should be in Chinese. Video publication time must use ISO 8601 with timezone; historical views must retain the original publication date. Price targets require a positive numeric value. Return no stock opinions that are not present in the video. Include a Chinese video-level summary in summary, covering macroeconomic or market views when present. For videos without explicit stock opinions, return opinions: [] and keep the video analysis in summary. Never invent stock opinions to fill the array.\n\n${JSON.stringify(template, null, 2)}`;
 
 type Payload = Record<string, unknown>;
 
@@ -155,7 +156,7 @@ export default function YouTubeOpinionImporter({ onImported }: { onImported?: ()
       const correctedNote = corrected.length
         ? ` 已按 YouTube 视频归属修正 ${corrected.length} 个视频的频道 ID：${corrected.map((item) => `${item.from} → ${item.to}`).join("，")}。`
         : "";
-      setResult(`已保存 ${imported.video_count} 个视频的 ${imported.inserted_count} 条股票观点：${tickers.join(", ")}。${correctedNote}`);
+      setResult(`已保存 ${imported.video_count} 个视频的分析及 ${imported.inserted_count} 条股票观点${tickers.length ? `：${tickers.join(", ")}` : ""}。${correctedNote}`);
       onImported?.();
     } catch (e) { setError(e instanceof Error ? e.message : "导入失败，可重新提交。"); }
     finally { setBusy(false); }
@@ -178,6 +179,7 @@ export default function YouTubeOpinionImporter({ onImported }: { onImported?: ()
             {[
               ["channel.id / title", "必填：真实博主频道 ID / 名称；同一博主保持同一 ID"],
               ["video.id / title / published_at", "必填：真实视频 ID / 标题 / 发布时间（带时区 ISO 8601）"],
+              ["summary / opinions", "视频分析摘要；无个股观点时 opinions 填 []，仍可保存宏观分析"],
               ["opinions[].ticker / summary", "必填：股票代码 / 博主观点摘要；每只股票一条"],
               ["opinions[].sentiment", "必填：bullish 看涨、bearish 看跌、neutral 中性、mixed 分歧"],
               ["direction_score / confidence", "可选：方向分数 -100 到 100；置信度 0 到 1"],
@@ -220,9 +222,10 @@ export default function YouTubeOpinionImporter({ onImported }: { onImported?: ()
         </ul> : null}
         {preview.videos.map((video) => <div key={video.video_id} className="min-w-0 space-y-2">
           <h4 className="flex items-center gap-2 text-sm font-medium"><CreatorAvatar name={video.channel_title || "?"} size="sm" /><span className="min-w-0 break-words">{video.channel_title} · {video.video_title} · {video.count} 条观点</span></h4>
-          <div className="max-h-64 min-w-0 overflow-auto"><table className="w-full text-left text-xs"><thead><tr className="border-b"><th className="p-2">股票</th><th className="p-2">观点</th><th className="p-2">分数</th><th className="p-2">日期</th><th className="p-2">摘要</th></tr></thead><tbody>
+          {video.video_summary && <p className="whitespace-pre-wrap text-sm text-muted-foreground">{video.video_summary}</p>}
+          {video.count === 0 ? <p className="text-sm text-muted-foreground">无个股观点，将保存视频分析。</p> : <div className="max-h-64 min-w-0 overflow-auto"><table className="w-full text-left text-xs"><thead><tr className="border-b"><th className="p-2">股票</th><th className="p-2">观点</th><th className="p-2">分数</th><th className="p-2">日期</th><th className="p-2">摘要</th></tr></thead><tbody>
             {video.opinions.map((row) => <tr key={row.ticker} className="border-b"><td className="p-2 font-medium"><span className="inline-flex items-center gap-2"><span aria-hidden="true"><CompanyLogo symbol={row.ticker} size="sm" /></span>{row.ticker}</span></td><td className="p-2">{{ bullish: "看涨", bearish: "看跌", neutral: "中性", mixed: "分歧" }[row.sentiment]}</td><td className="p-2">{row.direction_score}</td><td className="whitespace-nowrap p-2">{row.opinion_date}</td><td className="min-w-40 break-words p-2">{row.summary}</td></tr>)}
-          </tbody></table></div>
+          </tbody></table></div>}
         </div>)}
         <p className="text-xs text-muted-foreground">导入后观点将对所有用户可见。同一视频可重复导入，以最后一次导入为准：该视频已有的股票观点会被整体替换，新 JSON 中没有的股票将被移除；每日变化按视频发布时间统计。校验未通过的视频需要先修正，否则本次导入不会写入任何数据。</p>
       </section>}

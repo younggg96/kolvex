@@ -787,8 +787,10 @@ class TradingAnalysisService:
         limit: int = 20,
         offset: int = 0,
         ticker: Optional[str] = None,
+        *,
+        published_only: bool = False,
     ) -> dict[str, Any]:
-        """List all completed research results (legacy published route)."""
+        """List completed research; anonymous routes must set published_only."""
         select_fields = (
             "id, user_id, ticker, trade_date, status, selected_analysts, "
             "llm_provider, final_decision, duration_seconds, "
@@ -809,6 +811,9 @@ class TradingAnalysisService:
             .select("id", count="exact")
             .eq("status", "completed")
         )
+        if published_only:
+            query = query.eq("is_published", True)
+            count_q = count_q.eq("is_published", True)
         if ticker:
             count_q = count_q.eq("ticker", ticker.upper())
         count_result = count_q.execute()
@@ -826,17 +831,20 @@ class TradingAnalysisService:
             "offset": offset,
         }
 
-    async def get_published_analysis(self, analysis_id: str) -> Optional[dict[str, Any]]:
-        """Get completed research regardless of the legacy publishing flag."""
+    async def get_published_analysis(
+        self, analysis_id: str, *, published_only: bool = False,
+    ) -> Optional[dict[str, Any]]:
+        """Read completed research; anonymous routes must set published_only."""
         try:
-            result = (
+            query = (
                 self._supabase.table(TABLE)
                 .select("*")
                 .eq("id", analysis_id)
                 .eq("status", "completed")
-                .maybe_single()
-                .execute()
             )
+            if published_only:
+                query = query.eq("is_published", True)
+            result = query.maybe_single().execute()
             record = result.data if result else None
             if record:
                 self._attach_authors([record])

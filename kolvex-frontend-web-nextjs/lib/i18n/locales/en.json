@@ -1162,6 +1162,7 @@
     "performanceAria": "Actual move: last price {price}, today {day}, 5-day {week}, 1-month {month}",
     "uploadsCurrent": "No new videos since the last update",
     "uploadsUntracked": "{count} videos since the last update aren't tracked",
+    "videoAnalysisOnly": "Analyzed · No stock opinions",
     "untrackedVideo": "Untracked · No opinions yet",
     "showUntrackedVideos": "Show videos without opinions ({count})",
     "hideUntrackedVideos": "Hide videos without opinions ({count})",
