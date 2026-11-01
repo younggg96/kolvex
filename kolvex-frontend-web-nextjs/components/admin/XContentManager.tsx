@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useUserProfileContext } from "@/components/user/UserProfileProvider";
 import { useTranslation } from "@/lib/i18n";
-import { xRequest, type XPreview } from "@/lib/xContentApi";
+import { xRequest, type XCreator, type XPreview } from "@/lib/xContentApi";
 
 export default function XContentManager({ onSaved }: { onSaved: () => void }) {
   const { profile } = useUserProfileContext();
@@ -14,6 +14,11 @@ export default function XContentManager({ onSaved }: { onSaved: () => void }) {
   const [handle, setHandle] = useState("");
   const [name, setName] = useState("");
   const [bio, setBio] = useState("");
+  const [avatarUrl, setAvatarUrl] = useState("");
+  const [location, setLocation] = useState("");
+  const [website, setWebsite] = useState("");
+  const [followers, setFollowers] = useState("");
+  const [following, setFollowing] = useState("");
   const [payload, setPayload] = useState<unknown>(null);
   const [preview, setPreview] = useState<XPreview | null>(null);
   const [busy, setBusy] = useState(false);
@@ -40,6 +45,13 @@ export default function XContentManager({ onSaved }: { onSaved: () => void }) {
       handleRef.current?.focus();
       return;
     }
+    for (const url of [avatarUrl, website].filter(Boolean)) {
+      try { const parsed = new URL(url); if (parsed.protocol !== "https:" || parsed.username || parsed.password) throw new Error(); }
+      catch { setError(c("Profile links must be valid HTTPS URLs.", "资料链接必须是有效的 HTTPS 地址。")); return; }
+    }
+    for (const count of [followers, following].filter(Boolean)) {
+      if (!/^\d+$/.test(count) || !Number.isSafeInteger(Number(count))) { setError(c("Counts must be nonnegative whole numbers.", "关注数必须是非负整数。")); return; }
+    }
     setBusy(true);
     try {
       await xRequest("creators", {
@@ -48,12 +60,17 @@ export default function XContentManager({ onSaved }: { onSaved: () => void }) {
           username: handle.trim(),
           display_name: name,
           bio,
+          avatar_url: avatarUrl.trim() || null,
+          location: location.trim() || null,
+          website: website.trim() || null,
+          followers_count: followers ? Number(followers) : null,
+          following_count: following ? Number(following) : null,
         }),
       });
       setMessage(c("Creator saved.", "博主已保存。"));
       setHandle("");
       setName("");
-      setBio("");
+      setBio(""); setAvatarUrl(""); setLocation(""); setWebsite(""); setFollowers(""); setFollowing("");
       onSaved();
     } catch (err) {
       setError(
@@ -64,6 +81,18 @@ export default function XContentManager({ onSaved }: { onSaved: () => void }) {
     } finally {
       setBusy(false);
     }
+  }
+
+  async function loadCreator() {
+    if (busy || !handle.trim()) return;
+    setBusy(true); setError(""); setMessage("");
+    try {
+      const data = await xRequest<{ creators: XCreator[] }>("creators");
+      const creator = data.creators.find(item => item.username === handle.trim().replace(/^@/, "").toLowerCase());
+      if (!creator) { setError(c("Creator not found. Enter profile details to add one.", "未找到博主，可填写资料后新增。")); return; }
+      setName(creator.display_name); setBio(creator.bio); setAvatarUrl(creator.avatar_url || ""); setLocation(creator.location || ""); setWebsite(creator.website || ""); setFollowers(creator.followers_count?.toString() || ""); setFollowing(creator.following_count?.toString() || "");
+    } catch { setError(c("Could not load profile. Retry.", "无法读取资料，请重试。")); }
+    finally { setBusy(false); }
   }
 
   async function chooseFile(file?: File) {
@@ -195,6 +224,17 @@ export default function XContentManager({ onSaved }: { onSaved: () => void }) {
               disabled={busy}
             />
           </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {[
+              { id: "x-avatar", label: c("Avatar URL", "头像链接"), value: avatarUrl, set: setAvatarUrl, max: 2048 },
+              { id: "x-location", label: c("Location", "所在地"), value: location, set: setLocation, max: 200 },
+              { id: "x-website", label: c("Website", "个人网站"), value: website, set: setWebsite, max: 2048 },
+              { id: "x-followers", label: c("Followers (exact count)", "关注者（准确数量）"), value: followers, set: setFollowers, max: 16 },
+              { id: "x-following", label: c("Following (exact count)", "正在关注（准确数量）"), value: following, set: setFollowing, max: 16 },
+            ].map(field => <div key={field.id}><label htmlFor={field.id} className="mb-1 block text-sm">{field.label}</label><Input id={field.id} value={field.value} onChange={event => field.set(event.target.value)} maxLength={field.max} disabled={busy} /></div>)}
+          </div>
+          <p className="text-xs text-muted-foreground">{c("Use public profile information only. Leave unknown fields blank.", "仅填写公开资料，不确定的字段请留空。")}</p>
+          <Button type="button" variant="ghost" disabled={busy || !handle.trim()} onClick={() => void loadCreator()}>{c("Load saved profile", "读取已存资料")}</Button>
           <Button type="submit" variant="outline" disabled={busy}>
             {c("Save creator", "保存博主")}
           </Button>

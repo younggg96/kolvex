@@ -6,6 +6,7 @@ in memory for the current tab. It does not persist private responses or API keys
 to disk, and it does not cache authenticated responses in a server module.
 Existing portfolio snapshots retain their own session cache, cleared on account
 changes. Closing or fully reloading the tab clears the new memory cache.
+The public YouTube opinion dashboard has the session-storage exception described below.
 
 | Resource | Freshness window | Retained snapshot window |
 | --- | --- | --- |
@@ -104,3 +105,24 @@ was added to authenticated API routes.
 This is a navigation/re-entry cache, not persistent offline storage: a full browser
 reload still clears memory. First visits and expired entries still depend on the
 upstream API. No production latency reduction is claimed without runtime traces.
+
+
+## YouTube dashboard reload cache
+
+The public, account-independent `/youtube-opinions/dashboard` response also keeps
+up to 40 snapshots in `sessionStorage` under `kolvex:public-youtube-dashboard:v1`.
+A reload in the same tab can restore the directory, aggregates and opinion details.
+Fresh snapshots skip requests for 60 seconds; snapshots up to 15 minutes old render
+while the view revalidates. This does not persist credentials, holdings, admin reads
+or other private responses. Server renders do not share dashboard responses.
+
+Manual refresh and successful opinion/creator writes clear both dashboard layers.
+Transient refresh failures retain snapshots and allow retries; 401/403/404 remove
+the affected snapshot. Disabled storage and quota failures fall back to memory.
+The directory restores its snapshot after hydration, avoiding a server/client
+markup mismatch. A cold visit or a snapshot older than 15 minutes still loads from
+the API. Closing the tab ends the storage lifetime.
+
+Verification: `youtube-dashboard-cache.test.cjs` covers reload reuse, stale
+revalidation, expiry, invalidation, retry behavior, unavailable storage and server
+isolation, in addition to filtering, pagination and concurrent request reuse.

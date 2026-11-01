@@ -159,10 +159,42 @@ export function getYouTubeVideoFeed(limit = 20, offset = 0, signal?: AbortSignal
 }
 const dashboardCache = new Map<string, { expires: number; data?: YouTubeOpinionDashboard; request: Promise<YouTubeOpinionDashboard> }>();
 const dashboardCacheMs = 60_000;
+const dashboardSnapshotMs = 15 * 60_000;
+const dashboardStorageKey = "kolvex:public-youtube-dashboard:v1";
+type DashboardSnapshot = { expires: number; data: YouTubeOpinionDashboard };
+
+// Only this public, account-independent endpoint is persisted. Private API reads
+// continue to use memory only. Storage failures must never break navigation.
+function readDashboardSnapshots(): Record<string, DashboardSnapshot> {
+  if (typeof window === "undefined") return {};
+  try {
+    const stored = JSON.parse(window.sessionStorage.getItem(dashboardStorageKey) || "{}");
+    if (!stored || typeof stored !== "object" || Array.isArray(stored)) return {};
+    return Object.fromEntries(Object.entries(stored).filter(([key, value]) => {
+      const entry = value as DashboardSnapshot | null;
+      return key.startsWith("/dashboard") && entry && Number.isFinite(entry.expires)
+        && entry.expires + dashboardSnapshotMs - dashboardCacheMs > Date.now()
+        && entry.data && typeof entry.data === "object";
+    })) as Record<string, DashboardSnapshot>;
+  } catch { return {}; }
+}
+
+function saveDashboardSnapshot(key: string, snapshot?: DashboardSnapshot) {
+  if (typeof window === "undefined") return;
+  try {
+    const snapshots = readDashboardSnapshots();
+    delete snapshots[key];
+    if (snapshot) snapshots[key] = snapshot;
+    window.sessionStorage.setItem(dashboardStorageKey, JSON.stringify(Object.fromEntries(Object.entries(snapshots).slice(-40))));
+  } catch { /* Disabled storage or quota exceeded: retain the in-memory cache. */ }
+}
 subscribeClientCache(prefix => { if (!prefix) dashboardCache.clear(); });
 
 export function clearYouTubeDashboardCache() {
   dashboardCache.clear();
+  if (typeof window !== "undefined") {
+    try { window.sessionStorage.removeItem(dashboardStorageKey); } catch { /* Storage may be disabled. */ }
+  }
   invalidateClientCache(API_PREFIX);
 }
 
@@ -203,16 +235,22 @@ function dashboardEndpoint(params: YouTubeOpinionDashboardParams) {
 }
 
 export function getCachedYouTubeOpinionDashboard(params: YouTubeOpinionDashboardParams = {}) {
-  const entry = dashboardCache.get(dashboardEndpoint(params));
-  return entry && entry.expires + 14 * 60_000 > Date.now() ? entry.data : undefined;
+  if (typeof window === "undefined") return undefined;
+  const key = dashboardEndpoint(params);
+  const entry = dashboardCache.get(key);
+  if (entry?.data && entry.expires + dashboardSnapshotMs - dashboardCacheMs > Date.now()) return entry.data;
+  return readDashboardSnapshots()[key]?.data;
 }
 
 export function getYouTubeOpinionDashboard(
   params: YouTubeOpinionDashboardParams = {}
 ): Promise<YouTubeOpinionDashboard> {
   const key = dashboardEndpoint(params);
-  const cached = dashboardCache.get(key);
+  const inBrowser = typeof window !== "undefined";
+  const cached = inBrowser ? dashboardCache.get(key) : undefined;
   if (cached && cached.expires > Date.now()) return cached.request;
+  const snapshot = inBrowser ? readDashboardSnapshots()[key] : undefined;
+  if (snapshot && snapshot.expires > Date.now()) return Promise.resolve(snapshot.data);
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 20_000);
   const request = apiRequest<YouTubeOpinionDashboard>(key, { signal: controller.signal }).then((data) => {
@@ -220,14 +258,25 @@ export function getYouTubeOpinionDashboard(
     if (entry?.request === request) {
       entry.data = data;
       entry.expires = Date.now() + dashboardCacheMs;
+      saveDashboardSnapshot(key, { expires: entry.expires, data });
     }
     return data;
   }).catch((error) => {
-    if (dashboardCache.get(key)?.request === request) dashboardCache.delete(key);
+    if (dashboardCache.get(key)?.request === request) {
+      if ([401, 403, 404].includes(error?.status)) {
+        dashboardCache.delete(key);
+        saveDashboardSnapshot(key);
+      } else if (cached?.data || snapshot?.data) {
+        // Keep a readable stale snapshot, but allow the next attempt to retry.
+        dashboardCache.set(key, { expires: cached?.expires ?? snapshot!.expires, data: cached?.data ?? snapshot?.data, request });
+      } else dashboardCache.delete(key);
+    }
     throw error;
   }).finally(() => clearTimeout(timeout));
-  if (dashboardCache.size >= 40) dashboardCache.delete(dashboardCache.keys().next().value!);
-  dashboardCache.set(key, { expires: Date.now() + dashboardCacheMs, request });
+  if (inBrowser) {
+    if (dashboardCache.size >= 40 && !dashboardCache.has(key)) dashboardCache.delete(dashboardCache.keys().next().value!);
+    dashboardCache.set(key, { expires: Date.now() + dashboardCacheMs, data: cached?.data ?? snapshot?.data, request });
+  }
   return request;
 }
 

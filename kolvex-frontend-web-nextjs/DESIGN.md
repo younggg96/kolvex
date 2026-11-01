@@ -1110,9 +1110,15 @@ Browser database access remains denied; verify_admin owns all write operations.
 ## X creator content
 
 `/dashboard/x-opinions` uses DashboardLayout and OpinionSourceNav, with the
-existing semantic tokens and shared Button/Input controls. Desktop places the
-creator directory beside a single chronological feed; mobile stacks the directory
-above it. The page title is screen-reader-only, with no visible introductory
+existing semantic tokens and shared Button/Input controls. Desktop places the creator directory in a 300px right rail beside a single
+chronological feed, matching the YouTube overview. Mobile stacks the directory
+above it. Posts use hairline-separated rows on the page background, with the shared
+Avatar and initial fallback. Public profile facts include biography, website, location
+and known follower/following counts; absent facts are omitted. Profile administration
+can load and edit these fields. Post text, quotes and biographies have an explicit
+translation action targeting the interface locale, with machine-translation
+attribution, an original toggle, cancellation and retry. Translations stay in a
+bounded session cache and never replace stored originals. The page title is screen-reader-only, with no visible introductory
 heading or description. Author, stock ticker and page are committed URL filters. Stock filter
 validation is explicit on submit, with a localized clear action and inline error.
 New requests cancel old ones, time out, and retain a retry action. No-results

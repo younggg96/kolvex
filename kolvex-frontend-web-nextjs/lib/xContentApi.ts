@@ -2,6 +2,11 @@ export interface XCreator {
   username: string;
   display_name: string;
   bio: string;
+  avatar_url?: string | null;
+  location?: string | null;
+  website?: string | null;
+  followers_count?: number | null;
+  following_count?: number | null;
 }
 export interface XPost {
   id: string;
@@ -15,7 +20,7 @@ export interface XPost {
   media_links: string[];
   truncated: boolean;
   pinned: boolean;
-  creator: Pick<XCreator, "display_name" | "bio">;
+  creator: XCreator | null;
 }
 export interface XFeed {
   posts: XPost[];

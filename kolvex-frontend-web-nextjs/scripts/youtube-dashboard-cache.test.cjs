@@ -6,11 +6,16 @@ const ts = require('typescript');
 const source = ts.transpileModule(fs.readFileSync(require('node:path').join(__dirname, '../lib/youtubeOpinionsApi.ts'), 'utf8'), {
   compilerOptions: { module: ts.ModuleKind.CommonJS },
 }).outputText;
-function fixture(fetch) {
+function fixture(fetch, storage = new Map(), browser = true) {
   const exports = {};
   const cache = require("./helpers/client-cache.cjs")();
   let now = 0;
-  vm.runInNewContext(source, { exports, require: () => cache, fetch, URLSearchParams, AbortController, setTimeout, clearTimeout, Date: { now: () => now } });
+  const window = browser ? { sessionStorage: {
+    getItem: key => storage.get(key) ?? null,
+    setItem: (key, value) => storage.set(key, value),
+    removeItem: key => storage.delete(key),
+  } } : undefined;
+  vm.runInNewContext(source, { window, exports, require: () => cache, fetch, URLSearchParams, AbortController, setTimeout, clearTimeout, Date: { now: () => now } });
   return { api: exports, advance: (ms) => { now += ms; } };
 }
 const response = (data) => ({ ok: true, json: async () => data });
@@ -102,4 +107,61 @@ test('video feed aborts with its consumer and failures remain retryable', async 
   await assert.rejects(request, /aborted/);
   await api.getYouTubeVideoFeed();
   assert.equal(attempt, 2);
+});
+
+
+test('reload restores fresh snapshots without a request and revalidates stale snapshots', async () => {
+  const storage = new Map(); let calls = 0;
+  const fetch = async () => response({ version: ++calls });
+  await fixture(fetch, storage).api.getYouTubeOpinionDashboard();
+  const reload = fixture(fetch, storage);
+  assert.equal(reload.api.getCachedYouTubeOpinionDashboard().version, 1);
+  await reload.api.getYouTubeOpinionDashboard();
+  assert.equal(calls, 1);
+  reload.advance(60_001);
+  assert.equal(reload.api.getCachedYouTubeOpinionDashboard().version, 1);
+  await reload.api.getYouTubeOpinionDashboard();
+  assert.equal(calls, 2);
+  reload.api.clearYouTubeDashboardCache();
+  assert.equal(storage.size, 0);
+});
+
+test('failed refresh retains a snapshot and allows retries; forbidden clears it', async () => {
+  let calls = 0, status;
+  const { api, advance } = fixture(async () => {
+    if (++calls > 1) throw Object.assign(Error('failed'), { status });
+    return response({ version: 1 });
+  });
+  await api.getYouTubeOpinionDashboard();
+  advance(60_001);
+  await assert.rejects(api.getYouTubeOpinionDashboard());
+  assert.equal(api.getCachedYouTubeOpinionDashboard().version, 1);
+  await assert.rejects(api.getYouTubeOpinionDashboard());
+  assert.equal(calls, 3);
+  status = 403;
+  await assert.rejects(api.getYouTubeOpinionDashboard());
+  assert.equal(api.getCachedYouTubeOpinionDashboard(), undefined);
+});
+
+test('snapshots expire after fifteen minutes and blocked storage uses memory', async () => {
+  const saved = fixture(async () => response({ version: 1 }));
+  await saved.api.getYouTubeOpinionDashboard();
+  saved.advance(15 * 60_000 + 1);
+  assert.equal(saved.api.getCachedYouTubeOpinionDashboard(), undefined);
+  let calls = 0;
+  const blocked = fixture(async () => response({ version: ++calls }), {
+    get() { throw Error('blocked'); }, set() { throw Error('quota'); }, delete() { throw Error('blocked'); },
+  });
+  await blocked.api.getYouTubeOpinionDashboard();
+  await blocked.api.getYouTubeOpinionDashboard();
+  assert.equal(calls, 1);
+});
+
+test('server reads never share dashboard responses', async () => {
+  let calls = 0;
+  const { api } = fixture(async () => response({ version: ++calls }), new Map(), false);
+  await api.getYouTubeOpinionDashboard();
+  await api.getYouTubeOpinionDashboard();
+  assert.equal(calls, 2);
+  assert.equal(api.getCachedYouTubeOpinionDashboard(), undefined);
 });

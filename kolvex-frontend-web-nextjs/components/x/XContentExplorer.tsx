@@ -3,10 +3,12 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { ExternalLink } from "lucide-react";
+import { ExternalLink, Search, RefreshCw } from "lucide-react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import XCreatorProfile, { CreatorAvatar } from "./XCreatorProfile";
+import XTranslatedText from "./XTranslatedText";
 import StockBadge from "@/components/ui/stock-badge";
 import { useTranslation } from "@/lib/i18n";
 import { xRequest, type XCreator, type XFeed } from "@/lib/xContentApi";
@@ -103,11 +105,11 @@ export default function XContentExplorer() {
 
   return (
     <DashboardLayout title={c("X creator posts", "X 博主内容")}>
-      <div className="flex-1 overflow-y-auto px-4 py-8 md:px-8">
+      <div className="flex-1 overflow-y-auto px-4 pb-16 pt-5 md:px-8 md:pt-7">
         <h1 className="sr-only">{c("X creator posts", "X 博主内容")}</h1>
-        <div className="mx-auto max-w-6xl space-y-6">
-          <div className="grid gap-6 lg:grid-cols-[16rem_minmax(0,1fr)]">
-            <aside className="min-w-0">
+        <div className="mx-auto w-full space-y-6">
+          <div className="grid gap-10 xl:grid-cols-[minmax(0,1fr)_300px]">
+            <aside className="order-1 min-w-0 xl:col-start-2 xl:row-start-1">
               <h2 className="mb-3 text-base font-semibold">
                 {c("Creators", "博主")}
               </h2>
@@ -131,41 +133,20 @@ export default function XContentExplorer() {
                     }
                     className={`${focusClass} min-w-0 px-3 py-2 text-sm ${author === creator.username ? "bg-muted font-semibold" : "hover:bg-muted"}`}
                   >
-                    <span className="block break-words">
-                      {creator.display_name}
-                    </span>
-                    <span className="text-xs text-muted-foreground">
-                      @{creator.username}
+                    <span className="flex items-center gap-3">
+                      <CreatorAvatar creator={creator} username={creator.username} />
+                      <span className="min-w-0"><span className="block break-words font-medium">{creator.display_name}</span><span className="text-xs text-muted-foreground">@{creator.username}</span></span>
                     </span>
                   </Link>
                 ))}
               </nav>
+              {creators.length === 1 && !selected && <div className="mt-6"><XCreatorProfile creator={creators[0]} /></div>}
             </aside>
-            <div className="min-w-0 space-y-4">
-              {selected && (
-                <div className="space-y-2">
-                  <h2 className="text-xl font-semibold">
-                    {selected.display_name}
-                  </h2>
-                  {selected.bio && (
-                    <p className="break-words text-sm leading-6 text-muted-foreground">
-                      {selected.bio}
-                    </p>
-                  )}
-                  <a
-                    className={`${focusClass} inline-flex min-h-9 items-center gap-1 text-sm underline underline-offset-4`}
-                    href={`https://x.com/${selected.username}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    @{selected.username}
-                    <ExternalLink className="h-3 w-3" aria-hidden />
-                  </a>
-                </div>
-              )}
+            <div className="order-2 min-w-0 space-y-4 xl:col-start-1 xl:row-start-1">
+              {selected && <XCreatorProfile creator={selected} />}
               <form
                 noValidate
-                className="flex flex-wrap items-end gap-2"
+                className="flex flex-wrap items-center gap-2 border-b border-border pb-4"
                 onSubmit={(event) => {
                   event.preventDefault();
                   const value = draftTicker
@@ -186,11 +167,13 @@ export default function XContentExplorer() {
                   router.push(href({ ticker: value }));
                 }}
               >
-                <div className="min-w-0 flex-1">
-                  <label htmlFor="x-ticker" className="mb-2 block text-sm">
+                <div className="relative min-w-0 flex-1 sm:max-w-xs">
+                  <label htmlFor="x-ticker" className="sr-only">
                     {c("Stock ticker", "股票代码")}
                   </label>
+                  <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
                   <Input
+                    className="h-10 rounded-full pl-10 text-base sm:text-sm"
                     ref={tickerRef}
                     id="x-ticker"
                     value={draftTicker}
@@ -198,7 +181,7 @@ export default function XContentExplorer() {
                       setDraftTicker(e.target.value);
                       setFilterError("");
                     }}
-                    placeholder="TSLA"
+                    placeholder={c("Search stock ticker", "搜索股票代码")}
                     maxLength={16}
                     aria-invalid={!!filterError}
                     aria-describedby={
@@ -223,6 +206,7 @@ export default function XContentExplorer() {
                     {c("Clear", "清除")}
                   </Button>
                 )}
+                <Button type="button" variant="ghost" size="icon" disabled={loading} aria-label={c("Refresh posts", "刷新推文")} className="ml-auto" onClick={() => setRevision(value => value + 1)}><RefreshCw className="h-4 w-4" aria-hidden="true" /></Button>
                 {filterError && (
                   <p
                     id="x-ticker-error"
@@ -277,8 +261,8 @@ export default function XContentExplorer() {
                             "试试其他博主，或清除股票筛选。",
                           )
                         : c(
-                            "An administrator can add creators and import their posts above.",
-                            "管理员可在上方添加博主并导入推文。",
+                            "Posts will appear here once creators have been added and synced.",
+                            "添加博主并同步后，推文将显示在这里。",
                           )}
                     </p>
                     {(author || ticker || page > 1) && (
@@ -290,14 +274,16 @@ export default function XContentExplorer() {
                     )}
                   </div>
                 )}
-                <div className="space-y-4">
+                <div className="divide-y divide-border">
                   {feed?.posts.map((post) => (
                     <article
                       key={post.id}
-                      className="min-w-0 rounded-xl border border-border bg-card p-4 sm:p-6"
+                      className="min-w-0 py-6 first:pt-2"
                     >
                       <div className="flex flex-wrap items-start justify-between gap-2">
-                        <div>
+                        <div className="flex min-w-0 items-center gap-3">
+                          <CreatorAvatar creator={post.creator} username={post.author_username} />
+                          <div className="min-w-0">
                           <Link
                             className={`${focusClass} text-sm font-semibold hover:underline`}
                             href={href({ author: post.author_username })}
@@ -313,6 +299,7 @@ export default function XContentExplorer() {
                               ).format(new Date(post.published_at))}
                             </time>
                           </p>
+                          </div>
                         </div>
                         <a
                           className={`${focusClass} inline-flex min-h-9 items-center gap-1 text-xs underline-offset-4 hover:underline`}
@@ -324,9 +311,7 @@ export default function XContentExplorer() {
                           <ExternalLink className="h-3 w-3" aria-hidden />
                         </a>
                       </div>
-                      <p className="mt-4 whitespace-pre-wrap break-words text-base leading-7 [overflow-wrap:anywhere]">
-                        {post.text}
-                      </p>
+                      <div className="mt-4"><XTranslatedText text={post.text} quotes={post.quoted_texts} /></div>
                       {post.truncated && (
                         <p className="mt-2 text-xs text-muted-foreground">
                           {c(
@@ -335,14 +320,6 @@ export default function XContentExplorer() {
                           )}
                         </p>
                       )}
-                      {post.quoted_texts.map((quote, index) => (
-                        <blockquote
-                          key={index}
-                          className="mt-3 whitespace-pre-wrap break-words rounded-lg bg-muted p-3 text-sm leading-6 [overflow-wrap:anywhere]"
-                        >
-                          {quote}
-                        </blockquote>
-                      ))}
                       {post.cashtags.length > 0 && (
                         <div className="mt-4 flex flex-wrap gap-2">
                           {post.cashtags.map((tag) => (

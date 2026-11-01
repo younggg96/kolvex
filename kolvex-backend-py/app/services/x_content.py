@@ -105,15 +105,20 @@ class XContentService:
     def creators(self):
         return {"creators": self.db.table("x_creators").select("*").order("username").execute().data or []}
 
-    def save_creator(self, handle, display_name, bio):
+    def save_creator(self, handle, display_name, bio, **profile):
         handle = username(handle)
+        for field in ("avatar_url", "website"):
+            if profile.get(field):
+                parsed = urlparse(profile[field])
+                if parsed.scheme != "https" or not parsed.hostname or parsed.username or parsed.password:
+                    raise ValueError(f"{field} must be a public HTTPS URL")
         return {"creator": self.db.table("x_creators").upsert({
             "username": handle, "display_name": display_name.strip() or handle,
-            "bio": bio.strip(),
+            "bio": bio.strip(), **profile,
         }, on_conflict="username").execute().data[0]}
 
     def posts(self, author=None, ticker=None, limit=20, offset=0):
-        query = self.db.table("x_posts").select("*,creator:x_creators(display_name,bio)", count="exact")
+        query = self.db.table("x_posts").select("*,creator:x_creators(*)", count="exact")
         if author:
             query = query.eq("author_username", username(author))
         if ticker:

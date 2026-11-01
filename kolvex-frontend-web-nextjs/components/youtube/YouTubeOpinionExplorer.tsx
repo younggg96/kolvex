@@ -158,7 +158,7 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
   const { t } = useTranslation();
   const [route, setRoute] = useState<Route>({ tab: "stocks" });
   const [ready, setReady] = useState(false);
-  const [catalogue, setCatalogue] = useState<YouTubeOpinionDashboard | null>(() => getCachedYouTubeOpinionDashboard({ limit: 8 }) ?? null);
+  const [catalogue, setCatalogue] = useState<YouTubeOpinionDashboard | null>(null);
   const [coverage, setCoverage] = useState<Record<string, YouTubeUploadCoverage>>({});
   const [catalogueError, setCatalogueError] = useState("");
   const [detail, setDetail] = useState<YouTubeOpinionDashboard | null>(null);
@@ -236,12 +236,14 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
   useEffect(() => {
     let active = true;
     setCatalogueError("");
+    const cached = getCachedYouTubeOpinionDashboard({ limit: 8 });
+    if (cached) setCatalogue(cached);
     getYouTubeOpinionDashboard({ limit: 8 })
       .then((result) => {
         if (active) setCatalogue(result);
       })
       .catch((error) => {
-        if (active)
+        if (active && !cached)
           setCatalogueError(
             error instanceof Error ? error.message : "Failed to load directory",
           );

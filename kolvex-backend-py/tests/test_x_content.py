@@ -67,6 +67,21 @@ class ImportTests(unittest.TestCase):
         self.assertEqual(db.rpc.call_args.args[0], "import_x_posts")
         db.table.assert_not_called()
 
+    def test_profile_urls_are_validated_before_saving(self):
+        db = Mock()
+        for url in ("javascript:alert(1)", "http://example.com", "https://user:secret@example.com"):
+            with self.subTest(url=url), self.assertRaises(ValueError):
+                XContentService(db).save_creator("test", "Test", "", avatar_url=url)
+        db.table.assert_not_called()
+
+    def test_legacy_profile_save_preserves_optional_fields(self):
+        db = Mock()
+        db.table.return_value.upsert.return_value.execute.return_value.data = [{"username": "test"}]
+        XContentService(db).save_creator("test", "Test", "Bio")
+        values = db.table.return_value.upsert.call_args.args[0]
+        self.assertNotIn("avatar_url", values)
+        self.assertEqual(values["bio"], "Bio")
+
     def test_filter_and_pagination_are_applied_in_database(self):
         db = Mock()
         query = db.table.return_value.select.return_value
@@ -118,6 +133,14 @@ class PermissionTests(unittest.TestCase):
         self.login(True)
         self.service.upload.return_value = {"total": 1, "inserted": 1, "skipped": 0}
         self.assertEqual(self.client.post("/x-content/upload", json=[post()]).json()["inserted"], 1)
+
+    def test_admin_can_save_public_profile_fields(self):
+        self.login(True)
+        self.service.save_creator.return_value = {"creator": {"username": "test"}}
+        response = self.client.post("/x-content/creators", json={"username": "test", "avatar_url": "https://pbs.twimg.com/example.jpg", "followers_count": 0})
+        self.assertEqual(response.status_code, 200)
+        self.service.save_creator.assert_called_once_with("test", "", "", avatar_url="https://pbs.twimg.com/example.jpg", followers_count=0)
+        self.assertEqual(self.client.post("/x-content/creators", json={"username": "test", "followers_count": -1}).status_code, 422)
 
     def test_pagination_validation(self):
         for query in ("limit=0", "limit=101", "offset=-1", "offset=100001"):
