@@ -16,18 +16,56 @@ const useArmedAfterFirstFrame = () => {
   return armed;
 };
 
-const ScrollHint = () => (
-  <>
-    <span
-      aria-hidden="true"
-      className="pointer-events-none absolute inset-y-1 left-1 z-20 w-8 rounded-l-full bg-gradient-to-r from-muted to-transparent"
-    />
-    <span
-      aria-hidden="true"
-      className="pointer-events-none absolute inset-y-1 right-1 z-20 w-8 rounded-r-full bg-gradient-to-l from-muted to-transparent"
-    />
-  </>
-);
+/**
+ * Edge fades that hint at labels hidden past the scroll clip. They are painted
+ * only for the side that actually hides content: rendering them unconditionally
+ * laid a grey fade over the active pill's rounded ends even when every trigger
+ * fit, which read as a dirty shadow rather than an affordance.
+ */
+function ScrollHint({ listRef }: { listRef: React.RefObject<HTMLDivElement> }) {
+  const [edges, setEdges] = React.useState({ left: false, right: false });
+
+  React.useEffect(() => {
+    const el = listRef.current;
+    if (!el) return;
+
+    const sync = () => {
+      const overflow = el.scrollWidth - el.clientWidth;
+      setEdges({
+        left: overflow > 1 && el.scrollLeft > 1,
+        right: overflow > 1 && el.scrollLeft < overflow - 1,
+      });
+    };
+
+    sync();
+    el.addEventListener("scroll", sync, { passive: true });
+    const observer = new ResizeObserver(sync);
+    observer.observe(el);
+    // A font swap or a label translation changes scrollWidth without resizing
+    // the tracked boxes, so re-measure once fonts settle as well.
+    document.fonts?.ready.then(sync).catch(() => {});
+
+    return () => {
+      el.removeEventListener("scroll", sync);
+      observer.disconnect();
+    };
+  }, [listRef]);
+
+  return (
+    <>
+      <span
+        aria-hidden="true"
+        data-visible={edges.left}
+        className="pointer-events-none absolute inset-y-1 left-1 z-20 w-8 rounded-l-full bg-gradient-to-r from-muted to-transparent transition-opacity duration-150 data-[visible=false]:opacity-0 motion-reduce:transition-none"
+      />
+      <span
+        aria-hidden="true"
+        data-visible={edges.right}
+        className="pointer-events-none absolute inset-y-1 right-1 z-20 w-8 rounded-r-full bg-gradient-to-l from-muted to-transparent transition-opacity duration-150 data-[visible=false]:opacity-0 motion-reduce:transition-none"
+      />
+    </>
+  );
+}
 
 type TabsListProps = React.ComponentPropsWithoutRef<typeof TabsPrimitive.List> & {
   variant?: "default" | "auth" | "pill" | "pill-solid";
@@ -38,6 +76,17 @@ const TabsList = React.forwardRef<
   TabsListProps
 >(({ className, variant = "pill", children, ...props }, ref) => {
   const pill = variant === "pill" || variant === "pill-solid";
+  // The scroll hint measures the list itself, so it needs a ref even when the
+  // caller forwards one of its own.
+  const listRef = React.useRef<HTMLDivElement | null>(null) as React.MutableRefObject<HTMLDivElement | null>;
+  const setListRef = React.useCallback(
+    (node: HTMLDivElement | null) => {
+      listRef.current = node;
+      if (typeof ref === "function") ref(node);
+      else if (ref) (ref as React.MutableRefObject<HTMLDivElement | null | undefined>).current = node;
+    },
+    [ref],
+  );
   // A single animated pill sits under the active trigger in the pill variants,
   // matching `SegmentedControl`; the underline variant stays per-trigger.
   if (!pill) {
@@ -59,7 +108,7 @@ const TabsList = React.forwardRef<
   }
   return (
     <TabsPrimitive.List
-      ref={ref}
+      ref={setListRef}
       data-variant={variant}
       className={cn(
         "group relative min-h-11 items-center justify-start text-muted-foreground",
@@ -70,7 +119,7 @@ const TabsList = React.forwardRef<
       {...props}
     >
       <PillIndicator />
-      <ScrollHint />
+      <ScrollHint listRef={listRef} />
       {children}
     </TabsPrimitive.List>
   );

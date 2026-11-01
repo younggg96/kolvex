@@ -4,7 +4,7 @@ import { ContentSkeleton } from "@/components/ui/content-skeleton";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { ExternalLink, Filter, Search, RefreshCw } from "lucide-react";
+import { ExternalLink, Search, RefreshCw } from "lucide-react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,6 +21,7 @@ import XCreatorSummaries from "./XCreatorSummaries";
 import StockBadge from "@/components/ui/stock-badge";
 import { useTranslation } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
+import { marketStockHref } from "@/lib/stockLinks";
 import { xRequest, type XCreator, type XFeed } from "@/lib/xContentApi";
 
 export default function XContentExplorer() {
@@ -372,18 +373,32 @@ export default function XContentExplorer() {
                           )}
                           {post.cashtags.length > 0 && (
                             <div className="mt-4 flex flex-wrap gap-2">
-                              {post.cashtags.map((tag) => (
-                                <span key={tag} className="inline-flex max-w-full items-center gap-1.5">
-                                  <StockBadge symbol={tag} />
+                              {post.cashtags.map((tag) => {
+                                // One chip, one destination: the stock identity itself is the
+                                // link to that stock's quotes page. Tapping it must not be
+                                // ambiguous, so no separate "filter by this ticker" action
+                                // sits beside it (filtering also means server round-trips and
+                                // would strand the user away from the quotes page).
+                                const quotesHref = marketStockHref(tag);
+                                const isActiveFilter =
+                                  !!ticker &&
+                                  ticker.toUpperCase() === tag.toUpperCase();
+                                return (
                                   <Link
-                                    href={href({ ticker: tag })}
-                                    className="inline-flex min-h-11 items-center rounded-2xl px-2 text-xs font-medium text-muted-foreground transition-colors duration-150 hover:bg-foreground/[0.06] hover:text-foreground focus-visible:outline-none"
-                                    aria-label={c(`Filter X posts by ${tag}`, `只看含 ${tag} 的 X 帖子`)}
+                                    key={tag}
+                                    href={quotesHref}
+                                    aria-label={c(`Open ${tag} quotes`, `打开 ${tag} 行情`)}
+                                    aria-current={isActiveFilter ? "true" : undefined}
+                                    className={cn(
+                                      focusClass,
+                                      "inline-flex hover:border-foreground/25 hover:bg-foreground/[0.06] hover:text-foreground",
+                                      isActiveFilter && "border-foreground/40 text-foreground",
+                                    )}
                                   >
-                                    <Filter className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                                    <StockBadge symbol={tag} href={null} />
                                   </Link>
-                                </span>
-                              ))}
+                                );
+                              })}
                             </div>
                           )}
                           {post.media_links.length > 0 && (
