@@ -25,7 +25,7 @@ import { Change, Empty, HeldMark, Panel, TextLink, money, useCopy, useCreatorCat
 import StockTrend from "./StockTrend";
 import WatchlistButton from "./WatchlistButton";
 
-const ROW_GRID = "grid grid-cols-[minmax(0,1fr)_80px] gap-x-3 min-[400px]:grid-cols-[minmax(0,1fr)_60px_80px] sm:grid-cols-[minmax(0,1fr)_100px_100px] sm:gap-x-4";
+const ROW_GRID = "grid grid-cols-[minmax(0,1fr)_80px] gap-x-2 min-[400px]:grid-cols-[minmax(0,1fr)_60px_80px] sm:grid-cols-[minmax(0,1fr)_100px_100px] sm:gap-x-4";
 const scopes: { key: StockScope; en: string; zh: string }[] = [
   { key: "core", en: "Core US stocks", zh: "常看美股" },
   { key: "creators", en: "Creator activity", zh: "博主关注" },
@@ -161,8 +161,8 @@ export default function StockObservationList({ range, catalogue, held, onRetry }
   const clearSearch = () => { setSearchDraft(""); commitSearch(""); searchRef.current?.focus(); };
 
   return <div ref={listRef}>
-    <Panel title={c("Stock watch", "股票观察")} id="market-movers" className="[&>header]:min-h-14 [&>header]:items-center">
-      <div role="group" aria-label={c("Stock list", "股票列表")} className="flex flex-wrap gap-1 py-4">
+    <Panel title={c("Stock watch", "股票观察")} id="market-movers" surface="card">
+      <div role="group" aria-label={c("Stock list", "股票列表")} className="flex flex-wrap gap-1 pb-4">
         {scopes.filter(scope => scope.key !== "holdings" || holdingsEnabled).map(scope => <Button key={scope.key} variant="ghost" size="sm" className={cn("min-h-11 rounded-full px-4 text-sm", state.scope === scope.key ? "bg-muted font-semibold text-foreground hover:bg-secondary" : "font-medium text-muted-foreground")} aria-pressed={state.scope === scope.key} onClick={() => changeScope(scope.key)}>{c(scope.en, scope.zh)}</Button>)}
       </div>
       <div className={cn("mb-3 grid grid-cols-2 items-end gap-3", state.scope === "core" ? "lg:grid-cols-[minmax(0,1fr)_9rem_9rem]" : "lg:grid-cols-[minmax(0,1fr)_10rem]")}>
@@ -212,22 +212,25 @@ export default function StockObservationList({ range, catalogue, held, onRetry }
       </div>}
       {state.scope === "core" && catalogue.error && <p role="status" className="mb-3 text-xs text-muted-foreground">{c("Creator insights are temporarily unavailable. Quotes remain available.", "博主线索暂不可用，仍可查看行情。")}</p>}
       <div aria-busy={blocking || quoteLoading}>
-        <div className={cn(ROW_GRID, "mr-12 border-b border-border px-2 py-3 text-xs text-muted-foreground")} aria-hidden="true">
-          <span>{c("Stock", "股票")}</span>
-          <span className="hidden text-center min-[400px]:block">{c(`Trend · ${trend.en}`, `走势 · ${trend.zh}`)}</span>
-          <span className="text-right">{c("Price / Today", "价格 / 今日")}</span>
+        <div className="flex items-center gap-1 border-b border-border pr-2 text-xs text-muted-foreground" aria-hidden="true">
+          <div className={cn(ROW_GRID, "min-w-0 flex-1 px-2 py-3")}>
+            <span>{c("Stock", "股票")}</span>
+            <span className="hidden text-center min-[400px]:block">{c(`Trend · ${trend.en}`, `走势 · ${trend.zh}`)}</span>
+            <span className="text-right">{c("Price / Today", "价格 / 今日")}</span>
+          </div>
+          <span className="w-11 shrink-0 text-center">{c("Watch", "自选")}</span>
         </div>
         {blocking ? <div role="status" aria-label={c("Loading stocks", "正在加载股票")}>
           {[0, 1, 2, 3, 4].map(row => <div key={row} className="flex min-h-20 items-center justify-between gap-4 border-b border-border px-2 py-4"><Skeleton className="h-10 w-36" /><Skeleton className="h-8 w-20" /></div>)}
-        </div> : <ul className="divide-y divide-border" aria-label={c("Stock watch", "股票观察")}>
+        </div> : <ul aria-label={c("Stock watch", "股票观察")}>
           {visible.map(symbol => {
             const stock = coverage.get(symbol);
             const detailParams = new URLSearchParams({ from: returnHref });
             const href = `/dashboard/market/${encodeURIComponent(symbol)}`;
-            return <li key={symbol} className="flex items-center gap-1">
-              <Link href={`${href}?${detailParams}`} onClick={rememberScroll} className={cn(ROW_GRID, "min-h-20 min-w-0 flex-1 items-center rounded-2xl px-2 py-4 transition-colors hover:bg-muted/50 focus-visible:outline-none ")}>
-                <span className="flex min-w-0 items-center gap-3">
-                  <span aria-hidden="true" className="shrink-0"><CompanyLogo symbol={symbol} size="sm" /></span>
+            return <li key={symbol} className="flex items-center gap-1 rounded-2xl pr-2 transition-colors hover:bg-muted/50 focus-within:bg-muted/50 motion-reduce:transition-none">
+              <Link href={`${href}?${detailParams}`} onClick={rememberScroll} className={cn(ROW_GRID, "min-h-20 min-w-0 flex-1 items-center rounded-2xl px-2 py-4 focus-visible:bg-transparent focus-visible:outline-none")}>
+                <span className="flex min-w-0 items-center gap-2 sm:gap-3">
+                  <span aria-hidden="true" className="shrink-0"><CompanyLogo symbol={symbol} size="sm" className="max-[399px]:max-h-6 max-[399px]:max-w-6" /></span>
                   <span className="min-w-0"><span className="block truncate text-base font-semibold">{symbol}{state.scope !== "holdings" && held.tickers.includes(symbol) && <HeldMark />}</span><span className="mt-1 block truncate text-xs text-muted-foreground">{quotes[symbol]?.name || stock?.company_name || coreNames.get(symbol) || symbol}</span></span>
                 </span>
                 <span className="hidden min-[400px]:block"><StockTrend symbol={symbol} period={trend.period} interval={trend.interval} rangeLabel={c(trend.en, trend.zh)} rangeKey={range} /></span>

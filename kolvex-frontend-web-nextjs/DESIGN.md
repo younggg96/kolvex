@@ -227,14 +227,18 @@ and detail headings retain their shared logo treatment. Broad market events
 without tickers do not invent a company identity.
 
 Markets' stock observation list uses the existing flat rows, pill Buttons and
-Radix Selects. Core US stocks and Creator activity select the stock universe;
+Radix Selects inside one rounded card body. Core US stocks and Creator activity select the stock universe;
 The shared Input searches the current list by ticker or company name, accepting
 an optional dollar prefix. Search leads the toolbar, followed by labelled sector
 and sort Selects; on phones search spans the first row. Removable filter buttons
 and Reset filters preserve the current scope and restore the first ten rows.
 Rows show identity and signed daily price change at every width, without a
 separate creator link below each item. Below 400px the decorative sparkline
-yields space to identity and price. Use ten-row Load more increments,
+yields space to identity and price. The Watchlist star sits inside the same
+rounded row background as the stock identity, trend and quote; hover and keyboard
+focus highlight the whole row. It remains a separate 44px button beside the detail
+link, so saving never opens the stock. The aligned Watch / 自选 heading identifies
+the action column. Use ten-row Load more increments,
 explicit loading/error/empty states, and the existing semantic theme tokens.
 Market list state belongs to URL query parameters; local storage remembers the
 last scope/filter/sort, excluding search. Search is URL state, applies before
@@ -1067,7 +1071,11 @@ popup is introduced. Business/schema/permissions are in docs/market-events.md.
 ### Three daily editions
 
 Daily Briefs uses the shared Radix Tabs for pre-market 1h (`morning`), intraday
-(`intraday`), and post-market 1h (`evening`). Existing IDs and imported content
+(`intraday`), and post-market 1h (`evening`). The edition capsule fits its labels
+instead of stretching across the toolbar. Refresh stays right-aligned and wraps
+onto a separate row on narrow screens; the shared max-width and horizontal scroll
+keep longer translated labels accessible. There is no underline beneath the pill.
+Existing IDs and imported content
 remain valid. Default selection follows regular US market hours in Pacific time:
 pre-market before 06:30, intraday until 14:00, then post-market; URL selections win.
 The admin importer uses the shared Select for edition selection and list filtering.
@@ -1165,6 +1173,13 @@ Market cards are 240px tall with 64px charts. Five equal columns fill the wide
 desktop overview; smaller screens retain a single horizontally scrollable row
 with 240px cards so the stock list stays close to the overview. The lower grid
 uses a flexible stock list and a 320px secondary rail with matching header height.
+Stock watch, Watchlist and Creator updates use matching card bodies below their
+headings: shared Card, 24px corners, semantic card fill, 1px border and 12px padding
+on phones / 16px from sm. Section headers share a 56px minimum height and a 12px
+gap above their card. Stock rows stay flat within the card. The rail has no extra
+vertical divider; card boundaries separate its modules. Creator updates uses the
+same top-divided footer link as Watchlist. The plain Panel variant is unchanged
+for other screens; only these Markets sections opt into the card body.
 Range and view controls use neutral foreground selection; stock scope selection
 uses the muted surface. Brand green remains on the primary lookup action, active
 navigation and focus indicators, with semantic positive/negative data unchanged.

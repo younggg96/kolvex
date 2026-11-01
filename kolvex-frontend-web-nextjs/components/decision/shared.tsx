@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import { FormEvent, ReactNode, useEffect, useState } from "react";
 import { ArrowRight, Search } from "lucide-react";
 import CompanyLogo from "@/components/ui/company-logo";
+import { Card } from "@/components/ui/card";
 import { useTranslation } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import { getMyHoldings } from "@/lib/portfolioApi";
@@ -128,7 +129,7 @@ export function TickerSearch({
   );
 }
 
-/** A titled section separated by a hairline; sections are never boxed. */
+/** A titled section with an optional card body below its heading. */
 export function Panel({
   title,
   children,
@@ -136,6 +137,7 @@ export function Panel({
   description,
   className = "",
   id,
+  surface = "plain",
 }: {
   title?: string;
   children: ReactNode;
@@ -143,10 +145,11 @@ export function Panel({
   description?: ReactNode;
   className?: string;
   id?: string;
+  surface?: "plain" | "card";
 }) {
   return (
     <section id={id} aria-labelledby={id ? `${id}-title` : undefined} className={cn("min-w-0", className)}>
-      <header className={cn("flex flex-wrap items-end justify-between gap-x-4 gap-y-2", title ? "border-b border-border pb-3" : "")}>
+      <header className={cn("flex flex-wrap items-end justify-between gap-x-4 gap-y-2", title && (surface === "card" ? "mb-3 min-h-14 items-center" : "border-b border-border pb-3"))}>
         <div className="min-w-0">
           {title && (
             <h2 id={id ? `${id}-title` : undefined} className="text-xl font-semibold tracking-[-0.01em]">
@@ -159,7 +162,7 @@ export function Panel({
         </div>
         {action}
       </header>
-      {children}
+      {surface === "card" ? <Card className="p-3 sm:p-4">{children}</Card> : children}
     </section>
   );
 }

@@ -361,12 +361,13 @@ function MarketOverview({ range, setRange, view, setView }: { range: RangeKey; s
             <StockObservationList range={range} catalogue={catalogue} held={held} onRetry={() => setAttempt(value => value + 1)} />
           </div>
 
-          <aside className="min-w-0 space-y-8 xl:sticky xl:top-8 xl:self-start xl:border-l xl:border-border xl:pl-6">
+          <aside className="min-w-0 space-y-8 xl:sticky xl:top-8 xl:self-start">
             <MarketWatchlistCard />
             <Panel
               title={c("Creator updates", "博主新动态")}
               id="market-creator-updates"
-              className="[&>header]:items-center [&>header]:min-h-14 [&>header_h2]:text-lg"
+              surface="card"
+              className="[&>header_h2]:text-lg"
               action={<TextLink href="/dashboard/youtube-opinions" className="inline-flex min-h-10 items-center gap-1 !text-xs !font-medium text-muted-foreground hover:text-foreground">{c("View all", "全部观点")}<ArrowUpRight className="h-3.5 w-3.5" aria-hidden /></TextLink>}
             >
               {catalogue.loading && !catalogue.data ? (
@@ -383,7 +384,7 @@ function MarketOverview({ range, setRange, view, setView }: { range: RangeKey; s
                     <li key={shift.ticker}>
                       <Link
                         href={`/dashboard/market/${encodeURIComponent(shift.ticker)}`}
-                        className="-mx-2 flex min-h-20 items-center justify-between gap-3 rounded-2xl px-2 py-4 transition-colors duration-200 hover:bg-muted/50 focus-visible:outline-none "
+                        className="flex min-h-20 items-center justify-between gap-3 rounded-2xl px-1 py-4 transition-colors duration-200 hover:bg-muted/50 focus-visible:outline-none "
                       >
                         <span className="flex min-w-0 items-center gap-2.5">
                           <span aria-hidden><CompanyLogo symbol={shift.ticker} size="sm" /></span>
@@ -410,7 +411,7 @@ function MarketOverview({ range, setRange, view, setView }: { range: RangeKey; s
               )}
               <Link
                 href="/dashboard/youtube-opinions/stocks"
-                className="mt-2 flex min-h-11 items-center justify-between gap-3 rounded-2xl border border-border px-3 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground focus-visible:outline-none "
+                className="mt-3 flex min-h-11 items-center justify-between gap-3 border-t border-border px-1 pt-2 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none "
               >
                 {c("Explore creator-covered stocks", "查看博主覆盖股票")}
                 <ArrowUpRight className="h-4 w-4 shrink-0" aria-hidden />

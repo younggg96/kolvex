@@ -45,11 +45,11 @@ export default function BriefLibrary({ searchParams }: { searchParams?: BriefSea
           </nav>
         </div>
         <Tabs value={type} onValueChange={value => router.push(briefLibraryHref(isBriefType(value) ? value : "morning", 1, date))}>
-          <div className="mb-6 flex flex-wrap items-center gap-x-4 border-b border-border">
-            <TabsList aria-label={t("briefs.filterLabel")} className="min-w-0 flex-1 gap-3 border-0 sm:gap-5">
+          <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+            <TabsList aria-label={t("briefs.filterLabel")} className="min-w-0 shrink-0">
               {BRIEF_TYPES.map(edition => <TabsTrigger key={edition} value={edition}>{t(`briefs.${edition}`)}</TabsTrigger>)}
             </TabsList>
-            <Button variant="ghost" size="sm" disabled={loading} onClick={retry}><RefreshCw className="mr-1 h-3.5 w-3.5" aria-hidden="true" />{t("common.refresh")}</Button>
+            <Button variant="ghost" size="sm" className="ml-auto min-h-11 shrink-0" disabled={loading} onClick={retry}><RefreshCw className="mr-1 h-3.5 w-3.5" aria-hidden="true" />{t("common.refresh")}</Button>
           </div>
           <TabsContent value={type}>
             {error && data && <p role="alert" className="mb-4 text-sm text-muted-foreground">{t("common.error")} <Button variant="outline" size="sm" onClick={retry}>{t("common.retry")}</Button></p>}
