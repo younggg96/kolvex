@@ -129,7 +129,7 @@ export default function LandingStockTicker() {
                 </div>
 
                 {/* Stock symbol */}
-                <span className="font-bold text-xs md:text-base text-foreground group-hover:text-primary transition-colors duration-200">
+                <span className="font-bold text-xs md:text-base text-foreground group-hover:text-foreground/80 transition-colors duration-200">
                   {stock.symbol}
                 </span>
 
@@ -162,7 +162,7 @@ export default function LandingStockTicker() {
                 key={key}
                 href={href}
                 aria-label={`${stock.symbol} ${name} quotes`}
-                className={`${PILL_CLASS} cursor-pointer hover:border-primary/30 focus-visible:outline-none focus-visible:border-primary/60`}
+                className={`${PILL_CLASS} cursor-pointer hover:border-foreground/25 focus-visible:outline-none focus-visible:border-foreground/35`}
               >
                 {content}
               </Link>

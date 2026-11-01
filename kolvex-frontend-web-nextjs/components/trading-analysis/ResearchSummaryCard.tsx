@@ -15,7 +15,7 @@ export function ResearchSummaryCard({ analysis, href, t, headingLevel = "h3" }: 
 }) {
   const Heading = headingLevel;
   return (
-    <div className="relative flex h-full min-w-0 flex-col gap-6 rounded-3xl border border-border bg-card p-5 transition-colors hover:border-primary/40 hover:bg-primary/[0.04]">
+    <div className="relative flex h-full min-w-0 flex-col gap-6 rounded-3xl border border-border bg-card p-5 transition-colors hover:border-foreground/25 hover:bg-foreground/[0.04]">
       {/* Report overlay: the card body opens the report; the ticker identity is a
           sibling link so it can reach that stock's quotes page. */}
       <Link href={href} className="absolute inset-0 rounded-3xl focus-visible:outline-none " aria-label={analysis.ticker}><span className="sr-only">{analysis.ticker} {t("tradingAnalysis.title")}</span></Link>

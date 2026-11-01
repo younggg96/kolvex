@@ -22,12 +22,6 @@ const config: Config = {
         foreground: "rgb(var(--foreground) / <alpha-value>)",
         primary: "rgb(var(--primary) / <alpha-value>)",
         "primary-foreground": "rgb(var(--primary-foreground) / <alpha-value>)",
-        /* Brand-green interaction tokens; see the DESIGN TOKENS block in
-           app/globals.css. `primary-text` is the hover label colour that stays
-           readable on the light ground, `primary-line` the hover hairline. */
-        "primary-soft": "rgb(var(--primary-soft) / <alpha-value>)",
-        "primary-line": "rgb(var(--primary-line) / <alpha-value>)",
-        "primary-text": "rgb(var(--primary-text) / <alpha-value>)",
         secondary: "rgb(var(--secondary) / <alpha-value>)",
         "secondary-foreground": "rgb(var(--secondary-foreground) / <alpha-value>)",
         destructive: "rgb(var(--destructive) / <alpha-value>)",

@@ -82,7 +82,7 @@ export default function TranslateButton({
       className={`flex items-center gap-1 text-xs transition-colors cursor-pointer ${
         isTranslated
           ? "text-primary"
-          : "text-muted-foreground hover:text-primary"
+          : "text-muted-foreground hover:text-foreground"
       } ${isTranslating ? "opacity-50 cursor-not-allowed" : ""} ${className}`}
       title={isTranslated ? "显示原文" : "翻译"}
     >

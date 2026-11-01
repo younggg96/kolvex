@@ -40,9 +40,11 @@ export default function ExpandableText({
       </div>
 
       {needsTruncation && (
+        // Already full-contrast text, so hover feedback is a subtle dim rather
+        // than a colour shift that would fight the body copy.
         <button
           onClick={() => setIsExpanded(!isExpanded)}
-          className="mt-2 inline-flex items-center gap-1 text-sm font-medium text-foreground transition-colors hover:text-primary-text"
+          className="mt-2 inline-flex items-center gap-1 text-sm font-medium text-foreground transition-colors hover:opacity-70"
         >
           {isExpanded ? (
             <>

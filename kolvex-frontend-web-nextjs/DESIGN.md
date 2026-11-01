@@ -4,9 +4,6 @@ name: Kolvex
 description: Chinese-first equity research with source-linked opinions, quiet data lists and green navigation accents.
 colors:
   primary: "#00C805"
-  primary-soft: "#00C805"
-  primary-line: "#00C805"
-  primary-text: "#007D02"
   background: "#FAFAF9"
   foreground: "#000000"
   card: "#FFFFFF"
@@ -59,9 +56,10 @@ utilities consumed by shared components. The frontmatter mirrors light-mode
 values. Dark mode uses black ground, #0E0F10 cards, #FFFFFF foreground,
 #9BA0A6 muted text and #282A2D borders. Primary remains #00C805 in both themes.
 Use `positive` and `negative` for direction text, with a written decision label;
-the primary green alone is not a small-text color on the light background, so
-hovered labels use the darker `primary-text` token instead. See
-**Brand-green interaction** for the hover, focus and press rules.
+the primary green alone is not a small-text color on the light background.
+Interaction feedback (hover, focus, press) is neutral grey, layered as a
+transparent `foreground` over whatever surface it sits on. See **Interaction
+feedback** for the rules.
 
 ## Typography
 
@@ -1290,44 +1288,49 @@ count, refresh and a link to the full Watchlist; empty, loading, partial quote
 failure and session-only storage states remain explicit. Mobile places the rail
 after the stock observation list. No quotes or sector classifications are invented.
 
-## Brand-green interaction
+## Interaction feedback
 
-Brand green is the interaction colour, not only the confirm colour. Every
-interactive surface must acknowledge hover, keyboard focus and press with the
-brand hue instead of falling back to a neutral grey wash. `app/globals.css` owns
-three interaction tokens, and `tailwind.config.ts` exposes them as
-`primary-soft`, `primary-line` and `primary-text`:
+Green means direction, not interaction. Hover, focus and press feedback is a
+neutral grey layer built from the `foreground` colour at low opacity, so a
+hovered row, chip or menu item never reads as a price signal and never competes
+with the green/orange-red the data already uses for up and down. Green is
+reserved for two things: direction semantics (`positive`, `negative`,
+`chart-up`, `chart-down`) and solid brand actions.
 
-- `primary-soft` (`#00C805`) fills hovered and pressed surfaces at 4–16%
-  opacity: rows use 6–8%, pills and chips 10%, pressed states 14–16%.
-- `primary-line` (`#00C805`) draws the hover hairline on bordered controls,
-  table rows and disclosure boundaries at 25–55% opacity.
-- `primary-text` is the hovered label and glyph colour. It is `#007D02` in light
-  mode for ≥ 4.5:1 on the off-white ground and pure brand green in dark mode.
-  `primary` itself stays reserved for solid fills, icons and focus outlines where
-  the light ground cannot support small green text.
+There are no separate interaction tokens. Feedback is authored inline from the
+existing palette, which keeps dark mode correct without a second set of
+variables to maintain:
 
-Rules that follow from the tokens:
+- `bg-foreground/[0.04]`–`/[0.06]` fills a hovered or focused surface; rows use
+  `/[0.06]`, form fields a lighter `/[0.04]`. Pressed states deepen to `/[0.1]`.
+- `border-foreground/25` draws the hover hairline on bordered controls, table
+  rows and disclosure boundaries; `border-foreground/35` marks the pressed edge.
+- Hovered labels and glyphs resolve to `text-foreground` rather than to a
+  coloured accent, so text contrast is never weaker on hover than at rest.
+
+Rules that follow from that:
 
 - Filled brand buttons (`default`, `icon`) keep their green fill and darken it on
-  hover and press; they never lose contrast by turning neutral.
-- Neutral `outline` and `ghost` Buttons take a green hairline, wash and label on
-  hover, and a deeper green wash while pressed.
+  hover and press; they are the one interactive control that stays green.
+- Neutral `outline` and `ghost` Buttons take a grey hairline and wash on hover,
+  and a deeper grey wash while pressed. `link` and `text` actions rest on
+  `text-foreground`, not `text-positive`, so a navigation link is not mistaken
+  for an up move.
 - List rows (`ListRow`, `listRowTargetClass`, `listCompactRowClass`) wash in
-  `primary` at 7% with a green 2px focus outline. Feed rows use
+  `foreground/6` with an outline on keyboard focus. Feed rows use
   `listFeedRowClass`, whose `list-row-interactive` component class paints the
-  green wash, turns the row hairline green and reveals a 2px green leading mark
-  on hover or `focus-within`.
-- Tabs, `SegmentedControl`, `SwitchTab` and every authored pill keep a neutral or
-  foreground selected state with a green label/icon where it reads on the fill;
-  unselected options preview the brand with a 10% green wash and `primary-text`.
-- Desktop sidebar, mobile dock and the mobile opinion source nav show a green
-  wash, green hairline or green icon on hover; the selected entry takes the brand
-  hue on its icon or label so location and brand read as one signal.
-- Menus (`DropdownMenuItem`, `MultiSelect`, native disclosures) highlight on
-  `primary/10` with `primary-text`.
-- Tables keep semantic positive/negative direction colours; only the row wash,
-  hover hairline and sort label turn green.
+  neutral wash and darkens the row hairline on hover or `focus-within`; there is
+  no leading accent mark.
+- Tabs, `SegmentedControl`, `SwitchTab` and every authored pill select with
+  `bg-foreground` plus `text-background`, or a `secondary` fill with
+  foreground text. Unselected options preview with the same grey wash.
+- Desktop sidebar, mobile dock and the mobile opinion source nav take a grey
+  wash on hover; the selected route is the only entry marked, by its solid
+  secondary pill. Icons follow the text colour instead of turning green.
+- Menus (`DropdownMenuItem`, `MultiSelect`, native disclosures) highlight on a
+  grey wash with foreground text.
+- Tables keep semantic positive/negative direction colours untouched; the row
+  wash, hover hairline and sort order indicators are neutral too.
 - All of it is colour and border feedback with 150ms transitions and no new
   motion, so `prefers-reduced-motion` behavior is unchanged. `prefers-contrast:
   more` strengthens the hovered hairline.
@@ -1337,8 +1340,9 @@ Rules that follow from the tokens:
 Ring utilities are disabled in `tailwind.config.ts`. Components do not use ring
 colors, widths or offsets, including sidebar navigation and decorative rings.
 `app/globals.css` provides keyboard focus feedback through secondary background
-and underlined text instead of surrounding ring shadows. Focus is brand green:
-focus backgrounds use `primary/10` and row targets use a 2px `primary` outline.
+and underlined text instead of surrounding ring shadows. Focus carries a 2px
+`primary` outline because a keyboard-focus ring is a distinct affordance, not
+data; the focused background behind it stays neutral grey.
 
 ### Floating mobile navigation
 

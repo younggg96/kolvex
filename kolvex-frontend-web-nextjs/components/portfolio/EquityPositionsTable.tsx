@@ -155,7 +155,7 @@ export function EquityPositionsTable({
                 key={pos.id}
                 className={`${isSecretStock
                   ? "opacity-70"
-                  : "hover:bg-primary/[0.06]"
+                  : "hover:bg-foreground/[0.06]"
                   } transition-colors`}
               >
                 <TableCell className="pl-4 py-3">
@@ -296,7 +296,7 @@ export function EquityPositionsTable({
                         onToggleVisibility(e, pos.id, pos.is_hidden || false)
                       }
                       className={`p-1.5 rounded-full transition-colors ${pos.is_hidden
-                        ? "text-muted-foreground transition-colors hover:bg-primary/10 hover:text-primary-text"
+                        ? "text-muted-foreground transition-colors hover:bg-foreground/[0.08] hover:text-foreground"
                         : "text-positive hover:text-positive hover:bg-positive/10"
                         }`}
                       title={

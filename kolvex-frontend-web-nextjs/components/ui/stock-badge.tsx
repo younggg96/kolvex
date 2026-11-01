@@ -37,7 +37,7 @@ export default function StockBadge({
   }
 
   return (
-    <Link href={target} className={`${PILL_CLASS}transition-colors hover:border-primary/40 hover:bg-primary/[0.08] hover:text-primary-text`}>
+    <Link href={target} className={`${PILL_CLASS}transition-colors hover:border-foreground/25 hover:bg-foreground/[0.06] hover:text-foreground`}>
       {content}
     </Link>
   );

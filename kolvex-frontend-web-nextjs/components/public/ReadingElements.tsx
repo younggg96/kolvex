@@ -60,7 +60,7 @@ export function StockQuotesLink({ symbol, label = "行情" }: { symbol: string; 
     role="link"
     onClick={() => router.push(href)}
     aria-label={`${symbol} ${label}`}
-    className="inline-flex min-h-11 shrink-0 cursor-pointer items-center rounded-sm px-1.5 text-xs font-medium text-muted-foreground transition-colors hover:text-primary focus-visible:outline-none "
+    className="inline-flex min-h-11 shrink-0 cursor-pointer items-center rounded-sm px-1.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none "
   >{label}</button>;
 }
 
@@ -123,9 +123,9 @@ export function OpinionList({ opinions }: { opinions: YouTubeOpinion[] }) {
           {opinion.company_name && <p className="mt-3 text-xs text-muted-foreground">{opinion.company_name}</p>}
           <p className="mt-4 max-w-[72ch] whitespace-pre-wrap text-[15px] leading-7 text-foreground">{opinion.summary || opinion.thesis || opinion.key_points?.join("\n") || "暂无文字摘要，请查看原视频。"}</p>
           {!!(opinion.key_points?.length || opinion.risks?.length) && <div className="mt-4 grid gap-x-8 gap-y-4 md:grid-cols-2">
-            {[{ title: "观点依据", items: opinion.key_points }, { title: "提及的风险", items: opinion.risks }].map(({ title, items }) => !!items?.length && <details key={title} className="text-sm"><summary className="cursor-pointer rounded-full px-1 py-2 text-xs font-semibold text-muted-foreground transition-colors hover:text-primary-text focus-visible:outline-none">{title}</summary><ul className="mt-2 list-disc space-y-1.5 pl-5 text-sm leading-6">{items.map((item, i) => <li key={i}>{item}</li>)}</ul></details>)}
+            {[{ title: "观点依据", items: opinion.key_points }, { title: "提及的风险", items: opinion.risks }].map(({ title, items }) => !!items?.length && <details key={title} className="text-sm"><summary className="cursor-pointer rounded-full px-1 py-2 text-xs font-semibold text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none">{title}</summary><ul className="mt-2 list-disc space-y-1.5 pl-5 text-sm leading-6">{items.map((item, i) => <li key={i}>{item}</li>)}</ul></details>)}
           </div>}
-          {source && <a href={source} target="_blank" rel="noopener noreferrer" className="mt-4 inline-flex max-w-full items-start gap-2 rounded-full px-1 py-1 text-sm text-muted-foreground transition-colors hover:text-primary-text hover:underline focus-visible:outline-none"><PlayCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" /><span className="min-w-0">{opinion.video_title || "查看原视频"}</span></a>}
+          {source && <a href={source} target="_blank" rel="noopener noreferrer" className="mt-4 inline-flex max-w-full items-start gap-2 rounded-full px-1 py-1 text-sm text-muted-foreground transition-colors hover:text-foreground hover:underline focus-visible:outline-none"><PlayCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" /><span className="min-w-0">{opinion.video_title || "查看原视频"}</span></a>}
         </li>;
       })}
     </ListRows>

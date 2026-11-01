@@ -79,11 +79,11 @@ export default function MarketWatchlistCard() {
           <Button asChild variant="outline" size="sm" className="mt-4"><Link href="/dashboard/watchlist">{c("Manage Watchlist", "管理自选股")}</Link></Button>
         </div> : <div className="space-y-2">
           {[...groups].map(([sector, stocks]) => <details key={sector} open className="group">
-            <summary className="flex min-h-9 cursor-pointer list-none items-center gap-2 rounded-2xl px-1 text-xs font-medium text-muted-foreground transition-colors hover:text-primary-text focus-visible:outline-none [&::-webkit-details-marker]:hidden">
+            <summary className="flex min-h-9 cursor-pointer list-none items-center gap-2 rounded-2xl px-1 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none [&::-webkit-details-marker]:hidden">
               <ChevronDown className="h-3.5 w-3.5 shrink-0 -rotate-90 group-open:rotate-0" aria-hidden />{groupLabel(sector)}
             </summary>
             <ListRows>{stocks.map(symbol => <ListRow key={symbol} className="pr-0">
-              <Link href={marketStockHref(symbol)} className="grid min-h-11 w-full grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-2 rounded-full px-1 text-sm transition-colors duration-150 hover:text-primary-text focus-visible:outline-none" title={c(`${quotes[symbol]?.name ?? symbol} quotes`, `${quotes[symbol]?.name ?? symbol} 行情`)}>
+              <Link href={marketStockHref(symbol)} className="grid min-h-11 w-full grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-2 rounded-full px-1 text-sm transition-colors duration-150 hover:text-foreground focus-visible:outline-none" title={c(`${quotes[symbol]?.name ?? symbol} quotes`, `${quotes[symbol]?.name ?? symbol} 行情`)}>
                 <span className="flex min-w-0 items-center gap-2"><span className="shrink-0" aria-hidden><CompanyLogo symbol={symbol} size="xs" /></span><span className="truncate font-medium">{symbol}</span></span>
                 {loading && !quotes[symbol] ? <Skeleton className="col-span-2 h-4 w-28" /> : <><span className="figure text-right">{money(quotes[symbol]?.price)}</span><Change value={quotes[symbol]?.changePercent} className="min-w-14 text-right text-xs" /></>}
               </Link>

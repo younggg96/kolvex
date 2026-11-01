@@ -12,21 +12,26 @@ const buttonVariants = cva(
     variants: {
       variant: {
         /* Filled brand action: hovers darker instead of lighter so the label
-           keeps its contrast against the green fill. */
+           keeps its contrast against the green fill. This is the one control
+           that stays green outside direction semantics. */
         default:
-          "bg-primary text-primary-foreground hover:bg-primary/90 hover:brightness-95 active:bg-primary/80 active:brightness-90 disabled:opacity-40",
+          "bg-primary text-primary-foreground hover:bg-primary/90 active:bg-primary/80 disabled:opacity-40",
         secondary:
           "bg-secondary text-secondary-foreground hover:bg-foreground/10 active:bg-foreground/15 disabled:opacity-40",
-        /* Neutral actions tint toward the brand on hover and press. */
+        /* Neutral actions take a grey wash on hover and press so green keeps
+           meaning direction rather than interaction. */
         outline:
-          "border border-border bg-transparent text-foreground hover:border-primary/45 hover:bg-primary/[0.08] hover:text-primary-text active:border-primary/60 active:bg-primary/[0.16] disabled:opacity-40",
+          "border border-border bg-transparent text-foreground hover:border-foreground/25 hover:bg-foreground/[0.06] hover:text-foreground active:border-foreground/35 active:bg-foreground/[0.1] disabled:opacity-40",
         destructive:
           "bg-destructive text-destructive-foreground hover:brightness-95 active:brightness-90 disabled:opacity-40",
         ghost:
-          "font-medium text-muted-foreground hover:bg-primary/[0.09] hover:text-primary-text active:bg-primary/[0.16] disabled:opacity-40",
-        link: "text-positive underline-offset-4 hover:text-primary-text hover:underline active:text-primary-text active:opacity-80 disabled:opacity-40",
-        text: "text-positive hover:text-primary-text hover:opacity-90 active:text-primary-text active:opacity-70 !p-0 !h-auto !w-auto disabled:opacity-40",
-        icon: "bg-primary text-primary-foreground hover:bg-primary/90 hover:brightness-95 active:bg-primary/80 active:brightness-90 disabled:bg-muted disabled:text-muted-foreground disabled:cursor-not-allowed",
+          "font-medium text-muted-foreground hover:bg-foreground/[0.06] hover:text-foreground active:bg-foreground/[0.1] disabled:opacity-40",
+        /* Link and text actions rest on `foreground`, not `positive`: green
+           text is reserved for direction, so a plain navigation link must not
+           read as "price is up". */
+        link: "text-foreground underline-offset-4 underline hover:text-muted-foreground active:opacity-80 disabled:opacity-40",
+        text: "text-foreground hover:opacity-70 active:opacity-60 !p-0 !h-auto !w-auto disabled:opacity-40",
+        icon: "bg-primary text-primary-foreground hover:bg-primary/90 active:bg-primary/80 disabled:bg-muted disabled:text-muted-foreground disabled:cursor-not-allowed",
       },
       size: {
         default: "h-11 px-6 py-2",

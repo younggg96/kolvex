@@ -124,7 +124,7 @@ function AppSidebar({ onNavigate }: AppSidebarProps) {
             variant="ghost"
             size="icon"
             onClick={toggleSidebar}
-            className="hidden h-8 w-8 text-muted-foreground hover:bg-primary/10 hover:text-primary-text lg:flex group-data-[collapsible=icon]:w-full group-data-[collapsible=icon]:justify-center"
+            className="hidden h-8 w-8 text-muted-foreground hover:bg-foreground/[0.06] hover:text-foreground lg:flex group-data-[collapsible=icon]:w-full group-data-[collapsible=icon]:justify-center"
             suppressHydrationWarning
             title={t("sidebar.toggleSidebar")}
           >
@@ -156,9 +156,11 @@ function AppSidebar({ onNavigate }: AppSidebarProps) {
                       openAsk();
                     }}
                     tooltip={c("Ask Kolvex", "询问 Kolvex")}
-                    className="border border-border/70 bg-background/60 text-muted-foreground hover:border-primary/40 hover:text-primary-text group-data-[collapsible=icon]:border-transparent group-data-[collapsible=icon]:bg-transparent"
+                    className="border border-border/70 bg-background/60 text-muted-foreground hover:border-foreground/25 hover:text-foreground group-data-[collapsible=icon]:border-transparent group-data-[collapsible=icon]:bg-transparent"
                   >
-                    <MessageSquareText className="text-primary" />
+                    {/* The row reads as a muted, secondary entry point: it inherits
+                        the link colour on hover instead of a brand-tinted icon. */}
+                    <MessageSquareText className="text-muted-foreground" />
                     <span className="flex-1">{c("Ask Kolvex…", "询问 Kolvex…")}</span>
                     <kbd className="rounded border border-border px-1 font-sans text-[10px] leading-4 text-muted-foreground group-data-[collapsible=icon]:hidden">
                       ⌘K

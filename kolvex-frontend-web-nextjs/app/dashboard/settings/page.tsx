@@ -741,8 +741,8 @@ function SettingsContent() {
                                     onDragLeave={handleDragLeave}
                                     onDrop={handleDrop}
                                     className={`flex flex-col items-center justify-center w-full h-48 sm:h-64 border-2 border-dashed rounded-3xl cursor-pointer transition-all duration-200 ${isDragging
-                                        ? "border-primary bg-primary/[0.08]"
-                                        : "border-border bg-muted/60 hover:border-primary/45 hover:bg-primary/[0.05]"
+                                        ? "border-foreground bg-foreground/[0.08]"
+                                        : "border-border bg-muted/60 hover:border-foreground/25 hover:bg-foreground/[0.06]"
                                       }`}
                                   >
                                     <div className="flex flex-col items-center justify-center pt-4 pb-5 sm:pt-5 sm:pb-6 px-4">
@@ -1025,7 +1025,7 @@ function SettingsContent() {
                                           }))
                                         }
                                         aria-label={isVisible ? "Hide key" : "Show key"}
-                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-primary-text"
+                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-foreground"
                                       >
                                         {isVisible ? (
                                           <EyeOff className="w-3.5 h-3.5" />

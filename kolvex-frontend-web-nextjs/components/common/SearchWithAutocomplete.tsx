@@ -233,7 +233,7 @@ export default function SearchWithAutocomplete<T extends SearchItem>({
             displayList.map((item) => (
               <div
                 key={item.id}
-                className="hover:bg-primary/10 dark:hover:bg-primary/20 transition-colors duration-200"
+                className="hover:bg-foreground/[0.06] dark:hover:bg-foreground/[0.08] transition-colors duration-200"
               >
                 {renderItem(item, handleSelectItem)}
               </div>

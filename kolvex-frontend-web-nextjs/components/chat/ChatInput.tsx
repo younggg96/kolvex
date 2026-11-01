@@ -51,8 +51,8 @@ function SourceChip({ icon, label, active, onClick }: SourceChipProps) {
         "inline-flex h-8 items-center gap-1.5 rounded-full px-3 text-[13px] font-medium",
         " ",
         active
-          ? "bg-primary/10 text-primary-text"
-          : "text-muted-foreground hover:bg-primary/10 hover:text-primary-text active:bg-primary/[0.16]"
+          ? "bg-foreground/10 text-foreground"
+          : "text-muted-foreground hover:bg-foreground/[0.06] hover:text-foreground active:bg-foreground/[0.1]"
       )}
       aria-pressed={active}
       title={label}
@@ -415,7 +415,7 @@ export function ChatInput({
               <button
                 type="button"
                 onClick={onClearEvidence}
-                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-primary/10 hover:text-primary-text focus-visible:outline-none"
+                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-foreground/[0.06] hover:text-foreground focus-visible:outline-none"
                 aria-label={t("chat.evidence.clear")}
               >
                 <X className="h-3.5 w-3.5" />

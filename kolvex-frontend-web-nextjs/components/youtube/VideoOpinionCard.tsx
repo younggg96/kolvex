@@ -163,7 +163,7 @@ export default function VideoOpinionCard({
               <button
                 type="button"
                 onClick={() => onStock?.(opinion.ticker)}
-                className={cn("group grid w-full min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-1.5 rounded-2xl py-3 text-left transition-colors duration-150 hover:bg-primary/[0.07] focus-visible:outline-none focus-visible:bg-primary/10", !compact && "rounded-none sm:-mx-3 sm:w-[calc(100%+1.5rem)] sm:grid-cols-[7rem_7.5rem_minmax(0,1fr)_auto] sm:items-start sm:rounded-full sm:px-3")}
+                className={cn("group grid w-full min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-1.5 rounded-2xl py-3 text-left transition-colors duration-150 hover:bg-foreground/[0.06] focus-visible:outline-none focus-visible:bg-foreground/[0.06]", !compact && "rounded-none sm:-mx-3 sm:w-[calc(100%+1.5rem)] sm:grid-cols-[7rem_7.5rem_minmax(0,1fr)_auto] sm:items-start sm:rounded-full sm:px-3")}
               >
                 <span className="flex min-w-0 items-center gap-2.5">
                   <CompanyLogo symbol={opinion.ticker} size="sm" />
@@ -202,7 +202,7 @@ export default function VideoOpinionCard({
           aria-expanded={expanded}
           aria-controls={opinionsId}
           onClick={() => setExpanded((value) => !value)}
-          className="mt-2 inline-flex min-h-10 items-center gap-1.5 rounded-full px-3 text-[13px] font-semibold text-muted-foreground transition-colors duration-150 hover:bg-primary/10 hover:text-primary-text focus-visible:outline-none sm:-ml-3"
+          className="mt-2 inline-flex min-h-10 items-center gap-1.5 rounded-full px-3 text-[13px] font-semibold text-muted-foreground transition-colors duration-150 hover:bg-foreground/[0.06] hover:text-foreground focus-visible:outline-none sm:-ml-3"
         >
           {expanded ? t("youtubeOpinions.collapseVideoOpinions") : t("youtubeOpinions.showRemainingVideoOpinions", { count: String(hidden) })}
           <ChevronDown

@@ -10,15 +10,18 @@ const chipButtonVariants = cva(
   "inline-flex items-center gap-1.5 rounded-full font-medium transition-all duration-200 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-60",
   {
     variants: {
+      /* Chips are filters and tags, not directional data, so every variant
+         uses the same neutral hover/press feedback. `primary` is a heavier
+         resting fill rather than a green tint, which would read as a signal. */
       variant: {
         default:
-          "bg-muted hover:bg-primary/10 border border-border hover:border-primary/40 text-muted-foreground hover:text-primary-text active:bg-primary/[0.16]",
+          "bg-muted hover:bg-foreground/[0.08] border border-border hover:border-foreground/25 text-muted-foreground hover:text-foreground active:bg-foreground/[0.1]",
         primary:
-          "bg-primary/10 hover:bg-primary/20 border border-primary/20 hover:border-primary/40 text-primary-text",
+          "bg-muted hover:bg-foreground/[0.08] border border-border hover:border-foreground/25 text-foreground",
         outline:
-          "bg-transparent hover:bg-primary/[0.08] border border-border hover:border-primary/40 text-muted-foreground hover:text-primary-text active:bg-primary/[0.16]",
+          "bg-transparent hover:bg-foreground/[0.06] border border-border hover:border-foreground/25 text-muted-foreground hover:text-foreground active:bg-foreground/[0.1]",
         ghost:
-          "bg-transparent hover:bg-primary/[0.09] text-muted-foreground hover:text-primary-text active:bg-primary/[0.16]",
+          "bg-transparent hover:bg-foreground/[0.06] text-muted-foreground hover:text-foreground active:bg-foreground/[0.1]",
       },
       size: {
         default: "px-3 py-1.5 text-xs",

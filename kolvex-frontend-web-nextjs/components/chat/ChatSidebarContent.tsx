@@ -314,8 +314,8 @@ function ConversationItem({
       className={cn(
         "group relative w-full flex items-start gap-2 p-2 rounded-2xl text-left transition-all duration-200 cursor-pointer",
         isActive
-          ? "bg-primary/10 text-primary-text"
-          : "text-muted-foreground hover:bg-primary/[0.08] hover:text-primary-text"
+          ? "bg-foreground/10 text-foreground"
+          : "text-muted-foreground hover:bg-foreground/[0.06] hover:text-foreground"
       )}
     >
       <MessagesSquare className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />

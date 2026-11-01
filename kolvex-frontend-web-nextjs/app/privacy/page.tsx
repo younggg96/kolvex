@@ -331,7 +331,7 @@ export default function PrivacyPage() {
               To exercise these rights, please contact us at{" "}
               <a
                 href="mailto:support@kolvex.app"
-                className="text-primary hover:text-primary/80 transition-colors"
+                className="text-foreground underline underline-offset-4 hover:text-muted-foreground transition-colors"
               >
                 support@kolvex.app
               </a>
@@ -412,7 +412,7 @@ export default function PrivacyPage() {
               To exercise these rights, contact us at{" "}
               <a
                 href="mailto:support@kolvex.app"
-                className="text-primary hover:text-primary/80 transition-colors"
+                className="text-foreground underline underline-offset-4 hover:text-muted-foreground transition-colors"
               >
                 support@kolvex.app
               </a>
@@ -484,7 +484,7 @@ export default function PrivacyPage() {
                 <strong>Email:</strong>{" "}
                 <a
                   href="mailto:support@kolvex.app"
-                  className="text-primary hover:text-primary/80 transition-colors"
+                  className="text-foreground underline underline-offset-4 hover:text-muted-foreground transition-colors"
                 >
                   support@kolvex.app
                 </a>

@@ -85,8 +85,11 @@ export function SectorTable({
               <TableRow
                 className={cn(
                   "cursor-pointer",
+                  // Mirrors the donut/legend highlight, so it uses the neutral
+                  // selected surface rather than a green tint that would read
+                  // as a performance signal.
                   isHovered || isExpanded
-                    ? "bg-primary/10 hover:bg-primary/10"
+                    ? "bg-secondary hover:bg-secondary"
                     : ""
                 )}
                 onClick={() => toggleSector(sector.name)}
@@ -177,7 +180,7 @@ export function SectorTable({
                   return (
                     <TableRow
                       key={`${sector.name}-${aggPos.displaySymbol}-${posIndex}`}
-                      className="border-b border-border/50 bg-muted/20 transition-colors hover:bg-primary/[0.06] dark:bg-muted/10"
+                      className="border-b border-border/50 bg-muted/20 transition-colors hover:bg-foreground/[0.06] dark:bg-muted/10"
                     >
                       <TableCell className="py-2 px-2 pl-12">
                         <div className="flex items-center gap-2">

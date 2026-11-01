@@ -255,8 +255,8 @@ export function PortfolioPerformanceChart({
                             className={cn(
                                 "inline-flex h-8 shrink-0 items-center rounded-full px-3.5 text-[13px] font-semibold transition-colors duration-150 focus-visible:outline-none disabled:opacity-50",
                                 period === value
-                                    ? "bg-foreground text-primary"
-                                    : "text-muted-foreground hover:bg-primary/10 hover:text-primary-text active:bg-primary/[0.16]",
+                                    ? "bg-foreground text-background"
+                                    : "text-muted-foreground hover:bg-foreground/[0.06] hover:text-foreground active:bg-foreground/[0.1]",
                             )}
                         >
                             {t(`portfolio.performance.periods.${value}`)}
@@ -269,7 +269,7 @@ export function PortfolioPerformanceChart({
                             <TooltipTrigger asChild>
                                 <button
                                     type="button"
-                                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-primary/10 hover:text-primary-text"
+                                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-foreground/[0.06] hover:text-foreground"
                                     aria-label={t("portfolio.performance.dataSince", { date: new Date(firstSnapshotDate).toLocaleDateString() })}
                                 >
                                     <Info className="h-4 w-4" />

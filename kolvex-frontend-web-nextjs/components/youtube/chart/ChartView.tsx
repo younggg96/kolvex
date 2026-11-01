@@ -875,7 +875,7 @@ export default function ChartView({
   const iconButton = (isActive: boolean) =>
     cn(
       "inline-flex h-11 w-11 sm:h-8 sm:w-8 shrink-0 items-center justify-center rounded-full transition-colors duration-150 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-40",
-      isActive ? "bg-foreground text-primary" : "text-muted-foreground hover:bg-primary/10 hover:text-primary-text active:bg-primary/[0.16]",
+      isActive ? "bg-foreground text-background" : "text-muted-foreground hover:bg-foreground/[0.06] hover:text-foreground active:bg-foreground/[0.1]",
     );
   const stat = (label: string, value: string, tone?: string) => (
     <span className="whitespace-nowrap">
@@ -886,7 +886,7 @@ export default function ChartView({
   const pill = (isActive: boolean) =>
     cn(
       "inline-flex h-8 shrink-0 items-center rounded-full px-3 text-[13px] font-semibold transition-colors duration-150 focus-visible:outline-none ",
-      isActive ? "bg-foreground text-primary" : "text-muted-foreground hover:bg-primary/10 hover:text-primary-text active:bg-primary/[0.16]",
+      isActive ? "bg-foreground text-background" : "text-muted-foreground hover:bg-foreground/[0.06] hover:text-foreground active:bg-foreground/[0.1]",
     );
 
   const path = (values: Series) => {
@@ -1482,7 +1482,7 @@ export default function ChartView({
               {tools.map(item => {
                 const Icon = item.icon;
                 return <button key={item.value} type="button" aria-pressed={tool === item.value}
-                  className={cn("flex min-h-11 items-center gap-2 rounded-full px-2 text-left text-sm focus-visible:outline-none ", tool === item.value ? "bg-primary/10 font-semibold text-primary-text" : "hover:bg-primary/[0.08] hover:text-primary-text")}
+                  className={cn("flex min-h-11 items-center gap-2 rounded-full px-2 text-left text-sm focus-visible:outline-none ", tool === item.value ? "bg-secondary font-semibold text-foreground" : "hover:bg-foreground/[0.06] hover:text-foreground")}
                   onClick={() => { setTool(item.value); setDraft(null); if (item.value !== "cursor") setSelectedId(null); }}>
                   <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />{t(`youtubeOpinions.${item.label}`)}
                 </button>;
@@ -1577,7 +1577,7 @@ export default function ChartView({
                   type="button"
                   aria-pressed={activeIndicators.has(key)}
                   onClick={() => toggleIndicator(key)}
-                  className="flex w-full items-center gap-2.5 rounded-full px-2 py-1.5 text-sm transition-colors hover:bg-primary/[0.08] focus-visible:outline-none"
+                  className="flex w-full items-center gap-2.5 rounded-full px-2 py-1.5 text-sm transition-colors hover:bg-foreground/[0.06] focus-visible:outline-none"
                 >
                   <span
                     className={cn(
@@ -1594,7 +1594,7 @@ export default function ChartView({
               ))}
               <div className="mt-1 border-t border-border pt-1" role="group" aria-label={t("youtubeOpinions.oscillators")}>
                 <p className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">{t("youtubeOpinions.oscillators")}</p>
-                {(["kdj", "macd", "rsi"] as const).map(value => <button key={value} type="button" aria-pressed={oscillator === value} onClick={() => changeOscillator(oscillator === value ? null : value)} className={cn("flex min-h-11 w-full items-center rounded-full px-2 text-left text-sm transition-colors hover:bg-primary/[0.08] focus-visible:outline-none", oscillator === value && "bg-primary/10 font-semibold text-primary-text")}>
+                {(["kdj", "macd", "rsi"] as const).map(value => <button key={value} type="button" aria-pressed={oscillator === value} onClick={() => changeOscillator(oscillator === value ? null : value)} className={cn("flex min-h-11 w-full items-center rounded-full px-2 text-left text-sm transition-colors hover:bg-foreground/[0.06] focus-visible:outline-none", oscillator === value && "bg-secondary font-semibold text-foreground")}>
                   {oscillatorLabels[value]}
                 </button>)}
               </div>
@@ -1685,7 +1685,7 @@ export default function ChartView({
 
         {!advanced && <div className="mt-3 flex flex-wrap items-start justify-between gap-x-4 border-t border-border pt-2">
           <details className="group/tools min-w-0 flex-1">
-            <summary className="flex min-h-11 w-fit cursor-pointer list-none items-center gap-2 rounded-full px-2 text-sm text-muted-foreground transition-colors hover:bg-primary/[0.08] hover:text-primary-text focus-visible:outline-none [&::-webkit-details-marker]:hidden">
+            <summary className="flex min-h-11 w-fit cursor-pointer list-none items-center gap-2 rounded-full px-2 text-sm text-muted-foreground transition-colors hover:bg-foreground/[0.06] hover:text-foreground focus-visible:outline-none [&::-webkit-details-marker]:hidden">
               <SlidersHorizontal className="h-4 w-4" aria-hidden="true" />
               {t("youtubeOpinions.ai.actions")}
               <ChevronDown className="h-4 w-4 group-open/tools:rotate-180" aria-hidden="true" />

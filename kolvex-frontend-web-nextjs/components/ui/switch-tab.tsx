@@ -54,6 +54,9 @@ export const SwitchTab = React.memo(function SwitchTab({
   };
 
   // Variant configurations
+  // The sliding indicator keeps a brand tint because it is decoration, not
+  // hover feedback; the inactive triggers get a neutral wash so pointing at a
+  // segment never reads as a bullish signal.
   const variantConfig = {
     pills: {
       container:
@@ -61,21 +64,21 @@ export const SwitchTab = React.memo(function SwitchTab({
       indicator: "bg-primary/20 dark:bg-primary/80 rounded-full",
       active: "text-primary dark:text-primary-foreground",
       inactive:
-        "text-muted-foreground hover:bg-primary/10 hover:text-primary-text active:bg-primary/[0.16]",
+        "text-muted-foreground hover:bg-foreground/[0.06] hover:text-foreground active:bg-foreground/[0.1]",
     },
     tabs: {
       container: "bg-transparent border-b border-border",
       indicator: "bg-primary/40 rounded-t-md",
       active: "text-primary",
       inactive:
-        "text-muted-foreground hover:bg-primary/10 hover:text-primary-text active:bg-primary/[0.16]",
+        "text-muted-foreground hover:bg-foreground/[0.06] hover:text-foreground active:bg-foreground/[0.1]",
     },
     underline: {
       container: "bg-transparent",
       indicator: "bg-primary h-0.5 bottom-0 rounded-full",
       active: "text-primary font-semibold",
       inactive:
-        "text-muted-foreground hover:bg-primary/10 hover:text-primary-text active:bg-primary/[0.16]",
+        "text-muted-foreground hover:bg-foreground/[0.06] hover:text-foreground active:bg-foreground/[0.1]",
     },
   };
 

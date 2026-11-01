@@ -283,7 +283,7 @@ export default function StockWorkspace({
                 />
                 <Link
                   href={returnHref}
-                  className="transition-colors hover:text-primary-text"
+                  className="transition-colors hover:text-foreground"
                 >
                   {returnHref.startsWith("/dashboard/watchlist")
                     ? c("Watchlist", "自选股")

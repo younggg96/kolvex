@@ -17,16 +17,16 @@ export default function OpinionSourceNav() {
         const active = isNavItemActive(pathname, source.href);
         return (
           <Link key={source.href} href={source.href} aria-current={active ? "page" : undefined}
-            className={cn("group/source flex min-h-11 items-center gap-2 rounded-full px-4 text-sm font-medium transition-colors duration-150 focus-visible:outline-none focus-visible:bg-primary/10",
+            className={cn("group/source flex min-h-11 items-center gap-2 rounded-full px-4 text-sm font-medium transition-colors duration-150 focus-visible:outline-none focus-visible:bg-foreground/[0.06]",
               active
-                ? "bg-foreground text-primary"
-                : "text-muted-foreground hover:bg-primary/10 hover:text-primary-text active:bg-primary/[0.16]")}>
+                ? "bg-foreground text-background"
+                : "text-muted-foreground hover:bg-foreground/[0.06] hover:text-foreground active:bg-foreground/[0.1]")}>
             <source.icon
               className={cn(
                 "h-4 w-4 transition-opacity duration-150",
                 active
-                  ? "text-primary opacity-100"
-                  : "text-primary opacity-0 group-hover/source:opacity-100",
+                  ? "text-background opacity-100"
+                  : "text-foreground opacity-0 group-hover/source:opacity-100",
               )}
               aria-hidden="true"
             />

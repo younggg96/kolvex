@@ -38,9 +38,12 @@ const DropdownMenuItem = React.forwardRef<
     ref={ref}
     className={cn(
       "relative flex cursor-pointer select-none items-center gap-2 rounded-2xl px-2.5 py-2 text-sm transition-colors",
-      "text-foreground/70 hover:bg-primary/10 hover:text-primary-text",
-      "focus:bg-primary/10 focus:text-primary-text",
-      "data-[highlighted]:bg-primary/10 data-[highlighted]:text-primary-text",
+      // Menu rows are navigation targets. Highlighting them in the brand colour
+      // made every pointer move flash green, so hover/focus/keyboard-highlight
+      // all share one neutral tint and a foreground label.
+      "text-foreground/70 hover:bg-foreground/[0.06] hover:text-foreground",
+      "focus:bg-foreground/[0.06] focus:text-foreground",
+      "data-[highlighted]:bg-foreground/[0.06] data-[highlighted]:text-foreground",
       "data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
       "focus:outline-none ",
       inset && "pl-8",

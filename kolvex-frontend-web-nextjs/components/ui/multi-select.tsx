@@ -109,14 +109,14 @@ export const MultiSelect = React.forwardRef<HTMLDivElement, MultiSelectProps>(
                     {selectedOptions.slice(0, maxVisibleTags).map((option) => (
                       <span
                         key={option.value}
-                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary border border-primary/20"
+                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-secondary text-foreground border border-border"
                       >
                         {option.icon && <span className="flex items-center">{option.icon}</span>}
                         <span className="truncate max-w-[120px]">{option.label}</span>
                         {!disabled && (
                           <button
                             onClick={(e) => handleRemoveOption(e, option.value)}
-                            className="hover:bg-primary/20 rounded-full p-0.5 transition-colors flex-shrink-0"
+                            className="hover:bg-foreground/[0.12] rounded-full p-0.5 transition-colors flex-shrink-0"
                             aria-label={`Remove ${option.label}`}
                           >
                             <X className="h-3 w-3" />
@@ -163,16 +163,19 @@ export const MultiSelect = React.forwardRef<HTMLDivElement, MultiSelectProps>(
                         onClick={() => handleSelect(option.value)}
                         className={cn(
                           "flex w-full cursor-pointer select-none items-center rounded-2xl py-2 pl-8 pr-2 text-sm outline-none transition-colors duration-150",
+                          // Selection is a toggle state, not a direction, so the
+                          // row marks it with a neutral fill plus a check mark
+                          // instead of the brand green wash it used to carry.
                           isSelected
-                            ? "bg-primary/10 text-primary dark:bg-primary/20"
-                            : "text-foreground hover:bg-primary/[0.08] hover:text-primary-text"
+                            ? "bg-secondary text-foreground font-medium"
+                            : "text-foreground hover:bg-foreground/[0.06] hover:text-foreground"
                         )}
                         role="option"
                         aria-selected={isSelected}
                       >
                         <span className="absolute left-2 flex h-3.5 w-3.5 items-center justify-center">
                           {isSelected && (
-                            <Check className="h-4 w-4 text-primary" />
+                            <Check className="h-4 w-4" />
                           )}
                         </span>
                         <div className="flex items-center gap-2">

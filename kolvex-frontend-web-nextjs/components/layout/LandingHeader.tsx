@@ -130,7 +130,7 @@ export default function LandingHeader() {
                 !isAuthRoute && (
                   <Link
                     href="/auth"
-                    className="landing-sign-in rounded-full px-3 py-2 text-sm font-medium transition-colors hover:bg-primary/10 hover:text-primary-text"
+                    className="landing-sign-in rounded-full px-3 py-2 text-sm font-medium transition-colors hover:bg-foreground/[0.06] hover:text-foreground"
                   >
                     {t("landing.nav.signIn")}
                   </Link>

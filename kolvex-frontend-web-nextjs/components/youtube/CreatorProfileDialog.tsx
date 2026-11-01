@@ -53,7 +53,7 @@ export default function CreatorProfileDialog({ creator, onLoaded, compact = fals
   ];
 
   return <>
-    <button type="button" onClick={() => { setOpen(true); if (!profile && !loading) void loadProfile(); }} aria-haspopup="dialog" aria-label={`${title}: ${t("youtubeOpinions.profile.viewProfile")}`} title={t("youtubeOpinions.profile.viewProfile")} className={`flex max-w-full items-center gap-1.5 text-left text-sm font-medium hover:text-primary ${compact ? "h-11 w-11 shrink-0 justify-center" : ""}`}>
+    <button type="button" onClick={() => { setOpen(true); if (!profile && !loading) void loadProfile(); }} aria-haspopup="dialog" aria-label={`${title}: ${t("youtubeOpinions.profile.viewProfile")}`} title={t("youtubeOpinions.profile.viewProfile")} className={`flex max-w-full items-center gap-1.5 text-left text-sm font-medium hover:text-foreground ${compact ? "h-11 w-11 shrink-0 justify-center" : ""}`}>
       {!compact && <span className="truncate">{title}</span>}<UserRound className={compact ? "h-5 w-5 text-muted-foreground" : "h-3.5 w-3.5 shrink-0 text-muted-foreground"} />
     </button>
     <Dialog open={open} onOpenChange={setOpen}>

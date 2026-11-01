@@ -94,9 +94,13 @@ const TabsTrigger = React.forwardRef<
       variant === "pill"
         ? // The colour is painted by the list's sliding pill so only the
           // active hover surface is suppressed, never the shared indicator.
-          // Unselected segments preview the brand with a green wash and label.
-          "relative z-10 min-h-10 rounded-full px-4 hover:bg-primary/10 hover:text-primary-text focus-visible:bg-primary/10 focus-visible:text-primary-text active:bg-primary/[0.16] data-[state=active]:text-background data-[state=active]:hover:bg-transparent data-[state=active]:hover:text-background"
-        : "-mb-px min-h-11 border-b-2 border-transparent hover:border-primary/30 hover:text-primary-text focus-visible:rounded-t-md focus-visible:bg-primary/10 focus-visible:text-primary-text active:bg-primary/[0.16] data-[state=active]:border-primary data-[state=active]:text-foreground data-[state=active]:hover:border-primary",
+          // Unselected segments get a neutral wash: tabs are navigation, not
+          // direction, so brand green here would compete with real signals.
+          "relative z-10 min-h-10 rounded-full px-4 hover:bg-foreground/[0.06] hover:text-foreground focus-visible:bg-foreground/[0.06] focus-visible:text-foreground active:bg-foreground/[0.1] data-[state=active]:text-background data-[state=active]:hover:bg-transparent data-[state=active]:hover:text-background"
+        : // The underline variant uses border as its only active affordance, so
+          // the rule itself has to go neutral too — a green indicator line
+          // would read as state colour on what is just a tab position.
+          "-mb-px min-h-11 border-b-2 border-transparent hover:border-foreground/25 hover:text-foreground focus-visible:rounded-t-md focus-visible:bg-foreground/[0.06] focus-visible:text-foreground active:bg-foreground/[0.1] data-[state=active]:border-foreground data-[state=active]:text-foreground data-[state=active]:hover:border-foreground",
       className,
     )}
     {...props}

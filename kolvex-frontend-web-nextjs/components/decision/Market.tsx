@@ -150,7 +150,7 @@ function MarketInstrumentCard({ benchmark, quote, quoteLoading, range, attempt, 
 
 
   return (
-    <article ref={host} className="relative h-60 w-60 shrink-0 snap-start overflow-hidden rounded-3xl border border-border bg-card transition-colors duration-200 hover:border-primary/40 hover:bg-primary/[0.04] xl:w-auto xl:min-w-0">
+    <article ref={host} className="relative h-60 w-60 shrink-0 snap-start overflow-hidden rounded-3xl border border-border bg-card transition-colors duration-200 hover:border-foreground/25 hover:bg-foreground/[0.04] xl:w-auto xl:min-w-0">
       <Link
         href={benchmark.sourceUrl ?? marketStockHref(benchmark.symbol)}
         target={benchmark.sourceUrl ? "_blank" : undefined}
@@ -386,7 +386,7 @@ function MarketOverview({ range, setRange, view, setView }: { range: RangeKey; s
               id="market-creator-updates"
               surface="card"
               className="[&>header_h2]:text-lg"
-              action={<TextLink href="/dashboard/youtube-opinions" className="inline-flex min-h-10 items-center gap-1 !text-xs !font-medium text-muted-foreground hover:text-primary-text">{c("View all", "全部观点")}<ArrowUpRight className="h-3.5 w-3.5" aria-hidden /></TextLink>}
+              action={<TextLink href="/dashboard/youtube-opinions" className="inline-flex min-h-10 items-center gap-1 !text-xs !font-medium text-muted-foreground hover:text-foreground">{c("View all", "全部观点")}<ArrowUpRight className="h-3.5 w-3.5" aria-hidden /></TextLink>}
             >
               {catalogue.loading && !catalogue.data ? (
                 <div className="space-y-4 py-4" aria-busy="true">
@@ -402,7 +402,7 @@ function MarketOverview({ range, setRange, view, setView }: { range: RangeKey; s
                     <ListRow key={shift.ticker}>
                       <Link
                         href={marketStockHref(shift.ticker)}
-                        className="flex min-h-20 flex-1 items-center justify-between gap-3 rounded-2xl px-1 py-4 outline-offset-2 transition-colors duration-150 focus-visible:bg-primary/[0.07] focus-visible:outline-2 focus-visible:outline-primary"
+                        className="flex min-h-20 flex-1 items-center justify-between gap-3 rounded-2xl px-1 py-4 outline-offset-2 transition-colors duration-150 focus-visible:bg-foreground/[0.06] focus-visible:outline-2 focus-visible:outline-primary"
                       >
                         <span className="flex min-w-0 items-center gap-2.5">
                           <span aria-hidden><CompanyLogo symbol={shift.ticker} size="sm" /></span>

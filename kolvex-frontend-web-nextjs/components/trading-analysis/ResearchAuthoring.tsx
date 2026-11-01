@@ -330,7 +330,7 @@ export default function TradingAnalysisPage({ searchParams }: { searchParams?: {
                               head_cell: "text-center text-xs text-muted-foreground",
                               row: "mt-2 grid grid-cols-7",
                               cell: "relative min-w-0 text-center text-sm !p-0",
-                              day: "h-9 w-full rounded-full !p-0 text-sm hover:bg-primary/10 hover:text-primary-text ",
+                              day: "h-9 w-full rounded-full !p-0 text-sm hover:bg-foreground/[0.06] hover:text-foreground ",
                             }}
                             onSelect={(date) => {
                               if (!date) return;
@@ -401,7 +401,7 @@ export default function TradingAnalysisPage({ searchParams }: { searchParams?: {
                       ) : (
                         <Link
                           href="/dashboard/settings?tab=api-keys"
-                          className="flex h-10 items-center justify-center gap-1.5 rounded-full border border-dashed border-primary/35 px-4 text-[13px] font-semibold text-positive transition-colors duration-150 hover:border-primary/60 hover:bg-primary/[0.08]"
+                          className="flex h-10 items-center justify-center gap-1.5 rounded-full border border-dashed border-positive/35 px-4 text-[13px] font-semibold text-positive transition-colors duration-150 hover:border-positive/60 hover:bg-foreground/[0.06]"
                         >
                           <Settings className="w-3.5 h-3.5" />
                           {t("tradingAnalysis.addApiKey")}
@@ -522,8 +522,8 @@ export default function TradingAnalysisPage({ searchParams }: { searchParams?: {
                             className={cn(
                               "h-9 rounded-full px-4 text-[13px] font-semibold transition-colors duration-150 focus-visible:outline-none ",
                               isActive
-                                ? "bg-foreground text-primary"
-                                : "bg-muted text-muted-foreground hover:bg-primary/10 hover:text-primary-text active:bg-primary/[0.16]"
+                                ? "bg-foreground text-background"
+                                : "bg-muted text-muted-foreground hover:bg-foreground/[0.06] hover:text-foreground active:bg-foreground/[0.1]"
                             )}
                           >
                             {analystLabels[id]}

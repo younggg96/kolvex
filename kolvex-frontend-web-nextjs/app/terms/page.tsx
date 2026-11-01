@@ -311,7 +311,7 @@ export default function TermsPage() {
               Email:{" "}
               <a
                 href="mailto:support@kolvex.app"
-                className="text-primary hover:text-primary/80 transition-colors"
+                className="text-foreground underline underline-offset-4 hover:text-muted-foreground transition-colors"
               >
                 support@kolvex.app
               </a>

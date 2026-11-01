@@ -21,7 +21,7 @@ const SelectTrigger = React.forwardRef<
   <SelectPrimitive.Trigger
     ref={ref}
     className={cn(
-      "flex h-10 min-w-0 w-full items-center justify-between gap-2 border border-transparent bg-muted px-3.5 py-2 text-sm text-foreground placeholder:text-muted-foreground hover:bg-primary/[0.06] focus:outline-none focus-visible:border-foreground/60 disabled:cursor-not-allowed disabled:opacity-50 [&>span]:truncate transition-colors duration-150",
+      "flex h-10 min-w-0 w-full items-center justify-between gap-2 border border-transparent bg-muted px-3.5 py-2 text-sm text-foreground placeholder:text-muted-foreground hover:bg-foreground/[0.04] focus:outline-none focus-visible:border-foreground/60 disabled:cursor-not-allowed disabled:opacity-50 [&>span]:truncate transition-colors duration-150",
       shape === "pill" ? "rounded-full" : "rounded-3xl",
       className
     )}

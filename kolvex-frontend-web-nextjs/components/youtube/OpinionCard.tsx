@@ -132,7 +132,7 @@ export default function OpinionCard({
               href={opinion.video_url}
               target="_blank"
               rel="noreferrer"
-              className="group inline-flex max-w-full items-start gap-2 text-sm text-muted-foreground transition-colors hover:text-primary-text focus-visible:outline-none"
+              className="group inline-flex max-w-full items-start gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none"
             >
               <PlayCircle className="mt-0.5 h-4 w-4 shrink-0" />
               <span className="min-w-0 group-hover:underline">

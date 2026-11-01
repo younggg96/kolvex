@@ -866,7 +866,7 @@ export default function PriceGraph({
           <button
             type="button"
             onClick={onRetry}
-            className="inline-flex h-11 items-center rounded-full border border-border px-4 text-[13px] font-semibold text-foreground transition-colors hover:border-primary/45 hover:bg-primary/[0.08] focus-visible:outline-none sm:h-8"
+            className="inline-flex h-11 items-center rounded-full border border-border px-4 text-[13px] font-semibold text-foreground transition-colors hover:border-foreground/25 hover:bg-foreground/[0.06] focus-visible:outline-none sm:h-8"
           >
             {t("common.retry")}
           </button>

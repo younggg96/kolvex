@@ -47,14 +47,16 @@ const TriggerButton = React.forwardRef<HTMLButtonElement, TriggerButtonProps>(
             "hover:bg-foreground/[0.15] hover:border-border",
           ];
         default:
+          /* The selected trigger is a neutral chip with a heavier edge, not a
+             green panel: a 40% brand fill was the loudest green on most forms
+             and competed with the price colours around it. `green` and `red`
+             still carry their semantic tint when a caller asks for it. */
           return [
-            // Light mode - selected
-            "border-2 border-primary/60 bg-primary/40 text-foreground",
-            "hover:bg-primary/10 hover:border-primary",
-            
-            // Dark mode - selected
-            "dark:border-primary dark:bg-primary/20 dark:text-primary",
-            "dark:hover:bg-primary/30 dark:hover:border-primary",
+            "border-2 border-foreground/25 bg-foreground/[0.06] text-foreground",
+            "hover:bg-foreground/[0.1] hover:border-foreground/35",
+
+            "dark:border-foreground/30 dark:bg-foreground/10 dark:text-foreground",
+            "dark:hover:bg-foreground/[0.15] dark:hover:border-foreground/40",
           ];
       }
     };
@@ -74,9 +76,10 @@ const TriggerButton = React.forwardRef<HTMLButtonElement, TriggerButtonProps>(
           
           // Default state (not selected)
           !selected && [
-            // Light mode - default
+            // Light mode - default. Unselected triggers preview a grey wash on
+            // hover; the selected variants below carry the semantic colour.
             "border border-border bg-background text-foreground",
-            "hover:border-primary/45 hover:bg-primary/[0.08] hover:text-primary-text active:bg-primary/[0.16]",
+            "hover:border-foreground/25 hover:bg-foreground/[0.06] hover:text-foreground active:bg-foreground/[0.1]",
             
             // Dark mode - default
           ],

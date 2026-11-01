@@ -141,7 +141,7 @@ export default function EmailSignup() {
           <select
             value={country}
             onChange={(e) => setCountry(e.target.value)}
-            className="appearance-none bg-gray-200 dark:bg-white/5 rounded-full backdrop-blur-sm border border-gray-300 dark:border-white/10 px-2 py-1 text-gray-800 dark:text-white/80 text-xs cursor-pointer focus:outline-none focus:border-primary/50 hover:border-primary/30 transition-colors"
+            className="appearance-none bg-gray-200 dark:bg-white/5 rounded-full backdrop-blur-sm border border-gray-300 dark:border-white/10 px-2 py-1 text-gray-800 dark:text-white/80 text-xs cursor-pointer focus:outline-none focus:border-primary/50 hover:border-foreground/30 transition-colors"
           >
             {countries.map((c) => (
               <option

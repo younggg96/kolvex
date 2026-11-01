@@ -19,7 +19,9 @@ export default function MobileTabBar() {
     (item) => isProductFeatureEnabled(item.featureId) &&
       ["home", "watchlist", "tradingAnalysis"].includes(item.featureId),
   );
-  const targetClass = "mobile-nav-item flex h-11 min-w-11 items-center justify-center rounded-full text-foreground/70 transition-colors hover:bg-primary/10 hover:text-primary-text focus-visible:bg-primary/10 focus-visible:text-primary-text active:bg-primary/[0.16] motion-reduce:transition-none";
+  /* Dock affordances are neutral: hover/press use a grey wash and the current
+     page simply goes full-contrast. Green stays reserved for direction data. */
+  const targetClass = "mobile-nav-item flex h-11 min-w-11 items-center justify-center rounded-full text-foreground/70 transition-colors hover:bg-foreground/[0.06] hover:text-foreground focus-visible:bg-foreground/[0.06] focus-visible:text-foreground active:bg-foreground/[0.1] motion-reduce:transition-none";
 
   return (
     <nav
@@ -38,9 +40,9 @@ export default function MobileTabBar() {
                   aria-current={active ? "page" : undefined}
                   aria-label={t(item.shortTitleKey)}
                   title={t(item.shortTitleKey)}
-                  className={cn(targetClass, active && "bg-foreground/10 text-primary-text active:bg-foreground/10")}
+                  className={cn(targetClass, active && "bg-foreground/10 text-foreground active:bg-foreground/10")}
                 >
-                  <Icon aria-hidden className={cn("h-[22px] w-[22px]", active && "text-primary")} strokeWidth={active ? 2 : 1.75} />
+                  <Icon aria-hidden className={cn("h-[22px] w-[22px]", active && "text-foreground")} strokeWidth={active ? 2 : 1.75} />
                 </Link>
               </li>
             );
@@ -52,7 +54,7 @@ export default function MobileTabBar() {
               aria-expanded={openMobile}
               aria-label={c("Open navigation menu", "打开导航菜单")}
               title={c("Menu", "菜单")}
-              className={cn(targetClass, "w-full", openMobile && "bg-foreground/10 text-primary-text")}
+              className={cn(targetClass, "w-full", openMobile && "bg-foreground/10 text-foreground")}
             >
               <Menu aria-hidden className="h-[22px] w-[22px]" strokeWidth={1.75} />
             </button>

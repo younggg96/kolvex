@@ -362,7 +362,7 @@ export default function MarketEventCalendar() {
                                       <li
                                         key={event.id}
                                         className={cn(
-                                          "-mx-2 rounded-2xl px-2 py-3 transition-colors duration-150 hover:bg-primary/[0.07] motion-reduce:transition-none",
+                                          "-mx-2 rounded-2xl px-2 py-3 transition-colors duration-150 hover:bg-foreground/[0.06] motion-reduce:transition-none",
                                           index > 0 && "border-t border-border/60",
                                         )}
                                       >

@@ -90,7 +90,7 @@ export default function LandingPreview() {
             <Link
               href={marketStockUrl(EXAMPLE_SYMBOL) ?? `/stocks/${EXAMPLE_SYMBOL}`}
               aria-label={c(`${EXAMPLE_SYMBOL} ${EXAMPLE_COMPANY} quotes`, `${EXAMPLE_SYMBOL} ${EXAMPLE_COMPANY} 行情`)}
-              className="flex items-center gap-3 rounded-lg hover:text-primary focus-visible:outline-none "
+              className="flex items-center gap-3 rounded-lg hover:text-foreground/80 focus-visible:outline-none "
             >
               <CompanyLogo symbol={EXAMPLE_SYMBOL} size="sm" />
               <strong>{EXAMPLE_SYMBOL}</strong>

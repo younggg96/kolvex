@@ -543,8 +543,10 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
     route.creator && route.ticker
       ? { tab: "creators" as const, creator: route.creator }
       : root;
+  // Interactive rows signal hover with a neutral foreground wash so green stays
+  // reserved for direction semantics rather than interaction.
   const rowClass =
-    "group grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-2 border-b border-border py-3.5 transition-colors duration-150 hover:border-primary/30 hover:bg-primary/[0.07] focus-visible:bg-primary/10 focus-visible:outline-none sm:-mx-3 sm:rounded-3xl sm:border-transparent sm:px-3 sm:hover:border-transparent";
+    "group grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-2 border-b border-border py-3.5 transition-colors duration-150 hover:border-foreground/25 hover:bg-foreground/[0.06] focus-visible:bg-foreground/[0.06] focus-visible:outline-none sm:-mx-3 sm:rounded-3xl sm:border-transparent sm:px-3 sm:hover:border-transparent";
   const stockRowClass = cn(rowClass, "grid-cols-[minmax(0,1fr)_auto] gap-x-3 sm:grid-cols-[minmax(0,1fr)_110px_160px] sm:gap-x-4");
   // Rows inside one card body reuse the shared row target metrics (rounded-2xl,
   // min-h-20, no ring) while the ListRow supplies the hover/focus-within surface.
@@ -1133,7 +1135,7 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
                                 }}
                                 className="h-11 rounded-full pl-10 pr-10 text-base sm:text-sm"
                               />
-                              {search && <button type="button" aria-label={t("common.clearFilters")} className="absolute right-1 top-1.5 flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-primary/10 hover:text-primary-text focus-visible:outline-none" onClick={() => { setSearch(""); searchInput.current?.focus(); }}><X className="h-4 w-4" aria-hidden="true" /></button>}
+                              {search && <button type="button" aria-label={t("common.clearFilters")} className="absolute right-1 top-1.5 flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-foreground/[0.06] hover:text-foreground focus-visible:outline-none" onClick={() => { setSearch(""); searchInput.current?.focus(); }}><X className="h-4 w-4" aria-hidden="true" /></button>}
                             </div>
                           </div>
                           {route.tab === "stocks" && isProductFeatureEnabled("portfolio") && (
@@ -1157,7 +1159,7 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
                             <Select value={sortBy} onValueChange={(value) => setSortBy(value as DirectorySort)}>
                               <SelectTrigger
                                 aria-label={t("common.sort")}
-                                className="h-11 w-auto gap-1.5 rounded-full border-border bg-transparent px-3 text-[13px] font-semibold hover:border-primary/40 hover:bg-primary/[0.08]"
+                                className="h-11 w-auto gap-1.5 rounded-full border-border bg-transparent px-3 text-[13px] font-semibold hover:border-foreground/25 hover:bg-foreground/[0.06]"
                               >
                                 <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground" />
                                 <SelectValue />
@@ -1565,7 +1567,7 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
                             type="button"
                             role="radio"
                             aria-checked={filters.sentiment === option.value}
-                            className={cn("inline-flex h-8 shrink-0 items-center rounded-full px-3.5 text-[13px] font-semibold transition-colors duration-150 focus-visible:outline-none", filters.sentiment === option.value ? "bg-foreground text-primary" : "text-foreground/80 hover:bg-primary/10 hover:text-primary-text active:bg-primary/[0.16]")}
+                            className={cn("inline-flex h-8 shrink-0 items-center rounded-full px-3.5 text-[13px] font-semibold transition-colors duration-150 focus-visible:outline-none", filters.sentiment === option.value ? "bg-foreground text-background" : "text-foreground/80 hover:bg-foreground/[0.06] hover:text-foreground active:bg-foreground/[0.1]")}
                             onClick={() => setFilters((previous) => ({ ...previous, sentiment: option.value }))}
                           >
                             {option.label}
@@ -1588,7 +1590,7 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
                               type="button"
                               aria-pressed={showUntrackedVideos}
                               onClick={() => setShowUntrackedVideos((value) => !value)}
-                              className="mt-2 inline-flex min-h-10 items-center rounded-full px-3 text-[13px] font-semibold text-muted-foreground transition-colors hover:bg-primary/10 hover:text-primary-text focus-visible:outline-none"
+                              className="mt-2 inline-flex min-h-10 items-center rounded-full px-3 text-[13px] font-semibold text-muted-foreground transition-colors hover:bg-foreground/[0.06] hover:text-foreground focus-visible:outline-none"
                             >
                               {t(showUntrackedVideos ? "youtubeOpinions.hideUntrackedVideos" : "youtubeOpinions.showUntrackedVideos", { count: String(untrackedVideoCount) })}
                             </button>

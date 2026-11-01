@@ -14,10 +14,11 @@ html {
    Plain white / pure black ground, one grey,
    hairlines. Green and orange-red mean direction.
    *-foreground pairs keep text on fills ≥ 4.5:1.
-   Brand green is the interaction colour: hover,
-   focus and pressed states tint toward it through
-   --primary-soft / --primary-line / --primary-text
-   instead of falling back to neutral grey.
+   Interaction feedback (hover, focus, pressed)
+   stays neutral: it layers `foreground` over
+   whatever it sits on. Green is reserved for
+   direction semantics and solid brand actions,
+   so a green wash never competes with a price.
    ======================================== */
 
 :root {
@@ -36,13 +37,6 @@ html {
   --border: 228 227 223;
   --primary: 0 200 5;
   --primary-foreground: 0 0 0;
-  /* Brand-green interaction tokens. Hover and pressed feedback stays on the
-     brand hue instead of falling back to neutral grey: `primary-soft` fills a
-     hovered row or tinted control, `primary-line` draws the hover hairline and
-     `primary-text` keeps the hovered label/glyph readable on the light ground. */
-  --primary-soft: 0 200 5;
-  --primary-line: 0 200 5;
-  --primary-text: 0 125 2;
   /* Text-safe direction colours (small text on the ground) */
   --positive: 0 133 3;
   --negative: 214 58 0;
@@ -78,9 +72,6 @@ html {
   --border: 40 42 45;
   --primary: 0 200 5;
   --primary-foreground: 0 0 0;
-  --primary-soft: 0 200 5;
-  --primary-line: 0 200 5;
-  --primary-text: 0 200 5;
   --positive: 0 200 5;
   --negative: 255 80 0;
   --warning: 255 176 32;
@@ -133,8 +124,9 @@ a {
     box-shadow: 0 16px 40px -8px rgb(0 0 0 / 0.7);
   }
 
-  /* Row of one collection: hairline between rows, a brand-green tint and a
-     green leading mark on hover or keyboard focus inside the row. */
+  /* Row of one collection: hairline between rows, and a neutral wash plus a
+     slightly darker hairline on hover or keyboard focus inside the row. The
+     feedback stays grey so a hovered row never reads as a direction signal. */
   .list-row-interactive {
     position: relative;
     border-bottom: 1px solid rgb(var(--border));
@@ -145,37 +137,8 @@ a {
 
   .list-row-interactive:hover,
   .list-row-interactive:focus-within {
-    background-color: rgb(var(--primary-soft) / 0.06);
-    border-bottom-color: rgb(var(--primary-line) / 0.3);
-  }
-
-  .list-row-interactive::before {
-    content: "";
-    position: absolute;
-    top: 50%;
-    left: 0;
-    height: 1.25rem;
-    width: 2px;
-    border-radius: 9999px;
-    background: rgb(var(--primary));
-    opacity: 0;
-    transform: translateY(-50%) scaleY(0.4);
-    transition:
-      opacity 150ms ease,
-      transform 150ms var(--ease-out-quart);
-  }
-
-  .list-row-interactive:hover::before,
-  .list-row-interactive:focus-within::before {
-    opacity: 1;
-    transform: translateY(-50%) scaleY(1);
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .list-row-interactive::before {
-      transition: none;
-      transform: translateY(-50%);
-    }
+    background-color: rgb(var(--foreground) / 0.04);
+    border-bottom-color: rgb(var(--foreground) / 0.14);
   }
 }
 
@@ -346,20 +309,20 @@ a {
     font-feature-settings: "tnum", "cv11";
   }
 
-  /* Hairline that turns brand-green while its surface is hovered. */
+  /* Hairline that darkens a step while its surface is hovered. */
   .accent-rule {
     border-color: rgb(var(--border));
   }
 
   .accent-rule:hover,
   .accent-rule:focus-within {
-    border-color: rgb(var(--primary-line) / 0.4);
+    border-color: rgb(var(--foreground) / 0.2);
   }
 
   @media (prefers-contrast: more) {
     .accent-rule:hover,
     .accent-rule:focus-within {
-      border-color: rgb(var(--primary-line) / 0.75);
+      border-color: rgb(var(--foreground) / 0.45);
     }
   }
 }
@@ -929,27 +892,11 @@ a {
   transition: color 150ms ease;
 }
 
-/* Brand navigation: the selected route keeps its neutral pill and takes the
-   brand hue on its icon, so current location and brand read as one signal.
-   Hovering any route reveals a green wash, a green hairline and a green icon. */
-.app-workbench [data-sidebar="menu-button"][data-active="true"] svg {
-  color: rgb(var(--primary));
-}
-
-.app-workbench [data-sidebar="menu-button"]:hover {
-  border-color: rgb(var(--primary-line) / 0.35);
-}
-
+/* Navigation feedback stays neutral: the hovered route takes a grey wash while
+   the selected route keeps its solid grey pill, and icons only follow the text
+   colour so current location is the single highlighted signal. */
 .app-workbench [data-sidebar="menu-button"][data-active="false"]:hover {
-  background: rgb(var(--primary-soft) / 0.08);
-}
-
-.app-workbench [data-sidebar="menu-button"]:hover svg {
-  color: rgb(var(--primary));
-}
-
-.app-workbench [data-sidebar="menu-button"]:active {
-  background: rgb(var(--primary-soft) / 0.16);
+  background: rgb(var(--foreground) / 0.05);
 }
 
 @media (prefers-reduced-motion: reduce) {

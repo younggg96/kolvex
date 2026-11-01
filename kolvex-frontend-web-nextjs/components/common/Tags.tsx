@@ -29,9 +29,11 @@ export default function Tags({ tags, maxVisible = 5, className }: TagsProps) {
       ))}
 
       {shouldShowButton && (
+        // The tag pill keeps its tint as a label treatment, so the expand
+        // affordance dims on hover instead of layering a grey wash over it.
         <button
           onClick={() => setIsExpanded(!isExpanded)}
-          className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 transition-colors"
+          className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-primary/10 text-primary border border-primary/20 hover:opacity-70 transition-opacity"
         >
           {isExpanded ? "Show Less" : `+${tags.length - maxVisible}`}
         </button>

@@ -85,7 +85,7 @@ export function SortableHeader<T extends string>({
     >
       <div
         className={cn(
-          "group flex items-center gap-1 cursor-pointer whitespace-nowrap rounded-full transition-colors hover:text-primary-text",
+          "group flex items-center gap-1 cursor-pointer whitespace-nowrap rounded-full transition-colors hover:text-foreground",
           align === "left" && "justify-start",
           align === "center" && "justify-center",
           align === "right" && "justify-end",

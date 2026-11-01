@@ -94,7 +94,7 @@ export default function LandingStockBrief() {
         <Link
           href={marketStockUrl(stock.symbol) ?? `/stocks/${stock.symbol}`}
           aria-label={c(`${stock.symbol} ${stock.name} quotes`, `${stock.symbol} ${stock.name} 行情`)}
-          className="focus-company rounded-sm hover:text-primary focus-visible:outline-none "
+          className="focus-company rounded-sm hover:text-foreground/80 focus-visible:outline-none "
         >
           <CompanyLogo symbol={stock.symbol} name={stock.name} size="sm" /><span>{stock.name}</span><span className="focus-exchange">NASDAQ</span>
         </Link>

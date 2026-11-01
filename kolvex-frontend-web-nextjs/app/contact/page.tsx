@@ -20,7 +20,7 @@ export default function ContactPage() {
         <div className="mb-8">
           <Link
             href="/"
-            className="text-sm text-muted-foreground transition-colors hover:text-primary-text"
+            className="text-sm text-muted-foreground transition-colors hover:text-foreground"
           >
             ← Back to Home
           </Link>
@@ -45,7 +45,7 @@ export default function ContactPage() {
                   For support:{" "}
                   <a
                     href="mailto:support@kolvex.app"
-                    className="text-primary hover:text-primary/80 transition-colors"
+                    className="text-foreground underline underline-offset-4 hover:text-muted-foreground transition-colors"
                   >
                     support@kolvex.app
                   </a>

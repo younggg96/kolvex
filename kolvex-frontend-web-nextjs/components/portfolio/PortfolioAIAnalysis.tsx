@@ -213,7 +213,7 @@ function MetricCard({ icon: Icon, label, children }: { icon: React.ElementType; 
 function StockAnalysisItem({ stock, t }: { stock: StockAnalysis; t: TFunction }) {
     return (
         <AccordionItem value={stock.symbol} className="border border-border rounded-2xl mb-2 overflow-hidden">
-            <AccordionTrigger className="px-4 py-3 transition-colors hover:bg-primary/[0.06] hover:no-underline">
+            <AccordionTrigger className="px-4 py-3 transition-colors hover:bg-foreground/[0.06] hover:no-underline">
                 <div className="flex items-center gap-3 flex-1">
                     <span aria-hidden="true"><CompanyLogo symbol={stock.symbol} name={stock.name} size="md" /></span>
                     <div className="flex-1 min-w-0 text-left">
@@ -541,7 +541,7 @@ export function PortfolioAIAnalysis({ className }: PortfolioAIAnalysisProps) {
                                     <Button
                                         variant="ghost"
                                         size="sm"
-                                        className="mt-2 w-full text-muted-foreground hover:bg-primary/10 hover:text-primary-text"
+                                        className="mt-2 w-full text-muted-foreground hover:bg-foreground/[0.06] hover:text-foreground"
                                         onClick={() => setShowAllStocks(!showAllStocks)}
                                     >
                                         <ChevronDown className={cn("w-4 h-4 mr-1 transition-transform", showAllStocks && "rotate-180")} />

@@ -21,8 +21,9 @@ import { marketStockHref } from "@/lib/stockLinks";
 import { REDDIT_COMMUNITIES, mentionChange, selectRedditStocks, type RedditCommunity, type RedditRanking, type RedditSort, type RedditStock } from "@/lib/redditOpinions";
 
 const MOBILE_GRID = "grid min-h-20 grid-cols-[minmax(0,1fr)_5.5rem_1rem] items-center gap-2 px-2 py-3";
-/** Cells carry the hover band so the table row keeps rounded ends inside the card. */
-const HOVER_CELL = "transition-colors group-hover:bg-primary/10 first:rounded-l-2xl last:rounded-r-2xl";
+/** Cells carry the hover band so the table row keeps rounded ends inside the card. The
+ *  wash is neutral so green keeps signalling direction rather than interaction. */
+const HOVER_CELL = "transition-colors group-hover:bg-foreground/[0.06] first:rounded-l-2xl last:rounded-r-2xl";
 
 export default function RedditOpinionsPage() {
   const { t, locale } = useTranslation();
@@ -142,7 +143,7 @@ export default function RedditOpinionsPage() {
                               <span className="flex min-w-0 items-center gap-2.5">
                                 <span className="w-5 shrink-0 text-center text-xs tabular-nums text-muted-foreground"><span className="sr-only">{t("redditOpinions.rank")} </span>{row.rank}</span>
                                 <span aria-hidden="true"><CompanyLogo symbol={row.ticker} name={row.name} size="sm" /></span>
-                                <Link href={marketStockHref(row.ticker)} className="-m-1 min-w-0 rounded-xl p-1 transition-colors duration-150 hover:text-primary-text focus-visible:outline-none" aria-label={t("redditOpinions.openStock", { ticker: row.ticker })}>
+                                <Link href={marketStockHref(row.ticker)} className="-m-1 min-w-0 rounded-xl p-1 transition-colors duration-150 hover:text-foreground focus-visible:outline-none" aria-label={t("redditOpinions.openStock", { ticker: row.ticker })}>
                                   <span className="block text-sm font-semibold">{row.ticker}</span>
                                   <span className="mt-1 block truncate text-xs text-muted-foreground" title={row.name}>{row.name}</span>
                                 </Link>
@@ -186,7 +187,7 @@ export default function RedditOpinionsPage() {
                         <TableBody>{rows.map((row, index) => <TableRow key={row.ticker} className="opinion-result-row group hover:!bg-transparent" style={{ animationDelay: `${Math.min(index, 6) * 20}ms` }}>
                           <TableCell className={cn(HOVER_CELL, "text-muted-foreground")}>{row.rank}</TableCell>
                           <TableCell className={cn(HOVER_CELL, "min-w-48 max-w-72")}>
-                            <Link href={marketStockHref(row.ticker)} className="-m-1 flex min-h-11 items-center gap-3 rounded-xl p-1 transition-colors duration-150 hover:text-primary-text focus-visible:outline-none" aria-label={t("redditOpinions.openStock", { ticker: row.ticker })}>
+                            <Link href={marketStockHref(row.ticker)} className="-m-1 flex min-h-11 items-center gap-3 rounded-xl p-1 transition-colors duration-150 hover:text-foreground focus-visible:outline-none" aria-label={t("redditOpinions.openStock", { ticker: row.ticker })}>
                               <span aria-hidden="true"><CompanyLogo symbol={row.ticker} name={row.name} size="sm" /></span>
                               <div className="min-w-0 flex-1">
                                 <span className="font-semibold">{row.ticker}</span>

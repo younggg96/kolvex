@@ -342,11 +342,11 @@ export default function StockFinancials({
             </thead>
             <tbody>
               {rows.map((key) => (
-                <tr key={key} className="group transition-colors hover:bg-primary/[0.06]">
+                <tr key={key} className="group transition-colors hover:bg-foreground/[0.06]">
                   <th
                     scope="row"
                     className={cn(
-                      "sticky left-0 z-10 max-w-64 border-b border-r border-border bg-card px-4 py-4 text-left font-normal transition-colors group-hover:border-primary/30",
+                      "sticky left-0 z-10 max-w-64 border-b border-r border-border bg-card px-4 py-4 text-left font-normal transition-colors group-hover:border-foreground/25",
                       keyRows[kind].includes(key) && "font-medium",
                     )}
                   >
@@ -355,7 +355,7 @@ export default function StockFinancials({
                   {periods.map((p, index) => (
                     <td
                       key={p.period}
-                      className="figure whitespace-nowrap border-b border-border px-4 py-4 text-right transition-colors group-hover:border-primary/30"
+                      className="figure whitespace-nowrap border-b border-border px-4 py-4 text-right transition-colors group-hover:border-foreground/25"
                     >
                       {f.number(p[key])}
                       {index === 0 && (

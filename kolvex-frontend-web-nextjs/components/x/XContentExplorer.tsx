@@ -165,8 +165,8 @@ export default function XContentExplorer() {
                             listCompactRowClass,
                             "min-w-0 flex-1 gap-3",
                             author === creator.username
-                              ? "bg-primary/10 font-semibold text-primary-text"
-                              : "hover:text-primary-text",
+                              ? "bg-secondary font-semibold text-foreground"
+                              : "hover:text-foreground",
                           )}
                         >
                           <span className="flex min-w-0 flex-1 items-center gap-3">
@@ -325,7 +325,7 @@ export default function XContentExplorer() {
                           className={cn(
                             "opinion-result-row",
                             listFeedRowClass,
-                            "rounded-2xl px-2 transition-colors hover:bg-primary/[0.07] focus-within:bg-primary/[0.07] motion-reduce:transition-none",
+                            "rounded-2xl px-2 transition-colors hover:bg-foreground/[0.06] focus-within:bg-foreground/[0.06] motion-reduce:transition-none",
                           )}
                           style={{ animationDelay: `${Math.min(index, 6) * 20}ms` }}
                         >
@@ -377,7 +377,7 @@ export default function XContentExplorer() {
                                   <StockBadge symbol={tag} />
                                   <Link
                                     href={href({ ticker: tag })}
-                                    className="inline-flex min-h-11 items-center rounded-2xl px-2 text-xs font-medium text-muted-foreground transition-colors duration-150 hover:bg-primary/10 hover:text-primary-text focus-visible:outline-none"
+                                    className="inline-flex min-h-11 items-center rounded-2xl px-2 text-xs font-medium text-muted-foreground transition-colors duration-150 hover:bg-foreground/[0.06] hover:text-foreground focus-visible:outline-none"
                                     aria-label={c(`Filter X posts by ${tag}`, `只看含 ${tag} 的 X 帖子`)}
                                   >
                                     <Filter className="h-3.5 w-3.5 shrink-0" aria-hidden />
