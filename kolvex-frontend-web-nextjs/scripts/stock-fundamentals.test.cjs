@@ -63,3 +63,21 @@ test('fundamentals proxy forwards the reporting frequency and rejects malformed 
   const malformed = proxyFixture(async () => ({ok:true,json:async()=>({earnings_history:[]})}));
   assert.equal((await malformed({url:'http://localhost/test'}, {params:{symbol:'NVDA',kind:'earnings'}})).status,502);
 });
+test('statement charts read oldest to newest and preserve negative, zero and missing values', () => {
+  const { statementTrend } = fixture();
+  const input = [{period:'2026-06-30',Income:12}, {period:'2025-12-31',Income:0}, {period:'2026-03-31',Income:null}, {period:'2025-09-30',Income:-4}];
+  const result = statementTrend(input,'Income');
+  assert.equal(result.map(row=>row.value).join(','),'-4,0,,12');
+  assert.equal(result[0].period,'2025-09-30');
+  assert.equal(input[0].period,'2026-06-30');
+});
+test('report changes never divide by zero or assign misleading percentages to a negative baseline', () => {
+  const { financialChange } = fixture();
+  assert.equal(financialChange(12,8).relative,.5);
+  assert.equal(financialChange(-2,-4).absolute,2);
+  assert.equal(financialChange(-2,-4).relative,null);
+  assert.equal(financialChange(12,0).relative,null);
+  assert.equal(financialChange(0,8).relative,-1);
+  assert.equal(financialChange(null,8),null);
+  assert.equal(financialChange(Infinity,8),null);
+});

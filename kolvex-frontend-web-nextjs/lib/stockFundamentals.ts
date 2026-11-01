@@ -38,6 +38,22 @@ export function sortPeriods(rows: StatementPeriod[]): StatementPeriod[] {
     )
     .sort((a, b) => Date.parse(b.period) - Date.parse(a.period));
 }
+/** Oldest to newest for chart reading; keep missing observations as gaps. */
+export function statementTrend(rows: StatementPeriod[], metric: string) {
+  return sortPeriods(rows)
+    .reverse()
+    .map((row) => ({
+      period: row.period,
+      value: finite(row[metric]) ? (row[metric] as number) : null,
+    }));
+}
+export function financialChange(latest: unknown, previous: unknown) {
+  if (!finite(latest) || !finite(previous)) return null;
+  return {
+    absolute: latest - previous,
+    relative: previous > 0 ? (latest - previous) / previous : null,
+  };
+}
 export function fundamentalsKey(
   symbol: string,
   kind: StatementKind | "earnings" | "analyst",

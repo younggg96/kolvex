@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { Download, Plus, X } from "lucide-react";
+import { useState, type ReactNode } from "react";
+import { Download, Plus, X, BarChart3, List } from "lucide-react";
 import {
   Bar,
   BarChart,
@@ -9,6 +9,7 @@ import {
   Line,
   LineChart,
   ResponsiveContainer,
+  ReferenceLine,
   Tooltip,
   XAxis,
   YAxis,
@@ -30,6 +31,8 @@ import {
   loadFundamentals,
   metricValue,
   sortPeriods,
+  statementTrend,
+  financialChange,
   type StatementKind,
   type StatementPeriod,
 } from "@/lib/stockFundamentals";
@@ -150,6 +153,9 @@ export default function StockFinancials({
   const f = useFinancialFormat();
   const [kind, setKind] = useState<StatementKind>("income-statement");
   const [quarterly, setQuarterly] = useState(false);
+  const [view, setView] = useState<"chart" | "list">("chart");
+  const [line, setLine] = useState(false);
+  const [visibleMetrics, setVisibleMetrics] = useState(6);
   const resource = useStatement(symbol, kind, quarterly);
   const periods = sortPeriods(resource.data?.data ?? []);
   const available = new Set(
@@ -160,6 +166,21 @@ export default function StockFinancials({
   const rows = [
     ...keyRows[kind].filter((key) => available.has(key)),
     ...[...available].filter((key) => !keyRows[kind].includes(key)).sort(),
+  ];
+  const preferredMetrics =
+    kind === "income-statement"
+      ? [
+          "Total Revenue",
+          "Gross Profit",
+          "Operating Income",
+          "Net Income",
+          "Diluted EPS",
+          "EBITDA",
+        ]
+      : keyRows[kind];
+  const chartRows = [
+    ...preferredMetrics.filter((key) => available.has(key)),
+    ...rows.filter((key) => !preferredMetrics.includes(key)),
   ];
   const label = (key: string) => {
     const pair = labels[key as keyof typeof labels];
@@ -210,13 +231,42 @@ export default function StockFinancials({
                 "rounded-md",
                 kind === value && "bg-background text-foreground",
               )}
-              onClick={() => setKind(value)}
+              onClick={() => {
+                setKind(value);
+                setVisibleMetrics(6);
+              }}
             >
               {label}
             </Button>
           ))}
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
+          <div
+            role="group"
+            aria-label={c("Financial view", "财务显示方式")}
+            className="inline-flex rounded-lg bg-muted p-1"
+          >
+            {(["chart", "list"] as const).map((value) => (
+              <Button
+                key={value}
+                size="sm"
+                variant="ghost"
+                aria-pressed={view === value}
+                className={cn(
+                  "rounded-md",
+                  view === value && "bg-background text-foreground",
+                )}
+                onClick={() => setView(value)}
+              >
+                {value === "chart" ? (
+                  <BarChart3 aria-hidden="true" className="h-4 w-4" />
+                ) : (
+                  <List aria-hidden="true" className="h-4 w-4" />
+                )}
+                {value === "chart" ? c("Charts", "图表") : c("List", "列表")}
+              </Button>
+            ))}
+          </div>
           <PeriodToggle quarterly={quarterly} onChange={setQuarterly} />
           <Button
             size="sm"
@@ -241,7 +291,50 @@ export default function StockFinancials({
         empty={!periods.length}
         retry={resource.refresh}
       />
-      {!!periods.length && (
+      {!!periods.length && view === "chart" && (
+        <section
+          aria-label={c("Metric trends", "指标趋势")}
+          className="space-y-4"
+        >
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p className="text-xs text-muted-foreground">
+              {c(
+                "Oldest → newest · Change vs previous report, not year over year",
+                "时间从左到右 · 变化对比上一报告期，非同比",
+              )}{" "}
+              · {Math.min(visibleMetrics, chartRows.length)} /{" "}
+              {chartRows.length} {c("metrics", "项指标")}
+            </p>
+            <ChartStyleToggle line={line} onChange={setLine} />
+          </div>
+          <div className="grid gap-4 lg:grid-cols-2">
+            {chartRows.slice(0, visibleMetrics).map((key) => (
+              <FinancialMetricChart
+                key={key}
+                title={label(key)}
+                currency={key.includes("Shares") ? c("shares", "股") : currency}
+                data={statementTrend(periods, key)}
+                line={line}
+              />
+            ))}
+          </div>
+          {visibleMetrics < chartRows.length && (
+            <Button
+              variant="outline"
+              onClick={() => setVisibleMetrics((count) => count + 6)}
+            >
+              {c("Show more metrics", "显示更多指标")} (
+              {chartRows.length - visibleMetrics})
+            </Button>
+          )}
+          {visibleMetrics > 6 && (
+            <Button variant="ghost" onClick={() => setVisibleMetrics(6)}>
+              {c("Show fewer metrics", "收起指标")}
+            </Button>
+          )}
+        </section>
+      )}
+      {!!periods.length && view === "list" && (
         <div
           role="region"
           tabIndex={0}
@@ -286,12 +379,18 @@ export default function StockFinancials({
                   >
                     {label(key)}
                   </th>
-                  {periods.map((p) => (
+                  {periods.map((p, index) => (
                     <td
                       key={p.period}
                       className="figure whitespace-nowrap border-b border-border px-4 py-4 text-right group-hover:bg-muted"
                     >
                       {f.number(p[key])}
+                      {index === 0 && (
+                        <LatestReportChange
+                          latest={p[key]}
+                          previous={periods[1]?.[key]}
+                        />
+                      )}
                     </td>
                   ))}
                 </tr>
@@ -337,7 +436,6 @@ export function StockMulticharts({
   currency: string;
 }) {
   const c = useCopy();
-  const f = useFinancialFormat();
   const [quarterly, setQuarterly] = useState(false);
   const [line, setLine] = useState(false);
   const [selected, setSelected] = useState([
@@ -352,31 +450,11 @@ export function StockMulticharts({
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <h2 className="text-xl font-semibold">
-          {c("Financial trends", "财务趋势")}
+          {c("Metric trends", "指标趋势")}
         </h2>
         <div className="flex flex-wrap items-center gap-3">
           <PeriodToggle quarterly={quarterly} onChange={setQuarterly} />
-          <div
-            role="group"
-            aria-label={c("Chart style", "图表样式")}
-            className="inline-flex rounded-lg bg-muted p-1"
-          >
-            {[false, true].map((value) => (
-              <Button
-                key={String(value)}
-                size="sm"
-                variant="ghost"
-                aria-pressed={line === value}
-                className={cn(
-                  "rounded-md",
-                  line === value && "bg-background text-foreground",
-                )}
-                onClick={() => setLine(value)}
-              >
-                {value ? c("Line", "折线") : c("Bars", "柱状")}
-              </Button>
-            ))}
-          </div>
+          <ChartStyleToggle line={line} onChange={setLine} />
           {selected.length < chartMetrics.length && (
             <div className="w-40">
               <Select
@@ -425,7 +503,7 @@ export function StockMulticharts({
               const revenue = metricValue(period, ["Total Revenue"]);
               const income = metricValue(period, ["Net Income"]);
               return {
-                period: f.date(period.period),
+                period: period.period,
                 value:
                   id === "margin"
                     ? revenue && income !== null
@@ -434,52 +512,15 @@ export function StockMulticharts({
                     : metricValue(period, metric.keys),
               };
             });
-            const latest = data[data.length - 1];
-            const previous = data[data.length - 2];
-            const format = (value: unknown) =>
-              id === "margin" ? f.percent(value) : f.number(value);
-            const delta =
-              finite(latest?.value) && finite(previous?.value)
-                ? latest.value - previous.value
-                : null;
-            const axes = (
-              <>
-                <CartesianGrid vertical={false} stroke="rgb(var(--border))" />
-                <XAxis
-                  dataKey="period"
-                  tickLine={false}
-                  axisLine={false}
-                  tick={{ fontSize: 11, fill: "rgb(var(--muted-foreground))" }}
-                  minTickGap={20}
-                />
-                <YAxis
-                  width={62}
-                  tickLine={false}
-                  axisLine={false}
-                  tick={{ fontSize: 11, fill: "rgb(var(--muted-foreground))" }}
-                  tickFormatter={format}
-                />
-                <Tooltip
-                  contentStyle={chartTooltip}
-                  formatter={(value) => [
-                    format(value),
-                    c(metric.en, metric.zh),
-                  ]}
-                />
-              </>
-            );
             return (
-              <section
+              <FinancialMetricChart
                 key={id}
-                className="min-w-0 rounded-xl border border-border bg-card p-4 sm:p-6"
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <h3 className="text-sm font-medium text-muted-foreground">
-                    {c(metric.en, metric.zh)}
-                    {id !== "margin" && (
-                      <span className="ml-2 text-xs">{currency}</span>
-                    )}
-                  </h3>
+                title={c(metric.en, metric.zh)}
+                currency={id === "margin" ? undefined : currency}
+                ratio={id === "margin"}
+                data={data}
+                line={line}
+                action={
                   <Button
                     variant="ghost"
                     size="sm"
@@ -492,62 +533,8 @@ export function StockMulticharts({
                   >
                     <X className="h-4 w-4" />
                   </Button>
-                </div>
-                <p className="figure mt-2 text-2xl font-semibold">
-                  {format(latest?.value)}
-                </p>
-                <p className="mt-2 min-h-5 text-xs text-muted-foreground">
-                  {finite(delta) ? (
-                    <>
-                      <span
-                        className={
-                          delta >= 0 ? "text-positive" : "text-negative"
-                        }
-                      >
-                        {delta >= 0 ? "+" : ""}
-                        {id === "margin"
-                          ? `${f.number(delta * 100, false)} ${c("pp", "个百分点")}`
-                          : format(delta)}
-                      </span>{" "}
-                      · {c("vs previous period", "较上一报告期")}
-                    </>
-                  ) : (
-                    c("No comparable previous period", "暂无可比上一期")
-                  )}
-                </p>
-                <div
-                  className="mt-6 h-60"
-                  role="img"
-                  aria-label={`${c(metric.en, metric.zh)}: ${data.map((point) => `${point.period} ${format(point.value)}`).join("; ")}`}
-                >
-                  <ResponsiveContainer width="100%" height="100%">
-                    {line ? (
-                      <LineChart data={data}>
-                        {axes}
-                        <Line
-                          dataKey="value"
-                          type="monotone"
-                          stroke="rgb(var(--positive))"
-                          strokeWidth={2}
-                          isAnimationActive={false}
-                          connectNulls={false}
-                        />
-                      </LineChart>
-                    ) : (
-                      <BarChart data={data}>
-                        {axes}
-                        <Bar
-                          dataKey="value"
-                          fill="rgb(var(--positive))"
-                          radius={[3, 3, 0, 0]}
-                          maxBarSize={32}
-                          isAnimationActive={false}
-                        />
-                      </BarChart>
-                    )}
-                  </ResponsiveContainer>
-                </div>
-              </section>
+                }
+              />
             );
           })}
         </div>
@@ -559,5 +546,210 @@ export function StockMulticharts({
         )}
       </p>
     </div>
+  );
+}
+
+function ChartStyleToggle({
+  line,
+  onChange,
+}: {
+  line: boolean;
+  onChange: (line: boolean) => void;
+}) {
+  const c = useCopy();
+  return (
+    <div
+      role="group"
+      aria-label={c("Chart style", "图表样式")}
+      className="inline-flex rounded-lg bg-muted p-1"
+    >
+      {[false, true].map((value) => (
+        <Button
+          key={String(value)}
+          size="sm"
+          variant="ghost"
+          aria-pressed={line === value}
+          className={cn(
+            "rounded-md",
+            line === value && "bg-background text-foreground",
+          )}
+          onClick={() => onChange(value)}
+        >
+          {value ? c("Line", "折线") : c("Bars", "柱状")}
+        </Button>
+      ))}
+    </div>
+  );
+}
+
+function LatestReportChange({
+  latest,
+  previous,
+}: {
+  latest: unknown;
+  previous: unknown;
+}) {
+  const c = useCopy();
+  const f = useFinancialFormat();
+  const change = financialChange(latest, previous);
+  if (!change) return null;
+  const value = change.relative === null ? change.absolute : change.relative;
+  return (
+    <span className="mt-1 block text-xs text-muted-foreground">
+      {value >= 0 ? "+" : ""}
+      {change.relative === null ? f.number(value) : f.percent(value)} ·{" "}
+      {c("vs prior report", "较上期")}
+    </span>
+  );
+}
+
+function FinancialMetricChart({
+  title,
+  currency,
+  data,
+  line,
+  ratio = false,
+  action,
+}: {
+  title: string;
+  currency?: string;
+  data: { period: string; value: number | null }[];
+  line: boolean;
+  ratio?: boolean;
+  action?: ReactNode;
+}) {
+  const c = useCopy();
+  const f = useFinancialFormat();
+  const latest = data[data.length - 1];
+  const previous = data[data.length - 2];
+  const format = (value: unknown) =>
+    ratio ? f.percent(value) : f.number(value);
+  const change = financialChange(latest?.value, previous?.value);
+  const chartData = data.map((point) => ({
+    ...point,
+    label: Number.isFinite(Date.parse(point.period))
+      ? f.date(point.period)
+      : point.period,
+  }));
+  const axes = (
+    <>
+      <CartesianGrid vertical={false} stroke="rgb(var(--border))" />
+      <XAxis
+        dataKey="label"
+        tickLine={false}
+        axisLine={false}
+        minTickGap={24}
+        tick={{ fontSize: 11, fill: "rgb(var(--muted-foreground))" }}
+      />
+      <YAxis
+        width={68}
+        tickLine={false}
+        axisLine={false}
+        tickFormatter={format}
+        tick={{ fontSize: 11, fill: "rgb(var(--muted-foreground))" }}
+      />
+      <Tooltip
+        cursor={
+          line
+            ? {
+                stroke: "rgb(var(--muted-foreground))",
+                strokeWidth: 1,
+                strokeDasharray: "4 4",
+              }
+            : { fill: "rgb(var(--foreground))", fillOpacity: 0.035 }
+        }
+        contentStyle={chartTooltip}
+        itemStyle={{ color: "rgb(var(--foreground))" }}
+        formatter={(value) => [format(value), title]}
+      />
+      <ReferenceLine
+        y={0}
+        stroke="rgb(var(--muted-foreground))"
+        strokeOpacity={0.5}
+      />
+    </>
+  );
+  return (
+    <section className="min-w-0 rounded-xl border border-border bg-card p-4 sm:p-6">
+      <div className="flex items-start justify-between gap-3">
+        <h3 className="text-sm font-medium text-muted-foreground">
+          {title}
+          {currency && <span className="ml-2 text-xs">{currency}</span>}
+        </h3>
+        {action}
+      </div>
+      <p className="figure mt-2 text-2xl font-semibold">
+        {format(latest?.value)}
+      </p>
+      <p className="mt-2 min-h-5 text-xs text-muted-foreground">
+        {change ? (
+          <>
+            <span className="figure">
+              {change.absolute >= 0 ? "+" : ""}
+              {ratio
+                ? `${f.number(change.absolute * 100, false)} ${c("pp", "个百分点")}`
+                : format(change.absolute)}
+              {!ratio &&
+                change.relative !== null &&
+                ` (${change.relative >= 0 ? "+" : ""}${f.percent(change.relative)})`}
+            </span>{" "}
+            · {c("vs previous report", "较上一报告期")}
+          </>
+        ) : (
+          c("No comparable previous report", "暂无可比上一期")
+        )}
+      </p>
+      <p className="mt-1 text-xs text-muted-foreground">
+        {chartData[chartData.length - 1]?.label}
+      </p>
+      <div
+        className="mt-6 h-60"
+        role="img"
+        aria-label={`${title}: ${chartData.map((point) => `${point.label} ${format(point.value)}`).join("; ")}`}
+      >
+        <ResponsiveContainer width="100%" height="100%">
+          {line ? (
+            <LineChart data={chartData}>
+              {axes}
+              <Line
+                type="linear"
+                dataKey="value"
+                stroke="rgb(var(--positive))"
+                strokeWidth={2}
+                dot={{ r: 3 }}
+                connectNulls={false}
+                isAnimationActive={false}
+              />
+            </LineChart>
+          ) : (
+            <BarChart data={chartData}>
+              {axes}
+              <Bar
+                dataKey="value"
+                fill="rgb(var(--positive))"
+                maxBarSize={32}
+                radius={[3, 3, 0, 0]}
+                isAnimationActive={false}
+              />
+            </BarChart>
+          )}
+        </ResponsiveContainer>
+      </div>
+      <details className="mt-3 text-xs text-muted-foreground">
+        <summary className="cursor-pointer py-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
+          {c("View period values", "查看各期数值")}
+        </summary>
+        <dl className="divide-y divide-border">
+          {chartData.map((point) => (
+            <div key={point.period} className="flex justify-between gap-4 py-2">
+              <dt>{point.label}</dt>
+              <dd className="figure font-medium text-foreground">
+                {format(point.value)}
+              </dd>
+            </div>
+          ))}
+        </dl>
+      </details>
+    </section>
   );
 }

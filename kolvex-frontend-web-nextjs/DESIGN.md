@@ -95,7 +95,7 @@ the chart/research modules without stock-only financial tabs.
 
 Overview, Technicals and Setup share the mounted K-line chart and AI drawing tools.
 Its workspace plot is 320px on phones and 420px from sm; advanced/fullscreen views
-retain their existing sizing. Financials, Earnings, Multicharts, Target price, Profile,
+retain their existing sizing. Financials, Earnings, Metric trends, Target price, Profile,
 News, Creators and Research show their own content directly below navigation. The
 chart remains mounted but hidden for these views, preserving overlays and jobs.
 Overview orders the chart, source-backed growth indicators, three grouped financial
@@ -104,8 +104,17 @@ New chart modules load on demand; visited modules stay mounted while hidden,
 preserving local report frequency and metric selections. Switching tabs does not
 start AI generation. The technical portal remains mounted while hidden.
 
-Financial statements use a semantic table, sticky first column and header, and a
-keyboard-focusable scroll region. Report category and annual/quarterly controls use
+Financial statements default to a chart view with a labelled Charts / List toggle.
+Chart reading runs oldest to newest, with annual/quarterly and bar/line controls,
+latest value and the change from the previous available report. Initial charts show
+six priority metrics; Show more reveals six additional metrics at a time. Missing
+observations remain gaps and negative values retain their zero baseline. Each chart
+also exposes period values in a native disclosure. Charts share their implementation
+with Metric trends (`multicharts` remains the compatible URL value). The list retains a semantic table, sticky first column and header,
+and a keyboard-focusable scroll region; its latest column also shows the change from
+the prior report. Percentage changes are omitted for zero or negative baselines,
+where the absolute change remains available. View selection survives category and
+frequency changes while the module is mounted. Report category and annual/quarterly controls use
 labelled button groups. Columns show actual fiscal ending dates; unsupported history
 ranges and invented TTM columns do not appear. CSV exports raw numeric values,
 protects text cells against formula injection and preserves missing data. Multi-metric
@@ -115,7 +124,13 @@ the shared authored Select and Buttons. Theme colors resolve through the existin
 `rgb(var(--...))` runtime tokens; chart marks use the text-safe positive color in
 both themes. EPS actuals and estimates have named legends and an accompanying table.
 Analyst target differences are relative to the source-supplied price and are labelled
-as estimates, with no claim that the stock is objectively undervalued.
+as estimates, with no claim that the stock is objectively undervalued. The target
+section pairs a price-range visualization (reference and mean markers, explicit
+low/high endpoints) with horizontal rating-share bars. Analyst coverage and rating
+sample size retain distinct labels. Company descriptions and stock source notes
+use the full available content width, without a prose-width cap. Stock chart tooltips
+use a subtle theme-colored cursor; tab selection uses the green underline, while
+keyboard focus adds a quiet background and text underline rather than a green box.
 
 All modules retain localized loading, empty, retry and partial-data states. Missing
 numbers use an em dash and missing values are not converted to zero. Market currency

@@ -450,7 +450,7 @@ export default function StockWorkspace({
                       {c("Earnings", "盈利表现")}
                     </TabsTrigger>
                     <TabsTrigger value="multicharts">
-                      {c("Multicharts", "多图表")}
+                      {c("Metric trends", "指标趋势")}
                     </TabsTrigger>
                     <TabsTrigger value="analyst">
                       {c("Target price", "分析师目标价")}

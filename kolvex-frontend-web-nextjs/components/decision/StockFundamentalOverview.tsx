@@ -227,7 +227,7 @@ export function StockCompanyProfile({
             ))}
           </dl>
           {company.business_summary && (
-            <p className="max-w-prose text-sm leading-7 text-muted-foreground">
+            <p className="w-full max-w-none break-words text-sm leading-7 text-muted-foreground">
               {company.business_summary}
             </p>
           )}

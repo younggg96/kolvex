@@ -122,6 +122,11 @@ export default function StockEarnings({
                     }}
                   />
                   <Tooltip
+                    cursor={{
+                      fill: "rgb(var(--foreground))",
+                      fillOpacity: 0.035,
+                    }}
+                    itemStyle={{ color: "rgb(var(--foreground))" }}
                     contentStyle={{
                       background: "rgb(var(--card))",
                       border: "1px solid rgb(var(--border))",
