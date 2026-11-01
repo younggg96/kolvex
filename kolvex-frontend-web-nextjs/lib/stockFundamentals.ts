@@ -183,5 +183,7 @@ export interface StockOverviewMetrics {
 
 /** Ratios with a positive denominator; zero numerators remain meaningful. */
 export function overviewRatio(a: unknown, b: unknown): number | null {
-  return finite(a) && finite(b) && b > 0 && Number.isFinite(a / b) ? a / b : null;
+  return finite(a) && finite(b) && b > 0 && Number.isFinite(a / b)
+    ? a / b
+    : null;
 }

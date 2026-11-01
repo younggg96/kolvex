@@ -92,3 +92,18 @@ test('EPS beat and miss use actual vs estimate, preserve losses and zero, and re
   assert.equal(epsOutcome(null,2.09),null);
   assert.equal(epsOutcome(2.22,null),null);
 });
+test('overview ratios require finite inputs and positive denominators without losing zero', () => {
+  const { overviewRatio } = fixture();
+  assert.equal(overviewRatio(0, 5), 0);
+  assert.equal(overviewRatio(20, 5), 4);
+  for (const [a, b] of [[null, 5], [20, 0], [20, -5], [Infinity, 5], [20, NaN]]) assert.equal(overviewRatio(a, b), null);
+});
+test('overview proxy validates identity and avoids caching partial source failures', async () => {
+  const data = {symbol:'GOOGL', analyzed_at:'2026-10-31T12:00:00Z', unavailable_sources:['income']};
+  const GET = proxyFixture(async () => ({ok:true,json:async()=>data}));
+  const result = await GET({url:'http://localhost/test'}, {params:{symbol:'googl',kind:'overview-metrics'}});
+  assert.equal(result.status, 200);
+  assert.equal(result.headers['Cache-Control'], 'no-store');
+  data.symbol = 'AAPL';
+  assert.equal((await GET({url:'http://localhost/test'}, {params:{symbol:'googl',kind:'overview-metrics'}})).status, 502);
+});

@@ -104,8 +104,8 @@ including its existing confirmation; it does not borrow destructive red. Compact
 mobile visibility labels retain full accessible names. Financials, Earnings, Metric trends, Target price, Profile,
 News, Creators and Research show their own content directly below navigation. The
 chart remains mounted but hidden for these views, preserving overlays and jobs.
-Overview orders the chart, source-backed growth indicators, three grouped financial
-fact lists (one column on phones, three on wide screens), then research signals.
+Overview orders the chart, source-backed growth indicators, nine grouped financial
+fact lists (one column on phones, two on medium screens, three on wide screens), then research signals.
 New chart modules load on demand; visited modules stay mounted while hidden,
 preserving local report frequency and metric selections. Switching tabs does not
 start AI generation. The technical portal remains mounted while hidden.

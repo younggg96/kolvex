@@ -40,18 +40,25 @@ export async function GET(
     const data = await response.json();
     if (
       params.kind === "overview-metrics"
-        ? data.symbol !== symbol || typeof data.analyzed_at !== "string" || !Array.isArray(data.unavailable_sources)
+        ? data.symbol !== symbol ||
+          typeof data.analyzed_at !== "string" ||
+          !Array.isArray(data.unavailable_sources)
         : params.kind === "analyst"
-        ? !Array.isArray(data.recommendations_summary)
-        : params.kind === "earnings"
-          ? !Array.isArray(data.earnings_dates) ||
-            !Array.isArray(data.earnings_history)
-          : !Array.isArray(data.data)
+          ? !Array.isArray(data.recommendations_summary)
+          : params.kind === "earnings"
+            ? !Array.isArray(data.earnings_dates) ||
+              !Array.isArray(data.earnings_history)
+            : !Array.isArray(data.data)
     ) {
       throw new Error("Invalid fundamentals response");
     }
     return NextResponse.json(data, {
-      headers: { "Cache-Control": "private, max-age=300" },
+      headers: {
+        "Cache-Control":
+          params.kind === "overview-metrics" && data.unavailable_sources.length
+            ? "no-store"
+            : "private, max-age=300",
+      },
     });
   } catch {
     return NextResponse.json(

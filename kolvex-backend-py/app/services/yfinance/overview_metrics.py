@@ -5,6 +5,7 @@ import time
 from concurrent.futures import ThreadPoolExecutor, wait
 from datetime import datetime, timezone
 from threading import Lock
+from zoneinfo import ZoneInfo
 
 _EXECUTOR = ThreadPoolExecutor(max_workers=8, thread_name_prefix="overview-facts")
 _CACHE = {}
@@ -15,7 +16,7 @@ def number(value):
     try:
         result = float(value)
         return result if math.isfinite(result) else None
-    except (TypeError, ValueError):
+    except (TypeError, ValueError, OverflowError):
         return None
 
 
@@ -42,25 +43,29 @@ def cagr(rows, key):
             continue
         a, b = number(latest.get(key)), number(previous.get(key))
         if a is not None and b is not None and a > 0 and b > 0:
-            return number((a / b) ** (1 / years) - 1)
+            try:
+                return number((a / b) ** (1 / years) - 1)
+            except OverflowError:
+                return None
     return None
 
 
 def price_metrics(stock, benchmark, year):
-    """Aligned adjusted daily closes; previous-year close is required for YTD."""
+    """YTD uses aligned split-adjusted closes; drawdown includes dividends."""
     def prices(rows):
         return {row["date"][:10]: value for row in rows
                 if (value := number(row.get("close"))) is not None and value > 0}
+    adjusted = prices([{**row, "close": row.get("adjusted_close", row.get("close"))} for row in stock])
     stock, benchmark = prices(stock), prices(benchmark)
     result = {"max_drawdown_5y": None, "history_start": None, "history_end": None,
               "ytd_return": None, "benchmark_ytd_return": None, "ytd_vs_sp500": None,
               "ytd_start": None, "ytd_end": None}
-    if stock:
-        dates = sorted(stock)
+    if adjusted:
+        dates = sorted(adjusted)
         peak, drawdown = 0, 0
         for day in dates:
-            peak = max(peak, stock[day])
-            drawdown = max(drawdown, 1 - stock[day] / peak)
+            peak = max(peak, adjusted[day])
+            drawdown = max(drawdown, 1 - adjusted[day] / peak)
         if len(dates) > 1:
             result.update(max_drawdown_5y=drawdown, history_start=dates[0], history_end=dates[-1])
     common = sorted(stock.keys() & benchmark.keys())
@@ -128,9 +133,12 @@ def build_metrics(symbol, sources, now):
     if capital is not None and prior is not None and tax is not None and 0 <= tax <= 1 and ebit is not None:
         result["roic_annual"] = ratio(ebit*(1-tax), (capital+prior)/2)
     repurchase, issuance = number(cf.get("Repurchase Of Capital Stock")), number(cf.get("Issuance Of Capital Stock"))
-    if same_currency and repurchase is not None and issuance is not None:
+    net_issuance = number(cf.get("Net Common Stock Issuance"))
+    if same_currency and net_issuance is not None:
+        result["buyback_yield_annual"] = ratio(-net_issuance, info.get("marketCap"))
+    elif same_currency and repurchase is not None and issuance is not None:
         result["buyback_yield_annual"] = ratio(abs(repurchase)-abs(issuance), info.get("marketCap"))
-    result.update(price_metrics(sources.get("history") or [], sources.get("benchmark") or [], now.year))
+    result.update(price_metrics(sources.get("history") or [], sources.get("benchmark") or [], now.astimezone(ZoneInfo("America/New_York")).year))
     return result
 
 
@@ -142,8 +150,8 @@ def get_overview_metrics(service, symbol):
             return cached[1]
     now = datetime.now(timezone.utc)
     def history(ticker_symbol):
-        frame = service.get_ticker(ticker_symbol).history(period="5y", interval="1d", auto_adjust=True, timeout=8)
-        return [{"date": day.isoformat(), "close": number(row.get("Close"))} for day, row in frame.iterrows()]
+        frame = service.get_ticker(ticker_symbol).history(period="5y", interval="1d", auto_adjust=False, timeout=8)
+        return [{"date": day.isoformat(), "close": number(row.get("Close")), "adjusted_close": number(row.get("Adj Close"))} for day, row in frame.iterrows()]
     def forecast():
         frame = service.get_ticker(symbol).earnings_estimate
         return {"growth": number(frame.loc["+1y", "growth"])} if "+1y" in frame.index and "growth" in frame else {}
@@ -174,8 +182,10 @@ def get_overview_metrics(service, symbol):
         sources["balance"] = sources.get("annual_balance") or []
     result = build_metrics(symbol, sources, now)
     result["unavailable_sources"] = unavailable
+    if unavailable:
+        return result
     with _LOCK:
         if len(_CACHE) >= 128:
             _CACHE.pop(next(iter(_CACHE)))
-        _CACHE[symbol] = (time.monotonic() + (30 if unavailable else 300), result)
+        _CACHE[symbol] = (time.monotonic() + 300, result)
     return result

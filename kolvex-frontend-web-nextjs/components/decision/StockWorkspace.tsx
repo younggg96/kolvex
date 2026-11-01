@@ -585,7 +585,7 @@ export default function StockWorkspace({
                 >
                   {!benchmark && (
                     <StockFundamentalOverview
-                      symbol={symbol}
+                      symbol={ticker}
                       overview={overview}
                       quote={quote}
                       loading={overviewResource.loading}
