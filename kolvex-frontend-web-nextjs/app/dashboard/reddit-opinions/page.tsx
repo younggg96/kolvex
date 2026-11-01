@@ -109,7 +109,7 @@ export default function RedditOpinionsPage() {
             <Button variant="outline" size="sm" onClick={refresh} disabled={busy}>{t("redditOpinions.retry")}</Button>
           </div>}
 
-          <div aria-busy={busy}>
+          <div key={`${community}:${sort}:${query}:${onlyWatchlist}:${data?.fetchedAt ?? "loading"}`} aria-busy={busy} className="opinion-results">
             {loading && !data ? <div role="status" className="flex items-center justify-center gap-2 py-16 text-sm text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" aria-hidden="true" />{t("redditOpinions.loading")}</div>
               : data && rows.length > 0 ? <>
                 <div className="md:hidden">
@@ -118,8 +118,8 @@ export default function RedditOpinionsPage() {
                     <span className="text-right">{t("redditOpinions.mobileMentions")}</span>
                   </div>
                   <ol aria-label={t("redditOpinions.title")} className="divide-y divide-border">
-                    {rows.map((row) => <li key={row.ticker}>
-                      <details className="group">
+                    {rows.map((row, index) => <li key={row.ticker} className="opinion-result-row" style={{ animationDelay: `${Math.min(index, 6) * 20}ms` }}>
+                      <details className="group rounded-2xl transition-colors duration-150 hover:bg-muted/50">
                         <summary className="grid min-h-20 cursor-pointer list-none grid-cols-[minmax(0,1fr)_5.5rem_1rem] items-center gap-2 py-3 outline-none [&::-webkit-details-marker]:hidden">
                           <span className="flex min-w-0 items-center gap-2.5">
                             <span className="w-5 shrink-0 text-center text-xs tabular-nums text-muted-foreground"><span className="sr-only">{t("redditOpinions.rank")} </span>{row.rank}</span>
@@ -149,10 +149,10 @@ export default function RedditOpinionsPage() {
                     </li>)}
                   </ol>
                 </div>
-                <div role="region" aria-label={t("redditOpinions.title")} tabIndex={0} className="hidden overflow-x-auto rounded-3xl border border-border bg-card focus-visible:outline-none md:block">
+                <div role="region" aria-label={t("redditOpinions.title")} tabIndex={0} className="hidden overflow-x-auto rounded-3xl border border-border bg-background focus-visible:outline-none md:block">
                   <Table>
                     <caption className="sr-only">{t("redditOpinions.title")} · {t("redditOpinions.mobileMentions")}</caption>
-                    <TableHeader><TableRow>
+                    <TableHeader className="!bg-transparent"><TableRow>
                       <TableHead scope="col" className="w-14">{t("redditOpinions.rank")}</TableHead>
                       <TableHead scope="col">{t("redditOpinions.stock")}</TableHead>
                       <TableHead scope="col" className="whitespace-nowrap text-right">{t("redditOpinions.mobileMentions")}</TableHead>
@@ -161,7 +161,7 @@ export default function RedditOpinionsPage() {
                       <TableHead scope="col" className="text-right">{t("redditOpinions.upvotes")}</TableHead>
                       <TableHead scope="col" className="w-14"><span className="sr-only">{t("redditOpinions.followAction")}</span></TableHead>
                     </TableRow></TableHeader>
-                    <TableBody>{rows.map((row) => <TableRow key={row.ticker}>
+                    <TableBody>{rows.map((row, index) => <TableRow key={row.ticker} className="opinion-result-row" style={{ animationDelay: `${Math.min(index, 6) * 20}ms` }}>
                       <TableCell className="text-muted-foreground">{row.rank}</TableCell>
                       <TableCell className="min-w-48 max-w-72">
                         <div className="flex items-center gap-3">

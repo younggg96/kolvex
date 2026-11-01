@@ -1187,13 +1187,20 @@ and underlined text instead of surrounding ring shadows.
 
 ### Floating mobile navigation
 
-Below lg, AppShell reserves bottom space including the safe area for a floating
-icon dock. Markets, Watchlist and AI Research share a bordered capsule with Menu;
-the separate circular Search button opens the existing stock lookup in a bottom
-sheet. All other routes remain available through the sidebar menu. Active routes
-use a neutral inset pill and foreground icon, matching the supplied mobile reference.
-Targets are at least 44px; icon-only controls retain localized accessible names.
-Desktop navigation is unchanged. Light and dark surfaces use existing tokens.
+Below lg, Markets, Watchlist, AI Research and Menu share one centered floating
+capsule. There is no separate search action. The supplied iOS glass reference
+owns this material: a translucent white tint in both themes, 24px background blur,
+saturation and a fine reflective edge. The dock has no opaque black fill.
+Active routes use a neutral inset pill and foreground icon. Targets are at least
+44px; icon-only controls retain localized accessible names. All other routes
+remain available through the sidebar menu.
+
+Page-level scroll viewports extend beneath the glass; their bottom clearance and
+scroll padding keep the final row reachable above it, including the safe area.
+Fixed-composer pages retain AppShell's reserved inset. Nested tables and popup
+scrollers are excluded. Safari uses the prefixed backdrop filter; unsupported
+browsers, reduced transparency and increased contrast use a solid secondary
+surface. Desktop navigation is unchanged; no global theme colors change.
 
 ## Markets rounded surfaces
 
@@ -1220,3 +1227,13 @@ sheet edges, chart marks, checkboxes and brand assets retain functional shapes.
 These rules apply to research, creator opinions, portfolios, watchlists, news,
 briefs, chat, settings, admin, authentication and public reading pages. Existing
 ring utilities remain disabled.
+
+## Opinion feed background and motion
+
+X and Reddit use the same `bg-background` page ground as the rest of the
+workspace. The Reddit ranking body and header do not add card or muted fills;
+rows retain hairline separators and muted hover feedback. X creator filters
+use pill geometry and 150ms color feedback. Result changes use a 180ms fade
+and rows arrive over 220ms with at most 120ms stagger, including mobile rows.
+Animations start from visible content, never gate interaction, and stop under
+`prefers-reduced-motion`. Refresh and loading controls use existing spinners.

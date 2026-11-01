@@ -9,7 +9,7 @@ import { validTicker } from "@/lib/decision";
 import { useCopy } from "./shared";
 
 /** Direct market navigation is independent of the creator coverage catalogue. */
-export default function StockLookup({ onNavigate }: { onNavigate?: () => void }) {
+export default function StockLookup() {
   const id = useId();
   const c = useCopy();
   const router = useRouter();
@@ -28,7 +28,6 @@ export default function StockLookup({ onNavigate }: { onNavigate?: () => void })
       return;
     }
     router.push(`/dashboard/market/${encodeURIComponent(ticker)}`);
-    onNavigate?.();
   }
 
   return (

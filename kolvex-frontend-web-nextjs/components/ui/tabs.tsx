@@ -20,7 +20,7 @@ const TabsList = React.forwardRef<
         ? "grid w-full grid-cols-2 gap-1 rounded-full bg-muted/50 p-1"
         : variant === "pill"
           ? "inline-flex w-fit max-w-full gap-1 overflow-x-auto rounded-full bg-muted/50 p-1 scrollbar-hide"
-          : "inline-flex w-full gap-5 overflow-x-auto border-b border-border scrollbar-hide",
+          : "inline-flex w-full gap-1 overflow-x-auto border-b border-border scrollbar-hide",
       className,
     )}
     {...props}

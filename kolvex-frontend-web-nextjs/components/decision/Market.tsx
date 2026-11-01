@@ -264,7 +264,6 @@ function MarketCharts({ groups, quotes, loading, range, setRange, attempt, onRet
                 </section>
               ))}
               <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
-                <p>{view === "list" ? c("Daily closes · Price performance uses adjusted history · Yahoo Finance / FRED (Federal Reserve & ICE BofA) · Price changes in %; yields/spreads in pp; MOVE in points · QTD: quarter to date; YTD: year to date · Missing baselines: —", "日度收盘或观测值 · 价格表现使用复权日线 · 来源：Yahoo Finance / FRED（美联储、ICE BofA）· 价格为涨跌幅 %，收益率及利差为百分点 pp，MOVE 为点数 · QTD：本季度至今，YTD：今年至今 · 基准数据不足显示 —") : groups.length === 1 ? c("Index points · Quotes may be delayed", "指数点位 · 报价可能延迟") : c("Quotes may be delayed · Daily series use published observations · Yield/spread changes in bp (1 bp = 0.01 percentage point)", "报价可能延迟 · 日度指标以实际观测日为准 · 收益率及利差变动以基点计（1 bp = 0.01个百分点）")}{checkedAt && c(`, checked ${checkedAt}`, `，${checkedAt} 查询`)}</p>
                 {view === "card" && !loading && groups.some(group => group.instruments.some(item => item.source !== "fred" && !quotes[item.symbol])) && (
                   <Button size="xs" variant="ghost" onClick={onRetry}>
                     {c("Retry missing quotes", "重试缺失报价")}

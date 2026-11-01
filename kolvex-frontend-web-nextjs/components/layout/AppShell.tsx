@@ -19,7 +19,7 @@ export default function AppShell({ children }: AppShellProps) {
     <CommandLayer><SidebarProvider defaultOpen={true}>
       <div className="app-workbench flex w-full overflow-hidden bg-background font-display text-foreground">
         <AppSidebar />
-        <SidebarInset className="relative flex min-w-0 flex-col overflow-hidden pb-[calc(5.5rem+env(safe-area-inset-bottom))] lg:pb-0">
+        <SidebarInset className="mobile-nav-inset relative flex min-w-0 flex-col overflow-hidden pb-[calc(5.5rem+env(safe-area-inset-bottom))] lg:pb-0">
           {children}
           <MobileTabBar />
         </SidebarInset>

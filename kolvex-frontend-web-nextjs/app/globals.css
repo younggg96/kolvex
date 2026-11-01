@@ -853,6 +853,76 @@ a {
   min-height: 0;
 }
 
+/* The mobile dock is a translucent material, with a solid fallback for browsers
+   or accessibility preferences that disable backdrop filtering. */
+.mobile-nav-glass {
+  border: 1px solid rgb(var(--foreground) / 0.12);
+  background: rgb(var(--secondary));
+  box-shadow:
+    0 8px 24px -8px rgb(0 0 0 / 0.16),
+    inset 0 1px 0 rgb(255 255 255 / 0.65);
+}
+
+.dark .mobile-nav-glass {
+  border-color: rgb(255 255 255 / 0.2);
+  box-shadow:
+    0 8px 24px -8px rgb(0 0 0 / 0.24),
+    inset 0 1px 0 rgb(255 255 255 / 0.2);
+}
+
+@supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .mobile-nav-glass {
+    background: rgb(255 255 255 / 0.52);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    backdrop-filter: blur(24px) saturate(180%);
+  }
+
+  .dark .mobile-nav-glass {
+    background: rgb(255 255 255 / 0.12);
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .mobile-nav-glass,
+  .dark .mobile-nav-glass {
+    background: rgb(var(--secondary));
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+
+@media (prefers-contrast: more) {
+  .mobile-nav-glass,
+  .dark .mobile-nav-glass {
+    border-color: rgb(var(--foreground) / 0.55);
+    background: rgb(var(--secondary));
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+
+  .mobile-nav-item {
+    color: rgb(var(--foreground));
+  }
+}
+
+@media (max-width: 1023px) {
+  /* Extend only page-level scroll viewports beneath the glass. The clearance
+     lives inside their scrollable area so the final row remains reachable.
+     Fixed-composer pages retain AppShell's reserved inset instead. */
+  .mobile-nav-inset:has(
+    .dashboard-content > :is(.overflow-y-auto, .overflow-auto),
+    .dashboard-content > section > .overflow-y-auto
+  ) {
+    padding-bottom: 0;
+  }
+
+  .mobile-nav-inset .dashboard-content > :is(.overflow-y-auto, .overflow-auto),
+  .mobile-nav-inset .dashboard-content > section > .overflow-y-auto {
+    padding-bottom: calc(5.5rem + env(safe-area-inset-bottom, 0px));
+    scroll-padding-bottom: calc(5.5rem + env(safe-area-inset-bottom, 0px));
+  }
+}
+
 .dashboard-content section {
   min-width: 0;
 }
@@ -972,5 +1042,30 @@ a {
 @container creator-intelligence (min-width: 42rem) {
   .creator-opinion-groups {
     grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+/* Opinion feeds share the page ground; motion marks a new result set. */
+@keyframes opinion-results-enter {
+  from { opacity: 0.65; }
+  to { opacity: 1; }
+}
+
+@keyframes opinion-row-enter {
+  from { opacity: 0.65; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.opinion-results {
+  animation: opinion-results-enter 180ms var(--ease-out-quart);
+}
+
+.opinion-result-row {
+  animation: opinion-row-enter 220ms var(--ease-out-quart) backwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .opinion-results, .opinion-result-row {
+    animation: none;
   }
 }

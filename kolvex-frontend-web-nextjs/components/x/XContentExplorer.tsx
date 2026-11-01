@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { ExternalLink, Search, RefreshCw } from "lucide-react";
+import { ExternalLink, Loader2, Search, RefreshCw } from "lucide-react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -101,11 +101,11 @@ export default function XContentExplorer() {
     views: c("Views", "浏览"),
   };
   const focusClass =
-    "rounded-sm focus-visible:outline-none ";
+    "rounded-full transition-colors duration-150 focus-visible:outline-none ";
 
   return (
     <DashboardLayout title={c("X creator posts", "X 博主内容")}>
-      <div className="flex-1 overflow-y-auto px-4 pb-16 pt-5 md:px-8 md:pt-7">
+      <div className="min-h-0 flex-1 overflow-y-auto bg-background px-4 pb-16 pt-5 md:px-8 md:pt-7">
         <h1 className="sr-only">{c("X creator posts", "X 博主内容")}</h1>
         <div className="mx-auto w-full space-y-6">
           <div className="grid gap-10 xl:grid-cols-[minmax(0,1fr)_300px]">
@@ -206,7 +206,7 @@ export default function XContentExplorer() {
                     {c("Clear", "清除")}
                   </Button>
                 )}
-                <Button type="button" variant="ghost" size="icon" disabled={loading} aria-label={c("Refresh posts", "刷新推文")} className="ml-auto" onClick={() => setRevision(value => value + 1)}><RefreshCw className="h-4 w-4" aria-hidden="true" /></Button>
+                <Button type="button" variant="ghost" size="icon" disabled={loading} aria-label={c("Refresh posts", "刷新推文")} className="ml-auto" onClick={() => setRevision(value => value + 1)}><RefreshCw className={`h-4 w-4 ${loading ? "animate-spin motion-reduce:animate-none" : ""}`} aria-hidden="true" /></Button>
                 {filterError && (
                   <p
                     id="x-ticker-error"
@@ -221,8 +221,9 @@ export default function XContentExplorer() {
                 {loading && (
                   <p
                     role="status"
-                    className="py-12 text-center text-sm text-muted-foreground"
+                    className="flex items-center justify-center gap-2 py-12 text-sm text-muted-foreground"
                   >
+                    <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" aria-hidden="true" />
                     {c("Loading posts…", "正在加载推文…")}
                   </p>
                 )}
@@ -274,11 +275,12 @@ export default function XContentExplorer() {
                     )}
                   </div>
                 )}
-                <div className="divide-y divide-border">
-                  {feed?.posts.map((post) => (
+                <div key={`${author}:${ticker}:${page}:${revision}`} className="opinion-results divide-y divide-border">
+                  {feed?.posts.map((post, index) => (
                     <article
                       key={post.id}
-                      className="min-w-0 py-6 first:pt-2"
+                      className="opinion-result-row min-w-0 py-6 first:pt-2"
+                      style={{ animationDelay: `${Math.min(index, 6) * 20}ms` }}
                     >
                       <div className="flex flex-wrap items-start justify-between gap-2">
                         <div className="flex min-w-0 items-center gap-3">
