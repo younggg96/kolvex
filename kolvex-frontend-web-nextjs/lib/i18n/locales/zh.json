@@ -1290,6 +1290,14 @@
       "planReason": "计划依据与触发条件",
       "signalRules": "查看信号判定规则",
       "analysisButton": "AI 分析",
+      "empty": {
+        "title": "尚未生成分析",
+        "description": "分析当前图表，查看趋势解读、关键价位与技术信号。生成的结果会显示在这里。",
+        "visibleRange": "当前可见区间",
+        "start": "开始分析",
+        "configure": "选择模型并开始",
+        "drawingHint": "想在图表上标注关键价位？点击上方「AI 画线」，绘制支撑、阻力与趋势线。"
+      },
       "runAnalysis": "生成当前可见区间的文字分析和指标解读，不自动画线",
       "runDrawings": "仅生成支撑、阻力、趋势线和斐波那契画线",
       "analysisLoading": "正在分析…",

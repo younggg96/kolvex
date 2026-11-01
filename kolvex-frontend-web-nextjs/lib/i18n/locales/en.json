@@ -1290,6 +1290,14 @@
       "planReason": "Rationale and trigger conditions",
       "signalRules": "View signal detection rules",
       "analysisButton": "AI analysis",
+      "empty": {
+        "title": "No analysis yet",
+        "description": "Analyze this chart for trends, key price levels and technical signals. Your results will appear here.",
+        "visibleRange": "Visible range",
+        "start": "Start analysis",
+        "configure": "Choose a model to start",
+        "drawingHint": "Want to mark key levels on the chart? Use AI drawings above to plot support, resistance and trendlines."
+      },
       "runAnalysis": "Generate a written analysis of the visible window without drawing overlays",
       "runDrawings": "Generate support, resistance, trendlines and Fibonacci drawings",
       "analysisLoading": "Analyzing…",

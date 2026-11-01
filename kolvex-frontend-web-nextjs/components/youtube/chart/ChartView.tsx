@@ -73,6 +73,7 @@ import { toneStroke, toneText, type StrengthTone } from "../strength";
 import AiPriceActionSignals from "./AiPriceActionSignals";
 import AiDrawingSetup from "./AiDrawingSetup";
 import AiAnalysisPanel from "./AiAnalysisPanel";
+import AiAnalysisEmptyState from "./AiAnalysisEmptyState";
 import { computeIndicators, indicatorMeta, indicatorOrder, vwap, type IndicatorKey, type Series } from "./indicators";
 import {
   advancedHistoryParams,
@@ -1060,6 +1061,14 @@ export default function ChartView({
   ) : null;
   const stackedResults = !advanced && (compactLayout === "workspace" || Boolean(resultsContainer));
   const aiResults = (<>
+    {ai.status === "idle" && drawingAi.status === "idle" && !aiBusy && !aiJobs.monitorError && <AiAnalysisEmptyState
+      symbol={symbol}
+      interval={params.interval || "1d"}
+      disabled={!loaded || providersLoading || aiJobs.checking}
+      modelReady={modelReady}
+      onAnalyze={() => modelReady ? void runAi("analysis") : setSettingsOpen(true)}
+      t={t}
+    />}
     {drawingAi.status === "done" && drawingAi.result && (drawingAi.result.model || drawingAi.result.setup || drawingAi.result.findings?.some(item => item.status === "unavailable") || drawingAi.result.overlays?.some(item => ["breakouts", "retests", "false_breakouts"].includes(item.category) && item.detected_at && typeof item.level === "number")) && <details className={cn("group/drawings min-w-0 border-t border-border pt-3", stackedResults ? "order-2 mt-6" : "mt-5")}>
           <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 rounded text-sm font-medium hover:text-muted-foreground focus-visible:outline-none [&::-webkit-details-marker]:hidden">
             {t("youtubeOpinions.ai.button")}
