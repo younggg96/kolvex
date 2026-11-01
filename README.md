@@ -23,6 +23,8 @@ Next.js 服务端还提供后端接口代理、行情缓存、指数聚合、文
 
 ## 项目结构与技术栈
 
+React Native 手机端位于 [`kolvex-mobile`](./kolvex-mobile/README.md)，使用 Expo、原生导航和 iOS Liquid Glass。首版提供公开行情、创作者观点、股票详情与本机自选；未配置 API 时显示明确标注的演示行情。账户、Plaid 与 AI 功能尚未接入手机端。
+
 ```text
 kolvex/
 ├── kolvex-frontend-web-nextjs/   # Next.js 14、React 18、TypeScript、Tailwind CSS

@@ -1,0 +1,72 @@
+import { Pressable, View } from "react-native";
+import { router } from "expo-router";
+import { quote } from "../lib/api";
+import { number, percent } from "../lib/models";
+import { useResource } from "../lib/useResource";
+import { useTheme } from "../lib/theme";
+import { Copy, Failure, Glass, styles } from "./UI";
+
+export function QuoteRow({
+  symbol,
+  revision = 0,
+  compact = false,
+}: {
+  symbol: string;
+  revision?: number;
+  compact?: boolean;
+}) {
+  const t = useTheme();
+  const resource = useResource(`${symbol}:${revision}`, (signal) =>
+    quote(symbol, signal),
+  );
+  const q = resource.data;
+  const color = (q?.change_percent ?? 0) < 0 ? t.negative : t.accent;
+  return (
+    <Glass style={compact ? { width: 172 } : undefined}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={`查看 ${symbol} 股票详情`}
+        onPress={() => router.push(`/stock/${encodeURIComponent(symbol)}`)}
+        style={({ pressed }) => ({
+          padding: 16,
+          gap: 8,
+          opacity: pressed ? 0.6 : 1,
+        })}
+      >
+        <View style={styles.row}>
+          <View style={{ flex: 1, gap: 4 }}>
+            <Copy size={compact ? 14 : 18} bold>
+              {symbol}
+            </Copy>
+            <Copy size={12} muted>
+              {q?.name ?? (resource.loading ? "加载中…" : "报价不可用")}
+            </Copy>
+          </View>
+          {!compact && (
+            <View style={{ alignItems: "flex-end", gap: 4 }}>
+              <Copy bold>{number(q?.current_price)}</Copy>
+              <Copy size={14} color={color}>
+                {percent(q?.change_percent)}
+              </Copy>
+            </View>
+          )}
+        </View>
+        {compact && (
+          <>
+            <Copy size={24} bold>
+              {number(q?.current_price)}
+            </Copy>
+            <Copy size={14} color={color}>
+              {percent(q?.change_percent)}
+            </Copy>
+          </>
+        )}
+      </Pressable>
+      {resource.error && (
+        <View style={{ padding: 16, paddingTop: 0 }}>
+          <Failure message={resource.error} retry={resource.refresh} />
+        </View>
+      )}
+    </Glass>
+  );
+}
