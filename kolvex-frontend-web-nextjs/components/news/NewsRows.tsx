@@ -22,7 +22,7 @@ export default function NewsRows({ articles, translations, locale }: {
         <time dateTime={time?.toISOString()} className="pt-0.5 font-mono text-xs tabular-nums text-muted-foreground">
           {time ? time.toLocaleTimeString(locale === "zh" ? "zh-CN" : "en-US", { hour: "2-digit", minute: "2-digit", hour12: false }) : "—"}
         </time>
-        <a href={article.link} target="_blank" rel="noopener noreferrer" lang={translated ? "zh-CN" : "en"} className="block min-w-0 break-words rounded text-sm leading-relaxed text-foreground underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
+        <a href={article.link} target="_blank" rel="noopener noreferrer" lang={translated ? "zh-CN" : "en"} className="block min-w-0 break-words rounded text-sm leading-relaxed text-foreground underline-offset-4 hover:underline focus-visible:outline-none ">
           {translated || article.title}<span className="sr-only">{c(" (original source, new tab)", "（原文，新标签页）")}</span>
         </a>
       </div>

@@ -350,7 +350,7 @@ export default function StockFundamentalOverview({
         empty={false}
         retry={retry}
       />
-      <section className="rounded-xl border border-border bg-card p-4 sm:p-6">
+      <section className="rounded-3xl border border-border bg-card p-4 sm:p-6">
         <h2 className="text-sm font-medium text-muted-foreground">
           {c("Key indicators", "关键指标")}
         </h2>
@@ -440,7 +440,7 @@ export default function StockFundamentalOverview({
         {groups.map((group) => (
           <section
             key={group.title}
-            className="min-w-0 rounded-xl border border-border bg-card p-4 sm:p-6"
+            className="min-w-0 rounded-3xl border border-border bg-card p-4 sm:p-6"
           >
             <h2 className="text-sm font-medium text-muted-foreground">
               {group.title}
@@ -471,7 +471,7 @@ export default function StockFundamentalOverview({
         )}
       </p>
       <details className="text-xs leading-5 text-muted-foreground">
-        <summary className="cursor-pointer rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
+        <summary className="cursor-pointer rounded focus-visible:outline-none ">
           {c("Calculation notes & periods", "计算说明与数据周期")}
         </summary>
         <p className="mt-3">
@@ -525,7 +525,7 @@ export function StockCompanyProfile({
       />
       {company && (
         <>
-          <dl className="grid grid-cols-2 gap-6 rounded-xl border border-border bg-card p-6 lg:grid-cols-4">
+          <dl className="grid grid-cols-2 gap-6 rounded-3xl border border-border bg-card p-6 lg:grid-cols-4">
             {[
               [c("Sector", "行业板块"), company.sector],
               [c("Industry", "细分行业"), company.industry],
@@ -548,7 +548,7 @@ export function StockCompanyProfile({
               href={website}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-block text-sm underline underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+              className="inline-block text-sm underline underline-offset-4 focus-visible:outline-none "
             >
               {c("Company website", "公司官网")}{" "}
               <ExternalLink

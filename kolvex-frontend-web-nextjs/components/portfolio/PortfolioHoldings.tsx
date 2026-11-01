@@ -304,7 +304,7 @@ export default function PortfolioHoldings({
                     | "ai-insights",
                 )
               }
-              variant="underline"
+              variant="pills"
               size="md"
               className="!w-fit"
             />

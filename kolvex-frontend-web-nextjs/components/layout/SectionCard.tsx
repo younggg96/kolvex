@@ -82,7 +82,7 @@ export default function SectionCard({
           >
             <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-3 sm:mb-4 gap-2">
               <div className="flex items-start gap-2">
-                <div className="w-7 h-7 rounded-lg bg-primary/10 dark:bg-primary/20 flex items-center justify-center flex-shrink-0">
+                <div className="w-7 h-7 rounded-2xl bg-primary/10 dark:bg-primary/20 flex items-center justify-center flex-shrink-0">
                   {(() => {
                     const Icon = sectionHeaderIcon;
                     return <Icon className="w-3.5 h-3.5 text-primary" />;

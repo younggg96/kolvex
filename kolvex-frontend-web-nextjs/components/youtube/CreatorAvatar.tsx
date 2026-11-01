@@ -39,7 +39,7 @@ export default function CreatorAvatar({
       aria-hidden="true"
       style={{ "--avatar-hue": hue } as CSSProperties}
       className={cn(
-        "relative flex shrink-0 select-none items-center justify-center overflow-hidden rounded-full font-semibold ring-1 ring-inset ring-border/60",
+        "relative flex shrink-0 select-none items-center justify-center overflow-hidden rounded-full font-semibold ",
         "[background-color:hsl(var(--avatar-hue)_45%_50%/0.16)] [color:hsl(var(--avatar-hue)_40%_38%)] dark:[color:hsl(var(--avatar-hue)_55%_74%)]",
         sizeMap[size],
         className,

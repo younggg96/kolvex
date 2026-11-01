@@ -139,7 +139,7 @@ export default function MarketEventCalendar() {
       {error && !data ? (
         <div
           role="alert"
-          className="space-y-3 rounded-xl border border-border p-4"
+          className="space-y-3 rounded-3xl border border-border p-4"
         >
           <p className="text-sm">
             {c(
@@ -162,7 +162,7 @@ export default function MarketEventCalendar() {
           className="space-y-4"
         >
           {[0, 1, 2].map((n) => (
-            <Skeleton key={n} className="h-24 w-full rounded-xl" />
+            <Skeleton key={n} className="h-24 w-full rounded-3xl" />
           ))}
         </div>
       ) : (
@@ -238,7 +238,7 @@ export default function MarketEventCalendar() {
                 {!events.length && !isCalendar ? (
                   <p
                     role="status"
-                    className="rounded-xl border border-border p-6 text-sm text-muted-foreground"
+                    className="rounded-3xl border border-border p-6 text-sm text-muted-foreground"
                   >
                     {c(
                       "No published major events this week. Check again after the calendar is updated.",
@@ -260,7 +260,7 @@ export default function MarketEventCalendar() {
                     tabIndex={isCalendar ? 0 : undefined}
                     className={
                       isCalendar
-                        ? "w-full min-w-0 max-w-full overscroll-x-contain overflow-x-auto rounded-xl pb-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                        ? "w-full min-w-0 max-w-full overscroll-x-contain overflow-x-auto rounded-3xl pb-3 focus-visible:outline-none "
                         : undefined
                     }
                   >
@@ -284,7 +284,7 @@ export default function MarketEventCalendar() {
                           <section
                             key={day}
                             aria-label={day}
-                            className={`min-w-0 rounded-xl border bg-card p-4 ${day === data.today ? "border-positive" : "border-border"}`}
+                            className={`min-w-0 rounded-3xl border bg-card p-4 ${day === data.today ? "border-positive" : "border-border"}`}
                           >
                             <h3 className="figure mb-4 flex flex-wrap items-center gap-2 text-sm font-semibold">
                               <time
@@ -326,7 +326,7 @@ export default function MarketEventCalendar() {
                                   key={event.id}
                                   className={
                                     isCalendar
-                                      ? "rounded-lg border border-border bg-background p-3"
+                                      ? "rounded-2xl border border-border bg-background p-3"
                                       : "py-4 first:pt-0 last:pb-0"
                                   }
                                 >
@@ -368,7 +368,7 @@ export default function MarketEventCalendar() {
                                     : event.summary) &&
                                     (isCalendar ? (
                                       <details className="mt-2 text-sm text-muted-foreground">
-                                        <summary className="cursor-pointer rounded hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
+                                        <summary className="cursor-pointer rounded hover:text-foreground focus-visible:outline-none ">
                                           {c("Event details", "事件详情")}
                                         </summary>
                                         <p className="mt-2 whitespace-pre-line break-words leading-6">
@@ -390,7 +390,7 @@ export default function MarketEventCalendar() {
                                         href={event.source_url}
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        className="min-w-0 break-words [overflow-wrap:anywhere] rounded underline underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                                        className="min-w-0 break-words [overflow-wrap:anywhere] rounded underline underline-offset-4 focus-visible:outline-none "
                                       >
                                         {event.source_name ||
                                           c("Source", "来源")}{" "}

@@ -101,7 +101,7 @@ export default function XContentExplorer() {
     views: c("Views", "浏览"),
   };
   const focusClass =
-    "rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary";
+    "rounded-sm focus-visible:outline-none ";
 
   return (
     <DashboardLayout title={c("X creator posts", "X 博主内容")}>
@@ -229,7 +229,7 @@ export default function XContentExplorer() {
                 {error && (
                   <div
                     role="alert"
-                    className="rounded-xl border border-border p-6"
+                    className="rounded-3xl border border-border p-6"
                   >
                     <p className="text-sm">{error}</p>
                     <Button
@@ -250,7 +250,7 @@ export default function XContentExplorer() {
                   </p>
                 )}
                 {feed?.posts.length === 0 && (
-                  <div className="rounded-xl border border-border p-8 text-center">
+                  <div className="rounded-3xl border border-border p-8 text-center">
                     <h2 className="text-base font-semibold">
                       {c("No posts yet", "暂无推文")}
                     </h2>

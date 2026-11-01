@@ -23,7 +23,7 @@ export default function AuthLayout({
       <BaseLayout hasFooter={false}>
         <div className="relative flex flex-1 items-start justify-center px-4 py-10 sm:py-12">
           <section
-            className="w-full max-w-[440px] rounded-xl border border-border bg-card p-6 sm:p-8"
+            className="w-full max-w-[440px] rounded-3xl border border-border bg-card p-6 sm:p-8"
             aria-labelledby="auth-title"
           >
             <div className="mb-7">

@@ -16,7 +16,7 @@ export function ResearchSummaryCard({ analysis, href, t, headingLevel = "h3" }: 
   return (
     <Link
       href={href}
-      className="flex h-full min-w-0 flex-col gap-6 rounded-xl border border-border bg-card p-5 transition-colors hover:border-foreground/25 hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+      className="flex h-full min-w-0 flex-col gap-6 rounded-3xl border border-border bg-card p-5 transition-colors hover:border-foreground/25 hover:bg-muted/40 focus-visible:outline-none "
     >
       <div className="flex min-w-0 items-center gap-3">
         <CompanyLogo symbol={analysis.ticker} size="md" />

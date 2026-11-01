@@ -64,7 +64,7 @@ export default function TermsPage() {
             <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mt-8 mb-4">
               3. Investment Disclaimer
             </h2>
-            <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-6 mb-4">
+            <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-2xl p-6 mb-4">
               <p className="text-gray-900 dark:text-yellow-100 font-semibold mb-2">
                 IMPORTANT: NOT FINANCIAL ADVICE
               </p>

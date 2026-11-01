@@ -479,7 +479,7 @@ export default function PrivacyPage() {
               If you have questions, concerns, or requests regarding this
               Privacy Policy or our data practices, please contact us:
             </p>
-            <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-6 mb-4">
+            <div className="bg-gray-50 dark:bg-gray-900 rounded-2xl p-6 mb-4">
               <p className="text-gray-700 dark:text-gray-300 mb-2">
                 <strong>Email:</strong>{" "}
                 <a

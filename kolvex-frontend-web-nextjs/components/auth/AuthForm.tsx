@@ -242,7 +242,7 @@ export default function AuthForm({ mode, onModeChange }: AuthFormProps) {
           {mode === "login" && (
             <Link
               href="/auth/forgot-password"
-              className="-mt-2 self-end rounded-sm text-sm font-medium text-positive underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/60"
+              className="-mt-2 self-end rounded-sm text-sm font-medium text-positive underline-offset-4 hover:underline focus-visible:outline-none "
             >
               {t("auth.forgotPassword")}
             </Link>

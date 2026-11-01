@@ -7,6 +7,14 @@ const config: Config = {
     "./app/**/*.{js,ts,jsx,tsx,mdx}",
   ],
   darkMode: "class",
+  // Focus feedback uses background/text styling rather than ring shadows.
+  corePlugins: {
+    ringColor: false,
+    ringOpacity: false,
+    ringWidth: false,
+    ringOffsetColor: false,
+    ringOffsetWidth: false,
+  },
   theme: {
     extend: {
       colors: {
@@ -33,7 +41,6 @@ const config: Config = {
         "sidebar-border": "rgb(var(--border) / <alpha-value>)",
         "sidebar-accent": "rgb(var(--muted) / <alpha-value>)",
         "sidebar-accent-foreground": "rgb(var(--foreground) / <alpha-value>)",
-        "sidebar-ring": "rgb(var(--primary) / <alpha-value>)",
         /* Legacy aliases — both map to the same CSS var so dark: prefix is redundant */
         "background-light": "rgb(var(--background) / <alpha-value>)",
         "background-dark": "rgb(var(--background) / <alpha-value>)",

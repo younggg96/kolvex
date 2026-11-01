@@ -194,7 +194,7 @@ function DiversificationGauge({ score, t }: { score: number; t: TFunction }) {
 
 function MetricCard({ icon: Icon, label, children }: { icon: React.ElementType; label: string; children: React.ReactNode }) {
     return (
-        <div className="p-4 rounded-lg border border-border bg-card">
+        <div className="p-4 rounded-2xl border border-border bg-card">
             <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3">
                 <Icon className="w-4 h-4" />
                 <span>{label}</span>
@@ -210,7 +210,7 @@ function MetricCard({ icon: Icon, label, children }: { icon: React.ElementType; 
 
 function StockAnalysisItem({ stock, t }: { stock: StockAnalysis; t: TFunction }) {
     return (
-        <AccordionItem value={stock.symbol} className="border border-border rounded-lg mb-2 overflow-hidden">
+        <AccordionItem value={stock.symbol} className="border border-border rounded-2xl mb-2 overflow-hidden">
             <AccordionTrigger className="px-4 py-3 hover:no-underline hover:bg-muted transition-colors">
                 <div className="flex items-center gap-3 flex-1">
                     <span aria-hidden="true"><CompanyLogo symbol={stock.symbol} name={stock.name} size="md" /></span>
@@ -275,7 +275,7 @@ function OverallAnalysisSection({ analysis, t }: { analysis: OverallAnalysis; t:
     return (
         <div className="space-y-4">
             {/* Summary Card */}
-            <div className="p-4 rounded-lg  from-primary/5 via-primary/3 to-transparent border border-primary/10">
+            <div className="p-4 rounded-2xl  from-primary/5 via-primary/3 to-transparent border border-primary/10">
                 <p className="text-sm leading-relaxed">{analysis.summary}</p>
             </div>
 
@@ -291,7 +291,7 @@ function OverallAnalysisSection({ analysis, t }: { analysis: OverallAnalysis; t:
 
             {/* Portfolio Style */}
             {analysis.portfolio_style && (
-                <div className="flex items-center gap-2 px-4 py-3 rounded-lg bg-muted border border-border">
+                <div className="flex items-center gap-2 px-4 py-3 rounded-2xl bg-muted border border-border">
                     <span className="text-sm text-muted-foreground">{t("portfolio.ai.portfolioStyle")}</span>
                     <span className="text-sm font-semibold capitalize">{analysis.portfolio_style}</span>
                 </div>
@@ -300,7 +300,7 @@ function OverallAnalysisSection({ analysis, t }: { analysis: OverallAnalysis; t:
             {/* Strengths & Weaknesses */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {analysis.strengths && analysis.strengths.length > 0 && (
-                    <div className="p-4 rounded-lg border border-positive/30 bg-positive/10">
+                    <div className="p-4 rounded-2xl border border-positive/30 bg-positive/10">
                         <div className="flex items-center gap-2 mb-3">
                             <CheckCircle2 className="w-4 h-4 text-positive" />
                             <span className="text-sm font-semibold text-positive">{t("portfolio.ai.strengths")}</span>
@@ -317,7 +317,7 @@ function OverallAnalysisSection({ analysis, t }: { analysis: OverallAnalysis; t:
                 )}
 
                 {analysis.weaknesses && analysis.weaknesses.length > 0 && (
-                    <div className="p-4 rounded-lg border border-warning/30 bg-warning/10">
+                    <div className="p-4 rounded-2xl border border-warning/30 bg-warning/10">
                         <div className="flex items-center gap-2 mb-3">
                             <AlertTriangle className="w-4 h-4 text-warning" />
                             <span className="text-sm font-semibold text-warning">{t("portfolio.ai.areasToImprove")}</span>
@@ -367,7 +367,7 @@ function SuggestionsSection({ suggestions, t }: { suggestions: PortfolioAnalysis
                 return (
                     <div
                         key={section.key}
-                        className="p-4 rounded-lg border border-border bg-card"
+                        className="p-4 rounded-2xl border border-border bg-card"
                     >
                         <div className="flex items-center gap-2 mb-3">
                             <div className={cn("p-1.5 rounded-md", section.bg)}>
@@ -397,14 +397,14 @@ function SuggestionsSection({ suggestions, t }: { suggestions: PortfolioAnalysis
 function AnalysisLoadingState() {
     return (
         <div className="space-y-4">
-            <Skeleton className="h-24 rounded-lg" />
+            <Skeleton className="h-24 rounded-2xl" />
             <div className="grid grid-cols-2 gap-3">
-                <Skeleton className="h-32 rounded-lg" />
-                <Skeleton className="h-32 rounded-lg" />
+                <Skeleton className="h-32 rounded-2xl" />
+                <Skeleton className="h-32 rounded-2xl" />
             </div>
             <div className="space-y-2">
                 {[1, 2, 3].map((i) => (
-                    <Skeleton key={i} className="h-16 rounded-lg" />
+                    <Skeleton key={i} className="h-16 rounded-2xl" />
                 ))}
             </div>
         </div>

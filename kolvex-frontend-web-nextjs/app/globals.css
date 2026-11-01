@@ -126,6 +126,14 @@ a {
 }
 
 @layer utilities {
+  /* Visible keyboard focus without a surrounding ring. */
+  :focus-visible {
+    background-color: rgb(var(--secondary));
+    text-decoration-line: underline;
+    text-decoration-thickness: 2px;
+    text-underline-offset: 4px;
+  }
+
   .text-balance {
     text-wrap: balance;
   }

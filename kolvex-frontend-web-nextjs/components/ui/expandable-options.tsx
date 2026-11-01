@@ -98,7 +98,7 @@ export function ExpandableOptions({
               {options.slice(defaultVisibleCount).map((option) => (
                 <div
                   key={option.value}
-                  className="h-8 rounded-md bg-muted"
+                  className="h-8 rounded-full bg-muted"
                 />
               ))}
             </div>

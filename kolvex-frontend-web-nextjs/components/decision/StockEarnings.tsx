@@ -144,7 +144,7 @@ export default function StockEarnings({
               </span>
             </div>
             <div
-              className="mt-6 overflow-x-auto rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+              className="mt-6 overflow-x-auto rounded-2xl focus-visible:outline-none "
               tabIndex={0}
               role="region"
               aria-label={c(
@@ -197,7 +197,7 @@ export default function StockEarnings({
                           | undefined;
                         if (!active || !row) return null;
                         return (
-                          <div className="min-w-40 rounded-xl border border-border bg-card p-3 text-xs text-foreground">
+                          <div className="min-w-40 rounded-3xl border border-border bg-card p-3 text-xs text-foreground">
                             <p className="mb-2 font-semibold">{row.label}</p>
                             <dl className="space-y-1">
                               <div className="flex justify-between gap-4">
@@ -279,7 +279,7 @@ export default function StockEarnings({
                 "Earnings history, horizontally scrollable",
                 "盈利历史表，可横向滚动",
               )}
-              className="overflow-auto rounded-xl border border-border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+              className="overflow-auto rounded-3xl border border-border focus-visible:outline-none "
             >
               <table className="w-full whitespace-nowrap text-sm">
                 <caption className="sr-only">

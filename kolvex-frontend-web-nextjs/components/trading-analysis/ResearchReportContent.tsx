@@ -59,10 +59,10 @@ export function ResearchReportContent({ analysis, locale, t }: {
           <section id={`${id}-evidence`} className="min-w-0 scroll-mt-6">
             <h2 className="mb-5 text-xl font-semibold">{t("tradingAnalysis.reader.evidence")}</h2>
             <Tabs value={active} onValueChange={setSelected}>
-              <div className="mb-6 min-w-0 overflow-x-auto border-b border-border">
-                <TabsList className="h-auto justify-start gap-1 rounded-none bg-transparent p-0">
+              <div className="mb-6 min-w-0 overflow-x-auto">
+                <TabsList className="h-auto justify-start">
                   {reports.map((report) => (
-                    <TabsTrigger key={report.key} value={report.key} className="min-h-11 shrink-0 rounded-none border-b-2 border-transparent px-4 py-3 text-sm text-muted-foreground data-[state=active]:border-foreground data-[state=active]:bg-transparent data-[state=active]:text-foreground data-[state=active]:shadow-none">
+                    <TabsTrigger key={report.key} value={report.key} className="min-h-11 shrink-0 px-4 py-3 text-sm">
                       {report.title}
                     </TabsTrigger>
                   ))}

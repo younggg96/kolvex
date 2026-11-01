@@ -315,7 +315,7 @@ function ConversationItem({
       onMouseEnter={() => setShowDelete(true)}
       onMouseLeave={() => setShowDelete(false)}
       className={cn(
-        "group relative w-full flex items-start gap-2 p-2 rounded-lg text-left transition-all duration-200 cursor-pointer",
+        "group relative w-full flex items-start gap-2 p-2 rounded-2xl text-left transition-all duration-200 cursor-pointer",
         isActive
           ? "bg-secondary text-foreground"
           : "hover:bg-muted text-muted-foreground hover:text-foreground"
@@ -335,7 +335,7 @@ function ConversationItem({
             e.stopPropagation();
             onDelete();
           }}
-          className="absolute right-1 top-1/2 -translate-y-1/2 p-1 rounded text-muted-foreground hover:text-negative hover:bg-negative/10 transition-colors"
+          className="absolute right-1 top-1/2 -translate-y-1/2 p-1 rounded-full text-muted-foreground hover:text-negative hover:bg-negative/10 transition-colors"
         >
           <Trash2 className="w-3 h-3" />
         </button>

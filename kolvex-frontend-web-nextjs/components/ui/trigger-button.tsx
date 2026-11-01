@@ -65,8 +65,8 @@ const TriggerButton = React.forwardRef<HTMLButtonElement, TriggerButtonProps>(
         type="button"
         className={cn(
           // Base styles
-          "inline-flex items-center justify-center rounded-md font-medium transition-all duration-200",
-          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2",
+          "inline-flex items-center justify-center rounded-full font-medium transition-all duration-200",
+          "focus-visible:outline-none ",
           "disabled:pointer-events-none disabled:opacity-50",
           
           // Size

@@ -98,7 +98,7 @@ export default function EmailSignup() {
           <div className="glow-border rounded-full">
             <input
               type="email"
-              className="w-full h-12 rounded-full text-gray-900 dark:text-white bg-gray-200/80 dark:bg-white/5 backdrop-blur-sm border-0 focus:ring-0 placeholder:text-gray-500 dark:placeholder:text-white/40 px-5 text-sm font-normal focus:outline-none"
+              className="w-full h-12 rounded-full text-gray-900 dark:text-white bg-gray-200/80 dark:bg-white/5 backdrop-blur-sm border-0 placeholder:text-gray-500 dark:placeholder:text-white/40 px-5 text-sm font-normal focus:outline-none"
               placeholder="Enter your email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -119,7 +119,7 @@ export default function EmailSignup() {
           <div className="flex w-full items-stretch rounded-full h-12 md:h-14 bg-gray-200/80 dark:bg-white/5 backdrop-blur-sm">
             <input
               type="email"
-              className="flex-1 min-w-0 resize-none overflow-hidden rounded-l-full text-gray-900 dark:text-white bg-transparent border-0 focus:ring-0 placeholder:text-gray-500 dark:placeholder:text-white/40 px-5 md:px-6 text-sm md:text-base font-normal focus:outline-none"
+              className="flex-1 min-w-0 resize-none overflow-hidden rounded-l-full text-gray-900 dark:text-white bg-transparent border-0 placeholder:text-gray-500 dark:placeholder:text-white/40 px-5 md:px-6 text-sm md:text-base font-normal focus:outline-none"
               placeholder="Enter your email address"
               value={email}
               onChange={(e) => setEmail(e.target.value)}

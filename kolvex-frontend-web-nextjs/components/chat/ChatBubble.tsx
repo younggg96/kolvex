@@ -44,7 +44,7 @@ export function ChatBubble({
       <div className="flex w-full justify-end animate-fade-in">
         <div className="max-w-[88%] md:max-w-[70%]">
           <div
-            className="rounded-[22px] bg-muted px-4 py-2.5 text-foreground"
+            className="rounded-3xl bg-muted px-4 py-2.5 text-foreground"
             aria-label={t("chat.userName")}
           >
             <p className="text-[15px] leading-relaxed whitespace-pre-wrap">
@@ -85,7 +85,7 @@ export function ChatBubble({
                 "prose-ol:my-1.5 prose-ol:pl-4",
                 "prose-strong:text-foreground prose-strong:font-semibold",
                 "prose-code:text-xs prose-code:bg-muted prose-code:px-1 prose-code:py-0.5 prose-code:rounded",
-                "prose-pre:bg-muted prose-pre:text-foreground prose-pre:rounded-xl prose-pre:text-xs",
+                "prose-pre:bg-muted prose-pre:text-foreground prose-pre:rounded-3xl prose-pre:text-xs",
                 "prose-table:block prose-table:max-w-full prose-table:overflow-x-auto prose-table:text-xs prose-th:px-2 prose-th:py-1 prose-td:px-2 prose-td:py-1",
                 "[&>*:first-child]:mt-0 [&>*:last-child]:mb-0"
               )}

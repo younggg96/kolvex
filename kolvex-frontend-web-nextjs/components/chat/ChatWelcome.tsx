@@ -116,7 +116,7 @@ export function ChatWelcome({
               type="button"
               onClick={() => handleSuggestionClick(suggestion)}
               disabled={isBlocked || isLoading}
-              className="rounded-full border border-border px-3 py-1.5 text-left text-[13px] text-muted-foreground transition-colors duration-150 hover:border-foreground/30 hover:bg-muted/60 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+              className="rounded-full border border-border px-3 py-1.5 text-left text-[13px] text-muted-foreground transition-colors duration-150 hover:border-foreground/30 hover:bg-muted/60 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none "
             >
               {suggestion.text}
             </button>
@@ -157,7 +157,7 @@ export function ChatWelcome({
                 type="button"
                 onClick={() => handleSuggestionClick(suggestion)}
                 disabled={suggestion.isChat && (isBlocked || isLoading)}
-                className="group flex w-full items-center gap-3 py-3.5 text-left text-[15px] transition-colors duration-150 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                className="group flex w-full items-center gap-3 py-3.5 text-left text-[15px] transition-colors duration-150 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none "
               >
                 <MessageCircle className="h-4 w-4 shrink-0 text-muted-foreground" />
                 <span className="min-w-0 flex-1">{suggestion.text}</span>
@@ -172,7 +172,7 @@ export function ChatWelcome({
             <li key={href}>
               <Link
                 href={href}
-                className="group flex min-w-0 items-center gap-3 py-3.5 text-[15px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                className="group flex min-w-0 items-center gap-3 py-3.5 text-[15px] focus-visible:outline-none "
               >
                 <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />
                 <span className="flex-1">{label}</span>

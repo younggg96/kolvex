@@ -106,7 +106,7 @@ export default function LandingStockTicker() {
             return (
               <div
                 key={idx}
-                className="group inline-flex items-center gap-1.5 md:gap-3 px-2.5 md:px-5 py-1.5 md:py-2.5 mx-1 md:mx-2 rounded-xl bg-card border border-border hover:border-primary/30 transition-all duration-200 [transition-timing-function:cubic-bezier(0.25,1,0.5,1)] cursor-pointer"
+                className="group inline-flex items-center gap-1.5 md:gap-3 px-2.5 md:px-5 py-1.5 md:py-2.5 mx-1 md:mx-2 rounded-3xl bg-card border border-border hover:border-primary/30 transition-all duration-200 [transition-timing-function:cubic-bezier(0.25,1,0.5,1)] cursor-pointer"
               >
                 {/* Company Logo - hidden on mobile to save space */}
                 <div className="hidden sm:block">
@@ -133,7 +133,7 @@ export default function LandingStockTicker() {
 
                 {/* Change indicator */}
                 <div
-                  className={`flex items-center gap-0.5 md:gap-1 px-1.5 md:px-2 py-0.5 rounded-md md:rounded-lg text-[10px] md:text-xs font-bold ${isUp
+                  className={`flex items-center gap-0.5 md:gap-1 px-1.5 md:px-2 py-0.5 rounded-md md:rounded-2xl text-[10px] md:text-xs font-bold ${isUp
                     ? "bg-primary/10 text-primary"
                     : "bg-red-500/10 text-red-500"
                     }`}

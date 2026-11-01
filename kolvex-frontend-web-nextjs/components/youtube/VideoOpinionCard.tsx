@@ -38,7 +38,7 @@ function thumbnailFor(opinion: VideoOpinionGroup["video"]) {
 function Thumbnail({ src }: { src: string }) {
   const [failed, setFailed] = useState(false);
   return (
-    <span className="relative flex aspect-video w-[120px] shrink-0 items-center justify-center overflow-hidden rounded-xl bg-muted text-muted-foreground sm:w-[168px]">
+    <span className="relative flex aspect-video w-[120px] shrink-0 items-center justify-center overflow-hidden rounded-3xl bg-muted text-muted-foreground sm:w-[168px]">
       <PlayCircle className="h-5 w-5" />
       {src && !failed && (
         // eslint-disable-next-line @next/next/no-img-element
@@ -97,7 +97,7 @@ export default function VideoOpinionCard({
       {showCreator && creator && (
         <Link
           href={`/dashboard/youtube-opinions?tab=creators&creator=${encodeURIComponent(creator.channel_id)}`}
-          className="mb-3 flex w-fit max-w-full items-center gap-2 rounded-sm text-sm font-semibold hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+          className="mb-3 flex w-fit max-w-full items-center gap-2 rounded-sm text-sm font-semibold hover:underline focus-visible:outline-none "
         >
           <CreatorAvatar name={creator.channel_title || creator.channel_id} avatarUrl={creator.channel_avatar_url} size="xs" />
           <span className="truncate">{creator.channel_title || creator.channel_id}</span>
@@ -126,7 +126,7 @@ export default function VideoOpinionCard({
               rel="noreferrer"
               title={title}
               aria-label={title}
-              className="rounded-sm hover:underline hover:underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+              className="rounded-sm hover:underline hover:underline-offset-4 focus-visible:outline-none "
             >
               {heading}
             </a>
@@ -163,7 +163,7 @@ export default function VideoOpinionCard({
               <button
                 type="button"
                 onClick={() => onStock?.(opinion.ticker)}
-                className={cn("group grid w-full min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-1.5 py-3 text-left transition-colors duration-150 hover:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary", !compact && "sm:-mx-3 sm:w-[calc(100%+1.5rem)] sm:grid-cols-[7rem_7.5rem_minmax(0,1fr)_auto] sm:items-start sm:rounded-xl sm:px-3")}
+                className={cn("group grid w-full min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-1.5 py-3 text-left transition-colors duration-150 hover:bg-muted/60 focus-visible:outline-none ", !compact && "sm:-mx-3 sm:w-[calc(100%+1.5rem)] sm:grid-cols-[7rem_7.5rem_minmax(0,1fr)_auto] sm:items-start sm:rounded-full sm:px-3")}
               >
                 <span className="flex min-w-0 items-center gap-2.5">
                   <CompanyLogo symbol={opinion.ticker} size="sm" />
@@ -202,7 +202,7 @@ export default function VideoOpinionCard({
           aria-expanded={expanded}
           aria-controls={opinionsId}
           onClick={() => setExpanded((value) => !value)}
-          className="mt-2 inline-flex h-8 items-center gap-1.5 rounded-full px-3 text-[13px] font-semibold text-muted-foreground transition-colors duration-150 hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary sm:-ml-3"
+          className="mt-2 inline-flex h-8 items-center gap-1.5 rounded-full px-3 text-[13px] font-semibold text-muted-foreground transition-colors duration-150 hover:bg-muted hover:text-foreground focus-visible:outline-none sm:-ml-3"
         >
           {expanded ? t("youtubeOpinions.collapseVideoOpinions") : t("youtubeOpinions.showRemainingVideoOpinions", { count: String(hidden) })}
           <ChevronDown

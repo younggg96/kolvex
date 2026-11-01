@@ -11,17 +11,17 @@ export interface SearchInputProps
 
 const sizeConfig = {
   sm: {
-    container: "rounded-md",
+    container: "rounded-full",
     input: "h-8 px-3 text-xs pl-8",
     icon: "w-3.5 h-3.5 left-2.5",
   },
   md: {
-    container: "rounded-lg",
+    container: "rounded-full",
     input: "h-10 px-4 text-sm pl-9",
     icon: "w-4 h-4 left-3",
   },
   lg: {
-    container: "rounded-lg",
+    container: "rounded-full",
     input: "h-12 px-6 text-base pl-11",
     icon: "w-5 h-5 left-3.5",
   },
@@ -53,7 +53,7 @@ const SearchInput = React.forwardRef<HTMLInputElement, SearchInputProps>(
           ref={ref}
           type="text"
           className={cn(
-            "w-full bg-transparent border-none outline-none text-foreground placeholder:text-muted-foreground dark:placeholder:text-white/40 focus-visible:outline-none focus-visible:ring-0 transition-colors duration-200",
+            "w-full rounded-full bg-transparent border-none outline-none text-foreground placeholder:text-muted-foreground dark:placeholder:text-white/40 focus-visible:outline-none transition-colors duration-200",
             config.input,
             className
           )}

@@ -17,7 +17,8 @@ typography:
     fontFamily: "Inter, PingFang SC, Hiragino Sans GB, Microsoft YaHei, Noto Sans SC, sans-serif"
 rounded:
   control: "9999px"
-  row: "0.75rem"
+  row: "1rem"
+  surface: "1.5rem"
 spacing:
   page-mobile: "1rem"
   page-desktop: "2rem"
@@ -1115,8 +1116,10 @@ chronological feed, matching the YouTube overview. Mobile stacks the directory
 above it. Posts use hairline-separated rows on the page background, with the shared
 Avatar and initial fallback. Public profile facts include biography, website, location
 and known follower/following counts; absent facts are omitted. Profile administration
-can load and edit these fields. Post text, quotes and biographies have an explicit
-translation action targeting the interface locale, with machine-translation
+can load and edit these fields. Post text, quotes and biographies translate automatically to the saved user
+interface locale as they approach the viewport. A shared three-request limit
+bounds translation traffic. Switching locale cancels stale work; an explicit
+original/translation toggle and retry remain available, with machine-translation
 attribution, an original toggle, cancellation and retry. Translations stay in a
 bounded session cache and never replace stored originals. The page title is screen-reader-only, with no visible introductory
 heading or description. Author, stock ticker and page are committed URL filters. Stock filter
@@ -1174,3 +1177,46 @@ stocks. Native disclosures collapse each group. The header shows displayed/total
 count, refresh and a link to the full Watchlist; empty, loading, partial quote
 failure and session-only storage states remain explicit. Mobile places the rail
 after the stock observation list. No quotes or sector classifications are invented.
+
+## Focus without rings
+
+Ring utilities are disabled in `tailwind.config.ts`. Components do not use ring
+colors, widths or offsets, including sidebar navigation and decorative rings.
+`app/globals.css` provides keyboard focus feedback through secondary background
+and underlined text instead of surrounding ring shadows.
+
+### Floating mobile navigation
+
+Below lg, AppShell reserves bottom space including the safe area for a floating
+icon dock. Markets, Watchlist and AI Research share a bordered capsule with Menu;
+the separate circular Search button opens the existing stock lookup in a bottom
+sheet. All other routes remain available through the sidebar menu. Active routes
+use a neutral inset pill and foreground icon, matching the supplied mobile reference.
+Targets are at least 44px; icon-only controls retain localized accessible names.
+Desktop navigation is unchanged. Light and dark surfaces use existing tokens.
+
+## Markets rounded surfaces
+
+Markets uses a Robinhood-inspired rounded treatment: pill search inputs, select
+triggers, scope filters, range buttons, view switches and primary tabs. The shared
+Tabs primitives own the opt-in `pill` variant; existing tab styles remain the
+default elsewhere. Market cards, comparison surfaces, calendar day containers
+and the watchlist use 24px corners (`rounded-3xl`); rows and popup menus use 16px
+(`rounded-2xl`). Time ranges stay in a single pill track and scroll horizontally
+on narrow screens. Shared Input and SelectTrigger own an opt-in `shape="pill"`
+so their default corner styles cannot override the Markets treatment.
+Market overview, trends, calendar and macro indicators share this treatment,
+with existing typography, data colors and focus feedback retained.
+
+## Application-wide rounded geometry
+
+All pages share the Markets rounded style. Single-line inputs, search fields,
+select triggers, buttons, navigation and segmented controls use pill corners.
+Input and SelectTrigger now default to the pill shape; TabsList and TabsTrigger
+default to the pill variant, including the two-column auth tab layout.
+Cards, dialogs, textareas and large containers use 24px corners. Rows, popup
+menus and compact surfaces use 16px corners. Fullscreen surfaces, directional
+sheet edges, chart marks, checkboxes and brand assets retain functional shapes.
+These rules apply to research, creator opinions, portfolios, watchlists, news,
+briefs, chat, settings, admin, authentication and public reading pages. Existing
+ring utilities remain disabled.

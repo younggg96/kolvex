@@ -831,7 +831,7 @@ export default function ChartView({
 
   const iconButton = (isActive: boolean) =>
     cn(
-      "inline-flex h-11 w-11 sm:h-8 sm:w-8 shrink-0 items-center justify-center rounded-full transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:pointer-events-none disabled:opacity-40",
+      "inline-flex h-11 w-11 sm:h-8 sm:w-8 shrink-0 items-center justify-center rounded-full transition-colors duration-150 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-40",
       isActive ? "bg-foreground text-background" : "text-muted-foreground hover:bg-muted hover:text-foreground",
     );
   const stat = (label: string, value: string, tone?: string) => (
@@ -842,7 +842,7 @@ export default function ChartView({
   );
   const pill = (isActive: boolean) =>
     cn(
-      "inline-flex h-8 shrink-0 items-center rounded-full px-3 text-[13px] font-semibold transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
+      "inline-flex h-8 shrink-0 items-center rounded-full px-3 text-[13px] font-semibold transition-colors duration-150 focus-visible:outline-none ",
       isActive ? "bg-foreground text-background" : "text-muted-foreground hover:bg-muted hover:text-foreground",
     );
 
@@ -1020,7 +1020,7 @@ export default function ChartView({
                 </label>
                 {!providersLoading && !modelReady && !eligibleModels.length && <p className="mt-2 text-xs leading-5 text-muted-foreground">
                   {t("youtubeOpinions.ai.notConfigured")}{" "}
-                  <Link href="/dashboard/settings?tab=api-keys" className="underline underline-offset-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">{t("youtubeOpinions.ai.openSettings")}</Link>
+                  <Link href="/dashboard/settings?tab=api-keys" className="underline underline-offset-2 focus-visible:outline-none ">{t("youtubeOpinions.ai.openSettings")}</Link>
                 </p>}
                 {focusControls}
                 {drawingVersionControls}
@@ -1068,7 +1068,7 @@ export default function ChartView({
   ) : null;
   const aiResults = (<>
     {drawingAi.status === "done" && drawingAi.result && (drawingAi.result.model || drawingAi.result.setup || drawingAi.result.findings?.some(item => item.status === "unavailable") || drawingAi.result.overlays?.some(item => ["breakouts", "retests", "false_breakouts"].includes(item.category) && item.detected_at && typeof item.level === "number")) && <details className={cn("group/drawings min-w-0 border-t border-border pt-3", compactLayout === "workspace" && !advanced ? "order-2 mt-6" : "mt-5")}>
-          <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 rounded text-sm font-medium hover:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary [&::-webkit-details-marker]:hidden">
+          <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 rounded text-sm font-medium hover:text-muted-foreground focus-visible:outline-none [&::-webkit-details-marker]:hidden">
             {t("youtubeOpinions.ai.button")}
             <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground group-open/drawings:rotate-180" aria-hidden="true" />
           </summary>
@@ -1166,7 +1166,7 @@ export default function ChartView({
           <button
             type="button"
             onClick={onOpenAdvanced}
-            className="inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-full border border-border px-3 text-sm sm:min-h-8 font-semibold transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            className="inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-full border border-border px-3 text-sm sm:min-h-8 font-semibold transition-colors hover:bg-muted focus-visible:outline-none "
           >
             <Maximize2 className="h-3.5 w-3.5" aria-hidden="true" />
             {t("youtubeOpinions.advancedChart")}
@@ -1192,7 +1192,7 @@ export default function ChartView({
             {tools.map(item => {
               const Icon = item.icon;
               return <button key={item.value} type="button" aria-pressed={tool === item.value}
-                className={cn("flex min-h-11 items-center gap-2 rounded-lg px-2 text-left text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary", tool === item.value ? "bg-muted font-semibold" : "hover:bg-muted")}
+                className={cn("flex min-h-11 items-center gap-2 rounded-full px-2 text-left text-sm focus-visible:outline-none ", tool === item.value ? "bg-muted font-semibold" : "hover:bg-muted")}
                 onClick={() => { setTool(item.value); setDraft(null); if (item.value !== "cursor") setSelectedId(null); }}>
                 <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />{t(`youtubeOpinions.${item.label}`)}
               </button>;
@@ -1223,7 +1223,7 @@ export default function ChartView({
         <Popover>
           <PopoverTrigger asChild>
             <button type="button" aria-label={t("youtubeOpinions.drawColor")} title={t("youtubeOpinions.drawColor")} className={iconButton(false)}>
-              <span className="h-4 w-4 rounded-full ring-1 ring-inset ring-foreground/20" style={{ backgroundColor: selected?.color ?? color }} />
+              <span className="h-4 w-4 rounded-full " style={{ backgroundColor: selected?.color ?? color }} />
             </button>
           </PopoverTrigger>
           <PopoverContent align="start" className="w-auto p-2">
@@ -1238,12 +1238,12 @@ export default function ChartView({
                 aria-checked={isCurrent}
                 aria-label={`${t("youtubeOpinions.drawColor")} ${index + 1}`}
                 onClick={() => pickColor(value)}
-                className="inline-flex h-11 w-11 items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                className="inline-flex h-11 w-11 items-center justify-center rounded-full focus-visible:outline-none "
               >
                 <span
                   className={cn(
-                    "h-3.5 w-3.5 rounded-full ring-offset-2 ring-offset-background",
-                    isCurrent && "ring-2 ring-foreground/60",
+                    "h-3.5 w-3.5 rounded-full ",
+                    isCurrent && " ",
                   )}
                   style={{ backgroundColor: value }}
                 />
@@ -1294,7 +1294,7 @@ export default function ChartView({
                 role="menuitemcheckbox"
                 aria-checked={activeIndicators.has(key)}
                 onClick={() => toggleIndicator(key)}
-                className="flex w-full items-center gap-2.5 rounded-lg px-2 py-1.5 text-sm hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                className="flex w-full items-center gap-2.5 rounded-full px-2 py-1.5 text-sm hover:bg-muted focus-visible:outline-none "
               >
                 <span
                   className={cn(
@@ -1424,7 +1424,7 @@ export default function ChartView({
             onKeyDown={handleKey}
             onBlur={() => setActive(null)}
             className={cn(
-              "relative mt-3 select-none overflow-hidden rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-4 focus-visible:ring-offset-background",
+              "relative mt-3 select-none overflow-hidden rounded-2xl focus-visible:outline-none ",
               heightClass,
               drawing ? "cursor-crosshair" : gesture.current?.kind === "pan" ? "cursor-grabbing" : "cursor-crosshair",
               drawing || selectedId || advanced ? "touch-none" : "touch-pan-y",
@@ -1667,7 +1667,7 @@ export default function ChartView({
                 {activeEvents.length > 0 && !drawing && !gesture.current && (
                   <div
                     aria-hidden="true"
-                    className="pointer-events-none absolute top-6 z-10 w-64 max-w-[calc(100%-1rem)] rounded-xl border border-border bg-background/95 p-2.5 text-xs shadow-lg backdrop-blur"
+                    className="pointer-events-none absolute top-6 z-10 w-64 max-w-[calc(100%-1rem)] rounded-3xl border border-border bg-background/95 p-2.5 text-xs shadow-lg backdrop-blur"
                     style={
                       xOf(active!) > plotW / 2
                         ? { right: Math.max(size.width - xOf(active!) + 12, 0) }

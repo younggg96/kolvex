@@ -21,7 +21,7 @@ const biasTone: Record<AiTechnicalAnalysis["bias"], StrengthTone> = {
   bullish: "positive", bearish: "negative", neutral: "neutral",
 };
 const indicatorOrder = ["rsi14", "ema20", "ema50", "ema200", "atr14"] as const;
-const disclosureClass = "flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 rounded text-sm font-medium hover:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary [&::-webkit-details-marker]:hidden";
+const disclosureClass = "flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 rounded text-sm font-medium hover:text-muted-foreground focus-visible:outline-none [&::-webkit-details-marker]:hidden";
 
 function indicatorLabel(key: string) {
   if (key.startsWith("ema")) return `EMA${key.slice(3)}`;
@@ -63,12 +63,12 @@ export default function AiAnalysisPanel({ state, busy = false, interval, onRetry
       {loading && <p className="mt-4 flex items-center gap-2 text-sm leading-6 text-muted-foreground" role="status"><Loader2 className="h-4 w-4 shrink-0 animate-spin" aria-hidden="true" />{t("youtubeOpinions.ai.loading")}</p>}
       {state.status === "error" && <p className="mt-4 text-sm leading-6 text-muted-foreground" role="alert">
         {state.error}{" "}
-        {state.error === t("youtubeOpinions.ai.notConfigured") && <Link href="/dashboard/settings?tab=api-keys" className="font-medium underline underline-offset-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">{t("youtubeOpinions.ai.openSettings")}</Link>}
+        {state.error === t("youtubeOpinions.ai.notConfigured") && <Link href="/dashboard/settings?tab=api-keys" className="font-medium underline underline-offset-2 focus-visible:outline-none ">{t("youtubeOpinions.ai.openSettings")}</Link>}
       </p>}
 
       {state.status === "done" && result && <div className="mt-5">
         <AnalysisSummary key={result.summary} text={result.summary} t={t} />
-        {result.invalidation && <div className="mt-4  rounded-xl bg-muted/60 p-4">
+        {result.invalidation && <div className="mt-4 rounded-3xl bg-muted/60 p-4">
           <h4 className="text-sm font-semibold text-warning">{t("youtubeOpinions.ai.invalidation")}</h4>
           <p className="mt-2 max-w-[90ch] whitespace-pre-line break-words text-sm leading-7">{result.invalidation}</p>
         </div>}
@@ -108,13 +108,13 @@ export default function AiAnalysisPanel({ state, busy = false, interval, onRetry
               <ul className="mt-2 space-y-3">
                 {result.trendlines.map(line => <li key={`${line.start.date}-${line.end.date}-${line.kind}`}>
                   <p className={cn("text-sm font-medium", toneText[line.kind === "support" ? "positive" : "negative"])}>{t(`youtubeOpinions.ai.${line.kind}Line`)}</p>
-                  <p className="mt-1  break-words text-sm leading-7 text-muted-foreground">{line.reason}</p>
+                  <p className="mt-1 break-words text-sm leading-7 text-muted-foreground">{line.reason}</p>
                 </li>)}
               </ul>
             </div>}
             {!result.findings?.length && result.signals.length > 0 && <div>
               <h4 className="text-sm font-medium">{t("youtubeOpinions.ai.signals")}</h4>
-              <ul className="mt-2  space-y-2">
+              <ul className="mt-2 space-y-2">
                 {result.signals.map(signal => <li key={signal} className="break-words text-sm leading-7 text-muted-foreground">{signal}</li>)}
               </ul>
             </div>}

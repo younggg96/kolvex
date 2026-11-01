@@ -33,7 +33,7 @@ export default function PortfolioChanges({ tickers }: { tickers: string[] }) {
   if (!tickers.length) return null;
   const loading = catalogue.loading && !catalogue.data;
   const rowClass =
-    "-mx-3 flex items-center justify-between gap-4 rounded-xl px-3 py-3.5 transition-colors duration-150 hover:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary";
+    "-mx-3 flex items-center justify-between gap-4 rounded-3xl px-3 py-3.5 transition-colors duration-150 hover:bg-muted/60 focus-visible:outline-none ";
 
   return (
     <Panel

@@ -660,7 +660,7 @@ function SettingsContent() {
                               {previewUrl ? (
                                 <div className="space-y-4 mb-4">
                                   {/* Cropper area */}
-                                  <div className="relative aspect-square w-full overflow-hidden rounded-2xl bg-black">
+                                  <div className="relative aspect-square w-full overflow-hidden rounded-3xl bg-black">
                                     <Cropper
                                       image={previewUrl}
                                       crop={crop}
@@ -738,7 +738,7 @@ function SettingsContent() {
                                     onDragOver={handleDragOver}
                                     onDragLeave={handleDragLeave}
                                     onDrop={handleDrop}
-                                    className={`flex flex-col items-center justify-center w-full h-48 sm:h-64 border-2 border-dashed rounded-xl cursor-pointer transition-all duration-200 ${isDragging
+                                    className={`flex flex-col items-center justify-center w-full h-48 sm:h-64 border-2 border-dashed rounded-3xl cursor-pointer transition-all duration-200 ${isDragging
                                         ? "border-foreground bg-muted"
                                         : "border-border bg-muted/60 hover:bg-muted"
                                       }`}
@@ -917,7 +917,7 @@ function SettingsContent() {
                       ) : (
                         <>
                           {/* Info banner */}
-                          <div className="mt-4 rounded-2xl bg-muted px-4 py-3">
+                          <div className="mt-4 rounded-3xl bg-muted px-4 py-3">
                             <p className="text-[13px] leading-5 text-muted-foreground">
                               {t("settings.apiKeys.infoBanner")}
                             </p>
@@ -976,7 +976,7 @@ function SettingsContent() {
                                   {/* Existing key display */}
                                   {existingKey && (
                                     <div className="flex items-center gap-2 mb-2">
-                                      <code className="flex-1 truncate rounded-xl bg-muted px-3 py-2 font-mono text-xs text-muted-foreground">
+                                      <code className="flex-1 truncate rounded-3xl bg-muted px-3 py-2 font-mono text-xs text-muted-foreground">
                                         {existingKey.api_key_masked}
                                       </code>
                                       <Button
@@ -1115,7 +1115,7 @@ function SettingsContent() {
                                   aria-checked={isActive}
                                   title={mode.description}
                                   onClick={() => handleThemeChange(mode.value)}
-                                  className={`inline-flex h-9 items-center gap-1.5 rounded-full px-4 text-[13px] font-semibold transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${isActive
+                                  className={`inline-flex h-9 items-center gap-1.5 rounded-full px-4 text-[13px] font-semibold transition-colors duration-150 focus-visible:outline-none   ${isActive
                                       ? "bg-background text-foreground shadow-[0_1px_2px_rgb(0_0_0/0.12)]"
                                       : "text-muted-foreground hover:text-foreground"
                                     }`}

@@ -101,7 +101,7 @@ export default function MarketEventManager() {
         <a
           href="/examples/market-events.json"
           download
-          className="inline-block rounded text-sm font-semibold underline underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+          className="inline-block rounded text-sm font-semibold underline underline-offset-4 focus-visible:outline-none "
         >
           下载 JSON 模板（草稿示例）
         </a>
@@ -200,18 +200,18 @@ export default function MarketEventManager() {
         <p
           id="event-error"
           role="alert"
-          className="rounded-xl border border-border p-4 text-sm text-negative"
+          className="rounded-3xl border border-border p-4 text-sm text-negative"
         >
           {error}
         </p>
       )}
       {message && (
-        <p role="status" className="rounded-xl bg-positive/10 p-4 text-sm">
+        <p role="status" className="rounded-3xl bg-positive/10 p-4 text-sm">
           {message}
         </p>
       )}
       {preview && (
-        <section className="space-y-4 rounded-xl border border-border p-4">
+        <section className="space-y-4 rounded-3xl border border-border p-4">
           <h3 className="font-semibold">
             保存预览 · {preview.events.length} 个事件
           </h3>

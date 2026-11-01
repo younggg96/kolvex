@@ -3,11 +3,19 @@ function extractXPosts(expectedUsername) {
   const expected = expectedUsername.replace(/^@/, "").toLowerCase();
   const posts = [];
   const rejected = [];
-  for (const article of document.querySelectorAll('article[data-testid="tweet"]')) {
+  const articles = [...document.querySelectorAll('article[data-testid="tweet"]')];
+  // Server-rendered/loading variants do not expose the authored-text contract.
+  // Report them explicitly; never treat an unrecognized DOM as an empty timeline.
+  if (!articles.length) return { posts, rejected, ready: false, reason: "Wait for rendered tweet DOM; if it remains absent, inspect login and page structure" };
+  for (const article of articles) {
     const time = article.querySelector("time");
     const href = time?.closest("a")?.getAttribute("href");
     const match = href?.match(/^\/([A-Za-z0-9_]+)\/status\/(\d+)$/);
     if (!match || match[1].toLowerCase() !== expected) continue;
+    if ([...article.querySelectorAll('button')].some(button => /^(Show original|显示原文)$/.test(button.textContent?.trim() || ""))) {
+      rejected.push({ id: match[2], reason: "Translated content visible; select Show original before collecting" });
+      continue;
+    }
     const social = article.querySelector('[data-testid="socialContext"]')?.textContent || "";
     if (/reposted|retweeted|转帖|转发了/i.test(social)) continue;
     const texts = [...article.querySelectorAll('[data-testid="tweetText"]')];
@@ -31,5 +39,5 @@ function extractXPosts(expectedUsername) {
       pinned: /pinned|置顶/i.test(social), truncated: Boolean(article.querySelector('[data-testid="tweet-text-show-more-link"]')),
     });
   }
-  return { posts, rejected };
+  return { posts, rejected, ready: true };
 }

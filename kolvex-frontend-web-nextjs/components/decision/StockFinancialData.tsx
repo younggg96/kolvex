@@ -60,7 +60,7 @@ export function FinancialState({
     return (
       <div
         role={error ? "alert" : "status"}
-        className="rounded-xl border border-border px-6 py-12 text-center"
+        className="rounded-3xl border border-border px-6 py-12 text-center"
       >
         <p className="text-sm text-muted-foreground">
           {error

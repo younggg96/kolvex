@@ -20,7 +20,7 @@ export function BriefImageMedia({ image }: { image: ImageData }) {
 
 export default function BriefImage({ image }: { image: ImageData }) {
   return (
-    <figure className="overflow-hidden rounded-xl border border-border">
+    <figure className="overflow-hidden rounded-3xl border border-border">
       <BriefImageMedia key={image.url} image={image} />
       <figcaption className="flex flex-wrap items-start justify-between gap-2 bg-card px-3 py-2 text-xs leading-5 text-muted-foreground">
         <span>{image.caption}</span>

@@ -35,7 +35,7 @@ function DebatePanel({
   const isBull = variant === "bull";
   return (
     <details className="group min-w-0 border-t border-border py-4">
-      <summary className="flex min-h-11 cursor-pointer list-none items-center gap-3 rounded-sm text-base font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary [&::-webkit-details-marker]:hidden">
+      <summary className="flex min-h-11 cursor-pointer list-none items-center gap-3 rounded-sm text-base font-semibold focus-visible:outline-none [&::-webkit-details-marker]:hidden">
         <Icon className={cn("h-5 w-5 shrink-0", isBull ? "text-positive" : "text-negative")} />
         <span className="flex-1">{label}</span>
         <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform group-open:rotate-180" />
@@ -172,7 +172,7 @@ export function DebateCard({
                   type="button"
                   onClick={handleCopy}
                   aria-label={copied ? t("tradingAnalysis.debate.copied") : t("tradingAnalysis.debate.copyAll")}
-                  className="flex h-10 w-10 items-center justify-center rounded-full text-muted-foreground transition-colors duration-150 hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                  className="flex h-10 w-10 items-center justify-center rounded-full text-muted-foreground transition-colors duration-150 hover:bg-muted hover:text-foreground focus-visible:outline-none "
                 >
                   {copied ? (
                     <Check className="w-3.5 h-3.5 text-positive" />
@@ -196,7 +196,7 @@ export function DebateCard({
                   type="button"
                   onClick={handleDownload}
                   aria-label={t("tradingAnalysis.debate.download")}
-                  className="flex h-10 w-10 items-center justify-center rounded-full text-muted-foreground transition-colors duration-150 hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                  className="flex h-10 w-10 items-center justify-center rounded-full text-muted-foreground transition-colors duration-150 hover:bg-muted hover:text-foreground focus-visible:outline-none "
                 >
                   <Download className="w-3.5 h-3.5" />
                 </button>
@@ -212,7 +212,7 @@ export function DebateCard({
                   type="button"
                   onClick={handleShare}
                   aria-label={t("tradingAnalysis.debate.share")}
-                  className="flex h-10 w-10 items-center justify-center rounded-full text-muted-foreground transition-colors duration-150 hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                  className="flex h-10 w-10 items-center justify-center rounded-full text-muted-foreground transition-colors duration-150 hover:bg-muted hover:text-foreground focus-visible:outline-none "
                 >
                   <Share2 className="w-3.5 h-3.5" />
                 </button>
@@ -240,7 +240,7 @@ export function DebateCard({
         {/* Judge Verdict */}
         {hasJudge && (
           <div className="mb-6">
-            <div className="rounded-xl bg-muted/60 p-5 md:p-6">
+            <div className="rounded-3xl bg-muted/60 p-5 md:p-6">
               <div className="mb-4 flex flex-wrap items-center gap-2">
                 <ShieldCheck className="h-4 w-4 shrink-0 text-foreground" />
                 <span className="flex-1 text-base font-semibold text-foreground">

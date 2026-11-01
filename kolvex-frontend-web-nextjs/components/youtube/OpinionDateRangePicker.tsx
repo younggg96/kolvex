@@ -111,7 +111,7 @@ export default function OpinionDateRangePicker({
             caption_label: "text-sm font-medium",
             nav: "flex items-center",
             nav_button:
-              "inline-flex h-7 w-7 items-center justify-center rounded-full p-0 text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
+              "inline-flex h-7 w-7 items-center justify-center rounded-full p-0 text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-none ",
             nav_button_previous: "absolute left-0",
             nav_button_next: "absolute right-0",
             table: "w-full border-collapse",
@@ -119,7 +119,7 @@ export default function OpinionDateRangePicker({
             head_cell: "text-center text-xs font-normal text-muted-foreground",
             row: "mt-1 grid grid-cols-7",
             cell: "relative min-w-0 p-0 text-center text-sm first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md [&:has([aria-selected])]:bg-muted",
-            day: "inline-flex h-9 w-full items-center justify-center rounded-md p-0 text-sm font-normal hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary aria-selected:opacity-100",
+            day: "inline-flex h-9 w-full items-center justify-center rounded-md p-0 text-sm font-normal hover:bg-muted focus-visible:outline-none aria-selected:opacity-100",
             day_range_start: "day-range-start",
             day_range_end: "day-range-end",
           }}

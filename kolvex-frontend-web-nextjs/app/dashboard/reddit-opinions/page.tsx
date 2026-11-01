@@ -104,7 +104,7 @@ export default function RedditOpinionsPage() {
           {onlyWatchlist && <p className="mb-4 text-xs leading-5 text-muted-foreground">{t("redditOpinions.watchlistNote")}</p>}
           <div className="mb-4"><WatchlistStatus /></div>
 
-          {Boolean(error) && <div role="alert" className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border p-4 text-sm">
+          {Boolean(error) && <div role="alert" className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-3xl border border-border p-4 text-sm">
             <p>{t(data ? "redditOpinions.staleError" : "redditOpinions.error")}</p>
             <Button variant="outline" size="sm" onClick={refresh} disabled={busy}>{t("redditOpinions.retry")}</Button>
           </div>}
@@ -120,7 +120,7 @@ export default function RedditOpinionsPage() {
                   <ol aria-label={t("redditOpinions.title")} className="divide-y divide-border">
                     {rows.map((row) => <li key={row.ticker}>
                       <details className="group">
-                        <summary className="grid min-h-20 cursor-pointer list-none grid-cols-[minmax(0,1fr)_5.5rem_1rem] items-center gap-2 py-3 outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary [&::-webkit-details-marker]:hidden">
+                        <summary className="grid min-h-20 cursor-pointer list-none grid-cols-[minmax(0,1fr)_5.5rem_1rem] items-center gap-2 py-3 outline-none [&::-webkit-details-marker]:hidden">
                           <span className="flex min-w-0 items-center gap-2.5">
                             <span className="w-5 shrink-0 text-center text-xs tabular-nums text-muted-foreground"><span className="sr-only">{t("redditOpinions.rank")} </span>{row.rank}</span>
                             <span aria-hidden="true"><CompanyLogo symbol={row.ticker} name={row.name} size="sm" /></span>
@@ -149,7 +149,7 @@ export default function RedditOpinionsPage() {
                     </li>)}
                   </ol>
                 </div>
-                <div role="region" aria-label={t("redditOpinions.title")} tabIndex={0} className="hidden overflow-x-auto rounded-xl border border-border bg-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary md:block">
+                <div role="region" aria-label={t("redditOpinions.title")} tabIndex={0} className="hidden overflow-x-auto rounded-3xl border border-border bg-card focus-visible:outline-none md:block">
                   <Table>
                     <caption className="sr-only">{t("redditOpinions.title")} · {t("redditOpinions.mobileMentions")}</caption>
                     <TableHeader><TableRow>
@@ -187,7 +187,7 @@ export default function RedditOpinionsPage() {
           </div>
           <footer className="mt-4 flex flex-wrap items-center justify-between gap-2 text-xs leading-5 text-muted-foreground">
             <a href="https://apewisdom.io/methodology/" target="_blank" rel="noopener noreferrer" aria-label={t("redditOpinions.source")}
-              className="inline-flex min-h-9 items-center gap-1 underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
+              className="inline-flex min-h-9 items-center gap-1 underline-offset-4 hover:underline focus-visible:outline-none ">
               ApeWisdom <ExternalLink className="h-3 w-3" aria-hidden="true" />
             </a>
             {data && <time dateTime={data.fetchedAt} title={`${t("redditOpinions.fetchedAt")} ${fullFetchTime}`} aria-label={`${t("redditOpinions.fetchedAt")} ${fullFetchTime}`}>
@@ -195,7 +195,7 @@ export default function RedditOpinionsPage() {
             </time>}
           </footer>
           <details className="mt-2 text-xs leading-5 text-muted-foreground">
-            <summary className="w-fit cursor-pointer rounded-sm py-1 underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">{t("redditOpinions.dataNotes")}</summary>
+            <summary className="w-fit cursor-pointer rounded-sm py-1 underline-offset-4 hover:underline focus-visible:outline-none ">{t("redditOpinions.dataNotes")}</summary>
             <p className="mt-2 max-w-prose">{t("redditOpinions.note")}</p>
           </details>
         </div>

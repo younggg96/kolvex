@@ -20,9 +20,9 @@ function ExploreSkeleton() {
   return (
     <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {Array.from({ length: 6 }).map((_, i) => (
-        <div key={i} className="space-y-6 rounded-xl border border-border bg-card p-5">
+        <div key={i} className="space-y-6 rounded-3xl border border-border bg-card p-5">
           <div className="flex items-center gap-3">
-            <Skeleton className="h-10 w-10 shrink-0 rounded-xl" />
+            <Skeleton className="h-10 w-10 shrink-0 rounded-3xl" />
             <Skeleton className="h-5 w-16" />
             <Skeleton className="ml-auto h-6 w-14 rounded-full" />
           </div>

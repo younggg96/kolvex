@@ -328,7 +328,7 @@ export default function StockWorkspace({
                 />
                 <Link
                   href={returnHref}
-                  className="hover:text-foreground focus-visible:ring-2 focus-visible:ring-primary"
+                  className="hover:text-foreground "
                 >
                   {returnHref.startsWith("/dashboard/watchlist")
                     ? c("Watchlist", "自选股")
@@ -478,7 +478,7 @@ export default function StockWorkspace({
               </TabsList>
               <section
                 hidden={!["summary", "technical", "setup"].includes(activeTab)}
-                className="mb-6 min-w-0 rounded-xl border border-border bg-card p-4 sm:p-5"
+                className="mb-6 min-w-0 rounded-3xl border border-border bg-card p-4 sm:p-5"
                 aria-label={c(
                   "Price chart and AI drawings",
                   "K 线图与 AI 画线",
@@ -593,7 +593,7 @@ export default function StockWorkspace({
                       retry={overviewResource.refresh}
                     />
                   )}
-                  <div className="rounded-xl border border-border bg-card p-4 sm:p-6">
+                  <div className="rounded-3xl border border-border bg-card p-4 sm:p-6">
                     <h2 className="mb-4 text-sm font-medium text-muted-foreground">
                       {c("Research signals", "研究动态")}
                     </h2>

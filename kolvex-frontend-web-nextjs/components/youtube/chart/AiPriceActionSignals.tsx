@@ -31,7 +31,7 @@ export default function AiPriceActionSignals({ result, formatDate, t }: {
         ))}
       </ul>
       <details className="group/rules mt-2">
-        <summary className="flex min-h-10 cursor-pointer list-none items-center gap-2 rounded text-xs text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary [&::-webkit-details-marker]:hidden">
+        <summary className="flex min-h-10 cursor-pointer list-none items-center gap-2 rounded text-xs text-muted-foreground hover:text-foreground focus-visible:outline-none [&::-webkit-details-marker]:hidden">
           {t("youtubeOpinions.ai.signalRules")}
           <ChevronDown className="h-3.5 w-3.5 group-open/rules:rotate-180" aria-hidden="true" />
         </summary>

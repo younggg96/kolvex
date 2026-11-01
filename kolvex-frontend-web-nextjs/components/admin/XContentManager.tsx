@@ -166,7 +166,7 @@ export default function XContentManager({ onSaved }: { onSaved: () => void }) {
   }
 
   return (
-    <section aria-label={c("Manage creators and import posts", "管理博主与导入推文")} className="rounded-xl border border-border bg-card p-4">
+    <section aria-label={c("Manage creators and import posts", "管理博主与导入推文")} className="rounded-3xl border border-border bg-card p-4">
       <div className="space-y-6" aria-busy={busy}>
         <form noValidate onSubmit={saveCreator} className="space-y-3">
           <h2 className="text-base font-semibold">
@@ -261,14 +261,14 @@ export default function XContentManager({ onSaved }: { onSaved: () => void }) {
             accept="application/json,.json"
             aria-describedby="x-file-help"
             disabled={busy}
-            className="block w-full min-w-0 rounded-sm text-sm file:mr-3 file:rounded-full file:border-0 file:bg-muted file:px-3 file:py-2 file:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            className="block w-full min-w-0 rounded-full text-sm file:mr-3 file:rounded-full file:border-0 file:bg-muted file:px-3 file:py-2 file:text-foreground focus-visible:outline-none "
             onChange={(e) => {
               void chooseFile(e.target.files?.[0]);
               e.target.value = "";
             }}
           />
           <details className="text-xs text-muted-foreground">
-            <summary className="w-fit cursor-pointer rounded-sm py-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
+            <summary className="w-fit cursor-pointer rounded-sm py-2 focus-visible:outline-none ">
               {c("JSON format", "JSON 格式")}
             </summary>
             <p className="mb-2 leading-5">
@@ -278,7 +278,7 @@ export default function XContentManager({ onSaved }: { onSaved: () => void }) {
               )}
             </p>
             <pre
-              className="overflow-x-auto rounded-lg bg-muted p-3"
+              className="overflow-x-auto rounded-2xl bg-muted p-3"
               tabIndex={0}
             >
               {JSON.stringify(
@@ -298,7 +298,7 @@ export default function XContentManager({ onSaved }: { onSaved: () => void }) {
           </details>
           {preview && (
             <div
-              className="space-y-2 rounded-lg bg-muted p-3 text-sm"
+              className="space-y-2 rounded-2xl bg-muted p-3 text-sm"
               role="status"
             >
               <p>

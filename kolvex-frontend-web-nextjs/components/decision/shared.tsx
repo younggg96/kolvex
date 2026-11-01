@@ -89,7 +89,7 @@ export function TickerSearch({
   }
   return (
     <form onSubmit={submit} className={cn("w-full max-w-md", className)}>
-      <div className="group relative flex h-11 items-center rounded-full bg-muted transition-shadow duration-150 focus-within:ring-2 focus-within:ring-primary">
+      <div className="group relative flex h-11 items-center rounded-full bg-muted transition-shadow duration-150 ">
         <Search
           className="pointer-events-none absolute left-4 h-4 w-4 text-muted-foreground"
           aria-hidden
@@ -114,7 +114,7 @@ export function TickerSearch({
         <button
           type="submit"
           aria-label={c("Open stock", "打开股票")}
-          className="absolute right-1.5 flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground transition-opacity duration-150 hover:opacity-85 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+          className="absolute right-1.5 flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground transition-opacity duration-150 hover:opacity-85 focus-visible:outline-none "
         >
           <ArrowRight className="h-4 w-4" aria-hidden />
         </button>
@@ -178,7 +178,7 @@ export function TextLink({ href, children, className }: { href: string; children
     <Link
       href={href}
       className={cn(
-        "rounded-sm text-sm font-semibold text-foreground underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
+        "rounded-sm text-sm font-semibold text-foreground underline-offset-4 hover:underline focus-visible:outline-none ",
         className,
       )}
     >
@@ -208,7 +208,7 @@ export function WorkspaceLink({
   return (
     <Link
       href={`/dashboard/market/${encodeURIComponent(ticker)}`}
-      className={`${showLogo ? "inline-flex items-center gap-2 " : ""}rounded-sm font-semibold underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary`}
+      className={`${showLogo ? "inline-flex items-center gap-2 " : ""}rounded-sm font-semibold underline-offset-4 hover:underline focus-visible:outline-none  `}
     >
       {showLogo && (
         <span aria-hidden="true">

@@ -25,7 +25,7 @@ export default function VideoPlayer({
         <video
           src={videoUrl}
           controls
-          className="w-full h-full rounded-lg object-cover"
+          className="w-full h-full rounded-2xl object-cover"
         />
       </div>
     );
@@ -34,7 +34,7 @@ export default function VideoPlayer({
   // 否则显示视频封面 + 播放按钮（链接到原始页面）
   return (
     <div
-      className={`relative aspect-video rounded-lg overflow-hidden bg-muted ${className}`}
+      className={`relative aspect-video rounded-2xl overflow-hidden bg-muted ${className}`}
     >
       {coverUrl ? (
         <img

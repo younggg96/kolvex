@@ -50,8 +50,8 @@ export function OpinionList({ opinions }: { opinions: YouTubeOpinion[] }) {
         <CreatorAvatar name={name} avatarUrl={opinion.channel_avatar_url} size="sm" />
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-            <Link href={creatorSharePath(opinion.channel_id)} className="rounded-sm text-sm font-semibold hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">{name}</Link>
-            <h3><Link href={publicStockPath(opinion.ticker)} className="inline-flex items-center gap-2 rounded-sm text-[15px] font-semibold hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"><CompanyLogo symbol={opinion.ticker} size="sm" /><span>{opinion.ticker}</span></Link></h3>
+            <Link href={creatorSharePath(opinion.channel_id)} className="rounded-sm text-sm font-semibold hover:underline focus-visible:outline-none ">{name}</Link>
+            <h3><Link href={publicStockPath(opinion.ticker)} className="inline-flex items-center gap-2 rounded-sm text-[15px] font-semibold hover:underline focus-visible:outline-none "><CompanyLogo symbol={opinion.ticker} size="sm" /><span>{opinion.ticker}</span></Link></h3>
             <span className="text-xs text-muted-foreground"><ReadingDate value={opinion.opinion_date || opinion.video_published_at} />（美东日期）</span>
           </div>
           <div className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1"><StrengthIndicator value={opinion.direction_score} t={publicCopy} />{opinion.sentiment === "mixed" && <span className="text-xs font-medium text-warning">分歧</span>}</div>
@@ -60,9 +60,9 @@ export function OpinionList({ opinions }: { opinions: YouTubeOpinion[] }) {
       {opinion.company_name && <p className="mt-3 text-xs text-muted-foreground">{opinion.company_name}</p>}
       <p className="mt-4 max-w-[72ch] whitespace-pre-wrap text-[15px] leading-7 text-foreground">{opinion.summary || opinion.thesis || opinion.key_points?.join("\n") || "暂无文字摘要，请查看原视频。"}</p>
       {!!(opinion.key_points?.length || opinion.risks?.length) && <div className="mt-4 grid gap-x-8 gap-y-4 md:grid-cols-2">
-        {[{ title: "观点依据", items: opinion.key_points }, { title: "提及的风险", items: opinion.risks }].map(({ title, items }) => !!items?.length && <details key={title} className="text-sm"><summary className="cursor-pointer rounded-sm py-2 text-xs font-semibold text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">{title}</summary><ul className="mt-2 list-disc space-y-1.5 pl-5 text-sm leading-6">{items.map((item, i) => <li key={i}>{item}</li>)}</ul></details>)}
+        {[{ title: "观点依据", items: opinion.key_points }, { title: "提及的风险", items: opinion.risks }].map(({ title, items }) => !!items?.length && <details key={title} className="text-sm"><summary className="cursor-pointer rounded-sm py-2 text-xs font-semibold text-muted-foreground hover:text-foreground focus-visible:outline-none ">{title}</summary><ul className="mt-2 list-disc space-y-1.5 pl-5 text-sm leading-6">{items.map((item, i) => <li key={i}>{item}</li>)}</ul></details>)}
       </div>}
-      {source && <a href={source} target="_blank" rel="noopener noreferrer" className="mt-4 inline-flex max-w-full items-start gap-2 rounded-sm py-1 text-sm text-muted-foreground hover:text-foreground hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"><PlayCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" /><span className="min-w-0">{opinion.video_title || "查看原视频"}</span></a>}
+      {source && <a href={source} target="_blank" rel="noopener noreferrer" className="mt-4 inline-flex max-w-full items-start gap-2 rounded-sm py-1 text-sm text-muted-foreground hover:text-foreground hover:underline focus-visible:outline-none "><PlayCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" /><span className="min-w-0">{opinion.video_title || "查看原视频"}</span></a>}
     </article>;
   })}</div>;
 }

@@ -276,11 +276,11 @@ export default function YouTubeCreatorManager() {
           <p className="mt-1 text-sm text-muted-foreground">按博主查看、新增、修改或删除股票观点。这里不修改博主名称、账号或头像。</p>
         </div>
       </div>
-      {error && <p role="alert" className="break-words rounded-xl bg-negative/10 p-3 text-sm">{error}</p>}
+      {error && <p role="alert" className="break-words rounded-3xl bg-negative/10 p-3 text-sm">{error}</p>}
       {message && <p role="status" className="text-sm text-positive">{message}</p>}
 
       {selected && (
-        <section className="space-y-4 rounded-2xl border border-border p-4">
+        <section className="space-y-4 rounded-3xl border border-border p-4">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="flex min-w-0 items-center gap-3">
               <CreatorAvatar name={selected.channel_title || selected.channel_id} avatarUrl={selected.channel_avatar_url} />
@@ -309,7 +309,7 @@ export default function YouTubeCreatorManager() {
                 </Field>
                 <Field label="观点方向" id="opinion-sentiment">
                   <select id="opinion-sentiment" value={draft.sentiment} disabled={saving}
-                    className={cn("flex h-10 w-full rounded-xl border border-transparent bg-muted px-3.5 text-sm")}
+                    className={cn("flex h-10 w-full rounded-full border border-transparent bg-muted px-3.5 text-sm")}
                     onChange={(event) => setDraft((current) => ({ ...current, sentiment: event.target.value as OpinionSentiment }))}>
                     {sentiments.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
                   </select>

@@ -68,7 +68,7 @@ export default function TechnicalFocusSelector({ value: savedValue, onChange: sa
         <legend className="sr-only">{title}</legend>
         <div className="grid grid-cols-2 gap-x-4 sm:grid-cols-3">{categoryOptions("common")}</div>
         <details className="group/topics mt-3 border-t border-border">
-          <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary [&::-webkit-details-marker]:hidden">
+          <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 text-sm font-medium focus-visible:outline-none [&::-webkit-details-marker]:hidden">
             {t("youtubeOpinions.ai.focus.moreTopics")}
             {extraCount > 0 && <span className="text-xs font-normal text-muted-foreground">{t("youtubeOpinions.ai.focus.selectedTopics", { count: String(extraCount) })}</span>}
             <ChevronDown className="ml-auto h-4 w-4 text-muted-foreground group-open/topics:rotate-180" aria-hidden="true" />
@@ -147,7 +147,7 @@ export default function TechnicalFocusSelector({ value: savedValue, onChange: sa
       setOpen(next);
     }}>
       <DialogTrigger asChild>
-        <button type="button" disabled={disabled} className="flex min-h-11 w-full cursor-pointer items-center gap-2 rounded-lg px-2 text-left text-sm transition-colors hover:bg-muted active:bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:pointer-events-none disabled:opacity-50">
+        <button type="button" disabled={disabled} className="flex min-h-11 w-full cursor-pointer items-center gap-2 rounded-full px-2 text-left text-sm transition-colors hover:bg-muted active:bg-secondary focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50">
           <span className="shrink-0 font-medium">{title}</span>
           <span className="min-w-0 flex-1 truncate text-xs text-muted-foreground">
             {preview}{remaining > 0 && `${preview ? " · " : ""}+${remaining}`}

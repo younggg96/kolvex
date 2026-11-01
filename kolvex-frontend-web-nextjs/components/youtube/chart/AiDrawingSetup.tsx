@@ -17,7 +17,7 @@ export default function AiDrawingSetup({ setup, t }: {
           {t(`${key}.${setup.direction === "bullish" ? "long" : "short"}`)}
         </span>
       </div>
-      <dl className="mt-4 grid gap-4 rounded-xl bg-muted/60 p-4" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 7.5rem), 1fr))" }}>
+      <dl className="mt-4 grid gap-4 rounded-3xl bg-muted/60 p-4" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 7.5rem), 1fr))" }}>
         {[
           ["entry", `${formatPrice(setup.entry_low)} – ${formatPrice(setup.entry_high)}`],
           ["stop", formatPrice(setup.invalidation)],
@@ -32,7 +32,7 @@ export default function AiDrawingSetup({ setup, t }: {
       </dl>
       <p className="mt-2 text-xs leading-5 text-muted-foreground">{t(`${key}.basis`)}</p>
       <details className="group/plan mt-4 border-t border-border">
-        <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 rounded text-sm font-medium hover:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary [&::-webkit-details-marker]:hidden">
+        <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 rounded text-sm font-medium hover:text-muted-foreground focus-visible:outline-none [&::-webkit-details-marker]:hidden">
           {t("youtubeOpinions.ai.planReason")}
           <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground group-open/plan:rotate-180" aria-hidden="true" />
         </summary>

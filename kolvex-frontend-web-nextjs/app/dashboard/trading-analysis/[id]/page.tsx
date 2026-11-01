@@ -374,7 +374,7 @@ export default function TradingAnalysisDetailPage() {
           {isFailed && analysis.error_message && (
             <div
               role="alert"
-              className="rounded-2xl bg-negative/10 p-4 animate-fade-in-up"
+              className="rounded-3xl bg-negative/10 p-4 animate-fade-in-up"
             >
               <p className="text-sm text-foreground">
                 {analysis.error_message}

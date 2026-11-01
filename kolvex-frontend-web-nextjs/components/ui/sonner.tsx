@@ -24,7 +24,7 @@ const Toaster = ({ ...props }: ToasterProps) => {
       position={"top-center"}
       toastOptions={{
         classNames: {
-          toast: "group toast rounded-lg shadow-2xl border",
+          toast: "group toast rounded-2xl shadow-2xl border",
           description: "text-sm opacity-90",
           actionButton: "bg-white/20 text-white hover:bg-white/30",
           cancelButton: "bg-white/10 text-white hover:bg-white/20",

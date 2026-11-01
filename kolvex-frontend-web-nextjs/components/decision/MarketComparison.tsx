@@ -69,7 +69,7 @@ function ComparisonRow({ instrument, attempt }: { instrument: MarketInstrument; 
   return (
     <tr ref={host} aria-busy={state === "loading"} className="group transition-colors hover:bg-muted/30">
       <th scope="row" className="sticky left-0 z-10 border-b border-border/40 bg-card px-3 py-2 text-left align-middle font-normal group-hover:bg-muted">
-        <Link href={instrument.sourceUrl ?? `/dashboard/market/${encodeURIComponent(instrument.symbol)}`} target={instrument.sourceUrl ? "_blank" : undefined} rel={instrument.sourceUrl ? "noopener noreferrer" : undefined} className="block rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary hover:underline">
+        <Link href={instrument.sourceUrl ?? `/dashboard/market/${encodeURIComponent(instrument.symbol)}`} target={instrument.sourceUrl ? "_blank" : undefined} rel={instrument.sourceUrl ? "noopener noreferrer" : undefined} className="block rounded-sm focus-visible:outline-none hover:underline">
           <span className="block truncate text-[13px] font-semibold" title={name}>{name}</span>
           <span className="mt-0.5 block text-[11px] text-muted-foreground">{instrument.symbol} · {showValues && result.date ? <time dateTime={result.date}>{result.date.slice(5)}</time> : "—"}</span>
         </Link>
@@ -94,7 +94,7 @@ function ComparisonRow({ instrument, attempt }: { instrument: MarketInstrument; 
 export default function MarketComparison({ groups, attempt }: { groups: readonly (typeof MARKET_GROUPS)[number][]; attempt: number }) {
   const c = useCopy();
   return (
-    <div role="region" aria-label={c("Performance comparison, scroll horizontally", "多区间表现对比，可横向滚动")} tabIndex={0} className="min-w-0 overflow-x-auto overscroll-x-contain rounded-xl border border-border bg-card pb-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
+    <div role="region" aria-label={c("Performance comparison, scroll horizontally", "多区间表现对比，可横向滚动")} tabIndex={0} className="min-w-0 overflow-x-auto overscroll-x-contain rounded-3xl border border-border bg-card pb-2 focus-visible:outline-none ">
       <table className="w-full min-w-[960px] table-fixed border-separate border-spacing-0">
         <caption className="sr-only">{c("Daily closing values and simultaneous period changes", "最新日度收盘或观测值及各区间变动对比")}</caption>
         <colgroup><col className="w-[184px]" /><col className="w-[132px]" />{COMPARISON_PERIODS.map(period => <col key={period.key} />)}</colgroup>

@@ -7,7 +7,7 @@ export default function StockBadge({ symbol, href }: { symbol: string; href?: st
   return (
     <Link
       href={href ?? `/dashboard/market/${encodeURIComponent(ticker)}`}
-      className="inline-flex min-h-11 max-w-full items-center gap-2 rounded-lg border border-border bg-card p-1 pr-3 text-sm font-semibold hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+      className="inline-flex min-h-11 max-w-full items-center gap-2 rounded-2xl border border-border bg-card p-1 pr-3 text-sm font-semibold hover:bg-muted focus-visible:outline-none "
     >
       <span aria-hidden="true"><CompanyLogo symbol={ticker} size="sm" /></span>
       <span className="figure min-w-0 break-all">{ticker}</span>

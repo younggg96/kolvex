@@ -57,8 +57,8 @@ export const SwitchTab = React.memo(function SwitchTab({
   const variantConfig = {
     pills: {
       container:
-        "bg-card rounded-lg w-full border border-border",
-      indicator: "bg-primary/20 dark:bg-primary/80 rounded-md",
+        "bg-card rounded-full w-full border border-border",
+      indicator: "bg-primary/20 dark:bg-primary/80 rounded-full",
       active: "text-primary dark:text-primary-foreground",
       inactive:
         "text-muted-foreground hover:text-foreground/80",
@@ -177,7 +177,7 @@ export const SwitchTab = React.memo(function SwitchTab({
             aria-pressed={isActive}
             title={option.label}
             className={cn(
-              "relative z-10 rounded-md font-medium transition-all duration-200 flex items-center justify-center gap-1.5",
+              "relative z-10 rounded-full font-medium transition-all duration-200 flex items-center justify-center gap-1.5",
               config.size.button,
               isActive ? config.variant.active : config.variant.inactive,
               isDisabled && "opacity-50 cursor-not-allowed"

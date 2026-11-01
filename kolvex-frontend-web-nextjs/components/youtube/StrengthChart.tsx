@@ -88,7 +88,7 @@ export default function StrengthChart({
         onKeyDown={handleKey}
         onBlur={() => select(null)}
         className={cn(
-          "relative cursor-crosshair touch-pan-y select-none rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-4 focus-visible:ring-offset-background",
+          "relative cursor-crosshair touch-pan-y select-none rounded-2xl focus-visible:outline-none ",
           compact ? "h-[96px]" : "h-[150px] sm:h-[190px]",
         )}
       >
@@ -145,7 +145,7 @@ export default function StrengthChart({
         {count > 0 && (
           <span
             aria-hidden="true"
-            className="pointer-events-none absolute h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full ring-[3px] ring-background"
+            className="pointer-events-none absolute h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full "
             style={{
               left: `${(x(active ?? count - 1) / WIDTH) * 100}%`,
               top: `${(y((activePoint ?? points[count - 1]).value) / HEIGHT) * 100}%`,

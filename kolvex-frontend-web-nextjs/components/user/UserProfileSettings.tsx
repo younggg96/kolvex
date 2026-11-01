@@ -90,7 +90,7 @@ export default function UserProfileSettings() {
   if (error) {
     return (
       <div className="p-8">
-        <div className="bg-negative/10 border border-negative/30 rounded-lg p-4">
+        <div className="bg-negative/10 border border-negative/30 rounded-2xl p-4">
           <h3 className="text-negative font-semibold">加载失败</h3>
           <p className="text-negative mt-2">{error}</p>
         </div>
@@ -105,7 +105,7 @@ export default function UserProfileSettings() {
       {/* 消息提示 */}
       {message && (
         <div
-          className={`mb-6 p-4 rounded-lg ${
+          className={`mb-6 p-4 rounded-2xl ${
             message.type === "success"
               ? "bg-positive/10 border border-positive/30 text-positive"
               : "bg-negative/10 border border-negative/30 text-negative"
@@ -116,7 +116,7 @@ export default function UserProfileSettings() {
       )}
 
       {/* 基本信息 */}
-      <section className="bg-white rounded-lg shadow p-6 mb-6">
+      <section className="bg-white rounded-2xl shadow p-6 mb-6">
         <h2 className="text-xl font-semibold mb-4">基本信息</h2>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -128,7 +128,7 @@ export default function UserProfileSettings() {
               type="email"
               value={profile?.email || ""}
               disabled
-              className="w-full px-4 py-2 border border-border rounded-lg bg-muted"
+              className="w-full px-4 py-2 border border-border rounded-full bg-muted"
             />
             <p className="text-sm text-muted-foreground mt-1">邮箱无法修改</p>
           </div>
@@ -143,7 +143,7 @@ export default function UserProfileSettings() {
               value={formData.username}
               onChange={handleInputChange}
               placeholder="输入用户名"
-              className="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-border rounded-full focus:border-transparent"
             />
           </div>
 
@@ -157,7 +157,7 @@ export default function UserProfileSettings() {
               value={formData.full_name}
               onChange={handleInputChange}
               placeholder="输入全名"
-              className="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-border rounded-full focus:border-transparent"
             />
           </div>
 
@@ -171,7 +171,7 @@ export default function UserProfileSettings() {
               value={formData.phone_e164}
               onChange={handleInputChange}
               placeholder="+1234567890"
-              className="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-border rounded-full focus:border-transparent"
             />
             <p className="text-sm text-muted-foreground mt-1">
               请使用 E.164 格式（如 +1234567890）
@@ -189,13 +189,13 @@ export default function UserProfileSettings() {
       </section>
 
       {/* 主题设置 */}
-      <section className="bg-white rounded-lg shadow p-6 mb-6">
+      <section className="bg-white rounded-2xl shadow p-6 mb-6">
         <h2 className="text-xl font-semibold mb-4">主题设置</h2>
 
         <div className="grid grid-cols-3 gap-4">
           <button
             onClick={() => handleThemeChange("LIGHT")}
-            className={`p-4 border-2 rounded-lg transition ${
+            className={`p-4 border-2 rounded-full transition ${
               profile?.theme === "LIGHT"
                 ? "border-border bg-muted"
                 : "border-border hover:border-border"
@@ -209,7 +209,7 @@ export default function UserProfileSettings() {
 
           <button
             onClick={() => handleThemeChange("DARK")}
-            className={`p-4 border-2 rounded-lg transition ${
+            className={`p-4 border-2 rounded-full transition ${
               profile?.theme === "DARK"
                 ? "border-border bg-muted"
                 : "border-border hover:border-border"
@@ -223,7 +223,7 @@ export default function UserProfileSettings() {
 
           <button
             onClick={() => handleThemeChange("SYSTEM")}
-            className={`p-4 border-2 rounded-lg transition ${
+            className={`p-4 border-2 rounded-full transition ${
               profile?.theme === "SYSTEM"
                 ? "border-border bg-muted"
                 : "border-border hover:border-border"
@@ -238,7 +238,7 @@ export default function UserProfileSettings() {
       </section>
 
       {/* 账户信息 */}
-      <section className="bg-muted rounded-lg p-6 mt-6">
+      <section className="bg-muted rounded-2xl p-6 mt-6">
         <h2 className="text-xl font-semibold mb-4">账户信息</h2>
 
         <div className="grid grid-cols-2 gap-4 text-sm">

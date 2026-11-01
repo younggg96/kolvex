@@ -43,7 +43,7 @@ export default function StockNews({ ticker }: { ticker: string }) {
             {validDate && <><span aria-hidden>·</span><time dateTime={validDate.toISOString()}>{validDate.toLocaleString(intlLocale, { year: "numeric", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}</time></>}
           </div>
           <a href={item.link} target="_blank" rel="noopener noreferrer" lang={translation.translations[item.title] ? "zh-CN" : "en"}
-            className="rounded text-sm font-semibold leading-6 underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
+            className="rounded text-sm font-semibold leading-6 underline-offset-4 hover:underline focus-visible:outline-none ">
             {translation.translations[item.title] || item.title}
             <ExternalLink aria-hidden className="ml-1.5 inline h-3.5 w-3.5 text-muted-foreground" />
             <span className="sr-only">{c(" (original source, new tab)", "（原文，新标签页）")}</span>

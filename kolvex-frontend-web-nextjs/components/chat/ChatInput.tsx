@@ -49,7 +49,7 @@ function SourceChip({ icon, label, active, onClick }: SourceChipProps) {
       onClick={onClick}
       className={cn(
         "inline-flex h-8 items-center gap-1.5 rounded-full px-3 text-[13px] font-medium",
-        "focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-0",
+        " ",
         active
           ? "bg-foreground/[0.08] text-foreground"
           : "text-muted-foreground hover:bg-foreground/[0.05] hover:text-foreground"
@@ -104,7 +104,7 @@ function ModelSelector({
           size="xs"
           className={cn(
             "inline-flex h-8 items-center gap-1.5 rounded-full px-3 text-[13px] font-medium",
-            "focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-0",
+            " ",
             !hasAnyAvailable
               ? "text-muted-foreground"
               : "text-foreground hover:bg-foreground/[0.05] data-[state=open]:bg-foreground/[0.05]"
@@ -366,7 +366,7 @@ export function ChatInput({
     <form noValidate onSubmit={handleFormSubmit}>
       {/* Need API key prompt when user has not configured any keys */}
       {availableProviders !== undefined && !hasAnyModel && (
-        <div role="status" className="mb-3 rounded-2xl bg-warning/10 px-4 py-3">
+        <div role="status" className="mb-3 rounded-3xl bg-warning/10 px-4 py-3">
           <div className="flex items-start gap-2.5">
             <Lock className="mt-0.5 h-4 w-4 flex-shrink-0 text-warning" />
             <div>
@@ -415,7 +415,7 @@ export function ChatInput({
               <button
                 type="button"
                 onClick={onClearEvidence}
-                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-muted-foreground hover:bg-foreground/[0.06] hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-muted-foreground hover:bg-foreground/[0.06] hover:text-foreground focus-visible:outline-none "
                 aria-label={t("chat.evidence.clear")}
               >
                 <X className="h-3.5 w-3.5" />

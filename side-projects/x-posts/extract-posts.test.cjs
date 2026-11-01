@@ -48,3 +48,12 @@ test('detects pinned and incomplete text; abbreviated counts stay unknown', () =
   assert.equal(p.pinned, true); assert.equal(p.truncated, true);
   assert.equal(p.metrics.likes, null); assert.equal(p.metrics.views, 2);
 });
+
+test('unrecognized/loading DOM is not a successful empty timeline', () => {
+  const result = extract([]);
+  assert.equal(result.ready, false);
+  assert.match(result.reason, /Wait for rendered/);
+});
+test('reports readiness for recognized tweet DOM', () => {
+  assert.equal(extract([article()]).ready, true);
+});

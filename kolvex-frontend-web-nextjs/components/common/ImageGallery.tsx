@@ -57,7 +57,7 @@ export default function ImageGallery({
           <div
             key={index}
             style={{ width: imageSize, height: imageSize }}
-            className="relative rounded-lg overflow-hidden cursor-pointer hover:opacity-90 transition-opacity"
+            className="relative rounded-2xl overflow-hidden cursor-pointer hover:opacity-90 transition-opacity"
             onClick={() => openModal(index)}
           >
             <Image

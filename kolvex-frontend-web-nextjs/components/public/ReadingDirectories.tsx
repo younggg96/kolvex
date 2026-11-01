@@ -7,7 +7,7 @@ import { publicStockPath } from "@/lib/publicRoutes";
 import type { YouTubeCreatorSummary, YouTubeStockSummary } from "@/lib/youtubeOpinionsApi";
 import { ReadingDate } from "./ReadingElements";
 
-const rowClass = "group flex min-w-0 items-center gap-3 border-b border-border py-4 transition-colors hover:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary sm:-mx-3 sm:rounded-xl sm:border-transparent sm:px-3";
+const rowClass = "group flex min-w-0 items-center gap-3 border-b border-border py-4 transition-colors hover:bg-muted/60 focus-visible:outline-none sm:-mx-3 sm:rounded-3xl sm:border-transparent sm:px-3";
 
 export function CreatorDirectory({ creators }: { creators: YouTubeCreatorSummary[] }) {
   return <ul>{creators.map((creator) => {

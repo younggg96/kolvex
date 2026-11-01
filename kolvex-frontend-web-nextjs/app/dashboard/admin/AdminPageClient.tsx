@@ -85,7 +85,7 @@ export default function AdminPageClient({ initialTab }: { initialTab?: string })
           ))}
         </dl>
 
-        {error && <p role="alert" className="rounded-2xl bg-negative/10 px-4 py-3 text-sm text-foreground">{error}</p>}
+        {error && <p role="alert" className="rounded-3xl bg-negative/10 px-4 py-3 text-sm text-foreground">{error}</p>}
 
         <Tabs defaultValue={initialTab === "x" ? "x" : initialTab === "events" ? "events" : initialTab === "briefs" ? "briefs" : "database"}>
           <TabsList className="max-w-full flex-wrap h-auto">

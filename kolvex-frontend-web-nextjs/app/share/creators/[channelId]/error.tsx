@@ -10,6 +10,6 @@ export default function SharePageError({ reset }: { reset: () => void }) {
     <h1 className="text-2xl font-semibold">{c("Opinions could not be loaded", "暂时无法加载观点")}</h1>
     <p className="text-sm text-muted-foreground">{c("Please retry in a moment.", "请稍后重试。")}</p>
     <Button onClick={reset}>{c("Retry", "重试")}</Button>
-    <Link href="/" className="text-sm text-positive underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">{c("Kolvex home", "返回 Kolvex 首页")}</Link>
+    <Link href="/" className="text-sm text-positive underline focus-visible:outline-none ">{c("Kolvex home", "返回 Kolvex 首页")}</Link>
   </main>;
 }

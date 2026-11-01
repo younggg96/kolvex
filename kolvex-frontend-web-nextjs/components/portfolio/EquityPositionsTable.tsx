@@ -160,7 +160,7 @@ export function EquityPositionsTable({
                 <TableCell className="pl-4 py-3">
                   <div className="flex items-center gap-2.5">
                     {isSecretStock ? (
-                      <div className="w-8 h-8 rounded-lg bg-muted/80 flex items-center justify-center">
+                      <div className="w-8 h-8 rounded-2xl bg-muted/80 flex items-center justify-center">
                         <Lock className="w-4 h-4 text-muted-foreground" />
                       </div>
                     ) : (
@@ -289,7 +289,7 @@ export function EquityPositionsTable({
                       onClick={(e) =>
                         onToggleVisibility(e, pos.id, pos.is_hidden || false)
                       }
-                      className={`p-1.5 rounded-md transition-colors ${pos.is_hidden
+                      className={`p-1.5 rounded-full transition-colors ${pos.is_hidden
                         ? "text-muted-foreground hover:text-foreground hover:bg-muted"
                         : "text-positive hover:text-positive hover:bg-positive/10"
                         }`}

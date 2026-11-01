@@ -35,7 +35,7 @@ function IndicatorCard({ indicator, years, locale }: { indicator: EconomicIndica
   const method = indicator.method === "yoy" ? c("Not seasonally adjusted · year-over-year", "未季调 · 同比") : indicator.id === "gdp" ? c("Seasonally adjusted · annualized QoQ", "季调 · 季环比折年率") : indicator.id === "payrolls" ? c("Seasonally adjusted · monthly jobs added", "季调 · 当月就业人数净增") : indicator.id === "unemployment" ? c("Seasonally adjusted · U-3", "季调 · U-3 失业率") : indicator.method === "spread" ? c("10-year minus 2-year · same date", "同日10年收益率减2年收益率") : c("Daily constant-maturity Treasury yield", "日度国债固定期限收益率");
 
   return (
-    <article className="min-w-0 rounded-xl border border-border bg-card p-4" aria-labelledby={`indicator-${indicator.id}`}>
+    <article className="min-w-0 rounded-3xl border border-border bg-card p-4" aria-labelledby={`indicator-${indicator.id}`}>
       <div className="flex items-start justify-between gap-3">
         <h2 id={`indicator-${indicator.id}`} className="text-[15px] font-semibold leading-5">{name}</h2>
         <span className="shrink-0 text-xs leading-5 text-muted-foreground">{frequency}</span>
@@ -51,9 +51,9 @@ function IndicatorCard({ indicator, years, locale }: { indicator: EconomicIndica
       <p className="mt-3 min-h-5 text-xs leading-5 text-muted-foreground">{method}</p>
       {indicator.status !== "ready" && <p role="status" className="mt-2 text-xs text-muted-foreground">{indicator.value === null ? c("Data temporarily unavailable", "数据暂不可用") : c("Delayed data · check the observation period", "延迟数据 · 请以数据所属期为准")}</p>}
       <div className="mt-3 border-t border-border/60 pt-1">
-        <a href={indicator.source_url} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-9 max-w-full items-center gap-1 rounded-sm text-xs text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary" aria-label={c(`Source for ${name}: ${indicator.source}`, `${name}数据来源：${indicator.source}`)}>{indicator.source}<ArrowUpRight className="h-3 w-3 shrink-0" aria-hidden /></a>
+        <a href={indicator.source_url} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-9 max-w-full items-center gap-1 rounded-sm text-xs text-muted-foreground hover:text-foreground focus-visible:outline-none " aria-label={c(`Source for ${name}: ${indicator.source}`, `${name}数据来源：${indicator.source}`)}>{indicator.source}<ArrowUpRight className="h-3 w-3 shrink-0" aria-hidden /></a>
         <details className="group mt-1 w-full min-w-0 border-t border-border/60 text-xs text-muted-foreground">
-          <summary className="flex min-h-10 w-full cursor-pointer list-none items-center justify-between gap-3 rounded-sm font-medium hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary [&::-webkit-details-marker]:hidden">{c("Recent values", "近期数据")}<ChevronDown className="h-3.5 w-3.5 shrink-0 transition-transform duration-150 group-open:rotate-180 motion-reduce:transition-none" aria-hidden /></summary>
+          <summary className="flex min-h-10 w-full cursor-pointer list-none items-center justify-between gap-3 rounded-sm font-medium hover:text-foreground focus-visible:outline-none [&::-webkit-details-marker]:hidden">{c("Recent values", "近期数据")}<ChevronDown className="h-3.5 w-3.5 shrink-0 transition-transform duration-150 group-open:rotate-180 motion-reduce:transition-none" aria-hidden /></summary>
           <table className="w-full table-fixed text-xs">
             <caption className="sr-only">{c(`${name}, latest 12 observations`, `${name}，最近12期观测值`)}</caption>
             <colgroup><col className="w-1/2" /><col className="w-1/2" /></colgroup>
@@ -86,14 +86,14 @@ export default function MacroIndicators() {
       <h1 id="economic-indicators-heading" className="sr-only">{c("Macro indicators", "宏观指标")}</h1>
       <header className="flex justify-end">
         <div className="flex flex-wrap items-center gap-3">
-          <div role="group" aria-label={c("Indicator history range", "指标走势区间")} className="flex gap-1">{RANGES.map((range) => <button key={range} type="button" aria-pressed={years === range} onClick={() => setYears(range)} className={cn("inline-flex h-9 items-center rounded-full px-3.5 text-[13px] font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary", years === range ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted hover:text-foreground")}>{c(`${range}Y`, `${range}年`)}</button>)}</div>
+          <div role="group" aria-label={c("Indicator history range", "指标走势区间")} className="flex gap-1">{RANGES.map((range) => <button key={range} type="button" aria-pressed={years === range} onClick={() => setYears(range)} className={cn("inline-flex h-9 items-center rounded-full px-3.5 text-[13px] font-semibold focus-visible:outline-none ", years === range ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted hover:text-foreground")}>{c(`${range}Y`, `${range}年`)}</button>)}</div>
           <Button variant="outline" size="sm" className="rounded-full" disabled={resource.refreshing} onClick={resource.refresh}><RefreshCw className={cn("mr-2 h-3.5 w-3.5", resource.refreshing && "animate-spin motion-reduce:animate-none")} aria-hidden />{c("Refresh", "刷新")}</Button>
         </div>
       </header>
       <div aria-live="polite" aria-atomic="true" className={notice ? "mt-4 text-sm leading-6 text-muted-foreground" : "sr-only"}>{notice && <p>{notice}</p>}{loading && !snapshot && <p>{c("Loading official economic indicators", "正在加载官方宏观指标")}</p>}</div>
       {error === 401 && <Button asChild variant="outline" size="sm" className="mb-4 rounded-full"><Link href="/auth?redirectTo=%2Fdashboard%3Ftab%3Dmacro">{c("Sign in", "重新登录")}</Link></Button>}
       <div className="mt-4 grid grid-cols-[repeat(auto-fit,minmax(min(100%,260px),1fr))] items-start gap-4" aria-busy={loading}>
-        {loading && !snapshot ? Array.from({ length: 8 }, (_, index) => <div key={index} className="min-h-[360px] space-y-5 rounded-xl border border-border bg-card p-4"><Skeleton className="h-4 w-24" /><Skeleton className="h-5 w-40" /><Skeleton className="h-9 w-28" /><Skeleton className="h-24 w-full" /><Skeleton className="h-4 w-44" /></div>) : snapshot?.indicators.map((indicator) => <IndicatorCard key={indicator.id} indicator={error && indicator.value !== null ? { ...indicator, status: "stale" } : indicator} years={years} locale={intlLocale} />)}
+        {loading && !snapshot ? Array.from({ length: 8 }, (_, index) => <div key={index} className="min-h-[360px] space-y-5 rounded-3xl border border-border bg-card p-4"><Skeleton className="h-4 w-24" /><Skeleton className="h-5 w-40" /><Skeleton className="h-9 w-28" /><Skeleton className="h-24 w-full" /><Skeleton className="h-4 w-44" /></div>) : snapshot?.indicators.map((indicator) => <IndicatorCard key={indicator.id} indicator={error && indicator.value !== null ? { ...indicator, status: "stale" } : indicator} years={years} locale={intlLocale} />)}
       </div>
       {!loading && !snapshot?.indicators.length && <p className="py-12 text-center text-sm text-muted-foreground">{c("No indicators to display. Try refreshing.", "暂无可显示的指标，请尝试刷新。")}</p>}
       <footer className="mt-5 space-y-2 text-xs leading-6 text-muted-foreground">

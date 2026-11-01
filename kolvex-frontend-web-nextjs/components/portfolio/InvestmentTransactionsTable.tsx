@@ -123,7 +123,7 @@ export function InvestmentTransactionsTable({
 
   return (
     <div className="space-y-3">
-      <div className="flex flex-col gap-3 rounded-lg border border-border bg-card p-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h3 className="text-sm font-semibold">Investment transactions</h3>
           <p className="text-xs text-muted-foreground">
@@ -166,7 +166,7 @@ export function InvestmentTransactionsTable({
         </div>
       </div>
 
-      <div className="overflow-x-auto rounded-lg border border-border">
+      <div className="overflow-x-auto rounded-2xl border border-border">
         <Table className="min-w-[900px]">
           <TableHeader>
             <TableRow>

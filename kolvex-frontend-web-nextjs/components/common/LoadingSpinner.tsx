@@ -60,7 +60,7 @@ export default function LoadingSpinner({
   }
 
   const cardContent = (
-    <div className="bg-card border border-border rounded-2xl p-8">
+    <div className="bg-card border border-border rounded-3xl p-8">
       {spinnerContent}
     </div>
   );

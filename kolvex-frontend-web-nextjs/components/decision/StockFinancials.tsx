@@ -122,7 +122,7 @@ function PeriodToggle({
     <div
       role="group"
       aria-label={c("Reporting frequency", "报告周期")}
-      className="inline-flex rounded-lg bg-muted p-1"
+      className="inline-flex rounded-2xl bg-muted p-1"
     >
       {[false, true].map((value) => (
         <Button
@@ -131,7 +131,7 @@ function PeriodToggle({
           variant="ghost"
           aria-pressed={quarterly === value}
           className={cn(
-            "rounded-md",
+            "rounded-full",
             quarterly === value && "bg-background text-foreground",
           )}
           onClick={() => onChange(value)}
@@ -213,7 +213,7 @@ export default function StockFinancials({
         <div
           role="group"
           aria-label={c("Financial statement", "财务报表类型")}
-          className="inline-flex max-w-full flex-wrap gap-1 rounded-lg bg-muted p-1"
+          className="inline-flex max-w-full flex-wrap gap-1 rounded-2xl bg-muted p-1"
         >
           {(
             [
@@ -228,7 +228,7 @@ export default function StockFinancials({
               variant="ghost"
               aria-pressed={kind === value}
               className={cn(
-                "rounded-md",
+                "rounded-full",
                 kind === value && "bg-background text-foreground",
               )}
               onClick={() => {
@@ -244,7 +244,7 @@ export default function StockFinancials({
           <div
             role="group"
             aria-label={c("Financial view", "财务显示方式")}
-            className="inline-flex rounded-lg bg-muted p-1"
+            className="inline-flex rounded-2xl bg-muted p-1"
           >
             {(["chart", "list"] as const).map((value) => (
               <Button
@@ -253,7 +253,7 @@ export default function StockFinancials({
                 variant="ghost"
                 aria-pressed={view === value}
                 className={cn(
-                  "rounded-md",
+                  "rounded-full",
                   view === value && "bg-background text-foreground",
                 )}
                 onClick={() => setView(value)}
@@ -342,7 +342,7 @@ export default function StockFinancials({
             "Financial statements, scroll horizontally for more periods",
             "财务报表，可横向滚动查看更多报告期",
           )}
-          className="max-h-[72vh] overflow-auto rounded-xl border border-border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+          className="max-h-[72vh] overflow-auto rounded-3xl border border-border focus-visible:outline-none "
         >
           <table className="w-full border-separate border-spacing-0 text-sm">
             <caption className="sr-only">
@@ -561,7 +561,7 @@ function ChartStyleToggle({
     <div
       role="group"
       aria-label={c("Chart style", "图表样式")}
-      className="inline-flex rounded-lg bg-muted p-1"
+      className="inline-flex rounded-2xl bg-muted p-1"
     >
       {[false, true].map((value) => (
         <Button
@@ -570,7 +570,7 @@ function ChartStyleToggle({
           variant="ghost"
           aria-pressed={line === value}
           className={cn(
-            "rounded-md",
+            "rounded-full",
             line === value && "bg-background text-foreground",
           )}
           onClick={() => onChange(value)}
@@ -670,7 +670,7 @@ function FinancialMetricChart({
     </>
   );
   return (
-    <section className="min-w-0 rounded-xl border border-border bg-card p-4 sm:p-6">
+    <section className="min-w-0 rounded-3xl border border-border bg-card p-4 sm:p-6">
       <div className="flex items-start justify-between gap-3">
         <h3 className="text-sm font-medium text-muted-foreground">
           {title}
@@ -736,7 +736,7 @@ function FinancialMetricChart({
         </ResponsiveContainer>
       </div>
       <details className="mt-3 text-xs text-muted-foreground">
-        <summary className="cursor-pointer py-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
+        <summary className="cursor-pointer py-2 focus-visible:outline-none ">
           {c("View period values", "查看各期数值")}
         </summary>
         <dl className="divide-y divide-border">

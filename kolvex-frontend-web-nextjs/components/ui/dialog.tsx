@@ -45,14 +45,14 @@ const DialogContent = React.forwardRef<
         layout === "fullscreen"
           ? "inset-0 h-[100dvh] w-full overflow-hidden bg-background text-foreground"
           : layout === "sheet"
-          ? "inset-x-0 bottom-0 max-h-[85dvh] w-full max-w-xl overflow-hidden rounded-t-2xl surface-overlay px-5 pt-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] sm:bottom-auto sm:left-1/2 sm:right-auto sm:top-1/2 sm:w-[calc(100%-32px)] sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-2xl"
-          : "left-[50%] top-[50%] max-h-[90dvh] w-[calc(100%-32px)] max-w-lg translate-x-[-50%] translate-y-[-50%] overflow-y-auto gap-4 surface-overlay px-5 pt-10 pb-5 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 rounded-2xl",
+          ? "inset-x-0 bottom-0 max-h-[85dvh] w-full max-w-xl overflow-hidden rounded-t-2xl surface-overlay px-5 pt-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] sm:bottom-auto sm:left-1/2 sm:right-auto sm:top-1/2 sm:w-[calc(100%-32px)] sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-3xl"
+          : "left-[50%] top-[50%] max-h-[90dvh] w-[calc(100%-32px)] max-w-lg translate-x-[-50%] translate-y-[-50%] overflow-y-auto gap-4 surface-overlay px-5 pt-10 pb-5 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 rounded-3xl",
         className
       )}
       {...props}
     >
       {children}
-      {showCloseButton && <DialogPrimitive.Close className="absolute right-4 top-4 rounded-full opacity-70 ring-offset-background transition-all hover:opacity-100 hover:bg-muted focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 disabled:pointer-events-none p-1.5">
+      {showCloseButton && <DialogPrimitive.Close className="absolute right-4 top-4 rounded-full opacity-70 transition-all hover:opacity-100 hover:bg-muted focus:outline-none disabled:pointer-events-none p-1.5">
         <X className="h-4 w-4 text-muted-foreground" />
         <span className="sr-only">Close</span>
       </DialogPrimitive.Close>}

@@ -46,7 +46,7 @@ export default function OpinionCard({
             {showCreator && (
               <button
                 type="button"
-                className="min-w-0 text-left text-[15px] font-semibold hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                className="min-w-0 text-left text-[15px] font-semibold hover:underline focus-visible:outline-none "
                 onClick={() => onCreator?.(opinion.channel_id)}
               >
                 {opinion.channel_title || opinion.channel_id}
@@ -55,7 +55,7 @@ export default function OpinionCard({
             {showTicker && (
               <button
                 type="button"
-                className="inline-flex items-center gap-2 text-[15px] font-semibold hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                className="inline-flex items-center gap-2 text-[15px] font-semibold hover:underline focus-visible:outline-none "
                 onClick={() => onStock?.(opinion.ticker)}
               >
                 <span aria-hidden="true"><CompanyLogo symbol={opinion.ticker} size="sm" /></span>
@@ -132,7 +132,7 @@ export default function OpinionCard({
               href={opinion.video_url}
               target="_blank"
               rel="noreferrer"
-              className="group inline-flex max-w-full items-start gap-2 text-sm text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+              className="group inline-flex max-w-full items-start gap-2 text-sm text-muted-foreground hover:text-foreground focus-visible:outline-none "
             >
               <PlayCircle className="mt-0.5 h-4 w-4 shrink-0" />
               <span className="min-w-0 group-hover:underline">

@@ -50,7 +50,7 @@ type RangeKey = (typeof RANGES)[number]["key"];
 
 const pill = (active: boolean) =>
   cn(
-    "inline-flex min-h-10 shrink-0 items-center gap-2 rounded-lg px-2 text-sm font-medium sm:px-3 transition-colors duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:opacity-50",
+    "inline-flex min-h-10 shrink-0 items-center gap-2 rounded-full px-3 text-sm font-medium sm:px-4 transition-colors duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] focus-visible:outline-none disabled:opacity-50",
     active ? "bg-foreground text-background" : "text-muted-foreground hover:bg-muted hover:text-foreground",
   );
 
@@ -153,13 +153,13 @@ function MarketInstrumentCard({ benchmark, quote, quoteLoading, range, attempt, 
 
 
   return (
-    <article ref={host} className="relative h-60 w-60 shrink-0 snap-start overflow-hidden rounded-xl border border-border bg-card transition-colors duration-200 hover:border-foreground/30 xl:w-auto xl:min-w-0">
+    <article ref={host} className="relative h-60 w-60 shrink-0 snap-start overflow-hidden rounded-3xl border border-border bg-card transition-colors duration-200 hover:border-foreground/30 xl:w-auto xl:min-w-0">
       <Link
         href={benchmark.sourceUrl ?? `/dashboard/market/${encodeURIComponent(benchmark.symbol)}`}
         target={benchmark.sourceUrl ? "_blank" : undefined}
         rel={benchmark.sourceUrl ? "noopener noreferrer" : undefined}
         aria-label={c(`Open ${benchmark.en} market details`, `查看${benchmark.zh}行情详情`)}
-        className="block h-full cursor-pointer rounded-xl p-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary"
+        className="block h-full cursor-pointer rounded-3xl p-4 focus-visible:outline-none "
       >
         <div className="flex h-6 min-w-0 items-baseline justify-between gap-x-2">
           <h3 className="min-w-0 truncate text-sm font-medium" title={c(benchmark.en, benchmark.zh)}>{c(benchmark.en, benchmark.zh)}</h3>
@@ -198,7 +198,7 @@ function MarketRangeControls({ range, setRange, view, setView }: { range: RangeK
   const c = useCopy();
   return (
               <div className="flex min-w-0 flex-1 flex-wrap items-center justify-between gap-3">
-                {view === "card" ? <div role="group" aria-label={c("Chart range", "走势区间")} className="flex flex-wrap gap-1 rounded-xl bg-muted/50 p-1">
+                {view === "card" ? <div role="group" aria-label={c("Chart range", "走势区间")} className="flex max-w-full gap-1 overflow-x-auto rounded-full bg-muted/50 p-1 scrollbar-hide">
                   {RANGES.map((item) => (
                     <button
                       key={item.key}
@@ -213,7 +213,7 @@ function MarketRangeControls({ range, setRange, view, setView }: { range: RangeK
                     </button>
                   ))}
                 </div> : <p className="text-sm text-muted-foreground">{c("Compare all periods", "多区间表现对比")}</p>}
-                <div role="group" aria-label={c("Display mode", "显示方式")} className="ml-auto flex shrink-0 gap-1 rounded-xl border border-border p-1">
+                <div role="group" aria-label={c("Display mode", "显示方式")} className="ml-auto flex shrink-0 gap-1 rounded-full border border-border p-1">
                   <button type="button" aria-pressed={view === "card"} onClick={() => setView("card")} className={pill(view === "card")}><LayoutGrid className="h-3.5 w-3.5" aria-hidden />{c("Cards", "卡片")}</button>
                   <button type="button" aria-pressed={view === "list"} onClick={() => setView("list")} className={pill(view === "list")}><List className="h-3.5 w-3.5" aria-hidden />{c("List", "列表")}</button>
                 </div>
@@ -247,7 +247,7 @@ function MarketCharts({ groups, quotes, loading, range, setRange, attempt, onRet
                     role="region"
                     aria-label={c(`${group.en}, scroll horizontally`, `${group.zh}，可横向滚动`)}
                     tabIndex={0}
-                    className="flex snap-x snap-proximity gap-3 overflow-x-auto overscroll-x-contain pb-2 sm:gap-4 xl:grid xl:grid-cols-5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                    className="flex snap-x snap-proximity gap-3 overflow-x-auto overscroll-x-contain pb-2 sm:gap-4 xl:grid xl:grid-cols-5 focus-visible:outline-none "
                   >
                     {group.instruments.map(item => (
                       <MarketInstrumentCard
@@ -384,7 +384,7 @@ function MarketOverview({ range, setRange, view, setView }: { range: RangeKey; s
                     <li key={shift.ticker}>
                       <Link
                         href={`/dashboard/market/${encodeURIComponent(shift.ticker)}`}
-                        className="-mx-2 flex min-h-20 items-center justify-between gap-3 rounded-lg px-2 py-4 transition-colors duration-200 hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary"
+                        className="-mx-2 flex min-h-20 items-center justify-between gap-3 rounded-2xl px-2 py-4 transition-colors duration-200 hover:bg-muted/50 focus-visible:outline-none "
                       >
                         <span className="flex min-w-0 items-center gap-2.5">
                           <span aria-hidden><CompanyLogo symbol={shift.ticker} size="sm" /></span>
@@ -411,7 +411,7 @@ function MarketOverview({ range, setRange, view, setView }: { range: RangeKey; s
               )}
               <Link
                 href="/dashboard/youtube-opinions/stocks"
-                className="mt-2 flex min-h-11 items-center justify-between gap-3 rounded-lg border border-border px-3 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                className="mt-2 flex min-h-11 items-center justify-between gap-3 rounded-2xl border border-border px-3 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground focus-visible:outline-none "
               >
                 {c("Explore creator-covered stocks", "查看博主覆盖股票")}
                 <ArrowUpRight className="h-4 w-4 shrink-0" aria-hidden />
@@ -456,11 +456,11 @@ export default function Market() {
         <div className="mx-auto w-full min-w-0 max-w-[1600px] px-4 pb-16 pt-6 md:px-8 md:pt-8">
           <div className="max-w-2xl"><StockLookup /></div>
           <Tabs value={tab} onValueChange={selectTab} className="mt-6 min-w-0">
-            <TabsList aria-label={c("Market views", "行情视图")}>
-              <TabsTrigger value="overview">{c("Market overview", "市场概览")}</TabsTrigger>
-              <TabsTrigger value="trends">{c("Market trends", "市场走势")}</TabsTrigger>
-              <TabsTrigger value="calendar">{c("Event calendar", "事件日历")}</TabsTrigger>
-              <TabsTrigger value="macro">{c("Macro indicators", "宏观指标")}</TabsTrigger>
+            <TabsList variant="pill" aria-label={c("Market views", "行情视图")}>
+              <TabsTrigger variant="pill" value="overview">{c("Market overview", "市场概览")}</TabsTrigger>
+              <TabsTrigger variant="pill" value="trends">{c("Market trends", "市场走势")}</TabsTrigger>
+              <TabsTrigger variant="pill" value="calendar">{c("Event calendar", "事件日历")}</TabsTrigger>
+              <TabsTrigger variant="pill" value="macro">{c("Macro indicators", "宏观指标")}</TabsTrigger>
             </TabsList>
             <TabsContent value="overview"><MarketOverview range={range} setRange={setRange} view={view} setView={setView} /></TabsContent>
             <TabsContent value="trends"><MarketTrends range={range} setRange={setRange} view={view} setView={setView} /></TabsContent>

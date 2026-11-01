@@ -515,7 +515,7 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
       ? { tab: "creators" as const, creator: route.creator }
       : root;
   const rowClass =
-    "group grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-2 border-b border-border py-3.5 transition-colors duration-150 hover:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary sm:-mx-3 sm:rounded-xl sm:border-transparent sm:px-3";
+    "group grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-2 border-b border-border py-3.5 transition-colors duration-150 hover:bg-muted/60 focus-visible:outline-none sm:-mx-3 sm:rounded-3xl sm:border-transparent sm:px-3";
   const stockRowClass = cn(rowClass, "grid-cols-[minmax(0,1fr)_auto] gap-x-3 sm:grid-cols-[minmax(0,1fr)_110px_160px] sm:gap-x-4");
   const formatPercent = (value?: number | null) =>
     typeof value === "number" && Number.isFinite(value)
@@ -591,14 +591,14 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
 
   const pill = (active: boolean) =>
     cn(
-      "inline-flex h-8 shrink-0 items-center rounded-full px-3.5 text-[13px] font-semibold transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
+      "inline-flex h-8 shrink-0 items-center rounded-full px-3.5 text-[13px] font-semibold transition-colors duration-150 focus-visible:outline-none ",
       active
         ? "bg-foreground text-background"
         : "text-foreground/80 hover:bg-muted hover:text-foreground",
     );
   const segment = (active: boolean) =>
     cn(
-      "h-8 shrink-0 whitespace-nowrap rounded-full px-3.5 text-[13px] font-semibold transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
+      "h-8 shrink-0 whitespace-nowrap rounded-full px-3.5 text-[13px] font-semibold transition-colors duration-150 focus-visible:outline-none ",
       active
         ? "bg-background text-foreground shadow-[0_1px_2px_rgb(0_0_0/0.12)]"
         : "text-foreground/80 hover:text-foreground",
@@ -844,7 +844,7 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
                 ticker: change.ticker,
                 creator: route.creator,
               }}
-              className="flex min-w-0 items-center justify-between gap-3 border-b border-border py-3 text-sm last:border-0 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+              className="flex min-w-0 items-center justify-between gap-3 border-b border-border py-3 text-sm last:border-0 hover:text-foreground focus-visible:outline-none "
             >
               <span className="flex min-w-0 items-center gap-3">
                 <span aria-hidden="true"><CompanyLogo symbol={change.ticker} size="sm" /></span>
@@ -1049,7 +1049,7 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
                         onChange={(event) => setSearch(event.target.value)}
                         className="h-10 rounded-full pl-10 pr-10 text-base sm:text-sm"
                       />
-                      {search && <button type="button" aria-label={t("common.clearFilters")} className="absolute right-1 top-1 flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary" onClick={() => { setSearch(""); searchInput.current?.focus(); }}><X className="h-4 w-4" aria-hidden="true" /></button>}
+                      {search && <button type="button" aria-label={t("common.clearFilters")} className="absolute right-1 top-1 flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground hover:bg-muted focus-visible:outline-none " onClick={() => { setSearch(""); searchInput.current?.focus(); }}><X className="h-4 w-4" aria-hidden="true" /></button>}
                     </div>
                   </div>
                   <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-b border-border pb-3">
@@ -1143,7 +1143,7 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
                   <section aria-labelledby="creator-latest-opinions-title">
                     <div className="flex flex-wrap items-baseline justify-between gap-2">
                       <h2 id="creator-latest-opinions-title" className="text-base font-semibold">{c("Latest creator videos", "博主最新视频")}</h2>
-                      <Link href="/dashboard/youtube-opinions/opinions" className="rounded-sm text-xs font-medium underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
+                      <Link href="/dashboard/youtube-opinions/opinions" className="rounded-sm text-xs font-medium underline-offset-4 hover:underline focus-visible:outline-none ">
                         {c("View all opinions", "查看全部观点")}
                       </Link>
                     </div>
@@ -1174,7 +1174,7 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
                             <li key={stock.ticker}>
                               <Link
                                 href={`/dashboard/market/${encodeURIComponent(stock.ticker)}`}
-                                className="flex items-center justify-between gap-3 py-3 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                                className="flex items-center justify-between gap-3 py-3 hover:text-primary focus-visible:outline-none "
                               >
                                 <span className="font-semibold">{stock.ticker}</span>
                                 <OpinionStrength value={stock.avg_score} />
@@ -1214,7 +1214,7 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
                             size="lg"
                           />
                           {route.creator && creator && (
-                            <span className="absolute -bottom-1.5 -right-1.5 rounded-full ring-2 ring-background">
+                            <span className="absolute -bottom-1.5 -right-1.5 rounded-full ">
                               <Avatar creator={creator} size="sm" />
                             </span>
                           )}
@@ -1398,7 +1398,7 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
                     </section>
                   )}
 
-                  <section ref={opinionHistory} tabIndex={-1} aria-labelledby="opinion-history-title" className="min-w-0 scroll-mt-6 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary xl:col-start-1">
+                  <section ref={opinionHistory} tabIndex={-1} aria-labelledby="opinion-history-title" className="min-w-0 scroll-mt-6 rounded-sm focus-visible:outline-none xl:col-start-1">
                     <div className="flex flex-col gap-3 border-b border-border pb-3 sm:flex-row sm:items-center sm:justify-between">
                       <div className="flex min-w-0 flex-wrap items-center gap-x-4 gap-y-2">
                         <h2 id="opinion-history-title" className="text-lg font-semibold">
@@ -1448,7 +1448,7 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
                             type="button"
                             aria-pressed={showUntrackedVideos}
                             onClick={() => setShowUntrackedVideos((value) => !value)}
-                            className="mt-4 inline-flex min-h-8 items-center rounded-full px-3 text-[13px] font-semibold text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                            className="mt-4 inline-flex min-h-8 items-center rounded-full px-3 text-[13px] font-semibold text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none "
                           >
                             {t(showUntrackedVideos ? "youtubeOpinions.hideUntrackedVideos" : "youtubeOpinions.showUntrackedVideos", { count: String(untrackedVideoCount) })}
                           </button>

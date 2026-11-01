@@ -244,7 +244,7 @@ export function ChatMessageList({
 
           {errorMessage && (
             <div className="flex w-full justify-start">
-              <div role="alert" className="flex max-w-xl items-start gap-3 rounded-2xl bg-negative/10 px-4 py-3 text-sm">
+              <div role="alert" className="flex max-w-xl items-start gap-3 rounded-3xl bg-negative/10 px-4 py-3 text-sm">
                 <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0 text-negative" />
                 <div className="min-w-0">
                   <p className="font-medium text-foreground">

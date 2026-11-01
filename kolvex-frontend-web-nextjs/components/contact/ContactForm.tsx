@@ -58,7 +58,7 @@ export default function ContactForm() {
   };
 
   return (
-    <div className="bg-card p-6 rounded-2xl border border-border shadow-sm">
+    <div className="bg-card p-6 rounded-3xl border border-border shadow-sm">
       <h2 className="text-xl font-semibold text-foreground mb-4">
         Send us a message
       </h2>

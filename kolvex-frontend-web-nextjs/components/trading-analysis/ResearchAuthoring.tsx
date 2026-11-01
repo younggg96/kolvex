@@ -254,7 +254,7 @@ export default function TradingAnalysisPage({ searchParams }: { searchParams?: {
       }
     >
       <div className="relative flex-1 overflow-y-auto">
-        <div className="mx-auto w-full  px-4 pb-16 pt-6 md:px-8 md:pt-8">
+        <div className="mx-auto w-full px-4 pb-16 pt-6 md:px-8 md:pt-8">
           <div className="space-y-8">
             <div className="flex flex-wrap items-end justify-between gap-4">
               <div className="min-w-0">
@@ -306,7 +306,7 @@ export default function TradingAnalysisPage({ searchParams }: { searchParams?: {
                             type="button"
                             variant="ghost"
                             aria-label={t("tradingAnalysis.analysisDate")}
-                            className="h-10 w-full min-w-0 justify-start gap-2 rounded-xl bg-muted px-3.5 text-sm font-normal hover:bg-secondary"
+                            className="h-10 w-full min-w-0 justify-start gap-2 rounded-full bg-muted px-3.5 text-sm font-normal hover:bg-secondary"
                           >
                             <CalendarDays className="h-4 w-4 shrink-0 text-muted-foreground" />
                             <span className="truncate">
@@ -327,7 +327,7 @@ export default function TradingAnalysisPage({ searchParams }: { searchParams?: {
                               head_cell: "text-center text-xs text-muted-foreground",
                               row: "mt-2 grid grid-cols-7",
                               cell: "relative min-w-0 text-center text-sm !p-0",
-                              day: "h-9 w-full rounded-md !p-0 text-sm hover:bg-muted focus-visible:ring-2 focus-visible:ring-primary",
+                              day: "h-9 w-full rounded-md !p-0 text-sm hover:bg-muted ",
                             }}
                             onSelect={(date) => {
                               if (!date) return;
@@ -346,7 +346,7 @@ export default function TradingAnalysisPage({ searchParams }: { searchParams?: {
                         {t("tradingAnalysis.llmProvider")}
                       </label>
                       {providersLoading ? (
-                        <div className="flex h-10 items-center rounded-xl bg-muted px-4 text-sm text-muted-foreground">
+                        <div className="flex h-10 items-center rounded-3xl bg-muted px-4 text-sm text-muted-foreground">
                           <Loader2 className="w-3.5 h-3.5 mr-2 animate-spin" />
                           {t("common.loading")}
                         </div>
@@ -401,7 +401,7 @@ export default function TradingAnalysisPage({ searchParams }: { searchParams?: {
                       ) : (
                         <Link
                           href="/dashboard/settings?tab=api-keys"
-                          className="flex h-10 items-center justify-center gap-1.5 rounded-xl border border-dashed border-border px-4 text-[13px] font-semibold text-positive transition-colors duration-150 hover:bg-muted"
+                          className="flex h-10 items-center justify-center gap-1.5 rounded-3xl border border-dashed border-border px-4 text-[13px] font-semibold text-positive transition-colors duration-150 hover:bg-muted"
                         >
                           <Settings className="w-3.5 h-3.5" />
                           {t("tradingAnalysis.addApiKey")}
@@ -520,7 +520,7 @@ export default function TradingAnalysisPage({ searchParams }: { searchParams?: {
                             onClick={() => toggleAnalyst(id)}
                             aria-pressed={isActive}
                             className={cn(
-                              "h-9 rounded-full px-4 text-[13px] font-semibold transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
+                              "h-9 rounded-full px-4 text-[13px] font-semibold transition-colors duration-150 focus-visible:outline-none ",
                               isActive
                                 ? "bg-foreground text-background"
                                 : "bg-muted text-muted-foreground hover:text-foreground"
@@ -592,7 +592,7 @@ export default function TradingAnalysisPage({ searchParams }: { searchParams?: {
                         <div className="min-w-0 flex-1">
                           <Link
                             href={`/dashboard/trading-analysis/${item.id}`}
-                            className="text-[15px] font-semibold text-foreground after:absolute after:inset-0 focus-visible:outline-none focus-visible:after:rounded-xl focus-visible:after:ring-2 focus-visible:after:ring-primary"
+                            className="text-[15px] font-semibold text-foreground after:absolute after:inset-0 focus-visible:outline-none focus-visible:after:rounded-3xl "
                           >
                             {item.ticker}
                           </Link>
@@ -631,7 +631,7 @@ export default function TradingAnalysisPage({ searchParams }: { searchParams?: {
                                 type="button"
                                 onClick={() => handleDelete(item.id)}
                                 aria-label={`${t("common.delete")} ${item.ticker}`}
-                                className="relative z-10 flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground transition-colors duration-150 hover:bg-negative/10 hover:text-negative focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary md:opacity-0 md:group-hover:opacity-100 md:focus-visible:opacity-100"
+                                className="relative z-10 flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground transition-colors duration-150 hover:bg-negative/10 hover:text-negative focus-visible:outline-none md:opacity-0 md:group-hover:opacity-100 md:focus-visible:opacity-100"
                               >
                                 <Trash2 className="h-4 w-4" />
                               </button>

@@ -109,7 +109,7 @@ export const MultiSelect = React.forwardRef<HTMLDivElement, MultiSelectProps>(
                     {selectedOptions.slice(0, maxVisibleTags).map((option) => (
                       <span
                         key={option.value}
-                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-primary/10 text-primary border border-primary/20"
+                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary border border-primary/20"
                       >
                         {option.icon && <span className="flex items-center">{option.icon}</span>}
                         <span className="truncate max-w-[120px]">{option.label}</span>
@@ -125,7 +125,7 @@ export const MultiSelect = React.forwardRef<HTMLDivElement, MultiSelectProps>(
                       </span>
                     ))}
                     {selectedOptions.length > maxVisibleTags && (
-                      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-muted text-muted-foreground">
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-muted text-muted-foreground">
                         +{selectedOptions.length - maxVisibleTags} more
                       </span>
                     )}
@@ -162,7 +162,7 @@ export const MultiSelect = React.forwardRef<HTMLDivElement, MultiSelectProps>(
                         key={option.value}
                         onClick={() => handleSelect(option.value)}
                         className={cn(
-                          "flex w-full cursor-pointer select-none items-center rounded-md py-2 pl-8 pr-2 text-sm outline-none transition-colors duration-150",
+                          "flex w-full cursor-pointer select-none items-center rounded-2xl py-2 pl-8 pr-2 text-sm outline-none transition-colors duration-150",
                           isSelected
                             ? "bg-primary/10 text-primary dark:bg-primary/20"
                             : "hover:bg-muted text-foreground"
