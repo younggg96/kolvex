@@ -1302,6 +1302,8 @@
       "rerun": "重新分析",
       "clear": "隐藏 AI 画线",
       "showDrawings": "显示 AI 画线",
+      "hideDrawingsShort": "隐藏画线",
+      "showDrawingsShort": "显示画线",
       "hideDrawingsTitle": "确认隐藏 AI 画线？",
       "hideDrawingsDescription": "仅暂时隐藏图表上的 AI 画线，结果会保留。点击“显示 AI 画线”即可恢复，无需重新生成。",
       "confirmHideDrawings": "确认隐藏",

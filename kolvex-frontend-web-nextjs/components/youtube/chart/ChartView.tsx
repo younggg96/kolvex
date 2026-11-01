@@ -939,12 +939,12 @@ export default function ChartView({
 
   const hideDrawingsControl = (
             <Dialog open={hideDrawingsOpen} onOpenChange={setHideDrawingsOpen}>
-              {drawingAi.status === "done" && (drawingsHidden ? <Button ref={hideDrawingTriggerRef} type="button" size="sm" variant="outline" aria-pressed={false} className="min-h-11 min-w-[136px] px-3 sm:min-h-9" disabled={aiBusy} onClick={() => onDrawingVisibilityChange?.(false)}>
-                <Eye className="h-4 w-4" aria-hidden="true" />{t("youtubeOpinions.ai.showDrawings")}
+              {drawingAi.status === "done" && (drawingsHidden ? <Button ref={hideDrawingTriggerRef} type="button" size="sm" variant="outline" aria-label={t("youtubeOpinions.ai.showDrawings")} title={t("youtubeOpinions.ai.showDrawings")} aria-pressed={false} className="min-h-11 w-full min-w-0 gap-2 px-2 sm:min-h-9 sm:w-auto sm:px-3" disabled={aiBusy} onClick={() => onDrawingVisibilityChange?.(false)}>
+                <Eye className="h-4 w-4" aria-hidden="true" /><span className="sm:hidden">{t("youtubeOpinions.ai.showDrawingsShort")}</span><span className="hidden sm:inline">{t("youtubeOpinions.ai.showDrawings")}</span>
               </Button> : <DialogTrigger asChild>
-                <Button ref={hideDrawingTriggerRef} type="button" size="sm" variant="ghost" aria-pressed={true} className="min-h-11 min-w-[136px] px-3 text-red-600 hover:bg-red-500/10 hover:text-red-600 dark:text-red-400 dark:hover:text-red-400 sm:min-h-9" disabled={aiBusy}>
+                <Button ref={hideDrawingTriggerRef} type="button" size="sm" variant="outline" aria-label={t("youtubeOpinions.ai.clear")} title={t("youtubeOpinions.ai.clear")} aria-pressed={true} className="min-h-11 w-full min-w-0 gap-2 px-2 sm:min-h-9 sm:w-auto sm:px-3" disabled={aiBusy}>
                   <EyeOff className="h-4 w-4" aria-hidden="true" />
-                  {t("youtubeOpinions.ai.clear")}
+                  <span className="sm:hidden">{t("youtubeOpinions.ai.hideDrawingsShort")}</span><span className="hidden sm:inline">{t("youtubeOpinions.ai.clear")}</span>
                 </Button>
               </DialogTrigger>)}
               <DialogContent showCloseButton={false}
@@ -957,7 +957,7 @@ export default function ChartView({
                 </DialogHeader>
                 <DialogFooter className="gap-2 sm:space-x-0">
                   <DialogClose asChild><Button ref={cancelHideRef} type="button" variant="outline">{t("common.cancel")}</Button></DialogClose>
-                  <Button type="button" variant="destructive" className="bg-red-600 text-white" disabled={aiBusy || drawingAi.status !== "done"} onClick={() => {
+                  <Button type="button" variant="outline" disabled={aiBusy || drawingAi.status !== "done"} onClick={() => {
                     onDrawingVisibilityChange?.(true);
                     setHideDrawingsOpen(false);
                   }}>{t("youtubeOpinions.ai.confirmHideDrawings")}</Button>
@@ -967,8 +967,8 @@ export default function ChartView({
   );
   const aiControls = (
     <div className={advanced ? "min-w-0" : "mt-3 border-t border-border pt-3"} role="group" aria-label={t("youtubeOpinions.ai.actions")}>
-        <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_44px] items-center gap-2 sm:flex sm:flex-wrap sm:justify-between">
-          <div className="contents sm:flex sm:flex-wrap sm:items-center sm:gap-2">
+        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
+          <div className="grid min-w-0 grid-cols-2 gap-2 sm:flex sm:items-center">
             <Button size="sm" className="min-h-11 min-w-0 gap-1.5 px-2 sm:min-h-9 sm:min-w-[112px] sm:gap-2 sm:px-3" onClick={() => modelReady ? void runAi("analysis") : setSettingsOpen(true)} aria-busy={ai.status === "loading"}
               disabled={!loaded || providersLoading || aiBusy || ai.status === "loading" || drawingAi.status === "loading"}
               title={t("youtubeOpinions.ai.runAnalysis")}>
@@ -982,12 +982,12 @@ export default function ChartView({
               {t("youtubeOpinions.ai.button")}
             </Button>
           </div>
-          <div className="contents sm:ml-auto sm:flex sm:items-center sm:gap-2">
+          <div className="grid min-w-0 grid-cols-2 gap-2 sm:ml-auto sm:flex sm:flex-wrap sm:items-center">
           <Dialog open={settingsOpen} onOpenChange={(open) => { setSettingsOpen(open); if (open) void refreshProviders(); }}>
             <DialogTrigger asChild>
-              <Button type="button" size="sm" variant="ghost" aria-label={t("youtubeOpinions.ai.chartSettings")} title={t("youtubeOpinions.ai.chartSettings")} className="h-11 w-11 shrink-0 p-0 text-muted-foreground hover:text-foreground sm:h-9 sm:w-auto sm:px-3">
+              <Button type="button" size="sm" variant="outline" aria-label={t("youtubeOpinions.ai.chartSettings")} title={t("youtubeOpinions.ai.chartSettings")} className="min-h-11 w-full min-w-0 gap-2 px-2 sm:min-h-9 sm:w-auto sm:px-3">
                 <SlidersHorizontal className="h-4 w-4" aria-hidden="true" />
-                <span className="hidden sm:inline">{t("youtubeOpinions.ai.chartSettings")}</span>
+                <span>{t("youtubeOpinions.ai.chartSettings")}</span>
               </Button>
             </DialogTrigger>
             <DialogContent layout="sheet" showCloseButton={false} className="flex flex-col" onEscapeKeyDown={(event) => event.stopPropagation()}>
@@ -1030,16 +1030,15 @@ export default function ChartView({
               </DialogFooter>
             </DialogContent>
           </Dialog>
+            {drawingAi.status === "done" && <div className="min-w-0 sm:w-auto">{hideDrawingsControl}</div>}
             <Button type="button" size="sm" variant="ghost"
-              className="min-h-11 justify-self-start gap-2 px-0 text-muted-foreground sm:hidden"
+              className="col-span-2 min-h-11 w-full justify-between gap-2 px-3 text-muted-foreground sm:hidden"
               aria-expanded={mobileToolsOpen}
               aria-controls={drawingToolbarId}
               onClick={() => setMobileToolsOpen(open => !open)}>
-              <SlidersHorizontal className="h-4 w-4" aria-hidden="true" />
-              {t("youtubeOpinions.drawTools")}
+              <span className="inline-flex items-center gap-2"><SlidersHorizontal className="h-4 w-4" aria-hidden="true" />{t("youtubeOpinions.drawTools")}</span>
               <ChevronDown className={cn("h-4 w-4", mobileToolsOpen && "rotate-180")} aria-hidden="true" />
             </Button>
-            <div className="col-span-2 justify-self-end">{hideDrawingsControl}</div>
           </div>
         </div>
 

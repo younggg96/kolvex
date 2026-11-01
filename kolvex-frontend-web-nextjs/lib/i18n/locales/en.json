@@ -1302,6 +1302,8 @@
       "rerun": "Re-run",
       "clear": "Hide AI drawings",
       "showDrawings": "Show AI drawings",
+      "hideDrawingsShort": "Hide drawings",
+      "showDrawingsShort": "Show drawings",
       "hideDrawingsTitle": "Hide AI drawings?",
       "hideDrawingsDescription": "Temporarily hide AI drawings while keeping the results. Choose Show AI drawings to restore them without generating again.",
       "confirmHideDrawings": "Confirm hide",
