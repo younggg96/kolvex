@@ -65,6 +65,27 @@ def _optional_volume(value) -> Optional[int]:
     return int(number)
 
 
+def _financial_number(value):
+    """Keep source precision and zeroes; represent pandas gaps as JSON null."""
+    if value is None or pd.isna(value):
+        return None
+    if hasattr(value, "item"):
+        value = value.item()
+    return value if isinstance(value, (int, float)) and math.isfinite(value) else None
+
+
+def _statement_rows(df) -> List[Dict[str, Any]]:
+    if df is None or df.empty:
+        return []
+    return [
+        {
+            "period": col.isoformat() if hasattr(col, "isoformat") else str(col),
+            **{str(idx): _financial_number(df.loc[idx, col]) for idx in df.index},
+        }
+        for col in df.columns
+    ]
+
+
 def _history_point(row) -> Dict[str, Any]:
     """One OHLCV bar. Incomplete sessions from Yahoo use NaN prices; those stay null."""
     date_val = row.get("Date") or row.get("Datetime")
@@ -439,23 +460,7 @@ class YFinanceService:
         else:
             df = ticker.income_stmt
 
-        if df.empty:
-            return []
-
-        result = []
-        for col in df.columns:
-            period_data = {
-                "period": col.isoformat() if hasattr(col, "isoformat") else str(col),
-            }
-            for idx in df.index:
-                value = df.loc[idx, col]
-                # 转换为 Python 原生类型
-                if hasattr(value, "item"):
-                    value = value.item()
-                period_data[str(idx)] = value
-            result.append(period_data)
-
-        return result
+        return _statement_rows(df)
 
     def get_balance_sheet(self, symbol: str, quarterly: bool = False) -> List[Dict[str, Any]]:
         """
@@ -468,22 +473,7 @@ class YFinanceService:
         else:
             df = ticker.balance_sheet
 
-        if df.empty:
-            return []
-
-        result = []
-        for col in df.columns:
-            period_data = {
-                "period": col.isoformat() if hasattr(col, "isoformat") else str(col),
-            }
-            for idx in df.index:
-                value = df.loc[idx, col]
-                if hasattr(value, "item"):
-                    value = value.item()
-                period_data[str(idx)] = value
-            result.append(period_data)
-
-        return result
+        return _statement_rows(df)
 
     def get_cash_flow(self, symbol: str, quarterly: bool = False) -> List[Dict[str, Any]]:
         """
@@ -496,22 +486,7 @@ class YFinanceService:
         else:
             df = ticker.cashflow
 
-        if df.empty:
-            return []
-
-        result = []
-        for col in df.columns:
-            period_data = {
-                "period": col.isoformat() if hasattr(col, "isoformat") else str(col),
-            }
-            for idx in df.index:
-                value = df.loc[idx, col]
-                if hasattr(value, "item"):
-                    value = value.item()
-                period_data[str(idx)] = value
-            result.append(period_data)
-
-        return result
+        return _statement_rows(df)
 
     def get_dividends(self, symbol: str) -> Dict[str, Any]:
         """
@@ -701,14 +676,15 @@ class YFinanceService:
         try:
             earnings_df = ticker.earnings_history
             if earnings_df is not None and not earnings_df.empty:
-                for _, row in earnings_df.iterrows():
+                for idx, row in earnings_df.iterrows():
                     eps_actual = row.get("epsActual")
                     eps_estimate = row.get("epsEstimate")
+                    quarter = row.get("quarter", idx)
                     earnings_history.append({
-                        "quarter": row.get("quarter"),
-                        "eps_actual": float(eps_actual) if eps_actual else None,
-                        "eps_estimate": float(eps_estimate) if eps_estimate else None,
-                        "surprise_percent": row.get("surprisePercent"),
+                        "quarter": None if pd.isna(quarter) else quarter.isoformat() if hasattr(quarter, "isoformat") else str(quarter),
+                        "eps_actual": _financial_number(eps_actual),
+                        "eps_estimate": _financial_number(eps_estimate),
+                        "surprise_percent": _financial_number(row.get("surprisePercent")),
                     })
         except Exception:
             pass
@@ -721,9 +697,9 @@ class YFinanceService:
                 for idx, row in dates_df.head(8).iterrows():
                     earnings_dates.append({
                         "date": idx.isoformat() if hasattr(idx, "isoformat") else str(idx),
-                        "eps_estimate": row.get("EPS Estimate"),
-                        "reported_eps": row.get("Reported EPS"),
-                        "surprise_percent": row.get("Surprise(%)"),
+                        "eps_estimate": _financial_number(row.get("EPS Estimate")),
+                        "reported_eps": _financial_number(row.get("Reported EPS")),
+                        "surprise_percent": _financial_number(row.get("Surprise(%)")),
                     })
         except Exception:
             pass
@@ -731,8 +707,8 @@ class YFinanceService:
         return {
             "symbol": symbol.upper(),
             "earnings_date": info.get("earningsDate"),
-            "earnings_quarterly_growth": info.get("earningsQuarterlyGrowth"),
-            "revenue_quarterly_growth": info.get("revenueQuarterlyGrowth"),
+            "earnings_quarterly_growth": _financial_number(info.get("earningsQuarterlyGrowth")),
+            "revenue_quarterly_growth": _financial_number(info.get("revenueQuarterlyGrowth")),
             "earnings_history": earnings_history,
             "earnings_dates": earnings_dates,
         }
