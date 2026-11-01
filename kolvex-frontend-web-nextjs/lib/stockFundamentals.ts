@@ -70,7 +70,7 @@ export function epsOutcome(actual: unknown, estimate: unknown) {
 }
 export function fundamentalsKey(
   symbol: string,
-  kind: StatementKind | "earnings" | "analyst",
+  kind: StatementKind | "earnings" | "analyst" | "overview-metrics",
   quarterly = false,
 ) {
   return `/api/market/fundamentals/${encodeURIComponent(symbol)}/${kind}?quarterly=${quarterly}`;
@@ -132,4 +132,56 @@ export function csvCell(value: string | number | null): string {
   const safe =
     typeof value === "string" && /^[=+@\-\t\r]/.test(text) ? `'${text}` : text;
   return `"${safe.replaceAll('"', '""')}"`;
+}
+
+export interface StockOverviewMetrics {
+  symbol: string;
+  analyzed_at: string;
+  unavailable_sources: string[];
+  shares_outstanding?: number | null;
+  insider_ownership?: number | null;
+  short_float?: number | null;
+  target_mean_price?: number | null;
+  current_price?: number | null;
+  analyst_count?: number | null;
+  earnings_date?: number | null;
+  beta_5y?: number | null;
+  dividend_yield?: number | null;
+  payout_ratio?: number | null;
+  total_assets?: number | null;
+  long_term_debt?: number | null;
+  total_liabilities?: number | null;
+  shareholder_equity?: number | null;
+  operating_income?: number | null;
+  capital_expenditure?: number | null;
+  pretax_margin?: number | null;
+  fcf_margin_annual?: number | null;
+  cash_conversion_annual?: number | null;
+  revenue_cagr_3y?: number | null;
+  eps_cagr_3y?: number | null;
+  roce_annual?: number | null;
+  roic_annual?: number | null;
+  price_to_fcf?: number | null;
+  buyback_yield_annual?: number | null;
+  forecast_earnings_growth?: number | null;
+  max_drawdown_5y?: number | null;
+  ytd_return?: number | null;
+  benchmark_ytd_return?: number | null;
+  ytd_vs_sp500?: number | null;
+  financial_currency?: string | null;
+  currency?: string | null;
+  target_currency?: string | null;
+  analyst_consensus?: string | null;
+  income_period?: string | null;
+  balance_period?: string | null;
+  cash_period?: string | null;
+  history_start?: string | null;
+  history_end?: string | null;
+  ytd_start?: string | null;
+  ytd_end?: string | null;
+}
+
+/** Ratios with a positive denominator; zero numerators remain meaningful. */
+export function overviewRatio(a: unknown, b: unknown): number | null {
+  return finite(a) && finite(b) && b > 0 && Number.isFinite(a / b) ? a / b : null;
 }

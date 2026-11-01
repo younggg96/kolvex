@@ -21,6 +21,7 @@ from app.services.technical_analysis import AiNotConfigured, analyze_chart
 from app.services.technical_focus import TechnicalFocus
 from app.services.user_api_keys_service import UserApiKeysService, get_user_api_keys_service
 from app.services.yfinance.client import get_yfinance_service
+from app.services.yfinance.overview_metrics import get_overview_metrics
 
 logger = logging.getLogger(__name__)
 
@@ -940,3 +941,14 @@ async def get_stock_overview(
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"获取综合概览失败: {str(e)}")
+@router.get("/overview-metrics/{symbol}", summary="获取个股概览补充指标")
+def get_stock_overview_metrics(
+    symbol: str = Path(..., pattern=r"^[A-Za-z0-9.^-]{1,12}$"),
+):
+    try:
+        return get_overview_metrics(get_yfinance_service(), symbol)
+    except Exception as error:
+        logger.warning("Overview metrics unavailable for %s: %s", symbol, type(error).__name__)
+        raise HTTPException(status_code=503, detail="Overview metrics unavailable") from error
+
+

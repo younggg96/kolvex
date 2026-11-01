@@ -95,7 +95,13 @@ the chart/research modules without stock-only financial tabs.
 
 Overview, Technicals and Setup share the mounted K-line chart and AI drawing tools.
 Its workspace plot is 320px on phones and 420px from sm; advanced/fullscreen views
-retain their existing sizing. Financials, Earnings, Metric trends, Target price, Profile,
+retain their existing sizing. The AI toolbar keeps Analysis and Drawings together
+as primary actions, with Settings and drawing visibility as quiet outlined utility
+buttons. Desktop aligns the groups horizontally; phones use two equal columns for
+each group with full text labels, 44px minimum targets and a separate full-width
+manual-tools disclosure. Drawing visibility is reversible and uses neutral styling,
+including its existing confirmation; it does not borrow destructive red. Compact
+mobile visibility labels retain full accessible names. Financials, Earnings, Metric trends, Target price, Profile,
 News, Creators and Research show their own content directly below navigation. The
 chart remains mounted but hidden for these views, preserving overlays and jobs.
 Overview orders the chart, source-backed growth indicators, three grouped financial
