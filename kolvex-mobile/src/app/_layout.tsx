@@ -5,6 +5,8 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import { AuthProvider, useAuth } from "../state/Auth";
 import { WatchlistProvider } from "../state/Watchlist";
 import { useTheme } from "../lib/theme";
+export const unstable_settings = { anchor: "(tabs)" };
+
 function AppContent() {
   const { session } = useAuth();
   const t = useTheme();

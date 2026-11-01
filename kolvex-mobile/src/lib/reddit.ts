@@ -157,16 +157,17 @@ export async function redditRanking(
   const cached = snapshots.get(community);
   if (!refresh && cached && Date.now() - Date.parse(cached.fetchedAt) < 300000)
     return cached;
-  const response = await fetch(
-    `https://apewisdom.io/api/v1.0/filter/${community}/page/1`,
-    { signal, headers: { Accept: "application/json" } },
+  const { apiRequest } = await import("./http");
+  const result = await apiRequest<RedditRanking>(
+    `/reddit-opinions?community=${encodeURIComponent(community)}`,
+    { signal },
   );
-  if (!response.ok) throw new Error("Reddit 讨论榜暂时无法读取，请重试。");
-  const result = {
-    results: parseRedditStocks(await response.json()),
-    fetchedAt: new Date().toISOString(),
-    community,
-  };
+  if (
+    !Array.isArray(result.results) ||
+    result.community !== community ||
+    typeof result.fetchedAt !== "string"
+  )
+    throw new Error("讨论榜格式无效，请重试。");
   snapshots.set(community, result);
   return result;
 }

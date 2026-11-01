@@ -71,7 +71,10 @@ export default function Stock() {
         ) : bars.error ? (
           <Failure message={bars.error} retry={bars.refresh} />
         ) : (
-          <Chart data={bars.data ?? []} currency={q.data?.currency ?? undefined} />
+          <Chart
+            data={bars.data ?? []}
+            currency={q.data?.currency ?? undefined}
+          />
         )}
         <View style={styles.row}>
           {[
@@ -126,7 +129,12 @@ export default function Stock() {
           </View>
         ))}
       </Glass>
-      {valid && <StockContent symbol={symbol} />}
+      {valid && (
+        <StockContent
+          symbol={symbol}
+          currency={q.data?.currency ?? undefined}
+        />
+      )}
       <Copy size={12} muted>
         缺失数据以 — 显示。历史图为每日收盘价，不代表实时或盘中走势。
       </Copy>

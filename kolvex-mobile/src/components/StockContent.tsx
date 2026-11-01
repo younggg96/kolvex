@@ -1,3 +1,4 @@
+import { Statements, Earnings, Analysts } from "./StockResearch";
 import { useState } from "react";
 import { View } from "react-native";
 import { apiRequest } from "../lib/http";
@@ -7,7 +8,13 @@ import { number } from "../lib/models";
 import { useResource } from "../lib/useResource";
 import { Copy, Empty, Glass, Section } from "./UI";
 import { Filters, ResourceState, SourceLink } from "./Content";
-export function StockContent({ symbol }: { symbol: string }) {
+export function StockContent({
+  symbol,
+  currency,
+}: {
+  symbol: string;
+  currency?: string;
+}) {
   const [tab, setTab] = useState("company");
   return (
     <View style={{ gap: 16 }}>
@@ -15,6 +22,9 @@ export function StockContent({ symbol }: { symbol: string }) {
         values={[
           ["company", "公司资料"],
           ["financials", "基本面"],
+          ["statements", "财务报表"],
+          ["earnings", "盈利"],
+          ["analyst", "分析师"],
           ["news", "最新新闻"],
         ]}
         value={tab}
@@ -29,6 +39,12 @@ export function StockContent({ symbol }: { symbol: string }) {
         <Company symbol={symbol} />
       ) : tab === "financials" ? (
         <Financials symbol={symbol} />
+      ) : tab === "statements" ? (
+        <Statements symbol={symbol} />
+      ) : tab === "earnings" ? (
+        <Earnings symbol={symbol} />
+      ) : tab === "analyst" ? (
+        <Analysts symbol={symbol} currency={currency} />
       ) : (
         <StockNews symbol={symbol} />
       )}
@@ -81,7 +97,7 @@ function Financials({ symbol }: { symbol: string }) {
     ["return_on_equity", "净资产收益率"],
     ["revenue_growth", "营收增长率"],
     ["debt_to_equity", "负债权益比"],
-    ["free_cashflow", "自由现金流"],
+    ["free_cash_flow", "自由现金流"],
   ];
   return (
     <>

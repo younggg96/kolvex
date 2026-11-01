@@ -31,3 +31,7 @@ Auth state changes remount the account-scoped screen subtree. Private read hooks
 Portfolio is read-only on mobile. No brokerage authorization, orders, public-sharing changes, admin writes or costly research-generation action is added. Signup is a user action; implementation/verification did not create real accounts or send real AI questions.
 
 Dates that are calendar-only remain unchanged. Market amounts retain source currency/unit. Missing values remain unavailable, and demo quotes are never a fallback for real API failures. Native-device verification and authenticated success-path acceptance remain outstanding as recorded in VERIFICATION.md.
+
+## Native financial reading
+
+StockResearch owns annual/quarterly statement selection, native SVG chart/matrix, compact M/B/T display with exact CSV/accessibility values, explicit reporting currency, loss-aware EPS outcomes and source analyst targets. The root router anchors deep links to the main tab group so readers retain a way back. Reddit reads a fixed allowlisted public FastAPI proxy; it never forwards account tokens to ApeWisdom.

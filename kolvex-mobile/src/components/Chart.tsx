@@ -23,7 +23,7 @@ export function Chart({ data, currency }: { data: Bar[]; currency?: string }) {
   const color = values[values.length - 1] >= values[0] ? t.accent : t.negative;
   return (
     <View
-      accessibilityLabel={`历史收盘价折线图，${data[0].date} 至 ${data[data.length - 1].date}，起点 ${values[0].toFixed(2)}，终点 ${values[values.length - 1].toFixed(2)} ${currency || "报价币种未提供"}`}
+      accessibilityLabel={`历史收盘价折线图，${data[0].date.slice(0, 10)} 至 ${data[data.length - 1].date.slice(0, 10)}，起点 ${values[0].toFixed(2)}，终点 ${values[values.length - 1].toFixed(2)} ${currency || "报价币种未提供"}`}
     >
       <Svg width="100%" height={200} viewBox="0 0 320 200" accessible={false}>
         {[24, 99, 174].map((y) => (
@@ -48,10 +48,10 @@ export function Chart({ data, currency }: { data: Bar[]; currency?: string }) {
       </Svg>
       <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
         <Copy size={12} muted>
-          {data[0].date}
+          {data[0].date.slice(0, 10)}
         </Copy>
         <Copy size={12} muted>
-          {data[data.length - 1].date}
+          {data[data.length - 1].date.slice(0, 10)}
         </Copy>
       </View>
     </View>

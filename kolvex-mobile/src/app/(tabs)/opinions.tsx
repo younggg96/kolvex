@@ -125,7 +125,13 @@ function YouTube({ revision }: { revision: number }) {
             </Copy>
             <Copy
               size={12}
-              color={item.sentiment === "bearish" ? t.negative : item.sentiment === "bullish" ? t.accent : t.secondary}
+              color={
+                item.sentiment === "bearish"
+                  ? t.negative
+                  : item.sentiment === "bullish"
+                    ? t.accent
+                    : t.secondary
+              }
             >
               {sentiments[item.sentiment] ?? "未分类"}
             </Copy>

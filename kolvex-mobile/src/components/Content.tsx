@@ -127,7 +127,7 @@ export function Filters({
   return (
     <ScrollView
       horizontal
-      showsHorizontalScrollIndicator
+      showsHorizontalScrollIndicator={false}
       contentContainerStyle={{ gap: 8, paddingBottom: 4 }}
     >
       {values.map(([key, name]) => (

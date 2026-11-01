@@ -26,6 +26,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
   const [error, setError] = useState<string>();
   useEffect(() => {
     let active = true;
+    let authEvents = 0;
     configureIdentity(async () => {
       const result = await supabase?.auth.getSession();
       const s = result?.data.session;
@@ -35,6 +36,8 @@ export function AuthProvider({ children }: PropsWithChildren) {
     });
     const { data } = supabase?.auth.onAuthStateChange((_event, value) => {
       if (active) {
+        authEvents += 1;
+        if (value) setError(undefined);
         setSession(value);
         setReady(true);
       }
@@ -42,13 +45,13 @@ export function AuthProvider({ children }: PropsWithChildren) {
     supabase?.auth
       .getSession()
       .then((result) => {
-        if (!active) return;
+        if (!active || authEvents > 0) return;
         if (result.error) setError("会话恢复失败，请重新登录。");
         setSession(result.data.session);
         setReady(true);
       })
       .catch(() => {
-        if (active) {
+        if (active && authEvents === 0) {
           setError("无法读取安全会话，请重新登录。");
           setReady(true);
         }
