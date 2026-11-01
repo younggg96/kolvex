@@ -67,9 +67,7 @@ export default function AiAnalysisPanel({ state, busy = false, interval, onRetry
       </p>}
 
       {state.status === "done" && result && <div className="mt-5">
-        <div className="max-w-[85ch]">
-          <AnalysisSummary key={result.summary} text={result.summary} t={t} />
-        </div>
+        <AnalysisSummary key={result.summary} text={result.summary} t={t} />
         {result.invalidation && <div className="mt-4  rounded-xl bg-muted/60 p-4">
           <h4 className="text-sm font-semibold text-warning">{t("youtubeOpinions.ai.invalidation")}</h4>
           <p className="mt-2 max-w-[90ch] whitespace-pre-line break-words text-sm leading-7">{result.invalidation}</p>
