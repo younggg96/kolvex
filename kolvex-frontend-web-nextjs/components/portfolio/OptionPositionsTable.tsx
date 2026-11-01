@@ -252,7 +252,6 @@ export function OptionPositionsTable({
                             pos.symbol
                           }
                           size="sm"
-                          shape="rounded"
                           border="light"
                         />
                       )}

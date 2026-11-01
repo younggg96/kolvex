@@ -218,8 +218,9 @@ and report metadata. Route navigation uses an underline and otherwise stays flat
 
 Stock identity always pairs a company logo with its ticker in structured stock
 references. `components/ui/company-logo.tsx` owns logo loading, its white image
-surface and the symbol fallback. Use at least the 32px `sm` size for stock tags
-and opinion identities. `components/ui/stock-badge.tsx` owns the bordered,
+surface and the symbol fallback. Every company logo and its symbol fallback renders
+as a circle; the former 22% rounded-square shape is retired. Use at least the
+32px `sm` size for stock tags and opinion identities. `components/ui/stock-badge.tsx` owns the bordered,
 wrapping logo/ticker link used by event calendars, daily briefs and X cashtags;
 calendar badges sit above the event title, separately from source attribution.
 Every company in a multi-stock event gets its own badge. Existing stock lists

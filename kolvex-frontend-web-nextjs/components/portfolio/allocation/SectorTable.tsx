@@ -182,7 +182,6 @@ export function SectorTable({
                           <CompanyLogo
                             symbol={aggPos.displaySymbol}
                             size="sm"
-                            shape="rounded"
                             border="light"
                           />
                           <div className="flex flex-col">

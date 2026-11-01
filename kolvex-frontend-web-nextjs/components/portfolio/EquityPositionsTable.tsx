@@ -168,7 +168,6 @@ export function EquityPositionsTable({
                         symbol={pos.symbol}
                         name={pos.security_name || pos.symbol}
                         size="sm"
-                        shape="rounded"
                         border="light"
                       />
                     )}

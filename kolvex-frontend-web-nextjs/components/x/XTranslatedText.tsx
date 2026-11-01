@@ -96,7 +96,7 @@ export default function XTranslatedText({ text, quotes = [], compact = false }: 
   }
   const showingTranslation = resultKey === key && show && translated;
   const content = showingTranslation ? translated! : [text, ...quotes];
-  return <div ref={root} className="max-w-prose">
+  return <div ref={root} className="w-full min-w-0 max-w-none">
     <p lang={showingTranslation ? (locale === "zh" ? "zh-CN" : "en") : undefined} className={`${!compact && text.length > 600 && !expanded ? "line-clamp-6" : ""} whitespace-pre-wrap break-words [overflow-wrap:anywhere] ${compact ? "text-sm leading-6 text-muted-foreground" : "text-base leading-7"}`}>{content[0]}</p>
     {!compact && text.length > 600 && <Button type="button" variant="ghost" size="sm" aria-expanded={expanded} onClick={() => setExpanded(value => !value)} className="mt-1 min-h-10 px-2 text-xs">{expanded ? c("Show less", "收起全文") : c("Read full post", "展开全文")}</Button>}
     {content.slice(1).map((quote, index) => <blockquote key={index} className="mt-3 whitespace-pre-wrap break-words rounded-3xl bg-muted p-4 text-sm leading-6 [overflow-wrap:anywhere]">{quote}</blockquote>)}

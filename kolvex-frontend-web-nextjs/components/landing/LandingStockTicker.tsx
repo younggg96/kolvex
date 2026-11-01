@@ -114,7 +114,6 @@ export default function LandingStockTicker() {
                     symbol={stock.symbol}
                     name={COMPANY_NAMES[stock.symbol]}
                     size="sm"
-                    shape="rounded"
                     border="light"
                     borderColor="gray"
                     className="group-hover:scale-105 transition-transform duration-300"

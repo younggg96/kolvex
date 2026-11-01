@@ -51,8 +51,8 @@ interface CompanyLogoProps {
   size?: "xs" | "sm" | "md" | "lg" | "xl";
   /** Custom size in pixels (overrides size variant) */
   customSize?: number;
-  /** Shape variant */
-  shape?: "square" | "rounded" | "circle";
+  /** Shape variant (company logos are circular by default) */
+  shape?: "square" | "circle";
   /** Border style */
   border?: "none" | "light" | "normal" | "heavy";
   /** Border color variant */
@@ -81,7 +81,6 @@ const sizeMap = {
 
 const shapeMap = {
   square: "rounded-none",
-  rounded: "rounded-[22%]",
   circle: "rounded-full",
 };
 
@@ -116,7 +115,7 @@ export default function CompanyLogo({
   name,
   size = "md",
   customSize,
-  shape = "rounded",
+  shape = "circle",
   border = "light",
   borderColor = "gray",
   customBorderColor,
