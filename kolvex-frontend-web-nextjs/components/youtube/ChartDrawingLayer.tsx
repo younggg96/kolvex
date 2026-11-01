@@ -119,6 +119,21 @@ export default function ChartDrawingLayer({
         );
         break;
       }
+      case "extended": {
+        const length = Math.hypot(b.x - a.x, b.y - a.y) || 1;
+        const scale = (width + height) * 2 / length;
+        const start = { x: a.x - (b.x - a.x) * scale, y: a.y - (b.y - a.y) * scale };
+        const end = { x: b.x + (b.x - a.x) * scale, y: b.y + (b.y - a.y) * scale };
+        body = <><line x1={start.x} y1={start.y} x2={end.x} y2={end.y} {...stroke} />{hitLine(id, start, end)}</>;
+        break;
+      }
+      case "vline":
+        body = <>
+          <line x1={a.x} x2={a.x} y1={0} y2={height} {...stroke} strokeDasharray="4 3" />
+          <text x={Math.max(4, Math.min(a.x + 5, width - 80))} y={14} fill={color} {...labelProps}>{new Date(pa.time).toLocaleDateString(t("common.intlLocale"))}</text>
+          {hitLine(id, { x: a.x, y: 0 }, { x: a.x, y: height })}
+        </>;
+        break;
       case "hline":
         body = (
           <>
@@ -152,18 +167,20 @@ export default function ChartDrawingLayer({
         );
         break;
       }
-      case "fib": {
+      case "fib":
+      case "fibext": {
         const left = Math.min(a.x, b.x);
         const right = Math.max(a.x, b.x);
-        body = fibLevels.map((level) => {
-          const price = pb.price + (pa.price - pb.price) * level;
+        const extension = drawing.type === "fibext";
+        body = (extension ? [1, 1.272, 1.618, 2, 2.618] : fibLevels).map((level) => {
+          const price = extension ? pa.price + (pb.price - pa.price) * level : pb.price + (pa.price - pb.price) * level;
           const y = toPx({ time: pa.time, price }).y;
           return (
             <g key={level}>
               <line
                 x1={left}
                 y1={y}
-                x2={right}
+                x2={extension ? width : right}
                 y2={y}
                 stroke={color}
                 strokeWidth={level === 0 || level === 1 ? 1.25 : 1}
@@ -172,7 +189,7 @@ export default function ChartDrawingLayer({
               <text x={left + 4} y={y - 3} fill={color} {...labelProps}>
                 {`${level} (${formatPrice(price)})`}
               </text>
-              {hitLine(id, { x: left, y }, { x: right, y }, String(level))}
+              {hitLine(id, { x: left, y }, { x: extension ? width : right, y }, String(level))}
             </g>
           );
         });

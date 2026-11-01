@@ -24,6 +24,27 @@ export const ListCard = React.forwardRef<
 ));
 ListCard.displayName = "ListCard";
 
+/** Compact empty/error content inside a ListCard, without another boxed surface. */
+export function ListEmptyState({
+  title,
+  description,
+  action,
+  alert = false,
+}: {
+  title: string;
+  description?: string;
+  action?: React.ReactNode;
+  alert?: boolean;
+}) {
+  return (
+    <div role={alert ? "alert" : "status"} className="space-y-2 px-2 py-6 text-sm">
+      <p className="font-medium text-foreground">{title}</p>
+      {description && <p className="max-w-prose leading-6 text-muted-foreground">{description}</p>}
+      {action && <div className="pt-2">{action}</div>}
+    </div>
+  );
+}
+
 /** Title row for a list card: label/scope on the start side, count/sort on the end side. */
 export function ListToolbar({
   className,

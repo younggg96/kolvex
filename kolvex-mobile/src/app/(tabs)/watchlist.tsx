@@ -7,7 +7,7 @@ import {
   Copy,
   Empty,
   Failure,
-  Page,
+  ListPage,
   Skeleton,
 } from "../../components/UI";
 import { useWatchlist } from "../../state/Watchlist";
@@ -15,38 +15,57 @@ export default function Watchlist() {
   const list = useWatchlist();
   const [revision, setRevision] = useState(0);
   return (
-    <Page
+    <ListPage
       title="我的自选"
       subtitle="把值得持续关注的公司，留在这里。"
-      onRefresh={() => setRevision((v) => v + 1)}
-    >
-      {list.error && <Failure message={list.error} />}
-      {!list.ready ? (
-        <Skeleton />
-      ) : !list.symbols.length ? (
-        <>
-          <Empty
-            title="从一家公司开始"
-            message="打开股票详情，点击「加入自选」。自选保存在这台设备上。"
-          />
-          <Button onPress={() => router.navigate("/")}>浏览行情</Button>
-        </>
-      ) : (
-        list.symbols.map((symbol) => (
-          <View key={symbol} style={{ gap: 8 }}>
-            <QuoteRow symbol={symbol} revision={revision} />
-            <Button
-              onPress={() => list.toggle(symbol)}
-              label={`移除 ${symbol} 自选`}
-            >
-              移除 {symbol}
-            </Button>
+      items={list.symbols}
+      keyFor={(symbol) => symbol}
+      refreshing={list.pending}
+      onRefresh={() => {
+        list.refresh();
+        setRevision((v) => v + 1);
+      }}
+      header={
+        list.error ? (
+          <Failure message={list.error} retry={list.refresh} />
+        ) : undefined
+      }
+      empty={
+        !list.ready && !list.error ? (
+          <Skeleton />
+        ) : list.error ? undefined : (
+          <View style={{ gap: 16 }}>
+            <Empty
+              title="从一家公司开始"
+              message={
+                list.cloud
+                  ? "打开股票详情加入自选，与网页版使用同一份账户列表。"
+                  : "打开股票详情，点击「加入自选」。访客自选保存在这台设备上。"
+              }
+            />
+            <Button onPress={() => router.navigate("/")}>浏览行情</Button>
           </View>
-        ))
+        )
+      }
+      footer={
+        <Copy size={12} muted>
+          {list.cloud
+            ? "账户自选 · 下拉刷新获取网页端变化"
+            : "本机自选 · 登录后可使用云端列表"}
+        </Copy>
+      }
+      renderItem={(symbol) => (
+        <View style={{ gap: 8 }}>
+          <QuoteRow symbol={symbol} revision={revision} />
+          <Button
+            disabled={list.pending}
+            onPress={() => list.toggle(symbol)}
+            label={`移除 ${symbol} 自选`}
+          >
+            移除 {symbol}
+          </Button>
+        </View>
       )}
-      <Copy size={12} muted>
-        本机自选 · 暂不与网页账户同步
-      </Copy>
-    </Page>
+    />
   );
 }

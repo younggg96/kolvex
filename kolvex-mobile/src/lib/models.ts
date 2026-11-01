@@ -1,6 +1,7 @@
 export type Quote = {
   symbol: string;
   name?: string;
+  currency?: string | null;
   current_price: number | null;
   change: number | null;
   change_percent: number | null;
@@ -20,7 +21,15 @@ export type Opinion = {
   opinion_date: string;
   video_url?: string;
 };
-export type Dashboard = { latest: Opinion[] };
+export type Dashboard = {
+  latest: Opinion[];
+  pagination?: {
+    total: number;
+    has_more: boolean;
+    offset: number;
+    limit: number;
+  };
+};
 export const symbols = ["NVDA", "AAPL", "MSFT", "TSLA", "GOOGL", "AMZN"];
 export const companyNames: Record<string, string> = {
   NVDA: "英伟达 Nvidia",

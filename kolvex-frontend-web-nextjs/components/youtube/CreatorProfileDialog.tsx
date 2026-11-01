@@ -1,8 +1,9 @@
 "use client";
 
+import { ContentSkeleton } from "@/components/ui/content-skeleton";
 import { useState } from "react";
 import { loadClientCache, peekClientCache } from "@/lib/clientCache";
-import { ExternalLink, Loader2, UserRound } from "lucide-react";
+import { ExternalLink, UserRound } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -68,7 +69,7 @@ export default function CreatorProfileDialog({ creator, onLoaded, compact = fals
             <Badge variant="outline">{current.profile_source === "youtube" ? t("youtubeOpinions.profile.sourceYoutube") : t("youtubeOpinions.profile.sourceImported")}</Badge>
             {current.channel_url && /^https:\/\/www\.youtube\.com\//.test(current.channel_url) && <a href={current.channel_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-xs text-primary">{t("youtubeOpinions.profile.openChannel")}<ExternalLink className="h-3.5 w-3.5" /></a>}
           </div>
-          {loading && <div role="status" className="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" />{t("youtubeOpinions.profile.loading")}</div>}
+          {loading && <ContentSkeleton label={t("youtubeOpinions.profile.loading")} variant="text" rows={2} />}
           {(error || (profile && profile.profile_status !== "available")) && <p role="status" className="text-sm text-muted-foreground">{error || t("youtubeOpinions.profile.unavailableImported")}</p>}
           <div className="grid grid-cols-2 gap-x-5 gap-y-6 border-y border-border py-5 sm:grid-cols-4">
             {statistics.map(([label, value]) => <div key={label}><p className="text-xs text-muted-foreground">{label}</p><div className="mt-2 text-xl font-medium tabular-nums" aria-busy={loading && !profile}>{loading && !profile ? <Skeleton className="h-7 w-16" /> : value}</div></div>)}

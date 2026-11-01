@@ -83,3 +83,59 @@ export function computeIndicators(bars: PriceBar[], intraday: boolean, vwapAncho
 }
 
 export type IndicatorValues = ReturnType<typeof computeIndicators>;
+
+/** Wilder RSI: warm up with `period` changes, then use Wilder smoothing.
+ * A completely flat window is neutral (50), rather than overbought (100).
+ */
+export function rsi(values: number[], period = 14): Series {
+  const out: Series = new Array(values.length).fill(null);
+  if (values.length <= period) return out;
+  let gain = 0, loss = 0;
+  for (let i = 1; i <= period; i++) {
+    const delta = values[i] - values[i - 1];
+    gain += Math.max(delta, 0) / period;
+    loss += Math.max(-delta, 0) / period;
+  }
+  const value = () => loss === 0 ? (gain === 0 ? 50 : 100) : 100 - 100 / (1 + gain / loss);
+  out[period] = value();
+  for (let i = period + 1; i < values.length; i++) {
+    const delta = values[i] - values[i - 1];
+    gain = (gain * (period - 1) + Math.max(delta, 0)) / period;
+    loss = (loss * (period - 1) + Math.max(-delta, 0)) / period;
+    out[i] = value();
+  }
+  return out;
+}
+
+/** MACD (12,26,9). Histogram is DIF - DEA, without the optional 2x scaling. */
+export function macd(values: number[], fast = 12, slow = 26, signalPeriod = 9) {
+  const fastLine = ema(values, fast), slowLine = ema(values, slow);
+  const dif = values.map((_, i) => fastLine[i] === null || slowLine[i] === null ? null : fastLine[i]! - slowLine[i]!);
+  const first = Math.max(fast, slow) - 1;
+  const signal = ema(dif.slice(first) as number[], signalPeriod);
+  const dea: Series = dif.map((_, i) => i < first ? null : signal[i - first]);
+  const histogram = dif.map((v, i) => v === null || dea[i] === null ? null : v - dea[i]!);
+  return { dif, dea, histogram };
+}
+
+/** KDJ (9,3,3): full-window RSV, recursive K/D seeded at 50, J = 3K - 2D.
+ * Flat high/low windows use neutral RSV=50. J is intentionally not clamped.
+ */
+export function kdj(bars: PriceBar[], period = 9, smoothK = 3, smoothD = 3) {
+  const k: Series = new Array(bars.length).fill(null);
+  const d: Series = new Array(bars.length).fill(null);
+  const j: Series = new Array(bars.length).fill(null);
+  let previousK = 50, previousD = 50;
+  for (let i = period - 1; i < bars.length; i++) {
+    let high = -Infinity, low = Infinity;
+    for (let n = i - period + 1; n <= i; n++) {
+      high = Math.max(high, bars[n].high);
+      low = Math.min(low, bars[n].low);
+    }
+    const rsv = high === low ? 50 : (bars[i].close - low) / (high - low) * 100;
+    previousK = (previousK * (smoothK - 1) + rsv) / smoothK;
+    previousD = (previousD * (smoothD - 1) + previousK) / smoothD;
+    k[i] = previousK; d[i] = previousD; j[i] = 3 * previousK - 2 * previousD;
+  }
+  return { k, d, j };
+}

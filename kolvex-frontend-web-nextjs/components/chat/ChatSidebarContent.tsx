@@ -1,7 +1,8 @@
 "use client";
 
+import { ContentSkeleton } from "@/components/ui/content-skeleton";
 import { useState, useEffect, useCallback, useRef } from "react";
-import { Trash2, MessagesSquare, Loader2 } from "lucide-react";
+import { Trash2, MessagesSquare } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import type { ChatHistoryItem } from "./types";
@@ -198,11 +199,7 @@ export function ChatSidebarContent({
   // Show loading state
   if (isLoading) {
     return (
-      <div className="flex flex-col h-full pl-3">
-        <div className="flex items-center justify-center h-32">
-          <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
-        </div>
-      </div>
+      <ContentSkeleton label="Loading conversations / 正在加载会话" variant="text" rows={4} className="pl-3" />
     );
   }
 

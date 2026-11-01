@@ -289,7 +289,7 @@ export default function StockWorkspace({
     },
     {
       loading: researchLoading && !research?.fundamentals_report,
-      action: !research?.fundamentals_report ? "research" : null,
+      action: null,
       label: c("Fundamental", "基本面"),
       direction: null,
       assessed: Boolean(research?.fundamentals_report?.trim()),
@@ -299,7 +299,7 @@ export default function StockWorkspace({
     },
     {
       loading: researchLoading && !research?.news_report,
-      action: !research?.news_report ? "research" : null,
+      action: null,
       label: c("News", "新闻"),
       direction: null,
       assessed: Boolean(research?.news_report?.trim()),
@@ -704,34 +704,19 @@ export default function StockWorkspace({
                                 </Button>
                               </dd>
                             ) : (
-                              item.action && (
+                              item.action === "technical" && (
                                 <dd className="mt-2">
                                   <Button
                                     size="sm"
                                     variant="outline"
-                                    disabled={
-                                      item.action === "technical"
-                                        ? technicalBusy
-                                        : personalResearch.busy
-                                    }
+                                    disabled={technicalBusy}
                                     onClick={() =>
-                                      item.action === "technical"
-                                        ? setGenerationRequest(
-                                            (value) => value + 1,
-                                          )
-                                        : void personalResearch.generate()
+                                      setGenerationRequest((value) => value + 1)
                                     }
                                   >
-                                    {item.action === "technical"
-                                      ? technicalBusy
-                                        ? c("Analyzing…", "正在分析…")
-                                        : c("Generate analysis", "生成分析")
-                                      : personalResearch.busy
-                                        ? c("Generating…", "正在生成…")
-                                        : c(
-                                            "Generate AI research",
-                                            "生成 AI 研究",
-                                          )}
+                                    {technicalBusy
+                                      ? c("Analyzing…", "正在分析…")
+                                      : c("Generate analysis", "生成分析")}
                                   </Button>
                                 </dd>
                               )

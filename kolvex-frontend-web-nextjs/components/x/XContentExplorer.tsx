@@ -1,9 +1,10 @@
 "use client";
 
+import { ContentSkeleton } from "@/components/ui/content-skeleton";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { ExternalLink, Loader2, Search, RefreshCw } from "lucide-react";
+import { ExternalLink, Search, RefreshCw } from "lucide-react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -266,13 +267,7 @@ export default function XContentExplorer() {
                   </form>
                   <div aria-live="polite" aria-busy={loading}>
                     {loading && (
-                      <p
-                        role="status"
-                        className="flex items-center justify-center gap-2 py-12 text-sm text-muted-foreground"
-                      >
-                        <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" aria-hidden="true" />
-                        {c("Loading posts…", "正在加载推文…")}
-                      </p>
+                      <ContentSkeleton label={c("Loading posts…", "正在加载推文…")} variant="text" rows={4} />
                     )}
                     {error && (
                       <div

@@ -7,6 +7,7 @@ import {
 } from "react";
 import {
   AccessibilityInfo,
+  FlatList,
   Platform,
   Pressable,
   RefreshControl,
@@ -31,15 +32,18 @@ export function Copy({
   muted = false,
   bold = false,
   color,
+  selectable = false,
 }: PropsWithChildren<{
   size?: number;
   muted?: boolean;
   bold?: boolean;
   color?: string;
+  selectable?: boolean;
 }>) {
   const t = useTheme();
   return (
     <Text
+      selectable={selectable}
       style={{
         color: color ?? (muted ? t.secondary : t.text),
         fontSize: size,
@@ -139,19 +143,37 @@ export function Page({
   children,
   refreshing,
   onRefresh,
+  followContent = false,
 }: PropsWithChildren<{
   title: string;
   subtitle?: string;
   refreshing?: boolean;
   onRefresh?: () => void;
+  followContent?: boolean;
 }>) {
   const t = useTheme();
   const insets = useSafeAreaInsets();
+  const scroll = useRef<ComponentRef<typeof ScrollView>>(null);
+  const nearEnd = useRef(true);
   return (
     <ScrollView
+      ref={scroll}
+      onScroll={(event) => {
+        const { contentOffset, contentSize, layoutMeasurement } =
+          event.nativeEvent;
+        nearEnd.current =
+          contentOffset.y + layoutMeasurement.height >=
+          contentSize.height - 120;
+      }}
+      scrollEventThrottle={100}
+      onContentSizeChange={() => {
+        if (followContent && nearEnd.current)
+          scroll.current?.scrollToEnd({ animated: false });
+      }}
       style={{ flex: 1, backgroundColor: t.background }}
       contentInsetAdjustmentBehavior="automatic"
       keyboardShouldPersistTaps="handled"
+      automaticallyAdjustKeyboardInsets
       contentContainerStyle={{
         paddingHorizontal: 24,
         paddingTop: Platform.OS === "android" ? insets.top + 16 : 16,
@@ -261,10 +283,12 @@ export function Search({
   value,
   onChange,
   onSubmit,
+  placeholder = "搜索股票代码或名称",
 }: {
   value: string;
   onChange: (v: string) => void;
   onSubmit?: () => void;
+  placeholder?: string;
 }) {
   const t = useTheme();
   const input = useRef<ComponentRef<typeof TextInput>>(null);
@@ -280,8 +304,8 @@ export function Search({
         ref={input}
         value={value}
         onChangeText={onChange}
-        accessibilityLabel="搜索股票代码或名称"
-        placeholder="搜索股票代码或名称"
+        accessibilityLabel={placeholder}
+        placeholder={placeholder}
         placeholderTextColor={t.secondary}
         autoCapitalize="characters"
         autoCorrect={false}
@@ -338,3 +362,83 @@ export const styles = StyleSheet.create({
     gap: 12,
   },
 });
+
+// Virtualized counterpart of Page for potentially large news/watchlist feeds.
+export function ListPage<T>({
+  title,
+  subtitle,
+  items,
+  keyFor,
+  renderItem,
+  header,
+  footer,
+  empty,
+  onRefresh,
+  refreshing = false,
+}: {
+  title: string;
+  subtitle?: string;
+  items: readonly T[];
+  keyFor: (item: T) => string;
+  renderItem: (item: T) => React.ReactElement;
+  header?: React.ReactElement;
+  footer?: React.ReactElement;
+  empty?: React.ReactElement;
+  onRefresh: () => void;
+  refreshing?: boolean;
+}) {
+  const t = useTheme();
+  const insets = useSafeAreaInsets();
+  return (
+    <FlatList
+      data={items}
+      keyExtractor={keyFor}
+      renderItem={({ item }) => renderItem(item)}
+      style={{ flex: 1, backgroundColor: t.background }}
+      contentInsetAdjustmentBehavior="automatic"
+      keyboardShouldPersistTaps="handled"
+      contentContainerStyle={{
+        paddingHorizontal: 24,
+        paddingTop: Platform.OS === "android" ? insets.top + 16 : 16,
+        paddingBottom: insets.bottom + 100,
+      }}
+      ItemSeparatorComponent={() => <View style={{ height: 16 }} />}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+          tintColor={t.accent}
+        />
+      }
+      ListHeaderComponent={
+        <View style={{ gap: 24, paddingBottom: 24 }}>
+          <View style={{ gap: 4 }}>
+            <Copy size={12} bold color={t.accent}>
+              KOLVEX
+            </Copy>
+            <Copy size={36} bold>
+              {title}
+            </Copy>
+            {subtitle && (
+              <Copy size={14} muted>
+                {subtitle}
+              </Copy>
+            )}
+          </View>
+          {demoMode && (
+            <Glass style={{ padding: 12 }}>
+              <Copy size={12} muted>
+                演示模式 · 行情为静态样本，非实时市场数据
+              </Copy>
+            </Glass>
+          )}
+          {header}
+        </View>
+      }
+      ListFooterComponent={
+        footer ? <View style={{ paddingTop: 24 }}>{footer}</View> : undefined
+      }
+      ListEmptyComponent={empty}
+    />
+  );
+}

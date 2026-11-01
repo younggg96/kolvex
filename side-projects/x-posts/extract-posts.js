@@ -10,10 +10,10 @@ function extractXPosts(expectedUsername) {
   for (const article of articles) {
     // Detail pages may place a quote's unlinked time before the post's own date.
     const time = [...article.querySelectorAll("time")].find(node =>
-      /^\/[A-Za-z0-9_]+\/status\/\d+$/.test(node.closest("a")?.getAttribute("href") || "")
+      /^\/[A-Za-z0-9_]+\/status\/\d+(?:\/history)?$/.test(node.closest("a")?.getAttribute("href") || "")
     ) || article.querySelector("time");
     const href = time?.closest("a")?.getAttribute("href");
-    const match = href?.match(/^\/([A-Za-z0-9_]+)\/status\/(\d+)$/);
+    const match = href?.match(/^\/([A-Za-z0-9_]+)\/status\/(\d+)(?:\/history)?$/);
     if (!match || match[1].toLowerCase() !== expected) continue;
     if ([...article.querySelectorAll('button')].some(button => !button.closest?.('[role="link"]') && /^(Show original|显示原文)$/.test(button.textContent?.trim() || ""))) {
       rejected.push({ id: match[2], reason: "Translated content visible; select Show original before collecting" });
@@ -34,7 +34,7 @@ function extractXPosts(expectedUsername) {
     }
     const media = [...article.querySelectorAll('a[href]')].map(el => el.getAttribute("href"))
       .filter(value => /^\/[A-Za-z0-9_]+\/status\/\d+\/(photo|video)\/\d+$/.test(value));
-    posts.push({ id: match[2], author_username: match[1], url: `https://x.com${href}`,
+    posts.push({ id: match[2], author_username: match[1], url: `https://x.com/${match[1]}/status/${match[2]}`,
       published_at: time.getAttribute("datetime"), text,
       cashtags: [...new Set([...text.matchAll(/\$([A-Za-z][A-Za-z0-9.\-]{0,14})\b/g)].map(value => value[1].toUpperCase()))],
       metrics, metrics_label: label, quoted_texts: texts.filter(el => !own.includes(el)).map(el => el.innerText),

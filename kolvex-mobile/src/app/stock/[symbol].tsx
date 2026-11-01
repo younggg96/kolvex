@@ -1,4 +1,4 @@
-import { useLocalSearchParams } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import { View } from "react-native";
 import { history, quote } from "../../lib/api";
@@ -6,6 +6,7 @@ import { isSymbol, number, percent } from "../../lib/models";
 import { useResource } from "../../lib/useResource";
 import { useTheme } from "../../lib/theme";
 import { useWatchlist } from "../../state/Watchlist";
+import { StockContent } from "../../components/StockContent";
 import { Chart } from "../../components/Chart";
 import {
   Button,
@@ -38,7 +39,7 @@ export default function Stock() {
   return (
     <Page
       title={symbol || "股票详情"}
-      subtitle={`${q.data?.name ?? "股票研究"} · USD`}
+      subtitle={`${q.data?.name ?? "股票研究"} · ${q.data?.currency || "币种未提供"}`}
       refreshing={q.loading && !!q.data}
       onRefresh={() => {
         q.refresh();
@@ -70,7 +71,7 @@ export default function Stock() {
         ) : bars.error ? (
           <Failure message={bars.error} retry={bars.refresh} />
         ) : (
-          <Chart data={bars.data ?? []} />
+          <Chart data={bars.data ?? []} currency={q.data?.currency ?? undefined} />
         )}
         <View style={styles.row}>
           {[
@@ -89,13 +90,21 @@ export default function Stock() {
         </View>
       </Glass>
       <Button
-        disabled={!valid || !list.ready}
+        disabled={!valid || !list.ready || list.pending}
         selected={saved}
         onPress={() => list.toggle(symbol)}
       >
         {saved ? "★ 已加入自选 · 点击移除" : "☆ 加入自选"}
       </Button>
       {list.error && <Failure message={list.error} />}
+      <Button
+        disabled={!valid}
+        onPress={() =>
+          router.push({ pathname: "/chat", params: { ticker: symbol } })
+        }
+      >
+        向 Kolvex 提问
+      </Button>
       <Section title="交易概览" />
       <Glass style={{ padding: 20, gap: 16 }}>
         {[
@@ -117,6 +126,7 @@ export default function Stock() {
           </View>
         ))}
       </Glass>
+      {valid && <StockContent symbol={symbol} />}
       <Copy size={12} muted>
         缺失数据以 — 显示。历史图为每日收盘价，不代表实时或盘中走势。
       </Copy>

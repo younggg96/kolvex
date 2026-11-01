@@ -1,7 +1,9 @@
 "use client";
 
+import { Skeleton } from "@/components/ui/skeleton";
+import { ContentSkeleton } from "@/components/ui/content-skeleton";
 import { useEffect, useRef, useState } from "react";
-import { ArrowUp, Loader2, Newspaper, Pause, Play, RefreshCw } from "lucide-react";
+import { ArrowUp, Newspaper, Pause, Play, RefreshCw } from "lucide-react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { ListCard, ListLoadMore, ListToolbar } from "@/components/ui/list-card";
@@ -47,7 +49,7 @@ export default function NewsFeed() {
         <div className="flex min-h-0 flex-1 flex-col px-4 pb-4 pt-4 md:px-8 md:pb-6 md:pt-6">
           <ListCard className="flex min-h-0 flex-1 flex-col overflow-hidden">
             <ListToolbar className="shrink-0 border-b border-border pb-3 text-xs leading-5 text-muted-foreground">
-              <span>{terminal.loading && !terminal.meta ? c("Loading headlines…", "正在加载快讯…") : c(`${articles.length} loaded headlines`, `${articles.length} 条快讯`)}</span>
+              <span>{terminal.loading && !terminal.meta ? <Skeleton className="h-3 w-28" /> : c(`${articles.length} loaded headlines`, `${articles.length} 条快讯`)}</span>
               <span>{c("Updated", "更新于")} {time} · {c("Local time", "本地时间")}</span>
             </ListToolbar>
             {(terminal.error || terminal.meta?.stale) && <p role="alert" className="shrink-0 border-b border-border/70 py-2 text-sm">
@@ -63,9 +65,7 @@ export default function NewsFeed() {
               </Button>
             </div>}
             <div ref={scrollArea} className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
-              {!terminal.feed.initialized && terminal.loading ? <div role="status" className="flex min-h-48 items-center justify-center gap-2 text-sm text-muted-foreground">
-                <Loader2 aria-hidden className="h-4 w-4 animate-spin motion-reduce:animate-none" />{c("Loading headlines…", "正在加载快讯…")}
-              </div> : articles.length === 0 ? <div className="px-6 py-16 text-center">
+              {!terminal.feed.initialized && terminal.loading ? <ContentSkeleton label={c("Loading headlines…", "正在加载快讯…")} variant="text" rows={5} /> : articles.length === 0 ? <div className="px-6 py-16 text-center">
                 <Newspaper aria-hidden className="mx-auto mb-3 h-6 w-6 text-muted-foreground" />
                 <h2 className="text-sm font-medium">{terminal.error ? c("News unavailable", "新闻暂不可用") : c("No headlines yet", "暂无快讯")}</h2>
                 <p className="mt-2 text-xs text-muted-foreground">{c("Refresh to check again later.", "可稍后刷新重试。")}</p>

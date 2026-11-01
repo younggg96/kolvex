@@ -43,3 +43,9 @@ Signature: green stock identifiers on quiet surfaces beneath iOS native glass na
 NativeTabs owns mobile navigation; Expo Router Stack owns stock detail/back navigation. Web uses a separate Tabs adapter solely for preview. Glass uses native Liquid Glass when runtime availability is true, older iOS blur otherwise, solid surface on Android/web. Reduce transparency selects opaque surfaces. No custom movement, so reduced motion does not require an animation variant. Interactive press feedback uses opacity and optional native haptics.
 
 Chinese-only initial UI; securities and USD amounts retain market notation. Date-only source dates are never converted through local time. Demo quotes and chart are explicitly marked on every page; live failures never synthesize prices. No Japan-market scope. English locale parity and authentication migration remain future work.
+
+## Mobile 0.2 migration
+
+Five stable tabs: Markets, Opinions, Research, Watchlist and More. The More hub owns account, briefs, news, chat and portfolio entry points. All keep the same glass, spacing, system typography and inline feedback. `UI.ListPage` is the virtualized counterpart of `UI.Page` for large news/watchlist feeds; `components/Content.tsx` owns authentication gates, fields, selectors, pagination, safe sources and native text rendering. No report HTML is executed.
+
+Authentication is now implemented for password accounts, with encrypted native sessions and a separate ephemeral web-preview session. Authenticated watchlists are account-owned and do not silently import guest lists. Chinese remains the first UI locale; full English parity is still pending. Native tabs/system dialogs keep platform behavior; no decorative navigation is substituted for a platform control.

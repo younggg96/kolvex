@@ -67,3 +67,13 @@ test('detail-page quote time does not hide the original post', () => {
   own.querySelector = new Proxy(own.querySelector, { apply: (fn, target, args) => args[0] === 'time' ? { closest: () => null } : fn.apply(target, args) });
   assert.equal(extract([own]).posts[0].id, '2115976928918139192');
 });
+
+test('edited post history date links preserve the canonical post identity', () => {
+  const own = article();
+  const all = own.querySelectorAll.bind(own);
+  const date = { closest: () => ({ getAttribute: () => '/TestUser/status/2115976928918139192/history' }), getAttribute: () => '2026-10-29T12:00:00Z' };
+  own.querySelectorAll = selector => selector === 'time' ? [date] : all(selector);
+  const p = extract([own]).posts[0];
+  assert.equal(p.id, '2115976928918139192');
+  assert.equal(p.url, 'https://x.com/TestUser/status/2115976928918139192');
+});

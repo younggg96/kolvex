@@ -1,29 +1,33 @@
 # Mobile UI contract
 
-## Evidence
+## Business evidence
 
-- `../README.md`: Next.js / FastAPI product and service boundaries.
-- `../kolvex-frontend-web-nextjs/PRODUCT.md`: Chinese-first reading, source attribution, no fabricated creators or returns.
-- `../kolvex-backend-py/app/api/routes/market_data.py`: quote/history response contracts.
-- `../kolvex-backend-py/app/api/routes/youtube_opinions.py`: public dashboard contract; admin mutations excluded.
-- Current user request: create a React Native phone client with SwiftUI glass style.
+- `../kolvex-frontend-web-nextjs/PRODUCT.md`: Chinese-first source-attributed reading, no fabricated returns/creators, retired features excluded.
+- `../kolvex-backend-py/app/api/routes/{briefs.py,chat/routes.py,trading_analysis/routes.py,portfolio/holdings_routes.py,users.py}`: authenticated reading and account-owned mutations.
+- `../kolvex-backend-py/supabase/migrations/20261030220455_user_watchlist.sql`: existing account-owned select/insert/delete RLS and ticker validation.
+- `../kolvex-frontend-web-nextjs/components/auth/AuthForm.tsx`: existing email/signup password policy.
+- `../kolvex-frontend-web-nextjs/lib/{dailyBriefs.ts,redditOpinions.ts,chatApi.ts}`: content, comparison and SSE semantics.
 
-## Canonical UI map
+## Canonical ownership
 
-| Capability                     | Owner                          | Contract                                                                        | Verification            |
-| ------------------------------ | ------------------------------ | ------------------------------------------------------------------------------- | ----------------------- |
-| Navigation                     | Expo Router Stack + NativeTabs | Four stable tabs; stock detail has system back                                  | bundle + device pending |
-| Theme / type                   | theme.ts + UI Copy             | System theme and scalable system font                                           | typecheck + preview     |
-| Feedback                       | UI Failure / Empty / Skeleton  | Inline errors and retry; do not hide readable stale data                        | preview                 |
-| Search                         | UI Search                      | Explicit clear, local filtering without network races, explicit code submission | preview                 |
-| Async                          | useResource                    | Abort on unmount/key change, 15s deadline, ignore stale results                 | code review             |
-| Self-managed storage           | Watchlist provider             | Local device only; serialized writes; visible failure                           | preview persistence     |
-| Single select                  | Button range group             | Selected state announced; no popup                                              | preview                 |
-| Scrollbar                      | OS ScrollView                  | Native indicator; content clears safe area/navigation                           | device pending          |
-| Forms / CRUD / toast / billing | Not applicable                 | No account writes, payments or destructive remote actions                       | code inspection         |
+| Capability               | Owner                                       | Observable contract                                                                                                               |
+| ------------------------ | ------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| Navigation               | Router Stack + NativeTabs, web Tabs adapter | Five fixed tabs, stack back, More hub; private screens remain reachable through an auth gate                                      |
+| Theme / type / feedback  | `UI.tsx`, `theme.ts`                        | System theme, scalable type, 44pt controls, inline failure/retry, explicit empty/loading                                          |
+| Long lists               | `UI.ListPage`                               | Native virtualized news/watchlist, system scroll indicators, safe-area clearance                                                  |
+| Form / selection         | Content Field / Filters                     | Labels, password masking/toggle, local validation, submit locking, native text entry and selected states                          |
+| Search / pagination      | UI Search / Content Pager                   | Clear action and focus return; explicit committed remote filters; stale reads cancelled; no automatic duplicate writes            |
+| Authentication           | Auth provider / AuthGate                    | Existing Supabase public-client auth, secure native storage, foreground refresh; no service keys; account-bound private transport |
+| Async / private requests | `useResource`, `http.ts`                    | Abort and bounded reads; late previous-account results rejected; 401/403 remain explicit; no mutation auto-retry                  |
+| Session storage          | `secureStorage.ts` + SecureStore            | Unicode-safe encrypted chunks, manifest commit after durable chunks, serialized writes and deletion                               |
+| Watchlist                | Watchlist provider + existing RLS           | Guest local; cloud user-scoped reads/insert/delete, pending and failures; no implicit guest merge                                 |
+| Chat                     | stream parser + chat route                  | Full UTF-8/SSE blocks, stop available, no assumed rollback, reconcile history before sending again after uncertain completion     |
+| Sources / documents      | SourceLink / TextBody / EditorialImage      | HTTPS only, no embedded credentials or HTML execution; article/source text is data                                                |
 
-## Flow ledger
+## Account and data boundaries
 
-Market search filters a bounded curated company list and can explicitly open another syntactically valid ticker. Quote details load independently from price history. Switching range cancels prior history work. Adding/removing watchlist updates locally immediately; serialized persistence prevents stale writes. An empty watchlist points to Markets. Opinion cards retain creator/date/sentiment and link only to HTTPS YouTube sources. Only thirty recent opinions are requested in this first version; full history/pagination remains out of scope.
+Auth state changes remount the account-scoped screen subtree. Private read hooks mount only behind AuthGate. No private data is persisted in a shared local cache. API tokens are added only to trusted relative FastAPI paths and never to source URLs or Reddit requests. Cloud mutations use the captured user ID and existing RLS; metadata is not used to grant rights.
 
-Demo mode depends solely on missing API configuration and is labeled across all screens. Configured API failures show an error, never fixtures. No credentials are bundled. Missing quote fields show em dashes. Public reading is implemented; there is no mobile authentication/session/Plaid migration claim.
+Portfolio is read-only on mobile. No brokerage authorization, orders, public-sharing changes, admin writes or costly research-generation action is added. Signup is a user action; implementation/verification did not create real accounts or send real AI questions.
+
+Dates that are calendar-only remain unchanged. Market amounts retain source currency/unit. Missing values remain unavailable, and demo quotes are never a fallback for real API failures. Native-device verification and authenticated success-path acceptance remain outstanding as recorded in VERIFICATION.md.

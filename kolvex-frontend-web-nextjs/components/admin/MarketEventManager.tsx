@@ -1,4 +1,5 @@
 "use client";
+import { ContentSkeleton } from "@/components/ui/content-skeleton";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -251,9 +252,7 @@ export default function MarketEventManager() {
             {listError}
           </p>
         ) : loading ? (
-          <p role="status" className="text-sm text-muted-foreground">
-            加载中…
-          </p>
+          <ContentSkeleton label="正在加载事件列表" variant="text" rows={3} />
         ) : !list?.events.length ? (
           <p className="text-sm text-muted-foreground">
             暂无事件，请导入第一份 JSON。

@@ -1,5 +1,6 @@
 "use client";
 
+import { ContentSkeleton } from "@/components/ui/content-skeleton";
 import { useCallback, useEffect, useState } from "react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import MarketEventManager from "@/components/admin/MarketEventManager";
@@ -61,7 +62,7 @@ export default function AdminPageClient({ initialTab }: { initialTab?: string })
     finally { setBusy(false); }
   }
 
-  if (isLoading) return <DashboardLayout title="管理后台"><p className="mx-auto  px-4 py-8 text-muted-foreground md:px-8">加载中…</p></DashboardLayout>;
+  if (isLoading) return <DashboardLayout title="管理后台"><ContentSkeleton label="正在加载管理后台" variant="profile" className="mx-auto w-full max-w-3xl px-4 py-8 md:px-8" /></DashboardLayout>;
   if (!profile?.is_admin) return <DashboardLayout title="管理后台"><p className="mx-auto  px-4 py-8 text-muted-foreground md:px-8">需要管理员权限。</p></DashboardLayout>;
 
   const tableCount = Object.keys(tables).length;

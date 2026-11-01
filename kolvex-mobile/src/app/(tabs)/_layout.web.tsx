@@ -15,8 +15,9 @@ export default function WebTabs() {
     >
       <Tabs.Screen name="index" options={{ title: "行情" }} />
       <Tabs.Screen name="opinions" options={{ title: "观点" }} />
+      <Tabs.Screen name="research" options={{ title: "研究" }} />
       <Tabs.Screen name="watchlist" options={{ title: "自选" }} />
-      <Tabs.Screen name="settings" options={{ title: "设置" }} />
+      <Tabs.Screen name="settings" options={{ title: "更多" }} />
     </Tabs>
   );
 }

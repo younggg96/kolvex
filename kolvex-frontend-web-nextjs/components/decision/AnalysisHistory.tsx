@@ -1,4 +1,5 @@
 "use client";
+import { ContentSkeleton } from "@/components/ui/content-skeleton";
 import { loadClientCache, peekClientCache, subscribeClientCache, invalidateClientCache } from "@/lib/clientCache";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ChevronDown } from "lucide-react";
@@ -148,7 +149,7 @@ export function DrawingVersionSelector({ history, hidden, disabled = false }: {
       </SelectContent>
     </Select>
     <p className="mt-2 text-xs leading-5 text-muted-foreground">{c("All signed-in users can view these drawings. Your result opens first, otherwise the newest result. Switching only changes your view.", "所有已登录用户都可查看画线。优先显示自己的结果，否则显示最新结果；切换仅改变正在查看的版本。")}</p>
-    {history.busy && <p role="status" className="mt-2 text-xs text-muted-foreground">{c("Loading drawings…", "正在加载画线…")}</p>}
+    {history.busy && !history.items.length && <ContentSkeleton label={c("Loading drawings…", "正在加载画线…")} variant="text" rows={2} />}
     {history.error !== null && <p role="alert" className="mt-2 text-sm">{history.error === 401 ? c("Sign in to view shared drawings.", "请登录后查看共享画线。") : history.error === 409 ? c("The current version changed. Review and try again.", "当前版本已更新，请查看后重试。") : c("Drawing versions could not be loaded or saved. Please retry.", "画线版本加载或保存失败，请重试。")}</p>}
     <div className="mt-2 flex flex-wrap gap-2">
       {history.error !== null && <Button size="sm" variant="outline" disabled={blocked} onClick={() => void history.load(0, history.selected?.id)}>{c("Retry", "重试")}</Button>}
@@ -175,7 +176,7 @@ export default function AnalysisHistory<T>({ history, drawings = false, title }:
       <p>{history.error === 401 ? c("Sign in to view shared results.", "请登录后查看共享结果。") : history.error === 409 ? c("The current version changed. Review and try again.", "当前版本已更新，请查看最新状态后重试。") : c("History could not be loaded or saved. Please retry.", "历史记录加载或保存失败，请重试。")}</p>
       <Button size="sm" variant="outline" disabled={history.busy} onClick={() => void history.load()}>{c("Retry", "重试")}</Button>
     </div>}
-    {history.busy && <p role="status" className="mt-3 text-sm text-muted-foreground">{c("Loading history…", "正在加载历史…")}</p>}
+    {history.busy && !history.items.length && <ContentSkeleton label={c("Loading history…", "正在加载历史…")} rows={3} />}
     {!history.busy && history.error === null && !history.items.length && <p className="mt-3 text-sm text-muted-foreground">{c("No saved analyses yet.", "暂无已保存分析。")}</p>}
     {!!history.items.length && <ListCard className="mt-3">
       <ListRows aria-label={drawings ? c("AI drawing history", "AI 画线历史") : c("Analysis history", "分析历史")}>

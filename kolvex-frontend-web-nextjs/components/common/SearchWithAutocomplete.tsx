@@ -1,9 +1,9 @@
 "use client";
 
+import { ContentSkeleton } from "@/components/ui/content-skeleton";
 import { useState, useEffect, useRef, ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { SearchInput } from "@/components/ui/search-input";
-import { Loader2 } from "lucide-react";
 
 interface SearchItem {
   id: string;
@@ -228,10 +228,7 @@ export default function SearchWithAutocomplete<T extends SearchItem>({
             </div>
           )}
           {isLoading ? (
-            <div className="flex items-center justify-center py-4">
-              <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
-              <span className="ml-2 text-sm text-muted-foreground">Searching...</span>
-            </div>
+            <ContentSkeleton label="Searching / 正在搜索" rows={3} className="px-3" />
           ) : displayList.length > 0 ? (
             displayList.map((item) => (
               <div

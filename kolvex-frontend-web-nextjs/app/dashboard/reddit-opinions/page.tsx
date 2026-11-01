@@ -1,5 +1,6 @@
 "use client";
 
+import { ContentSkeleton } from "@/components/ui/content-skeleton";
 import { useMemo, useRef, useState } from "react";
 import { ChevronDown, ExternalLink, Loader2, RefreshCw, Search, Star, X } from "lucide-react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
@@ -120,7 +121,7 @@ export default function RedditOpinionsPage() {
               </div>}
 
               <div key={`${community}:${sort}:${query}:${onlyWatchlist}:${data?.fetchedAt ?? "loading"}`} aria-busy={busy} className="opinion-results mt-3">
-                {loading && !data ? <div role="status" className="flex items-center justify-center gap-2 py-16 text-sm text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" aria-hidden="true" />{t("redditOpinions.loading")}</div>
+                {loading && !data ? <ContentSkeleton label={t("redditOpinions.loading")} rows={4} />
                   : data && rows.length > 0 ? <>
                     <div className="md:hidden">
                       <ListColumnHeader>

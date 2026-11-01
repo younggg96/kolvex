@@ -1,19 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
 
 const MAX_CHUNK_LENGTH = 4000;
+const TRANSLATION_ORIGINS = [
+  "https://translate.googleapis.com",
+  "https://translate.google.com",
+] as const;
 
 async function translateChunk(
   text: string,
   targetLang: string
 ): Promise<string> {
-  const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${encodeURIComponent(
+  const path = `/translate_a/single?client=gtx&sl=auto&tl=${encodeURIComponent(
     targetLang
   )}&dt=t&q=${encodeURIComponent(text)}`;
-  // A malformed upstream response can be cached as HTTP 200. Retry once
-  // without the data cache so automatic news translation can recover.
-  for (let attempt = 0; attempt < 2; attempt++) {
+  // The primary can be blocked/rate-limited from a hosting region, or cache a
+  // malformed HTTP 200. Retry through Google's other origin without that cache.
+  for (let attempt = 0; attempt < TRANSLATION_ORIGINS.length; attempt++) {
     try {
-      const res = await fetch(url, {
+      const res = await fetch(`${TRANSLATION_ORIGINS[attempt]}${path}`, {
         ...(attempt === 0 ? { next: { revalidate: 86400 } } : { cache: "no-store" as const }),
         signal: AbortSignal.timeout(10_000),
       });
@@ -26,7 +30,12 @@ async function translateChunk(
       if (!translated.trim()) throw new Error("Empty translation response");
       return translated;
     } catch (error) {
-      if (attempt === 1) throw error;
+      // Never log source text, query URLs or upstream response bodies.
+      console.warn("[translation] Upstream attempt failed", {
+        origin: TRANSLATION_ORIGINS[attempt],
+        reason: error instanceof Error ? error.message.replace(/https?:\/\/\S+/g, "[redacted]").slice(0, 160) : "Unknown failure",
+      });
+      if (attempt === TRANSLATION_ORIGINS.length - 1) throw error;
     }
   }
   throw new Error("Translation failed");

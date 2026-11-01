@@ -32,7 +32,7 @@ class Anchor(BaseModel):
 
 class Drawing(BaseModel):
     id: str = Field(min_length=1, max_length=64)
-    type: Literal["trend", "ray", "hline", "rect", "fib", "measure"]
+    type: Literal["trend", "ray", "hline", "rect", "fib", "measure", "vline", "extended", "fibext"]
     points: List[Anchor] = Field(min_length=1, max_length=2)
     color: str = Field(max_length=48, pattern=r"^rgb\([0-9a-z \-()/.%]+\)$")
     label: Optional[str] = Field(default=None, max_length=80)
@@ -40,7 +40,7 @@ class Drawing(BaseModel):
 
     @model_validator(mode="after")
     def point_count(self) -> "Drawing":
-        expected = 1 if self.type == "hline" else 2
+        expected = 1 if self.type in ("hline", "vline") else 2
         if len(self.points) != expected:
             raise ValueError(f"{self.type} needs {expected} point(s)")
         return self

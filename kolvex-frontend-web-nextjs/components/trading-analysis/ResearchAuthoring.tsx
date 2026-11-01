@@ -1,5 +1,6 @@
 "use client";
 
+import { Skeleton } from "@/components/ui/skeleton";
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -347,10 +348,7 @@ export default function TradingAnalysisPage({ searchParams }: { searchParams?: {
                         {t("tradingAnalysis.llmProvider")}
                       </label>
                       {providersLoading ? (
-                        <div className="flex h-10 items-center rounded-3xl bg-muted px-4 text-sm text-muted-foreground">
-                          <Loader2 className="w-3.5 h-3.5 mr-2 animate-spin" />
-                          {t("common.loading")}
-                        </div>
+                        <div role="status" aria-label={t("common.loading")}><Skeleton className="h-10 w-full rounded-full" /></div>
                       ) : hasAnyProvider ? (
                         <Select
                           value={provider}

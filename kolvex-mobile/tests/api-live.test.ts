@@ -56,7 +56,7 @@ test("request cancellation reaches fetch", async () => {
   const controller = new AbortController();
   controller.abort();
   globalThis.fetch = async (_, options) => {
-    assert.equal(options?.signal, controller.signal);
+    assert.equal(options?.signal?.aborted, true);
     options?.signal?.throwIfAborted();
     throw new Error("must abort");
   };

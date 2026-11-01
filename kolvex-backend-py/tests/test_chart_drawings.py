@@ -53,6 +53,28 @@ class ChartDrawingRouteTests(unittest.TestCase):
         self.service.save.return_value = {"ticker": "NVDA", "drawings": [hline], "updated_at": None}
         self.assertEqual(self.client.put("/chart-drawings/NVDA", json={"drawings": [hline]}).status_code, 200)
 
+    def test_advanced_drawing_types_round_trip_through_save_and_read(self):
+        for kind in ("vline", "extended", "fibext"):
+            with self.subTest(kind=kind):
+                points = trend()["points"][:1] if kind == "vline" else trend()["points"]
+                drawing = trend(type=kind, points=points)
+                saved = {"ticker": "NVDA", "drawings": [drawing], "updated_at": None}
+                self.service.save.return_value = saved
+                self.service.get.return_value = saved
+                response = self.client.put("/chart-drawings/NVDA", json={"drawings": [drawing]})
+                self.assertEqual(response.status_code, 200)
+                self.assertEqual(response.json()["drawings"][0]["type"], kind)
+                restored = self.client.get("/chart-drawings/NVDA")
+                self.assertEqual(restored.status_code, 200)
+                self.assertEqual(restored.json()["drawings"][0]["points"], points)
+
+    def test_advanced_drawing_types_validate_anchor_count(self):
+        for kind, points in (("vline", trend()["points"]), ("extended", trend()["points"][:1]), ("fibext", trend()["points"][:1])):
+            with self.subTest(kind=kind):
+                response = self.client.put("/chart-drawings/NVDA", json={"drawings": [trend(type=kind, points=points)]})
+                self.assertEqual(response.status_code, 422)
+        self.service.save.assert_not_called()
+
     def test_missing_table_reports_unavailable(self):
         self.service.get.side_effect = ChartDrawingsUnavailable("PGRST205")
         self.assertEqual(self.client.get("/chart-drawings/NVDA").status_code, 503)

@@ -1,5 +1,6 @@
 "use client";
 
+import { ContentSkeleton } from "@/components/ui/content-skeleton";
 import { useEffect, useState, Suspense, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useTheme } from "next-themes";
@@ -910,10 +911,7 @@ function SettingsContent() {
                   >
                     <div>
                       {apiKeysLoading ? (
-                        <div className="flex items-center justify-center py-8">
-                          <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
-                          <span className="ml-2 text-sm text-muted-foreground">{t("common.loading")}</span>
-                        </div>
+                        <ContentSkeleton label={t("common.loading")} variant="text" rows={3} />
                       ) : (
                         <>
                           {/* Info banner */}
@@ -1142,7 +1140,7 @@ function SettingsContent() {
 
 export default function SettingsPage() {
   return (
-    <Suspense fallback={<div>Loading...</div>}>
+    <Suspense fallback={<ContentSkeleton label="Loading settings / 正在加载设置" variant="profile" className="mx-auto w-full max-w-3xl px-4 py-8 md:px-8" />}>
       <SettingsContent />
     </Suspense>
   );

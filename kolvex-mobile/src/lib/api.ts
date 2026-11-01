@@ -1,10 +1,8 @@
 import type { Bar, Dashboard, Quote } from "./models";
 
-export const apiURL = (process.env.EXPO_PUBLIC_API_URL ?? "").replace(
-  /\/$/,
-  "",
-);
-export const demoMode = !apiURL;
+import { apiRequest } from "./http";
+import { demoMode } from "./config";
+export { apiURL, demoMode } from "./config";
 // Deliberately static design fixtures. Never used as fallback for failed live requests.
 const fixtures: Record<string, [string, number, number]> = {
   SPY: ["标普 500 ETF", 573.76, 0.82],
@@ -18,14 +16,7 @@ const fixtures: Record<string, [string, number, number]> = {
   AMZN: ["亚马逊", 188.82, -0.32],
 };
 async function request<T>(path: string, signal: AbortSignal): Promise<T> {
-  const response = await fetch(`${apiURL}${path}`, { signal });
-  if (!response.ok)
-    throw new Error(
-      response.status === 401
-        ? "此内容需要登录，当前版本仅支持公开阅读。"
-        : `数据暂时无法加载（${response.status}），请重试。`,
-    );
-  return response.json();
+  return apiRequest<T>(path, { signal });
 }
 export async function quote(
   symbol: string,
@@ -49,6 +40,7 @@ export async function quote(
   return {
     symbol,
     name,
+    currency: "USD",
     current_price: price,
     change_percent: change,
     change: (price * change) / (100 + change),

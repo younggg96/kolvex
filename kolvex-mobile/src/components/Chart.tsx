@@ -3,7 +3,7 @@ import Svg, { Line, Path } from "react-native-svg";
 import type { Bar } from "../lib/models";
 import { useTheme } from "../lib/theme";
 import { Copy, Empty } from "./UI";
-export function Chart({ data }: { data: Bar[] }) {
+export function Chart({ data, currency }: { data: Bar[]; currency?: string }) {
   const t = useTheme();
   const values = data
     .map((b) => b.close)
@@ -23,7 +23,7 @@ export function Chart({ data }: { data: Bar[] }) {
   const color = values[values.length - 1] >= values[0] ? t.accent : t.negative;
   return (
     <View
-      accessibilityLabel={`历史收盘价折线图，${data[0].date} 至 ${data[data.length - 1].date}，起点 ${values[0].toFixed(2)}，终点 ${values[values.length - 1].toFixed(2)} 美元`}
+      accessibilityLabel={`历史收盘价折线图，${data[0].date} 至 ${data[data.length - 1].date}，起点 ${values[0].toFixed(2)}，终点 ${values[values.length - 1].toFixed(2)} ${currency || "报价币种未提供"}`}
     >
       <Svg width="100%" height={200} viewBox="0 0 320 200" accessible={false}>
         {[24, 99, 174].map((y) => (

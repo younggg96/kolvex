@@ -38,6 +38,9 @@ import {
   Minus,
   MousePointer2,
   MoveUpRight,
+  MoveVertical,
+  MoveHorizontal,
+  TrendingUp,
   RectangleHorizontal,
   RotateCcw,
   Ruler,
@@ -68,6 +71,7 @@ import {
   type PriceHistoryParams,
 } from "@/lib/stockApi";
 import ChartDrawingLayer from "../ChartDrawingLayer";
+import OscillatorPane, { oscillatorLabels, type Oscillator } from "./OscillatorPane";
 import { drawingColors, newDrawingId, type Anchor, type Drawing, type DrawingTool, type SyncStatus } from "../chartDrawings";
 import { toneStroke, toneText, type StrengthTone } from "../strength";
 import AiPriceActionSignals from "./AiPriceActionSignals";
@@ -132,6 +136,9 @@ const tools: Array<{
   { value: "cursor", icon: MousePointer2, label: "toolCursor" },
   { value: "trend", icon: Slash, label: "toolTrend" },
   { value: "ray", icon: MoveUpRight, label: "toolRay" },
+  { value: "extended", icon: MoveHorizontal, label: "toolExtended" },
+  { value: "vline", icon: MoveVertical, label: "toolVline" },
+  { value: "fibext", icon: TrendingUp, label: "toolFibext" },
   { value: "hline", icon: Minus, label: "toolHline" },
   { value: "rect", icon: RectangleHorizontal, label: "toolRect" },
   { value: "fib", icon: GanttChart, label: "toolFib" },
@@ -275,6 +282,7 @@ export default function ChartView({
     ? "h-[320px] sm:h-[420px]"
     : HEIGHT_CLASS[mode];
   const drawingToolbarId = useId();
+  const [oscillator, setOscillator] = useState<Oscillator | null>("kdj");
   const [range, setRange] = useState<AdvancedRange>("3M");
   const [interval, setChartInterval] = useState<ChartInterval>(defaultInterval["3M"]);
   const params = advanced && !snapshotBars ? advancedHistoryParams(range, interval) : compactParams;
@@ -330,6 +338,18 @@ export default function ChartView({
   const pointers = useRef(new Map<number, { x: number; y: number }>());
 
   useEffect(() => setIndicators(advanced ? readIndicators(mode) : []), [mode, advanced]);
+
+  useEffect(() => {
+    try {
+      const saved = window.localStorage.getItem("kolvex:chart-oscillator");
+      if (saved === "none") setOscillator(null);
+      else if (saved === "kdj" || saved === "macd" || saved === "rsi") setOscillator(saved);
+    } catch { /* Keep the session default when storage is unavailable. */ }
+  }, []);
+  function changeOscillator(next: Oscillator | null) {
+    setOscillator(next);
+    try { window.localStorage.setItem("kolvex:chart-oscillator", next ?? "none"); } catch { /* Session-only preference. */ }
+  }
 
   const lastHistoryAttempt = useRef(attempt);
   useEffect(() => {
@@ -655,7 +675,7 @@ export default function ChartView({
     if (drawing) {
       event.currentTarget.setPointerCapture(event.pointerId);
       const type = tool as Drawing["type"];
-      if (type === "hline") commit({ id: newDrawingId(), type, points: [anchor], color });
+      if (type === "hline" || type === "vline") commit({ id: newDrawingId(), type, points: [anchor], color });
       else if (draft?.awaitingSecond) commit({ ...draft.drawing, points: [draft.drawing.points[0], anchor] });
       else
         setDraft({
@@ -1284,8 +1304,7 @@ export default function ChartView({
               <button
                 key={key}
                 type="button"
-                role="menuitemcheckbox"
-                aria-checked={activeIndicators.has(key)}
+                aria-pressed={activeIndicators.has(key)}
                 onClick={() => toggleIndicator(key)}
                 className="flex w-full items-center gap-2.5 rounded-full px-2 py-1.5 text-sm hover:bg-muted focus-visible:outline-none "
               >
@@ -1306,6 +1325,12 @@ export default function ChartView({
                 {key === "volume" ? t("youtubeOpinions.priceVolumeFull") : indicatorMeta[key].label}
               </button>
             ))}
+            <div className="mt-1 border-t border-border pt-1" role="group" aria-label={t("youtubeOpinions.oscillators")}>
+              <p className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">{t("youtubeOpinions.oscillators")}</p>
+              {(["kdj", "macd", "rsi"] as const).map(value => <button key={value} type="button" aria-pressed={oscillator === value} onClick={() => changeOscillator(oscillator === value ? null : value)} className={cn("flex min-h-11 w-full items-center rounded-full px-2 text-left text-sm hover:bg-muted focus-visible:outline-none", oscillator === value && "bg-muted font-semibold")}>
+                {oscillatorLabels[value]}
+              </button>)}
+            </div>
           </PopoverContent>
         </Popover>
         <div className="ml-auto flex w-full shrink-0 flex-wrap items-center justify-end gap-1 sm:w-auto sm:flex-nowrap">
@@ -1585,10 +1610,10 @@ export default function ChartView({
                     );
                   })}
 
-                {advanced && <div className="absolute left-0 top-0 overflow-hidden" style={{ width: plotW, height: plotH }}>
+                {advanced && <div className="absolute left-0 top-0 overflow-hidden" style={{ width: plotW, height: priceBottom }}>
                   <ChartDrawingLayer
                     width={plotW}
-                    height={plotH}
+                    height={priceBottom}
                     drawings={drawings}
                     draft={draft?.drawing ?? null}
                     selectedId={selectedId}
@@ -1716,6 +1741,8 @@ export default function ChartView({
             )}
           </div>
 
+          {advanced && loaded && oscillator && <OscillatorPane bars={bars!} kind={oscillator} onChange={changeOscillator} width={size.width} axisWidth={AXIS_WIDTH} start={current.start} end={current.end} active={active} onActive={setActive} t={t} />}
+
           <div className="mt-2 flex shrink-0 flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
             {advanced ? (
               <>
@@ -1771,7 +1798,7 @@ export default function ChartView({
               </>
             ) : drawing ? (
               <span className="hidden sm:inline">
-                {t(tool === "hline" ? "youtubeOpinions.drawHintSingle" : "youtubeOpinions.drawHint")}
+                {t((tool === "hline" || tool === "vline") ? "youtubeOpinions.drawHintSingle" : "youtubeOpinions.drawHint")}
               </span>
             ) : (
               <span className="hidden items-center gap-2 sm:inline-flex">

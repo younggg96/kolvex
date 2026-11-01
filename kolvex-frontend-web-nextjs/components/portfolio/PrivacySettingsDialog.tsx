@@ -1,10 +1,10 @@
 "use client";
 
+import { ContentSkeleton } from "@/components/ui/content-skeleton";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { useTranslation } from "@/lib/i18n";
 import {
-  Loader2,
   Eye,
   EyeOff,
   Shield,
@@ -432,9 +432,7 @@ export default function PrivacySettingsDialog({
         </DialogHeader>
 
         {loading ? (
-          <div className="flex items-center justify-center py-12">
-            <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
-          </div>
+          <ContentSkeleton label={t("common.loading")} variant="profile" />
         ) : settings ? (
           <div className="space-y-4 max-h-[60vh] overflow-y-auto">
             <CategorySection

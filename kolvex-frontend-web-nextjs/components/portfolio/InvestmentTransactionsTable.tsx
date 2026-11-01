@@ -1,5 +1,6 @@
 "use client";
 
+import { ContentSkeleton } from "@/components/ui/content-skeleton";
 import React, { useMemo, useState } from "react";
 import { Download, RefreshCw, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -185,7 +186,7 @@ export function InvestmentTransactionsTable({
             {loading && transactions.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={8} className="py-8 text-center text-sm text-muted-foreground">
-                  Loading investment transactions...
+                  <ContentSkeleton label="Loading investment transactions" rows={4} />
                 </TableCell>
               </TableRow>
             ) : transactions.length === 0 ? (

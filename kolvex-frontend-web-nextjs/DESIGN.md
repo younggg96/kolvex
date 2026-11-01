@@ -109,6 +109,17 @@ price trend remains the focus. AI actions live in a collapsed disclosure below
 the preview; Analysis and Drawings use neutral outlined controls. Advanced mode
 keeps its manual toolbar, with AI controls in a desktop side panel or mobile
 popover. Settings and reversible drawing visibility retain their existing dialogs.
+Advanced charts default to a KDJ (9,3,3) subpane, switchable to Wilder RSI (14)
+or MACD (12,26,9). The subpane shares the price chart's time scale and inspected
+bar, supports keyboard inspection and can be closed/reopened from Indicators.
+Its selection persists locally. Warmup points remain missing; flat RSI is 50,
+KDJ starts K/D at 50 after a full nine-bar window, and J is not clamped.
+MACD uses SMA-seeded EMAs and an unscaled DIF-minus-DEA histogram. These are
+price-derived displays, not generated trade signals. New manual tools include
+bidirectional extended lines, one-anchor vertical time lines and two-anchor
+Fibonacci projections (1, 1.272, 1.618, 2 and 2.618 times the anchored move).
+They use the existing time/price anchors, undo history and per-user sync API;
+both the client renderer and server validation own support for each type.
 Setup content, loading and empty states use the same Card fill, border and
 24px corners as Technicals, with 16px mobile / 20px desktop content padding.
 Financials, Earnings, Metric trends, Target price, Profile,
@@ -1381,3 +1392,14 @@ The summary endpoint verifies every citation exists and belongs to its creator
 before returning a snapshot. Reading does not call a model or generate a fresh
 summary. This is a saved editorial snapshot, not a scheduled-generation service.
 Missing snapshots and recoverable failures leave the underlying feed available.
+
+### Content loading skeletons
+
+Initial content requests use the shared `ContentSkeleton` for lists, text feeds,
+compact creator videos, articles and profile forms. Existing specialized chart,
+financial and portfolio skeletons remain canonical. Shapes use the shared
+Skeleton token, hide decorative blocks from assistive technology, announce one
+localized status, and disable pulsing with reduced motion. Content remains
+visible during cached background refreshes. Button submissions, authentication
+processing, AI generation/streaming, translation and sync actions retain explicit
+progress feedback; they are not cold content placeholders.

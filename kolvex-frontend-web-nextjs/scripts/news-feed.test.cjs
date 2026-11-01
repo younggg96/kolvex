@@ -172,8 +172,9 @@ function translationRoute(fetch) {
 }
 
 test('translation API retries a failed cached response without caching and preserves Chinese output', async () => {
-  const calls=[];
-  const route=translationRoute(async (_url,options)=>{
+  const calls=[], urls=[];
+  const route=translationRoute(async (url,options)=>{
+    urls.push(new URL(url));
     calls.push(options);
     return calls.length===1 ? {ok:true,json:async()=>[null]} : {ok:true,json:async()=>[[['英国核心CPI同比实际2.8%']]]};
   });
@@ -181,6 +182,28 @@ test('translation API retries a failed cached response without caching and prese
   assert.equal(response.status,200);assert.equal(response.body.translated,'英国核心CPI同比实际2.8%');
   assert.equal(calls.length,2);assert.equal(calls[0].next.revalidate,86400);
   assert.equal(calls[1].cache,'no-store');assert.ok(calls[1].signal);
+  assert.equal(urls[0].hostname,'translate.googleapis.com');
+  assert.equal(urls[1].hostname,'translate.google.com');
+  assert.equal(urls[0].search,urls[1].search);
+});
+
+test('translation falls back on upstream rate limits and network failures', async () => {
+  for (const failure of ['rate-limit','network']) {
+    const urls=[];
+    const route=translationRoute(async url=>{
+      urls.push(new URL(url));
+      if (urls.length===1) {
+        if (failure==='network') throw new TypeError('fetch failed');
+        return {ok:false,status:429};
+      }
+      return {ok:true,json:async()=>[[['英特尔 KOLVEXLITERAL0TOKEN 处理器已售罄。']]]};
+    });
+    const response=await route.POST({json:async()=>({q:'Intel KOLVEXLITERAL0TOKEN processors sold out.',tl:'zh-CN'})});
+    assert.equal(response.status,200);
+    assert.match(response.body.translated,/KOLVEXLITERAL0TOKEN/);
+    assert.equal(urls.length,2);
+    assert.equal(urls[1].hostname,'translate.google.com');
+  }
 });
 
 test('translation API retry is bounded and does not accept empty output', async () => {

@@ -4,6 +4,7 @@
  */
 "use client";
 
+import { ContentSkeleton } from "@/components/ui/content-skeleton";
 import { useState, useEffect } from "react";
 import { useCurrentUserProfile } from "@/lib/api/userApi";
 import type { UserProfileUpdate } from "@/lib/api/userApi";
@@ -81,9 +82,7 @@ export default function UserProfileSettings() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center p-8">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-border"></div>
-      </div>
+      <ContentSkeleton label="Loading profile / 正在加载个人资料" variant="profile" className="p-8" />
     );
   }
 

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   ListCard,
+  ListEmptyState,
   ListLoadMore,
   ListRows,
   listFeedRowClass,
@@ -77,16 +78,13 @@ export default function OtherCreatorOpinions({
             ))}
           </div>
         ) : failed ? (
-          <div role="alert" className="flex flex-wrap items-center gap-3 py-6 text-sm text-muted-foreground">
-            <span>{t("youtubeOpinions.otherCreatorOpinionsFailed")}</span>
+          <ListEmptyState alert title={t("youtubeOpinions.otherCreatorOpinionsFailed")} action={
             <Button size="sm" variant="outline" onClick={resource.refresh}>
               {t("common.retry")}
             </Button>
-          </div>
+          } />
         ) : opinions.length === 0 ? (
-          <p className="py-6 text-sm leading-6 text-muted-foreground">
-            {t("youtubeOpinions.noOtherCreatorOpinions", { ticker })}
-          </p>
+          <ListEmptyState title={t("youtubeOpinions.noOtherCreatorOpinions", { ticker })} />
         ) : (
           <>
             <ListRows id="other-creator-opinions-list" aria-label={t("youtubeOpinions.otherCreatorOpinions")}>

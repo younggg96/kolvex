@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
-export type DrawingType = "trend" | "ray" | "hline" | "rect" | "fib" | "measure" | "polyline";
+export type DrawingType = "trend" | "ray" | "hline" | "rect" | "fib" | "measure" | "vline" | "extended" | "fibext" | "polyline";
 export type DrawingTool = "cursor" | Exclude<DrawingType, "polyline">;
 
 /** Anchored to time and price so drawings survive range and interval changes. */
