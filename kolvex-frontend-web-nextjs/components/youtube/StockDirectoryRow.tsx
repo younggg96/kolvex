@@ -4,6 +4,7 @@ import { useState, type ReactNode } from "react";
 import { ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { ListRow } from "@/components/ui/list-card";
 import { useTranslation } from "@/lib/i18n";
 import { formatOpinionDate } from "@/lib/opinionDates";
 import type { YouTubeStockSummary, YouTubeDailyChange } from "@/lib/youtubeOpinionsApi";
@@ -23,9 +24,9 @@ export default function StockDirectoryRow({ stock, children, performance, change
 
   return (
     <Collapsible open={open} onOpenChange={setOpen} asChild>
-      <article className="min-w-0 border-b border-border/70 pb-2 last:border-0">
+      <ListRow className="min-w-0 flex-col items-stretch gap-0 rounded-2xl">
         {children}
-        <div className="flex min-w-0 items-center gap-3 pb-1">
+        <div className="flex min-w-0 items-center gap-3 px-2 pb-2">
           {!open && <p className="min-w-0 flex-1 truncate text-xs text-muted-foreground">{reason}</p>}
           <CollapsibleTrigger asChild>
             <Button
@@ -40,7 +41,7 @@ export default function StockDirectoryRow({ stock, children, performance, change
           </CollapsibleTrigger>
         </div>
         <CollapsibleContent>
-          <div className="space-y-4 border-t border-border/50 pb-2 pt-4">
+          <div className="space-y-4 border-t border-border/50 px-2 pb-2 pt-4">
             <div className="grid min-w-0 gap-4 lg:grid-cols-[minmax(0,1fr)_auto]">
               <div className="min-w-0">
                 <p className="mb-1.5 text-xs font-medium text-muted-foreground">{t("youtubeOpinions.directory.latestReason")}</p>
@@ -54,7 +55,7 @@ export default function StockDirectoryRow({ stock, children, performance, change
             <StockDirectoryContext stock={stock} change={change} />
           </div>
         </CollapsibleContent>
-      </article>
+      </ListRow>
     </Collapsible>
   );
 }

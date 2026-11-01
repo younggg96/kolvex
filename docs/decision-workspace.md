@@ -125,8 +125,10 @@ feature flag and uses the shared holdings loader.
 
 ### Reddit discussion ranking
 
-The Creator Opinions entry has YouTube and Reddit child routes defined once in
-`components/layout/navItems.ts`. `DashboardLayout` supplies the mobile source
+The Creator Opinions entry has YouTube, Reddit and X child routes defined once in
+`components/layout/navItems.ts`. Each child link renders its platform's own
+monochrome brand mark from `components/common/PlatformIcons.tsx`, so the three
+sources never share a generic icon. `DashboardLayout` supplies the mobile source
 links through `OpinionSourceNav`, including on nested YouTube routes. Reddit
 keeps the same parent navigation item active at `/dashboard/reddit-opinions`.
 

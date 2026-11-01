@@ -235,13 +235,18 @@ export default function PriceChart({
         advancedTriggerRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
         setAdvancedOpen(true);
       }} />
-      {layout === "workspace" ? resultsContainer && createPortal(<div className="order-last mt-6 min-w-0 border-t border-border pt-1 [&>details]:mt-0 [&>details]:min-w-0 [&>details]:border-0 [&>details]:py-3">
+      {layout === "workspace" ? (
+        resultsContainer && createPortal(<div className="order-last mt-6 min-w-0 border-t border-border pt-1 [&>details]:mt-0 [&>details]:min-w-0 [&>details]:border-0 [&>details]:py-3">
+          <AnalysisHistory history={analysisHistory} />
+          {selectedHistory.selected && <SavedAnalysisData key={selectedHistory.selected.id} version={selectedHistory.selected} />}
+        </div>, resultsContainer)
+      ) : resultsContainer ? createPortal(<div className="order-last mt-6 min-w-0 border-t border-border pt-4 [&>details:first-child]:mt-0 [&>details:first-child]:border-0">
         <AnalysisHistory history={analysisHistory} />
         {selectedHistory.selected && <SavedAnalysisData key={selectedHistory.selected.id} version={selectedHistory.selected} />}
-      </div>, resultsContainer) : <>
+      </div>, resultsContainer) : (<>
         <AnalysisHistory history={analysisHistory} />
         {selectedHistory.selected && <SavedAnalysisData key={selectedHistory.selected.id} version={selectedHistory.selected} />}
-      </>}
+      </>)}
       <Dialog open={advancedOpen} onOpenChange={setAdvancedOpen}>
         <DialogContent
           layout="fullscreen"

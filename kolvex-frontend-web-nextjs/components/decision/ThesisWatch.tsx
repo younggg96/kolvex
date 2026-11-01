@@ -8,6 +8,7 @@ import {
   type Thesis,
   type Direction,
 } from "@/lib/decision";
+import { ListCard, ListRow, ListRows } from "@/components/ui/list-card";
 import { cn } from "@/lib/utils";
 import { Change, DirectionBadge, PriceLadder, WorkspaceLink, money, useCopy } from "./shared";
 
@@ -91,14 +92,15 @@ export default function ThesisWatch({
   const { data, changesFor } = signals ?? own;
   const labels = useChangeLabels();
   return (
-    <ul className="divide-y divide-border">
+    <ListCard>
+      <ListRows aria-label={c("Theses", "投资论点")}>
       {theses.map((thesis) => {
         const source = data[thesis.ticker];
         const changes = changesFor(thesis);
         return (
-          <li
-            key={thesis.thesis_id}
-            className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-x-6 gap-y-2 py-4 md:grid-cols-[minmax(0,1fr)_minmax(0,240px)_auto]"
+          <ListRow key={thesis.thesis_id}>
+          <div
+            className="grid w-full grid-cols-[minmax(0,1fr)_auto] items-start gap-x-6 gap-y-2 px-2 py-4 md:grid-cols-[minmax(0,1fr)_minmax(0,240px)_auto]"
           >
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
@@ -146,9 +148,11 @@ export default function ThesisWatch({
                         : c("Within plan", "仍在计划内")}
               </p>
             </div>
-          </li>
+          </div>
+          </ListRow>
         );
       })}
-    </ul>
+      </ListRows>
+    </ListCard>
   );
 }

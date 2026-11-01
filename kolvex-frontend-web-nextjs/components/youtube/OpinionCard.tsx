@@ -38,7 +38,7 @@ export default function OpinionCard({
   const sentiment = t(`youtubeOpinions.${opinion.sentiment}`);
 
   return (
-    <article className="min-w-0 border-b border-border py-6 [overflow-wrap:anywhere] first:pt-2">
+    <article className="min-w-0 [overflow-wrap:anywhere]">
       <header className="flex min-w-0 items-start gap-3">
         {showCreator && <CreatorAvatar name={opinion.channel_title || opinion.channel_id} avatarUrl={opinion.channel_avatar_url} />}
         <div className="min-w-0 flex-1">

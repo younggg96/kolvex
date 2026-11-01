@@ -77,7 +77,9 @@ horizontal padding on mobile and 32px from the medium breakpoint. Published
 reports stay within 1080px; Creator Opinions retains a wider two-column layout.
 
 Markets, Creator Opinions and AI Research each have one primary navigation entry.
-Creator Opinions contains YouTube, Reddit and X child links in the sidebar. All
+Creator Opinions contains YouTube, Reddit and X child links in the sidebar. Each
+child link carries that platform's own monochrome brand mark from
+`components/common/PlatformIcons.tsx`; no two sources share a generic glyph. All
 sources keep the parent active in shared desktop/mobile navigation. Below the
 large breakpoint, `DashboardLayout` owns the shared `OpinionSourceNav` beneath
 the header on either source and its nested routes: flat text links, a green
@@ -161,12 +163,38 @@ The count shows displayed/filtered totals. When more stocks match, View all link
 beside the count and below the preview open that directory with search, sentiment,
 scope and sort preserved. The full directory starts at 40 rows and loads 40 more
 per explicit action.
+Both directory tabs render one canonical list card (see **Canonical list cards**)
+below the page heading and search. Tone pills lead the card; the search and the
+sort Select share the next row; the displayed/filtered count, the list rule and one
+column header precede 80px hover rows without per-row dividers. Creator rows keep
+the avatar, name, handle and last-updated date on the identity side and the
+qualitative consensus with the opinion count on the end side; stock rows keep the
+price column, creator count and their labelled disclosure. The right rail's
+latest-video and holdings modules use the same card bodies below their headings,
+with their view-all links as top-divided footers. Recent opinion changes follows
+the directory as another list card. Controls keep 40px minimum height and existing
+URL state; light, dark, phone and wide layouts share the same anatomy.
 Creator detail pages show the creator’s five latest individual opinions across
 all dates, with a View all opinions button that clears history filters and focuses
 the full opinion history below. They order latest opinions, opinion history, then most
 discussed stocks in one reading column on all screen sizes. The stock list sorts
 by opinion count, initially shows at most five stocks, and offers a labelled
 expansion to the full searchable list and a collapse action.
+Stock and creator detail pages use the Markets card language. The trend view
+controls sit above the chart: the price / opinion-strength switch on the start side
+and the shared range pills in one muted track on the end side. The price chart and
+its AI drawing and analysis results render in separate 24px cards below that
+control row, followed by the opinion distribution card and the opinion history
+card, with 24px gaps. Drawing and analysis results are portalled out of the chart
+component into the second card, so the chart card keeps the same shape and height
+as the Markets chart card; the AI results card stacks the written analysis first,
+then the drawing detail disclosure and the saved analysis history, and hides its
+top divider. The creator rail that lists who discusses the stock is one card body
+below its heading, with 16px row corners, a 320px rail width, and the last-updated
+date under the creator handle so names keep their width. The opinion distribution
+card removes its own top padding because the card body supplies it. Controls and
+loading, empty, error and retry states keep their existing behavior.
+
 Recent opinion changes follow the directory in the left column. Its right rail
 orders latest creator videos and my holdings. The video preview shows at most five
 different creators, one newest imported video per creator, ordered by publication
@@ -268,7 +296,7 @@ is introduced.
 | Buttons and focus | `components/ui/button.tsx` | Pill variants; neutral navigation actions use `asChild` links |
 | AI Research routes | `lib/researchRoutes.ts` | AI Research list, authoring and report return links |
 | Route navigation | `components/layout/navItems.ts` | Markets, Creator Opinions and AI Research; `aria-current`, visible keyboard focus |
-| Opinion source links | `components/layout/OpinionSourceNav.tsx` and `navItems.ts` | Sidebar child links; shared mobile source row in `DashboardLayout` |
+| Opinion source links | `components/layout/OpinionSourceNav.tsx`, `navItems.ts` and `components/common/PlatformIcons.tsx` | Sidebar child links with per-platform brand marks; shared mobile source row in `DashboardLayout` |
 | In-page tabs | `components/ui/tabs.tsx` | Radix tabs for peer report panels; not a replacement for route links |
 | Loading and data states | `components/ui/skeleton.tsx` and the owning list | Existing skeleton geometry, explicit empty/error states and retry |
 | Scrollbars | `app/globals.css` | Global standards properties and WebKit fallback; new scrollers need no opt-in class |
@@ -296,11 +324,12 @@ Keep the ApeWisdom methodology link and actual fetch date/time in a compact
 footer, with retry and distinct empty/search-empty states in document flow.
 Repeated descriptions, coverage counts and explanatory notes are omitted.
 
-Lucide outline icons accompany visible labels except for these return controls. Hover/focus must reveal no
-otherwise inaccessible actions. Global reduced-motion rules apply to existing
-page animations. Report data and author attribution come from the API; missing
-reports get an empty state, never invented content. The behavioral companion is
-`../docs/decision-workspace.md`.
+Lucide outline icons accompany visible labels except for these return controls and
+the monochrome platform brand marks on opinion-source links. Hover/focus must
+reveal no otherwise inaccessible actions. Global reduced-motion rules apply to
+existing page animations. Report data and author attribution come from the API;
+missing reports get an empty state, never invented content. The behavioral
+companion is `../docs/decision-workspace.md`.
 
 Stock-page Creator Intelligence is owned by
 `components/decision/CreatorIntelligence.tsx`. Three quiet bordered cards group
@@ -743,8 +772,10 @@ underline route navigation; it retains document scrolling and anonymous access.
 public `ResearchList`: company logo and decision above author/date metadata,
 12px corners, quiet border and no static shadow. Public lists use the same
 one/two/three-column breakpoints. Related reports in a stock sidebar use the
-single-column variant of that same card. `ReadingDirectories` uses the existing
-creator avatar, company logo and quiet hover-row treatment for public directories.
+single-column variant of that same card. `ReadingDirectories` reuses the canonical
+list card (`components/ui/list-card.tsx`) for public stock and creator
+directories, and `ReadingElements` uses it for public opinion feeds, keeping the
+creator avatar, company logo and reading measure.
 
 `StrengthIndicator` owns the qualitative word/meter presentation. The existing
 `OpinionStrength` supplies the active workspace translation; public reading
@@ -878,8 +909,9 @@ The backend bounds quote workers and batch wait time so an unavailable symbol
 cannot block the full catalogue or the server event loop.
 
 A 160px wrapper bounds the shared Select so its default full width cannot expand
-the header. List filters sit below the heading; a muted column header precedes
-80px rows with quiet separators. A passive sparkline sits between creator consensus
+the header. List filters and the result count sit inside the canonical list card
+(see **Canonical list cards**); the column header precedes 80px hover rows without
+per-row separators. A passive sparkline sits between creator consensus
 and price, following the shared 1D/1W/1M/3M range. Desktop fixed columns are
 120px consensus, 88px trend, 88px price and 72px change. On phones, the trend
 keeps a 72px column; price and daily change stack in an 80px column and creator
@@ -1048,16 +1080,24 @@ Markets adds Event calendar between Market trends and Macro indicators; URL stat
 uses `tab=calendar`. Shared Radix Tabs own the outer view and the three week
 selectors. The server fixes the window to last/current/next Monday-based weeks
 in America/New_York, including DST. Only published high-impact or hot events
-appear. Day sections use existing card/border/rounded-xl tokens, 16px padding,
-semantic headings and written impact labels. A labelled Calendar / List button
+appear. Week selectors, the week summary and the calendar grid share one card body
+below the section heading, matching the Markets observation card: 24px card radius,
+1px border, card surface and 12–16px inner padding. Day sections are their own
+cards with 16–20px padding, semantic headings, a per-day event count and divided
+event rows instead of nested bordered boxes. A labelled Calendar / List button
 group switches presentation without changing the selected week or fetching data.
 Calendar is the default: seven equal Monday-to-Sunday columns, including empty
-days, with today's border highlighted and event summaries in native disclosures.
-Calendar columns retain a minimum width of 18rem (288px), with 12px gaps;
-the seven-column grid has a 132rem minimum width. The calendar region is
-constrained to the content width and scrolls horizontally, with a visible scroll
-hint and keyboard focus. Long source names wrap within their event card. List preserves one reading column with full summaries and hides empty
-days. Both views retain event ordering, tickers and source links.
+days, with today's border highlighted. Event summaries show their opening four
+lines inline; only the remainder hides behind an explicit Event details/Show less
+disclosure, so the week reads without opening every event. Calendar columns retain
+a minimum width of 23rem (368px), with 16px gaps; the seven-column grid has a
+168rem minimum width. The calendar region is constrained to the content width and
+scrolls horizontally from the card body, with a visible scroll hint, labelled
+scroll buttons and keyboard focus. Day cards carry no background animation and event
+rows highlight on hover without moving; List keeps the same static cards. Long
+source names wrap within their event row. List preserves one reading column with
+full summaries and hides empty days. Both views retain event ordering, tickers and
+source links.
 Chinese/English dates and labels use useCopy, with explicit Eastern-time context.
 Loading skeletons, empty weeks, error/retry and refresh use shared primitives.
 The calendar checks cache freshness when the tab resumes, reconnects and each minute.
@@ -1244,12 +1284,74 @@ These rules apply to research, creator opinions, portfolios, watchlists, news,
 briefs, chat, settings, admin, authentication and public reading pages. Existing
 ring utilities remain disabled.
 
+## Canonical list cards
+
+Every collection list in the web app reads as one shared list card. Markets'
+**Stock watch** surface is the reference, and `components/ui/list-card.tsx` owns
+the primitives: `ListCard`, `ListToolbar`, `ListColumnHeader`, `ListRows`,
+`ListRow`, `listRowTargetClass`, `listFeedRowClass`, `ListLoadMore`,
+`ListFooterLink` and `listCompactRowClass`. `components/decision/Watchlist.tsx`
+is the adopted reference for a full list page. Lists reuse this shell instead of
+defining their own box, header, hover or load-more styling.
+
+The Shared List Card Rule:
+- The section heading (and its count, refresh or view-all action) sits outside
+  and above the card, following the Markets heading rhythm.
+- The card body is one `ListCard`: 24px corners, 1px border, card surface and
+  12–16px inner padding. Lists never nest cards, and rows never become boxed
+  cards inside the card.
+- Search, scope pills, sort and result counts sit in an in-card toolbar; status,
+  stale-quote and retry notices sit between the toolbar and the rows.
+- Column lists show a `ListColumnHeader`: 12px muted labels with a hairline
+  bottom divider. Data rows use `ListRow` + `listRowTargetClass`: at least 80px
+  tall for stock rows, 16px corners, a transparent resting background and a muted
+  hover/focus-within fill. Stock rows carry no per-row dividers.
+- A trailing action (watch star, disclosure, chevron) is a sibling of the row
+  link, never nested inside it. Row height, logo size, price/change alignment,
+  tabular figures and the semantic green/orange tokens match Markets.
+- Long-form feeds (opinions, X posts, headlines) keep the same card shell, but
+  their rows keep hairlines, a 24px reading rhythm and `last:border-0` so the
+  card edge is not doubled; prose keeps its existing typography.
+- Footers use `ListLoadMore` for explicit pagination and `ListFooterLink` for the
+  "view all" route. Empty, loading, retry and partial states stay inside the
+  card without adding a second surface.
+- Native data tables (Reddit's desktop ranking, portfolio positions and
+  transactions, Market comparison) keep their table semantics and horizontal
+  scrolling inside the same card surface instead of becoming fake list rows.
+  Ordered ranked collections keep a native `<ol>` with `ListRow`; table-in-card
+  surfaces may use the full-bleed `!p-0` variant until a padding variant exists.
+- Existing semantic theme tokens, Inter/Chinese typography, pill controls,
+  `prefers-reduced-motion` behavior and keyboard focus feedback remain canonical.
+  Ring utilities stay disabled.
+
+Deliberate exceptions: admin authoring forms and management tables, chat and the
+command palette, article/report prose, marketing surfaces, calendar grids, and
+chart or metric matrices are content or tooling, not list cards. They keep their
+current owners.
+
+Adoption map:
+
+| Surface | Canonical owner | Presentation |
+|---|---|---|
+| Markets stock watch | `components/decision/StockObservationList.tsx` | Reference list card |
+| Watchlist page and rail card | `components/decision/Watchlist.tsx`, `MarketWatchlistCard.tsx` | List card, with 1D trend in the page list |
+| KOL opinion page and directories | `components/youtube/YouTubeOpinionExplorer.tsx`, `OpinionList.tsx`, `VideoOpinionCard.tsx`, `OpinionCard.tsx`, `OtherCreatorOpinions.tsx` | List cards with feed rows |
+| X creator content | `components/x/XContentExplorer.tsx` | List cards for creators and posts |
+| Reddit ranking | `app/dashboard/reddit-opinions/page.tsx` | List card with native table/list rows |
+| News terminal | `components/news/NewsFeed.tsx`, `NewsRows.tsx` | List card inside the terminal reading column |
+| Public directories, public opinions | `components/public/ReadingDirectories.tsx`, `ReadingElements.tsx` | List cards |
+| Updates and holdings changes | `components/decision/Journal.tsx`, `PortfolioChanges.tsx` | List cards |
+| Analysis history | `components/decision/AnalysisHistory.tsx` | List card |
+| Portfolio positions and transactions | `components/portfolio/**` | List card surfaces around native tables |
+| Published research list | `components/trading-analysis/PublishedResearch.tsx` | List card or same card grid |
+
 ## Opinion feed background and motion
 
 X and Reddit use the same `bg-background` page ground as the rest of the
-workspace. The Reddit ranking body and header do not add card or muted fills;
-rows retain hairline separators and muted hover feedback. X creator filters
-use pill geometry and 150ms color feedback. Result changes use a 180ms fade
-and rows arrive over 220ms with at most 120ms stagger, including mobile rows.
-Animations start from visible content, never gate interaction, and stop under
-`prefers-reduced-motion`. Refresh and loading controls use existing spinners.
+workspace. Their collections sit in the shared list card; feed rows keep hairline
+separators and muted hover feedback inside that card instead of adding a second
+page-level border. X creator filters use pill geometry and 150ms color feedback.
+Result changes use a 180ms fade and rows arrive over 220ms with at most 120ms
+stagger, including mobile rows. Animations start from visible content, never
+gate interaction, and stop under `prefers-reduced-motion`. Refresh and loading
+controls use existing spinners.

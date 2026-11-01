@@ -9,11 +9,17 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import WatchlistButton from "@/components/decision/WatchlistButton";
 import WatchlistStatus from "@/components/decision/WatchlistStatus";
 import CompanyLogo from "@/components/ui/company-logo";
+import { ListCard, ListColumnHeader, ListRow } from "@/components/ui/list-card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useTranslation } from "@/lib/i18n";
+import { cn } from "@/lib/utils";
 import { useCachedResource } from "@/hooks/useCachedResource";
 import { useRedditWatchlist } from "@/hooks/useRedditWatchlist";
 import { REDDIT_COMMUNITIES, mentionChange, selectRedditStocks, type RedditCommunity, type RedditRanking, type RedditSort, type RedditStock } from "@/lib/redditOpinions";
+
+const MOBILE_GRID = "grid min-h-20 grid-cols-[minmax(0,1fr)_5.5rem_1rem] items-center gap-2 px-2 py-3";
+/** Cells carry the hover band so the table row keeps rounded ends inside the card. */
+const HOVER_CELL = "transition-colors group-hover:bg-muted/50 first:rounded-l-2xl last:rounded-r-2xl";
 
 export default function RedditOpinionsPage() {
   const { t, locale } = useTranslation();
@@ -70,121 +76,133 @@ export default function RedditOpinionsPage() {
             </Button>
           </div>
 
-          <div className="mt-4 grid grid-cols-2 items-end gap-3 md:mt-5 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] xl:grid-cols-[minmax(0,1fr)_11rem_11rem_auto]">
-            <div className="relative col-span-2 md:col-span-3 xl:col-span-1">
-              <Search className="pointer-events-none absolute left-3 top-3 h-4 w-4 text-muted-foreground" aria-hidden="true" />
-              <Input ref={searchInput} type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder={t("redditOpinions.search")} aria-label={t("redditOpinions.search")} aria-describedby="reddit-scope" className="pl-9 pr-10 [&::-webkit-search-cancel-button]:hidden" />
-              {query && <Button variant="ghost" size="icon" className="absolute right-0 top-0 h-10 w-10" aria-label={t("redditOpinions.clearSearch")} title={t("redditOpinions.clearSearch")}
-                onClick={() => { setQuery(""); searchInput.current?.focus(); }}><X className="h-4 w-4" aria-hidden="true" /></Button>}
-            </div>
-            <div className="min-w-0">
-              <label htmlFor="reddit-community" className="mb-1.5 block text-xs text-muted-foreground">{t("redditOpinions.community")}</label>
-              <Select value={community} onValueChange={value => setCommunity(value as RedditCommunity)}>
-                <SelectTrigger id="reddit-community"><SelectValue /></SelectTrigger>
-                <SelectContent>{REDDIT_COMMUNITIES.map(value => <SelectItem key={value} value={value}>{communityLabel(value)}</SelectItem>)}</SelectContent>
-              </Select>
-            </div>
-            <div className="min-w-0">
-              <label htmlFor="reddit-sort" className="mb-1.5 block text-xs text-muted-foreground">{t("redditOpinions.sort")}</label>
-              <Select value={sort} onValueChange={value => setSort(value as RedditSort)}>
-                <SelectTrigger id="reddit-sort"><SelectValue /></SelectTrigger>
-                <SelectContent>{(["mentions", "mentionChange", "rankChange", "upvotes"] as const).map(value => <SelectItem key={value} value={value}>{t(`redditOpinions.sortOptions.${value}`)}</SelectItem>)}</SelectContent>
-              </Select>
-            </div>
-            <Button variant={onlyWatchlist ? "secondary" : "outline"} size="sm" className="col-span-2 h-10 justify-self-start md:col-span-1" aria-pressed={onlyWatchlist} disabled={!ready} onClick={() => setOnlyWatchlist(value => !value)}>
-              <Star className={`h-4 w-4 ${onlyWatchlist ? "fill-current" : ""}`} aria-hidden="true" />
-              {t("redditOpinions.onlyWatchlist")} <span className="tabular-nums">{watchlist.length}</span>
-            </Button>
-          </div>
-          <div id="reddit-scope" className="mb-4 mt-3 flex flex-wrap items-center justify-between gap-2 text-xs leading-5 text-muted-foreground">
-            <p>{t("redditOpinions.scopeNote", { community: communityLabel(community) })}</p>
-            {data && <p role="status" aria-live="polite">{t("redditOpinions.resultCount", { count: number.format(rows.length), total: number.format(data.results.length) })}</p>}
-          </div>
+          <div className="mt-3"><WatchlistStatus /></div>
 
-          {onlyWatchlist && <p className="mb-4 text-xs leading-5 text-muted-foreground">{t("redditOpinions.watchlistNote")}</p>}
-          <div className="mb-4"><WatchlistStatus /></div>
-
-          {Boolean(error) && <div role="alert" className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-3xl border border-border p-4 text-sm">
-            <p>{t(data ? "redditOpinions.staleError" : "redditOpinions.error")}</p>
-            <Button variant="outline" size="sm" onClick={refresh} disabled={busy}>{t("redditOpinions.retry")}</Button>
-          </div>}
-
-          <div key={`${community}:${sort}:${query}:${onlyWatchlist}:${data?.fetchedAt ?? "loading"}`} aria-busy={busy} className="opinion-results">
-            {loading && !data ? <div role="status" className="flex items-center justify-center gap-2 py-16 text-sm text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" aria-hidden="true" />{t("redditOpinions.loading")}</div>
-              : data && rows.length > 0 ? <>
-                <div className="md:hidden">
-                  <div className="grid grid-cols-[minmax(0,1fr)_5.5rem_1rem] items-center gap-2 border-b border-border pb-2 text-xs text-muted-foreground" aria-hidden="true">
-                    <span>{t("redditOpinions.stock")}</span>
-                    <span className="text-right">{t("redditOpinions.mobileMentions")}</span>
-                  </div>
-                  <ol aria-label={t("redditOpinions.title")} className="divide-y divide-border">
-                    {rows.map((row, index) => <li key={row.ticker} className="opinion-result-row" style={{ animationDelay: `${Math.min(index, 6) * 20}ms` }}>
-                      <details className="group rounded-2xl transition-colors duration-150 hover:bg-muted/50">
-                        <summary className="grid min-h-20 cursor-pointer list-none grid-cols-[minmax(0,1fr)_5.5rem_1rem] items-center gap-2 py-3 outline-none [&::-webkit-details-marker]:hidden">
-                          <span className="flex min-w-0 items-center gap-2.5">
-                            <span className="w-5 shrink-0 text-center text-xs tabular-nums text-muted-foreground"><span className="sr-only">{t("redditOpinions.rank")} </span>{row.rank}</span>
-                            <span aria-hidden="true"><CompanyLogo symbol={row.ticker} name={row.name} size="sm" /></span>
-                            <span className="min-w-0">
-                              <span className="block text-sm font-semibold">{row.ticker}</span>
-                              <span className="mt-1 block truncate text-xs text-muted-foreground" title={row.name}>{row.name}</span>
-                            </span>
-                          </span>
-                          <span className="text-right tabular-nums">
-                            <span className="block text-sm font-semibold"><span className="sr-only">{t("redditOpinions.mentions")} </span>{number.format(row.mentions)}</span>
-                            <span className="mt-1 block text-xs text-muted-foreground"><span className="sr-only">{t("redditOpinions.change")} </span>{changeLabel(row)}</span>
-                          </span>
-                          <ChevronDown className="h-3.5 w-3.5 text-muted-foreground transition-transform group-open:rotate-180 motion-reduce:transition-none" aria-hidden="true" />
-                          <span className="sr-only">{t("redditOpinions.details")}</span>
-                        </summary>
-                        <div className="pb-4 pl-8 text-xs">
-                          <p className="mb-3 break-words text-muted-foreground">{row.name}</p>
-                          <dl className="flex flex-wrap gap-x-6 gap-y-2">
-                            <div><dt className="text-muted-foreground">{t("redditOpinions.change")}</dt><dd className="mt-1 tabular-nums">{mentionChange(row) === null ? t("redditOpinions.noBaseline") : changeLabel(row)}</dd></div>
-                            <div><dt className="text-muted-foreground">{t("redditOpinions.rankChange")}</dt><dd className="mt-1 tabular-nums">{rankLabel(row)}</dd></div>
-                            <div><dt className="text-muted-foreground">{t("redditOpinions.upvotes")}</dt><dd className="mt-1 tabular-nums">{number.format(row.upvotes)}</dd></div>
-                          </dl>
-                          {watchButton(row)}
-                        </div>
-                      </details>
-                    </li>)}
-                  </ol>
+          <section aria-label={t("redditOpinions.title")} className="mt-3 md:mt-4">
+            <ListCard>
+              <div className="grid grid-cols-2 items-end gap-3 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] xl:grid-cols-[minmax(0,1fr)_11rem_11rem_auto]">
+                <div className="relative col-span-2 md:col-span-3 xl:col-span-1">
+                  <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
+                  <Input ref={searchInput} type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder={t("redditOpinions.search")} aria-label={t("redditOpinions.search")} aria-describedby="reddit-scope" className="h-11 pl-9 pr-10 [&::-webkit-search-cancel-button]:hidden" />
+                  {query && <Button variant="ghost" size="icon" className="absolute right-0 top-0 h-11 w-11" aria-label={t("redditOpinions.clearSearch")} title={t("redditOpinions.clearSearch")}
+                    onClick={() => { setQuery(""); searchInput.current?.focus(); }}><X className="h-4 w-4" aria-hidden="true" /></Button>}
                 </div>
-                <div role="region" aria-label={t("redditOpinions.title")} tabIndex={0} className="hidden overflow-x-auto rounded-3xl border border-border bg-background focus-visible:outline-none md:block">
-                  <Table>
-                    <caption className="sr-only">{t("redditOpinions.title")} · {t("redditOpinions.mobileMentions")}</caption>
-                    <TableHeader className="!bg-transparent"><TableRow>
-                      <TableHead scope="col" className="w-14">{t("redditOpinions.rank")}</TableHead>
-                      <TableHead scope="col">{t("redditOpinions.stock")}</TableHead>
-                      <TableHead scope="col" className="whitespace-nowrap text-right">{t("redditOpinions.mobileMentions")}</TableHead>
-                      <TableHead scope="col" className="whitespace-nowrap text-right">{t("redditOpinions.change")}</TableHead>
-                      <TableHead scope="col" className="whitespace-nowrap text-right">{t("redditOpinions.rankChange")}</TableHead>
-                      <TableHead scope="col" className="text-right">{t("redditOpinions.upvotes")}</TableHead>
-                      <TableHead scope="col" className="w-14"><span className="sr-only">{t("redditOpinions.followAction")}</span></TableHead>
-                    </TableRow></TableHeader>
-                    <TableBody>{rows.map((row, index) => <TableRow key={row.ticker} className="opinion-result-row" style={{ animationDelay: `${Math.min(index, 6) * 20}ms` }}>
-                      <TableCell className="text-muted-foreground">{row.rank}</TableCell>
-                      <TableCell className="min-w-48 max-w-72">
-                        <div className="flex items-center gap-3">
-                          <span aria-hidden="true"><CompanyLogo symbol={row.ticker} name={row.name} size="sm" /></span>
-                          <div className="min-w-0 flex-1">
-                            <span className="font-semibold">{row.ticker}</span>
-                            <span className="mt-1 block break-words text-xs leading-5 text-muted-foreground">{row.name}</span>
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-right font-medium">{number.format(row.mentions)}</TableCell>
-                      <TableCell className="text-right" title={mentionChange(row) === null ? t("redditOpinions.noBaseline") : undefined}>{changeLabel(row)}</TableCell>
-                      <TableCell className="text-right">{rankLabel(row)}</TableCell>
-                      <TableCell className="text-right">{number.format(row.upvotes)}</TableCell>
-                      <TableCell className="px-1">{watchButton(row, true)}</TableCell>
-                    </TableRow>)}</TableBody>
-                  </Table>
+                <div className="min-w-0">
+                  <label htmlFor="reddit-community" className="mb-1.5 block text-xs text-muted-foreground">{t("redditOpinions.community")}</label>
+                  <Select value={community} onValueChange={value => setCommunity(value as RedditCommunity)}>
+                    <SelectTrigger id="reddit-community" className="h-11"><SelectValue /></SelectTrigger>
+                    <SelectContent>{REDDIT_COMMUNITIES.map(value => <SelectItem key={value} value={value}>{communityLabel(value)}</SelectItem>)}</SelectContent>
+                  </Select>
                 </div>
-              </> : data && <div role="status" className="py-12 text-center text-sm text-muted-foreground">
-                <p>{t(data.results.length === 0 ? "redditOpinions.empty" : onlyWatchlist ? (watchlist.length === 0 ? "redditOpinions.watchlistEmpty" : "redditOpinions.watchlistNoResults") : "redditOpinions.noResults")}</p>
-                {(query || onlyWatchlist) && <Button variant="outline" size="sm" className="mt-4" onClick={() => { setQuery(""); setOnlyWatchlist(false); }}>{t("redditOpinions.clearFilters")}</Button>}
+                <div className="min-w-0">
+                  <label htmlFor="reddit-sort" className="mb-1.5 block text-xs text-muted-foreground">{t("redditOpinions.sort")}</label>
+                  <Select value={sort} onValueChange={value => setSort(value as RedditSort)}>
+                    <SelectTrigger id="reddit-sort" className="h-11"><SelectValue /></SelectTrigger>
+                    <SelectContent>{(["mentions", "mentionChange", "rankChange", "upvotes"] as const).map(value => <SelectItem key={value} value={value}>{t(`redditOpinions.sortOptions.${value}`)}</SelectItem>)}</SelectContent>
+                  </Select>
+                </div>
+                <Button variant={onlyWatchlist ? "secondary" : "outline"} size="sm" className="col-span-2 h-11 justify-self-start md:col-span-1" aria-pressed={onlyWatchlist} disabled={!ready} onClick={() => setOnlyWatchlist(value => !value)}>
+                  <Star className={`h-4 w-4 ${onlyWatchlist ? "fill-current" : ""}`} aria-hidden="true" />
+                  {t("redditOpinions.onlyWatchlist")} <span className="tabular-nums">{watchlist.length}</span>
+                </Button>
+              </div>
+              <div className="mt-3 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 text-xs leading-5 text-muted-foreground">
+                <div id="reddit-scope" className="min-w-0">
+                  <p>{t("redditOpinions.scopeNote", { community: communityLabel(community) })}</p>
+                  {onlyWatchlist && <p className="mt-1">{t("redditOpinions.watchlistNote")}</p>}
+                </div>
+                {data && <p role="status" aria-live="polite" className="shrink-0 tabular-nums">{t("redditOpinions.resultCount", { count: number.format(rows.length), total: number.format(data.results.length) })}</p>}
+              </div>
+
+              {Boolean(error) && <div role="alert" className="mt-3 flex flex-wrap items-center justify-between gap-3 border-t border-border pt-3 text-sm">
+                <p>{t(data ? "redditOpinions.staleError" : "redditOpinions.error")}</p>
+                <Button variant="outline" size="sm" onClick={refresh} disabled={busy}>{t("redditOpinions.retry")}</Button>
               </div>}
-          </div>
+
+              <div key={`${community}:${sort}:${query}:${onlyWatchlist}:${data?.fetchedAt ?? "loading"}`} aria-busy={busy} className="opinion-results mt-3">
+                {loading && !data ? <div role="status" className="flex items-center justify-center gap-2 py-16 text-sm text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" aria-hidden="true" />{t("redditOpinions.loading")}</div>
+                  : data && rows.length > 0 ? <>
+                    <div className="md:hidden">
+                      <ListColumnHeader>
+                        <div className="grid w-full grid-cols-[minmax(0,1fr)_5.5rem_1rem] items-center gap-2 px-2 py-3">
+                          <span>{t("redditOpinions.stock")}</span>
+                          <span className="text-right">{t("redditOpinions.mobileMentions")}</span>
+                          <span />
+                        </div>
+                      </ListColumnHeader>
+                      {/* Ordered list: ranks are meaningful, so the mobile disclosure
+                          rows stay an <ol> rather than the default <ul> ListRows. */}
+                      <ol aria-label={t("redditOpinions.title")} className="min-w-0">
+                        {rows.map((row, index) => <ListRow key={row.ticker} className="opinion-result-row" style={{ animationDelay: `${Math.min(index, 6) * 20}ms` }}>
+                          <details className="group min-w-0 flex-1 rounded-2xl">
+                            <summary className={cn(MOBILE_GRID, "cursor-pointer list-none outline-none [&::-webkit-details-marker]:hidden")}>
+                              <span className="flex min-w-0 items-center gap-2.5">
+                                <span className="w-5 shrink-0 text-center text-xs tabular-nums text-muted-foreground"><span className="sr-only">{t("redditOpinions.rank")} </span>{row.rank}</span>
+                                <span aria-hidden="true"><CompanyLogo symbol={row.ticker} name={row.name} size="sm" /></span>
+                                <span className="min-w-0">
+                                  <span className="block text-sm font-semibold">{row.ticker}</span>
+                                  <span className="mt-1 block truncate text-xs text-muted-foreground" title={row.name}>{row.name}</span>
+                                </span>
+                              </span>
+                              <span className="text-right tabular-nums">
+                                <span className="block text-sm font-semibold"><span className="sr-only">{t("redditOpinions.mentions")} </span>{number.format(row.mentions)}</span>
+                                <span className="mt-1 block text-xs text-muted-foreground"><span className="sr-only">{t("redditOpinions.change")} </span>{changeLabel(row)}</span>
+                              </span>
+                              <ChevronDown className="h-3.5 w-3.5 text-muted-foreground transition-transform group-open:rotate-180 motion-reduce:transition-none" aria-hidden="true" />
+                              <span className="sr-only">{t("redditOpinions.details")}</span>
+                            </summary>
+                            <div className="pb-4 pl-8 pr-2 text-xs">
+                              <p className="mb-3 break-words text-muted-foreground">{row.name}</p>
+                              <dl className="flex flex-wrap gap-x-6 gap-y-2">
+                                <div><dt className="text-muted-foreground">{t("redditOpinions.change")}</dt><dd className="mt-1 tabular-nums">{mentionChange(row) === null ? t("redditOpinions.noBaseline") : changeLabel(row)}</dd></div>
+                                <div><dt className="text-muted-foreground">{t("redditOpinions.rankChange")}</dt><dd className="mt-1 tabular-nums">{rankLabel(row)}</dd></div>
+                                <div><dt className="text-muted-foreground">{t("redditOpinions.upvotes")}</dt><dd className="mt-1 tabular-nums">{number.format(row.upvotes)}</dd></div>
+                              </dl>
+                              {watchButton(row)}
+                            </div>
+                          </details>
+                        </ListRow>)}
+                      </ol>
+                    </div>
+                    <div role="region" aria-label={t("redditOpinions.title")} tabIndex={0} className="hidden overflow-x-auto rounded-2xl focus-visible:outline-none md:block">
+                      <Table>
+                        <caption className="sr-only">{t("redditOpinions.title")} · {t("redditOpinions.mobileMentions")}</caption>
+                        <TableHeader className="!bg-transparent"><TableRow>
+                          <TableHead scope="col" className="w-14">{t("redditOpinions.rank")}</TableHead>
+                          <TableHead scope="col">{t("redditOpinions.stock")}</TableHead>
+                          <TableHead scope="col" className="whitespace-nowrap text-right">{t("redditOpinions.mobileMentions")}</TableHead>
+                          <TableHead scope="col" className="whitespace-nowrap text-right">{t("redditOpinions.change")}</TableHead>
+                          <TableHead scope="col" className="whitespace-nowrap text-right">{t("redditOpinions.rankChange")}</TableHead>
+                          <TableHead scope="col" className="text-right">{t("redditOpinions.upvotes")}</TableHead>
+                          <TableHead scope="col" className="w-14"><span className="sr-only">{t("redditOpinions.followAction")}</span></TableHead>
+                        </TableRow></TableHeader>
+                        <TableBody>{rows.map((row, index) => <TableRow key={row.ticker} className="opinion-result-row group hover:!bg-transparent" style={{ animationDelay: `${Math.min(index, 6) * 20}ms` }}>
+                          <TableCell className={cn(HOVER_CELL, "text-muted-foreground")}>{row.rank}</TableCell>
+                          <TableCell className={cn(HOVER_CELL, "min-w-48 max-w-72")}>
+                            <div className="flex items-center gap-3">
+                              <span aria-hidden="true"><CompanyLogo symbol={row.ticker} name={row.name} size="sm" /></span>
+                              <div className="min-w-0 flex-1">
+                                <span className="font-semibold">{row.ticker}</span>
+                                <span className="mt-1 block break-words text-xs leading-5 text-muted-foreground">{row.name}</span>
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell className={cn(HOVER_CELL, "text-right font-medium")}>{number.format(row.mentions)}</TableCell>
+                          <TableCell className={cn(HOVER_CELL, "text-right")} title={mentionChange(row) === null ? t("redditOpinions.noBaseline") : undefined}>{changeLabel(row)}</TableCell>
+                          <TableCell className={cn(HOVER_CELL, "text-right")}>{rankLabel(row)}</TableCell>
+                          <TableCell className={cn(HOVER_CELL, "text-right")}>{number.format(row.upvotes)}</TableCell>
+                          <TableCell className={cn(HOVER_CELL, "px-1")}>{watchButton(row, true)}</TableCell>
+                        </TableRow>)}</TableBody>
+                      </Table>
+                    </div>
+                  </> : data && <div role="status" className="py-12 text-center text-sm text-muted-foreground">
+                    <p>{t(data.results.length === 0 ? "redditOpinions.empty" : onlyWatchlist ? (watchlist.length === 0 ? "redditOpinions.watchlistEmpty" : "redditOpinions.watchlistNoResults") : "redditOpinions.noResults")}</p>
+                    {(query || onlyWatchlist) && <Button variant="outline" size="sm" className="mt-4" onClick={() => { setQuery(""); setOnlyWatchlist(false); }}>{t("redditOpinions.clearFilters")}</Button>}
+                  </div>}
+              </div>
+            </ListCard>
+          </section>
+
           <footer className="mt-4 flex flex-wrap items-center justify-between gap-2 text-xs leading-5 text-muted-foreground">
             <a href="https://apewisdom.io/methodology/" target="_blank" rel="noopener noreferrer" aria-label={t("redditOpinions.source")}
               className="inline-flex min-h-9 items-center gap-1 underline-offset-4 hover:underline focus-visible:outline-none ">

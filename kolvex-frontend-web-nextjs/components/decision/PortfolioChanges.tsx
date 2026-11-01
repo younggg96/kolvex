@@ -5,7 +5,7 @@ import { useEffect } from "react";
 import CompanyLogo from "@/components/ui/company-logo";
 import { Skeleton } from "@/components/ui/skeleton";
 import OpinionStrength from "@/components/youtube/OpinionStrength";
-import { cn } from "@/lib/utils";
+import { ListColumnHeader, ListRow, ListRows, listRowTargetClass } from "@/components/ui/list-card";
 import { Empty, Panel, TextLink, useCopy, useCreatorCatalogue, useDayLabel } from "./shared";
 import { useDecisionCommand } from "./CommandLayer";
 
@@ -32,12 +32,10 @@ export default function PortfolioChanges({ tickers }: { tickers: string[] }) {
 
   if (!tickers.length) return null;
   const loading = catalogue.loading && !catalogue.data;
-  const rowClass =
-    "-mx-3 flex items-center justify-between gap-4 rounded-3xl px-3 py-3.5 transition-colors duration-150 hover:bg-muted/60 focus-visible:outline-none ";
 
   return (
     <Panel
-      className="pb-2 pt-4"
+      surface="card"
       title={c("What changed in your holdings", "你的持仓有什么变化")}
       action={<TextLink href="/dashboard/journal">{c("Updates", "变化动态")}</TextLink>}
     >
@@ -50,10 +48,14 @@ export default function PortfolioChanges({ tickers }: { tickers: string[] }) {
       ) : !shifts.length ? (
         <Empty>{c("No creator updates on your holdings in the available data.", "现有数据中暂无与你持仓相关的博主动态。")}</Empty>
       ) : (
-        <ul className="divide-y divide-border">
+        <>
+          <ListColumnHeader>
+            <div className="flex w-full items-center justify-between gap-4 px-1 py-3"><span>{c("Stock", "股票")}</span><span>{c("Opinion change", "观点变化")}</span></div>
+          </ListColumnHeader>
+          <ListRows aria-label={c("Holdings changes", "持仓变化")}>
           {shifts.map((shift) => (
-            <li key={`${shift.current_date}-${shift.ticker}`}>
-              <Link href={`/dashboard/market/${encodeURIComponent(shift.ticker)}`} className={rowClass}>
+            <ListRow key={`${shift.current_date}-${shift.ticker}`}>
+              <Link href={`/dashboard/market/${encodeURIComponent(shift.ticker)}`} className={`flex items-center justify-between gap-4 ${listRowTargetClass}`}>
                 <span className="flex min-w-0 items-center gap-3">
                   <span aria-hidden><CompanyLogo symbol={shift.ticker} size="md" /></span>
                   <span className="min-w-0">
@@ -65,7 +67,7 @@ export default function PortfolioChanges({ tickers }: { tickers: string[] }) {
                     </span>
                   </span>
                 </span>
-                <span className={cn("flex shrink-0 flex-col items-end gap-0.5")}>
+                <span className="flex shrink-0 flex-col items-end gap-0.5">
                   {shift.change == null ? (
                     <>
                       <OpinionStrength value={shift.current_score} className="text-[13px]" />
@@ -76,9 +78,10 @@ export default function PortfolioChanges({ tickers }: { tickers: string[] }) {
                   )}
                 </span>
               </Link>
-            </li>
+            </ListRow>
           ))}
-        </ul>
+          </ListRows>
+        </>
       )}
     </Panel>
   );

@@ -9,7 +9,7 @@ import { CORE_STOCKS, STOCK_SECTORS } from "@/lib/stockDiscovery";
 import type { StockQuote } from "@/lib/stockApi";
 import CompanyLogo from "@/components/ui/company-logo";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { ListCard, ListFooterLink, ListRow, ListRows } from "@/components/ui/list-card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Change, money, useCopy } from "./shared";
 import WatchlistStatus from "./WatchlistStatus";
@@ -69,7 +69,7 @@ export default function MarketWatchlistCard() {
         <Button asChild variant="ghost" size="icon" className="h-11 w-11"><Link href="/dashboard/watchlist" aria-label={c("Open full Watchlist", "查看全部自选股")} title={c("Open Watchlist", "查看自选股")}><ArrowUpRight className="h-4 w-4" aria-hidden /></Link></Button>
       </div>
     </header>
-    <Card className="p-3 sm:p-4" aria-busy={!ready || loading}>
+    <ListCard aria-busy={!ready || loading}>
       {!ready ? <div role="status" aria-label={c("Loading Watchlist", "正在加载自选股")} className="space-y-3 py-2">{[0, 1, 2].map(row => <Skeleton key={row} className="h-11 w-full" />)}</div>
         : !symbols.length ? <div className="px-3 py-6 text-center">
           <Star className="mx-auto h-5 w-5 text-muted-foreground" aria-hidden />
@@ -81,17 +81,17 @@ export default function MarketWatchlistCard() {
             <summary className="flex min-h-9 cursor-pointer list-none items-center gap-2 rounded-2xl px-1 text-xs font-medium text-muted-foreground hover:text-foreground focus-visible:outline-none [&::-webkit-details-marker]:hidden">
               <ChevronDown className="h-3.5 w-3.5 shrink-0 -rotate-90 group-open:rotate-0" aria-hidden />{groupLabel(sector)}
             </summary>
-            <ul>{stocks.map(symbol => <li key={symbol}>
-              <Link href={`/dashboard/market/${encodeURIComponent(symbol)}`} className="grid min-h-11 grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-2 rounded-2xl px-1 text-sm transition-colors duration-200 hover:bg-muted focus-visible:outline-none " title={quotes[symbol]?.name ?? symbol}>
+            <ListRows>{stocks.map(symbol => <ListRow key={symbol} className="pr-0">
+              <Link href={`/dashboard/market/${encodeURIComponent(symbol)}`} className="grid min-h-11 w-full grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-2 rounded-2xl px-1 text-sm transition-colors duration-150 hover:bg-muted/50 focus-visible:outline-none" title={quotes[symbol]?.name ?? symbol}>
                 <span className="flex min-w-0 items-center gap-2"><span className="shrink-0" aria-hidden><CompanyLogo symbol={symbol} size="xs" /></span><span className="truncate font-medium">{symbol}</span></span>
                 {loading && !quotes[symbol] ? <Skeleton className="col-span-2 h-4 w-28" /> : <><span className="figure text-right">{money(quotes[symbol]?.price)}</span><Change value={quotes[symbol]?.changePercent} className="min-w-14 text-right text-xs" /></>}
               </Link>
-            </li>)}</ul>
+            </ListRow>)}</ListRows>
           </details>)}
         </div>}
       {unavailable && <p role="status" className="mt-3 text-xs leading-5 text-muted-foreground">{c("Some quotes are unavailable. Use refresh to retry.", "部分报价暂不可用，可点击刷新重试。")}</p>}
       <div className="mt-3"><WatchlistStatus /></div>
-      {ready && symbols.length > 0 && <Link href="/dashboard/watchlist" className="mt-3 flex min-h-11 items-center justify-between border-t border-border px-1 pt-2 text-xs font-medium text-muted-foreground hover:text-foreground focus-visible:outline-none ">{c("View all saved stocks", "查看全部自选股")}<ArrowUpRight className="h-3.5 w-3.5" aria-hidden /></Link>}
-    </Card>
+      {ready && symbols.length > 0 && <ListFooterLink href="/dashboard/watchlist">{c("View all saved stocks", "查看全部自选股")}</ListFooterLink>}
+    </ListCard>
   </section>;
 }

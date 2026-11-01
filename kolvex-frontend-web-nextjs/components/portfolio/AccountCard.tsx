@@ -3,7 +3,8 @@
 import React from "react";
 import { ChevronRight, Briefcase } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ListCard } from "@/components/ui/list-card";
 import {
   Collapsible,
   CollapsibleContent,
@@ -84,9 +85,9 @@ export function AccountCard({
 
   return (
     <Collapsible open={isExpanded} onOpenChange={onToggle}>
-      <Card className="overflow-hidden">
+      <ListCard className="overflow-hidden !p-0 sm:!p-0">
         <CollapsibleTrigger asChild>
-          <CardHeader className="cursor-pointer select-none hover:bg-primary/10 transition-colors py-3 px-4">
+          <CardHeader className="cursor-pointer select-none hover:bg-muted/50 transition-colors py-3 px-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <ChevronRight
@@ -162,7 +163,7 @@ export function AccountCard({
             )}
           </CardContent>
         </CollapsibleContent>
-      </Card>
+      </ListCard>
     </Collapsible>
   );
 }

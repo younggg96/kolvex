@@ -23,6 +23,19 @@ import {
 } from "lucide-react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import {
+  ListCard,
+  ListColumnHeader,
+  ListFooterLink,
+  ListLoadMore,
+  ListRow,
+  ListRows,
+  ListToolbar,
+  listCompactRowClass,
+  listFeedRowClass,
+  listRowTargetClass,
+} from "@/components/ui/list-card";
 import { Input } from "@/components/ui/input";
 import CompanyLogo from "@/components/ui/company-logo";
 import {
@@ -179,6 +192,9 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
   const [historyView, setHistoryView] = useState<HistoryView>("videos");
   const [showUntrackedVideos, setShowUntrackedVideos] = useState(false);
   const [chartView, setChartView] = useState<ChartView>("price");
+  // AI drawing results render in their own card below the price chart, matching
+  // the Market stock page's chart/results split.
+  const [chartResults, setChartResults] = useState<HTMLDivElement | null>(null);
   const detailRequest = useRef(0);
   const navigationRequest = useRef(0);
   const [navigating, setNavigating] = useState(false);
@@ -517,6 +533,26 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
   const rowClass =
     "group grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-2 border-b border-border py-3.5 transition-colors duration-150 hover:bg-muted/60 focus-visible:outline-none sm:-mx-3 sm:rounded-3xl sm:border-transparent sm:px-3";
   const stockRowClass = cn(rowClass, "grid-cols-[minmax(0,1fr)_auto] gap-x-3 sm:grid-cols-[minmax(0,1fr)_110px_160px] sm:gap-x-4");
+  // Rows inside one card body reuse the shared row target metrics (rounded-2xl,
+  // min-h-20, no ring) while the ListRow supplies the hover/focus-within surface.
+  const cardRowClass = cn(
+    "group grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-2",
+    listRowTargetClass,
+  );
+  const cardStockRowClass = cn(
+    "group grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-2 sm:grid-cols-[minmax(0,1fr)_110px_160px] sm:gap-x-4",
+    listRowTargetClass,
+  );
+  // Narrow rails keep the two-column mobile row layout at every breakpoint.
+  const cardNarrowStockRowClass = cn(
+    "group grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-2",
+    listRowTargetClass,
+  );
+  // Column headings mirror the row grids so labels line up with their cells.
+  const stockColumnHeaderClass =
+    "grid min-w-0 flex-1 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 px-2 py-3 sm:grid-cols-[minmax(0,1fr)_110px_160px] sm:gap-x-4";
+  const creatorColumnHeaderClass =
+    "grid min-w-0 flex-1 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 px-2 py-3";
   const formatPercent = (value?: number | null) =>
     typeof value === "number" && Number.isFinite(value)
       ? `${value > 0 ? "+" : ""}${value.toFixed(2)}%`
@@ -542,7 +578,7 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
     const date = formatDay(value);
     if (!value || !date) return null;
     return (
-      <time dateTime={value.slice(0, 10)} className="whitespace-nowrap text-xs text-foreground/60 tabular-nums">
+      <time dateTime={value.slice(0, 10)} className="whitespace-nowrap text-xs text-muted-foreground tabular-nums">
         {t("youtubeOpinions.lastUpdated", { date })}
       </time>
     );
@@ -596,12 +632,21 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
         ? "bg-foreground text-background"
         : "text-foreground/80 hover:bg-muted hover:text-foreground",
     );
+  // Inside the directory card, controls match the Markets card toolbar:
+  // muted selected pill, 40px minimum height.
+  const directoryPill = (active: boolean) =>
+    cn(
+      "inline-flex min-h-10 shrink-0 items-center rounded-full px-4 text-sm font-medium transition-colors duration-150 focus-visible:outline-none",
+      active
+        ? "bg-muted font-semibold text-foreground hover:bg-secondary"
+        : "text-muted-foreground hover:bg-muted hover:text-foreground",
+    );
   const segment = (active: boolean) =>
     cn(
-      "h-8 shrink-0 whitespace-nowrap rounded-full px-3.5 text-[13px] font-semibold transition-colors duration-150 focus-visible:outline-none ",
+      "inline-flex min-h-10 shrink-0 items-center whitespace-nowrap rounded-full px-4 text-sm font-semibold transition-colors duration-150 focus-visible:outline-none",
       active
-        ? "bg-background text-foreground shadow-[0_1px_2px_rgb(0_0_0/0.12)]"
-        : "text-foreground/80 hover:text-foreground",
+        ? "bg-foreground text-background"
+        : "text-muted-foreground hover:bg-secondary hover:text-foreground",
     );
 
   const shownStocks = creatorOverview && !showAllCreatorStocks
@@ -726,56 +771,57 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
     );
   };
 
-  const stockRows = (
+  const stockRows = (inCard = false, narrow = false) => (
     <div className="min-w-0">
-      {shownStocks.map((item, index) => (
-        <StockDirectoryRow key={item.ticker} stock={item} performance={performanceCell(item.ticker, index < performanceLimit)} change={changesByTicker.get(item.ticker)}>
-        <ExplorerLink
-          onNavigate={navigate}
-          key={item.ticker}
-          target={{
-            tab: route.creator ? "creators" : "stocks",
-            ticker: item.ticker,
-            creator: route.creator,
-          }}
-          className={stockRowClass}
-          label={`${t("youtubeOpinions.viewStock")}: ${item.ticker}`}
-        >
-          <div className="flex min-w-0 items-center gap-3">
-            <CompanyLogo symbol={item.ticker} size="md" />
-            <div className="min-w-0">
-              <p className="text-[15px] font-semibold">
-                {item.ticker}
-                {held.tickers.includes(item.ticker) && <HeldMark />}
-              </p>
-              <p className="mt-0.5 truncate text-[13px] text-foreground/80">
-                {item.company_name || item.ticker}
-              </p>
-            </div>
-          </div>
-          {performanceCell(item.ticker, index < performanceLimit, true)}
-          <div className="col-span-2 flex min-w-0 flex-wrap items-center justify-between gap-x-3 gap-y-1 text-right sm:col-span-1 sm:flex-col sm:items-end sm:justify-center" title={t("youtubeOpinions.directory.historicalConsensus")}>
-            <OpinionStrength value={item.avg_score} />
-            <p className="text-xs text-foreground/75 tabular-nums">
-              {t("youtubeOpinions.creatorOpinionCount", {
-                creators: String(item.creator_count),
-                opinions: String(item.total_opinions),
-              })}
-            </p>
-          </div>
-        </ExplorerLink>
-        </StockDirectoryRow>
-      ))}
+      <ListRows aria-label={t("youtubeOpinions.stocksDiscussedTitle")}>
+        {shownStocks.map((item, index) => (
+          <StockDirectoryRow key={item.ticker} stock={item} performance={performanceCell(item.ticker, index < performanceLimit)} change={changesByTicker.get(item.ticker)}>
+            <ExplorerLink
+              onNavigate={navigate}
+              target={{
+                tab: route.creator ? "creators" : "stocks",
+                ticker: item.ticker,
+                creator: route.creator,
+              }}
+              className={inCard ? (narrow ? cardNarrowStockRowClass : cardStockRowClass) : stockRowClass}
+              label={`${t("youtubeOpinions.viewStock")}: ${item.ticker}`}
+            >
+              <div className="flex min-w-0 items-center gap-3">
+                <CompanyLogo symbol={item.ticker} size="md" />
+                <div className="min-w-0">
+                  <p className="text-[15px] font-semibold">
+                    {item.ticker}
+                    {held.tickers.includes(item.ticker) && <HeldMark />}
+                  </p>
+                  <p className="mt-0.5 truncate text-[13px] text-muted-foreground">
+                    {item.company_name || item.ticker}
+                  </p>
+                </div>
+              </div>
+              {performanceCell(item.ticker, index < performanceLimit, true)}
+              <div className={cn("col-span-2 flex min-w-0 flex-wrap items-center justify-between gap-x-3 gap-y-1 text-right", !narrow && "sm:col-span-1 sm:flex-col sm:items-end sm:justify-center")} title={t("youtubeOpinions.directory.historicalConsensus")}>
+                <OpinionStrength value={item.avg_score} />
+                <p className="text-xs text-muted-foreground tabular-nums">
+                  {t("youtubeOpinions.creatorOpinionCount", {
+                    creators: String(item.creator_count),
+                    opinions: String(item.total_opinions),
+                  })}
+                </p>
+              </div>
+            </ExplorerLink>
+          </StockDirectoryRow>
+        ))}
+      </ListRows>
       {hasMorePreviewStocks && (
-        <div className="flex justify-center py-5">
-          <Button variant="outline" asChild>
-            <Link href={stockDirectoryHref}>
-              {c("View all stocks", "查看全部股票")} · {shownStocks.length}/{visibleStocks.length}
-            </Link>
-          </Button>
-        </div>
+        <ListFooterLink href={stockDirectoryHref}>
+          {c("View all stocks", "查看全部股票")} · {shownStocks.length}/{visibleStocks.length}
+        </ListFooterLink>
       )}
-      {allStocks && shownStocks.length < visibleStocks.length && <div className="flex justify-center py-5"><Button variant="outline" onClick={() => setDirectoryLimit(value => value + 40)}>{c("Load more stocks", "加载更多股票")} · {shownStocks.length}/{visibleStocks.length}</Button></div>}
+      {allStocks && shownStocks.length < visibleStocks.length && (
+        <ListLoadMore onClick={() => setDirectoryLimit(value => value + 40)}>
+          {c("Load more stocks", "加载更多股票")} · {shownStocks.length}/{visibleStocks.length}
+        </ListLoadMore>
+      )}
       {!visibleStocks.length && !(directoryActive && stockScope === "holdings" && (held.loading || held.error)) && (
         <EmptyLine
           text={filtering ? t("youtubeOpinions.noStocksMatch") : t("youtubeOpinions.noData")}
@@ -785,38 +831,40 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
     </div>
   );
 
-  const creatorRows = (items: YouTubeCreatorSummary[]) => (
-    <div className="min-w-0">
+  const creatorRows = (items: YouTubeCreatorSummary[], inCard = false) => (
+    <ListRows aria-label={t("youtubeOpinions.trackedCreators")}>
       {items.map((item) => (
-        <ExplorerLink
-          onNavigate={navigate}
-          key={item.channel_id}
-          target={{ tab: "creators", creator: item.channel_id }}
-          className={rowClass}
-          label={`${t("youtubeOpinions.viewCreator")}: ${item.channel_title || item.channel_id}`}
-        >
-          <div className="flex min-w-0 items-center gap-3">
-            <Avatar creator={item} />
-            <div className="min-w-0">
-              <p className="truncate text-[15px] font-semibold">
-                {item.channel_title || item.channel_id}
-              </p>
-              <p className="mt-0.5 truncate text-[13px] text-foreground/80">
-                {item.channel_handle || item.channel_id}
-              </p>
-              {coverageNote(item.channel_id)}
+        <ListRow key={item.channel_id}>
+          <ExplorerLink
+            onNavigate={navigate}
+            target={{ tab: "creators", creator: item.channel_id }}
+            className={inCard ? cardRowClass : rowClass}
+            label={`${t("youtubeOpinions.viewCreator")}: ${item.channel_title || item.channel_id}`}
+          >
+            <div className="flex min-w-0 items-center gap-3">
+              <Avatar creator={item} />
+              <div className="min-w-0">
+                <p className="truncate text-[15px] font-semibold">
+                  {item.channel_title || item.channel_id}
+                </p>
+                <p className="mt-0.5 truncate text-[13px] text-muted-foreground">
+                  {item.channel_handle || item.channel_id}
+                </p>
+                {inCard && lastUpdated(item.latest_opinion_at)}
+                {coverageNote(item.channel_id)}
+              </div>
             </div>
-          </div>
-          <div className="flex min-w-0 flex-col items-end gap-0.5 text-right">
-            <OpinionStrength value={item.avg_score} />
-            <p className="text-xs text-foreground/75 tabular-nums">
-              {t("youtubeOpinions.opinionCount", { count: String(item.total_opinions) })}
-            </p>
-            {lastUpdated(item.latest_opinion_at)}
-          </div>
-        </ExplorerLink>
+            <div className="flex min-w-0 flex-col items-end gap-0.5 text-right">
+              <OpinionStrength value={item.avg_score} />
+              <p className="text-xs text-muted-foreground tabular-nums">
+                {t("youtubeOpinions.opinionCount", { count: String(item.total_opinions) })}
+              </p>
+              {!inCard && lastUpdated(item.latest_opinion_at)}
+            </div>
+          </ExplorerLink>
+        </ListRow>
       ))}
-    </div>
+    </ListRows>
   );
 
   const loadingBlock = (
@@ -826,47 +874,62 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
     </div>
   );
 
-  const changeList = (
-    <section className="min-w-0">
-      <h2 className="text-base font-semibold">
-        {t("youtubeOpinions.recentShifts")}
-      </h2>
-      <p className="mt-1 text-xs text-foreground/75">
-        {t("youtubeOpinions.comparedWithPrevious")}
-      </p>
-      {catalogueError ? <EmptyLine text={t("youtubeOpinions.directoryLoadFailed")} action={{ label: t("common.retry"), onClick: refresh }} alert /> : !catalogue ? loadingBlock : !notableChanges.length ? <EmptyLine text={c("No opinion changes yet", "暂无观点变化")} /> : <ul className="mt-3">
-        {notableChanges.map((change) => (
-          <li key={change.ticker}>
-            <ExplorerLink
-              onNavigate={navigate}
-              target={{
-                tab: route.creator ? "creators" : "stocks",
-                ticker: change.ticker,
-                creator: route.creator,
-              }}
-              className="flex min-w-0 items-center justify-between gap-3 border-b border-border py-3 text-sm last:border-0 hover:text-foreground focus-visible:outline-none "
-            >
-              <span className="flex min-w-0 items-center gap-3">
-                <span aria-hidden="true"><CompanyLogo symbol={change.ticker} size="sm" /></span>
-                <span className="min-w-0">
-                  <span className="block font-semibold">{change.ticker}</span>
-                  <span className="block text-xs text-foreground/75 tabular-nums">
-                    {formatDay(change.current_date)}
+  const changeList = (primary = false) => (
+    <section aria-labelledby="creator-recent-shifts-title" className="min-w-0">
+      <header className={cn("mb-3 flex flex-wrap items-center justify-between gap-2", primary && "min-h-14")}>
+        <div className="min-w-0">
+          <h2
+            id="creator-recent-shifts-title"
+            className={cn("font-semibold tracking-[-0.01em]", primary ? "text-xl" : "text-base")}
+          >
+            {t("youtubeOpinions.recentShifts")}
+          </h2>
+          <p className="mt-1 text-xs text-muted-foreground">
+            {t("youtubeOpinions.comparedWithPrevious")}
+          </p>
+        </div>
+      </header>
+      <ListCard>
+        {catalogueError ? (
+          <EmptyLine text={t("youtubeOpinions.directoryLoadFailed")} action={{ label: t("common.retry"), onClick: refresh }} alert />
+        ) : !catalogue ? loadingBlock : !notableChanges.length ? (
+          <EmptyLine text={c("No opinion changes yet", "暂无观点变化")} />
+        ) : (
+          <ListRows aria-label={t("youtubeOpinions.recentShifts")}>
+            {notableChanges.map((change) => (
+              <ListRow key={change.ticker}>
+                <ExplorerLink
+                  onNavigate={navigate}
+                  target={{
+                    tab: route.creator ? "creators" : "stocks",
+                    ticker: change.ticker,
+                    creator: route.creator,
+                  }}
+                  className={cn(listCompactRowClass, "flex-1")}
+                >
+                  <span className="flex min-w-0 items-center gap-3">
+                    <span aria-hidden="true"><CompanyLogo symbol={change.ticker} size="sm" /></span>
+                    <span className="min-w-0">
+                      <span className="block font-semibold">{change.ticker}</span>
+                      <span className="block text-xs text-muted-foreground tabular-nums">
+                        {formatDay(change.current_date)}
+                      </span>
+                    </span>
                   </span>
-                </span>
-              </span>
-              <OpinionChange value={change} />
-            </ExplorerLink>
-          </li>
-        ))}
-      </ul>}
+                  <OpinionChange value={change} />
+                </ExplorerLink>
+              </ListRow>
+            ))}
+          </ListRows>
+        )}
+      </ListCard>
     </section>
   );
 
   const tabSwitcher = (
     <nav
       aria-label={t("youtubeOpinions.browseBy")}
-      className="inline-flex w-fit max-w-full items-center gap-0.5 rounded-full bg-muted p-1 align-middle"
+      className="inline-flex w-fit max-w-full items-center gap-1 rounded-full bg-muted/50 p-1 align-middle"
     >
       {([
         { tab: "stocks", label: t("youtubeOpinions.byStock") },
@@ -908,7 +971,7 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
     <div
       role="radiogroup"
       aria-label={t("youtubeOpinions.historyView")}
-      className="inline-flex w-fit max-w-full items-center gap-0.5 rounded-full bg-muted p-1 align-middle"
+      className="inline-flex w-fit max-w-full items-center gap-1 rounded-full bg-muted/50 p-1 align-middle"
     >
       {([
         { value: "videos", label: t("youtubeOpinions.byVideo") },
@@ -928,7 +991,7 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
     </div>
   );
   const focused = Boolean(route.creator && route.ticker);
-  const rangeControls = (compact: boolean) => {
+  const rangeControls = (compact: boolean, inline = false) => {
     const rangePill = (active: boolean) =>
       compact ? cn(pill(active), "h-7 px-2.5 text-xs") : pill(active);
     return (
@@ -939,7 +1002,9 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
           "flex items-center gap-1",
           compact
             ? "flex-wrap"
-            : "mt-3 overflow-x-auto border-b border-border pb-4 scrollbar-hide",
+            : inline
+              ? "min-w-0 max-w-full overflow-x-auto rounded-full bg-muted/50 p-1 scrollbar-hide"
+              : "mt-3 overflow-x-auto border-b border-border pb-4 scrollbar-hide",
         )}
       >
         {rangeOptions.map((option) => (
@@ -1003,7 +1068,7 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
             </span>
           </div>
         )}
-        <div className="mx-auto w-full min-w-0 px-4 pb-16 pt-5 md:px-8 md:pt-7">
+        <div className="mx-auto w-full min-w-0 max-w-[1600px] px-4 pb-16 pt-5 md:px-8 md:pt-7">
           {!inDetail && !allStocks && (
             <div className="mb-5 min-w-0 sm:mb-6">{tabSwitcher}</div>
           )}
@@ -1013,182 +1078,238 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
           >
 
             {!inDetail && (
-              <div className={cn("grid min-w-0 gap-10", allStocks ? "mx-auto " : "xl:grid-cols-[minmax(0,1fr)_300px]")}>
-                <div className="min-w-0">
-                  <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-                    <div>
-                      <div className="flex flex-col flex-wrap gap-3">
-                        <h2 className="text-[28px] font-semibold leading-tight tracking-[-0.02em]">
+              <div className={cn("grid min-w-0 gap-8", allStocks ? "mx-auto" : "xl:grid-cols-[minmax(0,1fr)_20rem] 2xl:gap-x-12")}>
+                <div className="min-w-0 space-y-8">
+                  <div>
+                    <header className="mb-3 flex min-h-14 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                      <div className="min-w-0">
+                        <h2
+                          id="creator-directory-heading"
+                          className="text-[28px] font-semibold leading-tight tracking-[-0.02em]"
+                        >
                           {route.tab === "stocks"
                             ? t("youtubeOpinions.stocksDiscussedTitle")
                             : t("youtubeOpinions.trackedCreators")}
                         </h2>
-
-                      {catalogue && !(route.tab === "stocks" && stockScope === "holdings" && (held.loading || held.error)) && (
-                        <p className="mt-1 text-sm text-foreground/80 tabular-nums">
-                          {t("youtubeOpinions.catalogueSummary", {
-                            stocks: String(catalogue.summary.total_stocks),
-                            creators: String(catalogue.summary.total_creators),
-                            opinions: String(catalogue.summary.total_opinions),
-                          })}
-                        </p>
-                      )}
-                      </div>
-                    </div>
-                    <div className="relative w-full sm:max-w-xs">
-                      <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                      <Input
-                        ref={searchInput}
-                        aria-label={t("common.search")}
-                        placeholder={
-                          route.tab === "stocks"
-                            ? t("youtubeOpinions.searchTicker")
-                            : t("youtubeOpinions.searchCreator")
-                        }
-                        value={search}
-                        onChange={(event) => setSearch(event.target.value)}
-                        className="h-10 rounded-full pl-10 pr-10 text-base sm:text-sm"
-                      />
-                      {search && <button type="button" aria-label={t("common.clearFilters")} className="absolute right-1 top-1 flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground hover:bg-muted focus-visible:outline-none " onClick={() => { setSearch(""); searchInput.current?.focus(); }}><X className="h-4 w-4" aria-hidden="true" /></button>}
-                    </div>
-                  </div>
-                  <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-b border-border pb-3">
-                    <div
-                      role="radiogroup"
-                      aria-label={t("youtubeOpinions.filterBySentiment")}
-                      className="flex items-center gap-1 overflow-x-auto scrollbar-hide"
-                    >
-                      {toneOptions.map((option) => (
-                        <button
-                          key={option.value}
-                          type="button"
-                          role="radio"
-                          aria-checked={toneFilter === option.value}
-                          onClick={() => setToneFilter(option.value)}
-                          className={pill(toneFilter === option.value)}
-                        >
-                          {option.label}
-                        </button>
-                      ))}
-                    </div>
-                    <div className="ml-auto flex shrink-0 items-center gap-2">
-                      {catalogue && (
-                        <span className="shrink-0 whitespace-nowrap text-[13px] text-foreground/75 tabular-nums">
-                          {t("youtubeOpinions.shownCount", {
-                            count: route.tab === "stocks"
-                              ? `${shownStocks.length}/${visibleStocks.length}`
-                              : String(visibleCreators.length),
-                          })}
-                        </span>
-                      )}
-                      {route.tab === "stocks" && hasMorePreviewStocks && (
-                        <Button variant="ghost" size="sm" asChild>
-                          <Link href={stockDirectoryHref}>{c("View all", "查看全部")}</Link>
-                        </Button>
-                      )}
-                      <Select value={sortBy} onValueChange={(value) => setSortBy(value as DirectorySort)}>
-                        <SelectTrigger
-                          aria-label={t("common.sort")}
-                          className="h-8 w-auto gap-1.5 rounded-full border-transparent bg-transparent px-3 text-[13px] font-semibold hover:bg-muted"
-                        >
-                          <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground" />
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent align="end">
-                          {sortOptions.map((option) => (
-                            <SelectItem key={option.value} value={option.value}>
-                              {option.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                  <div className="mt-1">
-                    {route.tab === "stocks" && isProductFeatureEnabled("portfolio") && <div className="flex flex-wrap items-center gap-2 py-3">
-                      <div className="flex flex-wrap gap-1" role="group" aria-label={t("youtubeOpinions.directory.allStocks")}>
-                        {([["all", "allStocks"], ["holdings", "holdingsOnly"]] as const).map(([value, label]) => <button key={value} type="button" aria-pressed={stockScope === value} className={pill(stockScope === value)} onClick={() => setStockScope(value)}>{t(`youtubeOpinions.directory.${label}`)}</button>)}
-                      </div>
-                      {stockScope === "holdings" && held.loading && <p role="status" className="text-xs text-muted-foreground">{t("common.loadingStatus")}</p>}
-                      {stockScope === "holdings" && held.error && <div role="alert" className="flex items-center gap-2 text-xs text-negative">{c("Holdings could not be loaded.", "暂时无法加载持仓。")}<Button size="xs" variant="outline" onClick={refresh}>{t("common.retry")}</Button></div>}
-                    </div>}
-                    {catalogueError ? (
-                      <EmptyLine
-                        text={t("youtubeOpinions.directoryLoadFailed")}
-                        action={{ label: t("common.retry"), onClick: refresh }}
-                        alert
-                      />
-                    ) : !catalogue ? (
-                      loadingBlock
-                    ) : (
-                      <>
-                        <TabsContent value="stocks" className="mt-0">
-                          {stockRows}
-                        </TabsContent>
-                        <TabsContent value="creators" className="mt-0">
-                          {creatorRows(visibleCreators)}
-                          {!visibleCreators.length && (
-                            <EmptyLine
-                              text={filtering ? t("youtubeOpinions.noCreatorsMatch") : t("youtubeOpinions.noData")}
-                              action={filtering ? { label: t("common.clearFilters"), onClick: clearFilters } : undefined}
-                            />
-                          )}
-                        </TabsContent>
-                      </>
-                    )}
-                  </div>
-                  {!allStocks && <div className="mt-10">{changeList}</div>}
-                </div>
-                {!allStocks && <aside className="min-w-0 space-y-8 xl:self-start">
-                  <section aria-labelledby="creator-latest-opinions-title">
-                    <div className="flex flex-wrap items-baseline justify-between gap-2">
-                      <h2 id="creator-latest-opinions-title" className="text-base font-semibold">{c("Latest creator videos", "博主最新视频")}</h2>
-                      <Link href="/dashboard/youtube-opinions/opinions" className="rounded-sm text-xs font-medium underline-offset-4 hover:underline focus-visible:outline-none ">
-                        {c("View all opinions", "查看全部观点")}
-                      </Link>
-                    </div>
-                    <p className="mt-2 text-xs text-muted-foreground">{c("Each creator’s latest video, with stock opinions grouped together", "每位博主仅展示最新一期，合并同视频内的股票观点")}</p>
-                    {catalogueError ? <EmptyLine text={t("youtubeOpinions.directoryLoadFailed")} action={{ label: t("common.retry"), onClick: refresh }} alert /> : !catalogue ? loadingBlock : catalogue.latest_videos?.length ? (
-                      <div className="mt-3">
-                        {catalogue.latest_videos.map((group) => (
-                          <VideoOpinionCard key={group.videoId} group={group} t={t} showCreator compact onStock={(ticker) => navigate({ tab: "stocks", ticker })} />
-                        ))}
-                      </div>
-                    ) : <EmptyLine text={t("youtubeOpinions.noOpinionsYet")} />}
-                  </section>
-                  {isProductFeatureEnabled("portfolio") && <section aria-labelledby="creator-holdings-title">
-                    <h2 id="creator-holdings-title" className="text-base font-semibold">{c("My holdings", "我的持仓")}</h2>
-                    {held.loading ? loadingBlock : held.error ? (
-                      <EmptyLine text={t("research.holdingsUnavailable")} />
-                    ) : !held.tickers.length ? (
-                      <p className="mt-3 text-sm text-muted-foreground">
-                        {t("research.noHoldings")}{" "}
-                        <Link href="/dashboard/portfolio" className="font-medium text-foreground underline-offset-4 hover:underline">
-                          {t("research.viewPortfolio")}
-                        </Link>
-                      </p>
-                    ) : (
-                      <>
-                        <ul className="mt-3 divide-y divide-border">
-                          {holdingsWithCoverage.map((stock) => (
-                            <li key={stock.ticker}>
-                              <Link
-                                href={`/dashboard/market/${encodeURIComponent(stock.ticker)}`}
-                                className="flex items-center justify-between gap-3 py-3 hover:text-primary focus-visible:outline-none "
-                              >
-                                <span className="font-semibold">{stock.ticker}</span>
-                                <OpinionStrength value={stock.avg_score} />
-                              </Link>
-                            </li>
-                          ))}
-                        </ul>
-                        {held.tickers.length > holdingsWithCoverage.length && (
-                          <p className="mt-2 text-xs text-muted-foreground">
-                            {t("research.uncoveredHoldings", { count: String(held.tickers.length - holdingsWithCoverage.length) })}
+                        {catalogue && !(route.tab === "stocks" && stockScope === "holdings" && (held.loading || held.error)) && (
+                          <p className="mt-1 text-sm text-muted-foreground tabular-nums">
+                            {t("youtubeOpinions.catalogueSummary", {
+                              stocks: String(catalogue.summary.total_stocks),
+                              creators: String(catalogue.summary.total_creators),
+                              opinions: String(catalogue.summary.total_opinions),
+                            })}
                           </p>
                         )}
-                      </>
-                    )}
+                      </div>
+                    </header>
+                    <section aria-labelledby="creator-directory-heading" className="min-w-0">
+                      <ListCard>
+                        <ListToolbar>
+                          <div
+                            role="radiogroup"
+                            aria-label={t("youtubeOpinions.filterBySentiment")}
+                            className="flex flex-wrap items-center gap-1"
+                          >
+                            {toneOptions.map((option) => (
+                              <button
+                                key={option.value}
+                                type="button"
+                                role="radio"
+                                aria-checked={toneFilter === option.value}
+                                onClick={() => setToneFilter(option.value)}
+                                className={directoryPill(toneFilter === option.value)}
+                              >
+                                {option.label}
+                              </button>
+                            ))}
+                          </div>
+                        </ListToolbar>
+                        <div className="mt-3 flex flex-wrap items-center gap-2">
+                          <div className="relative min-w-0 flex-1">
+                            <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                            <Input
+                              ref={searchInput}
+                              aria-label={t("common.search")}
+                              placeholder={
+                                route.tab === "stocks"
+                                  ? t("youtubeOpinions.searchTicker")
+                                  : t("youtubeOpinions.searchCreator")
+                              }
+                              value={search}
+                              onChange={(event) => setSearch(event.target.value)}
+                              className="h-11 rounded-full pl-10 pr-10 text-base sm:text-sm"
+                            />
+                            {search && <button type="button" aria-label={t("common.clearFilters")} className="absolute right-1 top-1.5 flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground hover:bg-muted focus-visible:outline-none" onClick={() => { setSearch(""); searchInput.current?.focus(); }}><X className="h-4 w-4" aria-hidden="true" /></button>}
+                          </div>
+                          {route.tab === "stocks" && isProductFeatureEnabled("portfolio") && (
+                            <div className="flex flex-wrap items-center gap-1">
+                              <div className="flex flex-wrap gap-1" role="group" aria-label={t("youtubeOpinions.directory.allStocks")}>
+                                {([["all", "allStocks"], ["holdings", "holdingsOnly"]] as const).map(([value, label]) => (
+                                  <button key={value} type="button" aria-pressed={stockScope === value} className={directoryPill(stockScope === value)} onClick={() => setStockScope(value)}>
+                                    {t(`youtubeOpinions.directory.${label}`)}
+                                  </button>
+                                ))}
+                              </div>
+                              {stockScope === "holdings" && held.loading && <p role="status" className="text-xs text-muted-foreground">{t("common.loadingStatus")}</p>}
+                              {stockScope === "holdings" && held.error && <div role="alert" className="flex items-center gap-2 text-xs text-negative">{c("Holdings could not be loaded.", "暂时无法加载持仓。")}<Button size="xs" variant="outline" onClick={refresh}>{t("common.retry")}</Button></div>}
+                            </div>
+                          )}
+                          <div className="ml-auto flex shrink-0 justify-end">
+                            <Select value={sortBy} onValueChange={(value) => setSortBy(value as DirectorySort)}>
+                              <SelectTrigger
+                                aria-label={t("common.sort")}
+                                className="h-11 w-auto gap-1.5 rounded-full border-border bg-transparent px-3 text-[13px] font-semibold hover:bg-muted"
+                              >
+                                <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground" />
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent align="end">
+                                {sortOptions.map((option) => (
+                                  <SelectItem key={option.value} value={option.value}>
+                                    {option.label}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+                        {catalogue && (
+                          <div className="mt-3 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 text-xs leading-5 text-muted-foreground">
+                            <p role="status" aria-live="polite" className="shrink-0 tabular-nums">
+                              {route.tab === "stocks"
+                                ? c(`Showing ${shownStocks.length} of ${visibleStocks.length} stocks`, `已显示 ${shownStocks.length} / ${visibleStocks.length} 只股票`)
+                                : c(`Showing ${visibleCreators.length} of ${creators.length} creators`, `已显示 ${visibleCreators.length} / ${creators.length} 位博主`)}
+                            </p>
+                            <p className="min-w-0 truncate">
+                              {route.tab === "stocks"
+                                ? c("Ranked within this list", "名单内排序")
+                                : c("All tracked creators", "全部追踪博主")}
+                            </p>
+                          </div>
+                        )}
+                        {catalogueError ? (
+                          <EmptyLine
+                            text={t("youtubeOpinions.directoryLoadFailed")}
+                            action={{ label: t("common.retry"), onClick: refresh }}
+                            alert
+                          />
+                        ) : !catalogue ? (
+                          loadingBlock
+                        ) : (
+                          <>
+                            <TabsContent value="stocks" className="mt-0">
+                              <ListColumnHeader>
+                                <div className={stockColumnHeaderClass}>
+                                  <span>{t("youtubeOpinions.ticker")}</span>
+                                  <span className="text-right">{t("youtubeOpinions.directory.currentPrice")}</span>
+                                  <span className="hidden text-right sm:block">{t("youtubeOpinions.directory.historicalConsensus")}</span>
+                                </div>
+                              </ListColumnHeader>
+                              {stockRows(true)}
+                            </TabsContent>
+                            <TabsContent value="creators" className="mt-0">
+                              <ListColumnHeader>
+                                <div className={creatorColumnHeaderClass}>
+                                  <span>{t("youtubeOpinions.creator")}</span>
+                                  <span className="text-right">{t("youtubeOpinions.opinions")}</span>
+                                </div>
+                              </ListColumnHeader>
+                              {creatorRows(visibleCreators, true)}
+                              {!visibleCreators.length && (
+                                <EmptyLine
+                                  text={filtering ? t("youtubeOpinions.noCreatorsMatch") : t("youtubeOpinions.noData")}
+                                  action={filtering ? { label: t("common.clearFilters"), onClick: clearFilters } : undefined}
+                                />
+                              )}
+                            </TabsContent>
+                          </>
+                        )}
+                      </ListCard>
+                    </section>
+                  </div>
+                  {!allStocks && changeList(true)}
+                </div>
+                {!allStocks && <aside className="min-w-0 space-y-8">
+                  <section aria-labelledby="creator-latest-opinions-title" className="min-w-0">
+                    <header className="mb-3 flex min-h-14 items-start gap-2">
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                          <h2 id="creator-latest-opinions-title" className="text-lg font-semibold">{c("Latest creator videos", "博主最新视频")}</h2>
+                          {catalogue?.latest_videos?.length ? (
+                            <span
+                              className="rounded-full bg-muted px-2 py-0.5 text-xs tabular-nums text-muted-foreground"
+                              aria-label={c(`Showing ${catalogue.latest_videos.length} latest videos`, `展示 ${catalogue.latest_videos.length} 位博主的最新视频`)}
+                            >
+                              {catalogue.latest_videos.length}
+                            </span>
+                          ) : null}
+                        </div>
+                        <p className="mt-1 text-xs leading-5 text-muted-foreground">{c("Each creator’s latest video, with stock opinions grouped together", "每位博主仅展示最新一期，合并同视频内的股票观点")}</p>
+                      </div>
+                    </header>
+                    <ListCard>
+                      {catalogueError ? <EmptyLine text={t("youtubeOpinions.directoryLoadFailed")} action={{ label: t("common.retry"), onClick: refresh }} alert /> : !catalogue ? loadingBlock : catalogue.latest_videos?.length ? (
+                        <ListRows aria-label={c("Latest creator videos", "博主最新视频")}>
+                          {catalogue.latest_videos.map((group) => (
+                            <li key={group.videoId} className={cn(listFeedRowClass, "py-4 first:pt-1")}>
+                              <VideoOpinionCard group={group} t={t} showCreator compact onStock={(ticker) => navigate({ tab: "stocks", ticker })} />
+                            </li>
+                          ))}
+                        </ListRows>
+                      ) : <EmptyLine text={t("youtubeOpinions.noOpinionsYet")} />}
+                      <ListFooterLink href="/dashboard/youtube-opinions/opinions">
+                        {c("View all opinions", "查看全部观点")}
+                      </ListFooterLink>
+                    </ListCard>
+                  </section>
+                  {isProductFeatureEnabled("portfolio") && <section aria-labelledby="creator-holdings-title" className="min-w-0">
+                    <header className="mb-3 flex min-h-14 items-center gap-2">
+                      <h2 id="creator-holdings-title" className="text-lg font-semibold">{c("My holdings", "我的持仓")}</h2>
+                      {held.tickers.length > 0 && (
+                        <span
+                          className="rounded-full bg-muted px-2 py-0.5 text-xs tabular-nums text-muted-foreground"
+                          aria-label={c(`Covering ${holdingsWithCoverage.length} of ${held.tickers.length} holdings`, `已覆盖 ${holdingsWithCoverage.length} / ${held.tickers.length} 只持仓`)}
+                        >
+                          {holdingsWithCoverage.length}/{held.tickers.length}
+                        </span>
+                      )}
+                    </header>
+                    <ListCard>
+                      {held.loading ? loadingBlock : held.error ? (
+                        <EmptyLine text={t("research.holdingsUnavailable")} />
+                      ) : !held.tickers.length ? (
+                        <p className="px-1 py-2 text-sm leading-6 text-muted-foreground">
+                          {t("research.noHoldings")}{" "}
+                          <Link href="/dashboard/portfolio" className="font-medium text-foreground underline-offset-4 hover:underline">
+                            {t("research.viewPortfolio")}
+                          </Link>
+                        </p>
+                      ) : (
+                        <>
+                          <ListRows aria-label={c("My holdings", "我的持仓")}>
+                            {holdingsWithCoverage.map((stock) => (
+                              <ListRow key={stock.ticker}>
+                                <Link
+                                  href={`/dashboard/market/${encodeURIComponent(stock.ticker)}`}
+                                  className={cn(listCompactRowClass, "flex-1")}
+                                >
+                                  <span className="font-semibold">{stock.ticker}</span>
+                                  <OpinionStrength value={stock.avg_score} />
+                                </Link>
+                              </ListRow>
+                            ))}
+                          </ListRows>
+                          {held.tickers.length > holdingsWithCoverage.length && (
+                            <p className="mt-1 px-1 text-xs leading-5 text-muted-foreground">
+                              {t("research.uncoveredHoldings", { count: String(held.tickers.length - holdingsWithCoverage.length) })}
+                            </p>
+                          )}
+                          <ListFooterLink href="/dashboard/portfolio">
+                            {c("View all holdings", "查看全部持仓")}
+                          </ListFooterLink>
+                        </>
+                      )}
+                    </ListCard>
                   </section>}
                 </aside>}
               </div>
@@ -1199,7 +1320,7 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
                 <div
                   className={cn(
                     "grid min-w-0 gap-x-12",
-                    !creatorOverview && "xl:grid-cols-[minmax(0,1fr)_300px] xl:grid-rows-[auto_1fr]",
+                    !creatorOverview && "xl:grid-cols-[minmax(0,1fr)_20rem] xl:grid-rows-[auto_1fr]",
                     focused ? "gap-y-8" : "gap-y-10",
                   )}
                 >
@@ -1307,71 +1428,86 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
                           </p>
                         </div>
 
-                        {route.ticker && (
-                          <div
-                            role="tablist"
-                            aria-label={t("youtubeOpinions.chartView")}
-                            className="mt-6 inline-flex w-fit max-w-full items-center gap-0.5 rounded-full bg-muted p-1"
-                          >
-                            {([
-                              { value: "price", label: t("youtubeOpinions.priceTrend") },
-                              { value: "opinions", label: t("youtubeOpinions.strengthTrend") },
-                            ] as const).map((item) => (
-                              <button
-                                key={item.value}
-                                type="button"
-                                role="tab"
-                                aria-selected={chartView === item.value}
-                                onClick={() => {
-                                  setChartView(item.value);
-                                  setScrub(null);
-                                }}
-                                className={segment(chartView === item.value)}
+                        <section aria-label={t("youtubeOpinions.chartView")} className="min-w-0">
+                          <div className="mt-6 flex min-w-0 flex-wrap items-center justify-between gap-x-4 gap-y-3">
+                            {route.ticker && (
+                              <div
+                                role="tablist"
+                                aria-label={t("youtubeOpinions.chartView")}
+                                className="inline-flex w-fit max-w-full items-center gap-1 rounded-full bg-muted/50 p-1"
                               >
-                                {item.label}
-                              </button>
-                            ))}
+                                {([
+                                  { value: "price", label: t("youtubeOpinions.priceTrend") },
+                                  { value: "opinions", label: t("youtubeOpinions.strengthTrend") },
+                                ] as const).map((item) => (
+                                  <button
+                                    key={item.value}
+                                    type="button"
+                                    role="tab"
+                                    aria-selected={chartView === item.value}
+                                    onClick={() => {
+                                      setChartView(item.value);
+                                      setScrub(null);
+                                    }}
+                                    className={segment(chartView === item.value)}
+                                  >
+                                    {item.label}
+                                  </button>
+                                ))}
+                              </div>
+                            )}
+                            {rangeControls(false, true)}
                           </div>
-                        )}
 
-                        {route.ticker && chartView === "price" ? (
-                          <div className="mt-5">
-                            <PriceChart
-                              symbol={route.ticker}
-                              range={filters.range}
-                              from={filters.from}
-                              to={filters.to}
-                              opinions={chartPoints}
-                              formatDate={formatDay}
-                              t={t}
-                            />
-                          </div>
-                        ) : chartPoints.length > 0 && (
-                          <div className={route.ticker ? "mt-5" : "mt-6"}>
-                            <StrengthChart
-                              points={chartPoints}
-                              tone={overallTone}
-                              label={t("youtubeOpinions.chartLabel")}
-                              formatDate={formatDay}
-                              onScrub={setScrub}
-                            />
-                          </div>
-                        )}
+                          <div className="mt-3 space-y-6">
+                            {route.ticker && chartView === "price" ? (
+                              <Card className="min-w-0 p-3 sm:p-4">
+                                <PriceChart
+                                  symbol={route.ticker}
+                                  range={filters.range}
+                                  from={filters.from}
+                                  to={filters.to}
+                                  opinions={chartPoints}
+                                  formatDate={formatDay}
+                                  t={t}
+                                  resultsContainer={chartResults}
+                                />
+                              </Card>
+                            ) : chartPoints.length > 0 ? (
+                              <Card className="min-w-0 p-4 sm:p-5">
+                                <StrengthChart
+                                  points={chartPoints}
+                                  tone={overallTone}
+                                  label={t("youtubeOpinions.chartLabel")}
+                                  formatDate={formatDay}
+                                  onScrub={setScrub}
+                                />
+                              </Card>
+                            ) : null}
 
-                        {rangeControls(false)}
+                            {route.ticker && chartView === "price" && (
+                              <Card className="min-w-0 p-3 sm:p-4">
+                                <div
+                                  ref={setChartResults}
+                                  className="flex min-w-0 flex-col [&>*:first-child]:mt-0 [&>*:first-child]:border-t-0 [&>*:first-child]:pt-0"
+                                />
+                              </Card>
+                            )}
 
-                        {overview && overview.total_opinions > 0 && (
-                          <div>
-                            <OpinionDistribution summary={overview} />
+                            {overview && overview.total_opinions > 0 && (
+                              <Card className="min-w-0 p-4 sm:p-5">
+                                <OpinionDistribution summary={overview} className="pt-0" />
+                              </Card>
+                            )}
                           </div>
-                        )}
+                        </section>
                       </>
                     )}
                   </div>
 
                   {creatorOverview && (
                     <section className="min-w-0" aria-labelledby="creator-detail-latest-title">
-                      <div className="flex flex-wrap items-center justify-between gap-3">
+                      <header className="mb-3 flex min-h-14 flex-wrap items-center justify-between gap-3">
                         <h2 id="creator-detail-latest-title" className="text-lg font-semibold">{c("Latest opinions", "最新观点")}</h2>
                         <Button
                           variant="outline"
@@ -1385,21 +1521,25 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
                         >
                           {c("View all opinions", "查看所有观点")}
                         </Button>
-                      </div>
-                      {contextError ? (
-                        <EmptyLine text={t("youtubeOpinions.opinionsLoadFailed")} action={{ label: t("common.retry"), onClick: refresh }} alert />
-                      ) : !context ? loadingBlock : latestCreatorOpinions.length ? (
-                        <div className="mt-4">
-                          {latestCreatorOpinions.map((opinion) => (
-                            <OpinionCard key={opinion.id} opinion={opinion} t={t} showCreator={false} onStock={onStock} />
-                          ))}
-                        </div>
-                      ) : <EmptyLine text={t("youtubeOpinions.noOpinionsYet")} />}
+                      </header>
+                      <ListCard>
+                        {contextError ? (
+                          <EmptyLine text={t("youtubeOpinions.opinionsLoadFailed")} action={{ label: t("common.retry"), onClick: refresh }} alert />
+                        ) : !context ? loadingBlock : latestCreatorOpinions.length ? (
+                          <ListRows aria-label={c("Latest opinions", "最新观点")}>
+                            {latestCreatorOpinions.map((opinion) => (
+                              <li key={opinion.id} className={listFeedRowClass}>
+                                <OpinionCard opinion={opinion} t={t} showCreator={false} onStock={onStock} />
+                              </li>
+                            ))}
+                          </ListRows>
+                        ) : <EmptyLine text={t("youtubeOpinions.noOpinionsYet")} />}
+                      </ListCard>
                     </section>
                   )}
 
                   <section ref={opinionHistory} tabIndex={-1} aria-labelledby="opinion-history-title" className="min-w-0 scroll-mt-6 rounded-sm focus-visible:outline-none xl:col-start-1">
-                    <div className="flex flex-col gap-3 border-b border-border pb-3 sm:flex-row sm:items-center sm:justify-between">
+                    <header className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                       <div className="flex min-w-0 flex-wrap items-center gap-x-4 gap-y-2">
                         <h2 id="opinion-history-title" className="text-lg font-semibold">
                           {t("youtubeOpinions.opinionHistory")}
@@ -1431,74 +1571,74 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
                           </button>
                         ))}
                       </div>
-                    </div>
-                    {loading ? (
-                      loadingBlock
-                    ) : (
-                      <>
-                        {detailError && (
-                          <EmptyLine
-                            text={t("youtubeOpinions.opinionsLoadFailed")}
-                            action={{ label: t("common.retry"), onClick: detail ? loadMore : refresh }}
-                            alert
-                          />
-                        )}
-                        {videoView && untrackedVideoCount > 0 && (
-                          <button
-                            type="button"
-                            aria-pressed={showUntrackedVideos}
-                            onClick={() => setShowUntrackedVideos((value) => !value)}
-                            className="mt-4 inline-flex min-h-8 items-center rounded-full px-3 text-[13px] font-semibold text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none "
-                          >
-                            {t(showUntrackedVideos ? "youtubeOpinions.hideUntrackedVideos" : "youtubeOpinions.showUntrackedVideos", { count: String(untrackedVideoCount) })}
-                          </button>
-                        )}
-                        {!detailError && !(videoView ? visibleVideos.length : stockOpinions.length) && (
-                          <EmptyLine
-                            text={
-                              filters.sentiment !== "all" || filters.range !== "all"
-                                ? t("youtubeOpinions.noOpinionsMatch")
-                                : t("youtubeOpinions.noData")
-                            }
-                            action={
-                              filters.sentiment !== "all" || filters.range !== "all"
-                                ? { label: t("common.clearFilters"), onClick: () => setFilters(emptyFilters) }
-                                : undefined
-                            }
-                          />
-                        )}
-                        <div className="min-w-0">
-                          {videoView
-                            ? visibleVideos.map((group) => (
-                                <VideoOpinionCard
-                                  key={group.videoId}
-                                  group={group}
-                                  t={t}
-                                  onStock={onStock}
-                                />
-                              ))
-                            : stockOpinions.map((opinion) => (
-                                <OpinionCard
-                                  key={opinion.id}
-                                  opinion={opinion}
-                                  t={t}
-                                  showCreator={!route.creator}
-                                  showTicker={!route.ticker}
-                                  onCreator={(channelId) => navigate({ tab: "creators", creator: channelId })}
-                                  onStock={onStock}
-                                />
-                              ))}
-                        </div>
-                        {hasMore && (
-                          <div className="mt-6 flex justify-center">
-                            <Button variant="outline" onClick={loadMore} disabled={moreLoading}>
+                    </header>
+                    <ListCard>
+                      {loading ? loadingBlock : (
+                        <>
+                          {detailError && (
+                            <EmptyLine
+                              text={t("youtubeOpinions.opinionsLoadFailed")}
+                              action={{ label: t("common.retry"), onClick: detail ? loadMore : refresh }}
+                              alert
+                            />
+                          )}
+                          {videoView && untrackedVideoCount > 0 && (
+                            <button
+                              type="button"
+                              aria-pressed={showUntrackedVideos}
+                              onClick={() => setShowUntrackedVideos((value) => !value)}
+                              className="mt-2 inline-flex min-h-10 items-center rounded-full px-3 text-[13px] font-semibold text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none"
+                            >
+                              {t(showUntrackedVideos ? "youtubeOpinions.hideUntrackedVideos" : "youtubeOpinions.showUntrackedVideos", { count: String(untrackedVideoCount) })}
+                            </button>
+                          )}
+                          {!detailError && !(videoView ? visibleVideos.length : stockOpinions.length) && (
+                            <EmptyLine
+                              text={
+                                filters.sentiment !== "all" || filters.range !== "all"
+                                  ? t("youtubeOpinions.noOpinionsMatch")
+                                  : t("youtubeOpinions.noData")
+                              }
+                              action={
+                                filters.sentiment !== "all" || filters.range !== "all"
+                                  ? { label: t("common.clearFilters"), onClick: () => setFilters(emptyFilters) }
+                                  : undefined
+                              }
+                            />
+                          )}
+                          <ListRows aria-label={t("youtubeOpinions.opinionHistory")}>
+                            {videoView
+                              ? visibleVideos.map((group) => (
+                                  <li key={group.videoId} className={listFeedRowClass}>
+                                    <VideoOpinionCard
+                                      group={group}
+                                      t={t}
+                                      onStock={onStock}
+                                    />
+                                  </li>
+                                ))
+                              : stockOpinions.map((opinion) => (
+                                  <li key={opinion.id} className={listFeedRowClass}>
+                                    <OpinionCard
+                                      opinion={opinion}
+                                      t={t}
+                                      showCreator={!route.creator}
+                                      showTicker={!route.ticker}
+                                      onCreator={(channelId) => navigate({ tab: "creators", creator: channelId })}
+                                      onStock={onStock}
+                                    />
+                                  </li>
+                                ))}
+                          </ListRows>
+                          {hasMore && (
+                            <ListLoadMore onClick={loadMore} disabled={moreLoading}>
                               {moreLoading && <Loader2 className="h-4 w-4 animate-spin" />}
                               {t("youtubeOpinions.loadMoreOpinions")}
-                            </Button>
-                          </div>
-                        )}
-                      </>
-                    )}
+                            </ListLoadMore>
+                          )}
+                        </>
+                      )}
+                    </ListCard>
                     {route.ticker && route.creator && (
                       <OtherCreatorOpinions
                         key={`${route.ticker}:${route.creator}`}
@@ -1544,52 +1684,51 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
                     )}
                     {route.creator && !route.ticker && (
                       <section className="min-w-0">
-                        <h2 className="text-base font-semibold">
+                        <h2 className="mb-3 text-base font-semibold">
                           {c("Most discussed stocks", "讨论最多的股票")}
                         </h2>
-                        {showAllCreatorStocks && (
-                          <div className="relative mt-3">
-                            <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                            <Input
-                              aria-label={t("youtubeOpinions.searchStocks")}
-                              value={search}
-                              onChange={(event) => setSearch(event.target.value)}
-                              placeholder={t("youtubeOpinions.searchTicker")}
-                              className="h-10 rounded-full pl-10 text-base sm:text-sm"
-                            />
-                          </div>
-                        )}
-                        <div id="creator-discussed-stocks" className="mt-2">{context ? stockRows : loadingBlock}</div>
-                        {(context?.stocks.length || 0) > 5 && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="mt-4"
-                            aria-expanded={showAllCreatorStocks}
-                            aria-controls="creator-discussed-stocks"
-                            onClick={() => {
-                              setShowAllCreatorStocks((previous) => !previous);
-                              setSearch("");
-                            }}
-                          >
-                            {showAllCreatorStocks
-                              ? c("Show top 5", "收起，仅显示前 5 只")
-                              : c("View all stocks", "查看全部股票")}
-                          </Button>
-                        )}
+                        <ListCard>
+                          {showAllCreatorStocks && (
+                            <div className="relative mb-3">
+                              <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                              <Input
+                                aria-label={t("youtubeOpinions.searchStocks")}
+                                value={search}
+                                onChange={(event) => setSearch(event.target.value)}
+                                placeholder={t("youtubeOpinions.searchTicker")}
+                                className="h-10 rounded-full pl-10 text-base sm:text-sm"
+                              />
+                            </div>
+                          )}
+                          <div id="creator-discussed-stocks">{context ? stockRows(true, true) : loadingBlock}</div>
+                          {(context?.stocks.length || 0) > 5 && (
+                            <ListLoadMore
+                              aria-expanded={showAllCreatorStocks}
+                              aria-controls="creator-discussed-stocks"
+                              onClick={() => {
+                                setShowAllCreatorStocks((previous) => !previous);
+                                setSearch("");
+                              }}
+                            >
+                              {showAllCreatorStocks
+                                ? c("Show top 5", "收起，仅显示前 5 只")
+                                : c("View all stocks", "查看全部股票")}
+                            </ListLoadMore>
+                          )}
+                        </ListCard>
                       </section>
                     )}
                     {!route.creator && (
                       <section className="min-w-0">
-                        <h2 className="text-base font-semibold">
+                        <h2 className="mb-3 text-lg font-semibold">
                           {t("youtubeOpinions.creatorsDiscussing")}
                         </h2>
-                        <div className="mt-2">
-                          {context ? creatorRows(context.creators) : loadingBlock}
-                        </div>
+                        <ListCard>
+                          {context ? creatorRows(context.creators, true) : loadingBlock}
+                        </ListCard>
                       </section>
                     )}
-                    {route.creator && !route.ticker && changeList}
+                    {route.creator && !route.ticker && changeList()}
                   </aside>
                 </div>
               </TabsContent>

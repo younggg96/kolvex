@@ -13,6 +13,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { ListCard, ListLoadMore, ListToolbar } from "@/components/ui/list-card";
 import { formatCurrency } from "@/lib/portfolioApi";
 import type { PlaidInvestmentTransaction } from "@/lib/plaidApi";
 
@@ -122,8 +123,8 @@ export function InvestmentTransactionsTable({
   };
 
   return (
-    <div className="space-y-3">
-      <div className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-3 sm:flex-row sm:items-center sm:justify-between">
+    <ListCard className="overflow-hidden !p-0 sm:!p-0">
+      <ListToolbar className="flex-col items-stretch gap-3 px-4 py-3 sm:flex-row sm:items-center">
         <div>
           <h3 className="text-sm font-semibold">Investment transactions</h3>
           <p className="text-xs text-muted-foreground">
@@ -164,9 +165,9 @@ export function InvestmentTransactionsTable({
             Sync
           </Button>
         </div>
-      </div>
+      </ListToolbar>
 
-      <div className="overflow-x-auto rounded-2xl border border-border">
+      <div className="overflow-x-auto">
         <Table className="min-w-[900px]">
           <TableHeader>
             <TableRow>
@@ -246,18 +247,11 @@ export function InvestmentTransactionsTable({
       </div>
 
       {hasMore && (
-        <div className="flex justify-center">
-          <Button
-            variant="outline"
-            onClick={onLoadMore}
-            disabled={loading}
-            className="gap-2"
-          >
-            {loading && <RefreshCw className="h-4 w-4 animate-spin" />}
-            Load more
-          </Button>
-        </div>
+        <ListLoadMore onClick={onLoadMore} disabled={loading}>
+          {loading && <RefreshCw className="h-4 w-4 animate-spin" />}
+          Load more
+        </ListLoadMore>
       )}
-    </div>
+    </ListCard>
   );
 }

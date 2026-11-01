@@ -3,7 +3,9 @@ import { loadClientCache, peekClientCache, subscribeClientCache, invalidateClien
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ListCard, ListLoadMore, ListRow, ListRows } from "@/components/ui/list-card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { cn } from "@/lib/utils";
 import type { AiTechnicalAnalysis } from "@/lib/stockApi";
 import { useTranslation } from "@/lib/i18n";
 import { getStockAnalysisHistory, getStockAnalysisVersion, activateStockAnalysis, HistoryError, type AnalysisVersion } from "@/lib/stockAnalysisHistory";
@@ -175,19 +177,36 @@ export default function AnalysisHistory<T>({ history, drawings = false, title }:
     </div>}
     {history.busy && <p role="status" className="mt-3 text-sm text-muted-foreground">{c("Loading history…", "正在加载历史…")}</p>}
     {!history.busy && history.error === null && !history.items.length && <p className="mt-3 text-sm text-muted-foreground">{c("No saved analyses yet.", "暂无已保存分析。")}</p>}
-    <ul className="mt-2 divide-y divide-border">
-      {history.items.map(item => <li key={item.id} className="flex flex-wrap items-center gap-2 py-2">
-        <Button ref={history.selected?.id === item.id ? selectedButton : undefined} variant={history.selected?.id === item.id ? "secondary" : "ghost"} size="sm" aria-pressed={history.selected?.id === item.id} disabled={history.busy} onClick={() => void history.select(item)}>
-          {new Date(item.created_at).toLocaleString(t("common.intlLocale"), { dateStyle: "medium", timeStyle: "medium" })}
-        </Button>
-        <span className="text-xs text-muted-foreground">{authorLabel(item, c)}</span>
-        {history.current?.id === item.id && <span className="text-xs font-medium text-positive">{c("Current", "当前版本")}</span>}
-      </li>)}
-    </ul>
-    <div className="mt-3 flex flex-wrap gap-2">
-      {history.selected?.is_owner && history.selected.id !== history.current?.id && <Button variant="outline" size="sm" disabled={history.busy} onClick={async () => { await history.activate(); selectedButton.current?.focus(); }}>{drawings ? c("Set as current drawings", "设为当前画线") : c("Set as current", "设为当前分析")}</Button>}
-      {history.current && history.selected?.id !== history.current.id && <Button variant="ghost" size="sm" onClick={() => history.select(history.current)}>{drawings ? c("Back to current drawings", "返回当前画线") : c("Back to current", "返回当前分析")}</Button>}
-      {history.items.length < history.total && <Button variant="outline" size="sm" disabled={history.busy} onClick={() => void history.load(history.items.length)}>{c("Load older analyses", "加载更早的分析")}</Button>}
-    </div>
+    {!!history.items.length && <ListCard className="mt-3">
+      <ListRows aria-label={drawings ? c("AI drawing history", "AI 画线历史") : c("Analysis history", "分析历史")}>
+        {history.items.map(item => {
+          const active = history.selected?.id === item.id;
+          return <ListRow key={item.id}>
+            <button
+              ref={active ? selectedButton : undefined}
+              type="button"
+              aria-pressed={active}
+              disabled={history.busy}
+              onClick={() => void history.select(item)}
+              className={cn(
+                "flex min-h-11 min-w-0 flex-1 flex-wrap items-center gap-x-3 gap-y-1 rounded-2xl px-2 py-2 text-left text-sm transition-colors duration-150 focus-visible:bg-muted/70 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 motion-reduce:transition-none",
+                active ? "bg-muted/60" : "hover:bg-muted/40",
+              )}
+            >
+              <span className="figure tabular-nums">{new Date(item.created_at).toLocaleString(t("common.intlLocale"), { dateStyle: "medium", timeStyle: "medium" })}</span>
+              <span className="text-xs text-muted-foreground">{authorLabel(item, c)}</span>
+              {history.current?.id === item.id && <span className="text-xs font-medium text-positive">{c("Current", "当前版本")}</span>}
+            </button>
+          </ListRow>;
+        })}
+      </ListRows>
+      {(history.selected?.is_owner && history.selected.id !== history.current?.id) || (history.current && history.selected?.id !== history.current.id)
+        ? <div className="mt-1 flex flex-wrap gap-2 border-t border-border px-1 pt-3">
+          {history.selected?.is_owner && history.selected.id !== history.current?.id && <Button variant="outline" size="sm" disabled={history.busy} onClick={async () => { await history.activate(); selectedButton.current?.focus(); }}>{drawings ? c("Set as current drawings", "设为当前画线") : c("Set as current", "设为当前分析")}</Button>}
+          {history.current && history.selected?.id !== history.current.id && <Button variant="ghost" size="sm" onClick={() => history.select(history.current)}>{drawings ? c("Back to current drawings", "返回当前画线") : c("Back to current", "返回当前分析")}</Button>}
+        </div>
+        : null}
+      {history.items.length < history.total && <ListLoadMore onClick={() => void history.load(history.items.length)} disabled={history.busy}>{c("Load older analyses", "加载更早的分析")}</ListLoadMore>}
+    </ListCard>}
   </details></>;
 }

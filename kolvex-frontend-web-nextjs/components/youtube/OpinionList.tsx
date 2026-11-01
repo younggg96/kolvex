@@ -7,6 +7,12 @@ import HeaderBackButton from "@/components/layout/HeaderBackButton";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Empty, useCopy } from "@/components/decision/shared";
+import {
+  ListCard,
+  ListLoadMore,
+  ListRows,
+  listFeedRowClass,
+} from "@/components/ui/list-card";
 import { useTranslation } from "@/lib/i18n";
 import { getYouTubeVideoFeed } from "@/lib/youtubeOpinionsApi";
 import VideoOpinionCard from "./VideoOpinionCard";
@@ -74,24 +80,29 @@ export default function OpinionList() {
   return (
     <DashboardLayout title={c("All opinions", "全部观点")} headerLeftAction={<HeaderBackButton href="/dashboard/youtube-opinions" label={t("common.back")} />}>
       <main className="min-h-0 flex-1 overflow-y-auto">
-        <div className="mx-auto px-4 pb-16 pt-6 md:px-8 md:pt-8">
-          <header className="mb-6 border-b border-border pb-5">
+        <div className="mx-auto max-w-6xl px-4 pb-16 pt-6 md:px-8 md:pt-8">
+          <header className="mb-6">
             <h1 className="text-[28px] font-semibold tracking-tight sm:text-[32px]">{c("All opinions", "全部观点")}</h1>
             <p className="mt-2 text-sm text-muted-foreground">{c("Grouped by video, newest publication first", "按视频归并，按视频发布时间排序")}</p>
-            {!loading && !error && <p className="mt-1 text-xs tabular-nums text-muted-foreground" role="status">{c(`${videos.length} of ${total} videos`, `已显示 ${videos.length} / ${total} 期视频`)}</p>}
           </header>
-          <div aria-busy={loading || moreLoading}>
-            {loading ? (
-              <div role="status" aria-label={t("common.loadingStatus")} className="space-y-5">{[0, 1, 2].map((row) => <Skeleton key={row} className="h-32 w-full" />)}</div>
-            ) : (
-              <>
-                {videos.map((group) => <VideoOpinionCard key={group.videoId} group={group} t={t} showCreator onStock={(ticker) => router.push(`/dashboard/youtube-opinions?tab=stocks&stock=${encodeURIComponent(ticker)}`)} />)}
-                {!videos.length && !error && <Empty>{t("youtubeOpinions.noOpinionsYet")}</Empty>}
-              </>
-            )}
-          </div>
-          {!loading && error && <div role="alert" className="mt-5 flex flex-wrap items-center gap-3"><p className="text-sm text-muted-foreground">{c("Opinions could not be loaded. Try again.", "暂时无法加载观点，请重试。")}</p><Button variant="outline" onClick={() => videos.length ? loadMore() : setRevision((value) => value + 1)}>{t("common.retry")}</Button></div>}
-          {!loading && !error && hasMore && <Button variant="outline" className="mt-6" disabled={moreLoading} onClick={loadMore}>{moreLoading ? t("common.loadingStatus") : c("Load more videos", "加载更多视频")}</Button>}
+          <ListCard>
+            <div aria-busy={loading || moreLoading}>
+              {loading ? (
+                <div role="status" aria-label={t("common.loadingStatus")} className="space-y-3 py-2">{[0, 1, 2].map((row) => <Skeleton key={row} className="h-32 w-full" />)}</div>
+              ) : (
+                <>
+                  {!error && <p role="status" className="mb-1 border-b border-border pb-3 text-xs tabular-nums text-muted-foreground">{c(`${videos.length} of ${total} videos`, `已显示 ${videos.length} / ${total} 期视频`)}</p>}
+                  {videos.length ? (
+                    <ListRows aria-label={c("All opinions", "全部观点")}>
+                      {videos.map((group) => <li key={group.videoId} className={listFeedRowClass}><VideoOpinionCard group={group} t={t} showCreator onStock={(ticker) => router.push(`/dashboard/youtube-opinions?tab=stocks&stock=${encodeURIComponent(ticker)}`)} /></li>)}
+                    </ListRows>
+                  ) : !error ? <Empty>{t("youtubeOpinions.noOpinionsYet")}</Empty> : null}
+                </>
+              )}
+            </div>
+            {!loading && error && <div role="alert" className="flex flex-wrap items-center gap-3 py-6"><p className="text-sm text-muted-foreground">{c("Opinions could not be loaded. Try again.", "暂时无法加载观点，请重试。")}</p><Button variant="outline" onClick={() => videos.length ? loadMore() : setRevision((value) => value + 1)}>{t("common.retry")}</Button></div>}
+            {!loading && !error && hasMore && <ListLoadMore disabled={moreLoading} onClick={loadMore}>{moreLoading ? t("common.loadingStatus") : c("Load more videos", "加载更多视频")}</ListLoadMore>}
+          </ListCard>
         </div>
       </main>
     </DashboardLayout>

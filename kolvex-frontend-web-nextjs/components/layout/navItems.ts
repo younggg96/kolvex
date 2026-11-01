@@ -6,9 +6,9 @@ import {
   Radio,
   Telescope,
   MessageSquareText,
-  Youtube,
   type LucideIcon,
 } from "lucide-react";
+import { RedditIcon, XIcon, YouTubeIcon, type PlatformIconComponent } from "@/components/common/PlatformIcons";
 import type { ProductFeatureId } from "@/lib/productFeatures";
 export interface MainNavItem {
   icon: LucideIcon;
@@ -17,12 +17,13 @@ export interface MainNavItem {
   href: string;
   type: "link";
   featureId: ProductFeatureId;
-  children?: { title: string; href: string; icon: LucideIcon }[];
+  children?: { title: string; href: string; icon: LucideIcon | PlatformIconComponent }[];
 }
+/** Each opinion source keeps the platform's own logo so the links stay distinct. */
 export const OPINION_SOURCES = [
-  { title: "YouTube", href: "/dashboard/youtube-opinions", icon: Youtube },
-  { title: "Reddit", href: "/dashboard/reddit-opinions", icon: MessageSquareText },
-  { title: "X", href: "/dashboard/x-opinions", icon: MessageSquareText },
+  { title: "YouTube", href: "/dashboard/youtube-opinions", icon: YouTubeIcon },
+  { title: "Reddit", href: "/dashboard/reddit-opinions", icon: RedditIcon },
+  { title: "X", href: "/dashboard/x-opinions", icon: XIcon },
 ];
 
 export const MAIN_NAV_ITEMS: MainNavItem[] = [

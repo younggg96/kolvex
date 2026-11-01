@@ -21,6 +21,7 @@ import { useTranslation } from "@/lib/i18n";
 import ResearchLayout from "@/components/decision/ResearchLayout";
 import { DEEP_RESEARCH_PATH } from "@/lib/researchRoutes";
 import { Button } from "@/components/ui/button";
+import { ListCard, ListRow, ListRows } from "@/components/ui/list-card";
 import { Input } from "@/components/ui/input";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -585,9 +586,10 @@ export default function TradingAnalysisPage({ searchParams }: { searchParams?: {
                 </div>
               ) : (
                 <TooltipProvider>
-                  <ul className="divide-y divide-border">
+                  <ListCard className="mt-4">
+                    <ListRows aria-label={t("tradingAnalysis.history")}>
                     {history.map((item) => (
-                      <li key={item.id} className="group relative flex items-center gap-3 py-3.5 sm:gap-4">
+                      <ListRow key={item.id} className="group relative gap-3 py-3.5 sm:gap-4">
                         <CompanyLogo symbol={item.ticker} size="md" />
                         <div className="min-w-0 flex-1">
                           <Link
@@ -641,9 +643,10 @@ export default function TradingAnalysisPage({ searchParams }: { searchParams?: {
                             </TooltipContent>
                           </Tooltip>
                         </div>
-                      </li>
+                      </ListRow>
                     ))}
-                  </ul>
+                    </ListRows>
+                  </ListCard>
                 </TooltipProvider>
               )}
             </section>

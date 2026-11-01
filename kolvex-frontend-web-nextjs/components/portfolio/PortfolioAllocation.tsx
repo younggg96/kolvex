@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { useTranslation } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import { SectionCard } from "../layout";
+import { ListCard } from "@/components/ui/list-card";
 import {
   DonutChart,
   SectorLegend,
@@ -114,22 +115,24 @@ export function PortfolioAllocation({
         {/* Sector Table */}
         <div
           className={cn(
-            "overflow-x-auto",
+            "min-w-0 overflow-x-auto",
             isOwner ? "col-span-2" : "col-span-3 pb-4"
           )}
         >
-          <SectorTable
-            sectorData={sectorData}
-            totalValue={totalValue}
-            isOwner={isOwner}
-            sortKey={sortKey}
-            sortDir={sortDir}
-            onSort={handleSort}
-            hoveredSector={hoveredSector}
-            setHoveredSector={setHoveredSector}
-            expandedSectors={expandedSectors}
-            toggleSector={toggleSector}
-          />
+          <ListCard className="overflow-hidden !p-0 sm:!p-0">
+            <SectorTable
+              sectorData={sectorData}
+              totalValue={totalValue}
+              isOwner={isOwner}
+              sortKey={sortKey}
+              sortDir={sortDir}
+              onSort={handleSort}
+              hoveredSector={hoveredSector}
+              setHoveredSector={setHoveredSector}
+              expandedSectors={expandedSectors}
+              toggleSector={toggleSector}
+            />
+          </ListCard>
         </div>
       </div>
     </SectionCard>

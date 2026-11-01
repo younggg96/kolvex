@@ -7,6 +7,7 @@ import { usePathname, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import CompanyLogo from "@/components/ui/company-logo";
+import { ListColumnHeader, ListLoadMore, ListRow, ListRows, listRowTargetClass } from "@/components/ui/list-card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { isProductFeatureEnabled } from "@/lib/productFeatures";
@@ -212,23 +213,23 @@ export default function StockObservationList({ range, catalogue, held, onRetry }
       </div>}
       {state.scope === "core" && catalogue.error && <p role="status" className="mb-3 text-xs text-muted-foreground">{c("Creator insights are temporarily unavailable. Quotes remain available.", "博主线索暂不可用，仍可查看行情。")}</p>}
       <div aria-busy={blocking || quoteLoading}>
-        <div className="flex items-center gap-1 border-b border-border pr-2 text-xs text-muted-foreground" aria-hidden="true">
+        <ListColumnHeader>
           <div className={cn(ROW_GRID, "min-w-0 flex-1 px-2 py-3")}>
             <span>{c("Stock", "股票")}</span>
             <span className="hidden text-center min-[400px]:block">{c(`Trend · ${trend.en}`, `走势 · ${trend.zh}`)}</span>
             <span className="text-right">{c("Price / Today", "价格 / 今日")}</span>
           </div>
           <span className="w-11 shrink-0 text-center">{c("Watch", "自选")}</span>
-        </div>
+        </ListColumnHeader>
         {blocking ? <div role="status" aria-label={c("Loading stocks", "正在加载股票")}>
           {[0, 1, 2, 3, 4].map(row => <div key={row} className="flex min-h-20 items-center justify-between gap-4 border-b border-border px-2 py-4"><Skeleton className="h-10 w-36" /><Skeleton className="h-8 w-20" /></div>)}
-        </div> : <ul aria-label={c("Stock watch", "股票观察")}>
+        </div> : <ListRows aria-label={c("Stock watch", "股票观察")}>
           {visible.map(symbol => {
             const stock = coverage.get(symbol);
             const detailParams = new URLSearchParams({ from: returnHref });
             const href = `/dashboard/market/${encodeURIComponent(symbol)}`;
-            return <li key={symbol} className="flex items-center gap-1 rounded-2xl pr-2 transition-colors hover:bg-muted/50 focus-within:bg-muted/50 motion-reduce:transition-none">
-              <Link href={`${href}?${detailParams}`} onClick={rememberScroll} className={cn(ROW_GRID, "min-h-20 min-w-0 flex-1 items-center rounded-2xl px-2 py-4 focus-visible:bg-transparent focus-visible:outline-none")}>
+            return <ListRow key={symbol}>
+              <Link href={`${href}?${detailParams}`} onClick={rememberScroll} className={cn(ROW_GRID, listRowTargetClass)}>
                 <span className="flex min-w-0 items-center gap-2 sm:gap-3">
                   <span aria-hidden="true" className="shrink-0"><CompanyLogo symbol={symbol} size="sm" className="max-[399px]:max-h-6 max-[399px]:max-w-6" /></span>
                   <span className="min-w-0"><span className="block truncate text-base font-semibold">{symbol}{state.scope !== "holdings" && held.tickers.includes(symbol) && <HeldMark />}</span><span className="mt-1 block truncate text-xs text-muted-foreground">{quotes[symbol]?.name || stock?.company_name || coreNames.get(symbol) || symbol}</span></span>
@@ -237,13 +238,13 @@ export default function StockObservationList({ range, catalogue, held, onRetry }
                 <span className="min-w-0 text-right">{quoteLoading && !quotes[symbol] ? <Skeleton className="ml-auto h-10 w-20" /> : <><span className="figure block text-base font-medium">{money(quotes[symbol]?.price)}</span><Change value={quotes[symbol]?.changePercent} className="mt-1 block text-xs font-semibold" /></>}</span>
               </Link>
               <WatchlistButton ticker={symbol} />
-            </li>;
+            </ListRow>;
           })}
-        </ul>}
+        </ListRows>}
         {!blocking && !symbols.length && !sourceError && <Empty action={hasFilters ? <Button variant="outline" size="sm" onClick={resetFilters}>{c("Reset filters", "重置筛选")}</Button> : state.scope === "creators" ? <Button variant="outline" size="sm" onClick={() => state.sort === "latest" ? changeScope("core") : update({ ...state, sort: "latest", rows: STOCK_PAGE_SIZE })}>{state.sort === "latest" ? c("Browse core stocks", "查看常看美股") : c("View historical opinions", "查看历史观点")}</Button> : state.scope === "holdings" ? <TextLink href="/dashboard/portfolio">{c("Connect an account", "连接账户")}</TextLink> : undefined}>
           {hasFilters ? c("No stocks match. Try another search or reset filters.", "没有符合条件的股票，试试其他关键词或重置筛选。") : state.scope === "creators" ? state.sort === "latest" ? c("No source-dated creator opinions yet.", "暂时没有带原文日期的博主观点。") : c("No creator opinions published in the past 7 days.", "近 7 天暂时没有博主观点更新。") : c("No stocks in this list yet.", "这个列表暂时没有股票。")}
         </Empty>}
-        {!blocking && visible.length < symbols.length && <div className="flex justify-center py-4"><Button variant="outline" size="sm" className="min-h-11" onClick={() => update({ ...state, rows: state.rows + STOCK_PAGE_SIZE })}>{c(`Load ${Math.min(STOCK_PAGE_SIZE, symbols.length - visible.length)} more stocks`, `再看 ${Math.min(STOCK_PAGE_SIZE, symbols.length - visible.length)} 只股票`)}</Button></div>}
+        {!blocking && visible.length < symbols.length && <ListLoadMore onClick={() => update({ ...state, rows: state.rows + STOCK_PAGE_SIZE })}>{c(`Load ${Math.min(STOCK_PAGE_SIZE, symbols.length - visible.length)} more stocks`, `再看 ${Math.min(STOCK_PAGE_SIZE, symbols.length - visible.length)} 只股票`)}</ListLoadMore>}
       </div>
     </Panel>
   </div>;

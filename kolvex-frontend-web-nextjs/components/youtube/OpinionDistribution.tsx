@@ -7,9 +7,11 @@ import type { YouTubeOpinionSummary } from "@/lib/youtubeOpinionsApi";
 export default function OpinionDistribution({
   summary,
   compact = false,
+  className,
 }: {
   summary: YouTubeOpinionSummary;
   compact?: boolean;
+  className?: string;
 }) {
   const { t } = useTranslation();
   const total = summary.total_opinions;
@@ -56,7 +58,7 @@ export default function OpinionDistribution({
   }
 
   return (
-    <section className="grid gap-6 pt-6 sm:grid-cols-[180px_minmax(0,1fr)] sm:items-center">
+    <section className={cn("grid gap-6 pt-6 sm:grid-cols-[180px_minmax(0,1fr)] sm:items-center", className)}>
       <div>
         <h2 className="text-lg font-semibold">{t("youtubeOpinions.distributionTitle")}</h2>
         <p className={cn("figure mt-3 text-[32px] font-semibold leading-none", lead.text)}>

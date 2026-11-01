@@ -1066,8 +1066,9 @@ export default function ChartView({
       </Button>
     </div>
   ) : null;
+  const stackedResults = !advanced && (compactLayout === "workspace" || Boolean(resultsContainer));
   const aiResults = (<>
-    {drawingAi.status === "done" && drawingAi.result && (drawingAi.result.model || drawingAi.result.setup || drawingAi.result.findings?.some(item => item.status === "unavailable") || drawingAi.result.overlays?.some(item => ["breakouts", "retests", "false_breakouts"].includes(item.category) && item.detected_at && typeof item.level === "number")) && <details className={cn("group/drawings min-w-0 border-t border-border pt-3", compactLayout === "workspace" && !advanced ? "order-2 mt-6" : "mt-5")}>
+    {drawingAi.status === "done" && drawingAi.result && (drawingAi.result.model || drawingAi.result.setup || drawingAi.result.findings?.some(item => item.status === "unavailable") || drawingAi.result.overlays?.some(item => ["breakouts", "retests", "false_breakouts"].includes(item.category) && item.detected_at && typeof item.level === "number")) && <details className={cn("group/drawings min-w-0 border-t border-border pt-3", stackedResults ? "order-2 mt-6" : "mt-5")}>
           <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 rounded text-sm font-medium hover:text-muted-foreground focus-visible:outline-none [&::-webkit-details-marker]:hidden">
             {t("youtubeOpinions.ai.button")}
             <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground group-open/drawings:rotate-180" aria-hidden="true" />
@@ -1087,7 +1088,7 @@ export default function ChartView({
             onRetry={() => void runAi("analysis")}
             formatDate={formatDate}
             t={t}
-            className={compactLayout === "workspace" && !advanced ? "order-first mt-6" : "mt-6 border-t border-border pt-4"}
+            className={stackedResults ? "order-first mt-6" : "mt-6 border-t border-border pt-4"}
           />
         )}
   </>);
@@ -1794,7 +1795,9 @@ export default function ChartView({
             )}
           </div>
 
-          {!advanced && compactLayout !== "workspace" && aiResults}
+          {!advanced &&
+            compactLayout !== "workspace" &&
+            (resultsContainer ? createPortal(aiResults, resultsContainer) : aiResults)}
           {!advanced && compactLayout === "workspace" && resultsContainer && createPortal(aiResults, resultsContainer)}
         </div>
       </div>

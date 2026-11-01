@@ -8,6 +8,7 @@ import { ArrowUpRight, LayoutGrid, List } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import CompanyLogo from "@/components/ui/company-logo";
+import { ListFooterLink, ListRow, ListRows } from "@/components/ui/list-card";
 import OpinionStrength from "@/components/youtube/OpinionStrength";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -379,12 +380,12 @@ function MarketOverview({ range, setRange, view, setView }: { range: RangeKey; s
                   {c("Creator updates could not be loaded.", "暂时无法加载博主动态。")}
                 </Empty>
               ) : shifts.length ? (
-                <ul className="divide-y divide-border/60">
+                <ListRows>
                   {shifts.map((shift) => (
-                    <li key={shift.ticker}>
+                    <ListRow key={shift.ticker}>
                       <Link
                         href={`/dashboard/market/${encodeURIComponent(shift.ticker)}`}
-                        className="flex min-h-20 items-center justify-between gap-3 rounded-2xl px-1 py-4 transition-colors duration-200 hover:bg-muted/50 focus-visible:outline-none "
+                        className="flex min-h-20 flex-1 items-center justify-between gap-3 rounded-2xl px-1 py-4 transition-colors duration-150 hover:bg-muted/50 focus-visible:outline-none"
                       >
                         <span className="flex min-w-0 items-center gap-2.5">
                           <span aria-hidden><CompanyLogo symbol={shift.ticker} size="sm" /></span>
@@ -403,19 +404,13 @@ function MarketOverview({ range, setRange, view, setView }: { range: RangeKey; s
                             : <OpinionStrength value={shift.change} change className="text-xs" />}
                         </span>
                       </Link>
-                    </li>
+                    </ListRow>
                   ))}
-                </ul>
+                </ListRows>
               ) : (
                 <Empty>{c("No creator updates yet.", "暂时没有博主新动态。")}</Empty>
               )}
-              <Link
-                href="/dashboard/youtube-opinions/stocks"
-                className="mt-3 flex min-h-11 items-center justify-between gap-3 border-t border-border px-1 pt-2 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none "
-              >
-                {c("Explore creator-covered stocks", "查看博主覆盖股票")}
-                <ArrowUpRight className="h-4 w-4 shrink-0" aria-hidden />
-              </Link>
+              <ListFooterLink href="/dashboard/youtube-opinions/stocks">{c("Explore creator-covered stocks", "查看博主覆盖股票")}</ListFooterLink>
             </Panel>
           </aside>
         </div>
