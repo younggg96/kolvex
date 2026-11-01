@@ -54,6 +54,20 @@ export function financialChange(latest: unknown, previous: unknown) {
     relative: previous > 0 ? (latest - previous) / previous : null,
   };
 }
+/** Compare reported EPS with its estimate, including zero and negative EPS. */
+export function epsOutcome(actual: unknown, estimate: unknown) {
+  if (!finite(actual) || !finite(estimate)) return null;
+  const delta = Math.round((actual - estimate) * 100_000_000) / 100_000_000;
+  return {
+    kind:
+      delta > 0
+        ? ("beat" as const)
+        : delta < 0
+          ? ("miss" as const)
+          : ("met" as const),
+    delta,
+  };
+}
 export function fundamentalsKey(
   symbol: string,
   kind: StatementKind | "earnings" | "analyst",

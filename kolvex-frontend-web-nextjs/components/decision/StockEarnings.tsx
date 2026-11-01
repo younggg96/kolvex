@@ -5,6 +5,8 @@ import {
   BarChart,
   CartesianGrid,
   Legend,
+  LabelList,
+  type LabelProps,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -13,6 +15,7 @@ import {
 import { useCachedResource } from "@/hooks/useCachedResource";
 import {
   earningsRows,
+  epsOutcome,
   finite,
   fundamentalsKey,
   loadFundamentals,
@@ -44,7 +47,56 @@ export default function StockEarnings({
   );
   const actual = rows.filter((row) => finite(row.actual));
   const latest = actual[actual.length - 1];
-  const data = rows.map((row) => ({ ...row, label: f.date(row.period) }));
+  const data = rows.map((row) => ({
+    ...row,
+    label: f.date(row.period),
+    outcome: epsOutcome(row.actual, row.estimate),
+  }));
+  const outcomeLabel = (kind: "beat" | "miss" | "met") =>
+    kind === "beat" ? "Beat" : kind === "miss" ? "Miss" : c("Met", "符合预期");
+  const outcomeClass = (kind: "beat" | "miss" | "met") =>
+    kind === "beat"
+      ? "text-positive"
+      : kind === "miss"
+        ? "text-negative"
+        : "text-muted-foreground";
+  const deltaLabel = (value: number) =>
+    `${value > 0 ? "+" : value < 0 ? "−" : ""}${Math.abs(value) > 0 && Math.abs(value) < 0.01 ? `<0.01` : f.number(Math.abs(value), false)} ${currency}`;
+  const renderOutcome = (props: LabelProps, series: "estimate" | "actual") => {
+    const row = data[props.index ?? -1];
+    if (
+      !row?.outcome ||
+      (row.outcome.kind === "miss"
+        ? series !== "estimate"
+        : series !== "actual")
+    )
+      return null;
+    const x = Number(props.x) + Number(props.width) / 2;
+    const y = Number(props.y);
+    if (!finite(x) || !finite(y)) return null;
+    const color =
+      row.outcome.kind === "beat"
+        ? "rgb(var(--positive))"
+        : row.outcome.kind === "miss"
+          ? "rgb(var(--negative))"
+          : "rgb(var(--muted-foreground))";
+    return (
+      <g aria-hidden="true" fill={color} pointerEvents="none">
+        <text
+          x={x}
+          y={y - 20}
+          textAnchor="middle"
+          fontSize={11}
+          fontWeight={500}
+        >
+          {outcomeLabel(row.outcome.kind)}
+        </text>
+        <path
+          d={`M ${x - 4} ${y - 14} L ${x + 4} ${y - 14} L ${x} ${y - 9} Z`}
+        />
+      </g>
+    );
+  };
   return (
     <div className="space-y-8">
       <dl className="grid grid-cols-2 gap-6 border-b border-border pb-6 lg:grid-cols-4">
@@ -92,68 +144,129 @@ export default function StockEarnings({
               </span>
             </div>
             <div
-              className="mt-6 h-72"
-              role="img"
+              className="mt-6 overflow-x-auto rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+              tabIndex={0}
+              role="region"
               aria-label={c(
                 "EPS actual versus estimate. Exact values follow in the table.",
                 "实际 EPS 与预期对比，具体数值见下方表格。",
               )}
             >
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={data}>
-                  <CartesianGrid vertical={false} stroke="rgb(var(--border))" />
-                  <XAxis
-                    dataKey="label"
-                    minTickGap={24}
-                    tickLine={false}
-                    axisLine={false}
-                    tick={{
-                      fontSize: 11,
-                      fill: "rgb(var(--muted-foreground))",
-                    }}
-                  />
-                  <YAxis
-                    width={48}
-                    tickLine={false}
-                    axisLine={false}
-                    tick={{
-                      fontSize: 11,
-                      fill: "rgb(var(--muted-foreground))",
-                    }}
-                  />
-                  <Tooltip
-                    cursor={{
-                      fill: "rgb(var(--foreground))",
-                      fillOpacity: 0.035,
-                    }}
-                    itemStyle={{ color: "rgb(var(--foreground))" }}
-                    contentStyle={{
-                      background: "rgb(var(--card))",
-                      border: "1px solid rgb(var(--border))",
-                      borderRadius: 12,
-                    }}
-                    formatter={(value) => f.number(value, false)}
-                  />
-                  <Legend />
-                  <Bar
-                    dataKey="estimate"
-                    name={c("Estimate", "预期 EPS")}
-                    fill="rgb(var(--muted-foreground))"
-                    maxBarSize={24}
-                    radius={[3, 3, 0, 0]}
-                    isAnimationActive={false}
-                  />
-                  <Bar
-                    dataKey="actual"
-                    name={c("Actual", "实际 EPS")}
-                    fill="rgb(var(--positive))"
-                    maxBarSize={24}
-                    radius={[3, 3, 0, 0]}
-                    isAnimationActive={false}
-                  />
-                </BarChart>
-              </ResponsiveContainer>
+              <div
+                className="h-80"
+                style={{ minWidth: Math.max(360, data.length * 76) }}
+              >
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart
+                    barSize={14}
+                    barGap={4}
+                    data={data}
+                    margin={{ top: 36, right: 16, left: 4, bottom: 4 }}
+                  >
+                    <CartesianGrid
+                      vertical={false}
+                      stroke="rgb(var(--border))"
+                    />
+                    <XAxis
+                      dataKey="label"
+                      minTickGap={24}
+                      tickLine={false}
+                      axisLine={false}
+                      tick={{
+                        fontSize: 11,
+                        fill: "rgb(var(--muted-foreground))",
+                      }}
+                    />
+                    <YAxis
+                      width={48}
+                      tickLine={false}
+                      axisLine={false}
+                      tick={{
+                        fontSize: 11,
+                        fill: "rgb(var(--muted-foreground))",
+                      }}
+                    />
+                    <Tooltip
+                      cursor={{
+                        fill: "rgb(var(--foreground))",
+                        fillOpacity: 0.035,
+                      }}
+                      content={({ active, payload }) => {
+                        const row = payload?.[0]?.payload as
+                          | (typeof data)[number]
+                          | undefined;
+                        if (!active || !row) return null;
+                        return (
+                          <div className="min-w-40 rounded-xl border border-border bg-card p-3 text-xs text-foreground">
+                            <p className="mb-2 font-semibold">{row.label}</p>
+                            <dl className="space-y-1">
+                              <div className="flex justify-between gap-4">
+                                <dt className="text-muted-foreground">
+                                  {c("Est. EPS", "预期 EPS")}
+                                </dt>
+                                <dd className="figure">
+                                  {f.number(row.estimate, false)} {currency}
+                                </dd>
+                              </div>
+                              <div className="flex justify-between gap-4">
+                                <dt className="text-muted-foreground">
+                                  {c("Act. EPS", "实际 EPS")}
+                                </dt>
+                                <dd className="figure">
+                                  {f.number(row.actual, false)} {currency}
+                                </dd>
+                              </div>
+                            </dl>
+                            {row.outcome && (
+                              <p
+                                className={cn(
+                                  "figure mt-2 font-semibold",
+                                  outcomeClass(row.outcome.kind),
+                                )}
+                              >
+                                {outcomeLabel(row.outcome.kind)} (
+                                {deltaLabel(row.outcome.delta)})
+                              </p>
+                            )}
+                          </div>
+                        );
+                      }}
+                    />
+                    <Legend />
+                    <Bar
+                      dataKey="estimate"
+                      name={c("Estimate", "预期 EPS")}
+                      fill="rgb(var(--muted-foreground))"
+                      maxBarSize={24}
+                      radius={[3, 3, 0, 0]}
+                      isAnimationActive={false}
+                    >
+                      <LabelList
+                        content={(props) => renderOutcome(props, "estimate")}
+                      />
+                    </Bar>
+                    <Bar
+                      dataKey="actual"
+                      name={c("Actual", "实际 EPS")}
+                      fill="rgb(var(--positive))"
+                      maxBarSize={24}
+                      radius={[3, 3, 0, 0]}
+                      isAnimationActive={false}
+                    >
+                      <LabelList
+                        content={(props) => renderOutcome(props, "actual")}
+                      />
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
             </div>
+            <p className="mt-3 text-xs text-muted-foreground">
+              {c(
+                "Beat / Miss compare reported EPS with estimates. Unreported periods have no marker. Scroll horizontally to see more periods.",
+                "Beat / Miss 根据实际 EPS 与预期比较；未公布或缺少预期时不显示标记，可横向滚动查看更多报告期。",
+              )}
+            </p>
           </section>
           <section>
             <h2 className="mb-4 text-xl font-semibold">
@@ -178,6 +291,7 @@ export default function StockEarnings({
                       c("Report / period date", "报告 / 报告期日期"),
                       c("Estimated EPS", "预期 EPS"),
                       c("Actual EPS", "实际 EPS"),
+                      c("Result vs estimate", "预期表现"),
                       c("Surprise", "超预期幅度"),
                     ].map((label, index) => (
                       <th
@@ -211,6 +325,13 @@ export default function StockEarnings({
                       <td className="figure px-4 py-4 text-right">
                         {f.number(row.actual, false)}
                       </td>
+                      <td className="figure px-4 py-4 text-right">
+                        <EarningsOutcome
+                          actual={row.actual}
+                          estimate={row.estimate}
+                          currency={currency}
+                        />
+                      </td>
                       <td
                         className={cn(
                           "figure px-4 py-4 text-right",
@@ -239,5 +360,48 @@ export default function StockEarnings({
         )}
       </p>
     </div>
+  );
+}
+
+function EarningsOutcome({
+  actual,
+  estimate,
+  currency,
+}: {
+  actual: number | null;
+  estimate: number | null;
+  currency: string;
+}) {
+  const c = useCopy();
+  const f = useFinancialFormat();
+  const outcome = epsOutcome(actual, estimate);
+  if (!outcome) return <>—</>;
+  const label =
+    outcome.kind === "beat"
+      ? "Beat"
+      : outcome.kind === "miss"
+        ? "Miss"
+        : c("Met", "符合预期");
+  return (
+    <span
+      className={
+        outcome.kind === "beat"
+          ? "text-positive"
+          : outcome.kind === "miss"
+            ? "text-negative"
+            : "text-muted-foreground"
+      }
+    >
+      {label}
+      {outcome.delta !== 0 && (
+        <span className="ml-2 text-xs">
+          ({outcome.delta > 0 ? "+" : "−"}
+          {Math.abs(outcome.delta) < 0.01
+            ? "<0.01"
+            : f.number(Math.abs(outcome.delta), false)}{" "}
+          {currency})
+        </span>
+      )}
+    </span>
   );
 }

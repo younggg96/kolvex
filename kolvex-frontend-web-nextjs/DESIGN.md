@@ -122,7 +122,14 @@ charts use a two-column grid on large screens and one column on phones, support
 bar/line and annual/quarterly switches, and permit adding/removing metrics through
 the shared authored Select and Buttons. Theme colors resolve through the existing
 `rgb(var(--...))` runtime tokens; chart marks use the text-safe positive color in
-both themes. EPS actuals and estimates have named legends and an accompanying table.
+both themes. EPS actuals and estimates have named legends and an accompanying table. Earnings
+bars show a Beat / Miss / Met label and small downward pointer above the higher
+bar in each reported pair. Hover/tap details retain source dates, estimated EPS,
+reported EPS and the absolute difference in the supplied currency. The history
+table repeats the outcome and delta; missing actuals or estimates have no outcome.
+Markers are computed from reported EPS versus estimates (including losses and zero),
+not inferred from source surprise percentages. The chart reserves headroom for
+labels and scrolls horizontally on narrow screens to keep labels readable.
 Analyst target differences are relative to the source-supplied price and are labelled
 as estimates, with no claim that the stock is objectively undervalued. The target
 section pairs a price-range visualization (reference and mean markers, explicit

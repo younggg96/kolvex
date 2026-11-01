@@ -81,3 +81,14 @@ test('report changes never divide by zero or assign misleading percentages to a 
   assert.equal(financialChange(null,8),null);
   assert.equal(financialChange(Infinity,8),null);
 });
+test('EPS beat and miss use actual vs estimate, preserve losses and zero, and require both values', () => {
+  const { epsOutcome } = fixture();
+  assert.equal(epsOutcome(2.22,2.09).kind,'beat');
+  assert.equal(epsOutcome(2.22,2.09).delta,.13);
+  assert.equal(epsOutcome(1.8,2.09).kind,'miss');
+  assert.equal(epsOutcome(-.1,-.2).kind,'beat');
+  assert.equal(epsOutcome(0,0).kind,'met');
+  assert.equal(epsOutcome(.1+.2,.3).kind,'met');
+  assert.equal(epsOutcome(null,2.09),null);
+  assert.equal(epsOutcome(2.22,null),null);
+});
