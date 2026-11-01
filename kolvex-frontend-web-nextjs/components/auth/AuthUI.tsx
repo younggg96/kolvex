@@ -116,7 +116,7 @@ export function AuthBackLink() {
     <div className="mt-6 border-t border-border pt-5">
       <Link
         href="/auth"
-        className="inline-flex items-center gap-2 rounded-sm text-sm font-medium text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none "
+        className="inline-flex items-center gap-2 rounded-sm text-sm font-medium text-muted-foreground transition-colors hover:text-primary-text focus-visible:outline-none"
       >
         <ArrowLeft size={16} aria-hidden="true" />
         {t("auth.backToLogin")}

@@ -1,9 +1,11 @@
 "use client";
 
 import React from "react";
+import Link from "next/link";
 import { TrendingUp, TrendingDown } from "lucide-react";
 import { useMultipleQuotes } from "@/hooks/useStockData";
 import CompanyLogo from "@/components/ui/company-logo";
+import { marketStockUrl } from "@/lib/stockLinks";
 
 // Default symbols to display in the ticker
 const TICKER_SYMBOLS = [
@@ -49,6 +51,10 @@ const FALLBACK_DATA = [
 
 // Refresh every 5 minutes
 const REFRESH_INTERVAL = 5 * 60 * 1000;
+
+/** Pill shell: identical for the link and the non-routable fallback so the marquee never reflows. */
+const PILL_CLASS =
+  "group inline-flex min-h-11 items-center gap-1.5 md:gap-3 px-2.5 md:px-5 py-1.5 md:py-2.5 mx-1 md:mx-2 rounded-3xl bg-card border border-border transition-all duration-200 [transition-timing-function:cubic-bezier(0.25,1,0.5,1)]";
 
 export default function LandingStockTicker() {
   const { data: quotes, error } = useMultipleQuotes(
@@ -103,11 +109,13 @@ export default function LandingStockTicker() {
         <div className="flex animate-ticker hover:[animation-play-state:paused] whitespace-nowrap">
           {displayStocks.map((stock, idx) => {
             const isUp = stock.changePercent >= 0;
-            return (
-              <div
-                key={idx}
-                className="group inline-flex items-center gap-1.5 md:gap-3 px-2.5 md:px-5 py-1.5 md:py-2.5 mx-1 md:mx-2 rounded-3xl bg-card border border-border hover:border-primary/30 transition-all duration-200 [transition-timing-function:cubic-bezier(0.25,1,0.5,1)] cursor-pointer"
-              >
+            // Every pill that identifies a tradable stock opens that stock's quotes page.
+            // Symbols we cannot route (e.g. indexes) stay plain, non-interactive pills.
+            const href = marketStockUrl(stock.symbol);
+            const name = COMPANY_NAMES[stock.symbol] || stock.symbol;
+
+            const content = (
+              <>
                 {/* Company Logo - hidden on mobile to save space */}
                 <div className="hidden sm:block">
                   <CompanyLogo
@@ -144,6 +152,23 @@ export default function LandingStockTicker() {
                   )}
                   <span>{formatChange(stock.changePercent)}</span>
                 </div>
+              </>
+            );
+
+            const key = `${stock.symbol}-${idx}`;
+
+            return href ? (
+              <Link
+                key={key}
+                href={href}
+                aria-label={`${stock.symbol} ${name} quotes`}
+                className={`${PILL_CLASS} cursor-pointer hover:border-primary/30 focus-visible:outline-none focus-visible:border-primary/60`}
+              >
+                {content}
+              </Link>
+            ) : (
+              <div key={key} className={PILL_CLASS}>
+                {content}
               </div>
             );
           })}

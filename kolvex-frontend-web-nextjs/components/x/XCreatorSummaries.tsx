@@ -65,7 +65,7 @@ export default function XCreatorSummaries({ author, creators }: { author: string
           </div>
           <p className="mt-3 text-sm font-medium leading-6">{content.headline}</p>
           <details className="group mt-1">
-            <summary className="flex min-h-11 w-fit cursor-pointer list-none items-center gap-1.5 rounded-sm text-xs text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary [&::-webkit-details-marker]:hidden">{c("Reasoning, caveats & sources", "论据、风险与原帖")}<ChevronDown className="h-3.5 w-3.5 group-open:rotate-180" aria-hidden="true" /></summary>
+            <summary className="flex min-h-11 w-fit cursor-pointer list-none items-center gap-1.5 rounded-sm text-xs text-muted-foreground transition-colors hover:text-primary-text focus-visible:outline-none [&::-webkit-details-marker]:hidden">{c("Reasoning, caveats & sources", "论据、风险与原帖")}<ChevronDown className="h-3.5 w-3.5 group-open:rotate-180" aria-hidden="true" /></summary>
             <div className="max-w-prose space-y-3 pb-2 text-sm leading-6">
               <p>{content.basis}</p>
               <p className="text-muted-foreground"><span className="font-medium text-foreground">{c("Caveats: ", "注意：")}</span>{content.risks}</p>

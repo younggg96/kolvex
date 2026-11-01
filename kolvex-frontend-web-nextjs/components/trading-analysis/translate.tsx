@@ -67,7 +67,7 @@ export function TranslateButton({
             "inline-flex h-10 shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-full px-3 text-sm font-medium transition-colors duration-150 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50",
             showTranslated
               ? "bg-foreground text-background"
-              : "text-muted-foreground hover:bg-muted hover:text-foreground"
+              : "text-muted-foreground hover:bg-primary/10 hover:text-primary-text"
           )}
         >
           {isTranslating ? (

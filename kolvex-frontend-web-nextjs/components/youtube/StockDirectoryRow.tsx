@@ -32,7 +32,7 @@ export default function StockDirectoryRow({ stock, children, performance, change
             <Button
               variant="ghost"
               size="xs"
-              className="ml-auto shrink-0 text-muted-foreground hover:text-foreground"
+              className="ml-auto shrink-0 text-muted-foreground hover:bg-primary/10 hover:text-primary-text"
               aria-label={t(open ? "youtubeOpinions.directory.collapseAria" : "youtubeOpinions.directory.expandAria", { ticker: stock.ticker })}
             >
               {t(open ? "youtubeOpinions.directory.collapse" : "youtubeOpinions.directory.expand")}

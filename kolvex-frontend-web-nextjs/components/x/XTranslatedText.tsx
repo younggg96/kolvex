@@ -10,27 +10,40 @@ import { useTranslation } from "@/lib/i18n";
 const translations = new Map<string, string[]>();
 let activeTranslations = 0;
 const translationQueue: Array<() => void> = [];
+const IDENTIFIER_PATTERN = /https?:\/\/[^\s]+|\$[A-Za-z][A-Za-z0-9.\-]{0,14}\b/g;
+// Placeholder for a protected identifier: the bracket-wrapped source index, e.g.
+// "⟨0⟩". Machine translation keeps these brackets and digits verbatim (an ASCII
+// word or bare number is translated, e.g. "Bloom" → "布卢姆", "0" → "LE"), so the
+// index alone is enough to map each placeholder back to its identifier.
+const TAG = { open: "⟨", close: "⟩" };
+const TAG_PATTERN = new RegExp(`${TAG.open}(\\d+)${TAG.close}`, "g");
+// Restore placeholders in place; anything the service left malformed is stripped so
+// no marker text ever reaches the reader.
+function restoreIdentifiers(translated: string, literals: string[]) {
+  return translated.replace(TAG_PATTERN, (_, index: string) => literals[Number(index)] ?? "")
+    .replace(new RegExp(`${TAG.open}\\d*${TAG.close}?`, "g"), "");
+}
+// If the service drops or reorders placeholders, keep the translation but append the
+// identifiers it lost so cashtags never silently disappear from the post.
+function appendDroppedIdentifiers(restored: string, literals: string[]) {
+  const dropped = literals.filter(literal => !restored.includes(literal));
+  return dropped.length ? `${restored.trimEnd()} ${dropped.join(" ")}` : restored;
+}
 async function queuedTranslation(text: string, locale: string, signal: AbortSignal) {
   if (activeTranslations >= 3) await new Promise<void>(resolve => translationQueue.push(resolve));
   else activeTranslations++;
   try {
     signal.throwIfAborted();
     // Keep financial identifiers and source URLs literal in every target language.
-    let prefix = "KOLVEXLITERAL";
-    while (text.includes(prefix)) prefix += "X";
     const literals: string[] = [];
-    const protectedText = text.replace(/https?:\/\/[^\s]+|\$[A-Za-z][A-Za-z0-9.\-]{0,14}\b/g, value => {
-      const token = `${prefix}${literals.length}TOKEN`;
+    const protectedText = text.replace(IDENTIFIER_PATTERN, value => {
+      if (!value) return value;
       literals.push(value);
-      return token;
+      return `${TAG.open}${literals.length - 1}${TAG.close}`;
     });
-    let result = await translateText(protectedText, locale, signal);
-    for (const [index, literal] of literals.entries()) {
-      const token = `${prefix}${index}TOKEN`;
-      if (!result.includes(token)) throw new Error("Translation changed a source identifier");
-      result = result.replaceAll(token, literal);
-    }
-    return result;
+    const translated = await translateText(protectedText, locale, signal);
+    signal.throwIfAborted();
+    return appendDroppedIdentifiers(restoreIdentifiers(translated, literals), literals);
   }
   finally { const next = translationQueue.shift(); if (next) next(); else activeTranslations--; }
 }

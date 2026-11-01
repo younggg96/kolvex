@@ -6,6 +6,7 @@ import CompanyLogo from "@/components/ui/company-logo";
 import { Skeleton } from "@/components/ui/skeleton";
 import OpinionStrength from "@/components/youtube/OpinionStrength";
 import { ListColumnHeader, ListRow, ListRows, listRowTargetClass } from "@/components/ui/list-card";
+import { marketStockHref } from "@/lib/stockLinks";
 import { Empty, Panel, TextLink, useCopy, useCreatorCatalogue, useDayLabel } from "./shared";
 import { useDecisionCommand } from "./CommandLayer";
 
@@ -55,7 +56,7 @@ export default function PortfolioChanges({ tickers }: { tickers: string[] }) {
           <ListRows aria-label={c("Holdings changes", "持仓变化")}>
           {shifts.map((shift) => (
             <ListRow key={`${shift.current_date}-${shift.ticker}`}>
-              <Link href={`/dashboard/market/${encodeURIComponent(shift.ticker)}`} className={`flex items-center justify-between gap-4 ${listRowTargetClass}`}>
+              <Link href={marketStockHref(shift.ticker)} className={`flex items-center justify-between gap-4 ${listRowTargetClass}`}>
                 <span className="flex min-w-0 items-center gap-3">
                   <span aria-hidden><CompanyLogo symbol={shift.ticker} size="md" /></span>
                   <span className="min-w-0">

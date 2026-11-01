@@ -11,6 +11,11 @@ import CompanyLogo from "@/components/ui/company-logo";
 import { DirectionBadge, useCopy } from "@/components/decision/shared";
 import { useTranslation } from "@/lib/i18n";
 import type { AiTechnicalAnalysis } from "@/lib/stockApi";
+import { marketStockUrl } from "@/lib/stockLinks";
+
+/** Stock identity shown in the product example; every surface must lead to its quotes page. */
+const EXAMPLE_SYMBOL = "NVDA";
+const EXAMPLE_COMPANY = "NVIDIA";
 
 export default function LandingPreview() {
   const c = useCopy();
@@ -82,11 +87,15 @@ export default function LandingPreview() {
         </div>
         <LandingParallax className="landing-workspace" distance={38}>
           <div className="workspace-top">
-            <div className="flex items-center gap-3">
-              <CompanyLogo symbol="NVDA" size="sm" />
-              <strong>NVDA</strong>
-              <span className="text-muted-foreground">NVIDIA</span>
-            </div>
+            <Link
+              href={marketStockUrl(EXAMPLE_SYMBOL) ?? `/stocks/${EXAMPLE_SYMBOL}`}
+              aria-label={c(`${EXAMPLE_SYMBOL} ${EXAMPLE_COMPANY} quotes`, `${EXAMPLE_SYMBOL} ${EXAMPLE_COMPANY} 行情`)}
+              className="flex items-center gap-3 rounded-lg hover:text-primary focus-visible:outline-none "
+            >
+              <CompanyLogo symbol={EXAMPLE_SYMBOL} size="sm" />
+              <strong>{EXAMPLE_SYMBOL}</strong>
+              <span className="text-muted-foreground">{EXAMPLE_COMPANY}</span>
+            </Link>
             <span>
               {c(
                 "Product example · Not live research",
@@ -133,7 +142,7 @@ export default function LandingPreview() {
                         "AI 支出前景升温，让半导体需求成为焦点。把新闻与受影响的公司、关键假设放在一起阅读。",
                       )}
                     </p>
-                    <Link className="landing-text-link" href="/stocks/NVDA">
+                    <Link className="landing-text-link" href={`/stocks/${EXAMPLE_SYMBOL}`}>
                       {c("Open stock coverage", "查看个股信息")}
                       <ArrowUpRight size={16} />
                     </Link>
@@ -234,7 +243,7 @@ export default function LandingPreview() {
                     </p>
                     <Link
                       className="landing-text-link"
-                      href="/dashboard/market/NVDA"
+                      href={marketStockUrl(EXAMPLE_SYMBOL) ?? `/stocks/${EXAMPLE_SYMBOL}`}
                     >
                       {c("Open technical analysis", "打开技术分析")}
                       <ArrowUpRight size={16} />

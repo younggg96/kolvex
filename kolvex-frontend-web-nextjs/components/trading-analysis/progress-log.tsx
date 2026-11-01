@@ -168,7 +168,7 @@ function AgentStep({
         aria-expanded={hasDetail ? expanded : undefined}
         className={cn(
           "flex w-full items-center gap-2.5 rounded-full py-1.5 text-left outline-offset-4",
-          hasDetail && "cursor-pointer hover:bg-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary",
+          hasDetail && "cursor-pointer hover:bg-primary/[0.07] focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary",
         )}
       >
         <Icon aria-hidden="true" className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />

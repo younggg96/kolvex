@@ -122,7 +122,7 @@ export function ExpandableOptions({
         <div className="mt-2">
           <button
             onClick={() => setIsExpanded(false)}
-            className="w-full flex items-center justify-center gap-1 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+            className="flex w-full items-center justify-center gap-1 rounded-full py-2 text-sm text-muted-foreground transition-colors hover:bg-primary/10 hover:text-primary-text"
           >
             Show less
             <ChevronUp className="w-4 h-4" />

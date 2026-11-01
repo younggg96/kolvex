@@ -22,6 +22,7 @@ import { useTranslation } from "@/lib/i18n";
 import ResearchLayout from "@/components/decision/ResearchLayout";
 import { DEEP_RESEARCH_PATH } from "@/lib/researchRoutes";
 import { Button } from "@/components/ui/button";
+import { marketStockHref } from "@/lib/stockLinks";
 import { ListCard, ListRow, ListRows } from "@/components/ui/list-card";
 import { Input } from "@/components/ui/input";
 import { Calendar } from "@/components/ui/calendar";
@@ -329,7 +330,7 @@ export default function TradingAnalysisPage({ searchParams }: { searchParams?: {
                               head_cell: "text-center text-xs text-muted-foreground",
                               row: "mt-2 grid grid-cols-7",
                               cell: "relative min-w-0 text-center text-sm !p-0",
-                              day: "h-9 w-full rounded-md !p-0 text-sm hover:bg-muted ",
+                              day: "h-9 w-full rounded-full !p-0 text-sm hover:bg-primary/10 hover:text-primary-text ",
                             }}
                             onSelect={(date) => {
                               if (!date) return;
@@ -400,7 +401,7 @@ export default function TradingAnalysisPage({ searchParams }: { searchParams?: {
                       ) : (
                         <Link
                           href="/dashboard/settings?tab=api-keys"
-                          className="flex h-10 items-center justify-center gap-1.5 rounded-3xl border border-dashed border-border px-4 text-[13px] font-semibold text-positive transition-colors duration-150 hover:bg-muted"
+                          className="flex h-10 items-center justify-center gap-1.5 rounded-full border border-dashed border-primary/35 px-4 text-[13px] font-semibold text-positive transition-colors duration-150 hover:border-primary/60 hover:bg-primary/[0.08]"
                         >
                           <Settings className="w-3.5 h-3.5" />
                           {t("tradingAnalysis.addApiKey")}
@@ -521,8 +522,8 @@ export default function TradingAnalysisPage({ searchParams }: { searchParams?: {
                             className={cn(
                               "h-9 rounded-full px-4 text-[13px] font-semibold transition-colors duration-150 focus-visible:outline-none ",
                               isActive
-                                ? "bg-foreground text-background"
-                                : "bg-muted text-muted-foreground hover:text-foreground"
+                                ? "bg-foreground text-primary"
+                                : "bg-muted text-muted-foreground hover:bg-primary/10 hover:text-primary-text active:bg-primary/[0.16]"
                             )}
                           >
                             {analystLabels[id]}
@@ -588,7 +589,15 @@ export default function TradingAnalysisPage({ searchParams }: { searchParams?: {
                     <ListRows aria-label={t("tradingAnalysis.history")}>
                     {history.map((item) => (
                       <ListRow key={item.id} className="group relative gap-3 py-3.5 sm:gap-4">
-                        <CompanyLogo symbol={item.ticker} size="md" />
+                        {/* The logo reaches the stock's quotes page; the report
+                            overlay link below would otherwise swallow the click. */}
+                        <Link
+                          href={marketStockHref(item.ticker)}
+                          aria-label={t("redditOpinions.openStock", { ticker: item.ticker })}
+                          className="relative z-10 shrink-0 rounded-2xl underline-offset-4 hover:opacity-90 focus-visible:outline-none "
+                        >
+                          <CompanyLogo symbol={item.ticker} size="md" />
+                        </Link>
                         <div className="min-w-0 flex-1">
                           <Link
                             href={`/dashboard/trading-analysis/${item.id}`}

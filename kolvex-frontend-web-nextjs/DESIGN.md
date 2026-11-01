@@ -4,6 +4,9 @@ name: Kolvex
 description: Chinese-first equity research with source-linked opinions, quiet data lists and green navigation accents.
 colors:
   primary: "#00C805"
+  primary-soft: "#00C805"
+  primary-line: "#00C805"
+  primary-text: "#007D02"
   background: "#FAFAF9"
   foreground: "#000000"
   card: "#FFFFFF"
@@ -56,7 +59,9 @@ utilities consumed by shared components. The frontmatter mirrors light-mode
 values. Dark mode uses black ground, #0E0F10 cards, #FFFFFF foreground,
 #9BA0A6 muted text and #282A2D borders. Primary remains #00C805 in both themes.
 Use `positive` and `negative` for direction text, with a written decision label;
-the primary green alone is not a small-text color on the light background.
+the primary green alone is not a small-text color on the light background, so
+hovered labels use the darker `primary-text` token instead. See
+**Brand-green interaction** for the hover, focus and press rules.
 
 ## Typography
 
@@ -94,6 +99,16 @@ identity, exchange/currency and regular/available after-hours quotes before a si
 sticky horizontal Radix research tab bar. The bar scrolls horizontally on phones;
 its shared `pill-solid` surface uses opaque muted fill to hide scrolling content
 behind the labels, with a 16px sticky inset from the content viewport's top edge.
+A single active pill slides between labels there, as it does in
+`components/ui/segmented-control.tsx`, the shared iOS-style switcher behind the
+in-page toggles. Selection is one continuously animated thumb rather than two
+fading backgrounds: the thumb keeps the pill radius so it grows and shrinks with
+the target width, glides on a `cubic-bezier(0.32, 0.72, 0.24, 1)` curve, presses
+down under the finger, and is measured from the live DOM so it stays put across
+reflows, font loads and horizontal scrolling. Labels never move. The control keeps
+`aria-pressed` / `aria-selected` / `aria-checked` / `aria-current` for whichever
+pattern the caller needs, supports roving focus with arrow, Home and End keys, and
+re-measures instead of animating on first paint.
 all labels remain full text. The `tab` query parameter restores the selected module
 without losing the Markets return filter or legacy creator deep links. Indices retain
 the chart/research modules without stock-only financial tabs.
@@ -101,14 +116,33 @@ Technicals is the first tab and the default when no valid tab or creator deep li
 is supplied. Its analysis content uses the shared Card with the same 24px corners,
 border, card fill and 16px mobile / 20px desktop padding as the chart surface.
 
-Overview, Technicals and Setup share a mounted closing-price line preview.
-Its workspace plot is 320px on phones and 420px from sm. Clicking the plot or
-its quiet Advanced action opens the fullscreen candlestick chart with volume,
-indicators and saved/manual drawings. The preview omits these overlays so the
-price trend remains the focus. AI actions live in a collapsed disclosure below
-the preview; Analysis and Drawings use neutral outlined controls. Advanced mode
-keeps its manual toolbar, with AI controls in a desktop side panel or mobile
-popover. Settings and reversible drawing visibility retain their existing dialogs.
+Overview, Technicals and Setup share one mounted price graph,
+`components/youtube/chart/PriceGraph.tsx`: a quiet line graph with no frame and no
+left axis, a ~2px close line in `chart-up` green or `chart-down` orange by the
+window's own change, a soft gradient area under it, a faint dashed baseline at the
+price the window opened at, small numerals with the window's high and low on the
+right edge, one floating tag on the peak, the latest price as a filled pill on the
+axis, and three or four short date labels. Hover or touch scrubs with a dashed
+guide, a dot on the line and a small date/price pill; the plot pans by drag and the
+range bar's crossfade is skipped under `prefers-reduced-motion`. Creator calls stay
+triangles above and below the bar (▲ bullish, ▼ bearish, · neutral, counted when a
+day has several). The workspace plot is 320px on phones and 420px from sm; the
+Creator Opinions preview is 260px and 320px from sm.
+
+The graph owns its time span. A range row offers 1D, 1W, 1M, 3M, 6M, YTD, 1Y, 5Y,
+All and a custom window; choosing one loads exactly that window's history rather
+than trimming a fixed three-month fetch. ⌘/Ctrl + wheel and pinch zoom, horizontal
+drag pans, double-click or double-tap resets, and a reset action appears only while
+the view is modified. Phones stack the range row over the icon row so a long label
+never hides the buttons. Clicking the plot or its quiet Advanced action opens the
+fullscreen chart, which shares the same chrome and range row and adds candlesticks,
+volume, indicators, the KDJ/RSI/MACD subpane and saved/manual drawings on the same
+visible window. The Creator Opinions page keeps its own range control only for the
+opinion-strength view; the price view uses the graph's bar. AI actions live in a
+collapsed disclosure below the preview; Analysis and Drawings use neutral outlined
+controls. Advanced mode keeps its manual toolbar, with AI controls in a desktop side
+panel or mobile popover. Settings and reversible drawing visibility retain their
+existing dialogs.
 Advanced charts default to a KDJ (9,3,3) subpane, switchable to Wilder RSI (14)
 or MACD (12,26,9). The subpane shares the price chart's time scale and inspected
 bar, supports keyboard inspection and can be closed/reopened from Indicators.
@@ -142,7 +176,12 @@ and a keyboard-focusable scroll region; its latest column also shows the change 
 the prior report. Percentage changes are omitted for zero or negative baselines,
 where the absolute change remains available. View selection survives category and
 frequency changes while the module is mounted. Report category and annual/quarterly controls use
-labelled button groups. Columns show actual fiscal ending dates; unsupported history
+labelled button groups in the same segmented style as the research tab bar: a
+`bg-muted` pill container with fully rounded, equal-height segments, the selected
+segment in `bg-foreground` / `text-background` (white on black, matching the active
+tab) and unselected labels in `muted-foreground` with a `secondary` hover. The
+Charts / List and Bars / Line controls share that exact treatment, and the CSV
+action stays a neutral outlined pill beside them. Columns show actual fiscal ending dates; unsupported history
 ranges and invented TTM columns do not appear. CSV exports raw numeric values,
 protects text cells against formula injection and preserves missing data. Multi-metric
 charts use a two-column grid on large screens and one column on phones, support
@@ -1251,12 +1290,55 @@ count, refresh and a link to the full Watchlist; empty, loading, partial quote
 failure and session-only storage states remain explicit. Mobile places the rail
 after the stock observation list. No quotes or sector classifications are invented.
 
+## Brand-green interaction
+
+Brand green is the interaction colour, not only the confirm colour. Every
+interactive surface must acknowledge hover, keyboard focus and press with the
+brand hue instead of falling back to a neutral grey wash. `app/globals.css` owns
+three interaction tokens, and `tailwind.config.ts` exposes them as
+`primary-soft`, `primary-line` and `primary-text`:
+
+- `primary-soft` (`#00C805`) fills hovered and pressed surfaces at 4–16%
+  opacity: rows use 6–8%, pills and chips 10%, pressed states 14–16%.
+- `primary-line` (`#00C805`) draws the hover hairline on bordered controls,
+  table rows and disclosure boundaries at 25–55% opacity.
+- `primary-text` is the hovered label and glyph colour. It is `#007D02` in light
+  mode for ≥ 4.5:1 on the off-white ground and pure brand green in dark mode.
+  `primary` itself stays reserved for solid fills, icons and focus outlines where
+  the light ground cannot support small green text.
+
+Rules that follow from the tokens:
+
+- Filled brand buttons (`default`, `icon`) keep their green fill and darken it on
+  hover and press; they never lose contrast by turning neutral.
+- Neutral `outline` and `ghost` Buttons take a green hairline, wash and label on
+  hover, and a deeper green wash while pressed.
+- List rows (`ListRow`, `listRowTargetClass`, `listCompactRowClass`) wash in
+  `primary` at 7% with a green 2px focus outline. Feed rows use
+  `listFeedRowClass`, whose `list-row-interactive` component class paints the
+  green wash, turns the row hairline green and reveals a 2px green leading mark
+  on hover or `focus-within`.
+- Tabs, `SegmentedControl`, `SwitchTab` and every authored pill keep a neutral or
+  foreground selected state with a green label/icon where it reads on the fill;
+  unselected options preview the brand with a 10% green wash and `primary-text`.
+- Desktop sidebar, mobile dock and the mobile opinion source nav show a green
+  wash, green hairline or green icon on hover; the selected entry takes the brand
+  hue on its icon or label so location and brand read as one signal.
+- Menus (`DropdownMenuItem`, `MultiSelect`, native disclosures) highlight on
+  `primary/10` with `primary-text`.
+- Tables keep semantic positive/negative direction colours; only the row wash,
+  hover hairline and sort label turn green.
+- All of it is colour and border feedback with 150ms transitions and no new
+  motion, so `prefers-reduced-motion` behavior is unchanged. `prefers-contrast:
+  more` strengthens the hovered hairline.
+
 ## Focus without rings
 
 Ring utilities are disabled in `tailwind.config.ts`. Components do not use ring
 colors, widths or offsets, including sidebar navigation and decorative rings.
 `app/globals.css` provides keyboard focus feedback through secondary background
-and underlined text instead of surrounding ring shadows.
+and underlined text instead of surrounding ring shadows. Focus is brand green:
+focus backgrounds use `primary/10` and row targets use a 2px `primary` outline.
 
 ### Floating mobile navigation
 

@@ -1,10 +1,10 @@
 import { addDays, format, startOfYear, subDays, subMonths, subWeeks, subYears } from "date-fns";
 import type { PriceHistoryParams } from "@/lib/stockApi";
 
-export type AdvancedRange = "1D" | "1W" | "1M" | "3M" | "YTD" | "1Y" | "5Y" | "ALL";
+export type AdvancedRange = "1D" | "1W" | "1M" | "3M" | "6M" | "YTD" | "1Y" | "5Y" | "ALL";
 export type ChartInterval = "5m" | "15m" | "1h" | "4h" | "1d" | "1wk" | "1mo";
 
-export const advancedRanges: AdvancedRange[] = ["1D", "1W", "1M", "3M", "YTD", "1Y", "5Y", "ALL"];
+export const advancedRanges: AdvancedRange[] = ["1D", "1W", "1M", "3M", "6M", "YTD", "1Y", "5Y", "ALL"];
 
 /** Intervals that give a readable number of bars for each range, within yfinance's intraday limits. */
 export const rangeIntervals: Record<AdvancedRange, ChartInterval[]> = {
@@ -12,6 +12,7 @@ export const rangeIntervals: Record<AdvancedRange, ChartInterval[]> = {
   "1W": ["5m", "15m", "1h", "4h"],
   "1M": ["15m", "1h", "4h", "1d"],
   "3M": ["1h", "4h", "1d"],
+  "6M": ["1h", "4h", "1d", "1wk"],
   YTD: ["1h", "4h", "1d", "1wk"],
   "1Y": ["1h", "4h", "1d", "1wk"],
   "5Y": ["1d", "1wk", "1mo"],
@@ -23,6 +24,7 @@ export const defaultInterval: Record<AdvancedRange, ChartInterval> = {
   "1W": "15m",
   "1M": "1h",
   "3M": "1d",
+  "6M": "1d",
   YTD: "1d",
   "1Y": "1d",
   "5Y": "1wk",
@@ -65,6 +67,8 @@ export function rangeStart(range: AdvancedRange, lastBarTime: number): number | 
       return subMonths(last, 1).getTime();
     case "3M":
       return subMonths(last, 3).getTime();
+    case "6M":
+      return subMonths(last, 6).getTime();
     case "YTD":
       return startOfYear(last).getTime();
     case "1Y":

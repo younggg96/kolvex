@@ -89,10 +89,6 @@ export default function StockWorkspace({
             style: "currency",
             currency,
           }).format(value);
-  const changeLabel = (value: number) =>
-    benchmark
-      ? `${value >= 0 ? "+" : "−"}${indexValue(Math.abs(value))}`
-      : `${value >= 0 ? "+" : "−"}${priceLabel(Math.abs(value))}`;
   const { setContext } = useDecisionCommand();
   const quoteResource = useCachedResource(
     `/api/stocks?action=quote&symbol=${encodeURIComponent(ticker)}`,
@@ -131,7 +127,7 @@ export default function StockWorkspace({
   const searchParams = useSearchParams();
   const pathname = usePathname();
   const sections = benchmark
-    ? ["technical", "summary", "setup", "news", "creators", "research"]
+    ? ["technical", "summary", "news", "creators", "research"]
     : [
         "technical",
         "summary",
@@ -139,7 +135,6 @@ export default function StockWorkspace({
         "earnings",
         "multicharts",
         "analyst",
-        "setup",
         "news",
         "creators",
         "research",
@@ -148,7 +143,9 @@ export default function StockWorkspace({
   const requestedTab = searchParams.get("tab") || "";
   const activeTab = sections.includes(requestedTab)
     ? requestedTab
-    : (initialInsight ?? "technical");
+    : requestedTab === "setup"
+      ? "technical"
+      : (initialInsight ?? "technical");
   const [visitedTabs, setVisitedTabs] = useState(() => new Set([activeTab]));
   useEffect(() => {
     setVisitedTabs((previous) =>
@@ -260,54 +257,11 @@ export default function StockWorkspace({
   useEffect(() => {
     document.title = `${ticker} · ${locale === "zh" ? "行情" : "Markets"} — Kolvex`;
   }, [ticker, locale, activeTab]);
-  const sorted = [...opinions].sort((a, b) =>
-    b.opinion_date.localeCompare(a.opinion_date),
-  );
   const up = (quote?.changePercent ?? 0) >= 0;
-
-  const evidenceItems = [
-    {
-      loading: technicalBusy && !technical,
-      action: !technical ? "technical" : null,
-      label: c("Technical", "技术面"),
-      direction: technical?.bias,
-      detail: technical
-        ? [technical.interval, date(technical.generated_at)].join(c(", ", "，"))
-        : c("Run AI analysis on the chart", "在图表上运行 AI 分析"),
-    },
-    {
-      loading: opinionsResource.loading && !creators.count,
-      action: !creators.count ? "creators" : null,
-      label: c("Creators", "博主"),
-      direction: creators.direction,
-      detail: creators.count
-        ? c(
-            `${creators.count} creators, last 30 days`,
-            `${creators.count} 位博主，近 30 天`,
-          )
-        : c("No calls in 30 days", "近 30 天无观点"),
-    },
-    {
-      loading: researchLoading && !research?.fundamentals_report,
-      action: null,
-      label: c("Fundamental", "基本面"),
-      direction: null,
-      assessed: Boolean(research?.fundamentals_report?.trim()),
-      detail: research?.fundamentals_report
-        ? `${research.trade_date} · ${c("In the AI research tab", "见 AI 研究标签")}`
-        : c("Needs AI research", "需要 AI 研究"),
-    },
-    {
-      loading: researchLoading && !research?.news_report,
-      action: null,
-      label: c("News", "新闻"),
-      direction: null,
-      assessed: Boolean(research?.news_report?.trim()),
-      detail: research?.news_report
-        ? `${research.trade_date} · ${c("In the AI research tab", "见 AI 研究标签")}`
-        : c("Needs AI research", "需要 AI 研究"),
-    },
-  ];
+  const changeLabel = (value: number) =>
+    benchmark
+      ? `${value >= 0 ? "+" : "−"}${indexValue(Math.abs(value))}`
+      : `${value >= 0 ? "+" : "−"}${priceLabel(Math.abs(value))}`;
 
   return (
     <DashboardLayout title={c("Markets", "行情")}>
@@ -329,7 +283,7 @@ export default function StockWorkspace({
                 />
                 <Link
                   href={returnHref}
-                  className="hover:text-foreground "
+                  className="transition-colors hover:text-primary-text"
                 >
                   {returnHref.startsWith("/dashboard/watchlist")
                     ? c("Watchlist", "自选股")
@@ -462,9 +416,6 @@ export default function StockWorkspace({
                     </TabsTrigger>
                   </>
                 )}
-                <TabsTrigger value="setup">
-                  {c("Setup", "条件计划")}
-                </TabsTrigger>
                 <TabsTrigger value="news">{c("News", "新闻")}</TabsTrigger>
                 <TabsTrigger value="creators">
                   {c("Creators", "博主情报")}
@@ -479,7 +430,7 @@ export default function StockWorkspace({
                 )}
               </TabsList>
               <section
-                hidden={!["summary", "technical", "setup"].includes(activeTab)}
+                hidden={!["summary", "technical"].includes(activeTab)}
                 className="mb-6 min-w-0 rounded-3xl border border-border bg-card p-4 sm:p-5"
                 aria-label={c(
                   "Price trend",
@@ -492,7 +443,7 @@ export default function StockWorkspace({
                     symbol={ticker}
                     layout="workspace"
                     resultsContainer={technicalContainer}
-                    range="3m"
+                    range="3M"
                     from=""
                     to=""
                     opinions={[]}
@@ -595,142 +546,11 @@ export default function StockWorkspace({
                       retry={overviewResource.refresh}
                     />
                   )}
-                  <div className="rounded-3xl border border-border bg-card p-4 sm:p-6">
-                    <h2 className="mb-4 text-sm font-medium text-muted-foreground">
-                      {c("Research signals", "研究动态")}
-                    </h2>
-                    <Panel>
-                      <div className="grid gap-4 divide-y divide-border sm:grid-cols-3 sm:divide-y-0 [&>div+div]:pt-4 sm:[&>div+div]:pt-0">
-                        <div>
-                          <p className="text-xs text-muted-foreground">
-                            {c("Market today", "今日行情")}
-                          </p>
-                          <div
-                            className="figure mt-1 text-sm font-semibold"
-                            aria-busy={loading && !quote}
-                          >
-                            {loading && !quote ? (
-                              <Skeleton className="h-5 w-32" />
-                            ) : quote ? (
-                              `${changeLabel(quote.change)} (${quote.changePercent >= 0 ? "+" : ""}${quote.changePercent.toFixed(2)}%)`
-                            ) : (
-                              "—"
-                            )}
-                          </div>
-                        </div>
-                        <div>
-                          <p className="text-xs text-muted-foreground">
-                            {c("Latest creator call", "最新博主观点")}
-                          </p>
-                          <div
-                            className="mt-1 text-sm font-semibold"
-                            aria-busy={opinionsResource.loading && !sorted[0]}
-                          >
-                            {opinionsResource.loading && !sorted[0] ? (
-                              <Skeleton className="h-5 w-40" />
-                            ) : sorted[0] ? (
-                              `${sorted[0].channel_title || sorted[0].channel_id} · ${date(sorted[0].opinion_date)}`
-                            ) : (
-                              c("No coverage yet", "暂无观点")
-                            )}
-                          </div>
-                        </div>
-                        <div>
-                          <p className="text-xs text-muted-foreground">
-                            {c("Latest AI research", "最近 AI 研究")}
-                          </p>
-                          <div
-                            className="mt-1 text-sm font-semibold"
-                            aria-busy={researchLoading && !completedAt}
-                          >
-                            {researchLoading && !completedAt ? (
-                              <Skeleton className="h-5 w-28" />
-                            ) : completedAt ? (
-                              date(completedAt)
-                            ) : (
-                              c("No AI research yet", "暂无 AI 研究")
-                            )}
-                          </div>
-                          {!researchLoading && !research && (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="mt-2"
-                              disabled={personalResearch.busy}
-                              onClick={() => void personalResearch.generate()}
-                            >
-                              {personalResearch.busy
-                                ? c("Generating…", "正在生成…")
-                                : c("Generate AI research", "生成 AI 研究")}
-                            </Button>
-                          )}
-                        </div>
-                      </div>
-                      <dl className="mt-6 grid grid-cols-2 gap-x-6 gap-y-5 border-t border-border pt-5 sm:grid-cols-4">
-                        {evidenceItems.map((item) => (
-                          <div
-                            key={item.label}
-                            className="min-w-0"
-                            aria-busy={item.loading}
-                          >
-                            <dt className="text-[13px] text-muted-foreground">
-                              {item.label}
-                            </dt>
-                            <dd className="mt-1">
-                              {item.loading ? (
-                                <Skeleton className="h-5 w-16" />
-                              ) : item.assessed ? (
-                                <span className="inline-flex items-center rounded-full border border-border px-2 py-0.5 text-xs font-medium text-foreground">
-                                  {c("Assessed", "已评估")}
-                                </span>
-                              ) : (
-                                <DirectionBadge direction={item.direction} />
-                              )}
-                            </dd>
-                            <dd className="mt-1 text-xs leading-5 text-muted-foreground">
-                              {item.loading ? (
-                                <Skeleton className="h-5 w-32" />
-                              ) : (
-                                item.detail
-                              )}
-                            </dd>
-                            {item.loading ? null : item.action ===
-                              "creators" ? (
-                              <dd className="mt-2">
-                                <Button asChild size="sm" variant="outline">
-                                  <Link href="/dashboard/youtube-opinions">
-                                    {c("Browse creators", "查看博主观点")}
-                                  </Link>
-                                </Button>
-                              </dd>
-                            ) : (
-                              item.action === "technical" && (
-                                <dd className="mt-2">
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    disabled={technicalBusy}
-                                    onClick={() =>
-                                      setGenerationRequest((value) => value + 1)
-                                    }
-                                  >
-                                    {technicalBusy
-                                      ? c("Analyzing…", "正在分析…")
-                                      : c("Generate analysis", "生成分析")}
-                                  </Button>
-                                </dd>
-                              )
-                            )}
-                          </div>
-                        ))}
-                      </dl>
-                    </Panel>
-                  </div>
                 </TabsContent>
                 <TabsContent
                   value="technical"
                   forceMount
-                  className="stock-tab-panel pt-2 data-[state=inactive]:hidden"
+                  className="stock-tab-panel space-y-6 pt-2 data-[state=inactive]:hidden"
                 >
                   <Card className="min-w-0 p-4 sm:p-5">
                     <div
@@ -746,26 +566,35 @@ export default function StockWorkspace({
                       </Empty>
                     )}
                   </Card>
-                </TabsContent>
-                <TabsContent
-                  value="setup"
-                  forceMount
-                  className="stock-tab-panel pt-2 data-[state=inactive]:hidden"
-                >
                   {technicalBusy && !technical ? (
-                    <div role="status" className="space-y-4 rounded-3xl border border-border bg-card p-4 sm:p-5">
-                      <span className="sr-only">
-                        {c("Loading technical analysis…", "正在加载技术分析…")}
-                      </span>
-                      <Skeleton className="h-5 w-40" />
-                      <Skeleton className="h-24 w-full" />
-                    </div>
-                  ) : technical?.setup ? (
                     <Card className="min-w-0 p-4 sm:p-5">
+                      <div role="status" className="space-y-4">
+                        <span className="sr-only">
+                          {c(
+                            "Loading technical analysis…",
+                            "正在加载技术分析…",
+                          )}
+                        </span>
+                        <Skeleton className="h-5 w-40" />
+                        <Skeleton className="h-24 w-full" />
+                      </div>
+                    </Card>
+                  ) : technical?.setup ? (
+                    <Card
+                      className="min-w-0 p-4 sm:p-5"
+                      role="region"
+                      aria-labelledby="stock-setup-title"
+                    >
                       <div>
-                        <h3 className="font-semibold">
-                          {technical.setup.name}
+                        <h3
+                          id="stock-setup-title"
+                          className="text-xs font-medium text-muted-foreground"
+                        >
+                          {c("Setup plan", "条件计划")}
                         </h3>
+                        <p className="mt-2 font-semibold">
+                          {technical.setup.name}
+                        </p>
                         <p className="mt-1.5 text-sm leading-6 text-muted-foreground">
                           {technical.setup.reason}
                         </p>
@@ -829,24 +658,30 @@ export default function StockWorkspace({
                     </Card>
                   ) : (
                     <Card className="min-w-0 p-4 sm:p-5">
-                      <Empty>
+                      <h3 className="text-xs font-medium text-muted-foreground">
+                        {c("Setup plan", "条件计划")}
+                      </h3>
+                      <Empty
+                        action={
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={technicalBusy}
+                            onClick={() =>
+                              setGenerationRequest((value) => value + 1)
+                            }
+                          >
+                            {technicalBusy
+                              ? c("Analyzing…", "正在分析…")
+                              : c("Generate analysis", "生成分析")}
+                          </Button>
+                        }
+                      >
                         {c(
                           "Generate technical analysis to see entry conditions, invalidation and targets when a setup is available.",
                           "生成技术分析后，若有适用的条件计划，将在这里显示入场条件、失效价与目标。",
                         )}
                       </Empty>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        disabled={technicalBusy}
-                        onClick={() =>
-                          setGenerationRequest((value) => value + 1)
-                        }
-                      >
-                        {technicalBusy
-                          ? c("Analyzing…", "正在分析…")
-                          : c("Generate analysis", "生成分析")}
-                      </Button>
                     </Card>
                   )}
                 </TabsContent>

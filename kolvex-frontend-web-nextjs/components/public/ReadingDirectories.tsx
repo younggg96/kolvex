@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/list-card";
 import { creatorSharePath } from "@/lib/creatorSharing";
 import { publicStockPath } from "@/lib/publicRoutes";
+import { marketStockUrl } from "@/lib/stockLinks";
 import type { YouTubeCreatorSummary, YouTubeStockSummary } from "@/lib/youtubeOpinionsApi";
 import { cn } from "@/lib/utils";
 import { ReadingDate } from "./ReadingElements";
@@ -50,7 +51,7 @@ export function CreatorDirectory({ creators }: { creators: YouTubeCreatorSummary
                 </div>
               </div>
               <span className={trailingDateClass}>最近观点：<ReadingDate value={creator.latest_opinion_at} /></span>
-              <ChevronRight aria-hidden="true" className="h-4 w-4 shrink-0 text-muted-foreground group-hover:text-foreground" />
+              <ChevronRight aria-hidden="true" className="h-4 w-4 shrink-0 text-muted-foreground transition-colors group-hover:text-primary" />
             </Link>
           </ListRow>;
         })}
@@ -76,10 +77,21 @@ export function StockDirectory({ stocks }: { stocks: YouTubeStockSummary[] }) {
               </div>
             </div>
             <span className={trailingDateClass}>最近更新：<ReadingDate value={stock.latest_opinion_at} /></span>
-            <ChevronRight aria-hidden="true" className="h-4 w-4 shrink-0 text-muted-foreground group-hover:text-foreground" />
+            <ChevronRight aria-hidden="true" className="h-4 w-4 shrink-0 text-muted-foreground transition-colors group-hover:text-primary" />
           </Link>
         </ListRow>)}
       </ListRows>
+      {/* The stock rows above open their reading pages; this strip offers the same tickers
+          as straight quotes-page shortcuts (each links to `/dashboard/market/<TICKER>`). */}
+      <div className="flex flex-wrap items-center gap-2 border-t border-border px-2 py-3">
+        <span className="text-xs text-muted-foreground">直达行情</span>
+        {stocks.map((stock) => {
+          const quotesHref = marketStockUrl(stock.ticker);
+          return quotesHref
+            ? <Link key={stock.ticker} href={quotesHref} aria-label={`${stock.ticker} 行情`} className="inline-flex min-h-11 items-center gap-2 rounded-full border border-border px-3 text-xs font-semibold transition-colors hover:border-primary/40 hover:text-primary focus-visible:outline-none "><CompanyLogo symbol={stock.ticker} name={stock.company_name || stock.ticker} size="xs" /><span>{stock.ticker}</span></Link>
+            : <span key={stock.ticker} className="inline-flex min-h-11 items-center rounded-full border border-border px-3 text-xs text-muted-foreground">{stock.ticker}</span>;
+        })}
+      </div>
     </ListCard>
   );
 }

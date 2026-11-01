@@ -190,8 +190,8 @@ export default function AnalysisHistory<T>({ history, drawings = false, title }:
               disabled={history.busy}
               onClick={() => void history.select(item)}
               className={cn(
-                "flex min-h-11 min-w-0 flex-1 flex-wrap items-center gap-x-3 gap-y-1 rounded-2xl px-2 py-2 text-left text-sm transition-colors duration-150 focus-visible:bg-muted/70 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 motion-reduce:transition-none",
-                active ? "bg-muted/60" : "hover:bg-muted/40",
+                "flex min-h-11 min-w-0 flex-1 flex-wrap items-center gap-x-3 gap-y-1 rounded-2xl px-2 py-2 text-left text-sm transition-colors duration-150 focus-visible:bg-primary/10 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 motion-reduce:transition-none",
+                active ? "bg-primary/10 font-medium" : "hover:bg-primary/[0.07]",
               )}
             >
               <span className="figure tabular-nums">{new Date(item.created_at).toLocaleString(t("common.intlLocale"), { dateStyle: "medium", timeStyle: "medium" })}</span>

@@ -38,6 +38,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import DashboardLayout from "@/components/layout/DashboardLayout";
+import { SegmentedControl } from "@/components/ui/segmented-control";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useTranslation, SUPPORTED_LOCALES } from "@/lib/i18n";
 import type { Locale } from "@/lib/i18n";
@@ -740,8 +741,8 @@ function SettingsContent() {
                                     onDragLeave={handleDragLeave}
                                     onDrop={handleDrop}
                                     className={`flex flex-col items-center justify-center w-full h-48 sm:h-64 border-2 border-dashed rounded-3xl cursor-pointer transition-all duration-200 ${isDragging
-                                        ? "border-foreground bg-muted"
-                                        : "border-border bg-muted/60 hover:bg-muted"
+                                        ? "border-primary bg-primary/[0.08]"
+                                        : "border-border bg-muted/60 hover:border-primary/45 hover:bg-primary/[0.05]"
                                       }`}
                                   >
                                     <div className="flex flex-col items-center justify-center pt-4 pb-5 sm:pt-5 sm:pb-6 px-4">
@@ -1024,7 +1025,7 @@ function SettingsContent() {
                                           }))
                                         }
                                         aria-label={isVisible ? "Hide key" : "Show key"}
-                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-primary-text"
                                       >
                                         {isVisible ? (
                                           <EyeOff className="w-3.5 h-3.5" />
@@ -1082,48 +1083,46 @@ function SettingsContent() {
                       </FieldRow>
                       <FieldRow icon={SunMoon} label={t("settings.preferences.theme")}>
                         {mounted && (
-                          <div role="radiogroup" aria-label={t("settings.preferences.theme")} className="inline-flex flex-wrap gap-1 rounded-full bg-muted p-1">
-                            {[
+                          <SegmentedControl
+                            label={t("settings.preferences.theme")}
+                            semantics="radio"
+                            wrap
+                            value={theme}
+                            onChange={handleThemeChange}
+                            options={[
                               {
                                 value: "light",
-                                icon: Sun,
-                                label: t("settings.preferences.themeLight"),
-                                description: t("settings.preferences.themeLightDesc"),
+                                label: (
+                                  <>
+                                    <Sun className="h-4 w-4" />
+                                    {t("settings.preferences.themeLight")}
+                                  </>
+                                ),
+                                title: t("settings.preferences.themeLightDesc"),
                               },
                               {
                                 value: "dark",
-                                icon: Moon,
-                                label: t("settings.preferences.themeDark"),
-                                description: t("settings.preferences.themeDarkDesc"),
+                                label: (
+                                  <>
+                                    <Moon className="h-4 w-4" />
+                                    {t("settings.preferences.themeDark")}
+                                  </>
+                                ),
+                                title: t("settings.preferences.themeDarkDesc"),
                               },
                               {
                                 value: "system",
-                                icon: Monitor,
-                                label: t("settings.preferences.themeSystem"),
-                                description: t("settings.preferences.themeSystemDesc"),
+                                label: (
+                                  <>
+                                    <Monitor className="h-4 w-4" />
+                                    {t("settings.preferences.themeSystem")}
+                                  </>
+                                ),
+                                title: t("settings.preferences.themeSystemDesc"),
                               },
-                            ].map((mode) => {
-                              const Icon = mode.icon;
-                              const isActive = theme === mode.value;
-                              return (
-                                <button
-                                  key={mode.value}
-                                  type="button"
-                                  role="radio"
-                                  aria-checked={isActive}
-                                  title={mode.description}
-                                  onClick={() => handleThemeChange(mode.value)}
-                                  className={`inline-flex h-9 items-center gap-1.5 rounded-full px-4 text-[13px] font-semibold transition-colors duration-150 focus-visible:outline-none   ${isActive
-                                      ? "bg-background text-foreground shadow-[0_1px_2px_rgb(0_0_0/0.12)]"
-                                      : "text-muted-foreground hover:text-foreground"
-                                    }`}
-                                >
-                                  <Icon className="h-4 w-4" />
-                                  {mode.label}
-                                </button>
-                              );
-                            })}
-                          </div>
+                            ]}
+                            itemClassName="min-h-9 px-4 text-[13px]"
+                          />
                         )}
                       </FieldRow>
                     </div>

@@ -116,7 +116,7 @@ export function ChatBubble({
                 className={cn(
                   "flex items-center gap-1.5 rounded-full px-2.5 py-1",
                   "text-xs text-muted-foreground",
-                  "hover:text-foreground hover:bg-muted",
+                  "hover:bg-primary/10 hover:text-primary-text",
                   "transition-colors duration-150"
                 )}
               >

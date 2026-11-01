@@ -8,6 +8,7 @@ import { publicCopy } from "@/lib/publicCopy";
 import { notFound } from "next/navigation";
 import { getPublicResearch } from "@/lib/publicContent";
 import { publicResearchPath, publicStockPath } from "@/lib/publicRoutes";
+import { marketStockHref } from "@/lib/stockLinks";
 import { readingMetadata, breadcrumbData, plainExcerpt } from "@/lib/publicSeo";
 import { SITE_URL } from "@/lib/seo";
 import { MarkdownBody } from "@/components/trading-analysis/markdown";
@@ -56,7 +57,7 @@ export default async function ResearchDetailPage({ params }: Props) {
     }} />
     <div className="mb-6 flex items-center gap-2"><HeaderBackButton href="/research" label="返回股票研究" /><nav aria-label="面包屑" className="flex flex-wrap gap-3 text-xs text-muted-foreground"><Link href="/research" className="hover:underline">股票研究</Link><span aria-hidden="true">/</span><Link href={publicStockPath(report.ticker)} className="hover:underline">{report.ticker}</Link></nav></div>
     <div className="mb-8 border-b border-border pb-6">
-      <ReadingHeading title={title} icon={<CompanyLogo symbol={report.ticker} size="lg" />}>分析日期：<ReadingDate value={report.trade_date} />。AI 生成的已发布研究，阅读时请留意数据时点。</ReadingHeading>
+      <ReadingHeading title={title} icon={<Link href={marketStockHref(report.ticker)} aria-label={`打开 ${report.ticker} 行情页`} className="shrink-0 rounded-full transition-opacity duration-150 hover:opacity-80 focus-visible:outline-none "><CompanyLogo symbol={report.ticker} size="lg" /></Link>}>分析日期：<ReadingDate value={report.trade_date} />。AI 生成的已发布研究，阅读时请留意数据时点。</ReadingHeading>
       <div className="flex flex-wrap items-center gap-x-5 gap-y-3 text-xs text-muted-foreground"><DecisionBadge decision={report.final_decision} t={publicCopy} /><span>发布者：{author}</span>{report.published_at && <span>发布时间：<ReadingDate value={report.published_at} /></span>}</div>
     </div>
     <div className={REPORT_READER_GRID}>

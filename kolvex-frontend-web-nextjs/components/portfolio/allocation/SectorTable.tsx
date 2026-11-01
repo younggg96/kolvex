@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import Link from "next/link";
 import { TrendingUp, TrendingDown, ChevronRight } from "lucide-react";
 import CompanyLogo from "@/components/ui/company-logo";
 import { Badge } from "@/components/ui/badge";
@@ -16,6 +17,7 @@ import { SortableHeader } from "@/components/ui/sortable-header";
 import { cn } from "@/lib/utils";
 import type { SectorTableProps, SortKey } from "./types";
 import { formatCurrency } from "./utils";
+import { marketStockHref } from "@/lib/stockLinks";
 
 // ================== SECTOR TABLE COMPONENT ==================
 
@@ -175,20 +177,31 @@ export function SectorTable({
                   return (
                     <TableRow
                       key={`${sector.name}-${aggPos.displaySymbol}-${posIndex}`}
-                      className="border-b border-border/50 bg-muted/20 dark:bg-muted/10 hover:bg-muted/30"
+                      className="border-b border-border/50 bg-muted/20 transition-colors hover:bg-primary/[0.06] dark:bg-muted/10"
                     >
                       <TableCell className="py-2 px-2 pl-12">
                         <div className="flex items-center gap-2">
-                          <CompanyLogo
-                            symbol={aggPos.displaySymbol}
-                            size="sm"
-                            border="light"
-                          />
+                          <Link
+                            href={marketStockHref(aggPos.displaySymbol)}
+                            aria-label={aggPos.displaySymbol}
+                            onClick={(event) => event.stopPropagation()}
+                            className="rounded-2xl underline-offset-4 hover:opacity-90 focus-visible:outline-none "
+                          >
+                            <CompanyLogo
+                              symbol={aggPos.displaySymbol}
+                              size="sm"
+                              border="light"
+                            />
+                          </Link>
                           <div className="flex flex-col">
                             <div className="flex items-center gap-1.5">
-                              <span className="font-medium text-foreground text-sm">
+                              <Link
+                                href={marketStockHref(aggPos.displaySymbol)}
+                                onClick={(event) => event.stopPropagation()}
+                                className="rounded-sm font-medium text-foreground text-sm underline-offset-4 hover:underline focus-visible:outline-none "
+                              >
                                 {aggPos.displaySymbol}
-                              </span>
+                              </Link>
                               {aggPos.hasOptions && aggPos.hasEquity && (
                                 <Badge
                                   size="xs"

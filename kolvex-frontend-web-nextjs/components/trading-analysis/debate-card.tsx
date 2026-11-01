@@ -172,7 +172,7 @@ export function DebateCard({
                   type="button"
                   onClick={handleCopy}
                   aria-label={copied ? t("tradingAnalysis.debate.copied") : t("tradingAnalysis.debate.copyAll")}
-                  className="flex h-10 w-10 items-center justify-center rounded-full text-muted-foreground transition-colors duration-150 hover:bg-muted hover:text-foreground focus-visible:outline-none "
+                  className="flex h-10 w-10 items-center justify-center rounded-full text-muted-foreground transition-colors duration-150 hover:bg-primary/10 hover:text-primary-text focus-visible:outline-none"
                 >
                   {copied ? (
                     <Check className="w-3.5 h-3.5 text-positive" />
@@ -196,7 +196,7 @@ export function DebateCard({
                   type="button"
                   onClick={handleDownload}
                   aria-label={t("tradingAnalysis.debate.download")}
-                  className="flex h-10 w-10 items-center justify-center rounded-full text-muted-foreground transition-colors duration-150 hover:bg-muted hover:text-foreground focus-visible:outline-none "
+                  className="flex h-10 w-10 items-center justify-center rounded-full text-muted-foreground transition-colors duration-150 hover:bg-primary/10 hover:text-primary-text focus-visible:outline-none"
                 >
                   <Download className="w-3.5 h-3.5" />
                 </button>
@@ -212,7 +212,7 @@ export function DebateCard({
                   type="button"
                   onClick={handleShare}
                   aria-label={t("tradingAnalysis.debate.share")}
-                  className="flex h-10 w-10 items-center justify-center rounded-full text-muted-foreground transition-colors duration-150 hover:bg-muted hover:text-foreground focus-visible:outline-none "
+                  className="flex h-10 w-10 items-center justify-center rounded-full text-muted-foreground transition-colors duration-150 hover:bg-primary/10 hover:text-primary-text focus-visible:outline-none"
                 >
                   <Share2 className="w-3.5 h-3.5" />
                 </button>

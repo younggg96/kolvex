@@ -42,7 +42,7 @@ export default function ExpandableText({
       {needsTruncation && (
         <button
           onClick={() => setIsExpanded(!isExpanded)}
-          className="mt-2 text-sm text-foreground hover:text-foreground font-medium transition-colors inline-flex items-center gap-1"
+          className="mt-2 inline-flex items-center gap-1 text-sm font-medium text-foreground transition-colors hover:text-primary-text"
         >
           {isExpanded ? (
             <>

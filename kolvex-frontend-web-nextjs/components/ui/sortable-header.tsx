@@ -85,7 +85,7 @@ export function SortableHeader<T extends string>({
     >
       <div
         className={cn(
-          "flex items-center gap-1 group cursor-pointer hover:text-foreground transition-colors whitespace-nowrap",
+          "group flex items-center gap-1 cursor-pointer whitespace-nowrap rounded-full transition-colors hover:text-primary-text",
           align === "left" && "justify-start",
           align === "center" && "justify-center",
           align === "right" && "justify-end",
@@ -98,7 +98,7 @@ export function SortableHeader<T extends string>({
           <Button
             variant="ghost"
             size="icon"
-            className="h-6 w-6 !p-0 hover:bg-transparent"
+            className="h-6 w-6 !p-0 group-hover:bg-transparent"
           >
             {getSortIcon()}
           </Button>

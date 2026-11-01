@@ -135,6 +135,7 @@ test('PriceChart keeps text analysis and AI overlays in independent history chan
   const state=kind=>({items:[],total:0,busy:false,error:null,current:kind==='technical'?technical:drawn,selected:kind==='technical'?technical:drawn,load:async()=>calls.push(kind),select:async()=>{},activate:async()=>{}});
   const drawingModule=compile('components/youtube/aiDrawings.ts',{});
   const element=(type,props)=>({type,props});
+  const chartRange=compile('lib/chart/range.ts',{ './graph':{}, '@/lib/stockApi':{} });
   const h=compile('components/youtube/PriceChart.tsx',{
     react,'react/jsx-runtime':{jsx:element,jsxs:element,Fragment:'fragment'},'date-fns':require('date-fns'),
     '@/components/ui/dialog':{Dialog:'dialog',DialogClose:'close',DialogContent:'content',DialogDescription:'description',DialogTitle:'title'},
@@ -146,8 +147,11 @@ test('PriceChart keeps text analysis and AI overlays in independent history chan
     '@/hooks/useChartAiJobs':{useChartAiJobs:()=>({analysis:{status:'idle'},drawings:{status:'idle'},busy:false,clear:()=>{}})},
     './aiDrawings':drawingModule,'./chart/ChartView':{default:'chart'},'./chart/TechnicalFocusSelector':{default:'focus'},
     '@/lib/technicalFocus':{DEFAULT_TECHNICAL_FOCUS:{categories:['levels'],custom_scenarios:[]}},
+    // Real range mapping: PriceChart derives its yfinance params from the selected range.
+    '@/lib/chart/range':chartRange,
+    '@/components/ui/date-range-picker':{DateRangePicker:'daterange'},
   });
-  const props={symbol:'NVDA',range:'3m',from:'',to:'',opinions:[],formatDate:v=>v,t:k=>k};
+  const props={symbol:'NVDA',range:'3M',from:'',to:'',opinions:[],formatDate:v=>v,t:k=>k};
   const render=()=>{cursor=0;effects.length=0;return h.default(props)};
   const tree=render();const chart=tree.props.children.find(node=>node?.type==='chart');
   assert.equal(chart.props.savedAnalysis.summary,'text');

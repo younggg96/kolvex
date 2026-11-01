@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import HeaderBackButton from "@/components/layout/HeaderBackButton";
 import { useEffect } from "react";
 import { useCachedResource } from "@/hooks/useCachedResource";
@@ -13,6 +14,7 @@ import {
   User,
 } from "lucide-react";
 import { useTranslation } from "@/lib/i18n";
+import { marketStockHref } from "@/lib/stockLinks";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { deepResearchPagePath, parseDeepResearchPage } from "@/lib/researchRoutes";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -87,10 +89,12 @@ export default function PublishedAnalysisDetailPage() {
           <div className="border-b border-border pb-6">
             <div>
               <div className="flex flex-wrap items-center gap-3">
-                <CompanyLogo symbol={analysis.ticker} size="lg" />
-                <h1 className="text-[28px] font-bold leading-tight text-foreground md:text-[32px]">
-                  {analysis.ticker}
-                </h1>
+                <Link href={marketStockHref(analysis.ticker)} className="group flex min-h-11 min-w-11 items-center gap-3 rounded-2xl px-1 transition-colors duration-150 hover:text-foreground focus-visible:outline-none " aria-label={locale === "zh" ? `打开 ${analysis.ticker} 行情页` : `Open ${analysis.ticker} quotes`}>
+                  <CompanyLogo symbol={analysis.ticker} size="lg" />
+                  <h1 className="text-[28px] font-bold leading-tight text-foreground underline-offset-4 group-hover:underline md:text-[32px]">
+                    {analysis.ticker}
+                  </h1>
+                </Link>
                 <DecisionBadge decision={analysis.final_decision} t={t} />
                 <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-muted text-muted-foreground">
                   <Globe className="w-3 h-3" />

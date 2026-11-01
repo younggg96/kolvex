@@ -12,13 +12,13 @@ const chipButtonVariants = cva(
     variants: {
       variant: {
         default:
-          "bg-muted hover:bg-muted border border-border hover:border-primary/30 text-muted-foreground hover:text-foreground",
+          "bg-muted hover:bg-primary/10 border border-border hover:border-primary/40 text-muted-foreground hover:text-primary-text active:bg-primary/[0.16]",
         primary:
-          "bg-primary/10 hover:bg-primary/20 border border-primary/20 hover:border-primary/40 text-primary",
+          "bg-primary/10 hover:bg-primary/20 border border-primary/20 hover:border-primary/40 text-primary-text",
         outline:
-          "bg-transparent hover:bg-muted border border-border hover:border-primary/30 text-muted-foreground hover:text-foreground",
+          "bg-transparent hover:bg-primary/[0.08] border border-border hover:border-primary/40 text-muted-foreground hover:text-primary-text active:bg-primary/[0.16]",
         ghost:
-          "bg-transparent hover:bg-muted text-muted-foreground hover:text-foreground",
+          "bg-transparent hover:bg-primary/[0.09] text-muted-foreground hover:text-primary-text active:bg-primary/[0.16]",
       },
       size: {
         default: "px-3 py-1.5 text-xs",

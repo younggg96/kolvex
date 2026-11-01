@@ -311,7 +311,7 @@ export default function StockEarnings({
                   {[...rows].reverse().map((row) => (
                     <tr
                       key={row.period}
-                      className="border-t border-border hover:bg-muted"
+                      className="border-t border-border transition-colors hover:bg-primary/[0.07]"
                     >
                       <th
                         scope="row"

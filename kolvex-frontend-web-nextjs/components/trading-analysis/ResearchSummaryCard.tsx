@@ -4,6 +4,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import CompanyLogo from "@/components/ui/company-logo";
 import { DecisionBadge } from "./badges";
 import type { TradingAnalysis } from "@/lib/tradingAnalysisApi";
+import { marketStockHref } from "@/lib/stockLinks";
 
 /** One report-card presentation for the workspace and anonymous library. */
 export function ResearchSummaryCard({ analysis, href, t, headingLevel = "h3" }: {
@@ -14,16 +15,22 @@ export function ResearchSummaryCard({ analysis, href, t, headingLevel = "h3" }: 
 }) {
   const Heading = headingLevel;
   return (
-    <Link
-      href={href}
-      className="flex h-full min-w-0 flex-col gap-6 rounded-3xl border border-border bg-card p-5 transition-colors hover:border-foreground/25 hover:bg-muted/40 focus-visible:outline-none "
-    >
-      <div className="flex min-w-0 items-center gap-3">
-        <CompanyLogo symbol={analysis.ticker} size="md" />
-        <Heading className="min-w-0 flex-1 break-words text-lg font-semibold text-foreground">
-          {analysis.ticker}<span className="sr-only"> {t("tradingAnalysis.title")}</span>
-        </Heading>
-        <span className="shrink-0"><DecisionBadge decision={analysis.final_decision} t={t} /></span>
+    <div className="relative flex h-full min-w-0 flex-col gap-6 rounded-3xl border border-border bg-card p-5 transition-colors hover:border-primary/40 hover:bg-primary/[0.04]">
+      {/* Report overlay: the card body opens the report; the ticker identity is a
+          sibling link so it can reach that stock's quotes page. */}
+      <Link href={href} className="absolute inset-0 rounded-3xl focus-visible:outline-none " aria-label={analysis.ticker}><span className="sr-only">{analysis.ticker} {t("tradingAnalysis.title")}</span></Link>
+      <div className="relative flex min-w-0 items-center gap-3">
+        <Link
+          href={marketStockHref(analysis.ticker)}
+          className="relative z-10 flex min-w-0 flex-1 items-center gap-3 rounded-2xl underline-offset-4 hover:underline focus-visible:outline-none "
+          aria-label={t("redditOpinions.openStock", { ticker: analysis.ticker })}
+        >
+          <CompanyLogo symbol={analysis.ticker} size="md" />
+          <Heading className="min-w-0 break-words text-lg font-semibold text-foreground">
+            {analysis.ticker}<span className="sr-only"> {t("tradingAnalysis.title")}</span>
+          </Heading>
+        </Link>
+        <span className="relative z-10 shrink-0"><DecisionBadge decision={analysis.final_decision} t={t} /></span>
       </div>
       <div className="mt-auto space-y-3 border-t border-border pt-4 text-xs text-muted-foreground">
         {analysis.author && (
@@ -41,6 +48,6 @@ export function ResearchSummaryCard({ analysis, href, t, headingLevel = "h3" }: 
           {analysis.llm_provider && <span className="capitalize">{analysis.llm_provider}</span>}
         </div>
       </div>
-    </Link>
+    </div>
   );
 }

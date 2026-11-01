@@ -164,7 +164,7 @@ export default function StockObservationList({ range, catalogue, held, onRetry }
   return <div ref={listRef}>
     <Panel title={c("Stock watch", "股票观察")} id="market-movers" surface="card">
       <div role="group" aria-label={c("Stock list", "股票列表")} className="flex flex-wrap gap-1 pb-4">
-        {scopes.filter(scope => scope.key !== "holdings" || holdingsEnabled).map(scope => <Button key={scope.key} variant="ghost" size="sm" className={cn("min-h-11 rounded-full px-4 text-sm", state.scope === scope.key ? "bg-muted font-semibold text-foreground hover:bg-secondary" : "font-medium text-muted-foreground")} aria-pressed={state.scope === scope.key} onClick={() => changeScope(scope.key)}>{c(scope.en, scope.zh)}</Button>)}
+        {scopes.filter(scope => scope.key !== "holdings" || holdingsEnabled).map(scope => <Button key={scope.key} variant="ghost" size="sm" className={cn("min-h-11 rounded-full px-4 text-sm", state.scope === scope.key ? "bg-primary/10 font-semibold text-primary-text hover:bg-primary/[0.16]" : "font-medium text-muted-foreground hover:bg-primary/[0.08] hover:text-primary-text")} aria-pressed={state.scope === scope.key} onClick={() => changeScope(scope.key)}>{c(scope.en, scope.zh)}</Button>)}
       </div>
       <div className={cn("mb-3 grid grid-cols-2 items-end gap-3", state.scope === "core" ? "lg:grid-cols-[minmax(0,1fr)_9rem_9rem]" : "lg:grid-cols-[minmax(0,1fr)_10rem]")}>
         <div className="col-span-2 min-w-0 lg:col-span-1">

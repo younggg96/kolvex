@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { ChevronLeft, ChevronRight, PlayCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import CompanyLogo from "@/components/ui/company-logo";
@@ -16,6 +19,7 @@ import {
 import { publicCopy } from "@/lib/publicCopy";
 import { formatOpinionDate } from "@/lib/opinionDates";
 import { publicPagePath, publicResearchPath, publicStockPath } from "@/lib/publicRoutes";
+import { marketStockUrl } from "@/lib/stockLinks";
 import { creatorSharePath, sourceVideoUrl } from "@/lib/creatorSharing";
 import type { TradingAnalysis } from "@/lib/tradingAnalysisApi";
 import type { YouTubeOpinion } from "@/lib/youtubeOpinionsApi";
@@ -34,6 +38,30 @@ export function ReadingSectionHeading({ title, count, id }: { title: string; cou
 
 export function ReadingDate({ value }: { value?: string | null }) {
   return value ? <time dateTime={value} className="tabular-nums">{formatOpinionDate(value, "zh-CN")}</time> : <span>日期未提供</span>;
+}
+
+/**
+ * Quotes-page shortcut for a stock shown inside a reading list.
+ *
+ * Reading surfaces usually already have a link on the identity (the stock's
+ * reading page). A link cannot be nested inside another link, so this is a
+ * native `button` that routes to `/dashboard/market/<TICKER>` instead — it is
+ * keyboard reachable, keeps a 44px touch target and renders nothing for
+ * symbols that have no routable quotes page (e.g. indexes).
+ *
+ * It carries `role="link"` because it behaves like a link, not a toggle.
+ */
+export function StockQuotesLink({ symbol, label = "行情" }: { symbol: string; label?: string }) {
+  const router = useRouter();
+  const href = marketStockUrl(symbol);
+  if (!href) return null;
+  return <button
+    type="button"
+    role="link"
+    onClick={() => router.push(href)}
+    aria-label={`${symbol} ${label}`}
+    className="inline-flex min-h-11 shrink-0 cursor-pointer items-center rounded-sm px-1.5 text-xs font-medium text-muted-foreground transition-colors hover:text-primary focus-visible:outline-none "
+  >{label}</button>;
 }
 
 export function ReadingPagination({ page, total, size, path }: { page: number; total: number; size: number; path: string }) {
@@ -83,7 +111,10 @@ export function OpinionList({ opinions }: { opinions: YouTubeOpinion[] }) {
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
                 <Link href={creatorSharePath(opinion.channel_id)} className="rounded-sm text-sm font-semibold hover:underline focus-visible:outline-none ">{name}</Link>
-                <h3><Link href={publicStockPath(opinion.ticker)} className="inline-flex items-center gap-2 rounded-sm text-[15px] font-semibold hover:underline focus-visible:outline-none "><CompanyLogo symbol={opinion.ticker} size="sm" /><span>{opinion.ticker}</span></Link></h3>
+                <h3 className="inline-flex items-center gap-1.5">
+                  <Link href={publicStockPath(opinion.ticker)} className="inline-flex items-center gap-2 rounded-sm text-[15px] font-semibold hover:underline focus-visible:outline-none "><CompanyLogo symbol={opinion.ticker} size="sm" /><span>{opinion.ticker}</span></Link>
+                  <StockQuotesLink symbol={opinion.ticker} />
+                </h3>
                 <span className="text-xs text-muted-foreground"><ReadingDate value={opinion.opinion_date || opinion.video_published_at} />（美东日期）</span>
               </div>
               <div className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1"><StrengthIndicator value={opinion.direction_score} t={publicCopy} />{opinion.sentiment === "mixed" && <span className="text-xs font-medium text-warning">分歧</span>}</div>
@@ -92,9 +123,9 @@ export function OpinionList({ opinions }: { opinions: YouTubeOpinion[] }) {
           {opinion.company_name && <p className="mt-3 text-xs text-muted-foreground">{opinion.company_name}</p>}
           <p className="mt-4 max-w-[72ch] whitespace-pre-wrap text-[15px] leading-7 text-foreground">{opinion.summary || opinion.thesis || opinion.key_points?.join("\n") || "暂无文字摘要，请查看原视频。"}</p>
           {!!(opinion.key_points?.length || opinion.risks?.length) && <div className="mt-4 grid gap-x-8 gap-y-4 md:grid-cols-2">
-            {[{ title: "观点依据", items: opinion.key_points }, { title: "提及的风险", items: opinion.risks }].map(({ title, items }) => !!items?.length && <details key={title} className="text-sm"><summary className="cursor-pointer rounded-sm py-2 text-xs font-semibold text-muted-foreground hover:text-foreground focus-visible:outline-none ">{title}</summary><ul className="mt-2 list-disc space-y-1.5 pl-5 text-sm leading-6">{items.map((item, i) => <li key={i}>{item}</li>)}</ul></details>)}
+            {[{ title: "观点依据", items: opinion.key_points }, { title: "提及的风险", items: opinion.risks }].map(({ title, items }) => !!items?.length && <details key={title} className="text-sm"><summary className="cursor-pointer rounded-full px-1 py-2 text-xs font-semibold text-muted-foreground transition-colors hover:text-primary-text focus-visible:outline-none">{title}</summary><ul className="mt-2 list-disc space-y-1.5 pl-5 text-sm leading-6">{items.map((item, i) => <li key={i}>{item}</li>)}</ul></details>)}
           </div>}
-          {source && <a href={source} target="_blank" rel="noopener noreferrer" className="mt-4 inline-flex max-w-full items-start gap-2 rounded-sm py-1 text-sm text-muted-foreground hover:text-foreground hover:underline focus-visible:outline-none "><PlayCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" /><span className="min-w-0">{opinion.video_title || "查看原视频"}</span></a>}
+          {source && <a href={source} target="_blank" rel="noopener noreferrer" className="mt-4 inline-flex max-w-full items-start gap-2 rounded-full px-1 py-1 text-sm text-muted-foreground transition-colors hover:text-primary-text hover:underline focus-visible:outline-none"><PlayCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" /><span className="min-w-0">{opinion.video_title || "查看原视频"}</span></a>}
         </li>;
       })}
     </ListRows>

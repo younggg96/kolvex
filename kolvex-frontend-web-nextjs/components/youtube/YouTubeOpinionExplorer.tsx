@@ -41,6 +41,7 @@ import {
 } from "@/components/ui/list-card";
 import { Input } from "@/components/ui/input";
 import CompanyLogo from "@/components/ui/company-logo";
+import { marketStockHref } from "@/lib/stockLinks";
 import {
   Select,
   SelectContent,
@@ -48,6 +49,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { SegmentedControl } from "@/components/ui/segmented-control";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { useTranslation } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
@@ -63,14 +65,14 @@ import {
 } from "@/lib/youtubeOpinionsApi";
 import CreatorAvatar from "./CreatorAvatar";
 import CreatorProfileDialog from "./CreatorProfileDialog";
-import OpinionDateRangePicker from "./OpinionDateRangePicker";
 import OpinionCard from "./OpinionCard";
 import OtherCreatorOpinions from "./OtherCreatorOpinions";
 import OpinionDistribution from "./OpinionDistribution";
 import OpinionStrength from "./OpinionStrength";
 import StockDirectoryRow from "./StockDirectoryRow";
 import OpinionChange from "./OpinionChange";
-import PriceChart from "./PriceChart";
+import PriceChart, { type PriceRange } from "./PriceChart";
+import { legacyRangeToPriceRange, priceRangeToLegacyRange } from "@/lib/chart/range";
 import StrengthChart, { type StrengthPoint } from "./StrengthChart";
 import VideoOpinionCard from "./VideoOpinionCard";
 import { videoHistory } from "@/lib/youtubeVideoHistory";
@@ -87,11 +89,11 @@ type DirectorySort = "opinions" | "creators" | "latest" | "bullish" | "bearish" 
 type StockScope = "all" | "holdings";
 
 type Route = { tab: "stocks" | "creators"; ticker?: string; creator?: string };
-type Range = "1m" | "3m" | "6m" | "1y" | "all" | "custom";
+type Range = "1m" | "3m" | "6m" | "1y" | "all";
 type Filters = { sentiment: string; from: string; to: string; range: Range };
 const emptyFilters: Filters = { sentiment: "all", from: "", to: "", range: "all" };
 const pageSize = 40;
-const rangeMonths: Record<Exclude<Range, "all" | "custom">, number> = {
+const rangeMonths: Record<Exclude<Range, "all">, number> = {
   "1m": 1,
   "3m": 3,
   "6m": 6,
@@ -99,7 +101,7 @@ const rangeMonths: Record<Exclude<Range, "all" | "custom">, number> = {
 };
 
 function rangeStart(range: Range) {
-  if (range === "all" || range === "custom") return "";
+  if (range === "all") return "";
   const date = new Date();
   date.setMonth(date.getMonth() - rangeMonths[range]);
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
@@ -195,6 +197,12 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
   const [historyView, setHistoryView] = useState<HistoryView>("videos");
   const [showUntrackedVideos, setShowUntrackedVideos] = useState(false);
   const [chartView, setChartView] = useState<ChartView>("price");
+  /**
+   * The price graph owns its range bar, so this is the single range shared by both chart
+   * views: it drives the price graph's window and, when it maps to one of the opinion
+   * filter windows, the strength chart / opinion history too (see `syncChartRange`).
+   */
+  const [chartRange, setChartRange] = useState<PriceRange>(() => legacyRangeToPriceRange(emptyFilters.range));
   // AI drawing results render in their own card below the price chart, matching
   // the Market stock page's chart/results split.
   const [chartResults, setChartResults] = useState<HTMLDivElement | null>(null);
@@ -221,6 +229,7 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
       setNavigating(false);
       setRoute(allStocks ? { tab: "stocks" } : readRoute());
       setFilters(emptyFilters);
+      setChartRange(legacyRangeToPriceRange(emptyFilters.range));
       const params = new URLSearchParams(window.location.search);
       setSearch(params.get("q") || "");
       const scope = params.get("scope");
@@ -389,6 +398,7 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
     setToneFilter("all");
     if (next.tab === "creators" && sortBy === "creators") setSortBy("opinions");
     setFilters(emptyFilters);
+    setChartRange(legacyRangeToPriceRange(emptyFilters.range));
     setScrub(null);
     setChartView("price");
     scrollContainer.current?.scrollTo({ top: 0 });
@@ -534,7 +544,7 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
       ? { tab: "creators" as const, creator: route.creator }
       : root;
   const rowClass =
-    "group grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-2 border-b border-border py-3.5 transition-colors duration-150 hover:bg-muted/60 focus-visible:outline-none sm:-mx-3 sm:rounded-3xl sm:border-transparent sm:px-3";
+    "group grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-2 border-b border-border py-3.5 transition-colors duration-150 hover:border-primary/30 hover:bg-primary/[0.07] focus-visible:bg-primary/10 focus-visible:outline-none sm:-mx-3 sm:rounded-3xl sm:border-transparent sm:px-3 sm:hover:border-transparent";
   const stockRowClass = cn(rowClass, "grid-cols-[minmax(0,1fr)_auto] gap-x-3 sm:grid-cols-[minmax(0,1fr)_110px_160px] sm:gap-x-4");
   // Rows inside one card body reuse the shared row target metrics (rounded-2xl,
   // min-h-20, no ring) while the ListRow supplies the hover/focus-within surface.
@@ -628,29 +638,10 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
     return stock ? [stock] : [];
   });
 
-  const pill = (active: boolean) =>
-    cn(
-      "inline-flex h-8 shrink-0 items-center rounded-full px-3.5 text-[13px] font-semibold transition-colors duration-150 focus-visible:outline-none ",
-      active
-        ? "bg-foreground text-background"
-        : "text-foreground/80 hover:bg-muted hover:text-foreground",
-    );
-  // Inside the directory card, controls match the Markets card toolbar:
-  // muted selected pill, 40px minimum height.
-  const directoryPill = (active: boolean) =>
-    cn(
-      "inline-flex min-h-10 shrink-0 items-center rounded-full px-4 text-sm font-medium transition-colors duration-150 focus-visible:outline-none",
-      active
-        ? "bg-muted font-semibold text-foreground hover:bg-secondary"
-        : "text-muted-foreground hover:bg-muted hover:text-foreground",
-    );
-  const segment = (active: boolean) =>
-    cn(
-      "inline-flex min-h-10 shrink-0 items-center whitespace-nowrap rounded-full px-4 text-sm font-semibold transition-colors duration-150 focus-visible:outline-none",
-      active
-        ? "bg-foreground text-background"
-        : "text-muted-foreground hover:bg-secondary hover:text-foreground",
-    );
+  // Directory controls stay on one row at every width: on mobile the search
+  // collapses to an icon that expands the field in place when tapped.
+  const [searchOpen, setSearchOpen] = useState(false);
+  const searchCollapsed = Boolean(search) || searchOpen;
 
   const shownStocks = creatorOverview && !showAllCreatorStocks
     ? visibleStocks.slice(0, 5)
@@ -933,30 +924,21 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
   );
 
   const tabSwitcher = (
-    <nav
-      aria-label={t("youtubeOpinions.browseBy")}
-      className="inline-flex w-fit max-w-full items-center gap-1 rounded-full bg-muted/50 p-1 align-middle"
-    >
-      {([
-        { tab: "stocks", label: t("youtubeOpinions.byStock") },
-        { tab: "creators", label: t("youtubeOpinions.byCreator") },
-      ] as const).map((item) => {
-        const active = route.tab === item.tab;
-        return (
-          <button
-            key={item.tab}
-            type="button"
-            aria-current={active ? "page" : undefined}
-            onClick={() => {
-              if (!active || inDetail) navigate({ tab: item.tab });
-            }}
-            className={segment(active)}
-          >
-            {item.label}
-          </button>
-        );
-      })}
-    </nav>
+    <SegmentedControl
+      label={t("youtubeOpinions.browseBy")}
+      semantics="nav"
+      className="align-middle"
+      itemClassName="min-h-9"
+      value={route.tab}
+      onChange={(tab) => {
+        // Re-picking the current tab returns from a detail view to the list.
+        if (tab !== route.tab || inDetail) navigate({ tab });
+      }}
+      options={[
+        { value: "stocks", label: t("youtubeOpinions.byStock") },
+        { value: "creators", label: t("youtubeOpinions.byCreator") },
+      ]}
+    />
   );
 
   const groupByVideo = Boolean(route.creator && !route.ticker);
@@ -979,80 +961,58 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
   // for a confirmed empty archive or an initial loading/error state.
   const showHistoryControls = hasHistory || historyFiltered;
   const historySwitcher = groupByVideo && showHistoryControls && (
-    <div
-      role="radiogroup"
-      aria-label={t("youtubeOpinions.historyView")}
-      className="inline-flex w-fit max-w-full items-center gap-1 rounded-full bg-muted/50 p-1 align-middle"
-    >
-      {([
+    <SegmentedControl
+      label={t("youtubeOpinions.historyView")}
+      semantics="radio"
+      className="align-middle"
+      itemClassName="min-h-9"
+      value={historyView}
+      onChange={setHistoryView}
+      options={[
         { value: "videos", label: t("youtubeOpinions.byVideo") },
         { value: "opinions", label: t("youtubeOpinions.byOpinion") },
-      ] as const).map((item) => (
-        <button
-          key={item.value}
-          type="button"
-          role="radio"
-          aria-checked={historyView === item.value}
-          onClick={() => setHistoryView(item.value)}
-          className={segment(historyView === item.value)}
-        >
-          {item.label}
-        </button>
-      ))}
-    </div>
+      ]}
+    />
   );
   const focused = Boolean(route.creator && route.ticker);
-  const rangeControls = (compact: boolean, inline = false) => {
-    const rangePill = (active: boolean) =>
-      compact ? cn(pill(active), "h-7 px-2.5 text-xs") : pill(active);
-    return (
-      <div
-        role="radiogroup"
-        aria-label={t("common.timeRange")}
-        className={cn(
-          "flex items-center gap-1",
-          compact
-            ? "flex-wrap"
-            : inline
-              ? "min-w-0 max-w-full overflow-x-auto rounded-full bg-muted/50 p-1 scrollbar-hide"
-              : "mt-3 overflow-x-auto border-b border-border pb-4 scrollbar-hide",
-        )}
-      >
-        {rangeOptions.map((option) => (
-          <button
-            key={option.value}
-            type="button"
-            role="radio"
-            aria-checked={filters.range === option.value}
-            className={rangePill(filters.range === option.value)}
-            onClick={() =>
-              setFilters((previous) => ({
-                ...previous,
-                range: option.value,
-                from: rangeStart(option.value),
-                to: "",
-              }))
-            }
-          >
-            {option.label}
-          </button>
-        ))}
-        <OpinionDateRangePicker
-          from={filters.from}
-          to={filters.to}
-          active={filters.range === "custom"}
-          compact={compact}
-          triggerClassName={rangePill(filters.range === "custom")}
-          onApply={({ from, to }) =>
-            setFilters((previous) => ({ ...previous, range: "custom", from, to }))
-          }
-          onReset={() =>
-            setFilters((previous) => ({ ...previous, range: "all", from: "", to: "" }))
-          }
-        />
-      </div>
-    );
+  /**
+   * The price graph's range is the single time-range control on this card. Mirror it onto the
+   * opinion filters when it names one of their windows, so switching to 观点走势 keeps the
+   * range the user just picked instead of jumping back to the previous filter. Windows the
+   * filters do not offer (1D/1W/YTD/5Y/CUSTOM) leave the opinion history alone.
+   */
+  const syncChartRange = (range: PriceRange) => {
+    setChartRange(range);
+    const filterRange = priceRangeToLegacyRange(range);
+    if (!filterRange) return;
+    setFilters((previous) => ({
+      ...previous,
+      range: filterRange,
+      from: rangeStart(filterRange),
+      to: "",
+    }));
   };
+  const rangeControls = (compact: boolean, inline = false) => (
+    <SegmentedControl
+      label={t("common.timeRange")}
+      semantics="radio"
+      size={compact ? "sm" : "md"}
+      wrap={compact}
+      bare={!compact && !inline}
+      value={filters.range}
+      className={!compact && !inline ? "mt-3 flex-wrap" : "min-w-0"}
+      itemClassName={compact ? undefined : "min-h-8 px-3.5 text-[13px]"}
+      options={rangeOptions}
+      onChange={(range) =>
+        setFilters((previous) => ({
+          ...previous,
+          range,
+          from: rangeStart(range),
+          to: "",
+        }))
+      }
+    />
+  );
   const onStock = (ticker: string) =>
     navigate({
       tab: route.creator ? "creators" : "stocks",
@@ -1116,60 +1076,88 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
                     <section aria-labelledby="creator-directory-heading" className="min-w-0">
                       <ListCard>
                         <ListToolbar>
-                          <div
-                            role="radiogroup"
-                            aria-label={t("youtubeOpinions.filterBySentiment")}
-                            className="flex flex-wrap items-center gap-1"
-                          >
-                            {toneOptions.map((option) => (
-                              <button
-                                key={option.value}
-                                type="button"
-                                role="radio"
-                                aria-checked={toneFilter === option.value}
-                                onClick={() => setToneFilter(option.value)}
-                                className={directoryPill(toneFilter === option.value)}
-                              >
-                                {option.label}
-                              </button>
-                            ))}
-                          </div>
+                          <SegmentedControl
+                            label={t("youtubeOpinions.filterBySentiment")}
+                            semantics="radio"
+                            wrap
+                            bare
+                            value={toneFilter}
+                            onChange={setToneFilter}
+                            options={toneOptions}
+                            itemClassName="min-h-10 px-4 text-sm font-medium"
+                          />
                         </ListToolbar>
-                        <div className="mt-3 flex flex-wrap items-center gap-2">
-                          <div className="relative min-w-0 flex-1">
-                            <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                            <Input
-                              ref={searchInput}
-                              aria-label={t("common.search")}
-                              placeholder={
-                                route.tab === "stocks"
-                                  ? t("youtubeOpinions.searchTicker")
-                                  : t("youtubeOpinions.searchCreator")
-                              }
-                              value={search}
-                              onChange={(event) => setSearch(event.target.value)}
-                              className="h-11 rounded-full pl-10 pr-10 text-base sm:text-sm"
-                            />
-                            {search && <button type="button" aria-label={t("common.clearFilters")} className="absolute right-1 top-1.5 flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground hover:bg-muted focus-visible:outline-none" onClick={() => { setSearch(""); searchInput.current?.focus(); }}><X className="h-4 w-4" aria-hidden="true" /></button>}
+                        <div className="mt-3 flex min-w-0 flex-nowrap items-center gap-2">
+                          <div
+                            className={cn(
+                              "relative min-w-0 transition-[flex-grow] duration-150 motion-reduce:transition-none",
+                              searchCollapsed ? "min-w-[3rem] flex-1" : "shrink-0",
+                            )}
+                          >
+                            <button
+                              type="button"
+                              aria-label={t("youtubeOpinions.searchList")}
+                              aria-expanded={searchCollapsed}
+                              onClick={() => {
+                                setSearchOpen(true);
+                                searchInput.current?.focus();
+                              }}
+                              className={cn(
+                                "flex h-11 w-11 items-center justify-center rounded-full bg-muted text-muted-foreground transition-colors duration-150 hover:bg-secondary hover:text-foreground focus-visible:outline-none",
+                                searchCollapsed ? "pointer-events-none opacity-0" : "sm:hidden",
+                              )}
+                              tabIndex={searchCollapsed ? -1 : 0}
+                            >
+                              <Search className="h-4 w-4" aria-hidden="true" />
+                            </button>
+                            <div className={cn(!searchCollapsed && "hidden sm:block")}>
+                              <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                              <Input
+                                ref={searchInput}
+                                aria-label={t("common.search")}
+                                placeholder={
+                                  route.tab === "stocks"
+                                    ? t("youtubeOpinions.searchTicker")
+                                    : t("youtubeOpinions.searchCreator")
+                                }
+                                value={search}
+                                onChange={(event) => setSearch(event.target.value)}
+                                onBlur={() => {
+                                  if (!search) setSearchOpen(false);
+                                }}
+                                onKeyDown={(event) => {
+                                  if (event.key === "Escape") {
+                                    setSearch("");
+                                    setSearchOpen(false);
+                                  }
+                                }}
+                                className="h-11 rounded-full pl-10 pr-10 text-base sm:text-sm"
+                              />
+                              {search && <button type="button" aria-label={t("common.clearFilters")} className="absolute right-1 top-1.5 flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-primary/10 hover:text-primary-text focus-visible:outline-none" onClick={() => { setSearch(""); searchInput.current?.focus(); }}><X className="h-4 w-4" aria-hidden="true" /></button>}
+                            </div>
                           </div>
                           {route.tab === "stocks" && isProductFeatureEnabled("portfolio") && (
-                            <div className="flex flex-wrap items-center gap-1">
-                              <div className="flex flex-wrap gap-1" role="group" aria-label={t("youtubeOpinions.directory.allStocks")}>
-                                {([["all", "allStocks"], ["holdings", "holdingsOnly"]] as const).map(([value, label]) => (
-                                  <button key={value} type="button" aria-pressed={stockScope === value} className={directoryPill(stockScope === value)} onClick={() => setStockScope(value)}>
-                                    {t(`youtubeOpinions.directory.${label}`)}
-                                  </button>
-                                ))}
-                              </div>
+                            <div className="flex shrink-0 items-center gap-1">
+                              <SegmentedControl
+                                label={t("youtubeOpinions.directory.allStocks")}
+                                bare
+                                value={stockScope}
+                                onChange={setStockScope}
+                                itemClassName="min-h-10 px-4 text-sm font-medium"
+                                options={[
+                                  { value: "all", label: t("youtubeOpinions.directory.allStocks") },
+                                  { value: "holdings", label: t("youtubeOpinions.directory.holdingsOnly") },
+                                ]}
+                              />
                               {stockScope === "holdings" && held.loading && <ContentSkeleton label={t("common.loadingStatus")} rows={2} />}
                               {stockScope === "holdings" && held.error && <div role="alert" className="flex items-center gap-2 text-xs text-negative">{c("Holdings could not be loaded.", "暂时无法加载持仓。")}<Button size="xs" variant="outline" onClick={refresh}>{t("common.retry")}</Button></div>}
                             </div>
                           )}
-                          <div className="ml-auto flex shrink-0 justify-end">
+                          <div className="ml-auto flex shrink-0 items-center justify-end">
                             <Select value={sortBy} onValueChange={(value) => setSortBy(value as DirectorySort)}>
                               <SelectTrigger
                                 aria-label={t("common.sort")}
-                                className="h-11 w-auto gap-1.5 rounded-full border-border bg-transparent px-3 text-[13px] font-semibold hover:bg-muted"
+                                className="h-11 w-auto gap-1.5 rounded-full border-border bg-transparent px-3 text-[13px] font-semibold hover:border-primary/40 hover:bg-primary/[0.08]"
                               >
                                 <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground" />
                                 <SelectValue />
@@ -1339,22 +1327,33 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
                     <div className="flex min-w-0 flex-wrap items-center gap-4">
                       {route.creator && !route.ticker && creator && <Avatar creator={creator} size="lg" />}
                       {route.ticker && (
-                        <span className="relative shrink-0">
+                        <Link
+                          href={marketStockHref(route.ticker)}
+                          aria-label={t("redditOpinions.openStock", { ticker: route.ticker })}
+                          className="relative shrink-0 rounded-full underline-offset-4 hover:underline focus-visible:outline-none "
+                        >
                           <CompanyLogo
                             symbol={route.ticker}
                             name={stock?.company_name || context?.stocks[0]?.company_name || route.ticker}
                             size="lg"
                           />
-                          {route.creator && creator && (
-                            <span className="absolute -bottom-1.5 -right-1.5 rounded-full ">
-                              <Avatar creator={creator} size="sm" />
-                            </span>
-                          )}
+                        </Link>
+                      )}
+                      {route.ticker && route.creator && creator && (
+                        <span className="relative shrink-0">
+                          <Avatar creator={creator} size="sm" />
                         </span>
                       )}
                       <div className="min-w-0 flex-1">
                         <h2 className="break-words text-[32px] font-semibold leading-tight tracking-[-0.025em]">
-                          {route.ticker || title}
+                          {route.ticker ? (
+                            <Link
+                              href={marketStockHref(route.ticker)}
+                              className="rounded-sm underline-offset-4 hover:underline focus-visible:outline-none "
+                            >
+                              {route.ticker}
+                            </Link>
+                          ) : title}
                         </h2>
                         <p className="mt-0.5 break-words text-sm text-foreground/80">
                           {route.creator
@@ -1369,7 +1368,7 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
                         <div className="flex w-full shrink-0 flex-wrap items-center gap-2 sm:w-auto">
                           {route.ticker && (
                             <Button variant="outline" size="sm" asChild>
-                              <Link href={`/dashboard/market/${encodeURIComponent(route.ticker)}`}>
+                              <Link href={marketStockHref(route.ticker)}>
                                 <LineChart className="h-4 w-4" aria-hidden="true" />
                                 {c("View market data", "查看行情")}
                               </Link>
@@ -1442,32 +1441,24 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
                         <section aria-label={t("youtubeOpinions.chartView")} className="min-w-0">
                           <div className="mt-6 flex min-w-0 flex-wrap items-center justify-between gap-x-4 gap-y-3">
                             {route.ticker && (
-                              <div
-                                role="tablist"
-                                aria-label={t("youtubeOpinions.chartView")}
-                                className="inline-flex w-fit max-w-full items-center gap-1 rounded-full bg-muted/50 p-1"
-                              >
-                                {([
+                              <SegmentedControl
+                                label={t("youtubeOpinions.chartView")}
+                                semantics="tabs"
+                                itemClassName="min-h-9"
+                                value={chartView}
+                                onChange={(value) => {
+                                  setChartView(value);
+                                  setScrub(null);
+                                }}
+                                options={[
                                   { value: "price", label: t("youtubeOpinions.priceTrend") },
                                   { value: "opinions", label: t("youtubeOpinions.strengthTrend") },
-                                ] as const).map((item) => (
-                                  <button
-                                    key={item.value}
-                                    type="button"
-                                    role="tab"
-                                    aria-selected={chartView === item.value}
-                                    onClick={() => {
-                                      setChartView(item.value);
-                                      setScrub(null);
-                                    }}
-                                    className={segment(chartView === item.value)}
-                                  >
-                                    {item.label}
-                                  </button>
-                                ))}
-                              </div>
+                                ]}
+                              />
                             )}
-                            {rangeControls(false, true)}
+                            {/* The price graph owns its own range bar; the strength chart has none,
+                                so the control is only rendered for 观点走势. */}
+                            {chartView !== "price" && rangeControls(false, true)}
                           </div>
 
                           <div className="mt-3 space-y-6">
@@ -1475,7 +1466,8 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
                               <Card className="min-w-0 p-3 sm:p-4">
                                 <PriceChart
                                   symbol={route.ticker}
-                                  range={filters.range}
+                                  range={chartRange}
+                                  onRangeChange={syncChartRange}
                                   from={filters.from}
                                   to={filters.to}
                                   opinions={chartPoints}
@@ -1573,10 +1565,8 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
                             type="button"
                             role="radio"
                             aria-checked={filters.sentiment === option.value}
-                            className={pill(filters.sentiment === option.value)}
-                            onClick={() =>
-                              setFilters((previous) => ({ ...previous, sentiment: option.value }))
-                            }
+                            className={cn("inline-flex h-8 shrink-0 items-center rounded-full px-3.5 text-[13px] font-semibold transition-colors duration-150 focus-visible:outline-none", filters.sentiment === option.value ? "bg-foreground text-primary" : "text-foreground/80 hover:bg-primary/10 hover:text-primary-text active:bg-primary/[0.16]")}
+                            onClick={() => setFilters((previous) => ({ ...previous, sentiment: option.value }))}
                           >
                             {option.label}
                           </button>
@@ -1598,7 +1588,7 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
                               type="button"
                               aria-pressed={showUntrackedVideos}
                               onClick={() => setShowUntrackedVideos((value) => !value)}
-                              className="mt-2 inline-flex min-h-10 items-center rounded-full px-3 text-[13px] font-semibold text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none"
+                              className="mt-2 inline-flex min-h-10 items-center rounded-full px-3 text-[13px] font-semibold text-muted-foreground transition-colors hover:bg-primary/10 hover:text-primary-text focus-visible:outline-none"
                             >
                               {t(showUntrackedVideos ? "youtubeOpinions.hideUntrackedVideos" : "youtubeOpinions.showUntrackedVideos", { count: String(untrackedVideoCount) })}
                             </button>

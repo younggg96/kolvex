@@ -76,7 +76,7 @@ const TriggerButton = React.forwardRef<HTMLButtonElement, TriggerButtonProps>(
           !selected && [
             // Light mode - default
             "border border-border bg-background text-foreground",
-            "hover:bg-muted hover:border-border",
+            "hover:border-primary/45 hover:bg-primary/[0.08] hover:text-primary-text active:bg-primary/[0.16]",
             
             // Dark mode - default
           ],

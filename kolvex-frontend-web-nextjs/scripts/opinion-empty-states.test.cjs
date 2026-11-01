@@ -40,6 +40,10 @@ function renderExplorer(overrides = {}, locale = 'zh') {
     '@/lib/productFeatures': { isProductFeatureEnabled: () => false },
     '@/lib/opinionDates': { formatOpinionDate: () => '' },
     '@/lib/stockApi': { formatPrice: () => '' },
+    '@/lib/stockLinks': {
+      marketStockUrl: (symbol) => `/dashboard/market/${encodeURIComponent(String(symbol).trim().toUpperCase())}`,
+      marketStockHref: (symbol, from) => `/dashboard/market/${encodeURIComponent(String(symbol).trim().toUpperCase())}${from ? `?from=${encodeURIComponent(from)}` : ''}`,
+    },
     '@/lib/youtubeVideoHistory': { videoHistory: () => [] },
     '@/hooks/useStockPerformance': { useStockPerformance: () => ({ performance: {}, loading: false }) },
     '@/components/decision/shared': {

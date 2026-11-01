@@ -39,7 +39,7 @@ const PasswordInput = React.forwardRef<HTMLInputElement, PasswordInputProps>(
           aria-controls={inputId}
           disabled={disabled}
           className={cn(
-            "absolute right-1 top-1/2 flex -translate-y-1/2 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 motion-reduce:transition-none",
+            "absolute right-1 top-1/2 flex -translate-y-1/2 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-primary/10 hover:text-primary-text focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 motion-reduce:transition-none",
             variant === "auth" ? "h-10 w-10" : "h-8 w-8",
           )}
         >

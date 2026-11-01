@@ -7,11 +7,20 @@ const ts = require('typescript');
 const React = require('react');
 const { renderToStaticMarkup } = require('react-dom/server');
 
+/** Build a `./x` module from a node require (date-fns and friends stay real). */
+const nodeRequire = require;
+
 function compile(file, mocks = {}) {
   const module = { exports: {} };
-  const source = fs.readFileSync(path.join(__dirname, '..', file), 'utf8');
+  // Resolve the app's `@/*` alias to the TS source it points at, and let callers stub anything.
+  const load = key => {
+    if (key in mocks) return mocks[key];
+    if (key.startsWith("@/")) return compile(`${key.slice(2)}.ts`);
+    return nodeRequire(key);
+  };
+  const source = fs.readFileSync(path.join(__dirname, "..", file), "utf8");
   const output = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX, target: ts.ScriptTarget.ES2020 } }).outputText;
-  vm.runInNewContext(output, { module, exports: module.exports, require: key => mocks[key] ?? require(key), console });
+  vm.runInNewContext(output, { module, exports: module.exports, require: load, console });
   return module.exports;
 }
 const indicators = compile('components/youtube/chart/indicators.ts');

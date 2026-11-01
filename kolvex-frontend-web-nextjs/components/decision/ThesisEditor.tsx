@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useRef, useState } from "react";
+import Link from "next/link";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,6 +20,7 @@ import {
   type ThesisDraft,
 } from "@/lib/decision";
 import { useCopy } from "./shared";
+import { marketStockHref } from "@/lib/stockLinks";
 import type { AiTechnicalAnalysis } from "@/lib/stockApi";
 
 export default function ThesisEditor({
@@ -97,9 +99,16 @@ export default function ThesisEditor({
     >
       <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-xl">
         <DialogTitle className="flex items-center gap-2 pr-6">
-          <span aria-hidden="true"><CompanyLogo symbol={ticker} size="sm" /></span>
-          <span>{ticker} ·{" "}
-          {existing
+          <Link
+            href={marketStockHref(ticker)}
+            className="inline-flex items-center gap-2 rounded-sm underline-offset-4 hover:underline focus-visible:outline-none "
+            aria-label={c(`Open ${ticker} quotes`, `查看 ${ticker} 行情`)}
+          >
+            <span aria-hidden="true"><CompanyLogo symbol={ticker} size="sm" /></span>
+            <span>{ticker}</span>
+          </Link>
+          <span aria-hidden="true">·</span>
+          <span>{existing
             ? c("Review your thesis", "复盘你的判断")
             : c("Create thesis", "创建投资判断")}</span>
         </DialogTitle>

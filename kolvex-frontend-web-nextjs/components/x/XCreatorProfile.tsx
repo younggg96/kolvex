@@ -23,13 +23,13 @@ export default function XCreatorProfile({ creator }: { creator: XCreator }) {
       <CreatorAvatar creator={creator} username={creator.username} large />
       <div className="min-w-0 flex-1">
         <h2 className="break-words text-xl font-semibold">{creator.display_name}</h2>
-        <a href={`https://x.com/${creator.username}`} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-10 items-center gap-1.5 rounded-sm text-sm text-muted-foreground hover:text-foreground focus-visible:outline-none ">@{creator.username}<ExternalLink className="h-3.5 w-3.5" aria-hidden="true" /></a>
+        <a href={`https://x.com/${creator.username}`} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-10 items-center gap-1.5 rounded-full px-2 text-sm text-muted-foreground transition-colors hover:bg-primary/[0.08] hover:text-primary-text focus-visible:outline-none">@{creator.username}<ExternalLink className="h-3.5 w-3.5" aria-hidden="true" /></a>
       </div>
     </div>
     {creator.bio && <XTranslatedText text={creator.bio} compact />}
     <div className="flex flex-wrap gap-x-5 gap-y-2 text-sm text-muted-foreground">
       {creator.location && <span className="inline-flex items-center gap-1.5"><MapPin className="h-4 w-4" aria-hidden="true" />{creator.location}</span>}
-      {website && <a href={website} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-10 items-center gap-1.5 break-all rounded-sm hover:text-foreground hover:underline focus-visible:outline-none "><Link2 className="h-4 w-4 shrink-0" aria-hidden="true" />{website.replace(/^https:\/\//, "").replace(/\/$/, "")}</a>}
+      {website && <a href={website} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-10 items-center gap-1.5 break-all rounded-full px-2 text-muted-foreground transition-colors hover:bg-primary/[0.08] hover:text-primary-text hover:underline focus-visible:outline-none"><Link2 className="h-4 w-4 shrink-0" aria-hidden="true" />{website.replace(/^https:\/\//, "").replace(/\/$/, "")}</a>}
     </div>
     {(creator.followers_count != null || creator.following_count != null) && <dl className="flex flex-wrap gap-5 text-sm">
       {creator.followers_count != null && <div className="flex gap-1.5"><dd className="font-semibold tabular-nums">{number.format(creator.followers_count)}</dd><dt className="text-muted-foreground">{c("followers", "关注者")}</dt></div>}

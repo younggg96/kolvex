@@ -12,6 +12,7 @@ import { Card } from "@/components/ui/card";
 import { useTranslation } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import { getMyHoldings } from "@/lib/portfolioApi";
+import { marketStockHref } from "@/lib/stockLinks";
 import {
   getYouTubeOpinionDashboard,
   clearYouTubeDashboardCache,
@@ -86,7 +87,7 @@ export function TickerSearch({
       setError(true);
       return;
     }
-    router.push(`/dashboard/market/${symbol}`);
+    router.push(marketStockHref(symbol));
   }
   return (
     <form onSubmit={submit} className={cn("w-full max-w-md", className)}>
@@ -210,7 +211,7 @@ export function WorkspaceLink({
 }) {
   return (
     <Link
-      href={`/dashboard/market/${encodeURIComponent(ticker)}`}
+      href={marketStockHref(ticker)}
       className={`${showLogo ? "inline-flex items-center gap-2 " : ""}rounded-sm font-semibold underline-offset-4 hover:underline focus-visible:outline-none  `}
     >
       {showLogo && (

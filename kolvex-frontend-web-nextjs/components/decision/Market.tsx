@@ -11,6 +11,7 @@ import CompanyLogo from "@/components/ui/company-logo";
 import { ListFooterLink, ListRow, ListRows } from "@/components/ui/list-card";
 import OpinionStrength from "@/components/youtube/OpinionStrength";
 import { Button } from "@/components/ui/button";
+import { SegmentedControl } from "@/components/ui/segmented-control";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { type StockQuote } from "@/lib/stockApi";
@@ -19,6 +20,7 @@ import { loadStockTrend } from "@/lib/stockTrends";
 import { MARKET_RANGES, marketRangeBaseline, observationRange, type MarketObservation } from "@/lib/marketObservations";
 import { loadMarketQuotes, getCachedMarketQuotes } from "@/lib/marketQuotes";
 import { BENCHMARKS, MARKET_GROUPS, isMarketIndex, indexValue, type MarketInstrument } from "@/lib/marketBenchmarks";
+import { marketStockHref } from "@/lib/stockLinks";
 import {
   Empty,
   HeldMark,
@@ -48,12 +50,6 @@ type MarketView = "card" | "list";
 const MARKET_VIEW_KEY = "kolvex:market-view";
 
 type RangeKey = (typeof RANGES)[number]["key"];
-
-const pill = (active: boolean) =>
-  cn(
-    "inline-flex min-h-10 shrink-0 items-center gap-2 rounded-full px-3 text-sm font-medium sm:px-4 transition-colors duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] focus-visible:outline-none disabled:opacity-50",
-    active ? "bg-foreground text-background" : "text-muted-foreground hover:bg-muted hover:text-foreground",
-  );
 
 function MarketInstrumentCard({ benchmark, quote, quoteLoading, range, attempt, onRetry }: {
   benchmark: MarketInstrument;
@@ -154,9 +150,9 @@ function MarketInstrumentCard({ benchmark, quote, quoteLoading, range, attempt, 
 
 
   return (
-    <article ref={host} className="relative h-60 w-60 shrink-0 snap-start overflow-hidden rounded-3xl border border-border bg-card transition-colors duration-200 hover:border-foreground/30 xl:w-auto xl:min-w-0">
+    <article ref={host} className="relative h-60 w-60 shrink-0 snap-start overflow-hidden rounded-3xl border border-border bg-card transition-colors duration-200 hover:border-primary/40 hover:bg-primary/[0.04] xl:w-auto xl:min-w-0">
       <Link
-        href={benchmark.sourceUrl ?? `/dashboard/market/${encodeURIComponent(benchmark.symbol)}`}
+        href={benchmark.sourceUrl ?? marketStockHref(benchmark.symbol)}
         target={benchmark.sourceUrl ? "_blank" : undefined}
         rel={benchmark.sourceUrl ? "noopener noreferrer" : undefined}
         aria-label={c(`Open ${benchmark.en} market details`, `查看${benchmark.zh}行情详情`)}
@@ -199,25 +195,46 @@ function MarketRangeControls({ range, setRange, view, setView }: { range: RangeK
   const c = useCopy();
   return (
               <div className="flex min-w-0 flex-1 flex-wrap items-center justify-between gap-3">
-                {view === "card" ? <div role="group" aria-label={c("Chart range", "走势区间")} className="flex max-w-full gap-1 overflow-x-auto rounded-full bg-muted/50 p-1 scrollbar-hide">
-                  {RANGES.map((item) => (
-                    <button
-                      key={item.key}
-                      type="button"
-                      aria-pressed={range === item.key}
-                      aria-label={item.key === "QTD" ? c("QTD, quarter to date", "QTD，本季度至今") : item.key === "YTD" ? c("YTD, year to date", "YTD，今年至今") : undefined}
-                      title={item.key === "QTD" ? c("Quarter to date", "本季度至今") : item.key === "YTD" ? c("Year to date", "今年至今") : undefined}
-                      onClick={() => setRange(item.key)}
-                      className={pill(range === item.key)}
-                    >
-                      {c(item.en, item.zh)}
-                    </button>
-                  ))}
-                </div> : <p className="text-sm text-muted-foreground">{c("Compare all periods", "多区间表现对比")}</p>}
-                <div role="group" aria-label={c("Display mode", "显示方式")} className="ml-auto flex shrink-0 gap-1 rounded-full border border-border p-1">
-                  <button type="button" aria-pressed={view === "card"} onClick={() => setView("card")} className={pill(view === "card")}><LayoutGrid className="h-3.5 w-3.5" aria-hidden />{c("Cards", "卡片")}</button>
-                  <button type="button" aria-pressed={view === "list"} onClick={() => setView("list")} className={pill(view === "list")}><List className="h-3.5 w-3.5" aria-hidden />{c("List", "列表")}</button>
-                </div>
+                {view === "card" ? <SegmentedControl
+                  label={c("Chart range", "走势区间")}
+                  value={range}
+                  onChange={setRange}
+                  className="min-w-0 flex-nowrap overflow-x-auto scrollbar-hide"
+                  itemClassName="min-h-9 px-3 sm:px-4"
+                  options={RANGES.map((item) => ({
+                    value: item.key,
+                    label: c(item.en, item.zh),
+                    ariaLabel: item.key === "QTD" ? c("QTD, quarter to date", "QTD，本季度至今") : item.key === "YTD" ? c("YTD, year to date", "YTD，今年至今") : undefined,
+                    title: item.key === "QTD" ? c("Quarter to date", "本季度至今") : item.key === "YTD" ? c("Year to date", "今年至今") : undefined,
+                  }))}
+                /> : <p className="text-sm text-muted-foreground">{c("Compare all periods", "多区间表现对比")}</p>}
+                <SegmentedControl
+                  label={c("Display mode", "显示方式")}
+                  value={view}
+                  onChange={setView}
+                  className="ml-auto border border-border"
+                  itemClassName="min-h-9 px-3 sm:px-4"
+                  options={[
+                    {
+                      value: "card",
+                      label: (
+                        <>
+                          <LayoutGrid className="h-3.5 w-3.5" aria-hidden />
+                          {c("Cards", "卡片")}
+                        </>
+                      ),
+                    },
+                    {
+                      value: "list",
+                      label: (
+                        <>
+                          <List className="h-3.5 w-3.5" aria-hidden />
+                          {c("List", "列表")}
+                        </>
+                      ),
+                    },
+                  ]}
+                />
               </div>
   );
 }
@@ -369,7 +386,7 @@ function MarketOverview({ range, setRange, view, setView }: { range: RangeKey; s
               id="market-creator-updates"
               surface="card"
               className="[&>header_h2]:text-lg"
-              action={<TextLink href="/dashboard/youtube-opinions" className="inline-flex min-h-10 items-center gap-1 !text-xs !font-medium text-muted-foreground hover:text-foreground">{c("View all", "全部观点")}<ArrowUpRight className="h-3.5 w-3.5" aria-hidden /></TextLink>}
+              action={<TextLink href="/dashboard/youtube-opinions" className="inline-flex min-h-10 items-center gap-1 !text-xs !font-medium text-muted-foreground hover:text-primary-text">{c("View all", "全部观点")}<ArrowUpRight className="h-3.5 w-3.5" aria-hidden /></TextLink>}
             >
               {catalogue.loading && !catalogue.data ? (
                 <div className="space-y-4 py-4" aria-busy="true">
@@ -384,8 +401,8 @@ function MarketOverview({ range, setRange, view, setView }: { range: RangeKey; s
                   {shifts.map((shift) => (
                     <ListRow key={shift.ticker}>
                       <Link
-                        href={`/dashboard/market/${encodeURIComponent(shift.ticker)}`}
-                        className="flex min-h-20 flex-1 items-center justify-between gap-3 rounded-2xl px-1 py-4 transition-colors duration-150 hover:bg-muted/50 focus-visible:outline-none"
+                        href={marketStockHref(shift.ticker)}
+                        className="flex min-h-20 flex-1 items-center justify-between gap-3 rounded-2xl px-1 py-4 outline-offset-2 transition-colors duration-150 focus-visible:bg-primary/[0.07] focus-visible:outline-2 focus-visible:outline-primary"
                       >
                         <span className="flex min-w-0 items-center gap-2.5">
                           <span aria-hidden><CompanyLogo symbol={shift.ticker} size="sm" /></span>

@@ -224,7 +224,7 @@ export default function PrivacySettingsDialog({
     const isVisible = settings[item.key];
 
     return (
-      <div className="flex items-center justify-between py-2 px-3 rounded-md hover:bg-muted/40 transition-colors group">
+      <div className="group flex items-center justify-between rounded-full py-2 px-3 transition-colors hover:bg-primary/[0.06]">
         <div className="flex items-center gap-2.5">
           <div
             className={`w-1.5 h-1.5 rounded-full transition-colors ${isVisible ? "bg-primary" : "bg-muted-foreground/30"
@@ -252,7 +252,7 @@ export default function PrivacySettingsDialog({
     const positionsCount = account.portfolio_positions?.length || 0;
 
     return (
-      <div className="flex items-center justify-between py-2 px-3 rounded-md hover:bg-muted/40 transition-colors group">
+      <div className="group flex items-center justify-between rounded-full py-2 px-3 transition-colors hover:bg-primary/[0.06]">
         <div className="flex items-center gap-2.5">
           <Building2
             className={`w-4 h-4 transition-colors ${isHidden ? "text-muted-foreground/30" : "text-primary"

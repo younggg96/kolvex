@@ -87,7 +87,7 @@ export function AccountCard({
     <Collapsible open={isExpanded} onOpenChange={onToggle}>
       <ListCard className="overflow-hidden !p-0 sm:!p-0">
         <CollapsibleTrigger asChild>
-          <CardHeader className="cursor-pointer select-none hover:bg-muted/50 transition-colors py-3 px-4">
+          <CardHeader className="cursor-pointer select-none transition-colors hover:bg-primary/[0.06] py-3 px-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <ChevronRight

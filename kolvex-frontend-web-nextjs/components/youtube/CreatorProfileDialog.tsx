@@ -1,6 +1,7 @@
 "use client";
 
 import { ContentSkeleton } from "@/components/ui/content-skeleton";
+import Link from "next/link";
 import { useState } from "react";
 import { loadClientCache, peekClientCache } from "@/lib/clientCache";
 import { ExternalLink, UserRound } from "lucide-react";
@@ -8,6 +9,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import CompanyLogo from "@/components/ui/company-logo";
+import { marketStockHref } from "@/lib/stockLinks";
 import CreatorAvatar from "./CreatorAvatar";
 import { useTranslation } from "@/lib/i18n";
 import { getYouTubeCreatorProfile, type YouTubeCreatorSummary } from "@/lib/youtubeOpinionsApi";
@@ -79,7 +81,7 @@ export default function CreatorProfileDialog({ creator, onLoaded, compact = fals
             {current.country && <span>{t("youtubeOpinions.profile.country")}: {current.country}</span>}
             {current.channel_published_at && Number.isFinite(Date.parse(current.channel_published_at)) && <span>{t("youtubeOpinions.profile.created")}: {new Intl.DateTimeFormat(intlLocale, { dateStyle: "medium" }).format(new Date(current.channel_published_at))}</span>}
           </div>
-          <div className="flex flex-wrap gap-2">{current.top_tickers.map(stock => <Badge variant="secondary" key={stock.ticker} className="gap-2"><span aria-hidden="true"><CompanyLogo symbol={stock.ticker} size="sm" /></span>{stock.ticker}</Badge>)}</div>
+          <div className="flex flex-wrap gap-2">{current.top_tickers.map(stock => <Link key={stock.ticker} href={marketStockHref(stock.ticker)} aria-label={t("redditOpinions.openStock", { ticker: stock.ticker })} className="rounded-full underline-offset-4 hover:underline focus-visible:outline-none "><Badge variant="secondary" className="gap-2"><span aria-hidden="true"><CompanyLogo symbol={stock.ticker} size="sm" /></span>{stock.ticker}</Badge></Link>)}</div>
           {current.profile_source === "youtube" && <p className="text-xs text-muted-foreground">{t("youtubeOpinions.profile.subscriberNote")}</p>}
         </div>
       </DialogContent>

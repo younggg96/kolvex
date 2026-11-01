@@ -15,6 +15,7 @@ import {
   YAxis,
 } from "recharts";
 import { Button } from "@/components/ui/button";
+import { SegmentedControl } from "@/components/ui/segmented-control";
 import {
   Select,
   SelectContent,
@@ -119,27 +120,15 @@ function PeriodToggle({
 }) {
   const c = useCopy();
   return (
-    <div
-      role="group"
-      aria-label={c("Reporting frequency", "报告周期")}
-      className="inline-flex rounded-2xl bg-muted p-1"
-    >
-      {[false, true].map((value) => (
-        <Button
-          key={String(value)}
-          size="sm"
-          variant="ghost"
-          aria-pressed={quarterly === value}
-          className={cn(
-            "rounded-full",
-            quarterly === value && "bg-background text-foreground",
-          )}
-          onClick={() => onChange(value)}
-        >
-          {value ? c("Quarterly", "季度") : c("Annual", "年度")}
-        </Button>
-      ))}
-    </div>
+    <SegmentedControl
+      label={c("Reporting frequency", "报告周期")}
+      value={quarterly ? "quarterly" : "annual"}
+      onChange={(value) => onChange(value === "quarterly")}
+      options={[
+        { value: "annual", label: c("Annual", "年度") },
+        { value: "quarterly", label: c("Quarterly", "季度") },
+      ]}
+    />
   );
 }
 export default function StockFinancials({
@@ -210,63 +199,47 @@ export default function StockFinancials({
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
-        <div
-          role="group"
-          aria-label={c("Financial statement", "财务报表类型")}
-          className="inline-flex max-w-full flex-wrap gap-1 rounded-2xl bg-muted p-1"
-        >
-          {(
-            [
-              ["income-statement", c("Income", "利润表")],
-              ["balance-sheet", c("Balance sheet", "资产负债表")],
-              ["cash-flow", c("Cash flow", "现金流量表")],
-            ] as const
-          ).map(([value, label]) => (
-            <Button
-              key={value}
-              size="sm"
-              variant="ghost"
-              aria-pressed={kind === value}
-              className={cn(
-                "rounded-full",
-                kind === value && "bg-background text-foreground",
-              )}
-              onClick={() => {
-                setKind(value);
-                setVisibleMetrics(6);
-              }}
-            >
-              {label}
-            </Button>
-          ))}
-        </div>
+        <SegmentedControl
+          label={c("Financial statement", "财务报表类型")}
+          semantics="tabs"
+          value={kind}
+          onChange={(value) => {
+            setKind(value);
+            setVisibleMetrics(6);
+          }}
+          options={[
+            { value: "income-statement", label: c("Income", "利润表") },
+            { value: "balance-sheet", label: c("Balance sheet", "资产负债表") },
+            { value: "cash-flow", label: c("Cash flow", "现金流量表") },
+          ]}
+        />
         <div className="flex flex-wrap items-center gap-3">
-          <div
-            role="group"
-            aria-label={c("Financial view", "财务显示方式")}
-            className="inline-flex rounded-2xl bg-muted p-1"
-          >
-            {(["chart", "list"] as const).map((value) => (
-              <Button
-                key={value}
-                size="sm"
-                variant="ghost"
-                aria-pressed={view === value}
-                className={cn(
-                  "rounded-full",
-                  view === value && "bg-background text-foreground",
-                )}
-                onClick={() => setView(value)}
-              >
-                {value === "chart" ? (
-                  <BarChart3 aria-hidden="true" className="h-4 w-4" />
-                ) : (
-                  <List aria-hidden="true" className="h-4 w-4" />
-                )}
-                {value === "chart" ? c("Charts", "图表") : c("List", "列表")}
-              </Button>
-            ))}
-          </div>
+          <SegmentedControl
+            label={c("Financial view", "财务显示方式")}
+            semantics="tabs"
+            value={view}
+            onChange={setView}
+            options={[
+              {
+                value: "chart",
+                label: (
+                  <>
+                    <BarChart3 aria-hidden="true" className="h-4 w-4" />
+                    {c("Charts", "图表")}
+                  </>
+                ),
+              },
+              {
+                value: "list",
+                label: (
+                  <>
+                    <List aria-hidden="true" className="h-4 w-4" />
+                    {c("List", "列表")}
+                  </>
+                ),
+              },
+            ]}
+          />
           <PeriodToggle quarterly={quarterly} onChange={setQuarterly} />
           <Button
             size="sm"
@@ -274,7 +247,7 @@ export default function StockFinancials({
             disabled={!periods.length}
             onClick={exportCsv}
           >
-            <Download className="mr-2 h-4 w-4" />
+            <Download aria-hidden="true" className="h-4 w-4" />
             CSV
           </Button>
         </div>
@@ -369,11 +342,11 @@ export default function StockFinancials({
             </thead>
             <tbody>
               {rows.map((key) => (
-                <tr key={key} className="group">
+                <tr key={key} className="group transition-colors hover:bg-primary/[0.06]">
                   <th
                     scope="row"
                     className={cn(
-                      "sticky left-0 z-10 max-w-64 border-b border-r border-border bg-card px-4 py-4 text-left font-normal group-hover:bg-muted",
+                      "sticky left-0 z-10 max-w-64 border-b border-r border-border bg-card px-4 py-4 text-left font-normal transition-colors group-hover:border-primary/30",
                       keyRows[kind].includes(key) && "font-medium",
                     )}
                   >
@@ -382,7 +355,7 @@ export default function StockFinancials({
                   {periods.map((p, index) => (
                     <td
                       key={p.period}
-                      className="figure whitespace-nowrap border-b border-border px-4 py-4 text-right group-hover:bg-muted"
+                      className="figure whitespace-nowrap border-b border-border px-4 py-4 text-right transition-colors group-hover:border-primary/30"
                     >
                       {f.number(p[key])}
                       {index === 0 && (
@@ -558,27 +531,15 @@ function ChartStyleToggle({
 }) {
   const c = useCopy();
   return (
-    <div
-      role="group"
-      aria-label={c("Chart style", "图表样式")}
-      className="inline-flex rounded-2xl bg-muted p-1"
-    >
-      {[false, true].map((value) => (
-        <Button
-          key={String(value)}
-          size="sm"
-          variant="ghost"
-          aria-pressed={line === value}
-          className={cn(
-            "rounded-full",
-            line === value && "bg-background text-foreground",
-          )}
-          onClick={() => onChange(value)}
-        >
-          {value ? c("Line", "折线") : c("Bars", "柱状")}
-        </Button>
-      ))}
-    </div>
+    <SegmentedControl
+      label={c("Chart style", "图表样式")}
+      value={line ? "line" : "bars"}
+      onChange={(value) => onChange(value === "line")}
+      options={[
+        { value: "bars", label: c("Bars", "柱状") },
+        { value: "line", label: c("Line", "折线") },
+      ]}
+    />
   );
 }
 

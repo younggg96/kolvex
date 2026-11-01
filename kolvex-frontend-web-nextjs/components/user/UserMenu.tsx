@@ -48,7 +48,7 @@ export default function UserMenu({ isCollapsed = false }: UserMenuProps) {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <button
-          className={`flex w-full items-center gap-2.5 rounded-full py-1.5 transition-colors hover:bg-muted focus-visible:outline-none   ${
+          className={`flex w-full items-center gap-2.5 rounded-full py-1.5 transition-colors hover:bg-primary/[0.08] focus-visible:outline-none   ${
             isCollapsed ? "justify-center" : "pl-1.5 pr-3"
           }`}
         >

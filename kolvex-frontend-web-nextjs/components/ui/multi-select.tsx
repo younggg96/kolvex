@@ -165,7 +165,7 @@ export const MultiSelect = React.forwardRef<HTMLDivElement, MultiSelectProps>(
                           "flex w-full cursor-pointer select-none items-center rounded-2xl py-2 pl-8 pr-2 text-sm outline-none transition-colors duration-150",
                           isSelected
                             ? "bg-primary/10 text-primary dark:bg-primary/20"
-                            : "hover:bg-muted text-foreground"
+                            : "text-foreground hover:bg-primary/[0.08] hover:text-primary-text"
                         )}
                         role="option"
                         aria-selected={isSelected}

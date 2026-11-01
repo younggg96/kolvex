@@ -4,6 +4,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useCachedResource } from "@/hooks/useCachedResource";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { SegmentedControl } from "@/components/ui/segmented-control";
 import { Skeleton } from "@/components/ui/skeleton";
 import StockBadge from "@/components/ui/stock-badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -132,26 +133,17 @@ export default function MarketEventCalendar() {
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
-          <div
-            role="group"
-            aria-label={c("Event view", "事件视图")}
-            className="inline-flex gap-1 rounded-full border border-border p-1"
-          >
-            {(["calendar", "list"] as const).map((mode) => (
-              <Button
-                key={mode}
-                type="button"
-                variant={view === mode ? "secondary" : "ghost"}
-                size="sm"
-                aria-pressed={view === mode}
-                onClick={() => setView(mode)}
-              >
-                {mode === "calendar"
-                  ? c("Calendar", "日历")
-                  : c("List", "列表")}
-              </Button>
-            ))}
-          </div>
+          <SegmentedControl
+            label={c("Event view", "事件视图")}
+            value={view}
+            onChange={setView}
+            className="border border-border"
+            itemClassName="min-h-9 px-4"
+            options={[
+              { value: "calendar", label: c("Calendar", "日历") },
+              { value: "list", label: c("List", "列表") },
+            ]}
+          />
           <Button
             variant="outline"
             size="sm"
@@ -370,7 +362,7 @@ export default function MarketEventCalendar() {
                                       <li
                                         key={event.id}
                                         className={cn(
-                                          "-mx-2 rounded-2xl px-2 py-3 transition-colors duration-150 hover:bg-muted/40 motion-reduce:transition-none",
+                                          "-mx-2 rounded-2xl px-2 py-3 transition-colors duration-150 hover:bg-primary/[0.07] motion-reduce:transition-none",
                                           index > 0 && "border-t border-border/60",
                                         )}
                                       >

@@ -4,7 +4,7 @@ import { ContentSkeleton } from "@/components/ui/content-skeleton";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { ExternalLink, Search, RefreshCw } from "lucide-react";
+import { ExternalLink, Filter, Search, RefreshCw } from "lucide-react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -165,8 +165,8 @@ export default function XContentExplorer() {
                             listCompactRowClass,
                             "min-w-0 flex-1 gap-3",
                             author === creator.username
-                              ? "bg-muted font-semibold text-foreground"
-                              : "hover:text-foreground",
+                              ? "bg-primary/10 font-semibold text-primary-text"
+                              : "hover:text-primary-text",
                           )}
                         >
                           <span className="flex min-w-0 flex-1 items-center gap-3">
@@ -325,7 +325,7 @@ export default function XContentExplorer() {
                           className={cn(
                             "opinion-result-row",
                             listFeedRowClass,
-                            "rounded-2xl px-2 transition-colors hover:bg-muted/50 focus-within:bg-muted/50 motion-reduce:transition-none",
+                            "rounded-2xl px-2 transition-colors hover:bg-primary/[0.07] focus-within:bg-primary/[0.07] motion-reduce:transition-none",
                           )}
                           style={{ animationDelay: `${Math.min(index, 6) * 20}ms` }}
                         >
@@ -373,11 +373,16 @@ export default function XContentExplorer() {
                           {post.cashtags.length > 0 && (
                             <div className="mt-4 flex flex-wrap gap-2">
                               {post.cashtags.map((tag) => (
-                                <StockBadge
-                                  key={tag}
-                                  symbol={tag}
-                                  href={href({ ticker: tag })}
-                                />
+                                <span key={tag} className="inline-flex max-w-full items-center gap-1.5">
+                                  <StockBadge symbol={tag} />
+                                  <Link
+                                    href={href({ ticker: tag })}
+                                    className="inline-flex min-h-11 items-center rounded-2xl px-2 text-xs font-medium text-muted-foreground transition-colors duration-150 hover:bg-primary/10 hover:text-primary-text focus-visible:outline-none"
+                                    aria-label={c(`Filter X posts by ${tag}`, `只看含 ${tag} 的 X 帖子`)}
+                                  >
+                                    <Filter className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                                  </Link>
+                                </span>
                               ))}
                             </div>
                           )}

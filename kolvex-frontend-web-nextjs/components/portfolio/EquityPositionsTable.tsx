@@ -23,6 +23,7 @@ import { Badge } from "@/components/ui/badge";
 import { WeightIndicator } from "@/components/ui/weight-indicator";
 import MiniSparkline from "@/components/common/MiniSparkline";
 import { formatCurrency } from "@/lib/portfolioApi";
+import { marketStockHref } from "@/lib/stockLinks";
 import { useTranslation } from "@/lib/i18n";
 import type { EquityPositionsTableProps, PortfolioPosition } from "./types";
 
@@ -154,7 +155,7 @@ export function EquityPositionsTable({
                 key={pos.id}
                 className={`${isSecretStock
                   ? "opacity-70"
-                  : "hover:bg-muted/50"
+                  : "hover:bg-primary/[0.06]"
                   } transition-colors`}
               >
                 <TableCell className="pl-4 py-3">
@@ -164,19 +165,25 @@ export function EquityPositionsTable({
                         <Lock className="w-4 h-4 text-muted-foreground" />
                       </div>
                     ) : (
-                      <CompanyLogo
-                        symbol={pos.symbol}
-                        name={pos.security_name || pos.symbol}
-                        size="sm"
-                        border="light"
-                      />
+                      <Link
+                        href={marketStockHref(pos.symbol)}
+                        aria-label={pos.symbol}
+                        className="rounded-2xl underline-offset-4 hover:opacity-90 focus-visible:outline-none "
+                      >
+                        <CompanyLogo
+                          symbol={pos.symbol}
+                          name={pos.security_name || pos.symbol}
+                          size="sm"
+                          border="light"
+                        />
+                      </Link>
                     )}
                     <div className="min-w-0">
                       <div className="font-semibold flex items-center gap-1.5">
                         {isSecretStock ? (
                           <span className="text-muted-foreground">****</span>
                         ) : (
-                          <Link href={`/dashboard/market/${encodeURIComponent(pos.symbol)}`} className="hover:underline">
+                          <Link href={marketStockHref(pos.symbol)} className="rounded-sm underline-offset-4 hover:underline focus-visible:outline-none ">
                             {pos.symbol}
                           </Link>
                         )}
@@ -289,7 +296,7 @@ export function EquityPositionsTable({
                         onToggleVisibility(e, pos.id, pos.is_hidden || false)
                       }
                       className={`p-1.5 rounded-full transition-colors ${pos.is_hidden
-                        ? "text-muted-foreground hover:text-foreground hover:bg-muted"
+                        ? "text-muted-foreground transition-colors hover:bg-primary/10 hover:text-primary-text"
                         : "text-positive hover:text-positive hover:bg-positive/10"
                         }`}
                       title={

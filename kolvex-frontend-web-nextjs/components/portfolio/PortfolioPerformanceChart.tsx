@@ -14,6 +14,7 @@ import { cn } from "@/lib/utils";
 import { useTranslation } from "@/lib/i18n";
 import { formatCurrency, formatPercent } from "@/lib/portfolioApi";
 import { Button } from "@/components/ui/button";
+import { SegmentedControl } from "@/components/ui/segmented-control";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
     Tooltip as UITooltip,
@@ -157,25 +158,18 @@ export function PortfolioPerformanceChart({
                     )}
                 </div>
                 {isOwner && (
-                    <div role="radiogroup" aria-label={t("portfolio.performance.title")} className="flex items-center gap-1 rounded-full bg-muted p-1">
-                        {(["value", "pnl"] as ChartView[]).map((view) => (
-                            <button
-                                key={view}
-                                type="button"
-                                role="radio"
-                                aria-checked={chartView === view}
-                                onClick={() => setChartView(view)}
-                                className={cn(
-                                    "h-7 rounded-full px-3 text-xs font-semibold transition-colors duration-150 focus-visible:outline-none ",
-                                    chartView === view
-                                        ? "bg-background text-foreground shadow-[0_1px_2px_rgb(0_0_0/0.12)]"
-                                        : "text-muted-foreground hover:text-foreground",
-                                )}
-                            >
-                                {view === "value" ? t("portfolio.performance.portfolioValue") : t("portfolio.performance.pnl")}
-                            </button>
-                        ))}
-                    </div>
+                    <SegmentedControl
+                        label={t("portfolio.performance.title")}
+                        semantics="radio"
+                        size="sm"
+                        itemClassName="px-3 text-xs"
+                        value={chartView}
+                        onChange={setChartView}
+                        options={[
+                            { value: "value", label: t("portfolio.performance.portfolioValue") },
+                            { value: "pnl", label: t("portfolio.performance.pnl") },
+                        ]}
+                    />
                 )}
             </div>
 
@@ -261,8 +255,8 @@ export function PortfolioPerformanceChart({
                             className={cn(
                                 "inline-flex h-8 shrink-0 items-center rounded-full px-3.5 text-[13px] font-semibold transition-colors duration-150 focus-visible:outline-none disabled:opacity-50",
                                 period === value
-                                    ? "bg-foreground text-background"
-                                    : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                                    ? "bg-foreground text-primary"
+                                    : "text-muted-foreground hover:bg-primary/10 hover:text-primary-text active:bg-primary/[0.16]",
                             )}
                         >
                             {t(`portfolio.performance.periods.${value}`)}
@@ -275,7 +269,7 @@ export function PortfolioPerformanceChart({
                             <TooltipTrigger asChild>
                                 <button
                                     type="button"
-                                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground"
+                                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-primary/10 hover:text-primary-text"
                                     aria-label={t("portfolio.performance.dataSince", { date: new Date(firstSnapshotDate).toLocaleDateString() })}
                                 >
                                     <Info className="h-4 w-4" />

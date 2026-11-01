@@ -20,7 +20,7 @@ export default function ContactPage() {
         <div className="mb-8">
           <Link
             href="/"
-            className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+            className="text-sm text-muted-foreground transition-colors hover:text-primary-text"
           >
             ← Back to Home
           </Link>

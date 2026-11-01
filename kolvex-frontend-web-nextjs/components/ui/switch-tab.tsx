@@ -61,21 +61,21 @@ export const SwitchTab = React.memo(function SwitchTab({
       indicator: "bg-primary/20 dark:bg-primary/80 rounded-full",
       active: "text-primary dark:text-primary-foreground",
       inactive:
-        "text-muted-foreground hover:text-foreground/80",
+        "text-muted-foreground hover:bg-primary/10 hover:text-primary-text active:bg-primary/[0.16]",
     },
     tabs: {
       container: "bg-transparent border-b border-border",
       indicator: "bg-primary/40 rounded-t-md",
       active: "text-primary",
       inactive:
-        "text-muted-foreground hover:text-foreground/80",
+        "text-muted-foreground hover:bg-primary/10 hover:text-primary-text active:bg-primary/[0.16]",
     },
     underline: {
       container: "bg-transparent",
       indicator: "bg-primary h-0.5 bottom-0 rounded-full",
       active: "text-primary font-semibold",
       inactive:
-        "text-muted-foreground hover:text-foreground/80",
+        "text-muted-foreground hover:bg-primary/10 hover:text-primary-text active:bg-primary/[0.16]",
     },
   };
 

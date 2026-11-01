@@ -27,7 +27,7 @@ export function ReadingHeader() {
       <nav aria-label="公开阅读" className="mx-auto flex max-w-[1120px] gap-2 px-4 pb-3 md:px-8">
         {links.map(({ href, label }) => {
           const active = pathname === href || pathname.startsWith(`${href}/`) || (href === "/creators" && pathname.startsWith("/share/creators/"));
-          return <Link key={href} href={href} aria-current={active ? "page" : undefined} className={cn("reading-nav-link inline-flex min-h-11 items-center rounded-full px-4 text-sm font-semibold transition-colors focus-visible:outline-none ", active ? "bg-foreground text-background" : "text-muted-foreground hover:bg-muted")}>{label}</Link>;
+          return <Link key={href} href={href} aria-current={active ? "page" : undefined} className={cn("reading-nav-link inline-flex min-h-11 items-center rounded-full px-4 text-sm font-semibold transition-colors focus-visible:outline-none ", active ? "bg-foreground text-primary" : "text-muted-foreground hover:bg-primary/10 hover:text-primary-text active:bg-primary/[0.16]")}>{label}</Link>;
         })}
       </nav>
     </header>

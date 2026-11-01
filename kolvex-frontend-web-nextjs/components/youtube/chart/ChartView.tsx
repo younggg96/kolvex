@@ -73,7 +73,7 @@ import {
 import ChartDrawingLayer from "../ChartDrawingLayer";
 import OscillatorPane, { oscillatorLabels, type Oscillator } from "./OscillatorPane";
 import { drawingColors, newDrawingId, type Anchor, type Drawing, type DrawingTool, type SyncStatus } from "../chartDrawings";
-import { toneStroke, toneText, type StrengthTone } from "../strength";
+import { toneText, type StrengthTone } from "../strength";
 import AiPriceActionSignals from "./AiPriceActionSignals";
 import AiDrawingSetup from "./AiDrawingSetup";
 import AiAnalysisPanel from "./AiAnalysisPanel";
@@ -89,10 +89,23 @@ import {
   type AdvancedRange,
   type ChartInterval,
 } from "./timeframes";
+import PriceGraph, { defaultGraphView, graphGeometry, type GraphGeometry } from "./PriceGraph";
+import { ExtremeTag } from "./ChartMarkers";
+import {
+  GRAPH_AXIS_WIDTH,
+  GRAPH_MIN_BARS,
+  GRAPH_TIME_AXIS,
+  GRAPH_TOP_PAD,
+  clampGraphView,
+  zoomGraphView,
+  type GraphView,
+  type PriceRangeKey,
+} from "@/lib/chart/graph";
 
 type Translate = (key: string, params?: Record<string, string>) => string;
 type Mode = "compact" | "advanced";
-type View = { start: number; end: number };
+/** Visible window in bar indices — the same shape `lib/chart/graph.ts` and `PriceGraph` use. */
+type View = GraphView;
 type Draft = {
   drawing: Drawing;
   start: { x: number; y: number };
@@ -115,10 +128,8 @@ type Calls = {
   other: YouTubeOpinion[];
 };
 
-const AXIS_WIDTH = 60;
-const TIME_AXIS = 22;
 const SNAP_PX = 12;
-const MIN_BARS = 8;
+const MIN_BARS = GRAPH_MIN_BARS;
 const HEIGHT_CLASS: Record<Mode, string> = {
   compact: "h-[260px] sm:h-[320px]",
   advanced: "min-h-0 flex-1",
@@ -159,12 +170,6 @@ const callTone: Record<keyof Calls, StrengthTone> = {
 const sentimentTone = (sentiment: YouTubeOpinion["sentiment"]): StrengthTone =>
   sentiment === "bullish" ? "positive" : sentiment === "bearish" ? "negative" : "neutral";
 
-function niceStep(raw: number) {
-  const power = 10 ** Math.floor(Math.log10(raw));
-  const unit = raw / power;
-  return (unit <= 1 ? 1 : unit <= 2 ? 2 : unit <= 2.5 ? 2.5 : unit <= 5 ? 5 : 10) * power;
-}
-
 function readIndicators(mode: Mode): IndicatorKey[] {
   try {
     const saved = JSON.parse(window.localStorage.getItem(`kolvex:chart-indicators:${mode}`) || "null");
@@ -173,29 +178,6 @@ function readIndicators(mode: Mode): IndicatorKey[] {
     // Fall back to the defaults.
   }
   return defaultIndicators[mode];
-}
-
-function CallMarker({ direction, count, x, y }: { direction: "up" | "down" | "dot"; count: number; x: number; y: number }) {
-  const color = toneStroke[direction === "up" ? "positive" : direction === "down" ? "negative" : "neutral"];
-  return (
-    <span
-      aria-hidden="true"
-      className={cn(
-        "pointer-events-none absolute flex -translate-x-1/2 items-center gap-px text-[10px] font-semibold leading-none tabular-nums",
-        direction === "down" ? "-translate-y-full flex-col-reverse" : "flex-col",
-      )}
-      style={{ left: x, top: y, color }}
-    >
-      {direction === "dot" ? (
-        <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: color }} />
-      ) : (
-        <svg width={9} height={7} viewBox="0 0 9 7" className="drop-shadow-[0_0_1px_rgb(var(--background))]">
-          <path d={direction === "up" ? "M4.5 0L9 7H0z" : "M0 0h9L4.5 7z"} fill={color} />
-        </svg>
-      )}
-      {count > 1 && <span>{count}</span>}
-    </span>
-  );
 }
 
 export interface ChartViewProps {
@@ -214,6 +196,18 @@ export interface ChartViewProps {
   formatDate: (date: string) => string;
   t: Translate;
   onOpenAdvanced?: () => void;
+  /**
+   * Compact-mode time range, owned by the host (`PriceChart`) so the loaded history matches
+   * the window that is drawn. Advanced mode keeps its own `AdvancedRange` + interval state.
+   * When `onRangeChange` is missing the chart falls back to its internal range state.
+   */
+  range?: PriceRangeKey;
+  onRangeChange?: (range: PriceRangeKey) => void;
+  rangeOpen?: boolean;
+  onRangeOpenChange?: (open: boolean) => void;
+  rangeOptions?: { value: PriceRangeKey; label: string }[];
+  /** Text for the custom chip, e.g. "Sep 26 – Oct 30". */
+  rangeLabel?: string;
   headerActions?: ReactNode;
   onAnalysisChange?: (result: AiTechnicalAnalysis | null) => void;
   onDrawingsChange?: (result: AiTechnicalAnalysis | null) => void;
@@ -256,6 +250,12 @@ export default function ChartView({
   formatDate,
   t,
   onOpenAdvanced,
+  range: rangeProp,
+  onRangeChange: onRangeChangeProp,
+  rangeOpen = false,
+  onRangeOpenChange,
+  rangeOptions,
+  rangeLabel,
   headerActions,
   onAnalysisChange,
   onDrawingsChange,
@@ -283,9 +283,24 @@ export default function ChartView({
     : HEIGHT_CLASS[mode];
   const drawingToolbarId = useId();
   const [oscillator, setOscillator] = useState<Oscillator | null>("kdj");
-  const [range, setRange] = useState<AdvancedRange>("3M");
+  /**
+   * Compact: the host owns the range (it decides which history to load), so the local state is
+   * only a fallback for standalone use — `rangeProp` wins whenever it is supplied.
+   * Advanced: this component owns its `AdvancedRange` + interval.
+   */
+  const [rangeState, setRangeState] = useState<AdvancedRange>("3M");
   const [interval, setChartInterval] = useState<ChartInterval>(defaultInterval["3M"]);
-  const params = advanced && !snapshotBars ? advancedHistoryParams(range, interval) : compactParams;
+  const compactRange: AdvancedRange = (rangeProp && advancedRanges.includes(rangeProp as AdvancedRange)
+    ? rangeProp
+    : rangeState) as AdvancedRange;
+  const range: AdvancedRange = advanced ? rangeState : compactRange;
+  /** Changing the compact range reloads history, so the interval must stay one the range supports. */
+  const effectiveInterval: ChartInterval = advanced
+    ? interval
+    : rangeIntervals[range].includes(interval as ChartInterval)
+      ? interval
+      : defaultInterval[range];
+  const params = advanced && !snapshotBars ? advancedHistoryParams(range, effectiveInterval) : compactParams;
   const paramsKey = JSON.stringify(params);
   const chartCacheKey = stockHistoryKey(symbol, params);
   const intraday = isIntraday(params.interval || "1d");
@@ -298,7 +313,6 @@ export default function ChartView({
   const [view, setView] = useState<View | null>(null);
   const [autoScale, setAutoScale] = useState(true);
   const [active, setActive] = useState<number | null>(null);
-  const [hoverY, setHoverY] = useState<number | null>(null);
   const [tool, setTool] = useState<DrawingTool>("cursor");
   const [color, setColor] = useState(drawingColors[0]);
   const [magnet, setMagnet] = useState(true);
@@ -398,18 +412,9 @@ export default function ChartView({
   const defaultView = useMemo<View>(() => {
     if (!count) return { start: 0, end: 1 };
     if (!advanced) return { start: 0, end: count };
-    const startTime = rangeStart(range, times[count - 1]);
-    const first =
-      startTime === null
-        ? 0
-        : Math.max(
-            times.findIndex((time) => time >= startTime),
-            0,
-          );
-    return {
-      start: Math.min(first, count - MIN_BARS),
-      end: count + Math.max((count - first) * 0.04, 1),
-    };
+    if (count < 3) return { start: 0, end: Math.max(count, 1) };
+    // Shared default: the selected window with enough context to warm up the indicators.
+    return defaultGraphView({ count, times, range, rangeStart: rangeStart(range, times[count - 1]) }) || { start: 0, end: count };
   }, [advanced, count, range, times]);
   const current = view || defaultView;
 
@@ -438,25 +443,43 @@ export default function ChartView({
     return byBar;
   }, [bars, events, params.interval]);
 
+  /** `PriceGraph` wants per-bar counts; the advanced header still reads the opinion lists. */
+  const callCounts = useMemo(() => {
+    const counts = new Map<number, { bullish: number; bearish: number; other: number }>();
+    for (const [index, entry] of calls) {
+      counts.set(index, { bullish: entry.bullish.length, bearish: entry.bearish.length, other: entry.other.length });
+    }
+    return counts;
+  }, [calls]);
+
+  /** Selecting a compact range asks the host to load that window; standalone use keeps it local. */
+  function selectRange(next: PriceRangeKey) {
+    if (onRangeChangeProp) {
+      onRangeChangeProp(next);
+      return;
+    }
+    if (!advancedRanges.includes(next as AdvancedRange)) return;
+    const nextRange = next as AdvancedRange;
+    setRangeState(nextRange);
+    if (!rangeIntervals[nextRange].includes(interval)) setChartInterval(defaultInterval[nextRange]);
+    setView(null);
+  }
+
+  /** Option list for the graph's range bar; labels come from i18n unless the host supplies them. */
+  const graphRangeOptions = useMemo<{ value: PriceRangeKey; label: string }[]>(
+    () => rangeOptions ?? advancedRanges.map((item) => ({ value: item as PriceRangeKey, label: t(`youtubeOpinions.advancedRange.${item}`) })),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [rangeOptions, t],
+  );
+
   function clampView(next: View): View {
-    const minSpan = Math.min(MIN_BARS, count);
-    const span = Math.min(Math.max(next.end - next.start, minSpan), count * 1.15 + 4);
-    const start = Math.min(Math.max(next.start, -span * 0.1), count - Math.min(span * 0.3, count));
-    return { start, end: start + span };
+    return clampGraphView(next, count, MIN_BARS);
   }
 
   const zoomRef = useRef<(factor: number, anchorRatio: number) => void>(() => {});
   const panRef = useRef<(bars: number) => void>(() => {});
   zoomRef.current = (factor, anchorRatio) => {
-    const span = current.end - current.start;
-    const anchor = current.start + span * anchorRatio;
-    const nextSpan = span * factor;
-    setView(
-      clampView({
-        start: anchor - nextSpan * anchorRatio,
-        end: anchor - nextSpan * anchorRatio + nextSpan,
-      }),
-    );
+    setView(zoomGraphView(current, factor, anchorRatio, count, MIN_BARS));
   };
   panRef.current = (shift) => setView(clampView({ start: current.start + shift, end: current.end + shift }));
 
@@ -464,7 +487,7 @@ export default function ChartView({
     if (!box) return;
     const onWheel = (event: WheelEvent) => {
       const rect = box.getBoundingClientRect();
-      const plotWidth = rect.width - AXIS_WIDTH;
+      const plotWidth = Math.max(rect.width - GRAPH_AXIS_WIDTH, 1);
       const ratio = Math.min(Math.max((event.clientX - rect.left) / plotWidth, 0), 1);
       const horizontal = Math.abs(event.deltaX) > Math.abs(event.deltaY);
       if (horizontal) {
@@ -483,13 +506,24 @@ export default function ChartView({
 
   const activeIndicators = new Set(advanced ? indicators : []);
   const showVolume = activeIndicators.has("volume");
-  const plotW = Math.max(size.width - AXIS_WIDTH, 1);
-  const plotH = Math.max(size.height - TIME_AXIS, 1);
+  const plotW = Math.max(size.width - GRAPH_AXIS_WIDTH, 1);
+  const plotH = Math.max(size.height - GRAPH_TIME_AXIS, 1);
   const volumeH = showVolume ? plotH * 0.18 : 0;
-  const priceTop = 18;
-  const priceBottom = plotH - volumeH - 16;
+  /** Price scale rows: the candle body stops above the volume strip. */
+  const priceTop = GRAPH_TOP_PAD;
+  const priceBottom = Math.max(plotH - volumeH - 16, priceTop + 1);
   const span = current.end - current.start;
-  const slot = plotW / span;
+  const slot = plotW / Math.max(span, 1e-6);
+  /** Shared geometry: candles, drawings and the oscillator all read positions from it. */
+  const geometry = graphGeometry({
+    bars,
+    times,
+    view: current,
+    width: size.width,
+    height: size.height,
+    intraday,
+    interval: params.interval || "1d",
+  });
   const xOf = (index: number) => (index - current.start + 0.5) * slot;
   const firstVisible = Math.max(Math.floor(current.start), 0);
   const lastVisible = Math.min(Math.ceil(current.end), count) - 1;
@@ -552,32 +586,22 @@ export default function ChartView({
     );
   }
 
-  const yOf = (price: number) => priceTop + ((yRange.hi - price) / (yRange.hi - yRange.lo)) * (priceBottom - priceTop);
-  const priceAt = (py: number) => yRange.hi - ((py - priceTop) / (priceBottom - priceTop)) * (yRange.hi - yRange.lo);
-  const msPerBar = count > 1 ? (times[count - 1] - times[0]) / (count - 1) : 86_400_000;
-  const indexAt = (time: number) => {
-    if (time <= times[0]) return (time - times[0]) / msPerBar;
-    if (time >= times[count - 1]) return count - 1 + (time - times[count - 1]) / msPerBar;
-    let low = 0;
-    let high = count - 1;
-    while (high - low > 1) {
-      const middle = (low + high) >> 1;
-      if (times[middle] <= time) low = middle;
-      else high = middle;
-    }
-    return low + (time - times[low]) / (times[high] - times[low]);
-  };
-  const timeAt = (index: number) => {
-    if (index <= 0 || count < 2) return times[0] + index * msPerBar;
-    if (index >= count - 1) return times[count - 1] + (index - count + 1) * msPerBar;
-    const base = Math.floor(index);
-    return times[base] + (index - base) * (times[base + 1] - times[base]);
-  };
-  const toPx = (anchor: Anchor) => ({
-    x: xOf(indexAt(anchor.time)),
-    y: yOf(anchor.price),
-  });
-  const barsBetween = (a: Anchor, b: Anchor) => Math.round(indexAt(b.time) - indexAt(a.time));
+  /**
+   * The price scale comes from the shared geometry (optionally auto-scaled to the visible
+   * highs/lows), so drawings, call markers and the axis all agree on one mapping.
+   */
+  const yOf = (price: number) =>
+    autoScale
+      ? geometry.yOf(price)
+      : priceTop + ((yRange.hi - price) / (yRange.hi - yRange.lo)) * (priceBottom - priceTop);
+  const priceAt = (py: number) =>
+    autoScale
+      ? geometry.priceAt(py)
+      : yRange.hi - ((py - priceTop) / (priceBottom - priceTop)) * (yRange.hi - yRange.lo);
+  const indexAt = (time: number) => geometry.indexAt(time);
+  const timeAt = (index: number) => geometry.timeAt(index);
+  const toPx = (anchor: Anchor) => ({ x: xOf(indexAt(anchor.time)), y: yOf(anchor.price) });
+  const barsBetween = (a: Anchor, b: Anchor) => geometry.barsBetween(a, b);
   const barLabel = (bar: PriceBar) => `${formatDate(bar.date.slice(0, 10))}${intraday ? ` ${bar.date.slice(11, 16)}` : ""}`;
 
   const drawing = tool !== "cursor";
@@ -737,7 +761,6 @@ export default function ChartView({
     }
     const { anchor, px, py } = locate(event.clientX, event.clientY);
     scrubTo(px);
-    setHoverY(px <= plotW && py <= priceBottom + 8 ? py : null);
     if (now?.kind === "pan") {
       const dx = event.clientX - now.x;
       if (Math.abs(dx) > 3) now.moved = true;
@@ -852,7 +875,7 @@ export default function ChartView({
   const iconButton = (isActive: boolean) =>
     cn(
       "inline-flex h-11 w-11 sm:h-8 sm:w-8 shrink-0 items-center justify-center rounded-full transition-colors duration-150 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-40",
-      isActive ? "bg-foreground text-background" : "text-muted-foreground hover:bg-muted hover:text-foreground",
+      isActive ? "bg-foreground text-primary" : "text-muted-foreground hover:bg-primary/10 hover:text-primary-text active:bg-primary/[0.16]",
     );
   const stat = (label: string, value: string, tone?: string) => (
     <span className="whitespace-nowrap">
@@ -863,7 +886,7 @@ export default function ChartView({
   const pill = (isActive: boolean) =>
     cn(
       "inline-flex h-8 shrink-0 items-center rounded-full px-3 text-[13px] font-semibold transition-colors duration-150 focus-visible:outline-none ",
-      isActive ? "bg-foreground text-background" : "text-muted-foreground hover:bg-muted hover:text-foreground",
+      isActive ? "bg-foreground text-primary" : "text-muted-foreground hover:bg-primary/10 hover:text-primary-text active:bg-primary/[0.16]",
     );
 
   const path = (values: Series) => {
@@ -892,70 +915,6 @@ export default function ChartView({
     }
     return upper.length ? `M${upper.join("L")}L${lower.join("L")}Z` : "";
   };
-
-  const priceTicks = (() => {
-    const step = niceStep((yRange.hi - yRange.lo) / Math.max((priceBottom - priceTop) / 46, 2));
-    const ticks: number[] = [];
-    for (let value = Math.ceil(yRange.lo / step) * step; value <= yRange.hi; value += step) ticks.push(value);
-    return ticks;
-  })();
-  const timeTicks = (() => {
-    if (!bars || !count) return [] as Array<{ index: number; label: string }>;
-    const every = Math.max(Math.ceil(96 / slot), 1);
-    const ticks: Array<{ index: number; label: string }> = [];
-    const locale = t("common.intlLocale");
-    let previousDay = "";
-    let previousYear = "";
-    for (let index = Math.ceil(Math.max(firstVisible, 0) / every) * every; index <= lastVisible; index += every) {
-      const date = bars[index].date;
-      const [year, month, day] = date.slice(0, 10).split("-").map(Number);
-      const local = new Date(year, month - 1, day);
-      let label: string;
-      if (intraday) {
-        label =
-          date.slice(0, 10) === previousDay
-            ? date.slice(11, 16)
-            : new Intl.DateTimeFormat(locale, {
-                month: "numeric",
-                day: "numeric",
-              }).format(local);
-      } else if (params.interval === "1wk" || params.interval === "1mo") {
-        label = new Intl.DateTimeFormat(locale, {
-          year: "2-digit",
-          month: "short",
-        }).format(local);
-      } else {
-        label = new Intl.DateTimeFormat(
-          locale,
-          String(year) !== previousYear && previousYear
-            ? { year: "numeric", month: "short" }
-            : { month: "short", day: "numeric" },
-        ).format(local);
-      }
-      previousDay = date.slice(0, 10);
-      previousYear = String(year);
-      if (xOf(index) > 24 && xOf(index) < plotW - 24) ticks.push({ index, label });
-    }
-    return ticks;
-  })();
-  const visibleExtremes = (() => {
-    if (!bars || lastVisible < firstVisible) return null;
-    let high = firstVisible;
-    let low = firstVisible;
-    for (let index = firstVisible; index <= lastVisible; index++) {
-      if (bars[index].high > bars[high].high) high = index;
-      if (bars[index].low < bars[low].low) low = index;
-    }
-    return { high, low };
-  })();
-  const edgeX = (index: number) => Math.min(Math.max(xOf(index), 36), plotW - 36);
-  const legend = indicatorOrder.filter((key) => key !== "volume" && activeIndicators.has(key));
-  const legendValue = (key: IndicatorKey) => {
-    const value =
-      key === "bb" ? series.bb.middle[shownIndex] : lines[key as keyof typeof lines][shownIndex];
-    return value === null || value === undefined ? "—" : value.toFixed(2);
-  };
-  const lastTone = last && last.close >= (bars?.[count - 2]?.close ?? last.open) ? "positive" : "negative";
 
   const hideDrawingsControl = (
             <Dialog open={hideDrawingsOpen} onOpenChange={setHideDrawingsOpen}>
@@ -1114,41 +1073,369 @@ export default function ChartView({
         )}
   </>);
 
+  /**
+   * Advanced mode's candles / indicators painted on the shared `PriceGraph` geometry. The graph
+   * owns the SVG, the axes and every pointer/keyboard gesture; this callback only draws the
+   * marks, so both modes keep one price scale and one interaction model.
+   */
+  function renderAdvancedPlot(current: GraphGeometry): ReactNode {
+    if (!bars || !count) return null;
+    const firstVisible = current.firstIndex;
+    const lastVisible = current.lastIndex;
+    const plotW = current.plotWidth;
+    const plotH = current.plotHeight;
+    const slot = plotW / Math.max(current.view.end - current.view.start, 1e-6);
+    const priceBottom = current.priceBottom;
+    const volumeH = showVolume ? Math.max(priceBottom - current.priceTop, 1) * 0.18 : 0;
+    /** Candle bodies, indicator paths and volume all key off the graph's own scale. */
+    const y = (price: number) => current.yOf(price);
+    const x = (index: number) => current.xOf(index);
+    const path = (values: Series) => {
+      let d = "";
+      let pen = false;
+      for (let index = Math.max(firstVisible - 1, 0); index <= Math.min(lastVisible + 1, count - 1); index++) {
+        const value = values[index];
+        if (value === null || value === undefined) {
+          pen = false;
+          continue;
+        }
+        d += `${pen ? "L" : "M"}${x(index).toFixed(1)},${y(value).toFixed(1)}`;
+        pen = true;
+      }
+      return d;
+    };
+    const band = () => {
+      const upper: string[] = [];
+      const lower: string[] = [];
+      for (let index = Math.max(firstVisible - 1, 0); index <= Math.min(lastVisible + 1, count - 1); index++) {
+        const top = series.bb.upper[index];
+        const bottom = series.bb.lower[index];
+        if (top === null || bottom === null) continue;
+        upper.push(`${x(index).toFixed(1)},${y(top).toFixed(1)}`);
+        lower.unshift(`${x(index).toFixed(1)},${y(bottom).toFixed(1)}`);
+      }
+      return upper.length ? `M${upper.join("L")}L${lower.join("L")}Z` : "";
+    };
+    const visibleExtremes = (() => {
+      if (lastVisible < firstVisible) return null;
+      let high = firstVisible;
+      let low = firstVisible;
+      for (let index = firstVisible; index <= lastVisible; index++) {
+        if (bars[index].high > bars[high].high) high = index;
+        if (bars[index].low < bars[low].low) low = index;
+      }
+      return { high, low };
+    })();
+    const lastTone = last && last.close >= (bars[count - 2]?.close ?? last.open) ? "positive" : "negative";
+    const maxVolume = yRange.maxVolume || 1;
+    return (
+      <>
+        {activeIndicators.has("bb") && (
+          <>
+            <path d={band()} fill={indicatorMeta.bb.color} fillOpacity={0.07} />
+            <path d={path(series.bb.upper)} fill="none" stroke={indicatorMeta.bb.color} strokeWidth={1} />
+            <path d={path(series.bb.lower)} fill="none" stroke={indicatorMeta.bb.color} strokeWidth={1} />
+            <path d={path(series.bb.middle)} fill="none" stroke={indicatorMeta.bb.color} strokeWidth={1} strokeDasharray="3 3" />
+          </>
+        )}
+        {bars.slice(firstVisible, lastVisible + 1).map((bar, offset) => {
+          const index = firstVisible + offset;
+          const fill = bar.close >= bar.open ? "rgb(var(--chart-up))" : "rgb(var(--chart-down))";
+          const top = y(Math.max(bar.open, bar.close));
+          const bottom = y(Math.min(bar.open, bar.close));
+          const cx = x(index);
+          const width = Math.max(slot * 0.62, 1);
+          const volume = showVolume ? ((bar.volume || 0) / maxVolume) * volumeH : 0;
+          return (
+            <g key={bar.date}>
+              {showVolume && (
+                <rect x={cx - width / 2} y={plotH - volume} width={width} height={volume} fill={fill} opacity={0.28} />
+              )}
+              <line x1={cx} x2={cx} y1={y(bar.high)} y2={y(bar.low)} stroke={fill} strokeWidth={1} />
+              <rect x={cx - width / 2} y={top} width={width} height={Math.max(bottom - top, 1)} fill={fill} />
+            </g>
+          );
+        })}
+        {(["vwap", "ema5", "ema20", "ema50", "ema200"] as const).map((key) =>
+          activeIndicators.has(key) ? (
+            <path key={key} d={path(lines[key])} fill="none" stroke={indicatorMeta[key].color} strokeWidth={1.5} strokeLinejoin="round" />
+          ) : null,
+        )}
+        {last && (
+          <line
+            x1={0}
+            x2={plotW}
+            y1={y(last.close)}
+            y2={y(last.close)}
+            stroke={lastTone === "positive" ? "rgb(var(--chart-up))" : "rgb(var(--chart-down))"}
+            strokeOpacity={0.45}
+          />
+        )}
+        {/* the window's high / low as quiet floating numerals, as in the reference */}
+        {visibleExtremes && (
+          <>
+            <ExtremeTag side="high" value={bars[visibleExtremes.high].high} x={x(visibleExtremes.high)} y={Math.max(y(bars[visibleExtremes.high].high) - 6, 1)} clamp={plotW} />
+            <ExtremeTag side="low" value={bars[visibleExtremes.low].low} x={x(visibleExtremes.low)} y={Math.min(y(bars[visibleExtremes.low].low) + 6, plotH - 16)} clamp={plotW} />
+          </>
+        )}
+      </>
+    );
+  }
+
+  /** Indicator swatches for the toolbar state and the values printed over the plot. */
+  const legend = indicatorOrder.filter((key) => key !== "volume" && activeIndicators.has(key));
+  const legendValue = (key: IndicatorKey) => {
+    const value = key === "bb" ? series.bb.middle[shownIndex] : lines[key as keyof typeof lines][shownIndex];
+    return value === null || value === undefined ? "—" : value.toFixed(2);
+  };
+
+  /** Backgrounded nodes over the advanced plot: indicator values and the creator-call popover. */
+  const advancedOverlay = (
+    <>
+      {legend.length > 0 && (
+        <div
+          className="pointer-events-none absolute left-2 top-1 flex flex-wrap gap-x-3 gap-y-0.5 rounded-md bg-background/70 px-1.5 py-0.5 text-[11px] tabular-nums backdrop-blur-sm"
+          style={{ maxWidth: Math.max(size.width - GRAPH_AXIS_WIDTH - 16, 120) }}
+        >
+          {legend.map((key) => (
+            <span key={key} className="whitespace-nowrap">
+              <span className="text-muted-foreground">{indicatorMeta[key].label}</span>{" "}
+              <span className="font-semibold" style={{ color: indicatorMeta[key].color }}>
+                {legendValue(key)}
+              </span>
+            </span>
+          ))}
+        </div>
+      )}
+      {activeEvents.length > 0 && !drawing && !gesture.current && active !== null && (
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute top-6 z-10 w-64 max-w-[calc(100%-1rem)] rounded-3xl border border-border bg-background/95 p-2.5 text-xs shadow-lg backdrop-blur"
+          style={
+            xOf(active) > plotW / 2
+              ? { right: Math.max(size.width - xOf(active) + 12, 0) }
+              : { left: Math.min(xOf(active) + 12, Math.max(plotW - 256, 0)) }
+          }
+        >
+          <ul className="space-y-2">
+            {activeEvents.slice(0, 4).map((opinion) => (
+              <li key={opinion.id} className="flex min-w-0 gap-2">
+                <CreatorAvatar
+                  name={opinion.channel_title || opinion.channel_id}
+                  avatarUrl={opinion.channel_avatar_url}
+                  size="xs"
+                  className="mt-0.5"
+                />
+                <span className="min-w-0">
+                  <span className="flex min-w-0 items-baseline gap-1.5">
+                    <span className="truncate font-semibold text-foreground">
+                      {opinion.channel_title || opinion.channel_id}
+                    </span>
+                    <span className={cn("shrink-0 font-semibold", toneText[sentimentTone(opinion.sentiment)])}>
+                      {t(`youtubeOpinions.${opinion.sentiment}`)}
+                    </span>
+                  </span>
+                  {(opinion.summary || opinion.thesis) && (
+                    <span className="mt-0.5 line-clamp-2 leading-4 text-muted-foreground">
+                      {opinion.summary || opinion.thesis}
+                    </span>
+                  )}
+                </span>
+              </li>
+            ))}
+          </ul>
+          {activeEvents.length > 4 && (
+            <p className="mt-2 text-muted-foreground">
+              {t("youtubeOpinions.moreCalls", {
+                count: String(activeEvents.length - 4),
+              })}
+            </p>
+          )}
+        </div>
+      )}
+    </>
+  );
+
+  /**
+   * The drawing overlay, clipped to the plot box by `PriceGraph`. It is mounted for BOTH modes so
+   * a saved/AI drawing is visible in the preview too, but only advanced mode makes it editable.
+   */
+  const drawingLayerNode = loaded ? (
+    <ChartDrawingLayer
+      width={plotW}
+      height={Math.max(priceBottom, 1)}
+      drawings={drawings}
+      draft={draft?.drawing ?? null}
+      selectedId={advanced ? selectedId : null}
+      interactive={advanced && !drawing}
+      toPx={toPx}
+      barsBetween={barsBetween}
+      t={t}
+    />
+  ) : null;
+
+  /** Oscillator strip under the time axis, sharing the graph's visible window. */
+  const oscillatorPane = advanced && loaded && oscillator && bars ? (
+    <OscillatorPane
+      bars={bars}
+      kind={oscillator}
+      onChange={changeOscillator}
+      width={size.width}
+      axisWidth={GRAPH_AXIS_WIDTH}
+      start={current.start}
+      end={current.end}
+      active={active}
+      onActive={setActive}
+      t={t}
+    />
+  ) : null;
+
+  /** Advanced-only toggles that sit in the graph's control row after the range bar. */
+  const intervalControl = (
+    <Select
+      disabled={Boolean(snapshotBars)}
+      value={snapshotBars ? compactParams.interval : interval}
+      onValueChange={(value) => setChartInterval(value as ChartInterval)}
+    >
+      <SelectTrigger className="h-11 w-[92px] rounded-full text-[13px] sm:h-8" aria-label={t("youtubeOpinions.interval")}>
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+        {(snapshotBars && compactParams.interval ? [compactParams.interval] : rangeIntervals[range]).map((item) => (
+          <SelectItem key={item} value={item}>
+            {t(`youtubeOpinions.intervals.${item}`)}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
+  const autoScaleControl = (
+    <button
+      type="button"
+      aria-pressed={autoScale}
+      onClick={() => setAutoScale((value) => !value)}
+      className={cn(pill(autoScale), "gap-1.5")}
+    >
+      {autoScale ? <Lock className="h-3.5 w-3.5" aria-hidden="true" /> : <LockOpen className="h-3.5 w-3.5" aria-hidden="true" />}
+      {t("youtubeOpinions.autoScale")}
+    </button>
+  );
+  const hideDrawingsSlot = drawingAi.status === "done" ? hideDrawingsControl : null;
+
+  /** Compact draw hint / legend lives under the graph, where the reference keeps its notes. */
+  const compactFooter = drawing ? (
+    <span className="text-xs text-muted-foreground">
+      {t((tool === "hline" || tool === "vline") ? "youtubeOpinions.drawHintSingle" : "youtubeOpinions.drawHint")}
+    </span>
+  ) : showCalls && calls.size > 0 ? (
+    <span className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
+      <span className="inline-flex items-center gap-1">
+        <span className="text-positive" aria-hidden="true">
+          ▲
+        </span>
+        {t("youtubeOpinions.bullish")}
+        <span className="text-negative" aria-hidden="true">
+          ▼
+        </span>
+        {t("youtubeOpinions.bearish")}
+      </span>
+      <span>{t("youtubeOpinions.opinionMarkers")}</span>
+    </span>
+  ) : null;
+
+  const graph = (
+    <PriceGraph
+      mode={mode}
+      heightClass={heightClass}
+      bars={bars}
+      loading={!bars && !error}
+      error={error}
+      onRetry={() => setAttempt((value) => value + 1)}
+      view={view}
+      onViewChange={setView}
+      range={(advanced ? range : (rangeProp ?? rangeState)) as PriceRangeKey}
+      onRangeChange={(next) => {
+        if (advanced) {
+          if (!advancedRanges.includes(next as AdvancedRange) || snapshotBars) return;
+          const nextRange = next as AdvancedRange;
+          setRangeState(nextRange);
+          if (!rangeIntervals[nextRange].includes(interval)) setChartInterval(defaultInterval[nextRange]);
+          setView(null);
+          return;
+        }
+        selectRange(next);
+      }}
+      rangeOpen={rangeOpen}
+      onRangeOpenChange={onRangeOpenChange}
+      rangeOptions={graphRangeOptions}
+      rangeLabel={advanced && snapshotBars ? undefined : rangeLabel}
+      rangeStart={advanced ? rangeStart(range, times[count - 1] ?? Date.now()) : undefined}
+      calls={callCounts}
+      showCalls={showCalls}
+      activeIndex={active}
+      onActiveChange={setActive}
+      onOpenAdvanced={advanced ? undefined : onOpenAdvanced}
+      renderPlot={advanced ? renderAdvancedPlot : undefined}
+      drawingLayer={drawingLayerNode}
+      overlay={advanced ? advancedOverlay : null}
+      subPane={oscillatorPane}
+      trailingControls={advanced ? (
+        <>
+          {intervalControl}
+          {autoScaleControl}
+          {hideDrawingsSlot}
+        </>
+      ) : null}
+      formatDate={formatDate}
+      t={t}
+      symbol={symbol}
+      interval={params.interval || "1d"}
+      intraday={intraday}
+      rangeChangeLabel={t("youtubeOpinions.priceRangeChange")}
+      plotAriaLabel={advanced ? t("youtubeOpinions.priceChartLabel") : t("youtubeOpinions.advancedChartTitle", { symbol })}
+    />
+  );
+
   return (
     <div className={cn("min-w-0", advanced && "flex h-full min-h-0 gap-4")}>
       <div className={cn("min-w-0", advanced && "flex min-h-0 flex-1 flex-col")}>
-      {advanced && (
-        <div className="flex shrink-0 items-center gap-3">
-          <h2 className="text-lg font-semibold">{symbol}</h2>
-          {last && (
-            <span className="flex items-baseline gap-2 text-sm tabular-nums">
-              <span className="font-semibold">{formatPrice(last.close)}</span>
-              <span className={rangeChange >= 0 ? "text-positive" : "text-negative"}>{formatChangePercent(rangeChange)}</span>
-            </span>
-          )}
-          <div className="ml-auto flex shrink-0 items-center gap-2">
-            <div className="lg:hidden">
-              <Popover>
-                <PopoverTrigger asChild><Button size="sm" variant="outline">{t("youtubeOpinions.ai.actions")}</Button></PopoverTrigger>
-                <PopoverContent align="end" className="max-h-[70dvh] w-80 max-w-[calc(100vw-32px)] overflow-y-auto overscroll-contain p-4">
-                  {aiControls}{aiResults}
-                </PopoverContent>
-              </Popover>
+        {advanced && (
+          <div className="flex shrink-0 items-center gap-3">
+            <h2 className="text-lg font-semibold">{symbol}</h2>
+            {last && (
+              <span className="flex items-baseline gap-2 text-sm tabular-nums">
+                <span className="font-semibold">{formatPrice(last.close)}</span>
+                <span className={rangeChange >= 0 ? "text-positive" : "text-negative"}>{formatChangePercent(rangeChange)}</span>
+              </span>
+            )}
+            <div className="ml-auto flex shrink-0 items-center gap-2">
+              <div className="lg:hidden">
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button size="sm" variant="outline">
+                      {t("youtubeOpinions.ai.actions")}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent align="end" className="max-h-[70dvh] w-80 max-w-[calc(100vw-32px)] overflow-y-auto overscroll-contain p-4">
+                    {aiControls}
+                    {aiResults}
+                  </PopoverContent>
+                </Popover>
+              </div>
+              {headerActions}
             </div>
-            {headerActions}
           </div>
-        </div>
-      )}
+        )}
 
-      {advanced && <div className="lg:hidden">{aiStatus}</div>}
+        {advanced && <div className="lg:hidden">{aiStatus}</div>}
 
-      <div className={cn("flex shrink-0 items-start gap-3", advanced && "mt-1")}>
-        <div
-          className="flex min-h-8 min-w-0 flex-1 flex-wrap items-center gap-x-3 gap-y-1 text-[13px] tabular-nums"
-          aria-live="polite"
-        >
-          {shownBar ? (
-            advanced ? (
+        {/* active-bar numbers: the graph prints the header line, advanced mode adds OHLC + calls */}
+        {advanced && (
+          <div
+            className="mt-1 flex min-h-8 min-w-0 flex-wrap items-center gap-x-3 gap-y-1 text-[13px] tabular-nums"
+            aria-live="polite"
+          >
+            {shownBar ? (
               <>
                 <span className="font-medium text-foreground">{barLabel(shownBar)}</span>
                 {stat(t("youtubeOpinions.priceOpen"), formatPrice(shownBar.open))}
@@ -1172,675 +1459,248 @@ export default function ChartView({
                   )}
               </>
             ) : (
-              <>
-                <span className="text-base font-semibold text-foreground">{formatPrice(shownBar.close)}</span>
-                {activeBar && <span className="text-muted-foreground">{barLabel(activeBar)}</span>}
-                <span className={cn("font-medium", rangeChange >= 0 ? "text-positive" : "text-negative")}>
-                  {formatChangePercent(rangeChange)}
-                </span>
-                <span className="text-muted-foreground">{t("youtubeOpinions.priceRangeChange")}</span>
-              </>
-            )
-          ) : (
-            <Skeleton className="h-4 w-48" />
-          )}
-        </div>
-      </div>
+              <Skeleton className="h-4 w-48" />
+            )}
+          </div>
+        )}
 
-      {!advanced && aiStatus}
+        {!advanced && aiStatus}
 
-      <div
-        id={drawingToolbarId}
-        role="toolbar"
-        aria-label={t("youtubeOpinions.drawTools")}
-        className={cn("shrink-0 flex-wrap items-center gap-1 border-b border-border sm:flex-nowrap sm:overflow-x-auto", advanced ? "flex mt-1 pb-1" : "hidden")}
-      >
-        <Popover>
-          <PopoverTrigger asChild>
-            <button type="button" aria-label={t("youtubeOpinions.drawTools")} title={t("youtubeOpinions.drawTools")} className={cn(iconButton(drawing), "sm:hidden")}>
-              {(() => { const Icon = tools.find(item => item.value === tool)?.icon || MousePointer2; return <Icon className="h-4 w-4" />; })()}
-            </button>
-          </PopoverTrigger>
-          <PopoverContent align="start" className="grid w-64 max-w-[calc(100vw-32px)] grid-cols-2 gap-1 p-2">
-            {tools.map(item => {
-              const Icon = item.icon;
-              return <button key={item.value} type="button" aria-pressed={tool === item.value}
-                className={cn("flex min-h-11 items-center gap-2 rounded-full px-2 text-left text-sm focus-visible:outline-none ", tool === item.value ? "bg-muted font-semibold" : "hover:bg-muted")}
-                onClick={() => { setTool(item.value); setDraft(null); if (item.value !== "cursor") setSelectedId(null); }}>
-                <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />{t(`youtubeOpinions.${item.label}`)}
-              </button>;
-            })}
-          </PopoverContent>
-        </Popover>
-        <div className="hidden items-center gap-1 sm:flex">{tools.map((item) => {
-          const Icon = item.icon;
-          return (
-            <button
-              key={item.value}
-              type="button"
-              title={t(`youtubeOpinions.${item.label}`)}
-              aria-label={t(`youtubeOpinions.${item.label}`)}
-              aria-pressed={tool === item.value}
-              onClick={() => {
-                setTool(item.value);
-                setDraft(null);
-                if (item.value !== "cursor") setSelectedId(null);
-              }}
-              className={iconButton(tool === item.value)}
-            >
-              <Icon className="h-4 w-4" />
-            </button>
-          );
-        })}</div>
-        <span className="mx-1 hidden h-5 w-px shrink-0 bg-border sm:block" aria-hidden="true" />
-        <Popover>
-          <PopoverTrigger asChild>
-            <button type="button" aria-label={t("youtubeOpinions.drawColor")} title={t("youtubeOpinions.drawColor")} className={iconButton(false)}>
-              <span className="h-4 w-4 rounded-full " style={{ backgroundColor: selected?.color ?? color }} />
-            </button>
-          </PopoverTrigger>
-          <PopoverContent align="start" className="w-auto p-2">
-        <div role="radiogroup" aria-label={t("youtubeOpinions.drawColor")} className="flex shrink-0 items-center gap-1">
-          {drawingColors.map((value, index) => {
-            const isCurrent = (selected?.color ?? color) === value;
+        <div
+          id={drawingToolbarId}
+          role="toolbar"
+          aria-label={t("youtubeOpinions.drawTools")}
+          className={cn("shrink-0 flex-wrap items-center gap-1 border-b border-border sm:flex-nowrap sm:overflow-x-auto", advanced ? "flex mt-1 pb-1" : "hidden")}
+        >
+          <Popover>
+            <PopoverTrigger asChild>
+              <button type="button" aria-label={t("youtubeOpinions.drawTools")} title={t("youtubeOpinions.drawTools")} className={cn(iconButton(drawing), "sm:hidden")}>
+                {(() => { const Icon = tools.find(item => item.value === tool)?.icon || MousePointer2; return <Icon className="h-4 w-4" />; })()}
+              </button>
+            </PopoverTrigger>
+            <PopoverContent align="start" className="grid w-64 max-w-[calc(100vw-32px)] grid-cols-2 gap-1 p-2">
+              {tools.map(item => {
+                const Icon = item.icon;
+                return <button key={item.value} type="button" aria-pressed={tool === item.value}
+                  className={cn("flex min-h-11 items-center gap-2 rounded-full px-2 text-left text-sm focus-visible:outline-none ", tool === item.value ? "bg-primary/10 font-semibold text-primary-text" : "hover:bg-primary/[0.08] hover:text-primary-text")}
+                  onClick={() => { setTool(item.value); setDraft(null); if (item.value !== "cursor") setSelectedId(null); }}>
+                  <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />{t(`youtubeOpinions.${item.label}`)}
+                </button>;
+              })}
+            </PopoverContent>
+          </Popover>
+          <div className="hidden items-center gap-1 sm:flex">{tools.map((item) => {
+            const Icon = item.icon;
             return (
               <button
-                key={value}
+                key={item.value}
                 type="button"
-                role="radio"
-                aria-checked={isCurrent}
-                aria-label={`${t("youtubeOpinions.drawColor")} ${index + 1}`}
-                onClick={() => pickColor(value)}
-                className="inline-flex h-11 w-11 items-center justify-center rounded-full focus-visible:outline-none "
+                title={t(`youtubeOpinions.${item.label}`)}
+                aria-label={t(`youtubeOpinions.${item.label}`)}
+                aria-pressed={tool === item.value}
+                onClick={() => {
+                  setTool(item.value);
+                  setDraft(null);
+                  if (item.value !== "cursor") setSelectedId(null);
+                }}
+                className={iconButton(tool === item.value)}
               >
-                <span
-                  className={cn(
-                    "h-3.5 w-3.5 rounded-full ",
-                    isCurrent && " ",
-                  )}
-                  style={{ backgroundColor: value }}
-                />
+                <Icon className="h-4 w-4" />
               </button>
             );
-          })}
-        </div>
-          </PopoverContent>
-        </Popover>
-        <span className="mx-1 hidden h-5 w-px shrink-0 bg-border sm:block" aria-hidden="true" />
-        <button
-          type="button"
-          title={t("youtubeOpinions.magnet")}
-          aria-label={t("youtubeOpinions.magnet")}
-          aria-pressed={magnet}
-          onClick={() => setMagnet((value) => !value)}
-          className={iconButton(magnet)}
-        >
-          <Magnet className="h-4 w-4" />
-        </button>
-        <button
-          type="button"
-          title={t("youtubeOpinions.showCalls")}
-          aria-label={t("youtubeOpinions.showCalls")}
-          aria-pressed={showCalls}
-          onClick={() => setShowCalls((value) => !value)}
-          className={iconButton(showCalls)}
-        >
-          {showCalls ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
-        </button>
-        <Popover>
-          <PopoverTrigger asChild>
-            <button
-              type="button"
-              title={t("youtubeOpinions.indicators")}
-              aria-label={t("youtubeOpinions.indicators")}
-              className={iconButton(legend.length > 0)}
-            >
-              <Activity className="h-4 w-4" />
-            </button>
-          </PopoverTrigger>
-          <PopoverContent align="start" className="w-56 p-1.5">
-            <p className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">{t("youtubeOpinions.indicators")}</p>
-            {indicatorOrder.map((key) => (
-              <button
-                key={key}
-                type="button"
-                aria-pressed={activeIndicators.has(key)}
-                onClick={() => toggleIndicator(key)}
-                className="flex w-full items-center gap-2.5 rounded-full px-2 py-1.5 text-sm hover:bg-muted focus-visible:outline-none "
-              >
-                <span
-                  className={cn(
-                    "flex h-4 w-4 items-center justify-center rounded border border-border text-[10px]",
-                    activeIndicators.has(key) && "border-foreground bg-foreground text-background",
-                  )}
-                  aria-hidden="true"
-                >
-                  {activeIndicators.has(key) ? "✓" : ""}
-                </span>
-                <span
-                  className="h-0.5 w-3 rounded-full"
-                  style={{ backgroundColor: indicatorMeta[key].color }}
-                  aria-hidden="true"
-                />
-                {key === "volume" ? t("youtubeOpinions.priceVolumeFull") : indicatorMeta[key].label}
+          })}</div>
+          <span className="mx-1 hidden h-5 w-px shrink-0 bg-border sm:block" aria-hidden="true" />
+          <Popover>
+            <PopoverTrigger asChild>
+              <button type="button" aria-label={t("youtubeOpinions.drawColor")} title={t("youtubeOpinions.drawColor")} className={iconButton(false)}>
+                <span className="h-4 w-4 rounded-full " style={{ backgroundColor: selected?.color ?? color }} />
               </button>
-            ))}
-            <div className="mt-1 border-t border-border pt-1" role="group" aria-label={t("youtubeOpinions.oscillators")}>
-              <p className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">{t("youtubeOpinions.oscillators")}</p>
-              {(["kdj", "macd", "rsi"] as const).map(value => <button key={value} type="button" aria-pressed={oscillator === value} onClick={() => changeOscillator(oscillator === value ? null : value)} className={cn("flex min-h-11 w-full items-center rounded-full px-2 text-left text-sm hover:bg-muted focus-visible:outline-none", oscillator === value && "bg-muted font-semibold")}>
-                {oscillatorLabels[value]}
-              </button>)}
-            </div>
-          </PopoverContent>
-        </Popover>
-        <div className="ml-auto flex w-full shrink-0 flex-wrap items-center justify-end gap-1 sm:w-auto sm:flex-nowrap">
-          <button
-            type="button"
-            title={t("youtubeOpinions.zoomIn")}
-            aria-label={t("youtubeOpinions.zoomIn")}
-            disabled={!loaded}
-            onClick={() => zoomRef.current(0.7, 0.85)}
-            className={iconButton(false)}
-          >
-            <ZoomIn className="h-4 w-4" />
-          </button>
-          <button
-            type="button"
-            title={t("youtubeOpinions.zoomOut")}
-            aria-label={t("youtubeOpinions.zoomOut")}
-            disabled={!loaded}
-            onClick={() => zoomRef.current(1.4, 0.85)}
-            className={iconButton(false)}
-          >
-            <ZoomOut className="h-4 w-4" />
-          </button>
-          <button
-            type="button"
-            title={t("youtubeOpinions.resetZoom")}
-            aria-label={t("youtubeOpinions.resetZoom")}
-            disabled={!view}
-            onClick={resetView}
-            className={iconButton(false)}
-          >
-            <RotateCcw className="h-4 w-4" />
-          </button>
-          <span className="mx-1 h-5 w-px shrink-0 bg-border" aria-hidden="true" />
-          <span
-            role="status"
-            title={t(`youtubeOpinions.sync.${syncStatus}`)}
-            aria-label={t(`youtubeOpinions.sync.${syncStatus}`)}
-            className={cn(
-              "inline-flex h-8 w-8 items-center justify-center",
-              syncStatus === "offline" ? "text-negative" : "text-muted-foreground",
-            )}
-          >
-            <SyncIcon className={cn("h-4 w-4", (syncStatus === "loading" || syncStatus === "syncing") && "animate-spin")} />
-          </span>
-          <button
-            type="button"
-            title={t("youtubeOpinions.undo")}
-            aria-label={t("youtubeOpinions.undo")}
-            disabled={!canUndo}
-            onClick={undo}
-            className={iconButton(false)}
-          >
-            <Undo2 className="h-4 w-4" />
-          </button>
-          <button
-            type="button"
-            title={t("youtubeOpinions.deleteDrawing")}
-            aria-label={t("youtubeOpinions.deleteDrawing")}
-            disabled={!selectedId}
-            onClick={removeSelected}
-            className={iconButton(false)}
-          >
-            <X className="h-4 w-4" />
-          </button>
-          <button
-            type="button"
-            title={t("youtubeOpinions.clearDrawings")}
-            aria-label={t("youtubeOpinions.clearDrawings")}
-            disabled={!drawings.length}
-            onClick={() => {
-              setDrawings([]);
-              setSelectedId(null);
-            }}
-            className={iconButton(false)}
-          >
-            <Trash2 className="h-4 w-4" />
-          </button>
-        </div>
-      </div>
-
-      <div className={cn(advanced && "flex min-h-0 flex-1 flex-col")}>
-        <div className={cn("min-w-0", advanced && "flex min-h-0 flex-1 flex-col")}>
-          <div
-            ref={setBox}
-            role={advanced ? "slider" : "group"}
-            tabIndex={advanced ? 0 : undefined}
-            aria-label={t("youtubeOpinions.priceChartLabel")}
-            aria-valuemin={advanced ? 0 : undefined}
-            aria-valuemax={advanced ? Math.max(count - 1, 0) : undefined}
-            aria-valuenow={advanced ? active ?? Math.max(lastVisible, 0) : undefined}
-            aria-valuetext={advanced && activeBar ? `${barLabel(activeBar)} ${formatPrice(activeBar.close)}` : undefined}
-            onPointerDown={advanced ? handlePointerDown : undefined}
-            onPointerMove={handlePointerMove}
-            onPointerUp={advanced ? handlePointerUp : undefined}
-            onPointerCancel={(event) => {
-              pointers.current.delete(event.pointerId);
-              gesture.current = null;
-              setDraft(null);
-            }}
-            onPointerLeave={() => {
-              if (gesture.current) return;
-              setActive(null);
-              setHoverY(null);
-            }}
-            onDoubleClick={(event) => {
-              if (!drawing && !(event.target as Element).closest("[data-drawing]")) resetView();
-            }}
-            onKeyDown={advanced ? handleKey : undefined}
-            onBlur={() => setActive(null)}
-            className={cn(
-              "relative mt-3 select-none overflow-hidden rounded-2xl focus-visible:outline-none ",
-              heightClass,
-              drawing ? "cursor-crosshair" : gesture.current?.kind === "pan" ? "cursor-grabbing" : "cursor-crosshair",
-              drawing || selectedId || advanced ? "touch-none" : "touch-pan-y",
-            )}
-          >
-            {!advanced && onOpenAdvanced && loaded && <button
-              type="button"
-              onClick={onOpenAdvanced}
-              aria-label={t("youtubeOpinions.advancedChartTitle", { symbol })}
-              className="absolute inset-0 z-20 cursor-pointer rounded-2xl focus-visible:outline-none focus-visible:bg-muted/10"
-            />}
-            {!loaded ? (
-              <Skeleton className="absolute inset-0" />
-            ) : (
-              <>
-                <svg width={size.width} height={size.height} className="pointer-events-none absolute inset-0" aria-hidden="true">
-                  <defs>
-                    <clipPath id={`plot-${mode}`}>
-                      <rect x={0} y={0} width={plotW} height={plotH} />
-                    </clipPath>
-                  </defs>
-                  {priceTicks.map((value) => (
-                    <line key={value} x1={0} x2={plotW} y1={yOf(value)} y2={yOf(value)} stroke="rgb(var(--foreground) / 0.06)" />
-                  ))}
-                  <g clipPath={`url(#plot-${mode})`}>
-                    {activeIndicators.has("bb") && (
-                      <>
-                        <path d={band()} fill={indicatorMeta.bb.color} fillOpacity={0.07} />
-                        <path d={path(series.bb.upper)} fill="none" stroke={indicatorMeta.bb.color} strokeWidth={1} />
-                        <path d={path(series.bb.lower)} fill="none" stroke={indicatorMeta.bb.color} strokeWidth={1} />
-                        <path
-                          d={path(series.bb.middle)}
-                          fill="none"
-                          stroke={indicatorMeta.bb.color}
-                          strokeWidth={1}
-                          strokeDasharray="3 3"
-                        />
-                      </>
-                    )}
-                    {!advanced && <path d={path(bars!.map(bar => bar.close))} fill="none" stroke={rangeChange >= 0 ? "rgb(var(--chart-up))" : "rgb(var(--chart-down))"} strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" />}
-                    {advanced && bars!.slice(firstVisible, lastVisible + 1).map((bar, offset) => {
-                      const index = firstVisible + offset;
-                      const fill = bar.close >= bar.open ? "rgb(var(--chart-up))" : "rgb(var(--chart-down))";
-                      const top = yOf(Math.max(bar.open, bar.close));
-                      const bottom = yOf(Math.min(bar.open, bar.close));
-                      const cx = xOf(index);
-                      const width = Math.max(slot * 0.62, 1);
-                      const volume = showVolume ? ((bar.volume || 0) / yRange.maxVolume) * volumeH : 0;
-                      return (
-                        <g key={bar.date}>
-                          {showVolume && (
-                            <rect
-                              x={cx - width / 2}
-                              y={plotH - volume}
-                              width={width}
-                              height={volume}
-                              fill={fill}
-                              opacity={0.28}
-                            />
-                          )}
-                          <line x1={cx} x2={cx} y1={yOf(bar.high)} y2={yOf(bar.low)} stroke={fill} strokeWidth={1} />
-                          <rect x={cx - width / 2} y={top} width={width} height={Math.max(bottom - top, 1)} fill={fill} />
-                        </g>
-                      );
-                    })}
-                    {(["vwap", "ema5", "ema20", "ema50", "ema200"] as const).map((key) =>
-                      activeIndicators.has(key) ? (
-                        <path
-                          key={key}
-                          d={path(lines[key])}
-                          fill="none"
-                          stroke={indicatorMeta[key].color}
-                          strokeWidth={1.5}
-                          strokeLinejoin="round"
-                        />
-                      ) : null,
-                    )}
-                    {last && (
-                      <line
-                        x1={0}
-                        x2={plotW}
-                        y1={yOf(last.close)}
-                        y2={yOf(last.close)}
-                        stroke={lastTone === "positive" ? "rgb(var(--chart-up))" : "rgb(var(--chart-down))"}
-                        strokeOpacity={0.45}
-                      />
-                    )}
-                    {advanced && visibleExtremes && (
-                      <>
-                        <text
-                          x={edgeX(visibleExtremes.high)}
-                          y={yOf(bars![visibleExtremes.high].high) - 6}
-                          textAnchor="middle"
-                          fontSize={11}
-                          fill="rgb(var(--muted-foreground))"
-                          className="tabular-nums"
-                        >
-                          {`H: ${bars![visibleExtremes.high].high.toFixed(2)}`}
-                        </text>
-                        <text
-                          x={edgeX(visibleExtremes.low)}
-                          y={yOf(bars![visibleExtremes.low].low) + 14}
-                          textAnchor="middle"
-                          fontSize={11}
-                          fill="rgb(var(--muted-foreground))"
-                          className="tabular-nums"
-                        >
-                          {`L: ${bars![visibleExtremes.low].low.toFixed(2)}`}
-                        </text>
-                      </>
-                    )}
-                  </g>
-                  <line x1={plotW} x2={plotW} y1={0} y2={plotH} stroke="rgb(var(--border))" />
-                  <line x1={0} x2={plotW} y1={plotH} y2={plotH} stroke="rgb(var(--border))" />
-                  {priceTicks.map((value) => (
-                    <text
-                      key={value}
-                      x={plotW + 8}
-                      y={yOf(value) + 4}
-                      fontSize={11}
-                      fill="rgb(var(--muted-foreground))"
-                      className="tabular-nums"
-                    >
-                      {value.toFixed(value >= 1000 ? 0 : 2)}
-                    </text>
-                  ))}
-                  {timeTicks.map((tick) => (
-                    <text
-                      key={tick.index}
-                      x={xOf(tick.index)}
-                      y={plotH + 15}
-                      textAnchor="middle"
-                      fontSize={11}
-                      fill="rgb(var(--muted-foreground))"
-                      className="tabular-nums"
-                    >
-                      {tick.label}
-                    </text>
-                  ))}
-                </svg>
-
-                {showCalls &&
-                  Array.from(calls.entries()).map(([index, entry]) => {
-                    if (index < firstVisible || index > lastVisible) return null;
-                    const bar = bars![index];
-                    const left = xOf(index);
-                    const below = yOf(advanced ? bar.low : bar.close) + 4;
-                    return (
-                      <span key={index}>
-                        {entry.bearish.length > 0 && (
-                          <CallMarker direction="down" count={entry.bearish.length} x={left} y={yOf(bar.high) - 4} />
-                        )}
-                        {entry.bullish.length > 0 && (
-                          <CallMarker direction="up" count={entry.bullish.length} x={left} y={below} />
-                        )}
-                        {entry.other.length > 0 && (
-                          <CallMarker
-                            direction="dot"
-                            count={entry.other.length}
-                            x={left}
-                            y={below + (entry.bullish.length ? (entry.bullish.length > 1 ? 20 : 10) : 0)}
-                          />
-                        )}
-                      </span>
-                    );
-                  })}
-
-                {advanced && <div className="absolute left-0 top-0 overflow-hidden" style={{ width: plotW, height: priceBottom }}>
-                  <ChartDrawingLayer
-                    width={plotW}
-                    height={priceBottom}
-                    drawings={drawings}
-                    draft={draft?.drawing ?? null}
-                    selectedId={selectedId}
-                    interactive={!drawing}
-                    toPx={toPx}
-                    barsBetween={barsBetween}
-                    t={t}
-                  />
-                </div>}
-
-                {legend.length > 0 && (
-                  <div
-                    className="pointer-events-none absolute left-2 top-1 flex flex-wrap gap-x-3 gap-y-0.5 rounded-md bg-background/70 px-1.5 py-0.5 text-[11px] tabular-nums backdrop-blur-sm"
-                    style={{ maxWidth: plotW - 16 }}
-                  >
-                    {legend.map((key) => (
-                      <span key={key} className="whitespace-nowrap">
-                        <span className="text-muted-foreground">{indicatorMeta[key].label}</span>{" "}
-                        <span className="font-semibold" style={{ color: indicatorMeta[key].color }}>
-                          {legendValue(key)}
-                        </span>
-                      </span>
-                    ))}
-                  </div>
-                )}
-
-                {last && yOf(last.close) >= 0 && yOf(last.close) <= plotH && (
-                  <span
-                    aria-hidden="true"
-                    className="pointer-events-none absolute -translate-y-1/2 rounded px-1.5 py-0.5 text-[11px] font-semibold tabular-nums text-white"
-                    style={{
-                      left: plotW + 2,
-                      top: yOf(last.close),
-                      backgroundColor: lastTone === "positive" ? "rgb(var(--chart-up))" : "rgb(var(--chart-down))",
-                    }}
-                  >
-                    {last.close.toFixed(2)}
-                  </span>
-                )}
-                {activeBar && (
-                  <>
-                    <span
-                      aria-hidden="true"
-                      className="pointer-events-none absolute top-0 w-px bg-foreground/25"
-                      style={{ left: xOf(active!), height: plotH }}
-                    />
-                    <span
-                      aria-hidden="true"
-                      className="pointer-events-none absolute -translate-x-1/2 whitespace-nowrap rounded bg-foreground px-1.5 py-0.5 text-[11px] font-medium tabular-nums text-background"
-                      style={{
-                        left: Math.min(Math.max(xOf(active!), 40), plotW - 40),
-                        top: plotH + 2,
-                      }}
-                    >
-                      {barLabel(activeBar)}
-                    </span>
-                  </>
-                )}
-                {hoverY !== null && (
-                  <>
-                    <span
-                      aria-hidden="true"
-                      className="pointer-events-none absolute left-0 h-px border-t border-dashed border-foreground/25"
-                      style={{ top: hoverY, width: plotW }}
-                    />
-                    <span
-                      aria-hidden="true"
-                      className="pointer-events-none absolute -translate-y-1/2 rounded bg-foreground px-1.5 py-0.5 text-[11px] font-medium tabular-nums text-background"
-                      style={{ left: plotW + 2, top: hoverY }}
-                    >
-                      {priceAt(hoverY).toFixed(2)}
-                    </span>
-                  </>
-                )}
-
-                {activeEvents.length > 0 && !drawing && !gesture.current && (
-                  <div
-                    aria-hidden="true"
-                    className="pointer-events-none absolute top-6 z-10 w-64 max-w-[calc(100%-1rem)] rounded-3xl border border-border bg-background/95 p-2.5 text-xs shadow-lg backdrop-blur"
-                    style={
-                      xOf(active!) > plotW / 2
-                        ? { right: Math.max(size.width - xOf(active!) + 12, 0) }
-                        : {
-                            left: Math.min(xOf(active!) + 12, Math.max(plotW - 256, 0)),
-                          }
-                    }
-                  >
-                    <ul className="space-y-2">
-                      {activeEvents.slice(0, 4).map((opinion) => (
-                        <li key={opinion.id} className="flex min-w-0 gap-2">
-                          <CreatorAvatar
-                            name={opinion.channel_title || opinion.channel_id}
-                            avatarUrl={opinion.channel_avatar_url}
-                            size="xs"
-                            className="mt-0.5"
-                          />
-                          <span className="min-w-0">
-                            <span className="flex min-w-0 items-baseline gap-1.5">
-                              <span className="truncate font-semibold text-foreground">
-                                {opinion.channel_title || opinion.channel_id}
-                              </span>
-                              <span className={cn("shrink-0 font-semibold", toneText[sentimentTone(opinion.sentiment)])}>
-                                {t(`youtubeOpinions.${opinion.sentiment}`)}
-                              </span>
-                            </span>
-                            {(opinion.summary || opinion.thesis) && (
-                              <span className="mt-0.5 line-clamp-2 leading-4 text-muted-foreground">
-                                {opinion.summary || opinion.thesis}
-                              </span>
-                            )}
-                          </span>
-                        </li>
-                      ))}
-                    </ul>
-                    {activeEvents.length > 4 && (
-                      <p className="mt-2 text-muted-foreground">
-                        {t("youtubeOpinions.moreCalls", {
-                          count: String(activeEvents.length - 4),
-                        })}
-                      </p>
-                    )}
-                  </div>
-                )}
-              </>
-            )}
-          </div>
-
-          {advanced && loaded && oscillator && <OscillatorPane bars={bars!} kind={oscillator} onChange={changeOscillator} width={size.width} axisWidth={AXIS_WIDTH} start={current.start} end={current.end} active={active} onActive={setActive} t={t} />}
-
-          <div className="mt-2 flex shrink-0 flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
-            {advanced ? (
-              <>
-                <div
-                  role="radiogroup"
-                  aria-label={t("common.timeRange")}
-                  className="flex items-center gap-0.5 overflow-x-auto scrollbar-hide"
-                >
-                  {advancedRanges.map((item) => (
+            </PopoverTrigger>
+            <PopoverContent align="start" className="w-auto p-2">
+              <div role="radiogroup" aria-label={t("youtubeOpinions.drawColor")} className="flex shrink-0 items-center gap-1">
+                {drawingColors.map((value, index) => {
+                  const isCurrent = (selected?.color ?? color) === value;
+                  return (
                     <button
-                      key={item}
+                      key={value}
                       type="button"
                       role="radio"
-                      aria-checked={range === item}
-                      disabled={!!snapshotBars}
-                      onClick={() => {
-                        setRange(item);
-                        if (!rangeIntervals[item].includes(interval)) setChartInterval(defaultInterval[item]);
-                        setView(null);
-                      }}
-                      className={pill(range === item)}
+                      aria-checked={isCurrent}
+                      aria-label={`${t("youtubeOpinions.drawColor")} ${index + 1}`}
+                      onClick={() => pickColor(value)}
+                      className="inline-flex h-11 w-11 items-center justify-center rounded-full focus-visible:outline-none "
                     >
-                      {t(`youtubeOpinions.advancedRange.${item}`)}
+                      <span className={cn("h-3.5 w-3.5 rounded-full ")} style={{ backgroundColor: value }} />
                     </button>
-                  ))}
-                </div>
-                <div className="flex items-center gap-3">
-                  <label className="flex items-center gap-2 whitespace-nowrap text-[13px] font-semibold text-foreground">
-                    {t("youtubeOpinions.interval")}
-                    <Select disabled={!!snapshotBars} value={snapshotBars ? compactParams.interval : interval} onValueChange={(value) => setChartInterval(value as ChartInterval)}>
-                      <SelectTrigger className="h-8 w-[88px] rounded-full text-[13px]">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {(snapshotBars && compactParams.interval ? [compactParams.interval] : rangeIntervals[range]).map((item) => (
-                          <SelectItem key={item} value={item}>
-                            {t(`youtubeOpinions.intervals.${item}`)}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </label>
-                  <button
-                    type="button"
-                    aria-pressed={autoScale}
-                    onClick={() => setAutoScale((value) => !value)}
-                    className={cn(pill(false), "gap-1.5", autoScale && "text-foreground")}
+                  );
+                })}
+              </div>
+            </PopoverContent>
+          </Popover>
+          <span className="mx-1 hidden h-5 w-px shrink-0 bg-border sm:block" aria-hidden="true" />
+          <button
+            type="button"
+            title={t("youtubeOpinions.magnet")}
+            aria-label={t("youtubeOpinions.magnet")}
+            aria-pressed={magnet}
+            onClick={() => setMagnet((value) => !value)}
+            className={iconButton(magnet)}
+          >
+            <Magnet className="h-4 w-4" />
+          </button>
+          <button
+            type="button"
+            title={t("youtubeOpinions.showCalls")}
+            aria-label={t("youtubeOpinions.showCalls")}
+            aria-pressed={showCalls}
+            onClick={() => setShowCalls((value) => !value)}
+            className={iconButton(showCalls)}
+          >
+            {showCalls ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+          </button>
+          <Popover>
+            <PopoverTrigger asChild>
+              <button
+                type="button"
+                title={t("youtubeOpinions.indicators")}
+                aria-label={t("youtubeOpinions.indicators")}
+                className={iconButton(legend.length > 0)}
+              >
+                <Activity className="h-4 w-4" />
+              </button>
+            </PopoverTrigger>
+            <PopoverContent align="start" className="w-56 p-1.5">
+              <p className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">{t("youtubeOpinions.indicators")}</p>
+              {indicatorOrder.map((key) => (
+                <button
+                  key={key}
+                  type="button"
+                  aria-pressed={activeIndicators.has(key)}
+                  onClick={() => toggleIndicator(key)}
+                  className="flex w-full items-center gap-2.5 rounded-full px-2 py-1.5 text-sm transition-colors hover:bg-primary/[0.08] focus-visible:outline-none"
+                >
+                  <span
+                    className={cn(
+                      "flex h-4 w-4 items-center justify-center rounded border border-border text-[10px]",
+                      activeIndicators.has(key) && "border-primary bg-primary text-primary-foreground",
+                    )}
+                    aria-hidden="true"
                   >
-                    {autoScale ? <Lock className="h-3.5 w-3.5" /> : <LockOpen className="h-3.5 w-3.5" />}
-                    {t("youtubeOpinions.autoScale")}
-                  </button>
-                </div>
-              </>
-            ) : drawing ? (
-              <span className="hidden sm:inline">
-                {t((tool === "hline" || tool === "vline") ? "youtubeOpinions.drawHintSingle" : "youtubeOpinions.drawHint")}
-              </span>
-            ) : (
-              <span className="hidden items-center gap-2 sm:inline-flex">
-                {showCalls && calls.size > 0 && (
-                  <>
-                    <span className="text-positive" aria-hidden="true">
-                      ▲
-                    </span>
-                    {t("youtubeOpinions.bullish")}
-                    <span className="text-negative" aria-hidden="true">
-                      ▼
-                    </span>
-                    {t("youtubeOpinions.bearish")}
-                    <span>{t("youtubeOpinions.opinionMarkers")}</span>
-                    <span aria-hidden="true">·</span>
-                  </>
-                )}
-                {t("youtubeOpinions.advancedChart")}
-              </span>
-            )}
+                    {activeIndicators.has(key) ? "✓" : ""}
+                  </span>
+                  <span className="h-0.5 w-3 rounded-full" style={{ backgroundColor: indicatorMeta[key].color }} aria-hidden="true" />
+                  {key === "volume" ? t("youtubeOpinions.priceVolumeFull") : indicatorMeta[key].label}
+                </button>
+              ))}
+              <div className="mt-1 border-t border-border pt-1" role="group" aria-label={t("youtubeOpinions.oscillators")}>
+                <p className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">{t("youtubeOpinions.oscillators")}</p>
+                {(["kdj", "macd", "rsi"] as const).map(value => <button key={value} type="button" aria-pressed={oscillator === value} onClick={() => changeOscillator(oscillator === value ? null : value)} className={cn("flex min-h-11 w-full items-center rounded-full px-2 text-left text-sm transition-colors hover:bg-primary/[0.08] focus-visible:outline-none", oscillator === value && "bg-primary/10 font-semibold text-primary-text")}>
+                  {oscillatorLabels[value]}
+                </button>)}
+              </div>
+            </PopoverContent>
+          </Popover>
+          <div className="ml-auto flex w-full shrink-0 flex-wrap items-center justify-end gap-1 sm:w-auto sm:flex-nowrap">
+            <button
+              type="button"
+              title={t("youtubeOpinions.zoomIn")}
+              aria-label={t("youtubeOpinions.zoomIn")}
+              disabled={!loaded}
+              onClick={() => zoomRef.current(0.7, 0.85)}
+              className={iconButton(false)}
+            >
+              <ZoomIn className="h-4 w-4" />
+            </button>
+            <button
+              type="button"
+              title={t("youtubeOpinions.zoomOut")}
+              aria-label={t("youtubeOpinions.zoomOut")}
+              disabled={!loaded}
+              onClick={() => zoomRef.current(1.4, 0.85)}
+              className={iconButton(false)}
+            >
+              <ZoomOut className="h-4 w-4" />
+            </button>
+            <button
+              type="button"
+              title={t("youtubeOpinions.resetZoom")}
+              aria-label={t("youtubeOpinions.resetZoom")}
+              disabled={!view}
+              onClick={resetView}
+              className={iconButton(false)}
+            >
+              <RotateCcw className="h-4 w-4" />
+            </button>
+            <span className="mx-1 h-5 w-px shrink-0 bg-border" aria-hidden="true" />
+            <span
+              role="status"
+              title={t(`youtubeOpinions.sync.${syncStatus}`)}
+              aria-label={t(`youtubeOpinions.sync.${syncStatus}`)}
+              className={cn(
+                "inline-flex h-8 w-8 items-center justify-center",
+                syncStatus === "offline" ? "text-negative" : "text-muted-foreground",
+              )}
+            >
+              <SyncIcon className={cn("h-4 w-4", (syncStatus === "loading" || syncStatus === "syncing") && "animate-spin")} />
+            </span>
+            <button
+              type="button"
+              title={t("youtubeOpinions.undo")}
+              aria-label={t("youtubeOpinions.undo")}
+              disabled={!canUndo}
+              onClick={undo}
+              className={iconButton(false)}
+            >
+              <Undo2 className="h-4 w-4" />
+            </button>
+            <button
+              type="button"
+              title={t("youtubeOpinions.deleteDrawing")}
+              aria-label={t("youtubeOpinions.deleteDrawing")}
+              disabled={!selectedId}
+              onClick={removeSelected}
+              className={iconButton(false)}
+            >
+              <X className="h-4 w-4" />
+            </button>
+            <button
+              type="button"
+              title={t("youtubeOpinions.clearDrawings")}
+              aria-label={t("youtubeOpinions.clearDrawings")}
+              disabled={!drawings.length}
+              onClick={() => {
+                setDrawings([]);
+                setSelectedId(null);
+              }}
+              className={iconButton(false)}
+            >
+              <Trash2 className="h-4 w-4" />
+            </button>
           </div>
-
-          {!advanced && <div className="mt-3 flex flex-wrap items-start justify-between gap-x-4 border-t border-border pt-2">
-            <details className="group/tools min-w-0 flex-1">
-              <summary className="flex min-h-11 w-fit cursor-pointer list-none items-center gap-2 rounded-full px-2 text-sm text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-none [&::-webkit-details-marker]:hidden">
-                <SlidersHorizontal className="h-4 w-4" aria-hidden="true" />
-                {t("youtubeOpinions.ai.actions")}
-                <ChevronDown className="h-4 w-4 group-open/tools:rotate-180" aria-hidden="true" />
-              </summary>
-              {aiControls}
-            </details>
-            {onOpenAdvanced && <Button type="button" size="sm" variant="ghost" onClick={onOpenAdvanced} className="min-h-11 gap-1.5 text-muted-foreground">
-              <Maximize2 className="h-4 w-4" aria-hidden="true" />{t("youtubeOpinions.advancedChart")}
-            </Button>}
-          </div>}
-
-          {!advanced &&
-            compactLayout !== "workspace" &&
-            (resultsContainer ? createPortal(aiResults, resultsContainer) : aiResults)}
-          {!advanced && compactLayout === "workspace" && resultsContainer && createPortal(aiResults, resultsContainer)}
         </div>
-      </div>
+
+        {graph}
+
+        {!advanced && compactFooter && <div className="mt-1.5 flex shrink-0 flex-wrap items-center justify-between gap-x-3 gap-y-1">{compactFooter}</div>}
+
+        {!advanced && <div className="mt-3 flex flex-wrap items-start justify-between gap-x-4 border-t border-border pt-2">
+          <details className="group/tools min-w-0 flex-1">
+            <summary className="flex min-h-11 w-fit cursor-pointer list-none items-center gap-2 rounded-full px-2 text-sm text-muted-foreground transition-colors hover:bg-primary/[0.08] hover:text-primary-text focus-visible:outline-none [&::-webkit-details-marker]:hidden">
+              <SlidersHorizontal className="h-4 w-4" aria-hidden="true" />
+              {t("youtubeOpinions.ai.actions")}
+              <ChevronDown className="h-4 w-4 group-open/tools:rotate-180" aria-hidden="true" />
+            </summary>
+            {aiControls}
+          </details>
+          {onOpenAdvanced && <Button type="button" size="sm" variant="ghost" onClick={onOpenAdvanced} className="min-h-11 gap-1.5 text-muted-foreground">
+            <Maximize2 className="h-4 w-4" aria-hidden="true" />{t("youtubeOpinions.advancedChart")}
+          </Button>}
+        </div>}
+
+        {!advanced &&
+          compactLayout !== "workspace" &&
+          (resultsContainer ? createPortal(aiResults, resultsContainer) : aiResults)}
+        {!advanced && compactLayout === "workspace" && resultsContainer && createPortal(aiResults, resultsContainer)}
       </div>
       {advanced && <aside aria-label={t("youtubeOpinions.ai.actions")} className="hidden min-h-0 w-72 shrink-0 overflow-y-auto overscroll-contain border-l border-border pl-4 lg:block">
         {aiControls}{aiStatus}{aiResults}

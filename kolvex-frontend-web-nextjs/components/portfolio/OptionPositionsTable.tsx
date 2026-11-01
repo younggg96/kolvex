@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import Link from "next/link";
 import {
   ArrowUpRight,
   ArrowDownRight,
@@ -22,6 +23,7 @@ import CompanyLogo from "@/components/ui/company-logo";
 import { WeightIndicator } from "@/components/ui/weight-indicator";
 import MiniSparkline from "@/components/common/MiniSparkline";
 import { formatCurrency } from "@/lib/portfolioApi";
+import { marketStockHref } from "@/lib/stockLinks";
 import { useTranslation } from "@/lib/i18n";
 import type { OptionPositionsTableProps, PortfolioPosition } from "./types";
 
@@ -234,7 +236,7 @@ export function OptionPositionsTable({
               return (
                 <TableRow
                   key={pos.id}
-                  className={`${isSecretOption ? "opacity-70" : "hover:bg-muted/50"
+                  className={`${isSecretOption ? "opacity-70" : "hover:bg-primary/[0.06]"
                     } transition-colors`}
                 >
                   <TableCell className="pl-4 py-3">
@@ -244,23 +246,34 @@ export function OptionPositionsTable({
                           <Lock className="w-4 h-4 text-muted-foreground" />
                         </div>
                       ) : (
-                        <CompanyLogo
-                          symbol={pos.underlying_symbol || pos.symbol}
-                          name={
-                            pos.security_name ||
-                            pos.underlying_symbol ||
-                            pos.symbol
-                          }
-                          size="sm"
-                          border="light"
-                        />
+                        <Link
+                          href={marketStockHref(pos.underlying_symbol || pos.symbol)}
+                          aria-label={pos.underlying_symbol || pos.symbol}
+                          className="rounded-2xl underline-offset-4 hover:opacity-90 focus-visible:outline-none "
+                        >
+                          <CompanyLogo
+                            symbol={pos.underlying_symbol || pos.symbol}
+                            name={
+                              pos.security_name ||
+                              pos.underlying_symbol ||
+                              pos.symbol
+                            }
+                            size="sm"
+                            border="light"
+                          />
+                        </Link>
                       )}
                       <div className="min-w-0">
                         <div className="font-semibold flex items-center gap-1.5">
                           {isSecretOption ? (
                             <span className="text-muted-foreground">***</span>
                           ) : (
-                            pos.underlying_symbol || pos.symbol
+                            <Link
+                              href={marketStockHref(pos.underlying_symbol || pos.symbol)}
+                              className="rounded-sm underline-offset-4 hover:underline focus-visible:outline-none "
+                            >
+                              {pos.underlying_symbol || pos.symbol}
+                            </Link>
                           )}
                         </div>
                         <div className="text-xs text-muted-foreground truncate max-w-[150px]">
@@ -400,7 +413,7 @@ export function OptionPositionsTable({
                           onToggleVisibility(e, pos.id, pos.is_hidden || false)
                         }
                         className={`p-1.5 rounded-full transition-colors ${pos.is_hidden
-                          ? "text-muted-foreground hover:text-foreground hover:bg-muted"
+                          ? "text-muted-foreground transition-colors hover:bg-primary/10 hover:text-primary-text"
                           : "text-positive hover:text-positive hover:bg-positive/10"
                           }`}
                         title={

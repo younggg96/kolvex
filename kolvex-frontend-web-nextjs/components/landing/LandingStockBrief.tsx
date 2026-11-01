@@ -5,6 +5,7 @@ import { ArrowUpRight } from "lucide-react";
 import CompanyLogo from "@/components/ui/company-logo";
 import { useCopy } from "@/components/decision/shared";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { marketStockUrl } from "@/lib/stockLinks";
 
 /** Illustrative examples, not current market data. */
 const examples = [
@@ -90,7 +91,13 @@ export default function LandingStockBrief() {
     </div>
     {examples.map(stock => <TabsContent key={stock.symbol} value={stock.symbol} className="focus-stock-view">
       <div className="focus-stock-identity">
-        <div className="focus-company"><CompanyLogo symbol={stock.symbol} name={stock.name} size="sm" /><span>{stock.name}</span><span className="focus-exchange">NASDAQ</span></div>
+        <Link
+          href={marketStockUrl(stock.symbol) ?? `/stocks/${stock.symbol}`}
+          aria-label={c(`${stock.symbol} ${stock.name} quotes`, `${stock.symbol} ${stock.name} 行情`)}
+          className="focus-company rounded-sm hover:text-primary focus-visible:outline-none "
+        >
+          <CompanyLogo symbol={stock.symbol} name={stock.name} size="sm" /><span>{stock.name}</span><span className="focus-exchange">NASDAQ</span>
+        </Link>
         <h2>{stock.symbol}</h2>
         <div className="focus-market-line"><strong className={stock.move.startsWith("−") ? "text-negative" : "text-positive"}>{stock.move}</strong><span>{c(stock.theme[0], stock.theme[1])}</span></div>
       </div>
@@ -102,7 +109,7 @@ export default function LandingStockBrief() {
           </TabsList>
           {sources.map(item => <TabsContent key={item.key} value={item.key}><p>{c(stock[item.key][0], stock[item.key][1])}</p></TabsContent>)}
         </Tabs>
-        <Link href={`/stocks/${stock.symbol}`} className="focus-stock-link">{c("Open research", "查看研究")}<ArrowUpRight size={17} aria-hidden /></Link>
+        <Link href={marketStockUrl(stock.symbol) ?? `/stocks/${stock.symbol}`} className="focus-stock-link">{c("Open quotes", "查看行情")}<ArrowUpRight size={17} aria-hidden /></Link>
       </div>
     </TabsContent>)}
   </Tabs>;

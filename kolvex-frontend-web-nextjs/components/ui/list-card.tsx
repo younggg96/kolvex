@@ -94,6 +94,8 @@ export function ListRows({ className, ...props }: React.ComponentProps<"ul">) {
 /**
  * A hoverable list row matching the Markets stock rows. The trailing action
  * (watch star, disclosure) sits beside the row target, never nested inside it.
+ * Hover and keyboard focus inside the row wash it in brand green; pressing
+ * the row deepens the tint.
  */
 export const ListRow = React.forwardRef<
   HTMLLIElement,
@@ -102,7 +104,7 @@ export const ListRow = React.forwardRef<
   <li
     ref={ref}
     className={cn(
-      "flex items-center gap-1 rounded-2xl pr-2 transition-colors hover:bg-muted/50 focus-within:bg-muted/50 motion-reduce:transition-none",
+      "flex items-center gap-1 rounded-2xl pr-2 transition-colors hover:bg-primary/[0.07] focus-within:bg-primary/[0.07] active:bg-primary/[0.12] motion-reduce:transition-none",
       className,
     )}
     {...props}
@@ -116,11 +118,15 @@ ListRow.displayName = "ListRow";
  * can all share the same height, corner and focus treatment.
  */
 export const listRowTargetClass =
-  "min-h-20 min-w-0 flex-1 items-center rounded-2xl px-2 py-4 focus-visible:bg-transparent focus-visible:outline-none";
+  "min-h-20 min-w-0 flex-1 items-center rounded-2xl px-2 py-4 outline-offset-2 focus-visible:bg-primary/[0.07] focus-visible:outline-2 focus-visible:outline-primary";
 
-/** Long-reading rows (opinions, posts) keep a hairline so prose stays scannable. */
+/**
+ * Long-reading rows (opinions, posts) keep a hairline so prose stays scannable.
+ * The hairline turns brand-green and the row takes a faint green wash on hover
+ * or keyboard focus, matching the compact list rows.
+ */
 export const listFeedRowClass =
-  "min-w-0 border-b border-border py-6 first:pt-2 last:border-0 [overflow-wrap:anywhere]";
+  "list-row-interactive min-w-0 border-b border-border py-6 first:pt-2 last:border-0 [overflow-wrap:anywhere]";
 
 /** Centered "load more" footer of a list card. */
 export function ListLoadMore({
@@ -156,16 +162,19 @@ export function ListFooterLink({
     <Link
       href={href}
       className={cn(
-        "mt-2 flex min-h-11 items-center justify-between gap-3 border-t border-border px-1 pt-2 text-xs font-medium text-muted-foreground transition-colors duration-150 hover:text-foreground focus-visible:outline-none",
+        "group/footer mt-2 flex min-h-11 items-center justify-between gap-3 border-t border-border px-1 pt-2 text-xs font-medium text-muted-foreground transition-colors duration-150 hover:border-primary/35 hover:text-primary-text focus-visible:outline-none focus-visible:text-primary-text",
         className,
       )}
     >
       {children}
-      <ArrowUpRight className="h-4 w-4 shrink-0" aria-hidden="true" />
+      <ArrowUpRight
+        className="h-4 w-4 shrink-0 transition-transform duration-150 group-hover/footer:-translate-y-0.5 group-hover/footer:translate-x-0.5 group-hover/footer:text-primary motion-reduce:transition-none"
+        aria-hidden="true"
+      />
     </Link>
   );
 }
 
 /** Compact row for secondary rails (holdings, recent changes) inside a list card. */
 export const listCompactRowClass =
-  "flex min-h-11 items-center justify-between gap-3 rounded-2xl px-1 py-2.5 text-sm transition-colors duration-150 hover:bg-muted/50 focus-visible:outline-none";
+  "flex min-h-11 items-center justify-between gap-3 rounded-2xl px-1 py-2.5 text-sm transition-colors duration-150 hover:bg-primary/[0.07] focus-visible:bg-primary/[0.07] focus-visible:outline-none active:bg-primary/[0.12]";

@@ -67,9 +67,9 @@ function ComparisonRow({ instrument, attempt }: { instrument: MarketInstrument; 
   const unitLabel = result.unit === "pp" ? c("pp change", "百分点变化") : result.unit === "points" ? c("point change", "点数变化") : c("% change", "涨跌幅 %");
   const showValues = history.length > 0;
   return (
-    <tr ref={host} aria-busy={state === "loading"} className="group transition-colors hover:bg-muted/30">
-      <th scope="row" className="sticky left-0 z-10 border-b border-border/40 bg-card px-3 py-2 text-left align-middle font-normal group-hover:bg-muted">
-        <Link href={instrument.sourceUrl ?? `/dashboard/market/${encodeURIComponent(instrument.symbol)}`} target={instrument.sourceUrl ? "_blank" : undefined} rel={instrument.sourceUrl ? "noopener noreferrer" : undefined} className="block rounded-sm focus-visible:outline-none hover:underline">
+    <tr ref={host} aria-busy={state === "loading"} className="group transition-colors hover:bg-primary/[0.06]">
+      <th scope="row" className="sticky left-0 z-10 border-b border-border/40 bg-card px-3 py-2 text-left align-middle font-normal transition-colors group-hover:border-primary/30 group-hover:bg-card">
+        <Link href={instrument.sourceUrl ?? `/dashboard/market/${encodeURIComponent(instrument.symbol)}`} target={instrument.sourceUrl ? "_blank" : undefined} rel={instrument.sourceUrl ? "noopener noreferrer" : undefined} className="block rounded-sm transition-colors hover:text-primary-text focus-visible:outline-none">
           <span className="block truncate text-[13px] font-semibold" title={name}>{name}</span>
           <span className="mt-0.5 block text-[11px] text-muted-foreground">{instrument.symbol} · {showValues && result.date ? <time dateTime={result.date}>{result.date.slice(5)}</time> : "—"}</span>
         </Link>

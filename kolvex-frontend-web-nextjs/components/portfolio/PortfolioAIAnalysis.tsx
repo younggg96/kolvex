@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useCallback } from "react";
+import Link from "next/link";
 import { useTranslation } from "@/lib/i18n";
 import {
     TrendingUp,
@@ -22,6 +23,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import CompanyLogo from "@/components/ui/company-logo";
+import { marketStockHref } from "@/lib/stockLinks";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -211,7 +213,7 @@ function MetricCard({ icon: Icon, label, children }: { icon: React.ElementType; 
 function StockAnalysisItem({ stock, t }: { stock: StockAnalysis; t: TFunction }) {
     return (
         <AccordionItem value={stock.symbol} className="border border-border rounded-2xl mb-2 overflow-hidden">
-            <AccordionTrigger className="px-4 py-3 hover:no-underline hover:bg-muted transition-colors">
+            <AccordionTrigger className="px-4 py-3 transition-colors hover:bg-primary/[0.06] hover:no-underline">
                 <div className="flex items-center gap-3 flex-1">
                     <span aria-hidden="true"><CompanyLogo symbol={stock.symbol} name={stock.name} size="md" /></span>
                     <div className="flex-1 min-w-0 text-left">
@@ -228,6 +230,16 @@ function StockAnalysisItem({ stock, t }: { stock: StockAnalysis; t: TFunction })
             </AccordionTrigger>
             <AccordionContent className="px-4 pb-4">
                 <div className="space-y-4 pt-2">
+                    {/* Quotes page entry point: the accordion trigger above is a
+                        button, so the stock identity cannot itself be a link. */}
+                    <Link
+                        href={marketStockHref(stock.symbol)}
+                        className="inline-flex min-h-11 items-center gap-2 rounded-2xl text-sm font-medium underline-offset-4 hover:underline focus-visible:outline-none "
+                    >
+                        <CompanyLogo symbol={stock.symbol} name={stock.name} size="sm" />
+                        <span>{t("redditOpinions.openStock", { ticker: stock.symbol })}</span>
+                    </Link>
+
                     {/* Analysis Text */}
                     {stock.analysis && (
                         <p className="text-sm text-muted-foreground leading-relaxed">{stock.analysis}</p>
@@ -529,7 +541,7 @@ export function PortfolioAIAnalysis({ className }: PortfolioAIAnalysisProps) {
                                     <Button
                                         variant="ghost"
                                         size="sm"
-                                        className="w-full mt-2 text-muted-foreground hover:text-foreground"
+                                        className="mt-2 w-full text-muted-foreground hover:bg-primary/10 hover:text-primary-text"
                                         onClick={() => setShowAllStocks(!showAllStocks)}
                                     >
                                         <ChevronDown className={cn("w-4 h-4 mr-1 transition-transform", showAllStocks && "rotate-180")} />

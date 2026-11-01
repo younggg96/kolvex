@@ -18,6 +18,7 @@ import {
   Bot,
 } from "lucide-react";
 import { useTranslation } from "@/lib/i18n";
+import { marketStockHref } from "@/lib/stockLinks";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { RESEARCH_AUTHORING_PATH } from "@/lib/researchRoutes";
 import { Button } from "@/components/ui/button";
@@ -297,7 +298,7 @@ export default function TradingAnalysisDetailPage() {
           {isCompleted && <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground"><Globe className="h-3.5 w-3.5" aria-hidden="true" />{locale === "zh" ? "所有已登录用户可见" : "Visible to all signed-in users"}</span>}
 
           <Button asChild variant="outline" size="sm">
-            <Link href={`/dashboard/market/${analysis.ticker}`}>
+            <Link href={marketStockHref(analysis.ticker)}>
               {locale === "zh" ? "股票工作台" : "Stock workspace"}
             </Link>
           </Button>
@@ -311,10 +312,12 @@ export default function TradingAnalysisDetailPage() {
           <div className="animate-fade-in-up">
             <div>
               <div className="flex flex-wrap items-center gap-3">
-                <CompanyLogo symbol={analysis.ticker} size="lg" />
-                <h1 className="text-[28px] font-bold leading-tight text-foreground md:text-[32px]">
-                  {analysis.ticker}
-                </h1>
+                <Link href={marketStockHref(analysis.ticker)} className="group flex min-h-11 min-w-11 items-center gap-3 rounded-2xl px-1 transition-colors duration-150 hover:text-foreground focus-visible:outline-none " aria-label={locale === "zh" ? `打开 ${analysis.ticker} 行情页` : `Open ${analysis.ticker} quotes`}>
+                  <CompanyLogo symbol={analysis.ticker} size="lg" />
+                  <h1 className="text-[28px] font-bold leading-tight text-foreground underline-offset-4 group-hover:underline md:text-[32px]">
+                    {analysis.ticker}
+                  </h1>
+                </Link>
                 {isRunning && (
                   <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
                     <span aria-hidden="true" className="h-1 w-1 rounded-full bg-positive-fill" />
