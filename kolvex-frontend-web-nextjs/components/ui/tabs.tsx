@@ -9,7 +9,7 @@ const Tabs = TabsPrimitive.Root;
 const TabsList = React.forwardRef<
   React.ElementRef<typeof TabsPrimitive.List>,
   React.ComponentPropsWithoutRef<typeof TabsPrimitive.List> & {
-    variant?: "default" | "auth" | "pill";
+    variant?: "default" | "auth" | "pill" | "pill-solid";
   }
 >(({ className, variant = "pill", ...props }, ref) => (
   <TabsPrimitive.List
@@ -18,8 +18,11 @@ const TabsList = React.forwardRef<
       "min-h-11 items-center justify-start text-muted-foreground",
       variant === "auth"
         ? "grid w-full grid-cols-2 gap-1 rounded-full bg-muted/50 p-1"
-        : variant === "pill"
-          ? "inline-flex w-fit max-w-full gap-1 overflow-x-auto rounded-full bg-muted/50 p-1 scrollbar-hide"
+        : variant === "pill" || variant === "pill-solid"
+          ? cn(
+              "inline-flex w-fit max-w-full gap-1 overflow-x-auto rounded-full p-1 scrollbar-hide",
+              variant === "pill-solid" ? "bg-muted" : "bg-muted/50",
+            )
           : "inline-flex w-full gap-1 overflow-x-auto border-b border-border scrollbar-hide",
       className,
     )}

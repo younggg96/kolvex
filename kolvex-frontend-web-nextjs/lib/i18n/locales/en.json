@@ -1699,6 +1699,9 @@
     "risk": "Risk"
   },
   "briefs": {
+    "weekendEdition": "Weekend brief",
+    "weekendSchedule": "One brief per weekend day, without session editions",
+    "weekendEmptyDetail": "This day’s weekend brief has not been published. Refresh later or choose another date.",
     "title": "Daily Briefs",
     "description": "Trading plans before the open. Market recaps after the close.",
     "morning": "Pre-market 1h",

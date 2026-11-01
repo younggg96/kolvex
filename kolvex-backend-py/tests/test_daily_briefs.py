@@ -212,7 +212,7 @@ class RoutesTests(unittest.TestCase):
         self.login()
         for edition in ["morning", "intraday", "evening"]:
             value = sample()
-            value["brief"].update(type=edition, id=f"{edition}-2026-10-17")
+            value["brief"].update(type=edition, id=f"{edition}-2026-10-16", date="2026-10-16", market_status="trading_day")
             response = self.client.post("/briefs/validate", json=value)
             self.assertEqual(response.status_code, 200)
             response = self.client.post("/briefs", json=value)
@@ -261,3 +261,19 @@ class RoutesTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class WeekendSaveTests(unittest.TestCase):
+    def test_weekend_session_editions_rejected_before_database_write(self):
+        from app.api.dependencies.auth import verify_admin
+        api = FastAPI(); api.include_router(router)
+        db = Mock()
+        api.dependency_overrides[verify_admin] = lambda: "admin"
+        api.dependency_overrides[get_supabase_service] = lambda: db
+        client = TestClient(api)
+        for edition in ["morning", "intraday"]:
+            value = sample(); value["brief"].update(type=edition, id=f"{edition}-2026-10-17")
+            self.assertEqual(client.post("/briefs", json=value).status_code, 422)
+        db.table.assert_not_called()
+        self.assertEqual(client.post("/briefs", json=sample()).status_code, 200)
+        self.assertEqual(db.table.return_value.insert.call_args.args[0]["id"], "evening-2026-10-17")

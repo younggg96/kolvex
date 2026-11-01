@@ -83,14 +83,14 @@ test("reader entry defaults to only today in Pacific time, even with no publishe
 
 test("direct reader selects all three editions at Pacific session boundaries in summer and winter", () => {
   for (const [instant, expected, date] of [
-    ["2026-10-18T07:00:00Z", "morning", "2026-10-18"],
-    ["2026-10-18T13:29:59Z", "morning", "2026-10-18"],
-    ["2026-10-18T13:30:00Z", "intraday", "2026-10-18"],
-    ["2026-10-18T20:59:59Z", "intraday", "2026-10-18"],
-    ["2026-10-18T21:00:00Z", "evening", "2026-10-18"],
+    ["2026-10-19T07:00:00Z", "morning", "2026-10-19"],
+    ["2026-10-19T13:29:59Z", "morning", "2026-10-19"],
+    ["2026-10-19T13:30:00Z", "intraday", "2026-10-19"],
+    ["2026-10-19T20:59:59Z", "intraday", "2026-10-19"],
+    ["2026-10-19T21:00:00Z", "evening", "2026-10-19"],
     ["2026-12-18T21:59:59Z", "intraday", "2026-12-18"],
     ["2026-12-18T22:00:00Z", "evening", "2026-12-18"],
-    ["2026-10-19T06:59:59Z", "evening", "2026-10-18"],
+    ["2026-10-20T06:59:59Z", "evening", "2026-10-19"],
     ["2026-12-18T14:29:59Z", "morning", "2026-12-18"],
     ["2026-12-18T14:30:00Z", "intraday", "2026-12-18"],
   ]) {
@@ -101,8 +101,8 @@ test("direct reader selects all three editions at Pacific session boundaries in 
     assert.equal(result.id, `${expected}-${date}`);
     assert.equal(briefReadingFilters({ type: "all" }, now).type, expected);
     for (const type of ["morning", "intraday", "evening"]) {
-      const selected = briefReadingFilters({ type, date: "2026-10-17" }, now);
-      assert.equal(selected.id, `${type}-2026-10-17`);
+      const selected = briefReadingFilters({ type, date: "2026-10-16" }, now);
+      assert.equal(selected.id, `${type}-2026-10-16`);
     }
   }
 });
@@ -149,4 +149,21 @@ test("admin mutations forward method, JSON and revision headers", async () => {
   assert.equal(calls[1].options.method, 'DELETE');
   assert.equal(calls[1].options.headers['If-Match'], '4');
   assert.equal(calls[1].options.body, undefined);
+});
+
+
+test("weekend reader resolves to one issue regardless of session or explicit edition", () => {
+  for (const date of ["2026-10-31", "2026-11-01", "2026-03-08"]) {
+    for (const type of [undefined, "morning", "intraday", "evening", "all"]) {
+      for (const instant of ["2026-11-01T08:00:00Z", "2026-11-01T22:00:00Z"]) {
+        const result = briefReadingFilters({date, type}, new Date(instant));
+        assert.equal(result.type, "evening");
+        assert.equal(result.id, `evening-${date}`);
+      }
+    }
+  }
+  assert.equal(exportsObject.isWeekendBriefDate("2026-11-02"), false);
+  assert.equal(exportsObject.isWeekendBriefDate("2026-02-30"), false);
+  // Pacific Saturday while UTC and many reader timezones already show Sunday.
+  assert.equal(briefReadingFilters(undefined, new Date("2026-11-01T06:59:59Z")).id, "evening-2026-10-31");
 });

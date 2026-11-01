@@ -3,6 +3,7 @@
 import json
 import re
 from datetime import datetime, timezone
+from pathlib import Path
 from urllib.parse import urlparse
 
 
@@ -104,6 +105,29 @@ class XContentService:
 
     def creators(self):
         return {"creators": self.db.table("x_creators").select("*").order("username").execute().data or []}
+
+    def summaries(self, author=None):
+        """Saved AI-authored snapshot; reading never calls a model or mutates posts."""
+        author = username(author) if author else None
+        path = Path(__file__).resolve().parents[2] / "data" / "x_creator_summaries.json"
+        snapshot = json.loads(path.read_text())
+        records = [row for row in snapshot["summaries"] if not author or row["username"] == author]
+        ids = [post_id for row in records for post_id in row["source_ids"]]
+        if not ids:
+            return {"generated_at": snapshot["generated_at"], "coverage": "partial", "summaries": []}
+        rows = self.db.table("x_posts").select("id,author_username,url,published_at").in_("id", ids).execute().data or []
+        posts = {row["id"]: row for row in rows}
+        result = []
+        for record in records:
+            sources = [posts.get(post_id) for post_id in record["source_ids"]]
+            # Never display an insight without all of its original evidence.
+            if not all(source and source["author_username"].lower() == record["username"] for source in sources):
+                continue
+            result.append({"username": record["username"], "content": record["content"],
+                           "sources": sources,
+                           "coverage_start": min(source["published_at"] for source in sources),
+                           "coverage_end": max(source["published_at"] for source in sources)})
+        return {"generated_at": snapshot["generated_at"], "coverage": "partial", "summaries": result}
 
     def save_creator(self, handle, display_name, bio, **profile):
         handle = username(handle)

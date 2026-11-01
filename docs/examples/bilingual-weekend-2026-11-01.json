@@ -1,0 +1,53 @@
+{
+  "schema_version": "kolvex-brief/1.0",
+  "language": "zh",
+  "brief": {
+    "id": "evening-2026-11-01",
+    "type": "evening",
+    "date": "2026-11-01",
+    "title": "美股周末简报",
+    "headline": "此处填写当天文章的核心结论",
+    "subtitle": "格式示例，请替换为经过核验的文章内容",
+    "generated_at_pt": "2026-11-01T09:00:00-08:00",
+    "market_status": "weekend"
+  },
+  "sections": [
+    {
+      "section_id": "weekend_recap",
+      "order": 1,
+      "title": "本周回顾",
+      "narrative": "此处填写原文或核验后的摘要。",
+      "items": []
+    },
+    {
+      "section_id": "outlook",
+      "order": 2,
+      "title": "下周关注",
+      "narrative": "此处填写有来源的下周事件。"
+    }
+  ],
+  "disclaimer": "仅供信息参考，不构成投资建议。",
+  "translations": {
+    "en": {
+      "title": "US market weekend brief",
+      "headline": "Replace with the article’s key finding",
+      "subtitle": "Format example; replace with verified content",
+      "sections": [
+        {
+          "section_id": "weekend_recap",
+          "order": 1,
+          "title": "Weekly recap",
+          "narrative": "Replace with the original article or verified summary.",
+          "items": []
+        },
+        {
+          "section_id": "outlook",
+          "order": 2,
+          "title": "Week ahead",
+          "narrative": "Replace with sourced upcoming events."
+        }
+      ],
+      "disclaimer": "For information only. Not investment advice."
+    }
+  }
+}

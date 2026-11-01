@@ -161,3 +161,16 @@ and production build passed. Static premium audit retains three existing
 settings/global-scrollbar findings. Database migrations are applied and permissions
 were read back; real browser CRUD verification has not been completed because
 the local server port is blocked by environment permissions. App deployment is pending.
+
+## Weekend daily issue
+
+Pacific Saturdays and Sundays each have one Weekend brief, with no session tabs.
+The reader always requests evening-YYYY-MM-DD on these dates, even from an old
+morning/intraday URL. The existing evening storage key preserves historical weekend
+reports and enforces one canonical issue through the existing primary key; no new
+database migration is needed. New weekend morning/intraday imports are rejected
+before writes. Historical records remain readable and editable by their original ID.
+Calendar markers and article metadata show Weekend brief. Weekdays retain three editions.
+The existing daily-report automation keeps its schedule and skips already generated
+weekend dates; weekend instructions request one report per Pacific day. Generation
+is external to the repository; the backend remains an importer.

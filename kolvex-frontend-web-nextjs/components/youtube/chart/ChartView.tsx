@@ -119,7 +119,7 @@ const HEIGHT_CLASS: Record<Mode, string> = {
   advanced: "min-h-0 flex-1",
 };
 const defaultIndicators: Record<Mode, IndicatorKey[]> = {
-  compact: ["volume"],
+  compact: [],
   advanced: ["volume", "vwap", "ema20", "ema50", "ema200"],
 };
 
@@ -230,7 +230,7 @@ export interface ChartViewProps {
 }
 
 /**
- * Candlestick chart with zoom and pan, price and time axes, indicators, creator calls,
+ * Closing-price preview and advanced candlestick chart with price/time axes, indicators, creator calls,
  * drawing tools and AI-drawn levels. Compact mode sits in the page; advanced mode fills a dialog.
  */
 export default function ChartView({
@@ -274,7 +274,6 @@ export default function ChartView({
     ? "h-[320px] sm:h-[420px]"
     : HEIGHT_CLASS[mode];
   const drawingToolbarId = useId();
-  const [mobileToolsOpen, setMobileToolsOpen] = useState(false);
   const [range, setRange] = useState<AdvancedRange>("3M");
   const [interval, setChartInterval] = useState<ChartInterval>(defaultInterval["3M"]);
   const params = advanced && !snapshotBars ? advancedHistoryParams(range, interval) : compactParams;
@@ -329,7 +328,7 @@ export default function ChartView({
   const gesture = useRef<Gesture | null>(null);
   const pointers = useRef(new Map<number, { x: number; y: number }>());
 
-  useEffect(() => setIndicators(readIndicators(mode)), [mode]);
+  useEffect(() => setIndicators(advanced ? readIndicators(mode) : []), [mode, advanced]);
 
   const lastHistoryAttempt = useRef(attempt);
   useEffect(() => {
@@ -461,7 +460,7 @@ export default function ChartView({
     return () => box.removeEventListener("wheel", onWheel);
   });
 
-  const activeIndicators = new Set(indicators);
+  const activeIndicators = new Set(advanced ? indicators : []);
   const showVolume = activeIndicators.has("volume");
   const plotW = Math.max(size.width - AXIS_WIDTH, 1);
   const plotH = Math.max(size.height - TIME_AXIS, 1);
@@ -509,14 +508,14 @@ export default function ChartView({
     let hi = -Infinity;
     let maxVolume = 1;
     for (let index = Math.max(from, 0); index <= Math.min(to, bars.length - 1); index++) {
-      lo = Math.min(lo, bars[index].low);
-      hi = Math.max(hi, bars[index].high);
+      lo = Math.min(lo, advanced ? bars[index].low : bars[index].close);
+      hi = Math.max(hi, advanced ? bars[index].high : bars[index].close);
       maxVolume = Math.max(maxVolume, bars[index].volume || 0);
     }
     if (!Number.isFinite(lo)) return { lo: 0, hi: 1, maxVolume };
     const pad = (hi - lo || hi * 0.01 || 1) * 0.06;
     return { lo: lo - pad, hi: hi + pad, maxVolume };
-  }, [bars, autoScale, firstVisible, lastVisible]);
+  }, [bars, autoScale, firstVisible, lastVisible, advanced]);
 
   if (error) {
     return (
@@ -969,7 +968,7 @@ export default function ChartView({
     <div className={advanced ? "min-w-0" : "mt-3 border-t border-border pt-3"} role="group" aria-label={t("youtubeOpinions.ai.actions")}>
         <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
           <div className="grid min-w-0 grid-cols-2 gap-2 sm:flex sm:items-center">
-            <Button size="sm" className="min-h-11 min-w-0 gap-1.5 px-2 sm:min-h-9 sm:min-w-[112px] sm:gap-2 sm:px-3" onClick={() => modelReady ? void runAi("analysis") : setSettingsOpen(true)} aria-busy={ai.status === "loading"}
+            <Button size="sm" variant="outline" className="min-h-11 min-w-0 gap-1.5 px-2 sm:min-h-9 sm:min-w-[112px] sm:gap-2 sm:px-3" onClick={() => modelReady ? void runAi("analysis") : setSettingsOpen(true)} aria-busy={ai.status === "loading"}
               disabled={!loaded || providersLoading || aiBusy || ai.status === "loading" || drawingAi.status === "loading"}
               title={t("youtubeOpinions.ai.runAnalysis")}>
               {ai.status === "loading" ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <ScanSearch className="h-4 w-4" aria-hidden="true" />}
@@ -1030,15 +1029,8 @@ export default function ChartView({
               </DialogFooter>
             </DialogContent>
           </Dialog>
-            {drawingAi.status === "done" && <div className="min-w-0 sm:w-auto">{hideDrawingsControl}</div>}
-            <Button type="button" size="sm" variant="ghost"
-              className="col-span-2 min-h-11 w-full justify-between gap-2 px-3 text-muted-foreground sm:hidden"
-              aria-expanded={mobileToolsOpen}
-              aria-controls={drawingToolbarId}
-              onClick={() => setMobileToolsOpen(open => !open)}>
-              <span className="inline-flex items-center gap-2"><SlidersHorizontal className="h-4 w-4" aria-hidden="true" />{t("youtubeOpinions.drawTools")}</span>
-              <ChevronDown className={cn("h-4 w-4", mobileToolsOpen && "rotate-180")} aria-hidden="true" />
-            </Button>
+            {advanced && drawingAi.status === "done" && <div className="min-w-0 sm:w-auto">{hideDrawingsControl}</div>}
+
           </div>
         </div>
 
@@ -1127,7 +1119,7 @@ export default function ChartView({
           aria-live="polite"
         >
           {shownBar ? (
-            activeBar || advanced ? (
+            advanced ? (
               <>
                 <span className="font-medium text-foreground">{barLabel(shownBar)}</span>
                 {stat(t("youtubeOpinions.priceOpen"), formatPrice(shownBar.open))}
@@ -1153,6 +1145,7 @@ export default function ChartView({
             ) : (
               <>
                 <span className="text-base font-semibold text-foreground">{formatPrice(shownBar.close)}</span>
+                {activeBar && <span className="text-muted-foreground">{barLabel(activeBar)}</span>}
                 <span className={cn("font-medium", rangeChange >= 0 ? "text-positive" : "text-negative")}>
                   {formatChangePercent(rangeChange)}
                 </span>
@@ -1163,25 +1156,15 @@ export default function ChartView({
             <Skeleton className="h-4 w-48" />
           )}
         </div>
-        {onOpenAdvanced && (
-          <button
-            type="button"
-            onClick={onOpenAdvanced}
-            className="inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-full border border-border px-3 text-sm sm:min-h-8 font-semibold transition-colors hover:bg-muted focus-visible:outline-none "
-          >
-            <Maximize2 className="h-3.5 w-3.5" aria-hidden="true" />
-            {t("youtubeOpinions.advancedChart")}
-          </button>
-        )}
       </div>
 
-      {!advanced && <>{aiControls}{aiStatus}</>}
+      {!advanced && aiStatus}
 
       <div
         id={drawingToolbarId}
         role="toolbar"
         aria-label={t("youtubeOpinions.drawTools")}
-        className={cn("shrink-0 flex-wrap items-center gap-1 border-b border-border sm:flex sm:flex-nowrap sm:overflow-x-auto", advanced || mobileToolsOpen ? "flex" : "hidden", advanced ? "mt-1 pb-1" : "mt-2 pb-2 sm:mt-3")}
+        className={cn("shrink-0 flex-wrap items-center gap-1 border-b border-border sm:flex-nowrap sm:overflow-x-auto", advanced ? "flex mt-1 pb-1" : "hidden")}
       >
         <Popover>
           <PopoverTrigger asChild>
@@ -1399,16 +1382,16 @@ export default function ChartView({
         <div className={cn("min-w-0", advanced && "flex min-h-0 flex-1 flex-col")}>
           <div
             ref={setBox}
-            role="slider"
-            tabIndex={0}
+            role={advanced ? "slider" : "group"}
+            tabIndex={advanced ? 0 : undefined}
             aria-label={t("youtubeOpinions.priceChartLabel")}
-            aria-valuemin={0}
-            aria-valuemax={Math.max(count - 1, 0)}
-            aria-valuenow={active ?? Math.max(lastVisible, 0)}
-            aria-valuetext={activeBar ? `${barLabel(activeBar)} ${formatPrice(activeBar.close)}` : undefined}
-            onPointerDown={handlePointerDown}
+            aria-valuemin={advanced ? 0 : undefined}
+            aria-valuemax={advanced ? Math.max(count - 1, 0) : undefined}
+            aria-valuenow={advanced ? active ?? Math.max(lastVisible, 0) : undefined}
+            aria-valuetext={advanced && activeBar ? `${barLabel(activeBar)} ${formatPrice(activeBar.close)}` : undefined}
+            onPointerDown={advanced ? handlePointerDown : undefined}
             onPointerMove={handlePointerMove}
-            onPointerUp={handlePointerUp}
+            onPointerUp={advanced ? handlePointerUp : undefined}
             onPointerCancel={(event) => {
               pointers.current.delete(event.pointerId);
               gesture.current = null;
@@ -1422,7 +1405,7 @@ export default function ChartView({
             onDoubleClick={(event) => {
               if (!drawing && !(event.target as Element).closest("[data-drawing]")) resetView();
             }}
-            onKeyDown={handleKey}
+            onKeyDown={advanced ? handleKey : undefined}
             onBlur={() => setActive(null)}
             className={cn(
               "relative mt-3 select-none overflow-hidden rounded-2xl focus-visible:outline-none ",
@@ -1431,6 +1414,12 @@ export default function ChartView({
               drawing || selectedId || advanced ? "touch-none" : "touch-pan-y",
             )}
           >
+            {!advanced && onOpenAdvanced && loaded && <button
+              type="button"
+              onClick={onOpenAdvanced}
+              aria-label={t("youtubeOpinions.advancedChartTitle", { symbol })}
+              className="absolute inset-0 z-20 cursor-pointer rounded-2xl focus-visible:outline-none focus-visible:bg-muted/10"
+            />}
             {!loaded ? (
               <Skeleton className="absolute inset-0" />
             ) : (
@@ -1459,7 +1448,8 @@ export default function ChartView({
                         />
                       </>
                     )}
-                    {bars!.slice(firstVisible, lastVisible + 1).map((bar, offset) => {
+                    {!advanced && <path d={path(bars!.map(bar => bar.close))} fill="none" stroke={rangeChange >= 0 ? "rgb(var(--chart-up))" : "rgb(var(--chart-down))"} strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" />}
+                    {advanced && bars!.slice(firstVisible, lastVisible + 1).map((bar, offset) => {
                       const index = firstVisible + offset;
                       const fill = bar.close >= bar.open ? "rgb(var(--chart-up))" : "rgb(var(--chart-down))";
                       const top = yOf(Math.max(bar.open, bar.close));
@@ -1506,7 +1496,7 @@ export default function ChartView({
                         strokeOpacity={0.45}
                       />
                     )}
-                    {visibleExtremes && (
+                    {advanced && visibleExtremes && (
                       <>
                         <text
                           x={edgeX(visibleExtremes.high)}
@@ -1565,7 +1555,7 @@ export default function ChartView({
                     if (index < firstVisible || index > lastVisible) return null;
                     const bar = bars![index];
                     const left = xOf(index);
-                    const below = yOf(bar.low) + 4;
+                    const below = yOf(advanced ? bar.low : bar.close) + 4;
                     return (
                       <span key={index}>
                         {entry.bearish.length > 0 && (
@@ -1586,7 +1576,7 @@ export default function ChartView({
                     );
                   })}
 
-                <div className="absolute left-0 top-0 overflow-hidden" style={{ width: plotW, height: plotH }}>
+                {advanced && <div className="absolute left-0 top-0 overflow-hidden" style={{ width: plotW, height: plotH }}>
                   <ChartDrawingLayer
                     width={plotW}
                     height={plotH}
@@ -1598,7 +1588,7 @@ export default function ChartView({
                     barsBetween={barsBetween}
                     t={t}
                   />
-                </div>
+                </div>}
 
                 {legend.length > 0 && (
                   <div
@@ -1790,10 +1780,24 @@ export default function ChartView({
                     <span aria-hidden="true">·</span>
                   </>
                 )}
-                {t("youtubeOpinions.zoomHint")}
+                {t("youtubeOpinions.advancedChart")}
               </span>
             )}
           </div>
+
+          {!advanced && <div className="mt-3 flex flex-wrap items-start justify-between gap-x-4 border-t border-border pt-2">
+            <details className="group/tools min-w-0 flex-1">
+              <summary className="flex min-h-11 w-fit cursor-pointer list-none items-center gap-2 rounded-full px-2 text-sm text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-none [&::-webkit-details-marker]:hidden">
+                <SlidersHorizontal className="h-4 w-4" aria-hidden="true" />
+                {t("youtubeOpinions.ai.actions")}
+                <ChevronDown className="h-4 w-4 group-open/tools:rotate-180" aria-hidden="true" />
+              </summary>
+              {aiControls}
+            </details>
+            {onOpenAdvanced && <Button type="button" size="sm" variant="ghost" onClick={onOpenAdvanced} className="min-h-11 gap-1.5 text-muted-foreground">
+              <Maximize2 className="h-4 w-4" aria-hidden="true" />{t("youtubeOpinions.advancedChart")}
+            </Button>}
+          </div>}
 
           {!advanced &&
             compactLayout !== "workspace" &&

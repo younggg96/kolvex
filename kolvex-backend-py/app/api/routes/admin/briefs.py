@@ -1,6 +1,7 @@
 """Admin-only briefing CRUD with optimistic concurrency. Identical retries are idempotent."""
 import json
 import logging
+from datetime import date
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Header
 from pydantic import ValidationError
 from postgrest.exceptions import APIError
@@ -39,6 +40,8 @@ async def validate(request: Request, admin_id: str = Depends(verify_admin)):
 async def save(request: Request, admin_id: str = Depends(verify_admin), db: Client = Depends(get_supabase_service)):
     document = await payload(request)
     meta = document["brief"]
+    if date.fromisoformat(meta["date"]).weekday() >= 5 and meta["type"] != "evening":
+        raise HTTPException(422, "周末每天仅一篇周末简报，请使用 evening-{date} 作为兼容存储 ID。")
     try:
         db.table("daily_briefs").insert({"id": meta["id"], "brief_date": meta["date"], "brief_type": meta["type"], "title": meta["title"], "headline": meta["headline"], "payload": document, "imported_by": admin_id}).execute()
         return {"id": meta["id"], "already_exists": False}

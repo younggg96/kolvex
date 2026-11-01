@@ -1,2 +1,0 @@
-import Preview from './preview';
-export default function Page({searchParams}:{searchParams:{frame?:string}}){if(searchParams.frame)return <Preview/>;return <div style={{display:'flex',gap:24,padding:24,background:'#18191b',minHeight:'100vh'}}><iframe title="Desktop editions" src="/brief-tabs-preview?frame=1" style={{width:800,height:450,border:0,borderRadius:24}}/><iframe title="Phone editions" src="/brief-tabs-preview?frame=1" style={{width:320,height:600,border:0,borderRadius:24}}/></div>}

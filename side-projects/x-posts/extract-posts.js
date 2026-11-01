@@ -8,11 +8,14 @@ function extractXPosts(expectedUsername) {
   // Report them explicitly; never treat an unrecognized DOM as an empty timeline.
   if (!articles.length) return { posts, rejected, ready: false, reason: "Wait for rendered tweet DOM; if it remains absent, inspect login and page structure" };
   for (const article of articles) {
-    const time = article.querySelector("time");
+    // Detail pages may place a quote's unlinked time before the post's own date.
+    const time = [...article.querySelectorAll("time")].find(node =>
+      /^\/[A-Za-z0-9_]+\/status\/\d+$/.test(node.closest("a")?.getAttribute("href") || "")
+    ) || article.querySelector("time");
     const href = time?.closest("a")?.getAttribute("href");
     const match = href?.match(/^\/([A-Za-z0-9_]+)\/status\/(\d+)$/);
     if (!match || match[1].toLowerCase() !== expected) continue;
-    if ([...article.querySelectorAll('button')].some(button => /^(Show original|显示原文)$/.test(button.textContent?.trim() || ""))) {
+    if ([...article.querySelectorAll('button')].some(button => !button.closest?.('[role="link"]') && /^(Show original|显示原文)$/.test(button.textContent?.trim() || ""))) {
       rejected.push({ id: match[2], reason: "Translated content visible; select Show original before collecting" });
       continue;
     }

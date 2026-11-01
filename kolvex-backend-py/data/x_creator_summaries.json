@@ -1,0 +1,107 @@
+{
+  "version": 1,
+  "generated_at": "2026-11-01T11:35:56.936044+00:00",
+  "coverage": "partial",
+  "summaries": [
+    {
+      "username": "mentoviax",
+      "source_ids": [
+        "2116710556568547719",
+        "2116744981193064944",
+        "2116705865927397663"
+      ],
+      "content": {
+        "zh": {
+          "headline": "长期看好 AI 基建、存储与机器人",
+          "basis": "将 AI 算力与存储需求、企业变现及机器人发展联系起来，并表达了长期持有 SpaceX 的强烈意愿。",
+          "risks": "原帖包含远期排名、合并及增长预测；这些是博主判断，不能作为已发生或已核实的事实。"
+        },
+        "en": {
+          "headline": "Bullish on AI infrastructure, memory and robotics over the long term",
+          "basis": "Connects demand for AI compute and memory with enterprise monetization and robotics, and expresses a strong preference for holding SpaceX over a long horizon.",
+          "risks": "The posts contain forward-looking rankings, merger scenarios and growth forecasts. These are the creator’s views, not established or independently verified facts."
+        }
+      }
+    },
+    {
+      "username": "aleabitoreddit",
+      "source_ids": [
+        "2115624832947917083",
+        "2113433338522546399",
+        "2113575601390936238"
+      ],
+      "content": {
+        "zh": {
+          "headline": "关注半导体供应链瓶颈与存储供需",
+          "basis": "重点讨论激光器、光通信及存储环节的供给约束；认为产业整合可能提升稀缺供应商的战略价值，也将部分抛售归因于机构去杠杆。",
+          "risks": "论据包含公司讲话、媒体报道和渠道信息的转述；供需持续性与估值影响仍需后续业绩验证。"
+        },
+        "en": {
+          "headline": "Focuses on semiconductor bottlenecks and memory supply and demand",
+          "basis": "Highlights supply constraints in lasers, optical communications and memory. Argues that consolidation could increase the strategic value of scarce suppliers, and attributes part of the selloff to institutional deleveraging.",
+          "risks": "The evidence includes retellings of company remarks, media reports and channel checks. The durability of supply constraints and valuation implications still require confirmation from results."
+        }
+      }
+    },
+    {
+      "username": "tj_research",
+      "source_ids": [
+        "2116375083421733014",
+        "2116280911851336148",
+        "2116244523491774963"
+      ],
+      "content": {
+        "zh": {
+          "headline": "重视 AI 长期逻辑，同时反思仓位与轮动判断",
+          "basis": "认为投资者与行业从业者对 AI 存在显著分歧，区分短期价格与长期产业发展；同时复盘此前满仓承受回撤，以及对利率和板块普涨的假设。",
+          "risks": "文中的仓位调整和回撤数字是博主自述，不代表经过核验的业绩，也不应直接套用于其他人的风险承受能力。"
+        },
+        "en": {
+          "headline": "Maintains a long-term AI thesis while reviewing positioning and sector rotation",
+          "basis": "Distinguishes short-term pricing from long-term industry development amid differing views on AI. Reviews the drawdown from being fully invested and earlier assumptions about rates and a broad sector rally.",
+          "risks": "Position changes and drawdown figures are self-reported, not independently verified performance, and do not establish suitability for another investor."
+        }
+      }
+    },
+    {
+      "username": "stocktalkjay",
+      "source_ids": [
+        "2116239442197483535",
+        "2114846110443503873",
+        "2113044230742630715"
+      ],
+      "content": {
+        "zh": {
+          "headline": "关注短线情绪、尾盘资金流与消息面",
+          "basis": "结合恐慌情绪、MOC 尾盘流向及暗池变化观察市场；在反弹中仍强调重要事件前的谨慎，持续关注中东消息对盘面的影响。",
+          "risks": "这些是特定时间点的市场观察，不等于可执行的买卖信号；仅含链接或视频预览的内容未纳入本版摘要。"
+        },
+        "en": {
+          "headline": "Tracks near-term sentiment, closing flows and news",
+          "basis": "Uses fear sentiment, market-on-close flows and changes in dark-pool activity to observe the market. Remains cautious around major events even during rebounds, and monitors Middle East news.",
+          "risks": "These are observations at particular points in time, not actionable trading signals. Link-only posts and video previews are outside this snapshot."
+        }
+      }
+    },
+    {
+      "username": "trumptruthonx",
+      "source_ids": [
+        "2116754581103546422",
+        "2116758519613682174",
+        "2116768278442041555"
+      ],
+      "content": {
+        "zh": {
+          "headline": "整理政策、讲话及地缘事件转述",
+          "basis": "采集片段主要是政治人物讲话、活动及媒体报道的转载与评论，更适合作为事件线索，而非独立的股票分析。",
+          "risks": "该账号自述为评论账号，与特朗普本人无关联。须区分讲话、账号评论和未经核实的报道，尤其不能将冲突预测写成已经发生的事件。"
+        },
+        "en": {
+          "headline": "A digest of political remarks, policy and geopolitical reporting",
+          "basis": "The sampled posts primarily relay political remarks, events and media reports with commentary. They are event leads rather than independent stock analysis.",
+          "risks": "The account describes itself as commentary and unaffiliated with President Trump. Distinguish remarks, commentary and unverified reporting, especially predictions of conflict from events that have occurred."
+        }
+      }
+    }
+  ]
+}

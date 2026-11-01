@@ -82,6 +82,33 @@ class ImportTests(unittest.TestCase):
         self.assertNotIn("avatar_url", values)
         self.assertEqual(values["bio"], "Bio")
 
+    def test_summaries_require_all_citations_and_correct_author(self):
+        from datetime import datetime, timezone
+        import json
+        from pathlib import Path
+        snapshot = json.loads((Path(__file__).resolve().parents[1] / "data/x_creator_summaries.json").read_text())
+        record = snapshot["summaries"][0]
+        rows = [{"id": post_id, "author_username": record["username"],
+                 "url": f"https://x.com/{record['username']}/status/{post_id}",
+                 "published_at": "2026-10-31T00:00:00Z"} for post_id in record["source_ids"]]
+        db = Mock()
+        query = db.table.return_value.select.return_value.in_.return_value
+        query.execute.return_value.data = rows
+        service = XContentService(db)
+        result = service.summaries(record["username"])
+        self.assertEqual(len(result["summaries"]), 1)
+        self.assertEqual(len(result["summaries"][0]["sources"]), len(rows))
+        query.execute.return_value.data = rows[:-1]
+        self.assertEqual(service.summaries(record["username"])["summaries"], [])
+        query.execute.return_value.data = [{**row, "author_username": "other"} for row in rows]
+        self.assertEqual(service.summaries(record["username"])["summaries"], [])
+        db.rpc.assert_not_called()
+
+    def test_unknown_creator_has_no_fabricated_summary(self):
+        db = Mock()
+        self.assertEqual(XContentService(db).summaries("untracked")["summaries"], [])
+        db.table.assert_not_called()
+
     def test_filter_and_pagination_are_applied_in_database(self):
         db = Mock()
         query = db.table.return_value.select.return_value

@@ -4,7 +4,7 @@ import StockBadge from "@/components/ui/stock-badge";
 import ReactMarkdown from "react-markdown";
 import ImageContent from "./BriefImage";
 import { useTranslation } from "@/lib/i18n";
-import { localizedBrief, type BriefSection, type DailyBrief } from "@/lib/dailyBriefs";
+import { isWeekendBriefDate, localizedBrief, type BriefSection, type DailyBrief } from "@/lib/dailyBriefs";
 
 function Markdown({ children }: { children: string }) {
   return <div className="space-y-3 break-words text-[15px] leading-7 [&_a]:underline [&_ul]:list-inside [&_ul]:list-disc"><ReactMarkdown skipHtml allowedElements={["p", "strong", "em", "ul", "ol", "li", "br", "a", "blockquote"]} components={{ a: ({ children, href }) => <a href={href} target="_blank" rel="noopener noreferrer" className="underline">{children}</a> }}>{children}</ReactMarkdown></div>;
@@ -49,7 +49,7 @@ export default function BriefContent({ document: original }: { document: DailyBr
   return <article lang={(document.language ?? "zh") === "zh" ? "zh-CN" : "en"} className="mx-auto max-w-[1080px] space-y-10 break-words">
     <header className="space-y-4">
       {brief.hero_image && <ImageContent key={brief.hero_image.url} image={brief.hero_image} />}
-      <div className="flex flex-wrap gap-2 text-xs text-muted-foreground"><span>{brief.date}</span><span>{t(brief.market_status === "weekend" ? "briefs.weekend" : "briefs.tradingDay")}</span><span>{t(`briefs.${brief.type}`)}</span></div>
+      <div className="flex flex-wrap gap-2 text-xs text-muted-foreground"><span>{brief.date}</span><span>{t(isWeekendBriefDate(brief.date) || brief.market_status === "weekend" ? "briefs.weekend" : "briefs.tradingDay")}</span><span>{t(isWeekendBriefDate(brief.date) ? "briefs.weekendEdition" : `briefs.${brief.type}`)}</span></div>
       <p className="text-sm font-medium">{brief.title}</p><h1 className="text-2xl font-semibold leading-tight sm:text-[32px]">{brief.headline}</h1><p className="text-sm leading-6 text-muted-foreground">{brief.subtitle}</p>
       <p className="text-xs text-muted-foreground">{t("briefs.generatedAt")} {brief.generated_at_pt}</p>
     </header>

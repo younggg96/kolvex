@@ -44,6 +44,11 @@ def creators(service=Depends(get_service)):
     return run(service.creators)
 
 
+@router.get("/summaries")
+def summaries(author: str | None = Query(None, max_length=16), service=Depends(get_service)):
+    return run(lambda: service.summaries(author))
+
+
 @router.post("/creators")
 def save_creator(payload: CreatorInput, admin=Depends(verify_admin), service=Depends(get_service)):
     return run(lambda: service.save_creator(payload.username, payload.display_name, payload.bio, **payload.model_dump(exclude={"username", "display_name", "bio"}, exclude_unset=True)))

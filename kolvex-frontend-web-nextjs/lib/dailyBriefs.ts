@@ -87,6 +87,13 @@ export function briefFilters(params?: BriefSearchParams, now = new Date()) {
   return { type, page, date };
 }
 
+/** Issue dates are Pacific calendar dates; parse at UTC noon to avoid viewer-timezone shifts. */
+export function isWeekendBriefDate(value: string): boolean {
+  if (!isBriefDate(value)) return false;
+  const day = new Date(`${value}T12:00:00Z`).getUTCDay();
+  return day === 0 || day === 6;
+}
+
 /** Regular US equities session: 06:30–13:00 Pacific; post-close brief at 14:00. */
 export function briefReadingFilters(params?: BriefSearchParams, now = new Date()) {
   const { date } = briefFilters(params, now);
@@ -95,7 +102,7 @@ export function briefReadingFilters(params?: BriefSearchParams, now = new Date()
   }).formatToParts(now);
   const minutes = Number(parts.find(part => part.type === "hour")!.value) * 60
     + Number(parts.find(part => part.type === "minute")!.value);
-  const type: BriefType = isBriefType(params?.type)
+  const type: BriefType = isWeekendBriefDate(date) ? "evening" : isBriefType(params?.type)
     ? params.type : minutes < 390 ? "morning" : minutes < 840 ? "intraday" : "evening";
   return { date, type, id: `${type}-${date}` };
 }

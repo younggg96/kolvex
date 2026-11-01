@@ -92,19 +92,26 @@ AI generation remains an explicit action on the stock detail page. The stock
 workspace is capped at 1800px, uses the existing page gutters and presents company
 identity, exchange/currency and regular/available after-hours quotes before a single
 sticky horizontal Radix research tab bar. The bar scrolls horizontally on phones;
+its shared `pill-solid` surface uses opaque muted fill to hide scrolling content
+behind the labels, with a 16px sticky inset from the content viewport's top edge.
 all labels remain full text. The `tab` query parameter restores the selected module
 without losing the Markets return filter or legacy creator deep links. Indices retain
 the chart/research modules without stock-only financial tabs.
+Technicals is the first tab and the default when no valid tab or creator deep link
+is supplied. Its analysis content uses the shared Card with the same 24px corners,
+border, card fill and 16px mobile / 20px desktop padding as the chart surface.
 
-Overview, Technicals and Setup share the mounted K-line chart and AI drawing tools.
-Its workspace plot is 320px on phones and 420px from sm; advanced/fullscreen views
-retain their existing sizing. The AI toolbar keeps Analysis and Drawings together
-as primary actions, with Settings and drawing visibility as quiet outlined utility
-buttons. Desktop aligns the groups horizontally; phones use two equal columns for
-each group with full text labels, 44px minimum targets and a separate full-width
-manual-tools disclosure. Drawing visibility is reversible and uses neutral styling,
-including its existing confirmation; it does not borrow destructive red. Compact
-mobile visibility labels retain full accessible names. Financials, Earnings, Metric trends, Target price, Profile,
+Overview, Technicals and Setup share a mounted closing-price line preview.
+Its workspace plot is 320px on phones and 420px from sm. Clicking the plot or
+its quiet Advanced action opens the fullscreen candlestick chart with volume,
+indicators and saved/manual drawings. The preview omits these overlays so the
+price trend remains the focus. AI actions live in a collapsed disclosure below
+the preview; Analysis and Drawings use neutral outlined controls. Advanced mode
+keeps its manual toolbar, with AI controls in a desktop side panel or mobile
+popover. Settings and reversible drawing visibility retain their existing dialogs.
+Setup content, loading and empty states use the same Card fill, border and
+24px corners as Technicals, with 16px mobile / 20px desktop content padding.
+Financials, Earnings, Metric trends, Target price, Profile,
 News, Creators and Research show their own content directly below navigation. The
 chart remains mounted but hidden for these views, preserving overlays and jobs.
 Overview orders the chart, source-backed growth indicators, nine grouped financial
@@ -1191,12 +1198,11 @@ Unknown engagement counts are omitted rather than rendered as zero.
 
 ### Stock workspace on phones
 
-The stock chart uses the full page width below 640px, with a single inset for
-controls and the plotting area. AI analysis and AI drawings share one row with
-an accessible icon-only settings button. Manual drawing tools expand on demand
-on phones; the visibility action remains beside that disclosure. Full-screen
-advanced charts and desktop charts keep their tools visible. Expanded editing
-controls wrap to fit narrow screens without shrinking their 44px touch targets.
+The stock price preview uses the full page width below 640px, with one inset
+for the plotting area. The line chart leads; AI actions stay collapsed below it
+beside the quiet Advanced entry. Fullscreen candlesticks keep manual drawing
+tools visible and AI controls in a mobile popover. Editing controls wrap to fit
+narrow screens without shrinking their 44px touch targets.
 Stock insight tabs stay in one horizontally scrollable row on phones, retaining
 Radix keyboard navigation and the active underline. Summary facts use separated
 rows on phones and the existing three-column layout on larger screens.
@@ -1355,3 +1361,23 @@ Result changes use a 180ms fade and rows arrive over 220ms with at most 120ms
 stagger, including mobile rows. Animations start from visible content, never
 gate interaction, and stop under `prefers-reduced-motion`. Refresh and loading
 controls use existing spinners.
+
+### Weekend brief reader
+
+Pacific weekend dates show a single Weekend brief heading and daily cadence note
+in place of session tabs. Refresh stays right-aligned and dates remain navigable.
+Weekend article metadata and calendar cells use the same label; empty copy never
+suggests changing sessions. Existing evening issue IDs are the canonical weekend
+storage key. Weekday navigation retains its fitted three-option pill.
+
+### X opinion summary snapshots
+
+The X feed renders saved bilingual AI summaries above posts, grouped by creator
+and filtered by the selected author. The existing ListCard contains a compact
+headline row for each creator; native disclosures reveal reasoning, caveats and
+original source links. Dates use the reader locale and timezone. The scope note
+explicitly identifies selected, incomplete coverage and potential other stocks.
+The summary endpoint verifies every citation exists and belongs to its creator
+before returning a snapshot. Reading does not call a model or generate a fresh
+summary. This is a saved editorial snapshot, not a scheduled-generation service.
+Missing snapshots and recoverable failures leave the underlying feed available.

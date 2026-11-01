@@ -57,3 +57,13 @@ test('unrecognized/loading DOM is not a successful empty timeline', () => {
 test('reports readiness for recognized tweet DOM', () => {
   assert.equal(extract([article()]).ready, true);
 });
+
+test('detail-page quote time does not hide the original post', () => {
+  const own = article();
+  const all = own.querySelectorAll.bind(own);
+  const date = own.querySelector('time');
+  own.querySelectorAll = selector => selector === 'time'
+    ? [{ closest: () => null }, date] : all(selector);
+  own.querySelector = new Proxy(own.querySelector, { apply: (fn, target, args) => args[0] === 'time' ? { closest: () => null } : fn.apply(target, args) });
+  assert.equal(extract([own]).posts[0].id, '2115976928918139192');
+});

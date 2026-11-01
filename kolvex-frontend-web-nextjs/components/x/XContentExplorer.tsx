@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/list-card";
 import XCreatorProfile, { CreatorAvatar } from "./XCreatorProfile";
 import XTranslatedText from "./XTranslatedText";
+import XCreatorSummaries from "./XCreatorSummaries";
 import StockBadge from "@/components/ui/stock-badge";
 import { useTranslation } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
@@ -184,6 +185,7 @@ export default function XContentExplorer() {
             </aside>
             <div className="order-2 min-w-0 space-y-4 xl:col-start-1 xl:row-start-1">
               {selected && <XCreatorProfile creator={selected} />}
+              <XCreatorSummaries author={author} creators={creators} />
               <section
                 aria-label={c("X posts", "X 推文")}
                 className="min-w-0"

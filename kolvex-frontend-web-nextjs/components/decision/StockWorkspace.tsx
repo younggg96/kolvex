@@ -8,6 +8,7 @@ import { usePathname, useSearchParams } from "next/navigation";
 import HeaderBackButton from "@/components/layout/HeaderBackButton";
 import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import DashboardLayout from "@/components/layout/DashboardLayout";
@@ -130,14 +131,14 @@ export default function StockWorkspace({
   const searchParams = useSearchParams();
   const pathname = usePathname();
   const sections = benchmark
-    ? ["summary", "technical", "setup", "news", "creators", "research"]
+    ? ["technical", "summary", "setup", "news", "creators", "research"]
     : [
+        "technical",
         "summary",
         "financials",
         "earnings",
         "multicharts",
         "analyst",
-        "technical",
         "setup",
         "news",
         "creators",
@@ -147,7 +148,7 @@ export default function StockWorkspace({
   const requestedTab = searchParams.get("tab") || "";
   const activeTab = sections.includes(requestedTab)
     ? requestedTab
-    : (initialInsight ?? "summary");
+    : (initialInsight ?? "technical");
   const [visitedTabs, setVisitedTabs] = useState(() => new Set([activeTab]));
   useEffect(() => {
     setVisitedTabs((previous) =>
@@ -435,9 +436,13 @@ export default function StockWorkspace({
               onValueChange={setActiveTab}
             >
               <TabsList
-                className="sticky top-0 z-30 mb-6 flex max-w-full flex-nowrap gap-6 overflow-x-auto bg-background"
+                variant="pill-solid"
+                className="sticky top-4 z-30 mb-6 flex max-w-full flex-nowrap gap-6 overflow-x-auto"
                 aria-label={c("Stock sections", "个股研究导航")}
               >
+                <TabsTrigger value="technical">
+                  {c("Technicals", "技术分析")}
+                </TabsTrigger>
                 <TabsTrigger value="summary">
                   {c("Overview", "概览")}
                 </TabsTrigger>
@@ -457,9 +462,6 @@ export default function StockWorkspace({
                     </TabsTrigger>
                   </>
                 )}
-                <TabsTrigger value="technical">
-                  {c("Technicals", "技术分析")}
-                </TabsTrigger>
                 <TabsTrigger value="setup">
                   {c("Setup", "条件计划")}
                 </TabsTrigger>
@@ -480,8 +482,8 @@ export default function StockWorkspace({
                 hidden={!["summary", "technical", "setup"].includes(activeTab)}
                 className="mb-6 min-w-0 rounded-3xl border border-border bg-card p-4 sm:p-5"
                 aria-label={c(
-                  "Price chart and AI drawings",
-                  "K 线图与 AI 画线",
+                  "Price trend",
+                  "价格走势",
                 )}
               >
                 <div>
@@ -745,7 +747,7 @@ export default function StockWorkspace({
                   forceMount
                   className="stock-tab-panel pt-2 data-[state=inactive]:hidden"
                 >
-                  <Panel>
+                  <Card className="min-w-0 p-4 sm:p-5">
                     <div
                       ref={setTechnicalContainer}
                       className="flex min-w-0 flex-col"
@@ -758,7 +760,7 @@ export default function StockWorkspace({
                         )}
                       </Empty>
                     )}
-                  </Panel>
+                  </Card>
                 </TabsContent>
                 <TabsContent
                   value="setup"
@@ -766,7 +768,7 @@ export default function StockWorkspace({
                   className="stock-tab-panel pt-2 data-[state=inactive]:hidden"
                 >
                   {technicalBusy && !technical ? (
-                    <div role="status" className="space-y-4 py-4">
+                    <div role="status" className="space-y-4 rounded-3xl border border-border bg-card p-4 sm:p-5">
                       <span className="sr-only">
                         {c("Loading technical analysis…", "正在加载技术分析…")}
                       </span>
@@ -774,7 +776,7 @@ export default function StockWorkspace({
                       <Skeleton className="h-24 w-full" />
                     </div>
                   ) : technical?.setup ? (
-                    <Panel>
+                    <Card className="min-w-0 p-4 sm:p-5">
                       <div>
                         <h3 className="font-semibold">
                           {technical.setup.name}
@@ -839,9 +841,9 @@ export default function StockWorkspace({
                           </ul>
                         </details>
                       </div>
-                    </Panel>
+                    </Card>
                   ) : (
-                    <Panel>
+                    <Card className="min-w-0 p-4 sm:p-5">
                       <Empty>
                         {c(
                           "Generate technical analysis to see entry conditions, invalidation and targets when a setup is available.",
@@ -860,7 +862,7 @@ export default function StockWorkspace({
                           ? c("Analyzing…", "正在分析…")
                           : c("Generate analysis", "生成分析")}
                       </Button>
-                    </Panel>
+                    </Card>
                   )}
                 </TabsContent>
                 <TabsContent

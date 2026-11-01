@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useTranslation } from "@/lib/i18n";
-import { localizedBrief, BRIEF_TYPES, isBriefType, briefLibraryHref, briefReadingFilters, formatBriefDate, shiftBriefDate, type BriefSearchParams, type DailyBrief } from "@/lib/dailyBriefs";
+import { localizedBrief, isWeekendBriefDate, BRIEF_TYPES, isBriefType, briefLibraryHref, briefReadingFilters, formatBriefDate, shiftBriefDate, type BriefSearchParams, type DailyBrief } from "@/lib/dailyBriefs";
 import BriefCalendar from "./BriefCalendar";
 import BriefContent from "./BriefContent";
 import BriefState from "./BriefState";
@@ -20,6 +20,7 @@ export default function BriefLibrary({ searchParams }: { searchParams?: BriefSea
   const router = useRouter();
   const [calendarOpen, setCalendarOpen] = useState(false);
   const { type, date, id } = briefReadingFilters(searchParams);
+  const weekend = isWeekendBriefDate(date);
   const { data, loading, error, retry } = useBriefData<{ payload: DailyBrief }>(`?id=${encodeURIComponent(id)}`);
   useEffect(() => { document.title = `${(data ? localizedBrief(data.payload, locale).brief.headline : t("briefs.title"))} | Kolvex`; }, [data, locale, t]);
 
@@ -46,16 +47,16 @@ export default function BriefLibrary({ searchParams }: { searchParams?: BriefSea
         </div>
         <Tabs value={type} onValueChange={value => router.push(briefLibraryHref(isBriefType(value) ? value : "morning", 1, date))}>
           <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-            <TabsList aria-label={t("briefs.filterLabel")} className="min-w-0 shrink-0">
+            {weekend ? <div className="min-w-0 py-2"><h2 className="text-lg font-semibold">{t("briefs.weekendEdition")}</h2><p className="mt-1 text-xs text-muted-foreground">{t("briefs.weekendSchedule")}</p></div> : <TabsList aria-label={t("briefs.filterLabel")} className="min-w-0 shrink-0">
               {BRIEF_TYPES.map(edition => <TabsTrigger key={edition} value={edition}>{t(`briefs.${edition}`)}</TabsTrigger>)}
-            </TabsList>
+            </TabsList>}
             <Button variant="ghost" size="sm" className="ml-auto min-h-11 shrink-0" disabled={loading} onClick={retry}><RefreshCw className="mr-1 h-3.5 w-3.5" aria-hidden="true" />{t("common.refresh")}</Button>
           </div>
-          <TabsContent value={type}>
+          <TabsContent value={type} {...(weekend ? { role: "region", "aria-labelledby": undefined, "aria-label": t("briefs.weekendEdition") } : {})}>
             {error && data && <p role="alert" className="mb-4 text-sm text-muted-foreground">{t("common.error")} <Button variant="outline" size="sm" onClick={retry}>{t("common.retry")}</Button></p>}
             {loading || (error && error !== 404 && !data) ? <BriefState loading={loading} error={error} retry={retry} /> : error === 404 ? <div className="space-y-3 py-12 text-center">
-              <h2 className="text-xl font-semibold">{t("briefs.emptyEdition", { edition: t(`briefs.${type}`) })}</h2>
-              <p className="text-sm leading-6 text-muted-foreground">{t("briefs.emptyEditionDetail")}</p>
+              <h2 className="text-xl font-semibold">{t("briefs.emptyEdition", { edition: t(weekend ? "briefs.weekendEdition" : `briefs.${type}`) })}</h2>
+              <p className="text-sm leading-6 text-muted-foreground">{t(weekend ? "briefs.weekendEmptyDetail" : "briefs.emptyEditionDetail")}</p>
             </div> : data && <BriefContent key={id} document={data.payload} />}
           </TabsContent>
         </Tabs>

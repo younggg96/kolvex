@@ -8,7 +8,7 @@ import { enUS, zhCN } from "date-fns/locale";
 import { Calendar } from "@/components/ui/calendar";
 import { Button } from "@/components/ui/button";
 import { useTranslation } from "@/lib/i18n";
-import { briefCalendarDate, briefDateKey, briefLibraryHref, formatBriefDate, pacificBriefToday, type BriefCalendarData, type BriefFilter } from "@/lib/dailyBriefs";
+import { isWeekendBriefDate, briefCalendarDate, briefDateKey, briefLibraryHref, formatBriefDate, pacificBriefToday, type BriefCalendarData, type BriefFilter } from "@/lib/dailyBriefs";
 import { useBriefData } from "./useBriefData";
 
 type Availability = Map<string, string[]>;
@@ -18,13 +18,14 @@ function BriefDay(props: DayContentProps) {
   const { t, locale } = useTranslation();
   const { days, status } = useContext(CalendarAvailability);
   const available = days.get(briefDateKey(props.date)) ?? [];
+  const weekend = isWeekendBriefDate(briefDateKey(props.date));
   return <span className="relative flex h-full w-full items-center justify-center pb-1">
     <span aria-hidden="true"><DayContent {...props} /></span>
-    <span className="sr-only">{formatBriefDate(briefDateKey(props.date), locale)}，{status === "loading" ? t("briefs.loadingDates") : status === "error" ? t("common.error") : available.length ? available.map(kind => t(`briefs.${kind}`)).join(" / ") : t("briefs.noIssue")}</span>
+    <span className="sr-only">{formatBriefDate(briefDateKey(props.date), locale)}，{status === "loading" ? t("briefs.loadingDates") : status === "error" ? t("common.error") : available.length ? weekend ? t("briefs.weekendEdition") : available.map(kind => t(`briefs.${kind}`)).join(" / ") : t("briefs.noIssue")}</span>
     <span aria-hidden="true" className="absolute bottom-1 left-0 flex w-full justify-center gap-1">
-      {available.includes("morning") && <span className="h-1 w-1 rounded-full bg-current" />}
-      {available.includes("intraday") && <span className="h-1 w-1 rounded-sm bg-current" />}
-      {available.includes("evening") && <span className="h-1 w-1 rounded-full border border-current" />}
+      {!weekend && available.includes("morning") && <span className="h-1 w-1 rounded-full bg-current" />}
+      {!weekend && available.includes("intraday") && <span className="h-1 w-1 rounded-sm bg-current" />}
+      {(weekend ? available.length > 0 : available.includes("evening")) && <span className="h-1 w-1 rounded-full border border-current" />}
     </span>
   </span>;
 }
@@ -69,9 +70,12 @@ export default function BriefCalendar({ date, type, onSelectDate }: { date: stri
       />
     </CalendarAvailability.Provider>
     <div className="mt-4 flex flex-wrap items-center justify-center gap-x-3 gap-y-2 text-xs text-muted-foreground">
+      {!isWeekendBriefDate(date) && <>
       <span className="flex items-center gap-2"><span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-current" />{t("briefs.morning")}</span>
       <span className="flex items-center gap-2"><span aria-hidden="true" className="h-1.5 w-1.5 rounded-sm bg-current" />{t("briefs.intraday")}</span>
       <span className="flex items-center gap-2"><span aria-hidden="true" className="h-1.5 w-1.5 rounded-full border border-current" />{t("briefs.evening")}</span>
+      </>}
+      <span>{t("briefs.weekendSchedule")}</span>
     </div>
     <div className="mt-3 min-h-5 text-center text-xs leading-5 text-muted-foreground" aria-live="polite">
       {loading ? t("briefs.loadingDates") : error ? <span>{t("briefs.calendarError")} <button type="button" onClick={retry} className="cursor-pointer underline underline-offset-4 focus-visible:outline focus-visible:outline-2">{t("common.retry")}</button></span> : t("briefs.pacificDates")}

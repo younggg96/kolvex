@@ -1699,6 +1699,9 @@
     "risk": "风险"
   },
   "briefs": {
+    "weekendEdition": "周末简报",
+    "weekendSchedule": "周末每天一篇，不分盘前、盘中或盘后",
+    "weekendEmptyDetail": "当天的周末简报尚未发布，请稍后刷新或选择其他日期。",
     "title": "日报",
     "description": "盘前 1 小时看计划，盘中跟踪动态，盘后 1 小时读复盘。",
     "morning": "盘前 1 小时",

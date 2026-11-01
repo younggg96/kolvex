@@ -10,7 +10,7 @@ async function proxy(request: NextRequest, { params }: Context) {
   const path = params.path.join("/");
   const allowed =
     request.method === "GET"
-      ? ["creators", "posts"]
+      ? ["creators", "posts", "summaries"]
       : ["creators", "validate", "upload"];
   if (!allowed.includes(path))
     return NextResponse.json({ error: "Not found" }, { status: 404 });
