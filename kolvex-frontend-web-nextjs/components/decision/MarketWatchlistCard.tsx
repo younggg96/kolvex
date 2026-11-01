@@ -11,14 +11,15 @@ import CompanyLogo from "@/components/ui/company-logo";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Change, money, useCopy } from "./shared";
+import WatchlistStatus from "./WatchlistStatus";
 
 const PREVIEW_SIZE = 6;
 const sectors = new Map<string, string>(CORE_STOCKS.map(stock => [stock.symbol, stock.sector]));
 
-/** A bounded preview of the same browser-local list used by stock stars. */
+/** A bounded preview of the same account Watchlist used by stock stars. */
 export default function MarketWatchlistCard() {
   const c = useCopy();
-  const { watchlist, ready, storageUnavailable } = useWatchlist();
+  const { watchlist, ready } = useWatchlist();
   const symbols = watchlist.slice(-PREVIEW_SIZE).reverse();
   const key = symbols.join(",");
   const [quotes, setQuotes] = useState<Record<string, StockQuote>>({});
@@ -88,7 +89,7 @@ export default function MarketWatchlistCard() {
           </details>)}
         </div>}
       {unavailable && <p role="status" className="mt-3 text-xs leading-5 text-muted-foreground">{c("Some quotes are unavailable. Use refresh to retry.", "部分报价暂不可用，可点击刷新重试。")}</p>}
-      {storageUnavailable && <p role="status" className="mt-3 text-xs leading-5 text-muted-foreground">{c("Saved for this session only. Browser storage is unavailable.", "浏览器存储不可用，仅在本次会话保留。")}</p>}
+      <div className="mt-3"><WatchlistStatus /></div>
       {ready && symbols.length > 0 && <Link href="/dashboard/watchlist" className="mt-3 flex min-h-11 items-center justify-between border-t border-border px-1 pt-2 text-xs font-medium text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">{c("View all saved stocks", "查看全部自选股")}<ArrowUpRight className="h-3.5 w-3.5" aria-hidden /></Link>}
     </div>
   </section>;
