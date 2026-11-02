@@ -11,12 +11,15 @@ TAGS = {
     "net_income": ["NetIncomeLoss", "ProfitLoss"],
     "eps_diluted": ["EarningsPerShareDiluted"],
     "operating_cash_flow": ["NetCashProvidedByUsedInOperatingActivities"],
-    "capex": ["PaymentsToAcquirePropertyPlantAndEquipment"],
+    "capex": ["PaymentsToAcquirePropertyPlantAndEquipment", "PaymentsToAcquireProductiveAssets"],
     "assets": ["Assets"], "liabilities": ["Liabilities"],
     "equity": ["StockholdersEquity", "StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest"],
 }
 INSTANT = {"assets", "liabilities", "equity"}
 ADDITIVE = set(TAGS) - INSTANT - {"eps_diluted"}
+# 70-120 days: includes 16-week fiscal fourth quarters (for example Costco).
+QUARTER_DAYS = (70, 120)
+EARNINGS_FORMS = {"10-K", "10-K/A", "10-Q", "10-Q/A", "20-F", "20-F/A"}
 
 
 def number(value):
@@ -53,8 +56,14 @@ def filings_from(submissions):
         result.append({"form": form, "accession": accession, "filed": field("filingDate"),
                        "period": field("reportDate"), "document": field("primaryDocument"),
                        "description": field("primaryDocDescription"),
+                       "items": [i for i in str(field("items")).split(",") if i],
                        "source_url": filing_url(submissions["cik"], accession)})
     return sorted(result, key=lambda r: (r["filed"], r["accession"]), reverse=True)
+
+
+def is_earnings_filing(filing):
+    # 8-K Item 2.02 is "Results of Operations and Financial Condition".
+    return filing["form"] in EARNINGS_FORMS or (filing["form"] in {"8-K", "8-K/A", "6-K"} and "2.02" in filing.get("items", []))
 
 
 def financial_history(payload):
@@ -69,10 +78,10 @@ def financial_history(payload):
             break
     if not currency:
         return {"currency": None, "annual": [], "quarterly": [], "ttm": None}
-    series = {}
+    series, fiscal_years = {}, {}
     cik = payload["cik"]
     for metric, tags in TAGS.items():
-        candidates = {}
+        candidates, fiscal_years[metric] = {}, set()
         for priority, tag in enumerate(tags):
             unit = f"{currency}/shares" if metric == "eps_diluted" else currency
             for fact in facts.get(tag, {}).get("units", {}).get(unit, []):
@@ -86,6 +95,9 @@ def financial_history(payload):
                 if not source:
                     continue
                 key = (None if metric in INSTANT else start, end)
+                # 10-Qs can report rolling twelve months (Amazon); only a 10-K establishes a fiscal year.
+                if fact["form"].startswith("10-K"):
+                    fiscal_years[metric].add(key)
                 rank = (fact.get("filed", ""), -priority)
                 if key not in candidates or rank > candidates[key][0]:
                     candidates[key] = (rank, {"start": key[0], "period": end, "value": value,
@@ -98,7 +110,7 @@ def financial_history(payload):
             continue
         for (start, end), fact in entries.items():
             duration = days(start, end)
-            destination = annual if 330 <= duration <= 385 else quarter if 70 <= duration <= 110 else None
+            destination = annual if 330 <= duration <= 385 and (start, end) in fiscal_years[metric] else quarter if QUARTER_DAYS[0] <= duration <= QUARTER_DAYS[1] else None
             if destination is not None:
                 row = destination.setdefault((start, end), {"start": start, "period": end, "sources": {}})
                 row[metric] = fact["value"]
@@ -109,7 +121,7 @@ def financial_history(payload):
                 duration = days(start, end)
                 if not 150 <= duration <= 385:
                     continue
-                previous = [f for (s, e), f in entries.items() if s == start and 70 <= days(e, end) <= 110]
+                previous = [f for (s, e), f in entries.items() if s == start and QUARTER_DAYS[0] <= days(e, end) <= QUARTER_DAYS[1]]
                 if not previous:
                     continue
                 previous = max(previous, key=lambda f: f["period"])

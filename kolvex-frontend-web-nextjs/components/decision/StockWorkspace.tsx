@@ -51,7 +51,9 @@ import {
 } from "./shared";
 import { useDecisionCommand } from "./CommandLayer";
 
-const StockFinancials = dynamic(() => import("./StockFinancials"));
+const StockFinancialsTab = dynamic(() => import("./StockSecFinancials"));
+const StockPeers = dynamic(() => import("./StockPeers"));
+const StockOwnership = dynamic(() => import("./StockOwnership"));
 const StockMulticharts = dynamic(() =>
   import("./StockFinancials").then((module) => module.StockMulticharts),
 );
@@ -135,6 +137,8 @@ export default function StockWorkspace({
         "earnings",
         "multicharts",
         "analyst",
+        "peers",
+        "ownership",
         "news",
         "creators",
         "research",
@@ -421,6 +425,12 @@ export default function StockWorkspace({
                     <TabsTrigger value="analyst">
                       {c("Target price", "分析师目标价")}
                     </TabsTrigger>
+                    <TabsTrigger value="peers">
+                      {c("Peers", "同行比较")}
+                    </TabsTrigger>
+                    <TabsTrigger value="ownership">
+                      {c("Ownership", "持仓披露")}
+                    </TabsTrigger>
                   </>
                 )}
                 {!benchmark && (
@@ -470,7 +480,7 @@ export default function StockWorkspace({
                   {(activeTab === "financials" ||
                     visitedTabs.has("financials")) && (
                     <>
-                      <StockFinancials
+                      <StockFinancialsTab
                         symbol={ticker}
                         currency={financialCurrency}
                       />
@@ -513,6 +523,28 @@ export default function StockWorkspace({
                     <>
                       <StockAnalyst symbol={ticker} currency={currency} />
                     </>
+                  )}
+                </TabsContent>
+                <TabsContent
+                  value="peers"
+                  forceMount
+                  className="stock-tab-panel data-[state=inactive]:hidden"
+                >
+                  {(activeTab === "peers" || visitedTabs.has("peers")) && (
+                    <StockPeers symbol={ticker} />
+                  )}
+                </TabsContent>
+                <TabsContent
+                  value="ownership"
+                  forceMount
+                  className="stock-tab-panel data-[state=inactive]:hidden"
+                >
+                  {(activeTab === "ownership" ||
+                    visitedTabs.has("ownership")) && (
+                    <StockOwnership
+                      symbol={ticker}
+                      companyName={overview?.company.name}
+                    />
                   )}
                 </TabsContent>
                 <TabsContent

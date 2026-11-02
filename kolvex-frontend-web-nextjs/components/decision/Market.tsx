@@ -8,7 +8,7 @@ import { ArrowUpRight, LayoutGrid, List } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import CompanyLogo from "@/components/ui/company-logo";
-import { ListFooterLink, ListRow, ListRows } from "@/components/ui/list-card";
+import { ListCard, ListFooterLink, ListRow, ListRows } from "@/components/ui/list-card";
 import OpinionStrength from "@/components/youtube/OpinionStrength";
 import { Button } from "@/components/ui/button";
 import { SegmentedControl } from "@/components/ui/segmented-control";
@@ -22,14 +22,10 @@ import { loadMarketQuotes, getCachedMarketQuotes } from "@/lib/marketQuotes";
 import { BENCHMARKS, MARKET_GROUPS, isMarketIndex, indexValue, type MarketInstrument } from "@/lib/marketBenchmarks";
 import { marketStockHref } from "@/lib/stockLinks";
 import {
-  Empty,
   HeldMark,
-  Panel,
-  TextLink,
   money,
   useCopy,
   useCreatorCatalogue,
-  useDayLabel,
   useHeldTickers,
 } from "./shared";
 import ScrubChart, { type ScrubPoint } from "./ScrubChart";
@@ -324,7 +320,6 @@ function MarketTrends({ range, setRange, view, setView }: { range: RangeKey; set
 
 function MarketOverview({ range, setRange, view, setView }: { range: RangeKey; setRange: (range: RangeKey) => void; view: MarketView; setView: (view: MarketView) => void }) {
   const c = useCopy();
-  const dayLabel = useDayLabel();
   const { setContext } = useDecisionCommand();
   const [attempt, setAttempt] = useState(0);
   const [quotes, setQuotes] = useState<Record<string, StockQuote>>(() => getCachedMarketQuotes(BENCHMARKS.map(item => item.symbol)));
@@ -381,54 +376,43 @@ function MarketOverview({ range, setRange, view, setView }: { range: RangeKey; s
 
           <aside className="min-w-0 space-y-8 xl:sticky xl:top-8 xl:self-start">
             <MarketWatchlistCard />
-            <Panel
-              title={c("Creator updates", "博主新动态")}
-              id="market-creator-updates"
-              surface="card"
-              className="[&>header_h2]:text-lg"
-              action={<TextLink href="/dashboard/youtube-opinions" className="inline-flex min-h-10 items-center gap-1 !text-xs !font-medium text-muted-foreground hover:text-foreground">{c("View all", "全部观点")}<ArrowUpRight className="h-3.5 w-3.5" aria-hidden /></TextLink>}
-            >
-              {catalogue.loading && !catalogue.data ? (
-                <div className="space-y-4 py-4" aria-busy="true">
-                  {[0, 1, 2].map((row) => <Skeleton key={row} className="h-12 w-full" />)}
+            <section aria-labelledby="market-creator-updates-title" className="min-w-0">
+              <header className="mb-3 flex min-h-14 items-center gap-2">
+                <h2 id="market-creator-updates-title" className="text-lg font-semibold">{c("Creator updates", "博主新动态")}</h2>
+                {catalogue.data && shifts.length > 0 && <span className="rounded-full bg-muted px-2 py-0.5 text-xs tabular-nums text-muted-foreground" aria-label={c(`Showing ${shifts.length} latest creator updates`, `展示最新 ${shifts.length} 条博主动态`)}>{shifts.length}/{shifts.length}</span>}
+                <div className="ml-auto flex items-center">
+                  <Button asChild variant="ghost" size="icon" className="h-11 w-11"><Link href="/dashboard/youtube-opinions" aria-label={c("Open all creator opinions", "查看全部观点")} title={c("Open all opinions", "查看全部观点")}><ArrowUpRight className="h-4 w-4" aria-hidden /></Link></Button>
                 </div>
-              ) : catalogue.error && !catalogue.data ? (
-                <Empty action={<Button size="sm" variant="outline" onClick={() => setAttempt((n) => n + 1)}>{c("Retry", "重试")}</Button>}>
-                  {c("Creator updates could not be loaded.", "暂时无法加载博主动态。")}
-                </Empty>
-              ) : shifts.length ? (
-                <ListRows>
-                  {shifts.map((shift) => (
-                    <ListRow key={shift.ticker}>
-                      <Link
-                        href={marketStockHref(shift.ticker)}
-                        className="flex min-h-20 flex-1 items-center justify-between gap-3 rounded-2xl px-1 py-4 outline-offset-2 transition-colors duration-150 focus-visible:bg-foreground/[0.06] focus-visible:outline-2 focus-visible:outline-primary"
-                      >
-                        <span className="flex min-w-0 items-center gap-2.5">
-                          <span aria-hidden><CompanyLogo symbol={shift.ticker} size="sm" /></span>
-                          <span className="min-w-0">
-                            <span className="block text-sm font-semibold">
-                              {shift.ticker}
-                              {heldSet.has(shift.ticker) && <HeldMark />}
-                            </span>
-                            <span className="mt-1 block text-xs text-muted-foreground">{dayLabel(shift.current_date)}</span>
-                          </span>
-                        </span>
-                        <span className="flex shrink-0 flex-col items-end gap-1 text-right text-xs">
+              </header>
+              <ListCard aria-busy={catalogue.loading && !catalogue.data}>
+                {catalogue.loading && !catalogue.data ? (
+                  <div role="status" aria-label={c("Loading creator updates", "正在加载博主新动态")} className="space-y-3 py-2">{[0, 1, 2].map((row) => <Skeleton key={row} className="h-11 w-full" />)}</div>
+                ) : catalogue.error && !catalogue.data ? (
+                  <div className="px-3 py-6 text-center">
+                    <p className="text-sm font-medium">{c("Creator updates could not be loaded.", "暂时无法加载博主动态。")}</p>
+                    <Button size="sm" variant="outline" className="mt-4" onClick={() => setAttempt((n) => n + 1)}>{c("Retry", "重试")}</Button>
+                  </div>
+                ) : shifts.length ? (
+                  <ListRows>{shifts.map((shift) => (
+                    <ListRow key={shift.ticker} className="pr-0">
+                      <Link href={marketStockHref(shift.ticker)} className="grid min-h-11 w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-2 rounded-full px-1 text-sm transition-colors duration-150 hover:text-foreground focus-visible:outline-none" title={c(`${shift.ticker} creator opinions`, `${shift.ticker} 博主观点`)}>
+                        <span className="flex min-w-0 items-center gap-2"><span className="shrink-0" aria-hidden><CompanyLogo symbol={shift.ticker} size="xs" /></span><span className="truncate font-medium">{shift.ticker}{heldSet.has(shift.ticker) && <HeldMark />}</span></span>
+                        <span className="flex shrink-0 items-center gap-1.5 whitespace-nowrap text-xs">
                           <OpinionStrength value={consensus.get(shift.ticker)?.avg_score} className="text-xs" />
+                          <span aria-hidden="true" className="h-3 w-px shrink-0 bg-border" />
                           {shift.change == null
                             ? <span className="text-muted-foreground">{c("First coverage", "首次覆盖")}</span>
-                            : <OpinionStrength value={shift.change} change className="text-xs" />}
+                            : <OpinionStrength value={shift.change} change barsOnly className="text-xs" />}
                         </span>
                       </Link>
                     </ListRow>
-                  ))}
-                </ListRows>
-              ) : (
-                <Empty>{c("No creator updates yet.", "暂时没有博主新动态。")}</Empty>
-              )}
-              <ListFooterLink href="/dashboard/youtube-opinions/stocks">{c("Explore creator-covered stocks", "查看博主覆盖股票")}</ListFooterLink>
-            </Panel>
+                  ))}</ListRows>
+                ) : (
+                  <div className="px-3 py-6 text-center text-sm text-muted-foreground">{c("No creator updates yet.", "暂时没有博主新动态。")}</div>
+                )}
+                <ListFooterLink href="/dashboard/youtube-opinions/stocks">{c("Explore creator-covered stocks", "查看博主覆盖股票")}</ListFooterLink>
+              </ListCard>
+            </section>
           </aside>
         </div>
   );
