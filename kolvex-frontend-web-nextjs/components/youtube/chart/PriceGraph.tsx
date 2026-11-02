@@ -899,7 +899,7 @@ export default function PriceGraph({
       <div className={cn("mt-1.5", advanced && "flex min-h-0 flex-1 flex-col")}>{body}</div>
 
       {/* Phones stack the range bar over the icon row so a long label never hides the icons. */}
-      <div className="mt-1.5 flex shrink-0 flex-col items-stretch gap-1 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-2">
+      <div className="my-1.5 flex shrink-0 flex-col items-stretch gap-1 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-2">
         <div className="flex w-full min-w-0 flex-1 items-center gap-1 sm:w-auto">
           {leadingControls}
           {rangeBar}

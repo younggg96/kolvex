@@ -394,12 +394,19 @@ export default function StockWorkspace({
                 className="sticky top-4 z-30 mb-6 flex max-w-full flex-nowrap overflow-x-auto"
                 aria-label={c("Stock sections", "个股研究导航")}
               >
-                <TabsTrigger value="technical">
-                  {c("Technicals", "技术分析")}
-                </TabsTrigger>
                 <TabsTrigger value="summary">
                   {c("Overview", "概览")}
                 </TabsTrigger>
+                <TabsTrigger value="technical">
+                  {c("Technicals", "技术分析")}
+                </TabsTrigger>
+                <TabsTrigger value="creators">
+                  {c("Creators", "博主情报")}
+                </TabsTrigger>
+                <TabsTrigger value="research">
+                  {c("AI research", "AI 研究")}
+                </TabsTrigger>
+                <TabsTrigger value="news">{c("News", "新闻")}</TabsTrigger>
                 {!benchmark && (
                   <>
                     <TabsTrigger value="financials">
@@ -416,13 +423,6 @@ export default function StockWorkspace({
                     </TabsTrigger>
                   </>
                 )}
-                <TabsTrigger value="news">{c("News", "新闻")}</TabsTrigger>
-                <TabsTrigger value="creators">
-                  {c("Creators", "博主情报")}
-                </TabsTrigger>
-                <TabsTrigger value="research">
-                  {c("AI research", "AI 研究")}
-                </TabsTrigger>
                 {!benchmark && (
                   <TabsTrigger value="profile">
                     {c("Profile", "公司资料")}

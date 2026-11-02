@@ -1479,7 +1479,7 @@ export default function ChartView({
           id={drawingToolbarId}
           role="toolbar"
           aria-label={t("youtubeOpinions.drawTools")}
-          className={cn("shrink-0 flex-wrap items-center gap-1 border-b border-border sm:flex-nowrap sm:overflow-x-auto", advanced ? "flex mt-1 pb-1" : "hidden")}
+          className={cn("shrink-0 flex-wrap items-center gap-1 border-b border-border sm:flex-nowrap sm:overflow-x-auto", advanced ? "flex my-1 pb-1" : "hidden")}
         >
           <Popover>
             <PopoverTrigger asChild>
