@@ -3,19 +3,16 @@ import { useCachedResource } from "@/hooks/useCachedResource";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { format } from "date-fns";
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { X } from "lucide-react";
 import { getYouTubeStockDetail, type YouTubeOpinion } from "@/lib/youtubeOpinionsApi";
 import type { AiTechnicalAnalysis } from "@/lib/stockApi";
-import { DateRangePicker, type DateRange } from "@/components/ui/date-range-picker";
 import {
   defaultRangeForWindow,
   historyParamsFor,
   priceRanges,
-  rangeLabelFor,
   type PriceRange,
 } from "@/lib/chart/range";
 import { useSyncedDrawings, type Drawing } from "./chartDrawings";
@@ -30,8 +27,6 @@ import type { StrengthPoint } from "./StrengthChart";
 
 type Translate = (key: string, params?: Record<string, string>) => string;
 export type { PriceRange } from "@/lib/chart/range";
-
-const isoDay = (date: Date) => format(date, "yyyy-MM-dd");
 
 /**
  * Price chart for the opinion window, plus a full-screen advanced chart. Both share the
@@ -161,64 +156,37 @@ export default function PriceChart({
    * opinion window it is given (`defaultRangeForWindow`), which is "3M" on an empty page.
    * The window default is applied only until the user picks a range themselves.
    */
-  const [rangeState, setRangeState] = useState<{ value: PriceRange; custom: DateRange }>(
-    () => ({ value: requestedRange ?? "3M", custom: {} }),
+  const [range, setRange] = useState<PriceRange>(
+    () => requestedRange && priceRanges.includes(requestedRange) ? requestedRange : "3M",
   );
-  const [rangeOpen, setRangeOpen] = useState(false);
   const userPickedRange = useRef(false);
   const earliestOpinion = opinions.reduce<string | undefined>(
     (earliest, point) => (point.date && (!earliest || point.date < earliest) ? point.date : earliest),
     undefined,
   );
   useEffect(() => {
-    if (requestedRange) setRangeState(previous => (previous.value === requestedRange ? previous : { ...previous, value: requestedRange }));
+    if (requestedRange) setRange(priceRanges.includes(requestedRange) ? requestedRange : "3M");
   }, [requestedRange]);
   useEffect(() => {
     // Opinions arrive after mount; seed the window-sized default only while untouched.
     if (requestedRange || userPickedRange.current || earliestOpinion === undefined) return;
     const seeded = defaultRangeForWindow(earliestOpinion);
-    setRangeState(previous => (previous.value === seeded ? previous : { ...previous, value: seeded }));
+    setRange(seeded);
   }, [requestedRange, earliestOpinion]);
 
-  const range = rangeState.value;
-  const customFrom = rangeState.custom.from;
-  const customTo = rangeState.custom.to;
-  const params = useMemo(
-    () => historyParamsFor(range, {
-      customFrom: customFrom ? isoDay(customFrom) : undefined,
-      customTo: customTo ? isoDay(customTo) : undefined,
-    }),
-    [range, customFrom, customTo],
-  );
+  const params = useMemo(() => historyParamsFor(range), [range]);
 
   const selectRange = useCallback((next: PriceRange) => {
+    if (!priceRanges.includes(next)) return;
     userPickedRange.current = true;
-    setRangeState(previous => ({ ...previous, value: next }));
-    // Choosing 自定义 opens the date pickers; a fixed range closes them.
-    setRangeOpen(next === "CUSTOM");
+    setRange(next);
     onRangeChange?.(next);
   }, [onRangeChange]);
-  const rangeOptions = useMemo<{ value: PriceRange; label: string }[]>(() => [
-    ...priceRanges.map(value => ({ value, label: t(`youtubeOpinions.advancedRange.${value}`) })),
-    { value: "CUSTOM", label: t("youtubeOpinions.customRange") },
-  ], [t]);
-  // Custom windows label themselves with their dates; an unpicked one keeps the 自定义 name.
-  const rangeLabel = rangeLabelFor(range, {
-    customFrom,
-    customTo,
-    fallback: t(range === "CUSTOM" ? "youtubeOpinions.customRange" : `youtubeOpinions.advancedRange.${range}`),
-  });
-  /** Pickers stay open until both ends are chosen, so the graph never loads a half window. */
-  const showCustomPicker = range === "CUSTOM" && (rangeOpen || !customFrom || !customTo);
-  const commitCustomRange = useCallback((next: DateRange | undefined) => {
-    const from = next?.from;
-    // A cleared picker falls back to the previous window instead of an empty chart.
-    if (!from) return;
-    userPickedRange.current = true;
-    setRangeState(previous => ({ ...previous, value: "CUSTOM", custom: { from, ...(next?.to ? { to: next.to } : {}) } }));
-    onRangeChange?.("CUSTOM");
-    if (next?.to) setRangeOpen(false);
-  }, [onRangeChange]);
+  const rangeOptions = useMemo<{ value: PriceRange; label: string }[]>(
+    () => priceRanges.map(value => ({ value, label: t(`youtubeOpinions.advancedRange.${value}`) })),
+    [t],
+  );
+  const rangeLabel = t(`youtubeOpinions.advancedRange.${range}`);
   useEffect(() => {
     setHistory([]);
     setTechnicalFocus(DEFAULT_TECHNICAL_FOCUS);
@@ -270,8 +238,6 @@ export default function PriceChart({
      */
     range,
     onRangeChange: selectRange,
-    rangeOpen: showCustomPicker,
-    onRangeOpenChange: (open: boolean) => (open ? selectRange("CUSTOM") : setRangeOpen(false)),
     rangeOptions,
     rangeLabel,
     technicalFocus,
@@ -297,13 +263,6 @@ export default function PriceChart({
         advancedTriggerRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
         setAdvancedOpen(true);
       }} />
-      {/* 自定义 renders here, beside the graph's range bar, rather than in a nested dialog:
-          the full-screen advanced view already uses one dialog and stacking them traps focus. */}
-      {showCustomPicker && (
-        <div className="mt-3 rounded-2xl border border-border bg-muted/20 p-3 sm:p-4" role="group" aria-label={t("youtubeOpinions.customRange")}>
-          <DateRangePicker dateRange={rangeState.custom} onDateRangeChange={commitCustomRange} />
-        </div>
-      )}
       {layout === "workspace" ? (
         resultsContainer && createPortal(<div className="order-last mt-6 min-w-0 border-t border-border pt-1 [&>details]:mt-0 [&>details]:min-w-0 [&>details]:border-0 [&>details]:py-3">
           <AnalysisHistory history={analysisHistory} />

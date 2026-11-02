@@ -128,12 +128,12 @@ day has several). The workspace plot is 320px on phones and 420px from sm; the
 Creator Opinions preview is 260px and 320px from sm.
 
 The graph owns its time span. A range row offers 1D, 1W, 1M, 3M, 6M, YTD, 1Y, 5Y,
-All and a custom window; choosing one loads exactly that window's history rather
+and All; choosing one loads exactly that window's history rather
 than trimming a fixed three-month fetch. ⌘/Ctrl + wheel and pinch zoom, horizontal
 drag pans, double-click or double-tap resets, and a reset action appears only while
 the view is modified. Phones stack the range row over the icon row so a long label
-never hides the buttons. Clicking the plot or its quiet Advanced action opens the
-fullscreen chart, which shares the same chrome and range row and adds candlesticks,
+never hides the buttons. Clicking the plot or the single Advanced action beside the
+range row opens the fullscreen chart, which shares the same chrome and range row and adds candlesticks,
 volume, indicators, the KDJ/RSI/MACD subpane and saved/manual drawings on the same
 visible window. The Creator Opinions page keeps its own range control only for the
 opinion-strength view; the price view uses the graph's bar. AI actions live in a

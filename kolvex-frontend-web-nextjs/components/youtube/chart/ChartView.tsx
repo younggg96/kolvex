@@ -34,7 +34,6 @@ import {
   Lock,
   LockOpen,
   Magnet,
-  Maximize2,
   Minus,
   MousePointer2,
   MoveUpRight,
@@ -1692,9 +1691,6 @@ export default function ChartView({
             </summary>
             {aiControls}
           </details>
-          {onOpenAdvanced && <Button type="button" size="sm" variant="ghost" onClick={onOpenAdvanced} className="min-h-11 gap-1.5 text-muted-foreground">
-            <Maximize2 className="h-4 w-4" aria-hidden="true" />{t("youtubeOpinions.advancedChart")}
-          </Button>}
         </div>}
 
         {!advanced &&
