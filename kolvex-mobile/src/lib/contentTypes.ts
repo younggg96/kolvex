@@ -250,6 +250,9 @@ export type Profile = {
   username?: string;
   full_name?: string;
   membership: string;
+  is_admin?: boolean;
+  avatar_url?: string;
+  phone_e164?: string;
   theme?: string;
   locale?: string;
 };

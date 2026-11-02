@@ -30,6 +30,7 @@ export const supabase = authConfigured
         autoRefreshToken: true,
         persistSession: Platform.OS !== "web",
         detectSessionInUrl: false,
+        flowType: "pkce",
         lock: processLock,
       },
     })

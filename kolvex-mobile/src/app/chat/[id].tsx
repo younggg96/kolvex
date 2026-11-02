@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useLocalSearchParams } from "expo-router";
+import { ModelPicker } from "../../components/ModelPicker";
 import { View } from "react-native";
 import { useAuth } from "../../state/Auth";
 import { conversation } from "../../lib/contentApi";
@@ -37,6 +38,7 @@ function Room() {
   const market = useResource(`context:${ticker}`, (signal) =>
     ticker && !demoMode ? quote(ticker, signal) : Promise.resolve(null),
   );
+  const [model, setModel] = useState("");
   const [attach, setAttach] = useState(true);
   const [sources, setSources] = useState(["web"]);
   const [input, setInput] = useState("");
@@ -131,6 +133,7 @@ function Room() {
         },
         context,
         sources,
+        model || undefined,
       );
       // Reconcile the authoritative history before re-enabling Send. A stream's
       // done event may not guarantee that every storage write succeeded.
@@ -163,6 +166,7 @@ function Room() {
       followContent
       title="Ask Kolvex"
       subtitle={data?.title}
+      subtitleLocalize={false}
       onRefresh={() => {
         if (!busy) void recover();
       }}
@@ -184,7 +188,7 @@ function Room() {
           <Copy size={12} muted>
             你 · {busy ? "本轮问题" : "待核对保存状态"}
           </Copy>
-          <Copy>{sent}</Copy>
+          <Copy localize={false}>{sent}</Copy>
         </Glass>
       )}
       {(busy || !!partial) && (
@@ -236,6 +240,12 @@ function Room() {
               </Button>
             ))}
           </View>
+          <ModelPicker
+            user={user}
+            value={model}
+            onChange={setModel}
+            disabled={busy}
+          />
           <Field
             label="你的问题"
             value={input}

@@ -1,3 +1,4 @@
+import { usePreferences } from "../../state/Preferences";
 import { useEffect, useRef, useState } from "react";
 import { router, useLocalSearchParams } from "expo-router";
 import { useAuth } from "../../state/Auth";
@@ -5,6 +6,7 @@ import { conversations, createConversation } from "../../lib/contentApi";
 import { useResource } from "../../lib/useResource";
 import { AuthGate, Pager, ResourceState } from "../../components/Content";
 import { Button, Copy, Failure, Glass, Page } from "../../components/UI";
+import { ChatActions } from "../../components/ChatActions";
 import { isSymbol } from "../../lib/models";
 export default function Chats() {
   return (
@@ -14,6 +16,7 @@ export default function Chats() {
   );
 }
 function Library() {
+  const { locale } = usePreferences();
   const user = useAuth().session!.user.id;
   const { ticker } = useLocalSearchParams<{ ticker?: string }>();
   const symbol =
@@ -71,15 +74,25 @@ function Library() {
       />
       {rows.map((item) => (
         <Glass key={item.id} style={{ padding: 20, gap: 12 }}>
-          <Copy bold>{item.title}</Copy>
+          <Copy bold localize={false}>
+            {item.title}
+          </Copy>
           <Copy size={12} muted>
-            {new Date(item.updated_at).toLocaleString("zh-CN")}
+            {new Date(item.updated_at).toLocaleString(
+              locale === "en" ? "en-US" : "zh-CN",
+            )}
           </Copy>
           <Button
             onPress={() => router.push(`/chat/${encodeURIComponent(item.id)}`)}
           >
             继续对话
           </Button>
+          <ChatActions
+            id={item.id}
+            user={user}
+            title={item.title}
+            onChanged={resource.refresh}
+          />
         </Glass>
       ))}
       <Pager

@@ -42,9 +42,10 @@ export async function briefs(
   user: string,
   page: number,
   type: string,
+  date = "",
 ) {
   const result = await apiRequest<{ items: BriefSummary[]; total: number }>(
-    `/briefs?page=${page}${type === "all" ? "" : `&type=${encoded(type)}`}`,
+    `/briefs?page=${page}${type === "all" ? "" : `&type=${encoded(type)}`}${date ? `&date=${encoded(date)}` : ""}`,
     { signal, authenticated: true, expectedUser: user },
   );
   requireList(result.items);
@@ -165,3 +166,13 @@ export const stockFacts = (symbol: string, signal: AbortSignal) =>
     website?: string;
     employees?: number;
   }>(`/market/company/${encoded(symbol)}`, { signal });
+
+export const publicReports = (signal: AbortSignal, offset = 0, ticker = "") =>
+  apiRequest<TradingAnalysisListResponse>(
+    `/trading-analysis/public/list?limit=20&offset=${offset}${ticker ? `&ticker=${encoded(ticker)}` : ""}`,
+    { signal },
+  );
+export const publicReport = (id: string, signal: AbortSignal) =>
+  apiRequest<TradingAnalysis>(`/trading-analysis/public/${encoded(id)}`, {
+    signal,
+  });

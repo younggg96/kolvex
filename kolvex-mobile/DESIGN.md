@@ -40,12 +40,22 @@ Signature: neutral stock identifiers and signed green/orange direction on quiet 
 
 ## Behavior and platform variants
 
-NativeTabs owns mobile navigation; Expo Router Stack owns stock detail/back navigation. Web uses a separate Tabs adapter solely for preview. Glass uses native Liquid Glass when runtime availability is true, older iOS blur otherwise, solid surface on Android/web. Reduce transparency selects opaque surfaces. No custom movement, so reduced motion does not require an animation variant. Interactive press feedback uses opacity and optional native haptics.
+NativeTabs owns mobile navigation; Expo Router Stack owns stock detail/back navigation. Web uses a separate Tabs adapter solely for preview. Glass uses SwiftUI clear Liquid Glass through `native/SwiftGlass.ios.tsx` when iOS runtime availability is true, older iOS blur otherwise, and a solid semantic surface on Android/web. `native/SwiftButton.ios.tsx` owns actual SwiftUI glass/glassProminent controls; `native/DateField.ios.tsx` owns SwiftUI date selection. Reduce transparency selects opaque surfaces. No custom movement, so reduced motion does not require an animation variant. Interactive press feedback uses opacity and optional native haptics.
 
-Chinese-only initial UI; securities and USD amounts retain market notation. Date-only source dates are never converted through local time. Demo quotes and chart are explicitly marked on every page; live failures never synthesize prices. No Japan-market scope. English locale parity and authentication migration remain future work.
+Chinese/English UI; securities and USD amounts retain market notation. Date-only source dates are never converted through local time. Demo quotes and chart are explicitly marked on every page; live failures never synthesize prices. No Japan-market scope. UI message coverage is generated and checked; source editorial prose is translated only when the API supplies a translation.
 
 ## Mobile 0.2 migration
 
 Five stable tabs: Markets, Opinions, Research, Watchlist and More. The More hub owns account, briefs, news, chat and portfolio entry points. All keep the same glass, spacing, system typography and inline feedback. `UI.ListPage` is the virtualized counterpart of `UI.Page` for large news/watchlist feeds; `components/Content.tsx` owns authentication gates, fields, selectors, pagination, safe sources and native text rendering. No report HTML is executed.
 
-Authentication is now implemented for password accounts, with encrypted native sessions and a separate ephemeral web-preview session. Authenticated watchlists are account-owned and do not silently import guest lists. Chinese remains the first UI locale; full English parity is still pending. Native tabs/system dialogs keep platform behavior; no decorative navigation is substituted for a platform control.
+Authentication is now implemented for password accounts, with encrypted native sessions and a separate ephemeral web-preview session. Authenticated watchlists are account-owned and do not silently import guest lists. Chinese remains the default UI locale; English application chrome is available through account/guest preferences. Native tabs/system dialogs keep platform behavior; no decorative navigation is substituted for a platform control.
+
+## Mobile 0.3 native material and workspace ownership
+
+`UI.Glass` owns reduced-transparency detection and platform fallback. On supported iOS it delegates to SwiftUI `glassEffect({ glass: { variant: "clear" } })`; RNHostView measures wrapped React Native content vertically, while Yoga owns outer placement/width and SwiftUI owns the material. Button and date picker use SwiftUI Host directly. Clear glass has no fake opaque background. Older systems remain readable through blur/solid fallback; no Web screenshot is evidence of native glass.
+
+`CandleGraph` owns the native financial plot; copied pure indicator/range functions keep Web calculation semantics. Numeric/date anchor fields are the native drawing entry mechanism and allow precise, non-drag input. Explicit saves and conflict checks protect the cloud snapshot; this is not gesture-for-gesture replication of the Web canvas.
+
+`PreferencesProvider` owns theme selection and per-account preference initialization. System/default, light and dark are explicit app variants. Native Appearance override affects only this application, including system chrome; the override is cleared on provider disposal. Selectors preserve their footprint while mutations are busy. New private screens reuse AuthGate, with inline boundaries for nested workspaces.
+
+Chart viewport uses bounded horizontal pan and centered pinch with button alternatives. Message dictionaries cover static and dynamic UI labels; source names, user messages and editorial content bypass generic UI translation.

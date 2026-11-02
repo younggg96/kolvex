@@ -4,8 +4,13 @@ import { router } from "expo-router";
 import { useAuth } from "../state/Auth";
 import { supabase } from "../lib/supabase";
 import { authConfigured, apiURL, webURL } from "../lib/config";
+import { AvatarEditor } from "../components/AvatarEditor";
+import { apiRequest } from "../lib/http";
+import { oauth } from "../lib/authFlow";
+import { useMutation } from "../lib/useMutation";
+import { MutationStatus } from "../components/MutationStatus";
 import { credentialsError } from "../lib/links";
-import { profile, updateProfile } from "../lib/contentApi";
+import { profile } from "../lib/contentApi";
 import { useResource } from "../lib/useResource";
 import {
   Button,
@@ -28,6 +33,7 @@ export default function Account() {
   return auth.session ? <SignedIn key={auth.session.user.id} /> : <SignIn />;
 }
 function SignIn() {
+  const oauthAction = useMutation();
   const [mode, setMode] = useState("login");
   const [fieldError, setFieldError] = useState<{
     email?: string;
@@ -102,6 +108,30 @@ function SignIn() {
         />
       ) : (
         <>
+          <Button
+            disabled={oauthAction.busy || busy}
+            onPress={() =>
+              void oauthAction.run(async () => {
+                if (await oauth("google")) router.replace("/account");
+              })
+            }
+          >
+            使用 Google 登录
+          </Button>
+          <Button
+            disabled={oauthAction.busy || busy}
+            onPress={() =>
+              void oauthAction.run(async () => {
+                if (await oauth("apple")) router.replace("/account");
+              })
+            }
+          >
+            使用 Apple 登录
+          </Button>
+          <MutationStatus {...oauthAction} />
+          <Button onPress={() => router.push("/auth/recovery")}>
+            找回密码
+          </Button>
           <Filters
             values={[
               ["login", "登录"],
@@ -173,6 +203,8 @@ function SignedIn() {
   const auth = useAuth();
   const user = auth.session!.user;
   const [name, setName] = useState("");
+  const [username, setUsername] = useState("");
+  const [phone, setPhone] = useState("");
   const [editing, setEditing] = useState(false);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<string>();
@@ -192,7 +224,19 @@ function SignedIn() {
     setBusy(true);
     setError(undefined);
     try {
-      await updateProfile(user.id, name.trim(), controller.signal);
+      if (phone.trim() && !/^\+[1-9]\d{1,14}$/.test(phone.trim()))
+        throw new Error("手机号请使用 E.164 格式，例如 +14155551234。");
+      await apiRequest("/users/me", {
+        method: "PUT",
+        body: {
+          full_name: name.trim() || null,
+          username: username.trim() || null,
+          phone_e164: phone.trim() || null,
+        },
+        signal: controller.signal,
+        authenticated: true,
+        expectedUser: user.id,
+      });
       if (!controller.signal.aborted) {
         resource.refresh();
         setEditing(false);
@@ -209,13 +253,18 @@ function SignedIn() {
   return (
     <Page title="账户" subtitle={user.email}>
       <Glass style={{ padding: 20, gap: 8 }}>
-        <Copy size={20} bold>
+        <Copy size={20} bold localize={false}>
           {resource.data?.full_name || "Kolvex 用户"}
         </Copy>
         <Copy size={14} muted>
           会员类型：{resource.data?.membership ?? "—"}
         </Copy>
       </Glass>
+      <AvatarEditor
+        user={user.id}
+        url={resource.data?.avatar_url}
+        onChanged={resource.refresh}
+      />
       {auth.error && <Failure message={auth.error} />}
       {resource.error && (
         <Failure message={resource.error} retry={resource.refresh} />
@@ -231,6 +280,19 @@ function SignedIn() {
             maxLength={100}
             editable={!busy}
           />
+          <Field
+            label="用户名（可留空）"
+            value={username}
+            onChangeText={setUsername}
+            maxLength={50}
+          />
+          <Field
+            label="手机号（E.164，可留空）"
+            value={phone}
+            onChangeText={setPhone}
+            keyboardType="phone-pad"
+            maxLength={20}
+          />
           <View style={{ gap: 8 }}>
             <Button disabled={busy} onPress={() => void save()}>
               {busy ? "正在保存…" : "保存资料"}
@@ -245,6 +307,8 @@ function SignedIn() {
           disabled={!apiURL}
           onPress={() => {
             setName(resource.data?.full_name ?? "");
+            setUsername(resource.data?.username ?? "");
+            setPhone(resource.data?.phone_e164 ?? "");
             setEditing(true);
           }}
         >

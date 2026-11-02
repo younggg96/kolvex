@@ -1,0 +1,16 @@
+{
+  "移除 {0} 自选": "Remove {0} from watchlist",
+  "{0} 的管理权限将被{1}。请核对目标账户。": "Administrator access for {0}: {1}. Verify the target account.",
+  "{0} · {1} · 太平洋时间": "{0} · {1} · Pacific time",
+  "展开 {0} 条股票观点": "Expand {0} stock opinions",
+  "删除 {0} 密钥": "Delete {0} key",
+  "{0} 技术图表": "{0} technical chart",
+  "{0} {1} → {2} · 变化 {3}": "{0} {1} → {2} · Change {3}",
+  "编辑 {0}": "Edit {0}",
+  "{0}，{1} 至 {2}，起点 {3}，终点 {4} {5}": "{0}, {1} to {2}, start {3}, end {4} {5}",
+  "查看 {0} 股票详情": "View {0} stock details",
+  "{0} · 差额 {1}": "{0} · Difference {1}",
+  "目标价单位 {0}": "Target price unit {0}",
+  "服务暂时不可用（{0}），请稍后重试。": "Service temporarily unavailable ({0}). Please retry later.",
+  "当前窗口：{0} 根": "Visible window: {0} bars"
+}

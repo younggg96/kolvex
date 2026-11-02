@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { ScrollView, Share, View } from "react-native";
+import { ScrollView, View } from "react-native";
 import Svg, { Line, Rect, Text as SvgText } from "react-native-svg";
+import { exportCSV } from "../lib/exportFile";
 import { apiRequest } from "../lib/http";
 import { useTheme } from "../lib/theme";
 import { useResource } from "../lib/useResource";
@@ -22,11 +23,6 @@ import {
 import { number, percent } from "../lib/models";
 import { Button, Copy, Empty, Failure, Glass, Section } from "./UI";
 import { Filters, ResourceState } from "./Content";
-const statementNames: Record<StatementKind, string> = {
-  "income-statement": "利润表",
-  "balance-sheet": "资产负债表",
-  "cash-flow": "现金流量表",
-};
 export function Statements({ symbol }: { symbol: string }) {
   const [kind, setKind] = useState<StatementKind>("income-statement");
   const [quarterly, setQuarterly] = useState("annual");
@@ -34,6 +30,7 @@ export function Statements({ symbol }: { symbol: string }) {
   const [all, setAll] = useState(false);
   const [selected, setSelected] = useState("");
   const [shareError, setShareError] = useState<string>();
+  const [sharing, setSharing] = useState(false);
   const resource = useResource(
     `${symbol}:${kind}:${quarterly}`,
     async (signal) => {
@@ -64,14 +61,15 @@ export function Statements({ symbol }: { symbol: string }) {
   const change = financialChange(latest, previous);
   const title = metricLabels[metric] || metric;
   async function share() {
+    if (sharing) return;
+    setSharing(true);
     try {
-      await Share.share({
-        message: statementCSV(rows, keys),
-        title: `${symbol} ${statementNames[kind]}`,
-      });
+      await exportCSV(`${symbol}-${kind}`, statementCSV(rows, keys));
       setShareError(undefined);
     } catch {
-      setShareError("此环境无法打开系统分享，请使用报表列表查看数据。");
+      setShareError("此环境无法导出或分享，请使用报表列表查看数据。");
+    } finally {
+      setSharing(false);
     }
   }
   return (
@@ -156,7 +154,9 @@ export function Statements({ symbol }: { symbol: string }) {
           <Copy size={12} muted>
             M=百万，B=十亿，T=万亿；CSV 保留原始数值。
           </Copy>
-          <Button onPress={() => void share()}>分享 CSV 文本</Button>
+          <Button disabled={sharing} onPress={() => void share()}>
+            导出 / 分享 CSV
+          </Button>
           {shareError && <Failure message={shareError} />}
           <Copy size={12} muted>
             无数据以 —

@@ -1,3 +1,4 @@
+import { usePreferences } from "../state/Preferences";
 import {
   useEffect,
   useRef,
@@ -16,6 +17,7 @@ import {
 import { router } from "expo-router";
 import { apiURL } from "../lib/config";
 import { useAuth } from "../state/Auth";
+import { useText } from "../lib/i18n";
 import { useTheme } from "../lib/theme";
 import { Button, Copy, Empty, Failure, Glass, Page, Skeleton } from "./UI";
 import { safeExternal } from "../lib/links";
@@ -23,37 +25,41 @@ import { safeExternal } from "../lib/links";
 export function AuthGate({
   title,
   children,
-}: PropsWithChildren<{ title: string }>) {
+  inline = false,
+}: PropsWithChildren<{ title: string; inline?: boolean }>) {
   const auth = useAuth();
-  if (!auth.ready)
-    return (
-      <Page title={title}>
-        <Skeleton />
-      </Page>
-    );
-  if (!auth.session)
-    return (
-      <Page title={title}>
+  let boundary: React.ReactNode;
+  if (!auth.ready) boundary = <Skeleton />;
+  else if (!auth.session)
+    boundary = (
+      <>
         <Empty
           title="登录后继续"
           message="使用现有 Kolvex 账户，读取与你网页端相同的内容。"
         />
         <Button onPress={() => router.push("/account")}>登录账户</Button>
-      </Page>
+      </>
     );
-  if (!apiURL)
+  else if (!apiURL)
+    boundary = (
+      <Empty
+        title="尚未连接后端"
+        message="请配置 API 地址后重新启动应用。此页面不会使用演示数据替代你的账户内容。"
+      />
+    );
+  else
     return (
-      <Page title={title}>
-        <Empty
-          title="尚未连接后端"
-          message="请配置 API 地址后重新启动应用。此页面不会使用演示数据替代你的账户内容。"
-        />
-      </Page>
+      <View
+        key={auth.session.user.id}
+        style={inline ? { gap: 16 } : { flex: 1 }}
+      >
+        {children}
+      </View>
     );
-  return (
-    <View key={auth.session.user.id} style={{ flex: 1 }}>
-      {children}
-    </View>
+  return inline ? (
+    <View style={{ gap: 16 }}>{boundary}</View>
+  ) : (
+    <Page title={title}>{boundary}</Page>
   );
 }
 export function Field({
@@ -62,6 +68,7 @@ export function Field({
   ...props
 }: ComponentProps<typeof TextInput> & { label: string; error?: string }) {
   const t = useTheme();
+  const text = useText();
   const input = useRef<React.ComponentRef<typeof TextInput>>(null);
   useEffect(() => {
     if (error) input.current?.focus();
@@ -74,8 +81,8 @@ export function Field({
       <Glass style={{ paddingHorizontal: 16 }}>
         <TextInput
           ref={input}
-          accessibilityLabel={label}
-          accessibilityHint={error}
+          accessibilityLabel={text(label)}
+          accessibilityHint={error ? text(error) : undefined}
           placeholderTextColor={t.secondary}
           {...props}
           style={[
@@ -119,10 +126,12 @@ export function Filters({
   values,
   value,
   onChange,
+  disabled = false,
 }: {
   values: readonly (readonly [string, string])[];
   value: string;
   onChange: (v: string) => void;
+  disabled?: boolean;
 }) {
   return (
     <ScrollView
@@ -133,6 +142,7 @@ export function Filters({
       {values.map(([key, name]) => (
         <Button
           key={key}
+          disabled={disabled}
           selected={key === value}
           onPress={() => onChange(key)}
         >
@@ -153,6 +163,7 @@ export function Pager({
   loading: boolean;
   onChange: (v: number) => void;
 }) {
+  const { locale } = usePreferences();
   return (
     <View
       style={{
@@ -169,7 +180,7 @@ export function Pager({
         上一页
       </Button>
       <Copy size={12} muted>
-        第 {page} 页
+        {locale === "en" ? `Page ${page}` : <>第 {page} 页</>}
       </Copy>
       <Button disabled={!hasMore || loading} onPress={() => onChange(page + 1)}>
         下一页

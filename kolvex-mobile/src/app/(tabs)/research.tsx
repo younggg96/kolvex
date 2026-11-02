@@ -1,24 +1,22 @@
 import { useState } from "react";
 import { router } from "expo-router";
 import { useAuth } from "../../state/Auth";
-import { reports } from "../../lib/contentApi";
+import { reports, publicReports } from "../../lib/contentApi";
 import { useResource } from "../../lib/useResource";
-import { AuthGate, Pager, ResourceState } from "../../components/Content";
+import { Pager, ResourceState } from "../../components/Content";
 import { Button, Copy, Glass, Page, Search } from "../../components/UI";
 export default function Research() {
-  return (
-    <AuthGate title="AI 研究">
-      <Library />
-    </AuthGate>
-  );
+  return <Library />;
 }
 function Library() {
-  const user = useAuth().session!.user.id;
+  const user = useAuth().session?.user.id;
   const [page, setPage] = useState(1);
   const [input, setInput] = useState("");
   const [ticker, setTicker] = useState("");
   const resource = useResource(`reports:${user}:${page}:${ticker}`, (signal) =>
-    reports(signal, user, (page - 1) * 20, ticker),
+    user
+      ? reports(signal, user, (page - 1) * 20, ticker)
+      : publicReports(signal, (page - 1) * 20, ticker),
   );
   const rows = resource.data?.items ?? [];
   return (
@@ -28,6 +26,9 @@ function Library() {
       refreshing={resource.loading && !!resource.data}
       onRefresh={resource.refresh}
     >
+      <Button onPress={() => router.push("/research-tasks")}>
+        创建研究 / 我的任务
+      </Button>
       <Search
         value={input}
         onChange={(v) => {

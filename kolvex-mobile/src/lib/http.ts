@@ -16,6 +16,9 @@ export function errorForStatus(status: number) {
   if (status === 401) return "登录已过期，请返回账户页重新登录。";
   if (status === 403) return "当前账户没有访问此内容的权限。";
   if (status === 404) return "内容不存在或已被移除。";
+  if (status === 409)
+    return "内容已变化或请求结果尚未确认，请刷新核对后再操作。";
+  if (status === 422) return "提交内容不符合要求，请检查字段后重试。";
   if (status === 429) return "请求较频繁，请稍后重试。";
   return `服务暂时不可用（${status}），请稍后重试。`;
 }
@@ -25,8 +28,10 @@ type Options = {
   expectedUser?: string;
   method?: string;
   body?: unknown;
+  form?: FormData;
   timeout?: number;
   stream?: boolean;
+  revision?: string;
 };
 export async function apiRequest<T>(
   path: string,
@@ -66,13 +71,15 @@ export async function apiResponse(
         throw new ApiError("账户已切换，请重新打开页面。", 409);
       headers.Authorization = `Bearer ${account.token}`;
     }
-    if (options.body !== undefined)
+    if (options.revision !== undefined) headers["If-Match"] = options.revision;
+    if (options.body !== undefined && !options.form)
       headers["Content-Type"] = "application/json";
     const response = await fetch(`${apiURL}${path}`, {
       method: options.method ?? "GET",
       headers,
       body:
-        options.body === undefined ? undefined : JSON.stringify(options.body),
+        options.form ??
+        (options.body === undefined ? undefined : JSON.stringify(options.body)),
       signal: options.stream ? options.signal : controller.signal,
     });
     if (!response.ok)

@@ -3,6 +3,7 @@ import { router } from "expo-router";
 import { quote } from "../lib/api";
 import { number, percent } from "../lib/models";
 import { useResource } from "../lib/useResource";
+import { useText } from "../lib/i18n";
 import { useTheme } from "../lib/theme";
 import { Copy, Failure, Glass, styles } from "./UI";
 
@@ -16,6 +17,7 @@ export function QuoteRow({
   compact?: boolean;
 }) {
   const t = useTheme();
+  const text = useText();
   const resource = useResource(`${symbol}:${revision}`, (signal) =>
     quote(symbol, signal),
   );
@@ -25,7 +27,7 @@ export function QuoteRow({
     <Glass style={compact ? { width: 172 } : undefined}>
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={`查看 ${symbol} 股票详情`}
+        accessibilityLabel={text(`查看 ${symbol} 股票详情`)}
         onPress={() => router.push(`/stock/${encodeURIComponent(symbol)}`)}
         style={({ pressed }) => ({
           padding: 16,

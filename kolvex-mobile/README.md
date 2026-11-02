@@ -38,7 +38,7 @@ EXPO_PUBLIC_WEB_URL=https://your-website
 
 Supabase 使用与网页相同的项目。只接受 publishable / legacy anon 公共密钥，拒绝服务密钥。现有 `user_watchlist` 表及 RLS 迁移必须已部署。移动端不需要数据库服务密钥或模型密钥。
 
-开发后端默认端口 8080：iOS 模拟器可用 `http://127.0.0.1:8080/api/v1`，Android 模拟器可用 `http://10.0.2.2:8080/api/v1`；真机需用开发机局域网地址且后端监听 `0.0.0.0`。HTTP 受设备网络策略限制，生产使用 HTTPS。修改环境变量后重新启动 Metro。Web 预览的来源必须在后端 CORS 允许列表中。
+开发后端默认端口 8080：iOS 模拟器可用 `http://127.0.0.1:8080/api/v1`，Android 模拟器可用 `http://10.0.3.2:8080/api/v1`；真机需用开发机局域网地址且后端监听 `0.0.0.0`。HTTP 受设备网络策略限制，生产使用 HTTPS。修改环境变量后重新启动 Metro。Web 预览的来源必须在后端 CORS 允许列表中。
 
 ```sh
 npm run ios
@@ -70,3 +70,13 @@ npx expo export --platform all --output-dir dist-verified
 ```
 
 实际验证范围及限制见 [VERIFICATION.md](./VERIFICATION.md)。Metro 导出不是 Xcode / Gradle 编译或真机验收。
+
+### 0.3 added workspaces
+
+The More hub includes creators/videos, opinion updates, market calendar, macro, research tasks, model/API-key settings and a server-gated admin workspace. Markets links to the full market comparison board. Stock detail links to native technical charts, indicators, precise cloud drawing editing and AI chart job/version controls. See MIGRATION.md for exact parity and remaining acceptance.
+
+On iOS 26+, shared cards now use SwiftUI glassEffect clear material through `@expo/ui`, with SwiftUI glass buttons and date selection. The Web export intentionally uses opaque cards for preview and cannot demonstrate native glass. An updated native binary/compatible Expo Go runtime must include the SDK 58 Expo UI and added native modules; Metro export alone is not an Xcode compile.
+
+For Google/Apple and password recovery, configure the existing Supabase providers and allow `kolvex://auth/callback` (plus any actual development callback URL). PKCE callbacks must return to the device that initiated the flow. This task did not change those account settings.
+
+界面支持中文/英文，偏好按游客或账户保存；`npm run i18n:check` 检查界面字典覆盖。技术图表支持横向拖动与双指缩放，也保留精确按钮操作。来源正文仅使用接口提供的翻译。

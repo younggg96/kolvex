@@ -65,6 +65,9 @@ export default function Stock() {
           </Copy>
         </View>
       )}
+      <Button onPress={() => router.push(`/technical/${symbol}`)}>
+        K 线、指标与 AI 画线
+      </Button>
       <Glass style={{ padding: 16, gap: 16 }}>
         {bars.loading ? (
           <Skeleton />

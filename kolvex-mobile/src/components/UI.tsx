@@ -19,12 +19,16 @@ import {
   type StyleProp,
   type ViewStyle,
 } from "react-native";
-import { GlassView, isLiquidGlassAvailable } from "expo-glass-effect";
+import { isLiquidGlassAvailable } from "expo-glass-effect";
 import { BlurView } from "expo-blur";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as Haptics from "expo-haptics";
 import { demoMode } from "../lib/api";
+import { usePreferences } from "../state/Preferences";
+import { translateNodes, useText } from "../lib/i18n";
 import { useTheme } from "../lib/theme";
+import SwiftGlass from "./native/SwiftGlass";
+import SwiftButton, { swiftButtonsAvailable } from "./native/SwiftButton";
 
 export function Copy({
   children,
@@ -33,14 +37,17 @@ export function Copy({
   bold = false,
   color,
   selectable = false,
+  localize = true,
 }: PropsWithChildren<{
   size?: number;
   muted?: boolean;
   bold?: boolean;
   color?: string;
   selectable?: boolean;
+  localize?: boolean;
 }>) {
   const t = useTheme();
+  const { locale } = usePreferences();
   return (
     <Text
       selectable={selectable}
@@ -52,7 +59,7 @@ export function Copy({
         fontVariant: ["tabular-nums"],
       }}
     >
-      {children}
+      {localize && !selectable ? translateNodes(children, locale) : children}
     </Text>
   );
 }
@@ -79,11 +86,7 @@ export function Glass({
       <View style={[shell, { backgroundColor: t.surface }]}>{children}</View>
     );
   if (Platform.OS === "ios" && isLiquidGlassAvailable())
-    return (
-      <GlassView glassEffectStyle="regular" style={shell}>
-        {children}
-      </GlassView>
-    );
+    return <SwiftGlass style={shell}>{children}</SwiftGlass>;
   if (Platform.OS === "ios")
     return (
       <BlurView tint={t.dark ? "dark" : "light"} intensity={60} style={shell}>
@@ -107,10 +110,23 @@ export function Button({
   label?: string;
 }>) {
   const t = useTheme();
+  const { locale } = usePreferences();
+  const text = useText();
+  if (swiftButtonsAvailable)
+    return (
+      <SwiftButton
+        selected={selected}
+        disabled={disabled}
+        label={label ? text(label) : undefined}
+        onPress={onPress}
+      >
+        {translateNodes(children, locale)}
+      </SwiftButton>
+    );
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={label}
+      accessibilityLabel={label ? text(label) : undefined}
       accessibilityState={{ selected, disabled }}
       disabled={disabled}
       onPress={() => {
@@ -128,7 +144,7 @@ export function Button({
       ]}
     >
       <Copy size={14} bold color={t.text}>
-        {children}
+        {translateNodes(children, locale)}
       </Copy>
     </Pressable>
   );
@@ -136,6 +152,8 @@ export function Button({
 export function Page({
   title,
   subtitle,
+  titleLocalize = true,
+  subtitleLocalize = true,
   children,
   refreshing,
   onRefresh,
@@ -143,6 +161,8 @@ export function Page({
 }: PropsWithChildren<{
   title: string;
   subtitle?: string;
+  titleLocalize?: boolean;
+  subtitleLocalize?: boolean;
   refreshing?: boolean;
   onRefresh?: () => void;
   followContent?: boolean;
@@ -190,11 +210,11 @@ export function Page({
         <Copy size={12} bold color={t.accent}>
           KOLVEX
         </Copy>
-        <Copy size={36} bold>
+        <Copy size={36} bold localize={titleLocalize}>
           {title}
         </Copy>
         {subtitle && (
-          <Copy size={14} muted>
+          <Copy size={14} muted localize={subtitleLocalize}>
             {subtitle}
           </Copy>
         )}
@@ -210,14 +230,22 @@ export function Page({
     </ScrollView>
   );
 }
-export function Section({ title, note }: { title: string; note?: string }) {
+export function Section({
+  title,
+  note,
+  localize = true,
+}: {
+  title: string;
+  note?: string;
+  localize?: boolean;
+}) {
   return (
     <View style={{ gap: 4 }}>
-      <Copy size={20} bold>
+      <Copy size={20} bold localize={localize}>
         {title}
       </Copy>
       {note && (
-        <Copy size={12} muted>
+        <Copy size={12} muted localize={localize}>
           {note}
         </Copy>
       )}
@@ -255,9 +283,10 @@ export function Failure({
 }
 export function Skeleton() {
   const t = useTheme();
+  const text = useText();
   return (
     <View
-      accessibilityLabel="正在加载数据"
+      accessibilityLabel={text("正在加载数据")}
       accessibilityState={{ busy: true }}
       style={{ gap: 12 }}
     >
@@ -287,6 +316,7 @@ export function Search({
   placeholder?: string;
 }) {
   const t = useTheme();
+  const text = useText();
   const input = useRef<ComponentRef<typeof TextInput>>(null);
   return (
     <Glass
@@ -300,8 +330,8 @@ export function Search({
         ref={input}
         value={value}
         onChangeText={onChange}
-        accessibilityLabel={placeholder}
-        placeholder={placeholder}
+        accessibilityLabel={text(placeholder)}
+        placeholder={text(placeholder)}
         placeholderTextColor={t.secondary}
         autoCapitalize="characters"
         autoCorrect={false}
@@ -318,7 +348,7 @@ export function Search({
       {!!value && (
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="清除搜索"
+          accessibilityLabel={text("清除搜索")}
           onPress={() => {
             onChange("");
             input.current?.focus();

@@ -5,6 +5,7 @@ API Routes
 from fastapi import APIRouter
 from app.api.routes import health, users, market_data
 from app.api.routes.news_feed import router as news_feed_router
+from app.api.routes.market_observations import router as market_observations_router
 from app.api.routes.reddit_opinions import router as reddit_opinions_router
 from app.api.routes.auth import router as auth_router
 from app.api.routes.upload import router as upload_router
@@ -44,5 +45,6 @@ api_router.include_router(x_content_router)
 api_router.include_router(chart_drawings_router)
 api_router.include_router(briefs_router)
 api_router.include_router(market_events_router)
+api_router.include_router(market_observations_router)
 
 __all__ = ["api_router"]

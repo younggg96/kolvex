@@ -5,6 +5,7 @@ import { briefs } from "../lib/contentApi";
 import { useResource } from "../lib/useResource";
 import { AuthGate, Filters, Pager, ResourceState } from "../components/Content";
 import { Button, Copy, Glass, Page } from "../components/UI";
+import { BriefCalendar } from "../components/BriefCalendar";
 import { briefNames } from "../lib/contentTypes";
 export default function Briefs() {
   return (
@@ -17,8 +18,9 @@ function Library() {
   const user = useAuth().session!.user.id;
   const [page, setPage] = useState(1);
   const [type, setType] = useState("all");
-  const resource = useResource(`${user}:${page}:${type}`, (signal) =>
-    briefs(signal, user, page, type),
+  const [date, setDate] = useState("");
+  const resource = useResource(`${user}:${page}:${type}:${date}`, (signal) =>
+    briefs(signal, user, page, type, date),
   );
   const rows = resource.data?.items ?? [];
   return (
@@ -28,6 +30,14 @@ function Library() {
       refreshing={resource.loading && !!resource.data}
       onRefresh={resource.refresh}
     >
+      <BriefCalendar
+        user={user}
+        value={date}
+        onChange={(v) => {
+          setDate(v);
+          setPage(1);
+        }}
+      />
       <Filters
         values={[
           ["all", "全部"],

@@ -39,3 +39,13 @@ StockResearch owns annual/quarterly statement selection, native SVG chart/matrix
 ## Color ownership
 
 Web `app/globals.css` owns light/dark product colors. Native `src/lib/palette.ts` adapts those roles, checked by `tests/theme-parity.test.ts`; `useTheme` follows system appearance. Foreground titles, secondary metadata and neutral selected-control fills must stay separate from green positive/action labels and orange-red negative labels. Chart marks use chart-up/chart-down, not text-safe colors. Glass material remains native; reduced transparency uses the matching opaque card token.
+
+## Mobile 0.3 workspaces
+
+SwiftUI hosts own iOS glass surfaces/buttons/date selection; React Native primitives own content, editable fields and virtualization. No HTML/WebView imports are used. Older iOS/Android/Web fallbacks are explicit platform variants. System reduce-transparency takes precedence over clear glass.
+
+`useMutation` prevents duplicate submissions, cancels outstanding transport on disposal and exposes inline success/failure. ConfirmAction owns permanent-delete and administrator-role confirmations. No confirmation causes a write until the explicit final button is pressed. Brief writes/deletes send If-Match; chart saves re-read the remote timestamp before explicit PUT (the existing backend lacks an atomic revision header). AI chart requests retain a UUID for retry and are never started automatically; long-running server jobs are polled and survive leaving the screen.
+
+Public creator/news/quote/explicitly-published report reads omit bearer tokens. Macro, calendar, account, chat, research jobs, drawing sync and admin use the expected authenticated account. Changing accounts remounts scoped state and cannot consume a prior account's late response. Avatar upload previews/crops before the user confirms transmission and never caches API secrets.
+
+Locale preferences affect application chrome and available editorial translations. Never translate user input or original source prose through the UI dictionary. Horizontal chart pan and two-finger pinch retain bounded windows; previous/next and count controls remain accessible alternatives.

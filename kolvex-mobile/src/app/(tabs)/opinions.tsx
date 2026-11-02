@@ -1,3 +1,4 @@
+import { usePreferences } from "../../state/Preferences";
 import { useState } from "react";
 import { View } from "react-native";
 import { router } from "expo-router";
@@ -45,6 +46,10 @@ export default function Opinions() {
       subtitle="观点有出处，讨论有边界。"
       onRefresh={() => setRevision((v) => v + 1)}
     >
+      <Button onPress={() => router.push("/creators")}>
+        创作者目录 / 视频历史
+      </Button>
+      <Button onPress={() => router.push("/updates")}>观点动态</Button>
       <Filters
         values={[
           ["youtube", "YouTube"],
@@ -164,6 +169,7 @@ function YouTube({ revision }: { revision: number }) {
   );
 }
 function XFeed({ revision }: { revision: number }) {
+  const { locale } = usePreferences();
   const [page, setPage] = useState(1);
   const [input, setInput] = useState("");
   const [ticker, setTicker] = useState("");
@@ -200,7 +206,9 @@ function XFeed({ revision }: { revision: number }) {
           <Copy bold>{item.creator?.display_name || item.author_username}</Copy>
           <Copy size={12} muted>
             @{item.author_username} ·{" "}
-            {new Date(item.published_at).toLocaleString("zh-CN")}
+            {new Date(item.published_at).toLocaleString(
+              locale === "en" ? "en-US" : "zh-CN",
+            )}
           </Copy>
           <Copy>{item.text}</Copy>
           {item.quoted_texts?.map((text, i) => (
@@ -229,6 +237,7 @@ function XFeed({ revision }: { revision: number }) {
   );
 }
 function Reddit({ revision }: { revision: number }) {
+  const { locale } = usePreferences();
   const [community, setCommunity] = useState<RedditCommunity>("all-stocks");
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<RedditSort>("mentions");
@@ -278,7 +287,10 @@ function Reddit({ revision }: { revision: number }) {
       </Copy>
       {resource.data?.fetchedAt && (
         <Copy size={12} muted>
-          获取于 {new Date(resource.data.fetchedAt).toLocaleString("zh-CN")}
+          获取于{" "}
+          {new Date(resource.data.fetchedAt).toLocaleString(
+            locale === "en" ? "en-US" : "zh-CN",
+          )}
         </Copy>
       )}
       {list.error && <Failure message={list.error} retry={list.refresh} />}

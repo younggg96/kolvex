@@ -1,10 +1,20 @@
 import { View } from "react-native";
 import Svg, { Line, Path } from "react-native-svg";
 import type { Bar } from "../lib/models";
+import { useText } from "../lib/i18n";
 import { useTheme } from "../lib/theme";
 import { Copy, Empty } from "./UI";
-export function Chart({ data, currency }: { data: Bar[]; currency?: string }) {
+export function Chart({
+  data,
+  currency,
+  label = "历史收盘价折线图",
+}: {
+  data: Bar[];
+  currency?: string;
+  label?: string;
+}) {
   const t = useTheme();
+  const text = useText();
   const values = data
     .map((b) => b.close)
     .filter((v): v is number => v != null && Number.isFinite(v));
@@ -24,7 +34,9 @@ export function Chart({ data, currency }: { data: Bar[]; currency?: string }) {
     values[values.length - 1] >= values[0] ? t.chartUp : t.chartDown;
   return (
     <View
-      accessibilityLabel={`历史收盘价折线图，${data[0].date.slice(0, 10)} 至 ${data[data.length - 1].date.slice(0, 10)}，起点 ${values[0].toFixed(2)}，终点 ${values[values.length - 1].toFixed(2)} ${currency || "报价币种未提供"}`}
+      accessibilityLabel={text(
+        `${label}，${data[0].date.slice(0, 10)} 至 ${data[data.length - 1].date.slice(0, 10)}，起点 ${values[0].toFixed(2)}，终点 ${values[values.length - 1].toFixed(2)} ${currency || "报价币种未提供"}`,
+      )}
     >
       <Svg width="100%" height={200} viewBox="0 0 320 200" accessible={false}>
         {[24, 99, 174].map((y) => (

@@ -26,6 +26,11 @@ export default function Markets() {
       subtitle="市场脉搏，尽在掌心。"
       onRefresh={() => setRevision((v) => v + 1)}
     >
+      <Button onPress={() => router.push("/markets")}>
+        市场全景：指数 / 板块 / 风格 / 跨资产
+      </Button>
+      <Button onPress={() => router.push("/macro")}>宏观指标</Button>
+      <Button onPress={() => router.push("/calendar")}>市场日历</Button>
       <Search
         value={query}
         onChange={setQuery}

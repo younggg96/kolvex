@@ -15,6 +15,9 @@ export type Opinion = {
   id: string;
   ticker: string;
   channel_title?: string;
+  channel_id?: string;
+  key_points?: string[];
+  risks?: string[];
   summary?: string;
   thesis?: string;
   sentiment: "bullish" | "bearish" | "neutral" | "mixed";

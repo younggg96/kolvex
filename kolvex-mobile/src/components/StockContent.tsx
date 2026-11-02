@@ -1,3 +1,6 @@
+import { usePreferences } from "../state/Preferences";
+import { StockOpinions } from "./StockOpinions";
+import { Options } from "./Options";
 import { Statements, Earnings, Analysts } from "./StockResearch";
 import { useState } from "react";
 import { View } from "react-native";
@@ -26,6 +29,8 @@ export function StockContent({
           ["earnings", "盈利"],
           ["analyst", "分析师"],
           ["news", "最新新闻"],
+          ["options", "期权链"],
+          ["opinions", "博主观点"],
         ]}
         value={tab}
         onChange={setTab}
@@ -45,6 +50,10 @@ export function StockContent({
         <Earnings symbol={symbol} />
       ) : tab === "analyst" ? (
         <Analysts symbol={symbol} currency={currency} />
+      ) : tab === "opinions" ? (
+        <StockOpinions symbol={symbol} />
+      ) : tab === "options" ? (
+        <Options symbol={symbol} />
       ) : (
         <StockNews symbol={symbol} />
       )}
@@ -149,6 +158,7 @@ function Financials({ symbol }: { symbol: string }) {
   );
 }
 function StockNews({ symbol }: { symbol: string }) {
+  const { locale } = usePreferences();
   const resource = useResource(symbol, (signal) => news(signal, symbol));
   const rows = resource.data?.articles ?? [];
   return (
@@ -160,14 +170,18 @@ function StockNews({ symbol }: { symbol: string }) {
       />
       {rows.map((item, i) => (
         <Glass key={item.uuid || i} style={{ padding: 20, gap: 12 }}>
-          <Copy bold>{item.title}</Copy>
+          <Copy bold localize={false}>
+            {locale === "zh" ? item.title_zh || item.title : item.title}
+          </Copy>
           <Copy size={12} muted>
             {item.publisher || "来源未提供"} ·{" "}
             {item.publish_time
-              ? new Date(item.publish_time * 1000).toLocaleString("zh-CN")
+              ? new Date(item.publish_time * 1000).toLocaleString(
+                  locale === "en" ? "en-US" : "zh-CN",
+                )
               : "时间未提供"}
           </Copy>
-          {!!item.summary && <Copy>{item.summary}</Copy>}
+          {!!item.summary && <Copy localize={false}>{item.summary}</Copy>}
           <SourceLink url={item.link}>阅读原文 ↗</SourceLink>
         </Glass>
       ))}

@@ -49,12 +49,13 @@ export async function sendChat(
   onEvent: (event: ProgressEvent) => void,
   context?: string,
   sources: string[] = ["web"],
+  model?: string,
 ) {
   const response = await apiResponse(
     `/chat/conversations/${encodeURIComponent(id)}/stream`,
     {
       method: "POST",
-      body: { content, context, sources },
+      body: { content, context, sources, ...(model ? { model } : {}) },
       signal,
       authenticated: true,
       expectedUser: user,

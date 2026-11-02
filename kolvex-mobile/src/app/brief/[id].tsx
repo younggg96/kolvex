@@ -1,9 +1,12 @@
+import { usePreferences } from "../../state/Preferences";
+import { useState } from "react";
 import { useLocalSearchParams } from "expo-router";
 import { useAuth } from "../../state/Auth";
 import { brief } from "../../lib/contentApi";
 import { useResource } from "../../lib/useResource";
 import {
   AuthGate,
+  Filters,
   EditorialImage,
   ResourceState,
   SourceLink,
@@ -21,16 +24,20 @@ export default function Brief() {
 }
 function Reader() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const { locale } = usePreferences();
+  const [chosenLanguage, setLanguage] = useState<"zh" | "en">();
+  const language = chosenLanguage ?? locale;
   const user = useAuth().session!.user.id;
   const resource = useResource(`${user}:${id}`, (signal) =>
     brief(id, user, signal),
   );
   const doc = resource.data?.payload
-    ? localizedBrief(resource.data.payload, "zh")
+    ? localizedBrief(resource.data.payload, language)
     : undefined;
   return (
     <Page
       title={doc?.brief.title ?? "日报"}
+      titleLocalize={!doc}
       subtitle={
         doc
           ? `${doc.brief.date} · ${briefNames[doc.brief.type]} · 太平洋时间`
@@ -39,6 +46,14 @@ function Reader() {
       onRefresh={resource.refresh}
       refreshing={resource.loading && !!doc}
     >
+      <Filters
+        values={[
+          ["zh", "中文内容"],
+          ["en", "English content"],
+        ]}
+        value={language}
+        onChange={(v) => setLanguage(v as "zh" | "en")}
+      />
       <ResourceState
         resource={resource}
         empty={!doc}
@@ -49,15 +64,23 @@ function Reader() {
           {doc.brief.hero_image && (
             <EditorialImage image={doc.brief.hero_image} />
           )}
-          <Copy size={24} bold>
+          <Copy size={24} bold localize={false}>
             {doc.brief.headline}
           </Copy>
-          {!!doc.brief.subtitle && <Copy muted>{doc.brief.subtitle}</Copy>}
+          {!!doc.brief.subtitle && (
+            <Copy muted localize={false}>
+              {doc.brief.subtitle}
+            </Copy>
+          )}
           {[...doc.sections]
             .sort((a, b) => a.order - b.order)
             .map((section) => (
               <Glass key={section.section_id} style={{ padding: 20, gap: 16 }}>
-                <Section title={section.title} note={section.subtitle} />
+                <Section
+                  title={section.title}
+                  note={section.subtitle}
+                  localize={false}
+                />
                 {section.narrative && (
                   <TextBody
                     text={
