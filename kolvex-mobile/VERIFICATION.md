@@ -3,7 +3,7 @@
 ## Code and packaging
 
 - `npm run typecheck` and `npm run lint`: passed.
-- `npm test`: 28 tests passed. Covers public/private request contracts, absent login, account changes during requests, non-replayed mutations, encrypted session chunk integrity/Unicode/failure/sign-out, explicit demo semantics, safe source links, SSE fragmentation/EOF/errors/stop after headers, earnings outcome and unit normalization, financial period ordering/growth/CSV/compact numbers.
+- `npm test`: 32 tests passed. Covers public/private request contracts, absent login, account changes during requests, non-replayed mutations, encrypted session chunk integrity/Unicode/failure/sign-out, explicit demo semantics, safe source links, SSE fragmentation/EOF/errors/stop after headers, earnings outcome and unit normalization, financial period ordering/growth/CSV/compact numbers. Four color checks compare light/dark native tokens against the Web CSS source and validate AA text contrast on the actual reading/control surfaces.
 - `npx expo-doctor`: 20/20 passed after SecureStore and Supabase dependencies were installed.
 - iOS / Android Metro-Hermes and Web exports: passed. Bundle export does not establish native Xcode/Gradle compilation.
 - `designmd lint DESIGN.md`: zero errors; documentation token warnings remain.
@@ -47,3 +47,11 @@ Earlier 0.1 checks established visitor-watchlist add/read/reload/remove behavior
 No full Xcode/simctl or native test device is available on this host. Native glass, Keychain/Keystore persistence, system sharing, Dynamic Type, VoiceOver/TalkBack, hardware/gesture back and device keyboard behavior need iOS/Android evidence. No test-account credentials were supplied, so successful authentication, real cloud watchlist changes, private briefs/report/portfolio reading and real AI sends remain authenticated acceptance checks. No real AI question, brokerage mutation or trade was submitted.
 
 Advanced chart/drawing, native Plaid authorization, full bilingual UI and other remaining feature parity are tracked in MIGRATION.md. This is not a store-release or full-web-parity claim.
+
+## Web color alignment — 2026-11-01
+
+- Canonical source: `../kolvex-frontend-web-nextjs/app/globals.css`; native adapter: `src/lib/palette.ts`. Both themes match background/card/text/muted/border/primary/positive/negative/secondary/chart roles. Direction text uses text-safe tokens; chart marks use chart tokens. Selected controls use neutral fills and foreground text.
+- Fixed the older-iOS blur theme check to use the theme flag rather than a retired background hex. Native glass remains platform-owned.
+- 390px Web preview: visually checked Markets and Opinions with real data in the system dark theme; neutral selectors, grey card surfaces, green active navigation and orange-red declines. Screenshot: `artifacts/mobile-web-colors-dark.jpg`. Light tokens and text contrast are covered automatically; light runtime visual acceptance was not performed.
+- Typecheck, lint, formatting, all 32 tests and iOS/Android/Web bundle exports passed. DESIGN lint reports zero errors and seven documentation token warnings. The refreshed premium audit reports 27 existing HTML-style actionless-button false positives for native onPress; it is not clean.
+- `agent-device` is not installed, `simctl` is unavailable under the Command Line Tools installation, and no Android adb target is available. Device-level glass and native light/dark appearance remain unverified; no device session was claimed.

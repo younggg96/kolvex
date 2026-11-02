@@ -257,8 +257,8 @@ export function MetricBars({
             width={step}
             baseline={y(0)}
             top={finite(point.value) ? y(point.value) : y(0)}
-            positive={theme.accent}
-            negative={theme.negative}
+            positive={theme.chartUp}
+            negative={theme.chartDown}
             foreground={theme.secondary}
           />
         ))}

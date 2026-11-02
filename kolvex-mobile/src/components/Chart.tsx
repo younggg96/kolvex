@@ -20,7 +20,8 @@ export function Chart({ data, currency }: { data: Bar[]; currency?: string }) {
         `${i ? "L" : "M"}${8 + (i / (values.length - 1)) * 304},${174 - ((v - min) / span) * 150}`,
     )
     .join(" ");
-  const color = values[values.length - 1] >= values[0] ? t.accent : t.negative;
+  const color =
+    values[values.length - 1] >= values[0] ? t.chartUp : t.chartDown;
   return (
     <View
       accessibilityLabel={`历史收盘价折线图，${data[0].date.slice(0, 10)} 至 ${data[data.length - 1].date.slice(0, 10)}，起点 ${values[0].toFixed(2)}，终点 ${values[values.length - 1].toFixed(2)} ${currency || "报价币种未提供"}`}

@@ -35,3 +35,7 @@ Dates that are calendar-only remain unchanged. Market amounts retain source curr
 ## Native financial reading
 
 StockResearch owns annual/quarterly statement selection, native SVG chart/matrix, compact M/B/T display with exact CSV/accessibility values, explicit reporting currency, loss-aware EPS outcomes and source analyst targets. The root router anchors deep links to the main tab group so readers retain a way back. Reddit reads a fixed allowlisted public FastAPI proxy; it never forwards account tokens to ApeWisdom.
+
+## Color ownership
+
+Web `app/globals.css` owns light/dark product colors. Native `src/lib/palette.ts` adapts those roles, checked by `tests/theme-parity.test.ts`; `useTheme` follows system appearance. Foreground titles, secondary metadata and neutral selected-control fills must stay separate from green positive/action labels and orange-red negative labels. Chart marks use chart-up/chart-down, not text-safe colors. Glass material remains native; reduced transparency uses the matching opaque card token.

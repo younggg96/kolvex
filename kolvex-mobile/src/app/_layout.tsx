@@ -23,7 +23,7 @@ function AppContent() {
       >
         <Stack
           screenOptions={{
-            headerTintColor: t.accent,
+            headerTintColor: t.text,
             headerStyle: { backgroundColor: t.background },
             headerShadowVisible: false,
             contentStyle: { backgroundColor: t.background },

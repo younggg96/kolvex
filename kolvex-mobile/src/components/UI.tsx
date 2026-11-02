@@ -86,11 +86,7 @@ export function Glass({
     );
   if (Platform.OS === "ios")
     return (
-      <BlurView
-        tint={t.background === "#0B100E" ? "dark" : "light"}
-        intensity={60}
-        style={shell}
-      >
+      <BlurView tint={t.dark ? "dark" : "light"} intensity={60} style={shell}>
         {children}
       </BlurView>
     );
@@ -126,12 +122,12 @@ export function Button({
         styles.button,
         {
           backgroundColor: selected ? t.tint : t.surface,
-          borderColor: selected ? t.accent : t.border,
+          borderColor: selected ? t.secondary : t.border,
           opacity: disabled ? 0.45 : pressed ? 0.65 : 1,
         },
       ]}
     >
-      <Copy size={14} bold color={selected ? t.accent : t.text}>
+      <Copy size={14} bold color={t.text}>
         {children}
       </Copy>
     </Pressable>

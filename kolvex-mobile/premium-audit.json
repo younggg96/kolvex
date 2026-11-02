@@ -21,7 +21,7 @@
     {
       "category": "violation",
       "file": "src/app/(tabs)/opinions.tsx",
-      "line": 141,
+      "line": 147,
       "message": "Enabled literal button has no detectable action or submit behavior.",
       "remediation": "Connect the button to a real action, make it a submit button, or disable/remove it.",
       "ruleId": "affordance.actionless-button",
@@ -30,7 +30,7 @@
     {
       "category": "violation",
       "file": "src/app/(tabs)/opinions.tsx",
-      "line": 186,
+      "line": 192,
       "message": "Enabled literal button has no detectable action or submit behavior.",
       "remediation": "Connect the button to a real action, make it a submit button, or disable/remove it.",
       "ruleId": "affordance.actionless-button",
@@ -39,7 +39,7 @@
     {
       "category": "violation",
       "file": "src/app/(tabs)/opinions.tsx",
-      "line": 267,
+      "line": 273,
       "message": "Enabled literal button has no detectable action or submit behavior.",
       "remediation": "Connect the button to a real action, make it a submit button, or disable/remove it.",
       "ruleId": "affordance.actionless-button",
@@ -48,7 +48,7 @@
     {
       "category": "violation",
       "file": "src/app/(tabs)/opinions.tsx",
-      "line": 310,
+      "line": 316,
       "message": "Enabled literal button has no detectable action or submit behavior.",
       "remediation": "Connect the button to a real action, make it a submit button, or disable/remove it.",
       "ruleId": "affordance.actionless-button",
@@ -174,7 +174,7 @@
     {
       "category": "violation",
       "file": "src/app/stock/[symbol].tsx",
-      "line": 82,
+      "line": 85,
       "message": "Enabled literal button has no detectable action or submit behavior.",
       "remediation": "Connect the button to a real action, make it a submit button, or disable/remove it.",
       "ruleId": "affordance.actionless-button",
@@ -218,8 +218,26 @@
     },
     {
       "category": "violation",
+      "file": "src/components/StockResearch.tsx",
+      "line": 124,
+      "message": "Enabled literal button has no detectable action or submit behavior.",
+      "remediation": "Connect the button to a real action, make it a submit button, or disable/remove it.",
+      "ruleId": "affordance.actionless-button",
+      "severity": "error"
+    },
+    {
+      "category": "violation",
+      "file": "src/components/StockResearch.tsx",
+      "line": 159,
+      "message": "Enabled literal button has no detectable action or submit behavior.",
+      "remediation": "Connect the button to a real action, make it a submit button, or disable/remove it.",
+      "ruleId": "affordance.actionless-button",
+      "severity": "error"
+    },
+    {
+      "category": "violation",
       "file": "src/components/UI.tsx",
-      "line": 256,
+      "line": 252,
       "message": "Enabled literal button has no detectable action or submit behavior.",
       "remediation": "Connect the button to a real action, make it a submit button, or disable/remove it.",
       "ruleId": "affordance.actionless-button",
@@ -230,10 +248,10 @@
   "projectRoot": "/Users/guanggengyang/Documents/GitHub/kolvex/kolvex-mobile",
   "schemaVersion": 1,
   "summary": {
-    "errors": 25,
-    "total": 25,
+    "errors": 27,
+    "total": 27,
     "unresolved": 0,
-    "violations": 25,
+    "violations": 27,
     "warnings": 0
   }
 }
