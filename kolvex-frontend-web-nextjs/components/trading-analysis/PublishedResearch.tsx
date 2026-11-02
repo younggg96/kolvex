@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { useCachedResource } from "@/hooks/useCachedResource";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -10,26 +10,17 @@ import { useUserProfileContext } from "@/components/user/UserProfileProvider";
 import { RESEARCH_AUTHORING_PATH, deepResearchPagePath, parseDeepResearchPage } from "@/lib/researchRoutes";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  getPublishedAnalyses,
-  publishedAnalysesKey,
-} from "@/lib/tradingAnalysisApi";
-import { ResearchSummaryCard } from "./ResearchSummaryCard";
+import { groupResearchByStock, loadResearchCatalog, RESEARCH_GROUPS_KEY, STOCKS_PER_PAGE } from "@/lib/researchGroups";
+import { ResearchStockGroup } from "./ResearchStockGroup";
 
 function ExploreSkeleton() {
   return (
-    <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+    <div className="divide-y divide-border">
       {Array.from({ length: 6 }).map((_, i) => (
-        <div key={i} className="space-y-6 rounded-3xl border border-border bg-card p-5">
-          <div className="flex items-center gap-3">
-            <Skeleton className="h-10 w-10 shrink-0 rounded-3xl" />
-            <Skeleton className="h-5 w-16" />
-            <Skeleton className="ml-auto h-6 w-14 rounded-full" />
-          </div>
-          <div className="space-y-3 border-t border-border pt-4">
-            <Skeleton className="h-4 w-32" />
-            <Skeleton className="h-3 w-full" />
-          </div>
+        <div key={i} className="flex items-center gap-4 px-4 py-5">
+          <Skeleton className="h-10 w-10 shrink-0 rounded-full" />
+          <div className="flex-1 space-y-2"><Skeleton className="h-5 w-20" /><Skeleton className="h-3 w-16" /></div>
+          <Skeleton className="h-6 w-14 rounded-full" />
         </div>
       ))}
     </div>
@@ -37,20 +28,22 @@ function ExploreSkeleton() {
 }
 
 export default function PublishedResearch({ page }: { page?: string }) {
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
   const router = useRouter();
   const { profile } = useUserProfileContext();
   const currentPage = parseDeepResearchPage(page);
-  const offset = (currentPage - 1) * 30;
+  const offset = (currentPage - 1) * STOCKS_PER_PAGE;
 
-  const resource = useCachedResource(publishedAnalysesKey({ limit: 30, offset }), () => getPublishedAnalyses({ limit: 30, offset }), { ttl: 60_000 });
-  const analyses = resource.data?.items ?? [];
-  const total = resource.data?.total ?? 0;
+  const resource = useCachedResource(RESEARCH_GROUPS_KEY, loadResearchCatalog, { ttl: 60_000 });
+  const groups = useMemo(() => groupResearchByStock(resource.data ?? []), [resource.data]);
+  const total = groups.length;
+  const taskTotal = resource.data?.length ?? 0;
+  const visibleGroups = groups.slice(offset, offset + STOCKS_PER_PAGE);
   const loading = resource.loading;
   const error = Boolean(resource.error);
   const loadPublished = resource.refresh;
   useEffect(() => {
-    if (total > 0 && currentPage > Math.ceil(total / 30)) router.replace(deepResearchPagePath(Math.ceil(total / 30)));
+    if (total > 0 && currentPage > Math.ceil(total / STOCKS_PER_PAGE)) router.replace(deepResearchPagePath(Math.ceil(total / STOCKS_PER_PAGE)));
   }, [currentPage, total, router]);
 
   return (
@@ -63,7 +56,7 @@ export default function PublishedResearch({ page }: { page?: string }) {
                 {t("tradingAnalysis.title")}
               </h1>
               <p className="mt-2 max-w-[60ch] text-[15px] leading-relaxed text-muted-foreground">
-                {t("tradingAnalysis.explore.description")}
+                {t("tradingAnalysis.explore.groupedDescription")}
               </p>
             </div>
             {profile?.is_admin && (
@@ -74,39 +67,32 @@ export default function PublishedResearch({ page }: { page?: string }) {
           </div>
 
           <section aria-labelledby="explore-published" className="animate-fade-in-up">
-            <h3 id="explore-published" className="border-b border-border pb-3 text-[17px] font-semibold text-foreground">
-              {t("tradingAnalysis.explore.published")}
+            <h2 id="explore-published" className="border-b border-border pb-3 text-[17px] font-semibold text-foreground">
+              {t("tradingAnalysis.explore.byStock")}
               {total > 0 && (
                 <span className="figure ml-2 text-sm font-normal text-muted-foreground">
-                  {total}
+                  {t("tradingAnalysis.explore.libraryCount", { stocks: String(total), tasks: String(taskTotal) })}
                 </span>
               )}
-            </h3>
+            </h2>
 
             {error && resource.data && <p role="alert" className="py-3 text-sm text-muted-foreground">{t("common.error")} <Button variant="outline" size="sm" onClick={loadPublished}>{t("common.retry")}</Button></p>}
             {loading ? (
               <ExploreSkeleton />
             ) : error && !resource.data ? (
               <p role="alert" className="py-8 text-sm text-muted-foreground">{t("common.error")} <Button variant="outline" size="sm" onClick={() => loadPublished()}>{t("common.retry")}</Button></p>
-            ) : analyses.length === 0 ? (
+            ) : groups.length === 0 ? (
               <p className="py-12 text-[15px] text-muted-foreground">
                 {t("tradingAnalysis.explore.noPublished")}
               </p>
             ) : (
-              <ul className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {analyses.map((item) => (
-                  <li key={item.id} className="min-w-0">
-                    <ResearchSummaryCard
-                      analysis={item}
-                      headingLevel="h4"
-                      href={`/dashboard/trading-analysis/explore/${item.id}${currentPage > 1 ? `?page=${currentPage}` : ""}`}
-                      t={t}
-                    />
-                  </li>
+              <div className="mt-2">
+                {visibleGroups.map((group) => (
+                  <ResearchStockGroup key={`${currentPage}-${group.ticker}`} {...group} page={currentPage} locale={locale === "zh" ? "zh-CN" : "en-US"} t={t} />
                 ))}
-              </ul>
+              </div>
             )}
-            {!error && total > 30 && (
+            {!error && total > STOCKS_PER_PAGE && (
               <div className="mt-6 flex items-center gap-3">
                 <Button
                   variant="outline"
@@ -116,11 +102,11 @@ export default function PublishedResearch({ page }: { page?: string }) {
                   {t("common.previous")}
                 </Button>
                 <span className="text-sm text-muted-foreground">
-                  {currentPage} / {Math.ceil(total / 30)}
+                  {currentPage} / {Math.ceil(total / STOCKS_PER_PAGE)}
                 </span>
                 <Button
                   variant="outline"
-                  disabled={loading || offset + 30 >= total}
+                  disabled={loading || offset + STOCKS_PER_PAGE >= total}
                   onClick={() => router.push(deepResearchPagePath(currentPage + 1))}
                 >
                   {t("common.next")}

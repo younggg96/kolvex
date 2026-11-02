@@ -189,8 +189,8 @@ export function publishedAnalysesKey(params?: { limit?: number; offset?: number;
   return `${API_PREFIX}/published/list${query.size ? `?${query}` : ""}`;
 }
 
-export async function getPublishedAnalyses(params?: { limit?: number; offset?: number; ticker?: string }): Promise<TradingAnalysisListResponse> {
-  return apiRequest<TradingAnalysisListResponse>(publishedAnalysesKey(params).slice(API_PREFIX.length));
+export async function getPublishedAnalyses(params?: { limit?: number; offset?: number; ticker?: string }, signal?: AbortSignal): Promise<TradingAnalysisListResponse> {
+  return apiRequest<TradingAnalysisListResponse>(publishedAnalysesKey(params).slice(API_PREFIX.length), { signal });
 }
 
 export async function getPublishedAnalysis(

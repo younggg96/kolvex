@@ -1666,7 +1666,17 @@
       "noPublished": "暂时没有已发布的研究报告，发布后会显示在这里。",
       "noResultsForTicker": "未找到 {ticker} 的已发布分析",
       "searchPlaceholder": "按股票代码筛选...",
-      "backToExplore": "返回 AI 研究"
+      "backToExplore": "返回 AI 研究",
+      "groupedDescription": "按股票查看 AI 研究，展开比较不同日期的任务结论、依据与风险。",
+      "byStock": "股票研究",
+      "libraryCount": "{stocks} 只股票 · {tasks} 个任务",
+      "taskCount": "{count} 个研究任务",
+      "latestDecision": "最新结论",
+      "taskHistory": "研究任务",
+      "newestFirst": "按研究日期从新到旧",
+      "latestTask": "最新任务",
+      "readTask": "阅读报告",
+      "noDecision": "暂无结论"
     },
     "translate": "翻译",
     "showOriginal": "原文",

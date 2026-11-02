@@ -1507,3 +1507,16 @@ settings stays in the left cell. Compact chart controls retain their wrapping to
 YouTube Creator Opinions shows price/strength charts and creator-call markers without
 AI technical controls, AI overlays, results or history, including in its advanced chart.
 AI technical analysis belongs to the Markets stock workspace.
+
+### AI Research grouped task library
+
+The signed-in library groups completed report summaries by normalized stock symbol.
+Each native disclosure shows the stock, total task count, latest research-date
+conclusion and date. Expanding lists every task, newest research date first,
+with author, provider, duration, short task ID and its existing report link;
+the explicit stock link preserves Markets navigation. Same-date tasks stay
+separate. Missing conclusions are not inferred. English/Chinese copy and dates
+follow the reader locale. Load all summary pages before grouping, then paginate
+12 stocks per page, so one stock's tasks cannot split between pages. Failed or
+incomplete catalog loads retain the retry flow rather than showing partial
+counts. Permissions and the anonymous report-card library are unchanged.

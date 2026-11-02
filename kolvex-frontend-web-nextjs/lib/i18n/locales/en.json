@@ -1666,7 +1666,17 @@
       "noPublished": "No research reports have been published yet. Reports will appear here when available.",
       "noResultsForTicker": "No published analyses found for {ticker}",
       "searchPlaceholder": "Filter by ticker...",
-      "backToExplore": "Back to AI research"
+      "backToExplore": "Back to AI research",
+      "groupedDescription": "Explore AI research by stock. Expand a stock to compare task conclusions, evidence and risks across dates.",
+      "byStock": "Research by stock",
+      "libraryCount": "{stocks} stocks · {tasks} tasks",
+      "taskCount": "{count} research tasks",
+      "latestDecision": "Latest conclusion",
+      "taskHistory": "Research tasks",
+      "newestFirst": "Newest research date first",
+      "latestTask": "Latest task",
+      "readTask": "Read report",
+      "noDecision": "No conclusion"
     },
     "translate": "Translate",
     "showOriginal": "Original",
