@@ -360,3 +360,13 @@ test('AI drawings render before the host has measured a box and use the live gra
     assert.equal(layer.props.barsBetween, live.barsBetween);
   }
 });
+
+test('creator-opinion charts can hide AI surfaces in compact and advanced modes', () => {
+  for (const mode of ['compact', 'advanced']) {
+    const { markup, graph } = render({ mode, showAi: false });
+    assert.ok(graph, 'the price chart must remain available');
+    assert.doesNotMatch(markup, /youtubeOpinions\.ai\.(actions|analysisButton|chartSettings)/);
+    assert.doesNotMatch(markup, /<aside/);
+    assert.match(render({ mode, showAi: true }).markup, /youtubeOpinions\.ai\.actions/);
+  }
+});

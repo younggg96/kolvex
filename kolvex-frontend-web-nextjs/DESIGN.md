@@ -1491,3 +1491,19 @@ localized status, and disable pulsing with reduced motion. Content remains
 visible during cached background refreshes. Button submissions, authentication
 processing, AI generation/streaming, translation and sync actions retain explicit
 progress feedback; they are not cold content placeholders.
+
+When Technicals has no AI results, show one compact empty state: icon and explanation,
+window metadata, one generation action and a short drawing hint. The action sits beside
+the explanation when space permits and wraps below on narrow surfaces. Omit the empty
+history footer after a successful zero-result load and the separate setup placeholder
+until an analysis exists. Keep history loading, error and author-filter recovery visible.
+
+The advanced chart AI action group uses two aligned, equal-column rows: analysis and
+drawings first, settings and drawing visibility second. Buttons fill each cell with
+44px minimum height and 8px gaps. Visibility uses the existing short label in this
+narrow control group and retains its full accessible name. Without saved drawings,
+settings stays in the left cell. Compact chart controls retain their wrapping toolbar.
+
+YouTube Creator Opinions shows price/strength charts and creator-call markers without
+AI technical controls, AI overlays, results or history, including in its advanced chart.
+AI technical analysis belongs to the Markets stock workspace.

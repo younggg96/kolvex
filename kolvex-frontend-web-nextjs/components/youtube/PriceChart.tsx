@@ -47,6 +47,7 @@ export default function PriceChart({
   onAnalysisBusy,
   layout = "compact",
   resultsContainer,
+  showAi = true,
 }: {
   symbol: string;
   /**
@@ -67,6 +68,7 @@ export default function PriceChart({
   onAnalysisBusy?: (busy: boolean) => void;
   layout?: "compact" | "workspace";
   resultsContainer?: HTMLElement | null;
+  showAi?: boolean;
 }) {
   const { drawings, setDrawings: storeDrawings, status: syncStatus } = useSyncedDrawings(symbol);
   const versions = useStockHistory<AiTechnicalAnalysis>(symbol, "technical");
@@ -208,9 +210,10 @@ export default function PriceChart({
 
   const shared = {
     symbol,
+    showAi,
     params: historicalSnapshot ? { ...params, interval: historicalSnapshot.payload.interval } : params,
     events,
-    drawings: [...manualDrawings, ...(hiddenDrawings ? [] : aiOverrides || aiDrawings)],
+    drawings: [...manualDrawings, ...(!showAi || hiddenDrawings ? [] : aiOverrides || aiDrawings)],
     setDrawings: (next: Drawing[], recordFrom?: Drawing[] | null) => {
       // Local edits to AI overlays never mutate the saved analysis snapshot.
       setAiOverrides(next.filter(item => item.source === "ai"));
@@ -263,8 +266,8 @@ export default function PriceChart({
         advancedTriggerRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
         setAdvancedOpen(true);
       }} />
-      {layout === "workspace" ? (
-        resultsContainer && createPortal(<div className="order-last mt-6 min-w-0 border-t border-border pt-1 [&>details]:mt-0 [&>details]:min-w-0 [&>details]:border-0 [&>details]:py-3">
+      {showAi && (layout === "workspace" ? (
+        resultsContainer && (analysisHistory.busy || analysisHistory.error !== null || analysisHistory.total > 0 || analysisHistory.selected || analysisHistory.scope === "mine" || selectedHistory.selected) && createPortal(<div className="order-last mt-6 min-w-0 border-t border-border pt-1 [&>details]:mt-0 [&>details]:min-w-0 [&>details]:border-0 [&>details]:py-3">
           <AnalysisHistory history={analysisHistory} />
           {selectedHistory.selected && <SavedAnalysisData key={selectedHistory.selected.id} version={selectedHistory.selected} />}
         </div>, resultsContainer)
@@ -274,7 +277,7 @@ export default function PriceChart({
       </div>, resultsContainer) : (<>
         <AnalysisHistory history={analysisHistory} />
         {selectedHistory.selected && <SavedAnalysisData key={selectedHistory.selected.id} version={selectedHistory.selected} />}
-      </>)}
+      </>))}
       <Dialog open={advancedOpen} onOpenChange={setAdvancedOpen}>
         <DialogContent
           layout="fullscreen"

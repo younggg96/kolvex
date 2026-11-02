@@ -182,6 +182,7 @@ function readIndicators(mode: Mode): IndicatorKey[] {
 
 export interface ChartViewProps {
   resultsContainer?: HTMLElement | null;
+  showAi?: boolean;
   mode: Mode;
   compactLayout?: "compact" | "workspace";
   symbol: string;
@@ -237,6 +238,7 @@ export interface ChartViewProps {
  */
 export default function ChartView({
   resultsContainer,
+  showAi = true,
   mode,
   compactLayout = "compact",
   symbol,
@@ -918,14 +920,14 @@ export default function ChartView({
     return upper.length ? `M${upper.join("L")}L${lower.join("L")}Z` : "";
   };
 
-  const hideDrawingsControl = (
+  const hideDrawingsControl = (fill = false) => (
             <Dialog open={hideDrawingsOpen} onOpenChange={setHideDrawingsOpen}>
-              {drawingAi.status === "done" && (drawingsHidden ? <Button ref={hideDrawingTriggerRef} type="button" size="sm" variant="outline" aria-label={t("youtubeOpinions.ai.showDrawings")} title={t("youtubeOpinions.ai.showDrawings")} aria-pressed={false} className="min-h-11 w-full min-w-0 gap-2 px-2 sm:min-h-9 sm:w-auto sm:px-3" disabled={aiBusy} onClick={() => onDrawingVisibilityChange?.(false)}>
-                <Eye className="h-4 w-4" aria-hidden="true" /><span className="sm:hidden">{t("youtubeOpinions.ai.showDrawingsShort")}</span><span className="hidden sm:inline">{t("youtubeOpinions.ai.showDrawings")}</span>
+              {drawingAi.status === "done" && (drawingsHidden ? <Button ref={hideDrawingTriggerRef} type="button" size="sm" variant="outline" aria-label={t("youtubeOpinions.ai.showDrawings")} title={t("youtubeOpinions.ai.showDrawings")} aria-pressed={false} className={cn("min-h-11 w-full min-w-0 gap-2 px-2 sm:min-h-9 sm:w-auto sm:px-3", fill && "sm:min-h-11 sm:w-full")} disabled={aiBusy} onClick={() => onDrawingVisibilityChange?.(false)}>
+                <Eye className="h-4 w-4" aria-hidden="true" /><span className="sm:hidden">{t("youtubeOpinions.ai.showDrawingsShort")}</span><span className="hidden sm:inline">{t(fill ? "youtubeOpinions.ai.showDrawingsShort" : "youtubeOpinions.ai.showDrawings")}</span>
               </Button> : <DialogTrigger asChild>
-                <Button ref={hideDrawingTriggerRef} type="button" size="sm" variant="outline" aria-label={t("youtubeOpinions.ai.clear")} title={t("youtubeOpinions.ai.clear")} aria-pressed={true} className="min-h-11 w-full min-w-0 gap-2 px-2 sm:min-h-9 sm:w-auto sm:px-3" disabled={aiBusy}>
+                <Button ref={hideDrawingTriggerRef} type="button" size="sm" variant="outline" aria-label={t("youtubeOpinions.ai.clear")} title={t("youtubeOpinions.ai.clear")} aria-pressed={true} className={cn("min-h-11 w-full min-w-0 gap-2 px-2 sm:min-h-9 sm:w-auto sm:px-3", fill && "sm:min-h-11 sm:w-full")} disabled={aiBusy}>
                   <EyeOff className="h-4 w-4" aria-hidden="true" />
-                  <span className="sm:hidden">{t("youtubeOpinions.ai.hideDrawingsShort")}</span><span className="hidden sm:inline">{t("youtubeOpinions.ai.clear")}</span>
+                  <span className="sm:hidden">{t("youtubeOpinions.ai.hideDrawingsShort")}</span><span className="hidden sm:inline">{t(fill ? "youtubeOpinions.ai.hideDrawingsShort" : "youtubeOpinions.ai.clear")}</span>
                 </Button>
               </DialogTrigger>)}
               <DialogContent showCloseButton={false}
@@ -946,27 +948,31 @@ export default function ChartView({
               </DialogContent>
             </Dialog>
   );
+  const aiActionClass = cn(
+    "min-h-11 min-w-0 gap-2 px-3 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+    advanced ? "w-full" : "sm:min-h-9 sm:min-w-[112px]",
+  );
   const aiControls = (
     <div className={advanced ? "min-w-0" : "mt-3 border-t border-border pt-3"} role="group" aria-label={t("youtubeOpinions.ai.actions")}>
-        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
-          <div className="grid min-w-0 grid-cols-2 gap-2 sm:flex sm:items-center">
-            <Button size="sm" variant="outline" className="min-h-11 min-w-0 gap-1.5 px-2 sm:min-h-9 sm:min-w-[112px] sm:gap-2 sm:px-3" onClick={() => modelReady ? void runAi("analysis") : setSettingsOpen(true)} aria-busy={ai.status === "loading"}
+        <div className={advanced ? "flex flex-col gap-2" : "flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3"}>
+          <div className={cn("grid min-w-0 grid-cols-2 gap-2", !advanced && "sm:flex sm:items-center")}>
+            <Button size="sm" variant="outline" className={aiActionClass} onClick={() => modelReady ? void runAi("analysis") : setSettingsOpen(true)} aria-busy={ai.status === "loading"}
               disabled={!loaded || providersLoading || aiBusy || ai.status === "loading" || drawingAi.status === "loading"}
               title={t("youtubeOpinions.ai.runAnalysis")}>
               {ai.status === "loading" ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <ScanSearch className="h-4 w-4" aria-hidden="true" />}
               {t("youtubeOpinions.ai.analysisButton")}
             </Button>
-            <Button ref={drawingButtonRef} size="sm" variant="outline" className="min-h-11 min-w-0 gap-1.5 px-2 sm:min-h-9 sm:min-w-[112px] sm:gap-2 sm:px-3" onClick={() => modelReady ? void runAi("drawings") : setSettingsOpen(true)} aria-busy={drawingAi.status === "loading"}
+            <Button ref={drawingButtonRef} size="sm" variant="outline" className={aiActionClass} onClick={() => modelReady ? void runAi("drawings") : setSettingsOpen(true)} aria-busy={drawingAi.status === "loading"}
               disabled={!loaded || providersLoading || aiBusy || ai.status === "loading" || drawingAi.status === "loading"}
               title={t("youtubeOpinions.ai.runDrawings")}>
               {drawingAi.status === "loading" ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <GanttChart className="h-4 w-4" aria-hidden="true" />}
               {t("youtubeOpinions.ai.button")}
             </Button>
           </div>
-          <div className="grid min-w-0 grid-cols-2 gap-2 sm:ml-auto sm:flex sm:flex-wrap sm:items-center">
+          <div className={cn("grid min-w-0 grid-cols-2 gap-2", !advanced && "sm:ml-auto sm:flex sm:flex-wrap sm:items-center")}>
           <Dialog open={settingsOpen} onOpenChange={(open) => { setSettingsOpen(open); if (open) void refreshProviders(); }}>
             <DialogTrigger asChild>
-              <Button type="button" size="sm" variant="outline" aria-label={t("youtubeOpinions.ai.chartSettings")} title={t("youtubeOpinions.ai.chartSettings")} className="min-h-11 w-full min-w-0 gap-2 px-2 sm:min-h-9 sm:w-auto sm:px-3">
+              <Button type="button" size="sm" variant="outline" aria-label={t("youtubeOpinions.ai.chartSettings")} title={t("youtubeOpinions.ai.chartSettings")} className={cn(aiActionClass, "w-full", !advanced && "sm:w-auto")}>
                 <SlidersHorizontal className="h-4 w-4" aria-hidden="true" />
                 <span>{t("youtubeOpinions.ai.chartSettings")}</span>
               </Button>
@@ -1011,7 +1017,7 @@ export default function ChartView({
               </DialogFooter>
             </DialogContent>
           </Dialog>
-            {advanced && drawingAi.status === "done" && <div className="min-w-0 sm:w-auto">{hideDrawingsControl}</div>}
+            {advanced && drawingAi.status === "done" && <div className="min-w-0 [&_button]:focus-visible:ring-2 [&_button]:focus-visible:ring-ring [&_button]:focus-visible:ring-offset-2 [&_button]:focus-visible:ring-offset-background">{hideDrawingsControl(true)}</div>}
 
           </div>
         </div>
@@ -1070,7 +1076,7 @@ export default function ChartView({
             onRetry={() => void runAi("analysis")}
             formatDate={formatDate}
             t={t}
-            className={stackedResults ? "order-first mt-6" : "mt-6 border-t border-border pt-4"}
+            className={stackedResults ? "order-first" : "mt-6 border-t border-border pt-4"}
           />
         )}
   </>);
@@ -1322,7 +1328,7 @@ export default function ChartView({
       {t("youtubeOpinions.autoScale")}
     </button>
   );
-  const hideDrawingsSlot = drawingAi.status === "done" ? hideDrawingsControl : null;
+  const hideDrawingsSlot = showAi && drawingAi.status === "done" ? hideDrawingsControl() : null;
 
   /** Compact draw hint / legend lives under the graph, where the reference keeps its notes. */
   const compactFooter = drawing ? (
@@ -1412,7 +1418,7 @@ export default function ChartView({
               </span>
             )}
             <div className="ml-auto flex shrink-0 items-center gap-2">
-              <div className="lg:hidden">
+              {showAi && <div className="lg:hidden">
                 <Popover>
                   <PopoverTrigger asChild>
                     <Button size="sm" variant="outline">
@@ -1424,13 +1430,13 @@ export default function ChartView({
                     {aiResults}
                   </PopoverContent>
                 </Popover>
-              </div>
+              </div>}
               {headerActions}
             </div>
           </div>
         )}
 
-        {advanced && <div className="lg:hidden">{aiStatus}</div>}
+        {showAi && advanced && <div className="lg:hidden">{aiStatus}</div>}
 
         {/* active-bar numbers: the graph prints the header line, advanced mode adds OHLC + calls */}
         {advanced && (
@@ -1467,7 +1473,7 @@ export default function ChartView({
           </div>
         )}
 
-        {!advanced && aiStatus}
+        {showAi && !advanced && aiStatus}
 
         <div
           id={drawingToolbarId}
@@ -1686,7 +1692,7 @@ export default function ChartView({
 
         {!advanced && compactFooter && <div className="mt-1.5 flex shrink-0 flex-wrap items-center justify-between gap-x-3 gap-y-1">{compactFooter}</div>}
 
-        {!advanced && <div className="mt-3 flex flex-wrap items-start justify-between gap-x-4 border-t border-border pt-2">
+        {showAi && !advanced && <div className="mt-3 flex flex-wrap items-start justify-between gap-x-4 border-t border-border pt-2">
           <details className="group/tools min-w-0 flex-1">
             <summary className="flex min-h-11 w-fit cursor-pointer list-none items-center gap-2 rounded-full px-2 text-sm text-muted-foreground transition-colors hover:bg-foreground/[0.06] hover:text-foreground focus-visible:outline-none [&::-webkit-details-marker]:hidden">
               <SlidersHorizontal className="h-4 w-4" aria-hidden="true" />
@@ -1697,12 +1703,12 @@ export default function ChartView({
           </details>
         </div>}
 
-        {!advanced &&
+        {showAi && !advanced &&
           compactLayout !== "workspace" &&
           (resultsContainer ? createPortal(aiResults, resultsContainer) : aiResults)}
-        {!advanced && compactLayout === "workspace" && resultsContainer && createPortal(aiResults, resultsContainer)}
+        {showAi && !advanced && compactLayout === "workspace" && resultsContainer && createPortal(aiResults, resultsContainer)}
       </div>
-      {advanced && <aside aria-label={t("youtubeOpinions.ai.actions")} className="hidden min-h-0 w-[clamp(22rem,28vw,30rem)] shrink-0 overflow-y-auto overscroll-contain border-l border-border pl-4 lg:block">
+      {showAi && advanced && <aside aria-label={t("youtubeOpinions.ai.actions")} className="hidden min-h-0 w-[clamp(22rem,28vw,30rem)] shrink-0 overflow-y-auto overscroll-contain border-l border-border pl-4 lg:block">
         {aiControls}{aiStatus}{aiResults}
       </aside>}
     </div>

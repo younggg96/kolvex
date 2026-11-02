@@ -205,7 +205,6 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
   const [chartRange, setChartRange] = useState<PriceRange>(() => legacyRangeToPriceRange(emptyFilters.range));
   // AI drawing results render in their own card below the price chart, matching
   // the Market stock page's chart/results split.
-  const [chartResults, setChartResults] = useState<HTMLDivElement | null>(null);
   const detailRequest = useRef(0);
   const navigationRequest = useRef(0);
   const [navigating, setNavigating] = useState(false);
@@ -1475,7 +1474,7 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
                                   opinions={chartPoints}
                                   formatDate={formatDay}
                                   t={t}
-                                  resultsContainer={chartResults}
+                                  showAi={false}
                                 />
                               </Card>
                             ) : chartPoints.length > 0 ? (
@@ -1490,14 +1489,7 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
                               </Card>
                             ) : null}
 
-                            {route.ticker && chartView === "price" && (
-                              <Card className="min-w-0 p-3 sm:p-4 has-[>div:empty]:hidden">
-                                <div
-                                  ref={setChartResults}
-                                  className="flex min-w-0 flex-col [&>*:first-child]:mt-0 [&>*:first-child]:border-t-0 [&>*:first-child]:pt-0"
-                                />
-                              </Card>
-                            )}
+
 
                             {overview && overview.total_opinions > 0 && (
                               <Card className="min-w-0 p-4 sm:p-5">

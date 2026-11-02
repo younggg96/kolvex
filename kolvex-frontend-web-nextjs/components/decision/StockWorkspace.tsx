@@ -391,7 +391,7 @@ export default function StockWorkspace({
             >
               <TabsList
                 variant="pill-solid"
-                className="sticky top-4 z-30 mb-6 flex max-w-full flex-nowrap gap-6 overflow-x-auto"
+                className="sticky top-4 z-30 mb-6 flex max-w-full flex-nowrap overflow-x-auto"
                 aria-label={c("Stock sections", "个股研究导航")}
               >
                 <TabsTrigger value="technical">
@@ -557,14 +557,6 @@ export default function StockWorkspace({
                       ref={setTechnicalContainer}
                       className="flex min-w-0 flex-col"
                     />
-                    {!technical && !technicalBusy && (
-                      <Empty>
-                        {c(
-                          "Use AI analysis for a written interpretation, or AI drawings for support, resistance, trendlines and Fibonacci levels.",
-                          "点击 AI 分析获取文字解读；点击 AI 画线绘制支撑、阻力、趋势线和斐波那契水平。",
-                        )}
-                      </Empty>
-                    )}
                   </Card>
                   {technicalBusy && !technical ? (
                     <Card className="min-w-0 p-4 sm:p-5">
@@ -656,7 +648,7 @@ export default function StockWorkspace({
                         </details>
                       </div>
                     </Card>
-                  ) : (
+                  ) : technical ? (
                     <Card className="min-w-0 p-4 sm:p-5">
                       <h3 className="text-xs font-medium text-muted-foreground">
                         {c("Setup plan", "条件计划")}
@@ -683,7 +675,7 @@ export default function StockWorkspace({
                         )}
                       </Empty>
                     </Card>
-                  )}
+                  ) : null}
                 </TabsContent>
                 <TabsContent
                   value="news"
