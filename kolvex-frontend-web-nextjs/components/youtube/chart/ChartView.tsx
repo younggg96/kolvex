@@ -10,6 +10,7 @@ import type { useChartAiJobs } from "@/hooks/useChartAiJobs";
 import { DEFAULT_TECHNICAL_FOCUS, DEFAULT_DRAWING_FOCUS, type TechnicalFocus } from "@/lib/technicalFocus";
 
 import {
+  useCallback,
   useEffect,
   useId,
   useMemo,
@@ -306,6 +307,10 @@ export default function ChartView({
 
   const [box, setBox] = useState<HTMLDivElement | null>(null);
   const [size, setSize] = useState({ width: 0, height: 0 });
+  const receiveGraphGeometry = useCallback((next: GraphGeometry) => {
+    setSize(previous => previous.width === next.width && previous.height === next.height
+      ? previous : { width: next.width, height: next.height });
+  }, []);
   const [bars, setBars] = useState<PriceBar[] | null>(() => snapshotBars ?? peekClientCache<PriceBar[]>(chartCacheKey) ?? null);
   const [error, setError] = useState(false);
   const [attempt, setAttempt] = useState(0);
@@ -599,8 +604,6 @@ export default function ChartView({
       : yRange.hi - ((py - priceTop) / (priceBottom - priceTop)) * (yRange.hi - yRange.lo);
   const indexAt = (time: number) => geometry.indexAt(time);
   const timeAt = (index: number) => geometry.timeAt(index);
-  const toPx = (anchor: Anchor) => ({ x: xOf(indexAt(anchor.time)), y: yOf(anchor.price) });
-  const barsBetween = (a: Anchor, b: Anchor) => geometry.barsBetween(a, b);
   const barLabel = (bar: PriceBar) => `${formatDate(bar.date.slice(0, 10))}${intraday ? ` ${bar.date.slice(11, 16)}` : ""}`;
 
   const drawing = tool !== "cursor";
@@ -1259,19 +1262,19 @@ export default function ChartView({
    * The drawing overlay, clipped to the plot box by `PriceGraph`. It is mounted for BOTH modes so
    * a saved/AI drawing is visible in the preview too, but only advanced mode makes it editable.
    */
-  const drawingLayerNode = loaded ? (
+  const drawingLayerNode = (plot: GraphGeometry) => (
     <ChartDrawingLayer
-      width={plotW}
-      height={Math.max(priceBottom, 1)}
+      width={plot.plotWidth}
+      height={plot.axisBlock.h}
       drawings={drawings}
       draft={draft?.drawing ?? null}
       selectedId={advanced ? selectedId : null}
       interactive={advanced && !drawing}
-      toPx={toPx}
-      barsBetween={barsBetween}
+      toPx={plot.toPx}
+      barsBetween={plot.barsBetween}
       t={t}
     />
-  ) : null;
+  );
 
   /** Oscillator strip under the time axis, sharing the graph's visible window. */
   const oscillatorPane = advanced && loaded && oscillator && bars ? (
@@ -1375,6 +1378,7 @@ export default function ChartView({
       onActiveChange={setActive}
       onOpenAdvanced={advanced ? undefined : onOpenAdvanced}
       renderPlot={advanced ? renderAdvancedPlot : undefined}
+      onGeometry={receiveGraphGeometry}
       drawingLayer={drawingLayerNode}
       overlay={advanced ? advancedOverlay : null}
       subPane={oscillatorPane}
@@ -1698,7 +1702,7 @@ export default function ChartView({
           (resultsContainer ? createPortal(aiResults, resultsContainer) : aiResults)}
         {!advanced && compactLayout === "workspace" && resultsContainer && createPortal(aiResults, resultsContainer)}
       </div>
-      {advanced && <aside aria-label={t("youtubeOpinions.ai.actions")} className="hidden min-h-0 w-72 shrink-0 overflow-y-auto overscroll-contain border-l border-border pl-4 lg:block">
+      {advanced && <aside aria-label={t("youtubeOpinions.ai.actions")} className="hidden min-h-0 w-[clamp(22rem,28vw,30rem)] shrink-0 overflow-y-auto overscroll-contain border-l border-border pl-4 lg:block">
         {aiControls}{aiStatus}{aiResults}
       </aside>}
     </div>

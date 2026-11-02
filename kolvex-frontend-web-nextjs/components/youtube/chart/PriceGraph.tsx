@@ -358,7 +358,7 @@ export interface PriceGraphProps {
   /** Absolutely positioned nodes inside the plot box: AI drawing layers, indicator legends. */
   overlay?: ReactNode;
   /** Drawing layer rendered inside the plot, clipped to the plot box. */
-  drawingLayer?: ReactNode;
+  drawingLayer?: ReactNode | ((geometry: GraphGeometry) => ReactNode);
   /** Advanced: candles / indicators on the shared geometry, drawn instead of the close line. */
   renderPlot?: (geometry: GraphGeometry) => ReactNode;
   /** Rendered under the time axis (advanced: oscillator pane). */
@@ -1032,7 +1032,7 @@ export function PriceGraphPlot({
   renderPlot?: (geometry: GraphGeometry) => ReactNode;
   renderEventPopover?: (index: number) => ReactNode;
   eventsAt?: (index: number) => ReactNode;
-  drawingLayer?: ReactNode;
+  drawingLayer?: ReactNode | ((geometry: GraphGeometry) => ReactNode);
   overlay?: ReactNode;
   onPointerDown: (event: PointerEvent<HTMLDivElement>) => void;
   onPointerMove: (event: PointerEvent<HTMLDivElement>) => void;
@@ -1208,7 +1208,7 @@ export function PriceGraphPlot({
   
           {drawingLayer && (
             <div className="absolute left-0 top-0 overflow-hidden" style={{ width: geometry.plotWidth, height: geometry.axisBlock.h }}>
-              {drawingLayer}
+              {typeof drawingLayer === "function" ? drawingLayer(geometry) : drawingLayer}
             </div>
           )}
           {overlay}

@@ -234,7 +234,7 @@ function render(props) {
   renderToStaticMarkup(React.createElement(chartViewSized, base));
   const settled = graphRenders.at(-1) || first;
   settled.initial = first;
-  return { markup, graph: settled };
+  return { markup, graph: settled, initialGraph: first };
 }
 
 test('compact mode renders through PriceGraph, not its own SVG preview', () => {
@@ -344,4 +344,19 @@ test('the oscillator pane and the drawing layer share the graph window', () => {
   assert.ok(compact.drawingLayer, 'compact shows the drawing layer read-only');
   // Both hosts stay mounted through the shared graph, so the pane can never drift from the candles.
   assert.equal(compact.mode, 'compact');
+});
+
+
+test('AI drawings render before the host has measured a box and use the live graph coordinates', () => {
+  for (const mode of ['compact', 'advanced']) {
+    const { initialGraph: initial } = render({ mode });
+    assert.equal(typeof initial.onGeometry, 'function', 'the live graph must report its dimensions to enable AI controls and subpanes');
+    assert.equal(typeof initial.drawingLayer, 'function', 'drawings must not wait for the removed host DOM ref');
+    const live = graphGeometry({ bars, view: { start: 10, end: 30 }, width: 1200, height: 700 });
+    const layer = initial.drawingLayer(live);
+    assert.equal(layer.props.width, live.plotWidth);
+    assert.equal(layer.props.height, live.axisBlock.h);
+    assert.equal(layer.props.toPx, live.toPx, 'AI anchors must follow the same time and price scale as the candles');
+    assert.equal(layer.props.barsBetween, live.barsBetween);
+  }
 });

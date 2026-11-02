@@ -15,6 +15,10 @@ function extractXPosts(expectedUsername) {
     const href = time?.closest("a")?.getAttribute("href");
     const match = href?.match(/^\/([A-Za-z0-9_]+)\/status\/(\d+)(?:\/history)?$/);
     if (!match || match[1].toLowerCase() !== expected) continue;
+    if ([...article.querySelectorAll('a,button')].some(control => /^(Subscribe to unlock|订阅以解锁)$/.test(control.textContent?.trim() || ""))) {
+      rejected.push({ id: match[2], reason: "Subscribers-only content; full original text unavailable" });
+      continue;
+    }
     if ([...article.querySelectorAll('button')].some(button => !button.closest?.('[role="link"]') && /^(Show original|显示原文)$/.test(button.textContent?.trim() || ""))) {
       rejected.push({ id: match[2], reason: "Translated content visible; select Show original before collecting" });
       continue;

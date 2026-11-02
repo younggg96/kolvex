@@ -77,3 +77,13 @@ test('edited post history date links preserve the canonical post identity', () =
   assert.equal(p.id, '2115976928918139192');
   assert.equal(p.url, 'https://x.com/TestUser/status/2115976928918139192');
 });
+
+test('subscription previews are rejected even without a show-more control', () => {
+  const own = article();
+  const all = own.querySelectorAll.bind(own);
+  own.querySelectorAll = selector => selector === 'a,button'
+    ? [{ textContent: 'Subscribe to unlock' }] : all(selector);
+  const result = extract([own]);
+  assert.equal(result.posts.length, 0);
+  assert.match(result.rejected[0].reason, /Subscribers-only/);
+});
