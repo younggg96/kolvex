@@ -11,13 +11,22 @@ from xml.etree.ElementTree import ParseError
 
 import httpx
 
-from .parsers import compare_holdings, financial_history, filings_from, parse_holdings, parse_insider
+from .parsers import compare_holdings, financial_history, filings_from, is_earnings_filing, parse_holdings, parse_insider
 
 # An explicit, curated coverage list, not a claim to cover all institutional investors.
 MANAGERS = {
     "berkshire": {"cik": 1067983, "name": "Berkshire Hathaway"},
     "bridgewater": {"cik": 1350694, "name": "Bridgewater Associates"},
+    "pershing": {"cik": 1336528, "name": "Pershing Square"},
+    "duquesne": {"cik": 1536411, "name": "Duquesne Family Office"},
+    "appaloosa": {"cik": 1656456, "name": "Appaloosa"},
+    "baupost": {"cik": 1061768, "name": "Baupost Group"},
+    "tiger": {"cik": 1167483, "name": "Tiger Global"},
+    "third_point": {"cik": 1040273, "name": "Third Point"},
+    "oaktree": {"cik": 949509, "name": "Oaktree Capital"},
+    "renaissance": {"cik": 1037389, "name": "Renaissance Technologies"},
 }
+FINANCIALS_TTL = 21600
 
 
 class SecUnavailable(Exception):
@@ -35,6 +44,7 @@ class SecClient:
         self._gate = asyncio.Lock()
         self._locks = {}
         self._next_request = 0.0
+        self._financials = OrderedDict()
 
     async def read(self, url, ttl=21600):
         # URLs are entirely constructed by this module, never supplied by a caller.
@@ -116,13 +126,26 @@ class SecClient:
 
     async def financials(self, symbol):
         company = await self.company(symbol)
-        facts = await self.json(f"https://data.sec.gov/api/xbrl/companyfacts/CIK{int(company['cik']):010d}.json")
-        return {**company, **self.meta(), **financial_history(facts)}
+        cached = self._financials.get(company["cik"])
+        if cached and cached[0] > time.monotonic():
+            self._financials.move_to_end(company["cik"])
+            return {**company, **cached[1]}
+        raw = await self.read(f"https://data.sec.gov/api/xbrl/companyfacts/CIK{int(company['cik']):010d}.json", FINANCIALS_TTL)
+        # Company facts run to several megabytes. Parse off the event loop, keep only the result.
+        try:
+            history = await asyncio.to_thread(lambda: financial_history(json.loads(raw)))
+        except (json.JSONDecodeError, UnicodeError) as exc:
+            raise SecUnavailable("Invalid SEC response") from exc
+        result = {**self.meta(), **history}
+        self._financials[company["cik"]] = (time.monotonic() + FINANCIALS_TTL, result)
+        while len(self._financials) > 64:
+            self._financials.popitem(last=False)
+        return {**company, **result}
 
     async def filings(self, symbol):
         company = await self.company(symbol)
         submissions = await self.submissions(company["cik"])
-        rows = [r for r in filings_from(submissions) if r["form"] in {"10-K", "10-Q", "8-K", "10-K/A", "10-Q/A", "8-K/A", "20-F", "6-K"}][:30]
+        rows = [{**r, "earnings": is_earnings_filing(r)} for r in filings_from(submissions) if r["form"] in {"10-K", "10-Q", "8-K", "10-K/A", "10-Q/A", "8-K/A", "20-F", "20-F/A", "6-K"}][:40]
         return {**company, **self.meta(), "filings": rows,
             "coverage": "Recent SEC filings only. 8-K filings may include earnings releases and exhibits; transcripts and slides are not guaranteed."}
 

@@ -196,6 +196,19 @@ table repeats the outcome and delta; missing actuals or estimates have no outcom
 Markers are computed from reported EPS versus estimates (including losses and zero),
 not inferred from source surprise percentages. The chart reserves headroom for
 labels and scrolls horizontally on narrow screens to keep labels readable.
+Free research data uses SEC EDGAR and the existing Yahoo provider only; nothing here
+calls a paid service. Financials adds a Statements / Long-term, TTM & ratios switch:
+the long-term view reads SEC company facts, keeps a real TTM column only when four
+contiguous quarters connect, marks derived cells with `*` and links each date to the
+filing. Earnings adds current revenue consensus and SEC filings, with 8-K Item 2.02
+marking earnings releases; past revenue beat/miss, transcripts and slides have no
+reliable free source and say so rather than being inferred. Peers compares up to four
+user-chosen companies on one provider's definitions, restored from the `peers` query
+parameter. Series color follows the company and removing one never repaints the rest;
+S&P 500 stays a dashed neutral line. P/S and EV/EBITDA are hidden when listing and
+reporting currencies differ, because the source's ratio mixes them. Ownership shows
+Form 4 trades and a curated list of 13F investors; totals count only open-market
+codes P and S, and a failed 13F name match is worded as "no name match", never "not held".
 Analyst target differences are relative to the source-supplied price and are labelled
 as estimates, with no claim that the stock is objectively undervalued. The target
 section pairs a price-range visualization (reference and mean markers, explicit

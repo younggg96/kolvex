@@ -564,7 +564,7 @@ function LatestReportChange({
   );
 }
 
-function FinancialMetricChart({
+export function FinancialMetricChart({
   title,
   currency,
   data,

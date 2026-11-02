@@ -16,7 +16,9 @@ async def managers():
 
 
 @router.get("/institutions/{manager}")
-async def institution(manager: Literal["berkshire", "bridgewater"]):
+async def institution(manager: str):
+    if manager not in MANAGERS:
+        raise HTTPException(404, "Manager is outside the tracked list")
     try:
         return await sec_client.institution(manager)
     except (SecUnavailable, ValueError, KeyError) as exc:

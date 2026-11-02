@@ -23,6 +23,7 @@ import {
 } from "@/lib/stockFundamentals";
 import { cn } from "@/lib/utils";
 import { FinancialState, useFinancialFormat } from "./StockFinancialData";
+import StockEarningsMaterials from "./StockEarningsMaterials";
 import { useCopy } from "./shared";
 
 export default function StockEarnings({
@@ -353,10 +354,11 @@ export default function StockEarnings({
           </section>
         </>
       )}
+      <StockEarningsMaterials symbol={symbol} />
       <p className="text-xs leading-5 text-muted-foreground">
         {c(
-          "Source: Yahoo Finance · Dates follow the source. When report dates are unavailable, fiscal quarter ending dates are shown. Missing estimates and actuals are not inferred.",
-          "来源：Yahoo Finance · 日期以数据源为准，缺少发布日期时展示财季截止日。缺失的预期或实际值不做推算。",
+          "EPS source: Yahoo Finance · Dates follow the source. When report dates are unavailable, fiscal quarter ending dates are shown. Missing estimates and actuals are not inferred.",
+          "EPS 来源：Yahoo Finance · 日期以数据源为准，缺少发布日期时展示财季截止日。缺失的预期或实际值不做推算。",
         )}
       </p>
     </div>
