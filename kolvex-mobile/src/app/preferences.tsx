@@ -109,8 +109,8 @@ function Keys() {
       >
         {m.busy ? "正在保存…" : "保存密钥"}
       </Button>
-      {m.error && <Failure message={m.error} />}
-      {m.message && <Copy>{m.message}</Copy>}
+      {!!m.error && <Failure message={m.error} />}
+      {!!m.message && <Copy>{m.message}</Copy>}
       {r.data?.keys.map((k) => (
         <Glass key={k.provider} style={{ padding: 20, gap: 12 }}>
           <Copy>

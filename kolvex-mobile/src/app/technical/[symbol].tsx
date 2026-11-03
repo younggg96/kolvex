@@ -1,6 +1,6 @@
 import { View } from "react-native";
 import { useChartGestures } from "../../lib/useChartGestures";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useLocalSearchParams } from "expo-router";
 import { apiRequest } from "../../lib/http";
 import { useResource } from "../../lib/useResource";
@@ -18,7 +18,11 @@ import {
 import { Page, Button, Copy, Glass } from "../../components/UI";
 import { Filters, ResourceState, AuthGate } from "../../components/Content";
 import { CandleGraph } from "../../components/CandleGraph";
-import { DrawingEditor } from "../../components/DrawingEditor";
+import {
+  DrawingEditor,
+  type DrawingEditorHandle,
+} from "../../components/DrawingEditor";
+import { useAuth } from "../../state/Auth";
 import { TechnicalAI } from "../../components/TechnicalAI";
 export default function Technical() {
   const p = useLocalSearchParams<{ symbol: string }>();
@@ -41,6 +45,10 @@ function Workspace({ symbol }: { symbol: string }) {
   const [drawings, setDrawings] = useState<Drawing[]>([]);
   const [analysis, setAnalysis] = useState<AiTechnicalAnalysis>();
   const [showAI, setShowAI] = useState(true);
+  const [tool, setTool] = useState<Drawing["type"]>("trend");
+  const [drawMode, setDrawMode] = useState(false);
+  const editor = useRef<DrawingEditorHandle>(null);
+  const signedIn = !!useAuth().session;
   const r = useResource(
     `technical:${symbol}:${period}:${interval}`,
     async (signal) => {
@@ -68,6 +76,7 @@ function Workspace({ symbol }: { symbol: string }) {
       subtitle="原生 K 线、指标与云端画线。"
       onRefresh={r.refresh}
       refreshing={r.loading}
+      scrollEnabled={!drawMode}
     >
       <Filters
         values={[
@@ -113,7 +122,10 @@ function Workspace({ symbol }: { symbol: string }) {
       />
       {!!bars.length && (
         <Glass style={{ padding: 12, gap: 12 }}>
-          <View {...gestures.panHandlers} onLayout={gestures.onLayout}>
+          <View
+            {...(drawMode ? {} : gestures.panHandlers)}
+            onLayout={gestures.onLayout}
+          >
             <CandleGraph
               bars={bars}
               start={start}
@@ -128,14 +140,29 @@ function Workspace({ symbol }: { symbol: string }) {
               }}
               enabled={enabled}
               drawings={drawings}
+              draw={
+                drawMode
+                  ? {
+                      single: tool === "hline" || tool === "vline",
+                      onComplete: (points) => editor.current?.add(tool, points),
+                    }
+                  : undefined
+              }
               analysis={
                 showAI && analysis?.interval === interval ? analysis : undefined
               }
             />
           </View>
           <Copy size={12} muted>
-            横向拖动浏览 K 线，双指缩放；也可使用窗口和前后按钮。
+            {drawMode
+              ? "拖动绘制两点画线，水平线和垂直线轻点放置。"
+              : "横向拖动浏览 K 线，双指缩放；也可使用窗口和前后按钮。"}
           </Copy>
+          {signedIn && (
+            <Button selected={drawMode} onPress={() => setDrawMode((v) => !v)}>
+              {drawMode ? "完成绘制" : "在图上绘制"}
+            </Button>
+          )}
           <Copy size={12} muted>{`当前窗口：${count} 根`}</Copy>
           <Button
             disabled={start === 0}
@@ -192,6 +219,9 @@ function Workspace({ symbol }: { symbol: string }) {
           symbol={symbol}
           bar={bars[current]}
           onChange={setDrawings}
+          type={tool}
+          setType={setTool}
+          ref={editor}
         />
         <TechnicalAI
           symbol={symbol}

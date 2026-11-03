@@ -1,4 +1,110 @@
-# Mobile migration verification — 2026-11-01
+# Mobile migration verification
+
+## Latest status — Mobile 0.4, 2026-11-02
+
+| Level                              | Result                                                                                                  |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| Code implemented                   | See `MIGRATION.md`.                                                                                     |
+| Type check, lint, format, i18n     | Pass.                                                                                                   |
+| Unit and contract tests            | 73 of 73 pass.                                                                                          |
+| Expo Doctor                        | 20 of 20 pass.                                                                                          |
+| iOS and Android bundles            | Metro/Hermes exports pass. **This is not a native compile.**                                            |
+| React Native Web preview at 390 px | Exercised with real data, below. **Not native acceptance.**                                             |
+| Native run on iOS                  | **Started, partial.** See the iOS simulator run below.                                                  |
+| Native run on Android              | **Not done.** Set aside at the owner's request.                                                         |
+| Real signed-in or mutating flows   | **Not done.** No test account. No sign-in, AI run, save, upload, role change or deletion was performed. |
+
+### iOS simulator run (iPhone 17 Pro, iOS 26.0 runtime, Xcode 26.6)
+
+Native Swift/Xcode compile and launch succeeded, against the local read-only backend through Metro.
+
+Seen working natively with real data, signed out:
+
+- All five tabs, with the system glass tab bar.
+- Stock detail, Ownership (Form 4), the Peers table.
+- Technical chart: horizontal pan moved the window from 2026-08-10–11-02 to 2026-06-18–09-14; pinch reduced it to 15 bars.
+- Research report in dark theme, translate toggle, system share sheet, Markdown export (131 KB).
+- Creator profile, share sheet, image capture through `react-native-view-shot` (439 KB PNG).
+- `kolvex://` links for stock, technical, report, preferences, account and `share/creators`.
+- Light and dark themes through the system setting; English settings and account screens.
+- Sign-in form accepting input, with nothing submitted.
+
+Native-only defects found and fixed:
+
+| Defect                                                                                                                  | Fix                                                                      |
+| ----------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| Horizontal chart drag popped the screen through iOS 26's full-screen back gesture                                       | `gestureEnabled: false` on the technical screen; the back button remains |
+| `MutationStatus` rendered a bare space, a red error on every form using it, including sign-in. Existed before this work | Removed; `native-text-contract` now catches one-line spaces              |
+| `{text && <View />}` throws on an empty string, reachable with the empty default drawing label                          | 31 guards converted to `!!`; a new contract test covers this pattern     |
+| `(tabs)` back label                                                                                                     | Minimal back button                                                      |
+| Content under the status bar on tab screens                                                                             | Opaque status-area scrim                                                 |
+| 73pt filter buttons with a gray band                                                                                    | Plain chips                                                              |
+| Raw ISO time on the selected bar                                                                                        | Date, or date and time for intraday                                      |
+| Stacked full-width navigation buttons on Markets and Opinions                                                           | Grouped rows                                                             |
+| Timestamp in export file names; share actions below long previews                                                       | Web-style names; actions first                                           |
+
+Open on iOS:
+
+- Tab labels on never-visited tabs sit low and clip until the tab is first opened. Cause not established; it may come from running a 26.5 SDK build on the 26.0 runtime.
+- `https://kolvex.app` links open Safari until universal links are configured.
+- The software keyboard did not appear because the simulator uses the hardware keyboard, so keyboard avoidance is unverified.
+- Whether search and action bars render real glass was not confirmed by inspection.
+- Not exercised natively: signed-in flows, draw-on-chart (needs sign-in), 13F, long-term financials, earnings, news, briefs, chat, admin, Dynamic Type, VoiceOver, Reduce Transparency, small screens, iOS 18 fallback.
+
+`expo run:ios` currently fails: Xcode 26.6 reports no destinations because the iOS 26.5 platform component is not installed (about 8 GB, with 10 GB free). The build used instead, from `ios/`, compiles `Pods/Pods.xcodeproj -alltargets`, then `Kolvex.xcodeproj -target Kolvex`, with `-sdk iphonesimulator ARCHS=arm64 CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY=- SYMROOT=$PWD/build-sim/Products OBJROOT=$PWD/build-sim/Intermediates`. Do not delete `ios/build`: it holds codegen from `pod install`.
+
+### Login is required (no guest mode)
+
+At the owner's request the app has no signed-out experience. Signed out, only `sign-in`, `auth/callback` and `auth/recovery` are reachable; every other route is inside `Stack.Protected`. Guest watchlist and public research reads were removed.
+
+- Simulator: cold start lands on sign-in with no tab bar. `kolvex://stock/AAPL` and `kolvex://admin` stay on sign-in. The language choice survives a cold start.
+- `tests/auth-guard.test.ts` walks every route file under `src/app`, because `Stack.Protected` does not cover a route with no declared screen.
+- **Not verified: signing in, restoring a session, signing out back to sign-in, OAuth return, and everything behind them.** This needs a test account. Since login is now required, **no screen behind sign-in can be reached on the simulator without one, including the screens checked earlier in this document.** Those checks predate this change.
+- A signed-out deep link is dropped rather than resumed after signing in.
+- Local lists saved under `kolvex.mobile.watchlist` by earlier builds are no longer read or merged.
+- Unexplained: the sign-in screen once showed Chinese after English had been chosen, following hot reloads. It did not recur across a cold start.
+
+### Blockers
+
+- Android: set aside for now; requires a JDK and Android SDK with an emulator.
+- **Everything behind sign-in: requires a non-production or disposable test account**, and an administrator account for `/admin`.
+- Universal links: requires the Apple Team ID and hosted association files.
+- `react-native-view-shot` was added, so the next run needs a new development build; Expo Go will not do.
+
+### Live data checks (local backend, read-only)
+
+The local backend ran on port 8082 with `CHART_WORKER_ENABLED=false` and `ECONOMIC_INDICATORS_WORKER_ENABLED=false`, so it could not consume paid AI jobs or write indicators. `ALLOWED_ORIGINS` was overridden for that process only, to admit the preview.
+
+- 200: free-research `financials`, `filings`, `insiders`, `revenue-outlook` for AAPL; `institutions`, `institutions/berkshire`; `market/overview`; `^GSPC` history; `trading-analysis/public/list`; creator `latest-video`.
+- 404 for `ZZZZZ` financials. The screen shows an empty state, not a failure.
+
+### Web comparison
+
+The signed-in Web dashboard was not compared, because it redirects to sign-in without an account. The local Web server on port 3000 also lacks the free-research route, so it appears to predate that work. Instead, the public route at `kolvex.app` was compared with the mobile backend source using `fetched_at`-stripped payloads:
+
+- AAPL filings, insiders, revenue outlook and Berkshire 13F: identical.
+- AAPL financials: a serialized comparison first reported a difference, but a field-by-field diff found none.
+- NVDA financials: the same serialized comparison reported a difference. **It was not re-checked field by field.**
+
+The same mobile-side formulas gave AAPL FY2025 revenue 416.16B, growth 6.43%, FCF margin 23.73%, ROE 151.91%, liabilities/equity 3.87. These were computed with `freeResearch.ts`, which is AST-identical to the Web file, but were not read off a rendered Web page.
+
+### RN-Web preview walkthrough
+
+Checked: AAPL ownership (38 Form 4 rows, totals), NVDA peers with AMD and TSM (TSM's P/S and EV/EBITDA hidden for mixed currency), AAPL earnings materials, long-term financials in English and light theme, research groups and report actions, updates, creators tab distribution (55 AAPL opinions, matching `/youtube-opinions/stocks/AAPL`), `/portfolio` redirecting to Markets, and an unknown ticker's empty state.
+
+Not checked in the preview: the 13F investor view, translate toggle, draw-on-chart, share sheet, image capture, and the multicharts and stock research tabs. Cross-origin translation in a browser is not representative of native.
+
+Defects found this way and fixed: compact digit grouping (caught by comparing with `Intl`), overlapping chart dates on long histories, truncated table dates, untranslated strength phrases and "latest" label, literal `---` in reports, and a previous-to-current strength row with no arrow.
+
+Known preview noise: a development warning about `accessible={false}` on SVG comes from the Web adapter.
+
+Screenshots: `artifacts/mobile-v04-*-rnweb.jpg` are React Native Web; `artifacts/mobile-v04-ios26-*.png` are the iOS simulator.
+
+### New automated coverage
+
+`tests/free-research.test.ts`: compact numbers against `Intl`, percent and date formats, research grouping and incomplete catalogs, deep links including the disabled Portfolio and a traversal attempt, touch-to-price geometry, report export order, translation identifier protection, strength thresholds and English coverage, share content, and the Web feature flag. `web-source-parity` now also covers `freeResearch.ts` and `opinionDates.ts`.
+
+## Earlier records
 
 ## Code and packaging
 

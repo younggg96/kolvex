@@ -16,6 +16,7 @@ import {
   type RedditSort,
 } from "../../lib/reddit";
 import { useWatchlist } from "../../state/Watchlist";
+import { TranslatableText } from "../../components/Translate";
 import {
   Filters,
   Pager,
@@ -27,6 +28,7 @@ import {
   Copy,
   Failure,
   Glass,
+  NavRow,
   Page,
   Search,
   styles,
@@ -46,10 +48,13 @@ export default function Opinions() {
       subtitle="观点有出处，讨论有边界。"
       onRefresh={() => setRevision((v) => v + 1)}
     >
-      <Button onPress={() => router.push("/creators")}>
-        创作者目录 / 视频历史
-      </Button>
-      <Button onPress={() => router.push("/updates")}>观点动态</Button>
+      <Glass>
+        <NavRow
+          title="创作者目录 / 视频历史"
+          onPress={() => router.push("/creators")}
+        />
+        <NavRow title="观点动态" last onPress={() => router.push("/updates")} />
+      </Glass>
       <Filters
         values={[
           ["youtube", "YouTube"],
@@ -145,18 +150,20 @@ function YouTube({ revision }: { revision: number }) {
             {item.channel_title || "来源频道未提供"} · {item.opinion_date}
           </Copy>
           <Copy>{item.summary || item.thesis || "暂无摘要"}</Copy>
-          {item.video_url && (
-            <SourceLink url={item.video_url}>查看原视频 ↗</SourceLink>
-          )}
-          {isSymbol(item.ticker) && (
-            <Button
-              onPress={() =>
-                router.push(`/stock/${encodeURIComponent(item.ticker)}`)
-              }
-            >
-              查看股票
-            </Button>
-          )}
+          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+            {!!item.video_url && (
+              <SourceLink url={item.video_url}>查看原视频 ↗</SourceLink>
+            )}
+            {isSymbol(item.ticker) && (
+              <Button
+                onPress={() =>
+                  router.push(`/stock/${encodeURIComponent(item.ticker)}`)
+                }
+              >
+                查看股票
+              </Button>
+            )}
+          </View>
         </Glass>
       ))}
       <Pager
@@ -210,11 +217,9 @@ function XFeed({ revision }: { revision: number }) {
               locale === "en" ? "en-US" : "zh-CN",
             )}
           </Copy>
-          <Copy>{item.text}</Copy>
+          <TranslatableText text={item.text} />
           {item.quoted_texts?.map((text, i) => (
-            <Copy key={i} muted>
-              {text}
-            </Copy>
+            <TranslatableText key={i} text={text} size={14} muted />
           ))}
           {item.truncated && (
             <Copy size={12} muted>
@@ -293,7 +298,7 @@ function Reddit({ revision }: { revision: number }) {
           )}
         </Copy>
       )}
-      {list.error && <Failure message={list.error} retry={list.refresh} />}
+      {!!list.error && <Failure message={list.error} retry={list.refresh} />}
       <ResourceState
         resource={resource}
         empty={!rows.length}

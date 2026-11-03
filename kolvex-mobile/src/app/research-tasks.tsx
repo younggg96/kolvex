@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { router } from "expo-router";
 import { apiRequest } from "../lib/http";
+import { profile } from "../lib/contentApi";
 import { useAuth } from "../state/Auth";
 import { useResource } from "../lib/useResource";
 import { useMutation } from "../lib/useMutation";
@@ -21,8 +22,25 @@ import { MutationStatus } from "../components/MutationStatus";
 export default function Tasks() {
   return (
     <AuthGate title="我的研究任务">
-      <Library />
+      <AdminOnly />
     </AuthGate>
+  );
+}
+// The Web only offers research authoring to administrators.
+function AdminOnly() {
+  const user = useAuth().session!.user.id;
+  const account = useResource(`tasks-profile:${user}`, (signal) =>
+    profile(user, signal),
+  );
+  if (account.data?.is_admin) return <Library />;
+  return (
+    <Page title="我的研究任务" onRefresh={account.refresh}>
+      <ResourceState
+        resource={account}
+        empty={!!account.data}
+        message="当前账户没有访问此内容的权限。"
+      />
+    </Page>
   );
 }
 function Library() {

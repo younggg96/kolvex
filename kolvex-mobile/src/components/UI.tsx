@@ -38,6 +38,9 @@ export function Copy({
   color,
   selectable = false,
   localize = true,
+  lines,
+  onPress,
+  role,
 }: PropsWithChildren<{
   size?: number;
   muted?: boolean;
@@ -45,12 +48,18 @@ export function Copy({
   color?: string;
   selectable?: boolean;
   localize?: boolean;
+  lines?: number;
+  onPress?: () => void;
+  role?: "link";
 }>) {
   const t = useTheme();
   const { locale } = usePreferences();
   return (
     <Text
       selectable={selectable}
+      numberOfLines={lines}
+      onPress={onPress}
+      accessibilityRole={role}
       style={{
         color: color ?? (muted ? t.secondary : t.text),
         fontSize: size,
@@ -63,14 +72,17 @@ export function Copy({
     </Text>
   );
 }
+// Reading and data sit on an opaque surface. Only toolbars and overlays ask for
+// `material`: real SwiftUI glass on iOS 26+, blur on older iOS, opaque elsewhere.
 export function Glass({
   children,
   style,
-}: PropsWithChildren<{ style?: StyleProp<ViewStyle> }>) {
+  material = false,
+}: PropsWithChildren<{ style?: StyleProp<ViewStyle>; material?: boolean }>) {
   const t = useTheme();
   const [reduce, setReduce] = useState(true);
   useEffect(() => {
-    if (Platform.OS !== "ios") return;
+    if (!material || Platform.OS !== "ios") return;
     AccessibilityInfo.isReduceTransparencyEnabled()
       .then(setReduce)
       .catch(() => setReduce(true));
@@ -79,9 +91,9 @@ export function Glass({
       setReduce,
     );
     return () => subscription.remove();
-  }, []);
+  }, [material]);
   const shell = [styles.glass, { borderColor: t.border }, style];
-  if (reduce)
+  if (!material || reduce)
     return (
       <View style={[shell, { backgroundColor: t.surface }]}>{children}</View>
     );
@@ -149,6 +161,62 @@ export function Button({
     </Pressable>
   );
 }
+/** Screens without a navigation bar: keeps content from scrolling under the status bar. */
+export function StatusScrim() {
+  const t = useTheme();
+  const insets = useSafeAreaInsets();
+  return (
+    <View
+      pointerEvents="none"
+      style={{
+        position: "absolute",
+        top: 0,
+        left: 0,
+        right: 0,
+        height: insets.top,
+        backgroundColor: t.background,
+      }}
+    />
+  );
+}
+/** A filter choice: a plain control among content, deliberately without glass. */
+export function Chip({
+  children,
+  onPress,
+  selected = false,
+  disabled = false,
+}: PropsWithChildren<{
+  onPress: () => void;
+  selected?: boolean;
+  disabled?: boolean;
+}>) {
+  const t = useTheme();
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityState={{ selected, disabled }}
+      disabled={disabled}
+      onPress={() => {
+        if (Platform.OS !== "web")
+          void Haptics.selectionAsync().catch(() => {});
+        onPress();
+      }}
+      style={({ pressed }) => [
+        styles.button,
+        {
+          paddingVertical: 8,
+          backgroundColor: selected ? t.text : t.surface,
+          borderColor: selected ? t.text : t.border,
+          opacity: disabled ? 0.45 : pressed ? 0.65 : 1,
+        },
+      ]}
+    >
+      <Copy size={14} bold color={selected ? t.background : t.text}>
+        {children}
+      </Copy>
+    </Pressable>
+  );
+}
 export function Page({
   title,
   subtitle,
@@ -158,6 +226,7 @@ export function Page({
   refreshing,
   onRefresh,
   followContent = false,
+  scrollEnabled = true,
 }: PropsWithChildren<{
   title: string;
   subtitle?: string;
@@ -166,6 +235,7 @@ export function Page({
   refreshing?: boolean;
   onRefresh?: () => void;
   followContent?: boolean;
+  scrollEnabled?: boolean;
 }>) {
   const t = useTheme();
   const insets = useSafeAreaInsets();
@@ -174,6 +244,7 @@ export function Page({
   return (
     <ScrollView
       ref={scroll}
+      scrollEnabled={scrollEnabled}
       onScroll={(event) => {
         const { contentOffset, contentSize, layoutMeasurement } =
           event.nativeEvent;
@@ -213,7 +284,7 @@ export function Page({
         <Copy size={36} bold localize={titleLocalize}>
           {title}
         </Copy>
-        {subtitle && (
+        {!!subtitle && (
           <Copy size={14} muted localize={subtitleLocalize}>
             {subtitle}
           </Copy>
@@ -230,6 +301,51 @@ export function Page({
     </ScrollView>
   );
 }
+export function NavRow({
+  title,
+  note,
+  onPress,
+  last = false,
+}: {
+  title: string;
+  note?: string;
+  onPress: () => void;
+  last?: boolean;
+}) {
+  const t = useTheme();
+  const text = useText();
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={text(title)}
+      onPress={onPress}
+      style={({ pressed }) => ({
+        minHeight: 52,
+        paddingHorizontal: 20,
+        paddingVertical: 12,
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "space-between",
+        gap: 12,
+        opacity: pressed ? 0.6 : 1,
+        borderBottomWidth: last ? 0 : StyleSheet.hairlineWidth,
+        borderColor: t.border,
+      })}
+    >
+      <View style={{ flex: 1, gap: 2 }}>
+        <Copy size={15}>{title}</Copy>
+        {!!note && (
+          <Copy size={12} muted>
+            {note}
+          </Copy>
+        )}
+      </View>
+      <Copy muted localize={false}>
+        ›
+      </Copy>
+    </Pressable>
+  );
+}
 export function Section({
   title,
   note,
@@ -244,7 +360,7 @@ export function Section({
       <Copy size={20} bold localize={localize}>
         {title}
       </Copy>
-      {note && (
+      {!!note && (
         <Copy size={12} muted localize={localize}>
           {note}
         </Copy>
@@ -320,6 +436,7 @@ export function Search({
   const input = useRef<ComponentRef<typeof TextInput>>(null);
   return (
     <Glass
+      material
       style={{
         flexDirection: "row",
         alignItems: "center",
@@ -445,7 +562,7 @@ export function ListPage<T>({
             <Copy size={36} bold>
               {title}
             </Copy>
-            {subtitle && (
+            {!!subtitle && (
               <Copy size={14} muted>
                 {subtitle}
               </Copy>

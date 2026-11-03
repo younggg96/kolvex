@@ -1,5 +1,4 @@
 import { AppState } from "react-native";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
   createContext,
   useContext,
@@ -11,7 +10,6 @@ import {
 import { useAuth } from "./Auth";
 import { supabase } from "../lib/supabase";
 import { useResource } from "../lib/useResource";
-import { isSymbol } from "../lib/models";
 
 const Context = createContext<{
   symbols: string[];
@@ -29,70 +27,6 @@ const Context = createContext<{
   refresh: () => {},
   toggle: () => {},
 });
-function GuestWatchlistProvider({ children }: PropsWithChildren) {
-  const [symbols, setSymbols] = useState<string[]>([]);
-  const [ready, setReady] = useState(false);
-  const [error, setError] = useState<string>();
-  const queue = useRef(Promise.resolve());
-  const current = useRef<string[]>([]);
-  useEffect(() => {
-    let active = true;
-    AsyncStorage.getItem("kolvex.mobile.watchlist")
-      .then((raw) => {
-        const saved: unknown = raw ? JSON.parse(raw) : [];
-        if (active && Array.isArray(saved)) {
-          current.current = [
-            ...new Set(
-              saved.filter(
-                (s): s is string => typeof s === "string" && isSymbol(s),
-              ),
-            ),
-          ];
-          setSymbols(current.current);
-        }
-      })
-      .catch(() => {
-        if (active)
-          setError("无法读取本机自选，新增自选仍可在本次使用中保留。");
-      })
-      .finally(() => {
-        if (active) setReady(true);
-      });
-    return () => {
-      active = false;
-    };
-  }, []);
-  function toggle(symbol: string) {
-    if (!ready || !isSymbol(symbol)) return;
-    const old = current.current;
-    const next = old.includes(symbol)
-      ? old.filter((s) => s !== symbol)
-      : [...old, symbol];
-    current.current = next;
-    setSymbols(next);
-    queue.current = queue.current
-      .then(() =>
-        AsyncStorage.setItem("kolvex.mobile.watchlist", JSON.stringify(next)),
-      )
-      .then(() => setError(undefined))
-      .catch(() => setError("自选未保存到本机，请再次操作重试。"));
-  }
-  return (
-    <Context.Provider
-      value={{
-        symbols,
-        ready,
-        error,
-        toggle,
-        pending: false,
-        cloud: false,
-        refresh: () => {},
-      }}
-    >
-      {children}
-    </Context.Provider>
-  );
-}
 export const useWatchlist = () => useContext(Context);
 
 function CloudWatchlistProvider({
@@ -198,11 +132,12 @@ function CloudWatchlistProvider({
 }
 export function WatchlistProvider({ children }: PropsWithChildren) {
   const { session } = useAuth();
+  // Signed-out routes never read the watchlist, so they get the empty default.
   return session ? (
     <CloudWatchlistProvider key={session.user.id} userId={session.user.id}>
       {children}
     </CloudWatchlistProvider>
   ) : (
-    <GuestWatchlistProvider>{children}</GuestWatchlistProvider>
+    children
   );
 }

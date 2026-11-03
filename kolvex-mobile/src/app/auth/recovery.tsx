@@ -36,7 +36,7 @@ export default function Recovery() {
                 const r = await supabase?.auth.updateUser({ password });
                 if (!r || r.error) throw new Error("密码未更新，请重试。");
                 setPassword("");
-                router.replace("/account");
+                router.replace("/");
               })
             }
           >

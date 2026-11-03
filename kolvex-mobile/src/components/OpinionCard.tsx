@@ -37,7 +37,7 @@ export function OpinionCard({
         {names[item.sentiment]}
       </Copy>
       <Copy selectable>{item.summary || item.thesis || "暂无摘要"}</Copy>
-      {item.thesis && item.summary && item.thesis !== item.summary && (
+      {!!item.thesis && !!item.summary && item.thesis !== item.summary && (
         <Copy selectable>{item.thesis}</Copy>
       )}
       {item.key_points?.map((point, i) => (
@@ -68,7 +68,7 @@ export function OpinionCard({
           查看 {item.ticker}
         </Button>
       )}
-      {item.video_url && (
+      {!!item.video_url && (
         <SourceLink url={item.video_url}>查看原视频 ↗</SourceLink>
       )}
     </Glass>

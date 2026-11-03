@@ -6,7 +6,7 @@ import Svg, {
   Polygon,
   Text as SvgText,
 } from "react-native-svg";
-import { View } from "react-native";
+import { StyleSheet, View, type GestureResponderEvent } from "react-native";
 import { useText } from "../lib/i18n";
 import { useTheme } from "../lib/theme";
 import type {
@@ -24,6 +24,11 @@ import {
 import { Filters } from "./Content";
 import { Copy, Button } from "./UI";
 import { number } from "../lib/models";
+import { anchorAt, toViewBox } from "../lib/chartGeometry";
+export type DrawGesture = {
+  single: boolean;
+  onComplete: (points: { time: number; price: number }[]) => void;
+};
 const colors: Record<string, string> = {
   ema5: "#14B8A6",
   ema20: "#A855F7",
@@ -32,6 +37,11 @@ const colors: Record<string, string> = {
   vwap: "#EC4899",
   bb: "#94A3B8",
 };
+// Daily bars read as a date; intraday bars keep their exchange-local time.
+const barLabel = (date: string) =>
+  date.slice(11, 16) === "00:00" || date.length <= 10
+    ? date.slice(0, 10)
+    : date.slice(0, 16).replace("T", " ");
 export function CandleGraph({
   bars,
   start,
@@ -41,6 +51,7 @@ export function CandleGraph({
   enabled,
   drawings = [],
   analysis,
+  draw,
 }: {
   bars: PriceBar[];
   start: number;
@@ -50,9 +61,13 @@ export function CandleGraph({
   enabled: IndicatorKey[];
   drawings?: Drawing[];
   analysis?: AiTechnicalAnalysis;
+  draw?: DrawGesture;
 }) {
   const t = useTheme();
   const [oscillatorMode, setOscillatorMode] = useState("rsi");
+  const [size, setSize] = useState({ width: 320, height: 260 });
+  const [draft, setDraft] = useState<{ time: number; price: number }[]>([]);
+  const text = useText();
   const visible = bars.slice(start, start + count);
   if (!visible.length) return <Copy>此区间暂无有效 K 线。</Copy>;
   const indicators = computeIndicators(bars, false);
@@ -67,6 +82,18 @@ export function CandleGraph({
   const last = Date.parse(visible.at(-1)!.date) / 1000;
   const timeX = (time: number) =>
     10 + ((time - first) / (last - first || 1)) * 300;
+  const anchor = (event: GestureResponderEvent) =>
+    anchorAt(
+      toViewBox(
+        event.nativeEvent.locationX,
+        event.nativeEvent.locationY,
+        size.width,
+        size.height,
+      ),
+      visible,
+      min,
+      span,
+    );
   const bar = bars[Math.min(bars.length - 1, Math.max(0, selected))];
   const path = (values: (number | null)[]) =>
     values
@@ -84,145 +111,190 @@ export function CandleGraph({
       <Copy size={12} muted>
         {visible[0].date.slice(0, 10)} — {visible.at(-1)!.date.slice(0, 10)}
       </Copy>
-      <Svg
-        width="100%"
-        height={260}
-        viewBox="0 0 320 260"
-        accessible={false}
-        aria-hidden={true}
+      <View
+        onLayout={(event) => setSize(event.nativeEvent.layout)}
+        style={{ height: 260 }}
       >
-        {[0, 0.5, 1].map((p) => (
-          <Line
-            key={p}
-            x1={8}
-            x2={312}
-            y1={y(min + span * p)}
-            y2={y(min + span * p)}
-            stroke={t.border}
-          />
-        ))}
-        {visible.map((b, i) => {
-          const color = b.close >= b.open ? t.chartUp : t.chartDown;
-          return (
-            <ReactBar
-              key={b.date}
-              x={x(i)}
-              width={Math.max(dx * 0.65, 1)}
-              high={y(b.high)}
-              low={y(b.low)}
-              open={y(b.open)}
-              close={y(b.close)}
-              color={color}
-              onPress={() => onSelect(start + i)}
-            />
-          );
-        })}
-        {enabled
-          .filter((k) => k !== "volume")
-          .flatMap((k) =>
-            k === "bb"
-              ? [
-                  indicators.bb.upper,
-                  indicators.bb.middle,
-                  indicators.bb.lower,
-                ].map((line, i) => (
-                  <Polyline
-                    key={`${k}${i}`}
-                    points={path(line)}
-                    stroke={colors[k]}
-                    strokeWidth={1}
-                    fill="none"
-                  />
-                ))
-              : [
-                  <Polyline
-                    key={k}
-                    points={path(indicators[k] as (number | null)[])}
-                    stroke={colors[k]}
-                    strokeWidth={1.2}
-                    fill="none"
-                  />,
-                ],
-          )}
-        {enabled.includes("volume") &&
-          visible.map((b, i) => (
-            <Rect
-              key={`v${i}`}
-              x={x(i) - dx / 3}
-              y={255 - ((b.volume ?? 0) / maxVolume) * 22}
-              width={Math.max(dx * 0.6, 1)}
-              height={((b.volume ?? 0) / maxVolume) * 22}
-              fill={b.close >= b.open ? t.chartUp : t.chartDown}
-              opacity={0.5}
+        <Svg
+          width="100%"
+          height={260}
+          viewBox="0 0 320 260"
+          accessible={false}
+          aria-hidden={true}
+        >
+          {[0, 0.5, 1].map((p) => (
+            <Line
+              key={p}
+              x1={8}
+              x2={312}
+              y1={y(min + span * p)}
+              y2={y(min + span * p)}
+              stroke={t.border}
             />
           ))}
-        {selected >= start && selected < start + count && (
-          <Line
-            x1={x(selected - start)}
-            x2={x(selected - start)}
-            y1={10}
-            y2={245}
-            stroke={t.secondary}
-            strokeDasharray="3,3"
+          {visible.map((b, i) => {
+            const color = b.close >= b.open ? t.chartUp : t.chartDown;
+            return (
+              <ReactBar
+                key={b.date}
+                x={x(i)}
+                width={Math.max(dx * 0.65, 1)}
+                high={y(b.high)}
+                low={y(b.low)}
+                open={y(b.open)}
+                close={y(b.close)}
+                color={color}
+                onPress={() => onSelect(start + i)}
+              />
+            );
+          })}
+          {enabled
+            .filter((k) => k !== "volume")
+            .flatMap((k) =>
+              k === "bb"
+                ? [
+                    indicators.bb.upper,
+                    indicators.bb.middle,
+                    indicators.bb.lower,
+                  ].map((line, i) => (
+                    <Polyline
+                      key={`${k}${i}`}
+                      points={path(line)}
+                      stroke={colors[k]}
+                      strokeWidth={1}
+                      fill="none"
+                    />
+                  ))
+                : [
+                    <Polyline
+                      key={k}
+                      points={path(indicators[k] as (number | null)[])}
+                      stroke={colors[k]}
+                      strokeWidth={1.2}
+                      fill="none"
+                    />,
+                  ],
+            )}
+          {enabled.includes("volume") &&
+            visible.map((b, i) => (
+              <Rect
+                key={`v${i}`}
+                x={x(i) - dx / 3}
+                y={255 - ((b.volume ?? 0) / maxVolume) * 22}
+                width={Math.max(dx * 0.6, 1)}
+                height={((b.volume ?? 0) / maxVolume) * 22}
+                fill={b.close >= b.open ? t.chartUp : t.chartDown}
+                opacity={0.5}
+              />
+            ))}
+          {selected >= start && selected < start + count && (
+            <Line
+              x1={x(selected - start)}
+              x2={x(selected - start)}
+              y1={10}
+              y2={245}
+              stroke={t.secondary}
+              strokeDasharray="3,3"
+            />
+          )}
+          {!!draft.length && (
+            <DrawingShape
+              drawing={{
+                id: "draft",
+                type: draw?.single ? "hline" : "trend",
+                points: draft,
+                color: t.text,
+                label: "",
+              }}
+              x={timeX}
+              y={y}
+              foreground={t.text}
+            />
+          )}
+          {drawings.map((d) => (
+            <DrawingShape
+              key={d.id}
+              drawing={d}
+              x={timeX}
+              y={y}
+              foreground={t.text}
+            />
+          ))}
+          {analysis?.levels.map((level, i) => (
+            <Line
+              key={`a${i}`}
+              x1={8}
+              x2={312}
+              y1={y(level.price)}
+              y2={y(level.price)}
+              stroke={level.kind === "support" ? t.chartUp : t.chartDown}
+              strokeDasharray="4,3"
+            />
+          ))}
+          {analysis?.trendlines.map((line, i) => (
+            <Line
+              key={`at${i}`}
+              x1={timeX(Date.parse(line.start.date) / 1000)}
+              y1={y(line.start.price)}
+              x2={timeX(Date.parse(line.end.date) / 1000)}
+              y2={y(line.end.price)}
+              stroke={t.secondary}
+            />
+          ))}
+          {analysis?.overlays?.map((o, i) => {
+            const points = o.points
+              .map((p) => `${timeX(Date.parse(p.date) / 1000)},${y(p.price)}`)
+              .join(" ");
+            return o.shape === "area" ? (
+              <Polygon
+                key={`o${i}`}
+                points={points}
+                fill={t.secondary}
+                opacity={0.18}
+              />
+            ) : (
+              <Polyline
+                key={`o${i}`}
+                points={points}
+                fill="none"
+                stroke={t.secondary}
+                strokeWidth={1.5}
+              />
+            );
+          })}
+        </Svg>
+        {draw && (
+          <View
+            accessibilityLabel={text(
+              draw.single ? "轻点图表放置画线" : "在图表上拖动绘制画线",
+            )}
+            style={StyleSheet.absoluteFill}
+            onStartShouldSetResponder={() => true}
+            onMoveShouldSetResponder={() => true}
+            onResponderTerminationRequest={() => false}
+            onResponderGrant={(event) => {
+              const at = anchor(event);
+              setDraft(draw.single ? [at] : [at, at]);
+            }}
+            onResponderMove={(event) => {
+              const at = anchor(event);
+              setDraft((old) => (draw.single ? [at] : [old[0] ?? at, at]));
+            }}
+            onResponderRelease={(event) => {
+              const at = anchor(event);
+              const first = draft[0] ?? at;
+              setDraft([]);
+              draw.onComplete(draw.single ? [at] : [first, at]);
+            }}
+            onResponderTerminate={() => setDraft([])}
           />
         )}
-        {drawings.map((d) => (
-          <DrawingShape
-            key={d.id}
-            drawing={d}
-            x={timeX}
-            y={y}
-            foreground={t.text}
-          />
-        ))}
-        {analysis?.levels.map((level, i) => (
-          <Line
-            key={`a${i}`}
-            x1={8}
-            x2={312}
-            y1={y(level.price)}
-            y2={y(level.price)}
-            stroke={level.kind === "support" ? t.chartUp : t.chartDown}
-            strokeDasharray="4,3"
-          />
-        ))}
-        {analysis?.trendlines.map((line, i) => (
-          <Line
-            key={`at${i}`}
-            x1={timeX(Date.parse(line.start.date) / 1000)}
-            y1={y(line.start.price)}
-            x2={timeX(Date.parse(line.end.date) / 1000)}
-            y2={y(line.end.price)}
-            stroke={t.secondary}
-          />
-        ))}
-        {analysis?.overlays?.map((o, i) => {
-          const points = o.points
-            .map((p) => `${timeX(Date.parse(p.date) / 1000)},${y(p.price)}`)
-            .join(" ");
-          return o.shape === "area" ? (
-            <Polygon
-              key={`o${i}`}
-              points={points}
-              fill={t.secondary}
-              opacity={0.18}
-            />
-          ) : (
-            <Polyline
-              key={`o${i}`}
-              points={points}
-              fill="none"
-              stroke={t.secondary}
-              strokeWidth={1.5}
-            />
-          );
-        })}
-      </Svg>
+      </View>
       {bar && (
         <Copy size={12}>
-          选中 {bar.date} · 开 {number(bar.open)} · 高 {number(bar.high)} · 低{" "}
-          {number(bar.low)} · 收 {number(bar.close)} · 量{" "}
-          {number(bar.volume, 0)}
+          选中 {barLabel(bar.date)} · 开 {number(bar.open)} · 高{" "}
+          {number(bar.high)} · 低 {number(bar.low)} · 收 {number(bar.close)} ·
+          量 {number(bar.volume, 0)}
         </Copy>
       )}
       <View style={{ flexDirection: "row", gap: 12 }}>
@@ -392,7 +464,7 @@ function DrawingShape({
             : `${number(((b.price - a.price) / Math.abs(a.price)) * 100)}%`}
         </SvgText>
       )}
-      {d.label && (
+      {!!d.label && (
         <SvgText
           x={Math.max(0, Math.min(x1, 240))}
           y={Math.max(12, Math.min(y1, 235))}

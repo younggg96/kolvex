@@ -1,4 +1,10 @@
-import { useEffect, useEffectEvent, useState } from "react";
+import {
+  useEffect,
+  useEffectEvent,
+  useImperativeHandle,
+  useState,
+  type Ref,
+} from "react";
 import { apiRequest } from "../lib/http";
 import { useAuth } from "../state/Auth";
 import { useResource } from "../lib/useResource";
@@ -8,14 +14,23 @@ import { Button, Copy, Glass, Section } from "./UI";
 import { Field, Filters, ResourceState } from "./Content";
 import { MutationStatus } from "./MutationStatus";
 import { ConfirmAction } from "./ConfirmAction";
+export type DrawingEditorHandle = {
+  add: (type: Drawing["type"], points: Drawing["points"]) => void;
+};
 export function DrawingEditor({
   symbol,
   bar,
   onChange,
+  type,
+  setType,
+  ref,
 }: {
   symbol: string;
   bar?: PriceBar;
   onChange: (drawings: Drawing[]) => void;
+  type: Drawing["type"];
+  setType: (type: Drawing["type"]) => void;
+  ref?: Ref<DrawingEditorHandle>;
 }) {
   const user = useAuth().session!.user.id;
   const r = useResource(`drawings:${user}:${symbol}`, (signal) =>
@@ -26,7 +41,6 @@ export function DrawingEditor({
   );
   const [local, setLocal] = useState<Drawing[]>();
   const rows = local ?? r.data?.drawings ?? [];
-  const [type, setType] = useState<Drawing["type"]>("trend");
   const [time1, setTime1] = useState("");
   const [time2, setTime2] = useState("");
   const [price1, setPrice1] = useState("");
@@ -37,6 +51,18 @@ export function DrawingEditor({
   const m = useMutation();
   const update = useEffectEvent(onChange);
   useEffect(() => update(local ?? r.data?.drawings ?? []), [local, r.data]);
+  useImperativeHandle(ref, () => ({
+    add: (type, points) =>
+      setLocal((old) => {
+        const base = old ?? r.data?.drawings ?? [];
+        return base.length >= 300
+          ? base
+          : [
+              ...base,
+              { id: `mobile-${Date.now()}`, type, points, color, label },
+            ];
+      }),
+  }));
   const single = type === "hline" || type === "vline";
   const valid =
     Number.isFinite(Date.parse(time1)) &&
@@ -51,7 +77,7 @@ export function DrawingEditor({
       <Section title="我的云端画线" />
       <ResourceState resource={r} empty={false} message="画线暂无内容" />
       <Copy muted>
-        选择 K 线后可填入锚点，也可直接编辑日期与价格。保存后与 Web
+        可在图表上直接绘制，也可选择 K 线填入锚点或编辑日期与价格。保存后与 Web
         同步；不会自动覆盖云端变化。
       </Copy>
       <Filters

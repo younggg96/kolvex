@@ -3,6 +3,7 @@ import { useCallback, useEffect, useEffectEvent, useState } from "react";
 export function useResource<T>(
   key: string,
   load: (signal: AbortSignal) => Promise<T>,
+  timeoutMs = 15000,
 ) {
   const run = useEffectEvent(load);
   const [revision, setRevision] = useState(0);
@@ -26,7 +27,7 @@ export function useResource<T>(
       active = false;
       controller.abort();
       finishError("连接超时，请检查网络后重试。");
-    }, 15000);
+    }, timeoutMs);
     run(controller.signal)
       .then((data) => {
         if (active) setState({ key, revision, data });
@@ -43,7 +44,7 @@ export function useResource<T>(
       clearTimeout(timeout);
       controller.abort();
     };
-  }, [key, revision]);
+  }, [key, revision, timeoutMs]);
   const refresh = useCallback(() => setRevision((v) => v + 1), []);
   const loading = state.key !== key || state.revision !== revision;
   return {

@@ -3,6 +3,7 @@ import { useLocalSearchParams } from "expo-router";
 import { ModelPicker } from "../../components/ModelPicker";
 import { View } from "react-native";
 import { useAuth } from "../../state/Auth";
+import { ConfirmAction } from "../../components/ConfirmAction";
 import { conversation } from "../../lib/contentApi";
 import { quote } from "../../lib/api";
 import { demoMode } from "../../lib/config";
@@ -86,12 +87,19 @@ function Room() {
       if (alive.current) setRecovering(false);
     }
   }
-  async function send() {
-    if (action.current || uncertain || !input.trim() || input.length > 100000)
+  // `again` is the reader's explicit retry of the unconfirmed turn; never automatic.
+  async function send(again?: string) {
+    const content = (again ?? input).trim();
+    if (
+      action.current ||
+      (uncertain && again === undefined) ||
+      !content ||
+      content.length > 100000
+    )
       return;
     const controller = new AbortController();
     action.current = controller;
-    const content = input.trim();
+    setUncertain(false);
     const deadline = setTimeout(() => controller.abort(), 180000);
     setBusy(true);
     setPartial("");
@@ -199,16 +207,26 @@ function Room() {
           {!!partial && <TextBody text={partial} />}
         </Glass>
       )}
-      {error && <Failure message={error} />}
+      {!!error && <Failure message={error} />}
       {uncertain && (
-        <Button disabled={recovering} onPress={() => void recover()}>
-          {recovering ? "正在读取…" : "读取最新记录"}
-        </Button>
+        <>
+          <Button disabled={recovering} onPress={() => void recover()}>
+            {recovering ? "正在读取…" : "读取最新记录"}
+          </Button>
+          {!!sent && (
+            <ConfirmAction
+              label="重试"
+              description="上一轮可能已保存。重试会再次发送这个问题，并可能重复计费或产生重复消息。"
+              disabled={recovering}
+              onConfirm={() => void send(sent)}
+            />
+          )}
+        </>
       )}
       {!uncertain && (
         <>
           {attach && market.data && (
-            <Glass style={{ padding: 16, gap: 8 }}>
+            <Glass material style={{ padding: 16, gap: 8 }}>
               <Copy size={12}>已附加 {ticker} 报价资料，仅用于本轮提问。</Copy>
               <Button disabled={busy} onPress={() => setAttach(false)}>
                 移除报价资料

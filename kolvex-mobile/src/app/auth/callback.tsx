@@ -21,8 +21,7 @@ export default function Callback() {
     }
     void completeAuth(code)
       .then((result) => {
-        if (active)
-          router.replace(result.recovery ? "/auth/recovery" : "/account");
+        if (active) router.replace(result.recovery ? "/auth/recovery" : "/");
       })
       .catch((e) => {
         if (active) setError(e.message);
@@ -38,7 +37,7 @@ export default function Callback() {
       ) : (
         <Copy>正在验证此设备的登录请求…</Copy>
       )}
-      <Button onPress={() => router.replace("/account")}>返回账户</Button>
+      <Button onPress={() => router.replace("/")}>返回</Button>
     </Page>
   );
 }

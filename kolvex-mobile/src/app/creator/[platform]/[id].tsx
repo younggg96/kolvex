@@ -12,6 +12,7 @@ import { number } from "../../../lib/models";
 import { Page, Glass, Copy, Button } from "../../../components/UI";
 import { Pager, ResourceState, SourceLink } from "../../../components/Content";
 import { OpinionCard } from "../../../components/OpinionCard";
+import { CreatorShare } from "../../../components/CreatorShare";
 export default function CreatorDetail() {
   const p = useLocalSearchParams<{ id: string; platform: string }>();
   return p.platform === "youtube" ? (
@@ -60,9 +61,10 @@ function YouTube({ id }: { id: string }) {
               ? "公开频道资料"
               : "部分资料来自已导入内容"}
           </Copy>
-          {c.channel_url && (
+          {!!c.channel_url && (
             <SourceLink url={c.channel_url}>打开频道</SourceLink>
           )}
+          <CreatorShare creator={c} />
         </Glass>
       )}
       <ResourceState

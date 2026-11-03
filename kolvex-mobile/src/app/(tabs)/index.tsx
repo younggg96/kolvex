@@ -6,6 +6,8 @@ import {
   Button,
   Copy,
   Empty,
+  Glass,
+  NavRow,
   Page,
   Search,
   Section,
@@ -26,11 +28,18 @@ export default function Markets() {
       subtitle="市场脉搏，尽在掌心。"
       onRefresh={() => setRevision((v) => v + 1)}
     >
-      <Button onPress={() => router.push("/markets")}>
-        市场全景：指数 / 板块 / 风格 / 跨资产
-      </Button>
-      <Button onPress={() => router.push("/macro")}>宏观指标</Button>
-      <Button onPress={() => router.push("/calendar")}>市场日历</Button>
+      <Glass>
+        <NavRow
+          title="市场全景：指数 / 板块 / 风格 / 跨资产"
+          onPress={() => router.push("/markets")}
+        />
+        <NavRow title="宏观指标" onPress={() => router.push("/macro")} />
+        <NavRow
+          title="市场日历"
+          last
+          onPress={() => router.push("/calendar")}
+        />
+      </Glass>
       <Search
         value={query}
         onChange={setQuery}

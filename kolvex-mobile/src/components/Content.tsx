@@ -19,7 +19,17 @@ import { apiURL } from "../lib/config";
 import { useAuth } from "../state/Auth";
 import { useText } from "../lib/i18n";
 import { useTheme } from "../lib/theme";
-import { Button, Copy, Empty, Failure, Glass, Page, Skeleton } from "./UI";
+import {
+  Button,
+  Chip,
+  Copy,
+  Empty,
+  Failure,
+  Glass,
+  Page,
+  Skeleton,
+} from "./UI";
+import { textBlocks } from "../lib/markdownBlocks";
 import { safeExternal } from "../lib/links";
 
 export function AuthGate({
@@ -91,7 +101,7 @@ export function Field({
           ]}
         />
       </Glass>
-      {error && <Failure message={error} />}
+      {!!error && <Failure message={error} />}
     </View>
   );
 }
@@ -118,7 +128,7 @@ export function SourceLink({
       >
         {children ?? "查看来源 ↗"}
       </Button>
-      {error && <Failure message={error} />}
+      {!!error && <Failure message={error} />}
     </View>
   );
 }
@@ -137,17 +147,17 @@ export function Filters({
     <ScrollView
       horizontal
       showsHorizontalScrollIndicator={false}
-      contentContainerStyle={{ gap: 8, paddingBottom: 4 }}
+      contentContainerStyle={{ gap: 8 }}
     >
       {values.map(([key, name]) => (
-        <Button
+        <Chip
           key={key}
           disabled={disabled}
           selected={key === value}
           onPress={() => onChange(key)}
         >
           {name}
-        </Button>
+        </Chip>
       ))}
     </ScrollView>
   );
@@ -204,7 +214,7 @@ export function ResourceState({
 }) {
   return (
     <>
-      {resource.error && (
+      {!!resource.error && (
         <Failure message={resource.error} retry={resource.refresh} />
       )}
       {resource.error?.includes("登录") && (
@@ -251,17 +261,27 @@ export function TextBody({ text }: { text: string }) {
       });
   return (
     <View style={{ gap: 12 }}>
-      {text
-        .split(/\n\s*\n/)
-        .filter(Boolean)
-        .map((part, i) => {
-          const heading = /^#{1,6}\s/.test(part);
-          return (
-            <Copy key={i} selectable bold={heading} size={heading ? 20 : 16}>
-              {inline(part.replace(/^#{1,6}\s/, ""))}
-            </Copy>
-          );
-        })}
+      {textBlocks(text).map((block, i) =>
+        block.kind === "rule" ? (
+          <View key={i} style={{ height: 1, backgroundColor: theme.border }} />
+        ) : block.kind === "bullet" ? (
+          <View key={i} style={{ flexDirection: "row", gap: 8 }}>
+            <Copy localize={false}>•</Copy>
+            <View style={{ flex: 1 }}>
+              <Copy selectable>{inline(block.text)}</Copy>
+            </View>
+          </View>
+        ) : (
+          <Copy
+            key={i}
+            selectable
+            bold={block.kind === "heading"}
+            size={block.kind === "heading" ? 20 : 16}
+          >
+            {inline(block.text)}
+          </Copy>
+        ),
+      )}
       {linkError && <Failure message="无法打开来源链接，请稍后重试。" />}
     </View>
   );

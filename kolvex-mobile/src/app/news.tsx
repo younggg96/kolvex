@@ -2,11 +2,16 @@ import { usePreferences } from "../state/Preferences";
 import { news } from "../lib/contentApi";
 import { useResource } from "../lib/useResource";
 import { ResourceState, SourceLink } from "../components/Content";
-import { Copy, Glass, ListPage } from "../components/UI";
+import { useNewsTranslations } from "../lib/useNewsTranslations";
+import { Button, Copy, Glass, ListPage } from "../components/UI";
 export default function News() {
   const { locale } = usePreferences();
   const resource = useResource("news", (signal) => news(signal));
   const rows = resource.data?.articles ?? [];
+  const translated = useNewsTranslations(
+    rows.filter((item) => !item.title_zh).map((item) => item.title),
+    locale,
+  );
   return (
     <ListPage
       title="新闻终端"
@@ -28,6 +33,16 @@ export default function News() {
                 locale === "en" ? "en-US" : "zh-CN",
               )}
             </Copy>
+          )}
+          {translated.pending > 0 && (
+            <Copy size={12} muted>
+              正在翻译标题…
+            </Copy>
+          )}
+          {translated.failed > 0 && (
+            <Button onPress={translated.retry}>
+              部分标题翻译失败，显示原文。点击重试
+            </Button>
           )}
         </>
       }
@@ -51,7 +66,9 @@ export default function News() {
               : "时间未提供"}
           </Copy>
           <Copy bold localize={false}>
-            {locale === "zh" ? item.title_zh || item.title : item.title}
+            {locale === "zh"
+              ? item.title_zh || translated.title(item.title) || item.title
+              : item.title}
           </Copy>
           <SourceLink url={item.link}>阅读原文 ↗</SourceLink>
         </Glass>

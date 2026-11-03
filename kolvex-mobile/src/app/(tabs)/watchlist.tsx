@@ -37,11 +37,7 @@ export default function Watchlist() {
           <View style={{ gap: 16 }}>
             <Empty
               title="从一家公司开始"
-              message={
-                list.cloud
-                  ? "打开股票详情加入自选，与网页版使用同一份账户列表。"
-                  : "打开股票详情，点击「加入自选」。访客自选保存在这台设备上。"
-              }
+              message="打开股票详情加入自选，与网页版使用同一份账户列表。"
             />
             <Button onPress={() => router.navigate("/")}>浏览行情</Button>
           </View>
@@ -49,9 +45,7 @@ export default function Watchlist() {
       }
       footer={
         <Copy size={12} muted>
-          {list.cloud
-            ? "账户自选 · 下拉刷新获取网页端变化"
-            : "本机自选 · 登录后可使用云端列表"}
+          账户自选 · 下拉刷新获取网页端变化
         </Copy>
       }
       renderItem={(symbol) => (

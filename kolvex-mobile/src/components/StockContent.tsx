@@ -1,63 +1,125 @@
 import { usePreferences } from "../state/Preferences";
 import { StockOpinions } from "./StockOpinions";
 import { Options } from "./Options";
-import { Statements, Earnings, Analysts } from "./StockResearch";
+import { Multicharts, Earnings, Analysts } from "./StockResearch";
+import { EarningsMaterials, FinancialsTab, Ownership } from "./SecResearch";
+import { StockPeers } from "./StockPeers";
 import { useState } from "react";
 import { View } from "react-native";
+import { router } from "expo-router";
+import { BENCHMARKS } from "../lib/marketBenchmarks";
+import { useAuth } from "../state/Auth";
 import { apiRequest } from "../lib/http";
 import { demoMode } from "../lib/config";
-import { stockFacts, news } from "../lib/contentApi";
+import { news, reports, stockFacts } from "../lib/contentApi";
 import { number } from "../lib/models";
 import { useResource } from "../lib/useResource";
-import { Copy, Empty, Glass, Section } from "./UI";
+import { useNewsTranslations } from "../lib/useNewsTranslations";
+import { Button, Copy, Empty, Glass, Section } from "./UI";
 import { Filters, ResourceState, SourceLink } from "./Content";
+const allTabs = [
+  ["summary", "基本面"],
+  ["financials", "财务报表"],
+  ["earnings", "盈利"],
+  ["multicharts", "指标趋势"],
+  ["analyst", "分析师"],
+  ["peers", "同行比较"],
+  ["ownership", "持仓披露"],
+  ["news", "最新新闻"],
+  ["creators", "博主观点"],
+  ["research", "AI 研究"],
+  ["options", "期权链"],
+  ["profile", "公司资料"],
+] as const;
+const benchmarkTabs = ["summary", "news", "creators", "research"];
 export function StockContent({
   symbol,
   currency,
+  companyName,
+  initialTab,
 }: {
   symbol: string;
   currency?: string;
+  companyName?: string;
+  initialTab?: string;
 }) {
-  const [tab, setTab] = useState("company");
+  const benchmark = BENCHMARKS.some((item) => item.symbol === symbol);
+  const tabs = benchmark
+    ? allTabs.filter(([key]) => benchmarkTabs.includes(key))
+    : allTabs;
+  const [tab, setTab] = useState<string>(
+    tabs.some(([key]) => key === initialTab) ? initialTab! : "summary",
+  );
   return (
     <View style={{ gap: 16 }}>
-      <Filters
-        values={[
-          ["company", "公司资料"],
-          ["financials", "基本面"],
-          ["statements", "财务报表"],
-          ["earnings", "盈利"],
-          ["analyst", "分析师"],
-          ["news", "最新新闻"],
-          ["options", "期权链"],
-          ["opinions", "博主观点"],
-        ]}
-        value={tab}
-        onChange={setTab}
-      />
+      <Filters values={tabs} value={tab} onChange={setTab} />
       {demoMode ? (
         <Empty
           title="连接真实数据后查看"
           message="公司资料、财务指标及新闻均来自后端，不提供模拟资料。"
         />
-      ) : tab === "company" ? (
+      ) : tab === "profile" ? (
         <Company symbol={symbol} />
-      ) : tab === "financials" ? (
+      ) : tab === "summary" ? (
         <Financials symbol={symbol} />
-      ) : tab === "statements" ? (
-        <Statements symbol={symbol} />
+      ) : tab === "financials" ? (
+        <FinancialsTab symbol={symbol} />
+      ) : tab === "multicharts" ? (
+        <Multicharts symbol={symbol} />
       ) : tab === "earnings" ? (
-        <Earnings symbol={symbol} />
+        <>
+          <Earnings symbol={symbol} />
+          <EarningsMaterials symbol={symbol} />
+        </>
       ) : tab === "analyst" ? (
         <Analysts symbol={symbol} currency={currency} />
-      ) : tab === "opinions" ? (
+      ) : tab === "peers" ? (
+        <StockPeers symbol={symbol} />
+      ) : tab === "ownership" ? (
+        <Ownership symbol={symbol} companyName={companyName} />
+      ) : tab === "creators" ? (
         <StockOpinions symbol={symbol} />
       ) : tab === "options" ? (
         <Options symbol={symbol} />
+      ) : tab === "research" ? (
+        <StockReports symbol={symbol} />
       ) : (
         <StockNews symbol={symbol} />
       )}
     </View>
+  );
+}
+function StockReports({ symbol }: { symbol: string }) {
+  const user = useAuth().session?.user.id;
+  const resource = useResource(`stock-reports:${user}:${symbol}`, (signal) =>
+    reports(signal, user ?? "", 0, symbol),
+  );
+  const rows = (resource.data?.items ?? []).filter(
+    (item) => item.status === "completed",
+  );
+  return (
+    <>
+      <ResourceState
+        resource={resource}
+        empty={!rows.length}
+        message="这只股票还没有已发布的研究报告。"
+      />
+      {rows.map((item) => (
+        <Glass key={item.id} style={{ padding: 20, gap: 12 }}>
+          <Copy bold>{item.trade_date}</Copy>
+          <Copy size={14} localize={false}>
+            {item.final_decision?.slice(0, 240) || "—"}
+          </Copy>
+          <Button
+            onPress={() =>
+              router.push(`/report/${encodeURIComponent(item.id)}`)
+            }
+          >
+            阅读报告
+          </Button>
+        </Glass>
+      ))}
+    </>
   );
 }
 function Company({ symbol }: { symbol: string }) {
@@ -80,7 +142,7 @@ function Company({ symbol }: { symbol: string }) {
           <Copy size={14} muted>
             员工数：{number(data.employees, 0)}
           </Copy>
-          {data.website && (
+          {!!data.website && (
             <SourceLink url={data.website}>公司网站 ↗</SourceLink>
           )}
         </Glass>
@@ -161,6 +223,10 @@ function StockNews({ symbol }: { symbol: string }) {
   const { locale } = usePreferences();
   const resource = useResource(symbol, (signal) => news(signal, symbol));
   const rows = resource.data?.articles ?? [];
+  const translated = useNewsTranslations(
+    rows.filter((item) => !item.title_zh).map((item) => item.title),
+    locale,
+  );
   return (
     <>
       <ResourceState
@@ -171,7 +237,9 @@ function StockNews({ symbol }: { symbol: string }) {
       {rows.map((item, i) => (
         <Glass key={item.uuid || i} style={{ padding: 20, gap: 12 }}>
           <Copy bold localize={false}>
-            {locale === "zh" ? item.title_zh || item.title : item.title}
+            {locale === "zh"
+              ? item.title_zh || translated.title(item.title) || item.title
+              : item.title}
           </Copy>
           <Copy size={12} muted>
             {item.publisher || "来源未提供"} ·{" "}
