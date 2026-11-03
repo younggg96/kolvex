@@ -11,9 +11,8 @@ import { usePathname, useRouter } from "next/navigation";
 import { useTranslation } from "@/lib/i18n";
 import { isProductFeatureEnabled } from "@/lib/productFeatures";
 import { cn } from "@/lib/utils";
-import { MAIN_NAV_ITEMS, isMainNavItemActive, isNavItemActive } from "./navItems";
+import { MAIN_NAV_ITEMS, SEARCH_HREF, isMainNavItemActive, isNavItemActive } from "./navItems";
 
-const SEARCH_HREF = "/dashboard/search";
 const DOCK_TAB_FEATURES = ["home", "youtubeOpinions"];
 /** Rounding and iOS rubber-banding can leave a scroller just short of its exact end. */
 const SCROLL_END_TOLERANCE_PX = 2;

@@ -185,7 +185,7 @@ export default function RedditOpinionsPage() {
                         <TableBody>{rows.map((row, index) => <TableRow key={row.ticker} className="opinion-result-row group hover:!bg-transparent" style={{ animationDelay: `${Math.min(index, 6) * 20}ms` }}>
                           <TableCell className={cn(HOVER_CELL, "text-muted-foreground")}>{row.rank}</TableCell>
                           <TableCell className={cn(HOVER_CELL, "min-w-48 max-w-72")}>
-                            <Link href={marketStockHref(row.ticker)} className="-m-1 flex min-h-11 items-center gap-3 rounded-xl p-1 transition-colors duration-150 hover:text-foreground focus-visible:outline-none" aria-label={t("redditOpinions.openStock", { ticker: row.ticker })}>
+                            <Link href={marketStockHref(row.ticker)} className="-m-1 flex min-h-11 items-center gap-3 p-1 transition-colors duration-150 hover:text-foreground focus-visible:outline-none" aria-label={t("redditOpinions.openStock", { ticker: row.ticker })}>
                               <span aria-hidden="true"><CompanyLogo symbol={row.ticker} name={row.name} size="sm" /></span>
                               <div className="min-w-0 flex-1">
                                 <span className="font-semibold">{row.ticker}</span>

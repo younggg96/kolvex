@@ -1,52 +1,28 @@
-import { useEffect, useState } from "react";
+import { Tabs } from "expo-router";
 import { View } from "react-native";
-import { useText } from "../../lib/i18n";
-import { NativeTabs } from "expo-router/native-tabs";
-import { useTheme } from "../../lib/theme";
+import { Dock } from "../../components/Dock";
 import { StatusScrim } from "../../components/UI";
-// One step away in the last channel, which is not visible.
-const nudged = (color: string) =>
-  color.slice(0, -1) + (color.endsWith("0") ? "1" : "0");
-export default function Tabs() {
+import { useTheme } from "../../lib/theme";
+
+// The dock owns navigation, so routes without a dock button stay reachable from its menu.
+export default function TabsLayout() {
   const t = useTheme();
-  const text = useText();
-  // iOS 26 keeps cramped, clipped labels on unopened tabs until the bar's appearance changes,
-  // so the bar starts one color step off and settles after its first layout.
-  const [settled, setSettled] = useState(false);
-  useEffect(() => {
-    const timer = setTimeout(() => setSettled(true), 500);
-    return () => clearTimeout(timer);
-  }, []);
   return (
     <View style={{ flex: 1 }}>
-      <NativeTabs tintColor={settled ? t.accent : nudged(t.accent)}>
-        <NativeTabs.Trigger name="index">
-          <NativeTabs.Trigger.Icon sf="chart.xyaxis.line" md="show_chart" />
-          <NativeTabs.Trigger.Label>{text("行情")}</NativeTabs.Trigger.Label>
-        </NativeTabs.Trigger>
-        <NativeTabs.Trigger name="opinions">
-          <NativeTabs.Trigger.Icon
-            sf="bubble.left.and.bubble.right"
-            md="forum"
-          />
-          <NativeTabs.Trigger.Label>{text("观点")}</NativeTabs.Trigger.Label>
-        </NativeTabs.Trigger>
-        <NativeTabs.Trigger name="research">
-          <NativeTabs.Trigger.Icon
-            sf="doc.text.magnifyingglass"
-            md="description"
-          />
-          <NativeTabs.Trigger.Label>{text("研究")}</NativeTabs.Trigger.Label>
-        </NativeTabs.Trigger>
-        <NativeTabs.Trigger name="watchlist">
-          <NativeTabs.Trigger.Icon sf="star" md="star_outline" />
-          <NativeTabs.Trigger.Label>{text("自选")}</NativeTabs.Trigger.Label>
-        </NativeTabs.Trigger>
-        <NativeTabs.Trigger name="settings">
-          <NativeTabs.Trigger.Icon sf="slider.horizontal.3" md="tune" />
-          <NativeTabs.Trigger.Label>{text("更多")}</NativeTabs.Trigger.Label>
-        </NativeTabs.Trigger>
-      </NativeTabs>
+      <Tabs
+        tabBar={(props) => <Dock {...props} />}
+        screenOptions={{
+          headerShown: false,
+          sceneStyle: { backgroundColor: t.background },
+        }}
+      >
+        <Tabs.Screen name="index" />
+        <Tabs.Screen name="opinions" />
+        <Tabs.Screen name="search" />
+        <Tabs.Screen name="watchlist" />
+        <Tabs.Screen name="research" />
+        <Tabs.Screen name="settings" />
+      </Tabs>
       <StatusScrim />
     </View>
   );

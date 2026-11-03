@@ -1,6 +1,7 @@
-"""Cached public channel metadata from the YouTube Data API."""
+"""Cached public YouTube metadata, with watch-page publication verification."""
 
 import asyncio
+import json
 import os
 import re
 from collections import OrderedDict
@@ -49,6 +50,43 @@ def parse_youtube_time(value):
     if parsed.tzinfo is None:
         return parsed.replace(tzinfo=timezone.utc)
     return parsed
+
+
+def publication_time(value):
+    """Publication verification needs a precise time and an explicit timezone."""
+    if not isinstance(value, str) or "T" not in value:
+        return None
+    try:
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    if parsed.tzinfo is None:
+        return None
+    return parsed.astimezone(timezone.utc).isoformat()
+
+
+def publication_from_watch_page(html, video_id):
+    """Read the matching video's player data; never guess from a date alone."""
+    if not re.fullmatch(r"[A-Za-z0-9_-]{11}", video_id or ""):
+        return None
+    for match in re.finditer(r'\bytInitialPlayerResponse\s*=\s*|"ytInitialPlayerResponse"\s*:\s*', html):
+        try:
+            player, _ = json.JSONDecoder().raw_decode(html, match.end())
+        except ValueError:
+            continue
+        if not isinstance(player, dict):
+            continue
+        details = player.get("videoDetails")
+        if not isinstance(details, dict) or details.get("videoId") != video_id:
+            continue
+        microformat = player.get("microformat")
+        renderer = microformat.get("playerMicroformatRenderer") if isinstance(microformat, dict) else None
+        published = publication_time(renderer.get("publishDate")) if isinstance(renderer, dict) else None
+        if not published:
+            continue
+        owner = details.get("channelId")
+        return published, owner if re.fullmatch(r"UC[A-Za-z0-9_-]{22}", owner or "") else None
+    return None
 
 
 _SKIPPED_UPLOAD_TITLES = {"private video", "deleted video"}
@@ -143,8 +181,6 @@ class YouTubeChannelProfiles:
         """Resolve a public channel id from a YouTube video when the import id is not usable."""
         if not re.fullmatch(r"[A-Za-z0-9_-]{11}", video_id or ""):
             return None
-        if not self.api_key:
-            return None
         cache_key = ("video", video_id)
         async with self._lock:
             now = monotonic()
@@ -152,6 +188,8 @@ class YouTubeChannelProfiles:
             if cached and cached[0] > now:
                 self._cache.move_to_end(cache_key)
                 return cached[1].get("youtube_channel_id")
+            if not self.api_key:
+                return None
             if now < self._retry_after:
                 return None
             channel_id = None
@@ -179,10 +217,10 @@ class YouTubeChannelProfiles:
             return channel_id
 
     async def publications_for_videos(self, video_ids):
-        """Fetch authoritative publication timestamps in batches of 50 videos."""
+        """Verify dates via the API, then public player data if unavailable."""
         ids = list(dict.fromkeys(video_id for video_id in video_ids
                                  if re.fullmatch(r"[A-Za-z0-9_-]{11}", video_id or "")))
-        if not ids or not self.api_key:
+        if not ids:
             return {}
         publications = {}
         async with self._lock:
@@ -195,34 +233,52 @@ class YouTubeChannelProfiles:
                     self._cache.move_to_end(("publication", video_id))
                 else:
                     pending.append(video_id)
-            if pending and now < self._retry_after:
-                return publications
-            try:
-                async with httpx.AsyncClient(timeout=8) as client:
+            async with httpx.AsyncClient(timeout=8) as client:
+                if self.api_key and pending and now >= self._retry_after:
                     for start in range(0, len(pending), 50):
-                        response = await client.get(
-                            "https://www.googleapis.com/youtube/v3/videos",
-                            params={"part": "snippet", "id": ",".join(pending[start:start + 50])},
-                            headers={"X-Goog-Api-Key": self.api_key},
-                        )
-                        if response.status_code != 200:
-                            if response.status_code in {400, 401, 403, 429}:
-                                self._retry_after = now + 300
+                        try:
+                            response = await client.get(
+                                "https://www.googleapis.com/youtube/v3/videos",
+                                params={"part": "snippet", "id": ",".join(pending[start:start + 50])},
+                                headers={"X-Goog-Api-Key": self.api_key},
+                            )
+                            if response.status_code != 200:
+                                if response.status_code in {400, 401, 403, 429}:
+                                    self._retry_after = now + 300
+                                break
+                            for item in response.json().get("items", []):
+                                video_id = item.get("id")
+                                snippet = item.get("snippet") or {}
+                                published = publication_time(snippet.get("publishedAt"))
+                                if video_id not in ids or not published:
+                                    continue
+                                publications[video_id] = published
+                                self._cache[("publication", video_id)] = (monotonic() + 21600, published)
+                                owner = snippet.get("channelId")
+                                if re.fullmatch(r"UC[A-Za-z0-9_-]{22}", owner or ""):
+                                    self._cache[("video", video_id)] = (monotonic() + 21600, {"youtube_channel_id": owner})
+                        except (httpx.HTTPError, ValueError, KeyError, TypeError, AttributeError):
                             break
-                        for item in response.json().get("items", []):
-                            video_id = item.get("id")
-                            snippet = item.get("snippet") or {}
-                            published = snippet.get("publishedAt")
-                            parsed = parse_youtube_time(published)
-                            if video_id not in ids or not parsed:
-                                continue
-                            publications[video_id] = parsed.astimezone(timezone.utc).isoformat()
-                            self._cache[("publication", video_id)] = (monotonic() + 21600, publications[video_id])
-                            owner = snippet.get("channelId")
-                            if re.fullmatch(r"UC[A-Za-z0-9_-]{22}", owner or ""):
+                slots = asyncio.Semaphore(8)
+
+                async def verify_watch_page(video_id):
+                    async with slots:
+                        try:
+                            response = await client.get("https://www.youtube.com/watch", params={"v": video_id})
+                            if response.status_code != 200:
+                                return
+                            verified = publication_from_watch_page(response.text, video_id)
+                            if not verified:
+                                return
+                            published, owner = verified
+                            publications[video_id] = published
+                            self._cache[("publication", video_id)] = (monotonic() + 21600, published)
+                            if owner:
                                 self._cache[("video", video_id)] = (monotonic() + 21600, {"youtube_channel_id": owner})
-            except (httpx.HTTPError, ValueError, KeyError, TypeError, AttributeError):
-                pass
+                        except httpx.HTTPError:
+                            return
+
+                await asyncio.gather(*(verify_watch_page(video_id) for video_id in pending if video_id not in publications))
             while len(self._cache) > 128:
                 self._cache.popitem(last=False)
         return publications

@@ -1392,7 +1392,7 @@ full size only at the top or bottom of the scroll, or on a new route; expanding
 it also restores full size. Horizontal scrollers do not trigger this, and reduced
 motion disables it.
 
-Below lg the dock's search replaces per-list search fields in Markets, Watchlist
+From lg the sidebar links to the Search page above the main navigation. Below lg the dock's search replaces per-list search fields in Markets, Watchlist
 and Creator Opinions, so each list's filter and sort controls sit on one row.
 Those fields remain from lg up, and the Watchlist add-stock field stays at all widths.
 

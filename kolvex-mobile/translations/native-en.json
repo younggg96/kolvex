@@ -930,5 +930,22 @@
   "热门": "Trending",
   "其他大事件": "Major event",
   "全天": "All day",
-  "时间待定": "Time TBD"
+  "时间待定": "Time TBD",
+  "搜索股票和创作者": "Search stocks and creators",
+  "搜索股票、公司、创作者": "Stocks, companies, creators",
+  "清空搜索": "Clear search",
+  "没有匹配的股票。试试股票代码，如 AAPL、BRK-B。": "No matching stock. Try a ticker like AAPL or BRK-B.",
+  "最近搜索": "Recent searches",
+  "清除": "Clear",
+  "YouTube 博主热议": "Most discussed by creators",
+  "Reddit 讨论最热": "Most discussed on Reddit",
+  "X 创作者": "X creators",
+  "最新研究": "Latest research",
+  "新闻来源": "News source",
+  "最新日报": "Latest briefs",
+  "打开股票页": "Open stock page",
+  "这个分类下没有结果，切换到“全部”看看其他内容。": "Nothing in this category. Switch to All to see other results.",
+  "部分来源暂时不可用，结果可能不完整。": "Some sources are unavailable, so results may be incomplete.",
+  "关闭导航菜单": "Close navigation menu",
+  "打开导航菜单": "Open navigation menu"
 }

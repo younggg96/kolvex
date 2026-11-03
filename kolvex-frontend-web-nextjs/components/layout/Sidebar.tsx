@@ -4,10 +4,10 @@ import Link from "next/link";
 import LogoIcon from "@/components/common/LogoIcon";
 import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
-import { Settings, PanelLeftClose, PanelLeft, ShieldCheck, MessageSquareText } from "lucide-react";
+import { Settings, PanelLeftClose, PanelLeft, Search, ShieldCheck, MessageSquareText } from "lucide-react";
 import { useDecisionCommand } from "@/components/decision/CommandLayer";
 import { useCopy } from "@/components/decision/shared";
-import { MAIN_NAV_ITEMS, isNavItemActive, isMainNavItemActive } from "./navItems";
+import { MAIN_NAV_ITEMS, SEARCH_HREF, isNavItemActive, isMainNavItemActive } from "./navItems";
 import UserMenu from "@/components/user/UserMenu";
 import { Button } from "@/components/ui/button";
 import {
@@ -168,6 +168,19 @@ function AppSidebar({ onNavigate }: AppSidebarProps) {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               )}
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  asChild
+                  isActive={isActive(SEARCH_HREF)}
+                  onClick={handleNavigate}
+                  tooltip={c("Search", "搜索")}
+                >
+                  <Link href={SEARCH_HREF} aria-current={isActive(SEARCH_HREF) ? "page" : undefined}>
+                    <Search aria-hidden="true" />
+                    <span>{c("Search", "搜索")}</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
               {mainNavItems.map((item) => {
                 const active = isMainNavItemActive(pathname, item);
                 return (

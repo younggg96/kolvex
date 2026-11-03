@@ -10,6 +10,8 @@ import {
 } from "lucide-react";
 import { RedditIcon, XIcon, YouTubeIcon, type PlatformIconComponent } from "@/components/common/PlatformIcons";
 import type { ProductFeatureId } from "@/lib/productFeatures";
+export const SEARCH_HREF = "/dashboard/search";
+
 export interface MainNavItem {
   icon: LucideIcon;
   titleKey: string;

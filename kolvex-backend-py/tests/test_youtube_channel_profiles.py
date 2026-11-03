@@ -1,13 +1,21 @@
 import asyncio
+import json
 import unittest
 from unittest.mock import AsyncMock, Mock, patch
 import httpx
 
-from app.services.youtube_channel_profiles import YouTubeChannelProfiles, channel_identity, channel_link, parse_youtube_time, public_count
+from app.services.youtube_channel_profiles import YouTubeChannelProfiles, channel_identity, channel_link, parse_youtube_time, public_count, publication_from_watch_page
 from app.services.youtube_stock_opinions import YouTubeStockOpinionService, compare_upload_coverage
 
 
 CHANNEL_ID = "UC" + "a" * 22
+
+
+def watch_page(video_id="abcdefghijk", published="2026-11-01T21:48:36-08:00"):
+    return "<script>var ytInitialPlayerResponse = " + json.dumps({
+        "videoDetails": {"videoId": video_id, "channelId": CHANNEL_ID},
+        "microformat": {"playerMicroformatRenderer": {"publishDate": published}},
+    }) + ";</script>"
 
 
 class ChannelProfileTests(unittest.TestCase):
@@ -103,8 +111,80 @@ class ChannelProfileTests(unittest.TestCase):
             with patch("httpx.AsyncClient.get", get):
                 self.assertEqual(await service.publications_for_videos(["abcdefghijk"]), {})
                 self.assertEqual(await service.publications_for_videos(["abcdefghijk"]), {})
-            get.assert_awaited_once()
+            # Retry the public page, but keep the rejected API on cooldown.
+            self.assertEqual(get.await_count, 3)
+            self.assertEqual(get.await_args_list[0].args[0], "https://www.googleapis.com/youtube/v3/videos")
+            for call in get.await_args_list[1:]:
+                self.assertEqual(call.args[0], "https://www.youtube.com/watch")
+                self.assertNotIn("headers", call.kwargs)
         asyncio.run(exercise())
+
+    def test_forbidden_api_uses_watch_page_and_caches_verified_identity(self):
+        async def exercise():
+            service = YouTubeChannelProfiles(api_key="test-key")
+            get = AsyncMock(side_effect=[
+                httpx.Response(403),
+                httpx.Response(200, text=watch_page()),
+            ])
+            with patch("httpx.AsyncClient.get", get):
+                result = await service.publications_for_videos(["abcdefghijk"])
+                again = await service.publications_for_videos(["abcdefghijk"])
+                owner = await service.channel_id_for_video("abcdefghijk")
+            self.assertEqual(result, {"abcdefghijk": "2026-11-02T05:48:36+00:00"})
+            self.assertEqual(again, result)
+            self.assertEqual(owner, CHANNEL_ID)
+            self.assertEqual(get.await_count, 2)
+            page_call = get.await_args_list[1]
+            self.assertEqual(page_call.args[0], "https://www.youtube.com/watch")
+            self.assertEqual(page_call.kwargs, {"params": {"v": "abcdefghijk"}})
+        asyncio.run(exercise())
+
+    def test_publication_lookup_works_without_api_key_and_during_api_cooldown(self):
+        async def exercise():
+            for api_key in ("", "test-key"):
+                service = YouTubeChannelProfiles(api_key=api_key)
+                service._retry_after = float("inf")
+                get = AsyncMock(return_value=httpx.Response(200, text=watch_page()))
+                with patch("httpx.AsyncClient.get", get):
+                    result = await service.publications_for_videos(["invalid", "abcdefghijk"])
+                    self.assertEqual(await service.channel_id_for_video("abcdefghijk"), CHANNEL_ID)
+                self.assertEqual(result, {"abcdefghijk": "2026-11-02T05:48:36+00:00"})
+                get.assert_awaited_once_with("https://www.youtube.com/watch", params={"v": "abcdefghijk"})
+        asyncio.run(exercise())
+
+    def test_partial_api_result_only_fetches_missing_video_pages(self):
+        async def exercise():
+            service = YouTubeChannelProfiles(api_key="test-key")
+            get = AsyncMock(side_effect=[
+                httpx.Response(200, json={"items": [{"id": "abcdefghijk", "snippet": {
+                    "channelId": CHANNEL_ID, "publishedAt": "2026-10-31T00:00:00Z",
+                }}]}),
+                httpx.Response(200, text=watch_page("bbbbbbbbbbb", "2026-10-31T19:44:10-07:00")),
+            ])
+            with patch("httpx.AsyncClient.get", get):
+                result = await service.publications_for_videos(["abcdefghijk", "bbbbbbbbbbb"])
+            self.assertEqual(result, {
+                "abcdefghijk": "2026-10-31T00:00:00+00:00",
+                "bbbbbbbbbbb": "2026-11-01T02:44:10+00:00",
+            })
+            self.assertEqual(get.await_count, 2)
+            self.assertEqual(get.await_args_list[1].kwargs["params"], {"v": "bbbbbbbbbbb"})
+        asyncio.run(exercise())
+
+    def test_watch_page_requires_matching_video_and_precise_publication(self):
+        for html in (
+            watch_page("bbbbbbbbbbb"),
+            watch_page(published="2026-11-01"),
+            watch_page(published="2026-11-01T21:48:36"),
+            watch_page(published=None),
+            watch_page().replace("publishDate", "uploadDate"),
+            "<script>ytInitialPlayerResponse = {broken;</script>",
+            '<meta itemprop="datePublished" content="2026-11-01">',
+        ):
+            with self.subTest(html=html):
+                self.assertIsNone(publication_from_watch_page(html, "abcdefghijk"))
+        self.assertEqual(publication_from_watch_page(watch_page(), "abcdefghijk"),
+                         ("2026-11-02T05:48:36+00:00", CHANNEL_ID))
 
     def test_latest_uploads_skip_private_videos_and_keep_the_key_out_of_the_url(self):
         async def exercise():
