@@ -58,7 +58,7 @@ export default function OpinionDistribution({
   }
 
   return (
-    <section className={cn("grid gap-6 pt-6 sm:grid-cols-[11.25rem_minmax(0,1fr)] sm:items-center", className)}>
+    <section className={cn("grid gap-6 sm:grid-cols-[11.25rem_minmax(0,1fr)] sm:items-center", className)}>
       <div>
         <h2 className="text-lg font-semibold">{t("youtubeOpinions.distributionTitle")}</h2>
         <p className={cn("figure mt-3 text-[2rem] font-semibold leading-none", lead.text)}>
