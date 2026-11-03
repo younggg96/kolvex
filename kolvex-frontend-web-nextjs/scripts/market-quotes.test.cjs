@@ -15,7 +15,7 @@ function load(file, fetch, cache = new Map()) {
     require(name) {
       if (name === "./clientCache") return clientCache;
       if (name === 'next/server') return { NextResponse: Response };
-      if (name === '@/lib/cache') return { quoteCache: cache, CACHE_TTL: { QUOTE: 15 }, QUOTE_CACHE_CONTROL: 'quote-cache-control', getCacheKey: (...parts) => parts.join(':') };
+      if (name === '@/lib/cache') return { quoteCache: cache, chartCache: new Map(), overviewCache: new Map(), CACHE_TTL: { QUOTE: 15, CHART: 300, OVERVIEW: 600 }, QUOTE_CACHE_CONTROL: 'quote-cache-control', getCacheKey: (...parts) => parts.join(':') };
       throw Error(name);
     },
   });
@@ -149,4 +149,19 @@ test('quote requests to the backend bypass the Next Data Cache', async () => {
   for (const { url, cache } of quoteRequests) assert.equal(cache, 'no-store', url);
   assert.equal(single.headers.get('Cache-Control'), 'quote-cache-control');
   assert.equal(batch.headers.get('Cache-Control'), 'quote-cache-control');
+});
+
+test('chart, overview and index history requests also bypass the Next Data Cache', async () => {
+  const seen = [];
+  const backend = async (url, init = {}) => {
+    seen.push({ url: String(url), cache: init.cache });
+    return Response.json({ symbol: 'MU', current_price: 180, data: [] });
+  };
+  const stocks = load('app/api/stocks/route.ts', backend);
+  await stocks.GET({ nextUrl: new URL('https://kolvex.example/api/stocks?action=chart&symbol=MU') });
+  await stocks.GET({ nextUrl: new URL('https://kolvex.example/api/stocks?action=overview&symbol=MU') });
+  await load('app/api/market/indices/route.ts', backend).GET();
+  const upstream = seen.filter(({ url }) => /\/market\/(intraday|overview|history)\//.test(url));
+  assert.equal(upstream.length, 5);
+  for (const { url, cache } of upstream) assert.equal(cache, 'no-store', url);
 });

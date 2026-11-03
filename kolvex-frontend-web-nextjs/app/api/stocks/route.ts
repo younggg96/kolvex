@@ -238,7 +238,9 @@ export async function GET(request: NextRequest) {
 
         try {
           const historyResponse = await fetch(
-            `${NEXT_PUBLIC_BACKEND_API_URL}/api/v1/market/intraday/${symbol}?interval=${interval}`
+            `${NEXT_PUBLIC_BACKEND_API_URL}/api/v1/market/intraday/${symbol}?interval=${interval}`,
+            // Next's Data Cache has no expiry here; freshness comes from chartCache.
+            { cache: "no-store" }
           );
           if (!historyResponse.ok) {
             throw new Error(`Backend returned ${historyResponse.status}`);
@@ -292,7 +294,9 @@ export async function GET(request: NextRequest) {
 
         try {
           const overviewResponse = await fetch(
-            `${NEXT_PUBLIC_BACKEND_API_URL}/api/v1/market/overview/${symbol}`
+            `${NEXT_PUBLIC_BACKEND_API_URL}/api/v1/market/overview/${symbol}`,
+            // Next's Data Cache has no expiry here; freshness comes from overviewCache.
+            { cache: "no-store" }
           );
 
           if (!overviewResponse.ok) {

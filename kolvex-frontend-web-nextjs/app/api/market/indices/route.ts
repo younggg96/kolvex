@@ -34,7 +34,9 @@ export const dynamic = "force-dynamic";
 async function fetchHistoryData(symbol: string): Promise<number[]> {
   try {
     const response = await fetch(
-      `${BACKEND_API_URL}/api/v1/market/history/${encodeURIComponent(symbol)}?period=5d&interval=1d`
+      `${BACKEND_API_URL}/api/v1/market/history/${encodeURIComponent(symbol)}?period=5d&interval=1d`,
+      // Next's Data Cache has no expiry here; freshness comes from quoteCache.
+      { cache: "no-store" }
     );
     if (!response.ok) return [];
     const data = await response.json();
