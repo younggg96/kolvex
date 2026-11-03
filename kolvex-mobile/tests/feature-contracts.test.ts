@@ -86,9 +86,11 @@ test("macro reads require the selected account; versioned writes and multipart u
   }
 });
 test("macro unit conversion preserves zero and percentage-point semantics", async () => {
-  const [, api] = await modules;
-  assert.equal(api.indicatorValue(0, "percent"), "0%");
-  assert.equal(api.indicatorValue(100, "thousands"), "10 万人");
-  assert.equal(api.indicatorValue(null, "bp"), "—");
-  assert.equal(api.indicatorValue(0.5, "pp"), "0.5 个百分点");
+  const { indicatorValue } = await import("../src/lib/economicIndicators");
+  assert.equal(indicatorValue(0, "percent", "zh-CN"), "0.00%");
+  assert.equal(indicatorValue(100, "thousands", "zh-CN"), "10.0 万人");
+  assert.equal(indicatorValue(100, "thousands", "en-US"), "100K");
+  assert.equal(indicatorValue(null, "bp", "zh-CN"), "—");
+  assert.equal(indicatorValue(0.5, "pp", "zh-CN"), "0.50 个百分点");
+  assert.equal(indicatorValue(-5, "bp", "zh-CN", true), "−5.00 bp");
 });

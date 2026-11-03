@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { View } from "react-native";
 import { useAuth } from "../state/Auth";
 import { apiRequest } from "../lib/http";
 import { useResource } from "../lib/useResource";
@@ -10,20 +11,13 @@ import {
   SourceLink,
 } from "../components/Content";
 import { router } from "expo-router";
-type Event = {
-  id: string;
-  title: string;
-  summary: string;
-  category: string;
-  event_date: string;
-  starts_at?: string;
-  timing: string;
-  tickers: string[];
-  importance: string;
-  source_url?: string;
-  source_name: string;
-  status: string;
-};
+import {
+  EVENT_CATEGORIES,
+  eventTime,
+  type MarketEvent,
+} from "../lib/marketEvents";
+import { usePreferences } from "../state/Preferences";
+import { useTheme } from "../lib/theme";
 export default function Calendar() {
   return (
     <AuthGate title="市场日历">
@@ -33,10 +27,12 @@ export default function Calendar() {
 }
 function Events() {
   const user = useAuth().session!.user.id;
+  const t = useTheme();
+  const english = usePreferences().locale === "en";
   const [category, setCategory] = useState("all");
   const r = useResource(`events:${user}`, (signal) =>
     apiRequest<{
-      events: Event[];
+      events: MarketEvent[];
       timezone: string;
       start_date: string;
       end_date_exclusive: string;
@@ -74,20 +70,44 @@ function Events() {
       />
       {events.map((e) => (
         <Glass key={e.id} style={{ padding: 20, gap: 12 }}>
-          <Copy bold>{e.title}</Copy>
-          <Copy muted>
-            {e.event_date} · {e.starts_at || e.timing} · {e.importance} ·{" "}
-            {e.status}
+          <Copy bold localize={false}>
+            {english ? e.title_en || e.title : e.title}
           </Copy>
-          <Copy selectable>{e.summary}</Copy>
-          {e.tickers.map((t) => (
-            <Button
-              key={t}
-              onPress={() => router.push(`/stock/${encodeURIComponent(t)}`)}
-            >
-              {t}
-            </Button>
-          ))}
+          <Copy muted localize={false}>
+            {e.event_date} · {eventTime(e, english)} ET ·{" "}
+            {EVENT_CATEGORIES[e.category][english ? 0 : 1]}
+          </Copy>
+          {(e.importance === "high" || e.is_hot) && (
+            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+              {e.importance === "high" && (
+                <Copy size={12} bold>
+                  重大
+                </Copy>
+              )}
+              {e.is_hot && (
+                <Copy size={12} bold color={t.negative}>
+                  热门
+                </Copy>
+              )}
+            </View>
+          )}
+          <Copy selectable localize={false}>
+            {english ? e.summary_en || e.summary : e.summary}
+          </Copy>
+          {e.tickers.length > 0 && (
+            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+              {e.tickers.map((ticker) => (
+                <Button
+                  key={ticker}
+                  onPress={() =>
+                    router.push(`/stock/${encodeURIComponent(ticker)}`)
+                  }
+                >
+                  {ticker}
+                </Button>
+              ))}
+            </View>
+          )}
           {e.source_url && (
             <SourceLink url={e.source_url}>
               {e.source_name || "查看来源"}

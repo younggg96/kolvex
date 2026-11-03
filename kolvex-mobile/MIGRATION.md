@@ -16,7 +16,7 @@ The app has no guest mode, by the owner's decision. Every route except `sign-in`
 | **Native**   | Ran on an iOS/Android simulator or device.                                                                |
 | **Business** | The real signed-in or mutating flow completed end to end.                                                 |
 
-**No feature has reached Business, and Native is only partial.** The iOS simulator now runs the five tabs, stock detail, Ownership, Peers, the technical chart gestures, report actions, creator sharing and `kolvex://` links; `VERIFICATION.md` lists exactly what was and was not exercised there. Android is set aside and no test account was supplied. The table's status column still records pre-simulator levels. See `VERIFICATION.md`.
+**No mutating flow has reached Business, and Native is only partial; signed-in reads are in `VERIFICATION.md`.** The iOS simulator now runs the five tabs, stock detail, Ownership, Peers, the technical chart gestures, report actions, creator sharing and `kolvex://` links; `VERIFICATION.md` lists exactly what was and was not exercised there. Android is set aside and no test account was supplied. The table's status column still records pre-simulator levels. See `VERIFICATION.md`.
 
 Status abbreviations: `C` Code, `B` Bundle, `W` RN-Web. `Auth` means the screen requires sign-in and its success path was not exercised. `W` on a row means the screen's main read path was seen in the preview, in this pass or an earlier one recorded in `VERIFICATION.md`. The translate toggles and automatic headline translation added to the X and News rows are only `C B`.
 
@@ -80,12 +80,13 @@ Status abbreviations: `C` Code, `B` Bundle, `W` RN-Web. `Auth` means the screen 
 ## Known remaining work
 
 1. **Native acceptance of the remaining screens on iOS.** Android is set aside for now.
-2. **Signed-in flows.** Blocked on a test account.
-3. Creator-opinion markers on the price chart.
-4. Other creators' opinions and upload-coverage hints in the YouTube explorer.
-5. Personal stock research on the stock screen; SSE progress log and debate card for research tasks.
-6. Dragging saved drawings by their handles; paged share images; X translation on creator profiles.
-7. Universal links once the Team ID is known.
-8. A line-by-line re-audit of `Market.tsx` and `YouTubeOpinionExplorer.tsx`, which were reviewed by feature rather than by every control.
+2. **Signed-in writes.** Sign-in, restore, sign-out and read paths passed on the owner's account; writes need a disposable test account.
+3. Tab labels clip on unopened tabs after launch.
+4. Creator-opinion markers on the price chart.
+5. Other creators' opinions and upload-coverage hints in the YouTube explorer.
+6. Personal stock research on the stock screen; SSE progress log and debate card for research tasks.
+7. Dragging saved drawings by their handles; paged share images; X translation on creator profiles.
+8. Universal links once the Team ID is known.
+9. A line-by-line re-audit of `Market.tsx` and `YouTubeOpinionExplorer.tsx`, which were reviewed by feature rather than by every control.
 
 No RLS, administrator grants or OAuth settings were changed.

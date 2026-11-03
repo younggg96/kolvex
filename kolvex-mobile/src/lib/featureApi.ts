@@ -61,8 +61,9 @@ export type Indicator = {
   name_en: string;
   unit: "percent" | "pp" | "thousands";
   change_unit: "bp" | "pp" | "thousands";
-  frequency: string;
-  status: string;
+  frequency: "daily" | "monthly" | "quarterly";
+  method: "level" | "spread" | "yoy" | "monthly_change";
+  status: "ready" | "stale" | "unavailable";
   value: number | null;
   change: number | null;
   period: string | null;
@@ -150,8 +151,3 @@ export const creatorLatestVideo = (id: string, signal: AbortSignal) =>
     `/youtube-opinions/creators/${encodeURIComponent(id)}/latest-video`,
     { signal },
   );
-export function indicatorValue(value: number | null, unit: string) {
-  if (value === null || !Number.isFinite(value)) return "—";
-  const amount = unit === "thousands" ? value / 10 : value;
-  return `${amount.toLocaleString("zh-CN", { maximumFractionDigits: 2 })}${unit === "thousands" ? " 万人" : unit === "percent" ? "%" : unit === "bp" ? " bp" : " 个百分点"}`;
-}

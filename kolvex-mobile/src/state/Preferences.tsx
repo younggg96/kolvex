@@ -55,6 +55,10 @@ export function PreferencesProvider({
           } as Preferences;
           setValue(restored);
           last.current = restored;
+        } else if (!local && active.current && revision.current === started) {
+          // Another account's choices must not carry over.
+          setValue(initial);
+          last.current = initial;
         }
         if (user) {
           const remote = await apiRequest<{
@@ -72,6 +76,8 @@ export function PreferencesProvider({
             } as Preferences;
             setValue(restored);
             last.current = restored;
+            // The next launch starts in this theme instead of waiting for the network.
+            await AsyncStorage.setItem(key, JSON.stringify(restored));
           }
         }
       } catch {

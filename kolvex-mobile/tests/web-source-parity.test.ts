@@ -99,3 +99,27 @@ test("native indicator formulas retain the Web financial calculations", () => {
   for (const key of ["ema", "vwap", "bollinger", "rsi", "macd", "kdj"])
     assert.deepEqual(actual.get(key), expected.get(key), key);
 });
+for (const [file, names] of [
+  ["economicIndicators.ts", ["indicatorPeriod", "indicatorValue"]],
+  ["marketEvents.ts", ["eventTime", "EVENT_CATEGORIES"]],
+] as const) {
+  test(`${file} formatting matches the Web`, () => {
+    const find = (url: URL) => {
+      const found = new Map<string, unknown>();
+      ts.forEachChild(ast(url), (node) => {
+        if (ts.isFunctionDeclaration(node) && node.name)
+          found.set(node.name.text, canonical(node));
+        if (ts.isVariableStatement(node))
+          for (const item of node.declarationList.declarations)
+            found.set(item.name.getText(), canonical(item));
+      });
+      return found;
+    };
+    const fromWeb = find(new URL(`lib/${file}`, web));
+    const fromNative = find(new URL(file, native));
+    for (const name of names) {
+      assert.ok(fromWeb.has(name), name);
+      assert.deepEqual(fromNative.get(name), fromWeb.get(name), name);
+    }
+  });
+}

@@ -6,7 +6,7 @@
 | ---------------------------------- | ------------------------------------------------------------------------------------------------------- |
 | Code implemented                   | See `MIGRATION.md`.                                                                                     |
 | Type check, lint, format, i18n     | Pass.                                                                                                   |
-| Unit and contract tests            | 73 of 73 pass.                                                                                          |
+| Unit and contract tests            | 75 of 75 pass.                                                                                          |
 | Expo Doctor                        | 20 of 20 pass.                                                                                          |
 | iOS and Android bundles            | Metro/Hermes exports pass. **This is not a native compile.**                                            |
 | React Native Web preview at 390 px | Exercised with real data, below. **Not native acceptance.**                                             |
@@ -59,15 +59,44 @@ At the owner's request the app has no signed-out experience. Signed out, only `s
 
 - Simulator: cold start lands on sign-in with no tab bar. `kolvex://stock/AAPL` and `kolvex://admin` stay on sign-in. The language choice survives a cold start.
 - `tests/auth-guard.test.ts` walks every route file under `src/app`, because `Stack.Protected` does not cover a route with no declared screen.
-- **Not verified: signing in, restoring a session, signing out back to sign-in, OAuth return, and everything behind them.** This needs a test account. Since login is now required, **no screen behind sign-in can be reached on the simulator without one, including the screens checked earlier in this document.** Those checks predate this change.
 - A signed-out deep link is dropped rather than resumed after signing in.
 - Local lists saved under `kolvex.mobile.watchlist` by earlier builds are no longer read or merged.
 - Unexplained: the sign-in screen once showed Chinese after English had been chosen, following hot reloads. It did not recur across a cold start.
 
+### Signed-in pass (owner's account, read-only)
+
+The owner signed in on the simulator. This is a real, non-admin, free-tier account, so nothing was written with it: no watchlist, drawing, profile, preference, chat or research changes.
+
+| Check                     | Result                                                                                                                                                                                                                |
+| ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Sign-in                   | **Passed**, performed by the owner. The account's language and theme applied.                                                                                                                                         |
+| Session restore           | **Passed** across cold starts, before and after removing the deprecated `lock` option.                                                                                                                                |
+| Sign-out                  | **Passed**: returns to sign-in, shows the device's own language and theme, not the account's.                                                                                                                         |
+| Read paths with live data | **Passed**: Markets, cloud watchlist, briefs list and reader, news with translated headlines, macro, calendar, updates, research library, opinions, account, preferences, NVDA stock and financials, technical chart. |
+| Permission gates          | **Passed** for a non-admin: `/admin` and `/research-tasks` refuse with a message. Admin success paths remain unverified.                                                                                              |
+| Empty state               | Chat list with no conversations.                                                                                                                                                                                      |
+| OAuth start               | Reaches the system consent prompt without the plain-PKCE warning; cancelling returns to sign-in. The S256 parameter was not read from the URL, and OAuth return was not completed.                                    |
+
+Backend logged no 4xx or 5xx during the pass. Opening News runs the Web's automatic headline translation, which may use a paid model on the server.
+
+Fixed from this pass:
+
+- Macro showed raw `daily · ready` and diverged from the Web's precision and signs (`4.7%` against `4.70%`, `-5 bp` against `−5.00 bp`). Formatting is now copied from the Web and checked by test, with its frequency, comparison, method and status wording.
+- Calendar showed raw `tbd · medium · published`, ignored English titles and summaries, and stacked tickers one per row. It now uses the Web's event time, category, high-impact and trending labels.
+- PKCE fell back to plain because Hermes lacks WebCrypto; `expo-crypto` now backs it.
+- A signed-in cold start stayed in the system theme until `/users/me` answered, because the account's preferences were never cached. Another account's choices could also carry over after sign-out.
+
+Open:
+
+- **Tab labels sit low and clip on tabs not yet opened in this launch, on every launch.** Not fixed; cause unknown.
+- A tap on the tab bar and one `kolvex://preferences` link were each ignored once right after launch or navigation, then worked. Not reproduced on demand.
+- The launch screen is blank in the system theme for several seconds in the dev build. Release timing not measured.
+- Not exercised: every write path, chat send, draw-on-chart, English while signed in, and 13F, earnings and report reading in this pass.
+
 ### Blockers
 
 - Android: set aside for now; requires a JDK and Android SDK with an emulator.
-- **Everything behind sign-in: requires a non-production or disposable test account**, and an administrator account for `/admin`.
+- **Write paths behind sign-in: require a non-production or disposable test account**, and an administrator account for `/admin`.
 - Universal links: requires the Apple Team ID and hosted association files.
 - `react-native-view-shot` was added, so the next run needs a new development build; Expo Go will not do.
 
