@@ -73,7 +73,7 @@ export default function ImageGallery({
 
       {/* 图片查看 Modal */}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent className="!p-0 max-w-[90vw] w-[90vw] lg:!max-w-[600px] !h-fit !mx-auto border-none overflow-hidden">
+        <DialogContent className="!p-0 max-w-[90vw] w-[90vw] lg:!max-w-[37.5rem] !h-fit !mx-auto border-none overflow-hidden">
           <DialogTitle className="sr-only">Image view</DialogTitle>
 
           {/* 主图片区域 */}

@@ -116,7 +116,7 @@ export function ChatWelcome({
               type="button"
               onClick={() => handleSuggestionClick(suggestion)}
               disabled={isBlocked || isLoading}
-              className="rounded-full border border-border px-3 py-1.5 text-left text-[13px] text-muted-foreground transition-colors duration-150 hover:border-foreground/25 hover:bg-foreground/[0.06] hover:text-foreground active:bg-foreground/[0.1] disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none"
+              className="rounded-full border border-border px-3 py-1.5 text-left text-[0.8125rem] text-muted-foreground transition-colors duration-150 hover:border-foreground/25 hover:bg-foreground/[0.06] hover:text-foreground active:bg-foreground/[0.1] disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none"
             >
               {suggestion.text}
             </button>
@@ -129,7 +129,7 @@ export function ChatWelcome({
   return (
     <div className="flex flex-1 flex-col items-center justify-center overflow-y-auto px-5 py-10 md:px-8">
       <div className="mx-auto mb-8 w-full max-w-2xl animate-fade-in">
-        <h1 className="text-[28px] font-bold leading-tight tracking-[-0.01em] text-foreground md:text-[32px]">
+        <h1 className="text-[1.75rem] font-bold leading-tight tracking-[-0.01em] text-foreground md:text-[2rem]">
           {(() => {
             const raw = t("chat.heading");
             const parts = raw.split(/<highlight>|<\/highlight>/);
@@ -139,7 +139,7 @@ export function ChatWelcome({
             return raw;
           })()}
         </h1>
-        <p className="mt-3 max-w-xl text-[15px] leading-relaxed text-muted-foreground">
+        <p className="mt-3 max-w-xl text-[0.9375rem] leading-relaxed text-muted-foreground">
           {t("chat.description")}
         </p>
       </div>
@@ -157,7 +157,7 @@ export function ChatWelcome({
                 type="button"
                 onClick={() => handleSuggestionClick(suggestion)}
                 disabled={suggestion.isChat && (isBlocked || isLoading)}
-                className="group flex w-full items-center gap-3 py-3.5 text-left text-[15px] transition-colors duration-150 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none"
+                className="group flex w-full items-center gap-3 py-3.5 text-left text-[0.9375rem] transition-colors duration-150 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none"
               >
                 <MessageCircle className="h-4 w-4 shrink-0 text-muted-foreground" />
                 <span className="min-w-0 flex-1">{suggestion.text}</span>
@@ -172,7 +172,7 @@ export function ChatWelcome({
             <li key={href}>
               <Link
                 href={href}
-                className="group flex min-w-0 items-center gap-3 py-3.5 text-[15px] transition-colors hover:text-foreground focus-visible:outline-none"
+                className="group flex min-w-0 items-center gap-3 py-3.5 text-[0.9375rem] transition-colors hover:text-foreground focus-visible:outline-none"
               >
                 <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />
                 <span className="flex-1">{label}</span>

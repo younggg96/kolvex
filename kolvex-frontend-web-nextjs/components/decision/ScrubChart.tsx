@@ -24,7 +24,7 @@ export default function ScrubChart({
   data: ScrubPoint[];
   baseline?: number | null;
   positive: boolean;
-  height?: number;
+  height?: number | string;
   onScrub: (point: ScrubPoint | null) => void;
   label: string;
   tone?: "direction" | "neutral";

@@ -43,11 +43,14 @@ test('creator coverage uses small bounded concurrent requests and includes every
   assert.equal(result.unavailable, false);
 });
 test('fast batches render before a slow batch and a failed batch cannot erase successful prices', async () => {
-  let finishSlow;
+  let finishSlow, slowCalls = 0;
   const batches = [];
   const { loadMarketQuotes } = load('lib/marketQuotes.ts', async url => {
     const symbols = new URL(url, 'https://kolvex.example').searchParams.get('symbols').split(',');
-    if (symbols.includes('SPCX')) return new Promise(resolve => { finishSlow = resolve; });
+    if (symbols.includes('SPCX')) {
+      if (slowCalls++) return Response.json({}, { status: 503 });
+      return new Promise(resolve => { finishSlow = resolve; });
+    }
     return Response.json(symbols.map(quote));
   });
   const pending = loadMarketQuotes(['SPCX','A','B','C','D','MU','AMD','TSM'], new AbortController().signal, batch => batches.push(batch));
@@ -107,4 +110,24 @@ test('returning to a market list reuses fresh per-symbol prices; manual refresh 
   assert.equal(painted.AAPL.price, 100);
   await api.loadMarketQuotes(['AAPL'], signal, () => {}, true);
   assert.equal(calls, 2);
+});
+
+test('partial batches automatically retry only missing prices', async () => {
+  const seen = [];
+  const api = load('lib/marketQuotes.ts', async url => {
+    const symbols = new URL(url, 'https://kolvex.example').searchParams.get('symbols').split(',');
+    seen.push(symbols);
+    return Response.json(seen.length === 1 ? [quote('AAPL')] : symbols.map(quote));
+  });
+  const result = await api.loadMarketQuotes(['AAPL', 'MU', 'AMD'], new AbortController().signal, () => {});
+  assert.deepEqual(seen, [['AAPL', 'AMD', 'MU'], ['AMD', 'MU']]);
+  assert.equal(result.unavailable, false);
+  assert.equal(result.quotes.AAPL.price, 100);
+});
+test('an entirely failed batch is retried once with a bounded final failure', async () => {
+  let calls = 0;
+  const api = load('lib/marketQuotes.ts', async () => { calls++; return Response.json({}, { status: 503 }); });
+  const result = await api.loadMarketQuotes(['MU'], new AbortController().signal, () => {});
+  assert.equal(calls, 2);
+  assert.equal(result.unavailable, true);
 });

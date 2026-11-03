@@ -7,6 +7,8 @@ import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import { LanguageProvider } from "@/lib/i18n";
 import { UserProfileProvider } from "@/components/user/UserProfileProvider";
 import { StockDataCacheProvider } from "@/components/portfolio/hooks/useStockDataCache";
+import IosInputZoomGuard from "@/components/layout/IosInputZoomGuard";
+import NavigationProgress from "@/components/layout/NavigationProgress";
 
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { Analytics } from "@vercel/analytics/next";
@@ -81,6 +83,8 @@ export default function RootLayout({
             </UserProfileProvider>
           </LanguageProvider>
         </ThemeProvider>
+        <NavigationProgress />
+        <IosInputZoomGuard />
         <Analytics />
         <SpeedInsights />
       </body>

@@ -17,7 +17,7 @@ import { useTheme } from "../lib/theme";
 import { usePreferences } from "../state/Preferences";
 import { DataTable } from "./DataTable";
 import { Field, Filters } from "./Content";
-import { Button, Copy, Failure, Glass, Section, Skeleton } from "./UI";
+import { Button, Copy, Failure, Glass, Section, LoadingStatus } from "./UI";
 const BENCHMARK = "^GSPC";
 const RANGES = {
   "6M": { period: "6mo", interval: "1d" },
@@ -312,7 +312,7 @@ export function StockPeers({ symbol }: { symbol: string }) {
           ))}
         </View>
         {historyLoading && !chart.rows.length ? (
-          <Skeleton />
+          <LoadingStatus />
         ) : chart.rows.length ? (
           <ReturnChart
             rows={chart.rows}

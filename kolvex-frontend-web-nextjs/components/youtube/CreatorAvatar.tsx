@@ -4,7 +4,7 @@ import { useState, type CSSProperties } from "react";
 import { cn, proxyImageUrl } from "@/lib/utils";
 
 const sizeMap = {
-  xs: "h-5 w-5 text-[10px]",
+  xs: "h-5 w-5 text-[0.625rem]",
   sm: "h-7 w-7 text-xs",
   md: "h-10 w-10 text-sm",
   lg: "h-14 w-14 text-lg",

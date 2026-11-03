@@ -45,6 +45,7 @@ function fixture(pageCount = 1) {
   const modules = {
     react, 'react/jsx-runtime': { jsx: (type, props) => ({ type, props }), jsxs: (type, props) => ({ type, props }) },
     'lucide-react': {}, '@/components/ui/button': { Button: 'button' },
+    '@/components/ui/content-loading': { ContentLoading: 'contentloading' },
     '@/components/ui/input': { Input: 'input' }, '@/components/ui/textarea': { Textarea: 'textarea' },
     '@/components/ui/tabs': { Tabs: 'tabs', TabsContent: 'tabcontent', TabsList: 'tablist', TabsTrigger: 'tabtrigger' },
     '@/lib/creatorSharing': loadHelper('creatorSharing'),

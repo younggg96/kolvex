@@ -15,7 +15,7 @@ import {
   Glass,
   Page,
   Section,
-  Skeleton,
+  LoadingStatus,
   styles,
 } from "../../components/UI";
 export default function Stock() {
@@ -48,7 +48,7 @@ export default function Stock() {
     >
       {!!q.error && <Failure message={q.error} retry={q.refresh} />}
       {q.loading && !q.data ? (
-        <Skeleton />
+        <LoadingStatus />
       ) : (
         <View style={{ gap: 4 }}>
           <Copy size={48} bold>
@@ -94,7 +94,7 @@ export default function Stock() {
       {!!list.error && <Failure message={list.error} />}
       <Glass style={{ padding: 16, gap: 16 }}>
         {bars.loading ? (
-          <Skeleton />
+          <LoadingStatus />
         ) : bars.error ? (
           <Failure message={bars.error} retry={bars.refresh} />
         ) : (

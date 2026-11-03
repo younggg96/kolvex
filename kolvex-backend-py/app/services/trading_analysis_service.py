@@ -711,7 +711,7 @@ class TradingAnalysisService:
         """List analyses for a user with optional ticker filter."""
         query = (
             self._supabase.table(TABLE)
-            .select("id, ticker, trade_date, status, selected_analysts, llm_provider, final_decision, duration_seconds, created_at, completed_at, error_message, is_published, published_at")
+            .select("id, ticker, trade_date, status, selected_analysts, llm_provider, final_decision, duration_seconds, created_at, completed_at, error_message, is_published, published_at", count="exact")
             .eq("user_id", user_id)
             .order("created_at", desc=True)
         )
@@ -719,13 +719,8 @@ class TradingAnalysisService:
         if ticker:
             query = query.eq("ticker", ticker.upper())
 
-        count_q = self._supabase.table(TABLE).select("id", count="exact").eq("user_id", user_id)
-        if ticker:
-            count_q = count_q.eq("ticker", ticker.upper())
-        count_result = count_q.execute()
-        total = count_result.count or 0
-
         result = query.range(offset, offset + limit - 1).execute()
+        total = result.count or 0
 
         return {
             "items": result.data or [],
@@ -798,7 +793,7 @@ class TradingAnalysisService:
         )
         query = (
             self._supabase.table(TABLE)
-            .select(select_fields)
+            .select(select_fields, count="exact")
             .eq("status", "completed")
             .order("created_at", desc=True).order("id", desc=True)
         )
@@ -806,20 +801,10 @@ class TradingAnalysisService:
         if ticker:
             query = query.eq("ticker", ticker.upper())
 
-        count_q = (
-            self._supabase.table(TABLE)
-            .select("id", count="exact")
-            .eq("status", "completed")
-        )
         if published_only:
             query = query.eq("is_published", True)
-            count_q = count_q.eq("is_published", True)
-        if ticker:
-            count_q = count_q.eq("ticker", ticker.upper())
-        count_result = count_q.execute()
-        total = count_result.count or 0
-
         result = query.range(offset, offset + limit - 1).execute()
+        total = result.count or 0
         items = result.data or []
 
         self._attach_authors(items)

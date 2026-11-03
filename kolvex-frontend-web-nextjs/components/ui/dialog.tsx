@@ -45,8 +45,8 @@ const DialogContent = React.forwardRef<
         layout === "fullscreen"
           ? "inset-0 h-[100dvh] w-full overflow-hidden bg-background text-foreground"
           : layout === "sheet"
-          ? "inset-x-0 bottom-0 max-h-[85dvh] w-full max-w-xl overflow-hidden rounded-t-2xl surface-overlay px-5 pt-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] sm:bottom-auto sm:left-1/2 sm:right-auto sm:top-1/2 sm:w-[calc(100%-32px)] sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-3xl"
-          : "left-[50%] top-[50%] max-h-[90dvh] w-[calc(100%-32px)] max-w-lg translate-x-[-50%] translate-y-[-50%] overflow-y-auto gap-4 surface-overlay px-5 pt-10 pb-5 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 rounded-3xl",
+          ? "inset-x-0 bottom-0 max-h-[85dvh] w-full max-w-xl overflow-hidden rounded-t-2xl surface-overlay px-5 pt-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] sm:bottom-auto sm:left-1/2 sm:right-auto sm:top-1/2 sm:w-[calc(100%-2rem)] sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-3xl"
+          : "left-[50%] top-[50%] max-h-[90dvh] w-[calc(100%-2rem)] max-w-lg translate-x-[-50%] translate-y-[-50%] overflow-y-auto gap-4 surface-overlay px-5 pt-10 pb-5 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 rounded-3xl",
         className
       )}
       {...props}

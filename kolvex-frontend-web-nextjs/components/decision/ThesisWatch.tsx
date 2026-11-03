@@ -100,7 +100,7 @@ export default function ThesisWatch({
         return (
           <ListRow key={thesis.thesis_id}>
           <div
-            className="grid w-full grid-cols-[minmax(0,1fr)_auto] items-start gap-x-6 gap-y-2 px-2 py-4 md:grid-cols-[minmax(0,1fr)_minmax(0,240px)_auto]"
+            className="grid w-full grid-cols-[minmax(0,1fr)_auto] items-start gap-x-6 gap-y-2 px-2 py-4 md:grid-cols-[minmax(0,1fr)_minmax(0,15rem)_auto]"
           >
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
@@ -111,7 +111,7 @@ export default function ThesisWatch({
                 />
                 <DirectionBadge direction={thesis.direction} />
               </div>
-              <p className="mt-1.5 line-clamp-1 max-w-xl text-[13px] text-muted-foreground">
+              <p className="mt-1.5 line-clamp-1 max-w-xl text-[0.8125rem] text-muted-foreground">
                 {thesis.reasoning}
               </p>
             </div>
@@ -126,7 +126,7 @@ export default function ThesisWatch({
                 price={source?.quote?.price}
               />
             </div>
-            <div className="text-right text-[13px]">
+            <div className="text-right text-[0.8125rem]">
               <p className="font-semibold tabular-nums">
                 {money(source?.quote?.price)}{" "}
                 <Change value={source?.quote?.changePercent} className="text-xs font-medium" />

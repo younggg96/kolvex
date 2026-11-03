@@ -33,7 +33,7 @@ export default function DashboardLayout({
       >
         <OpinionSourceNav />
         {hasActions && (
-          <div className="flex shrink-0 flex-wrap items-center gap-2 px-4 pt-4 md:px-8">
+          <div className="flex shrink-0 flex-wrap items-center gap-2 px-[16px] pt-4 md:px-8">
             {headerLeftAction}
             {headerExtra}
             {headerActions && (

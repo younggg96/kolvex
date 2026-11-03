@@ -51,7 +51,7 @@ export default function PublishedAnalysisDetailPage() {
     return (
       <DashboardLayout title={t("tradingAnalysis.explore.title")} headerLeftAction={backAction}>
         <div className="relative flex-1 overflow-y-auto">
-          <div className="mx-auto w-full max-w-[1120px]">
+          <div className="mx-auto w-full max-w-[70rem]">
             <DetailSkeleton />
           </div>
         </div>
@@ -63,7 +63,7 @@ export default function PublishedAnalysisDetailPage() {
     return (
       <DashboardLayout title={t("tradingAnalysis.explore.title")} headerLeftAction={backAction}>
         <div className="relative flex-1 overflow-y-auto">
-          <div className="flex flex-col items-center justify-center flex-1 min-h-[400px] gap-4">
+          <div className="flex flex-col items-center justify-center flex-1 min-h-[25rem] gap-4">
             <XCircle className="h-10 w-10 text-muted-foreground" />
             <p className="text-muted-foreground">
               {resource.error ? t("common.error") : t("tradingAnalysis.notFound")}
@@ -84,14 +84,14 @@ export default function PublishedAnalysisDetailPage() {
       }
     >
       <div className="relative flex-1 overflow-y-auto">
-        <div className="mx-auto w-full max-w-[1120px] space-y-10 px-4 pb-16 pt-6 md:px-8 md:pt-8">
+        <div className="mx-auto w-full max-w-[70rem] space-y-10 px-[16px] pb-16 pt-6 md:px-8 md:pt-8">
           {/* Header */}
           <div className="border-b border-border pb-6">
             <div>
               <div className="flex flex-wrap items-center gap-3">
                 <Link href={marketStockHref(analysis.ticker)} className="group flex min-h-11 min-w-11 items-center gap-3 rounded-2xl px-1 transition-colors duration-150 hover:text-foreground focus-visible:outline-none " aria-label={locale === "zh" ? `打开 ${analysis.ticker} 行情页` : `Open ${analysis.ticker} quotes`}>
                   <CompanyLogo symbol={analysis.ticker} size="lg" />
-                  <h1 className="text-[28px] font-bold leading-tight text-foreground underline-offset-4 group-hover:underline md:text-[32px]">
+                  <h1 className="text-[1.75rem] font-bold leading-tight text-foreground underline-offset-4 group-hover:underline md:text-[2rem]">
                     {analysis.ticker}
                   </h1>
                 </Link>
@@ -109,7 +109,7 @@ export default function PublishedAnalysisDetailPage() {
                       {analysis.author.avatar_url && (
                         <AvatarImage src={analysis.author.avatar_url} alt="" />
                       )}
-                      <AvatarFallback className="text-[9px] bg-muted">
+                      <AvatarFallback className="text-[0.5625rem] bg-muted">
                         <User className="w-3 h-3" />
                       </AvatarFallback>
                     </Avatar>

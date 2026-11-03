@@ -27,13 +27,13 @@ import { cn } from "@/lib/utils";
 
 export function ReadingHeading({ title, children, icon }: { title: string; children?: React.ReactNode; icon?: React.ReactNode }) {
   return <div data-reading-reveal className="mb-8 max-w-[72ch]">
-    <div className="flex min-w-0 items-center gap-3">{icon}<h1 className="min-w-0 break-words text-[28px] font-bold leading-tight tracking-[-0.025em] md:text-[32px]">{title}</h1></div>
-    {children && <p className="mt-2 max-w-[60ch] text-[15px] leading-relaxed text-muted-foreground">{children}</p>}
+    <div className="flex min-w-0 items-center gap-3">{icon}<h1 className="min-w-0 break-words text-[1.75rem] font-bold leading-tight tracking-[-0.025em] md:text-[2rem]">{title}</h1></div>
+    {children && <p className="mt-2 max-w-[60ch] text-[0.9375rem] leading-relaxed text-muted-foreground">{children}</p>}
   </div>;
 }
 
 export function ReadingSectionHeading({ title, count, id }: { title: string; count?: number; id?: string }) {
-  return <h2 data-reading-reveal id={id} className="mb-4 border-b border-border pb-3 text-[17px] font-semibold text-foreground">{title}{count !== undefined && <span className="figure ml-2 text-sm font-normal text-muted-foreground">{count}</span>}</h2>;
+  return <h2 data-reading-reveal id={id} className="mb-4 border-b border-border pb-3 text-[1.0625rem] font-semibold text-foreground">{title}{count !== undefined && <span className="figure ml-2 text-sm font-normal text-muted-foreground">{count}</span>}</h2>;
 }
 
 export function ReadingDate({ value }: { value?: string | null }) {
@@ -83,7 +83,7 @@ export function ResearchList({ items, layout = "grid" }: { items: TradingAnalysi
             <span className="flex min-w-0 flex-1 items-center gap-2.5">
               <CompanyLogo symbol={report.ticker} size="sm" />
               <span className="min-w-0 flex-1">
-                <span className="block truncate text-[15px] font-semibold">{report.ticker}</span>
+                <span className="block truncate text-[0.9375rem] font-semibold">{report.ticker}</span>
                 <span className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground">
                   <time dateTime={report.trade_date} className="figure">{report.trade_date}</time>
                   {report.llm_provider && <span className="capitalize">{report.llm_provider}</span>}
@@ -112,7 +112,7 @@ export function OpinionList({ opinions }: { opinions: YouTubeOpinion[] }) {
               <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
                 <Link href={creatorSharePath(opinion.channel_id)} className="rounded-sm text-sm font-semibold hover:underline focus-visible:outline-none ">{name}</Link>
                 <h3 className="inline-flex items-center gap-1.5">
-                  <Link href={publicStockPath(opinion.ticker)} className="inline-flex items-center gap-2 rounded-sm text-[15px] font-semibold hover:underline focus-visible:outline-none "><CompanyLogo symbol={opinion.ticker} size="sm" /><span>{opinion.ticker}</span></Link>
+                  <Link href={publicStockPath(opinion.ticker)} className="inline-flex items-center gap-2 rounded-sm text-[0.9375rem] font-semibold hover:underline focus-visible:outline-none "><CompanyLogo symbol={opinion.ticker} size="sm" /><span>{opinion.ticker}</span></Link>
                   <StockQuotesLink symbol={opinion.ticker} />
                 </h3>
                 <span className="text-xs text-muted-foreground"><ReadingDate value={opinion.opinion_date || opinion.video_published_at} />（美东日期）</span>
@@ -121,7 +121,7 @@ export function OpinionList({ opinions }: { opinions: YouTubeOpinion[] }) {
             </div>
           </header>
           {opinion.company_name && <p className="mt-3 text-xs text-muted-foreground">{opinion.company_name}</p>}
-          <p className="mt-4 max-w-[72ch] whitespace-pre-wrap text-[15px] leading-7 text-foreground">{opinion.summary || opinion.thesis || opinion.key_points?.join("\n") || "暂无文字摘要，请查看原视频。"}</p>
+          <p className="mt-4 max-w-[72ch] whitespace-pre-wrap text-[0.9375rem] leading-7 text-foreground">{opinion.summary || opinion.thesis || opinion.key_points?.join("\n") || "暂无文字摘要，请查看原视频。"}</p>
           {!!(opinion.key_points?.length || opinion.risks?.length) && <div className="mt-4 grid gap-x-8 gap-y-4 md:grid-cols-2">
             {[{ title: "观点依据", items: opinion.key_points }, { title: "提及的风险", items: opinion.risks }].map(({ title, items }) => !!items?.length && <details key={title} className="text-sm"><summary className="cursor-pointer rounded-full px-1 py-2 text-xs font-semibold text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none">{title}</summary><ul className="mt-2 list-disc space-y-1.5 pl-5 text-sm leading-6">{items.map((item, i) => <li key={i}>{item}</li>)}</ul></details>)}
           </div>}

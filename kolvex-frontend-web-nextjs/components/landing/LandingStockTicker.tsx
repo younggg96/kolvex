@@ -98,7 +98,7 @@ export default function LandingStockTicker() {
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary-foreground opacity-75"></span>
             <span className="relative inline-flex rounded-full h-1.5 w-1.5 md:h-2 md:w-2 bg-primary-foreground"></span>
           </span>
-          <span className="text-[10px] md:text-xs font-bold text-primary-foreground">
+          <span className="text-[0.625rem] md:text-xs font-bold text-primary-foreground">
             LIVE
           </span>
         </div>
@@ -140,7 +140,7 @@ export default function LandingStockTicker() {
 
                 {/* Change indicator */}
                 <div
-                  className={`flex items-center gap-0.5 md:gap-1 px-1.5 md:px-2 py-0.5 rounded-md md:rounded-2xl text-[10px] md:text-xs font-bold ${isUp
+                  className={`flex items-center gap-0.5 md:gap-1 px-1.5 md:px-2 py-0.5 rounded-md md:rounded-2xl text-[0.625rem] md:text-xs font-bold ${isUp
                     ? "bg-primary/10 text-primary"
                     : "bg-red-500/10 text-red-500"
                     }`}

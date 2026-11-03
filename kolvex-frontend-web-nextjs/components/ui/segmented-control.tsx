@@ -21,7 +21,7 @@ type Size = "sm" | "md";
 
 const SIZES: Record<Size, { item: string; gap: string; thumbPress: string }> = {
   sm: {
-    item: "min-h-8 px-3 text-[13px]",
+    item: "min-h-8 px-3 text-[0.8125rem]",
     gap: "gap-0.5",
     thumbPress: "scale-y-[0.88]",
   },

@@ -13,6 +13,8 @@ from xml.etree import ElementTree
 
 import httpx
 
+from app.core.egress_metrics import traffic_metrics
+
 RSS_URL = "https://www.financialjuice.com/feed.ashx?xy=rss"
 MAX_BYTES = 1_000_000
 TTL = 60
@@ -82,7 +84,9 @@ class NewsFeedService:
         async with self._lock:
             now = time.monotonic()
             if self._cached is not None and now - self._fetched < TTL:
+                traffic_metrics.add("cache", "news_feed", cache_hits=1)
                 return {**self._cached, "stale": False}
+            traffic_metrics.add("cache", "news_feed", cache_misses=1)
             if now < self._retry_after:
                 if self._cached is not None and now - self._fetched < MAX_STALE:
                     return {**self._cached, "stale": True}

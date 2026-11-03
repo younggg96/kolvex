@@ -25,7 +25,7 @@ import { usePreferences } from "../state/Preferences";
 import { DataTable } from "./DataTable";
 import { Field, Filters } from "./Content";
 import { MetricBars, Statements } from "./StockResearch";
-import { Button, Copy, Empty, Failure, Glass, Section, Skeleton } from "./UI";
+import { Button, Copy, Empty, Failure, Glass, Section, LoadingStatus } from "./UI";
 const SEC_TIMEOUT = 55_000;
 function useFormat() {
   return financialFormat(usePreferences().locale);
@@ -41,7 +41,7 @@ function SecState({
   emptyText: string;
   errorText: string;
 }) {
-  if (resource.loading) return <Skeleton />;
+  if (resource.loading) return <LoadingStatus />;
   if (resource.error)
     return <Failure message={errorText} retry={resource.refresh} />;
   return empty ? <Empty title="暂无数据" message={emptyText} /> : null;

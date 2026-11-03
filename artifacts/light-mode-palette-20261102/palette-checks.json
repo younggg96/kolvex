@@ -1,0 +1,270 @@
+{
+  "darkThemeUnchanged": true,
+  "brandAndChartColorsUnchanged": true,
+  "designTokensMatch": true,
+  "contrastPairs": [
+    {
+      "foreground": "foreground",
+      "background": "background",
+      "ratio": 12.448
+    },
+    {
+      "foreground": "foreground",
+      "background": "card",
+      "ratio": 13.49
+    },
+    {
+      "foreground": "foreground",
+      "background": "sidebar",
+      "ratio": 12.904
+    },
+    {
+      "foreground": "foreground",
+      "background": "muted",
+      "ratio": 11.634
+    },
+    {
+      "foreground": "foreground",
+      "background": "secondary",
+      "ratio": 10.759
+    },
+    {
+      "foreground": "muted-foreground",
+      "background": "background",
+      "ratio": 5.362
+    },
+    {
+      "foreground": "muted-foreground",
+      "background": "card",
+      "ratio": 5.811
+    },
+    {
+      "foreground": "muted-foreground",
+      "background": "sidebar",
+      "ratio": 5.559
+    },
+    {
+      "foreground": "muted-foreground",
+      "background": "muted",
+      "ratio": 5.012
+    },
+    {
+      "foreground": "muted-foreground",
+      "background": "secondary",
+      "ratio": 4.635
+    },
+    {
+      "foreground": "positive",
+      "background": "background",
+      "ratio": 5.265
+    },
+    {
+      "foreground": "positive",
+      "background": "card",
+      "ratio": 5.706
+    },
+    {
+      "foreground": "positive",
+      "background": "sidebar",
+      "ratio": 5.458
+    },
+    {
+      "foreground": "positive",
+      "background": "muted",
+      "ratio": 4.921
+    },
+    {
+      "foreground": "positive",
+      "background": "secondary",
+      "ratio": 4.55
+    },
+    {
+      "foreground": "negative",
+      "background": "background",
+      "ratio": 5.23
+    },
+    {
+      "foreground": "negative",
+      "background": "card",
+      "ratio": 5.668
+    },
+    {
+      "foreground": "negative",
+      "background": "sidebar",
+      "ratio": 5.422
+    },
+    {
+      "foreground": "negative",
+      "background": "muted",
+      "ratio": 4.888
+    },
+    {
+      "foreground": "negative",
+      "background": "secondary",
+      "ratio": 4.52
+    },
+    {
+      "foreground": "warning",
+      "background": "background",
+      "ratio": 5.269
+    },
+    {
+      "foreground": "warning",
+      "background": "card",
+      "ratio": 5.71
+    },
+    {
+      "foreground": "warning",
+      "background": "sidebar",
+      "ratio": 5.462
+    },
+    {
+      "foreground": "warning",
+      "background": "muted",
+      "ratio": 4.925
+    },
+    {
+      "foreground": "warning",
+      "background": "secondary",
+      "ratio": 4.554
+    },
+    {
+      "foreground": "card-foreground",
+      "background": "card",
+      "ratio": 13.49
+    },
+    {
+      "foreground": "secondary-foreground",
+      "background": "secondary",
+      "ratio": 10.759
+    },
+    {
+      "foreground": "primary-foreground",
+      "background": "primary",
+      "ratio": 9.264
+    },
+    {
+      "foreground": "destructive-foreground",
+      "background": "destructive",
+      "ratio": 6.202
+    },
+    {
+      "foreground": "background",
+      "background": "foreground",
+      "ratio": 12.448
+    }
+  ],
+  "minimumContrast": 4.52,
+  "lightTokens": {
+    "background": [
+      235,
+      236,
+      233
+    ],
+    "foreground": [
+      37,
+      41,
+      37
+    ],
+    "card": [
+      244,
+      245,
+      242
+    ],
+    "card-foreground": [
+      37,
+      41,
+      37
+    ],
+    "sidebar": [
+      239,
+      240,
+      237
+    ],
+    "muted": [
+      227,
+      229,
+      224
+    ],
+    "muted-foreground": [
+      91,
+      97,
+      90
+    ],
+    "secondary": [
+      218,
+      221,
+      215
+    ],
+    "secondary-foreground": [
+      37,
+      41,
+      37
+    ],
+    "border": [
+      207,
+      212,
+      204
+    ],
+    "primary": [
+      0,
+      200,
+      5
+    ],
+    "primary-foreground": [
+      0,
+      0,
+      0
+    ],
+    "positive": [
+      0,
+      113,
+      3
+    ],
+    "negative": [
+      180,
+      49,
+      13
+    ],
+    "warning": [
+      133,
+      87,
+      0
+    ],
+    "positive-fill": [
+      0,
+      200,
+      5
+    ],
+    "negative-fill": [
+      255,
+      80,
+      0
+    ],
+    "chart-up": [
+      0,
+      200,
+      7
+    ],
+    "chart-down": [
+      255,
+      81,
+      0
+    ],
+    "chart-level": [
+      148,
+      112,
+      48
+    ],
+    "destructive": [
+      180,
+      49,
+      13
+    ],
+    "destructive-foreground": [
+      255,
+      255,
+      255
+    ]
+  }
+}

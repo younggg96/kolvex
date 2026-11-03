@@ -22,7 +22,7 @@ function DonutTooltip({ active, payload }: CustomTooltipProps) {
   const isPositive = data.gain >= 0;
 
   return (
-    <div className="bg-card-dark border border-border-dark rounded-2xl p-3 shadow-xl min-w-[180px]">
+    <div className="bg-card-dark border border-border-dark rounded-2xl p-3 shadow-xl min-w-[11.25rem]">
       <div className="flex items-center gap-2 mb-2">
         <div
           className="w-3 h-3 rounded-sm"

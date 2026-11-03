@@ -21,7 +21,7 @@ import { useTheme } from "../lib/theme";
 import { useResource } from "../lib/useResource";
 import { usePreferences } from "../state/Preferences";
 import { ResourceState } from "./Content";
-import { Button, Copy, Failure, Glass, Skeleton } from "./UI";
+import { Button, Copy, Failure, Glass, LoadingStatus } from "./UI";
 export function CreatorShare({ creator }: { creator: CreatorShareIdentity }) {
   const [open, setOpen] = useState(false);
   return (
@@ -122,7 +122,7 @@ function Sheet({
       </View>
       {!!failed && <Failure message={failed} />}
       {r.loading ? (
-        <Skeleton />
+        <LoadingStatus />
       ) : r.error ? (
         <Failure message="最新观点加载失败，仍可分享链接。" retry={r.refresh} />
       ) : !hasOpinions ? (

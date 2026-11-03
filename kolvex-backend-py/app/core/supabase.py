@@ -5,6 +5,7 @@ from supabase import create_client, Client
 from supabase.client import ClientOptions
 from app.core.config import settings
 from typing import Optional
+from app.core.egress_metrics import instrument_postgrest
 
 
 class SupabaseClient:
@@ -38,11 +39,11 @@ class SupabaseClient:
             if not key:
                 raise ValueError("Supabase Key 未配置")
             
-            cls._service_instance = create_client(
+            cls._service_instance = instrument_postgrest(create_client(
                 settings.SUPABASE_URL,
                 key,
                 options=ClientOptions(auto_refresh_token=False, persist_session=False),
-            )
+            ))
         
         return cls._service_instance
     

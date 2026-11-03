@@ -1,6 +1,6 @@
 "use client";
 
-import { ContentSkeleton } from "@/components/ui/content-skeleton";
+import { ContentLoading } from "@/components/ui/content-loading";
 import React, { useMemo, useState } from "react";
 import { Download, RefreshCw, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -169,7 +169,7 @@ export function InvestmentTransactionsTable({
       </ListToolbar>
 
       <div className="overflow-x-auto">
-        <Table className="min-w-[900px]">
+        <Table className="min-w-[56.25rem]">
           <TableHeader>
             <TableRow>
               <TableHead>Date</TableHead>
@@ -186,7 +186,7 @@ export function InvestmentTransactionsTable({
             {loading && transactions.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={8} className="py-8 text-center text-sm text-muted-foreground">
-                  <ContentSkeleton label="Loading investment transactions" rows={4} />
+                  <ContentLoading />
                 </TableCell>
               </TableRow>
             ) : transactions.length === 0 ? (
@@ -205,7 +205,7 @@ export function InvestmentTransactionsTable({
                     <div className="font-medium">
                       {transaction.symbol || "-"}
                     </div>
-                    <div className="max-w-[220px] truncate text-xs text-muted-foreground">
+                    <div className="max-w-[13.75rem] truncate text-xs text-muted-foreground">
                       {transaction.name || transaction.security_id || "-"}
                     </div>
                   </TableCell>
@@ -237,7 +237,7 @@ export function InvestmentTransactionsTable({
                       ? "-"
                       : formatCurrency(transaction.fees)}
                   </TableCell>
-                  <TableCell className="max-w-[180px] truncate text-xs text-muted-foreground">
+                  <TableCell className="max-w-[11.25rem] truncate text-xs text-muted-foreground">
                     {transaction.account_name || transaction.account_id || "-"}
                   </TableCell>
                 </TableRow>

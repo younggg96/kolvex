@@ -33,7 +33,7 @@ export default function Tags({ tags, maxVisible = 5, className }: TagsProps) {
         // affordance dims on hover instead of layering a grey wash over it.
         <button
           onClick={() => setIsExpanded(!isExpanded)}
-          className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-primary/10 text-primary border border-primary/20 hover:opacity-70 transition-opacity"
+          className="inline-flex items-center px-2 py-0.5 rounded-full text-[0.625rem] font-medium bg-primary/10 text-primary border border-primary/20 hover:opacity-70 transition-opacity"
         >
           {isExpanded ? "Show Less" : `+${tags.length - maxVisible}`}
         </button>

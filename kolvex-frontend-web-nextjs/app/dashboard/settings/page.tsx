@@ -1,6 +1,6 @@
 "use client";
 
-import { ContentSkeleton } from "@/components/ui/content-skeleton";
+import { ContentLoading } from "@/components/ui/content-loading";
 import { useEffect, useState, Suspense, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useTheme } from "next-themes";
@@ -92,7 +92,7 @@ function SettingsSection({
     <section className="pt-2">
       <div className="flex items-start justify-between gap-4 border-b border-border pb-4">
         <div className="min-w-0">
-          <h2 className="text-[22px] font-bold leading-tight text-foreground">{title}</h2>
+          <h2 className="text-[1.375rem] font-bold leading-tight text-foreground">{title}</h2>
           {subtitle && (
             <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p>
           )}
@@ -114,12 +114,12 @@ function FieldRow({
   children: React.ReactNode;
 }) {
   return (
-    <div className="grid gap-1.5 border-b border-border py-4 sm:grid-cols-[180px_minmax(0,1fr)] sm:items-center sm:gap-6">
+    <div className="grid gap-1.5 border-b border-border py-4 sm:grid-cols-[11.25rem_minmax(0,1fr)] sm:items-center sm:gap-6">
       <Label className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground">
         {Icon && <Icon className="h-3.5 w-3.5" />}
         {label}
       </Label>
-      <div className="min-w-0 text-[15px] text-foreground">{children}</div>
+      <div className="min-w-0 text-[0.9375rem] text-foreground">{children}</div>
     </div>
   );
 }
@@ -541,7 +541,7 @@ function SettingsContent() {
   return (
     <DashboardLayout title={t("settings.title")}>
       <div className="flex-1 overflow-y-auto">
-        <div className="mx-auto w-full min-w-0 max-w-[760px] px-4 pb-16 pt-6 md:px-8 md:pt-8">
+        <div className="mx-auto w-full min-w-0 max-w-[47.5rem] px-[16px] pb-16 pt-6 md:px-8 md:pt-8">
           {/* Settings Tabs */}
           <Tabs value={activeTab} onValueChange={handleTabChange}>
             <div className="flex flex-col gap-8">
@@ -589,7 +589,7 @@ function SettingsContent() {
                               <button
                                 onClick={() => setAvatarPreviewOpen(true)}
                                 aria-label={t("settings.account.uploadAvatar")}
-                                className="group relative h-[72px] w-[72px] cursor-pointer overflow-hidden rounded-full"
+                                className="group relative h-[4.5rem] w-[4.5rem] cursor-pointer overflow-hidden rounded-full"
                               >
                                 <Image
                                   src={profile.avatar_url}
@@ -603,7 +603,7 @@ function SettingsContent() {
                                 </div>
                               </button>
                             ) : (
-                              <div className="flex h-[72px] w-[72px] items-center justify-center rounded-full bg-primary text-2xl font-bold text-primary-foreground">
+                              <div className="flex h-[4.5rem] w-[4.5rem] items-center justify-center rounded-full bg-primary text-2xl font-bold text-primary-foreground">
                                 {profile?.email
                                   ?.substring(0, 2)
                                   .toUpperCase() || "US"}
@@ -912,12 +912,12 @@ function SettingsContent() {
                   >
                     <div>
                       {apiKeysLoading ? (
-                        <ContentSkeleton label={t("common.loading")} variant="text" rows={3} />
+                        <ContentLoading label={t("common.loading")} />
                       ) : (
                         <>
                           {/* Info banner */}
-                          <div className="mt-4 rounded-3xl bg-muted px-4 py-3">
-                            <p className="text-[13px] leading-5 text-muted-foreground">
+                          <div className="mt-4 rounded-3xl border border-border bg-card px-4 py-3">
+                            <p className="text-[0.8125rem] leading-5 text-muted-foreground">
                               {t("settings.apiKeys.infoBanner")}
                             </p>
                           </div>
@@ -948,16 +948,16 @@ function SettingsContent() {
                                   <div className="mb-3 flex items-start justify-between gap-4">
                                     <div>
                                       <div className="flex items-center gap-2">
-                                        <h3 className="text-[15px] font-semibold text-foreground">
+                                        <h3 className="text-[0.9375rem] font-semibold text-foreground">
                                           {info.name}
                                         </h3>
                                         {existingKey && (
-                                          <span className="rounded-full bg-positive/10 px-2 py-0.5 text-[11px] font-semibold text-positive">
+                                          <span className="rounded-full bg-positive/10 px-2 py-0.5 text-[0.6875rem] font-semibold text-positive">
                                             {t("common.configured")}
                                           </span>
                                         )}
                                       </div>
-                                      <p className="mt-0.5 text-[13px] text-muted-foreground">
+                                      <p className="mt-0.5 text-[0.8125rem] text-muted-foreground">
                                         {info.description}
                                       </p>
                                     </div>
@@ -965,7 +965,7 @@ function SettingsContent() {
                                       href={info.docsUrl}
                                       target="_blank"
                                       rel="noopener noreferrer"
-                                      className="flex flex-shrink-0 items-center gap-1 text-[13px] font-semibold text-positive hover:underline"
+                                      className="flex min-h-11 flex-shrink-0 items-center gap-1 text-[0.8125rem] font-medium text-muted-foreground transition-colors hover:text-foreground"
                                     >
                                       {t("settings.apiKeys.getKey")}
                                       <ExternalLink className="w-3 h-3" />
@@ -974,17 +974,17 @@ function SettingsContent() {
 
                                   {/* Existing key display */}
                                   {existingKey && (
-                                    <div className="flex items-center gap-2 mb-2">
-                                      <code className="flex-1 truncate rounded-3xl bg-muted px-3 py-2 font-mono text-xs text-muted-foreground">
-                                        {existingKey.api_key_masked}
-                                      </code>
+                                    <div className="mb-2 flex items-center justify-between gap-2">
+                                      <p className="figure min-w-0 truncate text-[0.8125rem] text-muted-foreground">
+                                        •••• {existingKey.api_key_masked.slice(-4)}
+                                      </p>
                                       <Button
                                         variant="ghost"
                                         size="sm"
                                         onClick={() => handleDeleteApiKey(provider)}
                                         disabled={isDeleting}
                                         aria-label={`${t("common.delete")} ${info.name}`}
-                                        className="h-9 w-9 flex-shrink-0 rounded-full p-0 text-negative hover:bg-negative/10 hover:text-negative"
+                                        className="h-11 w-11 flex-shrink-0 rounded-full p-0 text-muted-foreground hover:bg-negative/10 hover:text-negative"
                                       >
                                         {isDeleting ? (
                                           <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -1014,7 +1014,7 @@ function SettingsContent() {
                                           }
                                         }}
                                         aria-label={`${info.name} API key`}
-                                        className="pr-10 font-mono text-[13px]"
+                                        className="h-11 pr-12"
                                       />
                                       <button
                                         type="button"
@@ -1025,7 +1025,7 @@ function SettingsContent() {
                                           }))
                                         }
                                         aria-label={isVisible ? "Hide key" : "Show key"}
-                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-foreground"
+                                        className="absolute right-0 top-0 flex h-11 w-11 items-center justify-center rounded-full text-muted-foreground transition-colors hover:text-foreground"
                                       >
                                         {isVisible ? (
                                           <EyeOff className="w-3.5 h-3.5" />
@@ -1035,7 +1035,7 @@ function SettingsContent() {
                                       </button>
                                     </div>
                                     <Button
-                                      size="sm"
+                                      variant={inputValue.trim() ? "default" : "outline"}
                                       onClick={() => handleSaveApiKey(provider)}
                                       disabled={!inputValue.trim() || isSaving}
                                       className="flex-shrink-0"
@@ -1069,7 +1069,7 @@ function SettingsContent() {
                     <div>
                       <FieldRow icon={Globe} label={t("settings.preferences.language")}>
                         <Select value={locale} onValueChange={handleLanguageChange}>
-                          <SelectTrigger className="w-full sm:w-[280px]" aria-label={t("settings.preferences.language")}>
+                          <SelectTrigger className="w-full sm:w-[17.5rem]" aria-label={t("settings.preferences.language")}>
                             <SelectValue placeholder={t("settings.preferences.selectLanguage")} />
                           </SelectTrigger>
                           <SelectContent>
@@ -1121,7 +1121,7 @@ function SettingsContent() {
                                 title: t("settings.preferences.themeSystemDesc"),
                               },
                             ]}
-                            itemClassName="min-h-9 px-4 text-[13px]"
+                            itemClassName="min-h-9 px-4 text-[0.8125rem]"
                           />
                         )}
                       </FieldRow>
@@ -1139,7 +1139,7 @@ function SettingsContent() {
 
 export default function SettingsPage() {
   return (
-    <Suspense fallback={<ContentSkeleton label="Loading settings / 正在加载设置" variant="profile" className="mx-auto w-full max-w-3xl px-4 py-8 md:px-8" />}>
+    <Suspense fallback={<ContentLoading className="mx-auto w-full max-w-3xl px-[16px] py-8 md:px-8" />}>
       <SettingsContent />
     </Suspense>
   );

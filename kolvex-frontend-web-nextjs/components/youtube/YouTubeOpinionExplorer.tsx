@@ -1,7 +1,7 @@
 "use client";
 
 import { Skeleton } from "@/components/ui/skeleton";
-import { ContentSkeleton } from "@/components/ui/content-skeleton";
+import { ContentLoading } from "@/components/ui/content-loading";
 import { isProductFeatureEnabled } from "@/lib/productFeatures";
 
 import Link from "next/link";
@@ -639,11 +639,6 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
     return stock ? [stock] : [];
   });
 
-  // Directory controls stay on one row at every width: on mobile the search
-  // collapses to an icon that expands the field in place when tapped.
-  const [searchOpen, setSearchOpen] = useState(false);
-  const searchCollapsed = Boolean(search) || searchOpen;
-
   const shownStocks = creatorOverview && !showAllCreatorStocks
     ? visibleStocks.slice(0, 5)
     : !inDetail ? visibleStocks.slice(0, allStocks ? directoryLimit : 10) : visibleStocks;
@@ -697,7 +692,7 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
     if (compact) {
       return <div className="figure min-h-10 text-right sm:col-start-2 sm:row-start-1">
         {entry ? <>
-          <p className="text-[14px] font-semibold">{localPrice(ticker, entry.price)}</p>
+          <p className="text-[0.875rem] font-semibold">{localPrice(ticker, entry.price)}</p>
           <p className={cn("mt-1 text-xs font-semibold", percentTone(entry.change_1d_percent))}>
             <span className="mr-1 font-normal text-muted-foreground">{t("youtubeOpinions.price1d")}</span>{formatPercent(entry.change_1d_percent)}
           </p>
@@ -722,14 +717,14 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
         >
           <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 md:flex-col md:items-end md:gap-y-1">
             <p className="whitespace-nowrap tabular-nums">
-              <span className="text-[11px] font-medium text-foreground/55">
+              <span className="text-[0.6875rem] font-medium text-foreground/55">
                 {t("youtubeOpinions.directory.currentPrice")}
               </span>
-              <span className="ml-1.5 text-[13px] font-semibold text-foreground">
+              <span className="ml-1.5 text-[0.8125rem] font-semibold text-foreground">
                 {localPrice(ticker, entry.price)}
               </span>
             </p>
-            <p className="text-[11px] text-muted-foreground">{t("youtubeOpinions.directory.asOf", { date: formatDay(entry.as_of) })}</p>
+            <p className="text-[0.6875rem] text-muted-foreground">{t("youtubeOpinions.directory.asOf", { date: formatDay(entry.as_of) })}</p>
             <p className="flex flex-wrap items-baseline gap-x-3 gap-y-1 md:justify-end">
               {([
                 ["youtubeOpinions.price1d", entry.change_1d_percent],
@@ -737,7 +732,7 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
                 ["youtubeOpinions.price1mo", entry.change_1mo_percent],
               ] as const).map(([key, value]) => (
                 <span key={key} className="inline-flex items-baseline gap-1 whitespace-nowrap">
-                  <span className="text-[11px] text-foreground/55">{t(key)}</span>
+                  <span className="text-[0.6875rem] text-foreground/55">{t(key)}</span>
                   <span className={cn("text-xs font-semibold tabular-nums", percentTone(value))}>
                     {formatPercent(value)}
                   </span>
@@ -784,11 +779,11 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
               <div className="flex min-w-0 items-center gap-3">
                 <CompanyLogo symbol={item.ticker} size="md" />
                 <div className="min-w-0">
-                  <p className="text-[15px] font-semibold">
+                  <p className="text-[0.9375rem] font-semibold">
                     {item.ticker}
                     {held.tickers.includes(item.ticker) && <HeldMark />}
                   </p>
-                  <p className="mt-0.5 truncate text-[13px] text-muted-foreground">
+                  <p className="mt-0.5 truncate text-[0.8125rem] text-muted-foreground">
                     {item.company_name || item.ticker}
                   </p>
                 </div>
@@ -840,10 +835,10 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
             <div className="flex min-w-0 items-center gap-3">
               <Avatar creator={item} />
               <div className="min-w-0">
-                <p className="truncate text-[15px] font-semibold">
+                <p className="truncate text-[0.9375rem] font-semibold">
                   {item.channel_title || item.channel_id}
                 </p>
-                <p className="mt-0.5 truncate text-[13px] text-muted-foreground">
+                <p className="mt-0.5 truncate text-[0.8125rem] text-muted-foreground">
                   {item.channel_handle || item.channel_id}
                 </p>
                 {inCard && lastUpdated(item.latest_opinion_at)}
@@ -869,7 +864,7 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
   );
 
   const loadingBlock = (
-    <ContentSkeleton label={t("common.loadingStatus")} rows={4} />
+    <ContentLoading label={t("common.loadingStatus")} />
   );
 
   const changeList = (primary = false) => (
@@ -1002,7 +997,7 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
       bare={!compact && !inline}
       value={filters.range}
       className={!compact && !inline ? "mt-3 flex-wrap" : "min-w-0"}
-      itemClassName={compact ? undefined : "min-h-8 px-3.5 text-[13px]"}
+      itemClassName={compact ? undefined : "min-h-8 px-3.5 text-[0.8125rem]"}
       options={rangeOptions}
       onChange={(range) =>
         setFilters((previous) => ({
@@ -1033,17 +1028,14 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
         onScroll={loadMorePerformance}
       >
         {navigating && (
-          <div role="status" className="sticky top-0 z-20 flex h-0 justify-end overflow-visible px-4 md:px-8">
+          <div role="status" className="sticky top-0 z-20 flex h-0 justify-end overflow-visible px-[16px] md:px-8">
             <span className="mt-2 inline-flex items-center gap-2 rounded-full border border-border bg-background px-3 py-1.5 text-xs text-muted-foreground shadow-sm">
               <Loader2 className="h-3.5 w-3.5 animate-spin motion-reduce:animate-none" aria-hidden="true" />
               {t("common.loadingStatus")}
             </span>
           </div>
         )}
-        <div className="mx-auto w-full min-w-0 max-w-[1600px] px-4 pb-16 pt-5 md:px-8 md:pt-7">
-          {!inDetail && !allStocks && (
-            <div className="mb-5 min-w-0 sm:mb-6">{tabSwitcher}</div>
-          )}
+        <div className="mx-auto w-full min-w-0 max-w-[100rem] px-[16px] pb-16 pt-5 md:px-8 md:pt-7">
           <Tabs
             value={route.tab}
             onValueChange={(value) => navigate({ tab: value as Route["tab"] })}
@@ -1053,11 +1045,11 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
               <div className={cn("grid min-w-0 gap-8", allStocks ? "mx-auto" : "xl:grid-cols-[minmax(0,1fr)_20rem] 2xl:gap-x-12")}>
                 <div className="min-w-0 space-y-8">
                   <div>
-                    <header className="mb-3 flex min-h-14 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                    <header className="mb-3 flex min-h-14 items-center justify-between gap-3">
                       <div className="min-w-0">
                         <h2
                           id="creator-directory-heading"
-                          className="text-[28px] font-semibold leading-tight tracking-[-0.02em]"
+                          className="text-[1.75rem] font-semibold leading-tight tracking-[-0.02em]"
                         >
                           {route.tab === "stocks"
                             ? t("youtubeOpinions.stocksDiscussedTitle")
@@ -1073,9 +1065,12 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
                           </p>
                         )}
                       </div>
+                      {!allStocks && <div className="shrink-0">{tabSwitcher}</div>}
                     </header>
                     <section aria-labelledby="creator-directory-heading" className="min-w-0">
                       <ListCard>
+                        {/* Below lg the dock's search replaces this field, so the filter and sort share a row. */}
+                        <div className="flex min-w-0 flex-wrap items-center justify-between gap-2 lg:block">
                         <ListToolbar>
                           <SegmentedControl
                             label={t("youtubeOpinions.filterBySentiment")}
@@ -1088,54 +1083,25 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
                             itemClassName="min-h-10 px-4 text-sm font-medium"
                           />
                         </ListToolbar>
-                        <div className="mt-3 flex min-w-0 flex-nowrap items-center gap-2">
-                          <div
-                            className={cn(
-                              "relative min-w-0 transition-[flex-grow] duration-150 motion-reduce:transition-none",
-                              searchCollapsed ? "min-w-[3rem] flex-1" : "shrink-0",
-                            )}
-                          >
-                            <button
-                              type="button"
-                              aria-label={t("youtubeOpinions.searchList")}
-                              aria-expanded={searchCollapsed}
-                              onClick={() => {
-                                setSearchOpen(true);
-                                searchInput.current?.focus();
+                        <div className="ml-auto flex min-w-0 flex-nowrap items-center gap-2 lg:ml-0 lg:mt-3">
+                          <div className="relative hidden min-w-0 shrink-0 lg:block">
+                            <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                            <Input
+                              ref={searchInput}
+                              aria-label={t("common.search")}
+                              placeholder={
+                                route.tab === "stocks"
+                                  ? t("youtubeOpinions.searchTicker")
+                                  : t("youtubeOpinions.searchCreator")
+                              }
+                              value={search}
+                              onChange={(event) => setSearch(event.target.value)}
+                              onKeyDown={(event) => {
+                                if (event.key === "Escape") setSearch("");
                               }}
-                              className={cn(
-                                "flex h-11 w-11 items-center justify-center rounded-full bg-muted text-muted-foreground transition-colors duration-150 hover:bg-secondary hover:text-foreground focus-visible:outline-none",
-                                searchCollapsed ? "pointer-events-none opacity-0" : "sm:hidden",
-                              )}
-                              tabIndex={searchCollapsed ? -1 : 0}
-                            >
-                              <Search className="h-4 w-4" aria-hidden="true" />
-                            </button>
-                            <div className={cn(!searchCollapsed && "hidden sm:block")}>
-                              <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                              <Input
-                                ref={searchInput}
-                                aria-label={t("common.search")}
-                                placeholder={
-                                  route.tab === "stocks"
-                                    ? t("youtubeOpinions.searchTicker")
-                                    : t("youtubeOpinions.searchCreator")
-                                }
-                                value={search}
-                                onChange={(event) => setSearch(event.target.value)}
-                                onBlur={() => {
-                                  if (!search) setSearchOpen(false);
-                                }}
-                                onKeyDown={(event) => {
-                                  if (event.key === "Escape") {
-                                    setSearch("");
-                                    setSearchOpen(false);
-                                  }
-                                }}
-                                className="h-11 rounded-full pl-10 pr-10 text-base sm:text-sm"
-                              />
-                              {search && <button type="button" aria-label={t("common.clearFilters")} className="absolute right-1 top-1.5 flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-foreground/[0.06] hover:text-foreground focus-visible:outline-none" onClick={() => { setSearch(""); searchInput.current?.focus(); }}><X className="h-4 w-4" aria-hidden="true" /></button>}
-                            </div>
+                              className="h-11 rounded-full pl-10 pr-10 text-base sm:text-sm"
+                            />
+                            {search && <button type="button" aria-label={t("common.clearFilters")} className="absolute right-1 top-1.5 flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-foreground/[0.06] hover:text-foreground focus-visible:outline-none" onClick={() => { setSearch(""); searchInput.current?.focus(); }}><X className="h-4 w-4" aria-hidden="true" /></button>}
                           </div>
                           {route.tab === "stocks" && isProductFeatureEnabled("portfolio") && (
                             <div className="flex shrink-0 items-center gap-1">
@@ -1150,7 +1116,7 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
                                   { value: "holdings", label: t("youtubeOpinions.directory.holdingsOnly") },
                                 ]}
                               />
-                              {stockScope === "holdings" && held.loading && <ContentSkeleton label={t("common.loadingStatus")} rows={2} />}
+                              {stockScope === "holdings" && held.loading && <ContentLoading label={t("common.loadingStatus")} />}
                               {stockScope === "holdings" && held.error && <div role="alert" className="flex items-center gap-2 text-xs text-negative">{c("Holdings could not be loaded.", "暂时无法加载持仓。")}<Button size="xs" variant="outline" onClick={refresh}>{t("common.retry")}</Button></div>}
                             </div>
                           )}
@@ -1158,7 +1124,7 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
                             <Select value={sortBy} onValueChange={(value) => setSortBy(value as DirectorySort)}>
                               <SelectTrigger
                                 aria-label={t("common.sort")}
-                                className="h-11 w-auto gap-1.5 rounded-full border-border bg-transparent px-3 text-[13px] font-semibold hover:border-foreground/25 hover:bg-foreground/[0.06]"
+                                className="h-11 w-auto gap-1.5 rounded-full border-border bg-transparent px-3 text-[0.8125rem] font-semibold hover:border-foreground/25 hover:bg-foreground/[0.06]"
                               >
                                 <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground" />
                                 <SelectValue />
@@ -1173,20 +1139,7 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
                             </Select>
                           </div>
                         </div>
-                        {catalogue && (
-                          <div className="mt-3 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 text-xs leading-5 text-muted-foreground">
-                            <p role="status" aria-live="polite" className="shrink-0 tabular-nums">
-                              {route.tab === "stocks"
-                                ? c(`Showing ${shownStocks.length} of ${visibleStocks.length} stocks`, `已显示 ${shownStocks.length} / ${visibleStocks.length} 只股票`)
-                                : c(`Showing ${visibleCreators.length} of ${creators.length} creators`, `已显示 ${visibleCreators.length} / ${creators.length} 位博主`)}
-                            </p>
-                            <p className="min-w-0 truncate">
-                              {route.tab === "stocks"
-                                ? c("Ranked within this list", "名单内排序")
-                                : c("All tracked creators", "全部追踪博主")}
-                            </p>
-                          </div>
-                        )}
+                        </div>
                         {catalogueError ? (
                           <EmptyLine
                             text={t("youtubeOpinions.directoryLoadFailed")}
@@ -1198,13 +1151,6 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
                         ) : (
                           <>
                             <TabsContent value="stocks" className="mt-0">
-                              <ListColumnHeader>
-                                <div className={stockColumnHeaderClass}>
-                                  <span>{t("youtubeOpinions.ticker")}</span>
-                                  <span className="text-right">{t("youtubeOpinions.directory.currentPrice")}</span>
-                                  <span className="hidden text-right sm:block">{t("youtubeOpinions.directory.historicalConsensus")}</span>
-                                </div>
-                              </ListColumnHeader>
                               {stockRows(true)}
                             </TabsContent>
                             <TabsContent value="creators" className="mt-0">
@@ -1248,7 +1194,7 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
                       </div>
                     </header>
                     <ListCard>
-                      {catalogueError ? <EmptyLine text={t("youtubeOpinions.directoryLoadFailed")} action={{ label: t("common.retry"), onClick: refresh }} alert /> : !catalogue ? <ContentSkeleton label={t("common.loadingStatus")} variant="video" rows={2} /> : catalogue.latest_videos?.length ? (
+                      {catalogueError ? <EmptyLine text={t("youtubeOpinions.directoryLoadFailed")} action={{ label: t("common.retry"), onClick: refresh }} alert /> : !catalogue ? <ContentLoading label={t("common.loadingStatus")} /> : catalogue.latest_videos?.length ? (
                         <ListRows aria-label={c("Latest creator videos", "博主最新视频")}>
                           {catalogue.latest_videos.map((group) => (
                             <li key={group.videoId} className={cn(listFeedRowClass, "py-4 first:pt-1")}>
@@ -1346,7 +1292,7 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
                         </span>
                       )}
                       <div className="min-w-0 flex-1">
-                        <h2 className="break-words text-[32px] font-semibold leading-tight tracking-[-0.025em]">
+                        <h2 className="break-words text-[2rem] font-semibold leading-tight tracking-[-0.025em]">
                           {route.ticker ? (
                             <Link
                               href={marketStockHref(route.ticker)}
@@ -1415,7 +1361,7 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
                     ) : (
                       <>
                         <div className="mt-6" aria-live="polite">
-                          <p className={cn("text-[28px] font-semibold leading-tight tracking-[-0.02em] sm:text-[32px]", toneText[headline.tone])}>
+                          <p className={cn("text-[1.75rem] font-semibold leading-tight tracking-[-0.02em] sm:text-[2rem]", toneText[headline.tone])}>
                             {overview?.total_opinions ? headline.label : t("youtubeOpinions.noOpinionsYet")}
                           </p>
                           <p className="mt-1 text-sm text-foreground/75 tabular-nums">
@@ -1559,7 +1505,7 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
                             type="button"
                             role="radio"
                             aria-checked={filters.sentiment === option.value}
-                            className={cn("inline-flex h-8 shrink-0 items-center rounded-full px-3.5 text-[13px] font-semibold transition-colors duration-150 focus-visible:outline-none", filters.sentiment === option.value ? "bg-foreground text-background" : "text-foreground/80 hover:bg-foreground/[0.06] hover:text-foreground active:bg-foreground/[0.1]")}
+                            className={cn("inline-flex h-8 shrink-0 items-center rounded-full px-3.5 text-[0.8125rem] font-semibold transition-colors duration-150 focus-visible:outline-none", filters.sentiment === option.value ? "bg-foreground text-background" : "text-foreground/80 hover:bg-foreground/[0.06] hover:text-foreground active:bg-foreground/[0.1]")}
                             onClick={() => setFilters((previous) => ({ ...previous, sentiment: option.value }))}
                           >
                             {option.label}
@@ -1582,7 +1528,7 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
                               type="button"
                               aria-pressed={showUntrackedVideos}
                               onClick={() => setShowUntrackedVideos((value) => !value)}
-                              className="mt-2 inline-flex min-h-10 items-center rounded-full px-3 text-[13px] font-semibold text-muted-foreground transition-colors hover:bg-foreground/[0.06] hover:text-foreground focus-visible:outline-none"
+                              className="mt-2 inline-flex min-h-10 items-center rounded-full px-3 text-[0.8125rem] font-semibold text-muted-foreground transition-colors hover:bg-foreground/[0.06] hover:text-foreground focus-visible:outline-none"
                             >
                               {t(showUntrackedVideos ? "youtubeOpinions.hideUntrackedVideos" : "youtubeOpinions.showUntrackedVideos", { count: String(untrackedVideoCount) })}
                             </button>
@@ -1667,7 +1613,7 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
                               />
                             </div>
                           ) : (
-                            <p className="mt-2 text-[13px] leading-5 text-foreground/75">
+                            <p className="mt-2 text-[0.8125rem] leading-5 text-foreground/75">
                               {t("youtubeOpinions.trendNeedsMore")}
                             </p>
                           )}
@@ -1685,7 +1631,7 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
                         </h2>
                         <ListCard>
                           {showAllCreatorStocks && (
-                            <div className="relative mb-3">
+                            <div className="relative mb-3 hidden lg:block">
                               <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                               <Input
                                 aria-label={t("youtubeOpinions.searchStocks")}

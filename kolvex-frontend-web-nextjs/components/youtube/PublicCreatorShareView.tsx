@@ -26,9 +26,9 @@ export default function PublicCreatorShareView({ data }: { data: CreatorLatestVi
     channel_avatar_url: opinion.channel_avatar_url || creator.channel_avatar_url,
   }));
   return <ReadingLayout>
-    <div className="mx-auto max-w-[1080px] space-y-8">
+    <div className="mx-auto max-w-[67.5rem] space-y-8">
       <div className="space-y-4 border-b border-border pb-6">
-        <div className="flex items-center gap-4"><CreatorAvatar name={name} avatarUrl={creator.channel_avatar_url} size="lg" /><div className="min-w-0"><h1 className="break-words text-[28px] font-semibold leading-tight tracking-[-0.025em] md:text-[32px]">{name}</h1><p className="mt-1 text-sm text-muted-foreground">{c("Latest imported video opinions", "最新一期已收录视频观点")}</p></div></div>
+        <div className="flex items-center gap-4"><CreatorAvatar name={name} avatarUrl={creator.channel_avatar_url} size="lg" /><div className="min-w-0"><h1 className="break-words text-[1.75rem] font-semibold leading-tight tracking-[-0.025em] md:text-[2rem]">{name}</h1><p className="mt-1 text-sm text-muted-foreground">{c("Latest imported video opinions", "最新一期已收录视频观点")}</p></div></div>
         <p className="text-sm text-muted-foreground"><time dateTime={data.video.opinion_date}>{formatOpinionDate(data.video.opinion_date || data.video.video_published_at, t("common.intlLocale"))}</time> · {c("New York date", "美东日期")} · {data.opinions.length} {c("stocks", "只股票")}</p>
         <h2 className="break-words text-base font-medium leading-relaxed">{data.video.video_title}</h2>
         {source && <a href={source} target="_blank" rel="noopener noreferrer" className="inline-block rounded-sm text-sm text-positive underline underline-offset-4 focus-visible:outline-none ">{c("View source video", "查看原视频")}</a>}

@@ -118,7 +118,7 @@ ListRow.displayName = "ListRow";
  * can all share the same height, corner and focus treatment.
  */
 export const listRowTargetClass =
-  "min-h-20 min-w-0 flex-1 items-center rounded-2xl px-2 py-4 outline-offset-2 focus-visible:bg-foreground/[0.06] focus-visible:outline-2 focus-visible:outline-primary";
+  "min-h-20 min-w-0 flex-1 items-center rounded-2xl px-2 py-4 max-md:min-h-0 max-md:py-2 outline-offset-2 focus-visible:bg-foreground/[0.06] focus-visible:outline-2 focus-visible:outline-primary";
 
 /**
  * Long-reading rows (opinions, posts) keep a hairline so prose stays scannable.
@@ -126,7 +126,7 @@ export const listRowTargetClass =
  * keyboard focus, matching the compact list rows.
  */
 export const listFeedRowClass =
-  "list-row-interactive min-w-0 border-b border-border py-6 first:pt-2 last:border-0 [overflow-wrap:anywhere]";
+  "list-row-interactive min-w-0 py-6 first:pt-2 last:border-0 [overflow-wrap:anywhere]";
 
 /** Centered "load more" footer of a list card. */
 export function ListLoadMore({

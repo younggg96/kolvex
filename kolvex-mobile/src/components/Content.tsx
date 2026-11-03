@@ -27,7 +27,7 @@ import {
   Failure,
   Glass,
   Page,
-  Skeleton,
+  LoadingStatus,
 } from "./UI";
 import { textBlocks } from "../lib/markdownBlocks";
 import { safeExternal } from "../lib/links";
@@ -39,7 +39,7 @@ export function AuthGate({
 }: PropsWithChildren<{ title: string; inline?: boolean }>) {
   const auth = useAuth();
   let boundary: React.ReactNode;
-  if (!auth.ready) boundary = <Skeleton />;
+  if (!auth.ready) boundary = <LoadingStatus />;
   else if (!auth.session)
     boundary = (
       <>
@@ -221,7 +221,7 @@ export function ResourceState({
         <Button onPress={() => router.push("/account")}>管理登录</Button>
       )}
       {resource.loading && !resource.data ? (
-        <Skeleton />
+        <LoadingStatus />
       ) : !resource.error && empty ? (
         <Empty title="暂无内容" message={message} />
       ) : null}

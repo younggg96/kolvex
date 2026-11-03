@@ -7,7 +7,7 @@ import { useTranslation } from "@/lib/i18n";
 import { isWeekendBriefDate, localizedBrief, type BriefSection, type DailyBrief } from "@/lib/dailyBriefs";
 
 function Markdown({ children }: { children: string }) {
-  return <div className="space-y-3 break-words text-[15px] leading-7 [&_a]:underline [&_ul]:list-inside [&_ul]:list-disc"><ReactMarkdown skipHtml allowedElements={["p", "strong", "em", "ul", "ol", "li", "br", "a", "blockquote"]} components={{ a: ({ children, href }) => <a href={href} target="_blank" rel="noopener noreferrer" className="underline">{children}</a> }}>{children}</ReactMarkdown></div>;
+  return <div className="space-y-3 break-words text-[0.9375rem] leading-7 [&_a]:underline [&_ul]:list-inside [&_ul]:list-disc"><ReactMarkdown skipHtml allowedElements={["p", "strong", "em", "ul", "ol", "li", "br", "a", "blockquote"]} components={{ a: ({ children, href }) => <a href={href} target="_blank" rel="noopener noreferrer" className="underline">{children}</a> }}>{children}</ReactMarkdown></div>;
 }
 function DetailsList({ items }: { items: { name: string; detail: string }[] }) {
   return <ul className="space-y-3">{items.map((item, i) => <li key={i}><p className="font-medium">{item.name}</p><Markdown>{item.detail}</Markdown></li>)}</ul>;
@@ -46,11 +46,11 @@ export default function BriefContent({ document: original }: { document: DailyBr
   const { t, locale } = useTranslation();
   const document = localizedBrief(original, locale);
   const { brief } = document;
-  return <article lang={(document.language ?? "zh") === "zh" ? "zh-CN" : "en"} className="mx-auto max-w-[1080px] space-y-10 break-words">
+  return <article lang={(document.language ?? "zh") === "zh" ? "zh-CN" : "en"} className="mx-auto max-w-[67.5rem] space-y-10 break-words">
     <header className="space-y-4">
       {brief.hero_image && <ImageContent key={brief.hero_image.url} image={brief.hero_image} />}
       <div className="flex flex-wrap gap-2 text-xs text-muted-foreground"><span>{brief.date}</span><span>{t(isWeekendBriefDate(brief.date) || brief.market_status === "weekend" ? "briefs.weekend" : "briefs.tradingDay")}</span><span>{t(isWeekendBriefDate(brief.date) ? "briefs.weekendEdition" : `briefs.${brief.type}`)}</span></div>
-      <p className="text-sm font-medium">{brief.title}</p><h1 className="text-2xl font-semibold leading-tight sm:text-[32px]">{brief.headline}</h1><p className="text-sm leading-6 text-muted-foreground">{brief.subtitle}</p>
+      <p className="text-sm font-medium">{brief.title}</p><h1 className="text-2xl font-semibold leading-tight sm:text-[2rem]">{brief.headline}</h1><p className="text-sm leading-6 text-muted-foreground">{brief.subtitle}</p>
       <p className="text-xs text-muted-foreground">{t("briefs.generatedAt")} {brief.generated_at_pt}</p>
     </header>
     {[...document.sections].sort((a, b) => a.order - b.order).map(section => <section key={section.section_id} className="space-y-5 border-t border-border pt-6"><div><h2 className="text-xl font-semibold">{section.title}</h2>{section.subtitle && <p className="mt-2 text-sm leading-6 text-muted-foreground">{section.subtitle}</p>}</div><SectionBody section={section} /></section>)}

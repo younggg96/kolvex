@@ -46,8 +46,9 @@ export function loadStockTrend(symbol: string, params: PriceHistoryParams, signa
         getStockHistory(symbol, params, signal, force).then(bars => {
           if (signal.aborted) throw new DOMException("Cancelled", "AbortError");
           const points = trendPoints(bars, params.period === "1d");
+          if (points.length < 2) throw new Error("Trend unavailable");
           if (cache.size >= 500) cache.delete(cache.keys().next().value!);
-          cache.set(key, { points, expires: Date.now() + (points.length > 1 ? 300_000 : 30_000) });
+          cache.set(key, { points, expires: Date.now() + 300_000 });
           resolve(points);
         }).catch(reject).finally(() => { active--; pump(); });
       },

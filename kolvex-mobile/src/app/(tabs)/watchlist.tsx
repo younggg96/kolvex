@@ -8,7 +8,7 @@ import {
   Empty,
   Failure,
   ListPage,
-  Skeleton,
+  LoadingStatus,
 } from "../../components/UI";
 import { useWatchlist } from "../../state/Watchlist";
 export default function Watchlist() {
@@ -32,7 +32,7 @@ export default function Watchlist() {
       }
       empty={
         !list.ready && !list.error ? (
-          <Skeleton />
+          <LoadingStatus />
         ) : list.error ? undefined : (
           <View style={{ gap: 16 }}>
             <Empty

@@ -116,7 +116,7 @@ function AppSidebar({ onNavigate }: AppSidebarProps) {
             <div className="flex aspect-square size-8 items-center justify-center">
               <LogoIcon size={22} />
             </div>
-            <span className="text-[17px] font-bold tracking-[-0.02em] group-data-[collapsible=icon]:hidden">
+            <span className="text-[1.0625rem] font-bold tracking-[-0.02em] group-data-[collapsible=icon]:hidden">
               Kolvex
             </span>
           </Link>
@@ -162,7 +162,7 @@ function AppSidebar({ onNavigate }: AppSidebarProps) {
                         the link colour on hover instead of a brand-tinted icon. */}
                     <MessageSquareText className="text-muted-foreground" />
                     <span className="flex-1">{c("Ask Kolvex…", "询问 Kolvex…")}</span>
-                    <kbd className="rounded border border-border px-1 font-sans text-[10px] leading-4 text-muted-foreground group-data-[collapsible=icon]:hidden">
+                    <kbd className="rounded border border-border px-1 font-sans text-[0.625rem] leading-4 text-muted-foreground group-data-[collapsible=icon]:hidden">
                       ⌘K
                     </kbd>
                   </SidebarMenuButton>

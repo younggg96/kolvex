@@ -80,9 +80,9 @@ export const MultiSelect = React.forwardRef<HTMLDivElement, MultiSelectProps>(
 
     // Define min heights based on size
     const minHeightClasses = {
-      sm: "min-h-[38px]",
-      md: "min-h-[40px]",
-      lg: "min-h-[48px]",
+      sm: "min-h-[2.375rem]",
+      md: "min-h-[2.5rem]",
+      lg: "min-h-[3rem]",
     };
 
     return (
@@ -112,7 +112,7 @@ export const MultiSelect = React.forwardRef<HTMLDivElement, MultiSelectProps>(
                         className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-secondary text-foreground border border-border"
                       >
                         {option.icon && <span className="flex items-center">{option.icon}</span>}
-                        <span className="truncate max-w-[120px]">{option.label}</span>
+                        <span className="truncate max-w-[7.5rem]">{option.label}</span>
                         {!disabled && (
                           <button
                             onClick={(e) => handleRemoveOption(e, option.value)}
@@ -148,7 +148,7 @@ export const MultiSelect = React.forwardRef<HTMLDivElement, MultiSelectProps>(
             align="start"
             sideOffset={4}
           >
-            <div className="max-h-[168px] overflow-y-auto">
+            <div className="max-h-[10.5rem] overflow-y-auto">
               <div className="p-1 flex flex-col gap-1">
                 {options.length === 0 ? (
                   <div className="py-6 text-center text-sm text-muted-foreground">

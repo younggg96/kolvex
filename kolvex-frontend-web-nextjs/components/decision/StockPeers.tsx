@@ -18,6 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { SegmentedControl } from "@/components/ui/segmented-control";
 import { Skeleton } from "@/components/ui/skeleton";
+import { PendingValue } from "@/components/ui/content-loading";
 import { validTicker } from "@/lib/decision";
 import {
   MAX_PEERS,
@@ -422,7 +423,7 @@ export default function StockPeers({ symbol }: { symbol: string }) {
                     return (
                       <td key={item} className="figure border-b border-border px-4 py-3 text-right">
                         {!loaded || loaded.status === "loading" ? (
-                          <Skeleton className="ml-auto h-4 w-14" />
+                          <PendingValue className="h-4" />
                         ) : loaded.overview ? (
                           row.read(loaded.overview)
                         ) : (

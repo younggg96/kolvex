@@ -95,7 +95,7 @@ export function FilterSheet({
         >
           <Filter className="w-3 h-3" />
           {activeFilterCount > 0 && (
-            <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-white">
+            <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[0.625rem] font-bold text-white">
               {activeFilterCount}
             </span>
           )}
@@ -184,7 +184,7 @@ export function FilterSheet({
                 onSelectionChange={onTagsChange}
                 defaultVisibleCount={6}
                 columns={3}
-                expandButtonHeight="h-[40px]"
+                expandButtonHeight="h-[2.5rem]"
                 blurOpacity={80}
               />
             ) : (

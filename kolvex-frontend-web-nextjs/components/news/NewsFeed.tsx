@@ -1,7 +1,7 @@
 "use client";
 
 import { Skeleton } from "@/components/ui/skeleton";
-import { ContentSkeleton } from "@/components/ui/content-skeleton";
+import { ContentLoading } from "@/components/ui/content-loading";
 import { useEffect, useRef, useState } from "react";
 import { ArrowUp, Newspaper, Pause, Play, RefreshCw } from "lucide-react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
@@ -46,7 +46,7 @@ export default function NewsFeed() {
       </Button>
     </>}>
       <section className="flex min-h-0 flex-1 flex-col bg-background" aria-label={c("Headlines", "快讯列表")}>
-        <div className="flex min-h-0 flex-1 flex-col px-4 pb-4 pt-4 md:px-8 md:pb-6 md:pt-6">
+        <div className="flex min-h-0 flex-1 flex-col px-[16px] pb-4 pt-4 md:px-8 md:pb-6 md:pt-6">
           <ListCard className="flex min-h-0 flex-1 flex-col overflow-hidden">
             <ListToolbar className="shrink-0 border-b border-border pb-3 text-xs leading-5 text-muted-foreground">
               <span>{terminal.loading && !terminal.meta ? <Skeleton className="h-3 w-28" /> : c(`${articles.length} loaded headlines`, `${articles.length} 条快讯`)}</span>
@@ -65,7 +65,7 @@ export default function NewsFeed() {
               </Button>
             </div>}
             <div ref={scrollArea} className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
-              {!terminal.feed.initialized && terminal.loading ? <ContentSkeleton label={c("Loading headlines…", "正在加载快讯…")} variant="text" rows={5} /> : articles.length === 0 ? <div className="px-6 py-16 text-center">
+              {!terminal.feed.initialized && terminal.loading ? <ContentLoading label={c("Loading headlines…", "正在加载快讯…")} /> : articles.length === 0 ? <div className="px-6 py-16 text-center">
                 <Newspaper aria-hidden className="mx-auto mb-3 h-6 w-6 text-muted-foreground" />
                 <h2 className="text-sm font-medium">{terminal.error ? c("News unavailable", "新闻暂不可用") : c("No headlines yet", "暂无快讯")}</h2>
                 <p className="mt-2 text-xs text-muted-foreground">{c("Refresh to check again later.", "可稍后刷新重试。")}</p>

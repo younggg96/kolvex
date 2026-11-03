@@ -203,18 +203,28 @@ export async function getStockHistory(
 ): Promise<PriceBar[]> {
   const key = stockHistoryKey(symbol, params);
   return loadClientCache(key, async requestSignal => {
-    const response = await fetch(key, { signal: requestSignal });
-    const data = await response.json().catch(() => ({}));
-    if (!response.ok) {
-      throw Object.assign(new Error(data.error || `API error: ${response.status}`), { status: response.status });
+    for (let attempt = 0; ; attempt++) {
+      try {
+        const response = await fetch(key, { signal: requestSignal, cache: attempt ? "no-store" : "default" });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          throw Object.assign(new Error(data.error || `API error: ${response.status}`), { status: response.status });
+        }
+        const bars = (Array.isArray(data.data) ? data.data : []).filter(
+          (bar: Partial<PriceBar>): bar is PriceBar =>
+            typeof bar.date === "string" &&
+            [bar.open, bar.high, bar.low, bar.close].every(
+              value => typeof value === "number" && Number.isFinite(value)
+            )
+        );
+        // An empty upstream response is unavailable data, not a successful cache entry.
+        if (!bars.length) throw new Error("History unavailable");
+        return bars;
+      } catch (error) {
+        const status = (error as { status?: number }).status;
+        if (requestSignal.aborted || attempt > 0 || (status && status < 500 && status !== 429)) throw error;
+      }
     }
-    return ((data.data || []) as Array<Partial<PriceBar>>).filter(
-      (bar): bar is PriceBar =>
-        typeof bar.date === "string" &&
-        [bar.open, bar.high, bar.low, bar.close].every(
-          (value) => typeof value === "number" && Number.isFinite(value)
-        )
-    );
   }, { ttl: 60_000, maxAge: 5 * 60_000, signal, force });
 }
 

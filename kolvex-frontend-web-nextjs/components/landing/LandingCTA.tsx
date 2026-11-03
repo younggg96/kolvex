@@ -16,7 +16,7 @@ export default function LandingCTA() {
           <Button asChild size="lg" className="landing-primary">
             <Link href="/auth">
               {c("Start using Kolvex", "开始使用 Kolvex")}
-              <ArrowUpRight size={17} aria-hidden />
+              <ArrowUpRight size="1.0625rem" aria-hidden />
             </Link>
           </Button>
         </div>

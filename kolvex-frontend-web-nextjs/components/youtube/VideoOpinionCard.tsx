@@ -38,7 +38,7 @@ function thumbnailFor(opinion: VideoOpinionGroup["video"]) {
 function Thumbnail({ src }: { src: string }) {
   const [failed, setFailed] = useState(false);
   return (
-    <span className="relative flex aspect-video w-[120px] shrink-0 items-center justify-center overflow-hidden rounded-3xl bg-muted text-muted-foreground sm:w-[168px]">
+    <span className="relative flex aspect-video w-[7.5rem] shrink-0 items-center justify-center overflow-hidden rounded-3xl bg-muted text-muted-foreground sm:w-[10.5rem]">
       <PlayCircle className="h-5 w-5" />
       {src && !failed && (
         // eslint-disable-next-line @next/next/no-img-element
@@ -133,7 +133,7 @@ export default function VideoOpinionCard({
           ) : (
             <h3 title={title}>{heading}</h3>
           )}
-          <p className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px] text-muted-foreground tabular-nums">
+          <p className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[0.8125rem] text-muted-foreground tabular-nums">
             <time dateTime={published}>{formatOpinionDate(published, t("common.intlLocale"))}</time>
             {opinions.length > 0 ? (
               <span>{t("youtubeOpinions.videoStockCount", { count: String(opinions.length) })}</span>
@@ -167,7 +167,7 @@ export default function VideoOpinionCard({
               >
                 <span className="flex min-w-0 items-center gap-2.5">
                   <CompanyLogo symbol={opinion.ticker} size="sm" />
-                  <span className="truncate text-[15px] font-semibold">{opinion.ticker}</span>
+                  <span className="truncate text-[0.9375rem] font-semibold">{opinion.ticker}</span>
                   <OpinionStrength value={opinion.direction_score} className={cn("ml-1", !compact && "sm:hidden")} />
                 </span>
                 <span className={cn("hidden h-6 items-center", !compact && "sm:flex")}>
@@ -202,7 +202,7 @@ export default function VideoOpinionCard({
           aria-expanded={expanded}
           aria-controls={opinionsId}
           onClick={() => setExpanded((value) => !value)}
-          className="mt-2 inline-flex min-h-10 items-center gap-1.5 rounded-full px-3 text-[13px] font-semibold text-muted-foreground transition-colors duration-150 hover:bg-foreground/[0.06] hover:text-foreground focus-visible:outline-none sm:-ml-3"
+          className="mt-2 inline-flex min-h-10 items-center gap-1.5 rounded-full px-3 text-[0.8125rem] font-semibold text-muted-foreground transition-colors duration-150 hover:bg-foreground/[0.06] hover:text-foreground focus-visible:outline-none sm:-ml-3"
         >
           {expanded ? t("youtubeOpinions.collapseVideoOpinions") : t("youtubeOpinions.showRemainingVideoOpinions", { count: String(hidden) })}
           <ChevronDown

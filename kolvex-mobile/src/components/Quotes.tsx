@@ -5,7 +5,7 @@ import { number, percent } from "../lib/models";
 import { useResource } from "../lib/useResource";
 import { useText } from "../lib/i18n";
 import { useTheme } from "../lib/theme";
-import { Copy, Failure, Glass, styles } from "./UI";
+import { Copy, Failure, Glass, PendingValue, styles } from "./UI";
 
 export function QuoteRow({
   symbol,
@@ -22,6 +22,7 @@ export function QuoteRow({
     quote(symbol, signal),
   );
   const q = resource.data;
+  const pending = resource.loading && !q;
   const color = (q?.change_percent ?? 0) < 0 ? t.negative : t.accent;
   return (
     <Glass style={compact ? { width: 172 } : undefined}>
@@ -46,14 +47,29 @@ export function QuoteRow({
           </View>
           {!compact && (
             <View style={{ alignItems: "flex-end", gap: 4 }}>
-              <Copy bold>{number(q?.current_price)}</Copy>
-              <Copy size={14} color={color}>
-                {percent(q?.change_percent)}
-              </Copy>
+              {pending ? (
+                <>
+                  <PendingValue />
+                  <PendingValue />
+                </>
+              ) : (
+                <>
+                  <Copy bold>{number(q?.current_price)}</Copy>
+                  <Copy size={14} color={color}>
+                    {percent(q?.change_percent)}
+                  </Copy>
+                </>
+              )}
             </View>
           )}
         </View>
-        {compact && (
+        {compact && pending && (
+          <>
+            <PendingValue height={30} />
+            <PendingValue />
+          </>
+        )}
+        {compact && !pending && (
           <>
             <Copy size={24} bold>
               {number(q?.current_price)}

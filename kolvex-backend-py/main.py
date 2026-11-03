@@ -14,6 +14,8 @@ import os
 from app.api.routes import api_router
 from app.core.config import settings
 from app.core.redis import init_redis, close_redis, get_redis
+from app.core.egress_metrics import RequestMetricsMiddleware, run_traffic_reporter
+from app.core.public_read_cache import PublicReadCacheMiddleware
 
 # 配置日志
 logging.basicConfig(
@@ -46,6 +48,7 @@ async def lifespan(app: FastAPI):
     worker = asyncio.create_task(run_worker()) if os.getenv("CHART_WORKER_ENABLED", "true").lower() == "true" else None
     from app.services.economic_indicators import run_economic_indicators_worker
     indicators_worker = asyncio.create_task(run_economic_indicators_worker()) if settings.ECONOMIC_INDICATORS_WORKER_ENABLED else None
+    traffic_reporter = asyncio.create_task(run_traffic_reporter())
     try:
         yield
     finally:
@@ -62,6 +65,12 @@ async def lifespan(app: FastAPI):
             except asyncio.CancelledError:
                 pass
 
+        traffic_reporter.cancel()
+        try:
+            await traffic_reporter
+        except asyncio.CancelledError:
+            pass
+
     # 关闭时执行
     await close_redis()
     print("👋 Shutting down Kolvex Backend API...")
@@ -77,6 +86,10 @@ app = FastAPI(
     redoc_url="/redoc",
     openapi_url="/openapi.json",
 )
+
+# Public cache sits inside CORS so cached headers never contain another origin.
+app.add_middleware(PublicReadCacheMiddleware)
+app.add_middleware(RequestMetricsMiddleware)
 
 # CORS 配置
 app.add_middleware(

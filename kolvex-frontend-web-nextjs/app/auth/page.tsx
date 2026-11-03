@@ -1,4 +1,4 @@
-import { ContentSkeleton } from "@/components/ui/content-skeleton";
+import { ContentLoading } from "@/components/ui/content-loading";
 import { Metadata } from "next";
 import { Suspense } from "react";
 import AuthPageClient from "@/components/auth/AuthPageClient";
@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 function AuthPageFallback() {
   return (
     <div className="flex min-h-screen items-center justify-center">
-      <ContentSkeleton label="Loading sign in / 正在加载登录页面" variant="profile" className="w-full max-w-sm px-6" />
+      <ContentLoading className="w-full max-w-sm px-6" />
     </div>
   );
 }

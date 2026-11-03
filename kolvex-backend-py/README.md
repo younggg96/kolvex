@@ -152,12 +152,15 @@ python -m unittest discover -s tests -p 'test_*.py'
 历史 SQL、依赖、配置或残留辅助文件不代表这些功能仍可用。普通期权链、Plaid 连接和共享投资组合功能仍保留；Next.js 中的联系邮件接口已禁用。
 # Background chart analysis and drawings
 
-Apply `supabase/migrations/20261014072138_stock_chart_jobs.sql` after the existing
+Apply `supabase/migrations/20261016172845_stock_chart_jobs.sql` after the existing
 stock analysis history migrations before releasing the new frontend. The queue
 and its RPCs are service-role-only. No API keys are stored in queued requests.
 
 The FastAPI lifespan starts one chart worker per API process by default, so the
-existing Railway start command needs no change. Database claims use `FOR UPDATE
+existing Railway start command needs no change. An empty queue is checked every
+60 seconds; a non-empty queue is drained serially without a polling delay. A
+process guard rejects duplicate worker starts. Production Docker defaults to one
+API process; additional API processes/replicas each add a consumer. Database claims use `FOR UPDATE
 SKIP LOCKED` to avoid duplicate processing across replicas. Blocking market and
 database calls run outside the API event loop. For a separate worker service, set
 `CHART_WORKER_ENABLED=false` on the API and run:
@@ -184,3 +187,19 @@ python -m unittest discover -s tests -p 'test_stock_chart_jobs.py'
 
 Run `supabase/tests/stock_chart_jobs.sql` in a test database with the migrations
 and a test auth user. Its queue/history fixtures roll back.
+
+
+## Egress controls and monitoring
+
+See [the egress audit](docs/supabase-egress-audit.md) for verified sources,
+request estimates, validation results, and rollout checks. Public stock news,
+OHLCV and X reads use a bounded process-local cache (30–60 seconds). Personal
+jobs, AI history/generation, portfolio and authentication routes bypass this
+cache. No business tables or stored data are changed.
+
+Every 60 seconds, each API/standalone chart-worker process emits `egress_metrics`
+JSON logs: per-route request counts, decoded response-body bytes, HTTP errors,
+and public cache hits/misses/hit ratios. PostgREST table/RPC traffic is measured
+separately from API output; do not add both as Supabase egress. Aggregate by
+`source`, `endpoint`, and time across processes. Query strings, user IDs,
+credentials and response content are excluded from these metrics.

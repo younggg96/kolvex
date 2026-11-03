@@ -89,7 +89,7 @@ export default function StrengthChart({
         onBlur={() => select(null)}
         className={cn(
           "relative cursor-crosshair touch-pan-y select-none rounded-2xl focus-visible:outline-none ",
-          compact ? "h-[96px]" : "h-[150px] sm:h-[190px]",
+          compact ? "h-[6rem]" : "h-[9.375rem] sm:h-[11.875rem]",
         )}
       >
         <svg

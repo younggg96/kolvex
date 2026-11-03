@@ -37,7 +37,7 @@ export function ResearchSummaryCard({ analysis, href, t, headingLevel = "h3" }: 
           <span className="flex min-w-0 items-center gap-2">
             <Avatar className="h-5 w-5 shrink-0">
               {analysis.author.avatar_url && <AvatarImage src={analysis.author.avatar_url} alt="" />}
-              <AvatarFallback className="bg-muted text-[8px]"><User className="h-2.5 w-2.5" /></AvatarFallback>
+              <AvatarFallback className="bg-muted text-[0.5rem]"><User className="h-2.5 w-2.5" /></AvatarFallback>
             </Avatar>
             <span className="truncate">{analysis.author.full_name || analysis.author.username || t("research.author")}</span>
           </span>

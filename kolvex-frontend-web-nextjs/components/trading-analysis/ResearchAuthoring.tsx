@@ -65,7 +65,7 @@ import {
 } from "@/components/chat/ChatInput";
 import type { AIModelConfig } from "@/components/chat/types";
 import { DecisionBadge, StatusBadge } from "@/components/trading-analysis/badges";
-import { HistorySkeleton } from "@/components/trading-analysis/skeletons";
+import { ContentLoading } from "@/components/ui/content-loading";
 import CompanyLogo from "@/components/ui/company-logo";
 
 // ==================== Helpers ====================
@@ -257,14 +257,14 @@ export default function TradingAnalysisPage({ searchParams }: { searchParams?: {
       }
     >
       <div className="relative flex-1 overflow-y-auto">
-        <div className="mx-auto w-full px-4 pb-16 pt-6 md:px-8 md:pt-8">
+        <div className="mx-auto w-full px-[16px] pb-16 pt-6 md:px-8 md:pt-8">
           <div className="space-y-8">
             <div className="flex flex-wrap items-end justify-between gap-4">
               <div className="min-w-0">
-                <h2 className="text-[28px] font-bold leading-tight md:text-[32px]">
+                <h2 className="text-[1.75rem] font-bold leading-tight md:text-[2rem]">
                   {t("tradingAnalysis.title")}
                 </h2>
-                <p className="mt-2 max-w-[60ch] text-[15px] leading-relaxed text-muted-foreground">
+                <p className="mt-2 max-w-[60ch] text-[0.9375rem] leading-relaxed text-muted-foreground">
                   {t("tradingAnalysis.heroDescription")}
                 </p>
               </div>
@@ -317,7 +317,7 @@ export default function TradingAnalysisPage({ searchParams }: { searchParams?: {
                             </span>
                           </Button>
                         </PopoverTrigger>
-                        <PopoverContent align="start" collisionPadding={16} className="w-[284px] max-w-[calc(100vw-32px)] p-3">
+                        <PopoverContent align="start" collisionPadding={16} className="w-[17.75rem] max-w-[calc(100vw-2rem)] p-3">
                           <Calendar
                             mode="single"
                             required
@@ -401,7 +401,7 @@ export default function TradingAnalysisPage({ searchParams }: { searchParams?: {
                       ) : (
                         <Link
                           href="/dashboard/settings?tab=api-keys"
-                          className="flex h-10 items-center justify-center gap-1.5 rounded-full border border-dashed border-positive/35 px-4 text-[13px] font-semibold text-positive transition-colors duration-150 hover:border-positive/60 hover:bg-foreground/[0.06]"
+                          className="flex h-10 items-center justify-center gap-1.5 rounded-full border border-dashed border-positive/35 px-4 text-[0.8125rem] font-semibold text-positive transition-colors duration-150 hover:border-positive/60 hover:bg-foreground/[0.06]"
                         >
                           <Settings className="w-3.5 h-3.5" />
                           {t("tradingAnalysis.addApiKey")}
@@ -460,7 +460,7 @@ export default function TradingAnalysisPage({ searchParams }: { searchParams?: {
                               <span className="flex items-center gap-2">
                                 {m.name}
                                 {m.isPro && (
-                                  <span className="rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-semibold text-muted-foreground">
+                                  <span className="rounded-full bg-muted px-1.5 py-0.5 text-[0.625rem] font-semibold text-muted-foreground">
                                     Pro
                                   </span>
                                 )}
@@ -494,7 +494,7 @@ export default function TradingAnalysisPage({ searchParams }: { searchParams?: {
                               <span className="flex items-center gap-2">
                                 {m.name}
                                 {m.isPro && (
-                                  <span className="rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-semibold text-muted-foreground">
+                                  <span className="rounded-full bg-muted px-1.5 py-0.5 text-[0.625rem] font-semibold text-muted-foreground">
                                     Pro
                                   </span>
                                 )}
@@ -520,7 +520,7 @@ export default function TradingAnalysisPage({ searchParams }: { searchParams?: {
                             onClick={() => toggleAnalyst(id)}
                             aria-pressed={isActive}
                             className={cn(
-                              "h-9 rounded-full px-4 text-[13px] font-semibold transition-colors duration-150 focus-visible:outline-none ",
+                              "h-9 rounded-full px-4 text-[0.8125rem] font-semibold transition-colors duration-150 focus-visible:outline-none ",
                               isActive
                                 ? "bg-foreground text-background"
                                 : "bg-muted text-muted-foreground hover:bg-foreground/[0.06] hover:text-foreground active:bg-foreground/[0.1]"
@@ -562,7 +562,7 @@ export default function TradingAnalysisPage({ searchParams }: { searchParams?: {
 
             {/* ── History ── */}
             <section aria-labelledby="analysis-history" className="animate-fade-in-up">
-              <h3 id="analysis-history" className="border-b border-border pb-3 text-[17px] font-semibold text-foreground">
+              <h3 id="analysis-history" className="border-b border-border pb-3 text-[1.0625rem] font-semibold text-foreground">
                 {t("tradingAnalysis.history")}
                 {total > 0 && (
                   <span className="figure ml-2 text-sm font-normal text-muted-foreground">
@@ -572,10 +572,10 @@ export default function TradingAnalysisPage({ searchParams }: { searchParams?: {
               </h3>
 
               {loading ? (
-                <HistorySkeleton />
+                <ContentLoading />
               ) : history.length === 0 ? (
                 <div className="flex flex-col items-start gap-3 py-12">
-                  <p className="text-[15px] text-muted-foreground">
+                  <p className="text-[0.9375rem] text-muted-foreground">
                     {t("tradingAnalysis.noHistory")}
                   </p>
                   <Button variant="outline" onClick={() => setDialogOpen(true)} className="gap-1.5">
@@ -601,7 +601,7 @@ export default function TradingAnalysisPage({ searchParams }: { searchParams?: {
                         <div className="min-w-0 flex-1">
                           <Link
                             href={`/dashboard/trading-analysis/${item.id}`}
-                            className="text-[15px] font-semibold text-foreground after:absolute after:inset-0 focus-visible:outline-none focus-visible:after:rounded-3xl "
+                            className="text-[0.9375rem] font-semibold text-foreground after:absolute after:inset-0 focus-visible:outline-none focus-visible:after:rounded-3xl "
                           >
                             {item.ticker}
                           </Link>

@@ -22,6 +22,28 @@ def batch_service(provider, timeout=0.1):
     return service, executor
 
 
+class QuoteFallbackTests(unittest.TestCase):
+    def test_info_failure_still_uses_fast_quote_prices(self):
+        class Ticker:
+            @property
+            def info(self):
+                raise RuntimeError("Metadata unavailable")
+
+            fast_info = type("FastInfo", (), {"last_price": 102, "previous_close": 100})()
+
+        source = ast.parse(SOURCE.read_text())
+        cls = next(node for node in source.body if isinstance(node, ast.ClassDef) and node.name == "YFinanceService")
+        method = next(node for node in cls.body if isinstance(node, ast.FunctionDef) and node.name == "get_quote")
+        scope = {"Dict": Dict, "Any": Any}
+        exec(compile(ast.Module(body=[method], type_ignores=[]), str(SOURCE), "exec"), scope)
+        service = type("Fixture", (), {"get_ticker": lambda self, symbol: Ticker(), "get_quote": scope["get_quote"]})()
+        quote = service.get_quote("^GSPC")
+        self.assertEqual(quote["current_price"], 102)
+        self.assertEqual(quote["previous_close"], 100)
+        self.assertEqual(quote["change"], 2)
+        self.assertEqual(quote["change_percent"], 2)
+
+
 class QuoteBatchTests(unittest.TestCase):
     def test_a_slow_symbol_does_not_discard_ready_quotes(self):
         release = threading.Event()

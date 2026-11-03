@@ -25,8 +25,8 @@ export default function BriefLibrary({ searchParams }: { searchParams?: BriefSea
   useEffect(() => { document.title = `${(data ? localizedBrief(data.payload, locale).brief.headline : t("briefs.title"))} | Kolvex`; }, [data, locale, t]);
 
   return <DashboardLayout title={t("briefs.title")}>
-    <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-10 pt-6 md:px-8 md:pt-8">
-      <div className="mx-auto max-w-[1080px] space-y-6">
+    <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-[16px] pb-10 pt-6 md:px-8 md:pt-8">
+      <div className="mx-auto max-w-[67.5rem] space-y-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
             <PopoverTrigger asChild>

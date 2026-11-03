@@ -128,7 +128,7 @@ export default function EmailSignup() {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="flex min-w-[140px] md:min-w-[150px] items-center justify-center rounded-r-full px-5 md:px-6 bg-primary text-white dark:text-background text-sm md:text-base font-bold tracking-wide hover:bg-primary/90 transition-colors whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex min-w-[8.75rem] md:min-w-[9.375rem] items-center justify-center rounded-r-full px-5 md:px-6 bg-primary text-white dark:text-background text-sm md:text-base font-bold tracking-wide hover:bg-primary/90 transition-colors whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isSubmitting ? "Submitting..." : "Get Early Access"}
             </button>

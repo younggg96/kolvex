@@ -11,7 +11,7 @@ import { marketStockHref } from "@/lib/stockLinks";
 import CompanyLogo from "@/components/ui/company-logo";
 import { Button } from "@/components/ui/button";
 import { ListCard, ListFooterLink, ListRow, ListRows } from "@/components/ui/list-card";
-import { Skeleton } from "@/components/ui/skeleton";
+import { ContentLoading, PendingValue } from "@/components/ui/content-loading";
 import { Change, money, useCopy } from "./shared";
 import WatchlistStatus from "./WatchlistStatus";
 
@@ -71,7 +71,7 @@ export default function MarketWatchlistCard() {
       </div>
     </header>
     <ListCard aria-busy={!ready || loading}>
-      {!ready ? <div role="status" aria-label={c("Loading Watchlist", "正在加载自选股")} className="space-y-3 py-2">{[0, 1, 2].map(row => <Skeleton key={row} className="h-11 w-full" />)}</div>
+      {!ready ? <ContentLoading label={c("Loading Watchlist", "正在加载自选股")} />
         : !symbols.length ? <div className="px-3 py-6 text-center">
           <Star className="mx-auto h-5 w-5 text-muted-foreground" aria-hidden />
           <p className="mt-3 text-sm font-medium">{c("Follow your first stock", "添加第一只自选股")}</p>
@@ -85,7 +85,7 @@ export default function MarketWatchlistCard() {
             <ListRows>{stocks.map(symbol => <ListRow key={symbol} className="pr-0">
               <Link href={marketStockHref(symbol)} className="grid min-h-11 w-full grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-2 rounded-full px-1 text-sm transition-colors duration-150 hover:text-foreground focus-visible:outline-none" title={c(`${quotes[symbol]?.name ?? symbol} quotes`, `${quotes[symbol]?.name ?? symbol} 行情`)}>
                 <span className="flex min-w-0 items-center gap-2"><span className="shrink-0" aria-hidden><CompanyLogo symbol={symbol} size="xs" /></span><span className="truncate font-medium">{symbol}</span></span>
-                {loading && !quotes[symbol] ? <Skeleton className="col-span-2 h-4 w-28" /> : <><span className="figure text-right">{money(quotes[symbol]?.price)}</span><Change value={quotes[symbol]?.changePercent} className="min-w-14 text-right text-xs" /></>}
+                {loading && !quotes[symbol] ? <PendingValue className="col-span-2 h-4" /> : <><span className="figure text-right">{money(quotes[symbol]?.price)}</span><Change value={quotes[symbol]?.changePercent} className="min-w-14 text-right text-xs" /></>}
               </Link>
             </ListRow>)}</ListRows>
           </details>)}

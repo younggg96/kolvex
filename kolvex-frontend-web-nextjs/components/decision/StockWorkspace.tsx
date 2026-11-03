@@ -270,7 +270,7 @@ export default function StockWorkspace({
   return (
     <DashboardLayout title={c("Markets", "行情")}>
       <main className="flex-1 overflow-y-auto">
-        <div className="mx-auto max-w-[1800px] px-4 pb-16 pt-4 md:px-8 md:pt-6">
+        <div className="mx-auto max-w-[112.5rem] px-[16px] pb-16 pt-4 md:px-8 md:pt-6">
           <div className="min-w-0 space-y-6">
             <section className="min-w-0" aria-labelledby="stock-title">
               <nav
@@ -373,7 +373,7 @@ export default function StockWorkspace({
               {!!errors.length && (
                 <div
                   role="alert"
-                  className="mt-3 flex flex-wrap items-center gap-2 text-[13px] text-muted-foreground"
+                  className="mt-3 flex flex-wrap items-center gap-2 text-[0.8125rem] text-muted-foreground"
                 >
                   <span>
                     {c(

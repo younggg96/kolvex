@@ -1,6 +1,6 @@
 "use client";
 
-import { ContentSkeleton } from "@/components/ui/content-skeleton";
+import { ContentLoading } from "@/components/ui/content-loading";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
@@ -116,7 +116,7 @@ export default function XContentExplorer() {
 
   return (
     <DashboardLayout title={c("X creator posts", "X 博主内容")}>
-      <div className="min-h-0 flex-1 overflow-y-auto bg-background px-4 pb-16 pt-5 md:px-8 md:pt-7">
+      <div className="min-h-0 flex-1 overflow-y-auto bg-background px-[16px] pb-16 pt-5 md:px-8 md:pt-7">
         <h1 className="sr-only">{c("X creator posts", "X 博主内容")}</h1>
         <div className="mx-auto w-full space-y-6">
           <div className="grid gap-10 xl:grid-cols-[minmax(0,1fr)_300px]">
@@ -216,7 +216,7 @@ export default function XContentExplorer() {
                       router.push(href({ ticker: value }));
                     }}
                   >
-                    <div className="relative min-w-0 flex-1 sm:max-w-xs">
+                    <div className="relative hidden min-w-0 flex-1 sm:max-w-xs lg:block">
                       <label htmlFor="x-ticker" className="sr-only">
                         {c("Stock ticker", "股票代码")}
                       </label>
@@ -238,7 +238,7 @@ export default function XContentExplorer() {
                         }
                       />
                     </div>
-                    <Button type="submit" variant="outline">
+                    <Button type="submit" variant="outline" className="hidden lg:inline-flex">
                       {c("Filter", "筛选")}
                     </Button>
                     {draftTicker && (
@@ -252,6 +252,7 @@ export default function XContentExplorer() {
                           tickerRef.current?.focus();
                         }}
                       >
+                        <span className="lg:hidden">{draftTicker}</span>
                         {c("Clear", "清除")}
                       </Button>
                     )}
@@ -268,7 +269,7 @@ export default function XContentExplorer() {
                   </form>
                   <div aria-live="polite" aria-busy={loading}>
                     {loading && (
-                      <ContentSkeleton label={c("Loading posts…", "正在加载推文…")} variant="text" rows={4} />
+                      <ContentLoading label={c("Loading posts…", "正在加载推文…")} />
                     )}
                     {error && (
                       <div

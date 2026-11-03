@@ -33,7 +33,7 @@ export default function StockDirectoryContext({ stock, change }: {
     </div>
     <div className="min-w-0 space-y-2">
       <OpinionChange value={change} />
-      <p className="max-w-[40ch] text-[11px] leading-relaxed text-muted-foreground">{t("youtubeOpinions.directory.changeMethod")}</p>
+      <p className="max-w-[40ch] text-[0.6875rem] leading-relaxed text-muted-foreground">{t("youtubeOpinions.directory.changeMethod")}</p>
       {heat && <p className="text-muted-foreground" title={t("youtubeOpinions.directory.heatMethod", { from: heat.from, to: heat.to, previous: String(heat.previous) })}>
         {t("youtubeOpinions.directory.heat", { count: String(heat.recent) })}
         <span className="ml-2">{t("youtubeOpinions.directory.heatDelta", { count: `${heatDelta > 0 ? "+" : ""}${heatDelta}` })}</span>

@@ -53,7 +53,7 @@ export default function LandingHeader() {
 
   return (
     <header className="relative z-10 border-b border-border bg-background">
-      <div className="landing-width flex min-h-[72px] items-center justify-between gap-4 py-3">
+      <div className="landing-width flex min-h-[4.5rem] items-center justify-between gap-4 py-3">
         <Link
           href="/"
           className="flex items-center gap-1.5 sm:gap-2 group transition-all"
@@ -70,7 +70,7 @@ export default function LandingHeader() {
           <DropdownMenu open={navigationOpen} onOpenChange={setNavigationOpen}>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="min-h-10 gap-2 px-2 sm:px-3" aria-label={c("Navigation", "导航")}>
-                <Menu size={18} aria-hidden="true" />
+                <Menu size="1.125rem" aria-hidden="true" />
                 <span className="hidden sm:inline">{c("Navigation", "导航")}</span>
               </Button>
             </DropdownMenuTrigger>
@@ -80,7 +80,7 @@ export default function LandingHeader() {
                   <Link href={item.href} className="min-h-11 justify-between gap-8"
                     onClick={() => setNavigationOpen(false)}
                   >
-                    {c(item.label[0], item.label[1])}<ArrowUpRight size={15} aria-hidden="true" />
+                    {c(item.label[0], item.label[1])}<ArrowUpRight size="0.9375rem" aria-hidden="true" />
                   </Link>
                 </DropdownMenuItem>
               ))}

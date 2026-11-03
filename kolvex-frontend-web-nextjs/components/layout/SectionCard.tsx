@@ -51,8 +51,8 @@ export default function SectionCard({
   padding = "md",
 }: SectionCardProps) {
   const titleSizeClasses = {
-    sm: "text-[16px]",
-    md: "text-[17px]",
+    sm: "text-[1rem]",
+    md: "text-[1.0625rem]",
     lg: "text-lg",
   };
 
@@ -93,7 +93,7 @@ export default function SectionCard({
                     {title}
                   </h3>
                   {sectionHeaderSubtitle && (
-                    <p className="text-[11px] sm:text-xs text-muted-foreground">
+                    <p className="text-[0.6875rem] sm:text-xs text-muted-foreground">
                       {sectionHeaderSubtitle}
                     </p>
                   )}

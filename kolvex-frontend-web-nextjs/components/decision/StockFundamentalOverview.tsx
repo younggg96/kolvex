@@ -1,6 +1,6 @@
 "use client";
 
-import { ContentSkeleton } from "@/components/ui/content-skeleton";
+import { ContentLoading } from "@/components/ui/content-loading";
 import { ArrowDownRight, ArrowUpRight, ExternalLink } from "lucide-react";
 import type { StockOverview, StockQuote } from "@/lib/stockApi";
 import {
@@ -403,7 +403,7 @@ export default function StockFundamentalOverview({
           </p>
         )}
         {extra.loading && (
-          <ContentSkeleton label={c("Loading additional metrics…", "正在加载补充指标…")} variant="text" rows={2} className="mt-4" />
+          <ContentLoading label={c("Loading additional metrics…", "正在加载补充指标…")} className="mt-4" />
         )}
         {partial && (
           <div

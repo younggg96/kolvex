@@ -45,7 +45,7 @@ export default function StockDirectoryRow({ stock, children, performance, change
             <div className="grid min-w-0 gap-4 lg:grid-cols-[minmax(0,1fr)_auto]">
               <div className="min-w-0">
                 <p className="mb-1.5 text-xs font-medium text-muted-foreground">{t("youtubeOpinions.directory.latestReason")}</p>
-                <p className="max-w-[72ch] whitespace-pre-line break-words text-[13px] leading-relaxed">{reason}</p>
+                <p className="max-w-[72ch] whitespace-pre-line break-words text-[0.8125rem] leading-relaxed">{reason}</p>
                 {evidence && <p className="mt-2 text-xs text-muted-foreground">
                   {evidence.channel_title || evidence.channel_id} · {formatOpinionDate(evidence.video_published_at || evidence.opinion_date, t("common.intlLocale"))}
                 </p>}

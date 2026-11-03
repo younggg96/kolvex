@@ -40,3 +40,12 @@ test('upstream history errors remain explicit errors instead of empty charts', a
   assert.equal(response.status, 503);
   assert.deepEqual(await response.json(), { error: 'History unavailable' });
 });
+
+test('empty HTTP 200 histories are not cached as successful charts', async () => {
+  const response = await fixture(async (_url, options) => {
+    assert.equal(options.cache, 'no-store');
+    return Response.json({ data: [] });
+  })('^VIX');
+  assert.equal(response.status, 503);
+  assert.equal(response.headers.get('Cache-Control'), 'no-store');
+});

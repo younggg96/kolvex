@@ -5,7 +5,7 @@ import { loadClientCache, peekClientCache } from "@/lib/clientCache";
 import { loadMarketObservations } from "@/lib/marketObservationsApi";
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
+import { PendingValue } from "@/components/ui/content-loading";
 import { cn } from "@/lib/utils";
 import { isMarketIndex, indexValue, type MARKET_GROUPS, type MarketInstrument } from "@/lib/marketBenchmarks";
 import { COMPARISON_PERIODS, comparisonSnapshot, completedComparisonDate } from "@/lib/marketComparison";
@@ -68,23 +68,23 @@ function ComparisonRow({ instrument, attempt }: { instrument: MarketInstrument; 
   const showValues = history.length > 0;
   return (
     <tr ref={host} aria-busy={state === "loading"} className="group transition-colors hover:bg-foreground/[0.06]">
-      <th scope="row" className="sticky left-0 z-10 border-b border-border/40 bg-card px-3 py-2 text-left align-middle font-normal transition-colors group-hover:border-foreground/25 group-hover:bg-card">
+      <th scope="row" className="sticky left-0 z-10 border-b border-r border-border/40 bg-card px-3 py-2.5 text-left align-middle font-normal transition-colors group-hover:border-foreground/25 group-hover:bg-card">
         <Link href={instrument.sourceUrl ?? `/dashboard/market/${encodeURIComponent(instrument.symbol)}`} target={instrument.sourceUrl ? "_blank" : undefined} rel={instrument.sourceUrl ? "noopener noreferrer" : undefined} className="block rounded-sm transition-colors hover:text-foreground focus-visible:outline-none">
-          <span className="block truncate text-[13px] font-semibold" title={name}>{name}</span>
-          <span className="mt-0.5 block text-[11px] text-muted-foreground">{instrument.symbol} · {showValues && result.date ? <time dateTime={result.date}>{result.date.slice(5)}</time> : "—"}</span>
+          <span className="block truncate text-[0.8125rem] font-semibold" title={name}>{name}</span>
+          <span className="mt-0.5 block text-[0.6875rem] text-muted-foreground">{instrument.symbol} · {showValues && result.date ? <time dateTime={result.date}>{result.date.slice(5)}</time> : "—"}</span>
         </Link>
-        <span className="mt-0.5 block truncate text-[11px] text-muted-foreground" title={instrument.note ? c(instrument.note.en, instrument.note.zh) : unitLabel}>{state === "error" ? <Button size="xs" variant="ghost" className="h-5 px-0 text-[11px]" aria-label={c(`Retry ${name} comparison`, `重试${name}对比数据`)} onClick={() => setRetry(value => value + 1)}>{c("Unavailable · Retry", "暂不可用 · 重试")}</Button> : instrument.note && instrument.source !== "fred" ? `${c(instrument.note.en, instrument.note.zh)} · ${unitLabel}` : unitLabel}</span>
+        {state === "error" ? <Button size="xs" variant="ghost" className="mt-0.5 h-5 px-0 text-[0.6875rem]" aria-label={c(`Retry ${name} comparison`, `重试${name}对比数据`)} onClick={() => setRetry(value => value + 1)}>{c("Unavailable · Retry", "暂不可用 · 重试")}</Button> : instrument.note && instrument.source !== "fred" && <span className="mt-0.5 block truncate text-[0.6875rem] text-muted-foreground" title={c(instrument.note.en, instrument.note.zh)}>{c(instrument.note.en, instrument.note.zh)}</span>}
       </th>
-      <td className="figure border-b border-border/40 bg-muted/25 px-3 py-3 text-right text-sm font-semibold">
-        {state === "loading" ? <Skeleton className="ml-auto h-5 w-20" /> : !showValues || result.value === null ? "—" : valueUnit === "percent" ? `${indexValue(result.value)}%` : valueUnit === "points" ? indexValue(result.value) : money(result.value)}
+      <td className="figure border-b border-border/40 px-3 py-3 text-right text-sm font-semibold">
+        {state === "loading" ? <PendingValue className="h-5" /> : !showValues || result.value === null ? "—" : valueUnit === "percent" ? `${indexValue(result.value)}%` : valueUnit === "points" ? indexValue(result.value) : money(result.value)}
       </td>
       {COMPARISON_PERIODS.map(period => {
         const value = showValues ? result.changes[period.key] : null;
         const rounded = value === null ? null : Math.round(Math.abs(value) * 100) / 100;
         const direction = rounded ? value! > 0 ? 1 : -1 : 0;
         const unit = result.unit === "percent" ? "%" : result.unit === "pp" ? " pp" : c(" pts", " 点");
-        return <td key={period.key} className="figure border-b border-border/40 px-3 py-3 text-right text-[13px] font-normal">
-          {state === "loading" ? <Skeleton className="ml-auto h-4 w-14" /> : value === null || rounded === null ? <span className="text-muted-foreground" aria-label={c("Insufficient data", "数据不足")}>—</span> : <span className={cn("inline-block rounded-md px-2 py-1", direction > 0 ? "bg-positive/[0.025] text-positive dark:bg-positive/[0.06]" : direction < 0 ? "bg-negative/[0.025] text-negative dark:bg-negative/[0.06]" : "text-muted-foreground")} title={`${name} · ${c(period.en, period.zh)} · ${unitLabel}`}>{direction > 0 ? "+" : direction < 0 ? "−" : ""}{rounded.toFixed(2)}{unit}</span>}
+        return <td key={period.key} className="figure border-b border-border/40 px-3 py-3 text-right text-[0.8125rem] font-normal">
+          {state === "loading" ? <PendingValue className="h-4" /> : value === null || rounded === null ? <span className="text-muted-foreground" aria-label={c("Insufficient data", "数据不足")}>—</span> : <span className={cn(direction > 0 ? "text-positive" : direction < 0 ? "text-negative" : "text-muted-foreground")} title={`${name} · ${c(period.en, period.zh)} · ${unitLabel}`}>{direction > 0 ? "+" : direction < 0 ? "−" : ""}{rounded.toFixed(2)}{unit}</span>}
         </td>;
       })}
     </tr>
@@ -95,11 +95,11 @@ export default function MarketComparison({ groups, attempt }: { groups: readonly
   const c = useCopy();
   return (
     <div role="region" aria-label={c("Performance comparison, scroll horizontally", "多区间表现对比，可横向滚动")} tabIndex={0} className="min-w-0 overflow-x-auto overscroll-x-contain rounded-3xl border border-border bg-card pb-2 focus-visible:outline-none ">
-      <table className="w-full min-w-[960px] table-fixed border-separate border-spacing-0">
+      <table className="w-full min-w-[54rem] table-fixed sm:min-w-[60rem] border-separate border-spacing-0">
         <caption className="sr-only">{c("Daily closing values and simultaneous period changes", "最新日度收盘或观测值及各区间变动对比")}</caption>
-        <colgroup><col className="w-[184px]" /><col className="w-[132px]" />{COMPARISON_PERIODS.map(period => <col key={period.key} />)}</colgroup>
+        <colgroup><col className="w-[8.5rem] sm:w-[11.5rem]" /><col className="w-[7rem] sm:w-[8.25rem]" />{COMPARISON_PERIODS.map(period => <col key={period.key} />)}</colgroup>
         <thead className="text-xs text-muted-foreground"><tr>
-          <th scope="col" className="sticky left-0 z-20 bg-muted px-3 py-4 text-left font-medium">{c("Instrument / Date", "标的 / 日期")}</th>
+          <th scope="col" className="sticky left-0 z-20 border-r border-border/40 bg-muted px-3 py-4 text-left font-medium">{c("Instrument / Date", "标的 / 日期")}</th>
           <th scope="col" className="bg-muted px-3 py-4 text-right font-medium">{c("Latest close", "最新收盘")}</th>
           {COMPARISON_PERIODS.map(period => <th scope="col" key={period.key} className="bg-muted px-3 py-4 text-right font-medium" title={period.key === "QTD" ? c("Quarter to date", "本季度至今") : period.key === "YTD" ? c("Year to date", "今年至今") : undefined}>{c(period.en, period.zh)}</th>)}
         </tr></thead>

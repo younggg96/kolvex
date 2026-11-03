@@ -46,7 +46,7 @@ export default function OpinionCard({
             {showCreator && (
               <button
                 type="button"
-                className="min-w-0 text-left text-[15px] font-semibold hover:underline focus-visible:outline-none "
+                className="min-w-0 text-left text-[0.9375rem] font-semibold hover:underline focus-visible:outline-none "
                 onClick={() => onCreator?.(opinion.channel_id)}
               >
                 {opinion.channel_title || opinion.channel_id}
@@ -55,7 +55,7 @@ export default function OpinionCard({
             {showTicker && (
               <button
                 type="button"
-                className="inline-flex items-center gap-2 text-[15px] font-semibold hover:underline focus-visible:outline-none "
+                className="inline-flex items-center gap-2 text-[0.9375rem] font-semibold hover:underline focus-visible:outline-none "
                 onClick={() => onStock?.(opinion.ticker)}
               >
                 <span aria-hidden="true"><CompanyLogo symbol={opinion.ticker} size="sm" /></span>
@@ -85,7 +85,7 @@ export default function OpinionCard({
       </header>
 
       {(opinion.summary || opinion.thesis) && (
-        <p className="mt-4 text-[15px] leading-7 text-foreground">
+        <p className="mt-4 text-[0.9375rem] leading-7 text-foreground">
           {opinion.summary || opinion.thesis}
         </p>
       )}
@@ -100,7 +100,7 @@ export default function OpinionCard({
               <ul className="mt-2 space-y-1.5 text-sm leading-6">
                 {keyPoints.map((point) => (
                   <li key={point} className="flex gap-2">
-                    <span aria-hidden="true" className="mt-[9px] h-1 w-1 shrink-0 rounded-full bg-positive-fill" />
+                    <span aria-hidden="true" className="mt-[0.5625rem] h-1 w-1 shrink-0 rounded-full bg-positive-fill" />
                     <span>{point}</span>
                   </li>
                 ))}
@@ -115,7 +115,7 @@ export default function OpinionCard({
               <ul className="mt-2 space-y-1.5 text-sm leading-6">
                 {risks.map((risk) => (
                   <li key={risk} className="flex gap-2">
-                    <span aria-hidden="true" className="mt-[9px] h-1 w-1 shrink-0 rounded-full bg-negative-fill" />
+                    <span aria-hidden="true" className="mt-[0.5625rem] h-1 w-1 shrink-0 rounded-full bg-negative-fill" />
                     <span>{risk}</span>
                   </li>
                 ))}

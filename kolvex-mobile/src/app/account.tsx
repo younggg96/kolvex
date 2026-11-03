@@ -6,14 +6,14 @@ import { AvatarEditor } from "../components/AvatarEditor";
 import { apiRequest } from "../lib/http";
 import { profile } from "../lib/contentApi";
 import { useResource } from "../lib/useResource";
-import { Button, Copy, Failure, Glass, Page, Skeleton } from "../components/UI";
+import { Button, Copy, Failure, Glass, Page, LoadingStatus } from "../components/UI";
 import { Field } from "../components/Content";
 export default function Account() {
   const auth = useAuth();
   if (!auth.ready)
     return (
       <Page title="账户">
-        <Skeleton />
+        <LoadingStatus />
       </Page>
     );
   // Signing out unmounts this route through the root layout's guard.

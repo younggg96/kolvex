@@ -3,13 +3,15 @@ import { useCachedResource } from "@/hooks/useCachedResource";
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { ArrowUpRight, ChevronDown, RefreshCw } from "lucide-react";
+import { ArrowUpRight, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useTranslation } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import { EconomicRequestError, getEconomicIndicators, indicatorPeriod, indicatorValue, type EconomicIndicator, type EconomicSnapshot } from "@/lib/economicIndicators";
 import ScrubChart, { type ScrubPoint } from "./ScrubChart";
+import { SegmentedControl } from "@/components/ui/segmented-control";
+import { MarketRefreshButton, MarketToolbarControls } from "./MarketToolbar";
 import { useCopy } from "./shared";
 import { useDecisionCommand } from "./CommandLayer";
 
@@ -37,16 +39,16 @@ function IndicatorCard({ indicator, years, locale }: { indicator: EconomicIndica
   return (
     <article className="min-w-0 rounded-3xl border border-border bg-card p-4" aria-labelledby={`indicator-${indicator.id}`}>
       <div className="flex items-start justify-between gap-3">
-        <h2 id={`indicator-${indicator.id}`} className="text-[15px] font-semibold leading-5">{name}</h2>
+        <h2 id={`indicator-${indicator.id}`} className="text-[0.9375rem] font-semibold leading-5">{name}</h2>
         <span className="shrink-0 text-xs leading-5 text-muted-foreground">{frequency}</span>
       </div>
       <p className="figure mt-1 min-h-5 text-xs text-muted-foreground"><time dateTime={period ?? undefined}>{indicatorPeriod(indicator, period, locale)}</time>{scrub && <span> · {c("History", "历史值")}</span>}</p>
-      <p className="figure mt-2 min-h-9 text-[28px] font-semibold tracking-tight">{indicatorValue(currentValue, indicator.unit, locale, indicator.id === "payrolls" || indicator.id === "spread")}</p>
+      <p className="figure mt-2 min-h-9 text-[1.75rem] font-semibold tracking-tight">{indicatorValue(currentValue, indicator.unit, locale, indicator.id === "payrolls" || indicator.id === "spread")}</p>
       <p className="mt-1 min-h-5 text-xs leading-5 text-muted-foreground">
         {scrub ? c("Historical observation", "历史观测值") : indicator.change === null ? c("Previous-period change unavailable", "暂无上期变动") : <><span className={cn("figure font-medium", deltaTone)}>{indicatorValue(indicator.change, indicator.change_unit, locale, true)}</span><span className="ml-1.5">{comparison}</span></>}
       </p>
       <div className="mt-3 h-24 [--positive-fill:var(--positive)] [--negative-fill:var(--negative)]">
-        {history.length > 1 ? <ScrubChart data={history} positive={rangeChange >= 0} tone={rangeChange === 0 ? "neutral" : "direction"} height={96} baseline={indicator.id === "spread" || indicator.id === "gdp" ? 0 : undefined} onScrub={setScrub} label={c(`${name}, ${years} year history, ${rangeChange > 0 ? "up" : rangeChange < 0 ? "down" : "unchanged"} over this range`, `${name}，近${years}年走势，区间${rangeChange > 0 ? "上升" : rangeChange < 0 ? "下降" : "持平"}`)} /> : <div role="status" className="flex h-full items-center justify-center text-xs text-muted-foreground">{c("History unavailable", "暂无历史走势")}</div>}
+        {history.length > 1 ? <ScrubChart data={history} positive={rangeChange >= 0} tone={rangeChange === 0 ? "neutral" : "direction"} height="6rem" baseline={indicator.id === "spread" || indicator.id === "gdp" ? 0 : undefined} onScrub={setScrub} label={c(`${name}, ${years} year history, ${rangeChange > 0 ? "up" : rangeChange < 0 ? "down" : "unchanged"} over this range`, `${name}，近${years}年走势，区间${rangeChange > 0 ? "上升" : rangeChange < 0 ? "下降" : "持平"}`)} /> : <div role="status" className="flex h-full items-center justify-center text-xs text-muted-foreground">{c("History unavailable", "暂无历史走势")}</div>}
       </div>
       <p className="mt-3 min-h-5 text-xs leading-5 text-muted-foreground">{method}</p>
       {indicator.status !== "ready" && <p role="status" className="mt-2 text-xs text-muted-foreground">{indicator.value === null ? c("Data temporarily unavailable", "数据暂不可用") : c("Delayed data · check the observation period", "延迟数据 · 请以数据所属期为准")}</p>}
@@ -66,7 +68,7 @@ function IndicatorCard({ indicator, years, locale }: { indicator: EconomicIndica
   );
 }
 
-export default function MacroIndicators() {
+export default function MacroIndicators({ toolbar }: { toolbar: HTMLElement | null }) {
   const c = useCopy();
   const { locale } = useTranslation();
   const { setContext } = useDecisionCommand();
@@ -82,18 +84,16 @@ export default function MacroIndicators() {
   const notice = error === 401 ? c("Your session has expired. Sign in again to view the indicators.", "登录已过期，请重新登录后查看指标。") : error ? c("Could not update the indicators. Try again; existing values are from the previous load.", "暂时无法更新指标，请重试。已显示的数值来自上次加载。") : snapshot?.status === "partial" || snapshot?.status === "stale" ? c("Some sources are delayed or unavailable. Check each card's observation period.", "部分数据源延迟或暂不可用，请以各卡片的数据所属期为准。") : snapshot?.status === "unavailable" ? c("Official data sources are temporarily unavailable. Please try again later.", "官方数据源暂不可用，请稍后重试。") : snapshot?.status === "pending" ? c("The first official-data snapshot is being prepared. Check again shortly.", "首份官方数据正在准备中，请稍后刷新。") : null;
 
   return (
-    <section aria-labelledby="economic-indicators-heading" className="pt-6">
+    <section aria-labelledby="economic-indicators-heading" className="pt-2">
       <h1 id="economic-indicators-heading" className="sr-only">{c("Macro indicators", "宏观指标")}</h1>
-      <header className="flex justify-end">
-        <div className="flex flex-wrap items-center gap-3">
-          <div role="group" aria-label={c("Indicator history range", "指标走势区间")} className="flex gap-1">{RANGES.map((range) => <button key={range} type="button" aria-pressed={years === range} onClick={() => setYears(range)} className={cn("inline-flex h-9 items-center rounded-full px-3.5 text-[13px] font-semibold focus-visible:outline-none ", years === range ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-foreground/[0.06] hover:text-foreground active:bg-foreground/[0.1]")}>{c(`${range}Y`, `${range}年`)}</button>)}</div>
-          <Button variant="outline" size="sm" className="rounded-full" disabled={resource.refreshing} onClick={resource.refresh}><RefreshCw className={cn("mr-2 h-3.5 w-3.5", resource.refreshing && "animate-spin motion-reduce:animate-none")} aria-hidden />{c("Refresh", "刷新")}</Button>
-        </div>
-      </header>
+      <MarketToolbarControls toolbar={toolbar}>
+        <SegmentedControl label={c("Indicator history range", "指标走势区间")} value={String(years)} onChange={(value) => setYears(Number(value))} className="border border-border" itemClassName="min-h-9 px-3 sm:px-4" options={RANGES.map((range) => ({ value: String(range), label: c(`${range}Y`, `${range}年`) }))} />
+        <MarketRefreshButton refreshing={resource.refreshing} onClick={resource.refresh} />
+      </MarketToolbarControls>
       <div aria-live="polite" aria-atomic="true" className={notice ? "mt-4 text-sm leading-6 text-muted-foreground" : "sr-only"}>{notice && <p>{notice}</p>}{loading && !snapshot && <p>{c("Loading official economic indicators", "正在加载官方宏观指标")}</p>}</div>
       {error === 401 && <Button asChild variant="outline" size="sm" className="mb-4 rounded-full"><Link href="/auth?redirectTo=%2Fdashboard%3Ftab%3Dmacro">{c("Sign in", "重新登录")}</Link></Button>}
-      <div className="mt-4 grid grid-cols-[repeat(auto-fit,minmax(min(100%,260px),1fr))] items-start gap-4" aria-busy={loading}>
-        {loading && !snapshot ? Array.from({ length: 8 }, (_, index) => <div key={index} className="min-h-[360px] space-y-5 rounded-3xl border border-border bg-card p-4"><Skeleton className="h-4 w-24" /><Skeleton className="h-5 w-40" /><Skeleton className="h-9 w-28" /><Skeleton className="h-24 w-full" /><Skeleton className="h-4 w-44" /></div>) : snapshot?.indicators.map((indicator) => <IndicatorCard key={indicator.id} indicator={error && indicator.value !== null ? { ...indicator, status: "stale" } : indicator} years={years} locale={intlLocale} />)}
+      <div className="mt-4 grid grid-cols-[repeat(auto-fit,minmax(min(100%,16.25rem),1fr))] items-start gap-4" aria-busy={loading}>
+        {loading && !snapshot ? Array.from({ length: 8 }, (_, index) => <div key={index} className="min-h-[22.5rem] space-y-5 rounded-3xl border border-border bg-card p-4"><Skeleton className="h-4 w-24" /><Skeleton className="h-5 w-40" /><Skeleton className="h-9 w-28" /><Skeleton className="h-24 w-full" /><Skeleton className="h-4 w-44" /></div>) : snapshot?.indicators.map((indicator) => <IndicatorCard key={indicator.id} indicator={error && indicator.value !== null ? { ...indicator, status: "stale" } : indicator} years={years} locale={intlLocale} />)}
       </div>
       {!loading && !snapshot?.indicators.length && <p className="py-12 text-center text-sm text-muted-foreground">{c("No indicators to display. Try refreshing.", "暂无可显示的指标，请尝试刷新。")}</p>}
       <footer className="mt-5 space-y-2 text-xs leading-6 text-muted-foreground">
