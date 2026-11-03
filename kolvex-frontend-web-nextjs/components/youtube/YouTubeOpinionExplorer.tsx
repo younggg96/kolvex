@@ -72,7 +72,7 @@ import OpinionStrength from "./OpinionStrength";
 import StockDirectoryRow from "./StockDirectoryRow";
 import OpinionChange from "./OpinionChange";
 import PriceChart, { type PriceRange } from "./PriceChart";
-import { legacyRangeToPriceRange, priceRangeToLegacyRange } from "@/lib/chart/range";
+import { priceRangeToLegacyRange } from "@/lib/chart/range";
 import StrengthChart, { type StrengthPoint } from "./StrengthChart";
 import VideoOpinionCard from "./VideoOpinionCard";
 import { videoHistory } from "@/lib/youtubeVideoHistory";
@@ -92,6 +92,8 @@ type Route = { tab: "stocks" | "creators"; ticker?: string; creator?: string };
 type Range = "1m" | "3m" | "6m" | "1y" | "all";
 type Filters = { sentiment: string; from: string; to: string; range: Range };
 const emptyFilters: Filters = { sentiment: "all", from: "", to: "", range: "all" };
+/** The price graph opens on one day; the opinion filters stay on "all" until a range maps onto them. */
+const DEFAULT_CHART_RANGE: PriceRange = "1D";
 const pageSize = 40;
 const rangeMonths: Record<Exclude<Range, "all">, number> = {
   "1m": 1,
@@ -202,7 +204,7 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
    * views: it drives the price graph's window and, when it maps to one of the opinion
    * filter windows, the strength chart / opinion history too (see `syncChartRange`).
    */
-  const [chartRange, setChartRange] = useState<PriceRange>(() => legacyRangeToPriceRange(emptyFilters.range));
+  const [chartRange, setChartRange] = useState<PriceRange>(DEFAULT_CHART_RANGE);
   // AI drawing results render in their own card below the price chart, matching
   // the Market stock page's chart/results split.
   const detailRequest = useRef(0);
@@ -228,7 +230,7 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
       setNavigating(false);
       setRoute(allStocks ? { tab: "stocks" } : readRoute());
       setFilters(emptyFilters);
-      setChartRange(legacyRangeToPriceRange(emptyFilters.range));
+      setChartRange(DEFAULT_CHART_RANGE);
       const params = new URLSearchParams(window.location.search);
       setSearch(params.get("q") || "");
       const scope = params.get("scope");
@@ -397,7 +399,7 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
     setToneFilter("all");
     if (next.tab === "creators" && sortBy === "creators") setSortBy("opinions");
     setFilters(emptyFilters);
-    setChartRange(legacyRangeToPriceRange(emptyFilters.range));
+    setChartRange(DEFAULT_CHART_RANGE);
     setScrub(null);
     setChartView("price");
     scrollContainer.current?.scrollTo({ top: 0 });
@@ -1271,7 +1273,7 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
                   )}
                 >
                   <div className="min-w-0 xl:col-start-1">
-                    <div className="flex min-w-0 flex-wrap items-center gap-4">
+                    <div className={cn("flex min-w-0 items-center gap-4", route.creator && "flex-wrap")}>
                       {route.creator && !route.ticker && creator && <Avatar creator={creator} size="lg" />}
                       {route.ticker && (
                         <Link
@@ -1312,7 +1314,7 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
                         {route.creator && coverageNote(route.creator)}
                       </div>
                       {(route.ticker || creator) && (
-                        <div className="flex w-full shrink-0 flex-wrap items-center gap-2 sm:w-auto">
+                        <div className={cn("flex shrink-0 flex-wrap items-center gap-2", creator && "w-full sm:w-auto")}>
                           {route.ticker && (
                             <Button variant="outline" size="sm" asChild>
                               <Link href={marketStockHref(route.ticker)}>
@@ -1360,34 +1362,34 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
                       </div>
                     ) : (
                       <>
-                        <div className="mt-6" aria-live="polite">
-                          <p className={cn("text-[1.75rem] font-semibold leading-tight tracking-[-0.02em] sm:text-[2rem]", toneText[headline.tone])}>
-                            {overview?.total_opinions ? headline.label : t("youtubeOpinions.noOpinionsYet")}
-                          </p>
-                          <p className="mt-1 text-sm text-foreground/75 tabular-nums">
-                            {scrub
-                              ? t("youtubeOpinions.scrubSummary", {
-                                  date: formatDay(scrub.date),
-                                  count: String(scrub.count),
-                                })
-                              : overview
-                                ? overview.latest_opinion_at
-                                  ? t("youtubeOpinions.overviewSummaryLatest", {
-                                      opinions: String(overview.total_opinions),
-                                      creators: String(overview.total_creators),
-                                      date: formatDay(overview.latest_opinion_at),
-                                    })
-                                  : t("youtubeOpinions.overviewSummary", {
-                                      opinions: String(overview.total_opinions),
-                                      creators: String(overview.total_creators),
-                                    })
-                                : ""}
-                          </p>
-                        </div>
-
                         <section aria-label={t("youtubeOpinions.chartView")} className="min-w-0">
-                          <div className="mt-6 flex min-w-0 flex-wrap items-center justify-between gap-x-4 gap-y-3">
-                            {route.ticker && (
+                          {/* Verdict on the left, chart controls on the right; they stack once they no longer fit. */}
+                          <div className="mt-6 flex min-w-0 flex-wrap items-center justify-between gap-x-6 gap-y-3">
+                            <div className="min-w-0" aria-live="polite">
+                              <p className={cn("text-[1.75rem] font-semibold leading-tight tracking-[-0.02em] sm:text-[2rem]", toneText[headline.tone])}>
+                                {overview?.total_opinions ? headline.label : t("youtubeOpinions.noOpinionsYet")}
+                              </p>
+                              <p className="mt-1 text-sm text-foreground/75 tabular-nums">
+                                {scrub
+                                  ? t("youtubeOpinions.scrubSummary", {
+                                      date: formatDay(scrub.date),
+                                      count: String(scrub.count),
+                                    })
+                                  : overview
+                                    ? overview.latest_opinion_at
+                                      ? t("youtubeOpinions.overviewSummaryLatest", {
+                                          opinions: String(overview.total_opinions),
+                                          creators: String(overview.total_creators),
+                                          date: formatDay(overview.latest_opinion_at),
+                                        })
+                                      : t("youtubeOpinions.overviewSummary", {
+                                          opinions: String(overview.total_opinions),
+                                          creators: String(overview.total_creators),
+                                        })
+                                    : ""}
+                              </p>
+                            </div>
+                            {route.ticker ? (
                               <SegmentedControl
                                 label={t("youtubeOpinions.chartView")}
                                 semantics="tabs"
@@ -1402,13 +1404,18 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
                                   { value: "opinions", label: t("youtubeOpinions.strengthTrend") },
                                 ]}
                               />
+                            ) : (
+                              chartView !== "price" && rangeControls(false, true)
                             )}
-                            {/* The price graph owns its own range bar; the strength chart has none,
-                                so the control is only rendered for 观点走势. */}
-                            {chartView !== "price" && rangeControls(false, true)}
                           </div>
 
-                          <div className="mt-3 space-y-6">
+                          {/* The price graph owns its own range bar; the strength chart has none,
+                              so the control is only rendered for 观点走势. */}
+                          {route.ticker && chartView !== "price" && (
+                            <div className="mt-3 flex min-w-0 justify-end">{rangeControls(false, true)}</div>
+                          )}
+
+                          <div className="mt-4 space-y-6">
                             {route.ticker && chartView === "price" ? (
                               <Card className="min-w-0 p-3 sm:p-4">
                                 <PriceChart

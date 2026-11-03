@@ -131,7 +131,7 @@ type Calls = {
 const SNAP_PX = 12;
 const MIN_BARS = GRAPH_MIN_BARS;
 const HEIGHT_CLASS: Record<Mode, string> = {
-  compact: "h-[16.25rem] sm:h-[20rem]",
+  compact: "h-[18rem] sm:h-[20rem]",
   advanced: "min-h-0 flex-1",
 };
 const defaultIndicators: Record<Mode, IndicatorKey[]> = {

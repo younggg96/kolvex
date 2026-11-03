@@ -19,8 +19,8 @@
  *    inside the plot;
  *  - creator-call triangles above / below the bar (▲ bullish, ▼ bearish, · neutral, with a count).
  *
- * Compact mode makes the plot the "open advanced chart" hit target: the pointer only pans / scrubs
- * after a short drag threshold, so a tap still opens. Advanced mode is a `role="slider"` the host
+ * Compact mode opens the advanced chart only from its "Advanced" button; the plot itself just
+ * pans and scrubs. Advanced mode is a `role="slider"` the host
  * keyboard-scrubs through `activeIndex` / `onActiveChange`, and hosts candlesticks through
  * `renderPlot`, a drawing overlay, an oscillator pane and its own toolbar through the slots below.
  *
@@ -67,6 +67,8 @@ const DRAG_THRESHOLD = 5;
 /** One date label per this many px of plot, capped at four. */
 const BARS_PER_LABEL = 84;
 const FADE_MS = 190;
+/** Creator-call markers closer than this many px merge into one. */
+const CALL_MIN_GAP = 20;
 const AXIS_BLOCK = { x: 0, y: 0, w: GRAPH_AXIS_WIDTH, h: 0 };
 
 const toneColor: Record<StrengthTone, string> = {
@@ -441,7 +443,6 @@ export default function PriceGraph({
   const [fading, setFading] = useState<{ bars: PriceBar[]; view: GraphView } | null>(null);
   const gesture = useRef<{ kind: "pan"; x: number; moved: boolean; view: GraphView } | { kind: "pinch"; distance: number; mid: number; view: GraphView } | null>(null);
   const pointers = useRef(new Map<number, { x: number; y: number }>());
-  const suppressClick = useRef(false);
   const lastSnapshot = useRef<{ key: string; bars: PriceBar[]; view: GraphView } | null>(null);
   const rangeKey = `${range}|${bars?.length ?? 0}`;
 
@@ -579,11 +580,9 @@ export default function PriceGraph({
       const [a, b] = Array.from(pointers.current.values());
       const rect = plotRef.current!.getBoundingClientRect();
       gesture.current = { kind: "pinch", distance: Math.abs(a.x - b.x) || 1, mid: Math.min(Math.max(((a.x + b.x) / 2 - rect.left) / geometry.plotWidth, 0), 1), view: current };
-      suppressClick.current = true;
       return;
     }
     if (event.button !== 0) return;
-    // Compact: capturing the pointer would swallow the tap that opens the advanced chart.
     if (advanced) event.currentTarget.setPointerCapture(event.pointerId);
     gesture.current = { kind: "pan", x: event.clientX, moved: false, view: current };
     scrub(event.clientX, event.clientY);
@@ -610,7 +609,6 @@ export default function PriceGraph({
     const dx = event.clientX - now.x;
     if (!now.moved && Math.abs(dx) < DRAG_THRESHOLD) return;
     now.moved = true;
-    suppressClick.current = true;
     setDragging(true);
     const slot = geometry.plotWidth / Math.max(now.view.end - now.view.start, 1e-6);
     commit({ start: now.view.start - dx / slot, end: now.view.end - dx / slot });
@@ -623,7 +621,6 @@ export default function PriceGraph({
       if (pointers.current.size < 2) gesture.current = null;
       return;
     }
-    if (now?.moved) suppressClick.current = true;
     gesture.current = null;
     setDragging(false);
   };
@@ -633,17 +630,8 @@ export default function PriceGraph({
     if (activeIndex !== null) onActiveChange(null);
   };
 
-  const onClick = () => {
-    if (suppressClick.current) {
-      suppressClick.current = false;
-      return;
-    }
-    onOpenAdvanced?.();
-  };
-
   const onPlotDoubleClick = () => {
     if (!count) return;
-    suppressClick.current = true;
     resetView();
   };
 
@@ -733,7 +721,7 @@ export default function PriceGraph({
       <div
         role="radiogroup"
         aria-label={rangeAriaLabel || t("youtubeOpinions.graph.rangeLabel")}
-        className="flex min-w-0 basis-full items-center gap-0.5 overflow-x-auto scrollbar-hide sm:basis-auto"
+        className={cn("flex min-w-0 basis-full items-center gap-0.5 overflow-x-auto scrollbar-hide sm:basis-auto", !advanced && "justify-between sm:justify-start")}
       >
         {rangeButtons.map((option) => {
           const selected = option.value === range;
@@ -841,7 +829,6 @@ export default function PriceGraph({
       onPointerUp={endGesture}
       onPointerCancel={endGesture}
       onPointerLeave={onPointerLeave}
-      onClick={onOpenAdvanced ? onClick : undefined}
       onDoubleClick={onPlotDoubleClick}
       onKeyDown={advanced ? onKeyDown : undefined}
       ariaLabel={
@@ -878,21 +865,34 @@ export default function PriceGraph({
   return (
     <div className={cn("min-w-0", advanced && "flex min-h-0 flex-1 flex-col")}>
       {/* header: price · change · window label, as in the reference */}
-      <div className="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-0.5">
-        {headerLabel}
-        {headerBar ? (
-          <span className="flex min-w-0 items-baseline gap-2" aria-live="polite">
-            <span className="text-[0.9375rem] font-semibold tabular-nums text-foreground">{formatPrice(headerBar.close)}</span>
-            <span className={cn("text-[0.8125rem] font-semibold tabular-nums", headerChange > 0 ? "text-positive" : headerChange < 0 ? "text-negative" : "text-muted-foreground")}>
-              {formatChangePercent(headerChange)}
+      <div className="flex min-w-0 items-start justify-between gap-2">
+        <div className="flex min-w-0 flex-1 flex-wrap items-baseline gap-x-2 gap-y-0.5">
+          {headerLabel}
+          {headerBar ? (
+            <span className="flex min-w-0 items-baseline gap-2" aria-live="polite">
+              <span className="text-[0.9375rem] font-semibold tabular-nums text-foreground">{formatPrice(headerBar.close)}</span>
+              <span className={cn("text-[0.8125rem] font-semibold tabular-nums", headerChange > 0 ? "text-positive" : headerChange < 0 ? "text-negative" : "text-muted-foreground")}>
+                {formatChangePercent(headerChange)}
+              </span>
+              <span className="text-[0.6875rem] text-muted-foreground">{rangeChangeLabel || t("youtubeOpinions.priceRangeChange")}</span>
             </span>
-            <span className="text-[0.6875rem] text-muted-foreground">{rangeChangeLabel || t("youtubeOpinions.priceRangeChange")}</span>
-          </span>
-        ) : (
-          loading || !bars ? <Skeleton className="h-5 w-32" aria-hidden="true" /> : null
-        )}
-        {activeBar && activeIndex !== null && (
-          <span className="text-[0.6875rem] tabular-nums text-muted-foreground">{barLabel(activeBar)}</span>
+          ) : (
+            loading || !bars ? <Skeleton className="h-5 w-32" aria-hidden="true" /> : null
+          )}
+          {activeBar && activeIndex !== null && (
+            <span className="text-[0.6875rem] tabular-nums text-muted-foreground">{barLabel(activeBar)}</span>
+          )}
+        </div>
+        {/* Sits on the price line, not under the range bar; the negative margin keeps the phone hit area without growing the row. */}
+        {!advanced && onOpenAdvanced && (
+          <button
+            type="button"
+            onClick={onOpenAdvanced}
+            className="-my-3 -mr-1 inline-flex h-11 shrink-0 items-center gap-1 rounded-full px-2.5 text-[0.75rem] font-semibold text-muted-foreground transition-colors hover:bg-muted/70 hover:text-foreground focus-visible:outline-none focus-visible:bg-muted/60 sm:-my-1.5 sm:h-8"
+          >
+            <Maximize2 className="h-3.5 w-3.5" aria-hidden="true" />
+            {t("youtubeOpinions.advancedChart")}
+          </button>
         )}
       </div>
 
@@ -904,50 +904,37 @@ export default function PriceGraph({
           {leadingControls}
           {rangeBar}
         </div>
-        <div className="flex shrink-0 items-center justify-end gap-1 sm:justify-start">
-          {trailingControls}
-          {advanced ? (
-            <>
-              <button type="button" aria-label={t("youtubeOpinions.zoomIn")} title={t("youtubeOpinions.zoomIn")} onClick={() => zoomBy(0.8, 0.5)} className={iconButton(false)}>
-                <ZoomIn className="h-4 w-4" aria-hidden="true" />
-              </button>
-              <button type="button" aria-label={t("youtubeOpinions.zoomOut")} title={t("youtubeOpinions.zoomOut")} onClick={() => zoomBy(1.25, 0.5)} className={iconButton(false)}>
-                <ZoomOut className="h-4 w-4" aria-hidden="true" />
-              </button>
-              <button
-                type="button"
-                aria-pressed={panMode}
-                aria-label={t("youtubeOpinions.graph.panMode")}
-                title={t("youtubeOpinions.graph.panMode")}
-                onClick={() => setPanMode((value) => !value)}
-                className={iconButton(panMode)}
-              >
-                <MoveHorizontal className="h-4 w-4" aria-hidden="true" />
-              </button>
-              <button
-                type="button"
-                aria-label={t("youtubeOpinions.resetZoom")}
-                title={t("youtubeOpinions.resetZoom")}
-                onClick={resetView}
-                disabled={!modified}
-                className={cn(iconButton(false), "disabled:pointer-events-none disabled:opacity-40")}
-              >
-                {modified ? <LocateFixed className="h-4 w-4" aria-hidden="true" /> : <RotateCcw className="h-4 w-4" aria-hidden="true" />}
-              </button>
-            </>
-          ) : (
-            onOpenAdvanced && (
-              <button
-                type="button"
-                onClick={onOpenAdvanced}
-                className="inline-flex h-11 shrink-0 items-center gap-1 rounded-full px-3 text-[0.75rem] font-semibold text-muted-foreground transition-colors hover:bg-muted/70 hover:text-foreground focus-visible:outline-none focus-visible:bg-muted/60 sm:h-8"
-              >
-                <Maximize2 className="h-3.5 w-3.5" aria-hidden="true" />
-                {t("youtubeOpinions.advancedChart")}
-              </button>
-            )
-          )}
-        </div>
+        {advanced && (
+          <div className="flex shrink-0 items-center justify-end gap-1 sm:justify-start">
+            {trailingControls}
+            <button type="button" aria-label={t("youtubeOpinions.zoomIn")} title={t("youtubeOpinions.zoomIn")} onClick={() => zoomBy(0.8, 0.5)} className={iconButton(false)}>
+              <ZoomIn className="h-4 w-4" aria-hidden="true" />
+            </button>
+            <button type="button" aria-label={t("youtubeOpinions.zoomOut")} title={t("youtubeOpinions.zoomOut")} onClick={() => zoomBy(1.25, 0.5)} className={iconButton(false)}>
+              <ZoomOut className="h-4 w-4" aria-hidden="true" />
+            </button>
+            <button
+              type="button"
+              aria-pressed={panMode}
+              aria-label={t("youtubeOpinions.graph.panMode")}
+              title={t("youtubeOpinions.graph.panMode")}
+              onClick={() => setPanMode((value) => !value)}
+              className={iconButton(panMode)}
+            >
+              <MoveHorizontal className="h-4 w-4" aria-hidden="true" />
+            </button>
+            <button
+              type="button"
+              aria-label={t("youtubeOpinions.resetZoom")}
+              title={t("youtubeOpinions.resetZoom")}
+              onClick={resetView}
+              disabled={!modified}
+              className={cn(iconButton(false), "disabled:pointer-events-none disabled:opacity-40")}
+            >
+              {modified ? <LocateFixed className="h-4 w-4" aria-hidden="true" /> : <RotateCcw className="h-4 w-4" aria-hidden="true" />}
+            </button>
+          </div>
+        )}
       </div>
 
       {subPane}
@@ -997,7 +984,6 @@ export function PriceGraphPlot({
   onPointerUp,
   onPointerCancel,
   onPointerLeave,
-  onClick,
   onDoubleClick,
   onKeyDown,
   ariaLabel,
@@ -1039,7 +1025,6 @@ export function PriceGraphPlot({
   onPointerUp: (event: PointerEvent<HTMLDivElement>) => void;
   onPointerCancel: (event: PointerEvent<HTMLDivElement>) => void;
   onPointerLeave: (event: PointerEvent<HTMLDivElement>) => void;
-  onClick?: () => void;
   onDoubleClick: () => void;
   onKeyDown?: (event: KeyboardEvent<HTMLDivElement>) => void;
   ariaLabel: string;
@@ -1061,14 +1046,12 @@ export function PriceGraphPlot({
       onPointerUp={onPointerUp}
       onPointerCancel={onPointerCancel}
       onPointerLeave={onPointerLeave}
-      onClick={onClick}
       onDoubleClick={onDoubleClick}
       onKeyDown={onKeyDown}
       className={cn(
         "relative select-none overflow-hidden rounded-2xl focus-visible:outline-none focus-visible:bg-muted/20",
         heightClass,
         advanced ? "touch-none" : "touch-pan-y",
-        advanced ? "" : "cursor-pointer",
         dragging && "cursor-grabbing",
       )}
     >
@@ -1129,9 +1112,9 @@ export function PriceGraphPlot({
           {/* creator calls */}
           {showCalls &&
             calls &&
-            Array.from(calls.entries()).map(([index, entry]) => {
+            mergeNearbyCalls(calls, geometry).map(({ index, entry }) => {
               const bar = bars?.[index];
-              if (!bar || index < geometry.firstIndex || index > geometry.lastIndex) return null;
+              if (!bar) return null;
               const x = geometry.xOf(index);
               const closeY = geometry.yOf(bar.close);
               const lowAnchor = advanced ? geometry.yOf(bar.low) : closeY;
@@ -1220,6 +1203,32 @@ export function PriceGraphPlot({
 }
 
 /* -------------------------------------------------------------- sub-views */
+
+/**
+ * Visible calls closer than CALL_MIN_GAP px share one marker on the latest bar, with summed
+ * counts, so a long window never stacks triangles and numbers on top of each other.
+ */
+function mergeNearbyCalls(calls: Map<number, CallCounts>, geometry: GraphGeometry) {
+  const merged: Array<{ index: number; startX: number; entry: CallCounts }> = [];
+  const visible = Array.from(calls.entries())
+    .filter(([index]) => index >= geometry.firstIndex && index <= geometry.lastIndex)
+    .sort(([a], [b]) => a - b);
+  for (const [index, entry] of visible) {
+    const x = geometry.xOf(index);
+    const group = merged[merged.length - 1];
+    if (group && x - group.startX < CALL_MIN_GAP) {
+      group.index = index;
+      group.entry = {
+        bullish: group.entry.bullish + entry.bullish,
+        bearish: group.entry.bearish + entry.bearish,
+        other: group.entry.other + entry.other,
+      };
+    } else {
+      merged.push({ index, startX: x, entry });
+    }
+  }
+  return merged;
+}
 
 /** The line up to the hovered index, drawn solid over the dimmed whole. */
 function lineUntil(points: Array<{ x: number; y: number; index: number }>, active: number) {
