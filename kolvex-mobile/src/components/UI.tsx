@@ -38,6 +38,9 @@ export function Copy({
   color,
   selectable = false,
   localize = true,
+  lines,
+  onPress,
+  role,
 }: PropsWithChildren<{
   size?: number;
   muted?: boolean;
@@ -45,12 +48,18 @@ export function Copy({
   color?: string;
   selectable?: boolean;
   localize?: boolean;
+  lines?: number;
+  onPress?: () => void;
+  role?: "link";
 }>) {
   const t = useTheme();
   const { locale } = usePreferences();
   return (
     <Text
       selectable={selectable}
+      numberOfLines={lines}
+      onPress={onPress}
+      accessibilityRole={role}
       style={{
         color: color ?? (muted ? t.secondary : t.text),
         fontSize: size,
@@ -63,14 +72,17 @@ export function Copy({
     </Text>
   );
 }
+// Reading and data sit on an opaque surface. Only toolbars and overlays ask for
+// `material`: real SwiftUI glass on iOS 26+, blur on older iOS, opaque elsewhere.
 export function Glass({
   children,
   style,
-}: PropsWithChildren<{ style?: StyleProp<ViewStyle> }>) {
+  material = false,
+}: PropsWithChildren<{ style?: StyleProp<ViewStyle>; material?: boolean }>) {
   const t = useTheme();
   const [reduce, setReduce] = useState(true);
   useEffect(() => {
-    if (Platform.OS !== "ios") return;
+    if (!material || Platform.OS !== "ios") return;
     AccessibilityInfo.isReduceTransparencyEnabled()
       .then(setReduce)
       .catch(() => setReduce(true));
@@ -79,9 +91,9 @@ export function Glass({
       setReduce,
     );
     return () => subscription.remove();
-  }, []);
+  }, [material]);
   const shell = [styles.glass, { borderColor: t.border }, style];
-  if (reduce)
+  if (!material || reduce)
     return (
       <View style={[shell, { backgroundColor: t.surface }]}>{children}</View>
     );
@@ -158,6 +170,7 @@ export function Page({
   refreshing,
   onRefresh,
   followContent = false,
+  scrollEnabled = true,
 }: PropsWithChildren<{
   title: string;
   subtitle?: string;
@@ -166,6 +179,7 @@ export function Page({
   refreshing?: boolean;
   onRefresh?: () => void;
   followContent?: boolean;
+  scrollEnabled?: boolean;
 }>) {
   const t = useTheme();
   const insets = useSafeAreaInsets();
@@ -174,6 +188,7 @@ export function Page({
   return (
     <ScrollView
       ref={scroll}
+      scrollEnabled={scrollEnabled}
       onScroll={(event) => {
         const { contentOffset, contentSize, layoutMeasurement } =
           event.nativeEvent;
@@ -228,6 +243,51 @@ export function Page({
       )}
       {children}
     </ScrollView>
+  );
+}
+export function NavRow({
+  title,
+  note,
+  onPress,
+  last = false,
+}: {
+  title: string;
+  note?: string;
+  onPress: () => void;
+  last?: boolean;
+}) {
+  const t = useTheme();
+  const text = useText();
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={text(title)}
+      onPress={onPress}
+      style={({ pressed }) => ({
+        minHeight: 52,
+        paddingHorizontal: 20,
+        paddingVertical: 12,
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "space-between",
+        gap: 12,
+        opacity: pressed ? 0.6 : 1,
+        borderBottomWidth: last ? 0 : StyleSheet.hairlineWidth,
+        borderColor: t.border,
+      })}
+    >
+      <View style={{ flex: 1, gap: 2 }}>
+        <Copy size={15}>{title}</Copy>
+        {!!note && (
+          <Copy size={12} muted>
+            {note}
+          </Copy>
+        )}
+      </View>
+      <Copy muted localize={false}>
+        ›
+      </Copy>
+    </Pressable>
   );
 }
 export function Section({
@@ -320,6 +380,7 @@ export function Search({
   const input = useRef<ComponentRef<typeof TextInput>>(null);
   return (
     <Glass
+      material
       style={{
         flexDirection: "row",
         alignItems: "center",

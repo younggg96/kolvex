@@ -1,4 +1,5 @@
-import { router } from "expo-router";
+import { Redirect, router } from "expo-router";
+import { portfolioEnabled } from "../lib/productFeatures";
 import { useAuth } from "../state/Auth";
 import { holdings } from "../lib/contentApi";
 import { useResource } from "../lib/useResource";
@@ -6,6 +7,8 @@ import { isSymbol, number } from "../lib/models";
 import { AuthGate, ResourceState } from "../components/Content";
 import { Button, Copy, Empty, Glass, Page, Section } from "../components/UI";
 export default function Portfolio() {
+  // Disabled in the Web feature manifest, whose middleware redirects to Markets.
+  if (!portfolioEnabled) return <Redirect href="/" />;
   return (
     <AuthGate title="投资组合">
       <Positions />

@@ -1,12 +1,14 @@
 import { useState } from "react";
+import { View } from "react-native";
 import { router } from "expo-router";
 import { catalogue } from "../lib/featureApi";
 import { holdings } from "../lib/contentApi";
 import { useResource } from "../lib/useResource";
 import { useAuth } from "../state/Auth";
-import { number } from "../lib/models";
-import { Page, Copy, Glass, Button } from "../components/UI";
+import { OpinionStrength } from "../components/OpinionStrength";
+import { Page, Copy, Glass, Button, Section } from "../components/UI";
 import { Filters, ResourceState, AuthGate } from "../components/Content";
+import { portfolioEnabled } from "../lib/productFeatures";
 import { OpinionCard } from "../components/OpinionCard";
 export default function Updates() {
   const [scope, setScope] = useState("all");
@@ -15,14 +17,16 @@ export default function Updates() {
       title="观点动态"
       subtitle="比较相邻有观点日期的变化，首次观点单独标记。"
     >
-      <Filters
-        values={[
-          ["all", "全部股票"],
-          ["holdings", "我的持仓"],
-        ]}
-        value={scope}
-        onChange={setScope}
-      />
+      {portfolioEnabled && (
+        <Filters
+          values={[
+            ["all", "全部股票"],
+            ["holdings", "我的持仓"],
+          ]}
+          value={scope}
+          onChange={setScope}
+        />
+      )}
       {scope === "holdings" ? (
         <AuthGate inline title="持仓观点动态">
           <Feed held />
@@ -50,9 +54,12 @@ function Feed({ held }: { held: boolean }) {
         : null,
     };
   });
-  const changes = (r.data?.data.changes ?? []).filter(
-    (c) => !r.data?.symbols || r.data.symbols.has(c.ticker),
-  );
+  const changes = (r.data?.data.changes ?? [])
+    .filter((c) => !r.data?.symbols || r.data.symbols.has(c.ticker))
+    .sort((a, b) => b.current_date.localeCompare(a.current_date));
+  const latest = (r.data?.data.latest ?? [])
+    .filter((o) => !r.data?.symbols || r.data.symbols.has(o.ticker))
+    .sort((a, b) => b.opinion_date.localeCompare(a.opinion_date));
   return (
     <>
       <ResourceState
@@ -68,24 +75,45 @@ function Feed({ held }: { held: boolean }) {
           <Copy bold>
             {c.ticker} · {c.current_date}
           </Copy>
-          <Copy>
-            {c.change == null
-              ? "首次出现观点"
-              : `${c.previous_date} ${number(c.previous_score)} → ${number(c.current_score)} · 变化 ${number(c.change)}`}
-          </Copy>
-          <Copy muted>
-            {c.opinion_count} 条观点；分数表示来源倾向，不是收益率。
-          </Copy>
+          {c.change == null ? (
+            <>
+              <OpinionStrength value={c.current_score} />
+              <Copy size={12} muted>
+                首次出现观点
+              </Copy>
+            </>
+          ) : (
+            <>
+              <OpinionStrength value={c.change} change />
+              <Copy size={12} muted>
+                {c.previous_date || c.current_date}
+              </Copy>
+              <View
+                style={{
+                  flexDirection: "row",
+                  flexWrap: "wrap",
+                  alignItems: "center",
+                  gap: 8,
+                }}
+              >
+                <OpinionStrength value={c.previous_score} />
+                <Copy size={12} muted localize={false}>
+                  →
+                </Copy>
+                <OpinionStrength value={c.current_score} />
+              </View>
+            </>
+          )}
+          <Copy muted>{`${c.opinion_count} 条观点`}</Copy>
           <Button onPress={() => router.push(`/stock/${c.ticker}`)}>
             查看研究与来源
           </Button>
         </Glass>
       ))}
-      {r.data?.data.latest
-        .filter((o) => !r.data?.symbols || r.data.symbols.has(o.ticker))
-        .map((o) => (
-          <OpinionCard key={o.id} item={o} />
-        ))}
+      {!!latest.length && <Section title="最新观点" />}
+      {latest.map((o) => (
+        <OpinionCard key={o.id} item={o} />
+      ))}
     </>
   );
 }

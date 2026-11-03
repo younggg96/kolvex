@@ -2,7 +2,14 @@ import { usePreferences } from "../../state/Preferences";
 import { useEffect, useRef, useState } from "react";
 import { router, useLocalSearchParams } from "expo-router";
 import { useAuth } from "../../state/Auth";
-import { conversations, createConversation } from "../../lib/contentApi";
+import {
+  conversations,
+  createConversation,
+  deleteAllConversations,
+} from "../../lib/contentApi";
+import { useMutation } from "../../lib/useMutation";
+import { ConfirmAction } from "../../components/ConfirmAction";
+import { MutationStatus } from "../../components/MutationStatus";
 import { useResource } from "../../lib/useResource";
 import { AuthGate, Pager, ResourceState } from "../../components/Content";
 import { Button, Copy, Failure, Glass, Page } from "../../components/UI";
@@ -29,6 +36,7 @@ function Library() {
     conversations(user, signal, page),
   );
   const rows = resource.data?.conversations ?? [];
+  const clearAll = useMutation();
   useEffect(() => () => action.current?.abort(), []);
   async function create() {
     if (action.current) return;
@@ -101,6 +109,21 @@ function Library() {
         loading={resource.loading}
         onChange={setPage}
       />
+      {!!rows.length && (
+        <ConfirmAction
+          label="删除全部对话"
+          description="此账户的所有对话和消息都会被永久删除，无法恢复。"
+          disabled={clearAll.busy}
+          onConfirm={() =>
+            void clearAll.run(async (signal) => {
+              await deleteAllConversations(user, signal);
+              setPage(1);
+              resource.refresh();
+            })
+          }
+        />
+      )}
+      <MutationStatus {...clearAll} />
     </Page>
   );
 }

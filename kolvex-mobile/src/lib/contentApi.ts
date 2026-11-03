@@ -23,9 +23,10 @@ export async function reports(
   user: string,
   offset = 0,
   ticker = "",
+  limit = 20,
 ) {
   const result = await apiRequest<TradingAnalysisListResponse>(
-    `/trading-analysis/published/list?limit=20&offset=${offset}${ticker ? `&ticker=${encoded(ticker)}` : ""}`,
+    `/trading-analysis/published/list?limit=${limit}&offset=${offset}${ticker ? `&ticker=${encoded(ticker)}` : ""}`,
     { signal, authenticated: true, expectedUser: user },
   );
   requireList(result.items);
@@ -167,12 +168,24 @@ export const stockFacts = (symbol: string, signal: AbortSignal) =>
     employees?: number;
   }>(`/market/company/${encoded(symbol)}`, { signal });
 
-export const publicReports = (signal: AbortSignal, offset = 0, ticker = "") =>
+export const publicReports = (
+  signal: AbortSignal,
+  offset = 0,
+  ticker = "",
+  limit = 20,
+) =>
   apiRequest<TradingAnalysisListResponse>(
-    `/trading-analysis/public/list?limit=20&offset=${offset}${ticker ? `&ticker=${encoded(ticker)}` : ""}`,
+    `/trading-analysis/public/list?limit=${limit}&offset=${offset}${ticker ? `&ticker=${encoded(ticker)}` : ""}`,
     { signal },
   );
 export const publicReport = (id: string, signal: AbortSignal) =>
   apiRequest<TradingAnalysis>(`/trading-analysis/public/${encoded(id)}`, {
     signal,
+  });
+export const deleteAllConversations = (user: string, signal: AbortSignal) =>
+  apiRequest<unknown>("/chat/conversations", {
+    method: "DELETE",
+    signal,
+    authenticated: true,
+    expectedUser: user,
   });

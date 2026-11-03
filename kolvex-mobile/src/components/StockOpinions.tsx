@@ -5,6 +5,7 @@ import { useResource } from "../lib/useResource";
 import { Filters, Field, Pager, ResourceState } from "./Content";
 import { Copy, Button } from "./UI";
 import { OpinionCard } from "./OpinionCard";
+import { OpinionOverview } from "./OpinionOverview";
 export function StockOpinions({ symbol }: { symbol: string }) {
   const [page, setPage] = useState(1);
   const [direction, setDirection] = useState("all");
@@ -63,6 +64,9 @@ export function StockOpinions({ symbol }: { symbol: string }) {
         empty={!r.data?.latest.length}
         message="此范围没有已收录的股票观点。"
       />
+      {!r.loading && r.data && (
+        <OpinionOverview summary={r.data.summary} daily={r.data.daily} />
+      )}
       {r.data?.latest.map((o) => (
         <OpinionCard key={o.id} item={o} />
       ))}

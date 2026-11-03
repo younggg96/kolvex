@@ -1,6 +1,7 @@
 import { apiRequest } from "./http";
 import type { Opinion, Dashboard } from "./models";
 import type { XFeed } from "./contentTypes";
+import type { CreatorLatestVideo } from "./creatorSharing";
 export type Creator = {
   channel_id: string;
   channel_title?: string;
@@ -34,6 +35,14 @@ export type Catalogue = Dashboard & {
     avg_score: number;
   }[];
   changes: Change[];
+  summary?: {
+    total_opinions: number;
+    bullish_count: number;
+    bearish_count: number;
+    neutral_count: number;
+    avg_score: number;
+  };
+  daily?: { date: string; avg_score: number; total: number }[];
 };
 export type VideoGroup = {
   videoId: string;
@@ -134,6 +143,11 @@ export const optionChain = (
 ) =>
   apiRequest<OptionChain>(
     `/market/options/${encodeURIComponent(symbol)}/${encodeURIComponent(expiration)}`,
+    { signal },
+  );
+export const creatorLatestVideo = (id: string, signal: AbortSignal) =>
+  apiRequest<CreatorLatestVideo>(
+    `/youtube-opinions/creators/${encodeURIComponent(id)}/latest-video`,
     { signal },
   );
 export function indicatorValue(value: number | null, unit: string) {

@@ -16,6 +16,7 @@ import {
   type RedditSort,
 } from "../../lib/reddit";
 import { useWatchlist } from "../../state/Watchlist";
+import { TranslatableText } from "../../components/Translate";
 import {
   Filters,
   Pager,
@@ -210,11 +211,9 @@ function XFeed({ revision }: { revision: number }) {
               locale === "en" ? "en-US" : "zh-CN",
             )}
           </Copy>
-          <Copy>{item.text}</Copy>
+          <TranslatableText text={item.text} />
           {item.quoted_texts?.map((text, i) => (
-            <Copy key={i} muted>
-              {text}
-            </Copy>
+            <TranslatableText key={i} text={text} size={14} muted />
           ))}
           {item.truncated && (
             <Copy size={12} muted>

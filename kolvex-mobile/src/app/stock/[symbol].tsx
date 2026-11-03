@@ -19,7 +19,7 @@ import {
   styles,
 } from "../../components/UI";
 export default function Stock() {
-  const params = useLocalSearchParams<{ symbol: string }>();
+  const params = useLocalSearchParams<{ symbol: string; tab?: string }>();
   const symbol = (
     typeof params.symbol === "string" ? params.symbol : ""
   ).toUpperCase();
@@ -65,9 +65,33 @@ export default function Stock() {
           </Copy>
         </View>
       )}
-      <Button onPress={() => router.push(`/technical/${symbol}`)}>
-        K 线、指标与 AI 画线
-      </Button>
+      <Glass material style={{ padding: 8 }}>
+        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+          <Button
+            onPress={() =>
+              router.push(`/technical/${encodeURIComponent(symbol)}`)
+            }
+          >
+            K 线、指标与 AI 画线
+          </Button>
+          <Button
+            disabled={!valid || !list.ready || list.pending}
+            selected={saved}
+            onPress={() => list.toggle(symbol)}
+          >
+            {saved ? "★ 已加入自选" : "☆ 加入自选"}
+          </Button>
+          <Button
+            disabled={!valid}
+            onPress={() =>
+              router.push({ pathname: "/chat", params: { ticker: symbol } })
+            }
+          >
+            向 Kolvex 提问
+          </Button>
+        </View>
+      </Glass>
+      {list.error && <Failure message={list.error} />}
       <Glass style={{ padding: 16, gap: 16 }}>
         {bars.loading ? (
           <Skeleton />
@@ -95,22 +119,6 @@ export default function Stock() {
           ))}
         </View>
       </Glass>
-      <Button
-        disabled={!valid || !list.ready || list.pending}
-        selected={saved}
-        onPress={() => list.toggle(symbol)}
-      >
-        {saved ? "★ 已加入自选 · 点击移除" : "☆ 加入自选"}
-      </Button>
-      {list.error && <Failure message={list.error} />}
-      <Button
-        disabled={!valid}
-        onPress={() =>
-          router.push({ pathname: "/chat", params: { ticker: symbol } })
-        }
-      >
-        向 Kolvex 提问
-      </Button>
       <Section title="交易概览" />
       <Glass style={{ padding: 20, gap: 16 }}>
         {[
@@ -136,6 +144,8 @@ export default function Stock() {
         <StockContent
           symbol={symbol}
           currency={q.data?.currency ?? undefined}
+          companyName={q.data?.name}
+          initialTab={typeof params.tab === "string" ? params.tab : undefined}
         />
       )}
       <Copy size={12} muted>

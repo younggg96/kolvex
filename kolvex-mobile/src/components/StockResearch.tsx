@@ -7,6 +7,7 @@ import { useTheme } from "../lib/theme";
 import { useResource } from "../lib/useResource";
 import {
   finite,
+  metricValue,
   financialNumber,
   financialChange,
   sortPeriods,
@@ -223,10 +224,122 @@ function StatementTable({
     </ScrollView>
   );
 }
+const chartMetrics = [
+  { id: "revenue", label: "营业收入", keys: ["Total Revenue"] },
+  { id: "income", label: "净利润", keys: ["Net Income"] },
+  { id: "margin", label: "净利率", keys: [] },
+  { id: "eps", label: "稀释每股收益", keys: ["Diluted EPS"] },
+  { id: "gross", label: "毛利润", keys: ["Gross Profit"] },
+  { id: "operating", label: "营业利润", keys: ["Operating Income"] },
+  { id: "ebitda", label: "息税折旧摊销前利润", keys: ["EBITDA"] },
+];
+/** Several income-statement trends at once, in the reporting currency. */
+export function Multicharts({ symbol }: { symbol: string }) {
+  const [frequency, setFrequency] = useState("annual");
+  const [selected, setSelected] = useState([
+    "revenue",
+    "income",
+    "margin",
+    "eps",
+  ]);
+  const resource = useResource(
+    `multicharts:${symbol}:${frequency}`,
+    async (signal) => {
+      const result = await apiRequest<{ data: StatementPeriod[] }>(
+        `/market/income-statement/${encodeURIComponent(symbol)}?quarterly=${frequency === "quarterly"}`,
+        { signal },
+      );
+      if (!Array.isArray(result.data))
+        throw new Error("报表格式无效，请重试。");
+      return sortPeriods(result.data).reverse();
+    },
+  );
+  const periods = resource.data ?? [];
+  return (
+    <View style={{ gap: 16 }}>
+      <Section title="指标趋势" />
+      <Filters
+        values={[
+          ["annual", "年度"],
+          ["quarterly", "季度"],
+        ]}
+        value={frequency}
+        onChange={setFrequency}
+      />
+      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+        {chartMetrics.map((metric) => (
+          <Button
+            key={metric.id}
+            selected={selected.includes(metric.id)}
+            onPress={() =>
+              setSelected((items) =>
+                items.includes(metric.id)
+                  ? items.filter((item) => item !== metric.id)
+                  : [...items, metric.id],
+              )
+            }
+          >
+            {metric.label}
+          </Button>
+        ))}
+      </View>
+      <ResourceState
+        resource={resource}
+        empty={!periods.length}
+        message="数据源暂未提供该股票在此周期的数据。"
+      />
+      {!!periods.length && !selected.length && (
+        <Copy size={14} muted>
+          添加指标，开始对比财务趋势。
+        </Copy>
+      )}
+      {!!periods.length &&
+        selected.map((id) => {
+          const metric = chartMetrics.find((item) => item.id === id)!;
+          const points = periods.map((period) => {
+            const revenue = metricValue(period, ["Total Revenue"]);
+            const income = metricValue(period, ["Net Income"]);
+            return {
+              label: period.period,
+              value:
+                id === "margin"
+                  ? revenue && income !== null
+                    ? income / revenue
+                    : null
+                  : metricValue(period, metric.keys),
+            };
+          });
+          return (
+            <Glass key={id} style={{ padding: 16, gap: 8 }}>
+              <Copy bold>{metric.label}</Copy>
+              <MetricBars
+                points={points}
+                list={false}
+                format={(value) =>
+                  id === "margin"
+                    ? finite(value)
+                      ? `${number(value * 100)}%`
+                      : "—"
+                    : financialNumber(value)
+                }
+              />
+            </Glass>
+          );
+        })}
+      <Copy size={12} muted>
+        来源：Yahoo Finance · 净利率 = 净利润 / 营业收入，仅展示可用财年或财季。
+      </Copy>
+    </View>
+  );
+}
 export function MetricBars({
   points,
+  format = number,
+  list = true,
 }: {
   points: { label: string; value: number | null }[];
+  format?: (value: number | null) => string;
+  list?: boolean;
 }) {
   const theme = useTheme();
   const values = points.flatMap((point) =>
@@ -239,11 +352,13 @@ export function MetricBars({
   const range = high - low || 1;
   const y = (value: number) => 16 + ((high - value) / range) * 150;
   const step = 288 / Math.max(points.length, 1);
+  // Date labels are ~40 units wide; thin them so long histories stay legible.
+  const labelEvery = Math.max(1, Math.ceil(points.length / 6));
   return (
     <View
       accessible
       accessibilityLabel={points
-        .map((point) => `${point.label}：${number(point.value)}`)
+        .map((point) => `${point.label}：${format(point.value)}`)
         .join("；")}
     >
       <Svg viewBox="0 0 320 208" width="100%" height={208} accessible={false}>
@@ -252,7 +367,7 @@ export function MetricBars({
           <ViewlessBar
             key={point.label}
             value={point.value}
-            label={point.label.slice(0, 7)}
+            label={index % labelEvery === 0 ? point.label.slice(0, 7) : ""}
             x={16 + step * index}
             width={step}
             baseline={y(0)}
@@ -263,11 +378,12 @@ export function MetricBars({
           />
         ))}
       </Svg>
-      {points.map((point) => (
-        <Copy key={point.label} size={12} muted>
-          {point.label} · {number(point.value)}
-        </Copy>
-      ))}
+      {list &&
+        points.map((point) => (
+          <Copy key={point.label} size={12} muted>
+            {point.label} · {format(point.value)}
+          </Copy>
+        ))}
     </View>
   );
 }
@@ -304,15 +420,17 @@ function ViewlessBar({
           fill={value < 0 ? negative : positive}
         />
       )}
-      <SvgText
-        x={x + width / 2}
-        y={192}
-        textAnchor="middle"
-        fontSize={10}
-        fill={foreground}
-      >
-        {label}
-      </SvgText>
+      {!!label && (
+        <SvgText
+          x={x + width / 2}
+          y={192}
+          textAnchor="middle"
+          fontSize={10}
+          fill={foreground}
+        >
+          {label}
+        </SvgText>
+      )}
     </>
   );
 }

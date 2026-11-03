@@ -1,4 +1,60 @@
-# Mobile migration verification — 2026-11-01
+# Mobile migration verification
+
+## Latest status — Mobile 0.4, 2026-11-02
+
+| Level                              | Result                                                                                                  |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| Code implemented                   | See `MIGRATION.md`.                                                                                     |
+| Type check, lint, format, i18n     | Pass.                                                                                                   |
+| Unit and contract tests            | 70 of 70 pass.                                                                                          |
+| Expo Doctor                        | 20 of 20 pass.                                                                                          |
+| iOS and Android bundles            | Metro/Hermes exports pass. **This is not a native compile.**                                            |
+| React Native Web preview at 390 px | Exercised with real data, below. **Not native acceptance.**                                             |
+| Native run on iOS or Android       | **Not done.** No Xcode (`simctl` unavailable), no Android SDK, no Java on this host.                    |
+| Real signed-in or mutating flows   | **Not done.** No test account. No sign-in, AI run, save, upload, role change or deletion was performed. |
+
+### Blockers
+
+- iOS: install Xcode, then run `sudo xcode-select -s /Applications/Xcode.app/Contents/Developer`.
+- Android: requires a JDK and Android SDK with an emulator.
+- Signed-in flows: requires a non-production or disposable test account, and an administrator account for `/admin`.
+- Universal links: requires the Apple Team ID and hosted association files.
+- `react-native-view-shot` was added, so the next run needs a new development build; Expo Go will not do.
+
+### Live data checks (local backend, read-only)
+
+The local backend ran on port 8082 with `CHART_WORKER_ENABLED=false` and `ECONOMIC_INDICATORS_WORKER_ENABLED=false`, so it could not consume paid AI jobs or write indicators. `ALLOWED_ORIGINS` was overridden for that process only, to admit the preview.
+
+- 200: free-research `financials`, `filings`, `insiders`, `revenue-outlook` for AAPL; `institutions`, `institutions/berkshire`; `market/overview`; `^GSPC` history; `trading-analysis/public/list`; creator `latest-video`.
+- 404 for `ZZZZZ` financials. The screen shows an empty state, not a failure.
+
+### Web comparison
+
+The signed-in Web dashboard was not compared, because it redirects to sign-in without an account. The local Web server on port 3000 also lacks the free-research route, so it appears to predate that work. Instead, the public route at `kolvex.app` was compared with the mobile backend source using `fetched_at`-stripped payloads:
+
+- AAPL filings, insiders, revenue outlook and Berkshire 13F: identical.
+- AAPL financials: a serialized comparison first reported a difference, but a field-by-field diff found none.
+- NVDA financials: the same serialized comparison reported a difference. **It was not re-checked field by field.**
+
+The same mobile-side formulas gave AAPL FY2025 revenue 416.16B, growth 6.43%, FCF margin 23.73%, ROE 151.91%, liabilities/equity 3.87. These were computed with `freeResearch.ts`, which is AST-identical to the Web file, but were not read off a rendered Web page.
+
+### RN-Web preview walkthrough
+
+Checked: AAPL ownership (38 Form 4 rows, totals), NVDA peers with AMD and TSM (TSM's P/S and EV/EBITDA hidden for mixed currency), AAPL earnings materials, long-term financials in English and light theme, research groups and report actions, updates, creators tab distribution (55 AAPL opinions, matching `/youtube-opinions/stocks/AAPL`), `/portfolio` redirecting to Markets, and an unknown ticker's empty state.
+
+Not checked in the preview: the 13F investor view, translate toggle, draw-on-chart, share sheet, image capture, and the multicharts and stock research tabs. Cross-origin translation in a browser is not representative of native.
+
+Defects found this way and fixed: compact digit grouping (caught by comparing with `Intl`), overlapping chart dates on long histories, truncated table dates, untranslated strength phrases and "latest" label, literal `---` in reports, and a previous-to-current strength row with no arrow.
+
+Known preview noise: a development warning about `accessible={false}` on SVG comes from the Web adapter.
+
+Screenshots, all React Native Web and not iOS or Android: `artifacts/mobile-v04-*-rnweb.jpg`.
+
+### New automated coverage
+
+`tests/free-research.test.ts`: compact numbers against `Intl`, percent and date formats, research grouping and incomplete catalogs, deep links including the disabled Portfolio and a traversal attempt, touch-to-price geometry, report export order, translation identifier protection, strength thresholds and English coverage, share content, and the Web feature flag. `web-source-parity` now also covers `freeResearch.ts` and `opinionDates.ts`.
+
+## Earlier records
 
 ## Code and packaging
 

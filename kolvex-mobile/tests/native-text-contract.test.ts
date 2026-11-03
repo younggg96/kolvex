@@ -12,6 +12,7 @@ const textOwners = new Set([
   "Button",
   "SwiftButton",
   "SourceLink",
+  "Note",
   "NativeTabs.Trigger.Label",
 ]);
 test("native screen markup never places raw text or space expressions under non-text views", () => {
