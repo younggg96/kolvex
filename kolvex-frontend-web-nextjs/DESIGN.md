@@ -51,6 +51,13 @@ direction. All balances and performance are explicitly virtual. AI setup actions
 open editable drafts; they never execute trades. `UX-CONTRACT.md` records feedback,
 privacy, idempotent retries and state ownership for this new workflow.
 
+Stock details add a URL-restorable `paper-trading` tab after Technicals, labelled
+My virtual trades / 我的虚拟交易. It keeps the shared price chart mounted and
+shows only that ticker's private virtual lots, open orders and executions. The
+existing OrderTicket is reused with a read-only stock symbol; account-wide funds
+remain distinct from ticker-scoped P&L. The panel loads on first visit and pauses
+polling when hidden, preserving a draft while switching research tabs.
+
 ## Overview
 
 The product reference is the retail investing interface described in PRODUCT.md:

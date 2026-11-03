@@ -16,6 +16,14 @@ new virtual-trading workflow; it does not retrofit behavior onto unrelated route
 
 ## Virtual trading behavior
 
+- Stock detail `?tab=paper-trading` embeds the canonical OrderTicket with the
+  current ticker fixed. `stockPaperTrading` owns per-symbol selection and display
+  P&L; `usePaperTradingAccount` owns private reads, serialized mutations and stale
+  response handling there. `paperTradingErrors` supplies the same localized
+  recovery text as the full trading desk. Account-wide balances are never labelled
+  as a single stock's return. The existing shared chart stays visible, research
+  tab changes preserve the ticket, and inactive panels pause account polling.
+
 - All execution uses virtual funds. USD, supported-instrument, session and quote
   freshness checks occur on the server; the UI never authorizes a price.
 - AI setup links create an editable draft. Quantity is not inferred. Sending an

@@ -40,6 +40,7 @@ export default function OrderTicket({
   busy,
   errorText,
   mutationError,
+  fixedSymbol,
 }: {
   account: Account;
   closePosition: Position | null;
@@ -48,6 +49,7 @@ export default function OrderTicket({
   busy: boolean;
   errorText: (error: unknown) => string;
   mutationError: string;
+  fixedSymbol?: string;
 }) {
   const c = useCopy();
   const query = useSearchParams();
@@ -83,7 +85,7 @@ export default function OrderTicket({
   const [validationField, setValidationField] = useState("");
   const [draft, setDraft] = useState<Command | null>(null);
   const firstField = useRef<HTMLInputElement>(null);
-  const chosenSymbol = closePosition?.symbol || symbol;
+  const chosenSymbol = closePosition?.symbol || fixedSymbol || symbol;
   const chosenSide = closePosition?.side || side;
 
   useEffect(() => {
@@ -295,7 +297,8 @@ export default function OrderTicket({
                 id="paper-symbol"
                 {...fieldError("paper-symbol")}
                 maxLength={16}
-                value={symbol}
+                value={chosenSymbol}
+                readOnly={!!fixedSymbol}
                 onChange={(e) => {
                   setSymbol(e.target.value.toUpperCase());
                   setSource("manual");
