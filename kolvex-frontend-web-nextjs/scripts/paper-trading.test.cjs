@@ -159,6 +159,22 @@ test("malformed upstream success becomes an explicit gateway failure", async () 
   assert.equal((await response.json()).error, "backend_unavailable");
 });
 
+test("old backends return an actionable error instead of generic Not Found", async () => {
+  const response = await proxy(async () =>
+    Response.json({ detail: "Not Found" }, { status: 404 }),
+  )();
+  assert.equal(response.status, 503);
+  assert.equal((await response.json()).error, "paper_backend_outdated");
+});
+
+test("upstream session expiry normalizes to the localized unauthorized code", async () => {
+  const response = await proxy(async () =>
+    Response.json({ detail: "Unauthorized" }, { status: 401 }),
+  )();
+  assert.equal(response.status, 401);
+  assert.equal((await response.json()).error, "unauthorized");
+});
+
 test("client retains the server error code and status for recovery", async () => {
   const api = load("../lib/paperTrading.ts", {
     fetch: async () =>

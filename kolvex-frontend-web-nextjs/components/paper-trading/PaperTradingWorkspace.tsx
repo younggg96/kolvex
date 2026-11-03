@@ -39,6 +39,10 @@ import OrderTicket from "./OrderTicket";
 import TradingReviews from "./TradingReviews";
 
 const errorMessages: Record<string, [string, string]> = {
+  paper_backend_outdated: [
+    "The backend has not loaded paper trading yet. Restart or update the backend, then retry.",
+    "后端尚未加载虚拟交易接口，请重启或更新后端后重试。",
+  ],
   invalid_order: [
     "Order validation failed. Check the values and try again.",
     "订单校验未通过，请检查填写的数值后重试。",
@@ -136,15 +140,20 @@ export default function PaperTradingWorkspace() {
       ),
     [],
   );
-  const errorText = (value: unknown) => {
+  const errorText = (value: unknown, context: "read" | "order" = "read") => {
     const code = value instanceof PaperApiError ? value.code : "";
     const text = errorMessages[code];
     return text
       ? c(...text)
-      : c(
-          "Request failed. Check your connection and retry the same action. An order may already have been accepted.",
-          "请求失败。请检查网络并重试同一操作，订单可能已经被接收。",
-        );
+      : context === "order"
+        ? c(
+            "Request failed. Check your connection and retry the same action. An order may already have been accepted.",
+            "请求失败。请检查网络并重试同一操作，订单可能已经被接收。",
+          )
+        : c(
+            "Could not load data. Check your connection and try again.",
+            "暂时无法加载数据，请检查网络后重试。",
+          );
   };
   async function load() {
     setLoading(true);
@@ -179,7 +188,8 @@ export default function PaperTradingWorkspace() {
       }
       return true;
     } catch (e) {
-      if (alive.current) setError(errorText(e));
+      if (alive.current)
+        setError(errorText(e, command.action === "order" ? "order" : "read"));
       return false;
     } finally {
       locked.current = false;

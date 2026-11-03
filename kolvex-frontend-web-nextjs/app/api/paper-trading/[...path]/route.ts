@@ -32,13 +32,25 @@ async function proxy(request: NextRequest, { params }: Context) {
         body: request.method === "POST" ? await request.text() : undefined,
       },
     );
+    // Old running backends return FastAPI's generic 404 for every new route.
+    // Surface an actionable configuration error rather than an order failure.
+    if (upstream.status === 404) {
+      return NextResponse.json(
+        { error: "paper_backend_outdated" },
+        { status: 503, headers: { "Cache-Control": "private, no-store" } },
+      );
+    }
     const data = await upstream.json();
     return NextResponse.json(
       upstream.ok
         ? data
         : {
             error:
-              typeof data.detail === "string" ? data.detail : "invalid_order",
+              upstream.status === 401
+                ? "unauthorized"
+                : typeof data.detail === "string"
+                  ? data.detail
+                  : "invalid_order",
           },
       {
         status: upstream.status,
