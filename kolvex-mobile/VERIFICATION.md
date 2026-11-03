@@ -6,7 +6,7 @@
 | ---------------------------------- | ------------------------------------------------------------------------------------------------------- |
 | Code implemented                   | See `MIGRATION.md`.                                                                                     |
 | Type check, lint, format, i18n     | Pass.                                                                                                   |
-| Unit and contract tests            | 70 of 70 pass.                                                                                          |
+| Unit and contract tests            | 71 of 71 pass.                                                                                          |
 | Expo Doctor                        | 20 of 20 pass.                                                                                          |
 | iOS and Android bundles            | Metro/Hermes exports pass. **This is not a native compile.**                                            |
 | React Native Web preview at 390 px | Exercised with real data, below. **Not native acceptance.**                                             |
