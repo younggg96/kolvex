@@ -161,6 +161,44 @@ export function Button({
     </Pressable>
   );
 }
+/** A filter choice: a plain control among content, deliberately without glass. */
+export function Chip({
+  children,
+  onPress,
+  selected = false,
+  disabled = false,
+}: PropsWithChildren<{
+  onPress: () => void;
+  selected?: boolean;
+  disabled?: boolean;
+}>) {
+  const t = useTheme();
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityState={{ selected, disabled }}
+      disabled={disabled}
+      onPress={() => {
+        if (Platform.OS !== "web")
+          void Haptics.selectionAsync().catch(() => {});
+        onPress();
+      }}
+      style={({ pressed }) => [
+        styles.button,
+        {
+          paddingVertical: 8,
+          backgroundColor: selected ? t.text : t.surface,
+          borderColor: selected ? t.text : t.border,
+          opacity: disabled ? 0.45 : pressed ? 0.65 : 1,
+        },
+      ]}
+    >
+      <Copy size={14} bold color={selected ? t.background : t.text}>
+        {children}
+      </Copy>
+    </Pressable>
+  );
+}
 export function Page({
   title,
   subtitle,

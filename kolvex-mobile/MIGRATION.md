@@ -12,7 +12,7 @@ Reference: `../kolvex-frontend-web-nextjs` (routes, `lib/productFeatures.ts`) an
 | **Native**   | Ran on an iOS/Android simulator or device.                                                                |
 | **Business** | The real signed-in or mutating flow completed end to end.                                                 |
 
-**No feature has reached Native or Business in this repository.** This host has no Xcode, Android SDK or Java, and no test account was supplied. Everything below therefore stops at RN-Web or earlier. See `VERIFICATION.md`.
+**No feature has reached Business, and Native is only partial.** The iOS simulator now runs Markets, stock detail, Ownership, Peers and deep links; the rest of the table has not been re-checked there. Android is set aside and no test account was supplied. The table's status column still records pre-simulator levels. See `VERIFICATION.md`.
 
 Status abbreviations: `C` Code, `B` Bundle, `W` RN-Web. `Auth` means the screen requires sign-in and its success path was not exercised. `W` on a row means the screen's main read path was seen in the preview, in this pass or an earlier one recorded in `VERIFICATION.md`. The translate toggles and automatic headline translation added to the X and News rows are only `C B`.
 
@@ -61,7 +61,7 @@ Status abbreviations: `C` Code, `B` Bundle, `W` RN-Web. `Auth` means the screen 
 | Glass only on chrome           | **Changed in this pass.** `Glass` is now opaque by default. Data and reading cards no longer sit on glass; search bars, the stock action bar and the chat attachment bar use it. |
 | Native tabs                    | `NativeTabs` from Expo Router.                                                                                                                                                   |
 | Layout conversion              | Wide tables became cards or a fixed-label scroller; the More screen became grouped rows.                                                                                         |
-| Rendering, keyboard, type size | **Unverified.** None of this has run on a device.                                                                                                                                |
+| Rendering, keyboard, type size | **Partial.** Rendering seen on the iOS simulator for a few screens; keyboard and type size unverified.                                                                           |
 
 ## Disabled on the Web, not enabled here
 
@@ -75,7 +75,7 @@ Status abbreviations: `C` Code, `B` Bundle, `W` RN-Web. `Auth` means the screen 
 
 ## Known remaining work
 
-1. **Native acceptance of everything above.** Blocked on Xcode and an Android toolchain.
+1. **Native acceptance of the remaining screens on iOS.** Android is set aside for now.
 2. **Signed-in flows.** Blocked on a test account.
 3. Creator-opinion markers on the price chart.
 4. Other creators' opinions and upload-coverage hints in the YouTube explorer.

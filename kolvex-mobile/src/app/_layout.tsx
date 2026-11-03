@@ -29,6 +29,7 @@ function AppContent() {
             headerTintColor: t.text,
             headerStyle: { backgroundColor: t.background },
             headerShadowVisible: false,
+            headerBackButtonDisplayMode: "minimal",
             contentStyle: { backgroundColor: t.background },
           }}
         >
@@ -69,42 +70,30 @@ function AppContent() {
             name="auth/recovery"
             options={{ title: text("账户恢复") }}
           />
-          <Stack.Screen
-            name="account"
-            options={{ title: text("账户"), headerBackTitle: text("返回") }}
-          />
-          <Stack.Screen
-            name="briefs"
-            options={{ title: text("日报"), headerBackTitle: text("返回") }}
-          />
+          <Stack.Screen name="account" options={{ title: text("账户") }} />
+          <Stack.Screen name="briefs" options={{ title: text("日报") }} />
           <Stack.Screen
             name="brief/[id]"
-            options={{ title: text("日报详情"), headerBackTitle: text("返回") }}
+            options={{ title: text("日报详情") }}
           />
           <Stack.Screen
             name="report/[id]"
-            options={{ title: text("研究报告"), headerBackTitle: text("返回") }}
+            options={{ title: text("研究报告") }}
           />
-          <Stack.Screen
-            name="news"
-            options={{ title: text("新闻终端"), headerBackTitle: text("返回") }}
-          />
+          <Stack.Screen name="news" options={{ title: text("新闻终端") }} />
           <Stack.Screen
             name="portfolio"
-            options={{ title: text("投资组合"), headerBackTitle: text("返回") }}
+            options={{ title: text("投资组合") }}
           />
           <Stack.Screen
             name="chat/index"
-            options={{ title: text("AI 对话"), headerBackTitle: text("返回") }}
+            options={{ title: text("AI 对话") }}
           />
-          <Stack.Screen
-            name="chat/[id]"
-            options={{ title: "Ask Kolvex", headerBackTitle: text("返回") }}
-          />
+          <Stack.Screen name="chat/[id]" options={{ title: "Ask Kolvex" }} />
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           <Stack.Screen
             name="stock/[symbol]"
-            options={{ title: text("股票详情"), headerBackTitle: text("返回") }}
+            options={{ title: text("股票详情") }}
           />
         </Stack>
       </View>

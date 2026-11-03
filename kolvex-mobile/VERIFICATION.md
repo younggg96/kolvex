@@ -10,13 +10,23 @@
 | Expo Doctor                        | 20 of 20 pass.                                                                                          |
 | iOS and Android bundles            | Metro/Hermes exports pass. **This is not a native compile.**                                            |
 | React Native Web preview at 390 px | Exercised with real data, below. **Not native acceptance.**                                             |
-| Native run on iOS or Android       | **Not done.** No Xcode (`simctl` unavailable), no Android SDK, no Java on this host.                    |
+| Native run on iOS                  | **Started, partial.** See the iOS simulator run below.                                                  |
+| Native run on Android              | **Not done.** Set aside at the owner's request.                                                         |
 | Real signed-in or mutating flows   | **Not done.** No test account. No sign-in, AI run, save, upload, role change or deletion was performed. |
+
+### iOS simulator run (iPhone 17 Pro, iOS 26.0 runtime, Xcode 26.6)
+
+Native Swift/Xcode compile and launch succeeded, against the local read-only backend through Metro. Seen running with real data: Markets, native glass tab bar, stock detail, `kolvex://` deep links including `?tab=` and `?peers=`, Ownership and the Peers table with horizontal content.
+
+Native-only defects found and fixed: a `(tabs)` back label, content scrolling under the status bar on tab screens, 73pt-tall filter buttons with a gray band behind them.
+
+Not yet exercised natively: every other screen, signed-in flows, draw-on-chart, share sheets, keyboard, Dynamic Type, VoiceOver, dark theme and English. Whether the search and action bars render as real glass was not confirmed by inspection.
+
+`expo run:ios` currently fails: Xcode 26.6 reports no destinations because the iOS 26.5 platform component is not installed (about 8 GB, with 10 GB free). The build used instead, from `ios/`, compiles `Pods/Pods.xcodeproj -alltargets`, then `Kolvex.xcodeproj -target Kolvex`, with `-sdk iphonesimulator ARCHS=arm64 CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY=- SYMROOT=$PWD/build-sim/Products OBJROOT=$PWD/build-sim/Intermediates`. Do not delete `ios/build`: it holds codegen from `pod install`.
 
 ### Blockers
 
-- iOS: install Xcode, then run `sudo xcode-select -s /Applications/Xcode.app/Contents/Developer`.
-- Android: requires a JDK and Android SDK with an emulator.
+- Android: set aside for now; requires a JDK and Android SDK with an emulator.
 - Signed-in flows: requires a non-production or disposable test account, and an administrator account for `/admin`.
 - Universal links: requires the Apple Team ID and hosted association files.
 - `react-native-view-shot` was added, so the next run needs a new development build; Expo Go will not do.
@@ -48,7 +58,7 @@ Defects found this way and fixed: compact digit grouping (caught by comparing wi
 
 Known preview noise: a development warning about `accessible={false}` on SVG comes from the Web adapter.
 
-Screenshots, all React Native Web and not iOS or Android: `artifacts/mobile-v04-*-rnweb.jpg`.
+Screenshots: `artifacts/mobile-v04-*-rnweb.jpg` are React Native Web; `artifacts/mobile-v04-ios26-*.png` are the iOS simulator.
 
 ### New automated coverage
 

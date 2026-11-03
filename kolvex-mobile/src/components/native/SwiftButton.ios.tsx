@@ -33,12 +33,7 @@ export default function SwiftButton({
           ...(selected ? [accessibilityAddTraits(["isSelected"])] : []),
         ]}
       >
-        <Text
-          modifiers={[
-            frame({ minWidth: 44, minHeight: 44 }),
-            foregroundStyle(t.text),
-          ]}
-        >
+        <Text modifiers={[frame({ minWidth: 44 }), foregroundStyle(t.text)]}>
           {children}
         </Text>
       </Button>

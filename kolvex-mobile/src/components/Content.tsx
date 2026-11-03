@@ -19,7 +19,16 @@ import { apiURL } from "../lib/config";
 import { useAuth } from "../state/Auth";
 import { useText } from "../lib/i18n";
 import { useTheme } from "../lib/theme";
-import { Button, Copy, Empty, Failure, Glass, Page, Skeleton } from "./UI";
+import {
+  Button,
+  Chip,
+  Copy,
+  Empty,
+  Failure,
+  Glass,
+  Page,
+  Skeleton,
+} from "./UI";
 import { textBlocks } from "../lib/markdownBlocks";
 import { safeExternal } from "../lib/links";
 
@@ -138,17 +147,17 @@ export function Filters({
     <ScrollView
       horizontal
       showsHorizontalScrollIndicator={false}
-      contentContainerStyle={{ gap: 8, paddingBottom: 4 }}
+      contentContainerStyle={{ gap: 8 }}
     >
       {values.map(([key, name]) => (
-        <Button
+        <Chip
           key={key}
           disabled={disabled}
           selected={key === value}
           onPress={() => onChange(key)}
         >
           {name}
-        </Button>
+        </Chip>
       ))}
     </ScrollView>
   );
