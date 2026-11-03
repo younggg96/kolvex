@@ -159,11 +159,11 @@ export default function VideoOpinionCard({
               : Math.round(opinion.confidence * 100);
           const summary = opinion.summary || opinion.thesis;
           return (
-            <li key={opinion.id} className="border-t border-border first:border-t-0">
+            <li key={opinion.id} className="border-t border-border first:border-t-0 has-[button:hover]:border-transparent has-[button:focus-visible]:border-transparent">
               <button
                 type="button"
                 onClick={() => onStock?.(opinion.ticker)}
-                className={cn("group grid w-full min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-1.5 rounded-2xl py-3 text-left transition-colors duration-150 hover:bg-foreground/[0.06] focus-visible:outline-none focus-visible:bg-foreground/[0.06]", !compact && "rounded-none sm:-mx-3 sm:w-[calc(100%+1.5rem)] sm:grid-cols-[7rem_7.5rem_minmax(0,1fr)_auto] sm:items-start sm:rounded-full sm:px-3")}
+                className={cn("group grid w-full min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-1.5 rounded-2xl px-3 py-3 text-left transition-colors duration-150 hover:bg-foreground/[0.06] focus-visible:outline-none focus-visible:bg-foreground/[0.06]", !compact && "rounded-none sm:-mx-3 sm:w-[calc(100%+1.5rem)] sm:grid-cols-[7rem_7.5rem_minmax(0,1fr)_auto] sm:items-start sm:rounded-full sm:px-3")}
               >
                 <span className="flex min-w-0 items-center gap-2.5">
                   <CompanyLogo symbol={opinion.ticker} size="sm" />
