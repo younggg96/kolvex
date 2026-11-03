@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { quoteCache, CACHE_TTL, getCacheKey } from "@/lib/cache";
+import { quoteCache, CACHE_TTL, QUOTE_CACHE_CONTROL, getCacheKey } from "@/lib/cache";
 
 const BACKEND_API_URL =
   process.env.NEXT_PUBLIC_BACKEND_API_URL || "http://127.0.0.1:8080";
@@ -61,7 +61,9 @@ export async function GET() {
         // Fetch quote and history in parallel
         const [quoteResponse, chartData] = await Promise.all([
           fetch(
-            `${BACKEND_API_URL}/api/v1/market/quote/${encodeURIComponent(index.symbol)}`
+            `${BACKEND_API_URL}/api/v1/market/quote/${encodeURIComponent(index.symbol)}`,
+            // force-dynamic does not stop Next's Data Cache, which never expires here.
+            { cache: "no-store" }
           ),
           fetchHistoryData(index.symbol),
         ]);
@@ -81,7 +83,6 @@ export async function GET() {
           chartData,
         };
 
-        // Cache for 60 seconds
         quoteCache.set(cacheKey, indexData, CACHE_TTL.QUOTE);
 
         return indexData;
@@ -104,7 +105,7 @@ export async function GET() {
 
     return NextResponse.json(indicesData, {
       headers: {
-        "Cache-Control": "public, s-maxage=60, stale-while-revalidate=120",
+        "Cache-Control": QUOTE_CACHE_CONTROL,
       },
     });
   } catch (error) {

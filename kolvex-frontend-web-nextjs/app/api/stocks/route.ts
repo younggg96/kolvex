@@ -4,6 +4,7 @@ import {
   quoteCache,
   overviewCache,
   CACHE_TTL,
+  QUOTE_CACHE_CONTROL,
   getCacheKey,
 } from "@/lib/cache";
 
@@ -84,8 +85,7 @@ export async function GET(request: NextRequest) {
         if (cachedQuote) {
           return NextResponse.json(cachedQuote, {
             headers: {
-              "Cache-Control":
-                "public, s-maxage=60, stale-while-revalidate=120",
+              "Cache-Control": QUOTE_CACHE_CONTROL,
               "X-Cache": "HIT",
             },
           });
@@ -93,7 +93,9 @@ export async function GET(request: NextRequest) {
 
         try {
           const quoteResponse = await fetch(
-            `${NEXT_PUBLIC_BACKEND_API_URL}/api/v1/market/quote/${symbol}`
+            `${NEXT_PUBLIC_BACKEND_API_URL}/api/v1/market/quote/${symbol}`,
+            // force-dynamic does not stop Next's Data Cache, which never expires here.
+            { cache: "no-store" }
           );
           if (!quoteResponse.ok) {
             throw new Error(`Backend returned ${quoteResponse.status}`);
@@ -106,8 +108,7 @@ export async function GET(request: NextRequest) {
 
           return NextResponse.json(transformedQuote, {
             headers: {
-              "Cache-Control":
-                "public, s-maxage=60, stale-while-revalidate=120",
+              "Cache-Control": QUOTE_CACHE_CONTROL,
               "X-Cache": "MISS",
             },
           });
@@ -157,8 +158,7 @@ export async function GET(request: NextRequest) {
         if (symbolsToFetch.length === 0) {
           return NextResponse.json(cachedQuotes, {
             headers: {
-              "Cache-Control":
-                "public, s-maxage=60, stale-while-revalidate=120",
+              "Cache-Control": QUOTE_CACHE_CONTROL,
               "X-Cache": "HIT",
             },
           });
@@ -174,6 +174,8 @@ export async function GET(request: NextRequest) {
             {
               method: "POST",
               headers: { "Content-Type": "application/json" },
+              // Next's Data Cache also stores POST requests in route handlers.
+              cache: "no-store",
               signal: AbortSignal.timeout(20000),
             }
           );
@@ -199,8 +201,7 @@ export async function GET(request: NextRequest) {
 
           return NextResponse.json(allQuotes, {
             headers: {
-              "Cache-Control":
-                complete ? "public, s-maxage=60, stale-while-revalidate=120" : "no-store",
+              "Cache-Control": complete ? QUOTE_CACHE_CONTROL : "no-store",
               "X-Cache": cachedQuotes.length > 0 ? "PARTIAL" : "MISS",
             },
           });

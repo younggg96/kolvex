@@ -118,10 +118,14 @@ export const overviewCache = new MemoryCache();
 // 缓存 TTL 配置（秒）
 export const CACHE_TTL = {
   CHART: 5 * 60, // 图表数据缓存 5 分钟
-  QUOTE: 60, // 报价数据缓存 1 分钟（价格变化较快）
+  QUOTE: 15, // 报价数据缓存 15 秒（价格变化较快）
   OVERVIEW: 10 * 60, // 概览数据缓存 10 分钟
-  MULTIPLE_QUOTES: 60, // 多个报价缓存 1 分钟
+  MULTIPLE_QUOTES: 15, // 多个报价缓存 15 秒
 } as const;
+
+// 报价的 CDN 缓存头：与内存缓存、浏览器缓存叠加后，总延迟仍控制在 1 分钟内
+export const QUOTE_CACHE_CONTROL =
+  "public, s-maxage=10, stale-while-revalidate=20";
 
 /**
  * 生成缓存键

@@ -15,7 +15,7 @@ function load(file, fetch, cache = new Map()) {
     require(name) {
       if (name === "./clientCache") return clientCache;
       if (name === 'next/server') return { NextResponse: Response };
-      if (name === '@/lib/cache') return { quoteCache: cache, CACHE_TTL: { QUOTE: 60 }, getCacheKey: (...parts) => parts.join(':') };
+      if (name === '@/lib/cache') return { quoteCache: cache, CACHE_TTL: { QUOTE: 15 }, QUOTE_CACHE_CONTROL: 'quote-cache-control', getCacheKey: (...parts) => parts.join(':') };
       throw Error(name);
     },
   });
@@ -130,4 +130,23 @@ test('an entirely failed batch is retried once with a bounded final failure', as
   const result = await api.loadMarketQuotes(['MU'], new AbortController().signal, () => {});
   assert.equal(calls, 2);
   assert.equal(result.unavailable, true);
+});
+
+test('quote requests to the backend bypass the Next Data Cache', async () => {
+  const seen = [];
+  const backend = async (url, init = {}) => {
+    seen.push({ url: String(url), cache: init.cache });
+    return Response.json(String(url).includes('/quotes?')
+      ? { NVDA: { symbol: 'NVDA', current_price: 180 } }
+      : { symbol: 'MU', current_price: 180, data: [] });
+  };
+  const stocks = load('app/api/stocks/route.ts', backend);
+  const single = await stocks.GET({ nextUrl: new URL('https://kolvex.example/api/stocks?action=quote&symbol=MU') });
+  const batch = await stocks.GET(request(['NVDA']));
+  await load('app/api/market/indices/route.ts', backend).GET();
+  const quoteRequests = seen.filter(({ url }) => /\/market\/quotes?[/?]/.test(url));
+  assert.equal(quoteRequests.length, 5);
+  for (const { url, cache } of quoteRequests) assert.equal(cache, 'no-store', url);
+  assert.equal(single.headers.get('Cache-Control'), 'quote-cache-control');
+  assert.equal(batch.headers.get('Cache-Control'), 'quote-cache-control');
 });
