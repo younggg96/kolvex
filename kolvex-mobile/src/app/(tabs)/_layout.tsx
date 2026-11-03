@@ -1,12 +1,11 @@
 import { View } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useText } from "../../lib/i18n";
 import { NativeTabs } from "expo-router/native-tabs";
 import { useTheme } from "../../lib/theme";
+import { StatusScrim } from "../../components/UI";
 export default function Tabs() {
   const t = useTheme();
   const text = useText();
-  const insets = useSafeAreaInsets();
   return (
     <View style={{ flex: 1 }}>
       <NativeTabs tintColor={t.accent}>
@@ -37,18 +36,7 @@ export default function Tabs() {
           <NativeTabs.Trigger.Label>{text("更多")}</NativeTabs.Trigger.Label>
         </NativeTabs.Trigger>
       </NativeTabs>
-      {/* Tab screens have no navigation bar, so content would scroll under the status bar. */}
-      <View
-        pointerEvents="none"
-        style={{
-          position: "absolute",
-          top: 0,
-          left: 0,
-          right: 0,
-          height: insets.top,
-          backgroundColor: t.background,
-        }}
-      />
+      <StatusScrim />
     </View>
   );
 }

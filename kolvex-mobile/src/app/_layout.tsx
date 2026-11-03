@@ -10,9 +10,13 @@ import { useTheme } from "../lib/theme";
 export const unstable_settings = { anchor: "(tabs)" };
 
 function AppContent() {
-  const { session } = useAuth();
+  const { session, ready } = useAuth();
   const t = useTheme();
   const text = useText();
+  // Hold the navigator until the stored session is read, so a signed-in launch
+  // never flashes sign-in or loses the route a deep link asked for.
+  if (!ready)
+    return <View style={{ flex: 1, backgroundColor: t.background }} />;
   return (
     <WatchlistProvider key={session?.user.id ?? "guest"}>
       <StatusBar style={t.dark ? "light" : "dark"} />
@@ -33,36 +37,75 @@ function AppContent() {
             contentStyle: { backgroundColor: t.background },
           }}
         >
-          <Stack.Screen
-            name="technical/[symbol]"
-            // iOS 26 pops on a horizontal swipe anywhere, which would take over chart panning.
-            options={{ title: text("技术图表"), gestureEnabled: false }}
-          />
-          <Stack.Screen name="markets" options={{ title: text("市场全景") }} />
-          <Stack.Screen name="admin" options={{ title: text("管理中心") }} />
-          <Stack.Screen name="calendar" options={{ title: text("市场日历") }} />
-          <Stack.Screen
-            name="preferences"
-            options={{ title: text("显示与模型设置") }}
-          />
-          <Stack.Screen
-            name="research-tasks"
-            options={{ title: text("我的研究任务") }}
-          />
-          <Stack.Screen
-            name="research-task/[id]"
-            options={{ title: text("研究任务") }}
-          />
-          <Stack.Screen
-            name="creators"
-            options={{ title: text("创作者与视频") }}
-          />
-          <Stack.Screen
-            name="creator/[platform]/[id]"
-            options={{ title: text("创作者资料") }}
-          />
-          <Stack.Screen name="updates" options={{ title: text("观点动态") }} />
-          <Stack.Screen name="macro" options={{ title: text("宏观指标") }} />
+          <Stack.Protected guard={!session}>
+            <Stack.Screen name="sign-in" options={{ headerShown: false }} />
+          </Stack.Protected>
+          <Stack.Protected guard={!!session}>
+            <Stack.Screen
+              name="technical/[symbol]"
+              // iOS 26 pops on a horizontal swipe anywhere, which would take over chart panning.
+              options={{ title: text("技术图表"), gestureEnabled: false }}
+            />
+            <Stack.Screen
+              name="markets"
+              options={{ title: text("市场全景") }}
+            />
+            <Stack.Screen name="admin" options={{ title: text("管理中心") }} />
+            <Stack.Screen
+              name="calendar"
+              options={{ title: text("市场日历") }}
+            />
+            <Stack.Screen
+              name="preferences"
+              options={{ title: text("显示与模型设置") }}
+            />
+            <Stack.Screen
+              name="research-tasks"
+              options={{ title: text("我的研究任务") }}
+            />
+            <Stack.Screen
+              name="research-task/[id]"
+              options={{ title: text("研究任务") }}
+            />
+            <Stack.Screen
+              name="creators"
+              options={{ title: text("创作者与视频") }}
+            />
+            <Stack.Screen
+              name="creator/[platform]/[id]"
+              options={{ title: text("创作者资料") }}
+            />
+            <Stack.Screen
+              name="updates"
+              options={{ title: text("观点动态") }}
+            />
+            <Stack.Screen name="macro" options={{ title: text("宏观指标") }} />
+            <Stack.Screen name="account" options={{ title: text("账户") }} />
+            <Stack.Screen name="briefs" options={{ title: text("日报") }} />
+            <Stack.Screen
+              name="brief/[id]"
+              options={{ title: text("日报详情") }}
+            />
+            <Stack.Screen
+              name="report/[id]"
+              options={{ title: text("研究报告") }}
+            />
+            <Stack.Screen name="news" options={{ title: text("新闻终端") }} />
+            <Stack.Screen
+              name="portfolio"
+              options={{ title: text("投资组合") }}
+            />
+            <Stack.Screen
+              name="chat/index"
+              options={{ title: text("AI 对话") }}
+            />
+            <Stack.Screen name="chat/[id]" options={{ title: "Ask Kolvex" }} />
+            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+            <Stack.Screen
+              name="stock/[symbol]"
+              options={{ title: text("股票详情") }}
+            />
+          </Stack.Protected>
           <Stack.Screen
             name="auth/callback"
             options={{ title: text("账户验证") }}
@@ -70,31 +113,6 @@ function AppContent() {
           <Stack.Screen
             name="auth/recovery"
             options={{ title: text("账户恢复") }}
-          />
-          <Stack.Screen name="account" options={{ title: text("账户") }} />
-          <Stack.Screen name="briefs" options={{ title: text("日报") }} />
-          <Stack.Screen
-            name="brief/[id]"
-            options={{ title: text("日报详情") }}
-          />
-          <Stack.Screen
-            name="report/[id]"
-            options={{ title: text("研究报告") }}
-          />
-          <Stack.Screen name="news" options={{ title: text("新闻终端") }} />
-          <Stack.Screen
-            name="portfolio"
-            options={{ title: text("投资组合") }}
-          />
-          <Stack.Screen
-            name="chat/index"
-            options={{ title: text("AI 对话") }}
-          />
-          <Stack.Screen name="chat/[id]" options={{ title: "Ask Kolvex" }} />
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen
-            name="stock/[symbol]"
-            options={{ title: text("股票详情") }}
           />
         </Stack>
       </View>

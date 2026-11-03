@@ -6,7 +6,7 @@
 | ---------------------------------- | ------------------------------------------------------------------------------------------------------- |
 | Code implemented                   | See `MIGRATION.md`.                                                                                     |
 | Type check, lint, format, i18n     | Pass.                                                                                                   |
-| Unit and contract tests            | 71 of 71 pass.                                                                                          |
+| Unit and contract tests            | 73 of 73 pass.                                                                                          |
 | Expo Doctor                        | 20 of 20 pass.                                                                                          |
 | iOS and Android bundles            | Metro/Hermes exports pass. **This is not a native compile.**                                            |
 | React Native Web preview at 390 px | Exercised with real data, below. **Not native acceptance.**                                             |
@@ -53,10 +53,21 @@ Open on iOS:
 
 `expo run:ios` currently fails: Xcode 26.6 reports no destinations because the iOS 26.5 platform component is not installed (about 8 GB, with 10 GB free). The build used instead, from `ios/`, compiles `Pods/Pods.xcodeproj -alltargets`, then `Kolvex.xcodeproj -target Kolvex`, with `-sdk iphonesimulator ARCHS=arm64 CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY=- SYMROOT=$PWD/build-sim/Products OBJROOT=$PWD/build-sim/Intermediates`. Do not delete `ios/build`: it holds codegen from `pod install`.
 
+### Login is required (no guest mode)
+
+At the owner's request the app has no signed-out experience. Signed out, only `sign-in`, `auth/callback` and `auth/recovery` are reachable; every other route is inside `Stack.Protected`. Guest watchlist and public research reads were removed.
+
+- Simulator: cold start lands on sign-in with no tab bar. `kolvex://stock/AAPL` and `kolvex://admin` stay on sign-in. The language choice survives a cold start.
+- `tests/auth-guard.test.ts` walks every route file under `src/app`, because `Stack.Protected` does not cover a route with no declared screen.
+- **Not verified: signing in, restoring a session, signing out back to sign-in, OAuth return, and everything behind them.** This needs a test account. Since login is now required, **no screen behind sign-in can be reached on the simulator without one, including the screens checked earlier in this document.** Those checks predate this change.
+- A signed-out deep link is dropped rather than resumed after signing in.
+- Local lists saved under `kolvex.mobile.watchlist` by earlier builds are no longer read or merged.
+- Unexplained: the sign-in screen once showed Chinese after English had been chosen, following hot reloads. It did not recur across a cold start.
+
 ### Blockers
 
 - Android: set aside for now; requires a JDK and Android SDK with an emulator.
-- Signed-in flows: requires a non-production or disposable test account, and an administrator account for `/admin`.
+- **Everything behind sign-in: requires a non-production or disposable test account**, and an administrator account for `/admin`.
 - Universal links: requires the Apple Team ID and hosted association files.
 - `react-native-view-shot` was added, so the next run needs a new development build; Expo Go will not do.
 

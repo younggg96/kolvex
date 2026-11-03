@@ -26,17 +26,13 @@ export default function More() {
   return (
     <Page title="更多" subtitle="你的研究空间。">
       <Glass style={{ padding: 20, gap: 12 }}>
-        <Copy size={20} bold localize={!auth.session}>
-          {auth.session?.user.email || "访客模式"}
+        <Copy size={20} bold localize={false}>
+          {auth.session?.user.email ?? ""}
         </Copy>
         <Copy size={14} muted>
-          {auth.session
-            ? "使用现有账户的资料与云端自选。"
-            : "登录后查看日报和 AI 对话。"}
+          使用现有账户的资料与云端自选。
         </Copy>
-        <Button onPress={() => router.push("/account")}>
-          {auth.session ? "管理账户" : "登录 / 注册"}
-        </Button>
+        <Button onPress={() => router.push("/account")}>管理账户</Button>
       </Glass>
       <Section title="研究与阅读" />
       <Glass>

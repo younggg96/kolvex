@@ -11,7 +11,7 @@ import { BENCHMARKS } from "../lib/marketBenchmarks";
 import { useAuth } from "../state/Auth";
 import { apiRequest } from "../lib/http";
 import { demoMode } from "../lib/config";
-import { news, publicReports, reports, stockFacts } from "../lib/contentApi";
+import { news, reports, stockFacts } from "../lib/contentApi";
 import { number } from "../lib/models";
 import { useResource } from "../lib/useResource";
 import { useNewsTranslations } from "../lib/useNewsTranslations";
@@ -92,7 +92,7 @@ export function StockContent({
 function StockReports({ symbol }: { symbol: string }) {
   const user = useAuth().session?.user.id;
   const resource = useResource(`stock-reports:${user}:${symbol}`, (signal) =>
-    user ? reports(signal, user, 0, symbol) : publicReports(signal, 0, symbol),
+    reports(signal, user ?? "", 0, symbol),
   );
   const rows = (resource.data?.items ?? []).filter(
     (item) => item.status === "completed",

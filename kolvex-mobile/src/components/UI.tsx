@@ -161,6 +161,24 @@ export function Button({
     </Pressable>
   );
 }
+/** Screens without a navigation bar: keeps content from scrolling under the status bar. */
+export function StatusScrim() {
+  const t = useTheme();
+  const insets = useSafeAreaInsets();
+  return (
+    <View
+      pointerEvents="none"
+      style={{
+        position: "absolute",
+        top: 0,
+        left: 0,
+        right: 0,
+        height: insets.top,
+        backgroundColor: t.background,
+      }}
+    />
+  );
+}
 /** A filter choice: a plain control among content, deliberately without glass. */
 export function Chip({
   children,

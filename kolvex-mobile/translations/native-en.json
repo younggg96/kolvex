@@ -905,5 +905,10 @@
   "轻度转弱": "Mildly weakening",
   "中度转弱": "Moderately weakening",
   "强烈转弱": "Strongly weakening",
-  "持平": "Unchanged"
+  "持平": "Unchanged",
+  "登录 Kolvex": "Sign in to Kolvex",
+  "使用账户继续。": "Use your account to continue.",
+  "配置 Supabase 地址和公共密钥后，可使用现有账户登录。": "Configure the Supabase URL and public key to sign in with an existing account.",
+  "返回": "Back",
+  "自选通过现有账户同步。": "Your watchlist syncs through your account."
 }

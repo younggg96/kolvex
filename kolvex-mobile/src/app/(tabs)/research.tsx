@@ -3,7 +3,7 @@ import { Pressable, View } from "react-native";
 import { router } from "expo-router";
 import { useAuth } from "../../state/Auth";
 import { usePreferences } from "../../state/Preferences";
-import { profile, publicReports, reports } from "../../lib/contentApi";
+import { profile, reports } from "../../lib/contentApi";
 import type { TradingAnalysis } from "../../lib/contentTypes";
 import { financialFormat } from "../../lib/financialFormat";
 import {
@@ -27,9 +27,7 @@ export default function Research() {
     `research-catalog:${user}`,
     (signal) =>
       loadResearchCatalog((offset) =>
-        user
-          ? reports(signal, user, offset, "", 100)
-          : publicReports(signal, offset, "", 100),
+        reports(signal, user ?? "", offset, "", 100),
       ),
     50_000,
   );

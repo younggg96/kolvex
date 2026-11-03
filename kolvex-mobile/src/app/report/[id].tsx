@@ -1,6 +1,6 @@
 import { useLocalSearchParams } from "expo-router";
 import { useAuth } from "../../state/Auth";
-import { report, publicReport } from "../../lib/contentApi";
+import { report } from "../../lib/contentApi";
 import { useResource } from "../../lib/useResource";
 import { Page } from "../../components/UI";
 import { ResourceState } from "../../components/Content";
@@ -8,8 +8,8 @@ import { ReportBody } from "../../components/ReportBody";
 export default function Report() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const user = useAuth().session?.user.id;
-  const r = useResource(`report:${user || "public"}:${id}`, (signal) =>
-    user ? report(id, user, signal) : publicReport(id, signal),
+  const r = useResource(`report:${user}:${id}`, (signal) =>
+    report(id, user ?? "", signal),
   );
   return (
     <Page

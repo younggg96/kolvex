@@ -168,20 +168,6 @@ export const stockFacts = (symbol: string, signal: AbortSignal) =>
     employees?: number;
   }>(`/market/company/${encoded(symbol)}`, { signal });
 
-export const publicReports = (
-  signal: AbortSignal,
-  offset = 0,
-  ticker = "",
-  limit = 20,
-) =>
-  apiRequest<TradingAnalysisListResponse>(
-    `/trading-analysis/public/list?limit=${limit}&offset=${offset}${ticker ? `&ticker=${encoded(ticker)}` : ""}`,
-    { signal },
-  );
-export const publicReport = (id: string, signal: AbortSignal) =>
-  apiRequest<TradingAnalysis>(`/trading-analysis/public/${encoded(id)}`, {
-    signal,
-  });
 export const deleteAllConversations = (user: string, signal: AbortSignal) =>
   apiRequest<unknown>("/chat/conversations", {
     method: "DELETE",
