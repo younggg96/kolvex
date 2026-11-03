@@ -67,3 +67,12 @@ test('cancelled in-flight ranges cannot populate the cache with late results', a
   await tick();finish(bars);await second;
   assert.equal(calls, 2);
 });
+
+test('empty trends are rejected and a recovered provider is contacted again', async () => {
+  let calls = 0;
+  const { loadStockTrend } = fixture(async () => ++calls === 1 ? [] : bars);
+  const signal = new AbortController().signal;
+  await assert.rejects(loadStockTrend('A', params, signal), /Trend unavailable/);
+  assert.equal((await loadStockTrend('A', params, signal)).length, 2);
+  assert.equal(calls, 2);
+});

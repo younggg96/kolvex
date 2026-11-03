@@ -61,7 +61,7 @@ export function EquityPositionsTable({
               type="alpha"
               className="w-[25%] pl-4"
             />
-            <TableHead className="w-[80px] hidden sm:table-cell">
+            <TableHead className="w-[5rem] hidden sm:table-cell">
               <span className="text-xs text-muted-foreground">{t("portfolio.table.chart")}</span>
             </TableHead>
             <SortableHeader
@@ -129,7 +129,7 @@ export function EquityPositionsTable({
               className={isOwner && isPublic ? "" : "pr-4"}
             />
             {isOwner && isPublic && (
-              <TableHead className="w-[50px] pr-4">
+              <TableHead className="w-[3.125rem] pr-4">
                 <span className="text-xs text-muted-foreground">{t("portfolio.table.public")}</span>
               </TableHead>
             )}
@@ -189,7 +189,7 @@ export function EquityPositionsTable({
                         )}
                       </div>
                       <div
-                        className="text-xs text-muted-foreground truncate max-w-[150px]"
+                        className="text-xs text-muted-foreground truncate max-w-[9.375rem]"
                         title={isSecretStock ? "" : pos.security_name || ""}
                       >
                         {isSecretStock ? t("portfolio.table.lockedStock") : pos.security_name}
@@ -228,7 +228,7 @@ export function EquityPositionsTable({
                 <TableCell className="text-center tabular-nums">
                   <div className="inline-flex items-center justify-center gap-1">
                     {isShort && (
-                      <Badge variant="destructive" size="xxs" className="!text-[10px]">
+                      <Badge variant="destructive" size="xxs" className="!text-[0.625rem]">
                         {t("portfolio.table.short")}
                       </Badge>
                     )}

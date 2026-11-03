@@ -143,9 +143,9 @@ export default function CompanyLogo({
     <div
       title={name || abbreviation}
       style={{
-        width: px,
-        height: px,
-        padding: hasError ? 0 : customSize ? Math.round(px / 8) : preset.padding,
+        width: `${px / 16}rem`,
+        height: `${px / 16}rem`,
+        padding: `${(hasError ? 0 : customSize ? Math.round(px / 8) : preset.padding) / 16}rem`,
       }}
       className={cn(
         "relative flex flex-shrink-0 items-center justify-center overflow-hidden",
@@ -174,7 +174,7 @@ export default function CompanyLogo({
         />
       ) : (
         <span
-          style={{ fontSize: Math.max(9, Math.round(px / (fallbackText.length > 2 ? 3.6 : 2.6))) }}
+          style={{ fontSize: `${Math.max(9, Math.round(px / (fallbackText.length > 2 ? 3.6 : 2.6))) / 16}rem` }}
           className={cn("font-semibold leading-none tracking-tight", textColor)}
         >
           {fallbackText}

@@ -9,23 +9,9 @@ import ResearchLayout from "@/components/decision/ResearchLayout";
 import { useUserProfileContext } from "@/components/user/UserProfileProvider";
 import { RESEARCH_AUTHORING_PATH, deepResearchPagePath, parseDeepResearchPage } from "@/lib/researchRoutes";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
+import { ContentLoading } from "@/components/ui/content-loading";
 import { groupResearchByStock, loadResearchCatalog, RESEARCH_GROUPS_KEY, STOCKS_PER_PAGE } from "@/lib/researchGroups";
 import { ResearchStockGroup } from "./ResearchStockGroup";
-
-function ExploreSkeleton() {
-  return (
-    <div className="divide-y divide-border">
-      {Array.from({ length: 6 }).map((_, i) => (
-        <div key={i} className="flex items-center gap-4 px-4 py-5">
-          <Skeleton className="h-10 w-10 shrink-0 rounded-full" />
-          <div className="flex-1 space-y-2"><Skeleton className="h-5 w-20" /><Skeleton className="h-3 w-16" /></div>
-          <Skeleton className="h-6 w-14 rounded-full" />
-        </div>
-      ))}
-    </div>
-  );
-}
 
 export default function PublishedResearch({ page }: { page?: string }) {
   const { t, locale } = useTranslation();
@@ -49,13 +35,13 @@ export default function PublishedResearch({ page }: { page?: string }) {
   return (
     <ResearchLayout>
       <main className="relative flex-1 overflow-y-auto" aria-busy={loading}>
-        <div className="mx-auto w-full  space-y-8 px-4 pb-16 pt-6 md:px-8 md:pt-8">
+        <div className="mx-auto w-full  space-y-8 px-[16px] pb-16 pt-6 md:px-8 md:pt-8">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
-              <h1 className="text-[28px] font-bold leading-tight md:text-[32px]">
+              <h1 className="text-[1.75rem] font-bold leading-tight md:text-[2rem]">
                 {t("tradingAnalysis.title")}
               </h1>
-              <p className="mt-2 max-w-[60ch] text-[15px] leading-relaxed text-muted-foreground">
+              <p className="mt-2 max-w-[60ch] text-[0.9375rem] leading-relaxed text-muted-foreground">
                 {t("tradingAnalysis.explore.groupedDescription")}
               </p>
             </div>
@@ -67,7 +53,7 @@ export default function PublishedResearch({ page }: { page?: string }) {
           </div>
 
           <section aria-labelledby="explore-published" className="animate-fade-in-up">
-            <h2 id="explore-published" className="border-b border-border pb-3 text-[17px] font-semibold text-foreground">
+            <h2 id="explore-published" className="border-b border-border pb-3 text-[1.0625rem] font-semibold text-foreground">
               {t("tradingAnalysis.explore.byStock")}
               {total > 0 && (
                 <span className="figure ml-2 text-sm font-normal text-muted-foreground">
@@ -78,11 +64,11 @@ export default function PublishedResearch({ page }: { page?: string }) {
 
             {error && resource.data && <p role="alert" className="py-3 text-sm text-muted-foreground">{t("common.error")} <Button variant="outline" size="sm" onClick={loadPublished}>{t("common.retry")}</Button></p>}
             {loading ? (
-              <ExploreSkeleton />
+              <ContentLoading />
             ) : error && !resource.data ? (
               <p role="alert" className="py-8 text-sm text-muted-foreground">{t("common.error")} <Button variant="outline" size="sm" onClick={() => loadPublished()}>{t("common.retry")}</Button></p>
             ) : groups.length === 0 ? (
-              <p className="py-12 text-[15px] text-muted-foreground">
+              <p className="py-12 text-[0.9375rem] text-muted-foreground">
                 {t("tradingAnalysis.explore.noPublished")}
               </p>
             ) : (

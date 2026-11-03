@@ -139,11 +139,11 @@ export function PortfolioPerformanceChart({
             <div className="flex flex-wrap items-start justify-between gap-4">
                 <div className="min-w-0" aria-live="polite">
                     {isOwner ? (
-                        <p className="figure text-[34px] font-semibold leading-tight sm:text-[40px]">
+                        <p className="figure text-[2.125rem] font-semibold leading-tight sm:text-[2.5rem]">
                             {liveValue === "***" ? "***" : isNumber(headlineValue) ? formatCurrency(headlineValue) : "—"}
                         </p>
                     ) : (
-                        <p className={cn("figure text-[34px] font-semibold leading-tight sm:text-[40px]", changePositive ? "text-positive" : "text-negative")}>
+                        <p className={cn("figure text-[2.125rem] font-semibold leading-tight sm:text-[2.5rem]", changePositive ? "text-positive" : "text-negative")}>
                             {headlineChange ? formatPercent(headlineChange.percent) : "—"}
                         </p>
                     )}
@@ -253,7 +253,7 @@ export function PortfolioPerformanceChart({
                             onClick={() => setPeriod(value)}
                             disabled={loading}
                             className={cn(
-                                "inline-flex h-8 shrink-0 items-center rounded-full px-3.5 text-[13px] font-semibold transition-colors duration-150 focus-visible:outline-none disabled:opacity-50",
+                                "inline-flex h-8 shrink-0 items-center rounded-full px-3.5 text-[0.8125rem] font-semibold transition-colors duration-150 focus-visible:outline-none disabled:opacity-50",
                                 period === value
                                     ? "bg-foreground text-background"
                                     : "text-muted-foreground hover:bg-foreground/[0.06] hover:text-foreground active:bg-foreground/[0.1]",

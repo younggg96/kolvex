@@ -1,6 +1,6 @@
 "use client";
 
-import { ContentSkeleton } from "@/components/ui/content-skeleton";
+import { ContentLoading } from "@/components/ui/content-loading";
 import { useState, useEffect, useRef, ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { SearchInput } from "@/components/ui/search-input";
@@ -218,17 +218,17 @@ export default function SearchWithAutocomplete<T extends SearchItem>({
       {showDropdown && (displayList.length > 0 || isLoading) && (
         <div
           className={cn(
-            "absolute top-full left-0 right-0 mt-1 bg-card border border-border rounded-2xl shadow-lg max-h-[300px] overflow-y-auto z-50",
+            "absolute top-full left-0 right-0 mt-1 bg-card border border-border rounded-2xl shadow-lg max-h-[18.75rem] overflow-y-auto z-50",
             dropdownClassName
           )}
         >
           {!searchTerm && popularLabel && (
-            <div className="px-3 py-2 text-[10px] font-medium text-muted-foreground border-b border-border">
+            <div className="px-3 py-2 text-[0.625rem] font-medium text-muted-foreground border-b border-border">
               {popularLabel}
             </div>
           )}
           {isLoading ? (
-            <ContentSkeleton label="Searching / 正在搜索" rows={3} className="px-3" />
+            <ContentLoading className="px-3" />
           ) : displayList.length > 0 ? (
             displayList.map((item) => (
               <div

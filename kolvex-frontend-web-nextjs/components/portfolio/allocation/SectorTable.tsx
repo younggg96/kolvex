@@ -209,7 +209,7 @@ export function SectorTable({
                                 <Badge
                                   size="xs"
                                   variant="secondary"
-                                  className="!text-[9px] sm:!text-[11px]"
+                                  className="!text-[0.5625rem] sm:!text-[0.6875rem]"
                                 >
                                   Stock + Option
                                 </Badge>
@@ -218,7 +218,7 @@ export function SectorTable({
                                 <Badge
                                   size="xs"
                                   variant="outline"
-                                  className="!text-[9px] sm:!text-[11px]"
+                                  className="!text-[0.5625rem] sm:!text-[0.6875rem]"
                                 >
                                   Option
                                 </Badge>
@@ -230,7 +230,7 @@ export function SectorTable({
                               )}
                             </div>
                             {aggPos.securityName && (
-                              <span className="text-xs text-muted-foreground truncate w-[80px] sm:w-full">
+                              <span className="text-xs text-muted-foreground truncate w-[5rem] sm:w-full">
                                 {aggPos.securityName}
                               </span>
                             )}

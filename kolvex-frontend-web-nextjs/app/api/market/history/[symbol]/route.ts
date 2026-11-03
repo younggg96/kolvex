@@ -32,7 +32,8 @@ export async function GET(
 
     const response = await fetch(url, {
       headers: { "Content-Type": "application/json" },
-      next: { revalidate: 300 },
+      // Cache validated responses below; upstream HTTP 200 may contain no bars.
+      cache: "no-store",
       signal: AbortSignal.any([request.signal, AbortSignal.timeout(20000)]),
     });
 
@@ -47,7 +48,11 @@ export async function GET(
       return NextResponse.json({ error: detail }, { status: response.status });
     }
 
-    return NextResponse.json(await response.json());
+    const data = await response.json();
+    if (!Array.isArray(data.data) || !data.data.some((bar: { close?: number }) => typeof bar?.close === "number" && Number.isFinite(bar.close) && bar.close > 0)) {
+      return NextResponse.json({ error: "History unavailable" }, { status: 503, headers: { "Cache-Control": "no-store" } });
+    }
+    return NextResponse.json(data, { headers: { "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300" } });
   } catch (error) {
     console.error("Market history API error:", error);
     return NextResponse.json(

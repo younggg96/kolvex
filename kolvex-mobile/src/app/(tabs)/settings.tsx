@@ -24,7 +24,7 @@ export default function More() {
     user ? profile(user, signal) : Promise.resolve(null),
   );
   return (
-    <Page title="更多" subtitle="你的研究空间。">
+    <Page title="设置" subtitle="你的研究空间。">
       <Glass style={{ padding: 20, gap: 12 }}>
         <Copy size={20} bold localize={false}>
           {auth.session?.user.email ?? ""}

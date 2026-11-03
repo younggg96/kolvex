@@ -60,8 +60,8 @@ export default function PortfolioChanges({ tickers }: { tickers: string[] }) {
                 <span className="flex min-w-0 items-center gap-3">
                   <span aria-hidden><CompanyLogo symbol={shift.ticker} size="md" /></span>
                   <span className="min-w-0">
-                    <span className="block text-[15px] font-semibold">{shift.ticker}</span>
-                    <span className="block text-[13px] text-muted-foreground">
+                    <span className="block text-[0.9375rem] font-semibold">{shift.ticker}</span>
+                    <span className="block text-[0.8125rem] text-muted-foreground">
                       {c("Creators", "博主观点")}
                       {c(", ", "，")}
                       {dayLabel(shift.current_date)}
@@ -71,11 +71,11 @@ export default function PortfolioChanges({ tickers }: { tickers: string[] }) {
                 <span className="flex shrink-0 flex-col items-end gap-0.5">
                   {shift.change == null ? (
                     <>
-                      <OpinionStrength value={shift.current_score} className="text-[13px]" />
+                      <OpinionStrength value={shift.current_score} className="text-[0.8125rem]" />
                       <span className="text-xs text-muted-foreground">{c("New opinion", "新观点")}</span>
                     </>
                   ) : (
-                    <OpinionStrength value={shift.change} change className="text-[13px]" />
+                    <OpinionStrength value={shift.change} change className="text-[0.8125rem]" />
                   )}
                 </span>
               </Link>

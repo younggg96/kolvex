@@ -15,10 +15,10 @@ export function NotConnectedState({
 
   return (
     <div className="max-w-xl py-6 md:py-10">
-      <h2 className="text-[28px] font-bold leading-tight md:text-[32px]">
+      <h2 className="text-[1.75rem] font-bold leading-tight md:text-[2rem]">
         {t("portfolio.connect.title")}
       </h2>
-      <p className="mt-3 max-w-[52ch] text-[15px] leading-relaxed text-muted-foreground">
+      <p className="mt-3 max-w-[52ch] text-[0.9375rem] leading-relaxed text-muted-foreground">
         {t("portfolio.connect.description")}
       </p>
 
@@ -27,15 +27,15 @@ export function NotConnectedState({
         <li className="flex items-start gap-3 px-4 py-4">
           <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-foreground" />
           <div>
-            <h3 className="text-[15px] font-semibold">
+            <h3 className="text-[0.9375rem] font-semibold">
               {t("portfolio.connect.plaidTitle")}
             </h3>
-            <p className="mt-1 text-[13px] leading-5 text-muted-foreground">
+            <p className="mt-1 text-[0.8125rem] leading-5 text-muted-foreground">
               {t("portfolio.connect.plaidDescription")}
             </p>
           </div>
         </li>
-        <li className="flex flex-wrap gap-x-6 gap-y-2 px-4 py-4 text-[13px] text-muted-foreground">
+        <li className="flex flex-wrap gap-x-6 gap-y-2 px-4 py-4 text-[0.8125rem] text-muted-foreground">
           {(["secure", "readOnly", "encrypted"] as const).map((key) => (
             <span key={key} className="flex items-center gap-1.5">
               <Check className="h-3.5 w-3.5 text-positive" />
@@ -70,11 +70,11 @@ export function InitialSyncState({ onSync, syncing }: InitialSyncStateProps) {
 
   return (
     <div className="max-w-xl py-6 md:py-10">
-      <h2 className="flex items-center gap-2 text-[28px] font-bold leading-tight md:text-[32px]">
+      <h2 className="flex items-center gap-2 text-[1.75rem] font-bold leading-tight md:text-[2rem]">
         <Check className="h-7 w-7 shrink-0 text-positive" strokeWidth={2.5} />
         {t("portfolio.connect.connectedTitle")}
       </h2>
-      <p className="mt-3 max-w-[52ch] text-[15px] leading-relaxed text-muted-foreground">
+      <p className="mt-3 max-w-[52ch] text-[0.9375rem] leading-relaxed text-muted-foreground">
         {t("portfolio.connect.connectedDescription")}
       </p>
       <Button

@@ -60,7 +60,7 @@ function AgentActivityIndicator({
 
   return (
     <div className="flex w-full justify-start animate-fade-in" aria-live="polite">
-      <div className="w-full max-w-[720px]">
+      <div className="w-full max-w-[45rem]">
           <div className="mb-2 flex items-center gap-2 text-xs text-muted-foreground">
             <span className="font-semibold text-foreground">
               {t("chat.assistantName")}
@@ -200,7 +200,7 @@ export function ChatMessageList({
 
   return (
     <div ref={containerRef} className="relative flex-1 overflow-y-auto">
-      <div className="mx-auto flex min-h-full max-w-3xl flex-col justify-end px-4 py-6 md:px-6">
+      <div className="mx-auto flex min-h-full max-w-3xl flex-col justify-end px-[16px] py-6 md:px-6">
         {/* Messages */}
         <div className="space-y-8">
           {messages.map((message, index) => (

@@ -131,7 +131,7 @@ type Calls = {
 const SNAP_PX = 12;
 const MIN_BARS = GRAPH_MIN_BARS;
 const HEIGHT_CLASS: Record<Mode, string> = {
-  compact: "h-[260px] sm:h-[320px]",
+  compact: "h-[16.25rem] sm:h-[20rem]",
   advanced: "min-h-0 flex-1",
 };
 const defaultIndicators: Record<Mode, IndicatorKey[]> = {
@@ -281,7 +281,7 @@ export default function ChartView({
 }: ChartViewProps) {
   const advanced = mode === "advanced";
   const heightClass = !advanced && compactLayout === "workspace"
-    ? "h-[320px] sm:h-[420px]"
+    ? "h-[20rem] sm:h-[26.25rem]"
     : HEIGHT_CLASS[mode];
   const drawingToolbarId = useId();
   const [oscillator, setOscillator] = useState<Oscillator | null>("kdj");
@@ -889,7 +889,7 @@ export default function ChartView({
   );
   const pill = (isActive: boolean) =>
     cn(
-      "inline-flex h-8 shrink-0 items-center rounded-full px-3 text-[13px] font-semibold transition-colors duration-150 focus-visible:outline-none ",
+      "inline-flex h-8 shrink-0 items-center rounded-full px-3 text-[0.8125rem] font-semibold transition-colors duration-150 focus-visible:outline-none ",
       isActive ? "bg-foreground text-background" : "text-muted-foreground hover:bg-foreground/[0.06] hover:text-foreground active:bg-foreground/[0.1]",
     );
 
@@ -950,7 +950,7 @@ export default function ChartView({
   );
   const aiActionClass = cn(
     "min-h-11 min-w-0 gap-2 px-3 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
-    advanced ? "w-full" : "sm:min-h-9 sm:min-w-[112px]",
+    advanced ? "w-full" : "sm:min-h-9 sm:min-w-[7rem]",
   );
   const aiControls = (
     <div className={advanced ? "min-w-0" : "mt-3 border-t border-border pt-3"} role="group" aria-label={t("youtubeOpinions.ai.actions")}>
@@ -1062,7 +1062,7 @@ export default function ChartView({
             <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground group-open/drawings:rotate-180" aria-hidden="true" />
           </summary>
           {drawingAi.result?.model && <p className="mt-1 break-words text-xs leading-5 text-muted-foreground">{t("youtubeOpinions.ai.generatedBy", { model: `${drawingAi.result.provider || ""} / ${drawingAi.result.model}` })}</p>}
-          {drawingAi.status === "done" && drawingAi.result?.setup && <AiDrawingSetup setup={drawingAi.result.setup} t={t} />}
+          {drawingAi.status === "done" && drawingAi.result?.setup && <AiDrawingSetup setup={drawingAi.result.setup} t={t} symbol={symbol} />}
           {drawingAi.status === "done" && drawingAi.result && <AiPriceActionSignals result={drawingAi.result} formatDate={formatDate} t={t} />}
           {drawingAi.status === "done" && drawingAi.result?.findings?.some(item => item.status === "unavailable") && <p className="mt-3 text-xs leading-5 text-muted-foreground">
             {t("youtubeOpinions.ai.focus.unavailable")}：{drawingAi.result.findings.filter(item => item.status === "unavailable").map(item => t(`youtubeOpinions.ai.focus.categories.${item.id}`)).join(" / ")}
@@ -1202,7 +1202,7 @@ export default function ChartView({
     <>
       {legend.length > 0 && (
         <div
-          className="pointer-events-none absolute left-2 top-1 flex flex-wrap gap-x-3 gap-y-0.5 rounded-md bg-background/70 px-1.5 py-0.5 text-[11px] tabular-nums backdrop-blur-sm"
+          className="pointer-events-none absolute left-2 top-1 flex flex-wrap gap-x-3 gap-y-0.5 rounded-md bg-background/70 px-1.5 py-0.5 text-[0.6875rem] tabular-nums backdrop-blur-sm"
           style={{ maxWidth: Math.max(size.width - GRAPH_AXIS_WIDTH - 16, 120) }}
         >
           {legend.map((key) => (
@@ -1305,7 +1305,7 @@ export default function ChartView({
       value={snapshotBars ? compactParams.interval : interval}
       onValueChange={(value) => setChartInterval(value as ChartInterval)}
     >
-      <SelectTrigger className="h-11 w-[92px] rounded-full text-[13px] sm:h-8" aria-label={t("youtubeOpinions.interval")}>
+      <SelectTrigger className="h-11 w-[5.75rem] rounded-full text-[0.8125rem] sm:h-8" aria-label={t("youtubeOpinions.interval")}>
         <SelectValue />
       </SelectTrigger>
       <SelectContent>
@@ -1425,7 +1425,7 @@ export default function ChartView({
                       {t("youtubeOpinions.ai.actions")}
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent align="end" className="max-h-[70dvh] w-80 max-w-[calc(100vw-32px)] overflow-y-auto overscroll-contain p-4">
+                  <PopoverContent align="end" className="max-h-[70dvh] w-80 max-w-[calc(100vw-2rem)] overflow-y-auto overscroll-contain p-4">
                     {aiControls}
                     {aiResults}
                   </PopoverContent>
@@ -1441,7 +1441,7 @@ export default function ChartView({
         {/* active-bar numbers: the graph prints the header line, advanced mode adds OHLC + calls */}
         {advanced && (
           <div
-            className="mt-1 flex min-h-8 min-w-0 flex-wrap items-center gap-x-3 gap-y-1 text-[13px] tabular-nums"
+            className="mt-1 flex min-h-8 min-w-0 flex-wrap items-center gap-x-3 gap-y-1 text-[0.8125rem] tabular-nums"
             aria-live="polite"
           >
             {shownBar ? (
@@ -1487,7 +1487,7 @@ export default function ChartView({
                 {(() => { const Icon = tools.find(item => item.value === tool)?.icon || MousePointer2; return <Icon className="h-4 w-4" />; })()}
               </button>
             </PopoverTrigger>
-            <PopoverContent align="start" className="grid w-64 max-w-[calc(100vw-32px)] grid-cols-2 gap-1 p-2">
+            <PopoverContent align="start" className="grid w-64 max-w-[calc(100vw-2rem)] grid-cols-2 gap-1 p-2">
               {tools.map(item => {
                 const Icon = item.icon;
                 return <button key={item.value} type="button" aria-pressed={tool === item.value}
@@ -1590,7 +1590,7 @@ export default function ChartView({
                 >
                   <span
                     className={cn(
-                      "flex h-4 w-4 items-center justify-center rounded border border-border text-[10px]",
+                      "flex h-4 w-4 items-center justify-center rounded border border-border text-[0.625rem]",
                       activeIndicators.has(key) && "border-primary bg-primary text-primary-foreground",
                     )}
                     aria-hidden="true"

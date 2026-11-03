@@ -4,9 +4,7 @@ import { useCachedResource } from "@/hooks/useCachedResource";
 import { isProductFeatureEnabled } from "@/lib/productFeatures";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { FormEvent, ReactNode, useEffect, useState } from "react";
-import { ArrowRight, Search } from "lucide-react";
+import { ReactNode, useEffect, useState } from "react";
 import CompanyLogo from "@/components/ui/company-logo";
 import { Card } from "@/components/ui/card";
 import { useTranslation } from "@/lib/i18n";
@@ -17,7 +15,7 @@ import {
   getYouTubeOpinionDashboard,
   clearYouTubeDashboardCache,
 } from "@/lib/youtubeOpinionsApi";
-import { validTicker, type Direction } from "@/lib/decision";
+import type { Direction } from "@/lib/decision";
 
 export function useCopy() {
   const { locale } = useTranslation();
@@ -69,67 +67,6 @@ export function DirectionBadge({
   );
 }
 
-export function TickerSearch({
-  className,
-  placeholder,
-}: {
-  className?: string;
-  placeholder?: string;
-}) {
-  const c = useCopy();
-  const router = useRouter();
-  const [ticker, setTicker] = useState("");
-  const [error, setError] = useState(false);
-  function submit(event: FormEvent) {
-    event.preventDefault();
-    const symbol = ticker.trim().toUpperCase();
-    if (!validTicker(symbol)) {
-      setError(true);
-      return;
-    }
-    router.push(marketStockHref(symbol));
-  }
-  return (
-    <form onSubmit={submit} className={cn("w-full max-w-md", className)}>
-      <div className="group relative flex h-11 items-center rounded-full bg-muted transition-shadow duration-150 ">
-        <Search
-          className="pointer-events-none absolute left-4 h-4 w-4 text-muted-foreground"
-          aria-hidden
-        />
-        <input
-          value={ticker}
-          onChange={(e) => {
-            setTicker(e.target.value);
-            setError(false);
-          }}
-          aria-label={c("Stock ticker", "股票代码")}
-          aria-invalid={error || undefined}
-          placeholder={
-            placeholder ?? c("Look up a ticker: NVDA, AAPL…", "输入股票代码：NVDA、AAPL…")
-          }
-          className="h-full w-full rounded-full bg-transparent pl-11 pr-12 text-base uppercase outline-none placeholder:normal-case placeholder:text-muted-foreground sm:text-sm"
-          maxLength={10}
-          autoCapitalize="characters"
-          autoCorrect="off"
-          spellCheck={false}
-        />
-        <button
-          type="submit"
-          aria-label={c("Open stock", "打开股票")}
-          className="absolute right-1.5 flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground transition-opacity duration-150 hover:opacity-85 focus-visible:outline-none "
-        >
-          <ArrowRight className="h-4 w-4" aria-hidden />
-        </button>
-      </div>
-      {error && (
-        <p role="alert" className="mt-2 pl-4 text-sm text-negative">
-          {c("Enter a valid US stock ticker.", "请输入有效的美股代码。")}
-        </p>
-      )}
-    </form>
-  );
-}
-
 /** A titled section with an optional card body below its heading. */
 export function Panel({
   title,
@@ -158,7 +95,7 @@ export function Panel({
             </h2>
           )}
           {description && (
-            <p className="mt-1 text-[13px] leading-5 text-muted-foreground">{description}</p>
+            <p className="mt-1 text-[0.8125rem] leading-5 text-muted-foreground">{description}</p>
           )}
         </div>
         {action}
@@ -194,7 +131,7 @@ export function TextLink({ href, children, className }: { href: string; children
 export function HeldMark() {
   const c = useCopy();
   return (
-    <span className="ml-1.5 inline-flex h-[18px] items-center rounded-full border border-border px-1.5 align-middle text-[11px] font-medium text-muted-foreground">
+    <span className="ml-1.5 inline-flex h-[1.125rem] items-center rounded-full border border-border px-1.5 align-middle text-[0.6875rem] font-medium text-muted-foreground">
       {c("Held", "持有")}
     </span>
   );
@@ -348,11 +285,11 @@ export function PriceLadder({
       <div className="relative mx-2 h-6">
         <div className="absolute inset-x-0 top-1/2 h-px -translate-y-1/2 bg-border" />
         <div
-          className="absolute top-1/2 h-[3px] -translate-y-1/2 rounded-full bg-negative-fill/60"
+          className="absolute top-1/2 h-[0.1875rem] -translate-y-1/2 rounded-full bg-negative-fill/60"
           style={left(invalidation, anchor)}
         />
         <div
-          className="absolute top-1/2 h-[3px] -translate-y-1/2 rounded-full bg-positive-fill/70"
+          className="absolute top-1/2 h-[0.1875rem] -translate-y-1/2 rounded-full bg-positive-fill/70"
           style={left(anchor, target)}
         />
         {low !== null && high !== null && high > low && (

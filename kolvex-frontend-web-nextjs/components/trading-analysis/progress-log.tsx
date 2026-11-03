@@ -149,7 +149,7 @@ function AgentStep({
             <CheckCircle2 aria-hidden="true" className="mt-1 h-3 w-3 shrink-0 text-muted-foreground" />
             <span className="min-w-0 break-words">{ev.message || ev.stage}</span>
             {ev.elapsed != null && (
-              <span className="ml-auto text-[11px] text-muted-foreground tabular-nums shrink-0">
+              <span className="ml-auto text-[0.6875rem] text-muted-foreground tabular-nums shrink-0">
                 {ev.elapsed}s
               </span>
             )}
@@ -176,7 +176,7 @@ function AgentStep({
           {group.agentName}
         </span>
         {group.elapsed != null && (
-          <span className="ml-auto shrink-0 text-[11px] text-muted-foreground tabular-nums">
+          <span className="ml-auto shrink-0 text-[0.6875rem] text-muted-foreground tabular-nums">
             {group.elapsed}s
           </span>
         )}
@@ -210,7 +210,7 @@ function AgentStep({
 
           {group.latestDetail && (
             <div className="text-xs leading-6 text-muted-foreground">
-              <p className="mb-1 text-[11px] font-medium">
+              <p className="mb-1 text-[0.6875rem] font-medium">
                 {group.latestDetailType === "report_preview" ? "Report" : "Thinking"}
               </p>
               <div className="line-clamp-4 break-words [overflow-wrap:anywhere]">
@@ -253,7 +253,7 @@ export function ProgressLog({
               isLive ? "bg-positive-fill" : "bg-warning"
             )}
           />
-          <span className="text-[11px] text-muted-foreground">
+          <span className="text-[0.6875rem] text-muted-foreground">
             {isLive ? "Live" : "Syncing"}
           </span>
         </div>

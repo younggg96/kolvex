@@ -112,12 +112,12 @@ test('scope controls update Next App Router search params without bypassing its 
   function find(node) {
     if (node == null || typeof node !== 'object') return;
     if (Array.isArray(node)) return node.map(find).find(Boolean);
-    if (node.type === 'button' && node.props.children === '博主关注') return node;
+    if (node.props?.action?.props?.options?.some(option => option.label === '博主关注')) return node.props.action;
     return find(node.props?.children);
   }
-  const button = find(tree);
-  assert.ok(button);
-  button.props.onClick();
+  const scopeControl = find(tree);
+  assert.ok(scopeControl);
+  scopeControl.props.onChange('creators');
   assert.equal(synchronizedUrl, '/dashboard?stocks=creators&stockSort=heat');
   assert.equal(writtenState.__NA, true, 'Next retains its private state itself');
   assert.deepEqual(writtenState.__PRIVATE_NEXTJS_INTERNALS_TREE, ['market']);

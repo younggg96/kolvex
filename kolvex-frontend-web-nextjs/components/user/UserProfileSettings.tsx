@@ -4,7 +4,7 @@
  */
 "use client";
 
-import { ContentSkeleton } from "@/components/ui/content-skeleton";
+import { ContentLoading } from "@/components/ui/content-loading";
 import { useState, useEffect } from "react";
 import { useCurrentUserProfile } from "@/lib/api/userApi";
 import type { UserProfileUpdate } from "@/lib/api/userApi";
@@ -82,7 +82,7 @@ export default function UserProfileSettings() {
 
   if (loading) {
     return (
-      <ContentSkeleton label="Loading profile / 正在加载个人资料" variant="profile" className="p-8" />
+      <ContentLoading className="p-8" />
     );
   }
 

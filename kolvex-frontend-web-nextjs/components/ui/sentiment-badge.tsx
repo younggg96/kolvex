@@ -58,7 +58,7 @@ const getSentimentIcon = (score?: number) => {
 
 const sizeConfig = {
   sm: {
-    badge: "py-0.5 px-1.5 text-[12px]",
+    badge: "py-0.5 px-1.5 text-[0.75rem]",
     icon: "w-3 h-3",
     gap: "gap-0.5",
   },

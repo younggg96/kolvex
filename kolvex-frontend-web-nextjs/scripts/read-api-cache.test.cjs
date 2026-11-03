@@ -112,3 +112,24 @@ test('history consumers share normalized keys and in-flight requests; date windo
   await api.getStockHistory('NVDA', { start: '2026-10-02', end: '2026-10-20' });
   assert.equal(calls, 4);
 });
+
+test('history retries transient failures and empty responses without caching failure', async () => {
+  for (const first of [() => Response.json({}, { status: 503 }), () => Response.json({ data: [] })]) {
+    let calls = 0;
+    const { api } = fixture('stockApi.ts', async () => ++calls === 1 ? first() : Response.json({ data: [{ date: '2026-10-28', open: 1, high: 2, low: 1, close: 2 }] }));
+    assert.equal((await api.getStockHistory('^VIX')).length, 1);
+    await api.getStockHistory('^VIX');
+    assert.equal(calls, 2);
+  }
+});
+
+test('history does not retry permanent errors and bounds empty-result attempts', async () => {
+  for (const status of [400, 404, 200]) {
+    let calls = 0;
+    const { api } = fixture('stockApi.ts', async () => { calls++; return Response.json({ data: [] }, { status }); });
+    await assert.rejects(api.getStockHistory('BAD'));
+    assert.equal(calls, status === 200 ? 2 : 1);
+    await assert.rejects(api.getStockHistory('BAD'));
+    assert.equal(calls, status === 200 ? 4 : 2);
+  }
+});

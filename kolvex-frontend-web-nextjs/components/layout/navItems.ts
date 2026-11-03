@@ -2,6 +2,7 @@ import {
   BarChart3,
   Star,
   PieChart,
+  BookOpen,
   Newspaper,
   Radio,
   Telescope,
@@ -10,6 +11,8 @@ import {
 } from "lucide-react";
 import { RedditIcon, XIcon, YouTubeIcon, type PlatformIconComponent } from "@/components/common/PlatformIcons";
 import type { ProductFeatureId } from "@/lib/productFeatures";
+export const SEARCH_HREF = "/dashboard/search";
+
 export interface MainNavItem {
   icon: LucideIcon;
   titleKey: string;
@@ -75,6 +78,14 @@ export const MAIN_NAV_ITEMS: MainNavItem[] = [
     href: "/dashboard/ai-research",
     type: "link",
     featureId: "tradingAnalysis",
+  },
+  {
+    icon: BookOpen,
+    titleKey: "sidebar.paperTrading",
+    shortTitleKey: "tabBar.paperTrading",
+    href: "/dashboard/paper-trading",
+    type: "link",
+    featureId: "paperTrading",
   },
   {
     icon: PieChart,

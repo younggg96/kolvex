@@ -35,7 +35,7 @@ export function CallMarker({
     <span
       aria-hidden="true"
       className={cn(
-        "pointer-events-none absolute flex -translate-x-1/2 items-center gap-px text-[10px] font-semibold leading-none tabular-nums",
+        "pointer-events-none absolute flex -translate-x-1/2 items-center gap-px text-[0.625rem] font-semibold leading-none tabular-nums",
         direction === "down" ? "-translate-y-full flex-col-reverse" : "flex-col",
       )}
       style={{ left: x, top: y, color }}
@@ -84,7 +84,7 @@ export function ExtremeTag({
     <span
       aria-hidden="true"
       className={cn(
-        "pointer-events-none absolute -translate-x-1/2 whitespace-nowrap rounded-md border border-border/70 bg-background/90 px-1.5 py-0.5 text-[11px] font-medium tabular-nums text-foreground/80 shadow-[0_1px_2px_rgb(var(--foreground)/0.06)] backdrop-blur-sm",
+        "pointer-events-none absolute -translate-x-1/2 whitespace-nowrap rounded-md border border-border/70 bg-background/90 px-1.5 py-0.5 text-[0.6875rem] font-medium tabular-nums text-foreground/80 shadow-[0_1px_2px_rgb(var(--foreground)/0.06)] backdrop-blur-sm",
         side === "high" ? "-translate-y-full" : "-translate-y-0",
       )}
       style={{ left: edge ?? x, top: y }}
@@ -118,7 +118,7 @@ export function PriceTag({
     <span
       aria-hidden="true"
       className={cn(
-        "pointer-events-none absolute -translate-y-1/2 rounded-[5px] px-1.5 py-0.5 text-[11px] font-semibold tabular-nums",
+        "pointer-events-none absolute -translate-y-1/2 rounded-[0.3125rem] px-1.5 py-0.5 text-[0.6875rem] font-semibold tabular-nums",
         tone === "neutral" ? "bg-foreground text-background" : "text-white",
       )}
       style={{

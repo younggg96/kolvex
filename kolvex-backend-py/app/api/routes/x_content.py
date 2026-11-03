@@ -40,8 +40,9 @@ def run(action):
 
 
 @router.get("/creators")
-def creators(service=Depends(get_service)):
-    return run(service.creators)
+def creators(limit: int = Query(1000, ge=1, le=1000), offset: int = Query(0, ge=0, le=100000),
+             service=Depends(get_service)):
+    return run(lambda: service.creators(limit, offset))
 
 
 @router.get("/summaries")

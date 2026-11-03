@@ -37,7 +37,7 @@ export const SwitchTab = React.memo(function SwitchTab({
   // Size configurations
   const sizeConfig = {
     sm: {
-      button: "h-7 w-auto px-2 text-[12px]",
+      button: "h-7 w-auto px-2 text-[0.75rem]",
       gap: "gap-0.5",
       padding: "p-0.5",
     },
@@ -148,8 +148,8 @@ export const SwitchTab = React.memo(function SwitchTab({
             size === "sm"
               ? "top-[1.5px]"
               : size === "md"
-                ? "top-[3.5px]"
-                : "top-[6px]"
+                ? "top-[0.21875rem]"
+                : "top-[0.375rem]"
           )}
           style={indicatorStyle}
         />

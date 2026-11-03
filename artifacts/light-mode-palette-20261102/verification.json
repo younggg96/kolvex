@@ -1,0 +1,38 @@
+{
+  "changedFiles": [
+    "app/globals.css",
+    "DESIGN.md"
+  ],
+  "typescript": "passed",
+  "productionBuild": "passed in an isolated temporary copy",
+  "marketAndWatchlistTests": {
+    "passed": 28,
+    "failed": 0
+  },
+  "lint": "passed; existing @next/next/no-img-element warning in components/common/VideoPlayer.tsx:40",
+  "designLint": {
+    "errors": 0,
+    "warnings": 12,
+    "note": "Documentation-only component token references are not declared; runtime token mapping was verified separately."
+  },
+  "premiumAudit": {
+    "preExistingFindings": 4,
+    "newFindings": 0
+  },
+  "browser": {
+    "desktop": "1975x1233",
+    "mobile": "390x844",
+    "mobileHorizontalOverflow": false,
+    "verifiedStates": [
+      "market overview",
+      "sector dropdown",
+      "keyboard Escape",
+      "no search results",
+      "clear search",
+      "mobile navigation menu",
+      "stock detail",
+      "watchlist in dark theme"
+    ],
+    "themeNote": "The existing account/browser theme resolved to dark on the final sibling navigation; screenshot is labeled dark. Light palette was verified on desktop/mobile Markets and the stock detail view."
+  }
+}

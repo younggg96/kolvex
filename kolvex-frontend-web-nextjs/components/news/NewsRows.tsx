@@ -21,7 +21,7 @@ export default function NewsRows({ articles, translations, locale }: {
       const translated = translations[article.title];
       return <li key={article.id} className={cn(
         listFeedRowClass,
-        "rounded-2xl px-2 motion-reduce:transition-none",
+        "px-2 motion-reduce:transition-none",
       )}>
         {showDay && <p className="mb-2 text-xs font-medium text-muted-foreground">{day}</p>}
         <div className="grid grid-cols-[2.75rem_minmax(0,1fr)] items-start gap-3">

@@ -329,7 +329,7 @@ function tickLabel(bar: PriceBar, intraday: boolean, interval: string, locale: s
 
 export interface PriceGraphProps {
   mode: GraphMode;
-  /** Height classes for the plot box, e.g. `h-[260px] sm:h-[320px]` (workspace `h-[320px] sm:h-[420px]`). */
+  /** Height classes for the plot box, e.g. `h-[16.25rem] sm:h-[20rem]` (workspace `h-[20rem] sm:h-[26.25rem]`). */
   heightClass: string;
   bars: PriceBar[] | null;
   loading?: boolean;
@@ -750,7 +750,7 @@ export default function PriceGraph({
                 onActiveChange(null);
               }}
               className={cn(
-                "inline-flex h-11 shrink-0 select-none items-center justify-center rounded-full px-3 text-[13px] font-semibold transition-colors duration-150 sm:h-8",
+                "inline-flex h-11 shrink-0 select-none items-center justify-center rounded-full px-3 text-[0.8125rem] font-semibold transition-colors duration-150 sm:h-8",
                 "focus-visible:outline-none focus-visible:bg-muted/60",
                 "disabled:pointer-events-none disabled:opacity-40",
                 selected ? "bg-foreground text-background" : "text-muted-foreground hover:bg-muted/70 hover:text-foreground",
@@ -773,7 +773,7 @@ export default function PriceGraph({
               onViewChange(null);
             }}
             className={cn(
-              "inline-flex h-11 max-w-[min(15rem,52vw)] shrink-0 items-center justify-center rounded-full px-3 text-[13px] font-semibold transition-colors duration-150 sm:h-8",
+              "inline-flex h-11 max-w-[min(15rem,52vw)] shrink-0 items-center justify-center rounded-full px-3 text-[0.8125rem] font-semibold transition-colors duration-150 sm:h-8",
               "focus-visible:outline-none focus-visible:bg-muted/60",
               range === "CUSTOM" ? "bg-foreground text-background" : "text-muted-foreground hover:bg-muted/70 hover:text-foreground",
             )}
@@ -787,7 +787,7 @@ export default function PriceGraph({
         <button
           type="button"
           onClick={resetView}
-          className="inline-flex h-11 shrink-0 items-center gap-1 rounded-full px-2.5 text-[12px] font-semibold text-muted-foreground transition-colors hover:bg-muted/70 hover:text-foreground focus-visible:outline-none focus-visible:bg-muted/60 sm:h-8"
+          className="inline-flex h-11 shrink-0 items-center gap-1 rounded-full px-2.5 text-[0.75rem] font-semibold text-muted-foreground transition-colors hover:bg-muted/70 hover:text-foreground focus-visible:outline-none focus-visible:bg-muted/60 sm:h-8"
         >
           <RotateCcw className="h-3.5 w-3.5" aria-hidden="true" />
           {t("youtubeOpinions.graph.resetZoom")}
@@ -866,7 +866,7 @@ export default function PriceGraph({
           <button
             type="button"
             onClick={onRetry}
-            className="inline-flex h-11 items-center rounded-full border border-border px-4 text-[13px] font-semibold text-foreground transition-colors hover:border-foreground/25 hover:bg-foreground/[0.06] focus-visible:outline-none sm:h-8"
+            className="inline-flex h-11 items-center rounded-full border border-border px-4 text-[0.8125rem] font-semibold text-foreground transition-colors hover:border-foreground/25 hover:bg-foreground/[0.06] focus-visible:outline-none sm:h-8"
           >
             {t("common.retry")}
           </button>
@@ -882,17 +882,17 @@ export default function PriceGraph({
         {headerLabel}
         {headerBar ? (
           <span className="flex min-w-0 items-baseline gap-2" aria-live="polite">
-            <span className="text-[15px] font-semibold tabular-nums text-foreground">{formatPrice(headerBar.close)}</span>
-            <span className={cn("text-[13px] font-semibold tabular-nums", headerChange > 0 ? "text-positive" : headerChange < 0 ? "text-negative" : "text-muted-foreground")}>
+            <span className="text-[0.9375rem] font-semibold tabular-nums text-foreground">{formatPrice(headerBar.close)}</span>
+            <span className={cn("text-[0.8125rem] font-semibold tabular-nums", headerChange > 0 ? "text-positive" : headerChange < 0 ? "text-negative" : "text-muted-foreground")}>
               {formatChangePercent(headerChange)}
             </span>
-            <span className="text-[11px] text-muted-foreground">{rangeChangeLabel || t("youtubeOpinions.priceRangeChange")}</span>
+            <span className="text-[0.6875rem] text-muted-foreground">{rangeChangeLabel || t("youtubeOpinions.priceRangeChange")}</span>
           </span>
         ) : (
           loading || !bars ? <Skeleton className="h-5 w-32" aria-hidden="true" /> : null
         )}
         {activeBar && activeIndex !== null && (
-          <span className="text-[11px] tabular-nums text-muted-foreground">{barLabel(activeBar)}</span>
+          <span className="text-[0.6875rem] tabular-nums text-muted-foreground">{barLabel(activeBar)}</span>
         )}
       </div>
 
@@ -940,7 +940,7 @@ export default function PriceGraph({
               <button
                 type="button"
                 onClick={onOpenAdvanced}
-                className="inline-flex h-11 shrink-0 items-center gap-1 rounded-full px-3 text-[12px] font-semibold text-muted-foreground transition-colors hover:bg-muted/70 hover:text-foreground focus-visible:outline-none focus-visible:bg-muted/60 sm:h-8"
+                className="inline-flex h-11 shrink-0 items-center gap-1 rounded-full px-3 text-[0.75rem] font-semibold text-muted-foreground transition-colors hover:bg-muted/70 hover:text-foreground focus-visible:outline-none focus-visible:bg-muted/60 sm:h-8"
               >
                 <Maximize2 className="h-3.5 w-3.5" aria-hidden="true" />
                 {t("youtubeOpinions.advancedChart")}
@@ -1173,7 +1173,7 @@ export function PriceGraphPlot({
               <span
                 key={`axis-${value}`}
                 aria-hidden="true"
-                className="pointer-events-none absolute -translate-y-1/2 text-[10px] tabular-nums text-muted-foreground/80"
+                className="pointer-events-none absolute -translate-y-1/2 text-[0.625rem] tabular-nums text-muted-foreground/80"
                 style={{ left: geometry.plotWidth + 8, top: y }}
               >
                 {axisNumber(value)}
@@ -1196,7 +1196,7 @@ export function PriceGraphPlot({
             <span
               key={tick.index}
               aria-hidden="true"
-              className="pointer-events-none absolute -translate-x-1/2 whitespace-nowrap text-[10px] tabular-nums text-muted-foreground sm:text-[11px]"
+              className="pointer-events-none absolute -translate-x-1/2 whitespace-nowrap text-[0.625rem] tabular-nums text-muted-foreground sm:text-[0.6875rem]"
               style={{ left: tick.x, top: geometry.plotHeight + 6 }}
             >
               {tick.label}
@@ -1255,7 +1255,7 @@ function tooltipPill(
       />
       <span
         aria-hidden="true"
-        className="pointer-events-none absolute z-20 inline-flex items-baseline gap-1.5 whitespace-nowrap rounded-full bg-foreground px-2 py-1 text-[11px] font-medium leading-none tabular-nums text-background shadow-sm"
+        className="pointer-events-none absolute z-20 inline-flex items-baseline gap-1.5 whitespace-nowrap rounded-full bg-foreground px-2 py-1 text-[0.6875rem] font-medium leading-none tabular-nums text-background shadow-sm"
         style={right ? { right: geometry.plotWidth - point.x + 12, top } : { left: point.x + 12, top }}
       >
         <span className="opacity-75">{label}</span>

@@ -7,6 +7,7 @@ import {
 } from "react";
 import {
   AccessibilityInfo,
+  ActivityIndicator,
   FlatList,
   Platform,
   Pressable,
@@ -397,26 +398,56 @@ export function Failure({
     </View>
   );
 }
-export function Skeleton() {
+export function LoadingStatus() {
   const t = useTheme();
   const text = useText();
+  const [visible, setVisible] = useState(false);
+  // Fast reads finish before this fires, so they never flash a placeholder.
+  useEffect(() => {
+    const timer = setTimeout(() => setVisible(true), 300);
+    return () => clearTimeout(timer);
+  }, []);
   return (
     <View
+      accessible
       accessibilityLabel={text("正在加载数据")}
       accessibilityState={{ busy: true }}
-      style={{ gap: 12 }}
+      style={{
+        minHeight: 72,
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 8,
+      }}
     >
-      {[0, 1, 2].map((i) => (
-        <View
-          key={i}
-          style={{
-            height: 72,
-            borderRadius: 16,
-            backgroundColor: t.border,
-            opacity: 0.45,
-          }}
-        />
-      ))}
+      {visible && (
+        <>
+          <ActivityIndicator size="small" color={t.secondary} />
+          <Copy size={14} muted>
+            正在加载数据
+          </Copy>
+        </>
+      )}
+    </View>
+  );
+}
+export function PendingValue({ height = 20 }: { height?: number }) {
+  const t = useTheme();
+  return (
+    <View
+      style={{ height, justifyContent: "center" }}
+      accessibilityElementsHidden
+      importantForAccessibility="no-hide-descendants"
+    >
+      <View
+        style={{
+          width: 32,
+          height: 2,
+          borderRadius: 1,
+          backgroundColor: t.secondary,
+          opacity: 0.5,
+        }}
+      />
     </View>
   );
 }

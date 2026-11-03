@@ -5,6 +5,7 @@ from supabase import Client
 
 
 logger = logging.getLogger(__name__)
+VERSION_FIELDS = "id,user_id,kind,ticker,created_at,payload,request,bars"
 
 
 class StockAnalysisHistory:
@@ -41,24 +42,22 @@ class StockAnalysisHistory:
         current_id = head.data[0]["version_id"] if head and head.data else None
         current = None
         if current_id:
-            data = (self.db.table("stock_analysis_versions").select("*")
+            data = (self.db.table("stock_analysis_versions").select(VERSION_FIELDS)
                     .eq("user_id", user_id).eq("id", current_id).execute()).data
             current = data[0] if data else None
         if not current:
             # Prefer one's own latest result even if a current pointer is absent.
-            own = (self.db.table("stock_analysis_versions").select("*")
+            own = (self.db.table("stock_analysis_versions").select(VERSION_FIELDS)
                    .eq("ticker", ticker).eq("kind", kind).eq("user_id", user_id).order("created_at", desc=True)
                    .order("id", desc=True).limit(1).execute()).data if user_id else []
             if own:
                 current = own[0]
             elif scope == "all":
-                fallback = (self.db.table("stock_analysis_versions").select("*")
+                fallback = (self.db.table("stock_analysis_versions").select(VERSION_FIELDS)
                             .eq("ticker", ticker).eq("kind", kind)
                             .order("created_at", desc=True).order("id", desc=True).limit(1).execute()).data
                 current = fallback[0] if fallback else None
-        self._decorate(rows.data, user_id)
-        if current:
-            self._decorate([current], user_id)
+        self._decorate(rows.data + ([current] if current else []), user_id)
         return {"items": rows.data, "total": rows.count or 0,
                 "current": current, "limit": limit, "offset": offset}
 
@@ -73,7 +72,7 @@ class StockAnalysisHistory:
         return self.db.rpc("save_stock_technical_analysis", params).execute().data
 
     def get(self, user_id: str | None, ticker: str, version_id: str):
-        rows = (self.db.table("stock_analysis_versions").select("*")
+        rows = (self.db.table("stock_analysis_versions").select(VERSION_FIELDS)
                 .eq("ticker", ticker).eq("id", version_id).execute()).data
         self._decorate(rows, user_id)
         return rows[0] if rows else None

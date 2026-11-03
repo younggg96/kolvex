@@ -30,7 +30,7 @@ export function ExpandableOptions({
   defaultVisibleCount = 6,
   columns = 3,
   className,
-  expandButtonHeight = "h-[60px]",
+  expandButtonHeight = "h-[3.75rem]",
   blurOpacity = 80,
 }: ExpandableOptionsProps) {
   const [isExpanded, setIsExpanded] = useState(false);

@@ -1,6 +1,6 @@
 "use client";
 
-import { ContentSkeleton } from "@/components/ui/content-skeleton";
+import { ContentLoading } from "@/components/ui/content-loading";
 import { useEffect, useId, useRef, useState } from "react";
 import { useTheme } from "next-themes";
 import { ChevronLeft, ChevronRight, Copy, Download, Link2, Loader2, Mail, Share2 } from "lucide-react";
@@ -150,12 +150,12 @@ export default function CreatorShare({ creator }: { creator: CreatorShareIdentit
             <div className="space-y-3"><p className="text-sm font-medium">{c("Share to", "分享到")}</p><div className="flex flex-wrap gap-2">{creatorSocialLinks(content).map((platform) => <Button key={platform.name} variant="outline" asChild><a href={platform.href} target="_blank" rel="noopener noreferrer">{platform.name}</a></Button>)}<Button variant="outline" asChild><a href={creatorEmailLink(content)} className="gap-2"><Mail className="h-4 w-4" aria-hidden="true" />{c("Email", "邮件")}</a></Button></div></div>
             <div className="space-y-2"><label htmlFor={textId} className="text-sm font-medium">{c("Share text", "分享文案")}</label><Textarea id={textId} readOnly value={content.text} rows={5} onFocus={(event) => event.currentTarget.select()} /><Button variant="outline" disabled={loading} onClick={() => void copy(content.text)} className="gap-2"><Copy className="h-4 w-4" aria-hidden="true" />{c("Copy text", "复制文案")}</Button></div>
             <p className="text-xs leading-relaxed text-muted-foreground">{c("For WeChat, Xiaohongshu and other apps, paste the link or text, or switch to Image and save a share card.", "微信、小红书等应用可粘贴链接或文案，也可切换到「图片」保存分享卡片。")}</p>
-            {loading && <ContentSkeleton label={c("Loading the latest opinions…", "正在加载最新观点…")} rows={2} />}
+            {loading && <ContentLoading label={c("Loading the latest opinions…", "正在加载最新观点…")} />}
           </>}</TabsContent>
           <TabsContent value="image" className="mt-3 space-y-3">{mode === "image" && <>
-            {(loading || (doc && !visible && !error)) && <div role="status" className="mx-auto flex h-[min(45dvh,440px)] w-full items-center justify-center gap-2 text-sm text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" aria-hidden="true" />{c("Generating the image…", "正在生成图片…")}</div>}
+            {(loading || (doc && !visible && !error)) && <div role="status" className="mx-auto flex h-[min(45dvh,27.5rem)] w-full items-center justify-center gap-2 text-sm text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" aria-hidden="true" />{c("Generating the image…", "正在生成图片…")}</div>}
             {empty && <p className="py-12 text-center text-sm text-muted-foreground">{c("This creator has no imported opinions yet.", "这位博主暂无已收录观点。")}</p>}
-            {visible && doc && <><figure aria-busy={!ready && !error} className="relative mx-auto flex h-[min(45dvh,440px)] w-full items-center justify-center">
+            {visible && doc && <><figure aria-busy={!ready && !error} className="relative mx-auto flex h-[min(45dvh,27.5rem)] w-full items-center justify-center">
               {!ready && !error && <span role="status" className="absolute right-2 top-2 rounded-full bg-background p-2 text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" aria-hidden="true" /><span className="sr-only">{c("Generating the image…", "正在生成图片…")}</span></span>}
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={visible.url} width={1080} height={visible.height} alt={c(`${doc.creator}, opinions, image ${visible.page + 1} of ${doc.pages.length}`, `${doc.creator}观点，第 ${visible.page + 1} / ${doc.pages.length} 张`)} aria-describedby={transcriptId} className="block max-h-full max-w-full h-auto w-auto rounded-3xl border border-border bg-background" />

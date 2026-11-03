@@ -268,7 +268,12 @@ class YFinanceService:
         包含: 当前价格、涨跌幅、成交量、市值等
         """
         ticker = self.get_ticker(symbol)
-        info = ticker.info
+        # Detail metadata can fail independently of price history (notably indices).
+        # Keep the fast-info fallback reachable when Yahoo's info endpoint fails.
+        try:
+            info = ticker.info or {}
+        except Exception:
+            info = {}
 
         current_price = info.get("currentPrice") or info.get("regularMarketPrice")
         previous_close = info.get("previousClose") or info.get("regularMarketPreviousClose")
@@ -294,6 +299,7 @@ class YFinanceService:
             "name": info.get("shortName") or info.get("longName"),
             "exchange": info.get("exchange"),
             "currency": info.get("currency"),
+            "quote_type": info.get("quoteType"),
             # 价格信息
             "current_price": current_price,
             "previous_close": previous_close,

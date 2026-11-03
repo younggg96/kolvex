@@ -1,6 +1,6 @@
 "use client";
 
-import { ContentSkeleton } from "@/components/ui/content-skeleton";
+import { ContentLoading } from "@/components/ui/content-loading";
 import { useCallback, useEffect, useState } from "react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import MarketEventManager from "@/components/admin/MarketEventManager";
@@ -62,16 +62,16 @@ export default function AdminPageClient({ initialTab }: { initialTab?: string })
     finally { setBusy(false); }
   }
 
-  if (isLoading) return <DashboardLayout title="管理后台"><ContentSkeleton label="正在加载管理后台" variant="profile" className="mx-auto w-full max-w-3xl px-4 py-8 md:px-8" /></DashboardLayout>;
-  if (!profile?.is_admin) return <DashboardLayout title="管理后台"><p className="mx-auto  px-4 py-8 text-muted-foreground md:px-8">需要管理员权限。</p></DashboardLayout>;
+  if (isLoading) return <DashboardLayout title="管理后台"><ContentLoading label="正在加载管理后台" className="mx-auto w-full max-w-3xl px-[16px] py-8 md:px-8" /></DashboardLayout>;
+  if (!profile?.is_admin) return <DashboardLayout title="管理后台"><p className="mx-auto  px-[16px] py-8 text-muted-foreground md:px-8">需要管理员权限。</p></DashboardLayout>;
 
   const tableCount = Object.keys(tables).length;
   const recordCount = Object.values(tables).reduce((sum, count) => sum + count, 0);
 
   return (
     <DashboardLayout title="管理后台">
-      <div className="mx-auto min-h-0 w-full  flex-1 space-y-8 overflow-y-auto overscroll-contain px-4 pb-8 pt-6 md:px-8 md:pt-8">
-        <p className="text-[15px] text-muted-foreground">管理用户与研究数据</p>
+      <div className="mx-auto min-h-0 w-full  flex-1 space-y-8 overflow-y-auto overscroll-contain px-[16px] pb-8 pt-6 md:px-8 md:pt-8">
+        <p className="text-[0.9375rem] text-muted-foreground">管理用户与研究数据</p>
 
         <dl className="grid grid-cols-3 border-y border-border">
           {[
@@ -80,7 +80,7 @@ export default function AdminPageClient({ initialTab }: { initialTab?: string })
             { label: "用户", value: total },
           ].map((item) => (
             <div key={item.label} className="py-4 pr-4">
-              <dt className="text-[13px] text-muted-foreground">{item.label}</dt>
+              <dt className="text-[0.8125rem] text-muted-foreground">{item.label}</dt>
               <dd className="figure mt-1 text-xl font-semibold">{item.value.toLocaleString()}</dd>
             </div>
           ))}
@@ -103,7 +103,7 @@ export default function AdminPageClient({ initialTab }: { initialTab?: string })
             <div className="overflow-x-auto">
               <table className="w-full text-left text-sm">
                 <thead>
-                  <tr className="border-b border-border text-[13px] text-muted-foreground">
+                  <tr className="border-b border-border text-[0.8125rem] text-muted-foreground">
                     <th className="py-2.5 font-medium">表</th>
                     <th className="py-2.5 text-right font-medium">记录数</th>
                   </tr>
@@ -111,7 +111,7 @@ export default function AdminPageClient({ initialTab }: { initialTab?: string })
                 <tbody className="divide-y divide-border">
                   {Object.entries(tables).map(([name, count]) => (
                     <tr key={name}>
-                      <td className="break-all py-3 pr-4 font-mono text-[13px]">{name}</td>
+                      <td className="break-all py-3 pr-4 font-mono text-[0.8125rem]">{name}</td>
                       <td className="figure whitespace-nowrap py-3 text-right">{count.toLocaleString()}</td>
                     </tr>
                   ))}
@@ -131,7 +131,7 @@ export default function AdminPageClient({ initialTab }: { initialTab?: string })
             <div className="overflow-x-auto">
               <table className="w-full text-left text-sm">
                 <thead>
-                  <tr className="border-b border-border text-[13px] text-muted-foreground">
+                  <tr className="border-b border-border text-[0.8125rem] text-muted-foreground">
                     <th className="py-2.5 font-medium">邮箱</th>
                     <th className="py-2.5 font-medium">用户名</th>
                     <th className="py-2.5 text-right font-medium">权限</th>
@@ -144,7 +144,7 @@ export default function AdminPageClient({ initialTab }: { initialTab?: string })
                       <td className="py-3 pr-4 text-muted-foreground">{user.username || "—"}</td>
                       <td className="py-2 text-right">
                         <span className="inline-flex items-center gap-2">
-                          {user.is_admin && <span className="rounded-full bg-positive/10 px-2 py-0.5 text-[11px] font-semibold text-positive">管理员</span>}
+                          {user.is_admin && <span className="rounded-full bg-positive/10 px-2 py-0.5 text-[0.6875rem] font-semibold text-positive">管理员</span>}
                           <Button
                             variant="ghost"
                             size="sm"

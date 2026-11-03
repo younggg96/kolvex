@@ -4,14 +4,20 @@ name: Kolvex
 description: Chinese-first equity research with source-linked opinions, quiet data lists and green navigation accents.
 colors:
   primary: "#00C805"
-  background: "#FAFAF9"
-  foreground: "#000000"
-  card: "#FFFFFF"
-  muted: "#F2F2F0"
-  muted-foreground: "#5C5F63"
-  border: "#E4E3DF"
-  positive: "#008503"
-  negative: "#D63A00"
+  background: "#EBECE9"
+  foreground: "#252925"
+  card: "#F4F5F2"
+  card-foreground: "#252925"
+  sidebar: "#EFF0ED"
+  muted: "#E3E5E0"
+  muted-foreground: "#5B615A"
+  secondary: "#DADDD7"
+  secondary-foreground: "#252925"
+  border: "#CFD4CC"
+  positive: "#007103"
+  negative: "#B4310D"
+  warning: "#855700"
+  destructive: "#B4310D"
 typography:
   sans:
     fontFamily: "Inter, PingFang SC, Hiragino Sans GB, Microsoft YaHei, Noto Sans SC, sans-serif"
@@ -33,6 +39,18 @@ components:
 
 # Kolvex design system
 
+## Virtual trading workspace
+
+`/dashboard/paper-trading` extends the existing retail-investing product language.
+It reuses semantic runtime tokens, Inter/Chinese typography, pill controls, 24px
+surfaces, shared ListCard table shells and Radix Select/Dialog. Account metrics
+lead into the equity graph, lot positions and order ticket; narrow screens retain
+native horizontally scrollable tables with explicit labels and load-more actions.
+Positive/negative text always accompanies a signed monetary value or written
+direction. All balances and performance are explicitly virtual. AI setup actions
+open editable drafts; they never execute trades. `UX-CONTRACT.md` records feedback,
+privacy, idempotent retries and state ownership for this new workflow.
+
 ## Overview
 
 The product reference is the retail investing interface described in PRODUCT.md:
@@ -53,7 +71,14 @@ it does not generate CSS or introduce a separate theme.
 
 `app/globals.css` owns semantic variables, which `tailwind.config.ts` maps to
 utilities consumed by shared components. The frontmatter mirrors light-mode
-values. Dark mode uses black ground, #0E0F10 cards, #FFFFFF foreground,
+values. Light mode uses a soft neutral grey ground with a restrained green
+undertone, a lighter grey-white card surface and an intermediate sidebar fill.
+Muted controls and selected neutral fills step down in brightness, while charcoal
+text softens the contrast of large reading areas. Avoid pure-white page, card or
+chrome fills; reserve white for image backplates, small control details and
+contrast text on solid semantic fills. Direction and warning text use deeper
+shades to retain at least 4.5:1 contrast on all five neutral light surfaces.
+Dark mode uses black ground, #0E0F10 cards, #FFFFFF foreground,
 #9BA0A6 muted text and #282A2D borders. Primary remains #00C805 in both themes.
 Use `positive` and `negative` for direction text, with a written decision label;
 the primary green alone is not a small-text color on the light background.
@@ -74,9 +99,11 @@ and allow descriptions to wrap.
 AppShell owns the viewport, desktop sidebar and mobile navigation. DashboardLayout
 has no top header or duplicate page title. Optional return/actions render as an
 unbordered content row only when supplied; the AI Research management action
-sits beside its content heading. Mobile navigation includes a menu button to
-keep sidebar routes, settings and account controls reachable. Pages retain their established content scroller and use 16px
-horizontal padding on mobile and 32px from the medium breakpoint. Published
+sits beside its content heading. Mobile navigation includes a menu button that expands the dock to
+keep other routes, settings and log out reachable. Pages retain their established content scroller and use 16px
+horizontal padding on mobile and 32px from the medium breakpoint. Below 768px the root font size is 12px, so
+rem-based type, spacing and controls run at 75% of desktop; write new sizes in rem
+and keep px only for values that must not scale, such as the 16px page gutter and the mobile dock. Published
 reports stay within 1080px; Creator Opinions retains a wider two-column layout.
 
 Markets, Creator Opinions and AI Research each have one primary navigation entry.
@@ -368,7 +395,7 @@ is introduced.
 | Route navigation | `components/layout/navItems.ts` | Markets, Creator Opinions and AI Research; `aria-current`, visible keyboard focus |
 | Opinion source links | `components/layout/OpinionSourceNav.tsx`, `navItems.ts` and `components/common/PlatformIcons.tsx` | Sidebar child links with per-platform brand marks; shared mobile source row in `DashboardLayout` |
 | In-page tabs | `components/ui/tabs.tsx` | Radix tabs for peer report panels; not a replacement for route links |
-| Loading and data states | `components/ui/skeleton.tsx` and the owning list | Existing skeleton geometry, explicit empty/error states and retry |
+| Loading and data states | `components/ui/content-loading.tsx` and the owning list | Delayed status text, pending values in known rows, explicit empty/error states and retry |
 | Scrollbars | `app/globals.css` | Global standards properties and WebKit fallback; new scrollers need no opt-in class |
 
 Detail-page return navigation lives in `DashboardLayout.headerLeftAction` and uses
@@ -972,7 +999,7 @@ retry buttons remain separate from the link, with independent keyboard focus.
 
 The market movers section retains flat rows and existing text/direction colors.
 Creator coverage quotes load in batches of five with at most three requests in
-flight. Successful batches render immediately; pending prices show skeletons,
+flight. Successful batches render immediately; pending prices show the `PendingValue` line,
 and a partial failure keeps valid quotes and exposes a quote retry action. The
 proxy preserves cached successes and never turns failures into zero prices.
 The backend bounds quote workers and batch wait time so an unavailable symbol
@@ -1008,7 +1035,7 @@ Market trends, Macro indicators. Market trends is the second tab and owns the 27
 and cross-assets) and their range controls. The five major index cards remain
 in Market overview above the stock list.
 `/dashboard?tab=trends` restores it on refresh. Market overview retains index cards, stock
-movers and creator updates, with range controls shared by indices and stock previews. The
+movers and creator updates, with range controls shared by indices and stock previews. Each tab places its range, view and refresh controls at the right of the row shared with the Markets tabs, wrapping below them when space runs out; on phones both groups center and the active tab scrolls into the middle; the overview, calendar and macro tabs show no visible section title. `MarketRefreshButton` is the one refresh style. The
 selected chart range is shared across overview and trends while switching tabs.
 Each tab loads only its own quotes/context; visiting overview does not request
 all market instrument quotes.
@@ -1137,7 +1164,7 @@ keyboard accessible. Card styling and its seven time ranges remain unchanged.
 `lib/clientCache.ts` owns bounded browser memory snapshots and in-flight request
 sharing. `hooks/useCachedResource.ts` owns initial loading versus background
 refresh. Returning to a cached route paints the snapshot synchronously; stale
-snapshots revalidate without replacing readable content with a skeleton. Explicit
+snapshots revalidate without replacing readable content with a loading state. Explicit
 refresh bypasses freshness, and successful writes invalidate the related URL
 namespace. The auth client clears snapshots and aborts requests when account
 identity changes. Cached data and provider availability are never shared by SSR;
@@ -1169,7 +1196,7 @@ source names wrap within their event row. List preserves one reading column with
 full summaries and hides empty days. Both views retain event ordering, tickers and
 source links.
 Chinese/English dates and labels use useCopy, with explicit Eastern-time context.
-Loading skeletons, empty weeks, error/retry and refresh use shared primitives.
+Loading uses `MarketEventCalendarSkeleton`, which mirrors the week switcher and day columns; empty weeks, error/retry and refresh use shared primitives.
 The calendar checks cache freshness when the tab resumes, reconnects and each minute.
 Fresh responses are reused for one minute; recent snapshots remain visible during
 background refresh and recoverable refresh failures. Manual refresh bypasses freshness.
@@ -1283,7 +1310,7 @@ Market cards are 240px tall with 64px charts. Five equal columns fill the wide
 desktop overview; smaller screens retain a single horizontally scrollable row
 with 240px cards so the stock list stays close to the overview. The lower grid
 uses a flexible stock list and a 320px secondary rail with matching header height.
-Stock watch, Watchlist and Creator updates use matching card bodies below their
+Stock watch keeps its list switcher in the section header, right of the title, outside the card. Stock watch, Watchlist and Creator updates use matching card bodies below their
 headings: shared Card, 24px corners, semantic card fill, 1px border and 12px padding
 on phones / 16px from sm. Section headers share a 56px minimum height and a 12px
 gap above their card. Stock rows stay flat within the card. The rail has no extra
@@ -1361,13 +1388,25 @@ data; the focused background behind it stays neutral grey.
 
 ### Floating mobile navigation
 
-Below lg, Markets, Watchlist, AI Research and Menu share one centered floating
-capsule. There is no separate search action. The supplied iOS glass reference
+Below lg, Markets, KOL Views, Search and Menu share one centered floating
+capsule. The supplied iOS glass reference
 owns this material: a translucent white tint in both themes, 24px background blur,
 saturation and a fine reflective edge. The dock has no opaque black fill.
 Active routes use a neutral inset pill and foreground icon. Targets are at least
-44px; icon-only controls retain localized accessible names. All other routes
-remain available through the sidebar menu.
+44px; icon-only controls retain localized accessible names.
+
+Search and Menu expand the capsule upward in place rather than opening a sheet.
+Search holds the ticker lookup; Menu holds a three-column grid of every other
+route, settings, admin for admins, and log out. An outside press, Escape, a route
+change or page scrolling collapses it. Once a page scroller moves vertically away
+from its top, the capsule stays scaled down from its bottom edge and returns to
+full size only at the top or bottom of the scroll, or on a new route; expanding
+it also restores full size. Horizontal scrollers do not trigger this, and reduced
+motion disables it.
+
+From lg the sidebar links to the Search page above the main navigation. Below lg the dock's search replaces per-list search fields in Markets, Watchlist
+and Creator Opinions, so each list's filter and sort controls sit on one row.
+Those fields remain from lg up, and the Watchlist add-stock field stays at all widths.
 
 Page-level scroll viewports extend beneath the glass; their bottom clearance and
 scroll padding keep the final row reachable above it, including the safe area.
@@ -1494,13 +1533,14 @@ before returning a snapshot. Reading does not call a model or generate a fresh
 summary. This is a saved editorial snapshot, not a scheduled-generation service.
 Missing snapshots and recoverable failures leave the underlying feed available.
 
-### Content loading skeletons
+### Content loading states
 
-Initial content requests use the shared `ContentSkeleton` for lists, text feeds,
-compact creator videos, articles and profile forms. Existing specialized chart,
-financial and portfolio skeletons remain canonical. Shapes use the shared
-Skeleton token, hide decorative blocks from assistive technology, announce one
-localized status, and disable pulsing with reduced motion. Content remains
+Initial content requests use `ContentLoading` from `components/ui/content-loading.tsx`:
+a small Loader2 and one localized status line that fades in after 300ms, so fast
+reads show nothing. Lists never draw placeholder rows. When a row already knows its
+name or ticker, render the real row and use `PendingValue` for values still in flight;
+its line stays distinct from the "—" of missing data. Existing specialized chart,
+financial and portfolio skeletons remain canonical. Motion stops under reduced motion. Content remains
 visible during cached background refreshes. Button submissions, authentication
 processing, AI generation/streaming, translation and sync actions retain explicit
 progress feedback; they are not cold content placeholders.

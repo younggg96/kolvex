@@ -42,13 +42,13 @@ export const WeightIndicator = ({ percent }: { percent: number }) => {
   if (percent < 0)
     return (
       <div className="flex items-center justify-center">
-        <span className="text-xs min-w-[36px]">-</span>
+        <span className="text-xs min-w-[2.25rem]">-</span>
       </div>
     );
   return (
     <div className="flex items-center justify-end gap-1.5">
       <WeightCircle percent={percent} />
-      <span className="text-xs tabular-nums text-muted-foreground min-w-[36px] text-right">
+      <span className="text-xs tabular-nums text-muted-foreground min-w-[2.25rem] text-right">
         {percent.toFixed(1)}%
       </span>
     </div>

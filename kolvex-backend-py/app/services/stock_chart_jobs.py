@@ -1,6 +1,9 @@
 """Persisted chart jobs, consumed outside the lifetime of an HTTP request."""
 import asyncio
 import logging
+import os
+import socket
+import threading
 from typing import Any
 
 from app.core.supabase import get_supabase_service
@@ -10,6 +13,8 @@ from app.services.yfinance.client import get_yfinance_service
 
 logger = logging.getLogger(__name__)
 JOB_TIMEOUT_SECONDS = 480
+IDLE_POLL_SECONDS = 60
+_worker_lock = threading.Lock()
 PUBLIC_FIELDS = "id,ticker,operation,status,error_code,result,created_at,started_at,finished_at"
 
 
@@ -97,24 +102,57 @@ async def process_job(jobs: StockChartJobs, job: dict):
 
 
 async def run_worker():
-    """Single consumer per process. SKIP LOCKED supports multiple API/worker replicas."""
+    """One serial consumer per process, including accidental duplicate starts."""
+    if not _worker_lock.acquire(blocking=False):
+        logger.warning("Chart worker duplicate start ignored pid=%s", os.getpid())
+        return
+    logger.info("Chart worker started pid=%s host=%s idle_poll_seconds=%s",
+                os.getpid(), socket.gethostname(), IDLE_POLL_SECONDS)
     delay = 3
-    while True:
-        try:
-            jobs = StockChartJobs(get_supabase_service())
-            job = await asyncio.to_thread(jobs.claim)
-            delay = 3
-            if job:
-                await process_job(jobs, job)
-                continue
-        except asyncio.CancelledError:
-            raise
-        except Exception as exc:
-            logger.warning("Chart worker unavailable (%s); retrying", type(exc).__name__)
-            delay = min(delay * 2, 30)
-        await asyncio.sleep(delay)
+    try:
+        while True:
+            try:
+                jobs = StockChartJobs(get_supabase_service())
+                # Cancellation cannot stop a running to_thread RPC. Hold the guard
+                # until it finishes so a replacement cannot overlap that claim.
+                claim = asyncio.create_task(asyncio.to_thread(jobs.claim))
+                try:
+                    job = await asyncio.shield(claim)
+                except asyncio.CancelledError:
+                    try:
+                        abandoned = await claim
+                        if abandoned:
+                            await asyncio.to_thread(jobs.fail, abandoned["id"], "ai_job_interrupted")
+                    except Exception:
+                        logger.warning("Chart claim shutdown cleanup failed")
+                    raise
+                delay = 3
+                if job:
+                    await process_job(jobs, job)
+                    continue
+                await asyncio.sleep(IDLE_POLL_SECONDS)
+            except asyncio.CancelledError:
+                raise
+            except Exception as exc:
+                logger.warning("Chart worker unavailable (%s); retrying", type(exc).__name__)
+                delay = min(delay * 2, 30)
+                await asyncio.sleep(delay)
+    finally:
+        _worker_lock.release()
+        logger.info("Chart worker stopped pid=%s", os.getpid())
 
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
-    asyncio.run(run_worker())
+    async def main():
+        from app.core.egress_metrics import run_traffic_reporter
+        reporter = asyncio.create_task(run_traffic_reporter())
+        try:
+            await run_worker()
+        finally:
+            reporter.cancel()
+            try:
+                await reporter
+            except asyncio.CancelledError:
+                pass
+    asyncio.run(main())

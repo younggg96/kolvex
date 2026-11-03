@@ -5,7 +5,6 @@ import { useCachedResource } from "@/hooks/useCachedResource";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { SegmentedControl } from "@/components/ui/segmented-control";
-import { Skeleton } from "@/components/ui/skeleton";
 import StockBadge from "@/components/ui/stock-badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -16,6 +15,8 @@ import {
   type MarketCalendar,
 } from "@/lib/marketEvents";
 import { cn } from "@/lib/utils";
+import { MarketEventCalendarSkeleton } from "./MarketEventCalendarSkeleton";
+import { MarketRefreshButton, MarketToolbarControls } from "./MarketToolbar";
 import { useCopy } from "./shared";
 
 /** Event summary that shows the opening lines and only collapses the remainder. */
@@ -47,7 +48,7 @@ function EventSummary({ text, collapsible }: { text: string; collapsible: boolea
   );
 }
 
-export default function MarketEventCalendar() {
+export default function MarketEventCalendar({ toolbar }: { toolbar: HTMLElement | null }) {
   const c = useCopy();
   const english = c("en", "zh") === "en";
   const [week, setWeek] = useState("1");
@@ -120,46 +121,29 @@ export default function MarketEventCalendar() {
       aria-labelledby="events-heading"
       aria-busy={loading}
     >
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h2 id="events-heading" className="text-xl font-semibold">
-            {c("Events to watch", "重大事件日历")}
-          </h2>
-          <p className="mt-2 text-sm text-muted-foreground">
-            {c(
-              "Earnings, Fed decisions and major releases · US Eastern time · Monday to Sunday",
-              "关注财报、美联储及重要数据 · 美东时间 · 周一至周日",
-            )}
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center gap-3">
-          <SegmentedControl
-            label={c("Event view", "事件视图")}
-            value={view}
-            onChange={setView}
-            className="border border-border"
-            itemClassName="min-h-9 px-4"
-            options={[
-              { value: "calendar", label: c("Calendar", "日历") },
-              { value: "list", label: c("List", "列表") },
-            ]}
-          />
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={loading || refreshing}
-            onClick={refresh}
-          >
-            {c("Refresh", "刷新")}
-          </Button>
-        </div>
-      </div>
+      <h2 id="events-heading" className="sr-only">
+        {c("Events to watch", "重大事件日历")}
+      </h2>
+      <MarketToolbarControls toolbar={toolbar}>
+        <SegmentedControl
+          label={c("Event view", "事件视图")}
+          value={view}
+          onChange={setView}
+          className="border border-border"
+          itemClassName="min-h-9 px-4"
+          options={[
+            { value: "calendar", label: c("Calendar", "日历") },
+            { value: "list", label: c("List", "列表") },
+          ]}
+        />
+        <MarketRefreshButton refreshing={refreshing} disabled={loading || refreshing} onClick={refresh} />
+      </MarketToolbarControls>
       {Boolean(error) && data && (
-        <p role="status" className="mt-3 text-sm text-muted-foreground">
+        <p role="status" className="mb-3 text-sm text-muted-foreground">
           {c("Refresh failed. Showing the previous calendar.", "刷新失败，正在显示上次的日历。")}
         </p>
       )}
-      <Card className="mt-5 p-2.5 sm:p-4">
+      <Card className="p-2.5 sm:p-4">
         {error && !data ? (
           <div role="alert" className="flex flex-wrap items-center justify-between gap-3 p-2">
             <p className="text-sm">
@@ -173,15 +157,10 @@ export default function MarketEventCalendar() {
             </Button>
           </div>
         ) : !data ? (
-          <div
-            role="status"
-            aria-label={c("Loading calendar", "正在加载日历")}
-            className="space-y-3"
-          >
-            {[0, 1, 2].map((n) => (
-              <Skeleton key={n} className="h-24 w-full rounded-2xl" />
-            ))}
-          </div>
+          <MarketEventCalendarSkeleton
+            label={c("Loading calendar", "正在加载日历")}
+            calendar={isCalendar}
+          />
         ) : (
           <Tabs value={week} onValueChange={setWeek} className="min-w-0">
             <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 px-1 pb-3">
@@ -339,7 +318,7 @@ export default function MarketEventCalendar() {
                                       `${items.length} events`,
                                       `${items.length} 个事件`,
                                     )}
-                                    className="figure shrink-0 rounded-full border border-border/80 bg-background/70 px-2 py-0.5 text-[11px] font-medium text-muted-foreground"
+                                    className="figure shrink-0 rounded-full border border-border/80 bg-background/70 px-2 py-0.5 text-[0.6875rem] font-medium text-muted-foreground"
                                   >
                                     {items.length}
                                   </span>
@@ -397,7 +376,7 @@ export default function MarketEventCalendar() {
                                             ))}
                                           </div>
                                         )}
-                                        <h4 className="mt-2 break-words text-[15px] font-semibold leading-snug">
+                                        <h4 className="mt-2 break-words text-[0.9375rem] font-semibold leading-snug">
                                           {title}
                                         </h4>
                                         {summary && (

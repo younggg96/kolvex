@@ -71,11 +71,6 @@ export default function StockLookup() {
         </div>
         <Button type="submit" className="h-11 shrink-0">{c("View stock", "查看股票")}</Button>
       </div>
-      <p id={`${id}-help`} role={invalid ? "alert" : undefined} className={`min-h-5 text-xs ${invalid ? "text-negative" : "text-muted-foreground"}`}>
-        {invalid
-          ? c("Enter a valid stock symbol, e.g. AAPL or BRK-B.", "请输入有效的股票代码，如 AAPL、BRK-B。")
-          : c("Open quotes and AI analysis, even without creator coverage.", "查看行情和 AI 分析，无需博主覆盖。")}
-      </p>
     </form>
   );
 }

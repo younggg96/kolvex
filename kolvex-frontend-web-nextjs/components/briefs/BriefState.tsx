@@ -1,13 +1,13 @@
 "use client";
 
-import { ContentSkeleton } from "@/components/ui/content-skeleton";
+import { ContentLoading } from "@/components/ui/content-loading";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { useTranslation } from "@/lib/i18n";
 
 export default function BriefState({ loading, error, retry }: { loading: boolean; error: number | null; retry: () => void }) {
   const { t } = useTranslation();
-  if (loading) return <ContentSkeleton label={t("common.loading")} variant="article" />;
+  if (loading) return <ContentLoading label={t("common.loading")} />;
   const auth = error === 401 || error === 403;
   return <div className="space-y-4 rounded-3xl border border-border p-6 sm:p-8">
     <h2 className="text-lg font-semibold">{t(error === 404 ? "briefs.notFound" : auth ? "briefs.signInRequired" : "briefs.loadError")}</h2>

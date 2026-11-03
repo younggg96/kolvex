@@ -10,6 +10,8 @@ from urllib.parse import urlparse
 HANDLE = re.compile(r"[A-Za-z0-9_]{1,15}")
 POST_ID = re.compile(r"[1-9][0-9]{0,24}")
 TICKER = re.compile(r"[A-Z][A-Z0-9.\-]{0,14}")
+CREATOR_FIELDS = "username,display_name,bio,avatar_url,location,website,followers_count,following_count,created_at"
+POST_FIELDS = "id,author_username,url,published_at,text,cashtags,metrics,quoted_texts,media_links,truncated,pinned,imported_at"
 METRICS = ("replies", "reposts", "likes", "bookmarks", "views")
 
 
@@ -103,8 +105,10 @@ class XContentService:
     def __init__(self, db):
         self.db = db
 
-    def creators(self):
-        return {"creators": self.db.table("x_creators").select("*").order("username").execute().data or []}
+    def creators(self, limit=1000, offset=0):
+        rows = (self.db.table("x_creators").select(CREATOR_FIELDS)
+                .order("username").range(offset, offset + limit - 1).execute())
+        return {"creators": rows.data or [], "limit": limit, "offset": offset}
 
     def summaries(self, author=None):
         """Saved AI-authored snapshot; reading never calls a model or mutates posts."""
@@ -142,7 +146,7 @@ class XContentService:
         }, on_conflict="username").execute().data[0]}
 
     def posts(self, author=None, ticker=None, limit=20, offset=0):
-        query = self.db.table("x_posts").select("*,creator:x_creators(*)", count="exact")
+        query = self.db.table("x_posts").select(f"{POST_FIELDS},creator:x_creators({CREATOR_FIELDS})", count="exact")
         if author:
             query = query.eq("author_username", username(author))
         if ticker:

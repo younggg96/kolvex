@@ -31,5 +31,10 @@
   "{0} 暂无价格历史。": "No price history for {0}.",
   "移除 {0}": "Remove {0}",
   "{0}的最新观点 · Kolvex": "{0}'s latest opinions · Kolvex",
-  "{0}年{1}月{2}日": "{1}/{2}/{0}"
+  "{0}年{1}月{2}日": "{1}/{2}/{0}",
+  "{0} 研究报告": "{0} research report",
+  "从自选移除 {0}": "Remove {0} from watchlist",
+  "将 {0} 加入自选": "Add {0} to watchlist",
+  "从最近搜索中移除 {0}": "Remove {0} from recent searches",
+  "没有找到“{0}”。试试股票代码或公司名称。": "Nothing found for “{0}”. Try a ticker or company name."
 }

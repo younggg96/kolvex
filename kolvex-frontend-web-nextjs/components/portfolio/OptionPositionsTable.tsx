@@ -75,7 +75,7 @@ export function OptionPositionsTable({
         {t("portfolio.table.optionsContracts")}
       </div>
       <div className="overflow-x-auto">
-        <Table className="min-w-[1100px]">
+        <Table className="min-w-[68.75rem]">
           <TableHeader>
             <TableRow>
               <SortableHeader
@@ -86,7 +86,7 @@ export function OptionPositionsTable({
                 onSort={onSort}
                 align="left"
                 type="alpha"
-                className="w-[180px] min-w-[180px] pl-4"
+                className="w-[11.25rem] min-w-[11.25rem] pl-4"
               />
               <SortableHeader
                 label={t("portfolio.table.expiration")}
@@ -96,9 +96,9 @@ export function OptionPositionsTable({
                 onSort={onSort}
                 align="center"
                 type="amount"
-                className="w-[90px] min-w-[90px]"
+                className="w-[5.625rem] min-w-[5.625rem]"
               />
-              <TableHead className="w-[80px] min-w-[80px] hidden sm:table-cell text-center">
+              <TableHead className="w-[5rem] min-w-[5rem] hidden sm:table-cell text-center">
                 <span className="text-xs text-muted-foreground whitespace-nowrap">{t("portfolio.table.chart")}</span>
               </TableHead>
               <SortableHeader
@@ -109,7 +109,7 @@ export function OptionPositionsTable({
                 onSort={onSort}
                 align="center"
                 type="amount"
-                className="w-[160px] min-w-[160px]"
+                className="w-[10rem] min-w-[10rem]"
               />
               <SortableHeader
                 label={t("portfolio.table.price")}
@@ -119,7 +119,7 @@ export function OptionPositionsTable({
                 onSort={onSort}
                 align="center"
                 type="amount"
-                className="w-[80px] min-w-[80px]"
+                className="w-[5rem] min-w-[5rem]"
               />
               <SortableHeader
                 label={t("portfolio.table.cost")}
@@ -129,7 +129,7 @@ export function OptionPositionsTable({
                 onSort={onSort}
                 align="center"
                 type="amount"
-                className="w-[80px] min-w-[80px]"
+                className="w-[5rem] min-w-[5rem]"
               />
               <SortableHeader
                 label={t("portfolio.table.contracts")}
@@ -139,7 +139,7 @@ export function OptionPositionsTable({
                 onSort={onSort}
                 align="center"
                 type="numeric"
-                className="w-[80px] min-w-[80px]"
+                className="w-[5rem] min-w-[5rem]"
               />
               <SortableHeader
                 label={t("portfolio.table.value")}
@@ -149,7 +149,7 @@ export function OptionPositionsTable({
                 onSort={onSort}
                 align="center"
                 type="amount"
-                className="w-[80px] min-w-[80px]"
+                className="w-[5rem] min-w-[5rem]"
               />
               <SortableHeader
                 label={t("portfolio.table.totalPnl")}
@@ -159,7 +159,7 @@ export function OptionPositionsTable({
                 onSort={onSort}
                 align="right"
                 type="amount"
-                className="w-[90px] min-w-[90px]"
+                className="w-[5.625rem] min-w-[5.625rem]"
               />
               <SortableHeader
                 label={t("portfolio.table.pnlPerShare")}
@@ -169,7 +169,7 @@ export function OptionPositionsTable({
                 onSort={onSort}
                 align="right"
                 type="amount"
-                className="w-[90px] min-w-[90px]"
+                className="w-[5.625rem] min-w-[5.625rem]"
               />
               <SortableHeader
                 label={t("portfolio.table.weight")}
@@ -179,10 +179,10 @@ export function OptionPositionsTable({
                 onSort={onSort}
                 align="right"
                 type="numeric"
-                className={`w-[70px] min-w-[70px] ${isOwner && isPublic ? "" : "pr-4"}`}
+                className={`w-[4.375rem] min-w-[4.375rem] ${isOwner && isPublic ? "" : "pr-4"}`}
               />
               {isOwner && isPublic && (
-                <TableHead className="w-[50px] min-w-[50px] pr-4">
+                <TableHead className="w-[3.125rem] min-w-[3.125rem] pr-4">
                   <span className="text-xs text-muted-foreground whitespace-nowrap">{t("portfolio.table.public")}</span>
                 </TableHead>
               )}
@@ -276,7 +276,7 @@ export function OptionPositionsTable({
                             </Link>
                           )}
                         </div>
-                        <div className="text-xs text-muted-foreground truncate max-w-[150px]">
+                        <div className="text-xs text-muted-foreground truncate max-w-[9.375rem]">
                           {pos.security_name}
                         </div>
                       </div>
@@ -286,7 +286,7 @@ export function OptionPositionsTable({
                     {isSecretOption ? (
                       <span className="text-muted-foreground">***</span>
                     ) : (
-                      <span className="text-[12px] text-muted-foreground">
+                      <span className="text-[0.75rem] text-muted-foreground">
                         {pos.expiration_date ? pos.expiration_date : "-"}
                       </span>
                     )}
@@ -309,19 +309,19 @@ export function OptionPositionsTable({
                       )}
                     </div>
                   </TableCell>
-                  <TableCell className="text-center tabular-nums w-[160px] min-w-[160px]">
+                  <TableCell className="text-center tabular-nums w-[10rem] min-w-[10rem]">
                     <div className="flex justify-center items-center gap-1 whitespace-nowrap">
                       {isSecretOption ? (
                         <span className="text-muted-foreground">***</span>
                       ) : pos.strike_price ? (
-                        <div className="flex items-center gap-1 text-[14px]">
+                        <div className="flex items-center gap-1 text-[0.875rem]">
                           <Badge
                             variant={
                               isShort
                                 ? "destructive"
                                 : "default"
                             }
-                            className="!text-[12px] shrink-0"
+                            className="!text-[0.75rem] shrink-0"
                           >
                             {isShort ? t("portfolio.table.short") : t("portfolio.table.long")}
                           </Badge>

@@ -116,7 +116,7 @@ export function AnalysisProgress({
                         <span className="min-w-0 break-words leading-5">{stageLabel}</span>
                       </div>
                     </TooltipTrigger>
-                    <TooltipContent side="bottom" className="max-w-[220px]">
+                    <TooltipContent side="bottom" className="max-w-[13.75rem]">
                       <p className="text-xs font-medium">{stageLabel}</p>
                       <p className="mt-1 text-xs font-normal text-background/80">{stageDesc}</p>
                     </TooltipContent>

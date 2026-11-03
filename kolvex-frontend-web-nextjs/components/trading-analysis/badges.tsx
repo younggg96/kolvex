@@ -68,7 +68,7 @@ export function DecisionBadgeLarge({
   return (
     <div className={cn("flex items-center gap-2", config.text)}>
       <Icon className="h-7 w-7" strokeWidth={2.5} />
-      <span className="text-[32px] font-bold leading-none">{config.label}</span>
+      <span className="text-[2rem] font-bold leading-none">{config.label}</span>
     </div>
   );
 }

@@ -106,10 +106,10 @@ export default function LandingHero() {
               onBlur={() => { x.set(0); y.set(0); }}
             >
               <Button asChild size="lg" className="landing-primary hero-primary">
-                <Link href="/auth">{c("Get started", "开始使用")}<ArrowUpRight size={18} aria-hidden="true" /></Link>
+                <Link href="/auth">{c("Get started", "开始使用")}<ArrowUpRight size="1.125rem" aria-hidden="true" /></Link>
               </Button>
             </motion.div>
-            <Link href="/research" className="hero-explore">{c("Explore research", "探索研究")}<ArrowUpRight size={16} aria-hidden="true" /></Link>
+            <Link href="/research" className="hero-explore">{c("Explore research", "探索研究")}<ArrowUpRight size="1rem" aria-hidden="true" /></Link>
           </div>
         </div>
         <div className="hero-art">

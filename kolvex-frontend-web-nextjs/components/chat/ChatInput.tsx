@@ -48,7 +48,7 @@ function SourceChip({ icon, label, active, onClick }: SourceChipProps) {
       size="xs"
       onClick={onClick}
       className={cn(
-        "inline-flex h-8 items-center gap-1.5 rounded-full px-3 text-[13px] font-medium",
+        "inline-flex h-8 items-center gap-1.5 rounded-full px-3 text-[0.8125rem] font-medium",
         " ",
         active
           ? "bg-foreground/10 text-foreground"
@@ -103,7 +103,7 @@ function ModelSelector({
           variant="ghost"
           size="xs"
           className={cn(
-            "inline-flex h-8 items-center gap-1.5 rounded-full px-3 text-[13px] font-medium",
+            "inline-flex h-8 items-center gap-1.5 rounded-full px-3 text-[0.8125rem] font-medium",
             " ",
             !hasAnyAvailable
               ? "text-muted-foreground"
@@ -130,12 +130,12 @@ function ModelSelector({
         {!hasAnyAvailable && (
           <div className="px-3 py-3 text-center">
             <Lock className="w-4 h-4 mx-auto mb-1.5 text-muted-foreground" />
-            <p className="text-[11px] text-muted-foreground mb-2">
+            <p className="text-[0.6875rem] text-muted-foreground mb-2">
               {t("chat.input.apiKeyRequiredDesc")}
             </p>
             <Link
               href="/dashboard/settings?tab=api-keys"
-              className="inline-flex items-center gap-1 text-[11px] text-positive hover:underline font-medium"
+              className="inline-flex items-center gap-1 text-[0.6875rem] text-positive hover:underline font-medium"
             >
               <Settings className="w-3 h-3" />
               {t("chat.input.settingsApiKeys")}
@@ -180,7 +180,7 @@ function ModelSelector({
                 {model.name}
               </span>
               {model.isPro && available && (
-                <span className="ml-auto rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-semibold text-muted-foreground">
+                <span className="ml-auto rounded-full bg-muted px-1.5 py-0.5 text-[0.625rem] font-semibold text-muted-foreground">
                   Pro
                 </span>
               )}
@@ -233,7 +233,7 @@ function SendButton({
       )}
       aria-label="Send"
     >
-      <ArrowUp className="h-[18px] w-[18px]" strokeWidth={2.5} />
+      <ArrowUp className="h-[1.125rem] w-[1.125rem]" strokeWidth={2.5} />
     </Button>
   );
 }
@@ -370,7 +370,7 @@ export function ChatInput({
           <div className="flex items-start gap-2.5">
             <Lock className="mt-0.5 h-4 w-4 flex-shrink-0 text-warning" />
             <div>
-              <p className="text-[13px] font-semibold text-foreground">
+              <p className="text-[0.8125rem] font-semibold text-foreground">
                 {t("chat.input.apiKeyRequired")}
               </p>
               <p className="mt-0.5 text-xs leading-5 text-muted-foreground">
@@ -394,7 +394,7 @@ export function ChatInput({
           inline
             ? "bg-transparent"
             : cn(
-                "overflow-hidden rounded-[26px] border bg-muted transition-colors duration-150",
+                "overflow-hidden rounded-[1.625rem] border bg-muted transition-colors duration-150",
                 isFocused ? "border-foreground/25" : "border-transparent"
               )
         )}
@@ -406,7 +406,7 @@ export function ChatInput({
               inline ? "px-0 pb-1 pt-1" : "px-4 pt-3"
             )}
           >
-            <p className="min-w-0 flex-1 truncate text-[13px] text-muted-foreground">
+            <p className="min-w-0 flex-1 truncate text-[0.8125rem] text-muted-foreground">
               <span className="font-medium text-foreground">{t("chat.evidence.using")}</span>
               <span className="px-1.5 text-foreground/30" aria-hidden>·</span>
               {evidenceLabel}
@@ -443,8 +443,8 @@ export function ChatInput({
               "text-foreground placeholder:text-muted-foreground",
               "disabled:cursor-not-allowed disabled:opacity-50",
               inline
-                ? "min-h-11 border-b-2 border-transparent text-[17px] leading-7 focus-visible:border-primary focus-visible:outline-none"
-                : "min-h-[28px] max-h-[160px] text-base leading-relaxed"
+                ? "min-h-11 border-b-2 border-transparent text-[1.0625rem] leading-7 focus-visible:border-primary focus-visible:outline-none"
+                : "min-h-[1.75rem] max-h-[10rem] text-base leading-relaxed"
             )}
             rows={1}
           />

@@ -32,7 +32,7 @@ function Stat({
 }) {
   return (
     <div className="min-w-0 py-4 pr-4 sm:pr-6">
-      <dt className="text-[13px] text-muted-foreground">{label}</dt>
+      <dt className="text-[0.8125rem] text-muted-foreground">{label}</dt>
       <dd
         className={cn(
           "figure mt-1 truncate text-xl font-semibold",

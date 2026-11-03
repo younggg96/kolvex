@@ -59,7 +59,7 @@ function renderExplorer(overrides = {}, locale = 'zh') {
     }).outputText;
     vm.runInNewContext(source, { module: mod, exports: mod.exports, URLSearchParams,
       require: name => modules[name] ?? (name === '@/components/ui/button' ? { Button: button } :
-        name.startsWith('@/components/ui/') ? new Proxy({}, { get: (_, key) => key === 'ContentSkeleton' ? () => React.createElement('div', { 'data-loading': true }) : wrapper }) : { default: () => null }),
+        name.startsWith('@/components/ui/') ? new Proxy({}, { get: (_, key) => key === 'ContentLoading' ? () => React.createElement('div', { 'data-loading': true }) : wrapper }) : { default: () => null }),
     });
     return mod.exports;
   }

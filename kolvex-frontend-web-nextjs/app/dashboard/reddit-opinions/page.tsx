@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ContentSkeleton } from "@/components/ui/content-skeleton";
+import { ContentLoading } from "@/components/ui/content-loading";
 import { useMemo, useRef, useState } from "react";
 import { ChevronDown, ExternalLink, Loader2, RefreshCw, Search, Star, X } from "lucide-react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
@@ -71,9 +71,9 @@ export default function RedditOpinionsPage() {
   return (
     <DashboardLayout title={t("redditOpinions.header")}>
       <div className="min-h-0 flex-1 overflow-y-auto bg-background">
-        <div className="mx-auto max-w-6xl px-4 pb-6 pt-4 md:px-8 md:py-8">
+        <div className="mx-auto max-w-6xl px-[16px] pb-6 pt-4 md:px-8 md:py-8">
           <div className="flex items-center justify-between gap-3">
-            <h1 className="text-2xl font-semibold tracking-tight md:text-[32px]">{t("redditOpinions.title")}</h1>
+            <h1 className="text-2xl font-semibold tracking-tight md:text-[2rem]">{t("redditOpinions.title")}</h1>
             <Button variant="ghost" size="icon" className="h-10 w-10" onClick={refresh} disabled={busy}
               aria-label={t("redditOpinions.refresh")} title={t("redditOpinions.refresh")}>
               {busy ? <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" aria-hidden="true" /> : <RefreshCw className="h-4 w-4" aria-hidden="true" />}
@@ -84,28 +84,26 @@ export default function RedditOpinionsPage() {
 
           <section aria-label={t("redditOpinions.title")} className="mt-3 md:mt-4">
             <ListCard>
-              <div className="grid grid-cols-2 items-end gap-3 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] xl:grid-cols-[minmax(0,1fr)_11rem_11rem_auto]">
-                <div className="relative col-span-2 md:col-span-3 xl:col-span-1">
+              <div className="grid grid-cols-2 items-center gap-3 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] xl:grid-cols-[minmax(0,1fr)_11rem_11rem_auto]">
+                <div className="relative hidden lg:col-span-3 lg:block xl:col-span-1">
                   <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
                   <Input ref={searchInput} type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder={t("redditOpinions.search")} aria-label={t("redditOpinions.search")} aria-describedby="reddit-scope" className="h-11 pl-9 pr-10 [&::-webkit-search-cancel-button]:hidden" />
                   {query && <Button variant="ghost" size="icon" className="absolute right-0 top-0 h-11 w-11" aria-label={t("redditOpinions.clearSearch")} title={t("redditOpinions.clearSearch")}
                     onClick={() => { setQuery(""); searchInput.current?.focus(); }}><X className="h-4 w-4" aria-hidden="true" /></Button>}
                 </div>
                 <div className="min-w-0">
-                  <label htmlFor="reddit-community" className="mb-1.5 block text-xs text-muted-foreground">{t("redditOpinions.community")}</label>
                   <Select value={community} onValueChange={value => setCommunity(value as RedditCommunity)}>
-                    <SelectTrigger id="reddit-community" className="h-11"><SelectValue /></SelectTrigger>
+                    <SelectTrigger aria-label={t("redditOpinions.community")} className="h-11"><SelectValue /></SelectTrigger>
                     <SelectContent>{REDDIT_COMMUNITIES.map(value => <SelectItem key={value} value={value}>{communityLabel(value)}</SelectItem>)}</SelectContent>
                   </Select>
                 </div>
                 <div className="min-w-0">
-                  <label htmlFor="reddit-sort" className="mb-1.5 block text-xs text-muted-foreground">{t("redditOpinions.sort")}</label>
                   <Select value={sort} onValueChange={value => setSort(value as RedditSort)}>
-                    <SelectTrigger id="reddit-sort" className="h-11"><SelectValue /></SelectTrigger>
+                    <SelectTrigger aria-label={t("redditOpinions.sort")} className="h-11"><SelectValue /></SelectTrigger>
                     <SelectContent>{(["mentions", "mentionChange", "rankChange", "upvotes"] as const).map(value => <SelectItem key={value} value={value}>{t(`redditOpinions.sortOptions.${value}`)}</SelectItem>)}</SelectContent>
                   </Select>
                 </div>
-                <Button variant={onlyWatchlist ? "secondary" : "outline"} size="sm" className="col-span-2 h-11 justify-self-start md:col-span-1" aria-pressed={onlyWatchlist} disabled={!ready} onClick={() => setOnlyWatchlist(value => !value)}>
+                <Button variant="secondary" className={`col-span-2 justify-self-start !px-3.5 !font-normal md:col-span-1 ${onlyWatchlist ? "" : "!bg-muted hover:!bg-foreground/[0.04]"}`} aria-pressed={onlyWatchlist} disabled={!ready} onClick={() => setOnlyWatchlist(value => !value)}>
                   <Star className={`h-4 w-4 ${onlyWatchlist ? "fill-current" : ""}`} aria-hidden="true" />
                   {t("redditOpinions.onlyWatchlist")} <span className="tabular-nums">{watchlist.length}</span>
                 </Button>
@@ -124,7 +122,7 @@ export default function RedditOpinionsPage() {
               </div>}
 
               <div key={`${community}:${sort}:${query}:${onlyWatchlist}:${data?.fetchedAt ?? "loading"}`} aria-busy={busy} className="opinion-results mt-3">
-                {loading && !data ? <ContentSkeleton label={t("redditOpinions.loading")} rows={4} />
+                {loading && !data ? <ContentLoading label={t("redditOpinions.loading")} />
                   : data && rows.length > 0 ? <>
                     <div className="md:hidden">
                       <ListColumnHeader>
@@ -187,7 +185,7 @@ export default function RedditOpinionsPage() {
                         <TableBody>{rows.map((row, index) => <TableRow key={row.ticker} className="opinion-result-row group hover:!bg-transparent" style={{ animationDelay: `${Math.min(index, 6) * 20}ms` }}>
                           <TableCell className={cn(HOVER_CELL, "text-muted-foreground")}>{row.rank}</TableCell>
                           <TableCell className={cn(HOVER_CELL, "min-w-48 max-w-72")}>
-                            <Link href={marketStockHref(row.ticker)} className="-m-1 flex min-h-11 items-center gap-3 rounded-xl p-1 transition-colors duration-150 hover:text-foreground focus-visible:outline-none" aria-label={t("redditOpinions.openStock", { ticker: row.ticker })}>
+                            <Link href={marketStockHref(row.ticker)} className="-m-1 flex min-h-11 items-center gap-3 p-1 transition-colors duration-150 hover:text-foreground focus-visible:outline-none" aria-label={t("redditOpinions.openStock", { ticker: row.ticker })}>
                               <span aria-hidden="true"><CompanyLogo symbol={row.ticker} name={row.name} size="sm" /></span>
                               <div className="min-w-0 flex-1">
                                 <span className="font-semibold">{row.ticker}</span>

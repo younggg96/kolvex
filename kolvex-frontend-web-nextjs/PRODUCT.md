@@ -12,6 +12,14 @@ Chinese-speaking individual investors in US equities. They follow Chinese-langua
 
 ## Product Purpose
 
+**Virtual trading / 虚拟交易** (`/dashboard/paper-trading`) is an optional learning
+workspace requested in November 2026. Users can bring an AI setup into an editable
+order draft, trade USD stocks/ETFs with virtual funds, track their own performance
+and voluntarily publish completed-trade reviews for other signed-in learners.
+Personal plans remain optional; existing creator and research reading flows stay
+available without entering one. Model, privacy and execution rules are maintained
+in `../docs/paper-trading/PLAN.md`.
+
 Kolvex turns scattered investment opinion into something an individual can check against their own book:
 
 - **Markets / 行情** (`/dashboard`, `/dashboard/market/[ticker]`): default signed-in entry with quotes, benchmark ETFs and stock lists. Opening a stock stays in Markets. Its stock identity, regular quote and available after-hours quote precede a URL-restorable research tab bar. Overview leads with the K-line chart and AI drawings, source-backed key indicators, grouped financial facts and research signals. Financials offers annual/quarterly income, balance-sheet and cash-flow statements with switchable Charts / List views (charts first), period changes and CSV export. Earnings compares actual EPS with estimates and lists reported surprises. Metric trends compares available income-statement metrics with annual/quarterly and bar/line controls. Analyst targets and company profile use existing source data. Technical analysis, conditional setup, latest news, creator intelligence and AI research remain available in the same tab bar; news keeps source links, publication times, translation, refresh and expansion. Unavailable history or fields are not synthesized.

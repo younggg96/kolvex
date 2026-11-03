@@ -44,6 +44,7 @@
     "previous": "Previous"
   },
   "sidebar": {
+    "paperTrading": "Paper trading",
     "watchlist": "Watchlist",
     "markets": "Markets",
     "chat": "Chat",
@@ -68,6 +69,7 @@
     "briefs": "Daily Briefs"
   },
   "tabBar": {
+    "paperTrading": "Paper trading",
     "watchlist": "Watchlist",
     "news": "News",
     "markets": "Markets",
@@ -1180,7 +1182,7 @@
     "byStock": "By stock",
     "byCreator": "By creator",
     "allStocks": "All stocks",
-    "stocksDiscussedTitle": "Stocks creators discuss",
+    "stocksDiscussedTitle": "YouTube opinions",
     "trackedCreators": "Tracked creators",
     "catalogueSummary": "{stocks} stocks, {creators} creators, {opinions} opinions",
     "searchTicker": "Search ticker or company",
@@ -1495,6 +1497,10 @@
       "refresh": "Refresh profile"
     },
     "directory": {
+      "distributionTitle": "Creator sentiment",
+      "distributionWindow": "30 days · latest per creator",
+      "changeTitle": "Opinion change",
+      "methodology": "How this is calculated",
       "distribution": "Creators · latest per person in 30 days",
       "neutralMixed": "Neutral/mixed",
       "noRecentCreators": "No creator opinions in the past 30 days",

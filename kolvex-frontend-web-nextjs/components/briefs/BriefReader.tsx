@@ -18,8 +18,8 @@ export default function BriefReader({ id, searchParams }: { id: string; searchPa
   const { data, loading, error, retry } = useBriefData<{ payload: DailyBrief }>(`?id=${encodeURIComponent(id)}`);
   useEffect(() => { document.title = `${(data ? localizedBrief(data.payload, locale).brief.headline : t("briefs.title"))} | Kolvex`; }, [data, locale, t]);
   return <DashboardLayout title={t("briefs.title")} headerLeftAction={<HeaderBackButton href={back} label={t("briefs.back")} />}>
-    <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-10 pt-6 md:px-8 md:pt-8">
-      <div className="mx-auto max-w-[1080px]">
+    <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-[16px] pb-10 pt-6 md:px-8 md:pt-8">
+      <div className="mx-auto max-w-[67.5rem]">
         {loading || (error && !data) ? <><BriefState loading={loading} error={error} retry={retry} />{error === 404 && <Button asChild variant="outline" className="mt-4"><Link href={back}>{t("briefs.back")}</Link></Button>}</> : data && <>
           {error && <p role="alert" className="mb-4 text-sm text-muted-foreground">{t("common.error")} <Button variant="outline" size="sm" onClick={retry}>{t("common.retry")}</Button></p>}
           <BriefContent key={id} document={data.payload} />

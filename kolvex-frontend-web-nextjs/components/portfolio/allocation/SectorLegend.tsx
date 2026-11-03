@@ -31,7 +31,7 @@ export function SectorLegend({
           >
             <div className="flex items-center justify-between mb-0.5">
               <span
-                className={`text-[10px] truncate max-w-[60px] ${
+                className={`text-[0.625rem] truncate max-w-[3.75rem] ${
                   isHovered || isExpanded
                     ? "text-foreground font-medium"
                     : "text-muted-foreground"
@@ -39,7 +39,7 @@ export function SectorLegend({
               >
                 {sector.name}
               </span>
-              <span className="text-[10px] text-muted-foreground">
+              <span className="text-[0.625rem] text-muted-foreground">
                 {allocation.toFixed(0)}%
               </span>
             </div>
@@ -57,7 +57,7 @@ export function SectorLegend({
         );
       })}
       {sectorData.length > 8 && (
-        <span className="text-[10px] text-muted-foreground text-center">
+        <span className="text-[0.625rem] text-muted-foreground text-center">
           +{sectorData.length - 8} more
         </span>
       )}

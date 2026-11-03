@@ -1,6 +1,6 @@
 "use client";
 
-import { ContentSkeleton } from "@/components/ui/content-skeleton";
+import { ContentLoading } from "@/components/ui/content-loading";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { FileJson, Loader2 } from "lucide-react";
@@ -167,7 +167,7 @@ export default function DailyBriefImporter() {
     {preview && <div className="space-y-5 rounded-3xl border border-border bg-card p-4 sm:p-6"><div className="flex flex-wrap items-center justify-between gap-2 border-b border-border pb-4"><h3 className="font-semibold">保存前预览</h3><span className="text-xs text-muted-foreground">语言：{preview.language ?? "zh"}{Object.keys(preview.translations ?? {}).map(language => ` / ${language}`).join("")}</span></div><BriefContent document={preview} /></div>}
     <section className="space-y-4 border-t border-border pt-6" aria-busy={listBusy}>
       <div className="flex items-center justify-between gap-3"><h3 ref={listHeading} tabIndex={-1} className="text-lg font-semibold">已保存日报</h3><Button variant="ghost" size="sm" disabled={listBusy || busy} onClick={() => void refresh()}>刷新列表</Button></div>
-      {listError ? <p role="alert" className="text-sm leading-6 text-negative">{listError}</p> : listBusy ? <ContentSkeleton label="正在加载日报列表" variant="text" rows={3} /> : !items.length ? <p className="text-sm text-muted-foreground">暂无符合期次的日报。</p> : <ul className="divide-y divide-border">{items.map(item => <li key={item.id} className="flex flex-wrap items-start justify-between gap-4 py-4"><div className="min-w-0 flex-1 basis-48"><p className="text-xs text-muted-foreground">{item.brief_date} · {t(`briefs.${item.brief_type}`)}</p><h4 className="mt-1 break-words text-sm font-semibold">{item.headline}</h4><p className="mt-1 text-xs text-muted-foreground">{item.title}</p></div><div className="flex flex-wrap gap-2">
+      {listError ? <p role="alert" className="text-sm leading-6 text-negative">{listError}</p> : listBusy ? <ContentLoading label="正在加载日报列表" /> : !items.length ? <p className="text-sm text-muted-foreground">暂无符合期次的日报。</p> : <ul className="divide-y divide-border">{items.map(item => <li key={item.id} className="flex flex-wrap items-start justify-between gap-4 py-4"><div className="min-w-0 flex-1 basis-48"><p className="text-xs text-muted-foreground">{item.brief_date} · {t(`briefs.${item.brief_type}`)}</p><h4 className="mt-1 break-words text-sm font-semibold">{item.headline}</h4><p className="mt-1 text-xs text-muted-foreground">{item.title}</p></div><div className="flex flex-wrap gap-2">
         <Button size="sm" variant="outline" disabled={busy} onClick={() => void run(async () => { const result = await briefRequest<BriefDetail>(`?id=${encodeURIComponent(item.id)}`); setViewing(result.payload); })}>查看</Button>
         <Button size="sm" variant="outline" disabled={busy} onClick={() => protectDraft(() => { void run(() => edit(item)); })}>编辑</Button>
         <Button size="sm" variant="ghost" className="text-negative hover:text-negative" disabled={busy} onClick={() => void run(async () => { const result = await briefRequest<BriefDetail>(`?id=${encodeURIComponent(item.id)}`); setDeleteError(""); setDeleting({ item, revision: result.revision }); })}>删除</Button>

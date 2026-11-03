@@ -45,7 +45,7 @@ export function CreatorDirectory({ creators }: { creators: YouTubeCreatorSummary
               <div className="flex min-w-0 flex-1 items-center gap-3">
                 <CreatorAvatar name={name} avatarUrl={creator.channel_avatar_url} size="md" />
                 <div className="min-w-0 flex-1">
-                  <h2 className="break-words text-[15px] font-semibold">{name}</h2>
+                  <h2 className="break-words text-[0.9375rem] font-semibold">{name}</h2>
                   <p className="mt-1 break-words text-xs leading-6 text-muted-foreground">关注股票：{creator.top_tickers.map((stock) => stock.ticker).join("、") || "见原视频"}</p>
                   <p className="mt-1 text-xs text-muted-foreground sm:hidden">最近观点：<ReadingDate value={creator.latest_opinion_at} /></p>
                 </div>
@@ -71,7 +71,7 @@ export function StockDirectory({ stocks }: { stocks: YouTubeStockSummary[] }) {
             <div className="flex min-w-0 flex-1 items-center gap-3">
               <CompanyLogo symbol={stock.ticker} name={stock.company_name || stock.ticker} size="md" />
               <div className="min-w-0 flex-1">
-                <h2 className="break-words text-[15px] font-semibold">{stock.ticker}<span className="ml-3 font-normal text-muted-foreground">{stock.company_name}</span></h2>
+                <h2 className="break-words text-[0.9375rem] font-semibold">{stock.ticker}<span className="ml-3 font-normal text-muted-foreground">{stock.company_name}</span></h2>
                 <p className="mt-1 text-xs leading-6 text-muted-foreground">{stock.creator_count} 位博主 · {stock.total_opinions} 条已收录观点</p>
                 <p className="mt-1 text-xs text-muted-foreground sm:hidden">最近更新：<ReadingDate value={stock.latest_opinion_at} /></p>
               </div>

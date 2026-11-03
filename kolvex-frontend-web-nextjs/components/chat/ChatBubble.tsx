@@ -47,12 +47,12 @@ export function ChatBubble({
             className="rounded-3xl bg-muted px-4 py-2.5 text-foreground"
             aria-label={t("chat.userName")}
           >
-            <p className="text-[15px] leading-relaxed whitespace-pre-wrap">
+            <p className="text-[0.9375rem] leading-relaxed whitespace-pre-wrap">
               {question}
             </p>
           </div>
           {timestamp && (
-            <p className="mt-1 px-1 text-right text-[11px] text-muted-foreground">
+            <p className="mt-1 px-1 text-right text-[0.6875rem] text-muted-foreground">
               {formatTime(timestamp)}
             </p>
           )}
@@ -64,7 +64,7 @@ export function ChatBubble({
   // Assistant message
   return (
     <div className="group flex w-full justify-start animate-fade-in">
-      <div className="w-full min-w-0 max-w-[720px]">
+      <div className="w-full min-w-0 max-w-[45rem]">
           <div className="mb-2 flex items-center gap-2 text-xs text-muted-foreground">
             <span className="font-semibold text-foreground">
               {t("chat.assistantName")}
@@ -80,8 +80,8 @@ export function ChatBubble({
                 "break-words prose-headings:mt-4 prose-headings:mb-2 prose-headings:font-semibold",
                 "prose-h1:text-xl prose-h1:leading-tight",
                 "prose-h2:text-base prose-h3:text-sm",
-                "prose-p:my-2 prose-p:leading-7 prose-p:text-[15px]",
-                "prose-ul:my-2 prose-ul:pl-4 prose-li:my-0.5 prose-li:text-[15px]",
+                "prose-p:my-2 prose-p:leading-7 prose-p:text-[0.9375rem]",
+                "prose-ul:my-2 prose-ul:pl-4 prose-li:my-0.5 prose-li:text-[0.9375rem]",
                 "prose-ol:my-1.5 prose-ol:pl-4",
                 "prose-strong:text-foreground prose-strong:font-semibold",
                 "prose-code:text-xs prose-code:bg-muted prose-code:px-1 prose-code:py-0.5 prose-code:rounded",
@@ -95,7 +95,7 @@ export function ChatBubble({
               </ReactMarkdown>
               {isStreaming && (
                 <span className="inline-flex ml-0.5 align-middle">
-                  <span className="h-[18px] w-[3px] animate-pulse rounded-sm bg-foreground" />
+                  <span className="h-[1.125rem] w-[0.1875rem] animate-pulse rounded-sm bg-foreground" />
                 </span>
               )}
             </div>

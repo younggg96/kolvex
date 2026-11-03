@@ -21,7 +21,7 @@ export default function VideoPlayer({
 
   if (isDirectVideo) {
     return (
-      <div className={`relative w-[120px] h-[120px] ${className}`}>
+      <div className={`relative w-[7.5rem] h-[7.5rem] ${className}`}>
         <video
           src={videoUrl}
           controls

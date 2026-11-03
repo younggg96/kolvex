@@ -1,6 +1,6 @@
 "use client";
 
-import { ContentSkeleton } from "@/components/ui/content-skeleton";
+import { ContentLoading } from "@/components/ui/content-loading";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { useTranslation } from "@/lib/i18n";
@@ -265,7 +265,7 @@ export default function PrivacySettingsDialog({
             >
               {account.account_name || t("portfolio.holdings.brokerageAccount")}
             </span>
-            <p className="text-[10px] text-muted-foreground">
+            <p className="text-[0.625rem] text-muted-foreground">
               {t("portfolio.holdings.positions", { count: String(positionsCount) })}
             </p>
           </div>
@@ -432,7 +432,7 @@ export default function PrivacySettingsDialog({
         </DialogHeader>
 
         {loading ? (
-          <ContentSkeleton label={t("common.loading")} variant="profile" />
+          <ContentLoading label={t("common.loading")} />
         ) : settings ? (
           <div className="space-y-4 max-h-[60vh] overflow-y-auto">
             <CategorySection

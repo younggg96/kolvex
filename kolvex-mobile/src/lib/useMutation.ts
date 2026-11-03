@@ -12,7 +12,8 @@ export function useMutation() {
       action.current?.abort();
     };
   }, []);
-  async function run(work: (signal: AbortSignal) => Promise<void>) {
+  // Work resolving to false did nothing, such as a sign-in the user cancelled.
+  async function run(work: (signal: AbortSignal) => Promise<void | false>) {
     if (action.current) return;
     const controller = new AbortController();
     action.current = controller;
@@ -20,8 +21,8 @@ export function useMutation() {
     setError(undefined);
     setMessage(undefined);
     try {
-      await work(controller.signal);
-      if (alive.current && !controller.signal.aborted)
+      const outcome = await work(controller.signal);
+      if (outcome !== false && alive.current && !controller.signal.aborted)
         setMessage("操作已完成。");
     } catch (e) {
       if (alive.current && !controller.signal.aborted)
