@@ -710,30 +710,30 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
       });
       return (
         <div
-          className={cn(cellClass, "text-left md:text-right")}
+          className={cn(cellClass, "space-y-4")}
           role="group"
           aria-label={ariaLabel}
           title={t("youtubeOpinions.performanceNote", { date: entry.as_of })}
         >
-          <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 md:flex-col md:items-end md:gap-y-1">
+          <div className="space-y-4">
             <p className="whitespace-nowrap tabular-nums">
-              <span className="text-[0.6875rem] font-medium text-foreground/55">
+              <span className="text-xs font-medium text-muted-foreground">
                 {t("youtubeOpinions.directory.currentPrice")}
               </span>
-              <span className="ml-1.5 text-[0.8125rem] font-semibold text-foreground">
+              <span className="ml-2 text-2xl font-semibold text-foreground">
                 {localPrice(ticker, entry.price)}
               </span>
             </p>
-            <p className="text-[0.6875rem] text-muted-foreground">{t("youtubeOpinions.directory.asOf", { date: formatDay(entry.as_of) })}</p>
-            <p className="flex flex-wrap items-baseline gap-x-3 gap-y-1 md:justify-end">
+            <p className="text-xs text-muted-foreground">{t("youtubeOpinions.directory.asOf", { date: formatDay(entry.as_of) })}</p>
+            <p className="grid grid-cols-3 gap-3">
               {([
                 ["youtubeOpinions.price1d", entry.change_1d_percent],
                 ["youtubeOpinions.price5d", entry.change_5d_percent],
                 ["youtubeOpinions.price1mo", entry.change_1mo_percent],
               ] as const).map(([key, value]) => (
-                <span key={key} className="inline-flex items-baseline gap-1 whitespace-nowrap">
-                  <span className="text-[0.6875rem] text-foreground/55">{t(key)}</span>
-                  <span className={cn("text-xs font-semibold tabular-nums", percentTone(value))}>
+                <span key={key} className="flex flex-col items-start gap-1 whitespace-nowrap">
+                  <span className="text-xs text-muted-foreground">{t(key)}</span>
+                  <span className={cn("text-sm font-semibold tabular-nums", percentTone(value))}>
                     {formatPercent(value)}
                   </span>
                 </span>
@@ -745,7 +745,7 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
     }
     return (
       <div
-        className={cn(cellClass, "flex min-h-4 items-center gap-2 text-left md:justify-end md:text-right")}
+        className={cn(cellClass, "flex min-h-32 flex-wrap items-center gap-2")}
         title={performanceLoading ? undefined : t("youtubeOpinions.performanceUnavailable")}
       >
         {performanceLoading || !requested ? (

@@ -1,12 +1,14 @@
 import { formatPrice, type AiTechnicalAnalysis } from "@/lib/stockApi";
 import { cn } from "@/lib/utils";
 import { ChevronDown } from "lucide-react";
+import SetupTradeLink from "@/components/paper-trading/SetupTradeLink";
 
 type Translate = (key: string, params?: Record<string, string>) => string;
 
-export default function AiDrawingSetup({ setup, t }: {
+export default function AiDrawingSetup({ setup, t, symbol }: {
   setup: NonNullable<AiTechnicalAnalysis["setup"]>;
   t: Translate;
+  symbol: string;
 }) {
   const key = "youtubeOpinions.ai.tradePlan";
   return (
@@ -31,6 +33,7 @@ export default function AiDrawingSetup({ setup, t }: {
         ))}
       </dl>
       <p className="mt-2 text-xs leading-5 text-muted-foreground">{t(`${key}.basis`)}</p>
+      <SetupTradeLink symbol={symbol} setup={setup} />
       <details className="group/plan mt-4 border-t border-border">
         <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 rounded text-sm font-medium hover:text-muted-foreground focus-visible:outline-none [&::-webkit-details-marker]:hidden">
           {t("youtubeOpinions.ai.planReason")}

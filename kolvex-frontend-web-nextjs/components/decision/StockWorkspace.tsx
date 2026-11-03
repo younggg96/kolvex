@@ -50,6 +50,7 @@ import {
   useCopy,
 } from "./shared";
 import { useDecisionCommand } from "./CommandLayer";
+import SetupTradeLink from "@/components/paper-trading/SetupTradeLink";
 
 const StockFinancialsTab = dynamic(() => import("./StockSecFinancials"));
 const StockPeers = dynamic(() => import("./StockPeers"));
@@ -622,6 +623,7 @@ export default function StockWorkspace({
                         <p className="mt-1.5 text-sm leading-6 text-muted-foreground">
                           {technical.setup.reason}
                         </p>
+                        {!benchmark && <SetupTradeLink symbol={ticker} setup={technical.setup} />}
                         <dl className="mt-4 grid grid-cols-2 gap-4 text-sm">
                           {[
                             [

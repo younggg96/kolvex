@@ -299,6 +299,7 @@ class YFinanceService:
             "name": info.get("shortName") or info.get("longName"),
             "exchange": info.get("exchange"),
             "currency": info.get("currency"),
+            "quote_type": info.get("quoteType"),
             # 价格信息
             "current_price": current_price,
             "previous_close": previous_close,

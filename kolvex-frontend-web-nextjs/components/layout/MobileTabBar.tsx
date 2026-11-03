@@ -91,7 +91,7 @@ export default function MobileTabBar() {
     const closeOnEscape = (event: KeyboardEvent) => {
       if (event.key !== "Escape") return;
       setMenuOpen(false);
-      menuButton.current?.focus();
+      menuButton.current?.focus({ preventScroll: true });
     };
     document.addEventListener("pointerdown", closeOnOutsidePress);
     document.addEventListener("keydown", closeOnEscape);
@@ -106,9 +106,11 @@ export default function MobileTabBar() {
       setMenuOpen(false);
       return;
     }
-    // The panel must be visible before focus can move into it.
+    // Mount the visible panel before moving focus. Its opening animation starts
+    // at zero height while the dock also scales up: default focus scrolling can
+    // pan an ancestor and trigger useIsMidScroll's close-on-scroll handler.
     flushSync(() => setMenuOpen(true));
-    panelContent.current?.querySelector<HTMLElement>("a, button")?.focus();
+    panelContent.current?.querySelector<HTMLElement>("a, button")?.focus({ preventScroll: true });
   }
 
   async function handleLogout() {

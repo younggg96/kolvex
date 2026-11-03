@@ -39,6 +39,18 @@ components:
 
 # Kolvex design system
 
+## Virtual trading workspace
+
+`/dashboard/paper-trading` extends the existing retail-investing product language.
+It reuses semantic runtime tokens, Inter/Chinese typography, pill controls, 24px
+surfaces, shared ListCard table shells and Radix Select/Dialog. Account metrics
+lead into the equity graph, lot positions and order ticket; narrow screens retain
+native horizontally scrollable tables with explicit labels and load-more actions.
+Positive/negative text always accompanies a signed monetary value or written
+direction. All balances and performance are explicitly virtual. AI setup actions
+open editable drafts; they never execute trades. `UX-CONTRACT.md` records feedback,
+privacy, idempotent retries and state ownership for this new workflow.
+
 ## Overview
 
 The product reference is the retail investing interface described in PRODUCT.md:

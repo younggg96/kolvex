@@ -1062,7 +1062,7 @@ export default function ChartView({
             <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground group-open/drawings:rotate-180" aria-hidden="true" />
           </summary>
           {drawingAi.result?.model && <p className="mt-1 break-words text-xs leading-5 text-muted-foreground">{t("youtubeOpinions.ai.generatedBy", { model: `${drawingAi.result.provider || ""} / ${drawingAi.result.model}` })}</p>}
-          {drawingAi.status === "done" && drawingAi.result?.setup && <AiDrawingSetup setup={drawingAi.result.setup} t={t} />}
+          {drawingAi.status === "done" && drawingAi.result?.setup && <AiDrawingSetup setup={drawingAi.result.setup} t={t} symbol={symbol} />}
           {drawingAi.status === "done" && drawingAi.result && <AiPriceActionSignals result={drawingAi.result} formatDate={formatDate} t={t} />}
           {drawingAi.status === "done" && drawingAi.result?.findings?.some(item => item.status === "unavailable") && <p className="mt-3 text-xs leading-5 text-muted-foreground">
             {t("youtubeOpinions.ai.focus.unavailable")}：{drawingAi.result.findings.filter(item => item.status === "unavailable").map(item => t(`youtubeOpinions.ai.focus.categories.${item.id}`)).join(" / ")}

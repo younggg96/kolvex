@@ -49,9 +49,16 @@ async def lifespan(app: FastAPI):
     from app.services.economic_indicators import run_economic_indicators_worker
     indicators_worker = asyncio.create_task(run_economic_indicators_worker()) if settings.ECONOMIC_INDICATORS_WORKER_ENABLED else None
     traffic_reporter = asyncio.create_task(run_traffic_reporter())
+    from app.services.paper_trading.service import run_worker as run_paper_worker
+    paper_worker = asyncio.create_task(run_paper_worker())
     try:
         yield
     finally:
+        paper_worker.cancel()
+        try:
+            await paper_worker
+        except asyncio.CancelledError:
+            pass
         if indicators_worker:
             indicators_worker.cancel()
             try:
