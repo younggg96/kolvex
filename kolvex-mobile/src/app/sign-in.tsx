@@ -159,7 +159,8 @@ export default function SignIn() {
               disabled={oauthAction.busy || busy}
               onPress={() =>
                 void oauthAction.run(async () => {
-                  if (await oauth("google")) router.replace("/");
+                  if (!(await oauth("google"))) return false;
+                  router.replace("/");
                 })
               }
             >
@@ -169,7 +170,8 @@ export default function SignIn() {
               disabled={oauthAction.busy || busy}
               onPress={() =>
                 void oauthAction.run(async () => {
-                  if (await oauth("apple")) router.replace("/");
+                  if (!(await oauth("apple"))) return false;
+                  router.replace("/");
                 })
               }
             >

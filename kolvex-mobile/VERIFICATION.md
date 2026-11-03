@@ -75,7 +75,7 @@ The owner signed in on the simulator. This is a real, non-admin, free-tier accou
 | Read paths with live data | **Passed**: Markets, cloud watchlist, briefs list and reader, news with translated headlines, macro, calendar, updates, research library, opinions, account, preferences, NVDA stock and financials, technical chart. |
 | Permission gates          | **Passed** for a non-admin: `/admin` and `/research-tasks` refuse with a message. Admin success paths remain unverified.                                                                                              |
 | Empty state               | Chat list with no conversations.                                                                                                                                                                                      |
-| OAuth start               | Reaches the system consent prompt without the plain-PKCE warning; cancelling returns to sign-in. The S256 parameter was not read from the URL, and OAuth return was not completed.                                    |
+| OAuth start               | Reaches the system consent prompt without the plain-PKCE warning; cancelling returns to sign-in with no message. The S256 parameter was not read from the URL, and OAuth return was not completed.                    |
 
 Backend logged no 4xx or 5xx during the pass. Opening News runs the Web's automatic headline translation, which may use a paid model on the server.
 
@@ -86,9 +86,11 @@ Fixed from this pass:
 - PKCE fell back to plain because Hermes lacks WebCrypto; `expo-crypto` now backs it.
 - A signed-in cold start stayed in the system theme until `/users/me` answered, because the account's preferences were never cached. Another account's choices could also carry over after sign-out.
 
+- Tab labels sat low and clipped on every launch, truncating English to `Mar...`. The bar now re-applies its appearance 500 ms after mounting, which relays out the labels. Three light cold starts in English, plus dark in English and in Chinese, showed full labels. The cause inside UIKit is unknown, this is a timed workaround seen on the iOS 26.0 simulator with a dev build, and clipped labels may show briefly before it runs. Tested by opening the route guard locally while signed out, then restoring it; not re-checked in a signed-in launch.
+- Cancelling OAuth reported "Operation completed". It now shows nothing.
+
 Open:
 
-- **Tab labels sit low and clip on tabs not yet opened in this launch, on every launch.** Not fixed; cause unknown.
 - A tap on the tab bar and one `kolvex://preferences` link were each ignored once right after launch or navigation, then worked. Not reproduced on demand.
 - The launch screen is blank in the system theme for several seconds in the dev build. Release timing not measured.
 - Not exercised: every write path, chat send, draw-on-chart, English while signed in, and 13F, earnings and report reading in this pass.

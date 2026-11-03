@@ -1,14 +1,25 @@
+import { useEffect, useState } from "react";
 import { View } from "react-native";
 import { useText } from "../../lib/i18n";
 import { NativeTabs } from "expo-router/native-tabs";
 import { useTheme } from "../../lib/theme";
 import { StatusScrim } from "../../components/UI";
+// One step away in the last channel, which is not visible.
+const nudged = (color: string) =>
+  color.slice(0, -1) + (color.endsWith("0") ? "1" : "0");
 export default function Tabs() {
   const t = useTheme();
   const text = useText();
+  // iOS 26 keeps cramped, clipped labels on unopened tabs until the bar's appearance changes,
+  // so the bar starts one color step off and settles after its first layout.
+  const [settled, setSettled] = useState(false);
+  useEffect(() => {
+    const timer = setTimeout(() => setSettled(true), 500);
+    return () => clearTimeout(timer);
+  }, []);
   return (
     <View style={{ flex: 1 }}>
-      <NativeTabs tintColor={t.accent}>
+      <NativeTabs tintColor={settled ? t.accent : nudged(t.accent)}>
         <NativeTabs.Trigger name="index">
           <NativeTabs.Trigger.Icon sf="chart.xyaxis.line" md="show_chart" />
           <NativeTabs.Trigger.Label>{text("行情")}</NativeTabs.Trigger.Label>

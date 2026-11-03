@@ -81,12 +81,11 @@ Status abbreviations: `C` Code, `B` Bundle, `W` RN-Web. `Auth` means the screen 
 
 1. **Native acceptance of the remaining screens on iOS.** Android is set aside for now.
 2. **Signed-in writes.** Sign-in, restore, sign-out and read paths passed on the owner's account; writes need a disposable test account.
-3. Tab labels clip on unopened tabs after launch.
-4. Creator-opinion markers on the price chart.
-5. Other creators' opinions and upload-coverage hints in the YouTube explorer.
-6. Personal stock research on the stock screen; SSE progress log and debate card for research tasks.
-7. Dragging saved drawings by their handles; paged share images; X translation on creator profiles.
-8. Universal links once the Team ID is known.
-9. A line-by-line re-audit of `Market.tsx` and `YouTubeOpinionExplorer.tsx`, which were reviewed by feature rather than by every control.
+3. Creator-opinion markers on the price chart.
+4. Other creators' opinions and upload-coverage hints in the YouTube explorer.
+5. Personal stock research on the stock screen; SSE progress log and debate card for research tasks.
+6. Dragging saved drawings by their handles; paged share images; X translation on creator profiles.
+7. Universal links once the Team ID is known.
+8. A line-by-line re-audit of `Market.tsx` and `YouTubeOpinionExplorer.tsx`, which were reviewed by feature rather than by every control.
 
 No RLS, administrator grants or OAuth settings were changed.
