@@ -60,6 +60,7 @@ const StockMulticharts = dynamic(() =>
 );
 const StockEarnings = dynamic(() => import("./StockEarnings"));
 const StockAnalyst = dynamic(() => import("./StockAnalyst"));
+const StockPaperTrading = dynamic(() => import("@/components/paper-trading/StockPaperTrading"));
 
 type Side = "bullish" | "bearish" | "neutral";
 const sideOf = (opinion: YouTubeOpinion): Side =>
@@ -133,6 +134,7 @@ export default function StockWorkspace({
     ? ["technical", "summary", "news", "creators", "research"]
     : [
         "technical",
+        "paper-trading",
         "summary",
         "financials",
         "earnings",
@@ -405,6 +407,7 @@ export default function StockWorkspace({
                 <TabsTrigger value="technical">
                   {c("Technicals", "技术分析")}
                 </TabsTrigger>
+                {!benchmark && <TabsTrigger value="paper-trading">{c("My virtual trades", "我的虚拟交易")}</TabsTrigger>}
                 <TabsTrigger value="creators">
                   {c("Creators", "博主情报")}
                 </TabsTrigger>
@@ -441,7 +444,7 @@ export default function StockWorkspace({
                 )}
               </TabsList>
               <section
-                hidden={!["summary", "technical"].includes(activeTab)}
+                hidden={!["summary", "technical", "paper-trading"].includes(activeTab)}
                 className="mb-6 min-w-0 rounded-3xl border border-border bg-card p-4 sm:p-5"
                 aria-label={c(
                   "Price trend",
@@ -473,6 +476,9 @@ export default function StockWorkspace({
                 className="min-w-0 scroll-mt-16"
                 aria-label={c("Stock insights", "个股洞察")}
               >
+                {!benchmark && <TabsContent value="paper-trading" forceMount className="stock-tab-panel data-[state=inactive]:hidden">
+                  {(activeTab === "paper-trading" || visitedTabs.has("paper-trading")) && <StockPaperTrading key={ticker} symbol={ticker} active={activeTab === "paper-trading"} />}
+                </TabsContent>}
                 <TabsContent
                   value="financials"
                   forceMount

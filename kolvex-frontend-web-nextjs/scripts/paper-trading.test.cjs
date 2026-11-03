@@ -185,3 +185,76 @@ test("client retains the server error code and status for recovery", async () =>
     (error) => error.code === "account_conflict" && error.status === 409,
   );
 });
+
+test("stock panel isolates lots, pending orders and realized results by ticker", () => {
+  const { stockPaperTrading } = load("../lib/stockPaperTrading.ts");
+  const account = {
+    state: {
+      positions: [
+        {
+          id: "a",
+          symbol: "AMD",
+          side: "long",
+          quantity: 10,
+          entry_price: "100",
+        },
+        {
+          id: "b",
+          symbol: "AMD",
+          side: "short",
+          quantity: 4,
+          entry_price: "130",
+        },
+        {
+          id: "c",
+          symbol: "NVDA",
+          side: "long",
+          quantity: 100,
+          entry_price: "10",
+        },
+      ],
+      orders: [
+        { id: "pending", symbol: "AMD", status: "pending" },
+        { id: "filled", symbol: "AMD", status: "filled" },
+        { id: "other", symbol: "NVDA", status: "pending" },
+      ],
+      fills: [
+        { id: "open", symbol: "AMD", effect: "open", realized_pnl: "0" },
+        { id: "close1", symbol: "AMD", effect: "close", realized_pnl: "19.5" },
+        { id: "other", symbol: "NVDA", effect: "close", realized_pnl: "9999" },
+        { id: "close2", symbol: "AMD", effect: "close", realized_pnl: "-3.2" },
+      ],
+      marks: { AMD: { price: "120", at: "2026-11-03T15:00:00Z" } },
+    },
+    summary: { realized_pnl: "9999" },
+  };
+  const result = stockPaperTrading(account, " amd ");
+  assert.equal(result.positions.length, 2);
+  assert.equal(result.unrealizedPnl, 240);
+  assert.equal(result.realizedPnl, 16.3);
+  assert.equal(result.orders.length, 1);
+  assert.equal(result.orders[0].id, "pending");
+  assert.equal(result.fills[0].id, "close2");
+  assert.equal(account.state.fills[0].id, "open");
+  const empty = stockPaperTrading(account, "MSFT");
+  assert.equal(empty.positions.length, 0);
+  assert.equal(empty.fills.length, 0);
+  assert.equal(empty.realizedPnl, 0);
+});
+
+test("missing marks use entry and short price rises show a loss", () => {
+  const { stockPaperTrading } = load("../lib/stockPaperTrading.ts");
+  const account = {
+    state: {
+      positions: [
+        { symbol: "AMD", side: "short", quantity: 3, entry_price: "100" },
+      ],
+      orders: [],
+      fills: [],
+      marks: {},
+    },
+  };
+  assert.equal(stockPaperTrading(account, "AMD").unrealizedPnl, 0);
+  account.state.marks.AMD = { price: "110" };
+  assert.equal(stockPaperTrading(account, "AMD").unrealizedPnl, -30);
+});
