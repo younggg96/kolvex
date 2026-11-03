@@ -79,18 +79,26 @@ test("optional text never guards native views with a bare string", () => {
           ts.ScriptKind.TSX,
         );
         function visit(node: ts.Node) {
-          if (
-            ts.isJsxExpression(node) &&
-            node.expression &&
-            ts.isBinaryExpression(node.expression) &&
-            node.expression.operatorToken.kind ===
-              ts.SyntaxKind.AmpersandAmpersandToken &&
-            !ts.isPrefixUnaryExpression(node.expression.left) &&
-            stringName.test(node.expression.left.getText(ast))
-          )
-            violations.push(
-              `${file}:${ast.getLineAndCharacterOfPosition(node.pos).line + 1}`,
-            );
+          if (ts.isJsxExpression(node) && node.expression) {
+            // Every guard in `a && b && <View />` can be the rendered value.
+            let guard = node.expression;
+            while (
+              ts.isBinaryExpression(guard) &&
+              guard.operatorToken.kind === ts.SyntaxKind.AmpersandAmpersandToken
+            ) {
+              const operands = [guard.left];
+              for (const operand of operands)
+                if (
+                  !ts.isBinaryExpression(operand) &&
+                  !ts.isPrefixUnaryExpression(operand) &&
+                  stringName.test(operand.getText(ast))
+                )
+                  violations.push(
+                    `${file}:${ast.getLineAndCharacterOfPosition(node.pos).line + 1}`,
+                  );
+              guard = guard.left;
+            }
+          }
           ts.forEachChild(node, visit);
         }
         visit(ast);
