@@ -81,8 +81,10 @@ export function usePaperTradingAccount(active: boolean) {
       } catch (e) {
         if (mounted.current) {
           setMutationError(e);
-          if (e instanceof PaperApiError && [401, 403].includes(e.status))
+          if (e instanceof PaperApiError && [401, 403].includes(e.status)) {
             setAccount(null);
+            setError(e);
+          }
         }
         return false;
       } finally {
