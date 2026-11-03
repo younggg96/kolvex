@@ -104,7 +104,7 @@ export function Statements({ symbol }: { symbol: string }) {
         empty={!rows.length}
         message="数据源没有返回此类报表。"
       />
-      {currency.error && (
+      {!!currency.error && (
         <Failure
           message="财报币种暂时无法加载，报表保留原始数值。"
           retry={currency.refresh}

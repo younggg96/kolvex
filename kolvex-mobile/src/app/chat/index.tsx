@@ -74,7 +74,7 @@ function Library() {
       <Button disabled={busy} onPress={() => void create()}>
         {busy ? "正在创建…" : "新建对话"}
       </Button>
-      {error && <Failure message={error} retry={resource.refresh} />}
+      {!!error && <Failure message={error} retry={resource.refresh} />}
       <ResourceState
         resource={resource}
         empty={!rows.length}

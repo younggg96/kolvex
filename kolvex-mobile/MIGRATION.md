@@ -12,7 +12,7 @@ Reference: `../kolvex-frontend-web-nextjs` (routes, `lib/productFeatures.ts`) an
 | **Native**   | Ran on an iOS/Android simulator or device.                                                                |
 | **Business** | The real signed-in or mutating flow completed end to end.                                                 |
 
-**No feature has reached Business, and Native is only partial.** The iOS simulator now runs Markets, stock detail, Ownership, Peers and deep links; the rest of the table has not been re-checked there. Android is set aside and no test account was supplied. The table's status column still records pre-simulator levels. See `VERIFICATION.md`.
+**No feature has reached Business, and Native is only partial.** The iOS simulator now runs the five tabs, stock detail, Ownership, Peers, the technical chart gestures, report actions, creator sharing and `kolvex://` links; `VERIFICATION.md` lists exactly what was and was not exercised there. Android is set aside and no test account was supplied. The table's status column still records pre-simulator levels. See `VERIFICATION.md`.
 
 Status abbreviations: `C` Code, `B` Bundle, `W` RN-Web. `Auth` means the screen requires sign-in and its success path was not exercised. `W` on a row means the screen's main read path was seen in the preview, in this pass or an earlier one recorded in `VERIFICATION.md`. The translate toggles and automatic headline translation added to the X and News rows are only `C B`.
 

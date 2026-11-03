@@ -102,7 +102,7 @@ export function AvatarEditor({
           确认上传头像
         </Button>
       )}
-      {url && (
+      {!!url && (
         <ConfirmAction
           label="移除账户头像"
           description="从个人资料中移除当前头像。"

@@ -64,7 +64,7 @@ export function QuoteRow({
           </>
         )}
       </Pressable>
-      {resource.error && (
+      {!!resource.error && (
         <View style={{ padding: 16, paddingTop: 0 }}>
           <Failure message={resource.error} retry={resource.refresh} />
         </View>

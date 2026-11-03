@@ -46,7 +46,7 @@ export default function Stock() {
         bars.refresh();
       }}
     >
-      {q.error && <Failure message={q.error} retry={q.refresh} />}
+      {!!q.error && <Failure message={q.error} retry={q.refresh} />}
       {q.loading && !q.data ? (
         <Skeleton />
       ) : (
@@ -91,7 +91,7 @@ export default function Stock() {
           </Button>
         </View>
       </Glass>
-      {list.error && <Failure message={list.error} />}
+      {!!list.error && <Failure message={list.error} />}
       <Glass style={{ padding: 16, gap: 16 }}>
         {bars.loading ? (
           <Skeleton />

@@ -37,6 +37,11 @@ const colors: Record<string, string> = {
   vwap: "#EC4899",
   bb: "#94A3B8",
 };
+// Daily bars read as a date; intraday bars keep their exchange-local time.
+const barLabel = (date: string) =>
+  date.slice(11, 16) === "00:00" || date.length <= 10
+    ? date.slice(0, 10)
+    : date.slice(0, 16).replace("T", " ");
 export function CandleGraph({
   bars,
   start,
@@ -287,9 +292,9 @@ export function CandleGraph({
       </View>
       {bar && (
         <Copy size={12}>
-          选中 {bar.date} · 开 {number(bar.open)} · 高 {number(bar.high)} · 低{" "}
-          {number(bar.low)} · 收 {number(bar.close)} · 量{" "}
-          {number(bar.volume, 0)}
+          选中 {barLabel(bar.date)} · 开 {number(bar.open)} · 高{" "}
+          {number(bar.high)} · 低 {number(bar.low)} · 收 {number(bar.close)} ·
+          量 {number(bar.volume, 0)}
         </Copy>
       )}
       <View style={{ flexDirection: "row", gap: 12 }}>
@@ -459,7 +464,7 @@ function DrawingShape({
             : `${number(((b.price - a.price) / Math.abs(a.price)) * 100)}%`}
         </SvgText>
       )}
-      {d.label && (
+      {!!d.label && (
         <SvgText
           x={Math.max(0, Math.min(x1, 240))}
           y={Math.max(12, Math.min(y1, 235))}

@@ -160,7 +160,7 @@ function VideoFeed() {
           {!v.opinions.length && (
             <Copy muted>此视频没有已收录的个股观点。</Copy>
           )}
-          {v.video.video_url && (
+          {!!v.video.video_url && (
             <SourceLink url={v.video.video_url}>查看来源视频</SourceLink>
           )}
         </Glass>

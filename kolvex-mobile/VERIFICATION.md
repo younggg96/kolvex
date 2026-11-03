@@ -16,11 +16,40 @@
 
 ### iOS simulator run (iPhone 17 Pro, iOS 26.0 runtime, Xcode 26.6)
 
-Native Swift/Xcode compile and launch succeeded, against the local read-only backend through Metro. Seen running with real data: Markets, native glass tab bar, stock detail, `kolvex://` deep links including `?tab=` and `?peers=`, Ownership and the Peers table with horizontal content.
+Native Swift/Xcode compile and launch succeeded, against the local read-only backend through Metro.
 
-Native-only defects found and fixed: a `(tabs)` back label, content scrolling under the status bar on tab screens, 73pt-tall filter buttons with a gray band behind them.
+Seen working natively with real data, signed out:
 
-Not yet exercised natively: every other screen, signed-in flows, draw-on-chart, share sheets, keyboard, Dynamic Type, VoiceOver, dark theme and English. Whether the search and action bars render as real glass was not confirmed by inspection.
+- All five tabs, with the system glass tab bar.
+- Stock detail, Ownership (Form 4), the Peers table.
+- Technical chart: horizontal pan moved the window from 2026-08-10–11-02 to 2026-06-18–09-14; pinch reduced it to 15 bars.
+- Research report in dark theme, translate toggle, system share sheet, Markdown export (131 KB).
+- Creator profile, share sheet, image capture through `react-native-view-shot` (439 KB PNG).
+- `kolvex://` links for stock, technical, report, preferences, account and `share/creators`.
+- Light and dark themes through the system setting; English settings and account screens.
+- Sign-in form accepting input, with nothing submitted.
+
+Native-only defects found and fixed:
+
+| Defect                                                                                                                  | Fix                                                                      |
+| ----------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| Horizontal chart drag popped the screen through iOS 26's full-screen back gesture                                       | `gestureEnabled: false` on the technical screen; the back button remains |
+| `MutationStatus` rendered a bare space, a red error on every form using it, including sign-in. Existed before this work | Removed; `native-text-contract` now catches one-line spaces              |
+| `{text && <View />}` throws on an empty string, reachable with the empty default drawing label                          | 31 guards converted to `!!`; a new contract test covers this pattern     |
+| `(tabs)` back label                                                                                                     | Minimal back button                                                      |
+| Content under the status bar on tab screens                                                                             | Opaque status-area scrim                                                 |
+| 73pt filter buttons with a gray band                                                                                    | Plain chips                                                              |
+| Raw ISO time on the selected bar                                                                                        | Date, or date and time for intraday                                      |
+| Stacked full-width navigation buttons on Markets and Opinions                                                           | Grouped rows                                                             |
+| Timestamp in export file names; share actions below long previews                                                       | Web-style names; actions first                                           |
+
+Open on iOS:
+
+- Tab labels on never-visited tabs sit low and clip until the tab is first opened. Cause not established; it may come from running a 26.5 SDK build on the 26.0 runtime.
+- `https://kolvex.app` links open Safari until universal links are configured.
+- The software keyboard did not appear because the simulator uses the hardware keyboard, so keyboard avoidance is unverified.
+- Whether search and action bars render real glass was not confirmed by inspection.
+- Not exercised natively: signed-in flows, draw-on-chart (needs sign-in), 13F, long-term financials, earnings, news, briefs, chat, admin, Dynamic Type, VoiceOver, Reduce Transparency, small screens, iOS 18 fallback.
 
 `expo run:ios` currently fails: Xcode 26.6 reports no destinations because the iOS 26.5 platform component is not installed (about 8 GB, with 10 GB free). The build used instead, from `ios/`, compiles `Pods/Pods.xcodeproj -alltargets`, then `Kolvex.xcodeproj -target Kolvex`, with `-sdk iphonesimulator ARCHS=arm64 CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY=- SYMROOT=$PWD/build-sim/Products OBJROOT=$PWD/build-sim/Intermediates`. Do not delete `ios/build`: it holds codegen from `pod install`.
 

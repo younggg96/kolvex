@@ -174,8 +174,8 @@ function SignIn() {
           <Button onPress={() => setShow((v) => !v)}>
             {show ? "隐藏密码" : "显示密码"}
           </Button>
-          {error && <Failure message={error} />}
-          {notice && (
+          {!!error && <Failure message={error} />}
+          {!!notice && (
             <Glass style={{ padding: 16 }}>
               <Copy>{notice}</Copy>
             </Glass>
@@ -265,12 +265,12 @@ function SignedIn() {
         url={resource.data?.avatar_url}
         onChanged={resource.refresh}
       />
-      {auth.error && <Failure message={auth.error} />}
-      {resource.error && (
+      {!!auth.error && <Failure message={auth.error} />}
+      {!!resource.error && (
         <Failure message={resource.error} retry={resource.refresh} />
       )}
-      {error && <Failure message={error} />}
-      {notice && <Copy>{notice}</Copy>}
+      {!!error && <Failure message={error} />}
+      {!!notice && <Copy>{notice}</Copy>}
       {editing ? (
         <>
           <Field

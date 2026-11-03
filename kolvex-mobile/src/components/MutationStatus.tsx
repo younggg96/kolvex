@@ -8,7 +8,8 @@ export function MutationStatus({
 }) {
   return (
     <>
-      {error && <Failure message={error} />} {message && <Copy>{message}</Copy>}
+      {!!error && <Failure message={error} />}
+      {!!message && <Copy>{message}</Copy>}
     </>
   );
 }

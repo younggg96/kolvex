@@ -101,7 +101,7 @@ export function Field({
           ]}
         />
       </Glass>
-      {error && <Failure message={error} />}
+      {!!error && <Failure message={error} />}
     </View>
   );
 }
@@ -128,7 +128,7 @@ export function SourceLink({
       >
         {children ?? "查看来源 ↗"}
       </Button>
-      {error && <Failure message={error} />}
+      {!!error && <Failure message={error} />}
     </View>
   );
 }
@@ -214,7 +214,7 @@ export function ResourceState({
 }) {
   return (
     <>
-      {resource.error && (
+      {!!resource.error && (
         <Failure message={resource.error} retry={resource.refresh} />
       )}
       {resource.error?.includes("登录") && (

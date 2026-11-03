@@ -142,7 +142,7 @@ function Company({ symbol }: { symbol: string }) {
           <Copy size={14} muted>
             员工数：{number(data.employees, 0)}
           </Copy>
-          {data.website && (
+          {!!data.website && (
             <SourceLink url={data.website}>公司网站 ↗</SourceLink>
           )}
         </Glass>

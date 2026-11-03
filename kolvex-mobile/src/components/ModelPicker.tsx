@@ -37,7 +37,7 @@ export function ModelPicker({
         value={value}
         onChange={onChange}
       />
-      {r.error && <Button onPress={r.refresh}>重新读取可用模型</Button>}
+      {!!r.error && <Button onPress={r.refresh}>重新读取可用模型</Button>}
     </>
   );
 }

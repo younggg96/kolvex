@@ -61,7 +61,7 @@ function YouTube({ id }: { id: string }) {
               ? "公开频道资料"
               : "部分资料来自已导入内容"}
           </Copy>
-          {c.channel_url && (
+          {!!c.channel_url && (
             <SourceLink url={c.channel_url}>打开频道</SourceLink>
           )}
           <CreatorShare creator={c} />

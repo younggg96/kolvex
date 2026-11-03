@@ -266,7 +266,7 @@ export function Page({
         <Copy size={36} bold localize={titleLocalize}>
           {title}
         </Copy>
-        {subtitle && (
+        {!!subtitle && (
           <Copy size={14} muted localize={subtitleLocalize}>
             {subtitle}
           </Copy>
@@ -342,7 +342,7 @@ export function Section({
       <Copy size={20} bold localize={localize}>
         {title}
       </Copy>
-      {note && (
+      {!!note && (
         <Copy size={12} muted localize={localize}>
           {note}
         </Copy>
@@ -544,7 +544,7 @@ export function ListPage<T>({
             <Copy size={36} bold>
               {title}
             </Copy>
-            {subtitle && (
+            {!!subtitle && (
               <Copy size={14} muted>
                 {subtitle}
               </Copy>

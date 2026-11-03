@@ -96,6 +96,31 @@ function Sheet({
         </Copy>
         <Button onPress={close}>关闭</Button>
       </View>
+      <Button
+        onPress={() =>
+          void Share.share({
+            title: content.title,
+            message: content.text,
+            url: content.url,
+          }).catch(() => setFailed("此环境无法导出或分享，请稍后重试。"))
+        }
+      >
+        系统分享
+      </Button>
+      {Platform.OS !== "web" && hasOpinions && (
+        <Button disabled={busy} onPress={() => void shareImage()}>
+          {busy ? "正在生成图片…" : "分享图片"}
+        </Button>
+      )}
+      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+        {creatorSocialLinks(content).map((item) => (
+          <Button key={item.name} onPress={() => openUrl(item.href)}>
+            {item.name}
+          </Button>
+        ))}
+        <Button onPress={() => openUrl(creatorEmailLink(content))}>邮件</Button>
+      </View>
+      {!!failed && <Failure message={failed} />}
       {r.loading ? (
         <Skeleton />
       ) : r.error ? (
@@ -142,31 +167,6 @@ function Sheet({
           </Glass>
         </View>
       )}
-      <Button
-        onPress={() =>
-          void Share.share({
-            title: content.title,
-            message: content.text,
-            url: content.url,
-          }).catch(() => setFailed("此环境无法导出或分享，请稍后重试。"))
-        }
-      >
-        系统分享
-      </Button>
-      {Platform.OS !== "web" && hasOpinions && (
-        <Button disabled={busy} onPress={() => void shareImage()}>
-          {busy ? "正在生成图片…" : "分享图片"}
-        </Button>
-      )}
-      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
-        {creatorSocialLinks(content).map((item) => (
-          <Button key={item.name} onPress={() => openUrl(item.href)}>
-            {item.name}
-          </Button>
-        ))}
-        <Button onPress={() => openUrl(creatorEmailLink(content))}>邮件</Button>
-      </View>
-      {!!failed && <Failure message={failed} />}
     </ScrollView>
   );
 }

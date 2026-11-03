@@ -68,7 +68,7 @@ export function OpinionCard({
           查看 {item.ticker}
         </Button>
       )}
-      {item.video_url && (
+      {!!item.video_url && (
         <SourceLink url={item.video_url}>查看原视频 ↗</SourceLink>
       )}
     </Glass>

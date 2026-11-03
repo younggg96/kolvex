@@ -18,9 +18,10 @@ export async function exportText(
   if (!(await Sharing.isAvailableAsync())) throw new Error("系统分享不可用");
   const file = new File(
     Paths.cache,
-    `${name.replace(/[^A-Za-z0-9_-]/g, "_")}-${Date.now()}.${extension}`,
+    `${name.replace(/[^A-Za-z0-9_-]/g, "_")}.${extension}`,
   );
   try {
+    if (file.exists) file.delete();
     file.create();
     file.write(content);
     await Sharing.shareAsync(file.uri, {

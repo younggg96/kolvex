@@ -207,7 +207,7 @@ function Room() {
           {!!partial && <TextBody text={partial} />}
         </Glass>
       )}
-      {error && <Failure message={error} />}
+      {!!error && <Failure message={error} />}
       {uncertain && (
         <>
           <Button disabled={recovering} onPress={() => void recover()}>

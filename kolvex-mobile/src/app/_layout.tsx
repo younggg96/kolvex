@@ -35,7 +35,8 @@ function AppContent() {
         >
           <Stack.Screen
             name="technical/[symbol]"
-            options={{ title: text("技术图表") }}
+            // iOS 26 pops on a horizontal swipe anywhere, which would take over chart panning.
+            options={{ title: text("技术图表"), gestureEnabled: false }}
           />
           <Stack.Screen name="markets" options={{ title: text("市场全景") }} />
           <Stack.Screen name="admin" options={{ title: text("管理中心") }} />
