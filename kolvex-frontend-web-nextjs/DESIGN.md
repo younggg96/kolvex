@@ -1580,3 +1580,11 @@ follow the reader locale. Load all summary pages before grouping, then paginate
 12 stocks per page, so one stock's tasks cannot split between pages. Failed or
 incomplete catalog loads retain the retry flow rather than showing partial
 counts. Permissions and the anonymous report-card library are unchanged.
+
+### YouTube opinion initial loading
+
+The directory and creator/stock details use one page-level ContentLoading until
+core opinion data is available. Do not render empty subsection cards or repeated
+spinners during that initial read. Cached content stays readable during background
+refresh. Upload coverage starts after core content, and detail pages do not fetch
+the global catalogue just to populate their header.

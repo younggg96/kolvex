@@ -38,6 +38,17 @@ TABLE_NAME = "youtube_stock_opinions"
 VIDEO_ANALYSIS_TICKER = ""
 OPINION_TIMEZONE = ZoneInfo("America/New_York")
 MAX_IMPORT_VIDEOS = 50
+# Public reads need channel metadata and video summaries, never the repeated
+# full analyzer payload (including every other opinion in that video).
+READ_COLUMNS = ",".join((
+    "id,video_id,video_title,video_url,thumbnail_url,video_published_at",
+    "channel_id,channel_title,channel_handle,channel_url,channel_avatar_url",
+    "ticker,company_name,sentiment,direction_score,confidence,time_horizon",
+    "thesis,summary,key_points,risks,price_targets,opinion_date,analyzed_at,source_model,created_at,updated_at",
+    "raw_channel:raw_payload->channel,raw_video:raw_payload->video",
+    "raw_summary:raw_payload->summary,raw_overall_summary:raw_payload->overall_summary",
+    "raw_market_summary:raw_payload->market_summary,raw_analysis:raw_payload->analysis",
+))
 SENTIMENT_ALIASES = {
     "bull": "bullish",
     "bullish": "bullish",
@@ -477,20 +488,24 @@ class YouTubeStockOpinionService:
         limit: int = 80,
         offset: int = 0,
     ) -> Dict[str, Any]:
-        rows = self._fetch_rows(
+        rows = await asyncio.to_thread(self._fetch_rows,
             ticker=ticker,
             channel_id=channel_id,
             sentiment=sentiment,
             date_from=date_from,
             date_to=date_to,
         )
-        await self._fill_missing_avatars(rows)
+        # Optional external metadata must not hold the opinion page hostage.
+        try:
+            await asyncio.wait_for(self._fill_missing_avatars(rows), timeout=0.25)
+        except asyncio.TimeoutError:
+            pass
 
         stocks = self._build_stock_summaries(rows)
         if stocks and (channel_id or sentiment or date_from or date_to):
             # Participation is a stock-wide count, even inside one creator's
             # stock list. Opinion totals and scores still describe the filters.
-            creator_counts = self._stock_creator_counts([stock["ticker"] for stock in stocks])
+            creator_counts = await asyncio.to_thread(self._stock_creator_counts, [stock["ticker"] for stock in stocks])
             for stock in stocks:
                 stock["creator_count"] = creator_counts.get(stock["ticker"], 0)
 
@@ -500,7 +515,8 @@ class YouTubeStockOpinionService:
             "creators": self._build_creator_summaries(rows),
             "daily": self._build_daily_summaries(rows),
             "changes": self._build_daily_changes(rows),
-            "latest": [{**row, "video_summary": _video_summary(row.get("raw_payload") or {})}
+            "latest": [{**_public_opinion(row), **{field: row.get(field) for field in PROFILE_FIELDS},
+                        "analyzed_at": row.get("analyzed_at"), "source_model": row.get("source_model")}
                        for row in rows[offset:offset + limit]],
             "latest_videos": self._build_video_groups(rows, distinct_creators=True)[:5],
             "pagination": {"offset": offset, "limit": limit, "total": len(rows), "has_more": offset + limit < len(rows)},
@@ -550,7 +566,7 @@ class YouTubeStockOpinionService:
         return latest
 
     async def get_video_feed(self, limit: int = 20, offset: int = 0) -> Dict[str, Any]:
-        rows = self._fetch_rows()
+        rows = await asyncio.to_thread(self._fetch_rows)
         groups = self._build_video_groups(rows)
         page = groups[offset:offset + limit]
         # Enrich only the visible videos, rather than every historical channel.
@@ -562,7 +578,7 @@ class YouTubeStockOpinionService:
         }
 
     async def get_creator_profile(self, channel_id: str) -> Dict[str, Any]:
-        rows = self._fetch_rows(channel_id=channel_id)
+        rows = await asyncio.to_thread(self._fetch_rows, channel_id=channel_id)
         if not rows:
             raise LookupError("Creator not found in imported opinions")
         await self._fill_missing_avatars(rows)
@@ -581,7 +597,7 @@ class YouTubeStockOpinionService:
         tracked: Dict[str, set] = defaultdict(set)
         tracked_at: Dict[str, datetime] = {}
         sample_video: Dict[str, str] = {}
-        for row in self._tracked_video_index():
+        for row in await asyncio.to_thread(self._tracked_video_index):
             channel_id = row.get("channel_id")
             if not isinstance(channel_id, str) or not channel_id:
                 continue
@@ -688,7 +704,7 @@ class YouTubeStockOpinionService:
         date_from: Optional[str] = None,
         date_to: Optional[str] = None,
     ) -> Dict[str, Any]:
-        rows = self._fetch_rows(ticker=ticker, date_from=date_from, date_to=date_to)
+        rows = await asyncio.to_thread(self._fetch_rows, ticker=ticker, date_from=date_from, date_to=date_to)
         await self._fill_missing_avatars(rows)
         return {
             "ticker": ticker.upper(),
@@ -696,7 +712,7 @@ class YouTubeStockOpinionService:
             "creators": self._build_creator_summaries(rows),
             "daily": self._build_daily_summaries(rows),
             "changes": self._build_daily_changes(rows),
-            "opinions": rows,
+            "opinions": [{**_public_opinion(row), **{field: row.get(field) for field in PROFILE_FIELDS}} for row in rows],
         }
 
     async def _fill_missing_avatars(self, rows: List[Dict[str, Any]]) -> None:
@@ -745,11 +761,9 @@ class YouTubeStockOpinionService:
 
         for channel_id, avatar in found.items():
             try:
-                (
-                    self.supabase.table(TABLE_NAME)
-                    .update({"channel_avatar_url": avatar})
-                    .eq("channel_id", channel_id)
-                    .execute()
+                await asyncio.to_thread(
+                    lambda channel_id=channel_id, avatar=avatar: self.supabase.table(TABLE_NAME)
+                    .update({"channel_avatar_url": avatar}).eq("channel_id", channel_id).execute()
                 )
             except Exception:
                 logger.warning("Failed to store YouTube avatar for %s", channel_id, exc_info=True)
@@ -899,7 +913,7 @@ class YouTubeStockOpinionService:
         while True:
             query = (
                 self.supabase.table(TABLE_NAME)
-                .select("*", count="exact")
+                .select(READ_COLUMNS, count="exact")
                 .order("video_published_at", desc=True, nullsfirst=False)
                 .order("created_at", desc=True)
                 .order("id")
@@ -916,6 +930,10 @@ class YouTubeStockOpinionService:
                 query = query.lte("opinion_date", date_to)
             result = query.range(len(rows), len(rows) + 999).execute()
             page = result.data or []
+            for row in page:
+                if "raw_channel" in row:
+                    row["raw_payload"] = {key: row.pop("raw_" + key, None) for key in
+                                          ("channel", "video", "summary", "overall_summary", "market_summary", "analysis")}
             rows.extend(page)
             if not page or (result.count is not None and len(rows) >= result.count):
                 break

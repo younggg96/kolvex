@@ -17,6 +17,9 @@ class PublicReadCacheMiddleware:
     MAX_BYTES = 16 * 1024 * 1024
     MAX_BODY = 2 * 1024 * 1024
     PUBLIC = (
+        (re.compile(r"^/api/v1/youtube-opinions/(dashboard|videos)$"), "youtube_opinions", 60),
+        (re.compile(r"^/api/v1/youtube-opinions/stocks/[^/]+$"), "youtube_stock", 60),
+        (re.compile(r"^/api/v1/youtube-opinions/creators/[^/]+/latest-video$"), "youtube_video", 60),
         (re.compile(r"^/api/v1/market/news/[A-Za-z0-9.\-^=]{1,20}$"), "stock_news", 60),
         (re.compile(r"^/api/v1/market/history/[A-Za-z0-9.\-^=]{1,20}$"), "stock_history", 60),
         (re.compile(r"^/api/v1/market/intraday/[A-Za-z0-9.\-^=]{1,20}$"), "stock_intraday", 30),
@@ -43,7 +46,9 @@ class PublicReadCacheMiddleware:
         if scope["type"] != "http":
             return await self.app(scope, receive, send)
         path = scope["path"]
-        if scope["method"] == "POST" and path in ("/api/v1/x-content/creators", "/api/v1/x-content/upload"):
+        if (scope["method"] == "POST" and path in ("/api/v1/x-content/creators", "/api/v1/x-content/upload")) or (
+            scope["method"] in ("POST", "PATCH", "DELETE") and path.startswith("/api/v1/youtube-opinions/")
+        ):
             async def invalidate(message):
                 if message["type"] == "http.response.start" and 200 <= message["status"] < 300:
                     self._generation += 1

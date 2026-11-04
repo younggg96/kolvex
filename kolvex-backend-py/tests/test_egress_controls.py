@@ -73,7 +73,7 @@ class PublicCacheTests(unittest.IsolatedAsyncioTestCase):
             item.start()
             self.addCleanup(item.stop)
 
-        @self.app.api_route("/api/v1/{path:path}", methods=["GET", "POST"])
+        @self.app.api_route("/api/v1/{path:path}", methods=["GET", "POST", "PATCH", "DELETE"])
         async def read(path: str, request: Request):
             self.counts[path] = self.counts.get(path, 0) + 1
             await asyncio.sleep(0.005)
@@ -116,6 +116,19 @@ class PublicCacheTests(unittest.IsolatedAsyncioTestCase):
         for _ in range(2):
             await self.client.post("/api/v1/x-content/posts")
         self.assertEqual(self.counts["x-content/posts"], 2)
+
+    async def test_youtube_public_cache_coalesces_filters_and_invalidates_on_edits(self):
+        path = "/api/v1/youtube-opinions/dashboard?channel_id=creator1&limit=40"
+        responses = await asyncio.gather(*(self.client.get(path) for _ in range(5)))
+        self.assertEqual(self.counts["youtube-opinions/dashboard"], 1)
+        self.assertEqual(sum(r.headers["x-server-cache"] == "HIT" for r in responses), 4)
+        await self.client.get(path.replace("creator1", "creator2"))
+        self.assertEqual(self.counts["youtube-opinions/dashboard"], 2)
+        for method, target in (("PATCH", "creators/creator1"), ("DELETE", "opinions/one"), ("POST", "upload")):
+            await self.client.request(method, "/api/v1/youtube-opinions/" + target)
+            self.assertEqual((await self.client.get(path)).headers["x-server-cache"], "MISS")
+        for target in ("creators", "creators/creator1/opinions", "creators/creator1/profile"):
+            self.assertNotIn("x-server-cache", (await self.client.get("/api/v1/youtube-opinions/" + target)).headers)
 
     async def test_cors_headers_are_generated_for_each_request(self):
         for origin in ("https://a.test", "https://b.test"):

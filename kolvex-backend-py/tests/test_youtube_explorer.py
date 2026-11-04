@@ -76,6 +76,41 @@ class ExplorerTests(unittest.TestCase):
         self.assertEqual(response.json()["creator"]["channel_id"], "creator0")
         service.supabase.table.assert_not_called()
 
+    def test_dashboard_does_not_ship_repeated_raw_import_payloads(self):
+        service = YouTubeStockOpinionService(Mock())
+        service._fetch_rows = Mock(return_value=[{**opinion(0), "uploaded_by": "admin",
+            "raw_payload": {"video": {"summary": "Video thesis"}, "opinions": ["large"] * 1000}}])
+        result = asyncio.run(service.get_dashboard())
+        row = result["latest"][0]
+        self.assertNotIn("raw_payload", row)
+        self.assertNotIn("uploaded_by", row)
+        self.assertEqual(row["video_summary"], "Video thesis")
+        self.assertEqual(row["ticker"], "STK0")
+
+    def test_slow_optional_avatars_cannot_delay_dashboard_and_db_does_not_block_loop(self):
+        import threading
+        entered, release = threading.Event(), threading.Event()
+        service = YouTubeStockOpinionService(Mock())
+        def fetch(**kwargs):
+            entered.set()
+            release.wait(2)
+            return [opinion(0)]
+        service._fetch_rows = fetch
+        async def slow_avatars(rows):
+            await asyncio.sleep(10)
+        service._fill_missing_avatars = slow_avatars
+        async def exercise():
+            task = asyncio.create_task(service.get_dashboard())
+            try:
+                self.assertTrue(await asyncio.to_thread(entered.wait, 1))
+                # This coroutine runs while the synchronous query remains blocked.
+                self.assertFalse(task.done())
+            finally:
+                release.set()
+            result = await asyncio.wait_for(task, 1)
+            self.assertEqual(result["summary"]["total_opinions"], 1)
+        asyncio.run(exercise())
+
     def test_directory_is_not_truncated_by_opinion_pagination(self):
         service = YouTubeStockOpinionService(Mock())
         service._fetch_rows = Mock(return_value=[opinion(i) for i in range(85)])

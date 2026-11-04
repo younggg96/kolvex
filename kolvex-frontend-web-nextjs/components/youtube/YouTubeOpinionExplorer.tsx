@@ -263,6 +263,7 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
   useEffect(() => { setDirectoryLimit(40); }, [search, sortBy, toneFilter, stockScope]);
 
   useEffect(() => {
+    if (!ready || inDetail) return;
     let active = true;
     setCatalogueError("");
     const cached = getCachedYouTubeOpinionDashboard({ limit: 8 });
@@ -280,9 +281,11 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
     return () => {
       active = false;
     };
-  }, [revision]);
+  }, [ready, inDetail, revision]);
 
+  const coreReady = ready && Boolean(inDetail ? context : catalogue);
   useEffect(() => {
+    if (!coreReady) return;
     let active = true;
     getYouTubeUploadCoverage()
       .then((result) => {
@@ -299,7 +302,7 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
     return () => {
       active = false;
     };
-  }, [revision]);
+  }, [coreReady, revision]);
 
   const contextKey = `${route.ticker || ""}|${route.creator || ""}`;
   const lastContextKey = useRef("");
@@ -865,6 +868,8 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
     />
   );
 
+  const initialLoading = !ready || (!inDetail ? !catalogue && !catalogueError : !context && !contextError && !detailError);
+
   const loadingBlock = (
     <ContentLoading label={t("common.loadingStatus")} />
   );
@@ -1043,7 +1048,15 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
             onValueChange={(value) => navigate({ tab: value as Route["tab"] })}
           >
 
-            {!inDetail && (
+            {initialLoading && (
+              <section aria-busy="true" className="min-h-64">
+                <h2 className="mb-6 text-2xl font-semibold tracking-tight">
+                  {inDetail ? title : c("YouTube opinions", "YouTube 观点")}
+                </h2>
+                <ContentLoading label={t("common.loadingStatus")} />
+              </section>
+            )}
+            {!initialLoading && !inDetail && (
               <div className={cn("grid min-w-0 gap-8", allStocks ? "mx-auto" : "xl:grid-cols-[minmax(0,1fr)_20rem] 2xl:gap-x-12")}>
                 <div className="min-w-0 space-y-8">
                   <div>
@@ -1263,7 +1276,7 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
               </div>
             )}
 
-            {inDetail && (
+            {!initialLoading && inDetail && (
               <TabsContent value={route.tab} className="mt-0 min-w-0">
                 <div
                   className={cn(
