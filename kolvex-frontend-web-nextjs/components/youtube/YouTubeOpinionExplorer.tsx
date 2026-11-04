@@ -552,6 +552,9 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
   // reserved for direction semantics rather than interaction.
   const rowClass =
     "group grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-2 border-b border-border py-3.5 transition-colors duration-150 hover:border-foreground/25 hover:bg-foreground/[0.06] focus-visible:bg-foreground/[0.06] focus-visible:outline-none sm:-mx-3 sm:rounded-3xl sm:border-transparent sm:px-3 sm:hover:border-transparent";
+  // The link in rowClass already washes (wider than its ListRow), so the ListRow
+  // around it stays flat; otherwise a hovered row shows two stacked greys.
+  const flatListRowClass = "hover:bg-transparent focus-within:bg-transparent active:bg-transparent";
   const stockRowClass = cn(rowClass, "grid-cols-[minmax(0,1fr)_auto] gap-x-3 sm:grid-cols-[minmax(0,1fr)_110px_160px] sm:gap-x-4");
   // Rows inside one card body reuse the shared row target metrics (rounded-2xl,
   // min-h-20, no ring) while the ListRow supplies the hover/focus-within surface.
@@ -771,7 +774,7 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
     <div className="min-w-0">
       <ListRows aria-label={t("youtubeOpinions.stocksDiscussedTitle")}>
         {shownStocks.map((item, index) => (
-          <StockDirectoryRow key={item.ticker} stock={item} performance={performanceCell(item.ticker, index < performanceLimit)} change={changesByTicker.get(item.ticker)}>
+          <StockDirectoryRow key={item.ticker} className={inCard ? undefined : flatListRowClass} stock={item} performance={performanceCell(item.ticker, index < performanceLimit)} change={changesByTicker.get(item.ticker)}>
             <ExplorerLink
               onNavigate={navigate}
               target={{
@@ -831,7 +834,7 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
   const creatorRows = (items: YouTubeCreatorSummary[], inCard = false) => items.length ? (
     <ListRows aria-label={t("youtubeOpinions.trackedCreators")}>
       {items.map((item) => (
-        <ListRow key={item.channel_id}>
+        <ListRow key={item.channel_id} className={inCard ? undefined : flatListRowClass}>
           <ExplorerLink
             onNavigate={navigate}
             target={{ tab: "creators", creator: item.channel_id }}

@@ -5,14 +5,16 @@ import { ArrowUpRight, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ListRow } from "@/components/ui/list-card";
+import { cn } from "@/lib/utils";
 import { useTranslation } from "@/lib/i18n";
 import { formatOpinionDate } from "@/lib/opinionDates";
 import type { YouTubeStockSummary, YouTubeDailyChange } from "@/lib/youtubeOpinionsApi";
 import StockDirectoryContext from "./StockDirectoryContext";
 
 /** The overview remains a link; disclosure and source actions are sibling controls. */
-export default function StockDirectoryRow({ stock, children, performance, change }: {
+export default function StockDirectoryRow({ stock, children, performance, change, className }: {
   stock: YouTubeStockSummary;
+  className?: string;
   children: ReactNode;
   performance: ReactNode;
   change?: YouTubeDailyChange;
@@ -26,7 +28,7 @@ export default function StockDirectoryRow({ stock, children, performance, change
 
   return (
     <Collapsible open={open} onOpenChange={setOpen} asChild>
-      <ListRow className="min-w-0 flex-col items-stretch gap-0 rounded-2xl">
+      <ListRow className={cn("min-w-0 flex-col items-stretch gap-0 rounded-2xl", className)}>
         {children}
         <div className="flex min-w-0 items-center gap-3 px-2 pb-2">
           {!open && <p className="min-w-0 flex-1 truncate text-xs text-muted-foreground">{reason}</p>}
