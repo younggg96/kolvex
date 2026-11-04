@@ -25,6 +25,7 @@ test('all five index symbols forward once encoded and preserve the OHLC candles 
       });
       const response = await get(input);
       assert.equal(response.status, 200);
+      assert.equal(response.headers.get('Cache-Control'), 'no-store');
       assert.deepEqual(await response.json(), candles);
     }
   }

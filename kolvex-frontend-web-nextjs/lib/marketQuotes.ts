@@ -1,4 +1,5 @@
-import { loadClientCache, peekClientCache, writeClientCache } from "./clientCache";
+import { loadClientCache, peekClientCache } from "./clientCache";
+import { publishQuote } from "./quoteSnapshots";
 import type { StockQuote } from "./stockApi";
 
 export function getCachedMarketQuotes(symbols: string[]) {
@@ -33,7 +34,7 @@ export async function loadMarketQuotes(
         try {
           const key = `/api/stocks?action=multiple&symbols=${encodeURIComponent([...batch].sort().join(","))}`;
           const data = await loadClientCache<StockQuote[]>(key, async requestSignal => {
-            const response = await fetch(key, { signal: requestSignal });
+            const response = await fetch(key, { signal: requestSignal, cache: "no-store" });
             const result = await response.json();
             if (!response.ok || !Array.isArray(result) || !result.length) throw new Error("Quotes unavailable");
             return result;
@@ -41,9 +42,8 @@ export async function loadMarketQuotes(
           const received: Record<string, StockQuote> = {};
           for (const quote of data as StockQuote[]) {
             if (quote && batch.includes(quote.symbol) && Number.isFinite(quote.price) && quote.price > 0) {
-              received[quote.symbol] = quote;
+              received[quote.symbol] = publishQuote(quote);
               fresh.add(quote.symbol);
-              writeClientCache(`/api/stocks?action=quote&symbol=${encodeURIComponent(quote.symbol)}`, quote, 15_000, 60_000);
             }
           }
           if (signal.aborted) return;

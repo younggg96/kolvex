@@ -75,11 +75,12 @@ export async function GET() {
         }
 
         const quoteData: BackendQuote = await quoteResponse.json();
+        if (typeof quoteData.current_price !== "number" || !Number.isFinite(quoteData.current_price) || quoteData.current_price <= 0) throw new Error("Index quote unavailable");
 
         const indexData: IndexData = {
           symbol: index.symbol,
           name: index.name,
-          value: quoteData.current_price ?? 0,
+          value: quoteData.current_price,
           change: quoteData.change ?? 0,
           changePercent: quoteData.change_percent ?? 0,
           chartData,
@@ -90,20 +91,13 @@ export async function GET() {
         return indexData;
       } catch (error) {
         console.error(`Failed to fetch ${index.symbol}:`, error);
-        // Return placeholder data on error
-        return {
-          symbol: index.symbol,
-          name: index.name,
-          value: 0,
-          change: 0,
-          changePercent: 0,
-          chartData: [],
-        };
+        return null;
       }
     });
 
     const results = await Promise.all(fetchPromises);
-    indicesData.push(...results);
+    indicesData.push(...results.filter((index): index is IndexData => index !== null));
+    if (!indicesData.length) return NextResponse.json({ error: "Index quotes unavailable" }, { status: 503, headers: { "Cache-Control": "no-store" } });
 
     return NextResponse.json(indicesData, {
       headers: {

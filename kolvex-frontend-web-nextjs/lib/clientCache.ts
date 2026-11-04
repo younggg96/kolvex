@@ -3,6 +3,12 @@ type Entry = { data?: unknown; at: number; ttl: number; maxAge: number; promise?
 export interface CacheOptions { ttl?: number; maxAge?: number; force?: boolean; signal?: AbortSignal; timeout?: number }
 const entries = new Map<string, Entry>();
 const listeners = new Set<(prefix: string) => void>();
+const writers = new Set<(key: string) => void>();
+export function subscribeClientCacheWrites(listener: (key: string) => void) {
+  writers.add(listener);
+  return () => { writers.delete(listener); };
+}
+const publish = (key: string) => { for (const listener of writers) listener(key); };
 let identity: string | null | undefined;
 const browser = () => typeof window !== "undefined";
 const cancelled = () => new DOMException("Request cancelled", "AbortError");
@@ -18,6 +24,7 @@ export function writeClientCache<T>(key: string, data: T, ttl = 60_000, maxAge =
   if (!browser()) return;
   if (entries.size >= 160 && !entries.has(key)) entries.delete(entries.keys().next().value!);
   entries.set(key, { data, at: Date.now(), ttl, maxAge });
+  publish(key);
 }
 
 export function invalidateClientCache(prefix = "") {
@@ -71,6 +78,7 @@ export function loadClientCache<T>(key: string, loader: (signal: AbortSignal) =>
     if (controller.signal.aborted) throw cancelled();
     if (browser() && entries.get(key) === entry) {
       entry.data = data; entry.at = Date.now(); entry.promise = undefined; entry.controller = undefined;
+      publish(key);
     }
     return data;
   }).catch(error => {

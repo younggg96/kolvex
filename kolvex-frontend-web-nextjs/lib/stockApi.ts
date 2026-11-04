@@ -1,4 +1,5 @@
 import { loadClientCache } from "./clientCache";
+import { publishQuote } from "./quoteSnapshots";
 import type { TechnicalFocus, TechnicalCategory } from "./technicalFocus";
 // Stock API types and utilities
 
@@ -22,13 +23,21 @@ export interface StockQuote {
   dividend?: number;
   dividendYield?: number;
   updatedAt?: string;
+  marketTime?: number;
+  marketState?: string;
+  source?: string;
+  exchangeTimezone?: string;
+  preMarketPrice?: number;
+  preMarketTime?: number;
+  postMarketPrice?: number;
+  postMarketTime?: number;
 }
 
 export async function getStockQuote(symbol: string, signal?: AbortSignal): Promise<StockQuote> {
-  const response = await fetch(`/api/stocks?action=quote&symbol=${encodeURIComponent(symbol)}`, { signal });
+  const response = await fetch(`/api/stocks?action=quote&symbol=${encodeURIComponent(symbol)}`, { signal, cache: "no-store" });
   const data = await response.json();
   if (!response.ok || !Number.isFinite(data.price) || data.price <= 0) throw new Error("Market price unavailable");
-  return data as StockQuote;
+  return publishQuote(data as StockQuote);
 }
 
 export interface StockNewsItem {
@@ -205,7 +214,7 @@ export async function getStockHistory(
   return loadClientCache(key, async requestSignal => {
     for (let attempt = 0; ; attempt++) {
       try {
-        const response = await fetch(key, { signal: requestSignal, cache: attempt ? "no-store" : "default" });
+        const response = await fetch(key, { signal: requestSignal, cache: "no-store" });
         const data = await response.json().catch(() => ({}));
         if (!response.ok) {
           throw Object.assign(new Error(data.error || `API error: ${response.status}`), { status: response.status });

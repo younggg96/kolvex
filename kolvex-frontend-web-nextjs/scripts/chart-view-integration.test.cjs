@@ -153,6 +153,10 @@ function graphGeometry(args) {
 
 const stubs = {
   './PriceGraph': { __esModule: true, default: PriceGraphStub, defaultGraphView, graphGeometry },
+  '@/hooks/useStockData': { useStockQuote: (symbol, interval, enabled) => ({
+    data: enabled ? { symbol, price: 203.36, changePercent: -1.6111 } : null,
+    loading: false, error: null, refresh() {},
+  }) },
 };
 
 const ChartView = compile('components/youtube/chart/ChartView.tsx', {
@@ -249,6 +253,19 @@ test('compact mode renders through PriceGraph, not its own SVG preview', () => {
   assert.equal(graph.renderPlot, undefined);
   assert.equal(graph.onOpenAdvanced, baseProps.onOpenAdvanced);
   assert.equal(graph.overlay, null);
+});
+
+test('live views forward independent quotes; immutable analysis snapshots keep historical prices', () => {
+  for (const mode of ['compact', 'advanced']) {
+    const { graph } = render({ mode, snapshotBars: undefined });
+    assert.equal(graph.quoteEnabled, true);
+    assert.equal(graph.quote.price, 203.36);
+    assert.equal(graph.quote.changePercent, -1.6111);
+    assert.equal(typeof graph.onQuoteRetry, 'function');
+    const snapshot = render({ mode }).graph;
+    assert.equal(snapshot.quoteEnabled, false);
+    assert.equal(snapshot.quote, null);
+  }
 });
 
 test('compact mode forwards the host-owned range contract straight to the graph', () => {

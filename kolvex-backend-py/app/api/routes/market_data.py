@@ -96,8 +96,14 @@ class QuoteResponse(BaseModel):
     # 市值
     market_cap: Optional[int] = None
     # 盘前盘后
+    market_time: Optional[int] = None
+    market_state: Optional[str] = None
+    quote_source: Optional[str] = None
+    exchange_timezone_name: Optional[str] = None
     pre_market_price: Optional[float] = None
+    pre_market_time: Optional[int] = None
     post_market_price: Optional[float] = None
+    post_market_time: Optional[int] = None
 
 
 class HistoryDataPoint(BaseModel):
@@ -384,7 +390,7 @@ async def get_stock_news(symbol: str = Path(..., description="股票代码")):
     summary="获取实时报价",
     description="获取股票的实时报价信息，包含当前价格、涨跌幅、成交量、市值等"
 )
-async def get_quote(
+def get_quote(
     symbol: str = Path(..., description="股票代码 (如 AAPL, NVDA, TSLA)")
 ):
     """获取股票实时报价"""

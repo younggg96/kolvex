@@ -275,8 +275,8 @@ class YFinanceService:
         except Exception:
             info = {}
 
-        current_price = info.get("currentPrice") or info.get("regularMarketPrice")
-        previous_close = info.get("previousClose") or info.get("regularMarketPreviousClose")
+        current_price = info.get("regularMarketPrice") or info.get("currentPrice")
+        previous_close = info.get("regularMarketPreviousClose") or info.get("previousClose")
 
         if not current_price or not previous_close:
             try:
@@ -286,12 +286,12 @@ class YFinanceService:
             except Exception:
                 pass
 
+        # Compute both from the same price/baseline; metadata fields may be from
+        # different observations, especially when fast_info supplies a fallback.
         change = info.get("regularMarketChange")
         change_percent = info.get("regularMarketChangePercent")
-
-        if change is None and current_price and previous_close:
+        if current_price and previous_close:
             change = round(current_price - previous_close, 4)
-        if change_percent is None and current_price and previous_close and previous_close != 0:
             change_percent = round(((current_price - previous_close) / previous_close) * 100, 4)
 
         return {
@@ -319,7 +319,11 @@ class YFinanceService:
             "market_cap": info.get("marketCap"),
             # 时间
             "market_time": info.get("regularMarketTime"),
+            "market_state": info.get("marketState"),
+            "quote_source": "Yahoo Finance",
+            "exchange_timezone_name": info.get("exchangeTimezoneName"),
             "pre_market_price": info.get("preMarketPrice"),
+            "pre_market_time": info.get("preMarketTime"),
             "post_market_price": info.get("postMarketPrice"),
             "post_market_time": info.get("postMarketTime"),
         }
@@ -349,9 +353,9 @@ class YFinanceService:
         source_interval = "60m" if interval == "4h" else interval
 
         if start and end:
-            df = ticker.history(start=start, end=end, interval=source_interval)
+            df = ticker.history(start=start, end=end, interval=source_interval, auto_adjust=False, prepost=False)
         else:
-            df = ticker.history(period=period, interval=source_interval)
+            df = ticker.history(period=period, interval=source_interval, auto_adjust=False, prepost=False)
 
         if df.empty:
             return []

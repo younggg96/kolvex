@@ -1,34 +1,33 @@
 "use client";
 
-import { useEffect } from "react";
 import { useCachedResource } from "./useCachedResource";
-import type { StockQuote, ChartData, StockOverview } from "@/lib/stockApi";
+import { useVisiblePolling } from "./useVisiblePolling";
+import { useMarketQuotes } from "./useMarketQuotes";
+import { getStockQuote, type StockQuote, type ChartData, type StockOverview } from "@/lib/stockApi";
 
-function useStockResource<T>(key: string, ttl: number, refreshInterval?: number, enabled = true) {
+function useStockResource<T>(key: string, ttl: number, refreshInterval?: number, enabled = true, loader?: (signal: AbortSignal) => Promise<T>) {
   const resource = useCachedResource<T>(key, async signal => {
     if (!enabled) return [] as T;
-    const response = await fetch(key, { signal });
+    if (loader) return loader(signal);
+    const response = await fetch(key, { signal, cache: "no-store" });
     if (!response.ok) throw new Error("Failed to fetch stock data");
     return response.json();
-  }, { ttl, maxAge: Math.max(ttl, 60_000) });
+  }, { ttl, maxAge: Math.max(ttl, 60_000), enabled });
   const refresh = resource.refresh;
-  useEffect(() => {
-    if (!refreshInterval || !enabled) return;
-    const timer = setInterval(() => { if (!document.hidden) refresh(); }, refreshInterval);
-    return () => clearInterval(timer);
-  }, [refreshInterval, enabled, refresh]);
-  return { data: resource.data, loading: enabled && resource.loading, error: resource.error ? resource.error instanceof Error ? resource.error.message : "Failed to fetch stock data" : null };
+  useVisiblePolling(refresh, refreshInterval ?? 0, enabled);
+  return { data: resource.data, loading: enabled && resource.loading, refreshing: enabled && resource.refreshing, refresh, error: resource.error ? resource.error instanceof Error ? resource.error.message : "Failed to fetch stock data" : null };
 }
 
-export function useStockQuote(symbol: string, refreshInterval?: number) {
-  const result = useStockResource<StockQuote>(`/api/stocks?action=quote&symbol=${encodeURIComponent(symbol)}`, 15_000, refreshInterval);
-  return { ...result, data: result.data ?? null };
+export function useStockQuote(symbol: string, refreshInterval = 15_000, enabled = true) {
+  const normalized = symbol.trim().toUpperCase();
+  const result = useStockResource<StockQuote>(`/api/stocks?action=quote&symbol=${encodeURIComponent(normalized)}`, 15_000, refreshInterval, enabled,
+    signal => getStockQuote(normalized, signal));
+  return { ...result, data: enabled && result.data?.symbol === normalized ? result.data : null };
 }
 
 export function useMultipleQuotes(symbols: string[], refreshInterval?: number) {
-  const normalized = [...new Set(symbols.map(symbol => symbol.trim().toUpperCase()).filter(Boolean))].sort();
-  const result = useStockResource<StockQuote[]>(`/api/stocks?action=multiple&symbols=${encodeURIComponent(normalized.join(","))}`, 15_000, refreshInterval, normalized.length > 0);
-  return { ...result, data: result.data ?? [] };
+  const result = useMarketQuotes(symbols, true, 0, refreshInterval);
+  return { ...result, data: Object.values(result.quotes), error: result.unavailable ? "Some quotes are unavailable" : null };
 }
 
 export function useChartData(symbol: string, interval = "5min") {

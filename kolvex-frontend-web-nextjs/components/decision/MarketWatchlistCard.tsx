@@ -1,12 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
 import { ArrowUpRight, ChevronDown, RefreshCw, Star } from "lucide-react";
 import { useWatchlist } from "@/hooks/useWatchlist";
-import { getCachedMarketQuotes, loadMarketQuotes } from "@/lib/marketQuotes";
+import { useMarketQuotes } from "@/hooks/useMarketQuotes";
 import { CORE_STOCKS, STOCK_SECTORS } from "@/lib/stockDiscovery";
-import type { StockQuote } from "@/lib/stockApi";
 import { marketStockHref } from "@/lib/stockLinks";
 import CompanyLogo from "@/components/ui/company-logo";
 import { Button } from "@/components/ui/button";
@@ -23,32 +21,7 @@ export default function MarketWatchlistCard() {
   const c = useCopy();
   const { watchlist, ready } = useWatchlist();
   const symbols = watchlist.slice(-PREVIEW_SIZE).reverse();
-  const key = symbols.join(",");
-  const [quotes, setQuotes] = useState<Record<string, StockQuote>>({});
-  const [loading, setLoading] = useState(true);
-  const [unavailable, setUnavailable] = useState(false);
-  const [attempt, setAttempt] = useState(0);
-  const previousAttempt = useRef(0);
-
-  useEffect(() => {
-    if (!ready) return;
-    const controller = new AbortController();
-    const requested = key ? key.split(",") : [];
-    const force = previousAttempt.current !== attempt;
-    previousAttempt.current = attempt;
-    setQuotes(getCachedMarketQuotes(requested));
-    setLoading(requested.length > 0);
-    setUnavailable(false);
-    loadMarketQuotes(requested, controller.signal, batch => {
-      if (!controller.signal.aborted) setQuotes(previous => ({ ...previous, ...batch }));
-    }, force).then(result => {
-      if (controller.signal.aborted) return;
-      setQuotes(result.quotes);
-      setUnavailable(result.unavailable);
-      setLoading(false);
-    });
-    return () => controller.abort();
-  }, [key, ready, attempt]);
+  const { quotes, loading, unavailable, refresh } = useMarketQuotes(symbols, ready);
 
   const groups = new Map<string, string[]>();
   for (const symbol of symbols) {
@@ -66,7 +39,7 @@ export default function MarketWatchlistCard() {
       <h2 id="market-watchlist-title" className="text-lg font-semibold">{c("Watchlist", "自选股")}</h2>
       {ready && <span className="rounded-full bg-muted px-2 py-0.5 text-xs tabular-nums text-muted-foreground" aria-label={c(`Showing ${symbols.length} of ${watchlist.length} saved stocks`, `展示 ${symbols.length} 只，共 ${watchlist.length} 只自选股`)}>{symbols.length}/{watchlist.length}</span>}
       <div className="ml-auto flex items-center">
-        <Button type="button" variant="ghost" size="icon" className="h-11 w-11" disabled={!ready || loading || !symbols.length} onClick={() => setAttempt(value => value + 1)} aria-label={c("Refresh Watchlist quotes", "刷新自选股行情")} title={c("Refresh quotes", "刷新行情")}><RefreshCw className="h-3.5 w-3.5" aria-hidden /></Button>
+        <Button type="button" variant="ghost" size="icon" className="h-11 w-11" disabled={!ready || loading || !symbols.length} onClick={refresh} aria-label={c("Refresh Watchlist quotes", "刷新自选股行情")} title={c("Refresh quotes", "刷新行情")}><RefreshCw className="h-3.5 w-3.5" aria-hidden /></Button>
         <Button asChild variant="ghost" size="icon" className="h-11 w-11"><Link href="/dashboard/watchlist" aria-label={c("Open full Watchlist", "查看全部自选股")} title={c("Open Watchlist", "查看自选股")}><ArrowUpRight className="h-4 w-4" aria-hidden /></Link></Button>
       </div>
     </header>

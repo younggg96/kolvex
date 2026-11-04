@@ -6,6 +6,7 @@ import { TrendingUp, TrendingDown } from "lucide-react";
 import { useMultipleQuotes } from "@/hooks/useStockData";
 import CompanyLogo from "@/components/ui/company-logo";
 import { marketStockUrl } from "@/lib/stockLinks";
+import { useTranslation } from "@/lib/i18n";
 
 // Default symbols to display in the ticker
 const TICKER_SYMBOLS = [
@@ -35,42 +36,14 @@ const COMPANY_NAMES: Record<string, string> = {
   COIN: "Coinbase",
 };
 
-// Fallback static data (shown while loading or on error)
-const FALLBACK_DATA = [
-  { symbol: "TSLA", price: 245.34, changePercent: 4.2 },
-  { symbol: "NVDA", price: 482.12, changePercent: 2.1 },
-  { symbol: "AAPL", price: 189.43, changePercent: -0.5 },
-  { symbol: "MSFT", price: 372.15, changePercent: 1.3 },
-  { symbol: "AMZN", price: 145.18, changePercent: 0.8 },
-  { symbol: "GOOGL", price: 132.45, changePercent: -1.2 },
-  { symbol: "META", price: 324.56, changePercent: 3.4 },
-  { symbol: "NFLX", price: 456.78, changePercent: 2.5 },
-  { symbol: "AMD", price: 118.9, changePercent: -0.7 },
-  { symbol: "COIN", price: 154.32, changePercent: 8.4 },
-];
-
-// Refresh every 5 minutes
-const REFRESH_INTERVAL = 5 * 60 * 1000;
-
 /** Pill shell: identical for the link and the non-routable fallback so the marquee never reflows. */
 const PILL_CLASS =
   "group inline-flex min-h-11 items-center gap-1.5 md:gap-3 px-2.5 md:px-5 py-1.5 md:py-2.5 mx-1 md:mx-2 rounded-3xl bg-card border border-border transition-all duration-200 [transition-timing-function:cubic-bezier(0.25,1,0.5,1)]";
 
 export default function LandingStockTicker() {
-  const { data: quotes, error } = useMultipleQuotes(
-    TICKER_SYMBOLS,
-    REFRESH_INTERVAL
-  );
-
-  // Use real data if available, otherwise fallback
-  const stockData =
-    quotes.length > 0
-      ? quotes.map((q) => ({
-        symbol: q.symbol,
-        price: q.price,
-        changePercent: q.changePercent,
-      }))
-      : FALLBACK_DATA;
+  const { t } = useTranslation();
+  const { data: quotes, error, loading } = useMultipleQuotes(TICKER_SYMBOLS);
+  const stockData = TICKER_SYMBOLS.map(symbol => ({ symbol, quote: quotes.find(quote => quote.symbol === symbol) }));
 
   // Duplicate for seamless loop
   const displayStocks = [...stockData, ...stockData, ...stockData];
@@ -91,24 +64,17 @@ export default function LandingStockTicker() {
     <div className="w-full relative overflow-hidden py-3 md:py-6 border-y border-border">
       <div className="absolute inset-0 bg-muted/30" />
 
-      {/* Live indicator */}
-      {quotes.length > 0 && !error && (
-        <div className="absolute top-1/2 -translate-y-1/2 left-2 md:left-6 z-20 flex items-center gap-1 md:gap-2 px-2 md:px-3 py-1 md:py-1.5 rounded-full bg-primary border border-primary/30">
-          <span className="relative flex h-1.5 w-1.5 md:h-2 md:w-2">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary-foreground opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-1.5 w-1.5 md:h-2 md:w-2 bg-primary-foreground"></span>
-          </span>
-          <span className="text-[0.625rem] md:text-xs font-bold text-primary-foreground">
-            LIVE
-          </span>
-        </div>
-      )}
+      <p role="status" className="relative mb-2 px-3 text-xs text-muted-foreground">
+        {error ? t(quotes.length ? "youtubeOpinions.quoteRefreshFailed" : "youtubeOpinions.priceUnavailable")
+          : loading && !quotes.length ? t("youtubeOpinions.quoteLoading")
+            : `Yahoo Finance · ${t("youtubeOpinions.quoteMayBeDelayed")}`}
+      </p>
 
       {/* Ticker content */}
       <div className="relative">
         <div className="flex animate-ticker hover:[animation-play-state:paused] whitespace-nowrap">
           {displayStocks.map((stock, idx) => {
-            const isUp = stock.changePercent >= 0;
+            const isUp = (stock.quote?.changePercent ?? 0) >= 0;
             // Every pill that identifies a tradable stock opens that stock's quotes page.
             // Symbols we cannot route (e.g. indexes) stay plain, non-interactive pills.
             const href = marketStockUrl(stock.symbol);
@@ -135,11 +101,11 @@ export default function LandingStockTicker() {
 
                 {/* Price */}
                 <span className="text-xs md:text-base text-muted-foreground font-medium tabular-nums">
-                  ${formatPrice(stock.price)}
+                  {stock.quote ? `$${formatPrice(stock.quote.price)}` : "—"}
                 </span>
 
                 {/* Change indicator */}
-                <div
+                {stock.quote && <div
                   className={`flex items-center gap-0.5 md:gap-1 px-1.5 md:px-2 py-0.5 rounded-md md:rounded-2xl text-[0.625rem] md:text-xs font-bold ${isUp
                     ? "bg-primary/10 text-primary"
                     : "bg-red-500/10 text-red-500"
@@ -150,8 +116,8 @@ export default function LandingStockTicker() {
                   ) : (
                     <TrendingDown size={10} className="md:w-3 md:h-3" />
                   )}
-                  <span>{formatChange(stock.changePercent)}</span>
-                </div>
+                  <span>{formatChange(stock.quote.changePercent)}</span>
+                </div>}
               </>
             );
 

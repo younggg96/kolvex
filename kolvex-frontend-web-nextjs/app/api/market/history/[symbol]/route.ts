@@ -52,7 +52,9 @@ export async function GET(
     if (!Array.isArray(data.data) || !data.data.some((bar: { close?: number }) => typeof bar?.close === "number" && Number.isFinite(bar.close) && bar.close > 0)) {
       return NextResponse.json({ error: "History unavailable" }, { status: 503, headers: { "Cache-Control": "no-store" } });
     }
-    return NextResponse.json(data, { headers: { "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300" } });
+    // Current sessions must not trail another five minutes behind the quote.
+    // The bounded browser history cache deduplicates readers and owns freshness.
+    return NextResponse.json(data, { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
     console.error("Market history API error:", error);
     return NextResponse.json(

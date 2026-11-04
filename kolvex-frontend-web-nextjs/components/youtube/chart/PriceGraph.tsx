@@ -36,7 +36,8 @@ import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent, type P
 import { LocateFixed, Maximize2, MoveHorizontal, RotateCcw, ZoomIn, ZoomOut } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
-import { formatChangePercent, formatPrice, formatVolume, type PriceBar } from "@/lib/stockApi";
+import { formatChangePercent, formatPrice, formatVolume, type PriceBar, type StockQuote } from "@/lib/stockApi";
+import { latestChartQuote } from "@/lib/chart/quote";
 import {
   GRAPH_AXIS_WIDTH,
   GRAPH_MIN_BARS,
@@ -334,6 +335,12 @@ export interface PriceGraphProps {
   /** Height classes for the plot box, e.g. `h-[16.25rem] sm:h-[20rem]` (workspace `h-[20rem] sm:h-[26.25rem]`). */
   heightClass: string;
   bars: PriceBar[] | null;
+  quote?: StockQuote | null;
+  quoteEnabled?: boolean;
+  quoteLoading?: boolean;
+  quoteError?: boolean;
+  onQuoteRetry?: () => void;
+  historyStale?: boolean;
   loading?: boolean;
   error?: boolean;
   onRetry?: () => void;
@@ -396,6 +403,12 @@ export default function PriceGraph({
   mode,
   heightClass,
   bars,
+  quote,
+  quoteEnabled = false,
+  quoteLoading = false,
+  quoteError = false,
+  onQuoteRetry,
+  historyStale = false,
   loading = false,
   error = false,
   onRetry,
@@ -655,7 +668,18 @@ export default function PriceGraph({
   const lastBar = count ? bars![Math.min(geometry.lastIndex, count - 1)] || bars![count - 1] : null;
   const firstBar = count ? bars![Math.min(Math.max(geometry.firstIndex, 0), count - 1)] : null;
   const headerBar = activeBar || lastBar;
-  const headerChange = headerBar && firstBar && firstBar.close ? ((headerBar.close - firstBar.close) / firstBar.close) * 100 : 0;
+  const baseline = range === "1D" && quote && Number.isFinite(quote.previousClose) && quote.previousClose! > 0
+    ? quote.previousClose! : firstBar?.close;
+  const headerChange = headerBar && baseline ? ((headerBar.close - baseline) / baseline) * 100 : 0;
+  const latest = quoteEnabled ? latestChartQuote(quote, false) : null;
+  const extended = quoteEnabled ? latestChartQuote(quote) : null;
+  const showQuote = !activeBar && !!latest;
+  const displayedPrice = showQuote ? latest.price : headerBar?.close;
+  const displayedChange = showQuote ? latest.changePercent : headerChange;
+  const quoteTime = latest?.time ? new Date(latest.time * 1000).toLocaleString(t("common.intlLocale"), {
+    timeZone: quote?.exchangeTimezone || "America/New_York", month: "2-digit", day: "2-digit",
+    hour: "2-digit", minute: "2-digit", second: "2-digit", timeZoneName: "short",
+  }) : t("youtubeOpinions.quoteTimeUnknown");
   const tone: StrengthTone = headerChange > 0 ? "positive" : headerChange < 0 ? "negative" : "neutral";
   const color = toneColor[tone];
   const barLabel = (bar: PriceBar) => `${formatDate(bar.date.slice(0, 10))}${intraday ? ` ${bar.date.slice(11, 16)}` : ""}`;
@@ -792,7 +816,16 @@ export default function PriceGraph({
 
   const plotTone = toneColor[tone];
 
-  const body = (
+  const body = error ? (
+    <div className={cn("flex flex-wrap items-center justify-center gap-3 text-sm text-muted-foreground", heightClass)} role="alert">
+      <span>{t("youtubeOpinions.priceUnavailable")}</span>
+      {onRetry && (
+        <button type="button" onClick={onRetry} className="inline-flex h-11 items-center rounded-full border border-border px-4 text-sm font-semibold text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 sm:h-8">
+          {t("common.retry")}
+        </button>
+      )}
+    </div>
+  ) : (
     <PriceGraphPlot
       advanced={advanced}
       size={size}
@@ -807,7 +840,7 @@ export default function PriceGraph({
       gradientId={gradientId}
       clipId={clipId}
       axisRules={axisRules}
-      firstBar={firstBar}
+      baselinePrice={baseline}
       line={line}
       activeBar={activeBar}
       activeIndex={activeIndex}
@@ -837,30 +870,13 @@ export default function PriceGraph({
           : plotAriaLabel ||
             t("youtubeOpinions.graph.plotLabel", {
               symbol,
-              price: headerBar ? formatPrice(headerBar.close) : "—",
-              change: formatChangePercent(headerChange),
+              price: displayedPrice !== undefined ? formatPrice(displayedPrice) : "—",
+              change: displayedChange !== null ? formatChangePercent(displayedChange) : "—",
             })
       }
       dragging={dragging}
     />
   );
-
-  if (error) {
-    return (
-      <div className={cn("flex flex-wrap items-center justify-center gap-3 text-sm text-muted-foreground", heightClass)} role="alert">
-        <span>{t("youtubeOpinions.priceUnavailable")}</span>
-        {onRetry && (
-          <button
-            type="button"
-            onClick={onRetry}
-            className="inline-flex h-11 items-center rounded-full border border-border px-4 text-[0.8125rem] font-semibold text-foreground transition-colors hover:border-foreground/25 hover:bg-foreground/[0.06] focus-visible:outline-none sm:h-8"
-          >
-            {t("common.retry")}
-          </button>
-        )}
-      </div>
-    );
-  }
 
   return (
     <div className={cn("min-w-0", advanced && "flex min-h-0 flex-1 flex-col")}>
@@ -868,13 +884,16 @@ export default function PriceGraph({
       <div className="flex min-w-0 items-start justify-between gap-2">
         <div className="flex min-w-0 flex-1 flex-wrap items-baseline gap-x-2 gap-y-0.5">
           {headerLabel}
-          {headerBar ? (
-            <span className="flex min-w-0 items-baseline gap-2" aria-live="polite">
-              <span className="text-[0.9375rem] font-semibold tabular-nums text-foreground">{formatPrice(headerBar.close)}</span>
-              <span className={cn("text-[0.8125rem] font-semibold tabular-nums", headerChange > 0 ? "text-positive" : headerChange < 0 ? "text-negative" : "text-muted-foreground")}>
-                {formatChangePercent(headerChange)}
-              </span>
-              <span className="text-[0.6875rem] text-muted-foreground">{rangeChangeLabel || t("youtubeOpinions.priceRangeChange")}</span>
+          {displayedPrice !== undefined ? (
+            <span className="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-1" aria-live="polite">
+              <span className="text-base font-semibold tabular-nums text-foreground">{formatPrice(displayedPrice)}</span>
+              {displayedChange !== null && <span className={cn("text-sm font-semibold tabular-nums", displayedChange > 0 ? "text-positive" : displayedChange < 0 ? "text-negative" : "text-muted-foreground")}>
+                {formatChangePercent(displayedChange)}
+              </span>}
+              <span className="text-xs text-muted-foreground">{showQuote
+                ? t(`youtubeOpinions.quoteSession.${latest.session}`)
+                : range === "1D" && baseline === quote?.previousClose ? t("youtubeOpinions.quoteSession.regular")
+                  : rangeChangeLabel || t("youtubeOpinions.priceRangeChange")}</span>
             </span>
           ) : (
             loading || !bars ? <Skeleton className="h-5 w-32" aria-hidden="true" /> : null
@@ -895,6 +914,24 @@ export default function PriceGraph({
           </button>
         )}
       </div>
+      {quoteEnabled && !activeBar && (
+        <div className="mt-1 flex flex-wrap items-baseline gap-x-2 gap-y-1 text-xs text-muted-foreground">
+          {latest && <span>{quote?.source || "Yahoo Finance"} · {quoteTime} · {t("youtubeOpinions.quoteMayBeDelayed")}</span>}
+          {extended && extended.session !== "regular" && <span>
+            {t(`youtubeOpinions.quoteSession.${extended.session}`)} {formatPrice(extended.price)}
+            {extended.changePercent !== null && ` (${formatChangePercent(extended.changePercent)})`}
+            {" · "}{extended.time && new Date(extended.time * 1000).toLocaleString(t("common.intlLocale"), {
+              timeZone: quote?.exchangeTimezone || "America/New_York", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit", timeZoneName: "short",
+            })}{" · "}{t("youtubeOpinions.regularSessionChart")}
+          </span>}
+          {!latest && quoteLoading && <span>{t("youtubeOpinions.quoteLoading")}</span>}
+          {(quoteError || (!latest && !quoteLoading)) && <span role="status">{t(latest ? "youtubeOpinions.quoteRefreshFailed" : "youtubeOpinions.quoteUnavailable")}</span>}
+          {(quoteError || (!latest && !quoteLoading)) && onQuoteRetry && (
+            <button type="button" onClick={onQuoteRetry} className="rounded px-1 font-semibold text-foreground underline underline-offset-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2">{t("common.retry")}</button>
+          )}
+        </div>
+      )}
+      {historyStale && <div role="status" className="mt-1 text-xs text-muted-foreground">{t("youtubeOpinions.historyRefreshFailed")}</div>}
 
       <div className={cn("mt-1.5", advanced && "flex min-h-0 flex-1 flex-col")}>{body}</div>
 
@@ -962,7 +999,7 @@ export function PriceGraphPlot({
   gradientId,
   clipId,
   axisRules,
-  firstBar,
+  baselinePrice,
   line,
   activeBar,
   activeIndex,
@@ -1003,7 +1040,7 @@ export function PriceGraphPlot({
   gradientId: string;
   clipId: string;
   axisRules: number[];
-  firstBar: PriceBar | null;
+  baselinePrice: number | undefined;
   line: { d: string; area: string; points: Array<{ x: number; y: number; index: number }> };
   activeBar: PriceBar | null;
   activeIndex: number | null;
@@ -1075,12 +1112,12 @@ export function PriceGraphPlot({
                 const y = geometry.yOf(value);
                 return <line key={`rule-${value}`} x1={0} x2={geometry.plotWidth} y1={y} y2={y} stroke="rgb(var(--foreground) / 0.055)" />;
               })}
-              {firstBar && (
+              {baselinePrice !== undefined && (
                 <line
                   x1={0}
                   x2={geometry.plotWidth}
-                  y1={geometry.yOf(firstBar.close)}
-                  y2={geometry.yOf(firstBar.close)}
+                  y1={geometry.yOf(baselinePrice)}
+                  y2={geometry.yOf(baselinePrice)}
                   stroke="rgb(var(--foreground) / 0.18)"
                   strokeDasharray="3 4"
                 />
@@ -1169,7 +1206,7 @@ export function PriceGraphPlot({
               x={geometry.plotWidth + 1}
               y={Math.min(Math.max(geometry.yOf(lastBar.close), 10), geometry.plotHeight - 10)}
               tone={tone}
-              decimals={0}
+              decimals={2}
             />
           )}
           {tooltipPill(activeBar, activeIndex, activeBar ? { x: geometry.xOf(activeIndex!), y: geometry.yOf(activeBar.close) } : null, geometry, plotTone, activeLabel, advanced)}

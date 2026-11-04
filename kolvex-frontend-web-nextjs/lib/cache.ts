@@ -123,9 +123,8 @@ export const CACHE_TTL = {
   MULTIPLE_QUOTES: 15, // 多个报价缓存 15 秒
 } as const;
 
-// 报价的 CDN 缓存头：与内存缓存、浏览器缓存叠加后，总延迟仍控制在 1 分钟内
-export const QUOTE_CACHE_CONTROL =
-  "public, s-maxage=10, stale-while-revalidate=20";
+// The bounded server quoteCache owns freshness. Do not stack browser/CDN stale copies.
+export const QUOTE_CACHE_CONTROL = "no-store";
 
 /**
  * 生成缓存键

@@ -1,6 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useVisiblePolling } from "@/hooks/useVisiblePolling";
+import { marketStockHref } from "@/lib/stockLinks";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -41,6 +43,7 @@ export default function OrderTicket({
   errorText,
   mutationError,
   fixedSymbol,
+  active = true,
 }: {
   account: Account;
   closePosition: Position | null;
@@ -50,6 +53,7 @@ export default function OrderTicket({
   errorText: (error: unknown) => string;
   mutationError: string;
   fixedSymbol?: string;
+  active?: boolean;
 }) {
   const c = useCopy();
   const query = useSearchParams();
@@ -87,6 +91,9 @@ export default function OrderTicket({
   const firstField = useRef<HTMLInputElement>(null);
   const chosenSymbol = closePosition?.symbol || fixedSymbol || symbol;
   const chosenSide = closePosition?.side || side;
+  const quoteSymbol = useRef<string | null>(null);
+  const refreshQuote = useCallback(() => setQuoteAttempt(value => value + 1), []);
+  useVisiblePolling(refreshQuote, 15_000, active && !busy && !draft && /^[A-Z][A-Z0-9.\-]{0,15}$/.test(chosenSymbol));
 
   useEffect(() => {
     if (closePosition) {
@@ -101,16 +108,18 @@ export default function OrderTicket({
 
   useEffect(() => {
     const controller = new AbortController();
-    setQuote(null);
-    setQuoteError("");
+    setQuote(previous => quoteSymbol.current === chosenSymbol ? previous : null);
+    if (quoteSymbol.current !== chosenSymbol) setQuoteError("");
     setQuoteLoading(false);
-    if (!/^[A-Z][A-Z0-9.\-]{0,15}$/.test(chosenSymbol)) return;
+    if (!active || !/^[A-Z][A-Z0-9.\-]{0,15}$/.test(chosenSymbol)) return;
     setQuoteLoading(true);
     const timer = setTimeout(() => {
       paperRequest<Quote>(`quote/${encodeURIComponent(chosenSymbol)}`, {
         signal: controller.signal,
       })
-        .then(setQuote)
+        .then(next => {
+          if (!controller.signal.aborted) { quoteSymbol.current = chosenSymbol; setQuote(next); setQuoteError(""); }
+        })
         .catch((error) => {
           if (!controller.signal.aborted) setQuoteError(errorText(error));
         })
@@ -124,7 +133,7 @@ export default function OrderTicket({
     };
     // errorText uses the active locale; quote refresh does not depend on its identity.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [chosenSymbol, quoteAttempt]);
+  }, [chosenSymbol, quoteAttempt, active]);
 
   const q = Number(quantity),
     reference = kind === "market" ? Number(quote?.price) : Number(price);
@@ -333,7 +342,7 @@ export default function OrderTicket({
           aria-live="polite"
           aria-busy={quoteLoading}
         >
-          {quoteLoading ? (
+          {quoteLoading && !quote ? (
             <p className="text-muted-foreground">
               {c("Loading quote…", "正在获取报价…")}
             </p>
@@ -364,6 +373,7 @@ export default function OrderTicket({
                 )}
             </p>
           )}
+          {quote && quoteError && <p role="status" className="mt-1 text-xs text-negative">{quoteError} · {c("Showing the last quote", "当前保留上次报价")}</p>}
           <Button
             type="button"
             variant="link"
@@ -536,7 +546,7 @@ export default function OrderTicket({
           {c("Review virtual order", "检查虚拟订单")}
         </Button>
         <Button asChild variant="link" className="w-full">
-          <Link href={`/dashboard/market/${encodeURIComponent(chosenSymbol)}`}>
+          <Link href={marketStockHref(chosenSymbol)}>
             {c("Open stock research", "查看股票分析")}
           </Link>
         </Button>

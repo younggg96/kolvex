@@ -1599,3 +1599,26 @@ full workspace use this mark for floating P&L, equity and subsequent equity samp
 Label these observations as after-hours alongside their actual timestamps. Missing
 or invalid extended data retains the regular/previous mark. After-hours marks never
 execute pending orders or protective exits; matching remains regular-session only.
+
+### Quote and chart freshness
+
+The shared price graph defaults to an independent source quote and its session
+comparison, rather than treating the last candle or the window return as today's
+quote. The primary price is the regular-session quote on lists, stock details and
+both graph modes, compared with the previous close. Newer timestamped pre/post
+market quotes appear separately, compared with the regular close and identifying
+their own session and observation time.
+The graph retains regular-session, unadjusted OHLC candles. Its source timestamp,
+exchange timezone and possible vendor delay remain visible. Inspecting a candle
+shows that historical price and its comparison. Saved analysis snapshots stay
+historical. Quote failures retain the last available value with a retry notice;
+candle failures do not hide an independently available quote. Existing semantic
+colors and shared controls own the presentation.
+
+Market overview, sector cards, stock discovery and Watchlist readers share the
+same per-symbol quote snapshots with the stock workspace and analyst reference
+price. Visible pages poll every 15 seconds; returning to the tab revalidates.
+Late requests cannot roll newer session observations back. Missing quotes remain
+unavailable rather than receiving fabricated sample prices. Historic comparison
+tables and explicitly dated financial/valuation inputs keep their own snapshot
+meaning and reporting periods.

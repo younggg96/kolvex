@@ -12,14 +12,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ContentLoading, PendingValue } from "@/components/ui/content-loading";
 import { SegmentedControl } from "@/components/ui/segmented-control";
 import { isProductFeatureEnabled } from "@/lib/productFeatures";
-import { getCachedMarketQuotes, loadMarketQuotes } from "@/lib/marketQuotes";
+import { useMarketQuotes } from "@/hooks/useMarketQuotes";
 import {
   CORE_STOCKS, STOCK_PAGE_SIZE, STOCK_PREFERENCE_KEY, STOCK_SECTORS,
   readStockObservationState,
   selectObservationSymbols, stockSorts, writeStockObservationState,
   type StockObservationState, type StockScope, type StockSector, type StockSort,
 } from "@/lib/stockDiscovery";
-import type { StockQuote } from "@/lib/stockApi";
 import type { YouTubeStockSummary } from "@/lib/youtubeOpinionsApi";
 import { cn } from "@/lib/utils";
 import { MARKET_RANGES } from "@/lib/marketObservations";
@@ -58,16 +57,11 @@ export default function StockObservationList({ range, catalogue, held, onRetry }
   const composing = useRef(false);
   useEffect(() => { if (!composing.current) setSearchDraft(state.search ?? ""); }, [state.search]);
   const [ready, setReady] = useState(false);
-  const [quotes, setQuotes] = useState<Record<string, StockQuote>>({});
-  const [quoteLoading, setQuoteLoading] = useState(true);
-  const [quoteError, setQuoteError] = useState(false);
-  const [settledQuoteKey, setSettledQuoteKey] = useState<string | null>(null);
   const [attempt, setAttempt] = useState(0);
   const [now, setNow] = useState(Date.now);
   const listRef = useRef<HTMLDivElement>(null);
   const restored = useRef(false);
   const restoredScroll = useRef(false);
-  const lastQuoteAttempt = useRef(0);
   const stocks = catalogue.data?.stocks ?? EMPTY_STOCKS;
   const coverage = useMemo(() => new Map(stocks.map(stock => [stock.ticker, stock])), [stocks]);
   const trend = MARKET_RANGES.find(item => item.key === range)!;
@@ -103,29 +97,8 @@ export default function StockObservationList({ range, catalogue, held, onRetry }
   const sourceSymbols = selectObservationSymbols({ ...state, search: state.scope === "creators" ? state.search : undefined, sort: state.scope === "creators" ? state.sort === "latest" ? "latest" : "heat" : "default" }, stocks, held.tickers, {}, now);
   const quoteSymbols = state.scope === "creators" && (state.sort === "heat" || state.sort === "latest") ? sourceSymbols.slice(0, state.rows) : sourceSymbols;
   const symbolKey = quoteSymbols.slice().sort().join(",");
-  useEffect(() => {
-    if (!ready) return;
-    const force = lastQuoteAttempt.current !== attempt;
-    lastQuoteAttempt.current = attempt;
-    const controller = new AbortController();
-    const symbols = symbolKey ? symbolKey.split(",") : [];
-    const cached = getCachedMarketQuotes(symbols);
-    setQuotes(cached);
-    setQuoteLoading(symbols.length > 0);
-    setQuoteError(false);
-    if (!symbols.length) {
-      setSettledQuoteKey(symbolKey);
-      return () => controller.abort();
-    }
-    loadMarketQuotes(symbols, controller.signal, () => {}, force).then(result => {
-      if (controller.signal.aborted) return;
-      setQuotes(result.quotes);
-      setQuoteError(result.unavailable);
-      setQuoteLoading(false);
-      setSettledQuoteKey(symbolKey);
-    });
-    return () => controller.abort();
-  }, [symbolKey, attempt, ready]);
+  const { quotes, loading: quoteLoading, refreshing: quoteRefreshing, unavailable: quoteError } = useMarketQuotes(quoteSymbols, ready, attempt);
+  const settledQuoteKey = quoteRefreshing ? null : symbolKey;
 
   const symbols = useMemo(() => selectObservationSymbols(state, stocks, held.tickers, quotes, now),
     [state, stocks, held.tickers, quotes, now]);

@@ -27,6 +27,14 @@ interface BackendQuote {
   previous_close?: number;
   fifty_two_week_high?: number;
   fifty_two_week_low?: number;
+  market_time?: number;
+  market_state?: string;
+  quote_source?: string;
+  exchange_timezone_name?: string;
+  pre_market_price?: number;
+  pre_market_time?: number;
+  post_market_price?: number;
+  post_market_time?: number;
 }
 
 // Chart data interface
@@ -53,6 +61,16 @@ function transformQuote(quote: BackendQuote) {
     previousClose: quote.previous_close,
     week52High: quote.fifty_two_week_high,
     week52Low: quote.fifty_two_week_low,
+    marketTime: quote.market_time,
+    updatedAt: typeof quote.market_time === "number" && Number.isFinite(quote.market_time) && quote.market_time > 0
+      ? new Date(quote.market_time * 1000).toISOString() : undefined,
+    marketState: quote.market_state,
+    source: quote.quote_source,
+    exchangeTimezone: quote.exchange_timezone_name,
+    preMarketPrice: quote.pre_market_price,
+    preMarketTime: quote.pre_market_time,
+    postMarketPrice: quote.post_market_price,
+    postMarketTime: quote.post_market_time,
   };
 }
 
@@ -95,12 +113,15 @@ export async function GET(request: NextRequest) {
           const quoteResponse = await fetch(
             `${NEXT_PUBLIC_BACKEND_API_URL}/api/v1/market/quote/${symbol}`,
             // force-dynamic does not stop Next's Data Cache, which never expires here.
-            { cache: "no-store" }
+            { cache: "no-store", signal: AbortSignal.timeout(20000) }
           );
           if (!quoteResponse.ok) {
             throw new Error(`Backend returned ${quoteResponse.status}`);
           }
           const quoteData: BackendQuote = await quoteResponse.json();
+          if (typeof quoteData.current_price !== "number" || !Number.isFinite(quoteData.current_price) || quoteData.current_price <= 0) {
+            throw new Error("Market price unavailable");
+          }
           const transformedQuote = transformQuote(quoteData);
 
           // 存入缓存
@@ -114,16 +135,9 @@ export async function GET(request: NextRequest) {
           });
         } catch (error) {
           console.error("Failed to fetch quote from backend:", error);
-          // Fallback mock data
           return NextResponse.json(
-            {
-              symbol,
-              name: `${symbol}`,
-              price: 0,
-              change: 0,
-              changePercent: 0,
-            },
-            { status: 200 }
+            { error: "Quote unavailable" },
+            { status: 503, headers: { "Cache-Control": "no-store" } }
           );
         }
 

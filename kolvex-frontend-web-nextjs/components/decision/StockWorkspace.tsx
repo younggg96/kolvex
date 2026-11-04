@@ -1,6 +1,8 @@
 "use client";
 
 import { useCachedResource } from "@/hooks/useCachedResource";
+import { useStockQuote } from "@/hooks/useStockData";
+import { latestChartQuote } from "@/lib/chart/quote";
 import { isProductFeatureEnabled } from "@/lib/productFeatures";
 
 import Link from "next/link";
@@ -26,7 +28,7 @@ import StockFundamentalOverview, {
 import { finite, getStockOverview } from "@/lib/stockFundamentals";
 import WatchlistButton from "./WatchlistButton";
 import { ReportCard } from "@/components/trading-analysis/report-card";
-import { getStockQuote, type AiTechnicalAnalysis } from "@/lib/stockApi";
+import type { AiTechnicalAnalysis } from "@/lib/stockApi";
 import {
   getYouTubeStockDetail,
   type YouTubeOpinion,
@@ -94,11 +96,7 @@ export default function StockWorkspace({
             currency,
           }).format(value);
   const { setContext } = useDecisionCommand();
-  const quoteResource = useCachedResource(
-    `/api/stocks?action=quote&symbol=${encodeURIComponent(ticker)}`,
-    (signal) => getStockQuote(ticker, signal),
-    { ttl: 15_000, maxAge: 60_000 },
-  );
+  const quoteResource = useStockQuote(ticker);
   const opinionsResource = useCachedResource(
     `/api/youtube-opinions/stocks/${encodeURIComponent(ticker)}`,
     (signal) => getYouTubeStockDetail(ticker, {}, signal),
@@ -128,6 +126,7 @@ export default function StockWorkspace({
   );
   const overview = overviewResource.data;
   const quote = quoteResource.data ?? null;
+  const latestQuote = latestChartQuote(quote);
   const searchParams = useSearchParams();
   const pathname = usePathname();
   const sections = benchmark
@@ -348,9 +347,9 @@ export default function StockWorkspace({
                     )}
                   </div>
                   <p className="mt-2 text-xs text-muted-foreground">
-                    {overview?.quote.market_time
+                    {quote?.marketTime
                       ? new Date(
-                          overview.quote.market_time * 1000,
+                          quote.marketTime * 1000,
                         ).toLocaleString(t("common.intlLocale"), {
                           timeZone: "America/New_York",
                           timeZoneName: "short",
@@ -358,17 +357,14 @@ export default function StockWorkspace({
                       : c("Latest available quote", "最新可用报价")}
                   </p>
                 </div>
-                {finite(overview?.quote.post_market_price) &&
-                  overview.quote.post_market_price > 0 && (
+                {latestQuote && latestQuote.session !== "regular" && (
                     <div className="border-border sm:border-l sm:pl-6">
                       <p className="figure text-2xl font-semibold">
-                        {priceLabel(overview.quote.post_market_price)}
+                        {priceLabel(latestQuote.price)}
                       </p>
                       <p className="mt-2 text-xs text-muted-foreground">
-                        {c(
-                          "After hours · latest from source",
-                          "盘后 · 数据源最新报价",
-                        )}
+                        {latestQuote.session === "pre" ? c("Pre-market", "盘前") : c("After hours", "盘后")}
+                        {" · "}{latestQuote.time && new Date(latestQuote.time * 1000).toLocaleTimeString(t("common.intlLocale"), { timeZone: "America/New_York", timeZoneName: "short" })}
                       </p>
                     </div>
                   )}

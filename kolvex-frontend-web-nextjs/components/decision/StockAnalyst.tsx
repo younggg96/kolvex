@@ -1,5 +1,6 @@
 "use client";
 import { useCachedResource } from "@/hooks/useCachedResource";
+import { useStockQuote } from "@/hooks/useStockData";
 import {
   finite,
   fundamentalsKey,
@@ -41,14 +42,16 @@ export default function StockAnalyst({
     { ttl: 300_000 },
   );
   const data = resource.data;
+  const quoteResource = useStockQuote(symbol);
+  const currentPrice = quoteResource.data?.price;
   const consensus = data?.recommendations_summary.find(
     (row) => row.period === "0m",
   );
   const difference =
     finite(data?.target_mean_price) &&
-    finite(data?.current_price) &&
-    data.current_price > 0
-      ? data.target_mean_price / data.current_price - 1
+    finite(currentPrice) &&
+    currentPrice > 0
+      ? data.target_mean_price / currentPrice - 1
       : null;
   const empty = !finite(data?.target_mean_price) && !consensus;
   const ratings = [
@@ -85,8 +88,8 @@ export default function StockAnalyst({
       : 0;
   const outsideRange =
     hasRange &&
-    finite(data?.current_price) &&
-    (data.current_price < low! || data.current_price > high!);
+    finite(currentPrice) &&
+    (currentPrice < low! || currentPrice > high!);
 
   return (
     <div className="space-y-6">
@@ -143,7 +146,7 @@ export default function StockAnalyst({
                   {c("Reference price", "参考股价")}
                 </dt>
                 <dd className="figure mt-2 text-base font-medium">
-                  {f.number(data.current_price, false)}{" "}
+                  {f.number(currentPrice, false)}{" "}
                   <span className="text-xs text-muted-foreground">
                     {currency}
                   </span>
@@ -180,10 +183,10 @@ export default function StockAnalyst({
                   className="relative mx-2 my-5 h-2 rounded-full bg-muted"
                   aria-hidden="true"
                 >
-                  {finite(data.current_price) && (
+                  {finite(currentPrice) && (
                     <span
                       className="absolute top-1/2 h-4 w-4 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-card bg-foreground"
-                      style={{ left: `${position(data.current_price)}%` }}
+                      style={{ left: `${position(currentPrice)}%` }}
                     />
                   )}
                   {finite(data.target_mean_price) && (

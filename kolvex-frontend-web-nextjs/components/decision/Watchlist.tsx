@@ -15,9 +15,8 @@ import { ListCard, ListColumnHeader, ListLoadMore, ListRow, ListRows, listRowTar
 import { useWatchlist } from "@/hooks/useWatchlist";
 import { MARKET_RANGES } from "@/lib/marketObservations";
 import { normalizeWatchlistTicker } from "@/lib/watchlist";
-import { getCachedMarketQuotes, loadMarketQuotes } from "@/lib/marketQuotes";
+import { useMarketQuotes } from "@/hooks/useMarketQuotes";
 import { CORE_STOCKS } from "@/lib/stockDiscovery";
-import type { StockQuote } from "@/lib/stockApi";
 import { cn } from "@/lib/utils";
 import { Change, money, useCopy } from "./shared";
 import StockTrend from "./StockTrend";
@@ -43,29 +42,10 @@ export default function Watchlist() {
   const [ticker, setTicker] = useState("");
   const [invalid, setInvalid] = useState(false);
   const [rows, setRows] = useState(PAGE_SIZE);
-  const [quotes, setQuotes] = useState<Record<string, StockQuote>>({});
-  const [loading, setLoading] = useState(false);
-  const [unavailable, setUnavailable] = useState(false);
   const [attempt, setAttempt] = useState(0);
-  const previousAttempt = useRef(0);
-  const key = watchlist.join(",");
+  const { quotes, loading, unavailable } = useMarketQuotes(watchlist, ready, attempt);
   useEffect(() => { if (!composing.current) setDraft(query); setRows(PAGE_SIZE); }, [query, sort]);
   useEffect(() => { document.title = c("Watchlist | Kolvex", "自选股 | Kolvex"); }, [c]);
-  useEffect(() => {
-    if (!ready) return;
-    const controller = new AbortController();
-    const symbols = key ? key.split(",") : [];
-    const force = previousAttempt.current !== attempt;
-    previousAttempt.current = attempt;
-    setQuotes(getCachedMarketQuotes(symbols));
-    setLoading(symbols.length > 0);
-    setUnavailable(false);
-    loadMarketQuotes(symbols, controller.signal, () => {}, force).then(result => {
-      if (controller.signal.aborted) return;
-      setQuotes(result.quotes); setUnavailable(result.unavailable); setLoading(false);
-    });
-    return () => controller.abort();
-  }, [key, ready, attempt]);
 
   function update(q: string, nextSort = sort) {
     const next = new URLSearchParams(window.location.search);

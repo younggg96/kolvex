@@ -11,6 +11,7 @@ function load(file, deps = {}, globals = {}) {
   vm.runInNewContext(ts.transpileModule(fs.readFileSync(path.join(__dirname, '..', file), 'utf8'), {
     compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020 },
   }).outputText, { exports, require: name => { if (name === "@/lib/clientCache" || name === "./clientCache") return clientCache;
+    if (name === "./quoteSnapshots") return { publishQuote: quote => quote };
     if (name in deps) return deps[name];
     throw Error(name);
   }, URL, AbortSignal, AbortController, process: { env: {} }, ...globals });

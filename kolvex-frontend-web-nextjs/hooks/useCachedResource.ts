@@ -1,10 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { loadClientCache, peekClientCache, subscribeClientCache, type CacheOptions } from "@/lib/clientCache";
+import { loadClientCache, peekClientCache, subscribeClientCache, subscribeClientCacheWrites, type CacheOptions } from "@/lib/clientCache";
 
 /** Show a recent snapshot immediately; refresh stale data without replacing it with a skeleton. */
-export function useCachedResource<T>(key: string, loader: (signal: AbortSignal) => Promise<T>, options: Omit<CacheOptions, "signal" | "force"> = {}) {
+export function useCachedResource<T>(key: string, loader: (signal: AbortSignal) => Promise<T>, options: Omit<CacheOptions, "signal" | "force"> & { enabled?: boolean } = {}) {
   const loaderRef = useRef(loader);
   loaderRef.current = loader;
   const [revision, setRevision] = useState(0);
@@ -15,15 +15,21 @@ export function useCachedResource<T>(key: string, loader: (signal: AbortSignal) 
   });
   const refresh = useCallback(() => { force.current = true; setRevision(value => value + 1); }, []);
   const revalidate = useCallback(() => setRevision(value => value + 1), []);
-  const { ttl, maxAge, timeout } = options;
+  const { ttl, maxAge, timeout, enabled = true } = options;
+  useEffect(() => subscribeClientCacheWrites(changed => {
+    if (!enabled || changed !== key) return;
+    const data = peekClientCache<T>(key);
+    if (data !== undefined) setState({ key, data, loading: false, refreshing: false, error: null });
+  }), [key, enabled]);
   useEffect(() => subscribeClientCache(prefix => {
-    if (!key.startsWith(prefix)) return;
+    if (!enabled || !key.startsWith(prefix)) return;
     setState(previous => prefix && previous.key === key
       ? { ...previous, refreshing: true, error: null }
       : { key, data: undefined, loading: true, refreshing: true, error: null });
     refresh();
-  }), [key, refresh]);
+  }), [key, refresh, enabled]);
   useEffect(() => {
+    if (!enabled) return;
     const controller = new AbortController();
     const data = peekClientCache<T>(key);
     const forceRefresh = force.current;
@@ -42,7 +48,8 @@ export function useCachedResource<T>(key: string, loader: (signal: AbortSignal) 
       .then(data => { if (!controller.signal.aborted) setState({ key, data, loading: false, refreshing: false, error: null }); })
       .catch(error => { if (!controller.signal.aborted) setState(previous => ({ key, data: [401, 403, 404].includes(error?.status) ? undefined : peekClientCache<T>(key) ?? (previous.key === key ? previous.data : undefined), loading: false, refreshing: false, error })); });
     return () => controller.abort();
-  }, [key, revision, ttl, maxAge, timeout]);
+  }, [key, revision, ttl, maxAge, timeout, enabled]);
   const data = state.key === key ? state.data : peekClientCache<T>(key);
+  if (!enabled) return { data: undefined, loading: false, refreshing: false, error: null, refresh, revalidate };
   return { data, loading: state.key === key ? state.loading : data === undefined, refreshing: state.key === key ? state.refreshing : true, error: state.key === key ? state.error : null, refresh, revalidate };
 }

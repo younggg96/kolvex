@@ -99,6 +99,7 @@ test('scope controls update Next App Router search params without bypassing its 
     '@/lib/productFeatures': { isProductFeatureEnabled: () => false },
     '@/lib/i18n': { useTranslation: () => ({ locale: 'zh' }) },
     '@/lib/stockDiscovery': discovery,
+    '@/hooks/useMarketQuotes': { useMarketQuotes: () => ({ quotes: {}, loading: false, refreshing: false, unavailable: false }) },
     '@/lib/opinionDates': load('lib/opinionDates.ts'),
     '@/lib/marketObservations': { MARKET_RANGES: [{ key: '1D', en: '1D', zh: '1天' }] },
     '@/lib/utils': { cn: (...values) => values.filter(Boolean).join(' ') },

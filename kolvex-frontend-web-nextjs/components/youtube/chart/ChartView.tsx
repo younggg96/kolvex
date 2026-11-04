@@ -1,6 +1,7 @@
 "use client";
 import { peekClientCache } from "@/lib/clientCache";
 import { stockHistoryKey } from "@/lib/stockApi";
+import { useStockQuote } from "@/hooks/useStockData";
 
 import Link from "next/link";
 import { createPortal } from "react-dom";
@@ -305,6 +306,7 @@ export default function ChartView({
   const params = advanced && !snapshotBars ? advancedHistoryParams(range, effectiveInterval) : compactParams;
   const paramsKey = JSON.stringify(params);
   const chartCacheKey = stockHistoryKey(symbol, params);
+  const quoteResource = useStockQuote(symbol, 15_000, !snapshotBars);
   const intraday = isIntraday(params.interval || "1d");
 
   const [box, setBox] = useState<HTMLDivElement | null>(null);
@@ -315,6 +317,7 @@ export default function ChartView({
   }, []);
   const [bars, setBars] = useState<PriceBar[] | null>(() => snapshotBars ?? peekClientCache<PriceBar[]>(chartCacheKey) ?? null);
   const [error, setError] = useState(false);
+  const [historyStale, setHistoryStale] = useState(false);
   const [attempt, setAttempt] = useState(0);
   const [view, setView] = useState<View | null>(null);
   const [autoScale, setAutoScale] = useState(true);
@@ -378,6 +381,7 @@ export default function ChartView({
     const controller = new AbortController();
     setBars(snapshotBars ?? peekClientCache<PriceBar[]>(chartCacheKey) ?? null);
     setError(false);
+    setHistoryStale(false);
     setActive(null);
     setView(null);
     if (snapshotBars) { setBars(snapshotBars); return () => controller.abort(); }
@@ -391,6 +395,37 @@ export default function ChartView({
       });
     return () => controller.abort();
   }, [symbol, paramsKey, chartCacheKey, attempt, snapshotBars]);
+
+  useEffect(() => {
+    if (snapshotBars) return;
+    const controller = new AbortController();
+    let pending = false;
+    const refreshHistory = async () => {
+      if (document.hidden || pending) return;
+      pending = true;
+      try {
+        const data = await getStockHistory(symbol, JSON.parse(paramsKey), controller.signal, true);
+        if (!controller.signal.aborted) {
+          setBars(data);
+          setError(false);
+          setHistoryStale(false);
+        }
+      } catch {
+        if (!controller.signal.aborted) setHistoryStale(true);
+      } finally { pending = false; }
+    };
+    const timer = window.setInterval(refreshHistory, 60_000);
+    document.addEventListener("visibilitychange", refreshHistory);
+    window.addEventListener("focus", refreshHistory);
+    window.addEventListener("online", refreshHistory);
+    return () => {
+      controller.abort();
+      window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", refreshHistory);
+      window.removeEventListener("focus", refreshHistory);
+      window.removeEventListener("online", refreshHistory);
+    };
+  }, [symbol, paramsKey, snapshotBars]);
 
   useEffect(() => {
     setSelectedId(null);
@@ -1356,6 +1391,12 @@ export default function ChartView({
       mode={mode}
       heightClass={heightClass}
       bars={bars}
+      quote={quoteResource.data}
+      quoteEnabled={!snapshotBars}
+      quoteLoading={quoteResource.loading}
+      quoteError={!!quoteResource.error}
+      onQuoteRetry={quoteResource.refresh}
+      historyStale={historyStale}
       loading={!bars && !error}
       error={error}
       onRetry={() => setAttempt((value) => value + 1)}
@@ -1411,7 +1452,7 @@ export default function ChartView({
         {advanced && (
           <div className="flex shrink-0 items-center gap-3">
             <h2 className="text-lg font-semibold">{symbol}</h2>
-            {last && (
+            {last && snapshotBars && (
               <span className="flex items-baseline gap-2 text-sm tabular-nums">
                 <span className="font-semibold">{formatPrice(last.close)}</span>
                 <span className={rangeChange >= 0 ? "text-positive" : "text-negative"}>{formatChangePercent(rangeChange)}</span>

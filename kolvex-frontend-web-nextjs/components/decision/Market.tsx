@@ -5,7 +5,8 @@ import { loadClientCache, peekClientCache } from "@/lib/clientCache";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { ArrowUpRight, LayoutGrid, List } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useVisiblePolling } from "@/hooks/useVisiblePolling";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import CompanyLogo from "@/components/ui/company-logo";
 import { ListCard, ListFooterLink, ListRow, ListRows } from "@/components/ui/list-card";
@@ -18,7 +19,7 @@ import { type StockQuote } from "@/lib/stockApi";
 import { cn } from "@/lib/utils";
 import { loadStockTrend } from "@/lib/stockTrends";
 import { MARKET_RANGES, marketRangeBaseline, observationRange, type MarketObservation } from "@/lib/marketObservations";
-import { loadMarketQuotes, getCachedMarketQuotes } from "@/lib/marketQuotes";
+import { useMarketQuotes } from "@/hooks/useMarketQuotes";
 import { BENCHMARKS, MARKET_GROUPS, isMarketIndex, indexValue, type MarketInstrument } from "@/lib/marketBenchmarks";
 import { marketStockHref } from "@/lib/stockLinks";
 import {
@@ -72,17 +73,25 @@ function MarketInstrumentCard({ benchmark, quote, quoteLoading, range, attempt, 
   const [series, setSeries] = useState<ScrubPoint[]>(() => peekClientCache<ScrubPoint[]>(seriesKey) ?? []);
   const [seriesState, setSeriesState] = useState<"loading" | "ready" | "error">((peekClientCache<ScrubPoint[]>(seriesKey)?.length ?? 0) > 1 ? "ready" : "loading");
   const [scrub, setScrub] = useState<ScrubPoint | null>(null);
+  const [seriesRevision, setSeriesRevision] = useState(0);
+  const refreshSeries = useCallback(() => setSeriesRevision(value => value + 1), []);
+  useVisiblePolling(refreshSeries, 60_000, near && benchmark.source !== "fred" && !benchmark.daily);
 
   const seriesAttempt = useRef(attempt);
+  const previousSeriesKey = useRef(seriesKey);
   useEffect(() => {
     const controller = new AbortController();
     const spec = RANGES.find((item) => item.key === range)!;
     const saved = peekClientCache<ScrubPoint[]>(seriesKey);
-    setSeriesState(saved?.length ? "ready" : "loading");
-    setSeries(saved ?? []);
-    setScrub(null);
+    const changed = previousSeriesKey.current !== seriesKey;
+    previousSeriesKey.current = seriesKey;
+    if (changed || saved?.length) {
+      setSeriesState(saved?.length ? "ready" : "loading");
+      setSeries(saved ?? []);
+    }
+    if (changed) setScrub(null);
     if (!near) return () => controller.abort();
-    const forceRefresh = seriesAttempt.current !== attempt;
+    const forceRefresh = seriesAttempt.current !== attempt || seriesRevision > 0;
     seriesAttempt.current = attempt;
     async function load(signal: AbortSignal): Promise<MarketObservation[]> {
       if (benchmark.source === "fred") {
@@ -104,16 +113,16 @@ function MarketInstrumentCard({ benchmark, quote, quoteLoading, range, attempt, 
         if (!controller.signal.aborted) setSeriesState("error");
       });
     return () => controller.abort();
-  }, [benchmark.symbol, benchmark.source, benchmark.daily, range, attempt, near, seriesKey]);
+  }, [benchmark.symbol, benchmark.source, benchmark.daily, range, attempt, near, seriesKey, seriesRevision]);
 
-  const value = scrub?.value ?? (benchmark.daily ? series.at(-1)?.value : (range === "1D" ? quote?.price : undefined) ?? series.at(-1)?.value);
-  const baseline = range === "1D" && !benchmark.daily
+  const value = scrub?.value ?? (benchmark.daily ? series.at(-1)?.value : quote?.price ?? series.at(-1)?.value);
+  const baseline = (!scrub || range === "1D") && !benchmark.daily
     ? quote?.previousClose ?? (quote ? quote.price - quote.change : undefined)
     : marketRangeBaseline(series, range);
-  const change = value !== undefined && baseline !== undefined ? value - baseline : undefined;
-  const percent = change !== undefined && baseline ? change / Math.abs(baseline) * 100 : undefined;
+  const change = !scrub && !benchmark.daily && quote ? quote.change : value !== undefined && baseline !== undefined ? value - baseline : undefined;
+  const percent = !scrub && !benchmark.daily && quote ? quote.changePercent : change !== undefined && baseline ? change / Math.abs(baseline) * 100 : undefined;
   const positive = (change ?? quote?.change ?? 0) >= 0;
-  const pointDate = (scrub ?? series[series.length - 1])?.date;
+  const pointDate = !scrub && !benchmark.daily && quote?.marketTime ? new Date(quote.marketTime * 1000).toISOString() : (scrub ?? series[series.length - 1])?.date;
   // Use the trading date supplied by the data, rather than the viewer's local day.
   const date = pointDate?.slice(0, 10);
   const spec = RANGES.find((item) => item.key === range)!;
@@ -125,7 +134,7 @@ function MarketInstrumentCard({ benchmark, quote, quoteLoading, range, attempt, 
               ? `${positive ? "+" : "−"}${indexValue(Math.abs(change))} (${positive ? "+" : "−"}${Math.abs(percent).toFixed(2)}%)`
               : quoteLoading || seriesState === "loading" ? <Skeleton className="inline-block h-4 w-32 align-middle" /> : c("Change unavailable", "暂无涨跌数据")}
           {benchmark.daily && range === "1D" && <span className="ml-1 text-muted-foreground">{c("vs. prior observation", "较前次观测")}</span>}
-          <span className="sr-only"> · {c(spec.en, spec.zh)}</span></>);
+          <span className="ml-1 text-muted-foreground"> · {!scrub && !benchmark.daily ? c("vs. prior close", "较昨收") : c(spec.en, spec.zh)}</span></>);
   const chartDisplay = (<>{seriesState === "loading" ? (
             <Skeleton className="h-full w-full" />
           ) : seriesState === "error" ? (
@@ -234,7 +243,7 @@ function MarketRangeControls({ range, setRange, view, setView }: { range: RangeK
   );
 }
 
-function MarketCharts({ groups, quotes, loading, range, attempt, onRetry, checkedAt, view }: {
+function MarketCharts({ groups, quotes, loading, range, attempt, onRetry, view }: {
   groups: readonly (typeof MARKET_GROUPS)[number][];
   view: MarketView;
   quotes: Record<string, StockQuote>;
@@ -242,7 +251,6 @@ function MarketCharts({ groups, quotes, loading, range, attempt, onRetry, checke
   range: RangeKey;
   attempt: number;
   onRetry: () => void;
-  checkedAt: string | null;
 }) {
   const c = useCopy();
   return (
@@ -284,24 +292,8 @@ function MarketCharts({ groups, quotes, loading, range, attempt, onRetry, checke
 
 function MarketTrends({ range, view }: { range: RangeKey; view: MarketView }) {
   const { setContext } = useDecisionCommand();
-  const [quotes, setQuotes] = useState<Record<string, StockQuote>>(() => getCachedMarketQuotes(TREND_QUOTE_SYMBOLS));
-  const [loading, setLoading] = useState(true);
   const [attempt, setAttempt] = useState(0);
-  const [checkedAt, setCheckedAt] = useState<string | null>(null);
-
-  useEffect(() => {
-    const controller = new AbortController();
-    setLoading(true);
-    loadMarketQuotes(TREND_QUOTE_SYMBOLS, controller.signal, batch => {
-      setQuotes(previous => ({ ...previous, ...batch }));
-    }, attempt > 0).then(({ quotes: result }) => {
-      if (controller.signal.aborted) return;
-      setQuotes(result);
-      setCheckedAt(new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }));
-      setLoading(false);
-    });
-    return () => controller.abort();
-  }, [attempt]);
+  const { quotes, loading } = useMarketQuotes(TREND_QUOTE_SYMBOLS, true, attempt);
 
   const context = JSON.stringify({ workspace: "Markets / Market trends", instruments: TREND_GROUPS.map(group => ({ group: group.en, symbols: group.instruments.map(item => item.symbol) })), range, quotes });
   useEffect(() => {
@@ -309,46 +301,19 @@ function MarketTrends({ range, view }: { range: RangeKey; view: MarketView }) {
     return () => setContext("");
   }, [context, setContext]);
 
-  return <div className="min-w-0 pt-6"><MarketCharts view={view} groups={TREND_GROUPS} quotes={quotes} loading={loading} range={range} attempt={attempt} onRetry={() => setAttempt(value => value + 1)} checkedAt={checkedAt} /></div>;
+  return <div className="min-w-0 pt-6"><MarketCharts view={view} groups={TREND_GROUPS} quotes={quotes} loading={loading} range={range} attempt={attempt} onRetry={() => setAttempt(value => value + 1)} /></div>;
 }
 
 function MarketOverview({ range, view }: { range: RangeKey; view: MarketView }) {
   const c = useCopy();
   const { setContext } = useDecisionCommand();
   const [attempt, setAttempt] = useState(0);
-  const [quotes, setQuotes] = useState<Record<string, StockQuote>>(() => getCachedMarketQuotes(BENCHMARKS.map(item => item.symbol)));
-  const [loading, setLoading] = useState(true);
-  const [failed, setFailed] = useState(false);
-  const [checkedAt, setCheckedAt] = useState<string | null>(null);
+  const { quotes, loading, unavailable: failed } = useMarketQuotes(BENCHMARKS.map(item => item.symbol), true, attempt);
 
   const held = useHeldTickers(attempt);
   const catalogue = useCreatorCatalogue(attempt);
   const consensus = useMemo(() => new Map(catalogue.data?.stocks.map(stock => [stock.ticker, stock]) ?? []), [catalogue.data]);
   const heldSet = useMemo(() => new Set(held.tickers), [held.tickers]);
-  const lastQuoteAttempt = useRef(attempt);
-  useEffect(() => {
-    const forceRefresh = lastQuoteAttempt.current !== attempt;
-    lastQuoteAttempt.current = attempt;
-    const controller = new AbortController();
-    setLoading(true);
-    setFailed(false);
-    async function load() {
-      const { quotes: result, unavailable } = await loadMarketQuotes(
-        BENCHMARKS.map(item => item.symbol),
-        controller.signal,
-        batch => setQuotes(previous => ({ ...previous, ...batch })),
-        forceRefresh,
-      );
-      if (!controller.signal.aborted) {
-        setQuotes(result);
-        setFailed(unavailable);
-        setCheckedAt(new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }));
-        setLoading(false);
-      }
-    }
-    load();
-    return () => controller.abort();
-  }, [attempt]);
 
   const context = JSON.stringify({ workspace: "Markets / Market overview", benchmarks: BENCHMARKS.map(item => item.symbol), range, quotes, quotesUnavailable: failed });
   useEffect(() => {
@@ -362,7 +327,7 @@ function MarketOverview({ range, view }: { range: RangeKey; view: MarketView }) 
   return (
         <div className="mx-auto grid gap-x-8 gap-y-8 pt-6 xl:grid-cols-[minmax(0,1fr)_320px] 2xl:gap-x-12">
           <div className="min-w-0 xl:col-span-2">
-            <MarketCharts view={view} groups={OVERVIEW_GROUPS} quotes={quotes} loading={loading} range={range} attempt={attempt} onRetry={() => setAttempt(value => value + 1)} checkedAt={checkedAt} />
+            <MarketCharts view={view} groups={OVERVIEW_GROUPS} quotes={quotes} loading={loading} range={range} attempt={attempt} onRetry={() => setAttempt(value => value + 1)} />
           </div>
           <div className="min-w-0 space-y-10">
             <StockObservationList range={range} catalogue={catalogue} held={held} onRetry={() => setAttempt(value => value + 1)} />

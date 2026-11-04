@@ -475,6 +475,7 @@ export default function StockPaperTrading({
                   <OrderTicket
                     key={`${symbol}-${closingId ?? "open"}`}
                     fixedSymbol={symbol}
+                    active={active}
                     account={account}
                     closePosition={closePosition}
                     clearClose={() => setClosingId(null)}

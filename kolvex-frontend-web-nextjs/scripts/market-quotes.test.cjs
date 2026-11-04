@@ -7,6 +7,10 @@ const ts = require('typescript');
 function load(file, fetch, cache = new Map()) {
   const module = { exports: {} };
   const clientCache = require("./helpers/client-cache.cjs")();
+  const snapshots = { exports: {} };
+  vm.runInNewContext(ts.transpileModule(fs.readFileSync(path.join(__dirname, '../lib/quoteSnapshots.ts'), 'utf8'), {
+    compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020 },
+  }).outputText, { module: snapshots, exports: snapshots.exports, require: () => clientCache });
   vm.runInNewContext(ts.transpileModule(fs.readFileSync(path.join(__dirname, '..', file), 'utf8'), {
     compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020 },
   }).outputText, {
@@ -14,6 +18,7 @@ function load(file, fetch, cache = new Map()) {
     process: { env: { NEXT_PUBLIC_BACKEND_API_URL: 'https://backend.example' } },
     require(name) {
       if (name === "./clientCache") return clientCache;
+      if (name === "./quoteSnapshots") return snapshots.exports;
       if (name === 'next/server') return { NextResponse: Response };
       if (name === '@/lib/cache') return { quoteCache: cache, chartCache: new Map(), overviewCache: new Map(), CACHE_TTL: { QUOTE: 15, CHART: 300, OVERVIEW: 600 }, QUOTE_CACHE_CONTROL: 'quote-cache-control', getCacheKey: (...parts) => parts.join(':') };
       throw Error(name);
@@ -164,4 +169,44 @@ test('chart, overview and index history requests also bypass the Next Data Cache
   const upstream = seen.filter(({ url }) => /\/market\/(intraday|overview|history)\//.test(url));
   assert.equal(upstream.length, 5);
   for (const { url, cache } of upstream) assert.equal(cache, 'no-store', url);
+});
+
+test('single and batch quotes preserve matching regular and extended-session timestamps', async () => {
+  const raw = { symbol: 'NVDA', current_price: 203.36, previous_close: 206.69, change: -3.33, change_percent: -1.6111,
+    market_time: 1793814337, market_state: 'POST', quote_source: 'Yahoo Finance', exchange_timezone_name: 'America/New_York',
+    pre_market_price: 202, pre_market_time: 1793800000, post_market_price: 204, post_market_time: 1793830000 };
+  const api = load('app/api/stocks/route.ts', async url => Response.json(String(url).includes('/quotes?') ? { NVDA: raw } : raw));
+  const single = await (await api.GET({ nextUrl: new URL('https://kolvex.example/api/stocks?action=quote&symbol=NVDA') })).json();
+  const batch = await (await api.GET(request(['NVDA']))).json();
+  assert.deepEqual(batch[0], single);
+  assert.equal(single.marketTime, raw.market_time);
+  assert.equal(single.preMarketTime, raw.pre_market_time);
+  assert.equal(single.postMarketTime, raw.post_market_time);
+  assert.equal(single.postMarketPrice, 204);
+  assert.equal(single.source, 'Yahoo Finance');
+  assert.equal(single.updatedAt, new Date(raw.market_time * 1000).toISOString());
+});
+
+test('invalid single quotes and outages return uncached errors without fabricated zero prices', async () => {
+  for (const raw of [{}, { current_price: null }, { current_price: 0 }, { current_price: -1 }, { current_price: '203' }]) {
+    const cache = new Map();
+    const api = load('app/api/stocks/route.ts', async () => Response.json(raw), cache);
+    const response = await api.GET({ nextUrl: new URL('https://kolvex.example/api/stocks?action=quote&symbol=NVDA') });
+    assert.equal(response.status, 503);
+    assert.equal(response.headers.get('Cache-Control'), 'no-store');
+    assert.equal((await response.json()).price, undefined);
+    assert.equal(cache.size, 0);
+  }
+  const api = load('app/api/stocks/route.ts', async () => { throw Error('Offline'); });
+  const response = await api.GET({ nextUrl: new URL('https://kolvex.example/api/stocks?action=quote&symbol=NVDA') });
+  assert.equal(response.status, 503);
+});
+
+test('index outages omit missing values instead of inventing zero quotes', async () => {
+  const api = load('app/api/market/indices/route.ts', async url => Response.json(String(url).includes('/history/')
+    ? { data: [] } : { current_price: 0 }));
+  const response = await api.GET();
+  assert.equal(response.status, 503);
+  assert.equal(response.headers.get('Cache-Control'), 'no-store');
+  assert.equal((await response.json()).error, 'Index quotes unavailable');
 });

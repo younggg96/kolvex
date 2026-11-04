@@ -107,3 +107,35 @@ test('fresh visits never enter a refreshing state, including false and zero payl
     h.unmount();
   }
 });
+
+test('disabled historical views neither request nor seed the live cache; enabling fetches normally', async () => {
+  const cache = createCache(), h = harness(cache);
+  let requests = 0;
+  const loader = async () => { requests++; return { price: 203.36 }; };
+  let state = h.render('/quote/NVDA', loader, { enabled: false });
+  h.effects(); await tick();
+  assert.equal(state.loading, false);
+  assert.equal(state.data, undefined);
+  assert.equal(requests, 0);
+  assert.equal(cache.peekClientCache('/quote/NVDA'), undefined);
+  h.render('/quote/NVDA', loader, { enabled: true });
+  h.effects(); await tick();
+  state = h.render('/quote/NVDA', loader, { enabled: true });
+  assert.equal(state.data.price, 203.36);
+  assert.equal(requests, 1);
+  h.unmount();
+});
+
+test('a quote published by a sibling list updates every mounted reader without refetching', async () => {
+  const cache = createCache(), a = harness(cache), b = harness(cache);
+  let requests = 0;
+  const loader = async () => { requests++; return { price: 200 }; };
+  a.render('/quote/NVDA', loader); a.effects();
+  b.render('/quote/NVDA', loader); b.effects();
+  await tick();
+  cache.writeClientCache('/quote/NVDA', { price: 203.36 });
+  assert.equal(a.render('/quote/NVDA', loader).data.price, 203.36);
+  assert.equal(b.render('/quote/NVDA', loader).data.price, 203.36);
+  assert.equal(requests, 1);
+  a.unmount(); b.unmount();
+});

@@ -66,3 +66,36 @@ The temporary fixture route was removed. Authenticated end-to-end verification
 against a deployed account remains pending; fixture checks do not verify deployment
 configuration or live storage. The existing project-wide UI audit findings in
 settings, Reddit and global scrollbar ownership remain outside this change.
+
+## Market quote freshness
+
+- `hooks/useMarketQuotes.ts` owns list quote polling; `useStockData.ts` owns
+  single-stock readers. Both reuse `useVisiblePolling`: 15 seconds while visible,
+  with revalidation on focus, visibility return and reconnection. `quoteSnapshots`
+  publishes a shared per-symbol price to `clientCache` subscribers, reconciles
+  each session by its source timestamp and guards against late-response rollback
+  even when the general cache evicts a large list. Each browser page owns its
+  independent memory cache; no cross-window simultaneous delivery is promised.
+- `ChartView` refreshes current candles every minute and on return without resetting
+  the inspected point, zoom or drawings. Immutable saved snapshots disable polling.
+- `lib/chart/quote.ts` selects extended hours only with a matching timestamp newer
+  than the regular quote. `PriceGraph` distinguishes source quotes, historical
+  candles, session baselines, unknown timestamps and refresh failures. Single-quote
+  failures are HTTP 503; no zero-price success is fabricated. Browser/CDN quote
+  and history responses use no-store; bounded in-memory caches own freshness.
+- Main quote values use the regular session across lists and charts. Extended
+  prices and their source timestamps are separate. Financial ratios, historical
+  closing-price comparisons and dated valuation inputs retain snapshot labels.
+- The private OrderTicket polls its server-validated quote every 15 seconds while
+  active, pauses during review/submission or inactive tabs, preserves form inputs
+  and retains the last genuine quote with an error on refresh failure. Its quote
+  never authorizes execution in the browser; server validation remains decisive.
+- Regression evidence: `chart-live-quote`, `chart-view-integration`,
+  `stock-quote-polling`, `market-quotes` and `market-history-proxy` Node tests;
+  backend `test_yfinance_quotes.py`; TypeScript check and local HTTP quote/history
+  flow. Browser layout/interaction QA remains unverified because local browser
+  control is disabled in Work settings.
+- Additional regression evidence: `market-quote-sync`, `quote-snapshots`,
+  `landing-quotes`, `stock-discovery`, `stock-news`, Watchlist and virtual-trading
+  tests. Five live local symbols (NVDA/AAPL/MSFT/TSLA/AMD) returned identical full
+  batch and single-quote responses with no-store headers and server cache hits.
