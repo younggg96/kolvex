@@ -142,10 +142,12 @@ const TabsTrigger = React.forwardRef<
       "inline-flex shrink-0 items-center justify-center whitespace-nowrap text-sm font-semibold transition-colors duration-150 focus-visible:outline-none focus-visible:underline focus-visible:decoration-2 focus-visible:underline-offset-8",
       variant === "pill"
         ? // The colour is painted by the list's sliding pill so only the
-          // active hover surface is suppressed, never the shared indicator.
+          // active label keeps its inverse colour during hover, press and focus.
+          // Scope interaction colours to inactive tabs so Safari touch hover
+          // and keyboard focus cannot paint white text on the white dark pill.
           // Unselected segments get a neutral wash: tabs are navigation, not
           // direction, so brand green here would compete with real signals.
-          "relative z-10 min-h-10 rounded-full px-4 hover:bg-foreground/[0.06] hover:text-foreground focus-visible:bg-foreground/[0.06] focus-visible:text-foreground active:bg-foreground/[0.1] data-[state=active]:text-background data-[state=active]:hover:bg-transparent data-[state=active]:hover:text-background"
+          "relative z-10 min-h-10 rounded-full px-4 data-[state=inactive]:hover:bg-foreground/[0.06] data-[state=inactive]:hover:text-foreground data-[state=inactive]:focus-visible:bg-foreground/[0.06] data-[state=inactive]:focus-visible:text-foreground data-[state=inactive]:active:bg-foreground/[0.1] data-[state=active]:text-background"
         : // The underline variant uses border as its only active affordance, so
           // the rule itself has to go neutral too — a green indicator line
           // would read as state colour on what is just a tab position.
