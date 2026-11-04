@@ -4,6 +4,25 @@ The maintained `DESIGN.md`, runtime `app/globals.css`, shared UI primitives and
 existing sibling workflows own the existing product. This document records the
 new virtual-trading workflow; it does not retrofit behavior onto unrelated routes.
 
+## Stock discovery
+
+Source: `../docs/stock-discovery.md` and backend `app/services/stock_discovery.py`.
+`StockObservationList` owns all five scopes, local search, ordering, load more,
+URL state and detail return. Shared SegmentedControl (desktop), Radix Select
+(narrow), ListRow, WatchlistButton, ContentLoading and inline live feedback retain
+their canonical behavior. No selection/bulk writes are introduced.
+
+`useMarketDiscovery` uses `useCachedResource` and `useVisiblePolling` for bounded
+read caching, stale-request cancellation and minute polling while visible.
+Switching ranking scopes shares the same fetched payload. Page refresh refreshes
+the active ranking and quotes; rank retries and quote retries remain separate.
+Partial-source failures and retained snapshots are labelled; total failure never
+falls back to the curated list. Quote reads still use shared per-symbol snapshots.
+Entry reasons distinguish dated price moves, full-day average volume multiples,
+seven-day opinion counts and curated sector membership in both zh and en.
+Node component-state tests cover empty/error/retry/loading, locale, scope state
+and detail returns. Real browser geometry/keyboard verification remains pending.
+
 | Capability | Canonical owner | Source of truth | Allowed variants | Verification |
 | --- | --- | --- | --- | --- |
 | Select/Listbox | `components/ui/select.tsx` (Radix) | Shared primitive + DESIGN.md | Authored order kind / completed lot | Typecheck; manual keyboard/popup QA pending |

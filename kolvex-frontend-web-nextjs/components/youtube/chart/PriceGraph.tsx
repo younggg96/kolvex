@@ -763,9 +763,9 @@ export default function PriceGraph({
               }}
               className={cn(
                 "inline-flex h-11 shrink-0 select-none items-center justify-center rounded-full px-3 text-[0.8125rem] font-semibold transition-colors duration-150 sm:h-8",
-                "focus-visible:outline-none focus-visible:bg-muted/60",
+                "focus-visible:outline-none",
                 "disabled:pointer-events-none disabled:opacity-40",
-                selected ? "bg-foreground text-background" : "text-muted-foreground hover:bg-muted/70 hover:text-foreground",
+                selected ? "bg-foreground text-background focus-visible:bg-foreground" : "text-muted-foreground hover:bg-muted/70 hover:text-foreground focus-visible:bg-muted/60",
               )}
             >
               {option.label}
@@ -786,8 +786,8 @@ export default function PriceGraph({
             }}
             className={cn(
               "inline-flex h-11 max-w-[min(15rem,52vw)] shrink-0 items-center justify-center rounded-full px-3 text-[0.8125rem] font-semibold transition-colors duration-150 sm:h-8",
-              "focus-visible:outline-none focus-visible:bg-muted/60",
-              range === "CUSTOM" ? "bg-foreground text-background" : "text-muted-foreground hover:bg-muted/70 hover:text-foreground",
+              "focus-visible:outline-none",
+              range === "CUSTOM" ? "bg-foreground text-background focus-visible:bg-foreground" : "text-muted-foreground hover:bg-muted/70 hover:text-foreground focus-visible:bg-muted/60",
             )}
             title={customOption.label}
           >
@@ -810,8 +810,8 @@ export default function PriceGraph({
 
   const iconButton = (active: boolean) =>
     cn(
-      "inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full transition-colors duration-150 focus-visible:outline-none focus-visible:bg-muted/60 sm:h-8 sm:w-8",
-      active ? "bg-foreground text-background" : "text-muted-foreground hover:bg-muted/70 hover:text-foreground",
+      "inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full transition-colors duration-150 focus-visible:outline-none sm:h-8 sm:w-8",
+      active ? "bg-foreground text-background focus-visible:bg-foreground" : "text-muted-foreground hover:bg-muted/70 hover:text-foreground focus-visible:bg-muted/60",
     );
 
   const plotTone = toneColor[tone];

@@ -330,7 +330,7 @@ function MarketOverview({ range, view }: { range: RangeKey; view: MarketView }) 
             <MarketCharts view={view} groups={OVERVIEW_GROUPS} quotes={quotes} loading={loading} range={range} attempt={attempt} onRetry={() => setAttempt(value => value + 1)} />
           </div>
           <div className="min-w-0 space-y-10">
-            <StockObservationList range={range} catalogue={catalogue} held={held} onRetry={() => setAttempt(value => value + 1)} />
+            <StockObservationList range={range} catalogue={catalogue} held={held} refreshToken={attempt} onRetry={() => setAttempt(value => value + 1)} />
           </div>
 
           <aside className="min-w-0 space-y-8 xl:sticky xl:top-8 xl:self-start">

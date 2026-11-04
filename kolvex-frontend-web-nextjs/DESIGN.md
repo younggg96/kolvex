@@ -118,7 +118,11 @@ Textarea and native fields, selects and editable regions, preventing iOS focus
 zoom despite the smaller root size or local text utilities. Non-text input types
 retain their own geometry; textareas retain their existing height/autogrow behavior.
 Desktop pointer layouts retain their existing type sizes, and the viewport keeps
-manual page zoom available. Published
+manual page zoom available. On narrow screens and touch devices, input and
+textarea placeholders use 14px text so empty fields read as quiet hints rather
+than oversized labels; entered text retains the 16px focus-safe size. These
+values share the global editable-control media rule, including auth and search.
+Published
 reports stay within 1080px; Creator Opinions retains a wider two-column layout.
 
 Markets, Creator Opinions and AI Research each have one primary navigation entry.
@@ -480,8 +484,11 @@ color authority.
 variant for aligned 48px controls with 12px corners, semantic borders, muted
 fill, 16px text and visible focus. Password visibility augments this same Input.
 Shared pill Buttons provide full-width primary and outline actions; shared Radix
-tabs provide two equal underlined login/signup choices with visible keyboard
-focus. Labels, hints, validation messages and status copy follow the active
+tabs provide two equal pill-shaped login/signup choices with visible keyboard
+focus. The `auth` list reuses the shared sliding `bg-foreground` indicator behind
+the active `text-background` label, keeping text and fill paired in both themes.
+Its two-column grid needs no horizontal scroll fades. Labels, hints, validation
+messages and status copy follow the active
 Chinese or English locale. Invalid fields expose their associated description
 and semantic negative border; submission focuses the first invalid field.
 
@@ -1336,6 +1343,18 @@ Range and view controls use neutral foreground selection; stock scope selection
 uses the muted surface. Brand green remains on the primary lookup action, active
 navigation and focus indicators, with semantic positive/negative data unchanged.
 
+Stock watch adds Daily movers / 今日异动, Volume surge / 放量活跃 and Creator
+buzz / 博主热议 alongside the maintained Core US stocks list. The desktop switcher
+reuses SegmentedControl; below lg the same URL-backed choices use the shared
+Radix Select in the section header. Each row has a wrapping, quiet entry reason
+below identity, chart and quote. Reasons use dated ranking snapshots or actual
+seven-day opinion counts; the right-hand prices retain the shared quote cache.
+The ranking disclosure states eligibility, candidate limits, source session and
+full-day volume-average basis. Partial, stale, unavailable and no-candidate states
+remain distinct, with ranking retries independent of quote retries. Source and
+verification details live in `../docs/stock-discovery.md`; browser QA is pending
+because local browser control is disabled in Work settings.
+
 The Markets secondary rail leads with a compact Watchlist card above creator
 updates. It uses the shared browser-local watchlist store and quote cache, previews
 the six most recently saved symbols, and groups known stocks by the maintained
@@ -1383,6 +1402,16 @@ Rules that follow from that:
 - Tabs, `SegmentedControl`, `SwitchTab` and every authored pill select with
   `bg-foreground` plus `text-background`, or a `secondary` fill with
   foreground text. Unselected options preview with the same grey wash.
+  Selected controls retain that pairing during keyboard focus; the global
+  focus wash excludes selected/pressed/checked/current states. Chart range
+  and selected tool buttons follow the same rule.
+  Pill triggers paint their own matching fill until the sliding indicator has
+  valid visible dimensions, including server rendering and hidden panels.
+  Radix triggers inherit their list's pill/underline variant unless explicitly
+  overridden. Segmented controls show a measured thumb immediately, then arm
+  movement; focus never covers it. The legacy SwitchTab uses the same neutral
+  palette. Indicator stacking is isolated per control and reduced motion skips
+  movement. Selection measurement ignores its own style writes.
 - Desktop sidebar, mobile dock and the mobile opinion source nav take a grey
   wash on hover; the selected route is the only entry marked, by its solid
   secondary pill. Icons follow the text colour instead of turning green.

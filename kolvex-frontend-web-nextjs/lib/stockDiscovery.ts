@@ -2,6 +2,7 @@ import type { StockQuote } from "./stockApi";
 import type { YouTubeStockSummary } from "./youtubeOpinionsApi";
 import { opinionDay } from "./opinionDates";
 import { validTicker } from "./decision";
+import type { DiscoveryStock } from "./marketDiscovery";
 
 export const STOCK_SECTORS = [
   { key: "all", en: "All sectors", zh: "全部行业" },
@@ -45,8 +46,8 @@ export const CORE_STOCKS = [
   { symbol: "NEE", name: "NextEra Energy", sector: "utilities" },
 ] as const satisfies readonly { symbol: string; name: string; sector: StockSector }[];
 
-export type StockScope = "core" | "creators" | "holdings";
-export type StockSort = "move" | "gainers" | "losers" | "default" | "heat" | "latest";
+export type StockScope = "core" | "movers" | "active" | "creators" | "holdings";
+export type StockSort = "move" | "gainers" | "losers" | "default" | "heat" | "latest" | "volume";
 export interface StockObservationState {
   scope: StockScope;
   sector: StockSector;
@@ -58,12 +59,14 @@ export const STOCK_PAGE_SIZE = 10;
 export const STOCK_PREFERENCE_KEY = "kolvex:stock-observation";
 
 export function stockSorts(scope: StockScope): StockSort[] {
+  if (scope === "active") return ["volume", "move", "gainers", "losers"];
+  if (scope === "movers") return ["move", "gainers", "losers"];
   return scope === "creators" ? ["heat", "latest", "move", "gainers", "losers"] : ["move", "gainers", "losers", "default"];
 }
 
 export function readStockObservationState(params: URLSearchParams, holdingsEnabled = false): StockObservationState {
   const requested = params.get("stocks");
-  const scope: StockScope = requested === "creators" ? "creators" : requested === "holdings" && holdingsEnabled ? "holdings" : "core";
+  const scope: StockScope = requested === "creators" || requested === "movers" || requested === "active" ? requested : requested === "holdings" && holdingsEnabled ? "holdings" : "core";
   const sector = scope === "core" ? STOCK_SECTORS.find(item => item.key === params.get("sector"))?.key ?? "all" : "all";
   const sorts = stockSorts(scope);
   const requestedSort = params.get("stockSort") as StockSort;
@@ -110,22 +113,55 @@ export function selectObservationSymbols(
   holdings: readonly string[],
   quotes: Record<string, StockQuote>,
   now = Date.now(),
+  discovered: readonly DiscoveryStock[] = [],
 ) {
   const coverage = new Map(stocks.map(stock => [stock.ticker, stock]));
-  const symbols: string[] = state.scope === "core" ? CORE_STOCKS.filter(stock => state.sector === "all" || stock.sector === state.sector).map(stock => stock.symbol)
+  const marketScope = state.scope === "movers" || state.scope === "active";
+  const discovery = new Map(discovered.map(stock => [stock.symbol, stock]));
+  const symbols: string[] = marketScope ? [...discovery.keys()]
+    : state.scope === "core" ? CORE_STOCKS.filter(stock => state.sector === "all" || stock.sector === state.sector).map(stock => stock.symbol)
     : state.scope === "holdings" ? [...new Set(holdings)]
     : stocks.filter(stock => validTicker(stock.ticker) && (state.sort === "latest" ? latestStockOpinionDate(stock, now) !== null : (recentStockOpinionCount(stock, now) ?? 0) > 0)).map(stock => stock.ticker);
   const search = (state.search ?? "").trim().replace(/^\$/, "").toLocaleLowerCase();
-  const matching = search ? symbols.filter(symbol => [symbol, CORE_STOCKS.find(stock => stock.symbol === symbol)?.name, coverage.get(symbol)?.company_name, quotes[symbol]?.name]
+  const matching = search ? symbols.filter(symbol => [symbol, CORE_STOCKS.find(stock => stock.symbol === symbol)?.name, coverage.get(symbol)?.company_name, quotes[symbol]?.name, discovery.get(symbol)?.name]
     .some(value => value?.toLocaleLowerCase().includes(search))) : symbols;
   return matching.sort((a, b) => {
     if (state.sort === "default") return 0;
+    if (state.sort === "volume") return (discovery.get(b)?.volumeMultiple ?? 0) - (discovery.get(a)?.volumeMultiple ?? 0) || a.localeCompare(b);
     if (state.sort === "heat") return (recentStockOpinionCount(coverage.get(b), now) ?? 0) - (recentStockOpinionCount(coverage.get(a), now) ?? 0) || (latestStockOpinionDate(coverage.get(b), now) ?? "").localeCompare(latestStockOpinionDate(coverage.get(a), now) ?? "") || a.localeCompare(b);
     if (state.sort === "latest") return Date.parse(latestStockOpinionDate(coverage.get(b), now)!) - Date.parse(latestStockOpinionDate(coverage.get(a), now)!) || a.localeCompare(b);
-    const left = quotes[a]?.changePercent, right = quotes[b]?.changePercent;
-    if (!Number.isFinite(left) || !Number.isFinite(right)) return Number.isFinite(left) ? -1 : Number.isFinite(right) ? 1 : 0;
+    const left = marketScope ? discovery.get(a)?.changePercent : quotes[a]?.changePercent;
+    const right = marketScope ? discovery.get(b)?.changePercent : quotes[b]?.changePercent;
+    if (typeof left !== "number" || !Number.isFinite(left) || typeof right !== "number" || !Number.isFinite(right)) return Number.isFinite(left) ? -1 : Number.isFinite(right) ? 1 : 0;
     return (state.sort === "move" ? Math.abs(right) - Math.abs(left) : state.sort === "gainers" ? right - left : left - right) || a.localeCompare(b);
   });
+}
+
+/** All entry reasons use dated evidence; a missing metric is never inferred. */
+export function stockEntryReason(scope: StockScope, symbol: string, stock: YouTubeStockSummary | undefined, item: DiscoveryStock | undefined, now = Date.now()): [string, string] {
+  if (scope === "movers" && item) {
+    const move = `${item.changePercent >= 0 ? "+" : ""}${item.changePercent.toFixed(2)}%`;
+    return [`${item.sessionDate} · Move ${move}`, `${item.sessionDate} · 涨跌 ${move}`];
+  }
+  if (scope === "active" && item?.volumeMultiple != null) {
+    const multiple = item.volumeMultiple.toFixed(2);
+    return [`${item.sessionDate} · Volume / 3M daily avg ${multiple}×`, `${item.sessionDate} · 成交量 / 3个月日均 ${multiple}倍`];
+  }
+  const count = recentStockOpinionCount(stock, now);
+  if (scope === "creators" && count !== null && count > 0) {
+    const previous = stock?.discussion_heat?.previous;
+    const delta = typeof previous === "number" && Number.isSafeInteger(previous) && previous >= 0 ? count - previous : null;
+    const en = delta !== null && delta > 0 ? ` · ${delta} more than prior 7d` : "";
+    const zh = delta !== null && delta > 0 ? ` · 较前7天多${delta}条` : "";
+    return [`${count} opinions in 7d${en}`, `近7天 ${count}条观点${zh}`];
+  }
+  if (scope === "creators") {
+    const latest = latestStockOpinionDate(stock, now);
+    if (latest) return [`Latest opinion · ${opinionDay(latest)}`, `最新观点 · ${opinionDay(latest)}`];
+  }
+  if (scope === "holdings") return ["In your linked holdings", "来自已连接持仓"];
+  const sector = STOCK_SECTORS.find(sector => sector.key === CORE_STOCKS.find(stock => stock.symbol === symbol)?.sector);
+  return sector ? [`${sector.en} · Curated stock`, `${sector.zh} · 精选观察股`] : ["Curated stock", "精选观察股"];
 }
 
 /** Stock details only accept a return to the owning market list. */

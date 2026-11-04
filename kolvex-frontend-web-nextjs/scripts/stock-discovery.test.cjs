@@ -100,6 +100,7 @@ test('scope controls update Next App Router search params without bypassing its 
     '@/lib/i18n': { useTranslation: () => ({ locale: 'zh' }) },
     '@/lib/stockDiscovery': discovery,
     '@/hooks/useMarketQuotes': { useMarketQuotes: () => ({ quotes: {}, loading: false, refreshing: false, unavailable: false }) },
+    '@/hooks/useMarketDiscovery': { useMarketDiscovery: () => ({ data: undefined, loading: false, refreshing: false, error: null }) },
     '@/lib/opinionDates': load('lib/opinionDates.ts'),
     '@/lib/marketObservations': { MARKET_RANGES: [{ key: '1D', en: '1D', zh: '1天' }] },
     '@/lib/utils': { cn: (...values) => values.filter(Boolean).join(' ') },
@@ -113,8 +114,8 @@ test('scope controls update Next App Router search params without bypassing its 
   function find(node) {
     if (node == null || typeof node !== 'object') return;
     if (Array.isArray(node)) return node.map(find).find(Boolean);
-    if (node.props?.action?.props?.options?.some(option => option.label === '博主关注')) return node.props.action;
-    return find(node.props?.children);
+    if (node.props?.options?.some(option => option.label === '博主热议')) return node;
+    return find(node.props?.action) || find(node.props?.children);
   }
   const scopeControl = find(tree);
   assert.ok(scopeControl);
@@ -138,4 +139,39 @@ test('stock search round trips, resets cleanly and preserves other URL state', (
   assert.equal(params.get('tab'), 'overview');
   assert.equal(writeStockObservationState(params, state()).has('stockSearch'), false);
   assert.equal(readStockObservationState(new URLSearchParams('stockSearch=' + 'a'.repeat(120))).search.length, 100);
+});
+
+const candidates = [
+  { symbol: 'PLTR', name: 'Palantir Technologies', changePercent: 8, volumeMultiple: 3 },
+  { symbol: 'DOX', name: 'Amdocs', changePercent: -30, volumeMultiple: 8 },
+  { symbol: 'HOOD', name: 'Robinhood Markets', changePercent: 5, volumeMultiple: 2 },
+].map(item => ({ price: 20, volume: 12e6, averageVolume: 4e6, marketTime: now / 1000, sessionDate: '2026-10-29', ...item }));
+
+test('discovery scopes persist with valid sorting and clear irrelevant sector filters', () => {
+  for (const scope of ['movers', 'active']) {
+    const parsed = readStockObservationState(new URLSearchParams(`stocks=${scope}&sector=energy&stockSort=heat&stockRows=20`));
+    assert.equal(parsed.scope, scope);
+    assert.equal(parsed.sector, 'all');
+    assert.equal(parsed.sort, scope === 'active' ? 'volume' : 'move');
+    assert.deepEqual(readStockObservationState(writeStockObservationState(new URLSearchParams(), parsed)), parsed);
+  }
+});
+test('market discovery finds stocks outside core list and ranks dated snapshot independently of live quotes', () => {
+  const quotes = { PLTR: { changePercent: -99 }, DOX: { changePercent: 0 } };
+  const select = patch => selectObservationSymbols(state({ scope: 'movers', sort: 'move', ...patch }), [], [], quotes, now, candidates);
+  assert.deepEqual(select({}), ['DOX', 'PLTR', 'HOOD']);
+  assert.deepEqual(select({ sort: 'gainers' }), ['PLTR', 'HOOD', 'DOX']);
+  assert.deepEqual(select({ sort: 'losers' }), ['DOX', 'HOOD', 'PLTR']);
+  assert.deepEqual(select({ scope: 'active', sort: 'volume' }), ['DOX', 'PLTR', 'HOOD']);
+  assert.deepEqual(select({ search: 'Palantir' }), ['PLTR']);
+  assert.deepEqual(selectObservationSymbols(state({ scope: 'movers', sort: 'move' }), inputs, [], quotes, now), [], 'missing screener must never fall back to curated stocks');
+});
+test('entry reasons use source date, full-day volume basis and actual recent opinion counts', () => {
+  const reason = discovery.stockEntryReason;
+  assert.match(reason('movers', 'DOX', undefined, candidates[1], now)[1], /2026-10-29.*-30.00%/);
+  assert.match(reason('active', 'PLTR', undefined, candidates[0], now)[1], /3个月日均.*3.00倍/);
+  assert.match(reason('creators', 'JPM', inputs[1], undefined, now)[1], /近7天 8条观点.*较前7天多7条/);
+  assert.doesNotMatch(reason('creators', 'JPM', inputs[1], undefined, now)[1], /位博主/);
+  assert.match(reason('creators', 'AAPL', inputs[2], undefined, now)[1], /最新观点.*2026-09-01/);
+  assert.match(reason('core', 'MSFT', undefined, undefined, now)[1], /科技.*精选/);
 });

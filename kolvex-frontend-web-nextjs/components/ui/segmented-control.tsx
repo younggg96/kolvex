@@ -202,6 +202,7 @@ export function SegmentedControl<T extends string>({
   const config = SIZES[size];
   const pattern = BINDS[semantics];
   const roving = semantics === "tabs" || semantics === "radio";
+  const hasThumb = Boolean(thumb && thumb.width > 0 && thumb.height > 0);
 
   return (
     <div
@@ -211,7 +212,7 @@ export function SegmentedControl<T extends string>({
       aria-label={pattern.group ? label : undefined}
       data-slot="segmented-control"
       className={cn(
-        "relative inline-flex max-w-full shrink-0 items-center p-1",
+        "relative isolate inline-flex max-w-full shrink-0 items-center p-1",
         wrap ? "flex-wrap" : "flex-nowrap",
         config.gap,
         bare ? "" : "rounded-full bg-muted",
@@ -239,15 +240,15 @@ export function SegmentedControl<T extends string>({
         aria-hidden="true"
         className={cn(
           "pointer-events-none absolute left-0 top-0 z-0 rounded-full bg-foreground",
-          "transition-[transform,width,height] duration-300 ease-out",
-          ready ? "opacity-100" : "opacity-0",
+          "transition-[transform,width,height] duration-300 ease-out motion-reduce:!transition-none",
+          hasThumb ? "opacity-100" : "opacity-0",
           pressed && config.thumbPress,
         )}
         style={{
           width: thumb ? `${thumb.width}px` : 0,
           height: thumb ? `${thumb.height}px` : 0,
           transitionProperty: "transform, width, height, opacity",
-          transitionDuration: ready ? `340ms, 340ms, 340ms, 150ms` : "0ms",
+          transitionDuration: ready ? `340ms, 340ms, 340ms, 0ms` : "0ms",
           transitionTimingFunction: ready
             ? `${EASE}, ${EASE}, ${EASE}, ease-out`
             : "linear",
@@ -286,7 +287,14 @@ export function SegmentedControl<T extends string>({
               "focus-visible:outline-none focus-visible:underline focus-visible:decoration-2 focus-visible:underline-offset-4",
               "disabled:pointer-events-none disabled:opacity-40",
               config.item,
-              active ? "text-background" : "text-muted-foreground hover:text-foreground",
+              active
+                ? cn(
+                    "text-background",
+                    hasThumb
+                      ? "bg-transparent focus-visible:bg-transparent"
+                      : "bg-foreground focus-visible:bg-foreground",
+                  )
+                : "text-muted-foreground hover:bg-foreground/[0.06] hover:text-foreground",
               itemClassName,
             )}
           >

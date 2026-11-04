@@ -35,6 +35,13 @@ html {
   select {
     min-height: 44px;
   }
+
+  /* Hints can be quieter than entered text without changing the field's
+     16px focus size. Apply equally to auth, search and multiline inputs. */
+  input::placeholder,
+  textarea::placeholder {
+    font-size: 14px;
+  }
 }
 
 /* ========================================
@@ -184,7 +191,7 @@ a {
 
 @layer utilities {
   /* Visible keyboard focus without a surrounding ring. */
-  :focus-visible {
+  :focus-visible:not(:where([aria-selected="true"], [aria-pressed="true"], [aria-checked="true"], [aria-current]:not([aria-current="false"]), [data-state="active"], [data-state="on"], [data-state="checked"])) {
     background-color: rgb(var(--secondary));
   }
 

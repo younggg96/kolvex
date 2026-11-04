@@ -54,29 +54,27 @@ export const SwitchTab = React.memo(function SwitchTab({
   };
 
   // Variant configurations
-  // The sliding indicator keeps a brand tint because it is decoration, not
-  // hover feedback; the inactive triggers get a neutral wash so pointing at a
-  // segment never reads as a bullish signal.
+  // Match the shared Tabs/SegmentedControl foreground + inverse-text pairing.
   const variantConfig = {
     pills: {
       container:
         "bg-card rounded-full w-full border border-border",
-      indicator: "bg-primary/20 dark:bg-primary/80 rounded-full",
-      active: "text-primary dark:text-primary-foreground",
+      indicator: "bg-foreground rounded-full",
+      active: "text-background",
       inactive:
         "text-muted-foreground hover:bg-foreground/[0.06] hover:text-foreground active:bg-foreground/[0.1]",
     },
     tabs: {
       container: "bg-transparent border-b border-border",
-      indicator: "bg-primary/40 rounded-t-md",
-      active: "text-primary",
+      indicator: "bg-foreground rounded-t-md",
+      active: "text-background",
       inactive:
         "text-muted-foreground hover:bg-foreground/[0.06] hover:text-foreground active:bg-foreground/[0.1]",
     },
     underline: {
       container: "bg-transparent",
-      indicator: "bg-primary h-0.5 bottom-0 rounded-full",
-      active: "text-primary font-semibold",
+      indicator: "bg-foreground h-0.5 bottom-0 rounded-full",
+      active: "text-foreground font-semibold",
       inactive:
         "text-muted-foreground hover:bg-foreground/[0.06] hover:text-foreground active:bg-foreground/[0.1]",
     },
@@ -85,7 +83,10 @@ export const SwitchTab = React.memo(function SwitchTab({
   // Update indicator position and size
   const updateIndicator = React.useCallback(() => {
     const activeOption = options.find((opt) => opt.value === value);
-    if (!activeOption) return;
+    if (!activeOption) {
+      setIndicatorStyle({});
+      return;
+    }
 
     const activeButton = buttonRefs.current.get(activeOption.value);
     if (!activeButton || !containerRef.current) return;
@@ -95,7 +96,7 @@ export const SwitchTab = React.memo(function SwitchTab({
 
     const style: React.CSSProperties = {
       width: buttonRect.width,
-      transform: `translateX(${buttonRect.left - containerRect.left}px)`,
+      transform: `translateX(${buttonRect.left - containerRect.left + containerRef.current.scrollLeft - containerRef.current.clientLeft}px)`,
       transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
     };
 
@@ -104,6 +105,7 @@ export const SwitchTab = React.memo(function SwitchTab({
       style.bottom = "0";
     } else {
       style.height = buttonRect.height;
+      style.top = buttonRect.top - containerRect.top + containerRef.current.scrollTop - containerRef.current.clientTop;
     }
 
     setIndicatorStyle(style);
@@ -113,26 +115,33 @@ export const SwitchTab = React.memo(function SwitchTab({
     updateIndicator();
   }, [updateIndicator]);
 
-  // 监听窗口大小变化，更新指示器位置（响应移动端 label 隐藏/显示）
-  React.useEffect(() => {
+  // Font loading and the mobile root size can reflow labels after resize.
+  React.useLayoutEffect(() => {
     const handleResize = () => {
       updateIndicator();
     };
-
+    const observer = new ResizeObserver(handleResize);
+    if (containerRef.current) observer.observe(containerRef.current);
+    buttonRefs.current.forEach((button) => observer.observe(button));
     window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", handleResize);
+    };
   }, [updateIndicator]);
 
   const config = {
     size: sizeConfig[size],
     variant: variantConfig[variant],
   };
+  const hasIndicator = typeof indicatorStyle.width === "number" && indicatorStyle.width > 0
+    && typeof indicatorStyle.height === "number" && indicatorStyle.height > 0;
 
   return (
     <div
       ref={containerRef}
       className={cn(
-        "relative flex items-center",
+        "relative isolate flex items-center",
         config.size.gap,
         config.size.padding,
         config.variant.container,
@@ -143,13 +152,8 @@ export const SwitchTab = React.memo(function SwitchTab({
       {variant !== "underline" && (
         <div
           className={cn(
-            "absolute top-[1.5px] left-0 pointer-events-none",
+            "pointer-events-none absolute left-0 z-0 motion-reduce:!transition-none",
             config.variant.indicator,
-            size === "sm"
-              ? "top-[1.5px]"
-              : size === "md"
-                ? "top-[0.21875rem]"
-                : "top-[0.375rem]"
           )}
           style={indicatorStyle}
         />
@@ -170,6 +174,7 @@ export const SwitchTab = React.memo(function SwitchTab({
                 buttonRefs.current.delete(option.value);
               }
             }}
+            type="button"
             onClick={() => {
               if (!isDisabled) {
                 onValueChange(option.value);
@@ -183,6 +188,9 @@ export const SwitchTab = React.memo(function SwitchTab({
               "relative z-10 rounded-full font-medium transition-all duration-200 flex items-center justify-center gap-1.5",
               config.size.button,
               isActive ? config.variant.active : config.variant.inactive,
+              isActive && variant !== "underline" && (hasIndicator
+                ? "bg-transparent focus-visible:bg-transparent"
+                : "bg-foreground focus-visible:bg-foreground"),
               isDisabled && "opacity-50 cursor-not-allowed"
             )}
           >
@@ -200,7 +208,7 @@ export const SwitchTab = React.memo(function SwitchTab({
       {variant === "underline" && (
         <div
           className={cn(
-            "absolute pointer-events-none left-0",
+            "absolute pointer-events-none left-0 motion-reduce:!transition-none",
             config.variant.indicator
           )}
           style={indicatorStyle}

@@ -15,6 +15,7 @@ from uuid import UUID
 from app.api.dependencies.auth import get_current_user_id
 from app.core.supabase import get_supabase_service
 from app.services.market_performance import TooManySymbolsError, get_stock_performance
+from app.services.stock_discovery import DiscoveryUnavailable, get_stock_discovery
 from app.services.stock_analysis_history import StockAnalysisHistory
 from app.services.stock_chart_jobs import StockChartJobs
 from app.services.technical_analysis import AiNotConfigured, analyze_chart
@@ -416,6 +417,14 @@ def get_multiple_quotes(
         return service.get_multiple_quotes(symbols)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"批量获取报价失败: {str(e)}")
+
+
+@router.get("/discovery", summary="股票发现：今日异动与放量活跃")
+def get_market_discovery():
+    try:
+        return get_stock_discovery()
+    except DiscoveryUnavailable as error:
+        raise HTTPException(status_code=503, detail="Stock discovery unavailable") from error
 
 
 @router.get(
