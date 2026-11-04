@@ -173,11 +173,11 @@ function AppSidebar({ onNavigate }: AppSidebarProps) {
                   asChild
                   isActive={isActive(SEARCH_HREF)}
                   onClick={handleNavigate}
-                  tooltip={c("Search", "搜索")}
+                  tooltip={c("Search", "探索")}
                 >
                   <Link href={SEARCH_HREF} aria-current={isActive(SEARCH_HREF) ? "page" : undefined}>
                     <Search aria-hidden="true" />
-                    <span>{c("Search", "搜索")}</span>
+                    <span>{c("Search", "探索")}</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>

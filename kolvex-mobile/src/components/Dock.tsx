@@ -28,7 +28,7 @@ const TABS: { route: string; label: string; icon: SymbolName }[] = [
   },
   {
     route: "search",
-    label: "搜索",
+    label: "探索",
     icon: {
       ios: "magnifyingglass",
       android: "search",

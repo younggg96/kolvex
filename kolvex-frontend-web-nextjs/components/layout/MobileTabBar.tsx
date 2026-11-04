@@ -200,8 +200,8 @@ export default function MobileTabBar() {
             <Link
               href={SEARCH_HREF}
               aria-current={searchActive ? "page" : undefined}
-              aria-label={c("Search", "搜索")}
-              title={c("Search", "搜索")}
+              aria-label={c("Search", "探索")}
+              title={c("Search", "探索")}
               onClick={() => setMenuOpen(false)}
               className={cn(targetClass, searchHighlighted && "bg-foreground/10 text-foreground active:bg-foreground/10")}
             >
