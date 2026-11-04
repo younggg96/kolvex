@@ -1,0 +1,76 @@
+{
+  "verified_at": "2026-11-04T09:44:31.725600+00:00",
+  "scope": "PE pilot: NVDA, AAPL, MSFT; local implementation, not deployed",
+  "tests": {
+    "valuation_backend": 68,
+    "related_backend_regressions": 7,
+    "frontend_client": 8,
+    "total": 83
+  },
+  "checks": {
+    "typescript": "passed",
+    "changed_file_eslint": "passed",
+    "production_build": "passed (isolated copy)",
+    "design_detector": []
+  },
+  "real_data": {
+    "as_of": "2026-11-04",
+    "symbols": [
+      "NVDA",
+      "AAPL",
+      "MSFT"
+    ],
+    "five_year_sessions_per_symbol": 1254,
+    "read_and_simulation_http": "passed"
+  },
+  "browser": {
+    "surface": "isolated local preview of the exact production component; real public-stock API",
+    "viewports": [
+      {
+        "width": 390,
+        "height": 844,
+        "document_width": 379
+      },
+      {
+        "width": 1280,
+        "height": 900,
+        "document_width": 1280
+      }
+    ],
+    "locales": [
+      "zh",
+      "en"
+    ],
+    "themes": [
+      "light",
+      "dark"
+    ],
+    "verified": [
+      "loading",
+      "success",
+      "unsupported security",
+      "source error via local fault injection",
+      "invalid parameters",
+      "valid simulation",
+      "restore defaults",
+      "price/PE/premium views",
+      "history range URL state",
+      "keyboard session selection",
+      "chart click selection",
+      "source disclosure",
+      "assumption disclosure"
+    ],
+    "authenticated_workspace_e2e": "not exercised; existing login retained",
+    "screenshots": [
+      "valuation-desktop.png",
+      "valuation-mobile.png"
+    ]
+  },
+  "known_limits": [
+    "pilot-specific split-basis policy; do not generalize to other issuers",
+    "in-memory jobs/snapshots require one backend worker",
+    "account persistence, fiscal-quarter targets, PEG and DCF remain future scope",
+    "four pre-existing whole-project UI audit findings recorded in ui-audit.json",
+    "market-data public display rights not evaluated"
+  ]
+}

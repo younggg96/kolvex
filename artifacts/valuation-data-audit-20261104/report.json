@@ -1,0 +1,1870 @@
+{
+  "as_of": "2026-11-04",
+  "start": "2021-11-04",
+  "generated_at": "2026-11-04T08:30:38.556182+00:00",
+  "mode": "live_fetch",
+  "companies": {
+    "NVDA": {
+      "model_version": "sec-eps-inputs-v1",
+      "as_of": "2026-11-04",
+      "start": "2021-11-04",
+      "cik": 1045810,
+      "name": "NVIDIA CORP",
+      "readiness": "blocked",
+      "ready_for_pe": false,
+      "checks": {
+        "current_ttm_inputs_complete": false,
+        "historical_ttm_candidate_coverage_at_least_90pct": false,
+        "at_least_252_price_sessions": true,
+        "usd_prices": true,
+        "explicit_price_adjustment": true,
+        "eps_share_basis_verified": false
+      },
+      "eps": {
+        "currency": "USD",
+        "fact_versions": 309,
+        "reported_quarter_periods": 67,
+        "reported_annual_periods": 19,
+        "rejected": {},
+        "other_units": [],
+        "missing_direct_q4_ends": [
+          "2022-01-30",
+          "2023-01-29",
+          "2024-01-28",
+          "2025-01-26",
+          "2026-01-25"
+        ],
+        "periods_with_value_changes": 18,
+        "value_change_examples": [
+          [
+            {
+              "start": "2024-01-29",
+              "end": "2024-04-28",
+              "value": 5.98,
+              "filed": "2024-05-29",
+              "accession": "0001045810-24-000124",
+              "form": "10-Q",
+              "unit": "USD/shares",
+              "cik": 1045810,
+              "id": "9a6d8427c01c1ec2ca2f0a2cd0e72873ae49ccaf9d129442c14e54c46f2dbb8c",
+              "tag": "EarningsPerShareDiluted",
+              "source_url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581024000124/0001045810-24-000124-index.html"
+            },
+            {
+              "start": "2024-01-29",
+              "end": "2024-04-28",
+              "value": 0.6,
+              "filed": "2025-05-28",
+              "accession": "0001045810-25-000116",
+              "form": "10-Q",
+              "unit": "USD/shares",
+              "cik": 1045810,
+              "id": "381482027f467a29365d8be886c3112d4c5b9c577b3e890635c74bc6f524b9ca",
+              "tag": "EarningsPerShareDiluted",
+              "source_url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581025000116/0001045810-25-000116-index.html"
+            }
+          ],
+          [
+            {
+              "start": "2023-01-30",
+              "end": "2024-01-28",
+              "value": 11.93,
+              "filed": "2024-02-21",
+              "accession": "0001045810-24-000029",
+              "form": "10-K",
+              "unit": "USD/shares",
+              "cik": 1045810,
+              "id": "7fb9a7022a6d388e2acb3818f963acd8ccb5e5879f2f5e512cdd1e8199ca5f45",
+              "tag": "EarningsPerShareDiluted",
+              "source_url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581024000029/0001045810-24-000029-index.html"
+            },
+            {
+              "start": "2023-01-30",
+              "end": "2024-01-28",
+              "value": 1.19,
+              "filed": "2025-02-26",
+              "accession": "0001045810-25-000023",
+              "form": "10-K",
+              "unit": "USD/shares",
+              "cik": 1045810,
+              "id": "d29dd0e9388dbddb0dd48ebc6dadcaca4b138f591e4731d791bd45f69002b0a9",
+              "tag": "EarningsPerShareDiluted",
+              "source_url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581025000023/0001045810-25-000023-index.html"
+            },
+            {
+              "start": "2023-01-30",
+              "end": "2024-01-28",
+              "value": 1.19,
+              "filed": "2026-02-25",
+              "accession": "0001045810-26-000021",
+              "form": "10-K",
+              "unit": "USD/shares",
+              "cik": 1045810,
+              "id": "81db8054c635c61df0d5dd31af80f4e2bf377635df38e09553c7418f7be9846f",
+              "tag": "EarningsPerShareDiluted",
+              "source_url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000021/0001045810-26-000021-index.html"
+            }
+          ],
+          [
+            {
+              "start": "2023-01-30",
+              "end": "2023-10-29",
+              "value": 7.01,
+              "filed": "2023-11-21",
+              "accession": "0001045810-23-000227",
+              "form": "10-Q",
+              "unit": "USD/shares",
+              "cik": 1045810,
+              "id": "7930d22525f1c7c6f0ad48ce2d0fab2625297da4803b96da6cb3199a9b6a4aa5",
+              "tag": "EarningsPerShareDiluted",
+              "source_url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581023000227/0001045810-23-000227-index.html"
+            },
+            {
+              "start": "2023-01-30",
+              "end": "2023-10-29",
+              "value": 0.7,
+              "filed": "2024-11-20",
+              "accession": "0001045810-24-000316",
+              "form": "10-Q",
+              "unit": "USD/shares",
+              "cik": 1045810,
+              "id": "0a114ba39f2737f7a3f596e6eeb6d2df1edc1ec4603bab18f3cdf696b8ad7985",
+              "tag": "EarningsPerShareDiluted",
+              "source_url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581024000316/0001045810-24-000316-index.html"
+            }
+          ]
+        ],
+        "current": {
+          "as_of": "2026-11-04",
+          "status": "missing_quarter_eps",
+          "eps": null,
+          "period_start": null,
+          "period_end": "2026-07-26",
+          "method": null,
+          "inputs": [],
+          "model_version": "sec-eps-inputs-v1",
+          "share_basis_status": "unverified",
+          "available_after": null,
+          "missing_quarter_ends": [
+            "2026-01-25"
+          ]
+        }
+      },
+      "history": {
+        "first_session": "2021-11-04",
+        "last_session": "2026-11-03",
+        "price_sessions": 1254,
+        "rejected_price_rows": 0,
+        "candidate_complete_sessions": 303,
+        "candidate_coverage": 0.24162679425837322,
+        "statuses": {
+          "missing_quarter_eps": 951,
+          "complete": 303
+        },
+        "complete_methods": {
+          "reported_full_year": 303
+        },
+        "events": [
+          {
+            "as_of": "2021-11-04",
+            "status": "missing_quarter_eps",
+            "eps": null,
+            "period_start": null,
+            "period_end": "2021-08-01",
+            "method": null,
+            "inputs": [],
+            "model_version": "sec-eps-inputs-v1",
+            "share_basis_status": "unverified",
+            "available_after": null,
+            "missing_quarter_ends": [
+              "2021-01-31"
+            ],
+            "effective_session": "2021-11-04"
+          },
+          {
+            "as_of": "2021-11-23",
+            "status": "missing_quarter_eps",
+            "eps": null,
+            "period_start": null,
+            "period_end": "2021-10-31",
+            "method": null,
+            "inputs": [],
+            "model_version": "sec-eps-inputs-v1",
+            "share_basis_status": "unverified",
+            "available_after": null,
+            "missing_quarter_ends": [
+              "2021-01-31"
+            ],
+            "effective_session": "2021-11-23"
+          },
+          {
+            "as_of": "2022-03-21",
+            "status": "complete",
+            "eps": 3.85,
+            "period_start": "2021-02-01",
+            "period_end": "2022-01-30",
+            "method": "reported_full_year",
+            "inputs": [
+              {
+                "start": "2021-02-01",
+                "end": "2022-01-30",
+                "value": 3.85,
+                "filed": "2022-03-18",
+                "accession": "0001045810-22-000036",
+                "form": "10-K",
+                "unit": "USD/shares",
+                "cik": 1045810,
+                "id": "fb99b6925bc9761008e9308fdc0190d04a48722a3d6e1a6b077569ab4404fe19",
+                "tag": "EarningsPerShareDiluted",
+                "source_url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581022000036/0001045810-22-000036-index.html"
+              }
+            ],
+            "model_version": "sec-eps-inputs-v1",
+            "share_basis_status": "unverified",
+            "available_after": "2022-03-18",
+            "missing_quarter_ends": [],
+            "input_filing_count": 1,
+            "input_age_days": 3,
+            "period_age_days": 50,
+            "effective_session": "2022-03-21"
+          },
+          {
+            "as_of": "2022-05-31",
+            "status": "missing_quarter_eps",
+            "eps": null,
+            "period_start": null,
+            "period_end": "2022-05-01",
+            "method": null,
+            "inputs": [],
+            "model_version": "sec-eps-inputs-v1",
+            "share_basis_status": "unverified",
+            "available_after": null,
+            "missing_quarter_ends": [
+              "2022-01-30"
+            ],
+            "effective_session": "2022-05-31"
+          },
+          {
+            "as_of": "2022-09-01",
+            "status": "missing_quarter_eps",
+            "eps": null,
+            "period_start": null,
+            "period_end": "2022-07-31",
+            "method": null,
+            "inputs": [],
+            "model_version": "sec-eps-inputs-v1",
+            "share_basis_status": "unverified",
+            "available_after": null,
+            "missing_quarter_ends": [
+              "2022-01-30"
+            ],
+            "effective_session": "2022-09-01"
+          },
+          {
+            "as_of": "2022-11-21",
+            "status": "missing_quarter_eps",
+            "eps": null,
+            "period_start": null,
+            "period_end": "2022-10-30",
+            "method": null,
+            "inputs": [],
+            "model_version": "sec-eps-inputs-v1",
+            "share_basis_status": "unverified",
+            "available_after": null,
+            "missing_quarter_ends": [
+              "2022-01-30"
+            ],
+            "effective_session": "2022-11-21"
+          },
+          {
+            "as_of": "2023-02-27",
+            "status": "complete",
+            "eps": 1.74,
+            "period_start": "2022-01-31",
+            "period_end": "2023-01-29",
+            "method": "reported_full_year",
+            "inputs": [
+              {
+                "start": "2022-01-31",
+                "end": "2023-01-29",
+                "value": 1.74,
+                "filed": "2023-02-24",
+                "accession": "0001045810-23-000017",
+                "form": "10-K",
+                "unit": "USD/shares",
+                "cik": 1045810,
+                "id": "2ce9d7aa3dc7ef50d2c54f91bc845c5a2d4bc35a8e5a7152f6ddfeee32e0ae00",
+                "tag": "EarningsPerShareDiluted",
+                "source_url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581023000017/0001045810-23-000017-index.html"
+              }
+            ],
+            "model_version": "sec-eps-inputs-v1",
+            "share_basis_status": "unverified",
+            "available_after": "2023-02-24",
+            "missing_quarter_ends": [],
+            "input_filing_count": 1,
+            "input_age_days": 3,
+            "period_age_days": 29,
+            "effective_session": "2023-02-27"
+          },
+          {
+            "as_of": "2023-05-30",
+            "status": "missing_quarter_eps",
+            "eps": null,
+            "period_start": null,
+            "period_end": "2023-04-30",
+            "method": null,
+            "inputs": [],
+            "model_version": "sec-eps-inputs-v1",
+            "share_basis_status": "unverified",
+            "available_after": null,
+            "missing_quarter_ends": [
+              "2023-01-29"
+            ],
+            "effective_session": "2023-05-30"
+          },
+          {
+            "as_of": "2023-08-29",
+            "status": "missing_quarter_eps",
+            "eps": null,
+            "period_start": null,
+            "period_end": "2023-07-30",
+            "method": null,
+            "inputs": [],
+            "model_version": "sec-eps-inputs-v1",
+            "share_basis_status": "unverified",
+            "available_after": null,
+            "missing_quarter_ends": [
+              "2023-01-29"
+            ],
+            "effective_session": "2023-08-29"
+          },
+          {
+            "as_of": "2023-11-22",
+            "status": "missing_quarter_eps",
+            "eps": null,
+            "period_start": null,
+            "period_end": "2023-10-29",
+            "method": null,
+            "inputs": [],
+            "model_version": "sec-eps-inputs-v1",
+            "share_basis_status": "unverified",
+            "available_after": null,
+            "missing_quarter_ends": [
+              "2023-01-29"
+            ],
+            "effective_session": "2023-11-22"
+          },
+          {
+            "as_of": "2024-02-22",
+            "status": "complete",
+            "eps": 11.93,
+            "period_start": "2023-01-30",
+            "period_end": "2024-01-28",
+            "method": "reported_full_year",
+            "inputs": [
+              {
+                "start": "2023-01-30",
+                "end": "2024-01-28",
+                "value": 11.93,
+                "filed": "2024-02-21",
+                "accession": "0001045810-24-000029",
+                "form": "10-K",
+                "unit": "USD/shares",
+                "cik": 1045810,
+                "id": "7fb9a7022a6d388e2acb3818f963acd8ccb5e5879f2f5e512cdd1e8199ca5f45",
+                "tag": "EarningsPerShareDiluted",
+                "source_url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581024000029/0001045810-24-000029-index.html"
+              }
+            ],
+            "model_version": "sec-eps-inputs-v1",
+            "share_basis_status": "unverified",
+            "available_after": "2024-02-21",
+            "missing_quarter_ends": [],
+            "input_filing_count": 1,
+            "input_age_days": 1,
+            "period_age_days": 25,
+            "effective_session": "2024-02-22"
+          },
+          {
+            "as_of": "2024-05-30",
+            "status": "missing_quarter_eps",
+            "eps": null,
+            "period_start": null,
+            "period_end": "2024-04-28",
+            "method": null,
+            "inputs": [],
+            "model_version": "sec-eps-inputs-v1",
+            "share_basis_status": "unverified",
+            "available_after": null,
+            "missing_quarter_ends": [
+              "2024-01-28"
+            ],
+            "effective_session": "2024-05-30"
+          },
+          {
+            "as_of": "2024-08-29",
+            "status": "missing_quarter_eps",
+            "eps": null,
+            "period_start": null,
+            "period_end": "2024-07-28",
+            "method": null,
+            "inputs": [],
+            "model_version": "sec-eps-inputs-v1",
+            "share_basis_status": "unverified",
+            "available_after": null,
+            "missing_quarter_ends": [
+              "2024-01-28"
+            ],
+            "effective_session": "2024-08-29"
+          },
+          {
+            "as_of": "2024-11-21",
+            "status": "missing_quarter_eps",
+            "eps": null,
+            "period_start": null,
+            "period_end": "2024-10-27",
+            "method": null,
+            "inputs": [],
+            "model_version": "sec-eps-inputs-v1",
+            "share_basis_status": "unverified",
+            "available_after": null,
+            "missing_quarter_ends": [
+              "2024-01-28"
+            ],
+            "effective_session": "2024-11-21"
+          },
+          {
+            "as_of": "2025-02-27",
+            "status": "complete",
+            "eps": 2.94,
+            "period_start": "2024-01-29",
+            "period_end": "2025-01-26",
+            "method": "reported_full_year",
+            "inputs": [
+              {
+                "start": "2024-01-29",
+                "end": "2025-01-26",
+                "value": 2.94,
+                "filed": "2025-02-26",
+                "accession": "0001045810-25-000023",
+                "form": "10-K",
+                "unit": "USD/shares",
+                "cik": 1045810,
+                "id": "be428c25c558f6d0826f14892950b304e6f41b6675f7da157eff6c66d60ab924",
+                "tag": "EarningsPerShareDiluted",
+                "source_url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581025000023/0001045810-25-000023-index.html"
+              }
+            ],
+            "model_version": "sec-eps-inputs-v1",
+            "share_basis_status": "unverified",
+            "available_after": "2025-02-26",
+            "missing_quarter_ends": [],
+            "input_filing_count": 1,
+            "input_age_days": 1,
+            "period_age_days": 32,
+            "effective_session": "2025-02-27"
+          },
+          {
+            "as_of": "2025-05-29",
+            "status": "missing_quarter_eps",
+            "eps": null,
+            "period_start": null,
+            "period_end": "2025-04-27",
+            "method": null,
+            "inputs": [],
+            "model_version": "sec-eps-inputs-v1",
+            "share_basis_status": "unverified",
+            "available_after": null,
+            "missing_quarter_ends": [
+              "2025-01-26"
+            ],
+            "effective_session": "2025-05-29"
+          },
+          {
+            "as_of": "2025-08-28",
+            "status": "missing_quarter_eps",
+            "eps": null,
+            "period_start": null,
+            "period_end": "2025-07-27",
+            "method": null,
+            "inputs": [],
+            "model_version": "sec-eps-inputs-v1",
+            "share_basis_status": "unverified",
+            "available_after": null,
+            "missing_quarter_ends": [
+              "2025-01-26"
+            ],
+            "effective_session": "2025-08-28"
+          },
+          {
+            "as_of": "2025-11-20",
+            "status": "missing_quarter_eps",
+            "eps": null,
+            "period_start": null,
+            "period_end": "2025-10-26",
+            "method": null,
+            "inputs": [],
+            "model_version": "sec-eps-inputs-v1",
+            "share_basis_status": "unverified",
+            "available_after": null,
+            "missing_quarter_ends": [
+              "2025-01-26"
+            ],
+            "effective_session": "2025-11-20"
+          },
+          {
+            "as_of": "2026-02-26",
+            "status": "complete",
+            "eps": 4.9,
+            "period_start": "2025-01-27",
+            "period_end": "2026-01-25",
+            "method": "reported_full_year",
+            "inputs": [
+              {
+                "start": "2025-01-27",
+                "end": "2026-01-25",
+                "value": 4.9,
+                "filed": "2026-02-25",
+                "accession": "0001045810-26-000021",
+                "form": "10-K",
+                "unit": "USD/shares",
+                "cik": 1045810,
+                "id": "0df68ce772c1d8e9f7a284967e7a663abaa6fd8fd3ec217a34ebf73f556269f7",
+                "tag": "EarningsPerShareDiluted",
+                "source_url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000021/0001045810-26-000021-index.html"
+              }
+            ],
+            "model_version": "sec-eps-inputs-v1",
+            "share_basis_status": "unverified",
+            "available_after": "2026-02-25",
+            "missing_quarter_ends": [],
+            "input_filing_count": 1,
+            "input_age_days": 1,
+            "period_age_days": 32,
+            "effective_session": "2026-02-26"
+          },
+          {
+            "as_of": "2026-05-21",
+            "status": "missing_quarter_eps",
+            "eps": null,
+            "period_start": null,
+            "period_end": "2026-04-26",
+            "method": null,
+            "inputs": [],
+            "model_version": "sec-eps-inputs-v1",
+            "share_basis_status": "unverified",
+            "available_after": null,
+            "missing_quarter_ends": [
+              "2026-01-25"
+            ],
+            "effective_session": "2026-05-21"
+          },
+          {
+            "as_of": "2026-08-27",
+            "status": "missing_quarter_eps",
+            "eps": null,
+            "period_start": null,
+            "period_end": "2026-07-26",
+            "method": null,
+            "inputs": [],
+            "model_version": "sec-eps-inputs-v1",
+            "share_basis_status": "unverified",
+            "available_after": null,
+            "missing_quarter_ends": [
+              "2026-01-25"
+            ],
+            "effective_session": "2026-08-27"
+          }
+        ]
+      },
+      "market": {
+        "currency": "USD",
+        "timezone": "America/New_York",
+        "parameters": {
+          "auto_adjust": false,
+          "back_adjust": false,
+          "actions": true,
+          "repair": false,
+          "interval": "1d",
+          "prepost": false
+        },
+        "splits": [
+          {
+            "date": "2024-06-10",
+            "ratio": 10.0
+          }
+        ],
+        "close_vs_adj_close_differing_sessions": 1215
+      },
+      "limitations": [
+        "TTM completeness is not proof that EPS and price share bases match.",
+        "Changed EPS values can reflect splits, amendments or other re-expressions; they are not automatically restatements.",
+        "Missing Q4 EPS is not reconstructed by subtracting annual and year-to-date EPS.",
+        "Filing dates are date-level: a fact is first eligible on a later observed trading session.",
+        "No PE, fair-value curve or trading recommendation is emitted by this audit."
+      ],
+      "source_receipt": {
+        "version": 1,
+        "symbol": "NVDA",
+        "cik": 1045810,
+        "fetched_at": "2026-11-04T08:30:38.556182+00:00",
+        "start": "2021-11-04",
+        "as_of": "2026-11-04",
+        "files": {
+          "sec": {
+            "filename": "sec-19ef503a5770f5660964b3c3aea6937579d9b359da344afe6a9adf59c63d26ff.json",
+            "sha256": "19ef503a5770f5660964b3c3aea6937579d9b359da344afe6a9adf59c63d26ff",
+            "bytes": 4092966
+          },
+          "market": {
+            "filename": "market-f4192d8cb0273a8ef35093c8ceea273a0abab98999422aaf3798347914e79de7.json",
+            "sha256": "f4192d8cb0273a8ef35093c8ceea273a0abab98999422aaf3798347914e79de7",
+            "bytes": 127792
+          }
+        },
+        "sec_url": "https://data.sec.gov/api/xbrl/companyfacts/CIK0001045810.json",
+        "market_source": "Yahoo Finance through yfinance; internal verification only"
+      }
+    },
+    "AAPL": {
+      "model_version": "sec-eps-inputs-v1",
+      "as_of": "2026-11-04",
+      "start": "2021-11-04",
+      "cik": 320193,
+      "name": "Apple Inc.",
+      "readiness": "blocked",
+      "ready_for_pe": false,
+      "checks": {
+        "current_ttm_inputs_complete": true,
+        "historical_ttm_candidate_coverage_at_least_90pct": false,
+        "at_least_252_price_sessions": true,
+        "usd_prices": true,
+        "explicit_price_adjustment": true,
+        "eps_share_basis_verified": false
+      },
+      "eps": {
+        "currency": "USD",
+        "fact_versions": 319,
+        "reported_quarter_periods": 67,
+        "reported_annual_periods": 20,
+        "rejected": {
+          "unsupported_form": 22
+        },
+        "other_units": [],
+        "missing_direct_q4_ends": [
+          "2022-09-24",
+          "2023-09-30",
+          "2024-09-28",
+          "2025-09-27",
+          "2026-09-26"
+        ],
+        "periods_with_value_changes": 25,
+        "value_change_examples": [
+          [
+            {
+              "start": "2019-09-29",
+              "end": "2020-06-27",
+              "value": 10.16,
+              "filed": "2020-07-31",
+              "accession": "0000320193-20-000062",
+              "form": "10-Q",
+              "unit": "USD/shares",
+              "cik": 320193,
+              "id": "945550e775ca4478b5c44073b3c41a0225372e5574e63f409b787bfa8ede5f83",
+              "tag": "EarningsPerShareDiluted",
+              "source_url": "https://www.sec.gov/Archives/edgar/data/320193/000032019320000062/0000320193-20-000062-index.html"
+            },
+            {
+              "start": "2019-09-29",
+              "end": "2020-06-27",
+              "value": 2.54,
+              "filed": "2021-07-28",
+              "accession": "0000320193-21-000065",
+              "form": "10-Q",
+              "unit": "USD/shares",
+              "cik": 320193,
+              "id": "18d1587c6e887588f2f49d0d89f77509d06ab337ac2ea54f323f16d53bc33f74",
+              "tag": "EarningsPerShareDiluted",
+              "source_url": "https://www.sec.gov/Archives/edgar/data/320193/000032019321000065/0000320193-21-000065-index.html"
+            }
+          ],
+          [
+            {
+              "start": "2020-03-29",
+              "end": "2020-06-27",
+              "value": 2.58,
+              "filed": "2020-07-31",
+              "accession": "0000320193-20-000062",
+              "form": "10-Q",
+              "unit": "USD/shares",
+              "cik": 320193,
+              "id": "9b6dd31208193c865a87dc41d0e64ec50e9030a9cf2801449116293ebd6d2d64",
+              "tag": "EarningsPerShareDiluted",
+              "source_url": "https://www.sec.gov/Archives/edgar/data/320193/000032019320000062/0000320193-20-000062-index.html"
+            },
+            {
+              "start": "2020-03-29",
+              "end": "2020-06-27",
+              "value": 0.65,
+              "filed": "2020-10-30",
+              "accession": "0000320193-20-000096",
+              "form": "10-K",
+              "unit": "USD/shares",
+              "cik": 320193,
+              "id": "105a2677e99394b55fc3e09825ec36eb7c8ef7606eb4a40667a16e6b693baa83",
+              "tag": "EarningsPerShareDiluted",
+              "source_url": "https://www.sec.gov/Archives/edgar/data/320193/000032019320000096/0000320193-20-000096-index.html"
+            },
+            {
+              "start": "2020-03-29",
+              "end": "2020-06-27",
+              "value": 0.65,
+              "filed": "2021-07-28",
+              "accession": "0000320193-21-000065",
+              "form": "10-Q",
+              "unit": "USD/shares",
+              "cik": 320193,
+              "id": "50f74591c3b94a54e783c7fcee0319eef03cc81d0a21853450e5c03b779fdda7",
+              "tag": "EarningsPerShareDiluted",
+              "source_url": "https://www.sec.gov/Archives/edgar/data/320193/000032019321000065/0000320193-21-000065-index.html"
+            }
+          ],
+          [
+            {
+              "start": "2019-09-29",
+              "end": "2020-03-28",
+              "value": 7.56,
+              "filed": "2020-05-01",
+              "accession": "0000320193-20-000052",
+              "form": "10-Q",
+              "unit": "USD/shares",
+              "cik": 320193,
+              "id": "e05815d7109e3799ebdecc7184730bcd95e46542287a65a5e75bd71d8283c827",
+              "tag": "EarningsPerShareDiluted",
+              "source_url": "https://www.sec.gov/Archives/edgar/data/320193/000032019320000052/0000320193-20-000052-index.html"
+            },
+            {
+              "start": "2019-09-29",
+              "end": "2020-03-28",
+              "value": 1.89,
+              "filed": "2021-04-29",
+              "accession": "0000320193-21-000056",
+              "form": "10-Q",
+              "unit": "USD/shares",
+              "cik": 320193,
+              "id": "4f828098fd829a7d333f177d667f95db32cc8a84ab98c3c2049f18ea575f2d46",
+              "tag": "EarningsPerShareDiluted",
+              "source_url": "https://www.sec.gov/Archives/edgar/data/320193/000032019321000056/0000320193-21-000056-index.html"
+            }
+          ]
+        ],
+        "current": {
+          "as_of": "2026-11-04",
+          "status": "complete",
+          "eps": 8.98,
+          "period_start": "2025-09-28",
+          "period_end": "2026-09-26",
+          "method": "reported_full_year",
+          "inputs": [
+            {
+              "start": "2025-09-28",
+              "end": "2026-09-26",
+              "value": 8.98,
+              "filed": "2026-11-03",
+              "accession": "0000320193-26-000026",
+              "form": "10-K",
+              "unit": "USD/shares",
+              "cik": 320193,
+              "id": "a45d9abe06b984ef3fbb8878ceaf0b4da8762996236b5a68554e7db8fa5da910",
+              "tag": "EarningsPerShareDiluted",
+              "source_url": "https://www.sec.gov/Archives/edgar/data/320193/000032019326000026/0000320193-26-000026-index.html"
+            }
+          ],
+          "model_version": "sec-eps-inputs-v1",
+          "share_basis_status": "unverified",
+          "available_after": "2026-11-03",
+          "missing_quarter_ends": [],
+          "input_filing_count": 1,
+          "input_age_days": 1,
+          "period_age_days": 39
+        }
+      },
+      "history": {
+        "first_session": "2021-11-04",
+        "last_session": "2026-11-03",
+        "price_sessions": 1254,
+        "rejected_price_rows": 0,
+        "candidate_complete_sessions": 307,
+        "candidate_coverage": 0.24481658692185007,
+        "statuses": {
+          "complete": 307,
+          "missing_quarter_eps": 947
+        },
+        "complete_methods": {
+          "reported_full_year": 307
+        },
+        "events": [
+          {
+            "as_of": "2021-11-04",
+            "status": "complete",
+            "eps": 5.61,
+            "period_start": "2020-09-27",
+            "period_end": "2021-09-25",
+            "method": "reported_full_year",
+            "inputs": [
+              {
+                "start": "2020-09-27",
+                "end": "2021-09-25",
+                "value": 5.61,
+                "filed": "2021-10-29",
+                "accession": "0000320193-21-000105",
+                "form": "10-K",
+                "unit": "USD/shares",
+                "cik": 320193,
+                "id": "93834092ca12bec58b68c6ab84e107b98ba56dc960fe570556ca00973bc7504a",
+                "tag": "EarningsPerShareDiluted",
+                "source_url": "https://www.sec.gov/Archives/edgar/data/320193/000032019321000105/0000320193-21-000105-index.html"
+              }
+            ],
+            "model_version": "sec-eps-inputs-v1",
+            "share_basis_status": "unverified",
+            "available_after": "2021-10-29",
+            "missing_quarter_ends": [],
+            "input_filing_count": 1,
+            "input_age_days": 6,
+            "period_age_days": 40,
+            "effective_session": "2021-11-04"
+          },
+          {
+            "as_of": "2022-01-31",
+            "status": "missing_quarter_eps",
+            "eps": null,
+            "period_start": null,
+            "period_end": "2021-12-25",
+            "method": null,
+            "inputs": [],
+            "model_version": "sec-eps-inputs-v1",
+            "share_basis_status": "unverified",
+            "available_after": null,
+            "missing_quarter_ends": [
+              "2021-09-25"
+            ],
+            "effective_session": "2022-01-31"
+          },
+          {
+            "as_of": "2022-05-02",
+            "status": "missing_quarter_eps",
+            "eps": null,
+            "period_start": null,
+            "period_end": "2022-03-26",
+            "method": null,
+            "inputs": [],
+            "model_version": "sec-eps-inputs-v1",
+            "share_basis_status": "unverified",
+            "available_after": null,
+            "missing_quarter_ends": [
+              "2021-09-25"
+            ],
+            "effective_session": "2022-05-02"
+          },
+          {
+            "as_of": "2022-08-01",
+            "status": "missing_quarter_eps",
+            "eps": null,
+            "period_start": null,
+            "period_end": "2022-06-25",
+            "method": null,
+            "inputs": [],
+            "model_version": "sec-eps-inputs-v1",
+            "share_basis_status": "unverified",
+            "available_after": null,
+            "missing_quarter_ends": [
+              "2021-09-25"
+            ],
+            "effective_session": "2022-08-01"
+          },
+          {
+            "as_of": "2022-10-31",
+            "status": "complete",
+            "eps": 6.11,
+            "period_start": "2021-09-26",
+            "period_end": "2022-09-24",
+            "method": "reported_full_year",
+            "inputs": [
+              {
+                "start": "2021-09-26",
+                "end": "2022-09-24",
+                "value": 6.11,
+                "filed": "2022-10-28",
+                "accession": "0000320193-22-000108",
+                "form": "10-K",
+                "unit": "USD/shares",
+                "cik": 320193,
+                "id": "db5ba405b72f412547564af6615a8c8de3f3d3a58e7760c1b534215f49694303",
+                "tag": "EarningsPerShareDiluted",
+                "source_url": "https://www.sec.gov/Archives/edgar/data/320193/000032019322000108/0000320193-22-000108-index.html"
+              }
+            ],
+            "model_version": "sec-eps-inputs-v1",
+            "share_basis_status": "unverified",
+            "available_after": "2022-10-28",
+            "missing_quarter_ends": [],
+            "input_filing_count": 1,
+            "input_age_days": 3,
+            "period_age_days": 37,
+            "effective_session": "2022-10-31"
+          },
+          {
+            "as_of": "2023-02-06",
+            "status": "missing_quarter_eps",
+            "eps": null,
+            "period_start": null,
+            "period_end": "2022-12-31",
+            "method": null,
+            "inputs": [],
+            "model_version": "sec-eps-inputs-v1",
+            "share_basis_status": "unverified",
+            "available_after": null,
+            "missing_quarter_ends": [
+              "2022-09-24"
+            ],
+            "effective_session": "2023-02-06"
+          },
+          {
+            "as_of": "2023-05-08",
+            "status": "missing_quarter_eps",
+            "eps": null,
+            "period_start": null,
+            "period_end": "2023-04-01",
+            "method": null,
+            "inputs": [],
+            "model_version": "sec-eps-inputs-v1",
+            "share_basis_status": "unverified",
+            "available_after": null,
+            "missing_quarter_ends": [
+              "2022-09-24"
+            ],
+            "effective_session": "2023-05-08"
+          },
+          {
+            "as_of": "2023-08-07",
+            "status": "missing_quarter_eps",
+            "eps": null,
+            "period_start": null,
+            "period_end": "2023-07-01",
+            "method": null,
+            "inputs": [],
+            "model_version": "sec-eps-inputs-v1",
+            "share_basis_status": "unverified",
+            "available_after": null,
+            "missing_quarter_ends": [
+              "2022-09-24"
+            ],
+            "effective_session": "2023-08-07"
+          },
+          {
+            "as_of": "2023-11-06",
+            "status": "complete",
+            "eps": 6.13,
+            "period_start": "2022-09-25",
+            "period_end": "2023-09-30",
+            "method": "reported_full_year",
+            "inputs": [
+              {
+                "start": "2022-09-25",
+                "end": "2023-09-30",
+                "value": 6.13,
+                "filed": "2023-11-03",
+                "accession": "0000320193-23-000106",
+                "form": "10-K",
+                "unit": "USD/shares",
+                "cik": 320193,
+                "id": "ea3d4bfd219ffbc28198b7a162a106929a571315ce8c3244f724c42794635141",
+                "tag": "EarningsPerShareDiluted",
+                "source_url": "https://www.sec.gov/Archives/edgar/data/320193/000032019323000106/0000320193-23-000106-index.html"
+              }
+            ],
+            "model_version": "sec-eps-inputs-v1",
+            "share_basis_status": "unverified",
+            "available_after": "2023-11-03",
+            "missing_quarter_ends": [],
+            "input_filing_count": 1,
+            "input_age_days": 3,
+            "period_age_days": 37,
+            "effective_session": "2023-11-06"
+          },
+          {
+            "as_of": "2024-02-05",
+            "status": "missing_quarter_eps",
+            "eps": null,
+            "period_start": null,
+            "period_end": "2023-12-30",
+            "method": null,
+            "inputs": [],
+            "model_version": "sec-eps-inputs-v1",
+            "share_basis_status": "unverified",
+            "available_after": null,
+            "missing_quarter_ends": [
+              "2023-09-30"
+            ],
+            "effective_session": "2024-02-05"
+          },
+          {
+            "as_of": "2024-05-06",
+            "status": "missing_quarter_eps",
+            "eps": null,
+            "period_start": null,
+            "period_end": "2024-03-30",
+            "method": null,
+            "inputs": [],
+            "model_version": "sec-eps-inputs-v1",
+            "share_basis_status": "unverified",
+            "available_after": null,
+            "missing_quarter_ends": [
+              "2023-09-30"
+            ],
+            "effective_session": "2024-05-06"
+          },
+          {
+            "as_of": "2024-08-05",
+            "status": "missing_quarter_eps",
+            "eps": null,
+            "period_start": null,
+            "period_end": "2024-06-29",
+            "method": null,
+            "inputs": [],
+            "model_version": "sec-eps-inputs-v1",
+            "share_basis_status": "unverified",
+            "available_after": null,
+            "missing_quarter_ends": [
+              "2023-09-30"
+            ],
+            "effective_session": "2024-08-05"
+          },
+          {
+            "as_of": "2024-11-04",
+            "status": "complete",
+            "eps": 6.08,
+            "period_start": "2023-10-01",
+            "period_end": "2024-09-28",
+            "method": "reported_full_year",
+            "inputs": [
+              {
+                "start": "2023-10-01",
+                "end": "2024-09-28",
+                "value": 6.08,
+                "filed": "2024-11-01",
+                "accession": "0000320193-24-000123",
+                "form": "10-K",
+                "unit": "USD/shares",
+                "cik": 320193,
+                "id": "8e377fb068e361843f2e20c939496ab8375f717865d0b82d0109e89f399c759d",
+                "tag": "EarningsPerShareDiluted",
+                "source_url": "https://www.sec.gov/Archives/edgar/data/320193/000032019324000123/0000320193-24-000123-index.html"
+              }
+            ],
+            "model_version": "sec-eps-inputs-v1",
+            "share_basis_status": "unverified",
+            "available_after": "2024-11-01",
+            "missing_quarter_ends": [],
+            "input_filing_count": 1,
+            "input_age_days": 3,
+            "period_age_days": 37,
+            "effective_session": "2024-11-04"
+          },
+          {
+            "as_of": "2025-02-03",
+            "status": "missing_quarter_eps",
+            "eps": null,
+            "period_start": null,
+            "period_end": "2024-12-28",
+            "method": null,
+            "inputs": [],
+            "model_version": "sec-eps-inputs-v1",
+            "share_basis_status": "unverified",
+            "available_after": null,
+            "missing_quarter_ends": [
+              "2024-09-28"
+            ],
+            "effective_session": "2025-02-03"
+          },
+          {
+            "as_of": "2025-05-05",
+            "status": "missing_quarter_eps",
+            "eps": null,
+            "period_start": null,
+            "period_end": "2025-03-29",
+            "method": null,
+            "inputs": [],
+            "model_version": "sec-eps-inputs-v1",
+            "share_basis_status": "unverified",
+            "available_after": null,
+            "missing_quarter_ends": [
+              "2024-09-28"
+            ],
+            "effective_session": "2025-05-05"
+          },
+          {
+            "as_of": "2025-08-04",
+            "status": "missing_quarter_eps",
+            "eps": null,
+            "period_start": null,
+            "period_end": "2025-06-28",
+            "method": null,
+            "inputs": [],
+            "model_version": "sec-eps-inputs-v1",
+            "share_basis_status": "unverified",
+            "available_after": null,
+            "missing_quarter_ends": [
+              "2024-09-28"
+            ],
+            "effective_session": "2025-08-04"
+          },
+          {
+            "as_of": "2025-11-03",
+            "status": "complete",
+            "eps": 7.46,
+            "period_start": "2024-09-29",
+            "period_end": "2025-09-27",
+            "method": "reported_full_year",
+            "inputs": [
+              {
+                "start": "2024-09-29",
+                "end": "2025-09-27",
+                "value": 7.46,
+                "filed": "2025-10-31",
+                "accession": "0000320193-25-000079",
+                "form": "10-K",
+                "unit": "USD/shares",
+                "cik": 320193,
+                "id": "f5afb5cc189a0d8c628a9b82dbefbdfc422961a07edf576d005ec10dbe729efd",
+                "tag": "EarningsPerShareDiluted",
+                "source_url": "https://www.sec.gov/Archives/edgar/data/320193/000032019325000079/0000320193-25-000079-index.html"
+              }
+            ],
+            "model_version": "sec-eps-inputs-v1",
+            "share_basis_status": "unverified",
+            "available_after": "2025-10-31",
+            "missing_quarter_ends": [],
+            "input_filing_count": 1,
+            "input_age_days": 3,
+            "period_age_days": 37,
+            "effective_session": "2025-11-03"
+          },
+          {
+            "as_of": "2026-02-02",
+            "status": "missing_quarter_eps",
+            "eps": null,
+            "period_start": null,
+            "period_end": "2025-12-27",
+            "method": null,
+            "inputs": [],
+            "model_version": "sec-eps-inputs-v1",
+            "share_basis_status": "unverified",
+            "available_after": null,
+            "missing_quarter_ends": [
+              "2025-09-27"
+            ],
+            "effective_session": "2026-02-02"
+          },
+          {
+            "as_of": "2026-05-04",
+            "status": "missing_quarter_eps",
+            "eps": null,
+            "period_start": null,
+            "period_end": "2026-03-28",
+            "method": null,
+            "inputs": [],
+            "model_version": "sec-eps-inputs-v1",
+            "share_basis_status": "unverified",
+            "available_after": null,
+            "missing_quarter_ends": [
+              "2025-09-27"
+            ],
+            "effective_session": "2026-05-04"
+          },
+          {
+            "as_of": "2026-08-03",
+            "status": "missing_quarter_eps",
+            "eps": null,
+            "period_start": null,
+            "period_end": "2026-06-27",
+            "method": null,
+            "inputs": [],
+            "model_version": "sec-eps-inputs-v1",
+            "share_basis_status": "unverified",
+            "available_after": null,
+            "missing_quarter_ends": [
+              "2025-09-27"
+            ],
+            "effective_session": "2026-08-03"
+          }
+        ]
+      },
+      "market": {
+        "currency": "USD",
+        "timezone": "America/New_York",
+        "parameters": {
+          "auto_adjust": false,
+          "back_adjust": false,
+          "actions": true,
+          "repair": false,
+          "interval": "1d",
+          "prepost": false
+        },
+        "splits": [],
+        "close_vs_adj_close_differing_sessions": 1193
+      },
+      "limitations": [
+        "TTM completeness is not proof that EPS and price share bases match.",
+        "Changed EPS values can reflect splits, amendments or other re-expressions; they are not automatically restatements.",
+        "Missing Q4 EPS is not reconstructed by subtracting annual and year-to-date EPS.",
+        "Filing dates are date-level: a fact is first eligible on a later observed trading session.",
+        "No PE, fair-value curve or trading recommendation is emitted by this audit."
+      ],
+      "source_receipt": {
+        "version": 1,
+        "symbol": "AAPL",
+        "cik": 320193,
+        "fetched_at": "2026-11-04T08:30:38.556182+00:00",
+        "start": "2021-11-04",
+        "as_of": "2026-11-04",
+        "files": {
+          "sec": {
+            "filename": "sec-75a78f918313f3336823517d6c34908d23dd07f07e90e625c61e705e3bb6d27b.json",
+            "sha256": "75a78f918313f3336823517d6c34908d23dd07f07e90e625c61e705e3bb6d27b",
+            "bytes": 3858323
+          },
+          "market": {
+            "filename": "market-abfc53b76194afde71ba96a97f928ffe9e948483f4b16b56faea81428ca8afed.json",
+            "sha256": "abfc53b76194afde71ba96a97f928ffe9e948483f4b16b56faea81428ca8afed",
+            "bytes": 127344
+          }
+        },
+        "sec_url": "https://data.sec.gov/api/xbrl/companyfacts/CIK0000320193.json",
+        "market_source": "Yahoo Finance through yfinance; internal verification only"
+      }
+    },
+    "MSFT": {
+      "model_version": "sec-eps-inputs-v1",
+      "as_of": "2026-11-04",
+      "start": "2021-11-04",
+      "cik": 789019,
+      "name": "MICROSOFT CORP",
+      "readiness": "blocked",
+      "ready_for_pe": false,
+      "checks": {
+        "current_ttm_inputs_complete": false,
+        "historical_ttm_candidate_coverage_at_least_90pct": false,
+        "at_least_252_price_sessions": true,
+        "usd_prices": true,
+        "explicit_price_adjustment": true,
+        "eps_share_basis_verified": false
+      },
+      "eps": {
+        "currency": "USD",
+        "fact_versions": 317,
+        "reported_quarter_periods": 72,
+        "reported_annual_periods": 19,
+        "rejected": {
+          "unsupported_form": 25
+        },
+        "other_units": [],
+        "missing_direct_q4_ends": [
+          "2022-06-30",
+          "2023-06-30",
+          "2024-06-30",
+          "2025-06-30",
+          "2026-06-30"
+        ],
+        "periods_with_value_changes": 10,
+        "value_change_examples": [
+          [
+            {
+              "start": "2016-07-01",
+              "end": "2017-06-30",
+              "value": 2.71,
+              "filed": "2017-08-02",
+              "accession": "0001564590-17-014900",
+              "form": "10-K",
+              "unit": "USD/shares",
+              "cik": 789019,
+              "id": "4883164d82a238456f51a11dce5035eb0a0d968ec6b14cf22fe507c4821e6e28",
+              "tag": "EarningsPerShareDiluted",
+              "source_url": "https://www.sec.gov/Archives/edgar/data/789019/000156459017014900/0001564590-17-014900-index.html"
+            },
+            {
+              "start": "2016-07-01",
+              "end": "2017-06-30",
+              "value": 3.25,
+              "filed": "2018-08-03",
+              "accession": "0001564590-18-019062",
+              "form": "10-K",
+              "unit": "USD/shares",
+              "cik": 789019,
+              "id": "ed93613b5922e8fb6759ed8c14328ced72127c89542d7e8f50ed14289eda7661",
+              "tag": "EarningsPerShareDiluted",
+              "source_url": "https://www.sec.gov/Archives/edgar/data/789019/000156459018019062/0001564590-18-019062-index.html"
+            },
+            {
+              "start": "2016-07-01",
+              "end": "2017-06-30",
+              "value": 3.25,
+              "filed": "2019-08-01",
+              "accession": "0001564590-19-027952",
+              "form": "10-K",
+              "unit": "USD/shares",
+              "cik": 789019,
+              "id": "cee11e953b42bbb8e18a8517dd860d8e33a98b01bcea70703876401c71168c85",
+              "tag": "EarningsPerShareDiluted",
+              "source_url": "https://www.sec.gov/Archives/edgar/data/789019/000156459019027952/0001564590-19-027952-index.html"
+            }
+          ],
+          [
+            {
+              "start": "2017-04-01",
+              "end": "2017-06-30",
+              "value": 0.83,
+              "filed": "2017-08-02",
+              "accession": "0001564590-17-014900",
+              "form": "10-K",
+              "unit": "USD/shares",
+              "cik": 789019,
+              "id": "83f7c566d94bb74e99693f590adbc5694ac82e5a6e46eb41c31836e7ead68aed",
+              "tag": "EarningsPerShareDiluted",
+              "source_url": "https://www.sec.gov/Archives/edgar/data/789019/000156459017014900/0001564590-17-014900-index.html"
+            },
+            {
+              "start": "2017-04-01",
+              "end": "2017-06-30",
+              "value": 1.03,
+              "filed": "2018-08-03",
+              "accession": "0001564590-18-019062",
+              "form": "10-K",
+              "unit": "USD/shares",
+              "cik": 789019,
+              "id": "9cf869a79b1877190a70d7879d89cbfb275bc2a389ef45f778add034d5477427",
+              "tag": "EarningsPerShareDiluted",
+              "source_url": "https://www.sec.gov/Archives/edgar/data/789019/000156459018019062/0001564590-18-019062-index.html"
+            }
+          ],
+          [
+            {
+              "start": "2016-07-01",
+              "end": "2017-03-31",
+              "value": 1.87,
+              "filed": "2017-04-27",
+              "accession": "0001564590-17-007547",
+              "form": "10-Q",
+              "unit": "USD/shares",
+              "cik": 789019,
+              "id": "5421cf6a4c0e3359d22cf5cbee033a93141ddac2846bdde2fb3377b67dda9630",
+              "tag": "EarningsPerShareDiluted",
+              "source_url": "https://www.sec.gov/Archives/edgar/data/789019/000156459017007547/0001564590-17-007547-index.html"
+            },
+            {
+              "start": "2016-07-01",
+              "end": "2017-03-31",
+              "value": 2.22,
+              "filed": "2018-04-26",
+              "accession": "0001564590-18-009307",
+              "form": "10-Q",
+              "unit": "USD/shares",
+              "cik": 789019,
+              "id": "dc221a9fde7ad829b4032313ec97de9445f158b286103abf9016e0abbb0fe242",
+              "tag": "EarningsPerShareDiluted",
+              "source_url": "https://www.sec.gov/Archives/edgar/data/789019/000156459018009307/0001564590-18-009307-index.html"
+            }
+          ]
+        ],
+        "current": {
+          "as_of": "2026-11-04",
+          "status": "missing_quarter_eps",
+          "eps": null,
+          "period_start": null,
+          "period_end": "2026-09-30",
+          "method": null,
+          "inputs": [],
+          "model_version": "sec-eps-inputs-v1",
+          "share_basis_status": "unverified",
+          "available_after": null,
+          "missing_quarter_ends": [
+            "2026-06-30"
+          ]
+        }
+      },
+      "history": {
+        "first_session": "2021-11-04",
+        "last_session": "2026-11-03",
+        "price_sessions": 1254,
+        "rejected_price_rows": 0,
+        "candidate_complete_sessions": 317,
+        "candidate_coverage": 0.2527910685805423,
+        "statuses": {
+          "missing_quarter_eps": 937,
+          "complete": 317
+        },
+        "complete_methods": {
+          "reported_full_year": 317
+        },
+        "events": [
+          {
+            "as_of": "2021-11-04",
+            "status": "missing_quarter_eps",
+            "eps": null,
+            "period_start": null,
+            "period_end": "2021-09-30",
+            "method": null,
+            "inputs": [],
+            "model_version": "sec-eps-inputs-v1",
+            "share_basis_status": "unverified",
+            "available_after": null,
+            "missing_quarter_ends": [
+              "2021-06-30"
+            ],
+            "effective_session": "2021-11-04"
+          },
+          {
+            "as_of": "2022-01-26",
+            "status": "missing_quarter_eps",
+            "eps": null,
+            "period_start": null,
+            "period_end": "2021-12-31",
+            "method": null,
+            "inputs": [],
+            "model_version": "sec-eps-inputs-v1",
+            "share_basis_status": "unverified",
+            "available_after": null,
+            "missing_quarter_ends": [
+              "2021-06-30"
+            ],
+            "effective_session": "2022-01-26"
+          },
+          {
+            "as_of": "2022-04-27",
+            "status": "missing_quarter_eps",
+            "eps": null,
+            "period_start": null,
+            "period_end": "2022-03-31",
+            "method": null,
+            "inputs": [],
+            "model_version": "sec-eps-inputs-v1",
+            "share_basis_status": "unverified",
+            "available_after": null,
+            "missing_quarter_ends": [
+              "2021-06-30"
+            ],
+            "effective_session": "2022-04-27"
+          },
+          {
+            "as_of": "2022-07-29",
+            "status": "complete",
+            "eps": 9.65,
+            "period_start": "2021-07-01",
+            "period_end": "2022-06-30",
+            "method": "reported_full_year",
+            "inputs": [
+              {
+                "start": "2021-07-01",
+                "end": "2022-06-30",
+                "value": 9.65,
+                "filed": "2022-07-28",
+                "accession": "0001564590-22-026876",
+                "form": "10-K",
+                "unit": "USD/shares",
+                "cik": 789019,
+                "id": "52ce9c29279d3c55640b9fd1803de80f0d6824f151f0bf0b10939b389dc0d655",
+                "tag": "EarningsPerShareDiluted",
+                "source_url": "https://www.sec.gov/Archives/edgar/data/789019/000156459022026876/0001564590-22-026876-index.html"
+              }
+            ],
+            "model_version": "sec-eps-inputs-v1",
+            "share_basis_status": "unverified",
+            "available_after": "2022-07-28",
+            "missing_quarter_ends": [],
+            "input_filing_count": 1,
+            "input_age_days": 1,
+            "period_age_days": 29,
+            "effective_session": "2022-07-29"
+          },
+          {
+            "as_of": "2022-10-26",
+            "status": "missing_quarter_eps",
+            "eps": null,
+            "period_start": null,
+            "period_end": "2022-09-30",
+            "method": null,
+            "inputs": [],
+            "model_version": "sec-eps-inputs-v1",
+            "share_basis_status": "unverified",
+            "available_after": null,
+            "missing_quarter_ends": [
+              "2022-06-30"
+            ],
+            "effective_session": "2022-10-26"
+          },
+          {
+            "as_of": "2023-01-25",
+            "status": "missing_quarter_eps",
+            "eps": null,
+            "period_start": null,
+            "period_end": "2022-12-31",
+            "method": null,
+            "inputs": [],
+            "model_version": "sec-eps-inputs-v1",
+            "share_basis_status": "unverified",
+            "available_after": null,
+            "missing_quarter_ends": [
+              "2022-06-30"
+            ],
+            "effective_session": "2023-01-25"
+          },
+          {
+            "as_of": "2023-04-26",
+            "status": "missing_quarter_eps",
+            "eps": null,
+            "period_start": null,
+            "period_end": "2023-03-31",
+            "method": null,
+            "inputs": [],
+            "model_version": "sec-eps-inputs-v1",
+            "share_basis_status": "unverified",
+            "available_after": null,
+            "missing_quarter_ends": [
+              "2022-06-30"
+            ],
+            "effective_session": "2023-04-26"
+          },
+          {
+            "as_of": "2023-07-28",
+            "status": "complete",
+            "eps": 9.68,
+            "period_start": "2022-07-01",
+            "period_end": "2023-06-30",
+            "method": "reported_full_year",
+            "inputs": [
+              {
+                "start": "2022-07-01",
+                "end": "2023-06-30",
+                "value": 9.68,
+                "filed": "2023-07-27",
+                "accession": "0000950170-23-035122",
+                "form": "10-K",
+                "unit": "USD/shares",
+                "cik": 789019,
+                "id": "ffd1bfe8edf019980d781b533d29da92bf13cb538426624ef065a4214ecfd742",
+                "tag": "EarningsPerShareDiluted",
+                "source_url": "https://www.sec.gov/Archives/edgar/data/789019/000095017023035122/0000950170-23-035122-index.html"
+              }
+            ],
+            "model_version": "sec-eps-inputs-v1",
+            "share_basis_status": "unverified",
+            "available_after": "2023-07-27",
+            "missing_quarter_ends": [],
+            "input_filing_count": 1,
+            "input_age_days": 1,
+            "period_age_days": 28,
+            "effective_session": "2023-07-28"
+          },
+          {
+            "as_of": "2023-10-25",
+            "status": "missing_quarter_eps",
+            "eps": null,
+            "period_start": null,
+            "period_end": "2023-09-30",
+            "method": null,
+            "inputs": [],
+            "model_version": "sec-eps-inputs-v1",
+            "share_basis_status": "unverified",
+            "available_after": null,
+            "missing_quarter_ends": [
+              "2023-06-30"
+            ],
+            "effective_session": "2023-10-25"
+          },
+          {
+            "as_of": "2024-01-31",
+            "status": "missing_quarter_eps",
+            "eps": null,
+            "period_start": null,
+            "period_end": "2023-12-31",
+            "method": null,
+            "inputs": [],
+            "model_version": "sec-eps-inputs-v1",
+            "share_basis_status": "unverified",
+            "available_after": null,
+            "missing_quarter_ends": [
+              "2023-06-30"
+            ],
+            "effective_session": "2024-01-31"
+          },
+          {
+            "as_of": "2024-04-26",
+            "status": "missing_quarter_eps",
+            "eps": null,
+            "period_start": null,
+            "period_end": "2024-03-31",
+            "method": null,
+            "inputs": [],
+            "model_version": "sec-eps-inputs-v1",
+            "share_basis_status": "unverified",
+            "available_after": null,
+            "missing_quarter_ends": [
+              "2023-06-30"
+            ],
+            "effective_session": "2024-04-26"
+          },
+          {
+            "as_of": "2024-07-31",
+            "status": "complete",
+            "eps": 11.8,
+            "period_start": "2023-07-01",
+            "period_end": "2024-06-30",
+            "method": "reported_full_year",
+            "inputs": [
+              {
+                "start": "2023-07-01",
+                "end": "2024-06-30",
+                "value": 11.8,
+                "filed": "2024-07-30",
+                "accession": "0000950170-24-087843",
+                "form": "10-K",
+                "unit": "USD/shares",
+                "cik": 789019,
+                "id": "7659a48c66282163b257ec2be2bf1817085b1ccc5efeb9dfc5938121824385dd",
+                "tag": "EarningsPerShareDiluted",
+                "source_url": "https://www.sec.gov/Archives/edgar/data/789019/000095017024087843/0000950170-24-087843-index.html"
+              }
+            ],
+            "model_version": "sec-eps-inputs-v1",
+            "share_basis_status": "unverified",
+            "available_after": "2024-07-30",
+            "missing_quarter_ends": [],
+            "input_filing_count": 1,
+            "input_age_days": 1,
+            "period_age_days": 31,
+            "effective_session": "2024-07-31"
+          },
+          {
+            "as_of": "2024-10-31",
+            "status": "missing_quarter_eps",
+            "eps": null,
+            "period_start": null,
+            "period_end": "2024-09-30",
+            "method": null,
+            "inputs": [],
+            "model_version": "sec-eps-inputs-v1",
+            "share_basis_status": "unverified",
+            "available_after": null,
+            "missing_quarter_ends": [
+              "2024-06-30"
+            ],
+            "effective_session": "2024-10-31"
+          },
+          {
+            "as_of": "2025-01-30",
+            "status": "missing_quarter_eps",
+            "eps": null,
+            "period_start": null,
+            "period_end": "2024-12-31",
+            "method": null,
+            "inputs": [],
+            "model_version": "sec-eps-inputs-v1",
+            "share_basis_status": "unverified",
+            "available_after": null,
+            "missing_quarter_ends": [
+              "2024-06-30"
+            ],
+            "effective_session": "2025-01-30"
+          },
+          {
+            "as_of": "2025-05-01",
+            "status": "missing_quarter_eps",
+            "eps": null,
+            "period_start": null,
+            "period_end": "2025-03-31",
+            "method": null,
+            "inputs": [],
+            "model_version": "sec-eps-inputs-v1",
+            "share_basis_status": "unverified",
+            "available_after": null,
+            "missing_quarter_ends": [
+              "2024-06-30"
+            ],
+            "effective_session": "2025-05-01"
+          },
+          {
+            "as_of": "2025-07-31",
+            "status": "complete",
+            "eps": 13.64,
+            "period_start": "2024-07-01",
+            "period_end": "2025-06-30",
+            "method": "reported_full_year",
+            "inputs": [
+              {
+                "start": "2024-07-01",
+                "end": "2025-06-30",
+                "value": 13.64,
+                "filed": "2025-07-30",
+                "accession": "0000950170-25-100235",
+                "form": "10-K",
+                "unit": "USD/shares",
+                "cik": 789019,
+                "id": "fb18a5c7524c94bf8b0632626be53bd55a82b7a0fc7fafe566109acef6e7c3cb",
+                "tag": "EarningsPerShareDiluted",
+                "source_url": "https://www.sec.gov/Archives/edgar/data/789019/000095017025100235/0000950170-25-100235-index.html"
+              }
+            ],
+            "model_version": "sec-eps-inputs-v1",
+            "share_basis_status": "unverified",
+            "available_after": "2025-07-30",
+            "missing_quarter_ends": [],
+            "input_filing_count": 1,
+            "input_age_days": 1,
+            "period_age_days": 31,
+            "effective_session": "2025-07-31"
+          },
+          {
+            "as_of": "2025-10-30",
+            "status": "missing_quarter_eps",
+            "eps": null,
+            "period_start": null,
+            "period_end": "2025-09-30",
+            "method": null,
+            "inputs": [],
+            "model_version": "sec-eps-inputs-v1",
+            "share_basis_status": "unverified",
+            "available_after": null,
+            "missing_quarter_ends": [
+              "2025-06-30"
+            ],
+            "effective_session": "2025-10-30"
+          },
+          {
+            "as_of": "2026-01-29",
+            "status": "missing_quarter_eps",
+            "eps": null,
+            "period_start": null,
+            "period_end": "2025-12-31",
+            "method": null,
+            "inputs": [],
+            "model_version": "sec-eps-inputs-v1",
+            "share_basis_status": "unverified",
+            "available_after": null,
+            "missing_quarter_ends": [
+              "2025-06-30"
+            ],
+            "effective_session": "2026-01-29"
+          },
+          {
+            "as_of": "2026-04-30",
+            "status": "missing_quarter_eps",
+            "eps": null,
+            "period_start": null,
+            "period_end": "2026-03-31",
+            "method": null,
+            "inputs": [],
+            "model_version": "sec-eps-inputs-v1",
+            "share_basis_status": "unverified",
+            "available_after": null,
+            "missing_quarter_ends": [
+              "2025-06-30"
+            ],
+            "effective_session": "2026-04-30"
+          },
+          {
+            "as_of": "2026-07-30",
+            "status": "complete",
+            "eps": 17.95,
+            "period_start": "2025-07-01",
+            "period_end": "2026-06-30",
+            "method": "reported_full_year",
+            "inputs": [
+              {
+                "start": "2025-07-01",
+                "end": "2026-06-30",
+                "value": 17.95,
+                "filed": "2026-07-29",
+                "accession": "0001193125-26-323660",
+                "form": "10-K",
+                "unit": "USD/shares",
+                "cik": 789019,
+                "id": "344edf05df0c1f4440e7f15781645819b275c974e3513e3dbdad94f758e47e9b",
+                "tag": "EarningsPerShareDiluted",
+                "source_url": "https://www.sec.gov/Archives/edgar/data/789019/000119312526323660/0001193125-26-323660-index.html"
+              }
+            ],
+            "model_version": "sec-eps-inputs-v1",
+            "share_basis_status": "unverified",
+            "available_after": "2026-07-29",
+            "missing_quarter_ends": [],
+            "input_filing_count": 1,
+            "input_age_days": 1,
+            "period_age_days": 30,
+            "effective_session": "2026-07-30"
+          },
+          {
+            "as_of": "2026-10-29",
+            "status": "missing_quarter_eps",
+            "eps": null,
+            "period_start": null,
+            "period_end": "2026-09-30",
+            "method": null,
+            "inputs": [],
+            "model_version": "sec-eps-inputs-v1",
+            "share_basis_status": "unverified",
+            "available_after": null,
+            "missing_quarter_ends": [
+              "2026-06-30"
+            ],
+            "effective_session": "2026-10-29"
+          }
+        ]
+      },
+      "market": {
+        "currency": "USD",
+        "timezone": "America/New_York",
+        "parameters": {
+          "auto_adjust": false,
+          "back_adjust": false,
+          "actions": true,
+          "repair": false,
+          "interval": "1d",
+          "prepost": false
+        },
+        "splits": [],
+        "close_vs_adj_close_differing_sessions": 1201
+      },
+      "limitations": [
+        "TTM completeness is not proof that EPS and price share bases match.",
+        "Changed EPS values can reflect splits, amendments or other re-expressions; they are not automatically restatements.",
+        "Missing Q4 EPS is not reconstructed by subtracting annual and year-to-date EPS.",
+        "Filing dates are date-level: a fact is first eligible on a later observed trading session.",
+        "No PE, fair-value curve or trading recommendation is emitted by this audit."
+      ],
+      "source_receipt": {
+        "version": 1,
+        "symbol": "MSFT",
+        "cik": 789019,
+        "fetched_at": "2026-11-04T08:30:38.556182+00:00",
+        "start": "2021-11-04",
+        "as_of": "2026-11-04",
+        "files": {
+          "sec": {
+            "filename": "sec-8c1903c041f5c27e86ed15f37debb1f41882b7904bba129ef9edc76478b1e8ea.json",
+            "sha256": "8c1903c041f5c27e86ed15f37debb1f41882b7904bba129ef9edc76478b1e8ea",
+            "bytes": 4938072
+          },
+          "market": {
+            "filename": "market-7d0970db487b6c9e155eb3c2a21dd8d332c2f138fc67a48f37706fea7208a03a.json",
+            "sha256": "7d0970db487b6c9e155eb3c2a21dd8d332c2f138fc67a48f37706fea7208a03a",
+            "bytes": 126534
+          }
+        },
+        "sec_url": "https://data.sec.gov/api/xbrl/companyfacts/CIK0000789019.json",
+        "market_source": "Yahoo Finance through yfinance; internal verification only"
+      }
+    }
+  }
+}

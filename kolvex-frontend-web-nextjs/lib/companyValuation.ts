@@ -1,0 +1,97 @@
+export const companyScenarios = ["conservative", "base", "optimistic"] as const;
+export type CompanyScenario = typeof companyScenarios[number];
+export type CompanyModel = "dcf" | "pe" | "peg";
+export type CompanyInput = "revenue" | "eps" | "shares" | "cash" | "debt" | "other_claims" | "tax_rate";
+export const inputScale: Record<CompanyInput, number> = { revenue: 1e9, eps: 1, shares: 1e6, cash: 1e9, debt: 1e9, other_claims: 1e9, tax_rate: .01 };
+export interface CompanyInputs {
+  status: "available" | "unsupported"; reason?: string; symbol: string; name: string;
+  snapshot_id: string; currency: string; source: string; fetched_at: string;
+  inputs: Record<CompanyInput, number | null>; origins: Record<string, string>;
+  income_basis: string; income_periods: string[]; balance_period: string | null;
+  operating_margin: number | null; price: number | null; quote_time: string | null;
+  market_cap_reference: number | null; dcf_exclusion: string | null;
+  sources: { financials: string; balance_sheet: string };
+}
+export interface CompanyDraft {
+  inputs: Record<CompanyInput, string>; edited: CompanyInput[];
+  scenarios: Record<CompanyScenario, Record<string, string>>;
+  years: string; terminal_growth: string; terminal_roic: string;
+}
+export interface CompanyCommand {
+  snapshot_id: string; model: CompanyModel; inputs: Partial<Record<CompanyInput, number>>;
+  scenarios: Record<CompanyScenario, Record<string, number>>;
+  years: number; terminal_growth: number; terminal_roic: number;
+}
+export interface CompanyScenarioResult {
+  status: string; reason?: string; fair_price: number | null; equity_value: number | null; enterprise_value: number | null;
+  target_pe?: number; terminal_value_share?: number | null;
+  comparison: { price_space: number; premium_discount: number } | null;
+  forecast?: { year: number; revenue: number; nopat: number; reinvestment: number; fcff: number; present_value: number }[];
+}
+export interface CompanyResult {
+  status: string; reason?: string; model: CompanyModel; snapshot_id: string;
+  inputs: Record<CompanyInput, number>; scenarios: Record<CompanyScenario, CompanyScenarioResult>;
+  sensitivity: { discount_rate: number; terminal_growth: number; fair_price: number | null }[];
+}
+
+export function initialCompanyDraft(data: CompanyInputs): CompanyDraft {
+  const inputs = Object.fromEntries((Object.keys(inputScale) as CompanyInput[]).map(key => [key,
+    data.inputs[key] == null ? "" : String(Number((data.inputs[key]! / inputScale[key]).toFixed(6))),
+  ])) as Record<CompanyInput, string>;
+  const margin = data.operating_margin == null ? "" : String(Number((data.operating_margin * 100).toFixed(4)));
+  return { inputs, edited: [], years: "5", terminal_growth: "2", terminal_roic: "10", scenarios: {
+    conservative: { revenue_growth: "0", operating_margin: margin, reinvestment_rate: "0", discount_rate: "12", target_pe: "", target_peg: ".75", eps_growth: "" },
+    base: { revenue_growth: "0", operating_margin: margin, reinvestment_rate: "0", discount_rate: "10", target_pe: "", target_peg: "1", eps_growth: "" },
+    optimistic: { revenue_growth: "0", operating_margin: margin, reinvestment_rate: "0", discount_rate: "8", target_pe: "", target_peg: "1.25", eps_growth: "" },
+  } };
+}
+
+export function buildCompanyCommand(data: CompanyInputs, model: CompanyModel, draft: CompanyDraft): CompanyCommand {
+  const read = (raw: string, min: number, max: number, exclusive = false) => {
+    if (!raw.trim()) throw new Error("required");
+    const value = Number(raw);
+    if (!Number.isFinite(value) || value < min || value > max || (exclusive && value === min)) throw new Error("range");
+    return value;
+  };
+  const inputs: CompanyCommand["inputs"] = {};
+  const needed: CompanyInput[] = model === "dcf" ? ["revenue", "shares", "cash", "debt", "other_claims", "tax_rate"] : ["eps", "shares"];
+  for (const key of needed) {
+    // Preserve vendor precision unless the user explicitly edits a field.
+    const value = draft.edited.includes(key) ? read(draft.inputs[key], key === "eps" ? -1e12 : 0, key === "tax_rate" ? 100 : 1e15, ["revenue", "shares"].includes(key)) * inputScale[key] : data.inputs[key];
+    if (value == null || !Number.isFinite(value)) throw new Error("required");
+    if (draft.edited.includes(key)) inputs[key] = value;
+  }
+  const scenarios = {} as CompanyCommand["scenarios"];
+  for (const name of companyScenarios) {
+    const v = draft.scenarios[name];
+    scenarios[name] = model === "dcf" ? {
+      revenue_growth: read(v.revenue_growth, -100, 200, true) / 100,
+      operating_margin: read(v.operating_margin, -100, 100) / 100,
+      reinvestment_rate: read(v.reinvestment_rate, 0, 200) / 100,
+      discount_rate: read(v.discount_rate, 0, 100, true) / 100,
+    } : model === "pe" ? { target_pe: read(v.target_pe, 0, 500, true) } : {
+      target_peg: read(v.target_peg, 0, 10, true), eps_growth: read(v.eps_growth, 0, 200, true) / 100,
+    };
+  }
+  const terminal_growth = model === "dcf" ? read(draft.terminal_growth, 0, 5) / 100 : .02;
+  const terminal_roic = model === "dcf" ? read(draft.terminal_roic, 0, 100, true) / 100 : .1;
+  if (model === "dcf" && (companyScenarios.some(k => scenarios[k].discount_rate <= terminal_growth) || terminal_roic <= terminal_growth)) throw new Error("terminal");
+  return { snapshot_id: data.snapshot_id, model, inputs, scenarios, years: draft.years === "10" ? 10 : 5, terminal_growth, terminal_roic };
+}
+
+export async function loadCompanyInputs(symbol: string, signal: AbortSignal): Promise<CompanyInputs> {
+  const response = await fetch(`/api/market/valuation/${encodeURIComponent(symbol)}/inputs`, { signal, cache: "no-store" });
+  if (!response.ok) throw Object.assign(new Error("inputs_unavailable"), { status: response.status });
+  return response.json();
+}
+
+export async function calculateCompany(symbol: string, command: CompanyCommand, signal: AbortSignal): Promise<CompanyResult> {
+  const response = await fetch(`/api/market/valuation/${encodeURIComponent(symbol)}/calculate`, {
+    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(command), signal,
+  });
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}));
+    throw Object.assign(new Error(typeof error.detail === "string" ? error.detail : "calculation_unavailable"), { status: response.status });
+  }
+  return response.json();
+}

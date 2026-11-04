@@ -1,0 +1,1762 @@
+{
+  "NVDA": {
+    "inputs": {
+      "symbol": "NVDA",
+      "name": "NVIDIA Corporation",
+      "source": "Yahoo Finance",
+      "fetched_at": "2026-11-04T10:09:14.194700+00:00",
+      "currency": "USD",
+      "financial_currency": "USD",
+      "sector": "Technology",
+      "industry": "Semiconductors",
+      "status": "available",
+      "inputs": {
+        "revenue": 302969000000,
+        "operating_income": 197579000000,
+        "pretax_income": 229744000000,
+        "tax_provision": 36865000000,
+        "tax_rate": 0.16046120899784108,
+        "cash": 62469000000,
+        "debt": 38351000000,
+        "other_claims": 0,
+        "eps": 7.91,
+        "shares": 24147000000
+      },
+      "origins": {
+        "revenue": "reported_vendor_data",
+        "operating_income": "reported_vendor_data",
+        "pretax_income": "reported_vendor_data",
+        "tax_provision": "reported_vendor_data",
+        "tax_rate": "derived_reported_data",
+        "cash": "reported_vendor_data",
+        "debt": "reported_vendor_data",
+        "other_claims": "missing_components_assumed_zero",
+        "eps": "reported_vendor_data",
+        "shares": "reported_vendor_data"
+      },
+      "fields": {
+        "revenue": {
+          "tags": [
+            "Total Revenue"
+          ],
+          "periods": [
+            "2026-07-31",
+            "2026-04-30",
+            "2026-01-31",
+            "2025-10-31"
+          ]
+        },
+        "operating_income": {
+          "tags": [
+            "Operating Income"
+          ],
+          "periods": [
+            "2026-07-31",
+            "2026-04-30",
+            "2026-01-31",
+            "2025-10-31"
+          ]
+        },
+        "pretax_income": {
+          "tags": [
+            "Pretax Income"
+          ],
+          "periods": [
+            "2026-07-31",
+            "2026-04-30",
+            "2026-01-31",
+            "2025-10-31"
+          ]
+        },
+        "tax_provision": {
+          "tags": [
+            "Tax Provision"
+          ],
+          "periods": [
+            "2026-07-31",
+            "2026-04-30",
+            "2026-01-31",
+            "2025-10-31"
+          ]
+        },
+        "cash": {
+          "tag": "Cash Cash Equivalents And Short Term Investments",
+          "period": "2026-07-31"
+        },
+        "debt": {
+          "tag": "Total Debt",
+          "period": "2026-07-31"
+        },
+        "other_claims": {
+          "tags": [
+            null,
+            "Preferred Stock"
+          ],
+          "period": "2026-07-31"
+        },
+        "eps": {
+          "tag": "trailingEps",
+          "period": "vendor_current"
+        },
+        "shares": {
+          "tag": "sharesOutstanding",
+          "period": "vendor_current"
+        }
+      },
+      "income_basis": "ttm_four_quarters",
+      "income_periods": [
+        "2026-07-31",
+        "2026-04-30",
+        "2026-01-31",
+        "2025-10-31"
+      ],
+      "balance_period": "2026-07-31",
+      "operating_margin": 0.6521426284537362,
+      "price": 206.69,
+      "quote_time": "2026-11-03T21:00:00+00:00",
+      "sources": {
+        "financials": "https://finance.yahoo.com/quote/NVDA/financials/",
+        "balance_sheet": "https://finance.yahoo.com/quote/NVDA/balance-sheet/"
+      },
+      "dcf_exclusion": null,
+      "market_cap_reference": 4990943430000,
+      "snapshot_id": "946dde61addd7bed5d7520c617161b6e39efa2a6649c4c8c8382ea80fa8fa9af"
+    },
+    "calculations": {
+      "dcf": {
+        "command": {
+          "snapshot_id": "946dde61addd7bed5d7520c617161b6e39efa2a6649c4c8c8382ea80fa8fa9af",
+          "model": "dcf",
+          "inputs": {},
+          "scenarios": {
+            "conservative": {
+              "revenue_growth": 0,
+              "operating_margin": 0.6521426284537362,
+              "reinvestment_rate": 0,
+              "discount_rate": 0.12
+            },
+            "base": {
+              "revenue_growth": 0,
+              "operating_margin": 0.6521426284537362,
+              "reinvestment_rate": 0,
+              "discount_rate": 0.1
+            },
+            "optimistic": {
+              "revenue_growth": 0,
+              "operating_margin": 0.6521426284537362,
+              "reinvestment_rate": 0,
+              "discount_rate": 0.08
+            }
+          },
+          "years": 5,
+          "terminal_growth": 0.02,
+          "terminal_roic": 0.1
+        },
+        "response": {
+          "symbol": "NVDA",
+          "snapshot_id": "946dde61addd7bed5d7520c617161b6e39efa2a6649c4c8c8382ea80fa8fa9af",
+          "currency": "USD",
+          "model": "dcf",
+          "model_version": "company-valuation-v1",
+          "result_kind": "assumption_based_company_valuation",
+          "inputs": {
+            "revenue": 302969000000,
+            "operating_income": 197579000000,
+            "pretax_income": 229744000000,
+            "tax_provision": 36865000000,
+            "tax_rate": 0.16046120899784108,
+            "cash": 62469000000,
+            "debt": 38351000000,
+            "other_claims": 0,
+            "eps": 7.91,
+            "shares": 24147000000
+          },
+          "input_origins": {
+            "revenue": "reported_vendor_data",
+            "operating_income": "reported_vendor_data",
+            "pretax_income": "reported_vendor_data",
+            "tax_provision": "reported_vendor_data",
+            "tax_rate": "derived_reported_data",
+            "cash": "reported_vendor_data",
+            "debt": "reported_vendor_data",
+            "other_claims": "missing_components_assumed_zero",
+            "eps": "reported_vendor_data",
+            "shares": "reported_vendor_data"
+          },
+          "assumptions": {
+            "conservative": {
+              "revenue_growth": 0,
+              "operating_margin": 0.6521426284537362,
+              "reinvestment_rate": 0,
+              "discount_rate": 0.12
+            },
+            "base": {
+              "revenue_growth": 0,
+              "operating_margin": 0.6521426284537362,
+              "reinvestment_rate": 0,
+              "discount_rate": 0.1
+            },
+            "optimistic": {
+              "revenue_growth": 0,
+              "operating_margin": 0.6521426284537362,
+              "reinvestment_rate": 0,
+              "discount_rate": 0.08
+            }
+          },
+          "price": 206.69,
+          "quote_time": "2026-11-03T21:00:00+00:00",
+          "status": "complete",
+          "scenarios": {
+            "conservative": {
+              "status": "complete",
+              "enterprise_value": 1365979132322.848,
+              "equity_value": 1390097132322.848,
+              "fair_price": 57.568109178069655,
+              "terminal_value": 1353541915865.311,
+              "terminal_present_value": 768036033402.7821,
+              "terminal_fcff": 135354191586.53108,
+              "terminal_reinvestment_rate": 0.19999999999999998,
+              "terminal_value_share": 0.5622604439767221,
+              "forecast": [
+                {
+                  "year": 1,
+                  "revenue": 302969000000,
+                  "ebit": 197579000000,
+                  "nopat": 165875234787.41556,
+                  "reinvestment": 0,
+                  "fcff": 165875234787.41556,
+                  "present_value": 148102888203.0496
+                },
+                {
+                  "year": 2,
+                  "revenue": 302969000000,
+                  "ebit": 197579000000,
+                  "nopat": 165875234787.41556,
+                  "reinvestment": 0,
+                  "fcff": 165875234787.41556,
+                  "present_value": 132234721609.8657
+                },
+                {
+                  "year": 3,
+                  "revenue": 302969000000,
+                  "ebit": 197579000000,
+                  "nopat": 165875234787.41556,
+                  "reinvestment": 0,
+                  "fcff": 165875234787.41556,
+                  "present_value": 118066715723.09436
+                },
+                {
+                  "year": 4,
+                  "revenue": 302969000000,
+                  "ebit": 197579000000,
+                  "nopat": 165875234787.41556,
+                  "reinvestment": 0,
+                  "fcff": 165875234787.41556,
+                  "present_value": 105416710467.04852
+                },
+                {
+                  "year": 5,
+                  "revenue": 302969000000,
+                  "ebit": 197579000000,
+                  "nopat": 165875234787.41556,
+                  "reinvestment": 0,
+                  "fcff": 165875234787.41556,
+                  "present_value": 94122062917.00761
+                }
+              ],
+              "bridge": {
+                "operating_enterprise_value": 1365979132322.848,
+                "nonoperating_cash": 62469000000,
+                "debt": 38351000000,
+                "other_claims": 0,
+                "equity_value": 1390097132322.848,
+                "shares": 24147000000
+              },
+              "comparison": {
+                "price_space": -0.7214760792584564,
+                "premium_discount": 2.590355892368578
+              }
+            },
+            "base": {
+              "status": "complete",
+              "enterprise_value": 1679351441923.545,
+              "equity_value": 1703469441923.545,
+              "fair_price": 70.54580038611607,
+              "terminal_value": 1691927394831.6384,
+              "terminal_present_value": 1050553796518.8901,
+              "terminal_fcff": 135354191586.53108,
+              "terminal_reinvestment_rate": 0.19999999999999998,
+              "terminal_value_share": 0.6255711403180599,
+              "forecast": [
+                {
+                  "year": 1,
+                  "revenue": 302969000000,
+                  "ebit": 197579000000,
+                  "nopat": 165875234787.41556,
+                  "reinvestment": 0,
+                  "fcff": 165875234787.41556,
+                  "present_value": 150795667988.5596
+                },
+                {
+                  "year": 2,
+                  "revenue": 302969000000,
+                  "ebit": 197579000000,
+                  "nopat": 165875234787.41556,
+                  "reinvestment": 0,
+                  "fcff": 165875234787.41556,
+                  "present_value": 137086970898.69052
+                },
+                {
+                  "year": 3,
+                  "revenue": 302969000000,
+                  "ebit": 197579000000,
+                  "nopat": 165875234787.41556,
+                  "reinvestment": 0,
+                  "fcff": 165875234787.41556,
+                  "present_value": 124624518998.80954
+                },
+                {
+                  "year": 4,
+                  "revenue": 302969000000,
+                  "ebit": 197579000000,
+                  "nopat": 165875234787.41556,
+                  "reinvestment": 0,
+                  "fcff": 165875234787.41556,
+                  "present_value": 113295017271.64505
+                },
+                {
+                  "year": 5,
+                  "revenue": 302969000000,
+                  "ebit": 197579000000,
+                  "nopat": 165875234787.41556,
+                  "reinvestment": 0,
+                  "fcff": 165875234787.41556,
+                  "present_value": 102995470246.95003
+                }
+              ],
+              "bridge": {
+                "operating_enterprise_value": 1679351441923.545,
+                "nonoperating_cash": 62469000000,
+                "debt": 38351000000,
+                "other_claims": 0,
+                "equity_value": 1703469441923.545,
+                "shares": 24147000000
+              },
+              "comparison": {
+                "price_space": -0.6586878882088341,
+                "premium_discount": 1.929869657282648
+              }
+            },
+            "optimistic": {
+              "status": "complete",
+              "enterprise_value": 2197621522203.0718,
+              "equity_value": 2221739522203.072,
+              "fair_price": 92.00892542357526,
+              "terminal_value": 2255903193108.8516,
+              "terminal_present_value": 1535329807364.6738,
+              "terminal_fcff": 135354191586.53108,
+              "terminal_reinvestment_rate": 0.19999999999999998,
+              "terminal_value_share": 0.6986324951102301,
+              "forecast": [
+                {
+                  "year": 1,
+                  "revenue": 302969000000,
+                  "ebit": 197579000000,
+                  "nopat": 165875234787.41556,
+                  "reinvestment": 0,
+                  "fcff": 165875234787.41556,
+                  "present_value": 153588180358.7181
+                },
+                {
+                  "year": 2,
+                  "revenue": 302969000000,
+                  "ebit": 197579000000,
+                  "nopat": 165875234787.41556,
+                  "reinvestment": 0,
+                  "fcff": 165875234787.41556,
+                  "present_value": 142211278109.92416
+                },
+                {
+                  "year": 3,
+                  "revenue": 302969000000,
+                  "ebit": 197579000000,
+                  "nopat": 165875234787.41556,
+                  "reinvestment": 0,
+                  "fcff": 165875234787.41556,
+                  "present_value": 131677109361.04088
+                },
+                {
+                  "year": 4,
+                  "revenue": 302969000000,
+                  "ebit": 197579000000,
+                  "nopat": 165875234787.41556,
+                  "reinvestment": 0,
+                  "fcff": 165875234787.41556,
+                  "present_value": 121923249408.37119
+                },
+                {
+                  "year": 5,
+                  "revenue": 302969000000,
+                  "ebit": 197579000000,
+                  "nopat": 165875234787.41556,
+                  "reinvestment": 0,
+                  "fcff": 165875234787.41556,
+                  "present_value": 112891897600.34367
+                }
+              ],
+              "bridge": {
+                "operating_enterprise_value": 2197621522203.0718,
+                "nonoperating_cash": 62469000000,
+                "debt": 38351000000,
+                "other_claims": 0,
+                "equity_value": 2221739522203.072,
+                "shares": 24147000000
+              },
+              "comparison": {
+                "price_space": -0.5548457814912416,
+                "premium_discount": 1.246412498010114
+              }
+            }
+          },
+          "sensitivity": [
+            {
+              "discount_rate": 0.09000000000000001,
+              "terminal_growth": 0.015,
+              "fair_price": 79.07651757486923
+            },
+            {
+              "discount_rate": 0.09000000000000001,
+              "terminal_growth": 0.02,
+              "fair_price": 79.76322083050856
+            },
+            {
+              "discount_rate": 0.09000000000000001,
+              "terminal_growth": 0.025,
+              "fair_price": 80.521227401094
+            },
+            {
+              "discount_rate": 0.1,
+              "terminal_growth": 0.015,
+              "fair_price": 70.33253275401488
+            },
+            {
+              "discount_rate": 0.1,
+              "terminal_growth": 0.02,
+              "fair_price": 70.54580038611607
+            },
+            {
+              "discount_rate": 0.1,
+              "terminal_growth": 0.025,
+              "fair_price": 70.75906801821728
+            },
+            {
+              "discount_rate": 0.11,
+              "terminal_growth": 0.015,
+              "fair_price": 63.409791320675815
+            },
+            {
+              "discount_rate": 0.11,
+              "terminal_growth": 0.02,
+              "fair_price": 63.348999164866896
+            },
+            {
+              "discount_rate": 0.11,
+              "terminal_growth": 0.025,
+              "fair_price": 63.25707469397245
+            }
+          ]
+        }
+      },
+      "pe": {
+        "command": {
+          "snapshot_id": "946dde61addd7bed5d7520c617161b6e39efa2a6649c4c8c8382ea80fa8fa9af",
+          "model": "pe",
+          "inputs": {},
+          "scenarios": {
+            "conservative": {
+              "target_pe": 15
+            },
+            "base": {
+              "target_pe": 20
+            },
+            "optimistic": {
+              "target_pe": 25
+            }
+          },
+          "years": 5,
+          "terminal_growth": 0.02,
+          "terminal_roic": 0.1
+        },
+        "response": {
+          "symbol": "NVDA",
+          "snapshot_id": "946dde61addd7bed5d7520c617161b6e39efa2a6649c4c8c8382ea80fa8fa9af",
+          "currency": "USD",
+          "model": "pe",
+          "model_version": "company-valuation-v1",
+          "result_kind": "assumption_based_company_valuation",
+          "inputs": {
+            "revenue": 302969000000,
+            "operating_income": 197579000000,
+            "pretax_income": 229744000000,
+            "tax_provision": 36865000000,
+            "tax_rate": 0.16046120899784108,
+            "cash": 62469000000,
+            "debt": 38351000000,
+            "other_claims": 0,
+            "eps": 7.91,
+            "shares": 24147000000
+          },
+          "input_origins": {
+            "revenue": "reported_vendor_data",
+            "operating_income": "reported_vendor_data",
+            "pretax_income": "reported_vendor_data",
+            "tax_provision": "reported_vendor_data",
+            "tax_rate": "derived_reported_data",
+            "cash": "reported_vendor_data",
+            "debt": "reported_vendor_data",
+            "other_claims": "missing_components_assumed_zero",
+            "eps": "reported_vendor_data",
+            "shares": "reported_vendor_data"
+          },
+          "assumptions": {
+            "conservative": {
+              "target_pe": 15
+            },
+            "base": {
+              "target_pe": 20
+            },
+            "optimistic": {
+              "target_pe": 25
+            }
+          },
+          "price": 206.69,
+          "quote_time": "2026-11-03T21:00:00+00:00",
+          "status": "complete",
+          "scenarios": {
+            "conservative": {
+              "status": "complete",
+              "fair_price": 118.65,
+              "equity_value": 2865041550000,
+              "enterprise_value": null,
+              "target_pe": 15,
+              "comparison": {
+                "price_space": -0.4259519086554744,
+                "premium_discount": 0.7420143278550357
+              }
+            },
+            "base": {
+              "status": "complete",
+              "fair_price": 158.2,
+              "equity_value": 3820055399999.9995,
+              "enterprise_value": null,
+              "target_pe": 20,
+              "comparison": {
+                "price_space": -0.23460254487396592,
+                "premium_discount": 0.306510745891277
+              }
+            },
+            "optimistic": {
+              "status": "complete",
+              "fair_price": 197.75,
+              "equity_value": 4775069250000,
+              "enterprise_value": null,
+              "target_pe": 25,
+              "comparison": {
+                "price_space": -0.04325318109245724,
+                "premium_discount": 0.045208596713021576
+              }
+            }
+          },
+          "sensitivity": []
+        }
+      },
+      "peg": {
+        "command": {
+          "snapshot_id": "946dde61addd7bed5d7520c617161b6e39efa2a6649c4c8c8382ea80fa8fa9af",
+          "model": "peg",
+          "inputs": {},
+          "scenarios": {
+            "conservative": {
+              "target_peg": 0.75,
+              "eps_growth": 0.2
+            },
+            "base": {
+              "target_peg": 1,
+              "eps_growth": 0.2
+            },
+            "optimistic": {
+              "target_peg": 1.25,
+              "eps_growth": 0.2
+            }
+          },
+          "years": 5,
+          "terminal_growth": 0.02,
+          "terminal_roic": 0.1
+        },
+        "response": {
+          "symbol": "NVDA",
+          "snapshot_id": "946dde61addd7bed5d7520c617161b6e39efa2a6649c4c8c8382ea80fa8fa9af",
+          "currency": "USD",
+          "model": "peg",
+          "model_version": "company-valuation-v1",
+          "result_kind": "assumption_based_company_valuation",
+          "inputs": {
+            "revenue": 302969000000,
+            "operating_income": 197579000000,
+            "pretax_income": 229744000000,
+            "tax_provision": 36865000000,
+            "tax_rate": 0.16046120899784108,
+            "cash": 62469000000,
+            "debt": 38351000000,
+            "other_claims": 0,
+            "eps": 7.91,
+            "shares": 24147000000
+          },
+          "input_origins": {
+            "revenue": "reported_vendor_data",
+            "operating_income": "reported_vendor_data",
+            "pretax_income": "reported_vendor_data",
+            "tax_provision": "reported_vendor_data",
+            "tax_rate": "derived_reported_data",
+            "cash": "reported_vendor_data",
+            "debt": "reported_vendor_data",
+            "other_claims": "missing_components_assumed_zero",
+            "eps": "reported_vendor_data",
+            "shares": "reported_vendor_data"
+          },
+          "assumptions": {
+            "conservative": {
+              "target_peg": 0.75,
+              "eps_growth": 0.2
+            },
+            "base": {
+              "target_peg": 1,
+              "eps_growth": 0.2
+            },
+            "optimistic": {
+              "target_peg": 1.25,
+              "eps_growth": 0.2
+            }
+          },
+          "price": 206.69,
+          "quote_time": "2026-11-03T21:00:00+00:00",
+          "status": "complete",
+          "scenarios": {
+            "conservative": {
+              "status": "complete",
+              "fair_price": 118.65000000000002,
+              "equity_value": 2865041550000.0005,
+              "enterprise_value": null,
+              "target_pe": 15.000000000000002,
+              "comparison": {
+                "price_space": -0.4259519086554743,
+                "premium_discount": 0.7420143278550355
+              }
+            },
+            "base": {
+              "status": "complete",
+              "fair_price": 158.2,
+              "equity_value": 3820055399999.9995,
+              "enterprise_value": null,
+              "target_pe": 20,
+              "comparison": {
+                "price_space": -0.23460254487396592,
+                "premium_discount": 0.306510745891277
+              }
+            },
+            "optimistic": {
+              "status": "complete",
+              "fair_price": 197.75,
+              "equity_value": 4775069250000,
+              "enterprise_value": null,
+              "target_pe": 25,
+              "comparison": {
+                "price_space": -0.04325318109245724,
+                "premium_discount": 0.045208596713021576
+              }
+            }
+          },
+          "sensitivity": []
+        }
+      }
+    }
+  },
+  "AMZN": {
+    "inputs": {
+      "symbol": "AMZN",
+      "name": "Amazon.com, Inc.",
+      "source": "Yahoo Finance",
+      "fetched_at": "2026-11-04T10:09:16.405906+00:00",
+      "currency": "USD",
+      "financial_currency": "USD",
+      "sector": "Consumer Cyclical",
+      "industry": "Internet Retail",
+      "status": "available",
+      "inputs": {
+        "revenue": 716924000000,
+        "operating_income": 79975000000,
+        "pretax_income": 97311000000,
+        "tax_provision": null,
+        "tax_rate": 0.21,
+        "cash": 114226000000,
+        "debt": 271949000000,
+        "other_claims": 0,
+        "eps": 12.37,
+        "shares": 10813138306
+      },
+      "origins": {
+        "revenue": "reported_vendor_data",
+        "operating_income": "reported_vendor_data",
+        "pretax_income": "reported_vendor_data",
+        "tax_provision": "unavailable",
+        "tax_rate": "assumed_21_percent",
+        "cash": "reported_vendor_data",
+        "debt": "reported_vendor_data",
+        "other_claims": "missing_components_assumed_zero",
+        "eps": "reported_vendor_data",
+        "shares": "reported_vendor_data"
+      },
+      "fields": {
+        "revenue": {
+          "tags": [
+            "Total Revenue"
+          ],
+          "periods": [
+            "2025-12-31"
+          ]
+        },
+        "operating_income": {
+          "tags": [
+            "Operating Income"
+          ],
+          "periods": [
+            "2025-12-31"
+          ]
+        },
+        "pretax_income": {
+          "tags": [
+            "Pretax Income"
+          ],
+          "periods": [
+            "2025-12-31"
+          ]
+        },
+        "tax_provision": {
+          "tags": [
+            "Tax Provision"
+          ],
+          "periods": [
+            "2025-12-31"
+          ]
+        },
+        "cash": {
+          "tag": "Cash Cash Equivalents And Short Term Investments",
+          "period": "2026-09-30"
+        },
+        "debt": {
+          "tag": "Total Debt",
+          "period": "2026-09-30"
+        },
+        "other_claims": {
+          "tags": [
+            null,
+            "Preferred Stock"
+          ],
+          "period": "2026-09-30"
+        },
+        "eps": {
+          "tag": "trailingEps",
+          "period": "vendor_current"
+        },
+        "shares": {
+          "tag": "sharesOutstanding",
+          "period": "vendor_current"
+        }
+      },
+      "income_basis": "reported_fiscal_year",
+      "income_periods": [
+        "2025-12-31"
+      ],
+      "balance_period": "2026-09-30",
+      "operating_margin": 0.11155296795755199,
+      "price": 250.69,
+      "quote_time": "2026-11-03T21:00:02+00:00",
+      "sources": {
+        "financials": "https://finance.yahoo.com/quote/AMZN/financials/",
+        "balance_sheet": "https://finance.yahoo.com/quote/AMZN/balance-sheet/"
+      },
+      "dcf_exclusion": null,
+      "market_cap_reference": 2710745641931.14,
+      "snapshot_id": "072e6521168254712c409cd2750dc25ebea4ee3d389077e59efddb2bf2c48f2d"
+    },
+    "calculations": {
+      "dcf": {
+        "command": {
+          "snapshot_id": "072e6521168254712c409cd2750dc25ebea4ee3d389077e59efddb2bf2c48f2d",
+          "model": "dcf",
+          "inputs": {},
+          "scenarios": {
+            "conservative": {
+              "revenue_growth": 0,
+              "operating_margin": 0.11155296795755199,
+              "reinvestment_rate": 0,
+              "discount_rate": 0.12
+            },
+            "base": {
+              "revenue_growth": 0,
+              "operating_margin": 0.11155296795755199,
+              "reinvestment_rate": 0,
+              "discount_rate": 0.1
+            },
+            "optimistic": {
+              "revenue_growth": 0,
+              "operating_margin": 0.11155296795755199,
+              "reinvestment_rate": 0,
+              "discount_rate": 0.08
+            }
+          },
+          "years": 5,
+          "terminal_growth": 0.02,
+          "terminal_roic": 0.1
+        },
+        "response": {
+          "symbol": "AMZN",
+          "snapshot_id": "072e6521168254712c409cd2750dc25ebea4ee3d389077e59efddb2bf2c48f2d",
+          "currency": "USD",
+          "model": "dcf",
+          "model_version": "company-valuation-v1",
+          "result_kind": "assumption_based_company_valuation",
+          "inputs": {
+            "revenue": 716924000000,
+            "operating_income": 79975000000,
+            "pretax_income": 97311000000,
+            "tax_provision": null,
+            "tax_rate": 0.21,
+            "cash": 114226000000,
+            "debt": 271949000000,
+            "other_claims": 0,
+            "eps": 12.37,
+            "shares": 10813138306
+          },
+          "input_origins": {
+            "revenue": "reported_vendor_data",
+            "operating_income": "reported_vendor_data",
+            "pretax_income": "reported_vendor_data",
+            "tax_provision": "unavailable",
+            "tax_rate": "assumed_21_percent",
+            "cash": "reported_vendor_data",
+            "debt": "reported_vendor_data",
+            "other_claims": "missing_components_assumed_zero",
+            "eps": "reported_vendor_data",
+            "shares": "reported_vendor_data"
+          },
+          "assumptions": {
+            "conservative": {
+              "revenue_growth": 0,
+              "operating_margin": 0.11155296795755199,
+              "reinvestment_rate": 0,
+              "discount_rate": 0.12
+            },
+            "base": {
+              "revenue_growth": 0,
+              "operating_margin": 0.11155296795755199,
+              "reinvestment_rate": 0,
+              "discount_rate": 0.1
+            },
+            "optimistic": {
+              "revenue_growth": 0,
+              "operating_margin": 0.11155296795755199,
+              "reinvestment_rate": 0,
+              "discount_rate": 0.08
+            }
+          },
+          "price": 250.69,
+          "quote_time": "2026-11-03T21:00:02+00:00",
+          "status": "complete",
+          "scenarios": {
+            "conservative": {
+              "status": "complete",
+              "enterprise_value": 520288053762.4906,
+              "equity_value": 362565053762.4906,
+              "fair_price": 33.53004867803367,
+              "terminal_value": 515550840000.00006,
+              "terminal_present_value": 292537392104.28265,
+              "terminal_fcff": 51555084000,
+              "terminal_reinvestment_rate": 0.19999999999999998,
+              "terminal_value_share": 0.5622604439767221,
+              "forecast": [
+                {
+                  "year": 1,
+                  "revenue": 716924000000,
+                  "ebit": 79975000000,
+                  "nopat": 63180250000,
+                  "reinvestment": 0,
+                  "fcff": 63180250000,
+                  "present_value": 56410937499.99999
+                },
+                {
+                  "year": 2,
+                  "revenue": 716924000000,
+                  "ebit": 79975000000,
+                  "nopat": 63180250000,
+                  "reinvestment": 0,
+                  "fcff": 63180250000,
+                  "present_value": 50366908482.14285
+                },
+                {
+                  "year": 3,
+                  "revenue": 716924000000,
+                  "ebit": 79975000000,
+                  "nopat": 63180250000,
+                  "reinvestment": 0,
+                  "fcff": 63180250000,
+                  "present_value": 44970454001.91325
+                },
+                {
+                  "year": 4,
+                  "revenue": 716924000000,
+                  "ebit": 79975000000,
+                  "nopat": 63180250000,
+                  "reinvestment": 0,
+                  "fcff": 63180250000,
+                  "present_value": 40152191073.136826
+                },
+                {
+                  "year": 5,
+                  "revenue": 716924000000,
+                  "ebit": 79975000000,
+                  "nopat": 63180250000,
+                  "reinvestment": 0,
+                  "fcff": 63180250000,
+                  "present_value": 35850170601.01502
+                }
+              ],
+              "bridge": {
+                "operating_enterprise_value": 520288053762.4906,
+                "nonoperating_cash": 114226000000,
+                "debt": 271949000000,
+                "other_claims": 0,
+                "equity_value": 362565053762.4906,
+                "shares": 10813138306
+              },
+              "comparison": {
+                "price_space": -0.8662489581633345,
+                "premium_discount": 6.476577275720835
+              }
+            },
+            "base": {
+              "status": "complete",
+              "enterprise_value": 639648492884.2415,
+              "equity_value": 481925492884.24146,
+              "fair_price": 44.56851278937498,
+              "terminal_value": 644438550000,
+              "terminal_present_value": 400145637096.32336,
+              "terminal_fcff": 51555084000,
+              "terminal_reinvestment_rate": 0.19999999999999998,
+              "terminal_value_share": 0.6255711403180599,
+              "forecast": [
+                {
+                  "year": 1,
+                  "revenue": 716924000000,
+                  "ebit": 79975000000,
+                  "nopat": 63180250000,
+                  "reinvestment": 0,
+                  "fcff": 63180250000,
+                  "present_value": 57436590909.090904
+                },
+                {
+                  "year": 2,
+                  "revenue": 716924000000,
+                  "ebit": 79975000000,
+                  "nopat": 63180250000,
+                  "reinvestment": 0,
+                  "fcff": 63180250000,
+                  "present_value": 52215082644.62809
+                },
+                {
+                  "year": 3,
+                  "revenue": 716924000000,
+                  "ebit": 79975000000,
+                  "nopat": 63180250000,
+                  "reinvestment": 0,
+                  "fcff": 63180250000,
+                  "present_value": 47468256949.661896
+                },
+                {
+                  "year": 4,
+                  "revenue": 716924000000,
+                  "ebit": 79975000000,
+                  "nopat": 63180250000,
+                  "reinvestment": 0,
+                  "fcff": 63180250000,
+                  "present_value": 43152960863.328995
+                },
+                {
+                  "year": 5,
+                  "revenue": 716924000000,
+                  "ebit": 79975000000,
+                  "nopat": 63180250000,
+                  "reinvestment": 0,
+                  "fcff": 63180250000,
+                  "present_value": 39229964421.208176
+                }
+              ],
+              "bridge": {
+                "operating_enterprise_value": 639648492884.2415,
+                "nonoperating_cash": 114226000000,
+                "debt": 271949000000,
+                "other_claims": 0,
+                "equity_value": 481925492884.24146,
+                "shares": 10813138306
+              },
+              "comparison": {
+                "price_space": -0.8222166309411026,
+                "premium_discount": 4.62482309393469
+              }
+            },
+            "optimistic": {
+              "status": "complete",
+              "enterprise_value": 837052483187.8307,
+              "equity_value": 679329483187.8307,
+              "fair_price": 62.824451511073704,
+              "terminal_value": 859251400000,
+              "terminal_present_value": 584792064867.728,
+              "terminal_fcff": 51555084000,
+              "terminal_reinvestment_rate": 0.19999999999999998,
+              "terminal_value_share": 0.6986324951102301,
+              "forecast": [
+                {
+                  "year": 1,
+                  "revenue": 716924000000,
+                  "ebit": 79975000000,
+                  "nopat": 63180250000,
+                  "reinvestment": 0,
+                  "fcff": 63180250000,
+                  "present_value": 58500231481.481476
+                },
+                {
+                  "year": 2,
+                  "revenue": 716924000000,
+                  "ebit": 79975000000,
+                  "nopat": 63180250000,
+                  "reinvestment": 0,
+                  "fcff": 63180250000,
+                  "present_value": 54166881001.371735
+                },
+                {
+                  "year": 3,
+                  "revenue": 716924000000,
+                  "ebit": 79975000000,
+                  "nopat": 63180250000,
+                  "reinvestment": 0,
+                  "fcff": 63180250000,
+                  "present_value": 50154519445.71457
+                },
+                {
+                  "year": 4,
+                  "revenue": 716924000000,
+                  "ebit": 79975000000,
+                  "nopat": 63180250000,
+                  "reinvestment": 0,
+                  "fcff": 63180250000,
+                  "present_value": 46439369857.14311
+                },
+                {
+                  "year": 5,
+                  "revenue": 716924000000,
+                  "ebit": 79975000000,
+                  "nopat": 63180250000,
+                  "reinvestment": 0,
+                  "fcff": 63180250000,
+                  "present_value": 42999416534.39177
+                }
+              ],
+              "bridge": {
+                "operating_enterprise_value": 837052483187.8307,
+                "nonoperating_cash": 114226000000,
+                "debt": 271949000000,
+                "other_claims": 0,
+                "equity_value": 679329483187.8307,
+                "shares": 10813138306
+              },
+              "comparison": {
+                "price_space": -0.7493938668831078,
+                "premium_discount": 2.99032532668928
+              }
+            }
+          },
+          "sensitivity": [
+            {
+              "discount_rate": 0.09000000000000001,
+              "terminal_growth": 0.015,
+              "fair_price": 51.82450416892553
+            },
+            {
+              "discount_rate": 0.09000000000000001,
+              "terminal_growth": 0.02,
+              "fair_price": 52.40859490748587
+            },
+            {
+              "discount_rate": 0.09000000000000001,
+              "terminal_growth": 0.025,
+              "fair_price": 53.0533342676257
+            },
+            {
+              "discount_rate": 0.1,
+              "terminal_growth": 0.015,
+              "fair_price": 44.387113258031505
+            },
+            {
+              "discount_rate": 0.1,
+              "terminal_growth": 0.02,
+              "fair_price": 44.56851278937498
+            },
+            {
+              "discount_rate": 0.1,
+              "terminal_growth": 0.025,
+              "fair_price": 44.74991232071842
+            },
+            {
+              "discount_rate": 0.11,
+              "terminal_growth": 0.015,
+              "fair_price": 38.49882144718699
+            },
+            {
+              "discount_rate": 0.11,
+              "terminal_growth": 0.02,
+              "fair_price": 38.447113325966505
+            },
+            {
+              "discount_rate": 0.11,
+              "terminal_growth": 0.025,
+              "fair_price": 38.3689249212144
+            }
+          ]
+        }
+      },
+      "pe": {
+        "command": {
+          "snapshot_id": "072e6521168254712c409cd2750dc25ebea4ee3d389077e59efddb2bf2c48f2d",
+          "model": "pe",
+          "inputs": {},
+          "scenarios": {
+            "conservative": {
+              "target_pe": 15
+            },
+            "base": {
+              "target_pe": 20
+            },
+            "optimistic": {
+              "target_pe": 25
+            }
+          },
+          "years": 5,
+          "terminal_growth": 0.02,
+          "terminal_roic": 0.1
+        },
+        "response": {
+          "symbol": "AMZN",
+          "snapshot_id": "072e6521168254712c409cd2750dc25ebea4ee3d389077e59efddb2bf2c48f2d",
+          "currency": "USD",
+          "model": "pe",
+          "model_version": "company-valuation-v1",
+          "result_kind": "assumption_based_company_valuation",
+          "inputs": {
+            "revenue": 716924000000,
+            "operating_income": 79975000000,
+            "pretax_income": 97311000000,
+            "tax_provision": null,
+            "tax_rate": 0.21,
+            "cash": 114226000000,
+            "debt": 271949000000,
+            "other_claims": 0,
+            "eps": 12.37,
+            "shares": 10813138306
+          },
+          "input_origins": {
+            "revenue": "reported_vendor_data",
+            "operating_income": "reported_vendor_data",
+            "pretax_income": "reported_vendor_data",
+            "tax_provision": "unavailable",
+            "tax_rate": "assumed_21_percent",
+            "cash": "reported_vendor_data",
+            "debt": "reported_vendor_data",
+            "other_claims": "missing_components_assumed_zero",
+            "eps": "reported_vendor_data",
+            "shares": "reported_vendor_data"
+          },
+          "assumptions": {
+            "conservative": {
+              "target_pe": 15
+            },
+            "base": {
+              "target_pe": 20
+            },
+            "optimistic": {
+              "target_pe": 25
+            }
+          },
+          "price": 250.69,
+          "quote_time": "2026-11-03T21:00:02+00:00",
+          "status": "complete",
+          "scenarios": {
+            "conservative": {
+              "status": "complete",
+              "fair_price": 185.54999999999998,
+              "equity_value": 2006377812678.2998,
+              "enterprise_value": null,
+              "target_pe": 15,
+              "comparison": {
+                "price_space": -0.2598428337787707,
+                "premium_discount": 0.3510644031258423
+              }
+            },
+            "base": {
+              "status": "complete",
+              "fair_price": 247.39999999999998,
+              "equity_value": 2675170416904.4,
+              "enterprise_value": null,
+              "target_pe": 20,
+              "comparison": {
+                "price_space": -0.013123778371694206,
+                "premium_discount": 0.013298302344381563
+              }
+            },
+            "optimistic": {
+              "status": "complete",
+              "fair_price": 309.25,
+              "equity_value": 3343963021130.5,
+              "enterprise_value": null,
+              "target_pe": 25,
+              "comparison": {
+                "price_space": 0.2335952770353824,
+                "premium_discount": -0.18936135812449473
+              }
+            }
+          },
+          "sensitivity": []
+        }
+      },
+      "peg": {
+        "command": {
+          "snapshot_id": "072e6521168254712c409cd2750dc25ebea4ee3d389077e59efddb2bf2c48f2d",
+          "model": "peg",
+          "inputs": {},
+          "scenarios": {
+            "conservative": {
+              "target_peg": 0.75,
+              "eps_growth": 0.2
+            },
+            "base": {
+              "target_peg": 1,
+              "eps_growth": 0.2
+            },
+            "optimistic": {
+              "target_peg": 1.25,
+              "eps_growth": 0.2
+            }
+          },
+          "years": 5,
+          "terminal_growth": 0.02,
+          "terminal_roic": 0.1
+        },
+        "response": {
+          "symbol": "AMZN",
+          "snapshot_id": "072e6521168254712c409cd2750dc25ebea4ee3d389077e59efddb2bf2c48f2d",
+          "currency": "USD",
+          "model": "peg",
+          "model_version": "company-valuation-v1",
+          "result_kind": "assumption_based_company_valuation",
+          "inputs": {
+            "revenue": 716924000000,
+            "operating_income": 79975000000,
+            "pretax_income": 97311000000,
+            "tax_provision": null,
+            "tax_rate": 0.21,
+            "cash": 114226000000,
+            "debt": 271949000000,
+            "other_claims": 0,
+            "eps": 12.37,
+            "shares": 10813138306
+          },
+          "input_origins": {
+            "revenue": "reported_vendor_data",
+            "operating_income": "reported_vendor_data",
+            "pretax_income": "reported_vendor_data",
+            "tax_provision": "unavailable",
+            "tax_rate": "assumed_21_percent",
+            "cash": "reported_vendor_data",
+            "debt": "reported_vendor_data",
+            "other_claims": "missing_components_assumed_zero",
+            "eps": "reported_vendor_data",
+            "shares": "reported_vendor_data"
+          },
+          "assumptions": {
+            "conservative": {
+              "target_peg": 0.75,
+              "eps_growth": 0.2
+            },
+            "base": {
+              "target_peg": 1,
+              "eps_growth": 0.2
+            },
+            "optimistic": {
+              "target_peg": 1.25,
+              "eps_growth": 0.2
+            }
+          },
+          "price": 250.69,
+          "quote_time": "2026-11-03T21:00:02+00:00",
+          "status": "complete",
+          "scenarios": {
+            "conservative": {
+              "status": "complete",
+              "fair_price": 185.55,
+              "equity_value": 2006377812678.3,
+              "enterprise_value": null,
+              "target_pe": 15.000000000000002,
+              "comparison": {
+                "price_space": -0.2598428337787705,
+                "premium_discount": 0.3510644031258421
+              }
+            },
+            "base": {
+              "status": "complete",
+              "fair_price": 247.39999999999998,
+              "equity_value": 2675170416904.4,
+              "enterprise_value": null,
+              "target_pe": 20,
+              "comparison": {
+                "price_space": -0.013123778371694206,
+                "premium_discount": 0.013298302344381563
+              }
+            },
+            "optimistic": {
+              "status": "complete",
+              "fair_price": 309.25,
+              "equity_value": 3343963021130.5,
+              "enterprise_value": null,
+              "target_pe": 25,
+              "comparison": {
+                "price_space": 0.2335952770353824,
+                "premium_discount": -0.18936135812449473
+              }
+            }
+          },
+          "sensitivity": []
+        }
+      }
+    }
+  },
+  "JPM": {
+    "inputs": {
+      "symbol": "JPM",
+      "name": "JPMorgan Chase & Co.",
+      "source": "Yahoo Finance",
+      "fetched_at": "2026-11-04T10:09:18.110838+00:00",
+      "currency": "USD",
+      "financial_currency": "USD",
+      "sector": "Financial Services",
+      "industry": "Banks - Diversified",
+      "status": "available",
+      "inputs": {
+        "revenue": 181847000000,
+        "operating_income": null,
+        "pretax_income": 72595000000,
+        "tax_provision": 15547000000,
+        "tax_rate": 0.21416075487292513,
+        "cash": 309811000000,
+        "debt": 532953000000,
+        "other_claims": 21040000000,
+        "eps": 23.84,
+        "shares": 2655600000
+      },
+      "origins": {
+        "revenue": "reported_vendor_data",
+        "operating_income": "unavailable",
+        "pretax_income": "reported_vendor_data",
+        "tax_provision": "reported_vendor_data",
+        "tax_rate": "derived_reported_data",
+        "cash": "reported_vendor_data",
+        "debt": "reported_vendor_data",
+        "other_claims": "missing_components_assumed_zero",
+        "eps": "reported_vendor_data",
+        "shares": "reported_vendor_data"
+      },
+      "fields": {
+        "revenue": {
+          "tags": [
+            "Total Revenue"
+          ],
+          "periods": [
+            "2025-12-31"
+          ]
+        },
+        "operating_income": {
+          "tags": [
+            "Operating Income"
+          ],
+          "periods": [
+            "2025-12-31"
+          ]
+        },
+        "pretax_income": {
+          "tags": [
+            "Pretax Income"
+          ],
+          "periods": [
+            "2025-12-31"
+          ]
+        },
+        "tax_provision": {
+          "tags": [
+            "Tax Provision"
+          ],
+          "periods": [
+            "2025-12-31"
+          ]
+        },
+        "cash": {
+          "tag": "Cash And Cash Equivalents",
+          "period": "2026-06-30"
+        },
+        "debt": {
+          "tag": "Total Debt",
+          "period": "2026-06-30"
+        },
+        "other_claims": {
+          "tags": [
+            null,
+            "Preferred Stock Equity"
+          ],
+          "period": "2026-06-30"
+        },
+        "eps": {
+          "tag": "trailingEps",
+          "period": "vendor_current"
+        },
+        "shares": {
+          "tag": "sharesOutstanding",
+          "period": "vendor_current"
+        }
+      },
+      "income_basis": "reported_fiscal_year",
+      "income_periods": [
+        "2025-12-31"
+      ],
+      "balance_period": "2026-06-30",
+      "operating_margin": null,
+      "price": 337.98,
+      "quote_time": "2026-11-03T21:00:02+00:00",
+      "sources": {
+        "financials": "https://finance.yahoo.com/quote/JPM/financials/",
+        "balance_sheet": "https://finance.yahoo.com/quote/JPM/balance-sheet/"
+      },
+      "dcf_exclusion": "specialized_financial_model_required",
+      "market_cap_reference": 897539688000,
+      "snapshot_id": "ba41b4c453e59e7045d9e601fb4c5d2e15cbda9fd8a77840e037b63c06580011"
+    },
+    "calculations": {
+      "dcf": {
+        "command": {
+          "snapshot_id": "ba41b4c453e59e7045d9e601fb4c5d2e15cbda9fd8a77840e037b63c06580011",
+          "model": "dcf",
+          "inputs": {},
+          "scenarios": {
+            "conservative": {
+              "revenue_growth": 0,
+              "operating_margin": 0,
+              "reinvestment_rate": 0,
+              "discount_rate": 0.12
+            },
+            "base": {
+              "revenue_growth": 0,
+              "operating_margin": 0,
+              "reinvestment_rate": 0,
+              "discount_rate": 0.1
+            },
+            "optimistic": {
+              "revenue_growth": 0,
+              "operating_margin": 0,
+              "reinvestment_rate": 0,
+              "discount_rate": 0.08
+            }
+          },
+          "years": 5,
+          "terminal_growth": 0.02,
+          "terminal_roic": 0.1
+        },
+        "response": {
+          "symbol": "JPM",
+          "snapshot_id": "ba41b4c453e59e7045d9e601fb4c5d2e15cbda9fd8a77840e037b63c06580011",
+          "currency": "USD",
+          "model": "dcf",
+          "model_version": "company-valuation-v1",
+          "result_kind": "assumption_based_company_valuation",
+          "inputs": {
+            "revenue": 181847000000,
+            "operating_income": null,
+            "pretax_income": 72595000000,
+            "tax_provision": 15547000000,
+            "tax_rate": 0.21416075487292513,
+            "cash": 309811000000,
+            "debt": 532953000000,
+            "other_claims": 21040000000,
+            "eps": 23.84,
+            "shares": 2655600000
+          },
+          "input_origins": {
+            "revenue": "reported_vendor_data",
+            "operating_income": "unavailable",
+            "pretax_income": "reported_vendor_data",
+            "tax_provision": "reported_vendor_data",
+            "tax_rate": "derived_reported_data",
+            "cash": "reported_vendor_data",
+            "debt": "reported_vendor_data",
+            "other_claims": "missing_components_assumed_zero",
+            "eps": "reported_vendor_data",
+            "shares": "reported_vendor_data"
+          },
+          "assumptions": {
+            "conservative": {
+              "revenue_growth": 0,
+              "operating_margin": 0,
+              "reinvestment_rate": 0,
+              "discount_rate": 0.12
+            },
+            "base": {
+              "revenue_growth": 0,
+              "operating_margin": 0,
+              "reinvestment_rate": 0,
+              "discount_rate": 0.1
+            },
+            "optimistic": {
+              "revenue_growth": 0,
+              "operating_margin": 0,
+              "reinvestment_rate": 0,
+              "discount_rate": 0.08
+            }
+          },
+          "price": 337.98,
+          "quote_time": "2026-11-03T21:00:02+00:00",
+          "status": "not_applicable",
+          "scenarios": {},
+          "sensitivity": [],
+          "reason": "specialized_financial_model_required"
+        }
+      },
+      "pe": {
+        "command": {
+          "snapshot_id": "ba41b4c453e59e7045d9e601fb4c5d2e15cbda9fd8a77840e037b63c06580011",
+          "model": "pe",
+          "inputs": {},
+          "scenarios": {
+            "conservative": {
+              "target_pe": 15
+            },
+            "base": {
+              "target_pe": 20
+            },
+            "optimistic": {
+              "target_pe": 25
+            }
+          },
+          "years": 5,
+          "terminal_growth": 0.02,
+          "terminal_roic": 0.1
+        },
+        "response": {
+          "symbol": "JPM",
+          "snapshot_id": "ba41b4c453e59e7045d9e601fb4c5d2e15cbda9fd8a77840e037b63c06580011",
+          "currency": "USD",
+          "model": "pe",
+          "model_version": "company-valuation-v1",
+          "result_kind": "assumption_based_company_valuation",
+          "inputs": {
+            "revenue": 181847000000,
+            "operating_income": null,
+            "pretax_income": 72595000000,
+            "tax_provision": 15547000000,
+            "tax_rate": 0.21416075487292513,
+            "cash": 309811000000,
+            "debt": 532953000000,
+            "other_claims": 21040000000,
+            "eps": 23.84,
+            "shares": 2655600000
+          },
+          "input_origins": {
+            "revenue": "reported_vendor_data",
+            "operating_income": "unavailable",
+            "pretax_income": "reported_vendor_data",
+            "tax_provision": "reported_vendor_data",
+            "tax_rate": "derived_reported_data",
+            "cash": "reported_vendor_data",
+            "debt": "reported_vendor_data",
+            "other_claims": "missing_components_assumed_zero",
+            "eps": "reported_vendor_data",
+            "shares": "reported_vendor_data"
+          },
+          "assumptions": {
+            "conservative": {
+              "target_pe": 15
+            },
+            "base": {
+              "target_pe": 20
+            },
+            "optimistic": {
+              "target_pe": 25
+            }
+          },
+          "price": 337.98,
+          "quote_time": "2026-11-03T21:00:02+00:00",
+          "status": "complete",
+          "scenarios": {
+            "conservative": {
+              "status": "complete",
+              "fair_price": 357.6,
+              "equity_value": 949642560000,
+              "enterprise_value": null,
+              "target_pe": 15,
+              "comparison": {
+                "price_space": 0.0580507722350434,
+                "premium_discount": -0.05486577181208052
+              }
+            },
+            "base": {
+              "status": "complete",
+              "fair_price": 476.8,
+              "equity_value": 1266190080000,
+              "enterprise_value": null,
+              "target_pe": 20,
+              "comparison": {
+                "price_space": 0.41073436298005794,
+                "premium_discount": -0.2911493288590604
+              }
+            },
+            "optimistic": {
+              "status": "complete",
+              "fair_price": 596,
+              "equity_value": 1582737600000,
+              "enterprise_value": null,
+              "target_pe": 25,
+              "comparison": {
+                "price_space": 0.7634179537250725,
+                "premium_discount": -0.43291946308724827
+              }
+            }
+          },
+          "sensitivity": []
+        }
+      },
+      "peg": {
+        "command": {
+          "snapshot_id": "ba41b4c453e59e7045d9e601fb4c5d2e15cbda9fd8a77840e037b63c06580011",
+          "model": "peg",
+          "inputs": {},
+          "scenarios": {
+            "conservative": {
+              "target_peg": 0.75,
+              "eps_growth": 0.2
+            },
+            "base": {
+              "target_peg": 1,
+              "eps_growth": 0.2
+            },
+            "optimistic": {
+              "target_peg": 1.25,
+              "eps_growth": 0.2
+            }
+          },
+          "years": 5,
+          "terminal_growth": 0.02,
+          "terminal_roic": 0.1
+        },
+        "response": {
+          "symbol": "JPM",
+          "snapshot_id": "ba41b4c453e59e7045d9e601fb4c5d2e15cbda9fd8a77840e037b63c06580011",
+          "currency": "USD",
+          "model": "peg",
+          "model_version": "company-valuation-v1",
+          "result_kind": "assumption_based_company_valuation",
+          "inputs": {
+            "revenue": 181847000000,
+            "operating_income": null,
+            "pretax_income": 72595000000,
+            "tax_provision": 15547000000,
+            "tax_rate": 0.21416075487292513,
+            "cash": 309811000000,
+            "debt": 532953000000,
+            "other_claims": 21040000000,
+            "eps": 23.84,
+            "shares": 2655600000
+          },
+          "input_origins": {
+            "revenue": "reported_vendor_data",
+            "operating_income": "unavailable",
+            "pretax_income": "reported_vendor_data",
+            "tax_provision": "reported_vendor_data",
+            "tax_rate": "derived_reported_data",
+            "cash": "reported_vendor_data",
+            "debt": "reported_vendor_data",
+            "other_claims": "missing_components_assumed_zero",
+            "eps": "reported_vendor_data",
+            "shares": "reported_vendor_data"
+          },
+          "assumptions": {
+            "conservative": {
+              "target_peg": 0.75,
+              "eps_growth": 0.2
+            },
+            "base": {
+              "target_peg": 1,
+              "eps_growth": 0.2
+            },
+            "optimistic": {
+              "target_peg": 1.25,
+              "eps_growth": 0.2
+            }
+          },
+          "price": 337.98,
+          "quote_time": "2026-11-03T21:00:02+00:00",
+          "status": "complete",
+          "scenarios": {
+            "conservative": {
+              "status": "complete",
+              "fair_price": 357.6,
+              "equity_value": 949642560000,
+              "enterprise_value": null,
+              "target_pe": 15.000000000000002,
+              "comparison": {
+                "price_space": 0.0580507722350434,
+                "premium_discount": -0.05486577181208052
+              }
+            },
+            "base": {
+              "status": "complete",
+              "fair_price": 476.8,
+              "equity_value": 1266190080000,
+              "enterprise_value": null,
+              "target_pe": 20,
+              "comparison": {
+                "price_space": 0.41073436298005794,
+                "premium_discount": -0.2911493288590604
+              }
+            },
+            "optimistic": {
+              "status": "complete",
+              "fair_price": 596,
+              "equity_value": 1582737600000,
+              "enterprise_value": null,
+              "target_pe": 25,
+              "comparison": {
+                "price_space": 0.7634179537250725,
+                "premium_discount": -0.43291946308724827
+              }
+            }
+          },
+          "sensitivity": []
+        }
+      }
+    }
+  }
+}

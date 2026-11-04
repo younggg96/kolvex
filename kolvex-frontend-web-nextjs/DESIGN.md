@@ -110,7 +110,15 @@ sits beside its content heading. Mobile navigation includes a menu button that e
 keep other routes, settings and log out reachable. Pages retain their established content scroller and use 16px
 horizontal padding on mobile and 32px from the medium breakpoint. Below 768px the root font size is 12px, so
 rem-based type, spacing and controls run at 75% of desktop; write new sizes in rem
-and keep px only for values that must not scale, such as the 16px page gutter and the mobile dock. Published
+and keep px only for values that must not scale, such as the 16px page gutter and the mobile dock.
+Editable controls are another fixed-pixel exception: `app/globals.css` owns a
+16px input font and a 44px minimum single-line field height on narrow screens
+and touch devices, including landscape. This covers shared Input, SearchInput,
+Textarea and native fields, selects and editable regions, preventing iOS focus
+zoom despite the smaller root size or local text utilities. Non-text input types
+retain their own geometry; textareas retain their existing height/autogrow behavior.
+Desktop pointer layouts retain their existing type sizes, and the viewport keeps
+manual page zoom available. Published
 reports stay within 1080px; Creator Opinions retains a wider two-column layout.
 
 Markets, Creator Opinions and AI Research each have one primary navigation entry.
@@ -1391,7 +1399,10 @@ Rules that follow from that:
 Ring utilities are disabled in `tailwind.config.ts`. Components do not use ring
 colors, widths or offsets, including sidebar navigation and decorative rings.
 `app/globals.css` provides keyboard focus feedback through secondary background
-and underlined text instead of surrounding ring shadows. Focus carries a 2px
+and underlined control labels instead of surrounding ring shadows. Inputs,
+textareas, native selects and editable regions are excluded from this underline;
+their existing background/border/outline feedback identifies focus without
+decorating entered text. Focus carries a 2px
 `primary` outline because a keyboard-focus ring is a distinct affordance, not
 data; the focused background behind it stays neutral grey.
 
@@ -1599,6 +1610,48 @@ full workspace use this mark for floating P&L, equity and subsequent equity samp
 Label these observations as after-hours alongside their actual timestamps. Missing
 or invalid extended data retains the regular/previous mark. After-hours marks never
 execute pending orders or protective exits; matching remains regular-session only.
+
+### Stock valuation
+
+StockWorkspace adds the URL-restorable `valuation` tab, loaded on first visit.
+`StockValuation` reuses Card, Button, Input, Label, ContentLoading and
+SegmentedControl, with the existing semantic theme and Chinese/English copy.
+The business and calculation contract is `../docs/stock-valuation/PRD.md`;
+the first vertical slice covers NVDA, AAPL and MSFT.
+
+The current reference uses an explicitly dated completed-session close, separate
+from the live header quote. Three scenario values and a price-position track
+precede the historical price/reference, PE and premium/discount chart views.
+Filing-driven references use steps; missing inputs remain gaps. The selected
+session and its source disclosure have previous/next keyboard controls.
+History view/range live in valuation-specific URL parameters. Personal simulation
+updates the current card and future date table without rewriting system history.
+Future targets use 3/6/9 calendar-month dates, explicitly distinct from fiscal
+quarter ends. Targets precede the native Adjust assumptions disclosure; controls
+stack on phones and the native scenario table scrolls horizontally with a hint.
+
+All computation remains deterministic on the backend. Cold builds expose a
+bounded status poll; no request triggers AI. Source failures, unsupported tickers,
+invalid inputs and stale snapshots have visible recovery text. Source links
+include direct GAAP earnings exhibits and original values when split-normalized.
+No new palette, typography, navigation shell or shared theme tokens are introduced.
+
+### Company valuation calculator
+
+The valuation tab defaults to Company calculator, with Valuation history as a
+visited, state-preserving sibling. Legacy history links retain their destination.
+The calculator supports DCF, PE and PEG with three named scenarios, an explicit
+enterprise-to-equity bridge for DCF, and separately labelled model per-share values.
+Current vendor financial inputs never backfill the SEC historical series.
+
+Result summary precedes the visible scenario editor. Financial basis and periods
+stay visible beside the heading; financial overrides and source links use native
+disclosure. Financial-sector and REIT exclusions explain the disabled DCF option.
+Defaults are explicitly trial assumptions. Inputs reuse Input/Label with field
+bounds and accessible errors. Forecast and sensitivity tables use native semantics.
+Debounced requests retain the last valid same-model result on invalid edits.
+Refreshing financials preserves user edits and updates untouched source fields;
+switching companies resets the calculator. Nothing is saved to an account.
 
 ### Quote and chart freshness
 

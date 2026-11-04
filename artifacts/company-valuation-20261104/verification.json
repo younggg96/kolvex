@@ -1,0 +1,79 @@
+{
+  "verified_at": "2026-11-04T10:19:32.788498+00:00",
+  "backend": {
+    "valuation_tests": 89,
+    "sec_and_yfinance_regression_tests": 7,
+    "passed": true
+  },
+  "frontend": {
+    "unit_tests": 15,
+    "typecheck": "passed",
+    "changed_file_eslint": "passed",
+    "production_build": "passed"
+  },
+  "real_http": {
+    "file": "http-verification.json",
+    "symbols": [
+      "NVDA",
+      "AMZN",
+      "JPM"
+    ],
+    "models": [
+      "dcf",
+      "pe",
+      "peg"
+    ],
+    "jpm_standard_dcf": "not_applicable"
+  },
+  "browser": {
+    "surface": "isolated local preview mounting production components and same-origin API proxy",
+    "authenticated_workspace_e2e": "not_verified",
+    "cases": [
+      "DCF automatic source inputs and three scenarios",
+      "PE target multiples 15/20/25",
+      "PEG growth20% and trial target PEG .75/1/1.25",
+      "crossed scenarios preserve prior valid result",
+      "WACC must exceed terminal growth",
+      "refresh changes source snapshot and preserves manually edited shares25000million and WACC11%",
+      "source details and forecast/sensitivity table",
+      "switch to real SEC history and return with calculator state retained",
+      "JPM disabled standard DCF explanation",
+      "injected503 source failure retry",
+      "AMZN explicitly marked annual fallback, not TTM"
+    ],
+    "layouts": [
+      {
+        "width": 1280,
+        "document_width": 1269,
+        "locale": "zh",
+        "theme": "light"
+      },
+      {
+        "width": 390,
+        "document_width": 379,
+        "locale": "en",
+        "theme": "dark"
+      }
+    ],
+    "screenshots": [
+      "preview-zh.png",
+      "desktop-zh.png",
+      "mobile-en-dark.png"
+    ]
+  },
+  "static_ui_audit": {
+    "new_feature_findings": 0,
+    "existing_project_errors": 4,
+    "file": "ui-audit.json",
+    "design_detector": "design-audit.json"
+  },
+  "deployment": "not_deployed",
+  "database_changes": false,
+  "limits": [
+    "US ordinary equity with USD listing and financial reporting",
+    "Financial and REIT companies excluded from generic FCFF DCF",
+    "Vendor current metrics are distinct from SEC historical inputs",
+    "Financial forecast and discount inputs are trial/user assumptions",
+    "Account scenario persistence and specialized industry models not implemented"
+  ]
+}

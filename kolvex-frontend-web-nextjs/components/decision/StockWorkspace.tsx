@@ -62,6 +62,7 @@ const StockMulticharts = dynamic(() =>
 );
 const StockEarnings = dynamic(() => import("./StockEarnings"));
 const StockAnalyst = dynamic(() => import("./StockAnalyst"));
+const StockValuation = dynamic(() => import("./StockValuation"));
 const StockPaperTrading = dynamic(() => import("@/components/paper-trading/StockPaperTrading"));
 
 type Side = "bullish" | "bearish" | "neutral";
@@ -136,6 +137,7 @@ export default function StockWorkspace({
         "paper-trading",
         "summary",
         "financials",
+        "valuation",
         "earnings",
         "multicharts",
         "analyst",
@@ -416,6 +418,7 @@ export default function StockWorkspace({
                     <TabsTrigger value="financials">
                       {c("Financials", "财务报表")}
                     </TabsTrigger>
+                    <TabsTrigger value="valuation">{c("Valuation", "估值")}</TabsTrigger>
                     <TabsTrigger value="earnings">
                       {c("Earnings", "盈利表现")}
                     </TabsTrigger>
@@ -474,6 +477,9 @@ export default function StockWorkspace({
               >
                 {!benchmark && <TabsContent value="paper-trading" forceMount className="stock-tab-panel data-[state=inactive]:hidden">
                   {(activeTab === "paper-trading" || visitedTabs.has("paper-trading")) && <StockPaperTrading key={ticker} symbol={ticker} active={activeTab === "paper-trading"} />}
+                </TabsContent>}
+                {!benchmark && <TabsContent value="valuation" forceMount className="stock-tab-panel data-[state=inactive]:hidden">
+                  {(activeTab === "valuation" || visitedTabs.has("valuation")) && <StockValuation key={ticker} symbol={ticker} />}
                 </TabsContent>}
                 <TabsContent
                   value="financials"

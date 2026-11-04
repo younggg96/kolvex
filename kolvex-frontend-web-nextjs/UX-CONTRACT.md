@@ -66,6 +66,46 @@ The temporary fixture route was removed. Authenticated end-to-end verification
 against a deployed account remains pending; fixture checks do not verify deployment
 configuration or live storage. The existing project-wide UI audit findings in
 settings, Reddit and global scrollbar ownership remain outside this change.
+## Stock valuation
+
+Business source: `../docs/stock-valuation/PRD.md`; implementation scope and
+verification: `../docs/stock-valuation/README.md`.
+
+| Capability | Canonical owner | Allowed valuation behavior |
+| --- | --- | --- |
+| Tabs / segmented controls | Existing Tabs and SegmentedControl | `tab=valuation`; `valuation_view` and `valuation_range` restore reading choices |
+| Fields and validation | Shared Input/Label; `lib/stockValuation.ts`; backend Simulation schema | Three PE values and growth rates, 300ms cancellable previews; no browser validation bubbles or persisted writes |
+| Loading / feedback | ContentLoading; existing client cache; inline live status | Cold background-build polling, explicit retry, retain readable cached data |
+| Sources / disclosure | Native details and validated SEC links | Selected-session financial inputs, split-normalized/original values; progressive assumption editor |
+| Table | Native semantic table inside Card | Three future dates; horizontally scrollable on phones, visible scroll hint and keyboard-focusable region |
+
+Simulation requests have no persistent side effects, never call an AI, and never
+alter system history. Navigating between visited stock tabs retains transient
+parameter state. A new data snapshot resets the editor to its system assumptions;
+409 conflicts require refreshing the valuation. Account-saved plans are outside
+this first vertical slice. Quotes are labelled completed-session closes; targets
+are conditional calculations, not analyst consensus or promised returns.
+
+### Company calculator addition
+
+`CompanyValuationCalculator` owns the current-company DCF/PE/PEG form;
+`lib/companyValuation.ts` owns unit conversion and request validation. The shared
+Input/Label, SegmentedControl, Card, Button, ContentLoading and cache remain the
+canonical UI owners. `valuation_mode` selects calculator/history; legacy history
+parameters open history. Visited views preserve transient state.
+
+This editor uses 350ms cancellable requests and never persists assumptions.
+Invalid numbers, crossed scenarios and invalid terminal conditions retain the
+last valid same-model result with an explicit stale label. Missing source inputs
+remain empty. HTTP 409 exposes Refresh inputs; network failures expose Retry.
+Financial refresh retains edited fields and scenario assumptions, updating only
+untouched defaults. Changing companies resets the editor. The older history PE
+editor still resets to system assumptions on a new historical snapshot.
+
+DCF results distinguish enterprise value, equity value and per-share value. PE
+and PEG display equity value only. Required financial basis and dated quote are
+visible with results. Native disclosures contain editable financial inputs,
+their vendor/assumption origins, source links, forecast and sensitivity tables.
 
 ## Market quote freshness
 

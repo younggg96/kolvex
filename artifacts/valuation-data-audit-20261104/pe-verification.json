@@ -1,0 +1,633 @@
+{
+  "generated_at": "2026-11-04T09:26:53.834141+00:00",
+  "companies": {
+    "NVDA": {
+      "as_of": "2026-11-04",
+      "snapshot_id": "8e47506cefaca30afae0d13bd7239ec3c3ba0cf9d7e68abb7ebabb96f966e1ee",
+      "five_year_sessions": 1254,
+      "eps_sessions": 1254,
+      "reference_sessions": 1254,
+      "basis": {
+        "status": "reviewed_pilot_policy",
+        "policy_version": "pilot-original-period-split-policy-v1",
+        "target_basis_date": "2026-11-03",
+        "approved_filing_count": 53,
+        "evidence": [
+          "https://nvidianews.nvidia.com/news/nvidia-announces-four-for-one-stock-split-pending-stockholder-approval-at-annual-meeting-set-for-june-3",
+          "https://www.sec.gov/Archives/edgar/data/1045810/000104581024000144/nvda-20240607.htm",
+          "https://www.sec.gov/Archives/edgar/data/1045810/000104581024000264/nvda-20240728.htm"
+        ]
+      },
+      "current": {
+        "as_of": "2026-11-04",
+        "status": "complete",
+        "eps": 7.91,
+        "period_start": "2025-07-28",
+        "period_end": "2026-07-26",
+        "method": "sum_reported_quarters",
+        "inputs": [
+          {
+            "start": "2025-07-28",
+            "end": "2025-10-26",
+            "value": 1.3,
+            "filed": "2025-11-19",
+            "accession": "0001045810-25-000230",
+            "form": "10-Q",
+            "unit": "USD/shares",
+            "cik": 1045810,
+            "source_url_override": null,
+            "source_sha256": null,
+            "raw_value": 1.3,
+            "share_basis_date": "2026-11-03",
+            "share_basis_status": "verified",
+            "basis_evidence": [
+              "https://nvidianews.nvidia.com/news/nvidia-announces-four-for-one-stock-split-pending-stockholder-approval-at-annual-meeting-set-for-june-3",
+              "https://www.sec.gov/Archives/edgar/data/1045810/000104581024000144/nvda-20240607.htm",
+              "https://www.sec.gov/Archives/edgar/data/1045810/000104581024000264/nvda-20240728.htm"
+            ],
+            "id": "5bd9f70124237268b1edd4732d258711f9b57627f7cc390fdb82a0021f7b0d73",
+            "tag": "EarningsPerShareDiluted",
+            "source_url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581025000230/0001045810-25-000230-index.html"
+          },
+          {
+            "start": "2025-10-27",
+            "end": "2026-01-25",
+            "value": 1.76,
+            "filed": "2026-02-25",
+            "accession": "0001045810-26-000019",
+            "form": "8-K/earnings-release",
+            "unit": "USD/shares",
+            "cik": 1045810,
+            "source_url_override": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000019/q4fy26pr.htm",
+            "source_sha256": "7775049665234f8f7f941b887d6b803b65a135486c31d891b4b1b83cdd261386",
+            "raw_value": 1.76,
+            "share_basis_date": "2026-11-03",
+            "share_basis_status": "verified",
+            "basis_evidence": [
+              "https://nvidianews.nvidia.com/news/nvidia-announces-four-for-one-stock-split-pending-stockholder-approval-at-annual-meeting-set-for-june-3",
+              "https://www.sec.gov/Archives/edgar/data/1045810/000104581024000144/nvda-20240607.htm",
+              "https://www.sec.gov/Archives/edgar/data/1045810/000104581024000264/nvda-20240728.htm"
+            ],
+            "id": "f22ffda5cbddf50b22cb1135ce1d45d1492d5f45a0a3e7cd5c64c22209b3f9fb",
+            "tag": "EarningsPerShareDiluted",
+            "source_url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000019/q4fy26pr.htm"
+          },
+          {
+            "start": "2026-01-26",
+            "end": "2026-04-26",
+            "value": 2.39,
+            "filed": "2026-05-20",
+            "accession": "0001045810-26-000052",
+            "form": "10-Q",
+            "unit": "USD/shares",
+            "cik": 1045810,
+            "source_url_override": null,
+            "source_sha256": null,
+            "raw_value": 2.39,
+            "share_basis_date": "2026-11-03",
+            "share_basis_status": "verified",
+            "basis_evidence": [
+              "https://nvidianews.nvidia.com/news/nvidia-announces-four-for-one-stock-split-pending-stockholder-approval-at-annual-meeting-set-for-june-3",
+              "https://www.sec.gov/Archives/edgar/data/1045810/000104581024000144/nvda-20240607.htm",
+              "https://www.sec.gov/Archives/edgar/data/1045810/000104581024000264/nvda-20240728.htm"
+            ],
+            "id": "6a6453e05b04646e7a0f8eb13c6e4657cd3d1ca3ef6b583637bf399fd08025f5",
+            "tag": "EarningsPerShareDiluted",
+            "source_url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000052/0001045810-26-000052-index.html"
+          },
+          {
+            "start": "2026-04-27",
+            "end": "2026-07-26",
+            "value": 2.46,
+            "filed": "2026-08-26",
+            "accession": "0001045810-26-000075",
+            "form": "10-Q",
+            "unit": "USD/shares",
+            "cik": 1045810,
+            "source_url_override": null,
+            "source_sha256": null,
+            "raw_value": 2.46,
+            "share_basis_date": "2026-11-03",
+            "share_basis_status": "verified",
+            "basis_evidence": [
+              "https://nvidianews.nvidia.com/news/nvidia-announces-four-for-one-stock-split-pending-stockholder-approval-at-annual-meeting-set-for-june-3",
+              "https://www.sec.gov/Archives/edgar/data/1045810/000104581024000144/nvda-20240607.htm",
+              "https://www.sec.gov/Archives/edgar/data/1045810/000104581024000264/nvda-20240728.htm"
+            ],
+            "id": "706849d0513d00bf4b35e324705f232e143f76902bee0c98876c34d66f8f33d2",
+            "tag": "EarningsPerShareDiluted",
+            "source_url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000075/0001045810-26-000075-index.html"
+          }
+        ],
+        "model_version": "sec-eps-inputs-v1",
+        "share_basis_status": "verified",
+        "available_after": "2026-08-26",
+        "missing_quarter_ends": [],
+        "input_filing_count": 4,
+        "input_age_days": 70,
+        "period_age_days": 101,
+        "price": 206.69000244140625,
+        "price_date": "2026-11-03",
+        "pe": 26.13021522647361,
+        "calibration": {
+          "model_version": "pe-reference-v1",
+          "lookback_start": "2021-08-27",
+          "cutoff_exclusive": "2026-08-27",
+          "sample_count": 1254,
+          "financial_input_count": 22,
+          "multiples": {
+            "conservative": 45.985158414256816,
+            "base": 58.96296270212896,
+            "optimistic": 79.55197986294024
+          },
+          "percentile": 0.0,
+          "status": "complete",
+          "quantile_method": "linear_r7",
+          "first_sample": "2021-08-27",
+          "last_sample": "2026-08-26"
+        },
+        "reference": {
+          "model_version": "pe-reference-v1",
+          "eps_basis": "ttm_diluted",
+          "result_kind": "model_calculation",
+          "scenarios": {
+            "conservative": {
+              "eps": 7.91,
+              "target_pe": 45.985158414256816,
+              "reference_value": 363.74260305677143,
+              "comparison": {
+                "price_space": 0.7598461404048191,
+                "premium_discount": -0.4317685068934668
+              }
+            },
+            "base": {
+              "eps": 7.91,
+              "target_pe": 58.96296270212896,
+              "reference_value": 466.3970349738401,
+              "comparison": {
+                "price_space": 1.2565050532913764,
+                "premium_discount": -0.5568368001031581
+              }
+            },
+            "optimistic": {
+              "eps": 7.91,
+              "target_pe": 79.55197986294024,
+              "reference_value": 629.2561607158573,
+              "comparison": {
+                "price_space": 2.044444110905861,
+                "premium_discount": -0.671532810729623
+              }
+            }
+          }
+        }
+      },
+      "supplements": {
+        "accepted": 6,
+        "failures": [],
+        "parser_version": "sec-gaap-release-v1",
+        "records": [
+          {
+            "period_end": "2021-01-31",
+            "value": 2.31,
+            "filed": "2021-02-24",
+            "source_url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581021000007/q4fy21pr.htm",
+            "source_sha256": "c33fa0b6d19d4bf4ec29b940e978f93438ec876983cdf58b04b3990d08ea72b2",
+            "evidence": "Diluted earnings per share $2.31 $2.12 $1.53 Up 9% Up 51%"
+          },
+          {
+            "period_end": "2022-01-30",
+            "value": 1.18,
+            "filed": "2022-02-16",
+            "source_url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581022000008/q4fy22pr.htm",
+            "source_sha256": "7e9f693053894c9d50c0398d73b9afceefc16e7ae2bb6361731a862ad88623aa",
+            "evidence": "Diluted earnings per share* $1.18 $0.97 $0.58 Up 22% Up 103%"
+          },
+          {
+            "period_end": "2023-01-29",
+            "value": 0.57,
+            "filed": "2023-02-22",
+            "source_url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581023000014/q4fy23pr.htm",
+            "source_sha256": "7e9427ad025134d57a147c1d0045b929f29543618ce97062268c7a1b63818228",
+            "evidence": "Diluted earnings per share $0.57 $0.27 $1.18 Up 111% Down 52%"
+          },
+          {
+            "period_end": "2024-01-28",
+            "value": 4.93,
+            "filed": "2024-02-21",
+            "source_url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581024000028/q4fy24pr.htm",
+            "source_sha256": "07143133febe045af8d8ffe9c024f01550ad98e99e0b75b0133dd67662836195",
+            "evidence": "Diluted earnings per share $4.93 $3.71 $0.57 Up 33% Up 765%"
+          },
+          {
+            "period_end": "2025-01-26",
+            "value": 0.89,
+            "filed": "2025-02-26",
+            "source_url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581025000021/q4fy25pr.htm",
+            "source_sha256": "03b74082a63f28b10ec5f7587c7668cff1712a85c45ae40644598edc996163ce",
+            "evidence": "Diluted earnings per share* $0.89 $0.78 $0.49 Up 14% Up 82%"
+          },
+          {
+            "period_end": "2026-01-25",
+            "value": 1.76,
+            "filed": "2026-02-25",
+            "source_url": "https://www.sec.gov/Archives/edgar/data/1045810/000104581026000019/q4fy26pr.htm",
+            "source_sha256": "7775049665234f8f7f941b887d6b803b65a135486c31d891b4b1b83cdd261386",
+            "evidence": "Diluted earnings per share $1.76 $1.30 $0.89 35 % 98 %"
+          }
+        ]
+      },
+      "http_simulation_verified": true
+    },
+    "AAPL": {
+      "as_of": "2026-11-04",
+      "snapshot_id": "e8c2b2ecf9889010315948426e72e0ce6dedb239413a4d8dc1ca00578d911575",
+      "five_year_sessions": 1254,
+      "eps_sessions": 1254,
+      "reference_sessions": 1254,
+      "basis": {
+        "status": "reviewed_pilot_policy",
+        "policy_version": "pilot-original-period-split-policy-v1",
+        "target_basis_date": "2026-11-03",
+        "approved_filing_count": 54,
+        "evidence": [
+          "https://investor.apple.com/dividend-history/default.aspx"
+        ]
+      },
+      "current": {
+        "as_of": "2026-11-04",
+        "status": "complete",
+        "eps": 8.98,
+        "period_start": "2025-09-28",
+        "period_end": "2026-09-26",
+        "method": "reported_full_year",
+        "inputs": [
+          {
+            "start": "2025-09-28",
+            "end": "2026-09-26",
+            "value": 8.98,
+            "filed": "2026-11-03",
+            "accession": "0000320193-26-000026",
+            "form": "10-K",
+            "unit": "USD/shares",
+            "cik": 320193,
+            "source_url_override": null,
+            "source_sha256": null,
+            "raw_value": 8.98,
+            "share_basis_date": "2026-11-03",
+            "share_basis_status": "verified",
+            "basis_evidence": [
+              "https://investor.apple.com/dividend-history/default.aspx"
+            ],
+            "id": "a45d9abe06b984ef3fbb8878ceaf0b4da8762996236b5a68554e7db8fa5da910",
+            "tag": "EarningsPerShareDiluted",
+            "source_url": "https://www.sec.gov/Archives/edgar/data/320193/000032019326000026/0000320193-26-000026-index.html"
+          }
+        ],
+        "model_version": "sec-eps-inputs-v1",
+        "share_basis_status": "verified",
+        "available_after": "2026-11-03",
+        "missing_quarter_ends": [],
+        "input_filing_count": 1,
+        "input_age_days": 1,
+        "period_age_days": 39,
+        "price": 331.8999938964844,
+        "price_date": "2026-11-03",
+        "pe": 36.95991023346151,
+        "calibration": {
+          "model_version": "pe-reference-v1",
+          "lookback_start": "2021-11-04",
+          "cutoff_exclusive": "2026-11-04",
+          "sample_count": 1254,
+          "financial_input_count": 25,
+          "multiples": {
+            "conservative": 27.803912088476594,
+            "base": 31.454432739392225,
+            "optimistic": 35.167547097951434
+          },
+          "percentile": 0.8516746411483254,
+          "status": "complete",
+          "quantile_method": "linear_r7",
+          "first_sample": "2021-11-04",
+          "last_sample": "2026-11-03"
+        },
+        "reference": {
+          "model_version": "pe-reference-v1",
+          "eps_basis": "ttm_diluted",
+          "result_kind": "model_calculation",
+          "scenarios": {
+            "conservative": {
+              "eps": 8.98,
+              "target_pe": 27.803912088476594,
+              "reference_value": 249.67913055451982,
+              "comparison": {
+                "price_space": -0.24772782420601147,
+                "premium_discount": 0.329306110444064
+              }
+            },
+            "base": {
+              "eps": 8.98,
+              "target_pe": 31.454432739392225,
+              "reference_value": 282.4608059997422,
+              "comparison": {
+                "price_space": -0.1489580861883404,
+                "premium_discount": 0.17503025852297283
+              }
+            },
+            "optimistic": {
+              "eps": 8.98,
+              "target_pe": 35.167547097951434,
+              "reference_value": 315.8045729396039,
+              "comparison": {
+                "price_space": -0.04849479136146195,
+                "premium_discount": 0.0509663961071225
+              }
+            }
+          }
+        }
+      },
+      "supplements": {
+        "accepted": 6,
+        "failures": [],
+        "parser_version": "sec-gaap-release-v1",
+        "records": [
+          {
+            "period_end": "2021-09-25",
+            "value": 1.24,
+            "filed": "2021-10-28",
+            "source_url": "https://www.sec.gov/Archives/edgar/data/320193/000032019321000104/a8-kex991q4202109252021.htm",
+            "source_sha256": "98b75f8ac8acfacbd2d348f9b5a2933d23b592b9bbe708400e6257c68a9b8f4e",
+            "evidence": "Diluted $ 1.24 $ 0.73 $ 5.61 $ 3.28"
+          },
+          {
+            "period_end": "2022-09-24",
+            "value": 1.29,
+            "filed": "2022-10-27",
+            "source_url": "https://www.sec.gov/Archives/edgar/data/320193/000032019322000107/a8-kex991q4202209242022.htm",
+            "source_sha256": "38fd07bcec21c0df143e6ea748cbaddb05869eb048fcb9823cd147bf634dd6f7",
+            "evidence": "Diluted $ 1.29 $ 1.24 $ 6.11 $ 5.61"
+          },
+          {
+            "period_end": "2023-09-30",
+            "value": 1.46,
+            "filed": "2023-11-02",
+            "source_url": "https://www.sec.gov/Archives/edgar/data/320193/000032019323000104/a8-kex991q4202309302023.htm",
+            "source_sha256": "cbe8421d4bbb5d72d5911361f9f9ad401b8f5cbe1005940dec30c945f4ad1c4a",
+            "evidence": "Diluted $ 1.46 $ 1.29 $ 6.13 $ 6.11"
+          },
+          {
+            "period_end": "2024-09-28",
+            "value": 0.97,
+            "filed": "2024-10-31",
+            "source_url": "https://www.sec.gov/Archives/edgar/data/320193/000032019324000120/a8-kex991q4202409282024.htm",
+            "source_sha256": "4436b65bc1af7c6aa49ff776f4afdbcee9f4780885b6b0839b0dc88c730f05d1",
+            "evidence": "Diluted $ 0.97 $ 1.46 $ 6.08 $ 6.13"
+          },
+          {
+            "period_end": "2025-09-27",
+            "value": 1.85,
+            "filed": "2025-10-30",
+            "source_url": "https://www.sec.gov/Archives/edgar/data/320193/000032019325000077/a8-kex991q4202509272025.htm",
+            "source_sha256": "b61ac08a4d5c224eb44d31106ac8e07e716f3457226e54dadbda7cc499020974",
+            "evidence": "Diluted $ 1.85 $ 0.97 $ 7.46 $ 6.08"
+          },
+          {
+            "period_end": "2026-09-26",
+            "value": 2.1,
+            "filed": "2026-11-02",
+            "source_url": "https://www.sec.gov/Archives/edgar/data/320193/000032019326000024/a8-kex991q4202609262026.htm",
+            "source_sha256": "1d3f094891b3655d5ff6555a657a9350ed4b41935b24cf76d336e2e88352e9aa",
+            "evidence": "Diluted $ 2.10 $ 1.85 $ 8.98 $ 7.46"
+          }
+        ]
+      },
+      "http_simulation_verified": true
+    },
+    "MSFT": {
+      "as_of": "2026-11-04",
+      "snapshot_id": "19a9e46b39e0466e02b4eb754d4e8d5d3554bc85f65921d54f24b9238800c619",
+      "five_year_sessions": 1254,
+      "eps_sessions": 1254,
+      "reference_sessions": 1254,
+      "basis": {
+        "status": "reviewed_pilot_policy",
+        "policy_version": "pilot-original-period-split-policy-v1",
+        "target_basis_date": "2026-11-03",
+        "approved_filing_count": 54,
+        "evidence": [
+          "https://www.microsoft.com/en-us/investor/dividends-and-stock-history"
+        ]
+      },
+      "current": {
+        "as_of": "2026-11-04",
+        "status": "complete",
+        "eps": 19.16,
+        "period_start": "2025-10-01",
+        "period_end": "2026-09-30",
+        "method": "sum_reported_quarters",
+        "inputs": [
+          {
+            "start": "2025-10-01",
+            "end": "2025-12-31",
+            "value": 5.16,
+            "filed": "2026-01-28",
+            "accession": "0001193125-26-027207",
+            "form": "10-Q",
+            "unit": "USD/shares",
+            "cik": 789019,
+            "source_url_override": null,
+            "source_sha256": null,
+            "raw_value": 5.16,
+            "share_basis_date": "2026-11-03",
+            "share_basis_status": "verified",
+            "basis_evidence": [
+              "https://www.microsoft.com/en-us/investor/dividends-and-stock-history"
+            ],
+            "id": "fec157441f2c39d4f68b2d1fb81566f12126598298ee4fc2a1d21d3785f39c70",
+            "tag": "EarningsPerShareDiluted",
+            "source_url": "https://www.sec.gov/Archives/edgar/data/789019/000119312526027207/0001193125-26-027207-index.html"
+          },
+          {
+            "start": "2026-01-01",
+            "end": "2026-03-31",
+            "value": 4.27,
+            "filed": "2026-04-29",
+            "accession": "0001193125-26-191507",
+            "form": "10-Q",
+            "unit": "USD/shares",
+            "cik": 789019,
+            "source_url_override": null,
+            "source_sha256": null,
+            "raw_value": 4.27,
+            "share_basis_date": "2026-11-03",
+            "share_basis_status": "verified",
+            "basis_evidence": [
+              "https://www.microsoft.com/en-us/investor/dividends-and-stock-history"
+            ],
+            "id": "0ce0412ba32a04adf6f2cf1c622d2f8c3b10184fdd0e7616668bf1c676994ff2",
+            "tag": "EarningsPerShareDiluted",
+            "source_url": "https://www.sec.gov/Archives/edgar/data/789019/000119312526191507/0001193125-26-191507-index.html"
+          },
+          {
+            "start": "2026-04-01",
+            "end": "2026-06-30",
+            "value": 4.81,
+            "filed": "2026-07-29",
+            "accession": "0001193125-26-323632",
+            "form": "8-K/earnings-release",
+            "unit": "USD/shares",
+            "cik": 789019,
+            "source_url_override": "https://www.sec.gov/Archives/edgar/data/789019/000119312526323632/msft-ex99_1.htm",
+            "source_sha256": "46379b956c9e1402a0ba48c97525636e0af4f92bf6ad06d3d52cb9aa73cae492",
+            "raw_value": 4.81,
+            "share_basis_date": "2026-11-03",
+            "share_basis_status": "verified",
+            "basis_evidence": [
+              "https://www.microsoft.com/en-us/investor/dividends-and-stock-history"
+            ],
+            "id": "1a75bd6b9dfce4e7e8e23a702abd98e952159c22187b74792d0b3094742b3ff0",
+            "tag": "EarningsPerShareDiluted",
+            "source_url": "https://www.sec.gov/Archives/edgar/data/789019/000119312526323632/msft-ex99_1.htm"
+          },
+          {
+            "start": "2026-07-01",
+            "end": "2026-09-30",
+            "value": 4.92,
+            "filed": "2026-10-28",
+            "accession": "0001193125-26-436133",
+            "form": "10-Q",
+            "unit": "USD/shares",
+            "cik": 789019,
+            "source_url_override": null,
+            "source_sha256": null,
+            "raw_value": 4.92,
+            "share_basis_date": "2026-11-03",
+            "share_basis_status": "verified",
+            "basis_evidence": [
+              "https://www.microsoft.com/en-us/investor/dividends-and-stock-history"
+            ],
+            "id": "9d4251d82b9d541784b77e5a41bd69469381ba444746d86e3d7f61102b5e0c53",
+            "tag": "EarningsPerShareDiluted",
+            "source_url": "https://www.sec.gov/Archives/edgar/data/789019/000119312526436133/0001193125-26-436133-index.html"
+          }
+        ],
+        "model_version": "sec-eps-inputs-v1",
+        "share_basis_status": "verified",
+        "available_after": "2026-10-28",
+        "missing_quarter_ends": [],
+        "input_filing_count": 4,
+        "input_age_days": 7,
+        "period_age_days": 35,
+        "price": 520.989990234375,
+        "price_date": "2026-11-03",
+        "pe": 27.1915443754893,
+        "calibration": {
+          "model_version": "pe-reference-v1",
+          "lookback_start": "2021-10-29",
+          "cutoff_exclusive": "2026-10-29",
+          "sample_count": 1254,
+          "financial_input_count": 22,
+          "multiples": {
+            "conservative": 27.918847224062134,
+            "base": 33.63406858267858,
+            "optimistic": 36.395545527054146
+          },
+          "percentile": 0.20334928229665072,
+          "status": "complete",
+          "quantile_method": "linear_r7",
+          "first_sample": "2021-10-29",
+          "last_sample": "2026-10-28"
+        },
+        "reference": {
+          "model_version": "pe-reference-v1",
+          "eps_basis": "ttm_diluted",
+          "result_kind": "model_calculation",
+          "scenarios": {
+            "conservative": {
+              "eps": 19.16,
+              "target_pe": 27.918847224062134,
+              "reference_value": 534.9251128130305,
+              "comparison": {
+                "price_space": 0.026747390237548796,
+                "premium_discount": -0.026050604551680845
+              }
+            },
+            "base": {
+              "eps": 19.16,
+              "target_pe": 33.63406858267858,
+              "reference_value": 644.4287540441215,
+              "comparison": {
+                "price_space": 0.23693116206362386,
+                "premium_discount": -0.19154757300183278
+              }
+            },
+            "optimistic": {
+              "eps": 19.16,
+              "target_pe": 36.395545527054146,
+              "reference_value": 697.3386522983575,
+              "comparison": {
+                "price_space": 0.33848762043326297,
+                "premium_discount": -0.25288812183686527
+              }
+            }
+          }
+        }
+      },
+      "supplements": {
+        "accepted": 6,
+        "failures": [],
+        "parser_version": "sec-gaap-release-v1",
+        "records": [
+          {
+            "period_end": "2021-06-30",
+            "value": 2.17,
+            "filed": "2021-07-27",
+            "source_url": "https://www.sec.gov/Archives/edgar/data/789019/000119312521225746/d200100dex991.htm",
+            "source_sha256": "d1a4c7ff6c8c224ce833b0e959dcf82380ed6c1c93c38fc83a071de40ae1107b",
+            "evidence": "Diluted $2.17 $1.46 $8.05 $5.76"
+          },
+          {
+            "period_end": "2022-06-30",
+            "value": 2.23,
+            "filed": "2022-07-26",
+            "source_url": "https://www.sec.gov/Archives/edgar/data/789019/000119312522202034/d372382dex991.htm",
+            "source_sha256": "8e19ab8ab96be375260cf36139d3af649974faf67f1559af0f23fb22fa07f040",
+            "evidence": "Diluted $2.23 $2.17 $9.65 $8.05"
+          },
+          {
+            "period_end": "2023-06-30",
+            "value": 2.69,
+            "filed": "2023-07-25",
+            "source_url": "https://www.sec.gov/Archives/edgar/data/789019/000095017023034400/msft-ex99_1.htm",
+            "source_sha256": "3fe18b64bf9285a55c0f7d213ef9d817c305eeff56961fc4d5ddcecf400cbefe",
+            "evidence": "Diluted $2.69 $2.23 $9.68 $9.65"
+          },
+          {
+            "period_end": "2024-06-30",
+            "value": 2.95,
+            "filed": "2024-07-30",
+            "source_url": "https://www.sec.gov/Archives/edgar/data/789019/000095017024087835/msft-ex99_1.htm",
+            "source_sha256": "8825de3b808677d0ee5a21df5e6fedb2fee0ea6472cc25d54d8c1f82c61e7729",
+            "evidence": "Diluted $2.95 $2.69 $11.80 $9.68"
+          },
+          {
+            "period_end": "2025-06-30",
+            "value": 3.65,
+            "filed": "2025-07-30",
+            "source_url": "https://www.sec.gov/Archives/edgar/data/789019/000095017025100226/msft-ex99_1.htm",
+            "source_sha256": "3115f895443dd5c76cc8c7ba94f4087c2e6a47300ba72ce46d5d3482ba1a783a",
+            "evidence": "Diluted $3.65 $2.95 $13.64 $11.80"
+          },
+          {
+            "period_end": "2026-06-30",
+            "value": 4.81,
+            "filed": "2026-07-29",
+            "source_url": "https://www.sec.gov/Archives/edgar/data/789019/000119312526323632/msft-ex99_1.htm",
+            "source_sha256": "46379b956c9e1402a0ba48c97525636e0af4f92bf6ad06d3d52cb9aa73cae492",
+            "evidence": "Diluted Earnings per Share $4.81 $(0.07) $4.74 $3.65 $0.21 $3.86 32% 32% $(0.28) 23% 23%"
+          }
+        ]
+      },
+      "http_simulation_verified": true
+    }
+  }
+}
