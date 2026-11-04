@@ -128,6 +128,12 @@ export const listRowTargetClass =
 export const listFeedRowClass =
   "list-row-interactive min-w-0 py-6 first:pt-2 last:border-0 [overflow-wrap:anywhere]";
 
+/**
+ * Feed row that holds its own hoverable rows (e.g. a video with one row per
+ * stock opinion). The inner rows carry the wash, so the wrapper stays flat.
+ */
+export const listFeedGroupRowClass = cn(listFeedRowClass, "list-row-group");
+
 /** Centered "load more" footer of a list card. */
 export function ListLoadMore({
   className,

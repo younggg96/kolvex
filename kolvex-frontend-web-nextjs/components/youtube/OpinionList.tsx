@@ -11,7 +11,7 @@ import {
   ListCard,
   ListLoadMore,
   ListRows,
-  listFeedRowClass,
+  listFeedGroupRowClass,
 } from "@/components/ui/list-card";
 import { useTranslation } from "@/lib/i18n";
 import { getYouTubeVideoFeed } from "@/lib/youtubeOpinionsApi";
@@ -94,7 +94,7 @@ export default function OpinionList() {
                   {!error && <p role="status" className="mb-1 border-b border-border pb-3 text-xs tabular-nums text-muted-foreground">{c(`${videos.length} of ${total} videos`, `已显示 ${videos.length} / ${total} 期视频`)}</p>}
                   {videos.length ? (
                     <ListRows aria-label={c("All opinions", "全部观点")}>
-                      {videos.map((group) => <li key={group.videoId} className={listFeedRowClass}><VideoOpinionCard group={group} t={t} showCreator onStock={(ticker) => router.push(`/dashboard/youtube-opinions?tab=stocks&stock=${encodeURIComponent(ticker)}`)} /></li>)}
+                      {videos.map((group) => <li key={group.videoId} className={listFeedGroupRowClass}><VideoOpinionCard group={group} t={t} showCreator onStock={(ticker) => router.push(`/dashboard/youtube-opinions?tab=stocks&stock=${encodeURIComponent(ticker)}`)} /></li>)}
                     </ListRows>
                   ) : !error ? <Empty>{t("youtubeOpinions.noOpinionsYet")}</Empty> : null}
                 </>

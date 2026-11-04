@@ -37,6 +37,7 @@ import {
   ListToolbar,
   listCompactRowClass,
   listFeedRowClass,
+  listFeedGroupRowClass,
   listRowTargetClass,
 } from "@/components/ui/list-card";
 import { Input } from "@/components/ui/input";
@@ -1212,7 +1213,7 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
                       {catalogueError ? <EmptyLine text={t("youtubeOpinions.directoryLoadFailed")} action={{ label: t("common.retry"), onClick: refresh }} alert /> : !catalogue ? <ContentLoading label={t("common.loadingStatus")} /> : catalogue.latest_videos?.length ? (
                         <ListRows aria-label={c("Latest creator videos", "博主最新视频")}>
                           {catalogue.latest_videos.map((group) => (
-                            <li key={group.videoId} className={cn(listFeedRowClass, "py-4 first:pt-1")}>
+                            <li key={group.videoId} className={cn(listFeedGroupRowClass, "py-4 first:pt-1")}>
                               <VideoOpinionCard group={group} t={t} showCreator compact onStock={(ticker) => navigate({ tab: "stocks", ticker })} />
                             </li>
                           ))}
@@ -1571,7 +1572,7 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
                           {(videoView ? visibleVideos.length : stockOpinions.length) > 0 && <ListRows aria-label={t("youtubeOpinions.opinionHistory")}>
                             {videoView
                               ? visibleVideos.map((group) => (
-                                  <li key={group.videoId} className={listFeedRowClass}>
+                                  <li key={group.videoId} className={listFeedGroupRowClass}>
                                     <VideoOpinionCard
                                       group={group}
                                       t={t}

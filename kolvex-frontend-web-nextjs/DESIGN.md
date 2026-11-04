@@ -1370,6 +1370,8 @@ Rules that follow from that:
   `listFeedRowClass`, whose `list-row-interactive` component class paints the
   neutral wash and darkens the row hairline on hover or `focus-within`; there is
   no leading accent mark.
+  A feed row that holds its own hoverable rows (a video and its stock opinions)
+  uses `listFeedGroupRowClass` so only the inner row washes, never both.
 - Tabs, `SegmentedControl`, `SwitchTab` and every authored pill select with
   `bg-foreground` plus `text-background`, or a `secondary` fill with
   foreground text. Unselected options preview with the same grey wash.

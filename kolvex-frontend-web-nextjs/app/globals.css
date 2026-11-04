@@ -146,6 +146,14 @@ a {
     background-color: rgb(var(--foreground) / 0.04);
     border-bottom-color: rgb(var(--foreground) / 0.14);
   }
+
+  /* A row that groups its own hoverable rows (a video and its stock opinions)
+     must not also wash as a whole, or the hovered inner row stacks two greys. */
+  .list-row-interactive.list-row-group:hover,
+  .list-row-interactive.list-row-group:focus-within {
+    background-color: transparent;
+    border-bottom-color: rgb(var(--border));
+  }
 }
 
 /* Tabular numbers for data alignment */
