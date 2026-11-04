@@ -939,6 +939,11 @@ class YouTubeStockOpinionService:
                 break
             if result.count is None and len(page) < 1000:
                 break
+        # Stable ties keep directories and latest-video groups consistent even
+        # when PostgREST changes its query plan after a column projection.
+        rows.sort(key=lambda row: str(row.get("id") or ""))
+        rows.sort(key=lambda row: (str(row.get("video_published_at") or ""),
+                                   str(row.get("created_at") or "")), reverse=True)
         return rows
 
     def _stock_creator_counts(self, tickers: List[str]) -> Dict[str, int]:
