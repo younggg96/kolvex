@@ -1590,3 +1590,12 @@ core opinion data is available. Do not render empty subsection cards or repeated
 spinners during that initial read. Cached content stays readable during background
 refresh. Upload coverage starts after core content, and detail pages do not fetch
 the global catalogue just to populate their header.
+
+### Virtual trading after-hours valuation
+
+The authoritative paper quote selects a timestamped after-hours observation only
+when newer than the regular quote and not in the future. Both the stock tab and
+full workspace use this mark for floating P&L, equity and subsequent equity samples.
+Label these observations as after-hours alongside their actual timestamps. Missing
+or invalid extended data retains the regular/previous mark. After-hours marks never
+execute pending orders or protective exits; matching remains regular-session only.

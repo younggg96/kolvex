@@ -44,7 +44,20 @@ def normalize_quote(raw, now=None):
         at = datetime.fromtimestamp(float(stamp), timezone.utc)
     except (ValueError, TypeError, OverflowError, OSError):
         raise TradingError("quote_time_unavailable") from None
-    return {"price": money(price), "at": at.isoformat(), "tradable": tradable_at(at, now),
+    session = "regular"
+    # Extended-hours observations affect marks, never order execution. Require
+    # the matching timestamp: a bare post-market price cannot prove freshness.
+    try:
+        post_price = d(raw.get("post_market_price"))
+        post_at = datetime.fromtimestamp(float(raw.get("post_market_time")), timezone.utc)
+        post_ny = post_at.astimezone(ZoneInfo("America/New_York"))
+        if (post_price > 0 and at < post_at <= now and post_ny.weekday() < 5
+                and 960 <= post_ny.hour * 60 + post_ny.minute <= 1200):
+            price, at, session = post_price, post_at, "post"
+    except (TradingError, ValueError, TypeError, OverflowError, OSError):
+        pass  # Keep the valid regular-session observation on incomplete data.
+    return {"price": money(price), "at": at.isoformat(),
+            "tradable": session == "regular" and tradable_at(at, now), "session": session,
             "currency": "USD", "source": "Yahoo Finance (may be delayed)"}
 
 

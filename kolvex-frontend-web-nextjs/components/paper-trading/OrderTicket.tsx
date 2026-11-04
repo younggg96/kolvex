@@ -345,7 +345,9 @@ export default function OrderTicket({
               <p className="mt-1 text-xs text-muted-foreground">
                 {c("Quote time", "报价时间")}：
                 {new Date(quote.at).toLocaleString(c("en-US", "zh-CN"))} ·{" "}
-                {quote.tradable
+                {quote.session === "post"
+                  ? c("After hours · valuation only · pending orders only", "盘后 · 计入估值 · 仅挂单")
+                  : quote.tradable
                   ? c("Regular session · may be delayed", "常规时段 · 可能延迟")
                   : c(
                       "Closed or stale · pending orders only",

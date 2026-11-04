@@ -267,7 +267,7 @@ export default function StockPaperTrading({
                           </dl>
                           <p className="text-xs text-muted-foreground">
                             {data.mark
-                              ? `${c("Mark time", "估值时间")} ${new Date(data.mark.at).toLocaleString(c("en-US", "zh-CN"))}`
+                              ? `${data.mark.session === "post" ? c("After-hours mark", "盘后估值") : c("Mark time", "估值时间")} ${new Date(data.mark.at).toLocaleString(c("en-US", "zh-CN"))}`
                               : c(
                                   "No mark available; valued at entry price.",
                                   "暂无估值报价，暂按开仓价计算。",

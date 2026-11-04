@@ -321,6 +321,7 @@ class YFinanceService:
             "market_time": info.get("regularMarketTime"),
             "pre_market_price": info.get("preMarketPrice"),
             "post_market_price": info.get("postMarketPrice"),
+            "post_market_time": info.get("postMarketTime"),
         }
 
     def get_history(

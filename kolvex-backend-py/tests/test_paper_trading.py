@@ -209,6 +209,58 @@ class QuoteTests(unittest.TestCase):
         self.assertFalse(normalize_quote({**raw, "market_time": now.timestamp() + 1}, now)["tradable"])
         self.assertFalse(normalize_quote(raw, datetime(2026, 11, 2, 22, 0, tzinfo=timezone.utc))["tradable"])
 
+    def test_after_hours_marks_long_and_short_without_executing_orders(self):
+        now = datetime(2026, 11, 2, 22, 0, tzinfo=timezone.utc)
+        raw = {"currency": "USD", "quote_type": "EQUITY", "current_price": 100,
+               "market_time": datetime(2026, 11, 2, 21, 0, tzinfo=timezone.utc).timestamp(),
+               "post_market_price": 120, "post_market_time": now.timestamp() - 60}
+        q = normalize_quote(raw, now)
+        self.assertEqual(d(q["price"]), d(120))
+        self.assertEqual(q["session"], "post")
+        self.assertFalse(q["tradable"])
+        for side in ("long", "short"):
+            state = run(new_account(NOW), order(side=side, stop_loss=110 if side == "short" else 90,
+                                               take_profit=90 if side == "short" else 110))
+            state = run(state, order(side=side, kind="limit", price=130 if side == "long" else 110),
+                        price=100, at=LATER, tradable=False)
+            before = deepcopy(state)
+            updated = command(state, {"action": "sync", "request_id": str(uuid4())},
+                              {"AAPL": q}, now.isoformat())
+            pnl = (d(q["price"]) - d(state["positions"][0]["entry_price"])) * 10 * (1 if side == "long" else -1)
+            self.assertEqual(d(summary(updated)["unrealized_pnl"]), pnl)
+            self.assertEqual(updated["snapshots"][-1]["equity"], summary(updated)["equity"])
+            self.assertEqual(updated["fills"], before["fills"])
+            self.assertEqual(updated["orders"], before["orders"])
+            self.assertEqual(updated["cash"], before["cash"])
+            self.assertEqual(updated["marks"]["AAPL"]["session"], "post")
+
+    def test_incomplete_old_future_or_invalid_post_quote_keeps_regular_mark(self):
+        now = datetime(2026, 11, 2, 22, 0, tzinfo=timezone.utc)
+        raw = {"currency": "USD", "quote_type": "ETF", "current_price": 100,
+               "market_time": now.timestamp() - 3600, "post_market_price": 120,
+               "post_market_time": now.timestamp() - 60}
+        for override in ({"post_market_time": None}, {"post_market_time": now.timestamp() + 1},
+                         {"post_market_time": raw["market_time"] - 60}, {"post_market_price": "NaN"},
+                         {"post_market_price": 0}, {"post_market_time": "invalid"}):
+            q = normalize_quote({**raw, **override}, now)
+            self.assertEqual(d(q["price"]), d(100))
+            self.assertEqual(q["session"], "regular")
+        # The next regular session supersedes yesterday's post-market mark.
+        next_day = datetime(2026, 11, 3, 15, 0, tzinfo=timezone.utc)
+        q = normalize_quote({**raw, "market_time": next_day.timestamp(), "current_price": 125}, next_day)
+        self.assertEqual(q["session"], "regular")
+        self.assertTrue(q["tradable"])
+        self.assertEqual(d(q["price"]), d(125))
+
+    def test_post_session_uses_new_york_dst_and_retains_final_quote_when_closed(self):
+        for now in (datetime(2026, 7, 1, 21, 0, tzinfo=timezone.utc),
+                    datetime(2026, 11, 2, 22, 0, tzinfo=timezone.utc)):
+            raw = {"currency": "USD", "quote_type": "ETF", "current_price": 100,
+                   "market_time": now.timestamp() - 3600, "post_market_price": 105,
+                   "post_market_time": now.timestamp() - 60}
+            self.assertEqual(normalize_quote(raw, now)["session"], "post")
+            self.assertEqual(d(normalize_quote(raw, now.replace(day=now.day + 1))["price"]), d(105))
+
     def test_reject_unknown_currency_instrument_and_timestamp(self):
         raw = {"currency": "USD", "quote_type": "ETF", "current_price": 100, "market_time": 1793631600}
         for override in ({"currency": "HKD"}, {"quote_type": "CRYPTOCURRENCY"}, {"market_time": None}, {"current_price": 0}):

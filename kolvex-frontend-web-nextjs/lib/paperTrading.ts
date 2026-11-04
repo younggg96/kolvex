@@ -5,6 +5,7 @@ export interface Quote {
   price: string;
   at: string;
   tradable: boolean;
+  session?: "regular" | "post";
   currency: string;
   source: string;
 }
