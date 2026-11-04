@@ -258,3 +258,92 @@ test("missing marks use entry and short price rises show a loss", () => {
   account.state.marks.AMD = { price: "110" };
   assert.equal(stockPaperTrading(account, "AMD").unrealizedPnl, -30);
 });
+
+test("journal separates same-symbol lots and keeps partial closes private", () => {
+  const { paperTradingReviews } = load("../lib/paperTradingReviews.ts");
+  const fill = (id, position_id, effect, at, extra = {}) => ({
+    id,
+    position_id,
+    symbol: "AMD",
+    side: "short",
+    effect,
+    at,
+    price: "100",
+    quantity: 10,
+    fee: "1",
+    realized_pnl: "0",
+    note: "",
+    ...extra,
+  });
+  const fills = [
+    fill("a-open", "a", "open", "2026-11-01T12:00:00Z", {
+      note: "Entry thesis",
+    }),
+    fill("b-open", "b", "open", "2026-11-01T13:00:00Z"),
+    fill("a-partial", "a", "close", "2026-11-02T12:00:00Z", {
+      realized_pnl: "18.75",
+    }),
+    fill("b-partial", "b", "close", "2026-11-02T13:00:00Z", {
+      realized_pnl: "-11.50",
+    }),
+    fill("b-close", "b", "close", "2026-11-03T13:00:00Z", {
+      realized_pnl: "4.25",
+    }),
+  ];
+  const account = {
+    state: {
+      positions: [
+        {
+          id: "a",
+          symbol: "AMD",
+          side: "short",
+          quantity: 5,
+          entry_price: "100",
+        },
+      ],
+      fills,
+      marks: { AMD: { price: "110", at: "2026-11-03T14:00:00Z" } },
+    },
+  };
+  const [closed, open] = paperTradingReviews(account);
+  assert.equal(closed.id, "b");
+  assert.equal(closed.completed, true);
+  assert.equal(closed.realizedPnl, -7.25);
+  assert.equal(closed.fees, 3);
+  assert.equal(closed.lastAt, "2026-11-03T13:00:00Z");
+  assert.equal(open.completed, false);
+  assert.equal(open.remaining, 5);
+  assert.equal(open.unrealizedPnl, -50);
+  assert.equal(open.realizedPnl, 18.75);
+  assert.equal(open.thesis, "Entry thesis");
+  assert.equal(fills[0].id, "a-open");
+});
+
+test("journal uses entry valuation without a mark and has no fabricated trades", () => {
+  const { paperTradingReviews } = load("../lib/paperTradingReviews.ts");
+  const account = { state: { positions: [], fills: [], marks: {} } };
+  assert.equal(paperTradingReviews(account).length, 0);
+  account.state.positions.push({
+    id: "open",
+    symbol: "AAPL",
+    side: "long",
+    quantity: 2,
+    entry_price: "120",
+    note: "Original thesis",
+  });
+  account.state.fills.push({
+    id: "fill",
+    position_id: "open",
+    symbol: "AAPL",
+    side: "long",
+    effect: "open",
+    at: "2026-11-01T12:00:00Z",
+    fee: "0.25",
+    realized_pnl: "0",
+  });
+  const trade = paperTradingReviews(account)[0];
+  assert.equal(trade.completed, false);
+  assert.equal(trade.unrealizedPnl, 0);
+  assert.equal(trade.markAt, undefined);
+  assert.equal(trade.thesis, "Original thesis");
+});
