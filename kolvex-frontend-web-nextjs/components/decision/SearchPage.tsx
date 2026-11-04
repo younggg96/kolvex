@@ -226,11 +226,11 @@ export default function SearchPage() {
     } else if (query) setSubmitFailed(true);
   }
 
-  return <DashboardLayout title={c("Search", "搜索")}>
+  return <DashboardLayout title={c("Search", "探索")}>
     <main className="min-w-0 flex-1 overflow-y-auto">
       <div className={styles.page}>
         <header className="mb-7">
-          <h1 className="text-[2rem] font-semibold tracking-tight">{c("Search", "搜索")}</h1>
+          <h1 className="text-[2rem] font-semibold tracking-tight">{c("Search", "探索")}</h1>
           <p className="mt-2 text-sm text-muted-foreground">{c("Explore stocks, creators and the ideas behind them.", "从一只股票、一位创作者，发现更多市场线索。")}</p>
           <div className="mt-6 flex items-center gap-3">
             <form role="search" noValidate onSubmit={submit} className="min-w-0 flex-1">

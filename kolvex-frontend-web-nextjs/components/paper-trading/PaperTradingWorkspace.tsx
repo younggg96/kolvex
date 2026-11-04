@@ -58,6 +58,7 @@ export default function PaperTradingWorkspace() {
   const [orderLimit, setOrderLimit] = useState(40);
   const [tab, setTab] = useState("trade");
   const ticketRef = useRef<HTMLElement>(null);
+  const positionsRef = useRef<HTMLElement>(null);
   const accept = useCallback(
     (next: Account) =>
       setAccount((current) =>
@@ -334,7 +335,11 @@ export default function PaperTradingWorkspace() {
                           )}
                         </p>
                       </Panel>
-                      <section>
+                      <section
+                        ref={positionsRef}
+                        tabIndex={-1}
+                        className="scroll-mt-4"
+                      >
                         <h2 className="mb-3 text-xl font-semibold">
                           {c("Open positions", "当前持仓")}{" "}
                           <span className="text-sm text-muted-foreground">
@@ -785,7 +790,28 @@ export default function PaperTradingWorkspace() {
                   </section>
                 </TabsContent>
                 <TabsContent value="reviews">
-                  <TradingReviews account={account} errorText={errorText} />
+                  <TradingReviews
+                    account={account}
+                    errorText={errorText}
+                    onTrade={() => {
+                      setTab("trade");
+                      requestAnimationFrame(() => {
+                        const target = account.state.positions.length
+                          ? positionsRef.current
+                          : ticketRef.current;
+                        target?.scrollIntoView({
+                          block: "start",
+                          behavior: "auto",
+                        });
+                        if (account.state.positions.length)
+                          target?.focus({ preventScroll: true });
+                        else
+                          target
+                            ?.querySelector<HTMLInputElement>("input")
+                            ?.focus({ preventScroll: true });
+                      });
+                    }}
+                  />
                 </TabsContent>
               </Tabs>
             </>
