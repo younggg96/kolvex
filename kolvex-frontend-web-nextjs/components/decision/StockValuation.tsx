@@ -20,6 +20,7 @@ import {
 } from "@/lib/stockValuation";
 import { useCopy } from "./shared";
 import CompanyValuationCalculator from "./CompanyValuationCalculator";
+import ValuationHistoryCard from "./ValuationHistoryCard";
 
 const names = { conservative: ["Conservative", "保守"], base: ["Base", "基准"], optimistic: ["Optimistic", "乐观"] } as const;
 type View = "price" | "pe" | "premium";
@@ -70,8 +71,10 @@ function HistoricalValuation({ symbol }: { symbol: string }) {
   const reference = shownSimulation?.reference ?? data?.current.reference ?? null;
 
   if (resource.loading && !data) return <ContentLoading label={c("Preparing source-linked valuation history…", "正在整理有来源的估值历史，首次计算可能需要几分钟…")} className="min-h-80" />;
+  // Companies outside the reviewed PE pipeline get a P/S history instead.
+  if (!data && resource.data && "status" in resource.data) return <ValuationHistoryCard symbol={symbol} />;
   if (!data) return <Card className="space-y-3 p-5">
-    <p>{resource.data && "status" in resource.data ? c("Pilot coverage: NVDA, AAPL and MSFT.", "估值试点目前覆盖 NVDA、AAPL 和 MSFT。") : c("Valuation data is temporarily unavailable.", "估值数据暂时无法读取。")}</p>
+    <p>{c("Valuation data is temporarily unavailable.", "估值数据暂时无法读取。")}</p>
     {resource.error ? <Button variant="outline" onClick={resource.refresh}>{c("Retry", "重试")}</Button> : null}
   </Card>;
 

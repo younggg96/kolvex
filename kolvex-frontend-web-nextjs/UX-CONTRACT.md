@@ -107,6 +107,11 @@ are conditional calculations, not analyst consensus or promised returns.
 
 ### Company calculator addition
 
+`ValuationHistoryCard` owns the compact multiple chart: PE for reviewed pilots,
+P/S for other companies. It shares the AI flow and the non-pilot history view.
+AI valuation only fills ordinary editable scenario fields through
+`applyAiAssumptions`; results always come from the existing calculate request.
+Saved runs reopen the latest result and can be switched; they are never edited.
 `CompanyValuationCalculator` owns the current-company DCF/PE/PEG form;
 `lib/companyValuation.ts` owns unit conversion and request validation. The shared
 Input/Label, SegmentedControl, Card, Button, ContentLoading and cache remain the

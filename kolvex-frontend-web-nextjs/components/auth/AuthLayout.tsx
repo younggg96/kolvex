@@ -2,6 +2,7 @@
 
 import { ReactNode, useEffect } from "react";
 import BaseLayout from "@/components/layout/BaseLayout";
+import WaylumeBackground from "@/components/auth/WaylumeBackground";
 import "./auth.css";
 
 interface AuthLayoutProps {
@@ -19,7 +20,9 @@ export default function AuthLayout({
     document.title = `${title} | Kolvex`;
   }, [title]);
   return (
-    <div className="auth-page">
+    // The artwork is always black, so tokens resolve to the dark theme here.
+    <div className="auth-page dark relative isolate min-h-screen text-foreground">
+      <WaylumeBackground style={{ position: "fixed" }} />
       <BaseLayout hasFooter={false}>
         <div className="relative flex flex-1 items-start justify-center px-4 py-10 sm:py-12">
           <section

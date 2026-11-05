@@ -52,3 +52,34 @@ test('POST sends assumptions to same-origin calculator without reading a provide
   assert.equal(calls.length, 1); assert.equal(calls[0][0], '/api/market/valuation/BRK.B/calculate');
   assert.equal(JSON.parse(calls[0][1].body).model, 'dcf');
 });
+test('new drafts start margin at the reported figure and send it with DCF', () => {
+  const lib = library(), data = { ...source(), operating_margin: -.3 }, draft = lib.initialCompanyDraft(data);
+  const command = lib.buildCompanyCommand(data, 'dcf', draft);
+  assert.equal(command.scenarios.base.starting_margin, -.3);
+  assert.equal(command.scenarios.base.operating_margin, -.3);
+});
+test('AI assumptions fill the draft as editable percentages and leave other models alone', () => {
+  const lib = library(), data = { ...source(), operating_margin: -.3 };
+  const row = { revenue_growth: .11, starting_margin: -.3, operating_margin: .18, reinvestment_rate: .5, discount_rate: .115 };
+  const ai = { assumptions: { dcf: { scenarios: { conservative: row, base: row, optimistic: row }, years: 10, terminal_growth: .025, terminal_roic: .18 } } };
+  const draft = lib.applyAiAssumptions(lib.initialCompanyDraft(data), ai);
+  assert.equal(draft.scenarios.base.operating_margin, '18');
+  assert.equal(draft.scenarios.base.discount_rate, '11.5');
+  assert.equal(draft.years, '10');
+  assert.equal(draft.terminal_growth, '2.5');
+  assert.equal(draft.scenarios.base.target_pe, '');
+  const command = lib.buildCompanyCommand(data, 'dcf', draft);
+  assert.equal(command.scenarios.base.discount_rate, .115);
+  assert.equal(command.years, 10);
+  assert.equal(Object.keys(command.inputs).length, 0);
+});
+test('AI PE and PEG assumptions fill their own fields', () => {
+  const lib = library(), data = source();
+  const peg = { target_peg: 1.25, eps_growth: .2 }, pe = { target_pe: 30 };
+  const draft = lib.applyAiAssumptions(lib.initialCompanyDraft(data), { assumptions: {
+    pe: { scenarios: { conservative: pe, base: pe, optimistic: pe } }, peg: { scenarios: { conservative: peg, base: peg, optimistic: peg } } } });
+  assert.equal(draft.scenarios.base.target_pe, '30');
+  assert.equal(draft.scenarios.base.target_peg, '1.25');
+  assert.equal(draft.scenarios.base.eps_growth, '20');
+  assert.equal(draft.years, '5');
+});

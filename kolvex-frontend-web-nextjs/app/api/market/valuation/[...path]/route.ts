@@ -8,7 +8,7 @@ const headers = { "Cache-Control": "private, no-store" };
 async function proxy(request: Request, path: string[]) {
   const job = path.length === 2 && path[0] === "jobs" && /^[a-f0-9]{32}$/.test(path[1]);
   const stock = path.length === 2 && /^[A-Za-z0-9][A-Za-z0-9.\-]{0,11}$/.test(path[0]) &&
-    ["summary", "history", "simulate", "inputs", "calculate"].includes(path[1]);
+    ["summary", "history", "simulate", "inputs", "calculate", "sales-history"].includes(path[1]);
   if ((!job && !stock) || (request.method === "POST") !== (stock && ["simulate", "calculate"].includes(path[1])))
     return NextResponse.json({ error: "Invalid valuation request" }, { status: 400, headers });
   const query = new URL(request.url).searchParams;

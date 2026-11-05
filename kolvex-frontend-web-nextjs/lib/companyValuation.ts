@@ -26,7 +26,7 @@ export interface CompanyScenarioResult {
   status: string; reason?: string; fair_price: number | null; equity_value: number | null; enterprise_value: number | null;
   target_pe?: number; terminal_value_share?: number | null;
   comparison: { price_space: number; premium_discount: number } | null;
-  forecast?: { year: number; revenue: number; nopat: number; reinvestment: number; fcff: number; present_value: number }[];
+  forecast?: { year: number; revenue: number; operating_margin?: number; nopat: number; reinvestment: number; fcff: number; present_value: number }[];
 }
 export interface CompanyResult {
   status: string; reason?: string; model: CompanyModel; snapshot_id: string;
@@ -40,9 +40,9 @@ export function initialCompanyDraft(data: CompanyInputs): CompanyDraft {
   ])) as Record<CompanyInput, string>;
   const margin = data.operating_margin == null ? "" : String(Number((data.operating_margin * 100).toFixed(4)));
   return { inputs, edited: [], years: "5", terminal_growth: "2", terminal_roic: "10", scenarios: {
-    conservative: { revenue_growth: "0", operating_margin: margin, reinvestment_rate: "0", discount_rate: "12", target_pe: "", target_peg: ".75", eps_growth: "" },
-    base: { revenue_growth: "0", operating_margin: margin, reinvestment_rate: "0", discount_rate: "10", target_pe: "", target_peg: "1", eps_growth: "" },
-    optimistic: { revenue_growth: "0", operating_margin: margin, reinvestment_rate: "0", discount_rate: "8", target_pe: "", target_peg: "1.25", eps_growth: "" },
+    conservative: { revenue_growth: "0", starting_margin: margin, operating_margin: margin, reinvestment_rate: "0", discount_rate: "12", target_pe: "", target_peg: ".75", eps_growth: "" },
+    base: { revenue_growth: "0", starting_margin: margin, operating_margin: margin, reinvestment_rate: "0", discount_rate: "10", target_pe: "", target_peg: "1", eps_growth: "" },
+    optimistic: { revenue_growth: "0", starting_margin: margin, operating_margin: margin, reinvestment_rate: "0", discount_rate: "8", target_pe: "", target_peg: "1.25", eps_growth: "" },
   } };
 }
 
@@ -66,6 +66,7 @@ export function buildCompanyCommand(data: CompanyInputs, model: CompanyModel, dr
     const v = draft.scenarios[name];
     scenarios[name] = model === "dcf" ? {
       revenue_growth: read(v.revenue_growth, -100, 200, true) / 100,
+      starting_margin: read(v.starting_margin, -1000, 100) / 100,
       operating_margin: read(v.operating_margin, -100, 100) / 100,
       reinvestment_rate: read(v.reinvestment_rate, 0, 200) / 100,
       discount_rate: read(v.discount_rate, 0, 100, true) / 100,
@@ -77,6 +78,66 @@ export function buildCompanyCommand(data: CompanyInputs, model: CompanyModel, dr
   const terminal_roic = model === "dcf" ? read(draft.terminal_roic, 0, 100, true) / 100 : .1;
   if (model === "dcf" && (companyScenarios.some(k => scenarios[k].discount_rate <= terminal_growth) || terminal_roic <= terminal_growth)) throw new Error("terminal");
   return { snapshot_id: data.snapshot_id, model, inputs, scenarios, years: draft.years === "10" ? 10 : 5, terminal_growth, terminal_roic };
+}
+
+export interface CompanyAiResult {
+  status: string; symbol: string; snapshot_id: string; model_id: string; generated_at: string; cached?: boolean;
+  run_id: string | null; saved: boolean; price_at_generation: number | null;
+  results: Partial<Record<CompanyModel, Record<CompanyScenario, { status: string; fair_price: number | null }>>>;
+  primary_model: CompanyModel; summary: string; used_consensus: boolean; risks: string[];
+  rationale: { assumption: string; reason: string }[];
+  assumptions: Partial<Record<CompanyModel, { scenarios: Record<CompanyScenario, Record<string, number>>; years: number; terminal_growth: number; terminal_roic: number }>>;
+}
+
+const percentText = (value: number) => String(Number((value * 100).toFixed(4)));
+
+/** AI values become ordinary draft fields: the calculator computes them and the user can edit them. */
+export function applyAiAssumptions(draft: CompanyDraft, ai: CompanyAiResult): CompanyDraft {
+  const scenarios = { ...draft.scenarios };
+  for (const name of companyScenarios) {
+    const next = { ...scenarios[name] };
+    const dcf = ai.assumptions.dcf?.scenarios[name];
+    if (dcf) for (const key of ["revenue_growth", "starting_margin", "operating_margin", "reinvestment_rate", "discount_rate"]) next[key] = percentText(dcf[key]);
+    const pe = ai.assumptions.pe?.scenarios[name];
+    if (pe) next.target_pe = String(Number(pe.target_pe.toFixed(4)));
+    const peg = ai.assumptions.peg?.scenarios[name];
+    if (peg) { next.target_peg = String(Number(peg.target_peg.toFixed(4))); next.eps_growth = percentText(peg.eps_growth); }
+    scenarios[name] = next;
+  }
+  const dcf = ai.assumptions.dcf;
+  return { ...draft, scenarios, ...(dcf ? { years: String(dcf.years), terminal_growth: percentText(dcf.terminal_growth), terminal_roic: percentText(dcf.terminal_roic) } : {}) };
+}
+
+export async function generateAiAssumptions(symbol: string, body: { snapshot_id: string; model: string; locale: string; regenerate: boolean }, signal: AbortSignal): Promise<CompanyAiResult> {
+  const response = await fetch(`/api/market/valuation-ai/${encodeURIComponent(symbol)}`, {
+    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body), signal,
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) throw Object.assign(new Error(typeof data.error === "string" ? data.error : "ai_unavailable"), { status: response.status });
+  return data;
+}
+
+export async function loadAiRuns(symbol: string, signal: AbortSignal): Promise<CompanyAiResult[]> {
+  const response = await fetch(`/api/market/valuation-ai/${encodeURIComponent(symbol)}`, { signal, cache: "no-store" });
+  if (!response.ok) throw Object.assign(new Error("ai_runs_unavailable"), { status: response.status });
+  return (await response.json()).items ?? [];
+}
+
+export interface SalesHistoryEvent {
+  period_end: string; kind: string;
+  inputs: { start: string; end: string; value: number; form: string; filed: string; source_url: string }[];
+}
+export interface SalesHistory {
+  status: "available" | "unavailable" | "unsupported"; reason?: string; symbol: string; as_of?: string;
+  points?: { date: string; price: number; ps: number | null; market_cap: number | null; ttm_revenue: number | null; event_id: string | null }[];
+  events?: Record<string, SalesHistoryEvent>; current?: { ps: number | null; date: string };
+  reference?: { p25: number; p50: number; p75: number; sample_count: number; current_percentile: number } | null;
+}
+
+export async function loadSalesHistory(symbol: string, signal: AbortSignal): Promise<SalesHistory> {
+  const response = await fetch(`/api/market/valuation/${encodeURIComponent(symbol)}/sales-history?years=5`, { signal, cache: "no-store" });
+  if (!response.ok) throw Object.assign(new Error("sales_history_unavailable"), { status: response.status });
+  return response.json();
 }
 
 export async function loadCompanyInputs(symbol: string, signal: AbortSignal): Promise<CompanyInputs> {

@@ -24,13 +24,16 @@ def bounded(value, name, minimum=None, maximum=None, *, exclusive_min=False):
 
 def fcff_value(*, revenue, shares, cash, debt, other_claims, tax_rate, years,
                revenue_growth, operating_margin, reinvestment_rate, discount_rate,
-               terminal_growth, terminal_roic):
+               terminal_growth, terminal_roic, starting_margin=None):
+    """Margin moves linearly from starting_margin to operating_margin by the final year."""
     revenue = bounded(revenue, "revenue", 0, exclusive_min=True)
     shares = bounded(shares, "shares", 0, exclusive_min=True)
     cash, debt, other_claims = [bounded(v, n, 0) for v, n in ((cash, "cash"), (debt, "debt"), (other_claims, "other_claims"))]
     tax_rate = bounded(tax_rate, "tax_rate", 0, 1)
     revenue_growth = bounded(revenue_growth, "revenue_growth", -1, 2, exclusive_min=True)
     operating_margin = bounded(operating_margin, "operating_margin", -1, 1)
+    # Early-stage companies can report losses larger than revenue.
+    starting_margin = operating_margin if starting_margin is None else bounded(starting_margin, "starting_margin", -10, 1)
     reinvestment_rate = bounded(reinvestment_rate, "reinvestment_rate", 0, 2)
     discount_rate = bounded(discount_rate, "discount_rate", 0, 1, exclusive_min=True)
     terminal_growth = bounded(terminal_growth, "terminal_growth", 0, .05)
@@ -44,17 +47,20 @@ def fcff_value(*, revenue, shares, cash, debt, other_claims, tax_rate, years,
     forecast = []
     for year in range(1, years + 1):
         sales = revenue * (1 + revenue_growth)**year
-        ebit = sales * operating_margin
-        nopat = ebit * (1-tax_rate)
-        reinvestment = nopat * reinvestment_rate
+        margin = starting_margin + (operating_margin-starting_margin) * year / years
+        ebit = sales * margin
+        # Losses create no current tax refund, and a loss is not negative reinvestment.
+        nopat = ebit * (1-tax_rate) if ebit > 0 else ebit
+        reinvestment = max(nopat, 0) * reinvestment_rate
         fcff = nopat - reinvestment
         pv = fcff / (1+discount_rate)**year
         if not all(math.isfinite(v) for v in (sales, ebit, nopat, reinvestment, fcff, pv)):
             raise ValueError("calculation_exceeds_finite_range")
-        forecast.append({"year": year, "revenue": sales, "ebit": ebit, "nopat": nopat,
+        forecast.append({"year": year, "revenue": sales, "operating_margin": margin, "ebit": ebit, "nopat": nopat,
                          "reinvestment": reinvestment, "fcff": fcff, "present_value": pv})
     # Stable growth consumes capital. It is not free growth of the last FCFF.
-    terminal_nopat = forecast[-1]["revenue"] * (1+terminal_growth) * operating_margin * (1-tax_rate)
+    terminal_ebit = forecast[-1]["revenue"] * (1+terminal_growth) * operating_margin
+    terminal_nopat = terminal_ebit * (1-tax_rate) if terminal_ebit > 0 else terminal_ebit
     terminal_reinvestment_rate = terminal_growth / terminal_roic
     terminal_fcff = terminal_nopat * (1-terminal_reinvestment_rate)
     if not math.isfinite(terminal_fcff):
@@ -119,7 +125,7 @@ def calculate_company(snapshot, command):
                    "enterprise_value": None, "target_pe": multiple}
         else:
             expected = {"revenue_growth", "operating_margin", "reinvestment_rate", "discount_rate"}
-            if set(assumption) != expected:
+            if set(assumption) - {"starting_margin"} != expected:
                 raise ValueError("unexpected_scenario_fields")
             row = fcff_value(revenue=inputs.get("revenue"), shares=shares, cash=inputs.get("cash"),
                              debt=inputs.get("debt"), other_claims=inputs.get("other_claims"),

@@ -1,4 +1,13 @@
-/* Keep BaseLayout's animated grid; only the form's entry stays still. */
+/* The form's entry stays still over the animated background. */
 .auth-page main {
   animation: none;
+}
+
+/* WaylumeBackground replaces BaseLayout's page fill and grid here. */
+.auth-page > .bg-background {
+  background: transparent;
+}
+
+.auth-page > .bg-background > .bg-grid {
+  display: none;
 }

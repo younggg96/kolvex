@@ -5,7 +5,7 @@ import { ContentLoading } from "@/components/ui/content-loading";
 import { isProductFeatureEnabled } from "@/lib/productFeatures";
 
 import Link from "next/link";
-import { formatOpinionDate } from "@/lib/opinionDates";
+import { formatOpinionDate, formatOpinionDateShort } from "@/lib/opinionDates";
 import { useRouter } from "next/navigation";
 import PageBreadcrumb, { type BreadcrumbItem } from "@/components/layout/PageBreadcrumb";
 import {
@@ -71,7 +71,6 @@ import OtherCreatorOpinions from "./OtherCreatorOpinions";
 import OpinionDistribution from "./OpinionDistribution";
 import OpinionStrength from "./OpinionStrength";
 import StockDirectoryRow from "./StockDirectoryRow";
-import OpinionChange from "./OpinionChange";
 import PriceChart, { type PriceRange } from "./PriceChart";
 import { priceRangeToLegacyRange } from "@/lib/chart/range";
 import StrengthChart, { type StrengthPoint } from "./StrengthChart";
@@ -597,6 +596,7 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
   const formatDay = (value?: string | null) => {
     return formatOpinionDate(value, t("common.intlLocale"));
   };
+  const formatShortDay = (value?: string | null) => formatOpinionDateShort(value, t("common.intlLocale"));
   const lastUpdated = (value?: string | null) => {
     const date = formatDay(value);
     if (!value || !date) return null;
@@ -884,7 +884,7 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
         <div className="min-w-0">
           <h2
             id="creator-recent-shifts-title"
-            className={cn("font-semibold tracking-[-0.01em]", primary ? "text-xl" : "text-base")}
+            className={cn("font-semibold tracking-[-0.01em]", primary ? "text-lg" : "text-base")}
           >
             {t("youtubeOpinions.recentShifts")}
           </h2>
@@ -915,12 +915,19 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
                     <span aria-hidden="true"><CompanyLogo symbol={change.ticker} size="sm" /></span>
                     <span className="min-w-0">
                       <span className="block font-semibold">{change.ticker}</span>
-                      <span className="block text-xs text-muted-foreground tabular-nums">
-                        {formatDay(change.current_date)}
+                      <span
+                        className="block truncate text-xs text-muted-foreground tabular-nums"
+                        title={change.previous_date
+                          ? t("youtubeOpinions.directory.comparison", { from: formatDay(change.previous_date), to: formatDay(change.current_date) })
+                          : formatDay(change.current_date)}
+                      >
+                        {change.previous_date
+                          ? t("youtubeOpinions.directory.comparison", { from: formatShortDay(change.previous_date), to: formatShortDay(change.current_date) })
+                          : formatShortDay(change.current_date)}
                       </span>
                     </span>
                   </span>
-                  <OpinionChange value={change} />
+                  <OpinionStrength value={change.change} change className="shrink-0 whitespace-nowrap text-xs" />
                 </ExplorerLink>
               </ListRow>
             ))}
@@ -1213,14 +1220,11 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
                       </ListCard>
                     </section>
                   </div>
-                  {!allStocks && changeList(true)}
-                </div>
-                {!allStocks && <aside className="min-w-0 space-y-8">
-                  <section aria-labelledby="creator-latest-opinions-title" className="min-w-0">
+                  {!allStocks && <section aria-labelledby="creator-latest-opinions-title" className="min-w-0">
                     <header className="mb-3 flex min-h-14 items-start gap-2">
                       <div className="min-w-0">
                         <div className="flex items-center gap-2">
-                          <h2 id="creator-latest-opinions-title" className="text-lg font-semibold">{c("Latest creator videos", "博主最新视频")}</h2>
+                          <h2 id="creator-latest-opinions-title" className="text-xl font-semibold tracking-[-0.01em]">{c("Latest creator videos", "博主最新视频")}</h2>
                           {catalogue?.latest_videos?.length ? (
                             <span
                               className="rounded-full bg-muted px-2 py-0.5 text-xs tabular-nums text-muted-foreground"
@@ -1238,7 +1242,7 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
                         <ListRows aria-label={c("Latest creator videos", "博主最新视频")}>
                           {catalogue.latest_videos.map((group) => (
                             <li key={group.videoId} className={cn(listFeedGroupRowClass, "py-4 first:pt-1")}>
-                              <VideoOpinionCard group={group} t={t} showCreator compact onStock={(ticker) => navigate({ tab: "stocks", ticker })} />
+                              <VideoOpinionCard group={group} t={t} showCreator onStock={(ticker) => navigate({ tab: "stocks", ticker })} />
                             </li>
                           ))}
                         </ListRows>
@@ -1247,7 +1251,10 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
                         {c("View all opinions", "查看全部观点")}
                       </ListFooterLink>
                     </ListCard>
-                  </section>
+                  </section>}
+                </div>
+                {!allStocks && <aside className="min-w-0 space-y-8">
+                  {changeList(true)}
                   {isProductFeatureEnabled("portfolio") && <section aria-labelledby="creator-holdings-title" className="min-w-0">
                     <header className="mb-3 flex min-h-14 items-center gap-2">
                       <h2 id="creator-holdings-title" className="text-lg font-semibold">{c("My holdings", "我的持仓")}</h2>
