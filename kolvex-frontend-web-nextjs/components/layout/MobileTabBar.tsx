@@ -120,8 +120,8 @@ export default function MobileTabBar() {
 
   /* Dock affordances are neutral: hover/press use a grey wash and the current
      page simply goes full-contrast. Green stays reserved for direction data. */
-  const targetClass = "mobile-nav-item flex h-11 min-w-11 items-center max-md:h-[42px] justify-center rounded-full text-foreground/70 transition-colors hover:bg-foreground/[0.06] hover:text-foreground focus-visible:bg-foreground/[0.06] focus-visible:text-foreground active:bg-foreground/[0.1] motion-reduce:transition-none";
-  const iconClass = "h-[1.375rem] w-[1.375rem] max-md:h-[20px] max-md:w-[20px]";
+  const targetClass = "mobile-nav-item flex h-11 min-w-11 items-center justify-center rounded-full text-foreground/70 transition-colors hover:bg-foreground/[0.06] hover:text-foreground focus-visible:bg-foreground/[0.06] focus-visible:text-foreground active:bg-foreground/[0.1] motion-reduce:transition-none";
+  const iconClass = "h-[1.375rem] w-[1.375rem]";
   const menuItemClass = "mobile-nav-item flex min-h-[60px] w-full flex-col items-center justify-center gap-1 rounded-[20px] px-1 text-[12px] font-medium text-foreground/70 transition-colors hover:bg-foreground/[0.06] hover:text-foreground focus-visible:bg-foreground/[0.06] focus-visible:text-foreground focus-visible:outline-none active:bg-foreground/[0.1] motion-reduce:transition-none";
 
   return (
@@ -176,7 +176,7 @@ export default function MobileTabBar() {
             </div>
           </div>
         </div>
-        <ul className="flex h-[46px] w-full items-center max-md:h-[40px]">
+        <ul className="flex h-[46px] w-full items-center">
           {tabs.map((item) => {
             const active = isMainNavItemActive(pathname, item);
             const highlighted = active && !menuOpen;

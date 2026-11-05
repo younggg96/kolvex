@@ -33,24 +33,26 @@ export default function NewsFeed() {
     ? new Date(terminal.meta.fetched_at).toLocaleTimeString(locale === "zh" ? "zh-CN" : "en-US", { hour: "2-digit", minute: "2-digit", hour12: false })
     : "—";
 
-  return <DashboardLayout title={title} noTransition
-    headerExtra={<span className="text-xs text-muted-foreground">{c("Delayed headlines", "延迟快讯")}</span>}
-    headerActions={<>
-      <span role="status" className="mr-auto text-xs text-muted-foreground sm:mr-1">{translation.pending > 0 ? c("Translating…", "正在切换为中文…") : status}</span>
-      <Button variant="outline" size="sm" aria-pressed={terminal.paused} onClick={terminal.togglePause}>
-        {terminal.paused ? <Play aria-hidden className="h-3.5 w-3.5" /> : <Pause aria-hidden className="h-3.5 w-3.5" />}
-        {terminal.paused ? c("Resume", "继续") : c("Pause", "暂停")}
-      </Button>
-      <Button variant="ghost" size="icon" aria-label={c("Refresh headlines", "刷新新闻")} disabled={terminal.loading} onClick={terminal.refresh}>
-        <RefreshCw aria-hidden className={cn("h-4 w-4", terminal.loading && "animate-spin motion-reduce:animate-none")} />
-      </Button>
-    </>}>
+  return <DashboardLayout title={title} noTransition>
       <section className="flex min-h-0 flex-1 flex-col bg-background" aria-label={c("Headlines", "快讯列表")}>
         <div className="flex min-h-0 flex-1 flex-col px-[16px] pb-4 pt-4 md:px-8 md:pb-6 md:pt-6">
           <ListCard className="flex min-h-0 flex-1 flex-col overflow-hidden">
             <ListToolbar className="shrink-0 border-b border-border pb-3 text-xs leading-5 text-muted-foreground">
-              <span>{terminal.loading && !terminal.meta ? <Skeleton className="h-3 w-28" /> : c(`${articles.length} loaded headlines`, `${articles.length} 条快讯`)}</span>
-              <span>{c("Updated", "更新于")} {time} · {c("Local time", "本地时间")}</span>
+              <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
+                <span>{terminal.loading && !terminal.meta ? <Skeleton className="h-3 w-28" /> : c(`${articles.length} loaded headlines`, `${articles.length} 条快讯`)}</span>
+                <span>{c("Delayed headlines", "延迟快讯")}</span>
+                <span>{c("Updated", "更新于")} {time} · {c("Local time", "本地时间")}</span>
+              </div>
+              <div className="ml-auto flex flex-wrap items-center gap-2">
+                <span role="status">{translation.pending > 0 ? c("Translating…", "正在切换为中文…") : status}</span>
+                <Button variant="outline" size="sm" aria-pressed={terminal.paused} onClick={terminal.togglePause}>
+                  {terminal.paused ? <Play aria-hidden className="h-3.5 w-3.5" /> : <Pause aria-hidden className="h-3.5 w-3.5" />}
+                  {terminal.paused ? c("Resume", "继续") : c("Pause", "暂停")}
+                </Button>
+                <Button variant="ghost" size="icon" aria-label={c("Refresh headlines", "刷新新闻")} disabled={terminal.loading} onClick={terminal.refresh}>
+                  <RefreshCw aria-hidden className={cn("h-4 w-4", terminal.loading && "animate-spin motion-reduce:animate-none")} />
+                </Button>
+              </div>
             </ListToolbar>
             {(terminal.error || terminal.meta?.stale) && <p role="alert" className="shrink-0 border-b border-border/70 py-2 text-sm">
               {c("Refresh failed. Showing the last available headlines; use Refresh to retry.", "更新失败，保留最近可用快讯；请点击刷新重试。")}

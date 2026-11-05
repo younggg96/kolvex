@@ -9,17 +9,10 @@ html {
   scroll-padding-top: 80px;
 }
 
-/* Phone density: rem-based sizes scale, except editable controls below. */
-@media (max-width: 767px) {
-  html {
-    font-size: 12px;
-  }
-}
-
-/* iOS zooms focused fields below 16 CSS px. Keep this in px because the
-   phone root is 12px (even text-base would be too small). Cover shared and
-   native fields, including touch devices in landscape, before focus occurs.
-   The font override must win over field-specific Tailwind size utilities. */
+/* iOS zooms focused fields below 16 CSS px, and local utilities such as
+   text-sm would otherwise drop below it. Cover shared and native fields,
+   including touch devices in landscape, before focus occurs. The font
+   override must win over field-specific Tailwind size utilities. */
 @media (max-width: 767px), (any-pointer: coarse) {
   input:not(:where([type="hidden"], [type="checkbox"], [type="radio"], [type="range"], [type="color"], [type="file"], [type="button"], [type="submit"], [type="reset"], [type="image"])),
   textarea,

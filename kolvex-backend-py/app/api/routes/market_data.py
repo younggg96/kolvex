@@ -601,6 +601,39 @@ async def chart_job_status(
     return job
 
 
+@router.get("/analysis-history/_index")
+async def stock_analysis_index(user_id: str = Depends(get_current_user_id)):
+    """Tickers that have AI technical analysis, and those with a conditional trade plan."""
+    def load():
+        db = get_supabase_service()
+        technical: dict[str, dict] = {}
+        planned: dict[str, dict] = {}
+        offset, size = 0, 500
+        while True:
+            rows = (db.table("stock_analysis_versions")
+                    .select("id,ticker,kind,created_at,bias:payload->bias,summary:payload->summary,signals:payload->signals,setup:payload->setup")
+                    .in_("kind", ["technical", "drawings"])
+                    .order("created_at", desc=True).order("id", desc=True)
+                    .range(offset, offset + size - 1).execute()).data or []
+            for row in rows:  # newest first: first hit per ticker is the latest
+                ticker = str(row["ticker"]).upper()
+                item = {"id": row["id"], "ticker": ticker, "created_at": row["created_at"], "bias": row.get("bias"),
+                        "summary": row.get("summary"), "signals": row.get("signals") or [], "setup": row.get("setup")}
+                if ticker not in technical:
+                    technical[ticker] = item
+                if row.get("setup") and ticker not in planned:
+                    planned[ticker] = item
+            if len(rows) < size:
+                break
+            offset += size
+        return {"technical": list(technical.values()), "planned": list(planned.values())}
+    try:
+        return await asyncio.to_thread(load)
+    except Exception:
+        logger.exception("Stock analysis index unavailable")
+        raise HTTPException(503, "analysis_history_unavailable")
+
+
 @router.get("/analysis-history/{symbol}")
 async def stock_analysis_history(
     symbol: str = Path(..., min_length=1, max_length=20, pattern=r"^[A-Za-z0-9.\-^=]+$"),

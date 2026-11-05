@@ -134,7 +134,7 @@ function MarketInstrumentCard({ benchmark, quote, quoteLoading, range, attempt, 
               ? `${positive ? "+" : "−"}${indexValue(Math.abs(change))} (${positive ? "+" : "−"}${Math.abs(percent).toFixed(2)}%)`
               : quoteLoading || seriesState === "loading" ? <Skeleton className="inline-block h-4 w-32 align-middle" /> : c("Change unavailable", "暂无涨跌数据")}
           {benchmark.daily && range === "1D" && <span className="ml-1 text-muted-foreground">{c("vs. prior observation", "较前次观测")}</span>}
-          <span className="ml-1 text-muted-foreground"> · {!scrub && !benchmark.daily ? c("vs. prior close", "较昨收") : c(spec.en, spec.zh)}</span></>);
+          <span className="ml-1 truncate text-muted-foreground max-md:ml-0 max-md:block"><span className="max-md:hidden"> · </span>{!scrub && !benchmark.daily ? c("vs. prior close", "较昨收") : c(spec.en, spec.zh)}</span></>);
   const chartDisplay = (<>{seriesState === "loading" ? (
             <Skeleton className="h-full w-full" />
           ) : seriesState === "error" ? (
@@ -198,13 +198,13 @@ function MarketInstrumentCard({ benchmark, quote, quoteLoading, range, attempt, 
 function MarketRangeControls({ range, setRange, view, setView }: { range: RangeKey; setRange: (range: RangeKey) => void; view: MarketView; setView: (view: MarketView) => void }) {
   const c = useCopy();
   return (
-              <div className="flex min-w-0 items-center justify-end gap-3 max-md:justify-center">
+              <div className="flex min-w-0 items-center justify-end gap-2 max-md:justify-center sm:gap-3">
                 {view === "card" ? <SegmentedControl
                   label={c("Chart range", "走势区间")}
                   value={range}
                   onChange={setRange}
-                  className="min-w-0 !shrink flex-nowrap overflow-x-auto border border-border scrollbar-hide"
-                  itemClassName="min-h-9 px-3 sm:px-4"
+                  className="min-w-0 !shrink flex-nowrap overflow-x-auto border border-border scrollbar-hide max-sm:!gap-0.5"
+                  itemClassName="!min-h-9 max-sm:!px-1.5 max-sm:!text-[0.8125rem]"
                   options={RANGES.map((item) => ({
                     value: item.key,
                     label: c(item.en, item.zh),
@@ -216,8 +216,8 @@ function MarketRangeControls({ range, setRange, view, setView }: { range: RangeK
                   label={c("Display mode", "显示方式")}
                   value={view}
                   onChange={setView}
-                  className="border border-border"
-                  itemClassName="min-h-9 px-3 sm:px-4"
+                  className="border border-border max-sm:!gap-0.5"
+                  itemClassName="!min-h-9 max-sm:!px-1.5"
                   options={[
                     {
                       value: "card",
@@ -263,7 +263,7 @@ function MarketCharts({ groups, quotes, loading, range, attempt, onRetry, view }
                     role="region"
                     aria-label={c(`${group.en}, scroll horizontally`, `${group.zh}，可横向滚动`)}
                     tabIndex={0}
-                    className="flex snap-x snap-proximity gap-3 overflow-x-auto overscroll-x-contain pb-2 sm:gap-4 xl:grid xl:grid-cols-5 focus-visible:outline-none "
+                    className="flex snap-x snap-proximity gap-3 overflow-x-auto overscroll-x-contain pb-2 max-md:scrollbar-hide sm:gap-4 xl:grid xl:grid-cols-5 focus-visible:outline-none"
                   >
                     {group.instruments.map(item => (
                       <MarketInstrumentCard
@@ -420,10 +420,10 @@ export default function Market() {
           <Tabs value={tab} onValueChange={selectTab} className="min-w-0">
             <div className="flex flex-wrap items-center justify-between gap-3 max-md:justify-center">
               <TabsList ref={tabList} variant="pill" aria-label={c("Market views", "行情视图")}>
-                <TabsTrigger variant="pill" value="overview">{c("Market overview", "市场概览")}</TabsTrigger>
-                <TabsTrigger variant="pill" value="trends">{c("Market trends", "市场走势")}</TabsTrigger>
-                <TabsTrigger variant="pill" value="calendar">{c("Event calendar", "事件日历")}</TabsTrigger>
-                <TabsTrigger variant="pill" value="macro">{c("Macro indicators", "宏观指标")}</TabsTrigger>
+                <TabsTrigger variant="pill" value="overview" className="max-sm:!px-3">{c("Market overview", "市场概览")}</TabsTrigger>
+                <TabsTrigger variant="pill" value="trends" className="max-sm:!px-3">{c("Market trends", "市场走势")}</TabsTrigger>
+                <TabsTrigger variant="pill" value="calendar" className="max-sm:!px-3">{c("Event calendar", "事件日历")}</TabsTrigger>
+                <TabsTrigger variant="pill" value="macro" className="max-sm:!px-3">{c("Macro indicators", "宏观指标")}</TabsTrigger>
               </TabsList>
               <div ref={setToolbar} className="flex min-w-0 max-w-full items-center justify-end gap-3 max-md:justify-center md:ml-auto">
                 {(tab === "overview" || tab === "trends") && <MarketRangeControls range={range} setRange={setRange} view={view} setView={setView} />}

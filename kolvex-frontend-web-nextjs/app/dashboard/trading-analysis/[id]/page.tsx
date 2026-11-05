@@ -1,6 +1,6 @@
 "use client";
 
-import HeaderBackButton from "@/components/layout/HeaderBackButton";
+import PageBreadcrumb from "@/components/layout/PageBreadcrumb";
 import { useEffect, useState, useCallback, useRef } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
@@ -20,7 +20,7 @@ import {
 import { useTranslation } from "@/lib/i18n";
 import { marketStockHref } from "@/lib/stockLinks";
 import DashboardLayout from "@/components/layout/DashboardLayout";
-import { RESEARCH_AUTHORING_PATH } from "@/lib/researchRoutes";
+import { DEEP_RESEARCH_PATH, RESEARCH_AUTHORING_PATH } from "@/lib/researchRoutes";
 import { Button } from "@/components/ui/button";
 import {
   getAnalysis,
@@ -247,11 +247,17 @@ export default function TradingAnalysisDetailPage() {
     0,
   );
 
-  const backAction = <HeaderBackButton href={RESEARCH_AUTHORING_PATH} label={t("tradingAnalysis.backToList")} />;
+  const breadcrumb = (
+    <PageBreadcrumb items={[
+      { label: t("tradingAnalysis.title"), href: DEEP_RESEARCH_PATH },
+      { label: t("research.manageReports"), href: RESEARCH_AUTHORING_PATH },
+      ...(analysis ? [{ label: analysis.ticker }] : []),
+    ]} />
+  );
 
   if (loading) {
     return (
-      <DashboardLayout title={t("tradingAnalysis.title")} headerLeftAction={backAction}>
+      <DashboardLayout title={t("tradingAnalysis.title")} breadcrumb={breadcrumb}>
         <div className="relative flex-1 overflow-y-auto">
           <div className="mx-auto w-full max-w-[70rem]">
             <DetailSkeleton />
@@ -263,7 +269,7 @@ export default function TradingAnalysisDetailPage() {
 
   if (!analysis) {
     return (
-      <DashboardLayout title={t("tradingAnalysis.title")} headerLeftAction={backAction}>
+      <DashboardLayout title={t("tradingAnalysis.title")} breadcrumb={breadcrumb}>
         <div className="relative flex-1 overflow-y-auto">
           <div className="flex flex-col items-center justify-center flex-1 min-h-[25rem] gap-4">
             <XCircle className="h-10 w-10 text-muted-foreground" />
@@ -292,19 +298,7 @@ export default function TradingAnalysisDetailPage() {
   return (
     <DashboardLayout
       title={t("tradingAnalysis.pageTitle", { ticker: analysis.ticker })}
-      headerLeftAction={backAction}
-      headerActions={
-        <>
-          {isCompleted && <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground"><Globe className="h-3.5 w-3.5" aria-hidden="true" />{locale === "zh" ? "所有已登录用户可见" : "Visible to all signed-in users"}</span>}
-
-          <Button asChild variant="outline" size="sm">
-            <Link href={marketStockHref(analysis.ticker)}>
-              {locale === "zh" ? "股票工作台" : "Stock workspace"}
-            </Link>
-          </Button>
-          {isCompleted && <FullReportActions analysis={analysis} t={t} />}
-        </>
-      }
+      breadcrumb={breadcrumb}
     >
       <div className="relative flex-1 overflow-y-auto">
         <div className="mx-auto w-full max-w-[70rem] space-y-8 px-[16px] pb-16 pt-6 md:px-8 md:pt-8">
@@ -330,7 +324,14 @@ export default function TradingAnalysisDetailPage() {
                     {t("tradingAnalysis.statusFailed")}
                   </span>
                 )}
-
+                <div className="flex flex-wrap items-center gap-2 sm:ml-auto">
+                  <Button asChild variant="outline" size="sm">
+                    <Link href={marketStockHref(analysis.ticker)}>
+                      {locale === "zh" ? "股票工作台" : "Stock workspace"}
+                    </Link>
+                  </Button>
+                  {isCompleted && <FullReportActions analysis={analysis} t={t} />}
+                </div>
               </div>
               {isCompleted && (
                 <div className="mt-5">
@@ -345,6 +346,12 @@ export default function TradingAnalysisDetailPage() {
                   <Calendar className="w-3.5 h-3.5" />
                   {analysis.trade_date}
                 </span>
+                {isCompleted && (
+                  <span className="flex items-center gap-1">
+                    <Globe className="w-3.5 h-3.5" aria-hidden="true" />
+                    {locale === "zh" ? "所有已登录用户可见" : "Visible to all signed-in users"}
+                  </span>
+                )}
                 {analysis.duration_seconds && (
                   <span className="flex items-center gap-1">
                     <Clock className="w-3.5 h-3.5" />

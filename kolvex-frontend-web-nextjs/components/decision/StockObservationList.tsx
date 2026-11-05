@@ -28,7 +28,7 @@ import { Change, Empty, HeldMark, Panel, TextLink, money, useCopy, useCreatorCat
 import StockTrend from "./StockTrend";
 import WatchlistButton from "./WatchlistButton";
 
-const ROW_GRID = "grid grid-cols-[minmax(0,1fr)_80px] gap-x-2 min-[400px]:grid-cols-[minmax(0,1fr)_60px_80px] sm:grid-cols-[minmax(0,1fr)_100px_100px] sm:gap-x-4";
+const ROW_GRID = "grid grid-cols-[minmax(0,1fr)_80px] gap-x-2 min-[360px]:grid-cols-[minmax(0,1fr)_60px_80px] sm:grid-cols-[minmax(0,1fr)_100px_100px] sm:gap-x-4";
 const scopes: { key: StockScope; en: string; zh: string }[] = [
   { key: "movers", en: "Daily movers", zh: "今日异动" },
   { key: "active", en: "Volume surge", zh: "放量活跃" },
@@ -218,7 +218,7 @@ export default function StockObservationList({ range, catalogue, held, onRetry, 
         <ListColumnHeader>
           <div className={cn(ROW_GRID, "min-w-0 flex-1 px-2 py-3")}>
             <span>{c("Stock", "股票")}</span>
-            <span className="hidden text-center min-[400px]:block">{c(`Trend · ${trend.en}`, `走势 · ${trend.zh}`)}</span>
+            <span className="hidden text-center min-[360px]:block">{c(`Trend · ${trend.en}`, `走势 · ${trend.zh}`)}</span>
             <span className="text-right">{c("Price / Today", "价格 / 今日")}</span>
           </div>
           <span className="w-11 shrink-0 text-center">{c("Watch", "自选")}</span>
@@ -231,10 +231,10 @@ export default function StockObservationList({ range, catalogue, held, onRetry, 
             return <ListRow key={symbol}>
               <Link href={`${href}?${detailParams}`} onClick={rememberScroll} className={cn(ROW_GRID, listRowTargetClass, "gap-y-1")}>
                 <span className="flex min-w-0 items-center gap-2 sm:gap-3">
-                  <span aria-hidden="true" className="shrink-0"><CompanyLogo symbol={symbol} size="sm" className="max-[399px]:max-h-6 max-[399px]:max-w-6" /></span>
+                  <span aria-hidden="true" className="shrink-0"><CompanyLogo symbol={symbol} size="sm" className="max-[359px]:max-h-6 max-[359px]:max-w-6" /></span>
                   <span className="min-w-0"><span className="block truncate text-base font-semibold">{symbol}{state.scope !== "holdings" && held.tickers.includes(symbol) && <HeldMark />}</span><span className="mt-1 block truncate text-xs text-muted-foreground">{quotes[symbol]?.name || discoveryBySymbol.get(symbol)?.name || stock?.company_name || coreNames.get(symbol) || symbol}</span></span>
                 </span>
-                <span className="hidden min-[400px]:block"><StockTrend symbol={symbol} period={trend.period} interval={trend.interval} rangeLabel={c(trend.en, trend.zh)} rangeKey={range} /></span>
+                <span className="hidden min-[360px]:block"><StockTrend symbol={symbol} period={trend.period} interval={trend.interval} rangeLabel={c(trend.en, trend.zh)} rangeKey={range} /></span>
                 <span className="min-w-0 text-right">{quoteLoading && !quotes[symbol] ? <PendingValue className="h-10" /> : <><span className="figure block text-base font-medium">{money(quotes[symbol]?.price)}</span><Change value={quotes[symbol]?.changePercent} className="mt-1 block text-xs font-semibold" /></>}</span>
                 <span className="col-span-full text-xs leading-5 text-muted-foreground">{c(...stockEntryReason(state.scope, symbol, stock, discoveryBySymbol.get(symbol), now))}</span>
               </Link>

@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import DashboardLayout from "@/components/layout/DashboardLayout";
-import HeaderBackButton from "@/components/layout/HeaderBackButton";
+import PageBreadcrumb from "@/components/layout/PageBreadcrumb";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Empty, useCopy } from "@/components/decision/shared";
@@ -78,7 +78,10 @@ export default function OpinionList() {
   }
 
   return (
-    <DashboardLayout title={c("All opinions", "全部观点")} headerLeftAction={<HeaderBackButton href="/dashboard/youtube-opinions" label={t("common.back")} />}>
+    <DashboardLayout title={c("All opinions", "全部观点")} breadcrumb={<PageBreadcrumb items={[
+      { label: t("youtubeOpinions.title"), href: "/dashboard/youtube-opinions" },
+      { label: c("All opinions", "全部观点") },
+    ]} />}>
       <main className="min-h-0 flex-1 overflow-y-auto">
         <div className="mx-auto max-w-6xl px-[16px] pb-16 pt-6 md:px-8 md:pt-8">
           <header className="mb-6">

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import HeaderBackButton from "@/components/layout/HeaderBackButton";
+import PageBreadcrumb from "@/components/layout/PageBreadcrumb";
 import { useEffect } from "react";
 import { useCachedResource } from "@/hooks/useCachedResource";
 import { Button } from "@/components/ui/button";
@@ -45,11 +45,16 @@ export default function PublishedAnalysisDetailPage() {
     document.title = `${heading} · ${t("sidebar.tradingAnalysis")} — Kolvex`;
   }, [analysis?.ticker, t]);
 
-  const backAction = <HeaderBackButton href={listPath} label={t("tradingAnalysis.explore.backToExplore")} />;
+  const breadcrumb = (
+    <PageBreadcrumb items={[
+      { label: t("tradingAnalysis.title"), href: listPath },
+      ...(analysis ? [{ label: analysis.ticker }] : []),
+    ]} />
+  );
 
   if (loading) {
     return (
-      <DashboardLayout title={t("tradingAnalysis.explore.title")} headerLeftAction={backAction}>
+      <DashboardLayout title={t("tradingAnalysis.explore.title")} breadcrumb={breadcrumb}>
         <div className="relative flex-1 overflow-y-auto">
           <div className="mx-auto w-full max-w-[70rem]">
             <DetailSkeleton />
@@ -61,7 +66,7 @@ export default function PublishedAnalysisDetailPage() {
 
   if (!analysis) {
     return (
-      <DashboardLayout title={t("tradingAnalysis.explore.title")} headerLeftAction={backAction}>
+      <DashboardLayout title={t("tradingAnalysis.explore.title")} breadcrumb={breadcrumb}>
         <div className="relative flex-1 overflow-y-auto">
           <div className="flex flex-col items-center justify-center flex-1 min-h-[25rem] gap-4">
             <XCircle className="h-10 w-10 text-muted-foreground" />
@@ -78,10 +83,7 @@ export default function PublishedAnalysisDetailPage() {
   return (
     <DashboardLayout
       title={t("tradingAnalysis.pageTitle", { ticker: analysis.ticker })}
-      headerLeftAction={backAction}
-      headerActions={
-        <FullReportActions analysis={analysis} t={t} />
-      }
+      breadcrumb={breadcrumb}
     >
       <div className="relative flex-1 overflow-y-auto">
         <div className="mx-auto w-full max-w-[70rem] space-y-10 px-[16px] pb-16 pt-6 md:px-8 md:pt-8">
@@ -100,6 +102,9 @@ export default function PublishedAnalysisDetailPage() {
                   <Globe className="w-3 h-3" />
                   {t("tradingAnalysis.publishedLabel")}
                 </span>
+                <div className="sm:ml-auto">
+                  <FullReportActions analysis={analysis} t={t} />
+                </div>
               </div>
 
               <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">

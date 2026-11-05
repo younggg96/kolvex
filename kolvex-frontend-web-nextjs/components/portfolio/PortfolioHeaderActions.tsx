@@ -42,8 +42,7 @@ export interface PortfolioHeaderActionsProps {
 }
 
 /**
- * Standalone Header Actions component for Portfolio
- * Can be used in DashboardLayout's headerActions prop
+ * Portfolio account actions, rendered above the portfolio content.
  */
 export function PortfolioHeaderActions({
   holdings,

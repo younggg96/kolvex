@@ -6,23 +6,18 @@ import OpinionSourceNav from "./OpinionSourceNav";
 interface DashboardLayoutProps {
   children: ReactNode;
   title?: string;
-  headerLeftAction?: ReactNode;
-  headerExtra?: ReactNode;
-  headerActions?: ReactNode;
+  breadcrumb?: ReactNode;
   /** Disable page transition animation */
   noTransition?: boolean;
 }
 
-/** Page content and optional inline actions; AppShell owns navigation. */
+/** Page content and an optional breadcrumb; actions live in the page content. */
 export default function DashboardLayout({
   children,
   title,
-  headerLeftAction,
-  headerExtra,
-  headerActions,
+  breadcrumb,
   noTransition = false,
 }: DashboardLayoutProps) {
-  const hasActions = Boolean(headerLeftAction || headerExtra || headerActions);
 
   return (
     <section aria-label={title} className="relative flex min-w-0 flex-1 flex-col overflow-hidden">
@@ -32,15 +27,9 @@ export default function DashboardLayout({
         }`}
       >
         <OpinionSourceNav />
-        {hasActions && (
-          <div className="flex shrink-0 flex-wrap items-center gap-2 px-[16px] pt-4 md:px-8">
-            {headerLeftAction}
-            {headerExtra}
-            {headerActions && (
-              <div className="ml-auto flex min-w-0 max-w-full flex-wrap items-center gap-2 [&>*]:shrink-0">
-                {headerActions}
-              </div>
-            )}
+        {breadcrumb && (
+          <div className="flex min-w-0 shrink-0 items-center px-[16px] py-4 md:px-8">
+            {breadcrumb}
           </div>
         )}
         {children}

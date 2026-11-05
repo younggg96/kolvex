@@ -29,7 +29,6 @@ export type { PortfolioHeaderActionsProps } from "./PortfolioHeaderActions";
 export default function PortfolioHoldings({
   userId,
   isOwner = false,
-  onHeaderActionsReady,
   renderAfterSummary,
 }: PortfolioHoldingsProps) {
   const { t } = useTranslation();
@@ -149,33 +148,6 @@ export default function PortfolioHoldings({
     return `${diffHours}h`;
   }, [lastRefreshTime, t]);
 
-  useEffect(() => {
-    if (!onHeaderActionsReady) return;
-    if (isOwner && status?.is_connected) {
-      onHeaderActionsReady({
-        holdings,
-        onTogglePublic: handleTogglePublic,
-        onCopyShareLink: handleCopyShareLink,
-        copied,
-        onConnect: handleConnectPlaid,
-        onDisconnect: () => setDisconnectDialogOpen(true),
-        onDownload: handleDownload,
-      });
-    } else {
-      onHeaderActionsReady(null);
-    }
-  }, [
-    onHeaderActionsReady,
-    isOwner,
-    status?.is_connected,
-    holdings,
-    copied,
-    handleTogglePublic,
-    handleCopyShareLink,
-    handleConnectPlaid,
-    handleDownload,
-  ]);
-
   const toggleAccount = (accountId: string) => {
     setExpandedAccounts((prev) => {
       const next = new Set(prev);
@@ -227,16 +199,18 @@ export default function PortfolioHoldings({
 
   return (
     <div className="space-y-6">
-      {isOwner && !onHeaderActionsReady && status?.is_connected && (
-        <PortfolioHeaderActions
-          holdings={holdings}
-          onTogglePublic={handleTogglePublic}
-          onCopyShareLink={handleCopyShareLink}
-          copied={copied}
-          onConnect={handleConnectPlaid}
-          onDisconnect={() => setDisconnectDialogOpen(true)}
-          onDownload={handleDownload}
-        />
+      {isOwner && status?.is_connected && (
+        <div className="flex justify-end">
+          <PortfolioHeaderActions
+            holdings={holdings}
+            onTogglePublic={handleTogglePublic}
+            onCopyShareLink={handleCopyShareLink}
+            copied={copied}
+            onConnect={handleConnectPlaid}
+            onDisconnect={() => setDisconnectDialogOpen(true)}
+            onDownload={handleDownload}
+          />
+        </div>
       )}
 
       {holdings?.accounts && holdings.accounts.length > 0 && userId && (

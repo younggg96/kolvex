@@ -39,3 +39,13 @@ export function activateStockAnalysis<T>(ticker: string, id: string, currentId: 
 export function getStockAnalysisVersion<T>(ticker: string, id: string, signal?: AbortSignal) {
   return request<AnalysisVersion<T>>(`${encodeURIComponent(ticker)}/${encodeURIComponent(id)}`, { signal });
 }
+export interface AnalysisIndexItem {
+  id: string; ticker: string; created_at: string;
+  bias: "bullish" | "bearish" | "neutral" | null;
+  summary: string | null; signals: string[];
+  setup: import("./stockApi").AiTechnicalAnalysis["setup"] | null;
+}
+export interface AnalysisIndex { technical: AnalysisIndexItem[]; planned: AnalysisIndexItem[] }
+export function getStockAnalysisIndex(signal?: AbortSignal) {
+  return request<AnalysisIndex>("_index", { signal });
+}

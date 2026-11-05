@@ -161,13 +161,13 @@ export default function PaperTradingWorkspace() {
   return (
     <DashboardLayout title={c("Paper trading", "虚拟交易")}>
       <main className="flex-1 overflow-y-auto" aria-busy={loading}>
-        <div className="mx-auto max-w-screen-2xl space-y-8 px-[16px] pb-16 pt-6 md:px-8 md:pt-8">
+        <div className="mx-auto max-w-screen-2xl space-y-6 px-[16px] pb-16 pt-6 md:space-y-8 md:px-8 md:pt-8">
           <header className="flex flex-wrap items-start justify-between gap-4">
             <div>
               <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
                 {c("Learn by trading", "在交易中学习")}
               </p>
-              <h1 className="text-3xl font-semibold tracking-tight">
+              <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
                 {c("Your virtual trading desk", "你的虚拟交易工作台")}
               </h1>
               <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground">
@@ -220,7 +220,7 @@ export default function PaperTradingWorkspace() {
               "仅模拟交易 · 美元股票与 ETF · 无杠杆 · 行情可能延迟。持仓与净值计入可用盘后报价，按常规时段实际观察报价撮合，不补算遗漏的价格路径。",
             )}
           </p>
-          <div aria-live="polite" className="min-h-6 text-sm">
+          <div aria-live="polite" className={cn("text-sm md:min-h-6", !error && !message && "max-md:sr-only")}>
             <p role="alert" className="text-negative">
               {error}
             </p>
@@ -259,7 +259,7 @@ export default function PaperTradingWorkspace() {
               )}
               <section
                 aria-label={c("Account overview", "账户概览")}
-                className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"
+                className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4"
               >
                 {[
                   [
@@ -294,7 +294,7 @@ export default function PaperTradingWorkspace() {
                     <h2 className="text-xs text-muted-foreground">{label}</h2>
                     <p
                       className={cn(
-                        "mt-3 text-2xl font-semibold tracking-tight tabular-nums",
+                        "mt-2 text-xl font-semibold tracking-tight tabular-nums sm:mt-3 sm:text-2xl",
                         typeof tone === "number" &&
                           (tone > 0
                             ? "text-positive"
@@ -951,7 +951,7 @@ function EquityChart({
         viewBox="0 0 800 192"
         role="img"
         aria-label={`${c("Equity from", "净值从")} ${money(values[0])} ${c("to", "到")} ${money(values[values.length - 1])}`}
-        className="h-48 w-full text-foreground"
+        className="h-40 w-full text-foreground sm:h-48"
         preserveAspectRatio="none"
       >
         <line

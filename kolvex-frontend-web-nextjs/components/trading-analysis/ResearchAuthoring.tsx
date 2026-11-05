@@ -241,21 +241,7 @@ export default function TradingAnalysisPage({ searchParams }: { searchParams?: {
   };
 
   return (
-    <ResearchLayout
-      headerActions={
-        <Button
-          variant="outline"
-          size="sm"
-          asChild
-          className="gap-1.5"
-        >
-          <Link href={DEEP_RESEARCH_PATH}>
-            <Globe className="h-4 w-4" />
-            {t("tradingAnalysis.explore.title")}
-          </Link>
-        </Button>
-      }
-    >
+    <ResearchLayout>
       <div className="relative flex-1 overflow-y-auto">
         <div className="mx-auto w-full px-[16px] pb-16 pt-6 md:px-8 md:pt-8">
           <div className="space-y-8">
@@ -268,10 +254,18 @@ export default function TradingAnalysisPage({ searchParams }: { searchParams?: {
                   {t("tradingAnalysis.heroDescription")}
                 </p>
               </div>
-              <Button onClick={() => setDialogOpen(true)} className="gap-1.5">
-                <Plus className="h-4 w-4" />
-                {t("tradingAnalysis.newAnalysis")}
-              </Button>
+              <div className="flex flex-wrap items-center gap-2">
+                <Button variant="outline" asChild className="gap-1.5">
+                  <Link href={DEEP_RESEARCH_PATH}>
+                    <Globe className="h-4 w-4" />
+                    {t("tradingAnalysis.explore.title")}
+                  </Link>
+                </Button>
+                <Button onClick={() => setDialogOpen(true)} className="gap-1.5">
+                  <Plus className="h-4 w-4" />
+                  {t("tradingAnalysis.newAnalysis")}
+                </Button>
+              </div>
             </div>
 
             {/* ── New Analysis Dialog ── */}

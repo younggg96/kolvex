@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import DashboardLayout from "@/components/layout/DashboardLayout";
-import HeaderBackButton from "@/components/layout/HeaderBackButton";
+import PageBreadcrumb from "@/components/layout/PageBreadcrumb";
 import { useTranslation } from "@/lib/i18n";
 import { localizedBrief, briefFilters, briefLibraryHref, type BriefSearchParams, type DailyBrief } from "@/lib/dailyBriefs";
 import BriefContent from "./BriefContent";
@@ -17,7 +17,10 @@ export default function BriefReader({ id, searchParams }: { id: string; searchPa
   const back = briefLibraryHref(type, page, date);
   const { data, loading, error, retry } = useBriefData<{ payload: DailyBrief }>(`?id=${encodeURIComponent(id)}`);
   useEffect(() => { document.title = `${(data ? localizedBrief(data.payload, locale).brief.headline : t("briefs.title"))} | Kolvex`; }, [data, locale, t]);
-  return <DashboardLayout title={t("briefs.title")} headerLeftAction={<HeaderBackButton href={back} label={t("briefs.back")} />}>
+  return <DashboardLayout title={t("briefs.title")} breadcrumb={<PageBreadcrumb items={[
+    { label: t("briefs.title"), href: back },
+    ...(data ? [{ label: localizedBrief(data.payload, locale).brief.headline }] : []),
+  ]} />}>
     <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-[16px] pb-10 pt-6 md:px-8 md:pt-8">
       <div className="mx-auto max-w-[67.5rem]">
         {loading || (error && !data) ? <><BriefState loading={loading} error={error} retry={retry} />{error === 404 && <Button asChild variant="outline" className="mt-4"><Link href={back}>{t("briefs.back")}</Link></Button>}</> : data && <>

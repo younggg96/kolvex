@@ -6,13 +6,9 @@ import { useTranslation } from "@/lib/i18n";
 
 interface ResearchLayoutProps {
   children: ReactNode;
-  headerActions?: ReactNode;
 }
 
-export default function ResearchLayout({
-  children,
-  headerActions,
-}: ResearchLayoutProps) {
+export default function ResearchLayout({ children }: ResearchLayoutProps) {
   const { t } = useTranslation();
   const title = t("tradingAnalysis.title");
 
@@ -21,7 +17,7 @@ export default function ResearchLayout({
   }, [title]);
 
   return (
-    <DashboardLayout title={title} headerActions={headerActions}>
+    <DashboardLayout title={title}>
       {children}
     </DashboardLayout>
   );

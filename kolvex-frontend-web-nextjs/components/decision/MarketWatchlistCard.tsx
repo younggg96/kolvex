@@ -8,11 +8,11 @@ import { CORE_STOCKS, STOCK_SECTORS } from "@/lib/stockDiscovery";
 import { marketStockHref } from "@/lib/stockLinks";
 import CompanyLogo from "@/components/ui/company-logo";
 import { Button } from "@/components/ui/button";
-import { ListCard, ListFooterLink, ListRow, ListRows } from "@/components/ui/list-card";
-import { ContentLoading, PendingValue } from "@/components/ui/content-loading";
+import { ListRow, ListRows } from "@/components/ui/list-card";
+import { PendingValue } from "@/components/ui/content-loading";
 import { Change, money, useCopy } from "./shared";
 import WatchlistStatus from "./WatchlistStatus";
-import WatchlistStatus from "./WatchlistStatus";
+import { Skeleton } from "../ui/skeleton";
 
 const PREVIEW_SIZE = 6;
 const sectors = new Map<string, string>(CORE_STOCKS.map(stock => [stock.symbol, stock.sector]));

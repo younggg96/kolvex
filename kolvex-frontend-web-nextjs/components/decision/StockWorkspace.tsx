@@ -5,9 +5,8 @@ import { useStockQuote } from "@/hooks/useStockData";
 import { latestChartQuote } from "@/lib/chart/quote";
 import { isProductFeatureEnabled } from "@/lib/productFeatures";
 
-import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
-import HeaderBackButton from "@/components/layout/HeaderBackButton";
+import PageBreadcrumb from "@/components/layout/PageBreadcrumb";
 import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -277,31 +276,18 @@ export default function StockWorkspace({
         <div className="mx-auto max-w-[112.5rem] px-[16px] pb-16 pt-4 md:px-8 md:pt-6">
           <div className="min-w-0 space-y-6">
             <section className="min-w-0" aria-labelledby="stock-title">
-              <nav
-                aria-label={c("Breadcrumb", "面包屑导航")}
-                className="mb-6 flex items-center gap-2 text-sm text-muted-foreground"
-              >
-                <HeaderBackButton
-                  href={returnHref}
-                  label={
-                    returnHref.startsWith("/dashboard/watchlist")
-                      ? c("Back to Watchlist", "返回自选股")
-                      : c("Back to Markets", "返回行情")
-                  }
-                />
-                <Link
-                  href={returnHref}
-                  className="transition-colors hover:text-foreground"
-                >
-                  {returnHref.startsWith("/dashboard/watchlist")
-                    ? c("Watchlist", "自选股")
-                    : c("Markets", "行情")}
-                </Link>
-                <span aria-hidden="true">/</span>
-                <span aria-current="page" className="text-foreground">
-                  {ticker}
-                </span>
-              </nav>
+              <PageBreadcrumb
+                className="mb-6 min-w-0"
+                items={[
+                  {
+                    label: returnHref.startsWith("/dashboard/watchlist")
+                      ? c("Watchlist", "自选股")
+                      : c("Markets", "行情"),
+                    href: returnHref,
+                  },
+                  { label: ticker },
+                ]}
+              />
               <div className="flex items-start gap-3">
                 <CompanyLogo symbol={ticker} size="md" />
                 <div className="min-w-0 flex-1">

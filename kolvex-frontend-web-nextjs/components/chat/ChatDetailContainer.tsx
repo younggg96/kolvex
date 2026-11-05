@@ -72,6 +72,8 @@ function saveModel(conversationId: string, model: AIModel) {
 interface ChatDetailContainerProps {
   className?: string;
   conversationId: string;
+  /** Action shown just above the message input */
+  inputAction?: React.ReactNode;
   /** First message to auto-send (from welcome page navigation) */
   firstMessage?: string;
   /** Initial sources from welcome page (comma-separated in URL) */
@@ -92,6 +94,7 @@ const DEFAULT_SOURCES: SearchSource[] = AVAILABLE_SOURCES;
 export function ChatDetailContainer({
   className,
   conversationId,
+  inputAction,
   firstMessage,
   initialSources,
   initialModel,
@@ -481,6 +484,7 @@ export function ChatDetailContainer({
         {/* Chat Input */}
         <div className="sticky bottom-0 z-20 bg-background">
           <div className="mx-auto max-w-3xl px-4 pb-4 pt-2">
+            {inputAction && <div className="flex justify-end pb-2">{inputAction}</div>}
             <ChatInput
               value={query}
               onChange={setQuery}

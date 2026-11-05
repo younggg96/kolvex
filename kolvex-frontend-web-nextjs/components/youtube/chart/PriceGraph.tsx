@@ -675,12 +675,19 @@ export default function PriceGraph({
   const extended = quoteEnabled ? latestChartQuote(quote) : null;
   const showQuote = !activeBar && !!latest;
   const displayedPrice = showQuote ? latest.price : headerBar?.close;
-  const displayedChange = showQuote ? latest.changePercent : headerChange;
+  // Change follows the selected range: 1D compares with the previous close (the quote's own
+  // change), every other range compares the latest price with the first bar of the window.
+  const quoteVsPreviousClose = range === "1D" && baseline === quote?.previousClose;
+  const quoteRangeChange = showQuote && baseline
+    ? quoteVsPreviousClose && latest.changePercent !== null ? latest.changePercent : ((latest.price - baseline) / baseline) * 100
+    : null;
+  const displayedChange = showQuote ? quoteRangeChange : headerChange;
   const quoteTime = latest?.time ? new Date(latest.time * 1000).toLocaleString(t("common.intlLocale"), {
     timeZone: quote?.exchangeTimezone || "America/New_York", month: "2-digit", day: "2-digit",
     hour: "2-digit", minute: "2-digit", second: "2-digit", timeZoneName: "short",
   }) : t("youtubeOpinions.quoteTimeUnknown");
-  const tone: StrengthTone = headerChange > 0 ? "positive" : headerChange < 0 ? "negative" : "neutral";
+  const toneChange = displayedChange ?? headerChange;
+  const tone: StrengthTone = toneChange > 0 ? "positive" : toneChange < 0 ? "negative" : "neutral";
   const color = toneColor[tone];
   const barLabel = (bar: PriceBar) => `${formatDate(bar.date.slice(0, 10))}${intraday ? ` ${bar.date.slice(11, 16)}` : ""}`;
 
@@ -890,9 +897,9 @@ export default function PriceGraph({
               {displayedChange !== null && <span className={cn("text-sm font-semibold tabular-nums", displayedChange > 0 ? "text-positive" : displayedChange < 0 ? "text-negative" : "text-muted-foreground")}>
                 {formatChangePercent(displayedChange)}
               </span>}
-              <span className="text-xs text-muted-foreground">{showQuote
+              <span className="text-xs text-muted-foreground">{showQuote && quoteVsPreviousClose
                 ? t(`youtubeOpinions.quoteSession.${latest.session}`)
-                : range === "1D" && baseline === quote?.previousClose ? t("youtubeOpinions.quoteSession.regular")
+                : quoteVsPreviousClose ? t("youtubeOpinions.quoteSession.regular")
                   : rangeChangeLabel || t("youtubeOpinions.priceRangeChange")}</span>
             </span>
           ) : (
@@ -914,7 +921,7 @@ export default function PriceGraph({
           </button>
         )}
       </div>
-      {quoteEnabled && !activeBar && (
+      {quoteEnabled && (
         <div className="mt-1 flex flex-wrap items-baseline gap-x-2 gap-y-1 text-xs text-muted-foreground">
           {latest && <span>{quote?.source || "Yahoo Finance"} · {quoteTime} · {t("youtubeOpinions.quoteMayBeDelayed")}</span>}
           {extended && extended.session !== "regular" && <span>

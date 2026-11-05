@@ -104,18 +104,22 @@ and allow descriptions to wrap.
 ## Layout
 
 AppShell owns the viewport, desktop sidebar and mobile navigation. DashboardLayout
-has no top header or duplicate page title. Optional return/actions render as an
-unbordered content row only when supplied; the AI Research management action
-sits beside its content heading. Mobile navigation includes a menu button that expands the dock to
+has no top header or duplicate page title. Its only optional row is the
+breadcrumb. Page actions belong in the page content, beside the heading or list
+they act on: report actions sit on the ticker row, the AI Research management
+action beside its content heading, news controls in the list-card toolbar,
+portfolio account actions above the portfolio content and New chat above the
+message input. Mobile navigation includes a menu button that expands the dock to
 keep other routes, settings and log out reachable. Pages retain their established content scroller and use 16px
-horizontal padding on mobile and 32px from the medium breakpoint. Below 768px the root font size is 12px, so
-rem-based type, spacing and controls run at 75% of desktop; write new sizes in rem
-and keep px only for values that must not scale, such as the 16px page gutter and the mobile dock.
-Editable controls are another fixed-pixel exception: `app/globals.css` owns a
+horizontal padding on mobile and 32px from the medium breakpoint. The root font size is 16px at every width, so
+`text-xs` is 12px and `text-sm` is 14px on phones as well. Do not shrink the root to gain density: when a
+layout does not fit a phone, change that layout with breakpoints (fewer columns, smaller padding, a stacked row).
+Primary mobile dock targets are at least 44px tall.
+Editable controls are a fixed-pixel exception: `app/globals.css` owns a
 16px input font and a 44px minimum single-line field height on narrow screens
 and touch devices, including landscape. This covers shared Input, SearchInput,
 Textarea and native fields, selects and editable regions, preventing iOS focus
-zoom despite the smaller root size or local text utilities. Non-text input types
+zoom despite local text utilities. Non-text input types
 retain their own geometry; textareas retain their existing height/autogrow behavior.
 Desktop pointer layouts retain their existing type sizes, and the viewport keeps
 manual page zoom available. On narrow screens and touch devices, input and
@@ -417,13 +421,16 @@ is introduced.
 | Loading and data states | `components/ui/content-loading.tsx` and the owning list | Delayed status text, pending values in known rows, explicit empty/error states and retry |
 | Scrollbars | `app/globals.css` | Global standards properties and WebKit fallback; new scrollers need no opt-in class |
 
-Detail-page return navigation lives in `DashboardLayout.headerLeftAction` and uses
-`components/layout/HeaderBackButton.tsx`: a ghost icon button with only a Lucide
-arrow, a translated accessible label and tooltip, and the existing return target.
-Keep it available in loading and missing-report states.
+Signed-in detail pages return through `components/layout/PageBreadcrumb.tsx`, passed
+to `DashboardLayout.breadcrumb`: a text trail such as `Markets / AMZN` with no back
+arrow. Parents are links or in-app navigation buttons with at least 44px of height
+and keep the existing return target, including list filters and pages. The current
+page is foreground text that truncates. Loading and missing states show parents
+only, so the way back stays available. The public reading pages keep
+`HeaderBackButton`.
 
-The stock workspace places that same return control at the right of the stock
-identity row, per the requested layout. Its `PriceChart` workspace variant reserves
+The stock workspace places the same breadcrumb above its stock identity row. Its
+`PriceChart` workspace variant reserves
 360px for the plot on phones and `clamp(480px, 60vh, 760px)` from the small breakpoint,
 including loading and error states. Creator-opinion compact charts and the advanced
 dialog retain their existing sizing. The page retains natural content scrolling.
@@ -913,8 +920,8 @@ providers or hide the public body behind tabs.
 
 ## News terminal
 
-`/dashboard/news` is a single-column reading feed. DashboardLayout renders its
-inline action row: delayed-headline notice, update status, pause/resume and refresh.
+`/dashboard/news` is a single-column reading feed. The list card's toolbar holds
+the delayed-headline notice, update status, pause/resume and refresh.
 Date separators and local timestamps introduce plain headline links. There are
 no row actions, bookmarks, source tags, category rails, search, Focus rules,
 details panes/drawers or related-symbol chips.
@@ -1622,6 +1629,15 @@ follow the reader locale. Load all summary pages before grouping, then paginate
 12 stocks per page, so one stock's tasks cannot split between pages. Failed or
 incomplete catalog loads retain the retry flow rather than showing partial
 counts. Permissions and the anonymous report-card library are unchanged.
+
+The library is one `ListCard`. The heading stays above the card; All, Technical
+analysis and Conditional plan scope pills and the plan sort sit in its toolbar.
+`researchList.tsx` owns a shared grid template for the `ListColumnHeader` and
+rows, so columns align whatever the value width. Direction is plain semantic text
+with its written label (`DecisionText`), not a pill per row. From 1400px, plan rows
+show entry, stop and target in columns; narrower widths move them into the
+disclosure, and phones keep the stock, risk/reward and direction. Rows carry no
+dividers and keep the shared neutral wash.
 
 ### YouTube opinion initial loading
 

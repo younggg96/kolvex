@@ -7,7 +7,7 @@ import { isProductFeatureEnabled } from "@/lib/productFeatures";
 import Link from "next/link";
 import { formatOpinionDate } from "@/lib/opinionDates";
 import { useRouter } from "next/navigation";
-import HeaderBackButton from "@/components/layout/HeaderBackButton";
+import PageBreadcrumb, { type BreadcrumbItem } from "@/components/layout/PageBreadcrumb";
 import {
   useEffect,
   useMemo,
@@ -1026,11 +1026,29 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
       creator: route.creator,
       ticker,
     });
+  const creatorLabel = creator?.channel_title || creator?.channel_handle || c("Creator", "博主");
+  const breadcrumbItems: BreadcrumbItem[] | null = allStocks
+    ? [
+        { label: t("youtubeOpinions.title"), href: "/dashboard/youtube-opinions" },
+        { label: t("youtubeOpinions.allTickers") },
+      ]
+    : route.creator && route.ticker
+      ? [
+          { label: t("youtubeOpinions.title"), onClick: () => navigate(root) },
+          { label: creatorLabel, onClick: () => navigate(back) },
+          { label: route.ticker },
+        ]
+      : inDetail
+        ? [
+            { label: t("youtubeOpinions.title"), onClick: () => navigate(root) },
+            { label: route.creator ? creatorLabel : route.ticker! },
+          ]
+        : null;
 
   return (
     <DashboardLayout
       title={t("youtubeOpinions.title")}
-      headerLeftAction={allStocks ? <HeaderBackButton href="/dashboard/youtube-opinions" label={t("common.back")} /> : inDetail ? <HeaderBackButton label={t("common.back")} onClick={() => navigate(back)} /> : undefined}
+      breadcrumb={breadcrumbItems && <PageBreadcrumb items={breadcrumbItems} />}
     >
       <div
         ref={scrollContainer}
@@ -1046,7 +1064,7 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
             </span>
           </div>
         )}
-        <div className="mx-auto w-full min-w-0 max-w-[100rem] px-[16px] pb-16 pt-5 md:px-8 md:pt-7">
+        <div className="mx-auto w-full min-w-0 max-w-[100rem] px-[16px] pb-16 pt-2 md:px-8 md:pt-7">
           <Tabs
             value={route.tab}
             onValueChange={(value) => navigate({ tab: value as Route["tab"] })}

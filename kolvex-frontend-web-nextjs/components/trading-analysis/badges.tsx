@@ -55,6 +55,19 @@ export function DecisionBadge({
   );
 }
 
+/** Plain direction text for aligned list columns, where a pill per row would be noise. */
+export function DecisionText({
+  decision,
+  t,
+}: {
+  decision: string | null | undefined;
+  t: (key: string) => string;
+}) {
+  if (!decision) return null;
+  const config = decisionConfig(decision, t);
+  return <span className={cn("whitespace-nowrap text-sm font-semibold", config.text)}>{config.label}</span>;
+}
+
 export function DecisionBadgeLarge({
   decision,
   t,

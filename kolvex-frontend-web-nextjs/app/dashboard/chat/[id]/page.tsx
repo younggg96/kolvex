@@ -3,6 +3,7 @@
 import { useState, useCallback, useEffect } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { MessageSquarePlus } from "lucide-react";
+import { useCopy } from "@/components/decision/shared";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { ChatDetailContainer } from "@/components/chat";
 import { visibleQuestion } from "@/components/chat/pageEvidence";
@@ -11,6 +12,7 @@ import { Button } from "@/components/ui/button";
 export default function ChatPage() {
   const params = useParams();
   const router = useRouter();
+  const c = useCopy();
   const searchParams = useSearchParams();
   const conversationId = params.id as string;
   const firstMessage = searchParams.get("firstMessage") || undefined;
@@ -50,22 +52,20 @@ export default function ChatPage() {
   }, [router]);
 
   return (
-    <DashboardLayout
-      title={conversationTitle}
-      headerActions={
-        <Button
-          variant="ghost"
-          size="xs"
-          onClick={handleNewChat}
-          className="gap-2"
-        >
-          <MessageSquarePlus className="w-3.5 h-3.5" />
-          <span className="hidden sm:inline">New Chat</span>
-        </Button>
-      }
-    >
+    <DashboardLayout title={conversationTitle}>
       <ChatDetailContainer
         key={conversationId}
+        inputAction={
+          <Button
+            variant="ghost"
+            size="xs"
+            onClick={handleNewChat}
+            className="gap-2"
+          >
+            <MessageSquarePlus className="w-3.5 h-3.5" aria-hidden="true" />
+            {c("New chat", "新对话")}
+          </Button>
+        }
         className="flex-1"
         conversationId={conversationId}
         firstMessage={pendingMessage || firstMessage}
