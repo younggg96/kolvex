@@ -1,6 +1,7 @@
 "use client";
 
 import { Play } from "lucide-react";
+import Image from "next/image";
 import { proxyImageUrl } from "@/lib/utils";
 
 interface VideoPlayerProps {
@@ -37,9 +38,12 @@ export default function VideoPlayer({
       className={`relative aspect-video rounded-2xl overflow-hidden bg-muted ${className}`}
     >
       {coverUrl ? (
-        <img
+        <Image
           src={proxyImageUrl(coverUrl)}
           alt="Video cover"
+          fill
+          // Covers come from external providers with arbitrary image hosts.
+          unoptimized
           className="w-full h-full object-cover"
         />
       ) : (

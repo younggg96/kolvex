@@ -1356,7 +1356,7 @@ verification details live in `../docs/stock-discovery.md`; browser QA is pending
 because local browser control is disabled in Work settings.
 
 The Markets secondary rail leads with a compact Watchlist card above creator
-updates. It uses the shared browser-local watchlist store and quote cache, previews
+updates. It uses the shared account-scoped watchlist store and quote cache, previews
 the six most recently saved symbols, and groups known stocks by the maintained
 sector catalogue. USD crypto pairs use Crypto; unclassified symbols use Other
 stocks. Native disclosures collapse each group. The header shows displayed/total
