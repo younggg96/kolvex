@@ -50,7 +50,7 @@ export function SecState({
   return (
     <div
       role={failed ? "alert" : "status"}
-      className="rounded-3xl border border-border px-6 py-12 text-center"
+      className="glass-card bg-card-glass rounded-3xl border border-foreground/10 px-6 py-12 text-center"
     >
       <p className="text-sm text-muted-foreground">
         {failed ? errorText : emptyText}

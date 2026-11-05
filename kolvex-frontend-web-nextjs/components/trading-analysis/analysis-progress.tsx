@@ -42,7 +42,7 @@ export function AnalysisProgress({
   return (
     <section
       aria-label={t("tradingAnalysis.analysisInProgress")}
-      className="overflow-hidden rounded-3xl border border-border bg-card"
+      className="overflow-hidden rounded-3xl border border-foreground/10 glass-card bg-card-glass"
     >
       <div className="px-4 pt-5 sm:px-6">
         <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2">

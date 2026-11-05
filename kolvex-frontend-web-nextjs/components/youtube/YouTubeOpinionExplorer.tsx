@@ -41,7 +41,7 @@ import {
   listRowTargetClass,
 } from "@/components/ui/list-card";
 import { Input } from "@/components/ui/input";
-import CompanyLogo from "@/components/ui/company-logo";
+import CompanyLogo, { phoneListLogoClass } from "@/components/ui/company-logo";
 import { marketStockHref } from "@/lib/stockLinks";
 import {
   Select,
@@ -786,7 +786,7 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
               label={`${t("youtubeOpinions.viewStock")}: ${item.ticker}`}
             >
               <div className="flex min-w-0 items-center gap-3">
-                <CompanyLogo symbol={item.ticker} size="md" />
+                <CompanyLogo symbol={item.ticker} size="md" className={phoneListLogoClass} />
                 <div className="min-w-0">
                   <p className="text-[0.9375rem] font-semibold">
                     {item.ticker}
@@ -934,8 +934,9 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
     <SegmentedControl
       label={t("youtubeOpinions.browseBy")}
       semantics="nav"
-      className="align-middle"
-      itemClassName="min-h-9"
+      className="align-middle md:gap-1"
+      size="sm"
+      itemClassName="md:min-h-9 md:px-4 md:text-sm"
       value={route.tab}
       onChange={(tab) => {
         // Re-picking the current tab returns from a detail view to the list.
@@ -1072,7 +1073,7 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
 
             {initialLoading && (
               <section aria-busy="true" className="min-h-64">
-                <h2 className="mb-6 text-2xl font-semibold tracking-tight">
+                <h2 className="mb-6 text-xl font-semibold tracking-tight md:text-2xl">
                   {inDetail ? title : c("YouTube opinions", "YouTube 观点")}
                 </h2>
                 <ContentLoading label={t("common.loadingStatus")} />
@@ -1086,14 +1087,14 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
                       <div className="min-w-0">
                         <h2
                           id="creator-directory-heading"
-                          className="text-[1.75rem] font-semibold leading-tight tracking-[-0.02em]"
+                          className="text-xl font-semibold leading-tight tracking-[-0.02em] md:text-[1.75rem]"
                         >
                           {route.tab === "stocks"
                             ? t("youtubeOpinions.stocksDiscussedTitle")
                             : t("youtubeOpinions.trackedCreators")}
                         </h2>
                         {catalogue && !(route.tab === "stocks" && stockScope === "holdings" && (held.loading || held.error)) && (
-                          <p className="mt-1 text-sm text-muted-foreground tabular-nums">
+                          <p className="mt-1 text-xs text-muted-foreground tabular-nums [text-wrap:balance] md:text-sm">
                             {t("youtubeOpinions.catalogueSummary", {
                               stocks: String(catalogue.summary.total_stocks),
                               creators: String(catalogue.summary.total_creators),
@@ -1106,21 +1107,22 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
                     </header>
                     <section aria-labelledby="creator-directory-heading" className="min-w-0">
                       <ListCard>
-                        {/* Below lg the dock's search replaces this field, so the filter and sort share a row. */}
-                        <div className="flex min-w-0 flex-wrap items-center justify-between gap-2 lg:block">
-                        <ListToolbar>
+                        {/* Below lg the dock's search replaces this field: the filter and sort keep one row, the filter scrolls if a long locale overflows it, and the holdings scope takes its own row. */}
+                        <div className="flex min-w-0 flex-wrap items-center gap-x-2 lg:block">
+                        <ListToolbar className="min-w-0 flex-1 flex-nowrap lg:flex-wrap">
                           <SegmentedControl
                             label={t("youtubeOpinions.filterBySentiment")}
                             semantics="radio"
-                            wrap
                             bare
                             value={toneFilter}
                             onChange={setToneFilter}
                             options={toneOptions}
-                            itemClassName="min-h-10 px-4 text-sm font-medium"
+                            className="min-w-0 shrink scrollbar-hide overflow-x-auto lg:shrink-0 lg:flex-wrap lg:gap-1 lg:overflow-visible"
+                            size="sm"
+                            itemClassName="font-medium max-lg:!px-2 max-lg:!text-xs lg:min-h-10 lg:px-4 lg:text-sm"
                           />
                         </ListToolbar>
-                        <div className="ml-auto flex min-w-0 flex-nowrap items-center gap-2 lg:ml-0 lg:mt-3">
+                        <div className="contents lg:mt-3 lg:flex lg:min-w-0 lg:flex-nowrap lg:items-center lg:gap-2">
                           <div className="relative hidden min-w-0 shrink-0 lg:block">
                             <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                             <Input
@@ -1141,13 +1143,14 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
                             {search && <button type="button" aria-label={t("common.clearFilters")} className="absolute right-1 top-1.5 flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-foreground/[0.06] hover:text-foreground focus-visible:outline-none" onClick={() => { setSearch(""); searchInput.current?.focus(); }}><X className="h-4 w-4" aria-hidden="true" /></button>}
                           </div>
                           {route.tab === "stocks" && isProductFeatureEnabled("portfolio") && (
-                            <div className="flex shrink-0 items-center gap-1">
+                            <div className="order-last flex w-full shrink-0 items-center gap-1 lg:order-none lg:w-auto">
                               <SegmentedControl
                                 label={t("youtubeOpinions.directory.allStocks")}
                                 bare
                                 value={stockScope}
                                 onChange={setStockScope}
-                                itemClassName="min-h-10 px-4 text-sm font-medium"
+                                size="sm"
+                            itemClassName="font-medium max-lg:!px-2 max-lg:!text-xs lg:min-h-10 lg:px-4 lg:text-sm"
                                 options={[
                                   { value: "all", label: t("youtubeOpinions.directory.allStocks") },
                                   { value: "holdings", label: t("youtubeOpinions.directory.holdingsOnly") },
@@ -1161,9 +1164,9 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
                             <Select value={sortBy} onValueChange={(value) => setSortBy(value as DirectorySort)}>
                               <SelectTrigger
                                 aria-label={t("common.sort")}
-                                className="h-11 w-auto gap-1.5 rounded-full border-border bg-transparent px-3 text-[0.8125rem] font-semibold hover:border-foreground/25 hover:bg-foreground/[0.06]"
+                                className="h-8 w-auto rounded-full border-border bg-transparent text-xs font-semibold hover:border-foreground/25 hover:bg-foreground/[0.06] max-lg:!gap-1 max-lg:!px-2.5 lg:h-11 lg:text-[0.8125rem]"
                               >
-                                <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground" />
+                                <ArrowUpDown className="hidden h-3.5 w-3.5 text-muted-foreground sm:block" />
                                 <SelectValue />
                               </SelectTrigger>
                               <SelectContent align="end">
@@ -1539,7 +1542,7 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
                       {showHistoryControls && <div
                         role="radiogroup"
                         aria-label={t("youtubeOpinions.sentiment")}
-                        className="-mx-1 flex items-center gap-1 overflow-x-auto px-1 scrollbar-hide"
+                        className="flex w-fit max-w-full items-center gap-1 overflow-x-auto rounded-full p-1 glass-track scrollbar-hide"
                       >
                         {sentimentOptions.map((option) => (
                           <button
@@ -1547,7 +1550,7 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
                             type="button"
                             role="radio"
                             aria-checked={filters.sentiment === option.value}
-                            className={cn("inline-flex h-8 shrink-0 items-center rounded-full px-3.5 text-[0.8125rem] font-semibold transition-colors duration-150 focus-visible:outline-none", filters.sentiment === option.value ? "bg-foreground text-background" : "text-foreground/80 hover:bg-foreground/[0.06] hover:text-foreground active:bg-foreground/[0.1]")}
+                            className={cn("inline-flex h-8 shrink-0 items-center rounded-full px-3.5 text-[0.8125rem] font-semibold transition-colors duration-150 focus-visible:outline-none", filters.sentiment === option.value ? "glass-thumb text-foreground" :"text-foreground/80 hover:bg-foreground/[0.06] hover:text-foreground active:bg-foreground/[0.1]")}
                             onClick={() => setFilters((previous) => ({ ...previous, sentiment: option.value }))}
                           >
                             {option.label}

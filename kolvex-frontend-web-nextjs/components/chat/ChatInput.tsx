@@ -227,7 +227,7 @@ function SendButton({
       size="icon"
       className={cn(
         "h-9 w-9 flex-shrink-0 rounded-full transition-colors duration-150",
-        "bg-primary text-primary-foreground hover:brightness-95",
+        "glass-button glass-button-primary bg-primary/85 text-primary-foreground hover:bg-primary/75",
         "disabled:bg-foreground/[0.08] disabled:text-muted-foreground disabled:opacity-100",
         className
       )}

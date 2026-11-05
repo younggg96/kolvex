@@ -124,7 +124,7 @@ export function InvestmentTransactionsTable({
   };
 
   return (
-    <ListCard className="overflow-hidden !p-0 sm:!p-0">
+    <ListCard className="overflow-hidden !p-0 sm:!p-0 max-md:-mx-[16px]">
       <ListToolbar className="flex-col items-stretch gap-3 px-4 py-3 sm:flex-row sm:items-center">
         <div>
           <h3 className="text-sm font-semibold">Investment transactions</h3>

@@ -105,7 +105,7 @@ export default function StockAnalyst({
       {data && !empty && (
         <div className="grid gap-4 xl:grid-cols-2">
           <section
-            className="min-w-0 rounded-3xl border border-border bg-card p-4 sm:p-6"
+            className="min-w-0 rounded-3xl border border-foreground/10 glass-card bg-card-glass p-4 sm:p-6"
             aria-labelledby="analyst-price-heading"
           >
             <div className="flex flex-wrap items-start justify-between gap-4">
@@ -233,7 +233,7 @@ export default function StockAnalyst({
           </section>
           {consensus && (
             <section
-              className="min-w-0 rounded-3xl border border-border bg-card p-4 sm:p-6"
+              className="min-w-0 rounded-3xl border border-foreground/10 glass-card bg-card-glass p-4 sm:p-6"
               aria-labelledby="analyst-ratings-heading"
             >
               <div className="mb-6 flex flex-wrap items-baseline justify-between gap-3">

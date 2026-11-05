@@ -78,7 +78,7 @@ export default function CreatorIntelligence({
     >
       {loading ? (
         <div className="pt-5" role="status" aria-label={t("common.loadingStatus")}>
-          <div className="creator-opinion-groups grid gap-4">{groups.map((group) => <div key={group.side} className="space-y-4 rounded-3xl border border-border bg-card p-4"><Skeleton className="h-6 w-24" /><Skeleton className="h-12 w-full" /><Skeleton className="h-12 w-full" /></div>)}</div>
+          <div className="creator-opinion-groups grid gap-4">{groups.map((group) => <div key={group.side} className="space-y-4 rounded-3xl border border-foreground/10 glass-card bg-card-glass p-4"><Skeleton className="h-6 w-24" /><Skeleton className="h-12 w-full" /><Skeleton className="h-12 w-full" /></div>)}</div>
           <Skeleton className="mt-8 h-28 w-full" />
         </div>
       ) : error ? (
@@ -92,7 +92,7 @@ export default function CreatorIntelligence({
               const items = latest.filter((opinion) => sideOf(opinion) === group.side);
               const expanded = expandedGroups.includes(group.side);
               return (
-                <section key={group.side} aria-label={group.label} className="min-w-0 rounded-3xl border border-border bg-card">
+                <section key={group.side} aria-label={group.label} className="min-w-0 rounded-3xl border border-foreground/10 glass-card bg-card-glass">
                   <header className="flex items-center justify-between gap-2 border-b border-border px-4 py-4">
                     <h3 className={cn("flex items-center gap-2 text-sm font-semibold", tones[group.side].text)}><span aria-hidden className={cn("h-2 w-2 rounded-full", tones[group.side].dot)} />{group.label}</h3>
                     <span className="whitespace-nowrap text-xs text-muted-foreground tabular-nums">{c(`${items.length} creators`, `${items.length} 位博主`)}</span>

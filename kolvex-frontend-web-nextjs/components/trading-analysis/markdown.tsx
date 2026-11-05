@@ -31,7 +31,7 @@ export function MarkdownBody({ content }: { content: string }) {
           h2: ({ children }) => <h3 className="text-lg md:text-xl">{children}</h3>,
           h3: ({ children }) => <h4 className="text-base md:text-lg">{children}</h4>,
           table: ({ children }) => (
-            <div role="region" aria-label="Data table" tabIndex={0} className="my-6 w-full min-w-0 max-w-full overflow-x-auto rounded-3xl border border-border focus-visible:outline-none ">
+            <div role="region" aria-label="Data table" tabIndex={0} className="glass-card bg-card-glass my-6 w-full min-w-0 max-w-full overflow-x-auto rounded-3xl border border-foreground/10 focus-visible:outline-none ">
               <table>{children}</table>
             </div>
           ),

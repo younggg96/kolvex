@@ -34,8 +34,10 @@ test("all pill lists keep selected text paired with a fill before hydration", ()
       h(TabsList, { variant }, options.map(item => h(TabsTrigger, { key: item.value, value: item.value }, item.label))),
     ));
     const active = html.match(/<button[^>]*data-state="active"[^>]*>/)[0];
-    assert.ok(active.includes("data-[state=active]:bg-foreground"), variant);
-    assert.ok(active.includes("data-[state=active]:text-background"), variant);
+    assert.ok(active.includes("data-[state=active]:bg-foreground/[0.14]"), variant);
+    assert.ok(active.includes("data-[state=active]:text-foreground"), variant);
+    assert.ok(html.includes("glass-track"), variant);
+    assert.ok(html.includes("glass-thumb"), variant);
     assert.ok(html.includes('data-slot="tabs-pill-indicator"'), variant);
   }
 });
@@ -65,9 +67,9 @@ test("segmented and legacy switch controls have readable initial selections", ()
     const html = renderToStaticMarkup(control);
     const active = html.match(/<button[^>]*aria-(?:pressed="true"|selected="true"|checked="true"|current="page")[^>]*>/)[0];
     const classes = active.match(/class="([^"]*)"/)[1].split(" ");
-    assert.ok(classes.includes("text-background"));
-    assert.ok(classes.includes("bg-foreground"));
-    assert.ok(classes.includes("focus-visible:bg-foreground"));
+    assert.ok(classes.includes("text-foreground"));
+    assert.ok(classes.includes("bg-foreground/[0.14]"));
+    assert.ok(classes.includes("focus-visible:bg-foreground/[0.14]"));
   }
 });
 

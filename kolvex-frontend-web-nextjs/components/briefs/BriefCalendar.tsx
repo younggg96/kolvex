@@ -39,7 +39,7 @@ export default function BriefCalendar({ date, type, onSelectDate }: { date: stri
   const { data, loading, error, retry } = useBriefData<BriefCalendarData>(`?calendar=1&month=${monthKey}`);
   const available = useMemo<Availability>(() => new Map(data?.days.map(day => [day.date, day.types]) ?? []), [data]);
   const today = pacificBriefToday();
-  return <aside aria-label={t("briefs.calendarLabel")} className="rounded-3xl border border-border bg-card p-4">
+  return <aside aria-label={t("briefs.calendarLabel")} className="rounded-3xl border border-foreground/10 glass-card bg-card-glass p-4">
     <div className="mb-4 flex items-center justify-between gap-3">
       <h2 className="text-sm font-semibold">{t("briefs.calendarLabel")}</h2>
     </div>

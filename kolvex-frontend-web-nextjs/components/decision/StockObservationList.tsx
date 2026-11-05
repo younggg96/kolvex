@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Search, X, RotateCcw } from "lucide-react";
+import { Search, SlidersHorizontal, X, RotateCcw } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -64,6 +64,7 @@ export default function StockObservationList({ range, catalogue, held, onRetry, 
   const composing = useRef(false);
   useEffect(() => { if (!composing.current) setSearchDraft(state.search ?? ""); }, [state.search]);
   const [ready, setReady] = useState(false);
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const [attempt, setAttempt] = useState(0);
   const [now, setNow] = useState(Date.now);
   const listRef = useRef<HTMLDivElement>(null);
@@ -150,15 +151,22 @@ export default function StockObservationList({ range, catalogue, held, onRetry, 
 
   return <div ref={listRef}>
     <Panel title={c("Stock watch", "股票观察")} id="market-movers" surface="card" action={<>
-      <div className="ml-auto w-44 lg:hidden">
-        <Select value={state.scope} onValueChange={value => changeScope(value as StockScope)}>
-          <SelectTrigger shape="pill" className="h-11" aria-label={c("Stock list", "股票列表")}><SelectValue /></SelectTrigger>
-          <SelectContent>{scopeOptions.map(option => <SelectItem key={option.value} value={option.value} className="min-h-11">{option.label}</SelectItem>)}</SelectContent>
-        </Select>
+      <div className="ml-auto flex min-w-0 items-center gap-2 lg:hidden">
+        <span className="truncate text-sm text-muted-foreground">{scopeOptions.find(option => option.value === state.scope)?.label}</span>
+        <Button type="button" variant="outline" size="icon" className="relative h-11 w-11 shrink-0 rounded-full" aria-expanded={filtersOpen} aria-controls="stock-filters" aria-label={c("Filter stocks", "筛选股票")} title={c("Filter stocks", "筛选股票")} onClick={() => setFiltersOpen(value => !value)}>
+          <SlidersHorizontal className="h-4 w-4" aria-hidden="true" />
+          {hasFilters && <span aria-hidden="true" className="absolute right-2 top-2 h-2 w-2 rounded-full bg-foreground" />}
+        </Button>
       </div>
       <SegmentedControl label={c("Stock list", "股票列表")} value={state.scope} onChange={changeScope} wrap className="ml-auto hidden max-w-full border border-border lg:flex" itemClassName="min-h-9 px-3" options={scopeOptions} />
     </>}>
-      <div className={cn("mb-3 grid grid-cols-2 items-end gap-3", state.scope === "core" ? "lg:grid-cols-[minmax(0,1fr)_9rem_9rem]" : "lg:grid-cols-[minmax(0,1fr)_10rem]")}>
+      <div id="stock-filters" className={cn("mb-3 grid grid-cols-2 items-end gap-3", state.scope === "core" ? "lg:grid-cols-[minmax(0,1fr)_9rem_9rem]" : "lg:grid-cols-[minmax(0,1fr)_10rem]", !filtersOpen && "max-lg:hidden")}>
+        <div className="min-w-0 lg:hidden">
+          <Select value={state.scope} onValueChange={value => changeScope(value as StockScope)}>
+            <SelectTrigger shape="pill" className="h-11" aria-label={c("Stock list", "股票列表")}><SelectValue /></SelectTrigger>
+            <SelectContent className="!rounded-2xl">{scopeOptions.map(option => <SelectItem key={option.value} value={option.value} className="min-h-11">{option.label}</SelectItem>)}</SelectContent>
+          </Select>
+        </div>
         <div className="hidden min-w-0 lg:block">
           <label htmlFor="stock-search" className="sr-only">{c("Search this list", "搜索当前名单")}</label>
           <div className="relative">
@@ -177,7 +185,7 @@ export default function StockObservationList({ range, catalogue, held, onRetry, 
             <SelectContent className="!rounded-2xl">{STOCK_SECTORS.map(sector => <SelectItem key={sector.key} value={sector.key} className="min-h-11">{c(sector.en, sector.zh)}</SelectItem>)}</SelectContent>
           </Select>
         </div>}
-        <div className={cn("min-w-0", state.scope !== "core" && "col-start-2 lg:col-start-auto")}>
+        <div className="min-w-0">
           <label htmlFor="stock-sort" className="sr-only">{c("Sort", "排序")}</label>
           <Select value={state.sort} onValueChange={value => update({ ...state, sort: value as StockSort, rows: STOCK_PAGE_SIZE })}>
             <SelectTrigger shape="pill" id="stock-sort" className="h-11"><SelectValue /></SelectTrigger>
@@ -199,7 +207,7 @@ export default function StockObservationList({ range, catalogue, held, onRetry, 
         <p>{board.stale ? c("Refresh unavailable. Showing a saved ranking snapshot (up to 15 minutes old).", "更新暂不可用，显示最多15分钟内的榜单快照。") : c("Some source lists are unavailable; this ranking has partial coverage.", "部分来源榜单暂不可用，当前仅显示已取得的候选。")}</p>
         <Button variant="ghost" size="sm" disabled={discovery.refreshing} onClick={discovery.refresh}>{c("Retry ranking", "重试榜单")}</Button>
       </div>}
-      {hasFilters && <div role="group" aria-label={c("Active stock filters", "当前股票筛选条件")} className="mb-4 flex flex-wrap items-center gap-2">
+      {hasFilters && <div role="group" aria-label={c("Active stock filters", "当前股票筛选条件")} className={cn("mb-4 flex flex-wrap items-center gap-2", !filtersOpen && "max-lg:hidden")}>
         {state.search && <Button variant="secondary" size="sm" className="min-h-11 max-w-full gap-2" onClick={clearSearch} aria-label={c(`Remove search: ${state.search}`, `移除搜索：${state.search}`)}><span className="truncate">{state.search}</span><X className="h-3.5 w-3.5 shrink-0" aria-hidden="true" /></Button>}
         {state.sector !== "all" && <Button variant="secondary" size="sm" className="min-h-11 gap-2" onClick={() => update({ ...state, sector: "all", rows: STOCK_PAGE_SIZE })} aria-label={c("Remove sector filter", "移除行业筛选")}>{c(STOCK_SECTORS.find(item => item.key === state.sector)!.en, STOCK_SECTORS.find(item => item.key === state.sector)!.zh)}<X className="h-3.5 w-3.5" aria-hidden="true" /></Button>}
         {state.sort !== defaultSort && <Button variant="secondary" size="sm" className="min-h-11 gap-2" onClick={() => update({ ...state, sort: defaultSort, rows: STOCK_PAGE_SIZE })} aria-label={c("Reset stock sort", "恢复默认排序")}>{c(...sortLabels[state.sort])}<X className="h-3.5 w-3.5" aria-hidden="true" /></Button>}
@@ -221,7 +229,7 @@ export default function StockObservationList({ range, catalogue, held, onRetry, 
             <span className="hidden text-center min-[360px]:block">{c(`Trend · ${trend.en}`, `走势 · ${trend.zh}`)}</span>
             <span className="text-right">{c("Price / Today", "价格 / 今日")}</span>
           </div>
-          <span className="w-11 shrink-0 text-center">{c("Watch", "自选")}</span>
+          <span className="w-11 shrink-0 text-center max-md:hidden">{c("Watch", "自选")}</span>
         </ListColumnHeader>
         {blocking ? <ContentLoading label={c("Loading stocks", "正在加载股票")} /> : <ListRows aria-label={c("Stock watch", "股票观察")}>
           {visible.map(symbol => {
@@ -231,14 +239,14 @@ export default function StockObservationList({ range, catalogue, held, onRetry, 
             return <ListRow key={symbol}>
               <Link href={`${href}?${detailParams}`} onClick={rememberScroll} className={cn(ROW_GRID, listRowTargetClass, "gap-y-1")}>
                 <span className="flex min-w-0 items-center gap-2 sm:gap-3">
-                  <span aria-hidden="true" className="shrink-0"><CompanyLogo symbol={symbol} size="sm" className="max-[359px]:max-h-6 max-[359px]:max-w-6" /></span>
+                  <span aria-hidden="true" className="shrink-0"><CompanyLogo symbol={symbol} size="sm" /></span>
                   <span className="min-w-0"><span className="block truncate text-base font-semibold">{symbol}{state.scope !== "holdings" && held.tickers.includes(symbol) && <HeldMark />}</span><span className="mt-1 block truncate text-xs text-muted-foreground">{quotes[symbol]?.name || discoveryBySymbol.get(symbol)?.name || stock?.company_name || coreNames.get(symbol) || symbol}</span></span>
                 </span>
                 <span className="hidden min-[360px]:block"><StockTrend symbol={symbol} period={trend.period} interval={trend.interval} rangeLabel={c(trend.en, trend.zh)} rangeKey={range} /></span>
                 <span className="min-w-0 text-right">{quoteLoading && !quotes[symbol] ? <PendingValue className="h-10" /> : <><span className="figure block text-base font-medium">{money(quotes[symbol]?.price)}</span><Change value={quotes[symbol]?.changePercent} className="mt-1 block text-xs font-semibold" /></>}</span>
                 <span className="col-span-full text-xs leading-5 text-muted-foreground">{c(...stockEntryReason(state.scope, symbol, stock, discoveryBySymbol.get(symbol), now))}</span>
               </Link>
-              <WatchlistButton ticker={symbol} />
+              <div className="shrink-0 max-md:hidden"><WatchlistButton ticker={symbol} /></div>
             </ListRow>;
           })}
         </ListRows>}

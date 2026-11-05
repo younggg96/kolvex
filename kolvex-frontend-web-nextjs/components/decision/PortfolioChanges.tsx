@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect } from "react";
-import CompanyLogo from "@/components/ui/company-logo";
+import CompanyLogo, { phoneListLogoClass } from "@/components/ui/company-logo";
 import { Skeleton } from "@/components/ui/skeleton";
 import OpinionStrength from "@/components/youtube/OpinionStrength";
 import { ListColumnHeader, ListRow, ListRows, listRowTargetClass } from "@/components/ui/list-card";
@@ -58,7 +58,7 @@ export default function PortfolioChanges({ tickers }: { tickers: string[] }) {
             <ListRow key={`${shift.current_date}-${shift.ticker}`}>
               <Link href={marketStockHref(shift.ticker)} className={`flex items-center justify-between gap-4 ${listRowTargetClass}`}>
                 <span className="flex min-w-0 items-center gap-3">
-                  <span aria-hidden><CompanyLogo symbol={shift.ticker} size="md" /></span>
+                  <span aria-hidden><CompanyLogo symbol={shift.ticker} size="md" className={phoneListLogoClass} /></span>
                   <span className="min-w-0">
                     <span className="block text-[0.9375rem] font-semibold">{shift.ticker}</span>
                     <span className="block text-[0.8125rem] text-muted-foreground">

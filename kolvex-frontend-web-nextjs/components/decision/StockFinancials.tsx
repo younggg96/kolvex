@@ -315,7 +315,7 @@ export default function StockFinancials({
             "Financial statements, scroll horizontally for more periods",
             "财务报表，可横向滚动查看更多报告期",
           )}
-          className="max-h-[72vh] overflow-auto rounded-3xl border border-border focus-visible:outline-none "
+          className="glass-card bg-card-glass max-h-[72vh] overflow-auto rounded-3xl border border-foreground/10 focus-visible:outline-none "
         >
           <table className="w-full border-separate border-spacing-0 text-sm">
             <caption className="sr-only">
@@ -631,7 +631,7 @@ export function FinancialMetricChart({
     </>
   );
   return (
-    <section className="min-w-0 rounded-3xl border border-border bg-card p-4 sm:p-6">
+    <section className="min-w-0 rounded-3xl border border-foreground/10 glass-card bg-card-glass p-4 sm:p-6">
       <div className="flex items-start justify-between gap-3">
         <h3 className="text-sm font-medium text-muted-foreground">
           {title}

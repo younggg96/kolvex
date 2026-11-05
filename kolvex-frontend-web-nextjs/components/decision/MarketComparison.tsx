@@ -94,7 +94,7 @@ function ComparisonRow({ instrument, attempt }: { instrument: MarketInstrument; 
 export default function MarketComparison({ groups, attempt }: { groups: readonly (typeof MARKET_GROUPS)[number][]; attempt: number }) {
   const c = useCopy();
   return (
-    <div role="region" aria-label={c("Performance comparison, scroll horizontally", "多区间表现对比，可横向滚动")} tabIndex={0} className="min-w-0 overflow-x-auto overscroll-x-contain rounded-3xl border border-border bg-card pb-2 focus-visible:outline-none ">
+    <div role="region" aria-label={c("Performance comparison, scroll horizontally", "多区间表现对比，可横向滚动")} tabIndex={0} className="min-w-0 overflow-x-auto overscroll-x-contain rounded-3xl border border-foreground/10 glass-card bg-card-glass pb-2 focus-visible:outline-none ">
       <table className="w-full min-w-[54rem] table-fixed sm:min-w-[60rem] border-separate border-spacing-0">
         <caption className="sr-only">{c("Daily closing values and simultaneous period changes", "最新日度收盘或观测值及各区间变动对比")}</caption>
         <colgroup><col className="w-[8.5rem] sm:w-[11.5rem]" /><col className="w-[7rem] sm:w-[8.25rem]" />{COMPARISON_PERIODS.map(period => <col key={period.key} />)}</colgroup>

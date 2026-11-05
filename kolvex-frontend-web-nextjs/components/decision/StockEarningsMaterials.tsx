@@ -66,7 +66,7 @@ function RevenueEstimates({ symbol }: { symbol: string }) {
             "Revenue estimates, horizontally scrollable",
             "营收预期表，可横向滚动",
           )}
-          className="overflow-auto rounded-3xl border border-border focus-visible:outline-none"
+          className="glass-card bg-card-glass overflow-auto rounded-3xl border border-foreground/10 focus-visible:outline-none"
         >
           <table className="w-full whitespace-nowrap text-sm">
             <thead className="bg-muted text-muted-foreground">
@@ -173,7 +173,7 @@ function EarningsFilings({ symbol }: { symbol: string }) {
           role="region"
           tabIndex={0}
           aria-label={c("SEC filings, horizontally scrollable", "SEC 申报表，可横向滚动")}
-          className="overflow-auto rounded-3xl border border-border focus-visible:outline-none"
+          className="glass-card bg-card-glass overflow-auto rounded-3xl border border-foreground/10 focus-visible:outline-none"
         >
           <table className="w-full whitespace-nowrap text-sm">
             <thead className="bg-muted text-muted-foreground">

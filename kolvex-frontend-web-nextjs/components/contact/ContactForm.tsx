@@ -58,7 +58,7 @@ export default function ContactForm() {
   };
 
   return (
-    <div className="bg-card p-6 rounded-3xl border border-border shadow-sm">
+    <div className="glass-card bg-card-glass p-6 rounded-3xl border border-foreground/10">
       <h2 className="text-xl font-semibold text-foreground mb-4">
         Send us a message
       </h2>
@@ -120,7 +120,7 @@ export default function ContactForm() {
         <Button
           type="submit"
           disabled={isSubmitting}
-          className="w-full bg-primary hover:bg-primary/90 text-white"
+          className="w-full"
         >
           {isSubmitting ? (
             <>

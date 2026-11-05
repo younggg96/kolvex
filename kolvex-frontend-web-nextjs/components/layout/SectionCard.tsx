@@ -70,7 +70,7 @@ export default function SectionCard({
 
   return (
     <div
-      className={`min-w-0 bg-card border-y border-border flex flex-col ${
+      className={`min-w-0 glass-card bg-card-glass border-y border-foreground/10 flex flex-col ${
         scrollable ? "overflow-hidden" : ""
       } ${className}`}
     >

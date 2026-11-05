@@ -12,13 +12,13 @@ export function MarketToolbarControls({ toolbar, children }: { toolbar: HTMLElem
   return toolbar ? createPortal(children, toolbar) : null;
 }
 
-/** Matches the height of the bordered segmented controls beside it. */
+/** Matches the height of the bordered segmented controls beside it; icon only on phones. */
 export function MarketRefreshButton({ refreshing, disabled, onClick }: { refreshing: boolean; disabled?: boolean; onClick: () => void }) {
   const c = useCopy();
   return (
-    <Button variant="outline" size="sm" className="h-[calc(2.75rem+2px)] shrink-0 rounded-full" disabled={disabled ?? refreshing} onClick={onClick}>
-      <RefreshCw className={cn("mr-2 h-3.5 w-3.5", refreshing && "animate-spin motion-reduce:animate-none")} aria-hidden />
-      {c("Refresh", "刷新")}
+    <Button variant="outline" size="sm" className="h-[calc(2.75rem+2px)] shrink-0 rounded-full max-md:!h-10 max-md:!w-10 max-md:!p-0" disabled={disabled ?? refreshing} onClick={onClick}>
+      <RefreshCw className={cn("h-3.5 w-3.5 md:mr-2", refreshing && "animate-spin motion-reduce:animate-none")} aria-hidden />
+      <span className="max-md:sr-only">{c("Refresh", "刷新")}</span>
     </Button>
   );
 }

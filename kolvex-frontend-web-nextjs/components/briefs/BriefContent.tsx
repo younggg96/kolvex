@@ -18,7 +18,7 @@ function SectionBody({ section }: { section: BriefSection }) {
   return <div className="space-y-6">
     {[...paragraphs, ...section.paragraphs].filter(Boolean).map((text, i) => <Markdown key={i}>{text}</Markdown>)}
     {["market_recap", "premarket", "intraday", "postmarket"].includes(section.section_id) && <>
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">{section.indices.map((index, i) => <dl key={i} className="rounded-3xl border border-border p-4">
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">{section.indices.map((index, i) => <dl key={i} className="glass-card bg-card-glass rounded-3xl border border-foreground/10 p-4">
         <dt className="font-medium">{index.name}</dt>
         {index.close !== null && <dd className="figure mt-2 text-2xl font-semibold">{index.close.toLocaleString("en-US", { maximumFractionDigits: 2 })}</dd>}
         {index.change_pct !== null && <dd className={`figure mt-1 text-sm ${index.change_pct > 0 ? "text-positive" : index.change_pct < 0 ? "text-negative" : "text-muted-foreground"}`}>{index.change_pct > 0 ? "+" : ""}{index.change_pct.toFixed(2)}%</dd>}
@@ -28,7 +28,7 @@ function SectionBody({ section }: { section: BriefSection }) {
       <div className="grid gap-6 sm:grid-cols-2">{section.movers_up.length > 0 && <div><h3 className="mb-3 font-semibold text-positive">{t("briefs.gainers")}</h3><DetailsList items={section.movers_up} /></div>}{section.movers_down.length > 0 && <div><h3 className="mb-3 font-semibold text-negative">{t("briefs.losers")}</h3><DetailsList items={section.movers_down} /></div>}</div>
       {section.commodities.length > 0 && <div className="flex flex-wrap gap-2">{section.commodities.map((item, i) => <p key={i} className="rounded-3xl bg-muted px-3 py-2 text-sm leading-6"><strong>{item.name}</strong> {item.detail}</p>)}</div>}
     </>}
-    {section.items.map((item, i) => <article key={i} className="space-y-5 rounded-3xl border border-border p-4 sm:p-6">
+    {section.items.map((item, i) => <article key={i} className="glass-card bg-card-glass space-y-5 rounded-3xl border border-foreground/10 p-4 sm:p-6">
       {item.image && <ImageContent key={item.image.url} image={item.image} />}
       <div className="space-y-3">{item.kicker && <span className="inline-block rounded-full bg-muted px-3 py-1 text-xs font-medium">{item.kicker}</span>}{item.time_pt && <p className="text-sm text-muted-foreground">{item.time_pt} PT</p>}<h3 className="text-xl font-semibold leading-8">{item.title}</h3>{item.summary && <Markdown>{item.summary}</Markdown>}{item.detail && <Markdown>{item.detail}</Markdown>}</div>
       {item.checklist.length > 0 && <ul className="space-y-2">{item.checklist.map((line, j) => <li key={j} className="flex gap-2 text-sm leading-6"><span aria-hidden="true">□</span>{line}</li>)}</ul>}

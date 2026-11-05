@@ -25,25 +25,31 @@ function EventPlaceholder({ index, day }: { index: number; day: number }) {
   );
 }
 
-/** Mirrors the week switcher and day columns so the layout holds when events arrive. */
+/** Mirrors the week switcher and day columns (one day at a time on phones) so the layout holds when events arrive. */
 export function MarketEventCalendarSkeleton({ label, calendar }: { label: string; calendar: boolean }) {
   return (
     <div role="status" aria-label={label} className="min-w-0">
       <div aria-hidden="true">
-        <div className="flex items-center justify-between gap-4 px-1 pb-3">
-          <Skeleton className="h-11 w-48 rounded-full" />
+        <div className="flex items-center justify-between gap-4 px-1 pb-3 max-md:px-0">
+          <Skeleton className="h-11 w-48 min-w-0 rounded-full max-md:h-10" />
+          <Skeleton className="h-10 w-10 shrink-0 rounded-full md:hidden" />
           {calendar && (
-            <div className="flex gap-2">
+            <div className="flex gap-2 max-md:hidden">
               <Skeleton className="h-11 w-11 rounded-full" />
               <Skeleton className="h-11 w-11 rounded-full" />
             </div>
           )}
         </div>
         <Skeleton className="mx-1 mb-3 h-3 w-48" />
-        <div className={calendar ? "overflow-hidden pb-2" : undefined}>
-          <div className={calendar ? "grid min-w-[168rem] grid-cols-7 gap-4" : "space-y-4"}>
+        {calendar && (
+          <div className="mb-3 grid grid-cols-7 gap-1 md:hidden">
+            {DAYS.map((day) => <Skeleton key={day} className="h-14 rounded-2xl" />)}
+          </div>
+        )}
+        <div className={calendar ? "overflow-hidden pb-2 max-md:pb-0" : undefined}>
+          <div className={calendar ? "grid min-w-[168rem] grid-cols-7 gap-4 max-md:block max-md:min-w-0" : "space-y-4"}>
             {(calendar ? DAYS : DAYS.slice(0, 3)).map((day) => (
-              <div key={day} className={cn("min-w-0 rounded-3xl border border-border bg-card", calendar ? "p-4" : "p-5")}>
+              <div key={day} className={cn("min-w-0 rounded-3xl border border-foreground/10 glass-card bg-card-glass", calendar ? "p-4" : "p-5", calendar && day > 0 && "max-md:hidden")}>
                 <div className="mb-3 flex items-center justify-between gap-2">
                   <Skeleton className="h-4 w-24" />
                   <Skeleton className="h-5 w-7 rounded-full" />

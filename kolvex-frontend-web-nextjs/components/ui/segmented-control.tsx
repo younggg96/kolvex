@@ -61,7 +61,7 @@ export interface SegmentedControlProps<T extends string>
    * like navigation.
    */
   semantics?: "single" | "tabs" | "radio" | "nav";
-  /** Omit the outer muted pill surface and paint only the thumb. */
+  /** Omit the outer glass track and paint only the thumb. */
   bare?: boolean;
   /** Let the pill wrap instead of forcing one row (wide label sets). */
   wrap?: boolean;
@@ -151,12 +151,35 @@ export function SegmentedControl<T extends string>({
     return () => cancelAnimationFrame(frame);
   }, []);
 
+  // A control wider than its screen scrolls so the chosen option is never clipped.
+  const center = React.useCallback(
+    (behavior: ScrollBehavior) => {
+      const control = controlRef.current;
+      const target = value == null ? null : itemRefs.current.get(value);
+      if (!control || !target || control.scrollWidth <= control.clientWidth) return;
+      control.scrollTo({
+        left: target.offsetLeft - (control.clientWidth - target.offsetWidth) / 2,
+        behavior,
+      });
+    },
+    [value],
+  );
+
   // Re-measure on reflow (fonts, responsive labels) and while the pill
   // scrolls, so the thumb never drifts off its segment.
   React.useLayoutEffect(() => {
     const control = controlRef.current;
     if (!control) return;
-    const onLayout = () => measure();
+    let width = control.clientWidth;
+    const onLayout = () => {
+      measure();
+      // A control can mount squeezed by a sibling that is about to leave, so
+      // a centring done at that width has to be redone once it has its room.
+      if (control.clientWidth !== width) {
+        width = control.clientWidth;
+        center("auto");
+      }
+    };
     const observer = new ResizeObserver(onLayout);
     observer.observe(control);
     for (const node of itemRefs.current.values()) observer.observe(node);
@@ -167,7 +190,14 @@ export function SegmentedControl<T extends string>({
       control.removeEventListener("scroll", onLayout);
       window.removeEventListener("resize", onLayout);
     };
-  }, [measure, options.length]);
+  }, [center, measure, options.length]);
+
+  const centeredValue = React.useRef(value);
+  React.useEffect(() => {
+    const changed = centeredValue.current !== value;
+    centeredValue.current = value;
+    center(changed && !window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "smooth" : "auto");
+  }, [center, value]);
 
   React.useEffect(
     () => () => {
@@ -215,7 +245,7 @@ export function SegmentedControl<T extends string>({
         "relative isolate inline-flex max-w-full shrink-0 items-center p-1",
         wrap ? "flex-wrap" : "flex-nowrap",
         config.gap,
-        bare ? "" : "rounded-full bg-muted",
+        bare ? "" : "glass-track rounded-full",
         className,
       )}
       onKeyDown={(event) => {
@@ -239,7 +269,7 @@ export function SegmentedControl<T extends string>({
       <span
         aria-hidden="true"
         className={cn(
-          "pointer-events-none absolute left-0 top-0 z-0 rounded-full bg-foreground",
+          "pointer-events-none absolute left-0 top-0 z-0 rounded-full glass-thumb",
           "transition-[transform,width,height] duration-300 ease-out motion-reduce:!transition-none",
           hasThumb ? "opacity-100" : "opacity-0",
           pressed && config.thumbPress,
@@ -289,10 +319,10 @@ export function SegmentedControl<T extends string>({
               config.item,
               active
                 ? cn(
-                    "text-background",
+                    "text-foreground",
                     hasThumb
                       ? "bg-transparent focus-visible:bg-transparent"
-                      : "bg-foreground focus-visible:bg-foreground",
+                      : "bg-foreground/[0.14] focus-visible:bg-foreground/[0.14]",
                   )
                 : "text-muted-foreground hover:bg-foreground/[0.06] hover:text-foreground",
               itemClassName,

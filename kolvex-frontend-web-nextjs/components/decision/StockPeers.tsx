@@ -233,7 +233,7 @@ export default function StockPeers({ symbol }: { symbol: string }) {
       </div>
 
       {!peers.length && (
-        <p className="rounded-3xl border border-border px-6 py-8 text-center text-sm text-muted-foreground">
+        <p className="glass-card bg-card-glass rounded-3xl border border-foreground/10 px-6 py-8 text-center text-sm text-muted-foreground">
           {c(
             "Add a company to compare valuation, growth, margins and returns.",
             "添加一家公司，比较估值、增长、利润率和收益走势。",
@@ -252,7 +252,7 @@ export default function StockPeers({ symbol }: { symbol: string }) {
         </div>
       )}
 
-      <section aria-labelledby="peer-returns-title" className="rounded-3xl border border-border bg-card p-4 sm:p-6">
+      <section aria-labelledby="peer-returns-title" className="rounded-3xl border border-foreground/10 glass-card bg-card-glass p-4 sm:p-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h3 id="peer-returns-title" className="text-sm font-medium text-muted-foreground">
             {c("Price return", "价格收益")}
@@ -364,7 +364,7 @@ export default function StockPeers({ symbol }: { symbol: string }) {
         role="region"
         tabIndex={0}
         aria-label={c("Peer metrics, horizontally scrollable", "同行指标表，可横向滚动")}
-        className="overflow-auto rounded-3xl border border-border focus-visible:outline-none"
+        className="glass-card bg-card-glass overflow-auto rounded-3xl border border-foreground/10 focus-visible:outline-none"
       >
         <table className="w-full border-separate border-spacing-0 whitespace-nowrap text-sm">
           <caption className="sr-only">{c("Peer comparison", "同行比较")}</caption>

@@ -4,7 +4,7 @@ import { marketStockUrl, normalizeStockSymbol } from "@/lib/stockLinks";
 
 /** Shared pill shell — keeps the historic look and min-h-11 touch target. */
 const PILL_CLASS =
-  "inline-flex min-h-11 max-w-full items-center gap-2 rounded-2xl border border-border bg-card p-1 pr-3 text-sm font-semibold transition-colors duration-150 focus-visible:outline-none ";
+  "inline-flex min-h-11 max-w-full items-center gap-2 rounded-2xl border border-foreground/10 glass-card bg-card-glass p-1 pr-3 text-sm font-semibold transition-colors duration-150 focus-visible:outline-none ";
 
 /**
  * A consistent stock identity for event, article and opinion tags.

@@ -351,7 +351,7 @@ export default function StockFundamentalOverview({
         empty={false}
         retry={retry}
       />
-      <section className="rounded-3xl border border-border bg-card p-4 sm:p-6">
+      <section className="rounded-3xl border border-foreground/10 glass-card bg-card-glass p-4 sm:p-6">
         <h2 className="text-sm font-medium text-muted-foreground">
           {c("Key indicators", "关键指标")}
         </h2>
@@ -439,7 +439,7 @@ export default function StockFundamentalOverview({
         {groups.map((group) => (
           <section
             key={group.title}
-            className="min-w-0 rounded-3xl border border-border bg-card p-4 sm:p-6"
+            className="min-w-0 rounded-3xl border border-foreground/10 glass-card bg-card-glass p-4 sm:p-6"
           >
             <h2 className="text-sm font-medium text-muted-foreground">
               {group.title}
@@ -524,7 +524,7 @@ export function StockCompanyProfile({
       />
       {company && (
         <>
-          <dl className="grid grid-cols-2 gap-6 rounded-3xl border border-border bg-card p-6 lg:grid-cols-4">
+          <dl className="grid grid-cols-2 gap-6 rounded-3xl border border-foreground/10 glass-card bg-card-glass p-6 lg:grid-cols-4">
             {[
               [c("Sector", "行业板块"), company.sector],
               [c("Industry", "细分行业"), company.industry],

@@ -752,7 +752,7 @@ export default function PriceGraph({
       <div
         role="radiogroup"
         aria-label={rangeAriaLabel || t("youtubeOpinions.graph.rangeLabel")}
-        className={cn("flex min-w-0 basis-full items-center gap-0.5 overflow-x-auto scrollbar-hide sm:basis-auto", !advanced && "justify-between sm:justify-start")}
+        className={cn("flex min-w-0 basis-full items-center gap-0.5 overflow-x-auto rounded-full p-0.5 glass-track scrollbar-hide sm:basis-auto", !advanced && "justify-between sm:justify-start")}
       >
         {rangeButtons.map((option) => {
           const selected = option.value === range;
@@ -772,7 +772,7 @@ export default function PriceGraph({
                 "inline-flex h-11 shrink-0 select-none items-center justify-center rounded-full px-3 text-[0.8125rem] font-semibold transition-colors duration-150 sm:h-8",
                 "focus-visible:outline-none",
                 "disabled:pointer-events-none disabled:opacity-40",
-                selected ? "bg-foreground text-background focus-visible:bg-foreground" : "text-muted-foreground hover:bg-muted/70 hover:text-foreground focus-visible:bg-muted/60",
+                selected ? "glass-thumb text-foreground" :"text-muted-foreground hover:bg-muted/70 hover:text-foreground focus-visible:bg-muted/60",
               )}
             >
               {option.label}
@@ -794,7 +794,7 @@ export default function PriceGraph({
             className={cn(
               "inline-flex h-11 max-w-[min(15rem,52vw)] shrink-0 items-center justify-center rounded-full px-3 text-[0.8125rem] font-semibold transition-colors duration-150 sm:h-8",
               "focus-visible:outline-none",
-              range === "CUSTOM" ? "bg-foreground text-background focus-visible:bg-foreground" : "text-muted-foreground hover:bg-muted/70 hover:text-foreground focus-visible:bg-muted/60",
+              range === "CUSTOM" ? "glass-thumb text-foreground" :"text-muted-foreground hover:bg-muted/70 hover:text-foreground focus-visible:bg-muted/60",
             )}
             title={customOption.label}
           >
@@ -818,7 +818,7 @@ export default function PriceGraph({
   const iconButton = (active: boolean) =>
     cn(
       "inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full transition-colors duration-150 focus-visible:outline-none sm:h-8 sm:w-8",
-      active ? "bg-foreground text-background focus-visible:bg-foreground" : "text-muted-foreground hover:bg-muted/70 hover:text-foreground focus-visible:bg-muted/60",
+      active ? "glass-thumb text-foreground" : "text-muted-foreground hover:bg-muted/70 hover:text-foreground focus-visible:bg-muted/60",
     );
 
   const plotTone = toneColor[tone];
@@ -827,7 +827,7 @@ export default function PriceGraph({
     <div className={cn("flex flex-wrap items-center justify-center gap-3 text-sm text-muted-foreground", heightClass)} role="alert">
       <span>{t("youtubeOpinions.priceUnavailable")}</span>
       {onRetry && (
-        <button type="button" onClick={onRetry} className="inline-flex h-11 items-center rounded-full border border-border px-4 text-sm font-semibold text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 sm:h-8">
+        <button type="button" onClick={onRetry} className="glass-button glass-button-neutral inline-flex h-11 items-center rounded-full border border-foreground/[0.12] bg-foreground/[0.05] px-4 text-sm font-semibold text-foreground hover:bg-foreground/[0.1] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 sm:h-8">
           {t("common.retry")}
         </button>
       )}

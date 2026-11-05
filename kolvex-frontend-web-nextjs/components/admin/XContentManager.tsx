@@ -166,7 +166,7 @@ export default function XContentManager({ onSaved }: { onSaved: () => void }) {
   }
 
   return (
-    <section aria-label={c("Manage creators and import posts", "管理博主与导入推文")} className="rounded-3xl border border-border bg-card p-4">
+    <section aria-label={c("Manage creators and import posts", "管理博主与导入推文")} className="rounded-3xl border border-foreground/10 glass-card bg-card-glass p-4">
       <div className="space-y-6" aria-busy={busy}>
         <form noValidate onSubmit={saveCreator} className="space-y-3">
           <h2 className="text-base font-semibold">

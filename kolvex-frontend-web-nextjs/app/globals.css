@@ -71,6 +71,13 @@ html {
   /* Fill direction colours (charts, dots, large numerals) */
   --positive-fill: 0 200 5;
   --negative-fill: 255 80 0;
+  /* Comparison lines mark identity, so they avoid the direction hues. The
+     order passes validate_palette.js against the card surface: keep it. */
+  --compare-1: 42 120 214;
+  --compare-2: 237 161 0;
+  --compare-3: 232 123 164;
+  --compare-4: 98 80 214;
+  --compare-5: 27 175 122;
   /* Reference chart palette: bright green up candles and orange down candles. */
   --chart-up: 0 200 7;
   --chart-down: 255 81 0;
@@ -87,6 +94,11 @@ html {
 }
 
 .dark {
+  --compare-1: 57 135 229;
+  --compare-2: 201 133 0;
+  --compare-3: 213 81 129;
+  --compare-4: 144 133 233;
+  --compare-5: 25 158 112;
   --background: 0 0 0;
   --foreground: 255 255 255;
   --card: 14 15 16;
@@ -897,6 +909,10 @@ a {
   --sidebar-background: var(--card);
 }
 
+.dark .app-workbench [data-sidebar="sidebar"] {
+  background: rgb(var(--card) / 0.72);
+}
+
 .app-workbench [data-sidebar="header"] {
   padding: 16px 12px 8px;
 }
@@ -1010,6 +1026,224 @@ a {
   }
 }
 
+/* iOS-style glass for tabs and segmented controls, in the dock's material.
+   `.glass-track` is the translucent container and `.glass-thumb` the lighter
+   selected pill; selected labels stay in foreground on it. `.glass-track-strong`
+   is a denser material for tab bars that stick above scrolling content. The
+   declared background is the solid fallback for browsers without backdrop filters. */
+.glass-track {
+  border-color: rgb(var(--foreground) / 0.08);
+  background: rgb(var(--muted));
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.45),
+    inset 0 0 0 1px rgb(var(--foreground) / 0.06);
+}
+
+.dark .glass-track {
+  border-color: rgb(255 255 255 / 0.1);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.14),
+    inset 0 0 0 1px rgb(255 255 255 / 0.08);
+}
+
+.glass-thumb {
+  background: rgb(255 255 255 / 0.82);
+  box-shadow:
+    0 2px 6px -1px rgb(0 0 0 / 0.16),
+    0 0 0 0.5px rgb(0 0 0 / 0.06),
+    inset 0 1px 0 rgb(255 255 255 / 0.9);
+}
+
+.dark .glass-thumb {
+  background: rgb(255 255 255 / 0.17);
+  box-shadow:
+    0 2px 8px -2px rgb(0 0 0 / 0.5),
+    inset 0 0 0 0.5px rgb(255 255 255 / 0.12),
+    inset 0 1px 0 rgb(255 255 255 / 0.24);
+}
+
+@supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .glass-track {
+    background: rgb(var(--foreground) / 0.06);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    backdrop-filter: blur(24px) saturate(180%);
+  }
+
+  .dark .glass-track {
+    background: rgb(255 255 255 / 0.09);
+  }
+
+  .glass-track-strong {
+    background: rgb(var(--background) / 0.72);
+  }
+
+  .dark .glass-track-strong {
+    background: rgb(38 38 40 / 0.72);
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .glass-track,
+  .dark .glass-track,
+  .glass-track-strong,
+  .dark .glass-track-strong {
+    background: rgb(var(--muted));
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+
+  .glass-thumb,
+  .dark .glass-thumb {
+    background: rgb(var(--secondary));
+  }
+}
+
+@media (prefers-contrast: more) {
+  .glass-track,
+  .dark .glass-track,
+  .glass-track-strong,
+  .dark .glass-track-strong {
+    border-color: rgb(var(--foreground) / 0.55);
+    background: rgb(var(--muted));
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+
+  .glass-thumb,
+  .dark .glass-thumb {
+    background: rgb(var(--background));
+    box-shadow: inset 0 0 0 1px rgb(var(--foreground) / 0.55);
+  }
+}
+
+/* Glass buttons. `.glass-button` supplies only the blur and specular edge: fills
+   stay in Tailwind utilities so hover, press and caller overrides keep working.
+   Ghost buttons stay bare until hovered. The role modifiers exist to restore a
+   solid fill where a preference turns the translucency off. */
+.glass-button {
+  box-shadow:
+    0 1px 3px rgb(0 0 0 / 0.08),
+    inset 0 1px 0 rgb(255 255 255 / 0.4);
+}
+
+.dark .glass-button {
+  box-shadow:
+    0 2px 8px -3px rgb(0 0 0 / 0.5),
+    inset 0 0 0 0.5px rgb(255 255 255 / 0.08),
+    inset 0 1px 0 rgb(255 255 255 / 0.18);
+}
+
+@media (hover: hover) {
+  .glass-button-ghost:hover {
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.4);
+  }
+
+  .dark .glass-button-ghost:hover {
+    box-shadow:
+      inset 0 0 0 0.5px rgb(255 255 255 / 0.08),
+      inset 0 1px 0 rgb(255 255 255 / 0.16);
+  }
+}
+
+@supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .glass-button {
+    -webkit-backdrop-filter: blur(16px) saturate(180%);
+    backdrop-filter: blur(16px) saturate(180%);
+  }
+
+  @media (hover: hover) {
+    .glass-button-ghost:hover {
+      -webkit-backdrop-filter: blur(16px) saturate(180%);
+      backdrop-filter: blur(16px) saturate(180%);
+    }
+  }
+}
+
+@media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
+  .glass-button,
+  .glass-button-ghost:hover {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+
+  .glass-button-primary:not(:disabled) {
+    background: rgb(var(--primary));
+  }
+
+  .glass-button-destructive:not(:disabled) {
+    background: rgb(var(--destructive));
+  }
+
+  .glass-button-neutral:not(:disabled) {
+    background: rgb(var(--secondary));
+  }
+}
+
+@media (prefers-contrast: more) {
+  .glass-button-neutral:not(:disabled) {
+    border-color: rgb(var(--foreground) / 0.55);
+  }
+}
+
+/* Glass cards. The fill is a token (`bg-card-glass`) so hover states and caller
+   overrides keep working; on the page background it resolves to almost exactly
+   `--card`, so opaque `bg-card` sticky table cells stay seamless inside a card.
+   `.glass-card` itself never blurs: a backdrop filter would trap `position: fixed`
+   descendants and put every card in its own stacking context, clipping popups
+   against the next card, with nothing to blur on a flat page. Use `.glass-card-blur`
+   only for a card over a visible backdrop, with `bg-card-glass-strong` when text
+   sits over live content. */
+:root {
+  --card-glass: rgb(255 255 255 / 0.55);
+  --card-glass-strong: rgb(250 250 248 / 0.78);
+}
+
+.dark {
+  --card-glass: rgba(24, 24, 24, 0.65);
+  --card-glass-strong: rgb(30 30 32 / 0.78);
+}
+
+.glass-card {
+  box-shadow:
+    0 1px 2px rgb(0 0 0 / 0.04),
+    0 8px 24px -12px rgb(0 0 0 / 0.1),
+    inset 0 1px 0 rgb(255 255 255 / 0.7);
+}
+
+.dark .glass-card {
+  box-shadow:
+    0 8px 24px -12px rgb(0 0 0 / 0.6),
+    inset 0 1px 0 rgb(255 255 255 / 0.1);
+}
+
+@supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .glass-card-blur {
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    backdrop-filter: blur(24px) saturate(180%);
+  }
+}
+
+@media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
+  :root,
+  .dark {
+    --card-glass: rgb(var(--card));
+    --card-glass-strong: rgb(var(--card));
+  }
+
+  .glass-card-blur {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+
+@media (prefers-contrast: more) {
+  .glass-card,
+  .dark .glass-card {
+    border-color: rgb(var(--foreground) / 0.55);
+    box-shadow: none;
+  }
+}
+
 @media (max-width: 1023px) {
   /* Extend only page-level scroll viewports beneath the glass. The clearance
      lives inside their scrollable area so the final row remains reachable.
@@ -1023,6 +1257,18 @@ a {
 
   .mobile-nav-inset .dashboard-content > :is(.overflow-y-auto, .overflow-auto),
   .mobile-nav-inset .dashboard-content > section > .overflow-y-auto {
+    padding-bottom: calc(5.5rem + env(safe-area-inset-bottom, 0px));
+    scroll-padding-bottom: calc(5.5rem + env(safe-area-inset-bottom, 0px));
+  }
+}
+
+/* Full-screen phone lists scroll beneath the dock from an inner region. */
+@media (max-width: 767px) {
+  .mobile-nav-inset:has(.dashboard-content [data-nav-underlay]) {
+    padding-bottom: 0;
+  }
+
+  .dashboard-content [data-nav-underlay] {
     padding-bottom: calc(5.5rem + env(safe-area-inset-bottom, 0px));
     scroll-padding-bottom: calc(5.5rem + env(safe-area-inset-bottom, 0px));
   }

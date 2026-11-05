@@ -29,6 +29,8 @@ const config: Config = {
         muted: "rgb(var(--muted) / <alpha-value>)",
         "muted-foreground": "rgb(var(--muted-foreground) / <alpha-value>)",
         card: "rgb(var(--card) / <alpha-value>)",
+        "card-glass": "var(--card-glass)",
+        "card-glass-strong": "var(--card-glass-strong)",
         "card-foreground": "rgb(var(--card-foreground) / <alpha-value>)",
         border: "rgb(var(--border) / <alpha-value>)",
         positive: "rgb(var(--positive) / <alpha-value>)",

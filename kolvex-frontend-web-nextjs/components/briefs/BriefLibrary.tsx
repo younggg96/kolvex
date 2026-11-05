@@ -46,11 +46,11 @@ export default function BriefLibrary({ searchParams }: { searchParams?: BriefSea
           </nav>
         </div>
         <Tabs value={type} onValueChange={value => router.push(briefLibraryHref(isBriefType(value) ? value : "morning", 1, date))}>
-          <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-            {weekend ? <div className="min-w-0 py-2"><h2 className="text-lg font-semibold">{t("briefs.weekendEdition")}</h2><p className="mt-1 text-xs text-muted-foreground">{t("briefs.weekendSchedule")}</p></div> : <TabsList aria-label={t("briefs.filterLabel")} className="min-w-0 shrink-0">
+          <div className="mb-6 flex flex-wrap items-center justify-between gap-3 max-md:flex-nowrap max-md:gap-2">
+            {weekend ? <div className="min-w-0 py-2"><h2 className="text-lg font-semibold">{t("briefs.weekendEdition")}</h2><p className="mt-1 text-xs text-muted-foreground">{t("briefs.weekendSchedule")}</p></div> : <TabsList aria-label={t("briefs.filterLabel")} className="min-w-0 md:shrink-0">
               {BRIEF_TYPES.map(edition => <TabsTrigger key={edition} value={edition}>{t(`briefs.${edition}`)}</TabsTrigger>)}
             </TabsList>}
-            <Button variant="ghost" size="sm" className="ml-auto min-h-11 shrink-0" disabled={loading} onClick={retry}><RefreshCw className="mr-1 h-3.5 w-3.5" aria-hidden="true" />{t("common.refresh")}</Button>
+            <Button variant="ghost" size="sm" className="ml-auto min-h-11 shrink-0 max-md:!w-11 max-md:!p-0" disabled={loading} onClick={retry}><RefreshCw className="h-4 w-4 md:mr-1 md:h-3.5 md:w-3.5" aria-hidden="true" /><span className="max-md:sr-only">{t("common.refresh")}</span></Button>
           </div>
           <TabsContent value={type} {...(weekend ? { role: "region", "aria-labelledby": undefined, "aria-label": t("briefs.weekendEdition") } : {})}>
             {error && data && <p role="alert" className="mb-4 text-sm text-muted-foreground">{t("common.error")} <Button variant="outline" size="sm" onClick={retry}>{t("common.retry")}</Button></p>}

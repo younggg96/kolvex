@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { ArrowUpRight, ChevronDown } from "lucide-react";
-import CompanyLogo from "@/components/ui/company-logo";
+import CompanyLogo, { phoneListLogoClass } from "@/components/ui/company-logo";
 import { cn } from "@/lib/utils";
 import { DecisionText } from "./badges";
 import { researchGridClass, researchSummaryClass } from "./researchList";
@@ -28,7 +28,7 @@ export function ResearchStockGroup({ ticker, tasks, page, locale, t }: Props) {
       <details className="group">
         <summary className={cn(researchSummaryClass, researchGridClass)}>
           <div className="flex min-w-0 items-center gap-3">
-            <CompanyLogo symbol={ticker} size="md" />
+            <CompanyLogo symbol={ticker} size="md" className={phoneListLogoClass} />
             <div className="min-w-0">
               <h3 className="break-words text-[0.9375rem] font-semibold">{ticker}</h3>
               <p className="mt-0.5 text-xs text-muted-foreground">{t("tradingAnalysis.explore.taskCount", { count: String(tasks.length) })}<time dateTime={latest.trade_date} className="figure mt-0.5 block sm:hidden">{date(latest.trade_date)}</time></p>

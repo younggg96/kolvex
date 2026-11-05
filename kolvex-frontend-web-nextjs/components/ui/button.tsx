@@ -7,31 +7,35 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
-  "inline-flex max-w-full shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-full text-sm font-semibold transition-[background-color,color,border-color,transform] duration-150 active:scale-[0.98] motion-reduce:transform-none focus-visible:outline-none disabled:pointer-events-none [&>svg]:shrink-0",
+  "inline-flex max-w-full shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-full text-sm font-semibold transition-[background-color,color,border-color,box-shadow,transform] duration-150 active:scale-[0.98] motion-reduce:transform-none focus-visible:outline-none disabled:pointer-events-none [&>svg]:shrink-0",
   {
     variants: {
       variant: {
-        /* Filled brand action: hovers darker instead of lighter so the label
-           keeps its contrast against the green fill. This is the one control
-           that stays green outside direction semantics. */
+        /* iOS-style glass: `glass-button` adds the blur and specular edge, while
+           translucent utilities carry each variant's fill and hover states.
+           Filled brand action: tinted glass that hovers darker so the label keeps
+           its contrast. This is the one control that stays green outside
+           direction semantics. */
         default:
-          "bg-primary text-primary-foreground hover:bg-primary/90 active:bg-primary/80 disabled:opacity-40",
+          "glass-button glass-button-primary bg-primary/85 text-primary-foreground hover:bg-primary/75 active:bg-primary/70 disabled:opacity-40",
         secondary:
-          "bg-secondary text-secondary-foreground hover:bg-foreground/10 active:bg-foreground/15 disabled:opacity-40",
+          "glass-button glass-button-neutral bg-foreground/[0.1] text-secondary-foreground hover:bg-foreground/[0.15] active:bg-foreground/[0.2] disabled:opacity-40",
         /* Neutral actions take a grey wash on hover and press so green keeps
            meaning direction rather than interaction. */
         outline:
-          "border border-border bg-transparent text-foreground hover:border-foreground/25 hover:bg-foreground/[0.06] hover:text-foreground active:border-foreground/35 active:bg-foreground/[0.1] disabled:opacity-40",
+          "glass-button glass-button-neutral border border-foreground/[0.12] bg-foreground/[0.05] text-foreground hover:border-foreground/25 hover:bg-foreground/[0.1] hover:text-foreground active:border-foreground/35 active:bg-foreground/[0.14] disabled:opacity-40",
         destructive:
-          "bg-destructive text-destructive-foreground hover:brightness-95 active:brightness-90 disabled:opacity-40",
+          "glass-button glass-button-destructive bg-destructive/85 text-destructive-foreground hover:bg-destructive/75 active:bg-destructive/70 disabled:opacity-40",
+        /* Stays bare at rest so toolbars of icons don't become rows of bubbles;
+           the glass appears on hover and press. */
         ghost:
-          "font-medium text-muted-foreground hover:bg-foreground/[0.06] hover:text-foreground active:bg-foreground/[0.1] disabled:opacity-40",
+          "glass-button-ghost font-medium text-muted-foreground hover:bg-foreground/[0.08] hover:text-foreground active:bg-foreground/[0.12] disabled:opacity-40",
         /* Link and text actions rest on `foreground`, not `positive`: green
            text is reserved for direction, so a plain navigation link must not
            read as "price is up". */
         link: "text-foreground underline-offset-4 underline hover:text-muted-foreground active:opacity-80 disabled:opacity-40",
         text: "text-foreground hover:opacity-70 active:opacity-60 !p-0 !h-auto !w-auto disabled:opacity-40",
-        icon: "bg-primary text-primary-foreground hover:bg-primary/90 active:bg-primary/80 disabled:bg-muted disabled:text-muted-foreground disabled:cursor-not-allowed",
+        icon: "glass-button glass-button-primary bg-primary/85 text-primary-foreground hover:bg-primary/75 active:bg-primary/70 disabled:bg-muted disabled:text-muted-foreground disabled:cursor-not-allowed",
       },
       size: {
         default: "h-11 px-6 py-2",

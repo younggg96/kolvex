@@ -281,7 +281,7 @@ export default function YouTubeCreatorManager() {
       {message && <p role="status" className="text-sm text-positive">{message}</p>}
 
       {selected && (
-        <section className="space-y-4 rounded-3xl border border-border p-4">
+        <section className="glass-card bg-card-glass space-y-4 rounded-3xl border border-foreground/10 p-4">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="flex min-w-0 items-center gap-3">
               <CreatorAvatar name={selected.channel_title || selected.channel_id} avatarUrl={selected.channel_avatar_url} />

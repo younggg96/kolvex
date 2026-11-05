@@ -613,7 +613,7 @@ function SettingsContent() {
                               type="button"
                               onClick={() => setAvatarDialogOpen(true)}
                               aria-label={t("settings.account.uploadAvatar")}
-                              className="absolute -bottom-0.5 -right-0.5 flex h-7 w-7 cursor-pointer items-center justify-center rounded-full border-2 border-background bg-foreground text-background transition-transform duration-150 hover:scale-105"
+                              className="absolute -bottom-0.5 -right-0.5 flex h-7 w-7 cursor-pointer items-center justify-center glass-button glass-button-neutral rounded-full border-2 border-background bg-foreground/[0.18] text-foreground transition-transform duration-150 hover:scale-105"
                             >
                               <Camera className="h-3.5 w-3.5" />
                             </button>
@@ -916,7 +916,7 @@ function SettingsContent() {
                       ) : (
                         <>
                           {/* Info banner */}
-                          <div className="mt-4 rounded-3xl border border-border bg-card px-4 py-3">
+                          <div className="mt-4 rounded-3xl border border-foreground/10 glass-card bg-card-glass px-4 py-3">
                             <p className="text-[0.8125rem] leading-5 text-muted-foreground">
                               {t("settings.apiKeys.infoBanner")}
                             </p>

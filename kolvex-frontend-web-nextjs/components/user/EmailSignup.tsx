@@ -108,7 +108,7 @@ export default function EmailSignup() {
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full h-12 rounded-full bg-primary text-white dark:text-background text-sm font-bold tracking-wide hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full h-12 rounded-full glass-button glass-button-primary bg-primary/85 text-white dark:text-background text-sm font-bold tracking-wide hover:bg-primary/75 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isSubmitting ? "Submitting..." : "Get Early Access"}
           </button>
@@ -128,7 +128,7 @@ export default function EmailSignup() {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="flex min-w-[8.75rem] md:min-w-[9.375rem] items-center justify-center rounded-r-full px-5 md:px-6 bg-primary text-white dark:text-background text-sm md:text-base font-bold tracking-wide hover:bg-primary/90 transition-colors whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex min-w-[8.75rem] md:min-w-[9.375rem] items-center justify-center rounded-r-full px-5 md:px-6 glass-button glass-button-primary bg-primary/85 text-white dark:text-background text-sm md:text-base font-bold tracking-wide hover:bg-primary/75 transition-colors whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isSubmitting ? "Submitting..." : "Get Early Access"}
             </button>

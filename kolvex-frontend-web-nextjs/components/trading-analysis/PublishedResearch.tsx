@@ -91,7 +91,7 @@ export default function PublishedResearch({ page }: { page?: string }) {
             </h2>
 
             <ListCard>
-              <ListToolbar className="pb-3">
+              <ListToolbar className="pb-3 max-md:flex-nowrap max-md:gap-x-2">
                 <Tabs value={tab} onValueChange={(value) => { setTab(value as ResearchListMode); resetPage(); }} className="min-w-0 max-w-full">
                   <TabsList aria-label={t("tradingAnalysis.explore.tabsLabel")}>
                     {tabs.map(({ value, label }) => (
@@ -105,9 +105,9 @@ export default function PublishedResearch({ page }: { page?: string }) {
                 {tab === "planned" && total > 1 && (
                   <div className="ml-auto flex shrink-0 items-center justify-end">
                     <Select value={sort} onValueChange={(value) => { setSort(value as PlanSort); resetPage(); }}>
-                      <SelectTrigger aria-label={t("common.sort")} className="h-11 w-auto gap-1.5 rounded-full border-border bg-transparent px-3 text-[0.8125rem] font-semibold hover:border-foreground/25 hover:bg-foreground/[0.06]">
-                        <ArrowUpDown aria-hidden="true" className="h-3.5 w-3.5 text-muted-foreground" />
-                        <SelectValue />
+                      <SelectTrigger aria-label={t("common.sort")} className="h-11 w-auto gap-1.5 rounded-full border-border bg-transparent px-3 text-[0.8125rem] font-semibold hover:border-foreground/25 hover:bg-foreground/[0.06] max-md:!w-11 max-md:justify-center max-md:!px-0 max-md:[&>svg:last-child]:hidden">
+                        <ArrowUpDown aria-hidden="true" className="h-4 w-4 text-muted-foreground md:h-3.5 md:w-3.5" />
+                        <span className="max-md:hidden"><SelectValue /></span>
                       </SelectTrigger>
                       <SelectContent align="end">
                         <SelectItem value="newest">{t("tradingAnalysis.explore.sortNewest")}</SelectItem>

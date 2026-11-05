@@ -22,7 +22,7 @@ export function NotConnectedState({
         {t("portfolio.connect.description")}
       </p>
 
-      <ListCard className="mt-8 !p-0 sm:!p-0">
+      <ListCard className="mt-8 !p-0 sm:!p-0 max-md:-mx-[16px]">
       <ListRows className="divide-y divide-border">
         <li className="flex items-start gap-3 px-4 py-4">
           <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-foreground" />

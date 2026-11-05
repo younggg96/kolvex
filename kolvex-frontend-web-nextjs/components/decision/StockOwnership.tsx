@@ -146,7 +146,7 @@ function Insiders({ symbol }: { symbol: string }) {
               "Insider transactions, horizontally scrollable",
               "内部人交易表，可横向滚动",
             )}
-            className="max-h-[72vh] overflow-auto rounded-3xl border border-border focus-visible:outline-none"
+            className="glass-card bg-card-glass max-h-[72vh] overflow-auto rounded-3xl border border-foreground/10 focus-visible:outline-none"
           >
             <table className="w-full whitespace-nowrap text-sm">
               <thead className="sticky top-0 z-10 bg-muted text-muted-foreground">
@@ -352,7 +352,7 @@ function Institutions({ companyName }: { companyName?: string | null }) {
             role="region"
             tabIndex={0}
             aria-label={c("13F holdings, horizontally scrollable", "13F 持仓表，可横向滚动")}
-            className="max-h-[72vh] overflow-auto rounded-3xl border border-border focus-visible:outline-none"
+            className="glass-card bg-card-glass max-h-[72vh] overflow-auto rounded-3xl border border-foreground/10 focus-visible:outline-none"
           >
             <table className="w-full whitespace-nowrap text-sm">
               <thead className="sticky top-0 z-10 bg-muted text-muted-foreground">

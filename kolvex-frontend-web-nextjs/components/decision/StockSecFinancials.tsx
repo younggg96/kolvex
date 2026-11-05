@@ -222,7 +222,7 @@ function StockSecFinancials({ symbol }: { symbol: string }) {
               "SEC financial history, scroll horizontally for more periods",
               "SEC 财务历史，可横向滚动查看更多报告期",
             )}
-            className="max-h-[72vh] overflow-auto rounded-3xl border border-border focus-visible:outline-none"
+            className="glass-card bg-card-glass max-h-[72vh] overflow-auto rounded-3xl border border-foreground/10 focus-visible:outline-none"
           >
             <table className="w-full border-separate border-spacing-0 text-sm">
               <caption className="sr-only">

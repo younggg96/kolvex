@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ListCard, ListLoadMore, ListRow, ListRows } from "@/components/ui/list-card";
+import { SegmentedControl } from "@/components/ui/segmented-control";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import type { AiTechnicalAnalysis } from "@/lib/stockApi";
@@ -21,7 +22,7 @@ function authorLabel<T>(item: AnalysisVersion<T>, c: (en: string, zh: string) =>
 function HistoryScope({ history }: { history: { scope: "all" | "mine"; setScope: (scope: "all" | "mine") => void } }) {
   const c = useCopy();
   return <div role="group" aria-label={c("Filter results by author", "按生成者筛选结果")} className="my-3 flex flex-wrap gap-2">
-    {(["all", "mine"] as const).map(scope => <Button key={scope} size="sm" variant={scope === history.scope ? "secondary" : "ghost"} aria-pressed={scope === history.scope} onClick={() => history.setScope(scope)}>{scope === "all" ? c("Everyone", "全部用户") : c("Mine", "我的结果")}</Button>)}
+    <SegmentedControl size="sm" label={c("Filter results by author", "按生成者筛选结果")} value={history.scope} onChange={history.setScope} options={[{ value: "all", label: c("Everyone", "全部用户") }, { value: "mine", label: c("Mine", "我的结果") }]} />
   </div>;
 }
 

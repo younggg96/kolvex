@@ -914,7 +914,7 @@ export default function ChartView({
   const iconButton = (isActive: boolean) =>
     cn(
       "inline-flex h-11 w-11 sm:h-8 sm:w-8 shrink-0 items-center justify-center rounded-full transition-colors duration-150 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-40",
-      isActive ? "bg-foreground text-background" : "text-muted-foreground hover:bg-foreground/[0.06] hover:text-foreground active:bg-foreground/[0.1]",
+      isActive ? "glass-thumb text-foreground" : "text-muted-foreground hover:bg-foreground/[0.06] hover:text-foreground active:bg-foreground/[0.1]",
     );
   const stat = (label: string, value: string, tone?: string) => (
     <span className="whitespace-nowrap">
@@ -925,7 +925,7 @@ export default function ChartView({
   const pill = (isActive: boolean) =>
     cn(
       "inline-flex h-8 shrink-0 items-center rounded-full px-3 text-[0.8125rem] font-semibold transition-colors duration-150 focus-visible:outline-none ",
-      isActive ? "bg-foreground text-background" : "text-muted-foreground hover:bg-foreground/[0.06] hover:text-foreground active:bg-foreground/[0.1]",
+      isActive ? "glass-thumb text-foreground" : "text-muted-foreground hover:bg-foreground/[0.06] hover:text-foreground active:bg-foreground/[0.1]",
     );
 
   const path = (values: Series) => {

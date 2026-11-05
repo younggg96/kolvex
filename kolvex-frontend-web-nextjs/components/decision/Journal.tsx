@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
+import { SegmentedControl } from "@/components/ui/segmented-control";
 import { Skeleton } from "@/components/ui/skeleton";
 import CreatorAvatar from "@/components/youtube/CreatorAvatar";
 import OpinionStrength from "@/components/youtube/OpinionStrength";
@@ -36,7 +37,7 @@ export default function Journal() {
             <h1 className="text-[1.75rem] font-semibold tracking-tight sm:text-[2rem]">{c("What changed in creator views", "博主观点有什么变化")}</h1>
             <p className="mt-2 text-sm leading-6 text-muted-foreground">{c("Latest imported opinions and changes from the previous day with coverage. Open a stock to read the evidence and source videos.", "查看最新收录的观点，以及相较上一次有观点的日期发生的变化。点击股票，查看分析依据和原始视频。")}</p>
             <div className="mt-5 flex gap-2" role="group" aria-label={c("Update scope", "动态范围")}>
-              {([['all', c('All stocks', '全部股票')], ['holdings', c('My holdings', '我的持仓')]] as const).filter(([value]) => value !== "holdings" || isProductFeatureEnabled("portfolio")).map(([value, label]) => <Button key={value} size="sm" variant={scope === value ? 'default' : 'outline'} aria-pressed={scope === value} onClick={() => setScope(value)}>{label}</Button>)}
+              <SegmentedControl size="sm" label={c("Update scope", "动态范围")} value={scope} onChange={setScope} options={([['all', c('All stocks', '全部股票')], ['holdings', c('My holdings', '我的持仓')]] as const).filter(([value]) => value !== "holdings" || isProductFeatureEnabled("portfolio")).map(([value, label]) => ({ value, label }))} />
             </div>
           </section>
           {error ? <div role="alert" className="space-y-3"><p>{c("Updates could not be loaded. Try again.", "暂时无法加载动态，请重试。")}</p><Button onClick={() => setAttempt((n) => n + 1)}>{c("Retry", "重试")}</Button></div> : scope === 'holdings' && !held.loading && !held.tickers.length ? <Empty action={<TextLink href="/dashboard/portfolio">{c("View portfolio", "查看投资组合")}</TextLink>}>{c("No linked equity holdings yet. Browse all stocks to see updates.", "暂时没有已连接的股票持仓。切换到全部股票即可查看动态。")}</Empty> : <>

@@ -22,7 +22,7 @@ import {
     PieChart,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import CompanyLogo from "@/components/ui/company-logo";
+import CompanyLogo, { phoneListLogoClass } from "@/components/ui/company-logo";
 import { marketStockHref } from "@/lib/stockLinks";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -196,7 +196,7 @@ function DiversificationGauge({ score, t }: { score: number; t: TFunction }) {
 
 function MetricCard({ icon: Icon, label, children }: { icon: React.ElementType; label: string; children: React.ReactNode }) {
     return (
-        <div className="p-4 rounded-2xl border border-border bg-card">
+        <div className="p-4 rounded-2xl border border-foreground/10 glass-card bg-card-glass">
             <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3">
                 <Icon className="w-4 h-4" />
                 <span>{label}</span>
@@ -212,10 +212,10 @@ function MetricCard({ icon: Icon, label, children }: { icon: React.ElementType; 
 
 function StockAnalysisItem({ stock, t }: { stock: StockAnalysis; t: TFunction }) {
     return (
-        <AccordionItem value={stock.symbol} className="border border-border rounded-2xl mb-2 overflow-hidden">
+        <AccordionItem value={stock.symbol} className="glass-card bg-card-glass border border-foreground/10 rounded-2xl mb-2 overflow-hidden">
             <AccordionTrigger className="px-4 py-3 transition-colors hover:bg-foreground/[0.06] hover:no-underline">
                 <div className="flex items-center gap-3 flex-1">
-                    <span aria-hidden="true"><CompanyLogo symbol={stock.symbol} name={stock.name} size="md" /></span>
+                    <span aria-hidden="true"><CompanyLogo symbol={stock.symbol} name={stock.name} size="md" className={phoneListLogoClass} /></span>
                     <div className="flex-1 min-w-0 text-left">
                         <div className="flex items-center gap-2 flex-wrap">
                             <span className="font-semibold">{stock.symbol}</span>
@@ -379,7 +379,7 @@ function SuggestionsSection({ suggestions, t }: { suggestions: PortfolioAnalysis
                 return (
                     <div
                         key={section.key}
-                        className="p-4 rounded-2xl border border-border bg-card"
+                        className="p-4 rounded-2xl border border-foreground/10 glass-card bg-card-glass"
                     >
                         <div className="flex items-center gap-2 mb-3">
                             <div className={cn("p-1.5 rounded-md", section.bg)}>

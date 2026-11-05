@@ -115,6 +115,19 @@ horizontal padding on mobile and 32px from the medium breakpoint. The root font 
 `text-xs` is 12px and `text-sm` is 14px on phones as well. Do not shrink the root to gain density: when a
 layout does not fit a phone, change that layout with breakpoints (fewer columns, smaller padding, a stacked row).
 Primary mobile dock targets are at least 44px tall.
+
+Phone patterns (below 768px): page-level tabs are 40px with 15px labels and fill the row; controls inside a view,
+such as ranges and weeks, are 32px with 13px labels, so the two levels read differently. A tab list that does not
+fit scrolls and centers its active tab, with no fade over the labels. Secondary controls share the tab row as icon
+buttons (refresh, sort) rather than wrapping below it. Markets keeps its card and table views on phones, with a scrolling range control on the left and refresh on the right; it drops the
+Watchlist column, and stock filters collapse behind a filter icon button. Collection lists (`ListCard`, card `Panel`) drop the card surface on phones and align rows to the page gutters; tables with their own cell padding bleed past the gutter so their cells still line up. List-row company logos are 32px on phones. The event calendar shows one day at a time from a seven-day
+strip, opening on today. Macro indicators are one-line rows that expand in place. News runs edge to edge beneath
+the dock through `data-nav-underlay`, which keeps the last row reachable.
+
+Trend comparison charts (`MarketCompareChart`) open full screen and plot change since the start of the range on one axis, for up to five
+instruments. Lines use `--compare-1` to `--compare-5`, which mark identity and deliberately avoid the green and orange
+direction hues. The order passed the palette validator in both themes, so do not reorder it, and a symbol keeps its
+color while selected. Daily series are unavailable in the 1D range because they have no intraday line.
 Editable controls are a fixed-pixel exception: `app/globals.css` owns a
 16px input font and a 44px minimum single-line field height on narrow screens
 and touch devices, including landscape. This covers shared Input, SearchInput,
@@ -145,8 +158,9 @@ AI generation remains an explicit action on the stock detail page. The stock
 workspace is capped at 1800px, uses the existing page gutters and presents company
 identity, exchange/currency and regular/available after-hours quotes before a single
 sticky horizontal Radix research tab bar. The bar scrolls horizontally on phones;
-its shared `pill-solid` surface uses opaque muted fill to hide scrolling content
-behind the labels, with a 16px sticky inset from the content viewport's top edge.
+its shared `pill-solid` surface uses the denser `glass-track-strong` material so
+scrolling content blurs out behind the labels, with a 16px sticky inset from the
+content viewport's top edge.
 A single active pill slides between labels there, as it does in
 `components/ui/segmented-control.tsx`, the shared iOS-style switcher behind the
 in-page toggles. Selection is one continuously animated thumb rather than two
@@ -227,9 +241,9 @@ the prior report. Percentage changes are omitted for zero or negative baselines,
 where the absolute change remains available. View selection survives category and
 frequency changes while the module is mounted. Report category and annual/quarterly controls use
 labelled button groups in the same segmented style as the research tab bar: a
-`bg-muted` pill container with fully rounded, equal-height segments, the selected
-segment in `bg-foreground` / `text-background` (white on black, matching the active
-tab) and unselected labels in `muted-foreground` with a `secondary` hover. The
+`glass-track` pill container with fully rounded, equal-height segments, the selected
+segment on a `glass-thumb` with `text-foreground` (matching the active tab) and
+unselected labels in `muted-foreground` with a `secondary` hover. The
 Charts / List and Bars / Line controls share that exact treatment, and the CSV
 action stays a neutral outlined pill beside them. Columns show actual fiscal ending dates; unsupported history
 ranges and invented TTM columns do not appear. CSV exports raw numeric values,
@@ -1406,13 +1420,34 @@ Rules that follow from that:
   no leading accent mark.
   A feed row that holds its own hoverable rows (a video and its stock opinions)
   uses `listFeedGroupRowClass` so only the inner row washes, never both.
-- Tabs, `SegmentedControl`, `SwitchTab` and every authored pill select with
-  `bg-foreground` plus `text-background`, or a `secondary` fill with
-  foreground text. Unselected options preview with the same grey wash.
+- Tabs, `SegmentedControl`, `SwitchTab` and other tab-like pill groups use the
+  iOS-style glass material from `app/globals.css`, matching the mobile dock: a
+  translucent, blurred `glass-track` holding a lighter `glass-thumb`, with
+  foreground text on the selected option. Unselected options preview with the
+  same grey wash. Solid fallbacks apply without backdrop filters and under
+  reduced-transparency or increased-contrast preferences.
   Selected controls retain that pairing during keyboard focus; the global
-  focus wash excludes selected/pressed/checked/current states. Chart range
-  and selected tool buttons follow the same rule.
-  Pill triggers paint their own matching fill until the sliding indicator has
+  focus wash excludes selected/pressed/checked/current states. Chart ranges
+  and on/off toggles, such as chart tools and translation, follow the same rule
+  with `glass-thumb` as their selected state.
+- `Button`, `ChipButton`, `TriggerButton` and hand-written action buttons are
+  glass as well. `glass-button` adds the blur and specular edge, while translucent
+  fill utilities carry each variant and its hover and press states: `default` and
+  `icon` are tinted green glass (the label stays `primary-foreground`), `destructive`
+  tinted orange, and `secondary` and `outline` neutral. `ghost` stays bare at rest
+  so icon toolbars do not become rows of bubbles, and gains glass on hover. `link`
+  and `text` have no surface. Reduced-transparency and increased-contrast
+  preferences restore solid fills through the `glass-button-*` role classes.
+- `Card` and card-shaped containers are glass too: `glass-card` (specular edge and
+  soft shadow), `bg-card-glass` and a translucent `border-foreground/10` hairline.
+  On the page background the fill resolves to almost exactly `--card`. Regular
+  cards do not use a backdrop filter, which would trap `position: fixed` descendants
+  and clip popups against the next card, and has nothing to blur on a flat page.
+  Add `glass-card-blur` only over a visible backdrop, such as the auth grid, with
+  `bg-card-glass-strong` when text sits over live content, such as `HoverCard`.
+  Sticky table cells, chart tooltips and search suggestions stay opaque `bg-card`
+  so scrolling content cannot show through their text.
+  Pill triggers paint a matching translucent fill until the sliding indicator has
   valid visible dimensions, including server rendering and hidden panels.
   Radix triggers inherit their list's pill/underline variant unless explicitly
   overridden. Segmented controls show a measured thumb immediately, then arm
@@ -1420,8 +1455,9 @@ Rules that follow from that:
   palette. Indicator stacking is isolated per control and reduced motion skips
   movement. Selection measurement ignores its own style writes.
 - Desktop sidebar, mobile dock and the mobile opinion source nav take a grey
-  wash on hover; the selected route is the only entry marked, by its solid
-  secondary pill. Icons follow the text colour instead of turning green.
+  wash on hover; the selected route is the only entry marked, by its pill (solid
+  secondary in the sidebar, glass in the dock and source nav). Icons follow the
+  text colour instead of turning green.
 - Menus (`DropdownMenuItem`, `MultiSelect`, native disclosures) highlight on a
   grey wash with foreground text.
 - Tables keep semantic positive/negative direction colours untouched; the row

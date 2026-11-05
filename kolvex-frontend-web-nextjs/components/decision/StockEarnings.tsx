@@ -280,7 +280,7 @@ export default function StockEarnings({
                 "Earnings history, horizontally scrollable",
                 "盈利历史表，可横向滚动",
               )}
-              className="overflow-auto rounded-3xl border border-border focus-visible:outline-none "
+              className="glass-card bg-card-glass overflow-auto rounded-3xl border border-foreground/10 focus-visible:outline-none "
             >
               <table className="w-full whitespace-nowrap text-sm">
                 <caption className="sr-only">

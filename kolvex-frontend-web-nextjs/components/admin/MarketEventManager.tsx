@@ -201,7 +201,7 @@ export default function MarketEventManager() {
         <p
           id="event-error"
           role="alert"
-          className="rounded-3xl border border-border p-4 text-sm text-negative"
+          className="glass-card bg-card-glass rounded-3xl border border-foreground/10 p-4 text-sm text-negative"
         >
           {error}
         </p>
@@ -212,7 +212,7 @@ export default function MarketEventManager() {
         </p>
       )}
       {preview && (
-        <section className="space-y-4 rounded-3xl border border-border p-4">
+        <section className="glass-card bg-card-glass space-y-4 rounded-3xl border border-foreground/10 p-4">
           <h3 className="font-semibold">
             保存预览 · {preview.events.length} 个事件
           </h3>

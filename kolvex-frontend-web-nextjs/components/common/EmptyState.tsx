@@ -35,7 +35,7 @@ export function EmptyState({
       {action && (
         <button
           onClick={action.onClick}
-          className="px-4 py-2 bg-primary dark:bg-primary text-white dark:text-background-dark text-sm font-medium rounded-full hover:bg-primary/90 dark:hover:bg-primary/90 transition-colors"
+          className="px-4 py-2 glass-button glass-button-primary bg-primary/85 text-white dark:text-background-dark text-sm font-medium rounded-full hover:bg-primary/75 transition-colors"
         >
           {action.label}
         </button>
@@ -67,7 +67,7 @@ export function ErrorState({
       {retry && (
         <button
           onClick={retry}
-          className="px-4 py-2 bg-muted text-foreground text-sm font-medium rounded-full hover:bg-foreground/20 transition-colors"
+          className="px-4 py-2 glass-button glass-button-neutral bg-foreground/[0.1] text-foreground text-sm font-medium rounded-full hover:bg-foreground/[0.16] transition-colors"
         >
           Try Again
         </button>

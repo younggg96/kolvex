@@ -17,57 +17,6 @@ const useArmedAfterFirstFrame = () => {
   return armed;
 };
 
-/**
- * Edge fades that hint at labels hidden past the scroll clip. They are painted
- * only for the side that actually hides content: rendering them unconditionally
- * laid a grey fade over the active pill's rounded ends even when every trigger
- * fit, which read as a dirty shadow rather than an affordance.
- */
-function ScrollHint({ listRef }: { listRef: React.RefObject<HTMLDivElement> }) {
-  const [edges, setEdges] = React.useState({ left: false, right: false });
-
-  React.useEffect(() => {
-    const el = listRef.current;
-    if (!el) return;
-
-    const sync = () => {
-      const overflow = el.scrollWidth - el.clientWidth;
-      setEdges({
-        left: overflow > 1 && el.scrollLeft > 1,
-        right: overflow > 1 && el.scrollLeft < overflow - 1,
-      });
-    };
-
-    sync();
-    el.addEventListener("scroll", sync, { passive: true });
-    const observer = new ResizeObserver(sync);
-    observer.observe(el);
-    // A font swap or a label translation changes scrollWidth without resizing
-    // the tracked boxes, so re-measure once fonts settle as well.
-    document.fonts?.ready.then(sync).catch(() => {});
-
-    return () => {
-      el.removeEventListener("scroll", sync);
-      observer.disconnect();
-    };
-  }, [listRef]);
-
-  return (
-    <>
-      <span
-        aria-hidden="true"
-        data-visible={edges.left}
-        className="pointer-events-none absolute inset-y-1 left-1 z-20 w-8 rounded-l-full bg-gradient-to-r from-muted to-transparent transition-opacity duration-150 data-[visible=false]:opacity-0 motion-reduce:transition-none"
-      />
-      <span
-        aria-hidden="true"
-        data-visible={edges.right}
-        className="pointer-events-none absolute inset-y-1 right-1 z-20 w-8 rounded-r-full bg-gradient-to-l from-muted to-transparent transition-opacity duration-150 data-[visible=false]:opacity-0 motion-reduce:transition-none"
-      />
-    </>
-  );
-}
-
 type TabsListProps = React.ComponentPropsWithoutRef<typeof TabsPrimitive.List> & {
   variant?: "default" | "auth" | "pill" | "pill-solid";
 };
@@ -77,17 +26,6 @@ const TabsList = React.forwardRef<
   TabsListProps
 >(({ className, variant = "pill", children, ...props }, ref) => {
   const pill = variant === "pill" || variant === "pill-solid" || variant === "auth";
-  // The scroll hint measures the list itself, so it needs a ref even when the
-  // caller forwards one of its own.
-  const listRef = React.useRef<HTMLDivElement | null>(null) as React.MutableRefObject<HTMLDivElement | null>;
-  const setListRef = React.useCallback(
-    (node: HTMLDivElement | null) => {
-      listRef.current = node;
-      if (typeof ref === "function") ref(node);
-      else if (ref) (ref as React.MutableRefObject<HTMLDivElement | null | undefined>).current = node;
-    },
-    [ref],
-  );
   // A single animated pill sits under the active trigger in the pill variants,
   // matching `SegmentedControl`; the underline variant stays per-trigger.
   if (!pill) {
@@ -110,20 +48,20 @@ const TabsList = React.forwardRef<
   return (
     <TabsVariantContext.Provider value="pill">
       <TabsPrimitive.List
-        ref={setListRef}
+        ref={ref}
         data-variant={variant}
         className={cn(
           "group/tabs relative isolate min-h-11 items-center justify-start gap-1 rounded-full p-1 text-muted-foreground",
           variant === "auth"
             ? "grid w-full grid-cols-2"
             : "inline-flex w-fit max-w-full overflow-x-auto scrollbar-hide",
-          variant === "pill-solid" ? "bg-muted" : "bg-muted/50",
+          "glass-track",
+          variant === "pill-solid" && "glass-track-strong",
           className,
         )}
         {...props}
       >
         <PillIndicator />
-        {variant !== "auth" && <ScrollHint listRef={listRef} />}
         {children}
       </TabsPrimitive.List>
     </TabsVariantContext.Provider>
@@ -149,13 +87,12 @@ const TabsTrigger = React.forwardRef<
       className={cn(
         "inline-flex shrink-0 items-center justify-center whitespace-nowrap text-sm font-semibold transition-colors duration-150 focus-visible:outline-none focus-visible:underline focus-visible:decoration-2 focus-visible:underline-offset-8",
         resolvedVariant === "pill"
-          ? // The colour is painted by the list's sliding pill so only the
-            // active label keeps its inverse colour during hover, press and focus.
-            // Until a visible indicator is measured, the trigger paints its own
-            // matching fill. Hidden panels and SSR must keep inverse text legible.
+          ? // The fill is painted by the list's sliding glass pill. Until a
+            // visible indicator is measured (SSR, hidden panels), the trigger
+            // paints a matching translucent fill of its own.
             // Unselected segments get a neutral wash: tabs are navigation, not
             // direction, so brand green here would compete with real signals.
-            "relative z-10 min-h-10 rounded-full px-4 data-[state=inactive]:hover:bg-foreground/[0.06] data-[state=inactive]:hover:text-foreground data-[state=inactive]:focus-visible:bg-foreground/[0.06] data-[state=inactive]:focus-visible:text-foreground data-[state=inactive]:active:bg-foreground/[0.1] data-[state=active]:bg-foreground data-[state=active]:text-background group-data-[pill-ready=true]/tabs:data-[state=active]:bg-transparent"
+            "relative z-10 min-h-10 rounded-full px-4 data-[state=inactive]:hover:bg-foreground/[0.06] data-[state=inactive]:hover:text-foreground data-[state=inactive]:focus-visible:bg-foreground/[0.06] data-[state=inactive]:focus-visible:text-foreground data-[state=inactive]:active:bg-foreground/[0.1] data-[state=active]:bg-foreground/[0.14] data-[state=active]:text-foreground group-data-[pill-ready=true]/tabs:data-[state=active]:bg-transparent"
           : // The underline variant uses border as its only active affordance, so
             // the rule itself has to go neutral too — a green indicator line
             // would read as state colour on what is just a tab position.
@@ -169,6 +106,17 @@ const TabsTrigger = React.forwardRef<
 TabsTrigger.displayName = TabsPrimitive.Trigger.displayName;
 
 const EASE = "cubic-bezier(0.32, 0.72, 0.24, 1)";
+
+/** A list wider than its screen scrolls so the chosen tab is never left clipped. */
+function centerActive(list: HTMLElement, behavior?: ScrollBehavior) {
+  const active = list.querySelector<HTMLElement>('[role="tab"][data-state="active"]');
+  if (!active || list.scrollWidth <= list.clientWidth) return;
+  const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  list.scrollTo({
+    left: active.offsetLeft - (list.clientWidth - active.offsetWidth) / 2,
+    behavior: behavior ?? (reduced ? "auto" : "smooth"),
+  });
+}
 
 /**
  * The sliding active pill for pill lists. It is measured from the active
@@ -213,6 +161,7 @@ function PillIndicator() {
     const list = indicatorRef.current?.closest<HTMLElement>('[role="tablist"]');
     if (!list) return;
     measure();
+    centerActive(list, "auto");
     const observer = new ResizeObserver(() => measure());
     observer.observe(list);
     const triggers = list.querySelectorAll<HTMLElement>('[role="tab"]');
@@ -220,6 +169,7 @@ function PillIndicator() {
     const mutations = new MutationObserver((records) => {
       // Measuring writes the indicator's style; do not observe our own writes.
       if (records.some((record) => record.target !== indicatorRef.current)) measure();
+      if (records.some((record) => record.attributeName === "data-state")) centerActive(list);
     });
     mutations.observe(list, {
       subtree: true,
@@ -242,7 +192,7 @@ function PillIndicator() {
       ref={indicatorRef}
       aria-hidden="true"
       data-slot="tabs-pill-indicator"
-      className="pointer-events-none absolute left-0 top-0 z-0 rounded-full bg-foreground opacity-0 motion-reduce:!transition-none"
+      className="pointer-events-none absolute left-0 top-0 z-0 rounded-full glass-thumb opacity-0 motion-reduce:!transition-none"
       style={{
         transitionProperty: "transform, width, height",
       }}

@@ -2,6 +2,7 @@
 
 import { ReactNode } from "react";
 import AppSidebar from "./Sidebar";
+import DashboardBackground from "./DashboardBackground";
 import MobileTabBar from "./MobileTabBar";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import CommandLayer from "@/components/decision/CommandLayer";
@@ -17,9 +18,10 @@ interface AppShellProps {
 export default function AppShell({ children }: AppShellProps) {
   return (
     <CommandLayer><SidebarProvider defaultOpen={true}>
-      <div className="app-workbench flex w-full overflow-hidden bg-background font-display text-foreground">
+      <div className="app-workbench relative isolate flex w-full overflow-hidden bg-background font-display text-foreground">
+        <DashboardBackground />
         <AppSidebar />
-        <SidebarInset className="mobile-nav-inset relative flex min-w-0 flex-col overflow-hidden pb-[calc(5.5rem+env(safe-area-inset-bottom))] lg:pb-0">
+        <SidebarInset className="mobile-nav-inset relative flex min-w-0 flex-col overflow-hidden pb-[calc(5.5rem+env(safe-area-inset-bottom))] dark:bg-transparent lg:pb-0">
           {children}
           <MobileTabBar />
         </SidebarInset>

@@ -1,10 +1,10 @@
 "use client";
-import { loadMarketObservations } from "@/lib/marketObservationsApi";
-import { loadClientCache, peekClientCache } from "@/lib/clientCache";
+import { peekClientCache } from "@/lib/clientCache";
+import { loadMarketSeries, marketSeriesKey } from "@/lib/marketSeries";
 
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { ArrowUpRight, LayoutGrid, List } from "lucide-react";
+import { ArrowUpRight, LayoutGrid, LineChart, List } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useVisiblePolling } from "@/hooks/useVisiblePolling";
 import DashboardLayout from "@/components/layout/DashboardLayout";
@@ -17,8 +17,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { type StockQuote } from "@/lib/stockApi";
 import { cn } from "@/lib/utils";
-import { loadStockTrend } from "@/lib/stockTrends";
-import { MARKET_RANGES, marketRangeBaseline, observationRange, type MarketObservation } from "@/lib/marketObservations";
+import { MARKET_RANGES, marketRangeBaseline } from "@/lib/marketObservations";
 import { useMarketQuotes } from "@/hooks/useMarketQuotes";
 import { BENCHMARKS, MARKET_GROUPS, isMarketIndex, indexValue, type MarketInstrument } from "@/lib/marketBenchmarks";
 import { marketStockHref } from "@/lib/stockLinks";
@@ -35,6 +34,8 @@ import MacroIndicators from "./MacroIndicators";
 import MarketEventCalendar from "./MarketEventCalendar";
 import StockObservationList from "./StockObservationList";
 import MarketComparison from "./MarketComparison";
+import MarketCompareDialog from "./MarketCompareChart";
+import { MarketRefreshButton } from "./MarketToolbar";
 import MarketWatchlistCard from "./MarketWatchlistCard";
 
 const OVERVIEW_GROUPS = MARKET_GROUPS.filter(group => group.key === "indices");
@@ -69,7 +70,7 @@ function MarketInstrumentCard({ benchmark, quote, quoteLoading, range, attempt, 
     observer.observe(host.current);
     return () => observer.disconnect();
   }, []);
-  const seriesKey = `/market-series/${benchmark.symbol}/${range}`;
+  const seriesKey = marketSeriesKey(benchmark.symbol, range);
   const [series, setSeries] = useState<ScrubPoint[]>(() => peekClientCache<ScrubPoint[]>(seriesKey) ?? []);
   const [seriesState, setSeriesState] = useState<"loading" | "ready" | "error">((peekClientCache<ScrubPoint[]>(seriesKey)?.length ?? 0) > 1 ? "ready" : "loading");
   const [scrub, setScrub] = useState<ScrubPoint | null>(null);
@@ -81,7 +82,6 @@ function MarketInstrumentCard({ benchmark, quote, quoteLoading, range, attempt, 
   const previousSeriesKey = useRef(seriesKey);
   useEffect(() => {
     const controller = new AbortController();
-    const spec = RANGES.find((item) => item.key === range)!;
     const saved = peekClientCache<ScrubPoint[]>(seriesKey);
     const changed = previousSeriesKey.current !== seriesKey;
     previousSeriesKey.current = seriesKey;
@@ -93,18 +93,7 @@ function MarketInstrumentCard({ benchmark, quote, quoteLoading, range, attempt, 
     if (!near) return () => controller.abort();
     const forceRefresh = seriesAttempt.current !== attempt || seriesRevision > 0;
     seriesAttempt.current = attempt;
-    async function load(signal: AbortSignal): Promise<MarketObservation[]> {
-      if (benchmark.source === "fred") {
-        return loadMarketObservations(benchmark.symbol, signal, forceRefresh);
-      }
-      return loadStockTrend(benchmark.symbol, benchmark.daily
-        ? { period: range === "1D" ? "5d" : spec.period, interval: "1d" }
-        : { period: spec.period, interval: spec.interval }, signal, forceRefresh);
-    }
-    loadClientCache(seriesKey, async signal => {
-      const history = await load(signal);
-      return benchmark.daily || ["1Y", "QTD", "YTD"].includes(range) ? observationRange(history, range) : history;
-    }, { ttl: benchmark.daily ? 5 * 60_000 : 60_000, maxAge: 5 * 60_000, force: forceRefresh, signal: controller.signal }).then((points) => {
+    loadMarketSeries(benchmark, range, { force: forceRefresh, signal: controller.signal }).then((points) => {
         if (controller.signal.aborted) return;
         setSeries(points);
         setSeriesState(points.length > 1 ? "ready" : "error");
@@ -113,7 +102,7 @@ function MarketInstrumentCard({ benchmark, quote, quoteLoading, range, attempt, 
         if (!controller.signal.aborted) setSeriesState("error");
       });
     return () => controller.abort();
-  }, [benchmark.symbol, benchmark.source, benchmark.daily, range, attempt, near, seriesKey, seriesRevision]);
+  }, [benchmark, range, attempt, near, seriesKey, seriesRevision]);
 
   const value = scrub?.value ?? (benchmark.daily ? series.at(-1)?.value : quote?.price ?? series.at(-1)?.value);
   const baseline = (!scrub || range === "1D") && !benchmark.daily
@@ -154,7 +143,7 @@ function MarketInstrumentCard({ benchmark, quote, quoteLoading, range, attempt, 
 
 
   return (
-    <article ref={host} className="relative h-60 w-60 shrink-0 snap-start max-md:h-auto max-md:w-[11.25rem] overflow-hidden rounded-3xl border border-border bg-card transition-colors duration-200 hover:border-foreground/25 hover:bg-foreground/[0.04] xl:w-auto xl:min-w-0">
+    <article ref={host} className="relative h-60 w-60 shrink-0 snap-start max-md:h-auto max-md:w-[11.25rem] overflow-hidden rounded-3xl border border-foreground/10 glass-card bg-card-glass transition-colors duration-200 hover:border-foreground/25 hover:bg-foreground/[0.04] xl:w-auto xl:min-w-0">
       <Link
         href={benchmark.sourceUrl ?? marketStockHref(benchmark.symbol)}
         target={benchmark.sourceUrl ? "_blank" : undefined}
@@ -195,35 +184,35 @@ function MarketInstrumentCard({ benchmark, quote, quoteLoading, range, attempt, 
   );
 }
 
-function MarketRangeControls({ range, setRange, view, setView }: { range: RangeKey; setRange: (range: RangeKey) => void; view: MarketView; setView: (view: MarketView) => void }) {
+function MarketRangeControls({ range, setRange, view, setView, refreshing, onRefresh }: { range: RangeKey; setRange: (range: RangeKey) => void; view: MarketView; setView: (view: MarketView) => void; refreshing: boolean; onRefresh: () => void }) {
   const c = useCopy();
   return (
-              <div className="flex min-w-0 items-center justify-end gap-2 max-md:justify-center sm:gap-3">
+              <div className="flex min-w-0 items-center justify-end gap-2 max-md:w-full md:gap-3">
                 {view === "card" ? <SegmentedControl
                   label={c("Chart range", "走势区间")}
                   value={range}
                   onChange={setRange}
-                  className="min-w-0 !shrink flex-nowrap overflow-x-auto border border-border scrollbar-hide max-sm:!gap-0.5"
-                  itemClassName="!min-h-9 max-sm:!px-1.5 max-sm:!text-[0.8125rem]"
+                  className="min-w-0 !shrink flex-nowrap overflow-x-auto border border-border scrollbar-hide max-md:mr-auto max-md:!max-w-[9.75rem] max-md:!gap-0.5"
+                  itemClassName="!min-h-9 max-md:!min-h-8 max-md:!px-2.5 max-md:!text-[0.8125rem]"
                   options={RANGES.map((item) => ({
                     value: item.key,
                     label: c(item.en, item.zh),
                     ariaLabel: item.key === "QTD" ? c("QTD, quarter to date", "QTD，本季度至今") : item.key === "YTD" ? c("YTD, year to date", "YTD，今年至今") : undefined,
                     title: item.key === "QTD" ? c("Quarter to date", "本季度至今") : item.key === "YTD" ? c("Year to date", "今年至今") : undefined,
                   }))}
-                /> : <p className="text-sm text-muted-foreground">{c("Compare all periods", "多区间表现对比")}</p>}
+                /> : <p className="min-w-0 truncate text-sm text-muted-foreground max-md:mr-auto">{c("Compare all periods", "多区间表现对比")}</p>}
                 <SegmentedControl
                   label={c("Display mode", "显示方式")}
                   value={view}
                   onChange={setView}
-                  className="border border-border max-sm:!gap-0.5"
-                  itemClassName="!min-h-9 max-sm:!px-1.5"
+                  className="border border-border max-md:!gap-0.5"
+                  itemClassName="!min-h-9 max-md:!min-h-8 max-md:!px-2"
                   options={[
                     {
                       value: "card",
                       label: (
                         <>
-                          <LayoutGrid className="h-3.5 w-3.5 max-md:h-4 max-md:w-4" aria-hidden />
+                          <LayoutGrid className="h-3.5 w-3.5" aria-hidden />
                           <span className="max-md:sr-only">{c("Cards", "卡片")}</span>
                         </>
                       ),
@@ -232,18 +221,20 @@ function MarketRangeControls({ range, setRange, view, setView }: { range: RangeK
                       value: "list",
                       label: (
                         <>
-                          <List className="h-3.5 w-3.5 max-md:h-4 max-md:w-4" aria-hidden />
+                          <List className="h-3.5 w-3.5" aria-hidden />
                           <span className="max-md:sr-only">{c("List", "列表")}</span>
                         </>
                       ),
                     },
                   ]}
                 />
+                <div className="shrink-0 md:hidden"><MarketRefreshButton refreshing={refreshing} onClick={onRefresh} /></div>
               </div>
   );
 }
 
-function MarketCharts({ groups, quotes, loading, range, attempt, onRetry, view }: {
+function MarketCharts({ groups, quotes, loading, range, attempt, onRetry, view, comparable = false }: {
+  comparable?: boolean;
   groups: readonly (typeof MARKET_GROUPS)[number][];
   view: MarketView;
   quotes: Record<string, StockQuote>;
@@ -253,12 +244,16 @@ function MarketCharts({ groups, quotes, loading, range, attempt, onRetry, view }
   onRetry: () => void;
 }) {
   const c = useCopy();
+  const [comparing, setComparing] = useState<(typeof MARKET_GROUPS)[number] | null>(null);
   return (
             <section aria-label={groups.length === 1 ? c("Market indices", "市场指数") : c("Market trends", "市场走势")}>
               {groups.length === 1 && <h2 id="market-indices-heading" className="sr-only">{c(groups[0].en, groups[0].zh)}</h2>}
               {view === "list" ? <MarketComparison groups={groups} attempt={attempt} /> : groups.map(group => (
-                <section key={group.key} aria-labelledby={`market-${group.key}-heading`}>
-                  <h2 id={`market-${group.key}-heading`} className="mb-4 text-xl font-semibold tracking-tight">{c(group.en, group.zh)}</h2>
+                <section key={group.key} aria-labelledby={`market-${group.key}-heading`} className="first:mt-0">
+                  <div className="mb-4 flex min-h-9 items-center justify-between gap-3">
+                    <h2 id={`market-${group.key}-heading`} className="min-w-0 text-xl font-semibold tracking-tight">{c(group.en, group.zh)}</h2>
+                    {comparable && <Button variant="outline" size="sm" className="shrink-0 gap-1.5" onClick={() => setComparing(group)}><LineChart className="h-3.5 w-3.5" aria-hidden />{c("Compare", "对比")}</Button>}
+                  </div>
                   <div
                     role="region"
                     aria-label={c(`${group.en}, scroll horizontally`, `${group.zh}，可横向滚动`)}
@@ -279,6 +274,7 @@ function MarketCharts({ groups, quotes, loading, range, attempt, onRetry, view }
                   </div>
                 </section>
               ))}
+              {comparing && <MarketCompareDialog instruments={comparing.instruments} initialRange={range} attempt={attempt} title={c(comparing.en, comparing.zh)} onClose={() => setComparing(null)} />}
               <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
                 {view === "card" && !loading && groups.some(group => group.instruments.some(item => item.source !== "fred" && !quotes[item.symbol])) && (
                   <Button size="xs" variant="ghost" onClick={onRetry}>
@@ -290,10 +286,12 @@ function MarketCharts({ groups, quotes, loading, range, attempt, onRetry, view }
   );
 }
 
-function MarketTrends({ range, view }: { range: RangeKey; view: MarketView }) {
+type MarketTabProps = { range: RangeKey; view: MarketView; attempt: number; retry: () => void; onRefreshing: (refreshing: boolean) => void };
+
+function MarketTrends({ range, view, attempt, retry, onRefreshing }: MarketTabProps) {
   const { setContext } = useDecisionCommand();
-  const [attempt, setAttempt] = useState(0);
-  const { quotes, loading } = useMarketQuotes(TREND_QUOTE_SYMBOLS, true, attempt);
+  const { quotes, loading, refreshing } = useMarketQuotes(TREND_QUOTE_SYMBOLS, true, attempt);
+  useEffect(() => onRefreshing(refreshing), [refreshing, onRefreshing]);
 
   const context = JSON.stringify({ workspace: "Markets / Market trends", instruments: TREND_GROUPS.map(group => ({ group: group.en, symbols: group.instruments.map(item => item.symbol) })), range, quotes });
   useEffect(() => {
@@ -301,14 +299,14 @@ function MarketTrends({ range, view }: { range: RangeKey; view: MarketView }) {
     return () => setContext("");
   }, [context, setContext]);
 
-  return <div className="min-w-0 pt-6"><MarketCharts view={view} groups={TREND_GROUPS} quotes={quotes} loading={loading} range={range} attempt={attempt} onRetry={() => setAttempt(value => value + 1)} /></div>;
+  return <div className="min-w-0 pt-6"><MarketCharts comparable view={view} groups={TREND_GROUPS} quotes={quotes} loading={loading} range={range} attempt={attempt} onRetry={retry} /></div>;
 }
 
-function MarketOverview({ range, view }: { range: RangeKey; view: MarketView }) {
+function MarketOverview({ range, view, attempt, retry, onRefreshing }: MarketTabProps) {
   const c = useCopy();
   const { setContext } = useDecisionCommand();
-  const [attempt, setAttempt] = useState(0);
-  const { quotes, loading, unavailable: failed } = useMarketQuotes(BENCHMARKS.map(item => item.symbol), true, attempt);
+  const { quotes, loading, refreshing, unavailable: failed } = useMarketQuotes(BENCHMARKS.map(item => item.symbol), true, attempt);
+  useEffect(() => onRefreshing(refreshing), [refreshing, onRefreshing]);
 
   const held = useHeldTickers(attempt);
   const catalogue = useCreatorCatalogue(attempt);
@@ -325,12 +323,12 @@ function MarketOverview({ range, view }: { range: RangeKey; view: MarketView }) 
     .sort((a, b) => Number(heldSet.has(b.ticker)) - Number(heldSet.has(a.ticker)) || b.current_date.localeCompare(a.current_date))
     .slice(0, 5);
   return (
-        <div className="mx-auto grid gap-x-8 gap-y-8 pt-6 xl:grid-cols-[minmax(0,1fr)_320px] 2xl:gap-x-12">
+        <div className="mx-auto grid gap-x-8 gap-y-2 pt-6 xl:grid-cols-[minmax(0,1fr)_320px] 2xl:gap-x-12">
           <div className="min-w-0 xl:col-span-2">
-            <MarketCharts view={view} groups={OVERVIEW_GROUPS} quotes={quotes} loading={loading} range={range} attempt={attempt} onRetry={() => setAttempt(value => value + 1)} />
+            <MarketCharts view={view} groups={OVERVIEW_GROUPS} quotes={quotes} loading={loading} range={range} attempt={attempt} onRetry={retry} />
           </div>
           <div className="min-w-0 space-y-10">
-            <StockObservationList range={range} catalogue={catalogue} held={held} refreshToken={attempt} onRetry={() => setAttempt(value => value + 1)} />
+            <StockObservationList range={range} catalogue={catalogue} held={held} refreshToken={attempt} onRetry={retry} />
           </div>
 
           <aside className="min-w-0 space-y-8 xl:sticky xl:top-8 xl:self-start">
@@ -349,13 +347,13 @@ function MarketOverview({ range, view }: { range: RangeKey; view: MarketView }) 
                 ) : catalogue.error && !catalogue.data ? (
                   <div className="px-3 py-6 text-center">
                     <p className="text-sm font-medium">{c("Creator updates could not be loaded.", "暂时无法加载博主动态。")}</p>
-                    <Button size="sm" variant="outline" className="mt-4" onClick={() => setAttempt((n) => n + 1)}>{c("Retry", "重试")}</Button>
+                    <Button size="sm" variant="outline" className="mt-4" onClick={retry}>{c("Retry", "重试")}</Button>
                   </div>
                 ) : shifts.length ? (
                   <ListRows>{shifts.map((shift) => (
                     <ListRow key={shift.ticker} className="pr-0">
-                      <Link href={marketStockHref(shift.ticker)} className="grid min-h-11 w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-2 rounded-full px-1 text-sm transition-colors duration-150 hover:text-foreground focus-visible:outline-none" title={c(`${shift.ticker} creator opinions`, `${shift.ticker} 博主观点`)}>
-                        <span className="flex min-w-0 items-center gap-2"><span className="shrink-0" aria-hidden><CompanyLogo symbol={shift.ticker} size="xs" /></span><span className="truncate font-medium">{shift.ticker}{heldSet.has(shift.ticker) && <HeldMark />}</span></span>
+                      <Link href={marketStockHref(shift.ticker)} className="grid min-h-11 w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-2 rounded-full px-1 text-sm transition-colors duration-150 hover:text-foreground focus-visible:outline-none max-md:px-0" title={c(`${shift.ticker} creator opinions`, `${shift.ticker} 博主观点`)}>
+                        <span className="flex min-w-0 items-center gap-2"><span className="shrink-0" aria-hidden><CompanyLogo symbol={shift.ticker} size="sm" className="md:max-h-5 md:max-w-5 md:!p-0.5" /></span><span className="truncate font-medium">{shift.ticker}{heldSet.has(shift.ticker) && <HeldMark />}</span></span>
                         <span className="flex shrink-0 items-center gap-1.5 whitespace-nowrap text-xs">
                           <OpinionStrength value={consensus.get(shift.ticker)?.avg_score} className="text-xs" />
                           <span aria-hidden="true" className="h-3 w-px shrink-0 bg-border" />
@@ -386,6 +384,9 @@ export default function Market() {
   const tab = requestedTab === "calendar" || requestedTab === "macro" || requestedTab === "trends" ? requestedTab : "overview";
   const [range, setRange] = useState<RangeKey>("1D");
   const [view, setViewState] = useState<MarketView>("card");
+  const [attempt, setAttempt] = useState(0);
+  const [refreshing, setRefreshing] = useState(false);
+  const retry = useCallback(() => setAttempt(value => value + 1), []);
   const [toolbar, setToolbar] = useState<HTMLDivElement | null>(null);
   const tabList = useRef<HTMLDivElement>(null);
   // Keeps the active tab centred when the list scrolls on narrow screens.
@@ -419,18 +420,18 @@ export default function Market() {
         <div className="mx-auto w-full min-w-0 max-w-[100rem] px-[16px] pb-16 pt-6 md:px-8 md:pt-8">
           <Tabs value={tab} onValueChange={selectTab} className="min-w-0">
             <div className="flex flex-wrap items-center justify-between gap-3 max-md:justify-center">
-              <TabsList ref={tabList} variant="pill" aria-label={c("Market views", "行情视图")}>
-                <TabsTrigger variant="pill" value="overview" className="max-sm:!px-3">{c("Market overview", "市场概览")}</TabsTrigger>
-                <TabsTrigger variant="pill" value="trends" className="max-sm:!px-3">{c("Market trends", "市场走势")}</TabsTrigger>
-                <TabsTrigger variant="pill" value="calendar" className="max-sm:!px-3">{c("Event calendar", "事件日历")}</TabsTrigger>
-                <TabsTrigger variant="pill" value="macro" className="max-sm:!px-3">{c("Macro indicators", "宏观指标")}</TabsTrigger>
+              <TabsList ref={tabList} variant="pill" aria-label={c("Market views", "行情视图")} className="max-md:w-full">
+                <TabsTrigger variant="pill" value="overview" className="max-md:!flex-1 max-md:!px-2 max-md:!text-[0.9375rem]">{c("Market overview", "市场概览")}</TabsTrigger>
+                <TabsTrigger variant="pill" value="trends" className="max-md:!flex-1 max-md:!px-2 max-md:!text-[0.9375rem]">{c("Market trends", "市场走势")}</TabsTrigger>
+                <TabsTrigger variant="pill" value="calendar" className="max-md:!flex-1 max-md:!px-2 max-md:!text-[0.9375rem]">{c("Event calendar", "事件日历")}</TabsTrigger>
+                <TabsTrigger variant="pill" value="macro" className="max-md:!flex-1 max-md:!px-2 max-md:!text-[0.9375rem]">{c("Macro indicators", "宏观指标")}</TabsTrigger>
               </TabsList>
-              <div ref={setToolbar} className="flex min-w-0 max-w-full items-center justify-end gap-3 max-md:justify-center md:ml-auto">
-                {(tab === "overview" || tab === "trends") && <MarketRangeControls range={range} setRange={setRange} view={view} setView={setView} />}
+              <div ref={setToolbar} className={cn("flex min-w-0 max-w-full items-center justify-end gap-3 max-md:w-full max-md:justify-between md:ml-auto", tab === "calendar" && "max-md:hidden")}>
+                {(tab === "overview" || tab === "trends") && <MarketRangeControls range={range} setRange={setRange} view={view} setView={setView} refreshing={refreshing} onRefresh={retry} />}
               </div>
             </div>
-            <TabsContent value="overview"><MarketOverview range={range} view={view} /></TabsContent>
-            <TabsContent value="trends"><MarketTrends range={range} view={view} /></TabsContent>
+            <TabsContent value="overview"><MarketOverview range={range} view={view} attempt={attempt} retry={retry} onRefreshing={setRefreshing} /></TabsContent>
+            <TabsContent value="trends"><MarketTrends range={range} view={view} attempt={attempt} retry={retry} onRefreshing={setRefreshing} /></TabsContent>
             <TabsContent value="calendar"><MarketEventCalendar toolbar={toolbar} /></TabsContent>
             <TabsContent value="macro"><MacroIndicators toolbar={toolbar} /></TabsContent>
           </Tabs>

@@ -15,13 +15,13 @@ const chipButtonVariants = cva(
          resting fill rather than a green tint, which would read as a signal. */
       variant: {
         default:
-          "bg-muted hover:bg-foreground/[0.08] border border-border hover:border-foreground/25 text-muted-foreground hover:text-foreground active:bg-foreground/[0.1]",
+          "glass-button glass-button-neutral bg-foreground/[0.08] hover:bg-foreground/[0.13] border border-foreground/[0.12] hover:border-foreground/25 text-muted-foreground hover:text-foreground active:bg-foreground/[0.17]",
         primary:
-          "bg-muted hover:bg-foreground/[0.08] border border-border hover:border-foreground/25 text-foreground",
+          "glass-button glass-button-neutral bg-foreground/[0.08] hover:bg-foreground/[0.13] border border-foreground/[0.12] hover:border-foreground/25 text-foreground",
         outline:
-          "bg-transparent hover:bg-foreground/[0.06] border border-border hover:border-foreground/25 text-muted-foreground hover:text-foreground active:bg-foreground/[0.1]",
+          "glass-button glass-button-neutral bg-foreground/[0.05] hover:bg-foreground/[0.1] border border-foreground/[0.12] hover:border-foreground/25 text-muted-foreground hover:text-foreground active:bg-foreground/[0.14]",
         ghost:
-          "bg-transparent hover:bg-foreground/[0.06] text-muted-foreground hover:text-foreground active:bg-foreground/[0.1]",
+          "glass-button-ghost bg-transparent hover:bg-foreground/[0.08] text-muted-foreground hover:text-foreground active:bg-foreground/[0.12]",
       },
       size: {
         default: "px-3 py-1.5 text-xs",

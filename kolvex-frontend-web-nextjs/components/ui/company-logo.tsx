@@ -71,6 +71,9 @@ interface CompanyLogoProps {
   imageClassName?: string;
 }
 
+/** Holds a larger list-row logo to the 32px every list uses on phones. */
+export const phoneListLogoClass = "max-md:max-h-8 max-md:max-w-8 max-md:!p-1";
+
 const sizeMap = {
   xs: { px: 20, padding: 2, chars: 1 },
   sm: { px: 32, padding: 4, chars: 3 },

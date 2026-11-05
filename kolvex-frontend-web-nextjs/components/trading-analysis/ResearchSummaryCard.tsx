@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Clock, User } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import CompanyLogo from "@/components/ui/company-logo";
+import CompanyLogo, { phoneListLogoClass } from "@/components/ui/company-logo";
 import { DecisionBadge } from "./badges";
 import type { TradingAnalysis } from "@/lib/tradingAnalysisApi";
 import { marketStockHref } from "@/lib/stockLinks";
@@ -15,7 +15,7 @@ export function ResearchSummaryCard({ analysis, href, t, headingLevel = "h3" }: 
 }) {
   const Heading = headingLevel;
   return (
-    <div className="relative flex h-full min-w-0 flex-col gap-6 rounded-3xl border border-border bg-card p-5 transition-colors hover:border-foreground/25 hover:bg-foreground/[0.04]">
+    <div className="relative flex h-full min-w-0 flex-col gap-6 rounded-3xl border border-foreground/10 glass-card bg-card-glass p-5 transition-colors hover:border-foreground/25 hover:bg-foreground/[0.04]">
       {/* Report overlay: the card body opens the report; the ticker identity is a
           sibling link so it can reach that stock's quotes page. */}
       <Link href={href} className="absolute inset-0 rounded-3xl focus-visible:outline-none " aria-label={analysis.ticker}><span className="sr-only">{analysis.ticker} {t("tradingAnalysis.title")}</span></Link>
@@ -25,7 +25,7 @@ export function ResearchSummaryCard({ analysis, href, t, headingLevel = "h3" }: 
           className="relative z-10 flex min-w-0 flex-1 items-center gap-3 rounded-2xl underline-offset-4 hover:underline focus-visible:outline-none "
           aria-label={t("redditOpinions.openStock", { ticker: analysis.ticker })}
         >
-          <CompanyLogo symbol={analysis.ticker} size="md" />
+          <CompanyLogo symbol={analysis.ticker} size="md" className={phoneListLogoClass} />
           <Heading className="min-w-0 break-words text-lg font-semibold text-foreground">
             {analysis.ticker}<span className="sr-only"> {t("tradingAnalysis.title")}</span>
           </Heading>

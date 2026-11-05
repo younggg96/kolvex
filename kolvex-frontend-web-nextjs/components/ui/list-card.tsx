@@ -5,12 +5,17 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
+/** Drops the card surface below 768px so a list sits directly on the page, between its gutters. */
+export const phonePlainCardClass =
+  "max-md:!rounded-none max-md:!border-0 max-md:!bg-transparent max-md:!p-0 max-md:!shadow-none";
+
 /**
  * Canonical list-card shell. The Markets "Stock watch" card is the reference:
  * one 24px card on the page background, 12–16px inner padding, controls and
  * column headings inside the card, hoverable rows, and footer actions.
  * Every collection list (watchlist, KOL opinions, X, Reddit, news, holdings…)
  * uses this shell so lists read as the same surface across the workspace.
+ * On phones the surface drops away and rows align to the page gutters.
  */
 export const ListCard = React.forwardRef<
   HTMLDivElement,
@@ -18,7 +23,7 @@ export const ListCard = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <Card
     ref={ref}
-    className={cn("min-w-0 p-3 sm:p-4", className)}
+    className={cn("min-w-0 p-3 sm:p-4", phonePlainCardClass, className)}
     {...props}
   />
 ));
@@ -37,7 +42,7 @@ export function ListEmptyState({
   alert?: boolean;
 }) {
   return (
-    <div role={alert ? "alert" : "status"} className="space-y-2 px-2 py-6 text-sm">
+    <div role={alert ? "alert" : "status"} className="space-y-2 px-2 py-6 text-sm max-md:px-0">
       <p className="font-medium text-foreground">{title}</p>
       {description && <p className="max-w-prose leading-6 text-muted-foreground">{description}</p>}
       {action && <div className="pt-2">{action}</div>}
@@ -77,7 +82,7 @@ export function ListColumnHeader({
     <div
       aria-hidden="true"
       className={cn(
-        "flex items-center gap-1 border-b border-border pr-2 text-xs text-muted-foreground",
+        "flex items-center gap-1 border-b border-border pr-2 text-xs text-muted-foreground max-md:!px-0 max-md:[&>*]:!px-0",
         className,
       )}
     >
@@ -104,7 +109,7 @@ export const ListRow = React.forwardRef<
   <li
     ref={ref}
     className={cn(
-      "flex items-center gap-1 rounded-2xl pr-2 transition-colors hover:bg-foreground/[0.06] focus-within:bg-foreground/[0.06] active:bg-foreground/[0.1] motion-reduce:transition-none",
+      "flex items-center gap-1 rounded-2xl pr-2 max-md:pr-0 max-md:[&>*]:!px-0 transition-colors hover:bg-foreground/[0.06] focus-within:bg-foreground/[0.06] active:bg-foreground/[0.1] motion-reduce:transition-none",
       className,
     )}
     {...props}
@@ -118,7 +123,7 @@ ListRow.displayName = "ListRow";
  * can all share the same height, corner and focus treatment.
  */
 export const listRowTargetClass =
-  "min-h-20 min-w-0 flex-1 items-center rounded-2xl px-2 py-4 max-md:min-h-0 max-md:py-2 outline-offset-2 focus-visible:bg-foreground/[0.06] focus-visible:outline-2 focus-visible:outline-primary";
+  "min-h-20 min-w-0 flex-1 items-center rounded-2xl px-2 py-4 max-md:min-h-0 max-md:px-0 max-md:py-2 outline-offset-2 focus-visible:bg-foreground/[0.06] focus-visible:outline-2 focus-visible:outline-primary";
 
 /**
  * Long-reading rows (opinions, posts) keep a hairline so prose stays scannable.
@@ -168,7 +173,7 @@ export function ListFooterLink({
     <Link
       href={href}
       className={cn(
-        "group/footer mt-2 flex min-h-11 items-center justify-between gap-3 border-t border-border px-1 pt-2 text-xs font-medium text-muted-foreground transition-colors duration-150 hover:border-foreground/25 hover:text-foreground focus-visible:outline-none focus-visible:text-foreground",
+        "group/footer mt-2 flex min-h-11 items-center justify-between gap-3 border-t border-border px-1 pt-2 max-md:px-0 text-xs font-medium text-muted-foreground transition-colors duration-150 hover:border-foreground/25 hover:text-foreground focus-visible:outline-none focus-visible:text-foreground",
         className,
       )}
     >

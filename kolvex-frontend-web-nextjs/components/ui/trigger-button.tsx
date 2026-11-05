@@ -67,7 +67,7 @@ const TriggerButton = React.forwardRef<HTMLButtonElement, TriggerButtonProps>(
         type="button"
         className={cn(
           // Base styles
-          "inline-flex items-center justify-center rounded-full font-medium transition-all duration-200",
+          "glass-button inline-flex items-center justify-center rounded-full font-medium transition-all duration-200",
           "focus-visible:outline-none ",
           "disabled:pointer-events-none disabled:opacity-50",
           
@@ -78,8 +78,8 @@ const TriggerButton = React.forwardRef<HTMLButtonElement, TriggerButtonProps>(
           !selected && [
             // Light mode - default. Unselected triggers preview a grey wash on
             // hover; the selected variants below carry the semantic colour.
-            "border border-border bg-background text-foreground",
-            "hover:border-foreground/25 hover:bg-foreground/[0.06] hover:text-foreground active:bg-foreground/[0.1]",
+            "glass-button-neutral border border-foreground/[0.12] bg-foreground/[0.05] text-foreground",
+            "hover:border-foreground/25 hover:bg-foreground/[0.1] hover:text-foreground active:bg-foreground/[0.14]",
             
             // Dark mode - default
           ],

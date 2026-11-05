@@ -66,7 +66,7 @@ export function TranslateButton({
           className={cn(
             "inline-flex h-10 shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-full px-3 text-sm font-medium transition-colors duration-150 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50",
             showTranslated
-              ? "bg-foreground text-background"
+              ? "glass-thumb text-foreground"
               : "text-muted-foreground hover:bg-foreground/[0.06] hover:text-foreground"
           )}
         >

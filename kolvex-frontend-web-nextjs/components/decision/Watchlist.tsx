@@ -104,7 +104,7 @@ export default function Watchlist() {
           <p id="watchlist-ticker-help" role={invalid ? "alert" : undefined} className={`text-xs ${invalid ? "text-negative" : "text-muted-foreground"}`}>{invalid ? c("Enter a valid symbol, e.g. AAPL or BRK-B.", "请输入有效的股票代码，如 AAPL、BRK-B。") : c("Shared with your Reddit follows and synced to your account.", "与 Reddit 关注共用，登录后同步到账号。")}</p>
         </form>
         <WatchlistStatus />
-        {!ready ? <ContentLoading label={c("Loading Watchlist", "正在加载自选股")} /> : (!userId || error) && !watchlist.length ? null : !watchlist.length ? <div className="rounded-3xl border border-border py-16 text-center">
+        {!ready ? <ContentLoading label={c("Loading Watchlist", "正在加载自选股")} /> : (!userId || error) && !watchlist.length ? null : !watchlist.length ? <div className="glass-card bg-card-glass rounded-3xl border border-foreground/10 py-16 text-center">
           <Star className="mx-auto h-8 w-8 text-muted-foreground" aria-hidden="true" /><h2 className="mt-4 text-lg font-semibold">{c("Your Watchlist starts here", "从第一只自选股开始")}</h2><p className="mx-auto mt-2 max-w-sm px-4 text-sm leading-6 text-muted-foreground">{c("Add a symbol above, or use the star beside a stock in Markets.", "在上方输入代码，或点击行情列表中股票旁的星标。")}</p><Button asChild variant="outline" className="mt-6"><Link href="/dashboard">{c("Browse Markets", "浏览行情")}</Link></Button>
         </div> : <section aria-label={c("Saved stocks", "已添加的股票")} className="space-y-3">
           <ListCard>
@@ -131,7 +131,7 @@ export default function Watchlist() {
                 {filtered.slice(0, rows).map(symbol => <ListRow key={symbol}>
                   <Link href={`/dashboard/market/${encodeURIComponent(symbol)}?${new URLSearchParams({ from: returnHref })}`} className={cn(ROW_GRID, listRowTargetClass)}>
                     <span className="flex min-w-0 items-center gap-2 sm:gap-3">
-                      <span aria-hidden="true" className="shrink-0"><CompanyLogo symbol={symbol} size="sm" className="max-[399px]:max-h-6 max-[399px]:max-w-6" /></span>
+                      <span aria-hidden="true" className="shrink-0"><CompanyLogo symbol={symbol} size="sm" /></span>
                       <span className="min-w-0"><span className="block truncate text-base font-semibold">{symbol}</span><span className="mt-1 block truncate text-xs text-muted-foreground">{quotes[symbol]?.name || names.get(symbol) || c("Stock details", "查看个股详情")}</span></span>
                     </span>
                     <span className="hidden min-[400px]:block"><StockTrend symbol={symbol} period={trend.period} interval={trend.interval} rangeLabel={c(trend.en, trend.zh)} rangeKey="1D" /></span>

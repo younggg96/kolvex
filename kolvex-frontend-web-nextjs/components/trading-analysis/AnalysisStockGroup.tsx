@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ChevronDown } from "lucide-react";
 import SetupTradeLink from "@/components/paper-trading/SetupTradeLink";
-import CompanyLogo from "@/components/ui/company-logo";
+import CompanyLogo, { phoneListLogoClass } from "@/components/ui/company-logo";
 import { marketStockHref } from "@/lib/stockLinks";
 import { formatPrice } from "@/lib/stockApi";
 import { cn } from "@/lib/utils";
@@ -43,7 +43,7 @@ export function AnalysisStockGroup({ item, mode, locale, t }: Props) {
         <details className="group">
           <summary className={cn(researchSummaryClass, planGridClass)}>
             <div className="flex min-w-0 items-center gap-3">
-              <CompanyLogo symbol={item.ticker} size="md" />
+              <CompanyLogo symbol={item.ticker} size="md" className={phoneListLogoClass} />
               <div className="min-w-0">
                 <h3 className="text-[0.9375rem] font-semibold">{item.ticker}</h3>
                 <p className="mt-0.5 truncate text-xs text-muted-foreground">{setup.name}</p>
@@ -90,7 +90,7 @@ export function AnalysisStockGroup({ item, mode, locale, t }: Props) {
       <details className="group">
         <summary className={cn(researchSummaryClass, researchGridClass)}>
           <div className="flex min-w-0 items-center gap-3">
-            <CompanyLogo symbol={item.ticker} size="md" />
+            <CompanyLogo symbol={item.ticker} size="md" className={phoneListLogoClass} />
             <div className="min-w-0">
               <h3 className="text-[0.9375rem] font-semibold">{item.ticker}</h3>
               {item.summary && <p className="mt-0.5 hidden truncate text-xs text-muted-foreground group-open:!hidden sm:block">{item.summary}</p>}

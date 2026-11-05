@@ -119,7 +119,7 @@ export function PortfolioAllocation({
             isOwner ? "col-span-2" : "col-span-3 pb-4"
           )}
         >
-          <ListCard className="overflow-hidden !p-0 sm:!p-0">
+          <ListCard className="overflow-hidden !p-0 sm:!p-0 max-md:-mx-[16px]">
             <SectorTable
               sectorData={sectorData}
               totalValue={totalValue}

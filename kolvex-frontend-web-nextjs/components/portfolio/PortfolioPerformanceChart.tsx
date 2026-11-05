@@ -243,7 +243,7 @@ export function PortfolioPerformanceChart({
             </div>
 
             <div className="mt-3 flex items-center justify-between gap-3 border-b border-border pb-4">
-                <div role="radiogroup" aria-label={t("portfolio.performance.period")} className="flex items-center gap-1 overflow-x-auto scrollbar-hide">
+                <div role="radiogroup" aria-label={t("portfolio.performance.period")} className="flex min-w-0 items-center gap-1 overflow-x-auto rounded-full p-1 glass-track scrollbar-hide">
                     {PERIOD_OPTIONS.map((value) => (
                         <button
                             key={value}
@@ -255,7 +255,7 @@ export function PortfolioPerformanceChart({
                             className={cn(
                                 "inline-flex h-8 shrink-0 items-center rounded-full px-3.5 text-[0.8125rem] font-semibold transition-colors duration-150 focus-visible:outline-none disabled:opacity-50",
                                 period === value
-                                    ? "bg-foreground text-background"
+                                    ? "glass-thumb text-foreground"
                                     : "text-muted-foreground hover:bg-foreground/[0.06] hover:text-foreground active:bg-foreground/[0.1]",
                             )}
                         >

@@ -66,7 +66,7 @@ import {
 import type { AIModelConfig } from "@/components/chat/types";
 import { DecisionBadge, StatusBadge } from "@/components/trading-analysis/badges";
 import { ContentLoading } from "@/components/ui/content-loading";
-import CompanyLogo from "@/components/ui/company-logo";
+import CompanyLogo, { phoneListLogoClass } from "@/components/ui/company-logo";
 
 // ==================== Helpers ====================
 
@@ -516,8 +516,8 @@ export default function TradingAnalysisPage({ searchParams }: { searchParams?: {
                             className={cn(
                               "h-9 rounded-full px-4 text-[0.8125rem] font-semibold transition-colors duration-150 focus-visible:outline-none ",
                               isActive
-                                ? "bg-foreground text-background"
-                                : "bg-muted text-muted-foreground hover:bg-foreground/[0.06] hover:text-foreground active:bg-foreground/[0.1]"
+                                ? "glass-thumb text-foreground"
+                                : "glass-button glass-button-neutral bg-foreground/[0.08] text-muted-foreground hover:bg-foreground/[0.13] hover:text-foreground active:bg-foreground/[0.17]"
                             )}
                           >
                             {analystLabels[id]}
@@ -590,7 +590,7 @@ export default function TradingAnalysisPage({ searchParams }: { searchParams?: {
                           aria-label={t("redditOpinions.openStock", { ticker: item.ticker })}
                           className="relative z-10 shrink-0 rounded-2xl underline-offset-4 hover:opacity-90 focus-visible:outline-none "
                         >
-                          <CompanyLogo symbol={item.ticker} size="md" />
+                          <CompanyLogo symbol={item.ticker} size="md" className={phoneListLogoClass} />
                         </Link>
                         <div className="min-w-0 flex-1">
                           <Link

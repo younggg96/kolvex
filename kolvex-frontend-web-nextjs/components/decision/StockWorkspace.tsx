@@ -430,7 +430,7 @@ export default function StockWorkspace({
               </TabsList>
               <section
                 hidden={!["summary", "technical", "paper-trading"].includes(activeTab)}
-                className="mb-6 min-w-0 rounded-3xl border border-border bg-card p-4 sm:p-5"
+                className="mb-6 min-w-0 rounded-3xl border border-foreground/10 glass-card bg-card-glass p-4 sm:p-5"
                 aria-label={c(
                   "Price trend",
                   "价格走势",

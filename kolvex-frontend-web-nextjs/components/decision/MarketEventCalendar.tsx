@@ -53,6 +53,7 @@ export default function MarketEventCalendar({ toolbar }: { toolbar: HTMLElement 
   const english = c("en", "zh") === "en";
   const [week, setWeek] = useState("1");
   const [view, setView] = useState<"calendar" | "list">("calendar");
+  const [pickedDay, setPickedDay] = useState<string | null>(null);
   const isCalendar = view === "calendar";
   const calendarRoot = useRef<HTMLElement>(null);
   const [scrollBounds, setScrollBounds] = useState({ left: false, right: false });
@@ -117,7 +118,7 @@ export default function MarketEventCalendar({ toolbar }: { toolbar: HTMLElement 
   return (
     <section
       ref={calendarRoot}
-      className="min-w-0 max-w-full pt-6"
+      className="min-w-0 max-w-full pt-3"
       aria-labelledby="events-heading"
       aria-busy={loading}
     >
@@ -143,7 +144,7 @@ export default function MarketEventCalendar({ toolbar }: { toolbar: HTMLElement 
           {c("Refresh failed. Showing the previous calendar.", "刷新失败，正在显示上次的日历。")}
         </p>
       )}
-      <Card className="p-2.5 sm:p-4">
+      <Card className="p-2.5 sm:p-4 max-md:!border-0 max-md:!bg-transparent max-md:!p-0 max-md:!shadow-none">
         {error && !data ? (
           <div role="alert" className="flex flex-wrap items-center justify-between gap-3 p-2">
             <p className="text-sm">
@@ -163,20 +164,20 @@ export default function MarketEventCalendar({ toolbar }: { toolbar: HTMLElement 
           />
         ) : (
           <Tabs value={week} onValueChange={setWeek} className="min-w-0">
-            <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 px-1 pb-3">
-              <TabsList aria-label={c("Calendar week", "日历周")}>
+            <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 px-1 pb-3 max-md:flex-nowrap max-md:px-0">
+              <TabsList aria-label={c("Calendar week", "日历周")} className="min-w-0">
                 {[
                   c("Last week", "上周"),
                   c("This week", "本周"),
                   c("Next week", "下周"),
                 ].map((label, i) => (
-                  <TabsTrigger key={i} value={String(i)}>
+                  <TabsTrigger key={i} value={String(i)} className="max-md:!min-h-8 max-md:!px-3 max-md:!text-[0.8125rem]">
                     {label}
                   </TabsTrigger>
                 ))}
               </TabsList>
               {isCalendar && (
-                <div className="flex flex-wrap items-center gap-3">
+                <div className="flex flex-wrap items-center gap-3 max-md:hidden">
                   <p className="hidden text-xs text-muted-foreground sm:block">
                     {c("Scroll to see all days", "左右滑动查看全部日期")}
                   </p>
@@ -215,12 +216,21 @@ export default function MarketEventCalendar({ toolbar }: { toolbar: HTMLElement 
                   </div>
                 </div>
               )}
+              <div className="shrink-0 md:hidden">
+                <MarketRefreshButton refreshing={refreshing} disabled={loading || refreshing} onClick={refresh} />
+              </div>
             </div>
             {[0, 1, 2].map((w) => {
               const days = calendarDays(data.start_date, w * 7);
               const events = data.events.filter((event) =>
                 days.includes(event.event_date),
               );
+              // Phones show one day at a time, opening on today within this week.
+              const activeDay = pickedDay && days.includes(pickedDay)
+                ? pickedDay
+                : days.includes(data.today)
+                  ? data.today
+                  : events.map((event) => event.event_date).sort()[0] ?? days[0];
               return (
                 <TabsContent
                   key={w}
@@ -231,10 +241,35 @@ export default function MarketEventCalendar({ toolbar }: { toolbar: HTMLElement 
                     {days[0]} ~ {days[6]} · {events.length}{" "}
                     {c("events", "个事件")}
                   </p>
+                  {isCalendar && (
+                    <div role="group" aria-label={c("Choose a day", "选择日期")} className="grid grid-cols-7 gap-1 md:hidden">
+                      {days.map((day) => {
+                        const date = new Date(`${day}T12:00:00Z`);
+                        const selected = day === activeDay;
+                        return (
+                          <button
+                            key={day}
+                            type="button"
+                            aria-pressed={selected}
+                            aria-current={day === data.today ? "date" : undefined}
+                            onClick={() => setPickedDay(day)}
+                            className={cn(
+                              "flex min-h-14 flex-col items-center justify-center gap-0.5 rounded-2xl text-xs transition-colors duration-150 focus-visible:outline-none focus-visible:underline focus-visible:underline-offset-4 motion-reduce:transition-none",
+                              selected ? "glass-thumb text-foreground" : "text-muted-foreground hover:bg-foreground/[0.06]",
+                            )}
+                          >
+                            <span>{new Intl.DateTimeFormat(english ? "en-US" : "zh-CN", { timeZone: "UTC", weekday: "short" }).format(date)}</span>
+                            <span className={cn("figure text-sm font-semibold", !selected && (day === data.today ? "text-positive" : "text-foreground"))}>{date.getUTCDate()}</span>
+                            <span aria-hidden="true" className={cn("h-1 w-1 rounded-full", events.some((event) => event.event_date === day) ? "bg-current" : "bg-transparent")} />
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
                   {!events.length && !isCalendar ? (
                     <p
                       role="status"
-                      className="rounded-2xl border border-border p-6 text-sm text-muted-foreground"
+                      className="glass-card bg-card-glass rounded-2xl border border-foreground/10 p-6 text-sm text-muted-foreground"
                     >
                       {c(
                         "No published major events this week. Check again after the calendar is updated.",
@@ -256,14 +291,14 @@ export default function MarketEventCalendar({ toolbar }: { toolbar: HTMLElement 
                       tabIndex={isCalendar ? 0 : undefined}
                       className={
                         isCalendar
-                          ? "w-full min-w-0 max-w-full overscroll-x-contain overflow-x-auto pb-2 focus-visible:outline-none "
+                          ? "w-full min-w-0 max-w-full overscroll-x-contain overflow-x-auto pb-2 focus-visible:outline-none max-md:!overflow-visible max-md:!pb-0"
                           : undefined
                       }
                     >
                       <div
                         className={
                           isCalendar
-                            ? "grid min-w-[168rem] grid-cols-7 items-stretch gap-4"
+                            ? "grid min-w-[168rem] grid-cols-7 items-stretch gap-4 max-md:!block max-md:!min-w-0"
                             : "space-y-4"
                         }
                       >
@@ -281,8 +316,9 @@ export default function MarketEventCalendar({ toolbar }: { toolbar: HTMLElement 
                               key={day}
                               aria-label={day}
                               className={cn(
-                                "flex min-w-0 flex-col overflow-hidden rounded-3xl border bg-card",
+                                "flex min-w-0 flex-col overflow-hidden rounded-3xl border glass-card bg-card-glass",
                                 isCalendar ? "p-4" : "p-5",
+                                isCalendar && day !== activeDay && "max-md:hidden",
                                 day === data.today
                                   ? "border-positive/70"
                                   : "border-border",

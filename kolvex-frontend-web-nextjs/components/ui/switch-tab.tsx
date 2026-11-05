@@ -54,20 +54,19 @@ export const SwitchTab = React.memo(function SwitchTab({
   };
 
   // Variant configurations
-  // Match the shared Tabs/SegmentedControl foreground + inverse-text pairing.
+  // Match the shared Tabs/SegmentedControl glass thumb and foreground label.
   const variantConfig = {
     pills: {
-      container:
-        "bg-card rounded-full w-full border border-border",
-      indicator: "bg-foreground rounded-full",
-      active: "text-background",
+      container: "glass-track rounded-full w-full",
+      indicator: "glass-thumb rounded-full",
+      active: "text-foreground",
       inactive:
         "text-muted-foreground hover:bg-foreground/[0.06] hover:text-foreground active:bg-foreground/[0.1]",
     },
     tabs: {
       container: "bg-transparent border-b border-border",
-      indicator: "bg-foreground rounded-t-md",
-      active: "text-background",
+      indicator: "glass-thumb rounded-t-md",
+      active: "text-foreground",
       inactive:
         "text-muted-foreground hover:bg-foreground/[0.06] hover:text-foreground active:bg-foreground/[0.1]",
     },
@@ -190,7 +189,7 @@ export const SwitchTab = React.memo(function SwitchTab({
               isActive ? config.variant.active : config.variant.inactive,
               isActive && variant !== "underline" && (hasIndicator
                 ? "bg-transparent focus-visible:bg-transparent"
-                : "bg-foreground focus-visible:bg-foreground"),
+                : "bg-foreground/[0.14] focus-visible:bg-foreground/[0.14]"),
               isDisabled && "opacity-50 cursor-not-allowed"
             )}
           >

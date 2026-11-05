@@ -180,7 +180,7 @@ export default function UserProfileSettings() {
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full bg-primary text-primary-foreground py-2 px-4 rounded-full font-semibold hover:brightness-95 disabled:opacity-50 disabled:cursor-not-allowed transition"
+            className="w-full glass-button glass-button-primary bg-primary/85 text-primary-foreground py-2 px-4 rounded-full font-semibold hover:bg-primary/75 disabled:opacity-50 disabled:cursor-not-allowed transition"
           >
             {isSubmitting ? "保存中..." : "保存更改"}
           </button>

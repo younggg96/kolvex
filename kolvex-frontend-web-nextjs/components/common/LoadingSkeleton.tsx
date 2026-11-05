@@ -8,7 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 // 市场指数卡片骨架屏
 export function MarketIndexSkeleton() {
   return (
-    <div className="bg-card p-4 rounded-2xl border border-border animate-pulse transition-colors duration-300">
+    <div className="glass-card bg-card-glass p-4 rounded-2xl border border-foreground/10 animate-pulse transition-colors duration-300">
       <div className="h-3 bg-foreground/20 rounded w-20 mb-2"></div>
       <div className="h-6 bg-foreground/20 rounded w-24 mb-2"></div>
       <div className="h-4 bg-foreground/20 rounded w-16"></div>
@@ -38,7 +38,7 @@ export function WatchlistItemSkeleton() {
 // 图表加载骨架屏
 export function ChartSkeleton() {
   return (
-    <div className="bg-card p-4 rounded-2xl border border-border transition-colors duration-300">
+    <div className="glass-card bg-card-glass p-4 rounded-2xl border border-foreground/10 transition-colors duration-300">
       <div className="flex justify-between items-center mb-4 animate-pulse">
         <div>
           <div className="h-5 bg-foreground/20 rounded w-16 mb-1"></div>
@@ -81,7 +81,7 @@ interface CardSkeletonProps {
 export function CardSkeleton({ lines = 3, className = "" }: CardSkeletonProps) {
   return (
     <div
-      className={`bg-card p-4 rounded-2xl border border-border animate-pulse transition-colors duration-300 ${className}`}
+      className={`glass-card bg-card-glass p-4 rounded-2xl border border-foreground/10 animate-pulse transition-colors duration-300 ${className}`}
     >
       {Array.from({ length: lines }).map((_, i) => (
         <div
@@ -97,7 +97,7 @@ export function CardSkeleton({ lines = 3, className = "" }: CardSkeletonProps) {
 // 帖子卡片骨架屏 - 用于社交媒体帖子列表
 export function PostSkeleton() {
   return (
-    <div className="bg-card opacity-50 rounded-3xl p-4 border border-border/50">
+    <div className="glass-card bg-card-glass opacity-50 rounded-3xl p-4 border border-foreground/10/50">
       {/* Header: Avatar + Username + Time */}
       <div className="flex items-start gap-3 mb-3">
         <Skeleton className="w-10 h-10 rounded-full flex-shrink-0" />
