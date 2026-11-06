@@ -37,7 +37,7 @@ export default function StockBadge({
   }
 
   return (
-    <Link href={target} className={`${PILL_CLASS}transition-colors hover:border-foreground/25 hover:bg-foreground/[0.06] hover:text-foreground`}>/Users/guanggengyang/Documents/GitHub/kolvex/side-projects/youtube-notes/batches/kolvex-untracked.json
+    <Link href={target} className={`${PILL_CLASS}transition-colors hover:border-foreground/25 hover:bg-foreground/[0.06] hover:text-foreground`}>
       {content}
     </Link>
   );
