@@ -24,6 +24,7 @@ from app.api.routes.market_events import router as market_events_router
 from app.api.routes.economic_indicators import router as economic_indicators_router
 from app.api.routes.free_research import router as free_research_router
 from app.api.routes.valuation import router as valuation_router
+from app.api.routes.options import router as options_router
 
 # Create API router
 api_router = APIRouter()
@@ -39,6 +40,7 @@ api_router.include_router(market_data.router)
 api_router.include_router(economic_indicators_router)
 api_router.include_router(free_research_router)
 api_router.include_router(valuation_router)
+api_router.include_router(options_router)
 api_router.include_router(portfolio_router)
 api_router.include_router(chat_router)
 api_router.include_router(admin_router, prefix="/admin", tags=["Admin"])

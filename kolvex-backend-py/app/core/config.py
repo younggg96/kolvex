@@ -63,6 +63,11 @@ class Settings(BaseSettings):
     # Finnhub API (实时股票数据)
     FINNHUB_API_KEY: str = os.getenv("FINNHUB_API_KEY", "")
 
+    # Alpaca options data (free `indicative` feed; personal/internal use only)
+    ALPACA_API_KEY_ID: str = os.getenv("ALPACA_API_KEY_ID", "")
+    ALPACA_API_SECRET_KEY: str = os.getenv("ALPACA_API_SECRET_KEY", "")
+    ALPACA_OPTIONS_FEED: str = os.getenv("ALPACA_OPTIONS_FEED", "indicative")
+
     # Free public government economic statistics.
     ECONOMIC_INDICATORS_WORKER_ENABLED: bool = True
     
