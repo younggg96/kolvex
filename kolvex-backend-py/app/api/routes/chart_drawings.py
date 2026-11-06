@@ -68,7 +68,7 @@ def _unavailable() -> HTTPException:
 
 
 @router.get("/{ticker}", response_model=DrawingsResponse)
-async def get_chart_drawings(
+def get_chart_drawings(
     ticker: str = TickerPath,
     user_id: str = Depends(get_current_user_id),
     service: ChartDrawingsService = Depends(get_service),
@@ -80,7 +80,7 @@ async def get_chart_drawings(
 
 
 @router.put("/{ticker}", response_model=DrawingsResponse)
-async def save_chart_drawings(
+def save_chart_drawings(
     body: SaveDrawingsRequest,
     ticker: str = TickerPath,
     user_id: str = Depends(get_current_user_id),

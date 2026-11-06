@@ -58,7 +58,7 @@ def get_service(
 
 
 @router.get("/creators")
-async def list_creators(
+def list_creators(
     admin_id: str = Depends(verify_admin),
     service: YouTubeStockOpinionService = Depends(get_service),
 ):
@@ -66,7 +66,7 @@ async def list_creators(
 
 
 @router.patch("/creators/{channel_id}")
-async def update_creator(
+def update_creator(
     channel_id: str,
     payload: CreatorUpdate,
     admin_id: str = Depends(verify_admin),
@@ -166,7 +166,7 @@ def get_creator_latest_video(
 
 
 @router.get("/creators/{channel_id}/opinions")
-async def list_creator_opinions(
+def list_creator_opinions(
     channel_id: str,
     admin_id: str = Depends(verify_admin),
     service: YouTubeStockOpinionService = Depends(get_service),
@@ -178,7 +178,7 @@ async def list_creator_opinions(
 
 
 @router.post("/creators/{channel_id}/opinions")
-async def create_creator_opinion(
+def create_creator_opinion(
     channel_id: str,
     payload: OpinionWrite,
     admin_id: str = Depends(verify_admin),
@@ -193,7 +193,7 @@ async def create_creator_opinion(
 
 
 @router.patch("/opinions/{opinion_id}")
-async def update_opinion(
+def update_opinion(
     opinion_id: str,
     payload: OpinionWrite,
     admin_id: str = Depends(verify_admin),
@@ -208,7 +208,7 @@ async def update_opinion(
 
 
 @router.delete("/opinions/{opinion_id}")
-async def delete_opinion(
+def delete_opinion(
     opinion_id: str,
     admin_id: str = Depends(verify_admin),
     service: YouTubeStockOpinionService = Depends(get_service),
@@ -231,7 +231,7 @@ async def get_creator_public_profile(
 
 
 @router.post("/validate")
-async def validate_youtube_opinion_payload(
+def validate_youtube_opinion_payload(
     payload: ImportBody,
     admin_id: str = Depends(verify_admin),
     service: YouTubeStockOpinionService = Depends(get_service),

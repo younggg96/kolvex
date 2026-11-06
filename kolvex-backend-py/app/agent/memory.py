@@ -4,6 +4,7 @@ Conversation Memory
 负责从数据库加载历史消息并转换为 LangChain 消息格式
 """
 
+import asyncio
 import logging
 from typing import List, Optional, Dict, Any
 
@@ -62,12 +63,12 @@ async def load_conversation_history(
 
         # 验证对话属于该用户
         conv_result = (
-            supabase.table("chat_conversations")
+            (await asyncio.to_thread(supabase.table("chat_conversations")
             .select("id")
             .eq("id", conversation_id)
             .eq("user_id", user_id)
             .single()
-            .execute()
+            .execute))
         )
 
         if not conv_result.data:
@@ -76,12 +77,12 @@ async def load_conversation_history(
 
         # 获取最近 N 条消息
         result = (
-            supabase.table("chat_messages")
+            (await asyncio.to_thread(supabase.table("chat_messages")
             .select("role, content, created_at")
             .eq("conversation_id", conversation_id)
             .order("created_at", desc=True)
             .limit(max_messages)
-            .execute()
+            .execute))
         )
 
         messages = result.data or []
@@ -118,12 +119,12 @@ async def save_message(
 
         # 验证对话属于该用户
         conv_result = (
-            supabase.table("chat_conversations")
+            (await asyncio.to_thread(supabase.table("chat_conversations")
             .select("id, title")
             .eq("id", conversation_id)
             .eq("user_id", user_id)
             .single()
-            .execute()
+            .execute))
         )
 
         if not conv_result.data:
@@ -132,13 +133,13 @@ async def save_message(
 
         # 保存消息
         result = (
-            supabase.table("chat_messages")
+            (await asyncio.to_thread(supabase.table("chat_messages")
             .insert({
                 "conversation_id": conversation_id,
                 "role": role,
                 "content": content,
             })
-            .execute()
+            .execute))
         )
 
         if result.data:
@@ -149,9 +150,9 @@ async def save_message(
             if conv.get("title") == "New Chat" and role == "user":
                 new_title = content[:50] + ("..." if len(content) > 50 else "")
                 try:
-                    supabase.table("chat_conversations").update(
+                    (await asyncio.to_thread(supabase.table("chat_conversations").update(
                         {"title": new_title}
-                    ).eq("id", conversation_id).eq("user_id", user_id).execute()
+                    ).eq("id", conversation_id).eq("user_id", user_id).execute))
                 except Exception as title_err:
                     logger.warning(f"Failed to update conversation title: {title_err}")
 

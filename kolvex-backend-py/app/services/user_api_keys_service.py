@@ -41,11 +41,11 @@ class UserApiKeysService:
         """
         try:
             response = (
-                self.supabase.table(self.table)
+                (await asyncio.to_thread(self.supabase.table(self.table)
                 .select("id, provider, api_key, created_at, updated_at")
                 .eq("user_id", user_id)
                 .order("provider")
-                .execute()
+                .execute))
             )
         except Exception as e:
             logger.warning(f"Failed to query user_api_keys (table may not exist): {e}")
@@ -104,7 +104,7 @@ class UserApiKeysService:
             raise ValueError("API key cannot be empty")
 
         response = (
-            self.supabase.table(self.table)
+            (await asyncio.to_thread(self.supabase.table(self.table)
             .upsert(
                 {
                     "user_id": user_id,
@@ -113,7 +113,7 @@ class UserApiKeysService:
                 },
                 on_conflict="user_id,provider",
             )
-            .execute()
+            .execute))
         )
 
         if response.data:
@@ -133,21 +133,21 @@ class UserApiKeysService:
         """Delete an API key for a provider. Returns True if deleted."""
         provider = provider.lower().strip()
         response = (
-            self.supabase.table(self.table)
+            (await asyncio.to_thread(self.supabase.table(self.table)
             .delete()
             .eq("user_id", user_id)
             .eq("provider", provider)
-            .execute()
+            .execute))
         )
         return bool(response.data)
 
     async def delete_all_keys(self, user_id: str) -> int:
         """Delete all API keys for a user. Returns count deleted."""
         response = (
-            self.supabase.table(self.table)
+            (await asyncio.to_thread(self.supabase.table(self.table)
             .delete()
             .eq("user_id", user_id)
-            .execute()
+            .execute))
         )
         return len(response.data or [])
 

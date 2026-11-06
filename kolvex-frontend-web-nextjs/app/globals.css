@@ -1515,3 +1515,48 @@ a {
   from { opacity: 0; transform: translateY(-4px); }
   to { opacity: 1; transform: none; }
 }
+
+/* Phone opinion-source header: a floating segmented control over an iOS-style
+   scroll-edge effect. Content scrolls beneath it, so the page's first region is
+   inset by the header's height instead of being pushed down by it. */
+.opinion-header {
+  padding-top: max(0.75rem, env(safe-area-inset-top, 0px));
+  padding-bottom: 0.75rem;
+}
+
+.opinion-header::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 -1.25rem;
+  z-index: -1;
+  pointer-events: none;
+  background: linear-gradient(to bottom, rgb(var(--background) / 0.9), rgb(var(--background) / 0.6) 60%, rgb(var(--background) / 0));
+  -webkit-backdrop-filter: blur(12px) saturate(1.6);
+  backdrop-filter: blur(12px) saturate(1.6);
+  -webkit-mask-image: linear-gradient(to bottom, #000 55%, transparent);
+  mask-image: linear-gradient(to bottom, #000 55%, transparent);
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .opinion-header::before {
+    background: rgb(var(--background));
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+
+@media (max-width: 1023px) {
+  .dashboard-content > [data-opinion-header] + :is(.overflow-y-auto, .overflow-auto) {
+    scroll-padding-top: calc(max(0.75rem, env(safe-area-inset-top, 0px)) + 3.75rem);
+  }
+
+  .dashboard-content > [data-opinion-header] + :is(.overflow-y-auto, .overflow-auto)::before {
+    content: "";
+    display: block;
+    height: calc(max(0.75rem, env(safe-area-inset-top, 0px)) + 3.75rem);
+  }
+
+  .dashboard-content > [data-opinion-header] + :not(.overflow-y-auto, .overflow-auto) {
+    padding-top: calc(max(0.75rem, env(safe-area-inset-top, 0px)) + 3.75rem + 0.5rem);
+  }
+}

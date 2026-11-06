@@ -1,5 +1,4 @@
 """Authentication requests must not retain or rotate browser sessions globally."""
-import asyncio
 import time
 import unittest
 from types import SimpleNamespace
@@ -67,7 +66,7 @@ class AuthSessionTests(unittest.TestCase):
     def test_logout_uses_request_token_instead_of_shared_client_session(self):
         client = Mock()
         with patch.object(routes, "get_supabase", return_value=client):
-            result = asyncio.run(routes.sign_out("Bearer caller-token"))
+            result = routes.sign_out("Bearer caller-token")
         self.assertTrue(result.success)
         client.auth.admin.sign_out.assert_called_once_with("caller-token")
         client.auth.sign_out.assert_not_called()
@@ -75,7 +74,7 @@ class AuthSessionTests(unittest.TestCase):
     def test_missing_or_malformed_logout_token_does_not_touch_other_sessions(self):
         for value in [None, "invalid", "Basic caller-token"]:
             with patch.object(routes, "get_supabase") as factory:
-                self.assertTrue(asyncio.run(routes.sign_out(value)).success)
+                self.assertTrue(routes.sign_out(value).success)
                 factory.assert_not_called()
 
     def test_service_client_does_not_persist_or_auto_refresh_user_sessions(self):

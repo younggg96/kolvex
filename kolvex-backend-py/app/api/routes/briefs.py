@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 
 @router.get("")
-async def listing(
+def listing(
     page: int = Query(1, ge=1, le=1000000),
     brief_type: BriefType | None = Query(None, alias="type"),
     brief_date: CalendarDate | None = Query(None, alias="date"),
@@ -31,7 +31,7 @@ async def listing(
 
 
 @router.get("/calendar")
-async def calendar(
+def calendar(
     month: str = Query(..., pattern=r"^\d{4}-(0[1-9]|1[0-2])$"),
     user_id: str = Depends(get_current_user_id),
     db: Client = Depends(get_supabase_service),
@@ -46,7 +46,7 @@ async def calendar(
 
 
 @router.get("/{brief_id}")
-async def detail(
+def detail(
     brief_id: str,
     user_id: str = Depends(get_current_user_id),
     db: Client = Depends(get_supabase_service),

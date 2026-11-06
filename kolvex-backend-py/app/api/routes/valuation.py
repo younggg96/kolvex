@@ -88,7 +88,7 @@ async def company_inputs(symbol: Symbol):
 
 
 @router.post("/{symbol}/calculate")
-async def company_calculate(symbol: Symbol, command: CompanyCalculation):
+def company_calculate(symbol: Symbol, command: CompanyCalculation):
     try:
         snapshot = company_inputs_service.snapshot(symbol.upper(), command.snapshot_id)
         return JSONResponse(calculate_company(snapshot, command.model_dump()), headers=HEADERS)
@@ -165,7 +165,7 @@ async def sales_history(symbol: Symbol, years: int = Query(default=5, ge=1, le=5
 
 
 @router.get("/jobs/{job_id}")
-async def job_status(job_id: str = Path(pattern=r"^[a-f0-9]{32}$")):
+def job_status(job_id: str = Path(pattern=r"^[a-f0-9]{32}$")):
     job = valuation_service.job(job_id)
     if not job:
         raise HTTPException(404, "Valuation job expired; request data again")
@@ -174,7 +174,7 @@ async def job_status(job_id: str = Path(pattern=r"^[a-f0-9]{32}$")):
 
 @router.get("/{symbol}/summary")
 @router.get("/{symbol}/history")
-async def read_valuation(symbol: Symbol, years: int = Query(default=3, ge=1, le=5), retry: bool = False):
+def read_valuation(symbol: Symbol, years: int = Query(default=3, ge=1, le=5), retry: bool = False):
     status, data = valuation_service.request(symbol.upper(), retry=retry)
     if status == 200 and "points" in data:
         cutoff = date.fromisoformat(data["as_of"])
@@ -189,7 +189,7 @@ async def read_valuation(symbol: Symbol, years: int = Query(default=3, ge=1, le=
 
 
 @router.post("/{symbol}/simulate")
-async def simulate(symbol: Symbol, command: Simulation):
+def simulate(symbol: Symbol, command: Simulation):
     try:
         data = valuation_service.simulate(symbol.upper(), command.snapshot_id, command.multiples.model_dump(),
                                           command.growth.model_dump(), [d.isoformat() for d in command.target_dates])

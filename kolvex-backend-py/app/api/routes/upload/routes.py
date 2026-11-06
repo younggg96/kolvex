@@ -114,7 +114,7 @@ async def upload_avatar(
     response_model=UploadResponse,
     summary="上传 Base64 编码的用户头像",
 )
-async def upload_avatar_base64(
+def upload_avatar_base64(
     image_data: str = Form(..., description="Base64 编码的图片数据"),
     content_type: str = Form(default="image/jpeg", description="图片 MIME 类型"),
     current_user_id: str = Depends(get_current_user_id),
@@ -203,7 +203,7 @@ async def upload_avatar_base64(
     response_model=UploadResponse,
     summary="删除用户头像",
 )
-async def delete_avatar(
+def delete_avatar(
     file_path: str,
     current_user_id: str = Depends(get_current_user_id),
 ):

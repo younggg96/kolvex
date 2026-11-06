@@ -3,6 +3,7 @@ Portfolio 服务层
 处理业务逻辑和数据库操作
 """
 
+import asyncio
 import logging
 from typing import Optional, Dict, Any, List
 from supabase import Client
@@ -38,10 +39,10 @@ class PortfolioService:
 
         # 获取账户和持仓（包含 is_hidden 字段供用户管理）
         accounts = (
-            self.supabase.table("portfolio_accounts")
+            (await asyncio.to_thread(self.supabase.table("portfolio_accounts")
             .select("*, portfolio_positions(*, is_hidden)")
             .eq("connection_id", connection["id"])
-            .execute()
+            .execute))
         )
 
         accounts_data = accounts.data or []
@@ -97,11 +98,11 @@ class PortfolioService:
         """
         # 检查是否公开
         result = (
-            self.supabase.table("portfolio_connections")
+            (await asyncio.to_thread(self.supabase.table("portfolio_connections")
             .select("*")
             .eq("user_id", user_id)
             .eq("is_public", True)
-            .execute()
+            .execute))
         )
 
         if not result.data:
@@ -133,10 +134,10 @@ class PortfolioService:
 
         # 获取账户和持仓（获取所有字段，然后过滤隐藏持仓）
         accounts = (
-            self.supabase.table("portfolio_accounts")
+            (await asyncio.to_thread(self.supabase.table("portfolio_accounts")
             .select("*, portfolio_positions(*)")
             .eq("connection_id", connection["id"])
-            .execute()
+            .execute))
         )
 
         # 过滤掉隐藏的账户
@@ -271,10 +272,10 @@ class PortfolioService:
             raise Exception("用户未连接 Portfolio")
 
         result = (
-            self.supabase.table("portfolio_connections")
+            (await asyncio.to_thread(self.supabase.table("portfolio_connections")
             .update({"is_public": is_public})
             .eq("id", connection["id"])
-            .execute()
+            .execute))
         )
 
         return bool(result.data)
@@ -299,11 +300,11 @@ class PortfolioService:
 
         # 验证持仓属于该用户
         position = (
-            self.supabase.table("portfolio_positions")
+            (await asyncio.to_thread(self.supabase.table("portfolio_positions")
             .select("id, account_id")
             .eq("id", position_id)
             .single()
-            .execute()
+            .execute))
         )
 
         if not position.data:
@@ -311,11 +312,11 @@ class PortfolioService:
 
         # 验证账户属于该用户的连接
         account = (
-            self.supabase.table("portfolio_accounts")
+            (await asyncio.to_thread(self.supabase.table("portfolio_accounts")
             .select("connection_id")
             .eq("id", position.data["account_id"])
             .single()
-            .execute()
+            .execute))
         )
 
         if not account.data or account.data["connection_id"] != connection["id"]:
@@ -323,10 +324,10 @@ class PortfolioService:
 
         # 更新持仓隐藏状态
         result = (
-            self.supabase.table("portfolio_positions")
+            (await asyncio.to_thread(self.supabase.table("portfolio_positions")
             .update({"is_hidden": is_hidden})
             .eq("id", position_id)
-            .execute()
+            .execute))
         )
 
         return bool(result.data)
@@ -351,10 +352,10 @@ class PortfolioService:
 
         # 获取用户所有账户 ID
         accounts = (
-            self.supabase.table("portfolio_accounts")
+            (await asyncio.to_thread(self.supabase.table("portfolio_accounts")
             .select("id")
             .eq("connection_id", connection["id"])
-            .execute()
+            .execute))
         )
 
         if not accounts.data:
@@ -364,11 +365,11 @@ class PortfolioService:
 
         # 批量更新属于用户的持仓
         result = (
-            self.supabase.table("portfolio_positions")
+            (await asyncio.to_thread(self.supabase.table("portfolio_positions")
             .update({"is_hidden": is_hidden})
             .in_("id", position_ids)
             .in_("account_id", account_ids)
-            .execute()
+            .execute))
         )
 
         return len(result.data) if result.data else 0
@@ -431,10 +432,10 @@ class PortfolioService:
 
         # 更新数据库
         result = (
-            self.supabase.table("portfolio_connections")
+            (await asyncio.to_thread(self.supabase.table("portfolio_connections")
             .update({"privacy_settings": updated_settings})
             .eq("id", connection["id"])
-            .execute()
+            .execute))
         )
 
         if not result.data:
@@ -464,10 +465,10 @@ class PortfolioService:
 
         # 统计账户数量
         accounts = (
-            self.supabase.table("portfolio_accounts")
+            (await asyncio.to_thread(self.supabase.table("portfolio_accounts")
             .select("id", count="exact")
             .eq("connection_id", connection["id"])
-            .execute()
+            .execute))
         )
 
         return {
@@ -481,10 +482,10 @@ class PortfolioService:
     async def _get_connection(self, user_id: str) -> Optional[Dict[str, Any]]:
         """获取用户的 Portfolio 连接"""
         result = (
-            self.supabase.table("portfolio_connections")
+            (await asyncio.to_thread(self.supabase.table("portfolio_connections")
             .select("*")
             .eq("user_id", user_id)
-            .execute()
+            .execute))
         )
         logger.info(f"Portfolio connection result: {result.data}")
 

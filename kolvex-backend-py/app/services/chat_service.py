@@ -2,6 +2,7 @@
 聊天服务 - 处理聊天对话相关业务逻辑
 """
 
+import asyncio
 import logging
 from typing import Optional, Dict, Any, List
 from datetime import datetime
@@ -41,12 +42,12 @@ class ChatService:
             offset = (page - 1) * page_size
 
             result = (
-                self.supabase.table("chat_conversations")
+                (await asyncio.to_thread(self.supabase.table("chat_conversations")
                 .select("*, chat_messages(id, role, content, created_at)", count="exact")
                 .eq("user_id", user_id)
                 .order("updated_at", desc=True)
                 .range(offset, offset + page_size - 1)
-                .execute()
+                .execute))
             )
 
             conversations = []
@@ -96,12 +97,12 @@ class ChatService:
         """
         try:
             result = (
-                self.supabase.table("chat_conversations")
+                (await asyncio.to_thread(self.supabase.table("chat_conversations")
                 .select("*, chat_messages(id, role, content, created_at)")
                 .eq("id", conversation_id)
                 .eq("user_id", user_id)
                 .single()
-                .execute()
+                .execute))
             )
 
             if not result.data:
@@ -142,34 +143,34 @@ class ChatService:
         try:
             # Check conversation limit
             count_result = (
-                self.supabase.table("chat_conversations")
+                (await asyncio.to_thread(self.supabase.table("chat_conversations")
                 .select("id", count="exact")
                 .eq("user_id", user_id)
-                .execute()
+                .execute))
             )
             
             if count_result.count and count_result.count >= MAX_CONVERSATIONS_PER_USER:
                 # Delete oldest conversation
                 oldest = (
-                    self.supabase.table("chat_conversations")
+                    (await asyncio.to_thread(self.supabase.table("chat_conversations")
                     .select("id")
                     .eq("user_id", user_id)
                     .order("updated_at", desc=False)
                     .limit(1)
-                    .execute()
+                    .execute))
                 )
                 if oldest.data:
-                    self.supabase.table("chat_conversations").delete().eq(
+                    (await asyncio.to_thread(self.supabase.table("chat_conversations").delete().eq(
                         "id", oldest.data[0]["id"]
-                    ).execute()
+                    ).execute))
 
             result = (
-                self.supabase.table("chat_conversations")
+                (await asyncio.to_thread(self.supabase.table("chat_conversations")
                 .insert({
                     "user_id": user_id,
                     "title": title,
                 })
-                .execute()
+                .execute))
             )
 
             if result.data:
@@ -206,11 +207,11 @@ class ChatService:
         """
         try:
             result = (
-                self.supabase.table("chat_conversations")
+                (await asyncio.to_thread(self.supabase.table("chat_conversations")
                 .update({"title": title})
                 .eq("id", conversation_id)
                 .eq("user_id", user_id)
-                .execute()
+                .execute))
             )
             return bool(result.data)
         except Exception as e:
@@ -234,11 +235,11 @@ class ChatService:
         """
         try:
             result = (
-                self.supabase.table("chat_conversations")
+                (await asyncio.to_thread(self.supabase.table("chat_conversations")
                 .delete()
                 .eq("id", conversation_id)
                 .eq("user_id", user_id)
-                .execute()
+                .execute))
             )
             return bool(result.data)
         except Exception as e:
@@ -257,10 +258,10 @@ class ChatService:
         """
         try:
             result = (
-                self.supabase.table("chat_conversations")
+                (await asyncio.to_thread(self.supabase.table("chat_conversations")
                 .delete()
                 .eq("user_id", user_id)
-                .execute()
+                .execute))
             )
             return len(result.data) if result.data else 0
         except Exception as e:
@@ -289,12 +290,12 @@ class ChatService:
         try:
             # Verify conversation belongs to user
             conv_result = (
-                self.supabase.table("chat_conversations")
+                (await asyncio.to_thread(self.supabase.table("chat_conversations")
                 .select("id, title")
                 .eq("id", conversation_id)
                 .eq("user_id", user_id)
                 .single()
-                .execute()
+                .execute))
             )
             
             if not conv_result.data:
@@ -302,13 +303,13 @@ class ChatService:
 
             # Add message
             result = (
-                self.supabase.table("chat_messages")
+                (await asyncio.to_thread(self.supabase.table("chat_messages")
                 .insert({
                     "conversation_id": conversation_id,
                     "role": role,
                     "content": content,
                 })
-                .execute()
+                .execute))
             )
 
             if result.data:
@@ -351,23 +352,23 @@ class ChatService:
         try:
             # Verify conversation belongs to user
             conv_result = (
-                self.supabase.table("chat_conversations")
+                (await asyncio.to_thread(self.supabase.table("chat_conversations")
                 .select("id")
                 .eq("id", conversation_id)
                 .eq("user_id", user_id)
                 .single()
-                .execute()
+                .execute))
             )
             
             if not conv_result.data:
                 return []
 
             result = (
-                self.supabase.table("chat_messages")
+                (await asyncio.to_thread(self.supabase.table("chat_messages")
                 .select("*")
                 .eq("conversation_id", conversation_id)
                 .order("created_at", desc=False)
-                .execute()
+                .execute))
             )
 
             return result.data or []

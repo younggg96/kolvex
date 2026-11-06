@@ -9,6 +9,9 @@ from contextlib import asynccontextmanager
 import logging
 import asyncio
 import os
+from concurrent.futures import ThreadPoolExecutor
+
+import anyio.to_thread
 
 # 导入路由和配置
 from app.api.routes import api_router
@@ -37,6 +40,14 @@ async def lifespan(app: FastAPI):
     print("🚀 Starting Kolvex Backend API...")
     print(f"📝 API Version: {settings.APP_VERSION}")
     print(f"🌐 CORS Origins: {settings.ALLOWED_ORIGINS}")
+
+    # 同步 I/O（Supabase、yfinance）都放在线程中执行，避免阻塞事件循环。
+    # 默认上限较小：asyncio.to_thread 约 12 个、sync 路由 40 个，并发时会排队。
+    threads = int(os.getenv("IO_THREAD_POOL_SIZE", "64"))
+    asyncio.get_running_loop().set_default_executor(
+        ThreadPoolExecutor(max_workers=threads, thread_name_prefix="io")
+    )
+    anyio.to_thread.current_default_thread_limiter().total_tokens = threads
 
     # 初始化 Redis
     await init_redis()

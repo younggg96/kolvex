@@ -635,7 +635,7 @@ async def stock_analysis_index(user_id: str = Depends(get_current_user_id)):
 
 
 @router.get("/analysis-history/{symbol}")
-async def stock_analysis_history(
+def stock_analysis_history(
     symbol: str = Path(..., min_length=1, max_length=20, pattern=r"^[A-Za-z0-9.\-^=]+$"),
     kind: str = Query("technical", pattern="^(technical|drawings|research)$"),
     limit: int = Query(10, ge=1, le=50),
@@ -651,7 +651,7 @@ async def stock_analysis_history(
 
 
 @router.get("/analysis-history/{symbol}/{version_id}")
-async def get_stock_analysis_version(
+def get_stock_analysis_version(
     symbol: str = Path(..., min_length=1, max_length=20, pattern=r"^[A-Za-z0-9.\-^=]+$"),
     version_id: str = Path(..., pattern=r"^[0-9a-fA-F-]{36}$"),
     user_id: str = Depends(get_current_user_id),
@@ -666,7 +666,7 @@ async def get_stock_analysis_version(
 
 
 @router.patch("/analysis-history/{symbol}/{version_id}/current")
-async def activate_stock_analysis(
+def activate_stock_analysis(
     body: ActivateAnalysisRequest,
     symbol: str = Path(..., min_length=1, max_length=20, pattern=r"^[A-Za-z0-9.\-^=]+$"),
     version_id: str = Path(..., pattern=r"^[0-9a-fA-F-]{36}$"),
@@ -689,7 +689,7 @@ async def activate_stock_analysis(
     summary="获取日内行情",
     description="获取股票的日内分时数据"
 )
-async def get_intraday(
+def get_intraday(
     symbol: str = Path(..., description="股票代码"),
     interval: str = Query("5m", description="间隔: 1m, 2m, 5m, 15m, 30m, 60m"),
 ):
@@ -719,7 +719,7 @@ async def get_intraday(
     summary="获取公司信息",
     description="获取公司基本信息，包含行业、地址、员工数、业务描述等"
 )
-async def get_company_info(
+def get_company_info(
     symbol: str = Path(..., description="股票代码")
 ):
     """获取公司基本信息"""
@@ -737,7 +737,7 @@ async def get_company_info(
     summary="获取财务指标",
     description="获取关键财务指标，包含估值、盈利能力、资产负债等"
 )
-async def get_financials(
+def get_financials(
     symbol: str = Path(..., description="股票代码")
 ):
     """获取财务指标"""
@@ -754,7 +754,7 @@ async def get_financials(
     summary="获取利润表",
     description="获取利润表详细数据"
 )
-async def get_income_statement(
+def get_income_statement(
     symbol: str = Path(..., description="股票代码"),
     quarterly: bool = Query(False, description="是否获取季度数据"),
 ):
@@ -777,7 +777,7 @@ async def get_income_statement(
     summary="获取资产负债表",
     description="获取资产负债表详细数据"
 )
-async def get_balance_sheet(
+def get_balance_sheet(
     symbol: str = Path(..., description="股票代码"),
     quarterly: bool = Query(False, description="是否获取季度数据"),
 ):
@@ -800,7 +800,7 @@ async def get_balance_sheet(
     summary="获取现金流量表",
     description="获取现金流量表详细数据"
 )
-async def get_cash_flow(
+def get_cash_flow(
     symbol: str = Path(..., description="股票代码"),
     quarterly: bool = Query(False, description="是否获取季度数据"),
 ):
@@ -824,7 +824,7 @@ async def get_cash_flow(
     summary="获取股息信息",
     description="获取股息相关信息，包含股息率、派息历史等"
 )
-async def get_dividends(
+def get_dividends(
     symbol: str = Path(..., description="股票代码")
 ):
     """获取股息信息"""
@@ -859,7 +859,7 @@ async def get_dividends(
     summary="获取期权数据",
     description="获取期权到期日列表和最近到期日的期权链"
 )
-async def get_options(
+def get_options(
     symbol: str = Path(..., description="股票代码")
 ):
     """获取期权数据"""
@@ -881,7 +881,7 @@ async def get_options(
     summary="获取指定到期日期权链",
     description="获取指定到期日的完整期权链数据"
 )
-async def get_options_chain(
+def get_options_chain(
     symbol: str = Path(..., description="股票代码"),
     expiration: str = Path(..., description="到期日 (YYYY-MM-DD)")
 ):
@@ -909,7 +909,7 @@ async def get_options_chain(
     summary="获取分析师评级",
     description="获取分析师评级、目标价格和评级历史"
 )
-async def get_analyst_recommendations(
+def get_analyst_recommendations(
     symbol: str = Path(..., description="股票代码")
 ):
     """获取分析师评级"""
@@ -939,7 +939,7 @@ async def get_analyst_recommendations(
     summary="获取盈利数据",
     description="获取盈利历史、盈利预期和盈利日期"
 )
-async def get_earnings(
+def get_earnings(
     symbol: str = Path(..., description="股票代码")
 ):
     """获取盈利数据"""
@@ -970,7 +970,7 @@ async def get_earnings(
     summary="获取股票综合概览",
     description="一次性获取股票的报价、公司信息和关键财务指标"
 )
-async def get_stock_overview(
+def get_stock_overview(
     symbol: str = Path(..., description="股票代码")
 ):
     """获取股票综合概览"""

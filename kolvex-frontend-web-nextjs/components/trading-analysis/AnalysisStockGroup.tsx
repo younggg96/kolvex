@@ -74,7 +74,7 @@ export function AnalysisStockGroup({ item, mode, locale, t }: Props) {
               </div>
             </dl>
             <h4 className="text-xs text-muted-foreground">{t("youtubeOpinions.ai.planReason")}</h4>
-            <p className="mt-1.5 max-w-[72ch] whitespace-pre-line break-words text-sm leading-7">{setup.reason}</p>
+            <p className="mt-1.5 whitespace-pre-line break-words text-sm leading-7">{setup.reason}</p>
             <div className="flex flex-wrap items-center gap-x-4">
               <SetupTradeLink symbol={item.ticker} setup={setup} />
               <StockLink ticker={item.ticker} t={t} className="mt-4" />
@@ -102,7 +102,7 @@ export function AnalysisStockGroup({ item, mode, locale, t }: Props) {
           <Chevron />
         </summary>
         <div className="px-2 pb-5 pt-1 sm:pl-[3.75rem] sm:pr-10">
-          {item.summary && <p className="max-w-[72ch] whitespace-pre-line break-words text-sm leading-7">{item.summary}</p>}
+          {item.summary && <p className="whitespace-pre-line break-words text-sm leading-7">{item.summary}</p>}
           {item.signals.length > 0 && (
             <div className="mt-4">
               <h4 className="text-xs text-muted-foreground">{t("youtubeOpinions.ai.signals")}</h4>

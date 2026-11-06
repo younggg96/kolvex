@@ -1,4 +1,5 @@
 """Administration for retained user, portfolio and research features."""
+import asyncio
 import logging
 from datetime import datetime, timezone, timedelta
 from typing import Dict, Any, Optional, List
@@ -19,7 +20,7 @@ BUSINESS_TABLES = (
 )
 
 @router.get("/database/stats")
-async def get_database_stats(admin_id: str = Depends(verify_admin), supabase: Client = Depends(get_supabase_service)):
+def get_database_stats(admin_id: str = Depends(verify_admin), supabase: Client = Depends(get_supabase_service)):
     counts = {}
     for name in BUSINESS_TABLES:
         try:
@@ -39,8 +40,8 @@ async def get_database_stats(admin_id: str = Depends(verify_admin), supabase: Cl
     return {"tables": counts}
 
 @router.get("/overview")
-async def get_admin_overview(admin_id: str = Depends(verify_admin), supabase: Client = Depends(get_supabase_service)):
-    return await get_database_stats(admin_id, supabase)
+def get_admin_overview(admin_id: str = Depends(verify_admin), supabase: Client = Depends(get_supabase_service)):
+    return get_database_stats(admin_id, supabase)
 
 
 @router.post("/actions/portfolio-snapshot", response_model=Dict[str, Any])
@@ -76,10 +77,10 @@ async def trigger_portfolio_snapshot(
 
         # 获取所有已连接的用户
         result = (
-            supabase.table("portfolio_connections")
+            (await asyncio.to_thread(supabase.table("portfolio_connections")
             .select("user_id, is_connected")
             .eq("is_connected", True)
-            .execute()
+            .execute))
         )
 
         if not result.data:
@@ -206,7 +207,7 @@ async def trigger_portfolio_snapshot(
         }
 
 @router.get("/users", response_model=Dict[str, Any])
-async def list_all_users(
+def list_all_users(
     page: int = Query(1, ge=1, description="页码"),
     page_size: int = Query(50, ge=1, le=100, description="每页数量"),
     search: Optional[str] = Query(None, description="搜索关键词（邮箱或用户名）"),
@@ -244,7 +245,7 @@ async def list_all_users(
         )
 
 @router.patch("/users/{user_id}/admin", response_model=Dict[str, Any])
-async def toggle_user_admin(
+def toggle_user_admin(
     user_id: str,
     is_admin: bool,
     admin_id: str = Depends(verify_admin),
