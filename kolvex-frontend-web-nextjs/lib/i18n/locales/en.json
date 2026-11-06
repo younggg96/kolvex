@@ -1442,6 +1442,31 @@
       "priceAction": {
         "title": "Price action signals",
         "rules": "Two consecutive closes confirm a break. Retests are observed within 10 bars; a close back inside within 5 bars marks a failed break. Wick rejections are detected separately."
+      },
+      "job": {
+        "progress": "Job progress",
+        "elapsed": "{time} elapsed",
+        "leave": "You can leave this page. The result is saved automatically when it finishes.",
+        "steps": {
+          "submitting": "Submit",
+          "queued": "Queue",
+          "running": "Generate"
+        },
+        "hint": {
+          "submitting": "Sending the current chart range to the AI.",
+          "queued": "Waiting for a background worker. It starts automatically.",
+          "running": "Reading the candles and building the result. This can take a few minutes."
+        },
+        "analysis": {
+          "submitting": "Submitting analysis",
+          "queued": "AI analysis queued",
+          "running": "Analyzing the chart"
+        },
+        "drawings": {
+          "submitting": "Submitting drawings",
+          "queued": "AI drawings queued",
+          "running": "Drawing on the chart"
+        }
       }
     },
     "drawTools": "Drawing tools",
@@ -1616,6 +1641,7 @@
       "debate": "Debate",
       "trader": "Trader",
       "risk": "Risk",
+      "translating": "Translate",
       "completed": "Done"
     },
     "stageDesc": {
@@ -1624,6 +1650,7 @@
       "debate": "Bull vs Bear debate in progress",
       "trader": "Generating trading recommendation",
       "risk": "Risk assessment & final review",
+      "translating": "Translating the report",
       "completed": "Analysis complete"
     },
     "analysisInProgress": "Analysis in Progress",
@@ -1714,6 +1741,19 @@
     "translationFailed": "Translation failed. Try Translate again.",
     "error": {
       "loadFailed": "Failed to load analysis"
+    },
+    "translation": {
+      "showingTranslation": "Showing the translation. The research was written in English.",
+      "showingOriginal": "Showing the English original.",
+      "viewOriginal": "View English original",
+      "viewTranslation": "View translation",
+      "missing": "This report is only available in English. Translating uses the model in your settings, and the translation becomes visible to everyone.",
+      "translate": "Translate",
+      "translating": "Translating. It appears automatically when ready, usually within a minute or two.",
+      "failed": "The translation did not finish. Try again.",
+      "retry": "Retry",
+      "notConfigured": "Add an API key for your selected model in settings to translate.",
+      "openSettings": "Open settings"
     }
   },
   "news": {

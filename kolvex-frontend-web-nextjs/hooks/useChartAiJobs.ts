@@ -5,7 +5,7 @@ import { AiAnalysisError, getAiChartJobs, submitAiChartJob, type AiChartJob, typ
 import type { AiPanelState } from "@/components/youtube/chart/AiAnalysisPanel";
 
 type Operation = "analysis" | "drawings";
-export type ChartJobState = AiPanelState & { phase?: "submitting" | "queued" | "running"; errorCode?: string };
+export type ChartJobState = AiPanelState & { phase?: "submitting" | "queued" | "running"; errorCode?: string; startedAt?: number };
 const empty = (): Record<Operation, ChartJobState> => ({ analysis: { status: "idle" }, drawings: { status: "idle" } });
 
 export function useChartAiJobs(symbol: string, onComplete: (operation: Operation, result: AiTechnicalAnalysis) => void) {
@@ -33,7 +33,8 @@ export function useChartAiJobs(symbol: string, onComplete: (operation: Operation
   const apply = useCallback((job: AiChartJob, submitted = false) => {
     if (job.status === "queued" || job.status === "running") {
       tracked.current.add(job.id);
-      update(job.operation, { status: "loading", phase: job.status });
+      const created = Date.parse(job.created_at);
+      update(job.operation, { status: "loading", phase: job.status, startedAt: Number.isFinite(created) ? created : current.current[job.operation].startedAt });
     } else if (job.status === "failed") {
       update(job.operation, { status: "error", errorCode: job.error_code || "ai_analysis_failed" });
     } else if ((submitted || tracked.current.has(job.id)) && !completed.current.has(job.id)) {
@@ -107,7 +108,7 @@ export function useChartAiJobs(symbol: string, onComplete: (operation: Operation
     if (submitting.current || Object.values(current.current).some(state => state.status === "loading")) return;
     submitting.current = true;
     attemptedAt.current[body.operation] = Date.now();
-    update(body.operation, { status: "loading", phase: "submitting" });
+    update(body.operation, { status: "loading", phase: "submitting", startedAt: Date.now() });
     const requestSymbol = symbol;
     const signature = JSON.stringify({ symbol, ...body });
     if (submission.current?.signature !== signature) submission.current = { signature, id: crypto.randomUUID() };

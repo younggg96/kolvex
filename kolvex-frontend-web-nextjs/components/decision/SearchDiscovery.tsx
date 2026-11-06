@@ -72,11 +72,10 @@ function TrendingStocks({ youtube, reddit, onRemember }: { youtube: Resource<You
   const [source, setSource] = useState<"youtube" | "reddit">("youtube");
   const resource = source === "youtube" ? youtube : reddit;
   const stocks = useMemo(() => source === "youtube"
-    ? [...(youtube.data?.stocks ?? [])].sort((a, b) => b.total_opinions - a.total_opinions).slice(0, PICK_COUNT).map(stock => ({ ticker: stock.ticker, name: stock.company_name || stock.ticker, count: stock.total_opinions }))
-    : (reddit.data?.results ?? []).slice(0, PICK_COUNT).map(stock => ({ ticker: stock.ticker, name: stock.name, count: stock.mentions })),
+    ? [...(youtube.data?.stocks ?? [])].sort((a, b) => b.total_opinions - a.total_opinions).slice(0, PICK_COUNT).map(stock => ({ ticker: stock.ticker, name: stock.company_name || stock.ticker }))
+    : (reddit.data?.results ?? []).slice(0, PICK_COUNT).map(stock => ({ ticker: stock.ticker, name: stock.name })),
   [source, youtube.data, reddit.data]);
   const href = source === "youtube" ? "/dashboard/youtube-opinions" : "/dashboard/reddit-opinions";
-  const metric = source === "youtube" ? c("opinions", "条观点") : c("mentions", "次提及");
 
   return <DiscoverySection id="search-trending" title={c("Trending stocks", "热议股票")} href={href} linkLabel={source === "youtube" ? c("View all YouTube stocks", "查看全部 YouTube 热议股票") : c("View all Reddit stocks", "查看全部 Reddit 热议股票")}>
     <ListCard>
@@ -101,8 +100,8 @@ function TrendingStocks({ youtube, reddit, onRemember }: { youtube: Resource<You
             <Link href={marketStockHref(stock.ticker)} title={stock.name} onClick={() => onRemember({ title: stock.name, detail: stock.ticker, href: marketStockHref(stock.ticker) })} className={cn(listCompactRowClass, styles.stockLink)}>
               <span aria-hidden className={styles.rank}>{index + 1}</span>
               <span aria-hidden className={styles.stockLogo}><CompanyLogo symbol={stock.ticker} name={stock.name} customSize={32} /></span>
-              <span className="min-w-0 flex-1"><span className="block text-sm font-semibold">{stock.ticker}</span><span className="mt-1 block truncate text-xs text-muted-foreground">{stock.name}</span></span>
-              <span className="shrink-0 text-right"><span className="block text-sm font-medium tabular-nums">{stock.count.toLocaleString(c("en-US", "zh-CN"))}</span><span className="mt-1 block text-[0.6875rem] text-muted-foreground">{metric}</span></span>
+              <span className="min-w-0 flex-1"><span className="block text-sm font-semibold">{stock.ticker}</span><span className="mt-0.5 block truncate text-xs text-muted-foreground">{stock.name}</span></span>
+              <ArrowUpRight aria-hidden className={cn("h-3.5 w-3.5", styles.rowArrow)} />
             </Link>
           </ListRow>)}
         </ol> : <SourceState {...resource} retry={resource.refresh} className="min-h-[22rem] xl:min-h-[26rem]" />}
@@ -240,8 +239,9 @@ export default function SearchDiscovery({ youtube, reddit, x, history, onHistory
         <h2 id="search-recent" className="text-sm font-medium text-muted-foreground">{c("Recent searches", "最近搜索")}</h2>
         <button type="button" onClick={() => onHistoryChange([])} className="min-h-9 rounded-full px-2 text-xs text-muted-foreground transition-colors hover:text-foreground motion-reduce:transition-none">{c("Clear", "清除")}</button>
       </div>
-      <ul className="flex flex-wrap gap-2">{history.map(item => <li key={item.href} className={cn("flex min-w-0 items-center rounded-full border border-border", styles.recentItem)}>
-        <Link href={item.href} title={item.title} onClick={() => onRemember(item)} className="flex min-h-11 min-w-0 items-center gap-2 rounded-full py-2 pl-3 pr-1 text-sm transition-colors hover:bg-foreground/[0.06] active:bg-foreground/[0.1] motion-reduce:transition-none">
+      <ul className="flex flex-wrap gap-2">{history.map(item => <li key={item.href} className={cn("glass-button glass-button-neutral flex min-w-0 items-center rounded-full bg-foreground/[0.08] transition-colors hover:bg-foreground/[0.13] has-[a:active]:bg-foreground/[0.18] motion-reduce:transition-none", styles.recentItem)}>
+        {/* The whole chip washes on hover, not just the link half, so the pill never looks split. */}
+        <Link href={item.href} title={item.title} onClick={() => onRemember(item)} className="flex min-h-11 min-w-0 items-center gap-2 rounded-full py-2 pl-3.5 pr-1 text-sm">
           <Clock aria-hidden className="h-3.5 w-3.5 shrink-0 text-muted-foreground" /><span className="truncate">{item.title}</span>
         </Link>
         <button type="button" aria-label={c(`Remove ${item.title} from recent searches`, `从最近搜索中移除 ${item.title}`)} onClick={() => onHistoryChange(history.filter(existing => existing.href !== item.href))} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-foreground/[0.06] hover:text-foreground motion-reduce:transition-none"><X aria-hidden className="h-3.5 w-3.5" /></button>

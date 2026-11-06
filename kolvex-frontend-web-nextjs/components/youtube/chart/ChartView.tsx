@@ -78,6 +78,7 @@ import { toneText, type StrengthTone } from "../strength";
 import AiPriceActionSignals from "./AiPriceActionSignals";
 import AiDrawingSetup from "./AiDrawingSetup";
 import AiAnalysisPanel from "./AiAnalysisPanel";
+import AiJobProgress, { AiJobStatusChip } from "./AiJobProgress";
 import AiAnalysisEmptyState from "./AiAnalysisEmptyState";
 import { computeIndicators, indicatorMeta, indicatorOrder, vwap, type IndicatorKey, type Series } from "./indicators";
 import {
@@ -1059,7 +1060,8 @@ export default function ChartView({
 
       </div>
   );
-  const activeJob = aiJobs.analysis.status === "loading" ? aiJobs.analysis : aiJobs.drawings.status === "loading" ? aiJobs.drawings : null;
+  const activeOperation = aiJobs.analysis.status === "loading" ? "analysis" as const : aiJobs.drawings.status === "loading" ? "drawings" as const : null;
+  const activeJob = activeOperation ? aiJobs[activeOperation] : null;
   const failedOperation = ai.status === "error" ? "analysis" : drawingAi.status === "error" ? "drawings" : null;
   const aiStatus = aiJobs.monitorError ? (
     <div role="alert" className="mt-3 flex flex-wrap items-center gap-2 text-sm leading-6 text-warning">
@@ -1067,11 +1069,8 @@ export default function ChartView({
       <span className="min-w-0 flex-1">{t("youtubeOpinions.ai.statusUnavailable")}</span>
       <Button size="sm" variant="ghost" onClick={aiJobs.refresh}>{t("youtubeOpinions.ai.checkStatus")}</Button>
     </div>
-  ) : activeJob ? (
-    <div role="status" className="mt-3 flex items-start gap-2 text-sm leading-6 text-muted-foreground">
-      <Loader2 className="mt-1 h-4 w-4 shrink-0 animate-spin" aria-hidden="true" />
-      <p>{t(`youtubeOpinions.ai.${activeJob.phase === "submitting" ? "submitting" : activeJob.phase === "queued" ? "queued" : "backgroundRunning"}`)}</p>
-    </div>
+  ) : activeJob && activeOperation ? (
+    <AiJobStatusChip operation={activeOperation} phase={activeJob.phase} startedAt={activeJob.startedAt} t={t} className="mt-3" />
   ) : failedOperation ? (
     <div role="alert" className="mt-3 flex flex-wrap items-start gap-2 text-sm leading-6 text-negative">
       <AlertCircle className="mt-1 h-4 w-4 shrink-0" aria-hidden="true" />
@@ -1083,6 +1082,13 @@ export default function ChartView({
   ) : null;
   const stackedResults = !advanced && (compactLayout === "workspace" || Boolean(resultsContainer));
   const aiResults = (<>
+    {activeJob && activeOperation && <AiJobProgress
+      operation={activeOperation}
+      phase={activeJob.phase}
+      startedAt={activeJob.startedAt}
+      t={t}
+      className={stackedResults ? "order-first" : "mt-4"}
+    />}
     {ai.status === "idle" && drawingAi.status === "idle" && !aiBusy && !aiJobs.monitorError && <AiAnalysisEmptyState
       symbol={symbol}
       interval={params.interval || "1d"}
@@ -1750,7 +1756,7 @@ export default function ChartView({
         {showAi && !advanced && compactLayout === "workspace" && resultsContainer && createPortal(aiResults, resultsContainer)}
       </div>
       {showAi && advanced && <aside aria-label={t("youtubeOpinions.ai.actions")} className="hidden min-h-0 w-[clamp(22rem,28vw,30rem)] shrink-0 overflow-y-auto overscroll-contain border-l border-border pl-4 lg:block">
-        {aiControls}{aiStatus}{aiResults}
+        {aiControls}{!activeJob && aiStatus}{aiResults}
       </aside>}
     </div>
   );

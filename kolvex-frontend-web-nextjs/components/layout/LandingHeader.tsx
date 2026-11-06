@@ -52,7 +52,7 @@ export default function LandingHeader() {
   };
 
   return (
-    <header className="relative z-10 border-b border-border bg-background">
+    <header className="glass-header sticky top-0 z-40 border-b">
       <div className="landing-width flex min-h-[4.5rem] items-center justify-between gap-4 py-3">
         <Link
           href="/"
@@ -69,7 +69,7 @@ export default function LandingHeader() {
         <div className="flex items-center gap-1 sm:gap-4">
           <DropdownMenu open={navigationOpen} onOpenChange={setNavigationOpen}>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="min-h-10 gap-2 px-2 sm:px-3" aria-label={c("Navigation", "导航")}>
+              <Button variant="outline" size="icon" className="gap-2 sm:w-auto sm:px-3.5" aria-label={c("Navigation", "导航")}>
                 <Menu size="1.125rem" aria-hidden="true" />
                 <span className="hidden sm:inline">{c("Navigation", "导航")}</span>
               </Button>
@@ -148,7 +148,7 @@ export default function LandingHeader() {
             </Button>
           )}
           <Button
-            variant="ghost"
+            variant="outline"
             size="icon"
             onClick={() => setLocale(locale === "zh" ? "en" : "zh")}
             aria-label={locale === "zh" ? "Switch to English" : "切换为中文"}

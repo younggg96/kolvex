@@ -15,7 +15,6 @@ export default function AiAnalysisEmptyState({ symbol, interval, disabled, model
     <section aria-label={t("youtubeOpinions.ai.title")} className="min-w-0 py-4 text-sm">
       <div className="flex min-w-0 flex-wrap items-center gap-4">
         <div className="flex min-w-0 flex-[1_1_24rem] items-start gap-4">
-          <ScanSearch className="mt-1 h-6 w-6 shrink-0 text-muted-foreground" strokeWidth={1.5} aria-hidden="true" />
           <div className="min-w-0 max-w-2xl">
             <h3 className="text-balance text-lg font-semibold text-foreground">{t("youtubeOpinions.ai.empty.title")}</h3>
             <p className="mt-2 text-pretty leading-6 text-muted-foreground">{t("youtubeOpinions.ai.empty.description")}</p>

@@ -148,19 +148,43 @@ a {
 }
 
 @layer components {
-  /* Floating surfaces: shadow in light, hairline in dark where shadows vanish */
+  /* Floating surfaces use the shared glass edge (see the glass tokens below) with
+     a deeper drop. They stay opaque enough to read over any content; the solid
+     fill is the fallback without backdrop filters and for reduced transparency. */
   .surface-overlay {
     background: rgb(var(--card));
     color: rgb(var(--card-foreground));
-    border: 1px solid transparent;
+    border: 1px solid var(--glass-rim);
     box-shadow:
       0 12px 32px -8px rgb(0 0 0 / 0.18),
-      0 2px 6px rgb(0 0 0 / 0.06);
+      var(--glass-sheen);
   }
 
   .dark .surface-overlay {
-    border-color: rgb(var(--border));
-    box-shadow: 0 16px 40px -8px rgb(0 0 0 / 0.7);
+    box-shadow:
+      0 16px 40px -8px rgb(0 0 0 / 0.7),
+      var(--glass-sheen);
+  }
+
+  @supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    .surface-overlay {
+      background: rgb(250 250 248 / 0.78);
+      -webkit-backdrop-filter: var(--glass-blur);
+      backdrop-filter: var(--glass-blur);
+    }
+
+    .dark .surface-overlay {
+      background: rgb(28 28 30 / 0.74);
+    }
+  }
+
+  @media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
+    .surface-overlay,
+    .dark .surface-overlay {
+      background: rgb(var(--card));
+      -webkit-backdrop-filter: none;
+      backdrop-filter: none;
+    }
   }
 
   /* Row of one collection: hairline between rows, and a neutral wash plus a
@@ -1026,51 +1050,70 @@ a {
   }
 }
 
-/* iOS-style glass for tabs and segmented controls, in the dock's material.
-   `.glass-track` is the translucent container and `.glass-thumb` the lighter
-   selected pill; selected labels stay in foreground on it. `.glass-track-strong`
-   is a denser material for tab bars that stick above scrolling content. The
-   declared background is the solid fallback for browsers without backdrop filters. */
-.glass-track {
-  border-color: rgb(var(--foreground) / 0.08);
-  background: rgb(var(--muted));
-  box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.45),
-    inset 0 0 0 1px rgb(var(--foreground) / 0.06);
+/* One glass material for every surface. Tracks, buttons, fields, cards, popups
+   and headers all draw their edge from these tokens so they read as the same
+   glass: a hairline rim, a bright top highlight, a faint bottom highlight and one
+   drop shadow, over the same blur. Only fills differ, by role. */
+:root {
+  --glass-rim: rgb(37 41 37 / 0.1);
+  --glass-highlight: rgb(255 255 255 / 0.75);
+  --glass-lowlight: rgb(255 255 255 / 0.3);
+  --glass-control: rgb(37 41 37 / 0.06);
+  --glass-drop: 0 8px 24px -12px rgb(0 0 0 / 0.16);
+  --glass-recess: inset 0 1px 2px rgb(0 0 0 / 0.06);
+  --glass-blur: blur(24px) saturate(180%);
+  --glass-sheen: inset 0 1px 0 var(--glass-highlight), inset 0 -1px 0 var(--glass-lowlight);
+  --glass-edge: inset 0 0 0 1px var(--glass-rim), var(--glass-sheen);
 }
 
-.dark .glass-track {
-  border-color: rgb(255 255 255 / 0.1);
-  box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.14),
-    inset 0 0 0 1px rgb(255 255 255 / 0.08);
+.dark {
+  --glass-rim: rgb(255 255 255 / 0.13);
+  --glass-highlight: rgb(255 255 255 / 0.22);
+  --glass-lowlight: rgb(255 255 255 / 0.06);
+  --glass-control: rgb(255 255 255 / 0.08);
+  --glass-drop: 0 10px 28px -12px rgb(0 0 0 / 0.6);
+  --glass-recess: inset 0 1px 2px rgb(0 0 0 / 0.3);
+  --glass-sheen: inset 0 1px 0 var(--glass-highlight), inset 0 -1px 0 var(--glass-lowlight);
+  --glass-edge: inset 0 0 0 1px var(--glass-rim), var(--glass-sheen);
+}
+
+/* iOS-style glass for tabs and segmented controls: a smoky frosted track with a
+   bright rim, holding a solid white thumb with near-black text (the selected
+   label colour comes from `--glass-thumb-foreground`, also exposed as the
+   `text-glass-thumb-foreground` utility). `.glass-track-strong` is a denser
+   material for tab bars that stick above scrolling content. The declared
+   background is the solid fallback for browsers without backdrop filters. */
+:root {
+  --glass-thumb-foreground: 17 17 17;
+}
+
+/* The rim is drawn by the shadow, so a caller's `border` stays invisible. */
+.glass-track {
+  border-color: transparent;
+  background: rgb(var(--muted));
+  box-shadow: var(--glass-drop), var(--glass-edge);
 }
 
 .glass-thumb {
-  background: rgb(255 255 255 / 0.82);
+  background: rgb(255 255 255 / 0.97);
+  color: rgb(var(--glass-thumb-foreground));
   box-shadow:
-    0 2px 6px -1px rgb(0 0 0 / 0.16),
+    0 2px 8px -2px rgb(0 0 0 / 0.22),
     0 0 0 0.5px rgb(0 0 0 / 0.06),
-    inset 0 1px 0 rgb(255 255 255 / 0.9);
+    inset 0 -1px 0 rgb(0 0 0 / 0.05);
 }
 
 .dark .glass-thumb {
-  background: rgb(255 255 255 / 0.17);
   box-shadow:
-    0 2px 8px -2px rgb(0 0 0 / 0.5),
-    inset 0 0 0 0.5px rgb(255 255 255 / 0.12),
-    inset 0 1px 0 rgb(255 255 255 / 0.24);
+    0 4px 14px -4px rgb(0 0 0 / 0.6),
+    inset 0 -1px 0 rgb(0 0 0 / 0.08);
 }
 
 @supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   .glass-track {
-    background: rgb(var(--foreground) / 0.06);
-    -webkit-backdrop-filter: blur(24px) saturate(180%);
-    backdrop-filter: blur(24px) saturate(180%);
-  }
-
-  .dark .glass-track {
-    background: rgb(255 255 255 / 0.09);
+    background: var(--glass-control);
+    -webkit-backdrop-filter: var(--glass-blur);
+    backdrop-filter: var(--glass-blur);
   }
 
   .glass-track-strong {
@@ -1078,7 +1121,7 @@ a {
   }
 
   .dark .glass-track-strong {
-    background: rgb(38 38 40 / 0.72);
+    background: rgb(34 34 36 / 0.74);
   }
 }
 
@@ -1094,7 +1137,7 @@ a {
 
   .glass-thumb,
   .dark .glass-thumb {
-    background: rgb(var(--secondary));
+    background: rgb(255 255 255);
   }
 }
 
@@ -1111,51 +1154,25 @@ a {
 
   .glass-thumb,
   .dark .glass-thumb {
-    background: rgb(var(--background));
-    box-shadow: inset 0 0 0 1px rgb(var(--foreground) / 0.55);
+    background: rgb(255 255 255);
+    box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.55);
   }
 }
 
-/* Glass buttons. `.glass-button` supplies only the blur and specular edge: fills
-   stay in Tailwind utilities so hover, press and caller overrides keep working.
-   Ghost buttons stay bare until hovered. The role modifiers exist to restore a
-   solid fill where a preference turns the translucency off. */
-.glass-button {
-  box-shadow:
-    0 1px 3px rgb(0 0 0 / 0.08),
-    inset 0 1px 0 rgb(255 255 255 / 0.4);
-}
-
-.dark .glass-button {
-  box-shadow:
-    0 2px 8px -3px rgb(0 0 0 / 0.5),
-    inset 0 0 0 0.5px rgb(255 255 255 / 0.08),
-    inset 0 1px 0 rgb(255 255 255 / 0.18);
-}
-
-@media (hover: hover) {
-  .glass-button-ghost:hover {
-    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.4);
-  }
-
-  .dark .glass-button-ghost:hover {
-    box-shadow:
-      inset 0 0 0 0.5px rgb(255 255 255 / 0.08),
-      inset 0 1px 0 rgb(255 255 255 / 0.16);
-  }
+/* Glass buttons. `.glass-button` supplies only the shared glass edge and blur;
+   fills stay in Tailwind utilities so hover, press and caller overrides keep
+   working. Ghost buttons stay bare until hovered or pressed. The role modifiers
+   exist to restore a solid fill where a preference turns the translucency off. */
+.glass-button,
+.glass-button-ghost:is(:hover, :active) {
+  box-shadow: var(--glass-drop), var(--glass-edge);
 }
 
 @supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  .glass-button {
-    -webkit-backdrop-filter: blur(16px) saturate(180%);
-    backdrop-filter: blur(16px) saturate(180%);
-  }
-
-  @media (hover: hover) {
-    .glass-button-ghost:hover {
-      -webkit-backdrop-filter: blur(16px) saturate(180%);
-      backdrop-filter: blur(16px) saturate(180%);
-    }
+  .glass-button,
+  .glass-button-ghost:is(:hover, :active) {
+    -webkit-backdrop-filter: var(--glass-blur);
+    backdrop-filter: var(--glass-blur);
   }
 }
 
@@ -1185,6 +1202,55 @@ a {
   }
 }
 
+/* Glass fields (Input, Textarea, SelectTrigger, SearchInput): a recessed pane of
+   frosted glass with a faint rim. Fills stay in utilities so hover and focus
+   still work; preferences that turn translucency off restore a solid fill. */
+.glass-field {
+  box-shadow:
+    var(--glass-recess),
+    inset 0 0 0 1px var(--glass-rim),
+    inset 0 -1px 0 var(--glass-lowlight);
+}
+
+/* Page headers: a frosted bar that content scrolls beneath. */
+/* A clear pane: almost no tint, so the page shows through, with the blur only
+   softening what scrolls beneath and a hairline rim marking its edge. Its
+   controls are glass buttons on top. The declared fill is the fallback for
+   browsers without backdrop filters, where text would sit over raw content. */
+.glass-header {
+  border-bottom-color: var(--glass-rim);
+  background: rgb(var(--background) / 0.85);
+  box-shadow: inset 0 -1px 0 var(--glass-lowlight);
+}
+
+@supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .glass-field {
+    -webkit-backdrop-filter: var(--glass-blur);
+    backdrop-filter: var(--glass-blur);
+  }
+
+  .glass-header {
+    background: rgb(var(--background) / 0.2);
+    -webkit-backdrop-filter: var(--glass-blur);
+    backdrop-filter: var(--glass-blur);
+  }
+}
+
+@media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
+  .glass-field:not(:disabled) {
+    background: rgb(var(--muted));
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+
+  .glass-header,
+  .dark .glass-header {
+    background: rgb(var(--card));
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+
 /* Glass cards. The fill is a token (`bg-card-glass`) so hover states and caller
    overrides keep working; on the page background it resolves to almost exactly
    `--card`, so opaque `bg-card` sticky table cells stay seamless inside a card.
@@ -1203,23 +1269,16 @@ a {
   --card-glass-strong: rgb(30 30 32 / 0.78);
 }
 
+/* A card's own `border-foreground/10` utility is its rim (so hover borders still
+   work); the drop shadow and sheen are the shared ones. */
 .glass-card {
-  box-shadow:
-    0 1px 2px rgb(0 0 0 / 0.04),
-    0 8px 24px -12px rgb(0 0 0 / 0.1),
-    inset 0 1px 0 rgb(255 255 255 / 0.7);
-}
-
-.dark .glass-card {
-  box-shadow:
-    0 8px 24px -12px rgb(0 0 0 / 0.6),
-    inset 0 1px 0 rgb(255 255 255 / 0.1);
+  box-shadow: var(--glass-drop), var(--glass-sheen);
 }
 
 @supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   .glass-card-blur {
-    -webkit-backdrop-filter: blur(24px) saturate(180%);
-    backdrop-filter: blur(24px) saturate(180%);
+    -webkit-backdrop-filter: var(--glass-blur);
+    backdrop-filter: var(--glass-blur);
   }
 }
 
@@ -1419,4 +1478,10 @@ a {
   .opinion-results, .opinion-result-row {
     animation: none;
   }
+}
+
+/* AI chart job progress: indeterminate sweep inside the active step bar */
+@keyframes ai-job-sweep {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(200%); }
 }

@@ -7,13 +7,19 @@ import type { TradingAnalysis } from "@/lib/tradingAnalysisApi";
 import { REPORT_READER_GRID, REPORT_READER_CONCLUSION, REPORT_READER_NAV } from "./reader-styles";
 import { ReportCard } from "./report-card";
 import { DebateCard } from "./debate-card";
+import { ResearchTranslationNotice } from "./ResearchTranslationNotice";
+import { useResearchTranslation, type ResearchTranslationControl } from "@/hooks/useResearchTranslation";
 
 /** Shared reading order for published reports and completed authoring reports. */
-export function ResearchReportContent({ analysis, locale, t }: {
+export function ResearchReportContent({ analysis: source, locale, t, translation }: {
   analysis: TradingAnalysis;
   locale: string;
   t: (key: string) => string;
+  /** Pass when the parent already shows this report in the reader's language (and its language bar). */
+  translation?: ResearchTranslationControl;
 }) {
+  const own = useResearchTranslation(translation ? null : source, locale);
+  const analysis = translation ? source : own.analysis ?? source;
   const id = useId().replace(/:/g, "");
   const reports = [
     { key: "market", title: t("tradingAnalysis.tabs.market"), icon: BarChart3, content: analysis.market_report },
@@ -33,6 +39,8 @@ export function ResearchReportContent({ analysis, locale, t }: {
   if (!sections.length) return null;
 
   return (
+    <>
+    {!translation && <ResearchTranslationNotice control={own} t={t} className="mb-5" />}
     <div className={REPORT_READER_GRID}>
       <nav aria-label={t("tradingAnalysis.reader.contents")} className="min-w-0 lg:sticky lg:top-6 lg:self-start">
         <div className="flex gap-1 overflow-x-auto border-b border-border pb-3 lg:flex-col lg:gap-2 lg:border-b-0 lg:pb-0">
@@ -90,5 +98,6 @@ export function ResearchReportContent({ analysis, locale, t }: {
         )}
       </div>
     </div>
+    </>
   );
 }

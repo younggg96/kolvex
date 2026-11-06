@@ -319,12 +319,12 @@ export function SegmentedControl<T extends string>({
               config.item,
               active
                 ? cn(
-                    "text-foreground",
+                    "text-glass-thumb-foreground",
                     hasThumb
                       ? "bg-transparent focus-visible:bg-transparent"
-                      : "bg-foreground/[0.14] focus-visible:bg-foreground/[0.14]",
+                      : "bg-white focus-visible:bg-white",
                   )
-                : "text-muted-foreground hover:bg-foreground/[0.06] hover:text-foreground",
+                : "text-foreground/70 hover:bg-foreground/[0.06] hover:text-foreground",
               itemClassName,
             )}
           >

@@ -37,7 +37,7 @@ const SearchInput = React.forwardRef<HTMLInputElement, SearchInputProps>(
     return (
       <div
         className={cn(
-          "relative w-fit bg-background border border-border transition-colors duration-200",
+          "relative w-fit glass-field bg-foreground/[0.06] border border-transparent transition-colors duration-200 hover:bg-foreground/[0.09] focus-within:bg-foreground/[0.11]",
           config.container,
           containerClassName
         )}

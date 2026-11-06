@@ -13,7 +13,7 @@
 
 .searchField:focus-within {
   border-color: rgb(var(--foreground) / 0.4);
-  background-color: rgb(var(--foreground) / 0.04);
+  background-color: rgb(var(--foreground) / 0.1);
 }
 
 .discovery {
@@ -188,13 +188,16 @@
     margin-top: 2.5rem;
   }
 
+  /* Compact two-column ranking: rows hug their content instead of padding out to a desktop height. */
   .stockList {
-    column-gap: 0.25rem;
+    column-gap: 0.5rem;
+    min-height: 0;
   }
 
   .stockLink {
     gap: 0.625rem;
-    min-height: 6rem;
+    min-height: 4rem;
+    padding-inline: 0.25rem;
   }
 
   .stockLink .rowArrow {

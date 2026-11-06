@@ -51,7 +51,7 @@ const TabsList = React.forwardRef<
         ref={ref}
         data-variant={variant}
         className={cn(
-          "group/tabs relative isolate min-h-11 items-center justify-start gap-1 rounded-full p-1 text-muted-foreground",
+          "group/tabs relative isolate min-h-11 items-center justify-start gap-1 rounded-full p-1 text-foreground/70",
           variant === "auth"
             ? "grid w-full grid-cols-2"
             : "inline-flex w-fit max-w-full overflow-x-auto scrollbar-hide",
@@ -89,10 +89,10 @@ const TabsTrigger = React.forwardRef<
         resolvedVariant === "pill"
           ? // The fill is painted by the list's sliding glass pill. Until a
             // visible indicator is measured (SSR, hidden panels), the trigger
-            // paints a matching translucent fill of its own.
+            // paints a matching white fill of its own.
             // Unselected segments get a neutral wash: tabs are navigation, not
             // direction, so brand green here would compete with real signals.
-            "relative z-10 min-h-10 rounded-full px-4 data-[state=inactive]:hover:bg-foreground/[0.06] data-[state=inactive]:hover:text-foreground data-[state=inactive]:focus-visible:bg-foreground/[0.06] data-[state=inactive]:focus-visible:text-foreground data-[state=inactive]:active:bg-foreground/[0.1] data-[state=active]:bg-foreground/[0.14] data-[state=active]:text-foreground group-data-[pill-ready=true]/tabs:data-[state=active]:bg-transparent"
+            "relative z-10 min-h-10 rounded-full px-4 data-[state=inactive]:hover:bg-foreground/[0.06] data-[state=inactive]:hover:text-foreground data-[state=inactive]:focus-visible:bg-foreground/[0.06] data-[state=inactive]:focus-visible:text-foreground data-[state=inactive]:active:bg-foreground/[0.1] data-[state=active]:bg-white data-[state=active]:text-glass-thumb-foreground group-data-[pill-ready=true]/tabs:data-[state=active]:bg-transparent"
           : // The underline variant uses border as its only active affordance, so
             // the rule itself has to go neutral too — a green indicator line
             // would read as state colour on what is just a tab position.

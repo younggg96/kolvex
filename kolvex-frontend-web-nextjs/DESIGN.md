@@ -1422,16 +1422,22 @@ Rules that follow from that:
   uses `listFeedGroupRowClass` so only the inner row washes, never both.
 - Tabs, `SegmentedControl`, `SwitchTab` and other tab-like pill groups use the
   iOS-style glass material from `app/globals.css`, matching the mobile dock: a
-  translucent, blurred `glass-track` holding a lighter `glass-thumb`, with
-  foreground text on the selected option. Unselected options preview with the
+  smoky, blurred `glass-track` with a bright rim, holding a solid white
+  `glass-thumb` whose label is near-black (`--glass-thumb-foreground`) in both
+  themes; unselected labels are `foreground` at 70%. Unselected options preview with the
   same grey wash. Solid fallbacks apply without backdrop filters and under
   reduced-transparency or increased-contrast preferences.
   Selected controls retain that pairing during keyboard focus; the global
   focus wash excludes selected/pressed/checked/current states. Chart ranges
   and on/off toggles, such as chart tools and translation, follow the same rule
   with `glass-thumb` as their selected state.
+- Every glass surface shares one material from the `--glass-*` tokens in
+  `app/globals.css`: the same rim, top and bottom highlight, drop shadow and blur.
+  Only the fill changes by role (controls about 8%, fields 6%, cards `--card-glass`,
+  popups about 75%). Change those tokens rather than a single component's shadow.
 - `Button`, `ChipButton`, `TriggerButton` and hand-written action buttons are
-  glass as well. `glass-button` adds the blur and specular edge, while translucent
+  glass as well. `glass-button` adds the shared glass edge and blur (outline
+  buttons use that rim instead of a border), while translucent
   fill utilities carry each variant and its hover and press states: `default` and
   `icon` are tinted green glass (the label stays `primary-foreground`), `destructive`
   tinted orange, and `secondary` and `outline` neutral. `ghost` stays bare at rest
@@ -1445,8 +1451,15 @@ Rules that follow from that:
   and clip popups against the next card, and has nothing to blur on a flat page.
   Add `glass-card-blur` only over a visible backdrop, such as the auth grid, with
   `bg-card-glass-strong` when text sits over live content, such as `HoverCard`.
-  Sticky table cells, chart tooltips and search suggestions stay opaque `bg-card`
-  so scrolling content cannot show through their text.
+  Sticky table cells and chart tooltips stay opaque `bg-card` so scrolling content
+  cannot show through their text.
+- Fields (`Input`, `Textarea`, `SelectTrigger`, `SearchInput`) are recessed
+  `glass-field` panes with translucent fills. Floating surfaces (`surface-overlay`:
+  dropdown menus, select lists, popovers, dialogs and search suggestions) are
+  frosted glass at about 75% opacity so their text stays readable over any content.
+  The landing and public reading headers are sticky, nearly transparent `glass-header`
+  bars (20% page tint plus blur) that content scrolls beneath. Their
+  navigation, language and theme controls are round `outline` glass buttons.
   Pill triggers paint a matching translucent fill until the sliding indicator has
   valid visible dimensions, including server rendering and hidden panels.
   Radix triggers inherit their list's pill/underline variant unless explicitly

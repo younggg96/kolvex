@@ -1442,6 +1442,31 @@
       "priceAction": {
         "title": "价位行为信号",
         "rules": "连续两根 K 线收盘越过价位确认突破；突破后 10 根内观察回踩，5 根内收回原区间标记假突破。影线穿越与收盘突破分别识别。"
+      },
+      "job": {
+        "progress": "任务进度",
+        "elapsed": "已用时 {time}",
+        "leave": "可以离开页面，完成后结果会自动保存。",
+        "steps": {
+          "submitting": "提交",
+          "queued": "排队",
+          "running": "生成"
+        },
+        "hint": {
+          "submitting": "正在把当前图表区间发送给 AI。",
+          "queued": "等待后台处理，轮到后会自动开始。",
+          "running": "AI 正在读取 K 线并生成结果，可能需要几分钟。"
+        },
+        "analysis": {
+          "submitting": "正在提交分析",
+          "queued": "AI 分析排队中",
+          "running": "AI 正在分析图表"
+        },
+        "drawings": {
+          "submitting": "正在提交画线",
+          "queued": "AI 画线排队中",
+          "running": "AI 正在画线"
+        }
       }
     },
     "drawTools": "画图工具",
@@ -1616,6 +1641,7 @@
       "debate": "辩论",
       "trader": "交易员",
       "risk": "风控",
+      "translating": "翻译",
       "completed": "完成"
     },
     "stageDesc": {
@@ -1624,6 +1650,7 @@
       "debate": "多空研究员辩论进行中",
       "trader": "生成交易建议",
       "risk": "风险评估与最终审核",
+      "translating": "正在把报告翻译成中文",
       "completed": "分析已完成"
     },
     "analysisInProgress": "分析进行中",
@@ -1714,6 +1741,19 @@
     "translationFailed": "翻译失败，请再次点击翻译重试。",
     "error": {
       "loadFailed": "加载分析记录失败"
+    },
+    "translation": {
+      "showingTranslation": "已显示中文翻译，研究原文为英文。",
+      "showingOriginal": "正在显示英文原文。",
+      "viewOriginal": "查看英文原文",
+      "viewTranslation": "查看中文翻译",
+      "missing": "这份报告只有英文原文。翻译会使用你在设置中选择的模型，完成后所有人都能看到中文版本。",
+      "translate": "翻译成中文",
+      "translating": "正在翻译成中文，完成后会自动显示，通常需要一两分钟。",
+      "failed": "翻译没有完成，请重试。",
+      "retry": "重试",
+      "notConfigured": "翻译需要先在设置中添加所选模型的 API Key。",
+      "openSettings": "前往设置"
     }
   },
   "news": {

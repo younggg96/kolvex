@@ -11,6 +11,8 @@ GET    /trading-analysis/{id}               — Get analysis detail
 GET    /trading-analysis/{id}/stream        — SSE progress stream
 PATCH  /trading-analysis/{id}/publish       — Publish an analysis
 PATCH  /trading-analysis/{id}/unpublish     — Unpublish an analysis
+POST   /trading-analysis/{id}/translations/{language} — Translate a completed report (viewer's model)
+GET    /trading-analysis/{id}/translations/{language} — Poll a report translation
 DELETE /trading-analysis/{id}               — Delete analysis
 """
 
@@ -133,6 +135,43 @@ async def start_stock_analysis(
         provider=provider, deep_think_model=model, quick_think_model=model,
         user_api_keys=keys or None,
     )
+
+
+@router.post("/{analysis_id}/translations/{language}")
+async def translate_analysis(
+    analysis_id: str,
+    language: str,
+    current_user_id: str = Depends(get_current_user_id),
+    api_keys_service: UserApiKeysService = Depends(get_user_api_keys_service),
+):
+    """Translate an older completed report with the viewer's configured model and key."""
+    if not TRADINGAGENTS_AVAILABLE:
+        raise HTTPException(503, "research_unavailable")
+    keys = await api_keys_service.get_keys_dict(current_user_id) or {}
+    provider, model = _choose_model(keys)
+    provider, model = provider or LLM_PROVIDER, model or LLM_MODEL
+    api_key = _resolve_api_key(provider, keys)
+    if not api_key:
+        raise HTTPException(503, "ai_not_configured")
+    try:
+        return await get_trading_analysis_service().translate_existing(analysis_id, language, provider, model, api_key)
+    except ValueError:
+        raise HTTPException(400, "unsupported_language")
+    except LookupError:
+        raise HTTPException(404, "Analysis not found")
+
+
+@router.get("/{analysis_id}/translations/{language}")
+async def get_analysis_translation(
+    analysis_id: str,
+    language: str,
+    current_user_id: str = Depends(get_current_user_id),
+):
+    service = get_trading_analysis_service()
+    record = await service.get_shared_analysis(analysis_id)
+    if not record:
+        raise HTTPException(404, "Analysis not found")
+    return service.translation_status(analysis_id, language, record)
 
 
 @router.get("/history")

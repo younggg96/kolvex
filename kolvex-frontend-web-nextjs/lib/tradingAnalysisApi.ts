@@ -44,7 +44,27 @@ export interface TradingAnalysis {
   created_at: string;
   completed_at?: string | null;
   author?: AnalysisAuthor | null;
+  /** Reader-facing text translated after the (English) research run, keyed by language. */
+  translations?: Record<string, ResearchTranslation> | null;
 }
+
+/** Same shape as the translatable parts of a record; any field may be missing. */
+export interface ResearchTranslation {
+  full_signal?: string;
+  investment_plan?: string;
+  trader_plan?: string;
+  market_report?: string;
+  fundamentals_report?: string;
+  news_report?: string;
+  sentiment_report?: string;
+  investment_debate?: Partial<InvestmentDebate>;
+  risk_debate?: Partial<RiskDebate>;
+  translated_at?: string;
+}
+
+export type ResearchTranslationStatus =
+  | { status: "completed"; translation: ResearchTranslation }
+  | { status: "translating" | "missing" };
 
 export interface InvestmentDebate {
   bull_history: string;
@@ -135,6 +155,14 @@ export async function startAnalysis(
 export async function getAnalysis(id: string): Promise<TradingAnalysis> {
   return apiRequest<TradingAnalysis>(`/${id}`);
 }
+export async function requestResearchTranslation(id: string, language: string): Promise<ResearchTranslationStatus> {
+  return apiRequest<ResearchTranslationStatus>(`/${id}/translations/${language}`, { method: "POST" });
+}
+
+export async function getResearchTranslation(id: string, language: string): Promise<ResearchTranslationStatus> {
+  return apiRequest<ResearchTranslationStatus>(`/${id}/translations/${language}`);
+}
+
 export async function startStockAnalysis(ticker: string, tradeDate: string): Promise<TradingAnalysis> {
   return apiRequest<TradingAnalysis>("/start-stock", {
     method: "POST", body: JSON.stringify({ ticker, trade_date: tradeDate }),

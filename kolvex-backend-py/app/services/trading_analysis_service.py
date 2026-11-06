@@ -30,6 +30,12 @@ from app.agent.config import (
 )
 from app.core.redis import get_redis
 from app.core.supabase import get_supabase_service
+from app.services.research_translation import (
+    DEFAULT_TIMEOUT as TRANSLATION_TIMEOUT,
+    SUPPORTED_LANGUAGES,
+    create_translation_llm,
+    translate_record,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -128,6 +134,9 @@ PROVIDER_TIMEOUTS: dict[str, int] = {
     "grok": 600,
 }
 _executor = ThreadPoolExecutor(max_workers=3)
+# On-demand translations in flight in this process, keyed by (analysis_id, language).
+_translation_lock = threading.Lock()
+_translations_in_flight: set[tuple[str, str]] = set()
 
 NODE_STAGE_MAP: dict[str, tuple[str, str]] = {
     "Market Analyst": ("analysts", "Running Market Analyst..."),
@@ -578,7 +587,8 @@ class TradingAnalysisService:
         """Wrapper to run the sync graph and persist results."""
         provider = config.get("llm_provider", "openai")
         timeout = PROVIDER_TIMEOUTS.get(provider, DEFAULT_GRAPH_TIMEOUT)
-        watchdog_timeout = timeout + 120  # extra buffer beyond graph timeout
+        # Extra buffer beyond the graph timeout, plus the post-run translation budget.
+        watchdog_timeout = timeout + 120 + TRANSLATION_TIMEOUT
         logger.info(
             f"[TradingAnalysis] Background thread started: {analysis_id} "
             f"ticker={ticker} date={trade_date} analysts={analysts} "
@@ -611,6 +621,7 @@ class TradingAnalysisService:
                 timeout_seconds=timeout,
             )
 
+            translations = self._translate_result(analysis_id, progress_key, config, result)
             completed.set()
             duration = time.time() - start_time
             update = {
@@ -632,6 +643,13 @@ class TradingAnalysisService:
             }
 
             supabase = get_supabase_service()
+            if translations:
+                # Separate, best-effort write before the status flips: the completion trigger
+                # snapshots the row, and a missing column must never fail the research itself.
+                try:
+                    supabase.table(TABLE).update({"translations": translations}).eq("id", analysis_id).execute()
+                except Exception as error:  # noqa: BLE001
+                    logger.warning(f"[TradingAnalysis] {analysis_id}: saving translations failed: {error}")
             supabase.table(TABLE).update(update).eq("id", analysis_id).execute()
             logger.info(f"Analysis {analysis_id} completed: {result['final_decision']} in {duration:.1f}s")
 
@@ -648,6 +666,124 @@ class TradingAnalysisService:
             self._push_failure_progress(progress_key, error_type, str(e))
         finally:
             watchdog_timer.cancel()
+
+    def _translate_result(self, analysis_id: str, progress_key: str, config: dict, result: dict) -> dict:
+        """Translate reader-facing text before completion so the saved version is bilingual.
+
+        Best effort: a translation failure never fails the research; readers then see the
+        English original and can request a translation later.
+        """
+        event = {"stage": "translating", "message": "Translating the report"}
+        _append_db_progress_event(analysis_id, event)
+        self._push_progress(progress_key, event)
+        translations: dict[str, Any] = {}
+        try:
+            llm = create_translation_llm(
+                config.get("llm_provider", "openai"),
+                config.get("quick_think_llm") or config.get("deep_think_llm"),
+                config.get("api_key"),
+            )
+            for language in SUPPORTED_LANGUAGES:
+                translated = translate_record({"id": analysis_id, **result}, language, llm, timeout=TRANSLATION_TIMEOUT)
+                if translated:
+                    translations[language] = translated
+        except Exception as error:  # noqa: BLE001
+            logger.warning(f"[TradingAnalysis] {analysis_id}: translation skipped: {error}")
+        return translations
+
+    async def translate_existing(
+        self,
+        analysis_id: str,
+        language: str,
+        provider: str,
+        model: str,
+        api_key: Optional[str],
+    ) -> dict[str, Any]:
+        """Start translating an older completed report; returns the current state immediately."""
+        if language not in SUPPORTED_LANGUAGES:
+            raise ValueError("unsupported_language")
+        record = await self.get_shared_analysis(analysis_id)
+        if not record:
+            raise LookupError("not_found")
+        existing = (record.get("translations") or {}).get(language)
+        if existing:
+            return {"status": "completed", "translation": existing}
+        key = (analysis_id, language)
+        with _translation_lock:
+            if key in _translations_in_flight:
+                return {"status": "translating"}
+            _translations_in_flight.add(key)
+
+        def work():
+            try:
+                llm = create_translation_llm(provider, model, api_key)
+                translated = translate_record(record, language, llm, timeout=TRANSLATION_TIMEOUT)
+                if translated:
+                    self._store_translation(analysis_id, language, translated)
+            except Exception as error:  # noqa: BLE001
+                logger.warning(f"[TradingAnalysis] {analysis_id}: on-demand translation failed: {error}")
+            finally:
+                with _translation_lock:
+                    _translations_in_flight.discard(key)
+
+        asyncio.get_running_loop().run_in_executor(_executor, work)
+        return {"status": "translating"}
+
+    def translation_status(self, analysis_id: str, language: str, record: Optional[dict]) -> dict[str, Any]:
+        existing = ((record or {}).get("translations") or {}).get(language)
+        if existing:
+            return {"status": "completed", "translation": existing}
+        with _translation_lock:
+            running = (analysis_id, language) in _translations_in_flight
+        return {"status": "translating" if running else "missing"}
+
+    async def get_shared_analysis(self, analysis_id: str) -> Optional[dict[str, Any]]:
+        """Completed research is readable by every signed-in user."""
+        try:
+            result = (
+                self._supabase.table(TABLE)
+                .select("*")
+                .eq("id", analysis_id)
+                .eq("status", "completed")
+                .maybe_single()
+                .execute()
+            )
+            return result.data if result else None
+        except Exception as e:
+            logger.warning(f"get_shared_analysis({analysis_id}) failed: {e}")
+            return None
+
+    @staticmethod
+    def _store_translation(analysis_id: str, language: str, translated: dict) -> None:
+        """Write the translation to the record and to its stock-page version snapshot."""
+        supabase = get_supabase_service()
+        row = supabase.table(TABLE).select("translations").eq("id", analysis_id).maybe_single().execute()
+        translations = dict(((row.data if row else None) or {}).get("translations") or {})
+        translations[language] = translated
+        supabase.table(TABLE).update({"translations": translations}).eq("id", analysis_id).execute()
+        version = (
+            supabase.table("stock_analysis_versions").select("payload")
+            .eq("id", analysis_id).eq("kind", "research").maybe_single().execute()
+        )
+        snapshot = ((version.data if version else None) or {}).get("payload")
+        if snapshot:
+            snapshot = dict(snapshot)
+            snapshot["translations"] = {**(snapshot.get("translations") or {}), language: translated}
+            supabase.table("stock_analysis_versions").update({"payload": snapshot}).eq("id", analysis_id).eq("kind", "research").execute()
+
+    @staticmethod
+    def _push_progress(progress_key: str, event: dict) -> None:
+        try:
+            import redis as sync_redis
+            from app.core.config import settings
+            redis_url = settings.REDIS_URL or f"redis://{settings.REDIS_HOST}:{settings.REDIS_PORT}/{settings.REDIS_DB}"
+            rc = sync_redis.from_url(redis_url, decode_responses=True)
+            full_key = f"{settings.REDIS_KEY_PREFIX}{progress_key}"
+            rc.rpush(full_key, json.dumps(event))
+            rc.expire(full_key, PROGRESS_TTL)
+            rc.close()
+        except Exception:
+            pass
 
     @staticmethod
     def _mark_failed(analysis_id: str, error_msg: str, duration: float):

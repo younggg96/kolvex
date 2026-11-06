@@ -16,6 +16,7 @@ import {
   XCircle,
   Globe,
   Bot,
+  Languages,
 } from "lucide-react";
 import { useTranslation } from "@/lib/i18n";
 import { marketStockHref } from "@/lib/stockLinks";
@@ -43,6 +44,7 @@ const STAGES = [
   { key: "debate", icon: Swords },
   { key: "trader", icon: DollarSign },
   { key: "risk", icon: ShieldCheck },
+  { key: "translating", icon: Languages },
   { key: "completed", icon: CheckCircle2 },
 ] as const;
 

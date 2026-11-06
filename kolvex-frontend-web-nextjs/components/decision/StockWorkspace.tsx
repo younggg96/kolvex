@@ -17,7 +17,10 @@ import PriceChart from "@/components/youtube/PriceChart";
 import CompanyLogo from "@/components/ui/company-logo";
 import { ResearchReportContent } from "@/components/trading-analysis/ResearchReportContent";
 import AnalysisHistory from "./AnalysisHistory";
+import { JobProgressCard } from "@/components/youtube/chart/AiJobProgress";
 import { useStockResearch } from "./useStockResearch";
+import { useResearchTranslation } from "@/hooks/useResearchTranslation";
+import { ResearchTranslationNotice } from "@/components/trading-analysis/ResearchTranslationNotice";
 import CreatorIntelligence from "./CreatorIntelligence";
 import StockNews from "./StockNews";
 import dynamic from "next/dynamic";
@@ -185,8 +188,10 @@ export default function StockWorkspace({
   const publishedResearch =
     publishedResource.data?.items.find((item) => item.status === "completed") ??
     null;
-  const research =
+  const researchSource =
     personalResearch.history.selected?.payload || publishedResearch;
+  const researchTranslation = useResearchTranslation(researchSource, locale);
+  const research = researchTranslation.analysis;
   const loading = quoteResource.loading;
   const opinionsError = Boolean(opinionsResource.error);
   const positionsError = Boolean(positionsResource.error);
@@ -752,17 +757,46 @@ export default function StockWorkspace({
                             ? c("Update AI research", "更新 AI 研究")
                             : c("Generate AI research", "生成 AI 研究")}
                       </Button>
-                      {personalResearch.busy && (
-                        <p
-                          role="status"
-                          className="mt-2 text-sm text-muted-foreground"
-                        >
-                          {c(
-                            "Research is running. You can leave this page and return later.",
-                            "研究正在进行，可以离开页面，稍后返回查看结果。",
-                          )}
-                        </p>
-                      )}
+                      {personalResearch.busy && (() => {
+                        const job = personalResearch.job;
+                        const running = job?.status === "running";
+                        const stage = running ? job?.progress_stage || "initializing" : null;
+                        const steps = ["queued", "analysts", "debate", "trader", "risk", "translating"];
+                        const activeIndex = !running ? 0 : Math.max(1, steps.indexOf(stage || ""));
+                        const created = job ? Date.parse(job.created_at) : NaN;
+                        return (
+                          <JobProgressCard
+                            className="mt-4"
+                            title={
+                              !job
+                                ? c("Submitting AI research", "正在提交 AI 研究")
+                                : running
+                                  ? c("AI research in progress", "AI 研究进行中")
+                                  : c("AI research queued", "AI 研究排队中")
+                            }
+                            hint={
+                              !job
+                                ? c("Sending this stock to the research agents.", "正在把这只股票交给研究团队。")
+                                : running
+                                  ? t(`tradingAnalysis.stageDesc.${stage}`)
+                                  : c("Waiting for a background worker. It starts automatically.", "等待后台处理，轮到后会自动开始。")
+                            }
+                            steps={steps.map((key) => ({
+                              key,
+                              label: key === "queued" ? c("Queue", "排队") : t(`tradingAnalysis.stages.${key}`),
+                            }))}
+                            activeIndex={activeIndex}
+                            startedAt={Number.isFinite(created) ? created : undefined}
+                            elapsedLabel={(time) => c(`${time} elapsed`, `已用时 ${time}`)}
+                            leaveLabel={c(
+                              "Research usually takes several minutes. You can leave this page; the result is saved automatically.",
+                              "研究通常需要几分钟。可以离开页面，完成后结果会自动保存。",
+                            )}
+                            progressLabel={c("Research progress", "研究进度")}
+                            skeleton="report"
+                          />
+                        );
+                      })()}
                       {(personalResearch.error ||
                         personalResearch.job?.status === "failed") && (
                         <p role="alert" className="mt-2 text-sm text-negative">
@@ -776,6 +810,11 @@ export default function StockWorkspace({
                     <AnalysisHistory history={personalResearch.history} />
                     {research ? (
                       <div className="pt-5">
+                        <ResearchTranslationNotice
+                          control={researchTranslation}
+                          t={t}
+                          className="mb-5"
+                        />
                         <ReportCard
                           key={`${research.id}-thesis`}
                           title={c(
@@ -877,6 +916,7 @@ export default function StockWorkspace({
                                 analysis={research}
                                 locale={locale}
                                 t={t}
+                                translation={researchTranslation}
                               />
                             </div>
                           </details>
@@ -890,7 +930,7 @@ export default function StockWorkspace({
                         <Skeleton className="h-5 w-40" />
                         <Skeleton className="h-24 w-full" />
                       </div>
-                    ) : (
+                    ) : personalResearch.busy ? null : (
                       <Empty>
                         {c(
                           "No AI research for this stock yet. Generate one to assess fundamentals and news.",

@@ -16,7 +16,7 @@ export default function ThemeToggle({ labels }: { labels?: { light: string; dark
 
   if (!mounted) {
     return (
-      <div className="w-9 h-9 rounded-2xl bg-muted flex items-center justify-center">
+      <div className="glass-button glass-button-neutral w-9 h-9 rounded-full bg-foreground/[0.08] flex items-center justify-center">
         <SunMoon className="w-5 h-5 text-muted-foreground" />
       </div>
     );
@@ -26,7 +26,7 @@ export default function ThemeToggle({ labels }: { labels?: { light: string; dark
 
   return (
     <Button
-      variant="ghost"
+      variant="outline"
       size="icon"
       onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
       title={label}

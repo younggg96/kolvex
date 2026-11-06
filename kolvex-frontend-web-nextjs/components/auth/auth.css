@@ -3,11 +3,11 @@
   animation: none;
 }
 
-/* WaylumeBackground replaces BaseLayout's page fill and grid here. */
-.auth-page > .bg-background {
+/* In the dark theme WaylumeBackground replaces BaseLayout's page fill and grid. */
+.auth-page[data-artwork] > .bg-background {
   background: transparent;
 }
 
-.auth-page > .bg-background > .bg-grid {
+.auth-page[data-artwork] > .bg-background > .bg-grid {
   display: none;
 }

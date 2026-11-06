@@ -13,6 +13,8 @@
 }
 .landing-page > .relative { min-height: 100dvh; overflow: clip; z-index: 1; background: transparent; }
 .landing-background { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
+/* Dark theme shows the Waylume light band: a scrim that travels with the hero copy keeps it legible. */
+.dark .hero-copy::before { content: ""; position: absolute; inset: -4rem -6rem; z-index: -1; pointer-events: none; background: radial-gradient(closest-side, rgb(3 8 5 / .78) 0%, rgb(3 8 5 / .55) 60%, rgb(3 8 5 / 0) 100%); }
 .landing-page > div > .bg-grid { display: none; }
 .landing-page main { animation: none; }
 .landing-width { width: min(1200px, calc(100% - 96px)); margin-inline: auto; }
@@ -20,7 +22,6 @@
 .landing-page :is(a, button):focus-visible { outline: 2px solid rgb(var(--positive)); outline-offset: 5px; }
 .landing-page :is(section, #product):focus { outline: none; }
 .landing-page a { transition: color 180ms, background-color 180ms; }
-.landing-page header { background: rgb(var(--background) / .82); }
 .landing-page .landing-primary { min-height: 3rem; padding-inline: 1.625rem; gap: 1.5rem; font-size: 0.875rem; color: rgb(var(--primary-foreground)); background: rgb(var(--primary) / .85); }
 .landing-page .landing-primary:hover { background: rgb(var(--primary) / .75); }
 .landing-page .landing-nav-cta { padding-inline: 1.25rem; font-size: 0.8125rem; }

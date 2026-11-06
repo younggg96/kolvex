@@ -1,10 +1,35 @@
 "use client";
 
+import { useEffect, useState } from "react";
+import { useTheme } from "next-themes";
 import Waves from "./react-bits/Waves";
+import LandingWaylumeBackground from "./LandingWaylumeBackground";
 import { useLandingReducedMotion } from "./useLandingReducedMotion";
 
 export default function LandingBackground() {
   const reduce = useLandingReducedMotion();
+
+  // Phones get one still frame: the per-pixel shader at 60fps heats them up.
+  const [freezeArtwork, setFreezeArtwork] = useState(false);
+  useEffect(() => {
+    const query = window.matchMedia("(max-width: 767px), (pointer: coarse)");
+    const update = () => setFreezeArtwork(query.matches);
+    update();
+    query.addEventListener("change", update);
+    return () => query.removeEventListener("change", update);
+  }, []);
+
+  // The artwork is near-black, so it only plays in the dark theme; the light
+  // theme keeps the Waves field. Until the theme is known it matches the dark default.
+  const { resolvedTheme } = useTheme();
+  if (resolvedTheme !== "light") {
+    return (
+      <div className="landing-background" aria-hidden="true">
+        <LandingWaylumeBackground paused={freezeArtwork} />
+      </div>
+    );
+  }
+
   return (
     <div className="landing-background" aria-hidden="true">
       <div className="hero-signal-field">

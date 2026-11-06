@@ -234,7 +234,7 @@ export default function SearchPage() {
           <p className="mt-2 text-sm text-muted-foreground">{c("Explore stocks, creators and the ideas behind them.", "从一只股票、一位创作者，发现更多市场线索。")}</p>
           <div className="mt-6 flex items-center gap-3">
             <form role="search" noValidate onSubmit={submit} className="min-w-0 flex-1">
-              <div className={cn("relative flex h-14 items-center rounded-full border border-border bg-card", styles.searchField)}>
+              <div className={cn("glass-field relative flex h-14 items-center rounded-full border border-transparent bg-foreground/[0.06]", styles.searchField)}>
                 <Search aria-hidden className="pointer-events-none absolute left-5 h-5 w-5 text-muted-foreground" />
                 <input
                   ref={input}
@@ -269,7 +269,7 @@ export default function SearchPage() {
               </div>
             </form>
             <button type="button" onClick={() => router.back()} className="flex min-h-11 shrink-0 items-center gap-3 rounded-full px-3 text-sm text-muted-foreground transition-colors hover:bg-foreground/[0.06] hover:text-foreground motion-reduce:transition-none">
-              {c("Cancel", "取消")}<kbd aria-hidden className="hidden rounded-md border border-border px-1.5 py-0.5 text-[0.6875rem] font-normal sm:inline">Esc</kbd>
+              {c("Cancel", "取消")}<kbd aria-hidden className="glass-button glass-button-neutral hidden rounded-md bg-foreground/[0.08] px-1.5 py-0.5 text-[0.6875rem] font-normal sm:inline">Esc</kbd>
             </button>
           </div>
           {submitFailed && <p id="search-error" role="alert" className="mt-3 pl-5 text-sm text-negative">{c("No matching stock. Choose a result below, or try a ticker like AAPL.", "没有匹配的股票。请选择下方结果，或试试 AAPL 这样的股票代码。")}</p>}

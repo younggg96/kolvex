@@ -59,14 +59,14 @@ export const SwitchTab = React.memo(function SwitchTab({
     pills: {
       container: "glass-track rounded-full w-full",
       indicator: "glass-thumb rounded-full",
-      active: "text-foreground",
+      active: "text-glass-thumb-foreground",
       inactive:
         "text-muted-foreground hover:bg-foreground/[0.06] hover:text-foreground active:bg-foreground/[0.1]",
     },
     tabs: {
       container: "bg-transparent border-b border-border",
       indicator: "glass-thumb rounded-t-md",
-      active: "text-foreground",
+      active: "text-glass-thumb-foreground",
       inactive:
         "text-muted-foreground hover:bg-foreground/[0.06] hover:text-foreground active:bg-foreground/[0.1]",
     },
@@ -189,7 +189,7 @@ export const SwitchTab = React.memo(function SwitchTab({
               isActive ? config.variant.active : config.variant.inactive,
               isActive && variant !== "underline" && (hasIndicator
                 ? "bg-transparent focus-visible:bg-transparent"
-                : "bg-foreground/[0.14] focus-visible:bg-foreground/[0.14]"),
+                : "bg-white focus-visible:bg-white"),
               isDisabled && "opacity-50 cursor-not-allowed"
             )}
           >

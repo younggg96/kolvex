@@ -3,6 +3,7 @@ import { cache } from "react";
 import type { TradingAnalysis, TradingAnalysisListResponse } from "@/lib/tradingAnalysisApi";
 import type { YouTubeOpinionDashboard } from "@/lib/youtubeOpinionsApi";
 import { validReportId, validTicker } from "@/lib/publicRoutes";
+import { applyResearchTranslation, storedTranslation } from "@/lib/researchTranslation";
 
 /** Public endpoints only. Never attach a session, cookie or service credential. */
 async function readPublic<T>(path: string): Promise<T | null> {
@@ -49,5 +50,6 @@ export const getPublicResearch = cache(async (id: string) => {
   if (!validReportId(id)) return null;
   const data = await readPublic<TradingAnalysis>(`trading-analysis/public/${encodeURIComponent(id)}`);
   // Recheck publication on every read so unpublishing revokes the public page.
-  return data && isPublished(data) ? data : null;
+  // Public reading pages are Chinese; show the stored translation, falling back per field.
+  return data && isPublished(data) ? applyResearchTranslation(data, storedTranslation(data, "zh")) : null;
 });

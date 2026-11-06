@@ -16,7 +16,7 @@ const links = [
 export function ReadingHeader() {
   const pathname = usePathname();
   return (
-    <header className="reading-header relative z-10 border-b border-border/70 bg-sidebar">
+    <header className="reading-header glass-header sticky top-0 z-40 border-b">
       <div className="mx-auto flex min-h-16 max-w-[70rem] items-center justify-between gap-4 px-[16px] py-2.5 md:px-8">
         <Link href="/" className="inline-flex shrink-0 items-center gap-2 rounded-sm text-xl font-extrabold focus-visible:outline-none "><LogoIcon size={26} />Kolvex</Link>
         <div className="flex items-center gap-2">
