@@ -1,5 +1,5 @@
 /** Browser-only, bounded read cache. Never shares authenticated responses on the server. */
-type Entry = { data?: unknown; at: number; ttl: number; maxAge: number; promise?: Promise<unknown>; controller?: AbortController };
+type Entry = { data?: unknown; at: number; ttl: number; maxAge: number; promise?: Promise<unknown>; controller?: AbortController; invalidated?: boolean };
 export interface CacheOptions { ttl?: number; maxAge?: number; force?: boolean; signal?: AbortSignal; timeout?: number }
 const entries = new Map<string, Entry>();
 const listeners = new Set<(prefix: string) => void>();
@@ -31,6 +31,7 @@ export function invalidateClientCache(prefix = "") {
   for (const [key, entry] of entries) {
     if (!key.startsWith(prefix)) continue;
     entries.delete(key);
+    entry.invalidated = true;
     entry.controller?.abort();
   }
   // Auth callbacks stay synchronous and never await other Supabase operations.
@@ -64,7 +65,7 @@ export function loadClientCache<T>(key: string, loader: (signal: AbortSignal) =>
   if (options.signal?.aborted) return Promise.reject(cancelled());
   const ttl = options.ttl ?? 60_000;
   const saved = browser() ? entries.get(key) : undefined;
-  if (saved?.promise) return forReader(saved.promise as Promise<T>, options.signal);
+  if (saved?.promise) return retryIfInvalidated(saved, forReader(saved.promise as Promise<T>, options.signal), key, loader, options);
   if (!options.force && saved?.data !== undefined && Date.now() - saved.at < saved.ttl) return forReader(Promise.resolve(saved.data as T), options.signal);
   const controller = new AbortController();
   const entry: Entry = { data: saved?.data, at: saved?.at ?? 0, ttl, maxAge: options.maxAge ?? Math.max(ttl, 15 * 60_000), controller };
@@ -92,10 +93,25 @@ export function loadClientCache<T>(key: string, loader: (signal: AbortSignal) =>
   if (browser()) {
     if (entries.size >= 160 && !entries.has(key)) {
       const oldest = entries.keys().next().value!;
-      entries.get(oldest)?.controller?.abort();
+      const evicted = entries.get(oldest);
+      if (evicted) evicted.invalidated = true;
+      evicted?.controller?.abort();
       entries.delete(oldest);
     }
     entries.delete(key); entries.set(key, entry);
   }
-  return forReader(promise, options.signal);
+  return retryIfInvalidated(entry, forReader(promise, options.signal), key, loader, options);
+}
+
+/**
+ * An invalidation (identity resolved after mount, sign-in/out, eviction) cancels the shared
+ * request, not this reader: fetch again instead of surfacing a spurious AbortError.
+ */
+function retryIfInvalidated<T>(entry: Entry, read: Promise<T>, key: string, loader: (signal: AbortSignal) => Promise<T>, options: CacheOptions): Promise<T> {
+  return read.catch(error => {
+    if (entry.invalidated && !options.signal?.aborted && error?.name === "AbortError") {
+      return loadClientCache(key, loader, { ...options, force: true });
+    }
+    throw error;
+  });
 }

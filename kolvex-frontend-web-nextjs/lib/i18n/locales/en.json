@@ -1467,7 +1467,9 @@
           "queued": "AI drawings queued",
           "running": "Drawing on the chart"
         }
-      }
+      },
+      "pendingRunHint": "Choose a model to start. The current result stays until the new one is ready.",
+      "startDrawings": "Start drawing"
     },
     "drawTools": "Drawing tools",
     "toolCursor": "Cursor (select and move drawings)",
