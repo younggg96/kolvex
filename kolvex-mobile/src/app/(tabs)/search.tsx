@@ -206,29 +206,15 @@ function WatchToggle({ ticker }: { ticker: string }) {
         opacity: pending ? 0.4 : 1,
       }}
     >
-      <View
-        style={{
-          width: 28,
-          height: 28,
-          borderRadius: 14,
-          borderWidth: 2,
-          borderColor: t.accent,
-          backgroundColor: watched ? t.accent : "transparent",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
-        <SymbolView
-          name={
-            watched
-              ? { ios: "checkmark", android: "check", web: "check" }
-              : { ios: "plus", android: "add", web: "add" }
-          }
-          size={14}
-          weight="bold"
-          tintColor={watched ? t.background : t.accent}
-        />
-      </View>
+      <SymbolView
+        name={
+          watched
+            ? { ios: "star.fill", android: "star", web: "star" }
+            : { ios: "star", android: "star", web: "star" }
+        }
+        size={22}
+        tintColor={watched ? t.accent : t.secondary}
+      />
     </Pressable>
   );
 }

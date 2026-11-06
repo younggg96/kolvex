@@ -46,7 +46,7 @@ const WAYLUME_SETTINGS = {
     0.0196
   ],
   "durationSeconds": 60,
-  "maxPixelRatio": 1,
+  "maxPixelRatio": 2,
   "pace": 0.35,
   "params": {
     "balanceX": 0,

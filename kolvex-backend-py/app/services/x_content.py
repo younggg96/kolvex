@@ -2,7 +2,7 @@
 
 import json
 import re
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from urllib.parse import urlparse
 
@@ -156,6 +156,38 @@ class XContentService:
             query = query.contains("cashtags", [ticker])
         response = query.order("published_at", desc=True).order("id", desc=True).range(offset, offset + limit - 1).execute()
         return {"posts": response.data or [], "total": response.count or 0, "limit": limit, "offset": offset}
+
+    def ticker_heat(self, days=7, now=None):
+        """Cashtag counts by source publication date for this window and the one before it."""
+        now = now or datetime.now(timezone.utc)
+        start, previous_start = now - timedelta(days=days), now - timedelta(days=2 * days)
+        rows, offset = [], 0
+        while offset < 10000:
+            page = (self.db.table("x_posts").select("author_username,published_at,cashtags")
+                    .gte("published_at", previous_start.isoformat()).lte("published_at", now.isoformat())
+                    .order("published_at", desc=True).order("id", desc=True)
+                    .range(offset, offset + 999).execute().data or [])
+            rows += page
+            if len(page) < 1000:
+                break
+            offset += 1000
+        heat = {}
+        for row in rows:
+            published = datetime.fromisoformat(row["published_at"].replace("Z", "+00:00"))
+            for ticker in set(row.get("cashtags") or []):
+                if not TICKER.fullmatch(ticker):
+                    continue
+                entry = heat.setdefault(ticker, {"ticker": ticker, "posts": 0, "previous": 0, "authors": set(), "latest": None})
+                if published >= start:
+                    entry["posts"] += 1
+                    entry["authors"].add(row["author_username"])
+                    entry["latest"] = max(entry["latest"] or row["published_at"], row["published_at"])
+                else:
+                    entry["previous"] += 1
+        tickers = sorted((
+            {**entry, "authors": len(entry["authors"])} for entry in heat.values() if entry["posts"] > 0
+        ), key=lambda entry: (-entry["posts"], -entry["authors"], entry["ticker"]))
+        return {"tickers": tickers, "days": days, "from": start.isoformat(), "to": now.isoformat()}
 
     def validate(self, payload):
         posts = normalize_import(payload)

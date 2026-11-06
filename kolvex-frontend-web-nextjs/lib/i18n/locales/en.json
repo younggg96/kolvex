@@ -69,6 +69,7 @@
     "briefs": "Daily Briefs"
   },
   "tabBar": {
+    "superinvestors": "Superinvestors",
     "paperTrading": "Paper trading",
     "watchlist": "Watchlist",
     "news": "News",

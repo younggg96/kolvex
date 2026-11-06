@@ -46,6 +46,20 @@ const ratio = (a: unknown, b: unknown) => (finiteNumber(a) && finiteNumber(b) &&
 
 export const institutionKey = (manager: string) => `/api/market/free-research/institutions/${encodeURIComponent(manager)}`;
 export const INSTITUTIONS_KEY = "/api/market/free-research/institutions";
+export const institutionSummaryKey = (manager: string) => `${institutionKey(manager)}/summary`;
+export type HoldingActivity = Institution["holdings"][number]["activity"];
+export interface InstitutionSummary {
+  id: string; name: string; cik: number; filing: Filing | null; previous_filing: Filing | null; partial: boolean;
+  positions: number; value: number;
+  changes: { new: number; increased: number; reduced: number; exited: number } | null;
+  top: { issuer: string; class: string; cusip: string; put_call: string | null; value: number | null; weight: number | null; activity: HoldingActivity }[];
+}
+
+/** Calendar quarter of a 13F reporting period, e.g. 2026-06-30 → { year: 2026, quarter: 2 }. */
+export function reportingQuarter(period: string | null | undefined) {
+  const match = /^(\d{4})-(\d{2})/.exec(period ?? "");
+  return match ? { year: Number(match[1]), quarter: Math.ceil(Number(match[2]) / 3) } : null;
+}
 
 export interface FinancialRatios {
   revenue_growth: number | null; fcf_margin: number | null; roe: number | null; liabilities_to_equity: number | null;

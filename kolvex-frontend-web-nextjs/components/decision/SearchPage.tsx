@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from "react";
-import { ArrowUpRight, Check, Plus, Search, X } from "lucide-react";
+import { ArrowUpRight, Search, Star, X } from "lucide-react";
 import { XIcon, YouTubeIcon } from "@/components/common/PlatformIcons";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
@@ -73,9 +73,7 @@ function WatchToggle({ ticker }: { ticker: string }) {
     onClick={() => toggle(ticker)}
     className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full transition-colors hover:bg-foreground/[0.06] active:bg-foreground/[0.1] disabled:opacity-40 motion-reduce:transition-none"
   >
-    <span className={cn("flex h-7 w-7 items-center justify-center rounded-full border-2 border-primary", watched ? "bg-primary text-primary-foreground" : "text-positive")}>
-      {watched ? <Check aria-hidden className="h-4 w-4" strokeWidth={3} /> : <Plus aria-hidden className="h-4 w-4" strokeWidth={2.5} />}
-    </span>
+    <Star aria-hidden className={cn("h-4 w-4", watched && "fill-current")} />
   </button>;
 }
 

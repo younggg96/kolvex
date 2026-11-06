@@ -62,6 +62,11 @@ def posts(author: str | None = Query(None, max_length=16), ticker: str | None = 
     return run(lambda: service.posts(author, ticker, limit, offset))
 
 
+@router.get("/tickers")
+def tickers(service=Depends(get_service)):
+    return run(lambda: service.ticker_heat())
+
+
 @router.post("/validate")
 def validate(payload: dict[str, Any] | list[dict[str, Any]], admin=Depends(verify_admin), service=Depends(get_service)):
     return run(lambda: service.validate(payload))

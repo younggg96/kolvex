@@ -13,6 +13,8 @@
 }
 .landing-page > .relative { min-height: 100dvh; overflow: clip; z-index: 1; background: transparent; }
 .landing-background { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
+.landing-artwork { background: rgb(3 8 5); }
+.landing-video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; background: rgb(3 8 5); }
 /* Dark theme shows the Waylume light band: a scrim that travels with the hero copy keeps it legible. */
 .dark .hero-copy::before { content: ""; position: absolute; inset: -4rem -6rem; z-index: -1; pointer-events: none; background: radial-gradient(closest-side, rgb(3 8 5 / .78) 0%, rgb(3 8 5 / .55) 60%, rgb(3 8 5 / 0) 100%); }
 .landing-page > div > .bg-grid { display: none; }
@@ -98,4 +100,44 @@
 @media (prefers-reduced-motion: reduce) {
   .landing-page *, .landing-page *::before, .landing-page *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
   .landing-page .landing-parallax { transform: none !important; }
+}
+
+/* Glass surfaces keep small text legible where the light band runs behind it.
+   Same material as the app glass: smoky fill, shared rim + sheen, one blur. */
+.landing-page {
+  --landing-glass-fill: rgb(var(--background) / .5);
+  --landing-glass-fill-hover: rgb(var(--background) / .62);
+}
+.dark .landing-page, .landing-page.dark {
+  --landing-glass-fill: rgb(6 12 8 / .68);
+  --landing-glass-fill-hover: rgb(6 12 8 / .78);
+}
+:is(.simple-features a, .hero-explore, .hero-art-caption > span) {
+  background: var(--landing-glass-fill);
+  box-shadow: var(--glass-drop), var(--glass-edge);
+  /* No saturation boost: it would push the green band through the glass. */
+  -webkit-backdrop-filter: blur(24px);
+  backdrop-filter: blur(24px);
+}
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .landing-page { --landing-glass-fill: rgb(var(--background) / .9); --landing-glass-fill-hover: rgb(var(--background) / .95); }
+}
+
+.simple-features { gap: 1rem; }
+.simple-features a { display: block; padding: 1.125rem 1.25rem 1.25rem; border-radius: 1.25rem; transition: background-color 180ms, transform 220ms cubic-bezier(0.22, 1, 0.36, 1); }
+.simple-features a:hover { background: var(--landing-glass-fill-hover); transform: translateY(-2px); }
+.simple-features p { color: rgb(var(--foreground) / .72); }
+
+.hero-explore { min-height: 3rem; padding-inline: 1.375rem; border-radius: 999px; }
+.hero-explore:hover { background: var(--landing-glass-fill-hover); }
+
+.hero-art-caption > span { display: inline-flex; align-items: center; min-height: 2rem; padding-inline: 0.875rem; border-radius: 999px; color: rgb(var(--foreground) / .78); }
+.dark .hero-copy > p { color: rgb(var(--foreground) / .8); }
+
+@media (max-width: 640px) {
+  .simple-features { gap: 0.625rem; }
+  .simple-features a { padding: 1rem 1.125rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .simple-features a, .simple-features a:hover { transform: none; transition: background-color 180ms; }
 }

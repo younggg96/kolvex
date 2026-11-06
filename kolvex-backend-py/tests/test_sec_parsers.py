@@ -72,3 +72,20 @@ class FilingTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class InstitutionSummaryTests(unittest.TestCase):
+    def row(self, issuer, value, activity):
+        return {"issuer": issuer, "class": "COM", "cusip": issuer, "put_call": None, "value": value, "weight": None, "activity": activity}
+
+    def test_exited_positions_count_as_changes_but_not_holdings(self):
+        result = parsers.summarize_institution({"id": "x", "name": "X", "holdings": [
+            self.row("A", 300, "unchanged"), self.row("B", 200, "increased"), self.row("C", 100, "new"), self.row("D", 0, "exited")]}, top=2)
+        self.assertEqual(result["positions"], 3)
+        self.assertEqual(result["value"], 600)
+        self.assertEqual(result["changes"], {"new": 1, "increased": 1, "reduced": 0, "exited": 1})
+        self.assertEqual([r["issuer"] for r in result["top"]], ["A", "B"])
+
+    def test_uncompared_filing_reports_no_change_counts(self):
+        result = parsers.summarize_institution({"holdings": [self.row("A", 1, "unknown")]})
+        self.assertIsNone(result["changes"])

@@ -9,7 +9,7 @@ export async function GET(_request: Request, { params }: { params: { path: strin
   const path = params.path;
   const institutions = path[0] === "institutions";
   const valid = institutions
-    ? path.length === 1 || (path.length === 2 && /^[a-z_]{1,32}$/.test(path[1]))
+    ? path.length === 1 || (/^[a-z_]{1,32}$/.test(path[1] ?? "") && (path.length === 2 || (path.length === 3 && path[2] === "summary")))
     : path.length === 2 && /^[A-Za-z0-9][A-Za-z0-9.\-]{0,11}$/.test(path[0]) && kinds.has(path[1]);
   if (!valid) return NextResponse.json({ error: "Invalid research request" }, { status: 400 });
   const headers = { "Cache-Control": "private, no-store" };
@@ -19,7 +19,7 @@ export async function GET(_request: Request, { params }: { params: { path: strin
     });
     if (!response.ok) return NextResponse.json({ error: "Free research data unavailable" }, { status: response.status === 404 ? 404 : 503, headers });
     const data = await response.json();
-    const arrayKey = institutions ? (path.length === 1 ? "managers" : "holdings") : ({ financials: "annual", filings: "filings", insiders: "transactions", "revenue-outlook": "estimates" } as Record<string, string>)[path[1]];
+    const arrayKey = institutions ? (path.length === 1 ? "managers" : path.length === 3 ? "top" : "holdings") : ({ financials: "annual", filings: "filings", insiders: "transactions", "revenue-outlook": "estimates" } as Record<string, string>)[path[1]];
     if (!Array.isArray(data?.[arrayKey]) || (!institutions && data.symbol !== path[0].toUpperCase())) throw new Error("Invalid research response");
     return NextResponse.json(data, { headers });
   } catch {

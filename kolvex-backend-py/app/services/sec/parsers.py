@@ -239,3 +239,17 @@ def compare_holdings(current, previous):
             "activity": "exited", "change": -r["shares"] if r["shares"] is not None else None,
             "change_percent": -1 if (r["shares"] or 0) > 0 else None} for k, r in before.items() if k not in now)
     return sorted(result, key=lambda r: r["value"] or 0, reverse=True)
+
+
+def summarize_institution(data, top=5):
+    """A compact card view of one manager's latest 13F: totals, change counts and largest positions."""
+    holdings = data.get("holdings") or []
+    held = [r for r in holdings if r.get("activity") != "exited"]
+    counts = {kind: sum(1 for r in holdings if r.get("activity") == kind) for kind in ("new", "increased", "reduced", "exited")}
+    compared = any(r.get("activity") != "unknown" for r in holdings)
+    return {key: data.get(key) for key in ("id", "name", "cik", "filing", "previous_filing", "partial", "fetched_at", "source")} | {
+        "positions": len(held),
+        "value": sum(r.get("value") or 0 for r in held),
+        "changes": counts if compared else None,
+        "top": [{field: r.get(field) for field in ("issuer", "class", "cusip", "put_call", "value", "weight", "activity")} for r in held[:top]],
+    }

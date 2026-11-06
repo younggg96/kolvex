@@ -5,7 +5,7 @@ from typing import Literal
 from fastapi import APIRouter, HTTPException, Path
 from app.services.sec.client import MANAGERS, SecNotFound, SecUnavailable, sec_client
 from app.services.yfinance.client import get_yfinance_service
-from app.services.sec.parsers import number
+from app.services.sec.parsers import number, summarize_institution
 
 router = APIRouter(prefix="/market/free-research", tags=["Market Data"])
 
@@ -15,14 +15,24 @@ async def managers():
     return {"managers": [{"id": key, **value} for key, value in MANAGERS.items()]}
 
 
-@router.get("/institutions/{manager}")
-async def institution(manager: str):
+async def tracked_institution(manager: str):
     if manager not in MANAGERS:
         raise HTTPException(404, "Manager is outside the tracked list")
     try:
-        return await sec_client.institution(manager)
+        return {"id": manager, **await sec_client.institution(manager)}
     except (SecUnavailable, ValueError, KeyError) as exc:
         raise HTTPException(503, "SEC holdings unavailable; retry later") from exc
+
+
+@router.get("/institutions/{manager}")
+async def institution(manager: str):
+    return await tracked_institution(manager)
+
+
+@router.get("/institutions/{manager}/summary")
+async def institution_summary(manager: str):
+    """Card data for the Superinvestors list; the full table stays on the manager endpoint."""
+    return summarize_institution(await tracked_institution(manager))
 
 
 def revenue_outlook(symbol):

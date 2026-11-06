@@ -3,6 +3,7 @@ import {
   Star,
   PieChart,
   BookOpen,
+  Landmark,
   Newspaper,
   Radio,
   Telescope,
@@ -78,6 +79,14 @@ export const MAIN_NAV_ITEMS: MainNavItem[] = [
     href: "/dashboard/ai-research",
     type: "link",
     featureId: "tradingAnalysis",
+  },
+  {
+    icon: Landmark,
+    titleKey: "sidebar.superinvestors",
+    shortTitleKey: "tabBar.superinvestors",
+    href: "/dashboard/superinvestors",
+    type: "link",
+    featureId: "superinvestors",
   },
   {
     icon: BookOpen,

@@ -423,7 +423,7 @@ export default function StockWorkspace({
                       {c("Peers", "同行比较")}
                     </TabsTrigger>
                     <TabsTrigger value="ownership">
-                      {c("Ownership", "持仓披露")}
+                      {c("Insider trades", "内部人交易")}
                     </TabsTrigger>
                   </>
                 )}
@@ -541,10 +541,7 @@ export default function StockWorkspace({
                 >
                   {(activeTab === "ownership" ||
                     visitedTabs.has("ownership")) && (
-                    <StockOwnership
-                      symbol={ticker}
-                      companyName={overview?.company.name}
-                    />
+                    <StockOwnership symbol={ticker} />
                   )}
                 </TabsContent>
                 <TabsContent

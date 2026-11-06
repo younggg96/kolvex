@@ -9,6 +9,7 @@ export type ProductFeatureId =
   | "news"
   | "portfolio"
   | "paperTrading"
+  | "superinvestors"
   | "settings"
   | "admin";
 
@@ -24,6 +25,7 @@ export interface ProductFeature {
 
 export const PRODUCT_FEATURES = [
   { id: "paperTrading", label: "Paper trading", enabled: true, routePrefixes: ["/dashboard/paper-trading"], apiPrefixes: ["/api/paper-trading"] },
+  { id: "superinvestors", label: "Superinvestors", enabled: true, routePrefixes: ["/dashboard/superinvestors"], componentDirs: ["components/superinvestors"] },
   { id: "watchlist", label: "Watchlist", enabled: true, routePrefixes: ["/dashboard/watchlist"] },
   { id: "news", label: "News", enabled: true, routePrefixes: ["/dashboard/news"], apiPrefixes: ["/api/news"], componentDirs: ["components/news"], libFiles: ["lib/newsFeed.ts"] },
   { id: "home", label: "Markets", enabled: true, routePrefixes: ["/dashboard", "/dashboard/market"] },

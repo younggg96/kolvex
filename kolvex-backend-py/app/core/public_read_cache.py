@@ -23,7 +23,7 @@ class PublicReadCacheMiddleware:
         (re.compile(r"^/api/v1/market/news/[A-Za-z0-9.\-^=]{1,20}$"), "stock_news", 60),
         (re.compile(r"^/api/v1/market/history/[A-Za-z0-9.\-^=]{1,20}$"), "stock_history", 60),
         (re.compile(r"^/api/v1/market/intraday/[A-Za-z0-9.\-^=]{1,20}$"), "stock_intraday", 30),
-        (re.compile(r"^/api/v1/x-content/(creators|posts|summaries)$"), "x_content", 60),
+        (re.compile(r"^/api/v1/x-content/(creators|posts|summaries|tickers)$"), "x_content", 60),
     )
 
     def __init__(self, app):

@@ -125,6 +125,26 @@ class ImportTests(unittest.TestCase):
         self.assertEqual(result["total"], 42)
 
 
+    def test_ticker_heat_counts_current_and_previous_windows_by_publication_date(self):
+        from datetime import datetime, timezone
+        db = Mock()
+        query = db.table.return_value.select.return_value
+        query.gte.return_value = query
+        query.lte.return_value = query
+        query.order.return_value = query
+        query.range.return_value = query
+        query.execute.return_value.data = [
+            {"author_username": "a", "published_at": "2026-11-05T12:00:00+00:00", "cashtags": ["NVDA", "TSLA"]},
+            {"author_username": "b", "published_at": "2026-11-04T12:00:00+00:00", "cashtags": ["NVDA", "NVDA"]},
+            {"author_username": "a", "published_at": "2026-10-28T12:00:00+00:00", "cashtags": ["NVDA", "AMD"]},
+        ]
+        result = XContentService(db).ticker_heat(now=datetime(2026, 11, 6, tzinfo=timezone.utc))
+        self.assertEqual([row["ticker"] for row in result["tickers"]], ["NVDA", "TSLA"])
+        self.assertEqual(result["tickers"][0], {"ticker": "NVDA", "posts": 2, "previous": 1, "authors": 2,
+                                                "latest": "2026-11-05T12:00:00+00:00"})
+        query.gte.assert_called_once_with("published_at", "2026-10-23T00:00:00+00:00")
+
+
 class PermissionTests(unittest.TestCase):
     def setUp(self):
         self.app = FastAPI()

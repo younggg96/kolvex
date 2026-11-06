@@ -101,6 +101,7 @@ export function ListRows({ className, ...props }: React.ComponentProps<"ul">) {
  * (watch star, disclosure) sits beside the row target, never nested inside it.
  * Hover and keyboard focus inside the row apply a neutral wash; pressing the
  * row deepens it. Grey keeps the row reading as a control rather than a signal.
+ * The row owns the only wash: the link that fills it never adds its own grey.
  */
 export const ListRow = React.forwardRef<
   HTMLLIElement,
@@ -109,7 +110,7 @@ export const ListRow = React.forwardRef<
   <li
     ref={ref}
     className={cn(
-      "flex items-center gap-1 rounded-2xl pr-2 max-md:pr-0 max-md:[&>*]:!px-0 transition-colors hover:bg-foreground/[0.06] focus-within:bg-foreground/[0.06] active:bg-foreground/[0.1] motion-reduce:transition-none",
+      "flex items-center gap-1 rounded-2xl pr-2 max-md:pr-0 max-md:[&>*]:!px-0 transition-colors hover:bg-foreground/[0.06] focus-within:bg-foreground/[0.06] active:bg-foreground/[0.1] motion-reduce:transition-none [&>a]:!bg-transparent",
       className,
     )}
     {...props}

@@ -14,6 +14,8 @@ import { SegmentedControl } from "@/components/ui/segmented-control";
 import { isProductFeatureEnabled } from "@/lib/productFeatures";
 import { useMarketQuotes } from "@/hooks/useMarketQuotes";
 import { useMarketDiscovery } from "@/hooks/useMarketDiscovery";
+import { useSocialBuzz } from "@/hooks/useSocialBuzz";
+import { STOCK_SOURCES, type StockSource } from "@/lib/socialBuzz";
 import type { DiscoveryStock } from "@/lib/marketDiscovery";
 import {
   CORE_STOCKS, STOCK_PAGE_SIZE, STOCK_PREFERENCE_KEY, STOCK_SECTORS,
@@ -42,6 +44,11 @@ const sortLabels: Record<StockSort, [string, string]> = {
   heat: ["Discussion · 7 days", "近期讨论 · 7 天"], latest: ["Latest opinion", "最新观点"],
   volume: ["Volume multiple", "放量倍数"],
 };
+const heatLabels: Record<StockSource, [string, string]> = {
+  all: ["Combined buzz", "综合热度"], youtube: ["Discussion · 7 days", "近期讨论 · 7 天"],
+  reddit: ["Reddit mentions · 24h", "Reddit 提及 · 24 小时"], x: ["X posts · 7 days", "X 帖子 · 7 天"],
+};
+const sortLabel = (sort: StockSort, source: StockSource) => sort === "heat" ? heatLabels[source] : sortLabels[sort];
 const coreNames = new Map<string, string>(CORE_STOCKS.map(stock => [stock.symbol, stock.name]));
 const EMPTY_STOCKS: YouTubeStockSummary[] = [];
 const EMPTY_DISCOVERY: DiscoveryStock[] = [];
@@ -78,6 +85,10 @@ export default function StockObservationList({ range, catalogue, held, onRetry, 
   const board = state.scope === "movers" ? discovery.data?.movers : state.scope === "active" ? discovery.data?.active : undefined;
   const discovered = board?.items ?? EMPTY_DISCOVERY;
   const discoveryBySymbol = useMemo(() => new Map(discovered.map(item => [item.symbol, item])), [discovered]);
+  const creatorScope = state.scope === "creators";
+  const buzz = useSocialBuzz(ready && creatorScope && state.source !== "youtube");
+  const social = creatorScope ? buzz.social : undefined;
+  const redditNames = useMemo(() => new Map((buzz.social.reddit ?? []).map(row => [row.ticker, row.name])), [buzz.social.reddit]);
 
   const update = useCallback((next: StockObservationState) => {
     const params = writeStockObservationState(new URLSearchParams(window.location.search), next);
@@ -107,17 +118,20 @@ export default function StockObservationList({ range, catalogue, held, onRetry, 
   }, []);
 
   // Quote batches never reorder visible rows halfway through a refresh.
-  const sourceSymbols = selectObservationSymbols({ ...state, search: marketScope || state.scope === "creators" ? state.search : undefined, sort: marketScope ? state.sort : state.scope === "creators" ? state.sort === "latest" ? "latest" : "heat" : "default" }, stocks, held.tickers, {}, now, discovered);
+  const sourceSymbols = selectObservationSymbols({ ...state, search: marketScope || state.scope === "creators" ? state.search : undefined, sort: marketScope ? state.sort : state.scope === "creators" ? state.sort === "latest" ? "latest" : "heat" : "default" }, stocks, held.tickers, {}, now, discovered, social);
   const quoteSymbols = marketScope || state.scope === "creators" && (state.sort === "heat" || state.sort === "latest") ? sourceSymbols.slice(0, state.rows) : sourceSymbols;
   const symbolKey = quoteSymbols.slice().sort().join(",");
   const { quotes, loading: quoteLoading, refreshing: quoteRefreshing, unavailable: quoteError } = useMarketQuotes(quoteSymbols, ready, attempt + refreshToken);
   const settledQuoteKey = quoteRefreshing ? null : symbolKey;
 
-  const symbols = useMemo(() => selectObservationSymbols(state, stocks, held.tickers, quotes, now, discovered),
-    [state, stocks, held.tickers, quotes, now, discovered]);
+  const symbols = useMemo(() => selectObservationSymbols(state, stocks, held.tickers, quotes, now, discovered, social),
+    [state, stocks, held.tickers, quotes, now, discovered, social]);
   const visible = symbols.slice(0, state.rows);
-  const sourceLoading = marketScope ? discovery.loading : state.scope === "creators" ? catalogue.loading && !catalogue.data : state.scope === "holdings" && held.loading;
-  const sourceError = marketScope ? discovery.error || board?.unavailable : state.scope === "creators" ? catalogue.error : state.scope === "holdings" && held.error;
+  const sourceLoading = marketScope ? discovery.loading : creatorScope ? (state.source !== "reddit" && state.source !== "x" && catalogue.loading && !catalogue.data) || (state.source !== "youtube" && buzz.loading) : state.scope === "holdings" && held.loading;
+  const sourceError = marketScope ? discovery.error || board?.unavailable : creatorScope ? Boolean(state.source === "youtube" ? catalogue.error : state.source === "reddit" ? buzz.reddit.error : state.source === "x" ? buzz.x.error : catalogue.error && buzz.reddit.error && buzz.x.error) : state.scope === "holdings" && held.error;
+  // In the combined list a failed source only narrows coverage; say which one is missing.
+  const missingSources = creatorScope && state.source === "all" && !sourceError
+    ? [catalogue.error && "YouTube", buzz.reddit.error && !buzz.social.reddit && "Reddit", buzz.x.error && !buzz.social.x && "X"].filter(Boolean) : [];
   const blocking = !ready || sourceLoading;
   const returnParams = writeStockObservationState(new URLSearchParams(searchParams.toString()), state);
   const returnHref = `${pathname}?${returnParams}`;
@@ -138,12 +152,16 @@ export default function StockObservationList({ range, catalogue, held, onRetry, 
     } catch { /* Native browser restoration remains available. */ }
   }, [blocking, quoteLoading, returnHref, settledQuoteKey, symbolKey, sourceError, symbols.length]);
 
-  const changeScope = (scope: StockScope) => update({ scope, sector: "all", sort: stockSorts(scope)[0], rows: STOCK_PAGE_SIZE, search: state.search });
-  const defaultSort = stockSorts(state.scope)[0];
-  const hasFilters = Boolean(state.search || state.sector !== "all" || state.sort !== defaultSort);
+  const changeScope = (scope: StockScope) => update({ scope, sector: "all", source: "all", sort: stockSorts(scope)[0], rows: STOCK_PAGE_SIZE, search: state.search });
+  const changeSource = (source: StockSource) => {
+    const sorts = stockSorts("creators", source);
+    update({ ...state, source, sort: sorts.includes(state.sort) ? state.sort : sorts[0], rows: STOCK_PAGE_SIZE });
+  };
+  const defaultSort = stockSorts(state.scope, state.source)[0];
+  const hasFilters = Boolean(state.search || state.sector !== "all");
   const resetFilters = () => {
     setSearchDraft("");
-    update({ ...state, search: undefined, sector: "all", sort: defaultSort, rows: STOCK_PAGE_SIZE });
+    update({ ...state, search: undefined, sector: "all", rows: STOCK_PAGE_SIZE });
   };
   const commitSearch = (search: string) => update({ ...state, search, rows: STOCK_PAGE_SIZE });
   const clearSearch = () => { setSearchDraft(""); commitSearch(""); searchRef.current?.focus(); };
@@ -155,12 +173,12 @@ export default function StockObservationList({ range, catalogue, held, onRetry, 
         <span className="truncate text-sm text-muted-foreground">{scopeOptions.find(option => option.value === state.scope)?.label}</span>
         <Button type="button" variant="outline" size="icon" className="relative h-11 w-11 shrink-0 rounded-full" aria-expanded={filtersOpen} aria-controls="stock-filters" aria-label={c("Filter stocks", "筛选股票")} title={c("Filter stocks", "筛选股票")} onClick={() => setFiltersOpen(value => !value)}>
           <SlidersHorizontal className="h-4 w-4" aria-hidden="true" />
-          {hasFilters && <span aria-hidden="true" className="absolute right-2 top-2 h-2 w-2 rounded-full bg-foreground" />}
+          {(hasFilters || state.sort !== defaultSort || state.source !== "all") && <span aria-hidden="true" className="absolute right-2 top-2 h-2 w-2 rounded-full bg-foreground" />}
         </Button>
       </div>
       <SegmentedControl label={c("Stock list", "股票列表")} value={state.scope} onChange={changeScope} wrap className="ml-auto hidden max-w-full border border-border lg:flex" itemClassName="min-h-9 px-3" options={scopeOptions} />
     </>}>
-      <div id="stock-filters" className={cn("mb-3 grid grid-cols-2 items-end gap-3", state.scope === "core" ? "lg:grid-cols-[minmax(0,1fr)_9rem_9rem]" : "lg:grid-cols-[minmax(0,1fr)_10rem]", !filtersOpen && "max-lg:hidden")}>
+      <div id="stock-filters" className={cn("mb-3 grid grid-cols-2 items-end gap-3", state.scope === "core" ? "lg:grid-cols-[minmax(0,1fr)_9rem_9rem]" : creatorScope ? "lg:grid-cols-[minmax(0,1fr)_9rem_11rem]" : "lg:grid-cols-[minmax(0,1fr)_10rem]", !filtersOpen && "max-lg:hidden")}>
         <div className="min-w-0 lg:hidden">
           <Select value={state.scope} onValueChange={value => changeScope(value as StockScope)}>
             <SelectTrigger shape="pill" className="h-11" aria-label={c("Stock list", "股票列表")}><SelectValue /></SelectTrigger>
@@ -185,16 +203,23 @@ export default function StockObservationList({ range, catalogue, held, onRetry, 
             <SelectContent className="!rounded-2xl">{STOCK_SECTORS.map(sector => <SelectItem key={sector.key} value={sector.key} className="min-h-11">{c(sector.en, sector.zh)}</SelectItem>)}</SelectContent>
           </Select>
         </div>}
+        {creatorScope && <div className="min-w-0">
+          <label htmlFor="stock-source" className="sr-only">{c("Discussion source", "讨论来源")}</label>
+          <Select value={state.source} onValueChange={value => changeSource(value as StockSource)}>
+            <SelectTrigger shape="pill" id="stock-source" className="h-11"><SelectValue /></SelectTrigger>
+            <SelectContent className="!rounded-2xl">{STOCK_SOURCES.map(source => <SelectItem key={source.key} value={source.key} className="min-h-11">{c(source.en, source.zh)}</SelectItem>)}</SelectContent>
+          </Select>
+        </div>}
         <div className="min-w-0">
           <label htmlFor="stock-sort" className="sr-only">{c("Sort", "排序")}</label>
           <Select value={state.sort} onValueChange={value => update({ ...state, sort: value as StockSort, rows: STOCK_PAGE_SIZE })}>
             <SelectTrigger shape="pill" id="stock-sort" className="h-11"><SelectValue /></SelectTrigger>
-            <SelectContent align="end" className="!rounded-2xl">{stockSorts(state.scope).map(sort => <SelectItem key={sort} value={sort} className="min-h-11">{c(...sortLabels[sort])}</SelectItem>)}</SelectContent>
+            <SelectContent align="end" className="!rounded-2xl">{stockSorts(state.scope, state.source).map(sort => <SelectItem key={sort} value={sort} className="min-h-11">{c(...sortLabel(sort, state.source))}</SelectItem>)}</SelectContent>
           </Select>
         </div>
       </div>
       <div className="mb-3 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 text-xs leading-5 text-muted-foreground">
-        <p>{state.scope === "movers" ? c("Yahoo gainers + losers · ranked by snapshot move", "Yahoo 涨跌榜候选 · 按快照涨跌排序") : state.scope === "active" ? c("Active stocks · volume ≥ 1.5× 3M daily average", "活跃股候选 · 成交量至少为3个月日均的1.5倍") : state.scope === "core" ? c("Curated list · ranked within this list", "精选观察名单 · 名单内排序") : state.scope === "holdings" ? c("Linked equity holdings", "已连接的股票持仓") : state.sort === "latest" ? c("Source publication date · includes history", "按原文发布时间 · 包含历史观点") : c("Opinions published in the past 7 days", "近 7 天发布的观点")}</p>
+        <p>{state.scope === "movers" ? c("Yahoo gainers + losers · ranked by snapshot move", "Yahoo 涨跌榜候选 · 按快照涨跌排序") : state.scope === "active" ? c("Active stocks · volume ≥ 1.5× 3M daily average", "活跃股候选 · 成交量至少为3个月日均的1.5倍") : state.scope === "core" ? c("Curated list · ranked within this list", "精选观察名单 · 名单内排序") : state.scope === "holdings" ? c("Linked equity holdings", "已连接的股票持仓") : state.sort === "latest" ? c("Source publication date · includes history", "按原文发布时间 · 包含历史观点") : state.source === "reddit" ? c("Reddit stock mentions in the past 24 hours · ApeWisdom", "Reddit 近 24 小时股票提及 · 来自 ApeWisdom") : state.source === "x" ? c("Cashtags in tracked X accounts' posts · past 7 days", "已收录 X 博主帖子中的股票代码 · 近 7 天") : state.source === "youtube" ? c("Opinions published in the past 7 days", "近 7 天发布的观点") : c("YouTube opinions (7d) + Reddit mentions (24h) + X posts (7d) · ranked by combined place", "YouTube 观点（7天）+ Reddit 提及（24小时）+ X 帖子（7天）· 按各来源名次综合排序")}</p>
         {!blocking && (!sourceError || symbols.length > 0) && <p role="status" aria-live="polite" className="shrink-0 tabular-nums">{c(`Showing ${visible.length} of ${symbols.length} stocks`, `已显示 ${visible.length} / ${symbols.length} 只`)}</p>}
       </div>
       {marketScope && <details className="mb-3 text-xs leading-5 text-muted-foreground">
@@ -210,12 +235,15 @@ export default function StockObservationList({ range, catalogue, held, onRetry, 
       {hasFilters && <div role="group" aria-label={c("Active stock filters", "当前股票筛选条件")} className={cn("mb-4 flex flex-wrap items-center gap-2", !filtersOpen && "max-lg:hidden")}>
         {state.search && <Button variant="secondary" size="sm" className="min-h-11 max-w-full gap-2" onClick={clearSearch} aria-label={c(`Remove search: ${state.search}`, `移除搜索：${state.search}`)}><span className="truncate">{state.search}</span><X className="h-3.5 w-3.5 shrink-0" aria-hidden="true" /></Button>}
         {state.sector !== "all" && <Button variant="secondary" size="sm" className="min-h-11 gap-2" onClick={() => update({ ...state, sector: "all", rows: STOCK_PAGE_SIZE })} aria-label={c("Remove sector filter", "移除行业筛选")}>{c(STOCK_SECTORS.find(item => item.key === state.sector)!.en, STOCK_SECTORS.find(item => item.key === state.sector)!.zh)}<X className="h-3.5 w-3.5" aria-hidden="true" /></Button>}
-        {state.sort !== defaultSort && <Button variant="secondary" size="sm" className="min-h-11 gap-2" onClick={() => update({ ...state, sort: defaultSort, rows: STOCK_PAGE_SIZE })} aria-label={c("Reset stock sort", "恢复默认排序")}>{c(...sortLabels[state.sort])}<X className="h-3.5 w-3.5" aria-hidden="true" /></Button>}
         <Button variant="ghost" size="sm" className="min-h-11 gap-2 text-muted-foreground" onClick={resetFilters}><RotateCcw className="h-3.5 w-3.5" aria-hidden="true" />{c("Reset filters", "重置筛选")}</Button>
       </div>}
       {sourceError && <div role="alert" className="mb-3 flex flex-wrap items-center justify-between gap-2 text-sm">
         <p>{marketScope ? c(board?.items.length ? "Ranking refresh failed. Showing the last snapshot." : "Could not load this ranking.", board?.items.length ? "榜单更新失败，保留上次快照。" : "暂时无法加载这个榜单。") : c(catalogue.data ? "Could not refresh. Showing saved coverage." : "Could not load this list.", catalogue.data ? "更新失败，保留上次观点。" : "暂时无法加载这个列表。")}</p>
-        <Button variant="outline" size="sm" disabled={marketScope && discovery.refreshing} onClick={marketScope ? discovery.refresh : onRetry}>{c("Retry", "重试")}</Button>
+        <Button variant="outline" size="sm" disabled={marketScope && discovery.refreshing} onClick={marketScope ? discovery.refresh : () => { onRetry(); if (creatorScope) buzz.retry(); }}>{c("Retry", "重试")}</Button>
+      </div>}
+      {missingSources.length > 0 && <div role="status" className="mb-3 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+        <p>{c(`${missingSources.join(", ")} unavailable right now; showing the other sources.`, `${missingSources.join("、")} 暂不可用，当前仅显示其他来源。`)}</p>
+        <Button variant="ghost" size="sm" onClick={() => { if (catalogue.error) onRetry(); buzz.retry(); }}>{c("Retry", "重试")}</Button>
       </div>}
       {quoteError && <div role="status" className="mb-3 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
         <p>{c("Some quotes could not be refreshed. Available prices are retained.", "部分报价更新失败，保留可用价格。")}</p>
@@ -240,18 +268,18 @@ export default function StockObservationList({ range, catalogue, held, onRetry, 
               <Link href={`${href}?${detailParams}`} onClick={rememberScroll} className={cn(ROW_GRID, listRowTargetClass, "gap-y-1")}>
                 <span className="flex min-w-0 items-center gap-2 sm:gap-3">
                   <span aria-hidden="true" className="shrink-0"><CompanyLogo symbol={symbol} size="sm" /></span>
-                  <span className="min-w-0"><span className="block truncate text-base font-semibold">{symbol}{state.scope !== "holdings" && held.tickers.includes(symbol) && <HeldMark />}</span><span className="mt-1 block truncate text-xs text-muted-foreground">{quotes[symbol]?.name || discoveryBySymbol.get(symbol)?.name || stock?.company_name || coreNames.get(symbol) || symbol}</span></span>
+                  <span className="min-w-0"><span className="block truncate text-base font-semibold">{symbol}{state.scope !== "holdings" && held.tickers.includes(symbol) && <HeldMark />}</span><span className="mt-1 block truncate text-xs text-muted-foreground">{quotes[symbol]?.name || discoveryBySymbol.get(symbol)?.name || stock?.company_name || coreNames.get(symbol) || redditNames.get(symbol) || symbol}</span></span>
                 </span>
                 <span className="hidden min-[360px]:block"><StockTrend symbol={symbol} period={trend.period} interval={trend.interval} rangeLabel={c(trend.en, trend.zh)} rangeKey={range} /></span>
                 <span className="min-w-0 text-right">{quoteLoading && !quotes[symbol] ? <PendingValue className="h-10" /> : <><span className="figure block text-base font-medium">{money(quotes[symbol]?.price)}</span><Change value={quotes[symbol]?.changePercent} className="mt-1 block text-xs font-semibold" /></>}</span>
-                <span className="col-span-full text-xs leading-5 text-muted-foreground">{c(...stockEntryReason(state.scope, symbol, stock, discoveryBySymbol.get(symbol), now))}</span>
+                <span className="col-span-full text-xs leading-5 text-muted-foreground">{c(...stockEntryReason(state.scope, symbol, stock, discoveryBySymbol.get(symbol), now, social, state.source))}</span>
               </Link>
               <div className="shrink-0 max-md:hidden"><WatchlistButton ticker={symbol} /></div>
             </ListRow>;
           })}
         </ListRows>}
         {!blocking && !symbols.length && !sourceError && <Empty action={hasFilters ? <Button variant="outline" size="sm" onClick={resetFilters}>{c("Reset filters", "重置筛选")}</Button> : state.scope === "creators" ? <Button variant="outline" size="sm" onClick={() => state.sort === "latest" ? changeScope("core") : update({ ...state, sort: "latest", rows: STOCK_PAGE_SIZE })}>{state.sort === "latest" ? c("Browse core stocks", "查看常看美股") : c("View historical opinions", "查看历史观点")}</Button> : state.scope === "holdings" ? <TextLink href="/dashboard/portfolio">{c("Connect an account", "连接账户")}</TextLink> : undefined}>
-          {hasFilters ? c("No stocks match. Try another search or reset filters.", "没有符合条件的股票，试试其他关键词或重置筛选。") : state.scope === "active" ? c("No active candidates have reached 1.5× full-day average volume this session. Check again later.", "本交易日活跃候选中，暂无成交量达到全天日均1.5倍的股票，可稍后刷新。") : state.scope === "movers" ? c("No qualifying movers in the source lists yet.", "来源榜单中暂时没有符合条件的异动股票。") : state.scope === "creators" ? state.sort === "latest" ? c("No source-dated creator opinions yet.", "暂时没有带原文日期的博主观点。") : c("No creator opinions published in the past 7 days.", "近 7 天暂时没有博主观点更新。") : c("No stocks in this list yet.", "这个列表暂时没有股票。")}
+          {hasFilters ? c("No stocks match. Try another search or reset filters.", "没有符合条件的股票，试试其他关键词或重置筛选。") : state.scope === "active" ? c("No active candidates have reached 1.5× full-day average volume this session. Check again later.", "本交易日活跃候选中，暂无成交量达到全天日均1.5倍的股票，可稍后刷新。") : state.scope === "movers" ? c("No qualifying movers in the source lists yet.", "来源榜单中暂时没有符合条件的异动股票。") : state.scope === "creators" ? state.sort === "latest" ? c("No source-dated creator opinions yet.", "暂时没有带原文日期的博主观点。") : state.source === "reddit" ? c("No Reddit stock mentions in the latest ranking.", "最新 Reddit 榜单暂时没有股票提及。") : state.source === "x" ? c("No cashtags in tracked X posts from the past 7 days.", "近 7 天收录的 X 帖子中暂时没有股票代码。") : c("No creator opinions published in the past 7 days.", "近 7 天暂时没有博主观点更新。") : c("No stocks in this list yet.", "这个列表暂时没有股票。")}
         </Empty>}
         {!blocking && visible.length < symbols.length && <ListLoadMore onClick={() => update({ ...state, rows: state.rows + STOCK_PAGE_SIZE })}>{c(`Load ${Math.min(STOCK_PAGE_SIZE, symbols.length - visible.length)} more stocks`, `再看 ${Math.min(STOCK_PAGE_SIZE, symbols.length - visible.length)} 只股票`)}</ListLoadMore>}
       </div>
