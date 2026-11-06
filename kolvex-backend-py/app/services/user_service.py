@@ -2,6 +2,7 @@
 用户服务 - 处理用户 Profile 相关业务逻辑
 """
 
+import asyncio
 from typing import Optional, Dict, Any, List
 from supabase import Client
 from app.schemas.user import (
@@ -35,11 +36,11 @@ class UserService:
         """
         try:
             response = (
-                self.supabase.table("user_profiles")
+                (await asyncio.to_thread(self.supabase.table("user_profiles")
                 .select("*")
                 .eq("id", user_id)
                 .single()
-                .execute()
+                .execute))
             )
 
             if not response.data:
@@ -72,11 +73,11 @@ class UserService:
         """
         try:
             response = (
-                self.supabase.table("user_profiles")
+                (await asyncio.to_thread(self.supabase.table("user_profiles")
                 .select("*")
                 .eq("email", email)
                 .single()
-                .execute()
+                .execute))
             )
 
             if not response.data:
@@ -116,7 +117,7 @@ class UserService:
             }
 
             response = (
-                self.supabase.table("user_profiles").insert(insert_data).execute()
+                (await asyncio.to_thread(self.supabase.table("user_profiles").insert(insert_data).execute))
             )
 
             if not response.data:
@@ -160,10 +161,10 @@ class UserService:
                 return await self.get_user_profile(user_id)
 
             response = (
-                self.supabase.table("user_profiles")
+                (await asyncio.to_thread(self.supabase.table("user_profiles")
                 .update(update_data)
                 .eq("id", user_id)
-                .execute()
+                .execute))
             )
 
             if not response.data:
@@ -198,10 +199,10 @@ class UserService:
         try:
             # theme_update.theme 已经是字符串（因为 use_enum_values=True）
             response = (
-                self.supabase.table("user_profiles")
+                (await asyncio.to_thread(self.supabase.table("user_profiles")
                 .update({"theme": theme_update.theme})
                 .eq("id", user_id)
-                .execute()
+                .execute))
             )
 
             if not response.data:
@@ -235,10 +236,10 @@ class UserService:
         """
         try:
             response = (
-                self.supabase.table("user_profiles")
+                (await asyncio.to_thread(self.supabase.table("user_profiles")
                 .update({"locale": locale_update.locale})
                 .eq("id", user_id)
-                .execute()
+                .execute))
             )
 
             if not response.data:
@@ -275,10 +276,10 @@ class UserService:
             # 注意：这会硬删除用户资料
             # 如果需要软删除，可以添加一个 deleted_at 字段
             response = (
-                self.supabase.table("user_profiles")
+                (await asyncio.to_thread(self.supabase.table("user_profiles")
                 .delete()
                 .eq("id", user_id)
-                .execute()
+                .execute))
             )
 
             if not response.data:
@@ -327,7 +328,7 @@ class UserService:
                 query = query.or_(f"email.ilike.%{search}%,username.ilike.%{search}%")
 
             # 执行查询
-            response = query.range(offset, offset + page_size - 1).execute()
+            response = (await asyncio.to_thread(query.range(offset, offset + page_size - 1).execute))
 
             users = (
                 [UserProfileResponse(**user) for user in response.data]

@@ -84,7 +84,7 @@ def get_error_message(error) -> tuple[str, str]:
     response_model=SignUpResponse,
     summary="用户注册",
 )
-async def sign_up(request: SignUpRequest):
+def sign_up(request: SignUpRequest):
     """
     注册新用户
     
@@ -145,7 +145,7 @@ async def sign_up(request: SignUpRequest):
     response_model=SignInResponse,
     summary="用户登录",
 )
-async def sign_in(request: SignInRequest):
+def sign_in(request: SignInRequest):
     """
     用户登录
     
@@ -188,7 +188,7 @@ async def sign_in(request: SignInRequest):
     response_model=OAuthUrlResponse,
     summary="获取 OAuth 登录 URL",
 )
-async def get_oauth_url(request: OAuthRequest):
+def get_oauth_url(request: OAuthRequest):
     """
     获取 OAuth 提供商的登录 URL
     
@@ -238,7 +238,7 @@ async def get_oauth_url(request: OAuthRequest):
     response_model=MessageResponse,
     summary="用户登出",
 )
-async def sign_out(
+def sign_out(
     authorization: Optional[str] = Header(None),
 ):
     """
@@ -295,7 +295,7 @@ async def sign_out(
     response_model=MessageResponse,
     summary="发送密码重置邮件",
 )
-async def reset_password(request: ResetPasswordRequest):
+def reset_password(request: ResetPasswordRequest):
     """
     发送密码重置邮件
     
@@ -334,7 +334,7 @@ async def reset_password(request: ResetPasswordRequest):
     response_model=MessageResponse,
     summary="更新密码",
 )
-async def update_password(
+def update_password(
     request: UpdatePasswordRequest,
     authorization: Optional[str] = Header(None),
 ):
@@ -414,7 +414,7 @@ async def update_password(
     response_model=dict,
     summary="获取当前用户信息",
 )
-async def get_current_user(
+def get_current_user(
     authorization: Optional[str] = Header(None),
 ):
     """
@@ -482,7 +482,7 @@ async def get_current_user(
     response_model=SignInResponse,
     summary="刷新访问令牌",
 )
-async def refresh_token(
+def refresh_token(
     authorization: Optional[str] = Header(None),
     refresh_token: Optional[str] = Header(None, alias="X-Refresh-Token"),
 ):

@@ -11,7 +11,7 @@ router = APIRouter(prefix="/market/free-research", tags=["Market Data"])
 
 
 @router.get("/institutions")
-async def managers():
+def managers():
     return {"managers": [{"id": key, **value} for key, value in MANAGERS.items()]}
 
 

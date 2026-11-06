@@ -355,7 +355,7 @@ async def publish_analysis(
 
 
 @router.patch("/{analysis_id}/unpublish")
-async def unpublish_analysis(
+def unpublish_analysis(
     analysis_id: str,
     current_user_id: str = Depends(get_current_user_id),
 ):

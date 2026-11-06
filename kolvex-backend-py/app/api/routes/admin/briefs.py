@@ -1,4 +1,5 @@
 """Admin-only briefing CRUD with optimistic concurrency. Identical retries are idempotent."""
+import asyncio
 import json
 import logging
 from datetime import date
@@ -43,11 +44,11 @@ async def save(request: Request, admin_id: str = Depends(verify_admin), db: Clie
     if date.fromisoformat(meta["date"]).weekday() >= 5 and meta["type"] != "evening":
         raise HTTPException(422, "周末每天仅一篇周末简报，请使用 evening-{date} 作为兼容存储 ID。")
     try:
-        db.table("daily_briefs").insert({"id": meta["id"], "brief_date": meta["date"], "brief_type": meta["type"], "title": meta["title"], "headline": meta["headline"], "payload": document, "imported_by": admin_id}).execute()
+        (await asyncio.to_thread(db.table("daily_briefs").insert({"id": meta["id"], "brief_date": meta["date"], "brief_type": meta["type"], "title": meta["title"], "headline": meta["headline"], "payload": document, "imported_by": admin_id}).execute))
         return {"id": meta["id"], "already_exists": False}
     except APIError as exc:
         if exc.code == "23505":
-            existing = db.table("daily_briefs").select("payload").eq("id", meta["id"]).single().execute()
+            existing = (await asyncio.to_thread(db.table("daily_briefs").select("payload").eq("id", meta["id"]).single().execute))
             if existing.data and Envelope.model_validate(existing.data["payload"]).model_dump(mode="json") == document:
                 return {"id": meta["id"], "already_exists": True}
             raise HTTPException(409, "同一 ID 已有不同内容，未覆盖原简报。") from exc
@@ -56,7 +57,7 @@ async def save(request: Request, admin_id: str = Depends(verify_admin), db: Clie
 
 
 @router.get("")
-async def listing(page: int = Query(1, ge=1), brief_type: BriefType | None = Query(None, alias="type"), admin_id: str = Depends(verify_admin), db: Client = Depends(get_supabase_service)):
+def listing(page: int = Query(1, ge=1), brief_type: BriefType | None = Query(None, alias="type"), admin_id: str = Depends(verify_admin), db: Client = Depends(get_supabase_service)):
     try:
         return list_saved_briefs(db, page, brief_type)
     except APIError as exc:
@@ -65,7 +66,7 @@ async def listing(page: int = Query(1, ge=1), brief_type: BriefType | None = Que
 
 
 @router.get("/{brief_id}")
-async def detail(brief_id: str, admin_id: str = Depends(verify_admin), db: Client = Depends(get_supabase_service)):
+def detail(brief_id: str, admin_id: str = Depends(verify_admin), db: Client = Depends(get_supabase_service)):
     try:
         return read_saved_brief(db, brief_id)
     except LookupError as exc:
@@ -93,8 +94,8 @@ async def update(brief_id: str, request: Request, revision: str = Header(..., al
         raise HTTPException(422, "编辑时不能修改 ID、日期或期次；请新增另一份简报。")
     try:
         current = current_for_write(db, brief_id, revision)
-        result = (db.table("daily_briefs").update({"title": meta["title"], "headline": meta["headline"], "payload": document, "revision": current + 1})
-                  .eq("id", brief_id).eq("revision", current).execute())
+        result = ((await asyncio.to_thread(db.table("daily_briefs").update({"title": meta["title"], "headline": meta["headline"], "payload": document, "revision": current + 1})
+                  .eq("id", brief_id).eq("revision", current).execute)))
         if not result.data:
             raise HTTPException(409, "简报已更新或删除，请重新读取后再操作。")
         return {"id": brief_id, "revision": str(current + 1)}
@@ -104,7 +105,7 @@ async def update(brief_id: str, request: Request, revision: str = Header(..., al
 
 
 @router.delete("/{brief_id}")
-async def delete(brief_id: str, revision: str = Header(..., alias="If-Match"), admin_id: str = Depends(verify_admin), db: Client = Depends(get_supabase_service)):
+def delete(brief_id: str, revision: str = Header(..., alias="If-Match"), admin_id: str = Depends(verify_admin), db: Client = Depends(get_supabase_service)):
     try:
         current = current_for_write(db, brief_id, revision)
         result = (db.table("daily_briefs").delete().eq("id", brief_id)

@@ -529,7 +529,7 @@ class TradingAnalysisService:
             "quick_think_model": quick_think_model,
         }
 
-        result = self._supabase.table(TABLE).insert(row).execute()
+        result = (await asyncio.to_thread(self._supabase.table(TABLE).insert(row).execute))
         record = result.data[0] if result.data else row
 
         config = build_ta_config(
@@ -741,12 +741,12 @@ class TradingAnalysisService:
         """Completed research is readable by every signed-in user."""
         try:
             result = (
-                self._supabase.table(TABLE)
+                (await asyncio.to_thread(self._supabase.table(TABLE)
                 .select("*")
                 .eq("id", analysis_id)
                 .eq("status", "completed")
                 .maybe_single()
-                .execute()
+                .execute))
             )
             return result.data if result else None
         except Exception as e:
@@ -825,12 +825,12 @@ class TradingAnalysisService:
         """Get a single analysis by ID."""
         try:
             result = (
-                self._supabase.table(TABLE)
+                (await asyncio.to_thread(self._supabase.table(TABLE)
                 .select("*")
                 .eq("id", analysis_id)
                 .eq("user_id", user_id)
                 .maybe_single()
-                .execute()
+                .execute))
             )
             return result.data if result else None
         except Exception as e:
@@ -855,7 +855,7 @@ class TradingAnalysisService:
         if ticker:
             query = query.eq("ticker", ticker.upper())
 
-        result = query.range(offset, offset + limit - 1).execute()
+        result = (await asyncio.to_thread(query.range(offset, offset + limit - 1).execute))
         total = result.count or 0
 
         return {
@@ -868,11 +868,11 @@ class TradingAnalysisService:
     async def delete_analysis(self, analysis_id: str, user_id: str) -> bool:
         """Delete an analysis."""
         result = (
-            self._supabase.table(TABLE)
+            (await asyncio.to_thread(self._supabase.table(TABLE)
             .delete()
             .eq("id", analysis_id)
             .eq("user_id", user_id)
-            .execute()
+            .execute))
         )
         return bool(result.data)
 
@@ -880,7 +880,7 @@ class TradingAnalysisService:
         """Publish an analysis so all users can view it."""
         try:
             result = (
-                self._supabase.table(TABLE)
+                (await asyncio.to_thread(self._supabase.table(TABLE)
                 .update({
                     "is_published": True,
                     "published_at": datetime.utcnow().isoformat(),
@@ -888,7 +888,7 @@ class TradingAnalysisService:
                 .eq("id", analysis_id)
                 .eq("user_id", user_id)
                 .eq("status", "completed")
-                .execute()
+                .execute))
             )
             return result.data[0] if result.data else None
         except Exception as e:
@@ -899,14 +899,14 @@ class TradingAnalysisService:
         """Unpublish an analysis, making it private again."""
         try:
             result = (
-                self._supabase.table(TABLE)
+                (await asyncio.to_thread(self._supabase.table(TABLE)
                 .update({
                     "is_published": False,
                     "published_at": None,
                 })
                 .eq("id", analysis_id)
                 .eq("user_id", user_id)
-                .execute()
+                .execute))
             )
             return result.data[0] if result.data else None
         except Exception as e:
@@ -939,7 +939,7 @@ class TradingAnalysisService:
 
         if published_only:
             query = query.eq("is_published", True)
-        result = query.range(offset, offset + limit - 1).execute()
+        result = (await asyncio.to_thread(query.range(offset, offset + limit - 1).execute))
         total = result.count or 0
         items = result.data or []
 
@@ -965,7 +965,7 @@ class TradingAnalysisService:
             )
             if published_only:
                 query = query.eq("is_published", True)
-            result = query.maybe_single().execute()
+            result = (await asyncio.to_thread(query.maybe_single().execute))
             record = result.data if result else None
             if record:
                 self._attach_authors([record])
@@ -1003,11 +1003,11 @@ class TradingAnalysisService:
         """Get analysis status without user_id check (service-level)."""
         try:
             result = (
-                self._supabase.table(TABLE)
+                (await asyncio.to_thread(self._supabase.table(TABLE)
                 .select("id, status, final_decision, error_message, progress_stage, progress_message, progress_events")
                 .eq("id", analysis_id)
                 .maybe_single()
-                .execute()
+                .execute))
             )
             return result.data if result else None
         except Exception as e:
@@ -1016,11 +1016,11 @@ class TradingAnalysisService:
             )
             try:
                 result = (
-                    self._supabase.table(TABLE)
+                    (await asyncio.to_thread(self._supabase.table(TABLE)
                     .select("id, status, final_decision, error_message, progress_stage, progress_message")
                     .eq("id", analysis_id)
                     .maybe_single()
-                    .execute()
+                    .execute))
                 )
                 return result.data if result else None
             except Exception as fallback_error:

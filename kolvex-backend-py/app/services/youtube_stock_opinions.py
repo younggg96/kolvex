@@ -264,9 +264,9 @@ class YouTubeStockOpinionService:
         await self.correct_publication_times(rows)
         corrected_channels = await self.correct_channel_ids(rows)
         await self._fill_missing_avatars(rows)
-        result = self.supabase.table(TABLE_NAME).upsert(
+        result = (await asyncio.to_thread(self.supabase.table(TABLE_NAME).upsert(
             rows, on_conflict="video_id,ticker"
-        ).execute()
+        ).execute))
         written_rows = result.data or []
 
         tickers_by_video: Dict[str, List[str]] = defaultdict(list)
@@ -274,11 +274,11 @@ class YouTubeStockOpinionService:
             tickers_by_video[row["video_id"]].append(row["ticker"])
         for video_id, tickers in tickers_by_video.items():
             (
-                self.supabase.table(TABLE_NAME)
+                (await asyncio.to_thread(self.supabase.table(TABLE_NAME)
                 .delete()
                 .eq("video_id", video_id)
                 .not_.in_("ticker", tickers)
-                .execute()
+                .execute))
             )
 
         return {

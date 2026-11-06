@@ -3,6 +3,7 @@ Portfolio Snapshot Service
 Records and retrieves historical portfolio snapshots
 """
 
+import asyncio
 import logging
 from datetime import date, datetime, timedelta
 from typing import Optional, List, Dict, Any
@@ -142,10 +143,10 @@ class PortfolioSnapshotService:
         
         try:
             # Upsert to handle both insert and update
-            result = self.supabase.table("portfolio_snapshots").upsert(
+            result = (await asyncio.to_thread(self.supabase.table("portfolio_snapshots").upsert(
                 snapshot_data,
                 on_conflict="user_id,snapshot_date"
-            ).execute()
+            ).execute))
         except Exception as e:
             if not _is_missing_calculation_version_error(e):
                 logger.error(f"❌ Failed to record snapshot for user {user_id[:8]}: {type(e).__name__}: {e}")
@@ -160,10 +161,10 @@ class PortfolioSnapshotService:
                 for key, value in snapshot_data.items()
                 if key != "calculation_version"
             }
-            result = self.supabase.table("portfolio_snapshots").upsert(
+            result = (await asyncio.to_thread(self.supabase.table("portfolio_snapshots").upsert(
                 legacy_snapshot_data,
                 on_conflict="user_id,snapshot_date"
-            ).execute()
+            ).execute))
 
         if result.data:
             logger.info(f"✅ Successfully recorded snapshot for user {user_id[:8]} on {snapshot_date}: {result.data[0].get('id', 'N/A')}")
@@ -222,7 +223,7 @@ class PortfolioSnapshotService:
 
         try:
             try:
-                result = build_query(include_calculation_version=True).execute()
+                result = (await asyncio.to_thread(build_query(include_calculation_version=True).execute))
             except Exception as e:
                 if not _is_missing_calculation_version_error(e):
                     raise
@@ -230,7 +231,7 @@ class PortfolioSnapshotService:
                     "Reading portfolio snapshots with the legacy schema because "
                     "calculation_version is unavailable"
                 )
-                result = build_query(include_calculation_version=False).execute()
+                result = (await asyncio.to_thread(build_query(include_calculation_version=False).execute))
             return result.data or []
         except Exception as e:
             logger.error(f"Failed to get snapshots for user {user_id}: {e}")
@@ -275,17 +276,17 @@ class PortfolioSnapshotService:
         """Get the most recent snapshot for a user"""
         try:
             try:
-                result = self.supabase.table("portfolio_snapshots").select("*").eq(
+                result = (await asyncio.to_thread(self.supabase.table("portfolio_snapshots").select("*").eq(
                     "user_id", user_id
                 ).gte(
                     "calculation_version", CURRENT_SNAPSHOT_CALCULATION_VERSION
-                ).order("snapshot_date", desc=True).limit(1).execute()
+                ).order("snapshot_date", desc=True).limit(1).execute))
             except Exception as e:
                 if not _is_missing_calculation_version_error(e):
                     raise
-                result = self.supabase.table("portfolio_snapshots").select("*").eq(
+                result = (await asyncio.to_thread(self.supabase.table("portfolio_snapshots").select("*").eq(
                     "user_id", user_id
-                ).order("snapshot_date", desc=True).limit(1).execute()
+                ).order("snapshot_date", desc=True).limit(1).execute))
             
             return result.data[0] if result.data else None
         except Exception as e:
@@ -296,19 +297,19 @@ class PortfolioSnapshotService:
         """Get the date of the first snapshot for a user"""
         try:
             try:
-                result = self.supabase.table("portfolio_snapshots").select(
+                result = (await asyncio.to_thread(self.supabase.table("portfolio_snapshots").select(
                     "snapshot_date"
                 ).eq("user_id", user_id).gte(
                     "calculation_version", CURRENT_SNAPSHOT_CALCULATION_VERSION
-                ).order("snapshot_date", desc=False).limit(1).execute()
+                ).order("snapshot_date", desc=False).limit(1).execute))
             except Exception as e:
                 if not _is_missing_calculation_version_error(e):
                     raise
-                result = self.supabase.table("portfolio_snapshots").select(
+                result = (await asyncio.to_thread(self.supabase.table("portfolio_snapshots").select(
                     "snapshot_date"
                 ).eq("user_id", user_id).order(
                     "snapshot_date", desc=False
-                ).limit(1).execute()
+                ).limit(1).execute))
             
             if result.data:
                 return date.fromisoformat(result.data[0]["snapshot_date"])

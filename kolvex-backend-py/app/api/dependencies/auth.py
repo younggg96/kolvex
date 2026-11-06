@@ -2,6 +2,7 @@
 认证相关依赖
 """
 
+import asyncio
 from fastapi import Depends, HTTPException, status, Header
 from typing import Optional
 from supabase import Client
@@ -51,7 +52,7 @@ async def get_current_user_id(
     # 验证 token
     try:
         # 使用 Supabase 验证 JWT token
-        user_response = supabase.auth.get_user(token)
+        user_response = await asyncio.to_thread(supabase.auth.get_user, token)
 
         if not user_response or not user_response.user:
             raise HTTPException(
@@ -133,7 +134,7 @@ async def get_current_user_email(
         )
 
     try:
-        user_response = supabase.auth.get_user(token)
+        user_response = await asyncio.to_thread(supabase.auth.get_user, token)
 
         if not user_response or not user_response.user or not user_response.user.email:
             raise HTTPException(
@@ -170,13 +171,13 @@ async def verify_admin(
         HTTPException: 403 如果用户不是管理员
     """
     try:
-        response = (
+        query = (
             supabase.table("user_profiles")
             .select("is_admin")
             .eq("id", current_user_id)
             .single()
-            .execute()
         )
+        response = await asyncio.to_thread(query.execute)
 
         if not response.data or not response.data.get("is_admin"):
             raise HTTPException(

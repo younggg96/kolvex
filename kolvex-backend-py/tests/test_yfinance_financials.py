@@ -81,7 +81,7 @@ class FinancialRouteTests(unittest.IsolatedAsyncioTestCase):
             'EarningsHistory', 'EarningsDate', 'EarningsResponse',
         }
         nodes = [node for node in ast.parse(route_file.read_text()).body
-                 if isinstance(node, (ast.ClassDef, ast.AsyncFunctionDef)) and node.name in wanted]
+                 if isinstance(node, (ast.ClassDef, ast.FunctionDef, ast.AsyncFunctionDef)) and node.name in wanted]
         frame = pd.DataFrame(
             {pd.Timestamp('2025-09-30'): [123.5, float('nan')]},
             index=['Total Revenue', 'Missing'],
