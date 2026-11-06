@@ -11,7 +11,7 @@ import { Card } from "@/components/ui/card";
 import { ListEmptyState } from "@/components/ui/list-card";
 import { INSTITUTIONS_KEY, institutionKey, type Institution, type InstitutionManager } from "@/lib/freeResearch";
 import InstitutionHoldings from "./InstitutionHoldings";
-import { Monogram, useQuarterLabel } from "./shared";
+import { InvestorAvatar, useInvestorByline, useQuarterLabel } from "./shared";
 
 const DIRECTORY = "/dashboard/superinvestors";
 
@@ -19,6 +19,7 @@ export default function SuperinvestorDetail({ manager }: { manager: string }) {
   const c = useCopy();
   const f = useFinancialFormat();
   const quarterLabel = useQuarterLabel();
+  const byline = useInvestorByline()(manager, true);
   const managers = useFreeResearch<{ managers: InstitutionManager[] }>(INSTITUTIONS_KEY);
   // Same cache key as InstitutionHoldings, so this shares its single SEC read.
   const institution = useFreeResearch<Institution>(institutionKey(manager));
@@ -51,11 +52,12 @@ export default function SuperinvestorDetail({ manager }: { manager: string }) {
           ) : (
             <>
               <header className="mb-8 flex min-w-0 items-center gap-4">
-                <Monogram name={identity?.name ?? ""} size="xl" />
+                <InvestorAvatar id={manager} name={identity?.name ?? ""} size="xl" />
                 <div className="min-w-0">
                   <h1 className="truncate text-2xl font-semibold tracking-tight md:text-[2rem]">
                     {identity?.name ?? parent}
                   </h1>
+                  {byline && <p className="mt-1 text-base text-foreground/80">{byline}</p>}
                   <p className="mt-1.5 flex flex-wrap gap-x-2 text-sm text-muted-foreground">
                     <span>{c("13F holdings", "13F 持仓")}</span>
                     {filing && (

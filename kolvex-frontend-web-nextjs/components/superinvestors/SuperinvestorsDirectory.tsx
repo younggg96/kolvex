@@ -26,9 +26,10 @@ import {
   ActivityBadge,
   AllocationBar,
   ChangeBreakdown,
-  Monogram,
+  InvestorAvatar,
   sumWeights,
   superinvestorHref,
+  useInvestorByline,
   useQuarterLabel,
 } from "./shared";
 
@@ -239,6 +240,7 @@ function LeadCard({ entry }: { entry: Loaded }) {
   const c = useCopy();
   const f = useFinancialFormat();
   const quarterLabel = useQuarterLabel();
+  const byline = useInvestorByline();
   const summary = entry.summary;
   const topShare = sumWeights(summary.top);
   const changes = changeTotal(summary);
@@ -247,7 +249,7 @@ function LeadCard({ entry }: { entry: Loaded }) {
       <Card className="grid gap-6 p-5 md:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] md:gap-8 md:p-6">
         <div className="flex min-w-0 flex-col gap-6">
           <div className="flex min-w-0 items-start gap-3">
-            <Monogram name={entry.manager.name} size="lg" />
+            <InvestorAvatar id={entry.manager.id} name={entry.manager.name} size="lg" />
             <div className="min-w-0">
               <p className="text-xs font-medium text-muted-foreground">{c("Largest reported value", "申报市值最大")}</p>
               <h2 id="superinvestor-lead-title" className="mt-1 truncate text-xl font-semibold">
@@ -258,6 +260,9 @@ function LeadCard({ entry }: { entry: Loaded }) {
                   {entry.manager.name}
                 </Link>
               </h2>
+              {byline(entry.manager.id, true) && (
+                <p className="mt-0.5 truncate text-sm text-muted-foreground">{byline(entry.manager.id, true)}</p>
+              )}
               <p className="mt-1 text-xs text-muted-foreground">
                 {quarterLabel(summary.filing.period)}
                 {" · "}
@@ -336,6 +341,7 @@ function LeadCard({ entry }: { entry: Loaded }) {
 function InvestorCard({ entry }: { entry: Loaded }) {
   const c = useCopy();
   const f = useFinancialFormat();
+  const byline = useInvestorByline();
   const summary = entry.summary;
   const first = summary.top[0];
   const topShare = sumWeights(summary.top);
@@ -345,9 +351,12 @@ function InvestorCard({ entry }: { entry: Loaded }) {
       className="glass-card group flex h-full min-w-0 flex-col gap-4 rounded-3xl border border-foreground/10 bg-card-glass p-4 transition-colors hover:bg-foreground/[0.04] focus-visible:outline-none active:bg-foreground/[0.07] sm:p-5"
     >
       <div className="flex min-w-0 items-start gap-3">
-        <Monogram name={entry.manager.name} />
+        <InvestorAvatar id={entry.manager.id} name={entry.manager.name} />
         <div className="min-w-0 flex-1">
           <h4 className="truncate font-semibold">{entry.manager.name}</h4>
+          {byline(entry.manager.id) && (
+            <p className="mt-0.5 truncate text-xs text-foreground/75">{byline(entry.manager.id)}</p>
+          )}
           <p className="mt-0.5 text-xs text-muted-foreground">
             {c("Filed", "申报于")} {f.date(summary.filing.filed)}
           </p>

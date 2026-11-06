@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { ArrowDown, ArrowUp, Minus, Plus, X } from "lucide-react";
 import { useFinancialFormat } from "@/components/decision/StockFinancialData";
 import { useCopy } from "@/components/decision/shared";
@@ -147,6 +148,67 @@ export function ChangeBreakdown({
         </li>
       ))}
     </ul>
+  );
+}
+
+type Bilingual = { en: string; zh: string };
+export interface InvestorProfile {
+  /** Chinese name the firm is commonly known by. */
+  zhName: string;
+  person: Bilingual;
+  role: Bilingual;
+  /** Vendored mark in /public/superinvestors; firms without a reliable mark use initials. */
+  logo?: string;
+}
+
+const FOUNDER = { en: "Founder", zh: "创始人" };
+const FOUNDER_CEO = { en: "Founder & CEO", zh: "创始人兼 CEO" };
+
+/** Curated alongside the backend MANAGERS list; ids must match. */
+export const INVESTOR_PROFILES: Record<string, InvestorProfile> = {
+  berkshire: { zhName: "伯克希尔·哈撒韦", person: { en: "Warren Buffett", zh: "沃伦·巴菲特" }, role: { en: "Chairman", zh: "董事长" }, logo: "berkshire" },
+  bridgewater: { zhName: "桥水基金", person: { en: "Ray Dalio", zh: "瑞·达利欧" }, role: FOUNDER, logo: "bridgewater" },
+  pershing: { zhName: "潘兴广场", person: { en: "Bill Ackman", zh: "比尔·阿克曼" }, role: FOUNDER_CEO, logo: "pershing" },
+  duquesne: { zhName: "杜肯家族办公室", person: { en: "Stanley Druckenmiller", zh: "斯坦利·德鲁肯米勒" }, role: FOUNDER },
+  appaloosa: { zhName: "阿帕卢萨", person: { en: "David Tepper", zh: "大卫·泰珀" }, role: FOUNDER },
+  baupost: { zhName: "包普斯特集团", person: { en: "Seth Klarman", zh: "塞斯·卡拉曼" }, role: { en: "CEO", zh: "CEO" } },
+  tiger: { zhName: "老虎环球", person: { en: "Chase Coleman", zh: "蔡斯·科尔曼" }, role: FOUNDER, logo: "tiger" },
+  third_point: { zhName: "第三点", person: { en: "Daniel Loeb", zh: "丹尼尔·勒布" }, role: FOUNDER_CEO },
+  oaktree: { zhName: "橡树资本", person: { en: "Howard Marks", zh: "霍华德·马克斯" }, role: { en: "Co-founder", zh: "联合创始人" }, logo: "oaktree" },
+  renaissance: { zhName: "文艺复兴科技", person: { en: "Jim Simons", zh: "吉姆·西蒙斯" }, role: FOUNDER, logo: "renaissance" },
+};
+
+/** Secondary identity line: Chinese firm name (zh only) and the investor behind it. */
+export function useInvestorByline() {
+  const c = useCopy();
+  return (id: string, withRole = false) => {
+    const profile = INVESTOR_PROFILES[id];
+    if (!profile) return null;
+    const person = c(profile.person.en, profile.person.zh);
+    const role = c(profile.role.en, profile.role.zh);
+    return c(
+      withRole ? `${person}, ${role}` : person,
+      [profile.zhName, person, withRole ? role : ""].filter(Boolean).join(" · "),
+    );
+  };
+}
+
+/** Firm mark when one is vendored, otherwise a neutral monogram. */
+export function InvestorAvatar({ id, name, size = "md" }: { id: string; name: string; size?: "md" | "lg" | "xl" }) {
+  const logo = INVESTOR_PROFILES[id]?.logo;
+  const [failed, setFailed] = useState(false);
+  if (!logo || failed) return <Monogram name={name} size={size} />;
+  return (
+    <span
+      aria-hidden="true"
+      className={cn(
+        "flex shrink-0 overflow-hidden rounded-full border border-foreground/10 bg-white",
+        size === "xl" ? "h-14 w-14" : size === "lg" ? "h-12 w-12" : "h-10 w-10",
+      )}
+    >
+      {/* eslint-disable-next-line @next/next/no-img-element -- tiny vendored static mark */}
+      <img src={`/superinvestors/${logo}.png`} alt="" className="h-full w-full object-cover" onError={() => setFailed(true)} />
+    </span>
   );
 }
 
