@@ -42,6 +42,8 @@ export function useStockHistory<T>(ticker: string, kind: "technical" | "drawings
   const [error, setError] = useState<number | null>(null);
   const controller = useRef<AbortController | null>(null);
   const generation = useRef(0);
+  // List rows omit chart bars, and research rows omit the report itself.
+  const isComplete = useCallback((item: AnalysisVersion<T>) => kind === "research" ? item.payload != null : !!item.bars, [kind]);
   const loadVersion = useCallback((id: string, signal: AbortSignal) => loadClientCache(
     `/api/market/analysis-history/${encodeURIComponent(ticker)}/${encodeURIComponent(id)}`,
     requestSignal => getStockAnalysisVersion<T>(ticker, id, requestSignal),
@@ -64,13 +66,13 @@ export function useStockHistory<T>(ticker: string, kind: "technical" | "drawings
       setCurrent(data.current); setTotal(data.total);
       if (!offset) {
         let next = data.current?.id === selectId ? data.current : data.items.find(item => item.id === selectId) || data.current;
-        if (next && kind !== "research" && !next.bars) next = await loadVersion(next.id, abort.signal);
+        if (next && !isComplete(next)) next = await loadVersion(next.id, abort.signal);
         if (!abort.signal.aborted) setSelected(next);
       }
     } catch (reason) {
       if (!abort.signal.aborted) setError(reason instanceof HistoryError ? reason.status : 0);
     } finally { if (!abort.signal.aborted) { setBusy(false); setLoadedKey(resourceKey); } }
-  }, [ticker, kind, scope, userId, resourceKey, historyKey, loadVersion]);
+  }, [ticker, kind, scope, userId, resourceKey, historyKey, loadVersion, isComplete]);
   useEffect(() => {
     generation.current += 1;
     const saved = peekClientCache<{ items: AnalysisVersion<T>[]; current: AnalysisVersion<T> | null; total: number }>(historyKey);
@@ -98,7 +100,7 @@ export function useStockHistory<T>(ticker: string, kind: "technical" | "drawings
   }
   const select = useCallback(async (item: AnalysisVersion<T> | null) => {
     controller.current?.abort();
-    if (!item || kind === "research" || item.bars) {
+    if (!item || isComplete(item)) {
       setSelected(item); setBusy(false); setError(null); return;
     }
     const abort = new AbortController();
@@ -110,7 +112,7 @@ export function useStockHistory<T>(ticker: string, kind: "technical" | "drawings
     } catch (reason) {
       if (!abort.signal.aborted) setError(reason instanceof HistoryError ? reason.status : 0);
     } finally { if (!abort.signal.aborted) setBusy(false); }
-  }, [kind, loadVersion]);
+  }, [isComplete, loadVersion]);
   const pendingResource = loadedKey !== resourceKey;
   return { items: pendingResource ? cached?.items ?? [] : items, selected: pendingResource ? cached?.current ?? null : selected, current: pendingResource ? cached?.current ?? null : current, total: pendingResource ? cached?.total ?? 0 : total, busy: busy || (pendingResource && !cached), error: pendingResource ? null : error, load, select, activate, scope, setScope };
 }

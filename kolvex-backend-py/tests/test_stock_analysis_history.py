@@ -171,6 +171,15 @@ class SharedHistorySelectionTests(unittest.TestCase):
         self.assertFalse(self.service.get("me", "NVDA", "new-other")["is_owner"])
         self.assertIsNone(self.service.get("me", "AAPL", "new-other"))
 
+    def test_research_list_rows_omit_report_but_current_keeps_it(self):
+        report = {"investment_plan": "x" * 1000}
+        for row in self.rows:
+            row.update(kind="research", payload=report)
+        self.tables["stock_analysis_heads"] = []
+        result = self.service.list("me", "NVDA", "research", 10, 0)
+        self.assertTrue(all(row["payload"] is None for row in result["items"]))
+        self.assertEqual(result["current"]["payload"], report)
+
 
 class SharedResearchTests(unittest.IsolatedAsyncioTestCase):
     async def test_completed_unpublished_research_is_shared_but_running_is_not(self):

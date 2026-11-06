@@ -7,71 +7,16 @@ import {
   QUOTE_CACHE_CONTROL,
   getCacheKey,
 } from "@/lib/cache";
+import { loadQuote, transformQuote, type BackendQuote } from "@/lib/server/stockQuote";
 
 const NEXT_PUBLIC_BACKEND_API_URL =
   process.env.NEXT_PUBLIC_BACKEND_API_URL || "http://127.0.0.1:8080";
-
-// Backend API response interface
-interface BackendQuote {
-  symbol: string;
-  name?: string;
-  current_price?: number;
-  change?: number;
-  change_percent?: number;
-  open?: number;
-  day_high?: number;
-  day_low?: number;
-  volume?: number;
-  avg_volume?: number;
-  market_cap?: number;
-  previous_close?: number;
-  fifty_two_week_high?: number;
-  fifty_two_week_low?: number;
-  market_time?: number;
-  market_state?: string;
-  quote_source?: string;
-  exchange_timezone_name?: string;
-  pre_market_price?: number;
-  pre_market_time?: number;
-  post_market_price?: number;
-  post_market_time?: number;
-}
 
 // Chart data interface
 interface ChartDataPoint {
   time: string;
   value: number;
   volume: number;
-}
-
-// Transform backend response to frontend format
-function transformQuote(quote: BackendQuote) {
-  return {
-    symbol: quote.symbol,
-    name: quote.name || quote.symbol,
-    price: quote.current_price ?? 0,
-    change: quote.change ?? 0,
-    changePercent: quote.change_percent ?? 0,
-    open: quote.open,
-    high: quote.day_high,
-    low: quote.day_low,
-    volume: quote.volume,
-    avgVolume: quote.avg_volume,
-    marketCap: quote.market_cap,
-    previousClose: quote.previous_close,
-    week52High: quote.fifty_two_week_high,
-    week52Low: quote.fifty_two_week_low,
-    marketTime: quote.market_time,
-    updatedAt: typeof quote.market_time === "number" && Number.isFinite(quote.market_time) && quote.market_time > 0
-      ? new Date(quote.market_time * 1000).toISOString() : undefined,
-    marketState: quote.market_state,
-    source: quote.quote_source,
-    exchangeTimezone: quote.exchange_timezone_name,
-    preMarketPrice: quote.pre_market_price,
-    preMarketTime: quote.pre_market_time,
-    postMarketPrice: quote.post_market_price,
-    postMarketTime: quote.post_market_time,
-  };
 }
 
 // Enable runtime edge for faster responses
@@ -97,41 +42,10 @@ export async function GET(request: NextRequest) {
           );
         }
 
-        // 检查内存缓存
-        const quoteCacheKey = getCacheKey("quote", symbol);
-        const cachedQuote = quoteCache.get(quoteCacheKey);
-        if (cachedQuote) {
-          return NextResponse.json(cachedQuote, {
-            headers: {
-              "Cache-Control": QUOTE_CACHE_CONTROL,
-              "X-Cache": "HIT",
-            },
-          });
-        }
-
         try {
-          const quoteResponse = await fetch(
-            `${NEXT_PUBLIC_BACKEND_API_URL}/api/v1/market/quote/${symbol}`,
-            // force-dynamic does not stop Next's Data Cache, which never expires here.
-            { cache: "no-store", signal: AbortSignal.timeout(20000) }
-          );
-          if (!quoteResponse.ok) {
-            throw new Error(`Backend returned ${quoteResponse.status}`);
-          }
-          const quoteData: BackendQuote = await quoteResponse.json();
-          if (typeof quoteData.current_price !== "number" || !Number.isFinite(quoteData.current_price) || quoteData.current_price <= 0) {
-            throw new Error("Market price unavailable");
-          }
-          const transformedQuote = transformQuote(quoteData);
-
-          // 存入缓存
-          quoteCache.set(quoteCacheKey, transformedQuote, CACHE_TTL.QUOTE);
-
+          const transformedQuote = await loadQuote(symbol);
           return NextResponse.json(transformedQuote, {
-            headers: {
-              "Cache-Control": QUOTE_CACHE_CONTROL,
-              "X-Cache": "MISS",
-            },
+            headers: { "Cache-Control": QUOTE_CACHE_CONTROL },
           });
         } catch (error) {
           console.error("Failed to fetch quote from backend:", error);

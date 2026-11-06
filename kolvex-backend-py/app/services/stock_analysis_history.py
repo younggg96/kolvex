@@ -29,8 +29,12 @@ class StockAnalysisHistory:
     def list(self, user_id: str | None, ticker: str, kind: str, limit: int, offset: int, scope: str = "all"):
         head = (self.db.table("stock_analysis_heads").select("version_id")
                 .eq("user_id", user_id).eq("ticker", ticker).eq("kind", kind).execute()) if user_id else None
+        # Research reports are ~100 KB each; list rows only need metadata and the
+        # client fetches the full version when one is selected.
+        list_fields = ("id,user_id,kind,ticker,created_at" if kind == "research"
+                       else "id,user_id,kind,ticker,created_at,payload,request")
         query = (self.db.table("stock_analysis_versions")
-                .select("id,user_id,kind,ticker,created_at,payload,request", count="exact")
+                .select(list_fields, count="exact")
                 .eq("ticker", ticker).eq("kind", kind))
         if scope == "mine":
             if not user_id:
@@ -57,6 +61,10 @@ class StockAnalysisHistory:
                             .eq("ticker", ticker).eq("kind", kind)
                             .order("created_at", desc=True).order("id", desc=True).limit(1).execute()).data
                 current = fallback[0] if fallback else None
+        if kind == "research":
+            for row in rows.data:
+                row["payload"] = None
+                row["request"] = None
         self._decorate(rows.data + ([current] if current else []), user_id)
         return {"items": rows.data, "total": rows.count or 0,
                 "current": current, "limit": limit, "offset": offset}

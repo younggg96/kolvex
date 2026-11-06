@@ -30,7 +30,7 @@ import StockFundamentalOverview, {
 import { finite, getStockOverview } from "@/lib/stockFundamentals";
 import WatchlistButton from "./WatchlistButton";
 import { ReportCard } from "@/components/trading-analysis/report-card";
-import type { AiTechnicalAnalysis } from "@/lib/stockApi";
+import type { AiTechnicalAnalysis, StockQuote } from "@/lib/stockApi";
 import {
   getYouTubeStockDetail,
   type YouTubeOpinion,
@@ -79,10 +79,13 @@ export default function StockWorkspace({
   ticker,
   returnHref = "/dashboard",
   initialInsight,
+  initialQuote = null,
 }: {
   ticker: string;
   returnHref?: string;
   initialInsight?: "creators";
+  /** Server-fetched quote so the price headline is in the first HTML paint. */
+  initialQuote?: StockQuote | null;
 }) {
   const c = useCopy();
   const { t, locale } = useTranslation();
@@ -128,7 +131,7 @@ export default function StockWorkspace({
     { ttl: 300_000 },
   );
   const overview = overviewResource.data;
-  const quote = quoteResource.data ?? null;
+  const quote = quoteResource.data ?? (initialQuote?.symbol === ticker ? initialQuote : null);
   const latestQuote = latestChartQuote(quote);
   const searchParams = useSearchParams();
   const pathname = usePathname();
@@ -339,7 +342,8 @@ export default function StockWorkspace({
                       </span>
                     )}
                   </div>
-                  <p className="mt-2 text-xs text-muted-foreground">
+                  {/* Server and browser ICU can name the time zone differently. */}
+                  <p className="mt-2 text-xs text-muted-foreground" suppressHydrationWarning>
                     {quote?.marketTime
                       ? new Date(
                           quote.marketTime * 1000,
@@ -355,7 +359,7 @@ export default function StockWorkspace({
                       <p className="figure text-2xl font-semibold">
                         {priceLabel(latestQuote.price)}
                       </p>
-                      <p className="mt-2 text-xs text-muted-foreground">
+                      <p className="mt-2 text-xs text-muted-foreground" suppressHydrationWarning>
                         {latestQuote.session === "pre" ? c("Pre-market", "盘前") : c("After hours", "盘后")}
                         {" · "}{latestQuote.time && new Date(latestQuote.time * 1000).toLocaleTimeString(t("common.intlLocale"), { timeZone: "America/New_York", timeZoneName: "short" })}
                       </p>

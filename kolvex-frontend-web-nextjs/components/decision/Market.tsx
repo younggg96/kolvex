@@ -105,12 +105,15 @@ function MarketInstrumentCard({ benchmark, quote, quoteLoading, range, attempt, 
   }, [benchmark, range, attempt, near, seriesKey, seriesRevision]);
 
   const value = scrub?.value ?? (benchmark.daily ? series.at(-1)?.value : quote?.price ?? series.at(-1)?.value);
-  const baseline = (!scrub || range === "1D") && !benchmark.daily
+  // 1D compares with the prior close; longer ranges compare with the close before the range starts.
+  const versusPriorClose = range === "1D" && !benchmark.daily;
+  const quoteDelta = versusPriorClose && !scrub && quote;
+  const baseline = versusPriorClose
     ? quote?.previousClose ?? (quote ? quote.price - quote.change : undefined)
     : marketRangeBaseline(series, range);
-  const change = !scrub && !benchmark.daily && quote ? quote.change : value !== undefined && baseline !== undefined ? value - baseline : undefined;
-  const percent = !scrub && !benchmark.daily && quote ? quote.changePercent : change !== undefined && baseline ? change / Math.abs(baseline) * 100 : undefined;
-  const positive = (change ?? quote?.change ?? 0) >= 0;
+  const change = quoteDelta ? quote.change : value !== undefined && baseline !== undefined ? value - baseline : undefined;
+  const percent = quoteDelta ? quote.changePercent : change !== undefined && baseline ? change / Math.abs(baseline) * 100 : undefined;
+  const positive = (change ?? 0) >= 0;
   const pointDate = !scrub && !benchmark.daily && quote?.marketTime ? new Date(quote.marketTime * 1000).toISOString() : (scrub ?? series[series.length - 1])?.date;
   // Use the trading date supplied by the data, rather than the viewer's local day.
   const date = pointDate?.slice(0, 10);
@@ -123,7 +126,7 @@ function MarketInstrumentCard({ benchmark, quote, quoteLoading, range, attempt, 
               ? `${positive ? "+" : "−"}${indexValue(Math.abs(change))} (${positive ? "+" : "−"}${Math.abs(percent).toFixed(2)}%)`
               : quoteLoading || seriesState === "loading" ? <Skeleton className="inline-block h-4 w-32 align-middle" /> : c("Change unavailable", "暂无涨跌数据")}
           {benchmark.daily && range === "1D" && <span className="ml-1 text-muted-foreground">{c("vs. prior observation", "较前次观测")}</span>}
-          <span className="ml-1 truncate text-muted-foreground max-md:ml-0 max-md:block"><span className="max-md:hidden"> · </span>{!scrub && !benchmark.daily ? c("vs. prior close", "较昨收") : c(spec.en, spec.zh)}</span></>);
+          <span className="ml-1 truncate text-muted-foreground max-md:ml-0 max-md:block"><span className="max-md:hidden"> · </span>{versusPriorClose && !scrub ? c("vs. prior close", "较昨收") : c(spec.en, spec.zh)}</span></>);
   const chartDisplay = (<>{seriesState === "loading" ? (
             <Skeleton className="h-full w-full" />
           ) : seriesState === "error" ? (
