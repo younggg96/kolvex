@@ -77,8 +77,11 @@ def alpaca_transport():
             assert params["feed"] == "indicative"
             if "page_token" not in params:
                 return httpx.Response(200, json={"snapshots": {"NVDA261113C00185000": {
-                    "latestQuote": {"bp": 5.0, "ap": 5.2}, "dailyBar": {"v": 300},
-                    "greeks": {"delta": 0.55}, "impliedVolatility": 0.6}}, "next_page_token": "p2"})
+                    "latestQuote": {"bp": 5.0, "ap": 5.2, "bs": 12, "as": 30, "bx": "C", "ax": "X", "t": "2026-11-06T20:59:00Z"},
+                    "latestTrade": {"p": 5.1, "s": 3, "x": "C", "t": "2026-11-06T20:58:00Z"},
+                    "dailyBar": {"o": 4.0, "h": 5.5, "l": 3.9, "c": 5.1, "v": 300, "n": 42, "vw": 4.8},
+                    "prevDailyBar": {"c": 4.25, "v": 120},
+                    "greeks": {"delta": 0.55, "rho": 0.02}, "impliedVolatility": 0.6}}, "next_page_token": "p2"})
             return httpx.Response(200, json={"snapshots": {"NVDA261113P00185000": {
                 "latestQuote": {"bp": 2.0, "ap": 2.2}, "dailyBar": {"v": 600}, "impliedVolatility": 0.62}}})
         return httpx.Response(404)
@@ -118,7 +121,11 @@ class ServiceTests(unittest.TestCase):
         self.assertEqual(m["expected_move"]["value"], 7.2)  # call mid 5.1 + put mid 2.1
         self.assertEqual(m["max_pain"]["strike"], 185)
         self.assertEqual(m["atm_iv"], 0.61)
-        self.assertIn(f"options:chain:v1:NVDA:{EXP}", self.redis.store)
+        call = result["contracts"][0]
+        self.assertEqual((call["bid_size"], call["ask_size"], call["trade_count"], call["vwap"], call["rho"]), (12, 30, 42, 4.8, 0.02))
+        self.assertEqual((call["prev_close"], call["change"], call["change_pct"]), (4.25, 0.85, 0.2))
+        self.assertEqual(result["contracts"][1]["change"], None)
+        self.assertIn(f"options:chain:v2:NVDA:{EXP}", self.redis.store)
 
     def test_unknown_expiration_and_missing_keys(self):
         with self.assertRaises(ExpirationNotFound):

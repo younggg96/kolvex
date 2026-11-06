@@ -50,7 +50,7 @@ class OptionsChainService:
             raise ExpirationNotFound(f"{expiration} is not a listed expiration for {symbol}")
 
         redis = get_redis()
-        key = f"options:chain:v1:{symbol}:{expiration}"
+        key = f"options:chain:v2:{symbol}:{expiration}"
         cached = await redis.get_json(key)
         if cached:
             return cached

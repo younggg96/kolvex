@@ -59,6 +59,7 @@ import SetupTradeLink from "@/components/paper-trading/SetupTradeLink";
 const StockFinancialsTab = dynamic(() => import("./StockSecFinancials"));
 const StockPeers = dynamic(() => import("./StockPeers"));
 const StockOwnership = dynamic(() => import("./StockOwnership"));
+const StockOptionsChain = dynamic(() => import("./StockOptionsChain"));
 const StockMulticharts = dynamic(() =>
   import("./StockFinancials").then((module) => module.StockMulticharts),
 );
@@ -136,7 +137,7 @@ export default function StockWorkspace({
   const searchParams = useSearchParams();
   const pathname = usePathname();
   const sections = benchmark
-    ? ["technical", "summary", "news", "creators", "research"]
+    ? ["technical", "summary", "news", "options", "creators", "research"]
     : [
         "technical",
         "paper-trading",
@@ -148,6 +149,7 @@ export default function StockWorkspace({
         "analyst",
         "peers",
         "ownership",
+        "options",
         "news",
         "creators",
         "research",
@@ -408,6 +410,7 @@ export default function StockWorkspace({
                   {c("AI research", "AI 研究")}
                 </TabsTrigger>
                 <TabsTrigger value="news">{c("News", "新闻")}</TabsTrigger>
+                <TabsTrigger value="options">{c("Options", "期权")}</TabsTrigger>
                 {!benchmark && (
                   <>
                     <TabsTrigger value="financials">
@@ -546,6 +549,15 @@ export default function StockWorkspace({
                   {(activeTab === "ownership" ||
                     visitedTabs.has("ownership")) && (
                     <StockOwnership symbol={ticker} />
+                  )}
+                </TabsContent>
+                <TabsContent
+                  value="options"
+                  forceMount
+                  className="stock-tab-panel data-[state=inactive]:hidden"
+                >
+                  {(activeTab === "options" || visitedTabs.has("options")) && (
+                    <StockOptionsChain key={ticker} symbol={ticker} />
                   )}
                 </TabsContent>
                 <TabsContent

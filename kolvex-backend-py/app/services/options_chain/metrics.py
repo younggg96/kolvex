@@ -46,17 +46,56 @@ def normalize_contract(symbol: str, snapshot: Optional[dict], contract: Optional
     quote = snapshot.get("latestQuote") or {}
     trade = snapshot.get("latestTrade") or {}
     bar = snapshot.get("dailyBar") or {}
+    prev = snapshot.get("prevDailyBar") or {}
+    minute = snapshot.get("minuteBar") or {}
     greeks = snapshot.get("greeks") or {}
     oi = _num(contract.get("open_interest"))
     volume = _num(bar.get("v"))
+    trades = _num(bar.get("n"))
+    last = _num(trade.get("p"))
+    # Previous session close: the snapshot's prior bar, else the contract's daily close.
+    prev_close = _num(prev.get("c")) or _num(contract.get("close_price"))
+    change = round(last - prev_close, 4) if last is not None and prev_close else None
+    multiplier = _num(contract.get("multiplier")) or _num(contract.get("size"))
     return {
         "symbol": symbol,
+        "name": contract.get("name"),
+        "root": contract.get("root_symbol") or (parsed or {}).get("root"),
         "type": contract.get("type") or parsed["type"],
+        "style": contract.get("style"),
         "strike": _num(contract.get("strike_price")) or parsed["strike"],
         "expiration": contract.get("expiration_date") or parsed["expiration"],
+        "multiplier": int(multiplier) if multiplier else CONTRACT_MULTIPLIER,
+        "tradable": contract.get("tradable"),
         "bid": _num(quote.get("bp")),
         "ask": _num(quote.get("ap")),
-        "last": _num(trade.get("p")),
+        "bid_size": _num(quote.get("bs")),
+        "ask_size": _num(quote.get("as")),
+        "bid_exchange": quote.get("bx"),
+        "ask_exchange": quote.get("ax"),
+        "quote_condition": quote.get("c"),
+        "quote_time": quote.get("t"),
+        "last": last,
+        "last_size": _num(trade.get("s")),
+        "last_exchange": trade.get("x"),
+        "trade_condition": trade.get("c"),
+        "trade_time": trade.get("t"),
+        "open": _num(bar.get("o")),
+        "high": _num(bar.get("h")),
+        "low": _num(bar.get("l")),
+        "close": _num(bar.get("c")),
+        "vwap": _num(bar.get("vw")),
+        "trade_count": int(trades) if trades is not None else None,
+        "bar_time": bar.get("t"),
+        "minute_close": _num(minute.get("c")),
+        "minute_volume": _num(minute.get("v")),
+        "minute_time": minute.get("t"),
+        "prev_close": prev_close,
+        "prev_volume": _num(prev.get("v")),
+        "change": change,
+        "change_pct": round(change / prev_close, 6) if change is not None else None,
+        "close_price": _num(contract.get("close_price")),
+        "close_price_date": contract.get("close_price_date"),
         "volume": int(volume) if volume is not None else 0,
         "open_interest": int(oi) if oi is not None else 0,
         "open_interest_date": contract.get("open_interest_date"),
@@ -65,6 +104,7 @@ def normalize_contract(symbol: str, snapshot: Optional[dict], contract: Optional
         "gamma": _num(greeks.get("gamma")),
         "theta": _num(greeks.get("theta")),
         "vega": _num(greeks.get("vega")),
+        "rho": _num(greeks.get("rho")),
     }
 
 
