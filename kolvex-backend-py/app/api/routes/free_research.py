@@ -6,6 +6,7 @@ from fastapi import APIRouter, HTTPException, Path
 from app.services.sec.client import MANAGERS, SecNotFound, SecUnavailable, sec_client
 from app.services.yfinance.client import get_yfinance_service
 from app.services.sec.parsers import number, summarize_institution
+from app.services.sec.tickers import cusip_tickers
 
 router = APIRouter(prefix="/market/free-research", tags=["Market Data"])
 
@@ -15,13 +16,20 @@ def managers():
     return {"managers": [{"id": key, **value} for key, value in MANAGERS.items()]}
 
 
-async def tracked_institution(manager: str):
+async def tracked_institution(manager: str, map_now: int = 100):
     if manager not in MANAGERS:
         raise HTTPException(404, "Manager is outside the tracked list")
     try:
-        return {"id": manager, **await sec_client.institution(manager)}
+        data = {"id": manager, **await sec_client.institution(manager)}
     except (SecUnavailable, ValueError, KeyError) as exc:
         raise HTTPException(503, "SEC holdings unavailable; retry later") from exc
+    # Tickers are best effort: a mapping outage leaves `ticker` null, never fails the filing.
+    try:
+        await cusip_tickers.attach(data["holdings"], now=map_now)
+    except Exception:
+        for row in data["holdings"]:
+            row.setdefault("ticker", None)
+    return data
 
 
 @router.get("/institutions/{manager}")
@@ -32,7 +40,7 @@ async def institution(manager: str):
 @router.get("/institutions/{manager}/summary")
 async def institution_summary(manager: str):
     """Card data for the Superinvestors list; the full table stays on the manager endpoint."""
-    return summarize_institution(await tracked_institution(manager))
+    return summarize_institution(await tracked_institution(manager, map_now=5))
 
 
 def revenue_outlook(symbol):

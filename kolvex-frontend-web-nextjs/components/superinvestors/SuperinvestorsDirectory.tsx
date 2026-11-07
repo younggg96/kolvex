@@ -26,6 +26,7 @@ import {
   ActivityBadge,
   AllocationBar,
   ChangeBreakdown,
+  HoldingName,
   InvestorAvatar,
   sumWeights,
   superinvestorHref,
@@ -316,10 +317,10 @@ function LeadCard({ entry }: { entry: Loaded }) {
                   <span className="figure text-xs text-muted-foreground">{index + 1}</span>
                 </span>
                 <span className="flex min-w-0 items-center gap-2">
-                  <span className="min-w-0 truncate font-medium" title={row.issuer}>
-                    {row.issuer}
+                  <HoldingName row={row} className="min-w-0" />
+                  <span className="hidden shrink-0 truncate text-xs text-muted-foreground sm:inline">
+                    {row.ticker ? row.issuer : row.class}
                   </span>
-                  <span className="hidden shrink-0 text-xs text-muted-foreground sm:inline">{row.class}</span>
                   <ActivityBadge kind={row.activity} />
                 </span>
                 <span className="text-right">
@@ -390,9 +391,7 @@ function InvestorCard({ entry }: { entry: Loaded }) {
           />
           <p className="flex min-w-0 items-baseline gap-2 text-xs">
             <span className="shrink-0 text-muted-foreground">{c("Largest", "第一大")}</span>
-            <span className="min-w-0 flex-1 truncate font-medium" title={summary.top.map((row) => row.issuer).join(" · ")}>
-              {first.issuer}
-            </span>
+            <HoldingName row={first} link={false} size="xs" className="flex-1" />
             <span className="figure shrink-0">{f.percent(first.weight)}</span>
           </p>
           <p className="flex items-baseline justify-between gap-2 text-xs text-muted-foreground">

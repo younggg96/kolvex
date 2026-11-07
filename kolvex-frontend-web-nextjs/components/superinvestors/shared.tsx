@@ -1,6 +1,9 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
+import CompanyLogo from "@/components/ui/company-logo";
+import { marketStockHref } from "@/lib/stockLinks";
 import { ArrowDown, ArrowUp, Minus, Plus, X } from "lucide-react";
 import { useFinancialFormat } from "@/components/decision/StockFinancialData";
 import { useCopy } from "@/components/decision/shared";
@@ -229,6 +232,86 @@ export function Monogram({ name, size = "md" }: { name: string; size?: "md" | "l
       )}
     >
       {letters || "·"}
+    </span>
+  );
+}
+
+export interface HoldingIdentityRow {
+  issuer: string;
+  ticker?: string | null;
+  class?: string | null;
+  cusip?: string | null;
+  put_call?: string | null;
+}
+
+/**
+ * A 13F row as a stock: logo, ticker and a link to its stock page. Rows OpenFIGI
+ * could not map keep the filed issuer name, so nothing is dropped or guessed.
+ */
+export function HoldingName({
+  row,
+  detail = false,
+  link = true,
+  size = "sm",
+  className,
+}: {
+  row: HoldingIdentityRow;
+  /** Second line with the filed issuer name and share class. */
+  detail?: boolean;
+  /** Off inside an element that is already a link. */
+  link?: boolean;
+  size?: "xs" | "sm";
+  className?: string;
+}) {
+  const c = useCopy();
+  const ticker = row.ticker || null;
+  const option = row.put_call ? (
+    <span className="shrink-0 rounded-full bg-foreground/[0.08] px-1.5 py-px text-[0.6875rem] font-medium uppercase">
+      {row.put_call.toUpperCase() === "PUT" ? c("Put", "看跌") : c("Call", "看涨")}
+    </span>
+  ) : null;
+  const subtitle = [row.issuer, row.class].filter(Boolean).join(" · ");
+  const body = (
+    <>
+      {ticker ? (
+        <CompanyLogo symbol={ticker} name={row.issuer} size={size} />
+      ) : (
+        <span
+          aria-hidden="true"
+          className={cn(
+            "flex shrink-0 items-center justify-center rounded-full bg-foreground/[0.07] font-semibold text-foreground/70",
+            size === "xs" ? "h-5 w-5 text-[0.625rem]" : "h-8 w-8 text-xs",
+          )}
+        >
+          {row.issuer.trim().charAt(0) || "·"}
+        </span>
+      )}
+      <span className="min-w-0 flex-1">
+        <span className="flex min-w-0 items-center gap-1.5">
+          <span className={cn("truncate font-semibold", !ticker && "font-medium")}>{ticker ?? row.issuer}</span>
+          {option}
+        </span>
+        {detail && (ticker || row.class) && (
+          <span className="mt-0.5 block truncate text-xs font-normal text-muted-foreground">
+            {ticker ? subtitle : row.class}
+          </span>
+        )}
+      </span>
+    </>
+  );
+  const shared = cn("flex min-w-0 items-center gap-2.5", className);
+  const title = [ticker, row.issuer, row.class, row.cusip && `CUSIP ${row.cusip}`].filter(Boolean).join(" · ");
+  return ticker && link ? (
+    <Link
+      href={marketStockHref(ticker)}
+      title={title}
+      className={cn(shared, "rounded-xl transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring")}
+    >
+      {body}
+    </Link>
+  ) : (
+    <span className={shared} title={title}>
+      {body}
     </span>
   );
 }

@@ -251,5 +251,5 @@ def summarize_institution(data, top=5):
         "positions": len(held),
         "value": sum(r.get("value") or 0 for r in held),
         "changes": counts if compared else None,
-        "top": [{field: r.get(field) for field in ("issuer", "class", "cusip", "put_call", "value", "weight", "activity")} for r in held[:top]],
+        "top": [{field: r.get(field) for field in ("issuer", "ticker", "class", "cusip", "put_call", "value", "weight", "activity")} for r in held[:top]],
     }

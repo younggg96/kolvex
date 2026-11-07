@@ -23,7 +23,7 @@ export interface SecInsiders extends SecMeta { transactions: InsiderTransaction[
 export interface InstitutionManager { id: string; name: string; cik: number }
 export interface Institution extends SecMeta {
   filing: Filing | null; previous_filing: Filing | null; partial: boolean; amendments: Filing[];
-  holdings: { issuer: string; class: string; cusip: string; put_call: string | null; share_type: string | null;
+  holdings: { issuer: string; ticker?: string | null; class: string; cusip: string; put_call: string | null; share_type: string | null;
     shares: number | null; value: number | null; weight: number | null; change: number | null;
     change_percent: number | null; previous_shares: number | null;
     activity: "unknown" | "new" | "increased" | "reduced" | "unchanged" | "exited" }[];
@@ -52,7 +52,7 @@ export interface InstitutionSummary {
   id: string; name: string; cik: number; filing: Filing | null; previous_filing: Filing | null; partial: boolean;
   positions: number; value: number;
   changes: { new: number; increased: number; reduced: number; exited: number } | null;
-  top: { issuer: string; class: string; cusip: string; put_call: string | null; value: number | null; weight: number | null; activity: HoldingActivity }[];
+  top: { issuer: string; ticker?: string | null; class: string; cusip: string; put_call: string | null; value: number | null; weight: number | null; activity: HoldingActivity }[];
 }
 
 /** Calendar quarter of a 13F reporting period, e.g. 2026-06-30 → { year: 2026, quarter: 2 }. */

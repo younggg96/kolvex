@@ -18,6 +18,7 @@ import {
   ActivityBadge,
   AllocationBar,
   ChangeBreakdown,
+  HoldingName,
   sumWeights,
   useActivityLabel,
   useQuarterLabel,
@@ -94,7 +95,7 @@ function Overview({ data, held, totalValue }: { data: Institution; held: Holding
     [
       c("Largest position", "第一大持仓"),
       f.percent(largest?.weight),
-      largest && <span className="block truncate" title={largest.issuer}>{largest.issuer}</span>,
+      largest && <HoldingName row={largest} size="xs" className="text-sm" />,
     ],
     [c("Reporting period", "持仓截止日"), f.date(filing.period), quarterLabel(filing.period)],
     [
@@ -145,9 +146,7 @@ function Allocation({ held }: { held: Holding[] }) {
           <li key={rowKey(row)} className="flex min-h-9 min-w-0 items-center gap-2 text-xs">
             <span aria-hidden="true" className={cn("h-2 w-2 shrink-0 rounded-full", ALLOCATION_SHADES[index])} />
             <span className="figure w-4 shrink-0 text-muted-foreground">{index + 1}</span>
-            <span className="min-w-0 flex-1 truncate font-medium" title={row.issuer}>
-              {row.issuer}
-            </span>
+            <HoldingName row={row} size="xs" className="flex-1" />
             <span className="figure shrink-0">{f.percent(row.weight)}</span>
           </li>
         ))}
@@ -219,9 +218,7 @@ function MoveList({ title, rows, empty }: { title: string; rows: Holding[]; empt
         <ul>
           {rows.map((row) => (
             <li key={rowKey(row)} className="flex min-h-11 min-w-0 items-center gap-2 border-b border-border py-1.5 text-xs last:border-0">
-              <span className="min-w-0 flex-1 truncate font-medium" title={row.issuer}>
-                {row.issuer}
-              </span>
+              <HoldingName row={row} size="xs" className="flex-1" />
               <ActivityBadge kind={row.activity} />
               <span className="figure w-14 shrink-0 text-right text-muted-foreground">
                 {row.activity === "new" || row.activity === "exited" ? `$${f.number(row.value ?? 0)}` : f.percent(row.change_percent)}
@@ -255,7 +252,7 @@ function HoldingsTable({ data }: { data: Institution }) {
   const needle = query.trim().toUpperCase();
   const filtered = holdings
     .filter((row) => filter === "all" || row.activity === filter)
-    .filter((row) => !needle || row.issuer.toUpperCase().includes(needle) || row.cusip?.includes(needle))
+    .filter((row) => !needle || row.ticker?.toUpperCase().startsWith(needle) || row.issuer.toUpperCase().includes(needle) || row.cusip?.includes(needle))
     .sort((a, b) => {
       const x = sortValue(a, sort.key);
       const y = sortValue(b, sort.key);
@@ -360,7 +357,7 @@ function HoldingsTable({ data }: { data: Institution }) {
               setQuery(event.target.value);
               reset();
             }}
-            placeholder={c("Filter by company or CUSIP", "按公司或 CUSIP 筛选")}
+            placeholder={c("Filter by ticker, company or CUSIP", "按代码、公司或 CUSIP 筛选")}
             aria-label={c("Filter holdings by company", "按公司筛选持仓")}
           />
         </div>
@@ -399,14 +396,7 @@ function HoldingsTable({ data }: { data: Institution }) {
                 >
                   <td className="figure py-3 pl-4 pr-1 text-xs text-muted-foreground">{ranks.get(rowKey(row)) ?? "—"}</td>
                   <th scope="row" className="max-w-[18rem] px-3 py-3 text-left font-normal">
-                    <span className="block truncate font-medium" title={row.issuer}>
-                      {row.issuer}
-                    </span>
-                    <span className="mt-0.5 block truncate text-xs text-muted-foreground">
-                      {row.class}
-                      {row.put_call && <span className="ml-1 font-medium text-foreground">· {row.put_call}</span>}
-                      {row.cusip && <span className="figure"> · {row.cusip}</span>}
-                    </span>
+                    <HoldingName row={row} detail />
                   </th>
                   <td className="figure px-3 py-3 text-right font-medium">{row.value === null ? "—" : `$${f.number(row.value)}`}</td>
                   <td className="px-3 py-3 text-right">
