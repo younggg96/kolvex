@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 function AuthPageFallback() {
   return (
     <div className="flex min-h-screen items-center justify-center">
-      <ContentLoading className="w-full max-w-sm px-6" />
+      <ContentLoading variant="form" className="w-full max-w-sm px-6" />
     </div>
   );
 }

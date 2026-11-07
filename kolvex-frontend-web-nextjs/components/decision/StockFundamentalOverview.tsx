@@ -14,6 +14,7 @@ import { useCachedResource } from "@/hooks/useCachedResource";
 import { Button } from "@/components/ui/button";
 import { FinancialState, useFinancialFormat } from "./StockFinancialData";
 import { useCopy } from "./shared";
+import AiFundamentalAnalysis from "./AiFundamentalAnalysis";
 
 export default function StockFundamentalOverview({
   symbol,
@@ -351,6 +352,7 @@ export default function StockFundamentalOverview({
         empty={false}
         retry={retry}
       />
+      <AiFundamentalAnalysis symbol={symbol} />
       <section className="rounded-3xl border border-foreground/10 glass-card bg-card-glass p-4 sm:p-6">
         <h2 className="text-sm font-medium text-muted-foreground">
           {c("Key indicators", "关键指标")}
@@ -403,7 +405,7 @@ export default function StockFundamentalOverview({
           </p>
         )}
         {extra.loading && (
-          <ContentLoading label={c("Loading additional metrics…", "正在加载补充指标…")} className="mt-4" />
+          <ContentLoading variant="grid" label={c("Loading additional metrics…", "正在加载补充指标…")} className="mt-4" />
         )}
         {partial && (
           <div

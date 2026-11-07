@@ -228,7 +228,7 @@ export default function SearchWithAutocomplete<T extends SearchItem>({
             </div>
           )}
           {isLoading ? (
-            <ContentLoading className="px-3" />
+            <ContentLoading variant="rows" rows={3} className="min-h-0 px-3 py-2" />
           ) : displayList.length > 0 ? (
             displayList.map((item) => (
               <div

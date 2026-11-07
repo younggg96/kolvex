@@ -1139,7 +1139,7 @@ function SettingsContent() {
 
 export default function SettingsPage() {
   return (
-    <Suspense fallback={<ContentLoading className="mx-auto w-full max-w-3xl px-[16px] py-8 md:px-8" />}>
+    <Suspense fallback={<ContentLoading variant="page" className="mx-auto w-full max-w-3xl px-[16px] py-8 md:px-8" />}>
       <SettingsContent />
     </Suspense>
   );

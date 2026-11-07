@@ -5,7 +5,7 @@ import { number, percent } from "../lib/models";
 import { useResource } from "../lib/useResource";
 import { useText } from "../lib/i18n";
 import { useTheme } from "../lib/theme";
-import { Copy, Failure, Glass, PendingValue, styles } from "./UI";
+import { Copy, Failure, Glass, PendingValue, Skeleton, styles } from "./UI";
 
 export function QuoteRow({
   symbol,
@@ -41,9 +41,13 @@ export function QuoteRow({
             <Copy size={compact ? 14 : 18} bold>
               {symbol}
             </Copy>
-            <Copy size={12} muted>
-              {q?.name ?? (resource.loading ? "加载中…" : "报价不可用")}
-            </Copy>
+            {!q?.name && resource.loading ? (
+              <Skeleton width="60%" height={12} />
+            ) : (
+              <Copy size={12} muted>
+                {q?.name ?? "报价不可用"}
+              </Copy>
+            )}
           </View>
           {!compact && (
             <View style={{ alignItems: "flex-end", gap: 4 }}>

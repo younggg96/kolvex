@@ -13,7 +13,7 @@ export default function DashboardLoading() {
     <DashboardLayout noTransition>
       <RouteLoadingSignal />
       <div className="min-h-0 flex-1 overflow-hidden px-[16px] md:px-8">
-        <ContentLoading label={t("common.loading")} className="h-full" />
+        <ContentLoading variant="page" label={t("common.loading")} className="h-full" />
       </div>
     </DashboardLayout>
   );

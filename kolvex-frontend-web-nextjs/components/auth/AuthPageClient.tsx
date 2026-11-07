@@ -8,6 +8,7 @@ import AuthLayout from "@/components/auth/AuthLayout";
 import { createClient } from "@/lib/supabase/client";
 import { getAuthRedirect } from "@/lib/supabase/redirect";
 import { useTranslation } from "@/lib/i18n";
+import { ContentLoading } from "@/components/ui/content-loading";
 
 type AuthMode = "login" | "signup";
 
@@ -152,9 +153,9 @@ export default function AuthPageClient() {
   if (isProcessingOAuth) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
-        <div className="flex flex-col items-center gap-4">
-          <div className="h-10 w-10 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-          <p className="text-muted-foreground text-lg">{t("auth.completingSignIn")}</p>
+        <div className="flex w-full max-w-sm flex-col gap-6 px-6">
+          <p className="text-center text-lg text-muted-foreground" aria-hidden="true">{t("auth.completingSignIn")}</p>
+          <ContentLoading variant="form" label={t("auth.completingSignIn")} className="animate-none" />
         </div>
       </div>
     );

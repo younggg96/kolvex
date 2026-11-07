@@ -1002,3 +1002,44 @@ def get_stock_overview_metrics(
         raise HTTPException(status_code=503, detail="Overview metrics unavailable") from error
 
 
+class AiFundamentalsRequest(BaseModel):
+    model: str = Field(min_length=1, max_length=100)
+    locale: Literal["zh", "en"] = "zh"
+    regenerate: bool = False
+
+
+@router.post("/ai-fundamentals/{symbol}", summary="AI 个股基本面分析")
+async def ai_fundamentals(
+    body: AiFundamentalsRequest,
+    symbol: str = Path(..., pattern=r"^[A-Za-z0-9][A-Za-z0-9.\-]{0,11}$"),
+    user_id: str = Depends(get_current_user_id),
+    api_keys: UserApiKeysService = Depends(get_user_api_keys_service),
+):
+    """The user's own model interprets the overview fundamentals; no buy/sell view."""
+    from app.services.fundamental_analysis import (
+        FundamentalsDataUnavailable, FundamentalsInvalid, FundamentalsKeyRejected,
+        FundamentalsRateLimited, fundamental_analysis_service,
+    )
+    try:
+        return await fundamental_analysis_service.generate(
+            symbol, user_id=user_id, model_id=body.model, locale=body.locale, regenerate=body.regenerate,
+            user_api_keys=await api_keys.get_keys_dict(user_id),
+        )
+    except AiNotConfigured as exc:
+        raise HTTPException(503, "ai_not_configured") from exc
+    except FundamentalsKeyRejected as exc:
+        raise HTTPException(400, "ai_key_rejected") from exc
+    except FundamentalsRateLimited as exc:
+        raise HTTPException(429, "ai_rate_limited") from exc
+    except FundamentalsDataUnavailable as exc:
+        raise HTTPException(422, "fundamentals_unavailable") from exc
+    except FundamentalsInvalid as exc:
+        raise HTTPException(502, "ai_fundamentals_invalid") from exc
+    except TimeoutError as exc:
+        raise HTTPException(504, "ai_analysis_timeout") from exc
+    except Exception as exc:
+        # Provider errors can echo request details; clients get a stable code.
+        logger.warning("AI fundamentals unavailable for %s (%s)", symbol.upper(), type(exc).__name__)
+        raise HTTPException(503, "ai_unavailable") from exc
+
+

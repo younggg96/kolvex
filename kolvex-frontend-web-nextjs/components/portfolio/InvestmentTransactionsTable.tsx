@@ -248,8 +248,7 @@ export function InvestmentTransactionsTable({
       </div>
 
       {hasMore && (
-        <ListLoadMore onClick={onLoadMore} disabled={loading}>
-          {loading && <RefreshCw className="h-4 w-4 animate-spin" />}
+        <ListLoadMore onClick={onLoadMore} loading={loading}>
           Load more
         </ListLoadMore>
       )}

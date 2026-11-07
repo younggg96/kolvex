@@ -70,7 +70,7 @@ function HistoricalValuation({ symbol }: { symbol: string }) {
   const shownSimulation = simulation?.snapshot_id === data?.snapshot_id ? simulation : null;
   const reference = shownSimulation?.reference ?? data?.current.reference ?? null;
 
-  if (resource.loading && !data) return <ContentLoading label={c("Preparing source-linked valuation history…", "正在整理有来源的估值历史，首次计算可能需要几分钟…")} className="min-h-80" />;
+  if (resource.loading && !data) return <ContentLoading label={c("Preparing source-linked valuation history…", "正在整理有来源的估值历史，首次计算可能需要几分钟…")} variant="block" className="min-h-80" />;
   // Companies outside the reviewed PE pipeline get a P/S history instead.
   if (!data && resource.data && "status" in resource.data) return <ValuationHistoryCard symbol={symbol} />;
   if (!data) return <Card className="space-y-3 p-5">

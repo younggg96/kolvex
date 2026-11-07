@@ -104,7 +104,7 @@ export default function OpinionList() {
               )}
             </div>
             {!loading && error && <div role="alert" className="flex flex-wrap items-center gap-3 py-6"><p className="text-sm text-muted-foreground">{c("Opinions could not be loaded. Try again.", "暂时无法加载观点，请重试。")}</p><Button variant="outline" onClick={() => videos.length ? loadMore() : setRevision((value) => value + 1)}>{t("common.retry")}</Button></div>}
-            {!loading && !error && hasMore && <ListLoadMore disabled={moreLoading} onClick={loadMore}>{moreLoading ? t("common.loadingStatus") : c("Load more videos", "加载更多视频")}</ListLoadMore>}
+            {!loading && !error && hasMore && <ListLoadMore loading={moreLoading} onClick={loadMore}>{c("Load more videos", "加载更多视频")}</ListLoadMore>}
           </ListCard>
         </div>
       </main>

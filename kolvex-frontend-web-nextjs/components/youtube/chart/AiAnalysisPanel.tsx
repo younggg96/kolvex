@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { ChevronDown, Loader2, RefreshCw } from "lucide-react";
+import { ChevronDown, RefreshCw } from "lucide-react";
+import { ContentLoading } from "@/components/ui/content-loading";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { formatPrice, type AiTechnicalAnalysis } from "@/lib/stockApi";
@@ -60,7 +61,7 @@ export default function AiAnalysisPanel({ state, busy = false, interval, onRetry
         </p>}
       </header>
 
-      {loading && <p className="mt-4 flex items-center gap-2 text-sm leading-6 text-muted-foreground" role="status"><Loader2 className="h-4 w-4 shrink-0 animate-spin" aria-hidden="true" />{t("youtubeOpinions.ai.loading")}</p>}
+      {loading && <div className="mt-4"><p className="text-sm leading-6 text-muted-foreground" aria-hidden="true">{t("youtubeOpinions.ai.loading")}</p><ContentLoading variant="text" label={t("youtubeOpinions.ai.loading")} className="mt-3 min-h-0" /></div>}
       {state.status === "error" && <p className="mt-4 text-sm leading-6 text-muted-foreground" role="alert">
         {state.error}{" "}
         {state.error === t("youtubeOpinions.ai.notConfigured") && <Link href="/dashboard/settings?tab=api-keys" className="font-medium underline underline-offset-2 focus-visible:outline-none ">{t("youtubeOpinions.ai.openSettings")}</Link>}

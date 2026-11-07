@@ -7,7 +7,7 @@ import {
 } from "react";
 import {
   AccessibilityInfo,
-  ActivityIndicator,
+  Animated,
   FlatList,
   Platform,
   Pressable,
@@ -398,11 +398,51 @@ export function Failure({
     </View>
   );
 }
-export function LoadingStatus() {
+/** Pulsing placeholder block; holds still when the system asks for reduced motion. */
+export function Skeleton({
+  width = "100%",
+  height = 14,
+  radius = 8,
+  style,
+}: {
+  width?: ViewStyle["width"];
+  height?: number;
+  radius?: number;
+  style?: StyleProp<ViewStyle>;
+}) {
   const t = useTheme();
+  const opacity = useRef(new Animated.Value(1)).current;
+  useEffect(() => {
+    let loop: Animated.CompositeAnimation | undefined;
+    let cancelled = false;
+    AccessibilityInfo.isReduceMotionEnabled().then((reduced) => {
+      if (cancelled || reduced) return;
+      loop = Animated.loop(
+        Animated.sequence([
+          Animated.timing(opacity, { toValue: 0.45, duration: 800, useNativeDriver: true }),
+          Animated.timing(opacity, { toValue: 1, duration: 800, useNativeDriver: true }),
+        ]),
+      );
+      loop.start();
+    });
+    return () => {
+      cancelled = true;
+      loop?.stop();
+    };
+  }, [opacity]);
+  return (
+    <Animated.View
+      style={[
+        { width, height, borderRadius: radius, backgroundColor: t.tint, opacity },
+        style,
+      ]}
+    />
+  );
+}
+/** Cold-load placeholder in the shape of a short list; appears after 300ms so fast reads never flash it. */
+export function LoadingStatus({ rows = 3 }: { rows?: number }) {
   const text = useText();
   const [visible, setVisible] = useState(false);
-  // Fast reads finish before this fires, so they never flash a placeholder.
   useEffect(() => {
     const timer = setTimeout(() => setVisible(true), 300);
     return () => clearTimeout(timer);
@@ -412,22 +452,18 @@ export function LoadingStatus() {
       accessible
       accessibilityLabel={text("正在加载数据")}
       accessibilityState={{ busy: true }}
-      style={{
-        minHeight: 72,
-        flexDirection: "row",
-        alignItems: "center",
-        justifyContent: "center",
-        gap: 8,
-      }}
+      style={{ minHeight: 72, gap: 16, paddingVertical: 4 }}
     >
-      {visible && (
-        <>
-          <ActivityIndicator size="small" color={t.secondary} />
-          <Copy size={14} muted>
-            正在加载数据
-          </Copy>
-        </>
-      )}
+      {visible &&
+        Array.from({ length: rows }, (_, i) => (
+          <View key={i} style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+            <Skeleton width={36} height={36} radius={18} />
+            <View style={{ flex: 1, gap: 8 }}>
+              <Skeleton width={i % 2 ? "55%" : "70%"} height={14} />
+              <Skeleton width={i % 2 ? "35%" : "45%"} height={12} />
+            </View>
+          </View>
+        ))}
     </View>
   );
 }

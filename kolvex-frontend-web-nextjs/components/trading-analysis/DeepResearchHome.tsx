@@ -11,7 +11,7 @@ function ResearchLoading() {
   const { t } = useTranslation();
   return (
     <ResearchLayout>
-      <ContentLoading label={t("common.loading")} className="min-h-[50dvh] w-full" />
+      <ContentLoading variant="page" label={t("common.loading")} className="min-h-[50dvh] w-full" />
     </ResearchLayout>
   );
 }

@@ -82,7 +82,7 @@ export default function UserProfileSettings() {
 
   if (loading) {
     return (
-      <ContentLoading className="p-8" />
+      <ContentLoading variant="form" rows={3} className="p-8" />
     );
   }
 

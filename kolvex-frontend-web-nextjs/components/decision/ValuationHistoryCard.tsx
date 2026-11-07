@@ -32,7 +32,7 @@ function PeHistory({ symbol }: { symbol: string }) {
   const resource = useCachedResource(`/api/market/valuation/${symbol}/history?years=5`, signal => loadValuation(symbol, 5, signal, true), { ttl: 600_000, timeout: 330_000 });
   const data = resource.data && "points" in resource.data ? resource.data : null;
   const rows = useMemo<Row[]>(() => data?.points.map(p => ({ date: p.date, value: p.pe, price: p.price })) ?? [], [data]);
-  if (resource.loading && !data) return <ContentLoading label={c("Preparing source-linked PE history…", "正在整理有来源的 PE 历史，首次计算可能需要几分钟…")} className="min-h-80" />;
+  if (resource.loading && !data) return <ContentLoading label={c("Preparing source-linked PE history…", "正在整理有来源的 PE 历史，首次计算可能需要几分钟…")} variant="block" className="min-h-80" />;
   if (!data) return <Unavailable message={c("Valuation history is temporarily unavailable.", "历史估值暂时无法读取。")} onRetry={resource.refresh} />;
   const m = data.current.calibration.multiples;
   return <MultipleChart metric="PE" rows={rows} asOf={data.as_of} current={data.current.pe}
@@ -45,7 +45,7 @@ function SalesHistory({ symbol }: { symbol: string }) {
   const resource = useCachedResource(`/api/market/valuation/${symbol}/sales-history?years=5`, signal => loadSalesHistory(symbol, signal), { ttl: 600_000, timeout: 50_000 });
   const data = resource.data;
   const rows = useMemo<Row[]>(() => data?.points?.map(p => ({ date: p.date, value: p.ps, price: p.price, eventId: p.event_id })) ?? [], [data]);
-  if (resource.loading && !data) return <ContentLoading label={c("Reading SEC filings and prices…", "正在读取 SEC 财报和历史股价…")} className="min-h-80" />;
+  if (resource.loading && !data) return <ContentLoading label={c("Reading SEC filings and prices…", "正在读取 SEC 财报和历史股价…")} variant="block" className="min-h-80" />;
   if (!data) return <Unavailable message={c("Valuation history is temporarily unavailable.", "历史估值暂时无法读取。")} onRetry={resource.refresh} />;
   if (data.status !== "available" || !data.points || !data.as_of) return <Unavailable message={
     data.reason === "share_basis_unverified" ? c("SEC share counts could not be reconciled with this share class, so no chart is shown.", "SEC 股本口径与该股票类别对不上，因此不显示走势图。")

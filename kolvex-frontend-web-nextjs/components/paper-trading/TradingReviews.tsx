@@ -516,15 +516,13 @@ export default function TradingReviews({
           )}
           {hasMore && (
             <ListLoadMore
-              disabled={loading}
+              loading={loading}
               onClick={() => {
                 setOffset(items.length);
                 setAttempt((v) => v + 1);
               }}
             >
-              {loading
-                ? c("Loading…", "加载中…")
-                : c("Load more reviews", "加载更多复盘")}
+              {c("Load more reviews", "加载更多复盘")}
             </ListLoadMore>
           )}
         </ListCard>

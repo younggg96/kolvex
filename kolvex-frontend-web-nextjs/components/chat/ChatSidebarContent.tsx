@@ -199,7 +199,7 @@ export function ChatSidebarContent({
   // Show loading state
   if (isLoading) {
     return (
-      <ContentLoading className="pl-3" />
+      <ContentLoading variant="rows" className="pl-3" />
     );
   }
 

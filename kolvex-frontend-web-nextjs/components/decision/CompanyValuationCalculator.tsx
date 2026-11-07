@@ -30,7 +30,7 @@ function NumericField({ label, value, onChange, note, min, max, exclusiveMin = f
 export default function CompanyValuationCalculator({ symbol }: { symbol: string }) {
   const c = useCopy();
   const resource = useCachedResource(`/api/market/valuation/${symbol}/inputs`, signal => loadCompanyInputs(symbol, signal), { ttl: 300_000, timeout: 45_000 });
-  if (resource.loading && !resource.data) return <ContentLoading label={c("Loading company financial inputs…", "正在读取公司财务数据…")} className="min-h-80" />;
+  if (resource.loading && !resource.data) return <ContentLoading label={c("Loading company financial inputs…", "正在读取公司财务数据…")} variant="block" className="min-h-80" />;
   if (!resource.data || resource.data.status !== "available") return <Card className="space-y-3 p-5">
     <h2 className="text-lg font-semibold">{c("Company valuation", "公司估值计算")}</h2>
     <p className="text-sm text-muted-foreground">{resource.data?.status === "unsupported" ? c("Automatic inputs currently cover US companies with USD financials and USD-listed ordinary equity.", "自动取数目前支持美元上市、使用美元财报的美国公司普通股。") : c("Financial inputs are temporarily unavailable. Retry to load a fresh snapshot.", "财务数据暂时不可用，请重试获取。")}</p>

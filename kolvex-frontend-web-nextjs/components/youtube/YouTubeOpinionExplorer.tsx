@@ -1625,8 +1625,7 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
                                 ))}
                           </ListRows>}
                           {hasMore && (
-                            <ListLoadMore onClick={loadMore} disabled={moreLoading}>
-                              {moreLoading && <Loader2 className="h-4 w-4 animate-spin" />}
+                            <ListLoadMore onClick={loadMore} loading={moreLoading}>
                               {t("youtubeOpinions.loadMoreOpinions")}
                             </ListLoadMore>
                           )}
