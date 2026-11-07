@@ -1,6 +1,7 @@
 "use client";
 
 import { ContentLoading } from "@/components/ui/content-loading";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useState, useEffect, useRef, ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { SearchInput } from "@/components/ui/search-input";
@@ -228,7 +229,7 @@ export default function SearchWithAutocomplete<T extends SearchItem>({
             </div>
           )}
           {isLoading ? (
-            <ContentLoading variant="rows" rows={3} className="min-h-0 px-3 py-2" />
+            <ContentLoading className="min-h-0">{[0, 1, 2].map(i => <div key={i} className="px-3 py-2.5"><Skeleton className={i % 2 ? "h-4 w-1/3 rounded-md" : "h-4 w-1/2 rounded-md"} /></div>)}</ContentLoading>
           ) : displayList.length > 0 ? (
             displayList.map((item) => (
               <div

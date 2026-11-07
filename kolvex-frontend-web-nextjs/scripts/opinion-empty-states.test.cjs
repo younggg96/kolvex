@@ -64,6 +64,7 @@ function renderExplorer(overrides = {}, locale = 'zh') {
     return mod.exports;
   }
   modules['@/components/ui/list-card'] = compile('components/ui/list-card.tsx');
+  modules['@/components/youtube/OpinionSkeletons'] = compile('components/youtube/OpinionSkeletons.tsx');
   const Explorer = compile('components/youtube/YouTubeOpinionExplorer.tsx').default;
   return renderToStaticMarkup(React.createElement(Explorer));
 }

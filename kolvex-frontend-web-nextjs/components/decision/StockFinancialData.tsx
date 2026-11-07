@@ -1,6 +1,5 @@
 "use client";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
 import { useTranslation } from "@/lib/i18n";
 import { finite } from "@/lib/stockFundamentals";
 import { useCopy } from "./shared";
@@ -39,21 +38,23 @@ export function FinancialState({
   error,
   empty,
   retry,
+  skeleton,
 }: {
   loading: boolean;
   error: boolean;
   empty: boolean;
   retry: () => void;
+  /** Placeholder in the shape of the content this state stands in for. */
+  skeleton: React.ReactNode;
 }) {
   const c = useCopy();
   if (loading)
     return (
-      <div role="status" className="space-y-4 py-8">
+      <div role="status">
         <span className="sr-only">
           {c("Loading financial data", "正在加载财务数据")}
         </span>
-        <Skeleton className="h-8 w-48" />
-        <Skeleton className="h-64 w-full" />
+        <div aria-hidden="true">{skeleton}</div>
       </div>
     );
   if (error || empty)

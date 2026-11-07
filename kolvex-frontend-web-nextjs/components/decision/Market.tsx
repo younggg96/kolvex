@@ -1,4 +1,5 @@
 "use client";
+import { RailRowsSkeleton } from "@/components/decision/MarketSkeletons";
 import { peekClientCache } from "@/lib/clientCache";
 import { loadMarketSeries, marketSeriesKey } from "@/lib/marketSeries";
 
@@ -346,7 +347,7 @@ function MarketOverview({ range, view, attempt, retry, onRefreshing }: MarketTab
               </header>
               <ListCard aria-busy={catalogue.loading && !catalogue.data}>
                 {catalogue.loading && !catalogue.data ? (
-                  <div role="status" aria-label={c("Loading creator updates", "正在加载博主新动态")} className="space-y-3 py-2">{[0, 1, 2].map((row) => <Skeleton key={row} className="h-11 w-full" />)}</div>
+                  <div role="status" aria-label={c("Loading creator updates", "正在加载博主新动态")}><RailRowsSkeleton rows={5} /></div>
                 ) : catalogue.error && !catalogue.data ? (
                   <div className="px-3 py-6 text-center">
                     <p className="text-sm font-medium">{c("Creator updates could not be loaded.", "暂时无法加载博主动态。")}</p>

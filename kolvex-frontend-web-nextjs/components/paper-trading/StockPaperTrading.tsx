@@ -6,6 +6,7 @@ import { RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ContentLoading } from "@/components/ui/content-loading";
+import { Skeleton } from "@/components/ui/skeleton";
 import { ListCard, ListEmptyState } from "@/components/ui/list-card";
 import {
   Empty,
@@ -154,12 +155,35 @@ export default function StockPaperTrading({
         {notice && <p>{notice}</p>}
       </div>
       {!account || !data ? (
+        loading || !resource.error ? (
+          <ContentLoading label={c("Loading your virtual trades", "正在加载我的虚拟交易")} className="min-h-0">
+            <div className="space-y-6">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+              {[0, 1, 2].map((i) => <Card key={i} className="p-4"><Skeleton className="h-3.5 w-32 rounded-md" /><Skeleton className="mt-3 h-7 w-24 rounded-lg" /></Card>)}
+            </div>
+            <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_24rem]">
+              <div className="min-w-0 space-y-6">
+                {[0, 1].map((section) => <div key={section}>
+                  <Skeleton className="mb-3 h-6 w-28 rounded-md" />
+                  <ListCard><div className="space-y-4">{[0, 1].map((i) => <div key={i} className="space-y-3 border-b border-border py-4 first:pt-0 last:border-0 last:pb-0">
+                    <div className="flex items-center justify-between gap-3"><Skeleton className="h-4 w-32 rounded-md" /><Skeleton className="h-5 w-20 rounded-md" /></div>
+                    <Skeleton className="h-3.5 w-2/3 rounded-md" />
+                  </div>)}</div></ListCard>
+                </div>)}
+              </div>
+              <div className="min-w-0">
+                <Skeleton className="mb-3 h-6 w-28 rounded-md" />
+                <Card className="space-y-4 p-4 sm:p-6">
+                  <Skeleton className="h-11 w-full rounded-full" />
+                  {[0, 1, 2].map((i) => <div key={i} className="space-y-2"><Skeleton className="h-3.5 w-20 rounded-md" /><Skeleton className="h-11 w-full rounded-xl" /></div>)}
+                  <Skeleton className="h-11 w-full rounded-full" />
+                </Card>
+              </div>
+            </div>
+            </div>
+          </ContentLoading>
+        ) : (
         <ListCard>
-          {loading || !resource.error ? (
-            <ContentLoading
-              label={c("Loading your virtual trades", "正在加载我的虚拟交易")}
-            />
-          ) : (
             <ListEmptyState
               title={c("Virtual trades could not load", "无法加载虚拟交易")}
               description={c(
@@ -167,8 +191,8 @@ export default function StockPaperTrading({
                 "请点击刷新重试，其他标签中的股票分析仍可使用。 ",
               )}
             />
-          )}
         </ListCard>
+        )
       ) : (
         <>
           <dl className="grid grid-cols-1 gap-4 sm:grid-cols-3">

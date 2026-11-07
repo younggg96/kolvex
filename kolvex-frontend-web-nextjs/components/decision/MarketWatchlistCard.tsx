@@ -1,5 +1,6 @@
 "use client";
 
+import { RailRowsSkeleton } from "@/components/decision/MarketSkeletons";
 import Link from "next/link";
 import { ArrowUpRight, ChevronDown, RefreshCw, Star } from "lucide-react";
 import { useWatchlist } from "@/hooks/useWatchlist";
@@ -46,7 +47,7 @@ export default function MarketWatchlistCard() {
       </div>
     </header>
     <div className={cn("rounded-3xl border border-foreground/10 glass-card bg-card-glass p-3", phonePlainCardClass)} aria-busy={!ready || loading}>
-      {!ready ? <div role="status" aria-label={c("Loading Watchlist", "正在加载自选股")} className="space-y-3 py-2">{[0, 1, 2].map(row => <Skeleton key={row} className="h-11 w-full" />)}</div>
+      {!ready ? <div role="status" aria-label={c("Loading Watchlist", "正在加载自选股")}><Skeleton className="mb-1 ml-1 mt-2.5 h-3 w-20 rounded-md max-md:ml-0" /><RailRowsSkeleton rows={4} /></div>
         : (!userId || error) && !symbols.length ? null : !symbols.length ? <div className="px-3 py-6 text-center">
           <Star className="mx-auto h-5 w-5 text-muted-foreground" aria-hidden />
           <p className="mt-3 text-sm font-medium">{c("Follow your first stock", "添加第一只自选股")}</p>

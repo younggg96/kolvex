@@ -1,5 +1,6 @@
 "use client";
 
+import { StatementSkeleton } from "@/components/decision/StockTabSkeletons";
 import { useState } from "react";
 import { Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -178,6 +179,7 @@ function StockSecFinancials({ symbol }: { symbol: string }) {
         </div>
       </div>
       <SecState
+        skeleton={<StatementSkeleton charts={3} columns={6} />}
         loading={resource.loading}
         error={resource.error}
         empty={!resource.loading && !columns.length}

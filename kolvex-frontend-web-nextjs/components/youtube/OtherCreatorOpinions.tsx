@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useCachedResource } from "@/hooks/useCachedResource";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
+import { OpinionCardsSkeleton } from "@/components/youtube/OpinionSkeletons";
 import {
   ListCard,
   ListEmptyState,
@@ -68,15 +68,7 @@ export default function OtherCreatorOpinions({
       </header>
       <ListCard>
         {loading ? (
-          <div className="space-y-5 py-2" role="status" aria-label={t("common.loadingStatus")}>
-            {[0, 1, 2].map((index) => (
-              <div key={index} className="space-y-3">
-                <Skeleton className="h-10 w-48" />
-                <Skeleton className="h-4 w-full" />
-                <Skeleton className="h-4 w-2/3" />
-              </div>
-            ))}
-          </div>
+          <OpinionCardsSkeleton label={t("common.loadingStatus")} />
         ) : failed ? (
           <ListEmptyState alert title={t("youtubeOpinions.otherCreatorOpinionsFailed")} action={
             <Button size="sm" variant="outline" onClick={resource.refresh}>

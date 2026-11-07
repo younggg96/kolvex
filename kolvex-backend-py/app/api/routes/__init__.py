@@ -25,6 +25,7 @@ from app.api.routes.economic_indicators import router as economic_indicators_rou
 from app.api.routes.free_research import router as free_research_router
 from app.api.routes.valuation import router as valuation_router
 from app.api.routes.options import router as options_router
+from app.api.routes.forecast import router as forecast_router
 
 # Create API router
 api_router = APIRouter()
@@ -41,6 +42,7 @@ api_router.include_router(economic_indicators_router)
 api_router.include_router(free_research_router)
 api_router.include_router(valuation_router)
 api_router.include_router(options_router)
+api_router.include_router(forecast_router)
 api_router.include_router(portfolio_router)
 api_router.include_router(chat_router)
 api_router.include_router(admin_router, prefix="/admin", tags=["Admin"])

@@ -1,5 +1,6 @@
 "use client";
 
+import { VideoGroupsSkeleton } from "@/components/youtube/OpinionSkeletons";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import DashboardLayout from "@/components/layout/DashboardLayout";
@@ -91,7 +92,7 @@ export default function OpinionList() {
           <ListCard>
             <div aria-busy={loading || moreLoading}>
               {loading ? (
-                <div role="status" aria-label={t("common.loadingStatus")} className="space-y-3 py-2">{[0, 1, 2].map((row) => <Skeleton key={row} className="h-32 w-full" />)}</div>
+                <><Skeleton className="mb-1 h-3.5 w-28 rounded-md" /><div className="border-t border-border" /><VideoGroupsSkeleton showCreator label={t("common.loadingStatus")} /></>
               ) : (
                 <>
                   {!error && <p role="status" className="mb-1 border-b border-border pb-3 text-xs tabular-nums text-muted-foreground">{c(`${videos.length} of ${total} videos`, `已显示 ${videos.length} / ${total} 期视频`)}</p>}
@@ -104,7 +105,7 @@ export default function OpinionList() {
               )}
             </div>
             {!loading && error && <div role="alert" className="flex flex-wrap items-center gap-3 py-6"><p className="text-sm text-muted-foreground">{c("Opinions could not be loaded. Try again.", "暂时无法加载观点，请重试。")}</p><Button variant="outline" onClick={() => videos.length ? loadMore() : setRevision((value) => value + 1)}>{t("common.retry")}</Button></div>}
-            {!loading && !error && hasMore && <ListLoadMore loading={moreLoading} onClick={loadMore}>{c("Load more videos", "加载更多视频")}</ListLoadMore>}
+            {!loading && !error && hasMore && <ListLoadMore loading={moreLoading} skeleton={<VideoGroupsSkeleton showCreator rows={2} />} onClick={loadMore}>{c("Load more videos", "加载更多视频")}</ListLoadMore>}
           </ListCard>
         </div>
       </main>

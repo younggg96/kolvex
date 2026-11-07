@@ -1,5 +1,7 @@
 "use client";
 
+import { DataTableSkeleton } from "@/components/decision/StockTabSkeletons";
+import { Skeleton } from "@/components/ui/skeleton";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { freeResearchKey, insiderSummary, type SecInsiders } from "@/lib/freeResearch";
@@ -67,6 +69,7 @@ function Insiders({ symbol }: { symbol: string }) {
         {c("Insider trades", "内部人交易")}
       </h2>
       <SecState
+        skeleton={<div className="space-y-6"><div className="grid grid-cols-2 gap-6 border-b border-border pb-6 lg:grid-cols-4">{[0, 1, 2, 3].map((i) => <div key={i}><Skeleton className="h-3 w-24 rounded-md" /><Skeleton className="mt-2 h-6 w-20 rounded-md" /></div>)}</div><DataTableSkeleton columns={8} rows={8} /></div>}
         loading={resource.loading}
         error={resource.error}
         empty={!resource.loading && !rows.length}

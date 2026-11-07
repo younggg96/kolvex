@@ -32,9 +32,13 @@ export default function StockNews({ ticker }: { ticker: string }) {
         : c("News could not be loaded. Please retry.", "新闻暂时无法加载，请重试。")}</span>
       <Button variant="ghost" size="sm" onClick={news.refresh} disabled={news.loading}>{c("Retry", "重试")}</Button>
     </div>}
-    {news.loading && !news.articles.length ? <div role="status" className="space-y-4 py-4">
+    {news.loading && !news.articles.length ? <div role="status">
       <span className="sr-only">{c("Loading stock news", "正在加载个股新闻")}</span>
-      {[0, 1, 2].map(item => <Skeleton key={item} className="h-20 w-full" />)}
+      <ul aria-hidden="true">{[0, 1, 2, 3, 4].map(item => <li key={item} className={cn(listFeedRowClass, "space-y-2")}>
+        <div className="mb-2 flex gap-2"><Skeleton className="h-3 w-20 rounded-md" /><Skeleton className="h-3 w-28 rounded-md" /></div>
+        <Skeleton className={cn("h-5 rounded-md", item % 2 ? "w-2/3" : "w-11/12")} />
+        <div className="space-y-2 pt-1"><Skeleton className="h-4 w-full rounded-md" /><Skeleton className="h-4 w-4/5 rounded-md" /></div>
+      </li>)}</ul>
     </div> : news.articles.length ? <>
       <ListRows aria-label={c("Related news", "相关新闻")}>{visible.map(item => {
         const published = item.publish_time ? new Date(item.publish_time * 1000) : null;

@@ -1,6 +1,6 @@
 "use client";
 
-import { ContentLoading } from "@/components/ui/content-loading";
+import { Skeleton } from "@/components/ui/skeleton";
 import React, { useMemo, useState } from "react";
 import { Download, RefreshCw, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -184,11 +184,7 @@ export function InvestmentTransactionsTable({
           </TableHeader>
           <TableBody>
             {loading && transactions.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={8} className="py-8 text-center text-sm text-muted-foreground">
-                  <ContentLoading />
-                </TableCell>
-              </TableRow>
+              <TransactionRowsSkeleton rows={6} />
             ) : transactions.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={8} className="py-8 text-center text-sm text-muted-foreground">
@@ -248,10 +244,21 @@ export function InvestmentTransactionsTable({
       </div>
 
       {hasMore && (
-        <ListLoadMore onClick={onLoadMore} loading={loading}>
+        <ListLoadMore onClick={onLoadMore} loading={loading} skeleton={<div className="overflow-x-auto"><Table><TableBody><TransactionRowsSkeleton rows={3} /></TableBody></Table></div>}>
           Load more
         </ListLoadMore>
       )}
     </ListCard>
   );
+}
+
+/** Table rows shaped like transactions: date, symbol/name, type badge, four figures, account. */
+function TransactionRowsSkeleton({ rows }: { rows: number }) {
+  return <>{Array.from({ length: rows }, (_, i) => <TableRow key={i} aria-hidden="true" className="hover:bg-transparent">
+    <TableCell>{i === 0 && <span role="status" className="sr-only">Loading transactions</span>}<Skeleton className="h-3 w-16 rounded-md" /></TableCell>
+    <TableCell><Skeleton className="h-4 w-12 rounded-md" /><Skeleton className={i % 2 ? "mt-1.5 h-3 w-28 rounded-md" : "mt-1.5 h-3 w-40 rounded-md"} /></TableCell>
+    <TableCell><Skeleton className="h-5 w-14 rounded-full" /></TableCell>
+    {[0, 1, 2, 3].map(j => <TableCell key={j}><Skeleton className="ml-auto h-4 w-14 rounded-md" /></TableCell>)}
+    <TableCell><Skeleton className="h-4 w-20 rounded-md" /></TableCell>
+  </TableRow>)}</>;
 }

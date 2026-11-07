@@ -41,8 +41,12 @@ export default function PortfolioChanges({ tickers }: { tickers: string[] }) {
       action={<TextLink href="/dashboard/journal">{c("Updates", "变化动态")}</TextLink>}
     >
       {loading ? (
-        <div className="space-y-3 py-4">
-          {[0, 1].map((row) => <Skeleton key={row} className="h-11 w-full" />)}
+        <div role="status" aria-label={c("Loading creator updates", "正在加载博主动态")}>
+          <div className="border-b border-border px-1 py-3"><Skeleton className="h-3.5 w-full rounded-md" /></div>
+          {[0, 1, 2].map((row) => <div key={row} className={`flex items-center justify-between gap-4 ${listRowTargetClass}`}>
+            <span className="flex min-w-0 items-center gap-3"><Skeleton className="h-10 w-10 shrink-0 rounded-full max-md:h-8 max-md:w-8" /><span className="flex flex-col gap-1.5"><Skeleton className="h-4 w-14 rounded-md" /><Skeleton className="h-3.5 w-28 rounded-md" /></span></span>
+            <span className="flex flex-col items-end gap-1.5"><Skeleton className="h-4 w-16 rounded-md" /><Skeleton className="h-3 w-20 rounded-md" /></span>
+          </div>)}
         </div>
       ) : catalogue.error ? (
         <p role="alert" className="py-4 text-sm text-muted-foreground">{c("Creator updates are temporarily unavailable.", "博主动态暂时无法加载。")}</p>

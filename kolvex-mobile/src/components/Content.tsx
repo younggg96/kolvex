@@ -36,10 +36,11 @@ export function AuthGate({
   title,
   children,
   inline = false,
-}: PropsWithChildren<{ title: string; inline?: boolean }>) {
+  skeleton,
+}: PropsWithChildren<{ title: string; inline?: boolean; skeleton: React.ReactNode }>) {
   const auth = useAuth();
   let boundary: React.ReactNode;
-  if (!auth.ready) boundary = <LoadingStatus />;
+  if (!auth.ready) boundary = <LoadingStatus>{skeleton}</LoadingStatus>;
   else if (!auth.session)
     boundary = (
       <>
@@ -202,6 +203,7 @@ export function ResourceState({
   resource,
   empty,
   message,
+  skeleton,
 }: {
   resource: {
     loading: boolean;
@@ -211,6 +213,8 @@ export function ResourceState({
   };
   empty: boolean;
   message: string;
+  /** Placeholder in the shape of the content this state stands in for. */
+  skeleton: React.ReactNode;
 }) {
   return (
     <>
@@ -221,7 +225,7 @@ export function ResourceState({
         <Button onPress={() => router.push("/account")}>管理登录</Button>
       )}
       {resource.loading && !resource.data ? (
-        <LoadingStatus />
+        <LoadingStatus>{skeleton}</LoadingStatus>
       ) : !resource.error && empty ? (
         <Empty title="暂无内容" message={message} />
       ) : null}

@@ -23,7 +23,8 @@ import {
   ListEmptyState,
   ListLoadMore,
 } from "@/components/ui/list-card";
-import { ContentLoading } from "@/components/ui/content-loading";
+import { ContentLoading, SkeletonRepeat } from "@/components/ui/content-loading";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   money,
   signedMoney,
@@ -390,9 +391,7 @@ export default function TradingReviews({
         )}
         <ListCard aria-busy={loading}>
           {loading && !items.length ? (
-            <ContentLoading
-              label={c("Loading public reviews", "正在加载公开复盘")}
-            />
+            <ContentLoading label={c("Loading public reviews", "正在加载公开复盘")} className="min-h-0"><ReviewRowsSkeleton rows={3} /></ContentLoading>
           ) : !items.length ? (
             <ListEmptyState
               title={
@@ -517,6 +516,7 @@ export default function TradingReviews({
           {hasMore && (
             <ListLoadMore
               loading={loading}
+              skeleton={<ContentLoading className="min-h-0"><ReviewRowsSkeleton rows={2} /></ContentLoading>}
               onClick={() => {
                 setOffset(items.length);
                 setAttempt((v) => v + 1);
@@ -723,4 +723,18 @@ export default function TradingReviews({
       </Dialog>
     </section>
   );
+}
+
+/** Mirrors a published review row: ticker + side, author/time, P&L, then the note and a details line. */
+function ReviewRowsSkeleton({ rows }: { rows: number }) {
+  return <ul>
+    <SkeletonRepeat count={rows}>{i => <li className="space-y-4 border-b border-border p-4 last:border-0 sm:p-6">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="flex flex-col gap-2"><span className="flex items-center gap-3"><Skeleton className="h-5 w-14 rounded-md" /><Skeleton className="h-4 w-10 rounded-md" /></span><Skeleton className="h-3 w-40 rounded-md" /></div>
+        <div className="flex flex-col items-end gap-2"><Skeleton className="h-6 w-20 rounded-md" /><Skeleton className="h-3 w-24 rounded-md" /></div>
+      </div>
+      <div className="flex flex-col gap-2.5"><Skeleton className="h-4 w-full rounded-md" /><Skeleton className={cn("h-4 rounded-md", i % 2 ? "w-1/2" : "w-3/4")} /></div>
+      <Skeleton className="h-4 w-24 rounded-md" />
+    </li>}</SkeletonRepeat>
+  </ul>;
 }

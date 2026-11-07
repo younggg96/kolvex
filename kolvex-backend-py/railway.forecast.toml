@@ -1,0 +1,12 @@
+# Separate Railway service; root directory: /kolvex-backend-py
+# Config file path: /kolvex-backend-py/railway.forecast.toml
+# Set FORECAST_SERVICE_TOKEN here and the same value on the main API service.
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile.forecast"
+
+[deploy]
+healthcheckPath = "/health"
+healthcheckTimeout = 120
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 3

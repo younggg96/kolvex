@@ -1,6 +1,7 @@
 "use client";
 
 import { ContentLoading } from "@/components/ui/content-loading";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useEffect, useState, Suspense, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useTheme } from "next-themes";
@@ -63,7 +64,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { ProfileInfoSkeleton } from "@/components/common/LoadingSkeleton";
 import {
   useCurrentUserProfile,
   updateUserTheme,
@@ -76,6 +76,35 @@ import {
   PROVIDER_INFO,
   type UserApiKey,
 } from "@/lib/api/userApiKeysApi";
+
+/** Account tab placeholder: avatar row, then the email / name / phone field rows. */
+function AccountSkeleton() {
+  const { t } = useTranslation();
+  return <ContentLoading label={t("common.loading")} className="min-h-0">
+    <div className="flex items-center gap-4 border-b border-border py-5"><Skeleton className="h-[4.5rem] w-[4.5rem] rounded-full" /></div>
+    {[0, 1, 2].map((i) => <div key={i} className="grid gap-1.5 border-b border-border py-4 sm:grid-cols-[11.25rem_minmax(0,1fr)] sm:items-center sm:gap-6">
+      <Skeleton className="h-4 w-24 rounded-md" /><Skeleton className={i === 1 ? "h-4 w-32 rounded-md" : "h-4 w-48 rounded-md"} />
+    </div>)}
+  </ContentLoading>;
+}
+
+/** Route fallback in the settings frame: tab bar, section heading, then the account rows. */
+function SettingsFallback() {
+  const { t } = useTranslation();
+  return <DashboardLayout title={t("settings.title")}>
+    <div className="flex-1 overflow-y-auto">
+      <div className="mx-auto w-full min-w-0 max-w-[47.5rem] px-[16px] pb-16 pt-6 md:px-8 md:pt-8">
+        <div className="flex flex-col gap-8">
+          <div className="flex gap-1">{settingsTabDefs.map((tab) => <Skeleton key={tab.value} className="h-10 w-20 rounded-full" />)}</div>
+          <section className="pt-2">
+            <div className="flex items-start justify-between gap-4 border-b border-border pb-4"><div className="flex flex-col gap-2"><Skeleton className="h-7 w-32 rounded-lg" /><Skeleton className="h-4 w-48 rounded-md" /></div><Skeleton className="h-9 w-16 rounded-full" /></div>
+            <AccountSkeleton />
+          </section>
+        </div>
+      </div>
+    </div>
+  </DashboardLayout>;
+}
 
 function SettingsSection({
   title,
@@ -579,7 +608,7 @@ function SettingsContent() {
                     }
                   >
                     {profileLoading ? (
-                      <ProfileInfoSkeleton />
+                      <AccountSkeleton />
                     ) : (
                       <div>
                         {/* Avatar with fullscreen preview */}
@@ -912,7 +941,13 @@ function SettingsContent() {
                   >
                     <div>
                       {apiKeysLoading ? (
-                        <ContentLoading label={t("common.loading")} />
+                        <ContentLoading label={t("common.loading")} className="min-h-0">
+                          <Skeleton className="mt-4 h-[4.25rem] w-full rounded-3xl" />
+                          <div className="divide-y divide-border">{[0, 1, 2, 3].map((i) => <div key={i} className="py-5">
+                            <div className="mb-3 flex items-start justify-between gap-4"><div className="flex flex-col gap-2"><Skeleton className="h-4 w-24 rounded-md" /><Skeleton className="h-3.5 w-48 rounded-md" /></div><Skeleton className="h-4 w-16 rounded-md" /></div>
+                            <div className="flex gap-2"><Skeleton className="h-11 flex-1 rounded-xl" /><Skeleton className="h-11 w-16 rounded-full" /></div>
+                          </div>)}</div>
+                        </ContentLoading>
                       ) : (
                         <>
                           {/* Info banner */}
@@ -1139,7 +1174,7 @@ function SettingsContent() {
 
 export default function SettingsPage() {
   return (
-    <Suspense fallback={<ContentLoading variant="page" className="mx-auto w-full max-w-3xl px-[16px] py-8 md:px-8" />}>
+    <Suspense fallback={<SettingsFallback />}>
       <SettingsContent />
     </Suspense>
   );

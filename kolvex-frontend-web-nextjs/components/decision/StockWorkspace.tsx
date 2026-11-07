@@ -605,15 +605,22 @@ export default function StockWorkspace({
                   </Card>
                   {technicalBusy && !technical ? (
                     <Card className="min-w-0 p-4 sm:p-5">
-                      <div role="status" className="space-y-4">
+                      <div role="status">
                         <span className="sr-only">
                           {c(
                             "Loading technical analysis…",
                             "正在加载技术分析…",
                           )}
                         </span>
-                        <Skeleton className="h-5 w-40" />
-                        <Skeleton className="h-24 w-full" />
+                        <div aria-hidden="true">
+                          <Skeleton className="h-3 w-24 rounded-md" />
+                          <Skeleton className="mt-2 h-5 w-48 rounded-md" />
+                          <div className="mt-2 space-y-2"><Skeleton className="h-4 w-full rounded-md" /><Skeleton className="h-4 w-2/3 rounded-md" /></div>
+                          <Skeleton className="mt-4 h-10 w-36 rounded-full" />
+                          <div className="mt-4 grid grid-cols-2 gap-4">{[0, 1, 2, 3].map((i) => <div key={i}><Skeleton className="h-3 w-16 rounded-md" /><Skeleton className="mt-1.5 h-4 w-20 rounded-md" /></div>)}</div>
+                          <Skeleton className="mt-4 h-4 w-28 rounded-md" />
+                          <Skeleton className="mt-2 h-3 w-3/4 rounded-md" />
+                        </div>
                       </div>
                     </Card>
                   ) : technical?.setup ? (
@@ -936,12 +943,15 @@ export default function StockWorkspace({
                         )}
                       </div>
                     ) : researchLoading ? (
-                      <div role="status" className="space-y-4 py-4">
+                      <div role="status" className="pt-5">
                         <span className="sr-only">
                           {c("Loading AI research…", "正在加载 AI 研究…")}
                         </span>
-                        <Skeleton className="h-5 w-40" />
-                        <Skeleton className="h-24 w-full" />
+                        <div aria-hidden="true">
+                          <Skeleton className="h-5 w-64 max-w-full rounded-md" />
+                          <div className="mt-4 space-y-2.5">{[0, 1, 2, 3, 4].map((i) => <Skeleton key={i} className={i === 4 ? "h-4 w-1/2 rounded-md" : "h-4 w-full rounded-md"} />)}</div>
+                          {[0, 1].map((i) => <div key={i} className="mt-5 border-t border-border pt-4"><Skeleton className="h-4 w-48 rounded-md" /></div>)}
+                        </div>
                       </div>
                     ) : personalResearch.busy ? null : (
                       <Empty>

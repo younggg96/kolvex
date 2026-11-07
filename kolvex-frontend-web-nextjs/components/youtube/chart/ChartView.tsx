@@ -2,6 +2,8 @@
 import { peekClientCache } from "@/lib/clientCache";
 import { stockHistoryKey } from "@/lib/stockApi";
 import { useStockQuote } from "@/hooks/useStockData";
+import { useCachedResource } from "@/hooks/useCachedResource";
+import { forecastExtent, getKlineForecast, klineForecastKey, type KlineForecast } from "@/lib/klineForecast";
 
 import Link from "next/link";
 import { createPortal } from "react-dom";
@@ -48,6 +50,7 @@ import {
   ScanSearch,
   SlidersHorizontal,
   Slash,
+  Sparkles,
   Trash2,
   Undo2,
   X,
@@ -309,6 +312,20 @@ export default function ChartView({
   const chartCacheKey = stockHistoryKey(symbol, params);
   const quoteResource = useStockQuote(symbol, 15_000, !snapshotBars);
   const intraday = isIntraday(params.interval || "1d");
+  /** Experimental Kronos forecast band past the last bar (advanced daily/weekly charts only). */
+  const [showForecast, setShowForecast] = useState(false);
+  const forecastInterval = params.interval || "1d";
+  const forecastable = advanced && !snapshotBars && (forecastInterval === "1d" || forecastInterval === "1wk");
+  const forecastOn = forecastable && showForecast;
+  const forecastResource = useCachedResource<KlineForecast>(
+    klineForecastKey(symbol, forecastInterval),
+    signal => getKlineForecast(symbol, forecastInterval, signal),
+    { ttl: 10 * 60_000, timeout: 130_000, enabled: forecastOn },
+  );
+  const forecast = forecastOn ? forecastResource.data ?? null : null;
+  const priceExtent = useMemo(() => forecastExtent(forecast), [forecast]);
+  const forecastErrorCode = forecastOn && forecastResource.error ? ((forecastResource.error as { code?: string }).code || "unavailable") : null;
+  const pct = (value: number) => `${value >= 0 ? "+" : ""}${(value * 100).toFixed(1)}%`;
 
   const [box, setBox] = useState<HTMLDivElement | null>(null);
   const [size, setSize] = useState({ width: 0, height: 0 });
@@ -452,6 +469,15 @@ export default function ChartView({
   const count = bars?.length ?? 0;
   const times = useMemo(() => (bars || []).map((bar) => Date.parse(bar.date)), [bars]);
   const series = useMemo(() => computeIndicators(bars || [], intraday), [bars, intraday]);
+  /**
+   * Bar index of the model's last input bar. Forecast point i sits at `forecastBase + 1 + i`;
+   * when the chart has newer bars than the (cached) forecast, the band starts inside them.
+   */
+  const forecastBase = useMemo(() => {
+    if (!forecast || !bars?.length) return -1;
+    const index = bars.findLastIndex(bar => bar.date.slice(0, 10) <= forecast.context_end);
+    return index;
+  }, [forecast, bars]);
 
   const defaultView = useMemo<View>(() => {
     if (!count) return { start: 0, end: 1 };
@@ -461,6 +487,23 @@ export default function ChartView({
     return defaultGraphView({ count, times, range, rangeStart: rangeStart(range, times[count - 1]) }) || { start: 0, end: count };
   }, [advanced, count, range, times]);
   const current = view || defaultView;
+  /** Once per loaded forecast, widen the window so the band past the last bar is in view. */
+  const revealedForecast = useRef<string | null>(null);
+  useEffect(() => {
+    if (!forecast || forecastBase < 0) {
+      if (!forecastOn) revealedForecast.current = null;
+      return;
+    }
+    const id = `${forecast.symbol}:${forecast.interval}:${forecast.context_end}`;
+    if (revealedForecast.current === id) return;
+    revealedForecast.current = id;
+    const end = forecastBase + forecast.points.length + 2;
+    setView(previous => {
+      const base = previous || defaultView;
+      if (base.end >= end) return previous;
+      return clampGraphView({ start: base.start, end }, count + forecast.points.length + 2);
+    });
+  }, [forecast, forecastBase, forecastOn, defaultView, count]);
 
   /**
    * Daily bars: a call made on a weekend or holiday lands on the next session.
@@ -567,6 +610,7 @@ export default function ChartView({
     height: size.height,
     intraday,
     interval: params.interval || "1d",
+    priceExtent,
   });
   const xOf = (index: number) => (index - current.start + 0.5) * slot;
   const firstVisible = Math.max(Math.floor(current.start), 0);
@@ -1143,6 +1187,43 @@ export default function ChartView({
    * owns the SVG, the axes and every pointer/keyboard gesture; this callback only draws the
    * marks, so both modes keep one price scale and one interaction model.
    */
+  /** P10–P90 closing band, dashed median and faint median candles, starting at the model's last bar. */
+  function renderForecast(data: KlineForecast, base: number, x: (index: number) => number, y: (price: number) => number, slot: number, height: number): ReactNode {
+    if (!bars?.[base]) return null;
+    const anchor = { index: base, price: bars[base].close };
+    const at = (offset: number) => base + 1 + offset;
+    const upper = [`${x(anchor.index).toFixed(1)},${y(anchor.price).toFixed(1)}`];
+    const lower = [`${x(anchor.index).toFixed(1)},${y(anchor.price).toFixed(1)}`];
+    let median = `M${x(anchor.index).toFixed(1)},${y(anchor.price).toFixed(1)}`;
+    data.points.forEach((point, offset) => {
+      upper.push(`${x(at(offset)).toFixed(1)},${y(point.close_p90).toFixed(1)}`);
+      lower.unshift(`${x(at(offset)).toFixed(1)},${y(point.close_p10).toFixed(1)}`);
+      median += `L${x(at(offset)).toFixed(1)},${y(point.close).toFixed(1)}`;
+    });
+    const up = data.summary.median_return >= 0;
+    const tone = up ? "rgb(var(--chart-up))" : "rgb(var(--chart-down))";
+    const width = Math.max(slot * 0.5, 1);
+    return (
+      <g aria-hidden="true" pointerEvents="none">
+        <line x1={x(base + 0.5)} x2={x(base + 0.5)} y1={0} y2={height} stroke="rgb(var(--foreground) / 0.25)" strokeDasharray="2 4" />
+        <path d={`M${upper.join("L")}L${lower.join("L")}Z`} fill={tone} fillOpacity={0.12} />
+        {data.points.map((point, offset) => {
+          const cx = x(at(offset));
+          const top = y(Math.max(point.open, point.close));
+          const bottom = y(Math.min(point.open, point.close));
+          const fill = point.close >= point.open ? "rgb(var(--chart-up))" : "rgb(var(--chart-down))";
+          return (
+            <g key={point.date} opacity={0.35}>
+              <line x1={cx} x2={cx} y1={y(point.high)} y2={y(point.low)} stroke={fill} strokeWidth={1} />
+              <rect x={cx - width / 2} y={top} width={width} height={Math.max(bottom - top, 1)} fill="none" stroke={fill} strokeWidth={1} />
+            </g>
+          );
+        })}
+        <path d={median} fill="none" stroke={tone} strokeWidth={1.5} strokeDasharray="5 4" strokeLinejoin="round" />
+      </g>
+    );
+  }
+
   function renderAdvancedPlot(current: GraphGeometry): ReactNode {
     if (!bars || !count) return null;
     const firstVisible = current.firstIndex;
@@ -1226,6 +1307,7 @@ export default function ChartView({
             <path key={key} d={path(lines[key])} fill="none" stroke={indicatorMeta[key].color} strokeWidth={1.5} strokeLinejoin="round" />
           ) : null,
         )}
+        {forecast && forecastBase >= 0 && renderForecast(forecast, forecastBase, x, y, slot, priceBottom)}
         {last && (
           <line
             x1={0}
@@ -1257,6 +1339,29 @@ export default function ChartView({
   /** Backgrounded nodes over the advanced plot: indicator values and the creator-call popover. */
   const advancedOverlay = (
     <>
+      {forecastOn && (forecast || forecastErrorCode) && (
+        <div
+          role="note"
+          className="pointer-events-none absolute bottom-2 left-2 z-10 max-w-[min(22rem,calc(100%-1rem))] rounded-xl border border-border bg-background/85 px-2.5 py-1.5 text-[0.6875rem] leading-4 text-muted-foreground backdrop-blur-sm"
+        >
+          {forecast ? (
+            <>
+              <span className="font-semibold text-foreground">{t("youtubeOpinions.forecast.title", { days: String(forecast.horizon) })}</span>{" "}
+              <span className="tabular-nums">
+                {t("youtubeOpinions.forecast.summary", {
+                  median: pct(forecast.summary.median_return),
+                  low: pct(forecast.summary.p10_return),
+                  high: pct(forecast.summary.p90_return),
+                  up: `${Math.round(forecast.summary.prob_up * 100)}%`,
+                })}
+              </span>
+              <span className="mt-0.5 block">{t("youtubeOpinions.forecast.disclaimer")}</span>
+            </>
+          ) : (
+            t(`youtubeOpinions.forecast.errors.${forecastErrorCode === "not_configured" || forecastErrorCode === "unauthorized" ? forecastErrorCode : "unavailable"}`)
+          )}
+        </div>
+      )}
       {legend.length > 0 && (
         <div
           className="pointer-events-none absolute left-2 top-1 flex flex-wrap gap-x-3 gap-y-0.5 rounded-md bg-background/70 px-1.5 py-0.5 text-[0.6875rem] tabular-nums backdrop-blur-sm"
@@ -1386,6 +1491,20 @@ export default function ChartView({
     </button>
   );
   const hideDrawingsSlot = showAi && drawingAi.status === "done" ? hideDrawingsControl() : null;
+  const forecastControl = forecastable ? (
+    <button
+      type="button"
+      aria-pressed={showForecast}
+      onClick={() => setShowForecast(value => !value)}
+      className={cn(pill(showForecast), "gap-1.5")}
+      title={t("youtubeOpinions.forecast.hint")}
+    >
+      {showForecast && forecastResource.loading
+        ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
+        : <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />}
+      {t("youtubeOpinions.forecast.toggle")}
+    </button>
+  ) : null;
 
   /** Compact draw hint / legend lives under the graph, where the reference keeps its notes. */
   const compactFooter = drawing ? (
@@ -1448,6 +1567,7 @@ export default function ChartView({
       onOpenAdvanced={advanced ? undefined : onOpenAdvanced}
       renderPlot={advanced ? renderAdvancedPlot : undefined}
       onGeometry={receiveGraphGeometry}
+      priceExtent={priceExtent}
       drawingLayer={drawingLayerNode}
       overlay={advanced ? advancedOverlay : null}
       subPane={oscillatorPane}
@@ -1455,6 +1575,7 @@ export default function ChartView({
         <>
           {intervalControl}
           {autoScaleControl}
+          {forecastControl}
           {hideDrawingsSlot}
         </>
       ) : null}

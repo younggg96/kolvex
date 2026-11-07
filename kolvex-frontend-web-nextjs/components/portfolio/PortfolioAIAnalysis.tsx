@@ -406,18 +406,31 @@ function SuggestionsSection({ suggestions, t }: { suggestions: PortfolioAnalysis
 // Loading State
 // ============================================================
 
+/** Mirrors the result: overview summary, two metric cards, sentiment strip, strengths/risks, then per-stock rows. */
 function AnalysisLoadingState() {
     return (
-        <div className="space-y-4">
-            <Skeleton className="h-24 rounded-2xl" />
-            <div className="grid grid-cols-2 gap-3">
-                <Skeleton className="h-32 rounded-2xl" />
-                <Skeleton className="h-32 rounded-2xl" />
+        <div role="status" className="space-y-6">
+            <span className="sr-only">Loading analysis</span>
+            <div aria-hidden="true">
+                <Skeleton className="mb-3 h-4 w-32 rounded-md" />
+                <div className="space-y-4">
+                    <div className="space-y-2 rounded-2xl border border-foreground/10 p-4">
+                        <Skeleton className="h-4 w-full rounded-md" /><Skeleton className="h-4 w-full rounded-md" /><Skeleton className="h-4 w-2/3 rounded-md" />
+                    </div>
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                        {[0, 1].map((i) => <div key={i} className="rounded-2xl border border-foreground/10 p-4"><Skeleton className="mb-3 h-4 w-24 rounded-md" /><Skeleton className="h-2 w-full rounded-full" /><Skeleton className="mt-2 h-3 w-16 rounded-md" /></div>)}
+                    </div>
+                    <Skeleton className="h-11 w-full rounded-2xl" />
+                    <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                        {[0, 1].map((i) => <div key={i} className="rounded-2xl border border-foreground/10 p-4"><Skeleton className="mb-3 h-4 w-20 rounded-md" /><div className="space-y-2">{[0, 1, 2].map((j) => <Skeleton key={j} className="h-3.5 w-full rounded-md" />)}</div></div>)}
+                    </div>
+                </div>
             </div>
-            <div className="space-y-2">
-                {[1, 2, 3].map((i) => (
-                    <Skeleton key={i} className="h-16 rounded-2xl" />
-                ))}
+            <div aria-hidden="true">
+                <Skeleton className="mb-3 h-4 w-28 rounded-md" />
+                <div className="space-y-2">
+                    {[0, 1, 2].map((i) => <div key={i} className="flex items-center justify-between gap-3 rounded-2xl border border-foreground/10 p-4"><span className="flex items-center gap-3"><Skeleton className="h-8 w-8 rounded-full" /><Skeleton className="h-4 w-14 rounded-md" /></span><span className="flex gap-2"><Skeleton className="h-5 w-16 rounded-full" /><Skeleton className="h-5 w-12 rounded-full" /></span></div>)}
+                </div>
             </div>
         </div>
     );

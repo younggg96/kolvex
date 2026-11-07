@@ -1,6 +1,7 @@
 "use client";
 
-import { ContentLoading } from "@/components/ui/content-loading";
+import { AdminRowsSkeleton } from "@/components/admin/AdminSkeletons";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useCallback, useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -387,7 +388,7 @@ export default function YouTubeCreatorManager() {
           )}
 
           <Input aria-label="搜索观点" placeholder="搜索股票、摘要或视频标题" value={opinionQuery} onChange={(event) => setOpinionQuery(event.target.value)} />
-          {loadingOpinions ? <ContentLoading label="正在加载观点" /> : (
+          {loadingOpinions ? <AdminRowsSkeleton label="正在加载观点" actions={2} /> : (
             <div className="divide-y divide-border">
               {visibleOpinions.map((opinion) => (
                 <article key={opinion.id} className="flex items-start justify-between gap-3 py-4">
@@ -413,7 +414,7 @@ export default function YouTubeCreatorManager() {
       {!selected && (
         <>
           <Input aria-label="搜索 YouTube 博主" placeholder="搜索博主名称、账号或频道 ID" value={search} onChange={(event) => setSearch(event.target.value)} />
-          {loading ? <ContentLoading label="正在加载博主" /> : (
+          {loading ? <><Skeleton className="h-3 w-20 rounded-md" /><AdminRowsSkeleton label="正在加载博主" avatar lines={2} /></> : (
             <>
               <p className="text-xs text-muted-foreground">共 {filtered.length} 位博主</p>
               <div className="divide-y divide-border">

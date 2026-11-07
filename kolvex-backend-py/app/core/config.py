@@ -68,6 +68,10 @@ class Settings(BaseSettings):
     ALPACA_API_SECRET_KEY: str = os.getenv("ALPACA_API_SECRET_KEY", "")
     ALPACA_OPTIONS_FEED: str = os.getenv("ALPACA_OPTIONS_FEED", "indicative")
 
+    # Kronos K-line forecast service (forecast_service/, separate deployment). Empty = disabled.
+    FORECAST_SERVICE_URL: str = os.getenv("FORECAST_SERVICE_URL", "")
+    FORECAST_SERVICE_TOKEN: str = os.getenv("FORECAST_SERVICE_TOKEN", "")
+
     # Free public government economic statistics.
     ECONOMIC_INDICATORS_WORKER_ENABLED: bool = True
     

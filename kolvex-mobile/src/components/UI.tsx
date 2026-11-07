@@ -439,8 +439,11 @@ export function Skeleton({
     />
   );
 }
-/** Cold-load placeholder in the shape of a short list; appears after 300ms so fast reads never flash it. */
-export function LoadingStatus({ rows = 3 }: { rows?: number }) {
+/**
+ * Cold-load wrapper for a skeleton. `children` must mirror the layout that replaces it
+ * (see Skeletons.tsx). Appears after 300ms so fast reads never flash a placeholder.
+ */
+export function LoadingStatus({ children, label = "正在加载数据" }: PropsWithChildren<{ label?: string }>) {
   const text = useText();
   const [visible, setVisible] = useState(false);
   useEffect(() => {
@@ -450,20 +453,11 @@ export function LoadingStatus({ rows = 3 }: { rows?: number }) {
   return (
     <View
       accessible
-      accessibilityLabel={text("正在加载数据")}
+      accessibilityLabel={text(label)}
       accessibilityState={{ busy: true }}
-      style={{ minHeight: 72, gap: 16, paddingVertical: 4 }}
+      style={{ gap: 12 }}
     >
-      {visible &&
-        Array.from({ length: rows }, (_, i) => (
-          <View key={i} style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
-            <Skeleton width={36} height={36} radius={18} />
-            <View style={{ flex: 1, gap: 8 }}>
-              <Skeleton width={i % 2 ? "55%" : "70%"} height={14} />
-              <Skeleton width={i % 2 ? "35%" : "45%"} height={12} />
-            </View>
-          </View>
-        ))}
+      {visible && children}
     </View>
   );
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { ContentLoading } from "@/components/ui/content-loading";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Trash2, MessagesSquare } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
@@ -199,7 +200,15 @@ export function ChatSidebarContent({
   // Show loading state
   if (isLoading) {
     return (
-      <ContentLoading variant="rows" className="pl-3" />
+      <ContentLoading className="min-h-0 pl-3">
+        <div className="space-y-1">
+          <Skeleton className="mx-2 my-1.5 h-3 w-12 rounded-md" />
+          {[0, 1, 2, 3].map((i) => <div key={i} className="flex items-start gap-2 p-2">
+            <Skeleton className="mt-0.5 h-3.5 w-3.5 shrink-0 rounded" />
+            <div className="flex min-w-0 flex-1 flex-col gap-1.5"><Skeleton className={i % 2 ? "h-3.5 w-3/5 rounded-md" : "h-3.5 w-4/5 rounded-md"} /><Skeleton className="h-2.5 w-12 rounded-md" /></div>
+          </div>)}
+        </div>
+      </ContentLoading>
     );
   }
 

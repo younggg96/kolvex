@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { ContentLoading } from "@/components/ui/content-loading";
+import { ContentLoading, SkeletonRepeat } from "@/components/ui/content-loading";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useMemo, useRef, useState } from "react";
 import { ChevronDown, ExternalLink, Loader2, RefreshCw, Search, Star, X } from "lucide-react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
@@ -122,7 +123,25 @@ export default function RedditOpinionsPage() {
               </div>}
 
               <div key={`${community}:${sort}:${query}:${onlyWatchlist}:${data?.fetchedAt ?? "loading"}`} aria-busy={busy} className="opinion-results mt-3">
-                {loading && !data ? <ContentLoading label={t("redditOpinions.loading")} />
+                {loading && !data ? <ContentLoading label={t("redditOpinions.loading")} className="min-h-0">
+                    <div className="md:hidden">
+                      <div className="border-b border-border px-2 py-3"><Skeleton className="h-3.5 w-1/2 rounded-md" /></div>
+                      <SkeletonRepeat count={8}>{i => <div className={MOBILE_GRID}>
+                        <span className="flex min-w-0 items-center gap-2.5"><Skeleton className="h-3 w-5 shrink-0 rounded" /><Skeleton className="h-8 w-8 shrink-0 rounded-full" /><span className="flex min-w-0 flex-1 flex-col gap-2"><Skeleton className="h-4 w-12 rounded-md" /><Skeleton className={cn("h-3 rounded-md", i % 2 ? "w-20" : "w-28")} /></span></span>
+                        <span className="flex flex-col items-end gap-2"><Skeleton className="h-4 w-10 rounded-md" /><Skeleton className="h-3 w-12 rounded-md" /></span>
+                        <Skeleton className="h-3.5 w-3.5 rounded" />
+                      </div>}</SkeletonRepeat>
+                    </div>
+                    <div className="hidden md:block">
+                      <div className="flex h-10 items-center gap-4 border-b border-border px-2"><Skeleton className="h-3.5 w-full rounded-md" /></div>
+                      <SkeletonRepeat count={8}>{i => <div className="grid grid-cols-[3.5rem_minmax(12rem,1fr)_repeat(4,5rem)_3.5rem] items-center gap-4 border-b border-border px-2 py-2">
+                        <Skeleton className="h-3.5 w-5 rounded" />
+                        <span className="flex min-h-11 items-center gap-3"><Skeleton className="h-8 w-8 shrink-0 rounded-full" /><span className="flex flex-1 flex-col gap-2"><Skeleton className="h-4 w-14 rounded-md" /><Skeleton className={cn("h-3 rounded-md", i % 2 ? "w-28" : "w-40")} /></span></span>
+                        <Skeleton className="ml-auto h-4 w-10 rounded-md" /><Skeleton className="ml-auto h-4 w-12 rounded-md" /><Skeleton className="ml-auto h-4 w-8 rounded-md" /><Skeleton className="ml-auto h-4 w-12 rounded-md" />
+                        <Skeleton className="mx-auto h-5 w-5 rounded-full" />
+                      </div>}</SkeletonRepeat>
+                    </div>
+                  </ContentLoading>
                   : data && rows.length > 0 ? <>
                     <div className="md:hidden">
                       <ListColumnHeader>

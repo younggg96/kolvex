@@ -1,6 +1,7 @@
 "use client";
 
 import { ContentLoading } from "@/components/ui/content-loading";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { useTranslation } from "@/lib/i18n";
@@ -432,7 +433,14 @@ export default function PrivacySettingsDialog({
         </DialogHeader>
 
         {loading ? (
-          <ContentLoading label={t("common.loading")} />
+          <ContentLoading label={t("common.loading")} className="min-h-0">
+            <div className="space-y-4">
+              {[4, 3].map((rows, section) => <div key={section}>
+                <div className="flex items-center justify-between"><span className="flex items-center gap-2"><Skeleton className="h-4 w-32 rounded-md" /><Skeleton className="h-3 w-10 rounded-md" /></span><span className="flex items-center gap-2"><Skeleton className="h-6 w-16 rounded-full" /><Skeleton className="h-4 w-4 rounded" /></span></div>
+                <div className="mt-2 space-y-1">{Array.from({ length: rows }, (_, i) => <div key={i} className="flex items-center justify-between px-3 py-2"><span className="flex items-center gap-2.5"><Skeleton className="h-4 w-4 rounded" /><Skeleton className={i % 2 ? "h-4 w-24 rounded-md" : "h-4 w-32 rounded-md"} /></span><Skeleton className="h-5 w-9 rounded-full" /></div>)}</div>
+              </div>)}
+            </div>
+          </ContentLoading>
         ) : settings ? (
           <div className="space-y-4 max-h-[60vh] overflow-y-auto">
             <CategorySection

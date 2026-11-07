@@ -10,7 +10,7 @@ import { MODEL_CONFIGS, PROVIDER_NAME_TO_ID } from "@/lib/aiModels";
 import { useTranslation } from "@/lib/i18n";
 import { useCopy } from "./shared";
 
-type DimensionKey = "profitability" | "growth" | "financial_health" | "cash_flow" | "valuation" | "shareholder_returns";
+type DimensionKey = "profitability" | "growth" | "financial_health" | "cash_flow" | "valuation" | "shareholder_returns" | "risk_performance";
 type Rating = "strong" | "solid" | "mixed" | "weak" | "insufficient_data";
 export interface AiFundamentalsResult {
   symbol: string;
@@ -105,6 +105,7 @@ export default function AiFundamentalAnalysis({ symbol }: { symbol: string }) {
     cash_flow: c("Cash flow quality", "现金流质量"),
     valuation: c("Valuation", "估值水平"),
     shareholder_returns: c("Shareholder returns", "股东回报"),
+    risk_performance: c("Risk & performance", "风险与表现"),
   };
   const ratingNames: Record<Rating, string> = {
     strong: c("Strong", "优秀"),
@@ -136,13 +137,12 @@ export default function AiFundamentalAnalysis({ symbol }: { symbol: string }) {
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="min-w-0 max-w-2xl">
           <h2 id="ai-fundamentals-title" className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-            <Sparkles aria-hidden="true" className="h-4 w-4" />
             {c("AI fundamental analysis", "AI 基本面分析")}
           </h2>
           <p className="mt-2 text-xs leading-5 text-muted-foreground">
             {c(
-              "Your selected model reads the figures on this page and assesses profitability, growth, balance sheet, cash flow, valuation and shareholder returns. It interprets data only; it is not a recommendation.",
-              "由你选择的模型读取本页指标，从盈利、成长、资产负债、现金流、估值与股东回报六个维度解读。仅为数据解读，不构成投资建议。",
+              "Your selected model reads the figures on this page and assesses profitability, growth, balance sheet, cash flow, valuation, shareholder returns, and risk and performance. It interprets data only; it is not a recommendation.",
+              "由你选择的模型读取本页指标，从盈利、成长、资产负债、现金流、估值、股东回报与风险表现七个维度解读。仅为数据解读，不构成投资建议。",
             )}
           </p>
         </div>

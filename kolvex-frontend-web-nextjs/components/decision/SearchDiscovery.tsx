@@ -8,6 +8,7 @@ import { RedditIcon, XIcon, YouTubeIcon } from "@/components/common/PlatformIcon
 import { Button } from "@/components/ui/button";
 import CompanyLogo from "@/components/ui/company-logo";
 import { ContentLoading } from "@/components/ui/content-loading";
+import { Skeleton } from "@/components/ui/skeleton";
 import { ListCard, ListEmptyState, ListFooterLink, ListRow, ListRows, ListToolbar, listCompactRowClass } from "@/components/ui/list-card";
 import { SegmentedControl } from "@/components/ui/segmented-control";
 import CreatorAvatar from "@/components/youtube/CreatorAvatar";
@@ -46,10 +47,11 @@ function DiscoverySection({ id, title, icon, href, linkLabel, className, childre
   </section>;
 }
 
-function SourceState({ loading, error, retry, className }: { loading: boolean; error: unknown; retry: () => void; className?: string }) {
+function SourceState({ loading, error, retry, className, skeleton }: { loading: boolean; error: unknown; retry: () => void; className?: string; skeleton: ReactNode }) {
   const c = useCopy();
+  if (loading) return <ContentLoading className="min-h-0">{skeleton}</ContentLoading>;
   return <div className={cn("flex min-h-40 items-center justify-center", className)}>
-    {loading ? <ContentLoading /> : <ListEmptyState
+    {<ListEmptyState
       title={error ? c("This source is unavailable", "这个来源暂时不可用") : c("Nothing here yet", "暂时还没有内容")}
       description={error ? c("Try again, or explore another source.", "可以重试，或切换到其他来源。") : c("Try another source, or search for a stock above.", "可以切换来源，或在上方搜索股票。")}
       action={error ? <Button type="button" variant="outline" size="sm" onClick={retry}>{c("Retry", "重试")}</Button> : undefined}
@@ -104,7 +106,7 @@ function TrendingStocks({ youtube, reddit, onRemember }: { youtube: Resource<You
               <ArrowUpRight aria-hidden className={cn("h-3.5 w-3.5", styles.rowArrow)} />
             </Link>
           </ListRow>)}
-        </ol> : <SourceState {...resource} retry={resource.refresh} className="min-h-[22rem] xl:min-h-[26rem]" />}
+        </ol> : <SourceState {...resource} retry={resource.refresh} className="min-h-[22rem] xl:min-h-[26rem]" skeleton={<ol className={styles.stockList}>{Array.from({ length: PICK_COUNT }, (_, i) => <li key={i} className={cn("flex min-w-0 pr-0", styles.stockItem)}><div className={cn(listCompactRowClass, styles.stockLink, "hover:bg-transparent")}><Skeleton className="h-3 w-4 rounded" /><Skeleton className="h-8 w-8 shrink-0 rounded-full" /><span className="flex min-w-0 flex-1 flex-col gap-1.5"><Skeleton className="h-4 w-12 rounded-md" /><Skeleton className={cn("h-3 rounded-md", i % 2 ? "w-20" : "w-28")} /></span></div></li>)}</ol>} />}
       </div>
       {stocks.length > 0 && <PartialError error={resource.error} retry={resource.refresh} />}
       <ListFooterLink href={href}>{source === "youtube" ? c("Explore creator opinions", "探索博主的完整观点") : c("Explore Reddit discussions", "查看 Reddit 完整讨论榜")}</ListFooterLink>
@@ -156,7 +158,7 @@ function CreatorPicks({ youtube, x, onRemember }: { youtube: Resource<YouTubeOpi
               <ArrowUpRight aria-hidden className={cn("h-3.5 w-3.5", styles.rowArrow)} />
             </Link>
           </ListRow>)}
-        </ListRows> : <SourceState {...resource} retry={resource.refresh} className="min-h-[22rem] xl:min-h-[26rem]" />}
+        </ListRows> : <SourceState {...resource} retry={resource.refresh} className="min-h-[22rem] xl:min-h-[26rem]" skeleton={<ul className={cn("min-w-0", styles.creatorList)}>{Array.from({ length: PICK_COUNT }, (_, i) => <li key={i} className="flex min-w-0 pr-0"><div className={cn(listCompactRowClass, styles.creatorLink, "w-full hover:bg-transparent")}><Skeleton className="h-8 w-8 shrink-0 rounded-full" /><span className="flex min-w-0 flex-1 flex-col gap-1.5"><Skeleton className={cn("h-4 rounded-md", i % 2 ? "w-20" : "w-28")} /><Skeleton className="h-3 w-16 rounded-md" /></span></div></li>)}</ul>} />}
       </div>
       {creators.length > 0 && <PartialError error={resource.error} retry={resource.refresh} />}
       <ListFooterLink href={href}>{source === "youtube" ? c("Browse YouTube creators", "浏览 YouTube 创作者") : c("Browse X creators", "浏览 X 创作者")}</ListFooterLink>
@@ -182,7 +184,7 @@ function ResearchPicks({ onRemember }: { onRemember: Remember }) {
             <ArrowUpRight aria-hidden className={cn("h-4 w-4", styles.rowArrow)} />
           </Link>
         </ListRow>;
-      })}</ListRows> : <SourceState {...resource} retry={resource.refresh} className="min-h-72" />}
+      })}</ListRows> : <SourceState {...resource} retry={resource.refresh} className="min-h-72" skeleton={<ul className="min-w-0">{[0, 1, 2, 3].map(i => <li key={i} className={cn(listCompactRowClass, "min-h-[4.5rem] w-full gap-3 px-2 hover:bg-transparent")}><Skeleton className="h-8 w-8 shrink-0 rounded-full" /><span className="flex min-w-0 flex-1 flex-col gap-1.5"><Skeleton className="h-4 w-12 rounded-md" /><Skeleton className="h-3 w-24 rounded-md" /></span><Skeleton className="h-3 w-14 rounded-md" /></li>)}</ul>} />}
       {reports.length > 0 && <PartialError error={resource.error} retry={resource.refresh} />}
     </ListCard>
   </DiscoverySection>;
@@ -205,7 +207,7 @@ function NewsPicks() {
           <span className="min-w-0 flex-1"><span className="line-clamp-2 text-sm leading-relaxed">{article.title}</span><span className="mt-1.5 block text-xs text-muted-foreground">{article.publisher || c("News source", "新闻来源")}</span></span>
           <ArrowUpRight aria-hidden className={cn("mt-1 h-4 w-4", styles.rowArrow)} />
         </Link>
-      </ListRow>)}</ListRows> : <SourceState {...resource} retry={resource.refresh} className="min-h-72" />}
+      </ListRow>)}</ListRows> : <SourceState {...resource} retry={resource.refresh} className="min-h-72" skeleton={<TextRowsSkeleton count={3} />} />}
       {articles.length > 0 && <PartialError error={resource.error} retry={resource.refresh} />}
     </ListCard>
   </DiscoverySection>;
@@ -225,7 +227,7 @@ function BriefPicks({ onRemember }: { onRemember: Remember }) {
           <span className="min-w-0 flex-1"><span className="line-clamp-2 text-sm font-medium leading-relaxed">{item.title}</span><span className="mt-2 block text-xs text-muted-foreground">{item.detail}</span></span>
           <ArrowUpRight aria-hidden className={cn("mt-1 h-4 w-4", styles.rowArrow)} />
         </Link></ListRow>;
-      })}</ListRows> : <SourceState {...resource} retry={resource.retry} />}
+      })}</ListRows> : <SourceState {...resource} retry={resource.retry} skeleton={<TextRowsSkeleton count={2} className={styles.briefList} />} />}
       {briefs.length > 0 && <PartialError error={resource.error} retry={resource.retry} />}
     </ListCard>
   </DiscoverySection>;
@@ -257,4 +259,11 @@ export default function SearchDiscovery({ youtube, reddit, x, history, onHistory
       {isProductFeatureEnabled("briefs") && <BriefPicks onRemember={onRemember} />}
     </div>
   </div>;
+}
+
+/** Headline rows (news, briefs): two clamped lines and a source/date line. */
+function TextRowsSkeleton({ count, className }: { count: number; className?: string }) {
+  return <ul className={cn("min-w-0", className)}>{Array.from({ length: count }, (_, i) => <li key={i} className={cn(listCompactRowClass, "min-h-24 w-full items-start gap-3 px-2 py-4 hover:bg-transparent")}>
+    <span className="flex min-w-0 flex-1 flex-col gap-2"><Skeleton className="h-4 w-full rounded-md" /><Skeleton className={cn("h-4 rounded-md", i % 2 ? "w-1/2" : "w-2/3")} /><Skeleton className="mt-0.5 h-3 w-20 rounded-md" /></span>
+  </li>)}</ul>;
 }

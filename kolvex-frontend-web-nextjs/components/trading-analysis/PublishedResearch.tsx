@@ -18,7 +18,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getStockAnalysisIndex } from "@/lib/stockAnalysisHistory";
 import { ResearchStockGroup } from "./ResearchStockGroup";
 import { AnalysisStockGroup } from "./AnalysisStockGroup";
-import { ResearchColumnHeader, type ResearchListMode } from "./researchList";
+import { ResearchColumnHeader, ResearchRowsSkeleton, type ResearchListMode } from "./researchList";
 
 type PlanSort = "newest" | "ratioDesc" | "ratioAsc";
 
@@ -121,7 +121,7 @@ export default function PublishedResearch({ page }: { page?: string }) {
 
               {error && hasData && <p role="alert" className="px-2 py-3 text-sm text-muted-foreground">{t("common.error")} <Button variant="outline" size="sm" onClick={() => loadPublished()}>{t("common.retry")}</Button></p>}
               {loading ? (
-                <ContentLoading />
+                <ContentLoading className="min-h-0"><ResearchColumnHeader mode={tab} t={t} /><ResearchRowsSkeleton /></ContentLoading>
               ) : error && !hasData ? (
                 <ListEmptyState alert title={t("common.error")} action={<Button variant="outline" size="sm" onClick={() => loadPublished()}>{t("common.retry")}</Button>} />
               ) : total === 0 ? (

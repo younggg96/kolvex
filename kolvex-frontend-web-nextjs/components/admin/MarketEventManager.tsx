@@ -1,5 +1,5 @@
 "use client";
-import { ContentLoading } from "@/components/ui/content-loading";
+import { AdminRowsSkeleton } from "@/components/admin/AdminSkeletons";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -252,7 +252,7 @@ export default function MarketEventManager() {
             {listError}
           </p>
         ) : loading ? (
-          <ContentLoading label="正在加载事件列表" />
+          <AdminRowsSkeleton label="正在加载事件列表" />
         ) : !list?.events.length ? (
           <p className="text-sm text-muted-foreground">
             暂无事件，请导入第一份 JSON。

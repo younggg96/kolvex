@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ChipButton } from "@/components/ui/chip-button";
 import { ContentLoading } from "@/components/ui/content-loading";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { ListCard, ListLoadMore } from "@/components/ui/list-card";
 import { institutionKey, secSourceUrl, type HoldingActivity, type Institution } from "@/lib/freeResearch";
@@ -51,12 +52,13 @@ export default function InstitutionHoldings({ manager }: { manager: string }) {
   const totalValue = held.reduce((sum, row) => sum + (row.value ?? 0), 0);
 
   if (resource.loading && !data)
-    return <ContentLoading className="min-h-48" label={c("Reading this 13F filing from the SEC…", "正在从 SEC 读取这份 13F 申报…")} />;
+    return <ContentLoading className="min-h-0" label={c("Reading this 13F filing from the SEC…", "正在从 SEC 读取这份 13F 申报…")}><InstitutionSkeleton /></ContentLoading>;
 
   return (
     <div className="space-y-8 md:space-y-10">
       <SecState
         loading={false}
+        skeleton={null}
         error={resource.error}
         empty={!holdings.length}
         retry={resource.refresh}
@@ -497,4 +499,36 @@ function HoldingsTable({ data }: { data: Institution }) {
       )}
     </section>
   );
+}
+
+/** Mirrors the loaded page: overview stats, concentration + quarter-change cards, then the holdings table. */
+function InstitutionSkeleton() {
+  return <div className="space-y-8 md:space-y-10">
+    <div className="grid grid-cols-2 gap-x-6 gap-y-5 border-b border-border pb-6 sm:grid-cols-3 lg:grid-cols-5">
+      {[0, 1, 2, 3, 4].map(i => <div key={i} className="flex flex-col gap-2"><Skeleton className="h-3 w-20 rounded-md" /><Skeleton className="h-6 w-24 rounded-md" /><Skeleton className="h-3 w-16 rounded-md" /></div>)}
+    </div>
+    <div className="grid gap-4 lg:grid-cols-2">
+      <Card className="flex min-w-0 flex-col gap-4 p-5">
+        <div className="flex justify-between"><Skeleton className="h-4 w-32 rounded-md" /><Skeleton className="h-4 w-20 rounded-md" /></div>
+        <Skeleton className="h-2.5 w-full rounded-full" />
+        <div className="grid grid-cols-1 gap-x-6 sm:grid-cols-2">{[0, 1, 2, 3, 4, 5].map(i => <div key={i} className="flex min-h-9 items-center gap-2"><Skeleton className="h-2 w-2 rounded-full" /><Skeleton className="h-3 flex-1 rounded-md" /><Skeleton className="h-3 w-10 rounded-md" /></div>)}</div>
+      </Card>
+      <Card className="flex min-w-0 flex-col gap-4 p-5">
+        <div className="flex justify-between"><Skeleton className="h-4 w-28 rounded-md" /><Skeleton className="h-3 w-24 rounded-md" /></div>
+        <Skeleton className="h-4 w-64 max-w-full rounded-md" />
+        <div className="grid flex-1 grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2">{[0, 1].map(i => <div key={i} className="space-y-2"><Skeleton className="h-3 w-20 rounded-md" />{[0, 1, 2].map(j => <Skeleton key={j} className="h-4 w-full rounded-md" />)}</div>)}</div>
+      </Card>
+    </div>
+    <div className="space-y-4">
+      <div className="flex items-end justify-between"><div className="flex flex-col gap-2"><Skeleton className="h-6 w-28 rounded-md" /><Skeleton className="h-3 w-16 rounded-md" /></div><Skeleton className="h-4 w-36 rounded-md" /></div>
+      <ListCard className="!p-0">
+        <div className="flex flex-col gap-3 p-3 sm:p-4 md:flex-row md:items-center md:justify-between"><div className="flex gap-1.5">{[0, 1, 2, 3].map(i => <Skeleton key={i} className="h-9 w-16 rounded-full" />)}</div><Skeleton className="h-11 w-full rounded-full md:w-64" /></div>
+        <div className="border-t border-border px-3 py-3 sm:px-4"><Skeleton className="h-3.5 w-full rounded-md" /></div>
+        {[0, 1, 2, 3, 4, 5, 6].map(i => <div key={i} className="flex items-center gap-4 border-t border-border px-3 py-3 sm:px-4">
+          <Skeleton className="h-4 w-14 rounded-md" /><Skeleton className={cn("h-3.5 rounded-md", i % 2 ? "w-28" : "w-40")} />
+          <span className="ml-auto flex gap-6"><Skeleton className="h-4 w-16 rounded-md" /><Skeleton className="hidden h-4 w-14 rounded-md sm:block" /><Skeleton className="hidden h-4 w-12 rounded-md sm:block" /></span>
+        </div>)}
+      </ListCard>
+    </div>
+  </div>;
 }

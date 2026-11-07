@@ -1568,6 +1568,18 @@
       "collapse": "收起详情",
       "expandAria": "展开 {ticker} 详情",
       "collapseAria": "收起 {ticker} 详情"
+    },
+    "forecast": {
+      "toggle": "预测",
+      "hint": "实验性 Kronos 模型对未来 20 根K线的预测",
+      "title": "Kronos 预测 · {days} 根K线",
+      "summary": "中位数 {median} · P10–P90 {low} 至 {high} · 上涨概率 {up}",
+      "disclaimer": "实验性模型输出。回测中它主要回归近期均值，无法预测方向。不构成投资建议。",
+      "errors": {
+        "not_configured": "预测服务未配置。",
+        "unauthorized": "登录后查看预测。",
+        "unavailable": "暂时无法获取预测。"
+      }
     }
   },
   "research": {

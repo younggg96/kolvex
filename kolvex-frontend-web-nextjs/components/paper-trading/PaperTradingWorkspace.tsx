@@ -227,10 +227,19 @@ export default function PaperTradingWorkspace() {
             {message && <p>{message}</p>}
           </div>
           {loading && !account ? (
-            <div className="grid gap-4 sm:grid-cols-3">
-              {[0, 1, 2].map((i) => (
-                <Skeleton key={i} className="h-28 rounded-3xl" />
-              ))}
+            <div role="status" aria-label={c("Loading virtual account", "正在加载虚拟账户")} className="space-y-6">
+              <div aria-hidden="true" className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
+                {[0, 1, 2, 3].map((i) => (
+                  <Card key={i} className="p-4 sm:p-6"><Skeleton className="h-3 w-24 rounded-md" /><Skeleton className="mt-2 h-7 w-28 rounded-lg sm:mt-3 sm:h-8" /><Skeleton className="mt-2 h-3 w-32 rounded-md" /></Card>
+                ))}
+              </div>
+              <div aria-hidden="true">
+                <div className="mb-6 flex gap-1"><Skeleton className="h-10 w-28 rounded-full" /><Skeleton className="h-10 w-28 rounded-full" /></div>
+                <div className="grid items-start gap-8 xl:grid-cols-[minmax(0,1fr)_24rem]">
+                  <Card className="p-4 sm:p-6"><Skeleton className="h-5 w-32 rounded-md" /><Skeleton className="mt-4 h-64 w-full rounded-2xl" /></Card>
+                  <Card className="space-y-4 p-4 sm:p-6"><Skeleton className="h-5 w-28 rounded-md" /><Skeleton className="h-11 w-full rounded-full" />{[0, 1, 2].map((i) => <div key={i} className="space-y-2"><Skeleton className="h-3.5 w-20 rounded-md" /><Skeleton className="h-11 w-full rounded-xl" /></div>)}</Card>
+                </div>
+              </div>
             </div>
           ) : !account ? (
             <ListCard>

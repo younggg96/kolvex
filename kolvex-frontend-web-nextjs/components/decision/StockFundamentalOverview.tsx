@@ -1,6 +1,8 @@
 "use client";
 
+import { FundamentalsSkeleton, ProfileSkeleton } from "@/components/decision/StockTabSkeletons";
 import { ContentLoading } from "@/components/ui/content-loading";
+import { Skeleton } from "@/components/ui/skeleton";
 import { ArrowDownRight, ArrowUpRight, ExternalLink } from "lucide-react";
 import type { StockOverview, StockQuote } from "@/lib/stockApi";
 import {
@@ -343,10 +345,11 @@ export default function StockFundamentalOverview({
   ].filter((item) => finite(item.value));
   const partial = Boolean(extra.error || m?.unavailable_sources.length);
   if (loading && !overview)
-    return <FinancialState loading error={false} empty={false} retry={retry} />;
+    return <FinancialState loading error={false} empty={false} retry={retry} skeleton={<FundamentalsSkeleton />} />;
   return (
     <div className="space-y-4">
       <FinancialState
+        skeleton={null}
         loading={false}
         error={error}
         empty={false}
@@ -405,7 +408,9 @@ export default function StockFundamentalOverview({
           </p>
         )}
         {extra.loading && (
-          <ContentLoading variant="grid" label={c("Loading additional metrics…", "正在加载补充指标…")} className="mt-4" />
+          <ContentLoading label={c("Loading additional metrics…", "正在加载补充指标…")} className="mt-4 min-h-0">
+            <div className="grid gap-4 sm:grid-cols-2">{[0, 1, 2, 3].map((i) => <div key={i} className="flex items-start gap-3"><Skeleton className="mt-1 h-4 w-4 shrink-0 rounded" /><div className="flex flex-1 flex-col gap-2"><Skeleton className="h-4 w-2/3 rounded-md" /><Skeleton className="h-3 w-1/2 rounded-md" /></div></div>)}</div>
+          </ContentLoading>
         )}
         {partial && (
           <div
@@ -519,6 +524,7 @@ export function StockCompanyProfile({
         {c("Company profile", "公司资料")}
       </h2>
       <FinancialState
+        skeleton={<ProfileSkeleton />}
         loading={loading}
         error={error}
         empty={!loading && !error && !company}

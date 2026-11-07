@@ -9,7 +9,8 @@ import { Button } from "@/components/ui/button";
 import CompanyLogo from "@/components/ui/company-logo";
 import { ListColumnHeader, ListLoadMore, ListRow, ListRows, listRowTargetClass } from "@/components/ui/list-card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ContentLoading, PendingValue } from "@/components/ui/content-loading";
+import { PendingValue } from "@/components/ui/content-loading";
+import { StockRowsSkeleton } from "@/components/decision/StockRowsSkeleton";
 import { SegmentedControl } from "@/components/ui/segmented-control";
 import { isProductFeatureEnabled } from "@/lib/productFeatures";
 import { useMarketQuotes } from "@/hooks/useMarketQuotes";
@@ -259,7 +260,7 @@ export default function StockObservationList({ range, catalogue, held, onRetry, 
           </div>
           <span className="w-11 shrink-0 text-center max-md:hidden">{c("Watch", "自选")}</span>
         </ListColumnHeader>
-        {blocking ? <ContentLoading label={c("Loading stocks", "正在加载股票")} /> : <ListRows aria-label={c("Stock watch", "股票观察")}>
+        {blocking ? <StockRowsSkeleton grid={ROW_GRID} trendClass="hidden min-[360px]:block" watchClass="max-md:hidden" reason label={c("Loading stocks", "正在加载股票")} /> : <ListRows aria-label={c("Stock watch", "股票观察")}>
           {visible.map(symbol => {
             const stock = coverage.get(symbol);
             const detailParams = new URLSearchParams({ from: returnHref });

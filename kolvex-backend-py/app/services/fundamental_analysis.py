@@ -20,12 +20,12 @@ from app.services.yfinance.client import get_yfinance_service
 from app.services.yfinance.overview_metrics import get_overview_metrics
 
 logger = logging.getLogger(__name__)
-PROMPT_VERSION = "fundamentals-v1"
+PROMPT_VERSION = "fundamentals-v2"
 CALL_TIMEOUT_SECONDS = 110
 DATA_TIMEOUT_SECONDS = 25
 CACHE_TTL_SECONDS = 1800
 RATE_LIMIT = (10, 600)  # Provider calls per user per window.
-DIMENSIONS = ("profitability", "growth", "financial_health", "cash_flow", "valuation", "shareholder_returns")
+DIMENSIONS = ("profitability", "growth", "financial_health", "cash_flow", "valuation", "shareholder_returns", "risk_performance")
 
 
 class FundamentalsKeyRejected(RuntimeError):
@@ -45,7 +45,7 @@ class FundamentalsInvalid(ValueError):
 
 
 class Dimension(BaseModel):
-    key: Literal["profitability", "growth", "financial_health", "cash_flow", "valuation", "shareholder_returns"]
+    key: Literal["profitability", "growth", "financial_health", "cash_flow", "valuation", "shareholder_returns", "risk_performance"]
     rating: Literal["strong", "solid", "mixed", "weak", "insufficient_data"] = Field(
         description="strong > solid > mixed > weak; insufficient_data when the supplied figures cannot support a view")
     headline: str = Field(description="One short sentence with the conclusion for this dimension")
@@ -74,32 +74,75 @@ def _clean(value):
     return value
 
 
+def _section(source, fields):
+    """Keeps unavailable fields as null so the model knows they were checked, not forgotten."""
+    return {label: _clean(source.get(key)) for label, key in fields}
+
+
 def load_context(symbol):
-    """Blocking: gathers the same data the overview tab displays."""
+    """Blocking: gathers the same data the overview tab shows, grouped like its sections."""
     service = get_yfinance_service()
     company = service.get_company_info(symbol)
-    financials = service.get_financials(symbol)
-    quote = service.get_quote(symbol)
+    v = service.get_financials(symbol)
+    q = service.get_quote(symbol)
     try:
-        metrics = get_overview_metrics(service, symbol)
+        m = get_overview_metrics(service, symbol)
     except Exception as exc:
         logger.info("Overview metrics unavailable for AI fundamentals %s (%s)", symbol, type(exc).__name__)
-        metrics = {}
-    summary = (company.get("business_summary") or "")[:800]
-    context = _clean({
-        "symbol": symbol,
-        "company": {key: company.get(key) for key in ("name", "sector", "industry", "country", "employees")} | {"business_summary": summary},
-        "market": {key: quote.get(key) for key in ("current_price", "currency", "market_cap", "fifty_two_week_low", "fifty_two_week_high", "volume", "avg_volume")},
-        "financials_ttm_or_latest": {key: value for key, value in financials.items() if key != "symbol"},
-        "supplementary_metrics": {key: value for key, value in metrics.items()
-                                   if key not in ("symbol", "unavailable_sources", "history_start", "history_end", "ytd_start", "ytd_end", "earnings_date")},
-        "conventions": "Ratios and margins are decimals (0.12 = 12%). debt_to_equity is in percent (37 = 0.37x). "
-                       "Fields ending _annual or _fy use the latest fiscal year; *_period fields give report dates. Missing fields are unavailable.",
-    })
-    useful = len(context.get("financials_ttm_or_latest", {})) + len(context.get("supplementary_metrics", {}))
-    if useful < 5:
+        m = {"unavailable_sources": ["all_supplementary"]}
+    debt_to_equity = v.get("debt_to_equity")
+    sections = {
+        "basic": _section({**q, **m, "enterprise_value": v.get("enterprise_value")}, (
+            ("market_cap", "market_cap"), ("enterprise_value", "enterprise_value"), ("shares_outstanding", "shares_outstanding"),
+            ("insider_ownership", "insider_ownership"), ("short_float", "short_float"), ("current_price", "current_price"),
+            ("analyst_mean_target", "target_mean_price"), ("analyst_consensus", "analyst_consensus"), ("analyst_count", "analyst_count"),
+            ("52w_low", "fifty_two_week_low"), ("52w_high", "fifty_two_week_high"), ("volume", "volume"), ("avg_volume", "avg_volume"))),
+        "revenue_and_profit": _section({**v, **m}, (
+            ("revenue_ttm", "total_revenue"), ("gross_profit_ttm", "gross_profits"), ("operating_income_fy", "operating_income"),
+            ("net_income_ttm", "net_income"), ("ebitda_ttm", "ebitda"), ("eps_trailing", "eps_trailing"), ("eps_forward", "eps_forward"),
+            ("operating_cash_flow_ttm", "operating_cash_flow"), ("free_cash_flow_ttm", "free_cash_flow"), ("capex_fy", "capital_expenditure"),
+            ("income_fiscal_year_end", "income_period"))),
+        "assets_and_liabilities": {**_section({**v, **m}, (
+            ("total_assets", "total_assets"), ("total_cash", "total_cash"), ("total_debt", "total_debt"), ("long_term_debt", "long_term_debt"),
+            ("total_liabilities", "total_liabilities"), ("shareholder_equity", "shareholder_equity"),
+            ("current_ratio", "current_ratio"), ("quick_ratio", "quick_ratio"), ("balance_sheet_date", "balance_period"))),
+            "debt_to_equity": _clean(debt_to_equity / 100) if isinstance(debt_to_equity, (int, float)) else None},
+        "valuation": _section({**v, **m}, (
+            ("pe_trailing", "pe_ratio"), ("pe_forward", "forward_pe"), ("peg", "peg_ratio"), ("price_to_sales", "price_to_sales"),
+            ("price_to_book", "price_to_book"), ("price_to_fcf", "price_to_fcf"), ("ev_to_ebitda", "ev_to_ebitda"), ("ev_to_revenue", "ev_to_revenue"))),
+        "margins": _section({**v, **m}, (
+            ("gross_margin", "gross_margins"), ("operating_margin", "operating_margins"), ("ebitda_margin", "ebitda_margins"),
+            ("pretax_margin_fy", "pretax_margin"), ("net_margin", "profit_margins"), ("fcf_margin_fy", "fcf_margin_annual"))),
+        "returns_on_capital": _section({**v, **m}, (
+            ("roe", "return_on_equity"), ("roa", "return_on_assets"), ("roce_fy", "roce_annual"), ("roic_fy", "roic_annual"),
+            ("cash_conversion_cfo_over_net_income_fy", "cash_conversion_annual"))),
+        "growth": _section({**v, **m}, (
+            ("revenue_growth_yoy", "revenue_growth"), ("revenue_cagr_3y", "revenue_cagr_3y"),
+            ("quarterly_earnings_growth_yoy", "quarterly_earnings_growth"), ("earnings_growth_yoy", "earnings_growth"),
+            ("diluted_eps_cagr_3y", "eps_cagr_3y"), ("eps_growth_estimate_next_fy", "forecast_earnings_growth"))),
+        "dividends_and_buybacks": _section(m, (
+            ("dividend_yield", "dividend_yield"), ("payout_ratio", "payout_ratio"), ("net_buyback_yield_fy", "buyback_yield_annual"),
+            ("cash_flow_fiscal_year_end", "cash_period"))),
+        "risk_and_performance": _section(m, (
+            ("beta_5y_monthly", "beta_5y"), ("max_drawdown_5y", "max_drawdown_5y"), ("ytd_price_return", "ytd_return"),
+            ("sp500_ytd_price_return", "benchmark_ytd_return"), ("ytd_vs_sp500", "ytd_vs_sp500"))),
+    }
+    useful = sum(value is not None for section in sections.values() for value in section.values())
+    if useful < 8:
         raise FundamentalsDataUnavailable("fundamentals_unavailable")
-    return context
+    return {
+        "symbol": symbol,
+        "company": _clean({key: company.get(key) for key in ("name", "sector", "industry", "country", "employees")}
+                          | {"business_summary": (company.get("business_summary") or "")[:800]}),
+        "currency": {"market": q.get("currency") or m.get("currency"), "financials": v.get("financial_currency") or m.get("financial_currency")},
+        "sections": sections,
+        "unavailable_sources": m.get("unavailable_sources") or [],
+        "data_as_of": m.get("analyzed_at"),
+        "conventions": "Ratios, margins, growth, yields, drawdown and returns are decimals (0.12 = 12%); ytd_vs_sp500 is a decimal difference "
+                       "(0.2856 = 28.56 percentage points). debt_to_equity is a multiple (0.37 = 0.37x). null means unavailable from the source: "
+                       "a null dividend_yield usually means no dividend. _fy fields use the latest fiscal year; others are TTM or latest. "
+                       "3y CAGR is annualized.",
+    }
 
 
 def build_messages(context, locale):
@@ -109,6 +152,7 @@ def build_messages(context, locale):
 Rules:
 - Use only the supplied figures plus general industry knowledge. Never invent numbers. When you cite a figure, use the supplied value (formatted readably, e.g. 38.2%, $7.9B).
 - Judge each metric against what is normal for this company's industry, not against the whole market.
+- Use every section. Base each dimension on its sections: profitability ← margins, returns_on_capital, revenue_and_profit; growth ← growth (YoY, 3y CAGR, next-FY estimate; note when trailing and forward growth diverge); financial_health ← assets_and_liabilities; cash_flow ← operating/free cash flow, capex, fcf margin, cash conversion; valuation ← valuation, analyst target vs current price, judged against the growth rates; shareholder_returns ← dividends_and_buybacks (net dilution counts against it; no dividend is fine for a growth company); risk_performance ← beta, max drawdown, YTD return vs S&P 500, short float, insider ownership, 52-week range.
 - Cover exactly these dimensions in this order: {", ".join(DIMENSIONS)}. Use insufficient_data when the figures cannot support a view.
 - Flag contradictions between figures (e.g. high net income but negative free cash flow) and explain what they likely mean.
 - Note that metrics may come from different reporting periods when it matters.
@@ -195,8 +239,8 @@ class FundamentalAnalysisService:
             data = {
                 "status": "complete", "symbol": symbol, "model_id": model_id, "locale": locale, "prompt_version": PROMPT_VERSION,
                 "generated_at": datetime.now(timezone.utc).isoformat(), **result.model_dump(),
-                "data_as_of": (context.get("supplementary_metrics") or {}).get("analyzed_at"),
-                "price_at_generation": (context.get("market") or {}).get("current_price"),
+                "data_as_of": context.get("data_as_of"),
+                "price_at_generation": context["sections"]["basic"].get("current_price"),
             }
             self.cache[key] = (time.monotonic() + CACHE_TTL_SECONDS, data)
             self.cache.move_to_end(key)

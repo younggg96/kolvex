@@ -1,6 +1,7 @@
 "use client";
 
 import { ContentLoading } from "@/components/ui/content-loading";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useCallback, useEffect, useState } from "react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import MarketEventManager from "@/components/admin/MarketEventManager";
@@ -62,7 +63,14 @@ export default function AdminPageClient({ initialTab }: { initialTab?: string })
     finally { setBusy(false); }
   }
 
-  if (isLoading) return <DashboardLayout title="管理后台"><ContentLoading variant="page" label="正在加载管理后台" className="mx-auto w-full max-w-3xl px-[16px] py-8 md:px-8" /></DashboardLayout>;
+  if (isLoading) return <DashboardLayout title="管理后台"><ContentLoading label="正在加载管理后台" className="mx-auto min-h-0 w-full px-[16px] pb-8 pt-6 md:px-8 md:pt-8">
+    <div className="space-y-8">
+      <Skeleton className="h-4 w-32 rounded-md" />
+      <div className="grid grid-cols-3 border-y border-border">{[0, 1, 2].map(i => <div key={i} className="flex flex-col gap-2 py-4 pr-4"><Skeleton className="h-3.5 w-14 rounded-md" /><Skeleton className="h-6 w-16 rounded-md" /></div>)}</div>
+      <div className="flex flex-wrap gap-1">{[0, 1, 2, 3, 4, 5, 6].map(i => <Skeleton key={i} className="h-10 w-20 rounded-full" />)}</div>
+      <div><div className="border-b border-border py-2.5"><Skeleton className="h-3.5 w-full rounded-md" /></div>{[0, 1, 2, 3, 4, 5].map(i => <div key={i} className="flex justify-between border-b border-border py-3"><Skeleton className={i % 2 ? "h-4 w-32 rounded-md" : "h-4 w-48 rounded-md"} /><Skeleton className="h-4 w-12 rounded-md" /></div>)}</div>
+    </div>
+  </ContentLoading></DashboardLayout>;
   if (!profile?.is_admin) return <DashboardLayout title="管理后台"><p className="mx-auto  px-[16px] py-8 text-muted-foreground md:px-8">需要管理员权限。</p></DashboardLayout>;
 
   const tableCount = Object.keys(tables).length;

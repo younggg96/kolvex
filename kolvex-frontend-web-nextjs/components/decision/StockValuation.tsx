@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ContentLoading } from "@/components/ui/content-loading";
+import { ValuationAnalysisSkeleton } from "@/components/decision/ValuationSkeletons";
 import { SegmentedControl } from "@/components/ui/segmented-control";
 import { useCachedResource } from "@/hooks/useCachedResource";
 import { useTranslation } from "@/lib/i18n";
@@ -70,7 +70,7 @@ function HistoricalValuation({ symbol }: { symbol: string }) {
   const shownSimulation = simulation?.snapshot_id === data?.snapshot_id ? simulation : null;
   const reference = shownSimulation?.reference ?? data?.current.reference ?? null;
 
-  if (resource.loading && !data) return <ContentLoading label={c("Preparing source-linked valuation history…", "正在整理有来源的估值历史，首次计算可能需要几分钟…")} variant="block" className="min-h-80" />;
+  if (resource.loading && !data) return <ValuationAnalysisSkeleton label={c("Preparing source-linked valuation history…", "正在整理有来源的估值历史，首次计算可能需要几分钟…")} />;
   // Companies outside the reviewed PE pipeline get a P/S history instead.
   if (!data && resource.data && "status" in resource.data) return <ValuationHistoryCard symbol={symbol} />;
   if (!data) return <Card className="space-y-3 p-5">

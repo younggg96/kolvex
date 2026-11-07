@@ -28,7 +28,20 @@ export default function Journal() {
   const opinions = [...(catalogue.data?.latest ?? [])].filter((item) => inScope(item.ticker)).sort((a, b) => b.opinion_date.localeCompare(a.opinion_date));
   const loading = catalogue.loading || (scope === "holdings" && held.loading);
   const error = catalogue.error || (scope === "holdings" && held.error);
-  const skeleton = <div className="space-y-4 py-5">{[0, 1, 2].map((row) => <Skeleton key={row} className="h-16 w-full" />)}</div>;
+  const changesSkeleton = <div role="status" aria-label={c("Loading updates", "正在加载动态")}>
+    <div className="border-b border-border px-1 py-3"><Skeleton className="h-3.5 w-full rounded-md" /></div>
+    {[0, 1, 2, 3].map((row) => <div key={row} className="flex items-center justify-between gap-4 border-b border-border px-1 py-4 last:border-0">
+      <div className="flex flex-col gap-2"><span className="flex items-center gap-2"><Skeleton className="h-6 w-6 rounded-full" /><Skeleton className="h-4 w-14 rounded-md" /></span><Skeleton className="h-3 w-32 rounded-md" /></div>
+      <div className="flex flex-col items-end gap-1.5"><Skeleton className="h-4 w-16 rounded-md" /><Skeleton className="h-3 w-24 rounded-md" /></div>
+    </div>)}
+  </div>;
+  const opinionsSkeleton = <ul role="status" aria-label={c("Loading opinions", "正在加载观点")}>{[0, 1, 2].map((row) => <li key={row} className={cn(listFeedRowClass, "space-y-3")}>
+    <div className="flex items-center justify-between gap-3"><Skeleton className="h-4 w-14 rounded-md" /><Skeleton className="h-3 w-20 rounded-md" /></div>
+    <span className="flex items-center gap-2"><Skeleton className="h-5 w-5 rounded-full" /><Skeleton className="h-4 w-24 rounded-md" /></span>
+    <Skeleton className="h-4 w-16 rounded-md" />
+    <div className="space-y-2"><Skeleton className="h-4 w-full rounded-md" /><Skeleton className="h-4 w-2/3 rounded-md" /></div>
+    <Skeleton className="h-3 w-24 rounded-md" />
+  </li>)}</ul>;
   return (
     <DashboardLayout title={c("Updates", "变化动态")}>
       <main className="flex-1 overflow-y-auto" aria-busy={loading}>
@@ -42,7 +55,7 @@ export default function Journal() {
           </section>
           {error ? <div role="alert" className="space-y-3"><p>{c("Updates could not be loaded. Try again.", "暂时无法加载动态，请重试。")}</p><Button onClick={() => setAttempt((n) => n + 1)}>{c("Retry", "重试")}</Button></div> : scope === 'holdings' && !held.loading && !held.tickers.length ? <Empty action={<TextLink href="/dashboard/portfolio">{c("View portfolio", "查看投资组合")}</TextLink>}>{c("No linked equity holdings yet. Browse all stocks to see updates.", "暂时没有已连接的股票持仓。切换到全部股票即可查看动态。")}</Empty> : <>
             <Panel surface="card" title={c("Opinion changes", "观点变化")} description={c("Daily creator averages; a new opinion is shown separately from a change.", "按有观点的日期比较博主平均倾向；首次观点单独标记。")}>
-              {loading ? skeleton : changes.length ? <>
+              {loading ? changesSkeleton : changes.length ? <>
                 <ListColumnHeader>
                   <div className="flex w-full items-center justify-between gap-4 px-1 py-3"><span>{c("Stock", "股票")}</span><span>{c("Opinion change", "观点变化")}</span></div>
                 </ListColumnHeader>
@@ -55,7 +68,7 @@ export default function Journal() {
               </> : <Empty>{c("No opinion changes in the available data.", "现有数据中暂无观点变化。")}</Empty>}
             </Panel>
             <Panel surface="card" title={c("Latest opinions", "最新观点")} action={<TextLink href="/dashboard/youtube-opinions?tab=stocks">{c("Full opinion history", "完整观点历史")}</TextLink>}>
-              {loading ? skeleton : opinions.length ? <ListRows>{opinions.map((opinion) => <li key={opinion.id} className={cn(listFeedRowClass, "space-y-3")}>
+              {loading ? opinionsSkeleton : opinions.length ? <ListRows>{opinions.map((opinion) => <li key={opinion.id} className={cn(listFeedRowClass, "space-y-3")}>
                 <div className="flex flex-wrap items-center justify-between gap-3"><Link href={`/dashboard/market/${encodeURIComponent(opinion.ticker)}`} className="font-semibold hover:underline">{opinion.ticker}{heldSet.has(opinion.ticker) && <HeldMark />}</Link><time className="text-xs text-muted-foreground" dateTime={opinion.opinion_date}>{dayLabel(opinion.opinion_date)}</time></div>
                 <Link href={`/dashboard/youtube-opinions?tab=creators&creator=${encodeURIComponent(opinion.channel_id)}`} className="inline-flex items-center gap-2 text-sm hover:underline"><CreatorAvatar name={opinion.channel_title || opinion.channel_id} avatarUrl={opinion.channel_avatar_url} size="xs" />{opinion.channel_title || opinion.channel_id}</Link>
                 <OpinionStrength value={opinion.direction_score} />

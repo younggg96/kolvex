@@ -132,6 +132,7 @@ export function graphGeometry({
   interval = "1d",
   timeAxis = GRAPH_TIME_AXIS,
   topPad = GRAPH_TOP_PAD,
+  priceExtent = null,
 }: {
   bars: PriceBar[] | null | undefined;
   /** `Date.parse(bar.date)` per bar; parsed from `bars` when omitted. */
@@ -143,6 +144,8 @@ export function graphGeometry({
   interval?: string;
   timeAxis?: number;
   topPad?: number;
+  /** Prices outside the bars the scale must still fit (forecast band). */
+  priceExtent?: { lo: number; hi: number } | null;
 }): GraphGeometry {
   const list = bars || [];
   const count = list.length;
@@ -155,7 +158,7 @@ export function graphGeometry({
   const closeOnly = interval === "1d" || interval === "1wk" || interval === "1mo";
   const firstIndex = Math.max(Math.floor(view.start), 0);
   const lastIndex = Math.min(Math.ceil(view.end) - 1, count - 1);
-  const domain = priceDomain(list, count ? view : { start: 0, end: 1 });
+  const domain = priceDomain(list, count ? view : { start: 0, end: 1 }, priceExtent);
   let priceHigh = -Infinity;
   let priceLow = Infinity;
   for (let index = firstIndex; index <= lastIndex; index++) {
@@ -378,6 +381,8 @@ export interface PriceGraphProps {
   trailingControls?: ReactNode;
   /** Called with the geometry after every resize / view / data change (drawing host hooks). */
   onGeometry?: (geometry: GraphGeometry) => void;
+  /** Prices outside the bars the scale must still fit (forecast band). */
+  priceExtent?: { lo: number; hi: number } | null;
   formatDate: (date: string) => string;
   t: Translate;
   symbol: string;
@@ -434,6 +439,7 @@ export default function PriceGraph({
   leadingControls,
   trailingControls,
   onGeometry,
+  priceExtent = null,
   formatDate,
   t,
   symbol,
@@ -495,8 +501,8 @@ export default function PriceGraph({
   const modified = Boolean(defaultView && view && (Math.abs(view.start - defaultView.start) > 0.5 || Math.abs(view.end - defaultView.end) > 0.5));
 
   const geometry = useMemo(
-    () => graphGeometry({ bars, times, view: current, width: size.width, height: size.height, intraday, interval, topPad: advanced ? GRAPH_TOP_PAD : GRAPH_TOP_PAD - 6 }),
-    [bars, times, current, size.width, size.height, intraday, interval, advanced],
+    () => graphGeometry({ bars, times, view: current, width: size.width, height: size.height, intraday, interval, topPad: advanced ? GRAPH_TOP_PAD : GRAPH_TOP_PAD - 6, priceExtent }),
+    [bars, times, current, size.width, size.height, intraday, interval, advanced, priceExtent],
   );
   const loaded = Boolean(count && size.width >= 40 && size.height >= 40);
   /**

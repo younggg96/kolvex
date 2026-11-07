@@ -1,5 +1,6 @@
 "use client";
 
+import { DataTableSkeleton } from "@/components/decision/StockTabSkeletons";
 import { useState } from "react";
 import { SegmentedControl } from "@/components/ui/segmented-control";
 import {
@@ -45,6 +46,7 @@ function RevenueEstimates({ symbol }: { symbol: string }) {
         {c("Revenue estimates", "营收预期")}
       </h2>
       <SecState
+        skeleton={<DataTableSkeleton columns={7} rows={4} />}
         loading={resource.loading}
         error={resource.error}
         empty={!resource.loading && !rows.length}
@@ -155,6 +157,7 @@ function EarningsFilings({ symbol }: { symbol: string }) {
         />
       </div>
       <SecState
+        skeleton={<DataTableSkeleton columns={5} rows={8} />}
         loading={resource.loading}
         error={resource.error}
         empty={!resource.loading && !rows.length}

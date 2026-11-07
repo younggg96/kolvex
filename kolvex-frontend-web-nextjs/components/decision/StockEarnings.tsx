@@ -1,5 +1,6 @@
 "use client";
 
+import { EarningsSkeleton } from "@/components/decision/StockTabSkeletons";
 import {
   Bar,
   BarChart,
@@ -132,6 +133,7 @@ export default function StockEarnings({
         error={Boolean(resource.error)}
         empty={!rows.length}
         retry={resource.refresh}
+        skeleton={<EarningsSkeleton />}
       />
       {!!rows.length && (
         <>

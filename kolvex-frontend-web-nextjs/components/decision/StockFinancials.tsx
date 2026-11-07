@@ -1,5 +1,6 @@
 "use client";
 
+import { MetricChartCardSkeleton, StatementSkeleton } from "@/components/decision/StockTabSkeletons";
 import { useState, type ReactNode } from "react";
 import { Download, Plus, X, BarChart3, List } from "lucide-react";
 import {
@@ -259,6 +260,7 @@ export default function StockFinancials({
         )}
       </p>
       <FinancialState
+        skeleton={<StatementSkeleton />}
         loading={resource.loading}
         error={Boolean(resource.error)}
         empty={!periods.length}
@@ -455,6 +457,7 @@ export function StockMulticharts({
         </div>
       </div>
       <FinancialState
+        skeleton={<div className="grid gap-4 lg:grid-cols-2"><MetricChartCardSkeleton /><MetricChartCardSkeleton /></div>}
         loading={resource.loading}
         error={Boolean(resource.error)}
         empty={!periods.length}

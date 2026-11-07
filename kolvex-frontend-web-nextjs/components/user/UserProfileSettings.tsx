@@ -5,6 +5,7 @@
 "use client";
 
 import { ContentLoading } from "@/components/ui/content-loading";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useState, useEffect } from "react";
 import { useCurrentUserProfile } from "@/lib/api/userApi";
 import type { UserProfileUpdate } from "@/lib/api/userApi";
@@ -82,7 +83,13 @@ export default function UserProfileSettings() {
 
   if (loading) {
     return (
-      <ContentLoading variant="form" rows={3} className="p-8" />
+      <ContentLoading className="mx-auto min-h-0 max-w-4xl p-6">
+        <Skeleton className="mb-8 h-9 w-36 rounded-lg" />
+        {[3, 2, 1].map((fields, section) => <div key={section} className="mb-6 rounded-2xl border border-border p-6">
+          <Skeleton className="mb-4 h-6 w-24 rounded-md" />
+          <div className="space-y-4">{Array.from({ length: fields }, (_, i) => <div key={i}><Skeleton className="mb-2 h-4 w-16 rounded-md" /><Skeleton className="h-10 w-full rounded-full" /></div>)}</div>
+        </div>)}
+      </ContentLoading>
     );
   }
 

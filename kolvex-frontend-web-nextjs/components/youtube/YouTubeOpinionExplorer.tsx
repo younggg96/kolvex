@@ -1,7 +1,8 @@
 "use client";
 
 import { Skeleton } from "@/components/ui/skeleton";
-import { ContentLoading } from "@/components/ui/content-loading";
+import { ContentLoading, SkeletonRepeat } from "@/components/ui/content-loading";
+import { ChangeRowsSkeleton, CreatorRowsSkeleton, OpinionCardsSkeleton, StockDirectorySkeleton, VideoGroupsSkeleton } from "@/components/youtube/OpinionSkeletons";
 import { isProductFeatureEnabled } from "@/lib/productFeatures";
 
 import Link from "next/link";
@@ -821,6 +822,7 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
           {c("Load more stocks", "加载更多股票")} · {shownStocks.length}/{visibleStocks.length}
         </ListLoadMore>
       )}
+      {!visibleStocks.length && directoryActive && stockScope === "holdings" && held.loading && <StockDirectorySkeleton label={t("common.loadingStatus")} />}
       {!visibleStocks.length && !(directoryActive && stockScope === "holdings" && (held.loading || held.error)) && (
         <EmptyLine
           text={filtering ? t("youtubeOpinions.noStocksMatch") : t("youtubeOpinions.noStocksDiscussed")}
@@ -874,9 +876,6 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
 
   const initialLoading = !ready || (!inDetail ? !catalogue && !catalogueError : !context && !contextError && !detailError);
 
-  const loadingBlock = (
-    <ContentLoading label={t("common.loadingStatus")} />
-  );
 
   const changeList = (primary = false) => (
     <section aria-labelledby="creator-recent-shifts-title" className="min-w-0">
@@ -896,7 +895,7 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
       <ListCard>
         {(route.creator ? contextError : catalogueError) ? (
           <EmptyLine text={t("youtubeOpinions.directoryLoadFailed")} action={{ label: t("common.retry"), onClick: refresh }} alert />
-        ) : !(route.creator ? context : catalogue) ? loadingBlock : !notableChanges.length ? (
+        ) : !(route.creator ? context : catalogue) ? <ChangeRowsSkeleton label={t("common.loadingStatus")} /> : !notableChanges.length ? (
           <EmptyLine text={c("No opinion changes yet", "暂无观点变化")} />
         ) : (
           <ListRows aria-label={t("youtubeOpinions.recentShifts")}>
@@ -1083,7 +1082,18 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
                 <h2 className="mb-6 text-xl font-semibold tracking-tight md:text-2xl">
                   {inDetail ? title : c("YouTube opinions", "YouTube 观点")}
                 </h2>
-                <ContentLoading label={t("common.loadingStatus")} />
+                {inDetail ? <>
+                  <ContentLoading label={t("common.loadingStatus")} className="min-h-0"><div className="flex flex-wrap items-baseline gap-x-3 gap-y-2"><Skeleton className="h-7 w-28 rounded-lg" /><Skeleton className="h-4 w-48 rounded-md" /></div></ContentLoading>
+                  <ListCard className="mt-8"><VideoGroupsSkeleton /></ListCard>
+                </> : <div className={cn("grid min-w-0 gap-8", allStocks ? "mx-auto" : "xl:grid-cols-[minmax(0,1fr)_20rem] 2xl:gap-x-12")}>
+                  <ListCard>
+                    <div className="flex items-center gap-2"><SkeletonRepeat count={4}>{i => <Skeleton className={cn("h-9 rounded-full lg:h-10", i ? "w-16" : "w-12")} />}</SkeletonRepeat></div>
+                    <div className="mt-3 hidden items-center gap-2 lg:flex"><Skeleton className="h-11 w-64 rounded-full" /><Skeleton className="ml-auto h-11 w-36 rounded-xl" /></div>
+                    <div className="mt-3 border-b border-border px-2 py-3"><Skeleton className="h-3.5 w-1/3 rounded-md" /></div>
+                    {route.tab === "creators" ? <CreatorRowsSkeleton label={t("common.loadingStatus")} /> : <StockDirectorySkeleton label={t("common.loadingStatus")} />}
+                  </ListCard>
+                  {!allStocks && <div className="hidden xl:block"><div className="mb-3 flex min-h-14 flex-col justify-center gap-2"><Skeleton className="h-5 w-28 rounded-md" /><Skeleton className="h-3.5 w-40 rounded-md" /></div><ListCard><ChangeRowsSkeleton /></ListCard></div>}
+                </div>}
               </section>
             )}
             {!initialLoading && !inDetail && (
@@ -1163,7 +1173,7 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
                                   { value: "holdings", label: t("youtubeOpinions.directory.holdingsOnly") },
                                 ]}
                               />
-                              {stockScope === "holdings" && held.loading && <ContentLoading label={t("common.loadingStatus")} />}
+                              
                               {stockScope === "holdings" && held.error && <div role="alert" className="flex items-center gap-2 text-xs text-negative">{c("Holdings could not be loaded.", "暂时无法加载持仓。")}<Button size="xs" variant="outline" onClick={refresh}>{t("common.retry")}</Button></div>}
                             </div>
                           )}
@@ -1194,7 +1204,7 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
                             alert
                           />
                         ) : !catalogue ? (
-                          loadingBlock
+                          route.tab === "creators" ? <CreatorRowsSkeleton label={t("common.loadingStatus")} /> : <StockDirectorySkeleton label={t("common.loadingStatus")} />
                         ) : (
                           <>
                             <TabsContent value="stocks" className="mt-0">
@@ -1238,7 +1248,7 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
                       </div>
                     </header>
                     <ListCard>
-                      {catalogueError ? <EmptyLine text={t("youtubeOpinions.directoryLoadFailed")} action={{ label: t("common.retry"), onClick: refresh }} alert /> : !catalogue ? <ContentLoading label={t("common.loadingStatus")} /> : catalogue.latest_videos?.length ? (
+                      {catalogueError ? <EmptyLine text={t("youtubeOpinions.directoryLoadFailed")} action={{ label: t("common.retry"), onClick: refresh }} alert /> : !catalogue ? <VideoGroupsSkeleton showCreator label={t("common.loadingStatus")} /> : catalogue.latest_videos?.length ? (
                         <ListRows aria-label={c("Latest creator videos", "博主最新视频")}>
                           {catalogue.latest_videos.map((group) => (
                             <li key={group.videoId} className={cn(listFeedGroupRowClass, "py-4 first:pt-1")}>
@@ -1268,7 +1278,7 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
                       )}
                     </header>
                     <ListCard>
-                      {held.loading ? loadingBlock : held.error ? (
+                      {held.loading ? <ContentLoading label={t("common.loadingStatus")} className="min-h-0"><SkeletonRepeat count={4}>{() => <div className={cn(listCompactRowClass, "hover:bg-transparent")}><Skeleton className="h-4 w-12 rounded-md" /><Skeleton className="h-4 w-16 rounded-md" /></div>}</SkeletonRepeat></ContentLoading> : held.error ? (
                         <EmptyLine text={t("research.holdingsUnavailable")} />
                       ) : !held.tickers.length ? (
                         <p className="px-1 py-2 text-sm leading-6 text-muted-foreground">
@@ -1385,7 +1395,7 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
                         alert
                       />
                     ) : !context ? (
-                      loadingBlock
+                      <ContentLoading label={t("common.loadingStatus")} className="mt-4 min-h-0"><div className="flex flex-wrap items-baseline gap-x-3 gap-y-2"><Skeleton className="h-7 w-28 rounded-lg" /><Skeleton className="h-4 w-48 rounded-md" /></div></ContentLoading>
                     ) : focused ? (
                       <div className="mt-4 flex flex-wrap items-baseline gap-x-3 gap-y-1" aria-live="polite">
                         <p className={cn("text-xl font-semibold tracking-[-0.01em]", toneText[headline.tone])}>
@@ -1520,7 +1530,7 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
                       <ListCard>
                         {contextError ? (
                           <EmptyLine text={t("youtubeOpinions.opinionsLoadFailed")} action={{ label: t("common.retry"), onClick: refresh }} alert />
-                        ) : !context ? loadingBlock : latestCreatorOpinions.length ? (
+                        ) : !context ? <OpinionCardsSkeleton label={t("common.loadingStatus")} /> : latestCreatorOpinions.length ? (
                           <ListRows aria-label={c("Latest opinions", "最新观点")}>
                             {latestCreatorOpinions.map((opinion) => (
                               <li key={opinion.id} className={listFeedRowClass}>
@@ -1566,7 +1576,7 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
                       </div>}
                     </header>
                     <ListCard>
-                      {loading ? loadingBlock : (
+                      {loading ? (videoView ? <VideoGroupsSkeleton label={t("common.loadingStatus")} /> : <OpinionCardsSkeleton label={t("common.loadingStatus")} />) : (
                         <>
                           {detailError && (
                             <EmptyLine
@@ -1625,7 +1635,7 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
                                 ))}
                           </ListRows>}
                           {hasMore && (
-                            <ListLoadMore onClick={loadMore} loading={moreLoading}>
+                            <ListLoadMore onClick={loadMore} loading={moreLoading} skeleton={videoView ? <VideoGroupsSkeleton rows={2} /> : <OpinionCardsSkeleton rows={2} />}>
                               {t("youtubeOpinions.loadMoreOpinions")}
                             </ListLoadMore>
                           )}
@@ -1695,7 +1705,7 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
                           )}
                           <div id="creator-discussed-stocks">{contextError ? (
                             <EmptyLine text={t("youtubeOpinions.directoryLoadFailed")} action={{ label: t("common.retry"), onClick: refresh }} alert />
-                          ) : context ? stockRows(true, true) : loadingBlock}</div>
+                          ) : context ? stockRows(true, true) : <StockDirectorySkeleton narrow rows={5} label={t("common.loadingStatus")} />}</div>
                           {(context?.stocks.length || 0) > 5 && (
                             <ListLoadMore
                               aria-expanded={showAllCreatorStocks}
@@ -1721,7 +1731,7 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
                         <ListCard>
                           {contextError ? (
                             <EmptyLine text={t("youtubeOpinions.directoryLoadFailed")} action={{ label: t("common.retry"), onClick: refresh }} alert />
-                          ) : context ? creatorRows(context.creators, true) : loadingBlock}
+                          ) : context ? creatorRows(context.creators, true) : <CreatorRowsSkeleton rows={5} label={t("common.loadingStatus")} />}
                         </ListCard>
                       </section>
                     )}

@@ -1,4 +1,5 @@
 "use client";
+import { AnalystSkeleton } from "@/components/decision/StockTabSkeletons";
 import { useCachedResource } from "@/hooks/useCachedResource";
 import { useStockQuote } from "@/hooks/useStockData";
 import {
@@ -101,6 +102,7 @@ export default function StockAnalyst({
         error={Boolean(resource.error)}
         empty={!resource.loading && !resource.error && empty}
         retry={resource.refresh}
+        skeleton={<AnalystSkeleton />}
       />
       {data && !empty && (
         <div className="grid gap-4 xl:grid-cols-2">

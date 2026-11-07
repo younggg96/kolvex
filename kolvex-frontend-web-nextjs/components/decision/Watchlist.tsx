@@ -9,7 +9,9 @@ import DashboardLayout from "@/components/layout/DashboardLayout";
 import CompanyLogo from "@/components/ui/company-logo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ContentLoading, PendingValue } from "@/components/ui/content-loading";
+import { PendingValue } from "@/components/ui/content-loading";
+import { Skeleton } from "@/components/ui/skeleton";
+import { StockRowsSkeleton } from "@/components/decision/StockRowsSkeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ListCard, ListColumnHeader, ListLoadMore, ListRow, ListRows, listRowTargetClass } from "@/components/ui/list-card";
 import { useWatchlist } from "@/hooks/useWatchlist";
@@ -104,7 +106,7 @@ export default function Watchlist() {
           <p id="watchlist-ticker-help" role={invalid ? "alert" : undefined} className={`text-xs ${invalid ? "text-negative" : "text-muted-foreground"}`}>{invalid ? c("Enter a valid symbol, e.g. AAPL or BRK-B.", "请输入有效的股票代码，如 AAPL、BRK-B。") : c("Shared with your Reddit follows and synced to your account.", "与 Reddit 关注共用，登录后同步到账号。")}</p>
         </form>
         <WatchlistStatus />
-        {!ready ? <ContentLoading label={c("Loading Watchlist", "正在加载自选股")} /> : (!userId || error) && !watchlist.length ? null : !watchlist.length ? <div className="glass-card bg-card-glass rounded-3xl border border-foreground/10 py-16 text-center">
+        {!ready ? <WatchlistCardSkeleton /> : (!userId || error) && !watchlist.length ? null : !watchlist.length ? <div className="glass-card bg-card-glass rounded-3xl border border-foreground/10 py-16 text-center">
           <Star className="mx-auto h-8 w-8 text-muted-foreground" aria-hidden="true" /><h2 className="mt-4 text-lg font-semibold">{c("Your Watchlist starts here", "从第一只自选股开始")}</h2><p className="mx-auto mt-2 max-w-sm px-4 text-sm leading-6 text-muted-foreground">{c("Add a symbol above, or use the star beside a stock in Markets.", "在上方输入代码，或点击行情列表中股票旁的星标。")}</p><Button asChild variant="outline" className="mt-6"><Link href="/dashboard">{c("Browse Markets", "浏览行情")}</Link></Button>
         </div> : <section aria-label={c("Saved stocks", "已添加的股票")} className="space-y-3">
           <ListCard>
@@ -146,6 +148,37 @@ export default function Watchlist() {
           </ListCard>
           <p className="text-xs leading-5 text-muted-foreground">{c("Prices use the existing market data source and may be delayed. Unavailable quotes show a dash.", "报价来自现有行情数据源，可能存在延迟；缺失报价显示为横线。")}</p>
         </section>}
+      </div>
+    </main>
+  </DashboardLayout>;
+}
+
+/** Saved-stocks card placeholder: search/sort controls, count line, column header and stock rows. */
+function WatchlistCardSkeleton() {
+  const c = useCopy();
+  return <ListCard aria-busy="true">
+    <div className="flex items-center justify-between gap-3 lg:grid lg:grid-cols-[minmax(0,1fr)_12rem]">
+      <Skeleton className="h-3.5 w-20 rounded-md lg:hidden" />
+      <div className="hidden lg:block"><Skeleton className="mb-2 h-3.5 w-24 rounded-md" /><Skeleton className="h-11 rounded-xl" /></div>
+      <div className="w-40 shrink-0 lg:w-auto"><Skeleton className="mb-2 hidden h-3.5 w-10 rounded-md lg:block" /><Skeleton className="h-11 rounded-xl" /></div>
+    </div>
+    <div className="mt-3 flex justify-between"><Skeleton className="hidden h-3.5 w-20 rounded-md lg:block" /><Skeleton className="h-3.5 w-40 rounded-md" /></div>
+    <div className="mt-3">
+      <div aria-hidden="true" className="border-b border-border px-2 py-3"><Skeleton className="h-3.5 w-1/3 rounded-md" /></div>
+      <StockRowsSkeleton grid={ROW_GRID} trendClass="hidden min-[400px]:block" label={c("Loading Watchlist", "正在加载自选股")} />
+    </div>
+  </ListCard>;
+}
+
+/** Route fallback in the Watchlist frame: heading, add-stock form, then the saved-stocks card. */
+export function WatchlistPageSkeleton({ noTransition = false }: { noTransition?: boolean }) {
+  const c = useCopy();
+  return <DashboardLayout title={c("Watchlist", "自选股")} noTransition={noTransition}>
+    <main className="flex-1 overflow-y-auto">
+      <div className="mx-auto max-w-6xl space-y-6 px-[16px] pb-16 pt-6 md:px-8 md:pt-8">
+        <div className="flex items-start justify-between gap-4"><div className="flex flex-col gap-3"><Skeleton className="h-8 w-28 rounded-lg sm:h-9" /><Skeleton className="h-4 w-60 rounded-md" /></div><Skeleton className="h-11 w-11 rounded-full" /></div>
+        <div className="space-y-2"><Skeleton className="h-4 w-20 rounded-md" /><div className="flex gap-2"><Skeleton className="h-11 flex-1 rounded-xl" /><Skeleton className="h-11 w-20 rounded-full" /></div><Skeleton className="h-3 w-64 rounded-md" /></div>
+        <WatchlistCardSkeleton />
       </div>
     </main>
   </DashboardLayout>;

@@ -27,6 +27,7 @@ wheels/
 .env
 .venv
 .venv-mcp/
+.venv-forecast/
 .env.local
 .env.*.local
 

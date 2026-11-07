@@ -3,7 +3,6 @@ import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { ContentLoading } from "@/components/ui/content-loading";
 import { cn } from "@/lib/utils";
 
 /** Drops the card surface below 768px so a list sits directly on the page, between its gutters. */
@@ -141,17 +140,18 @@ export const listFeedRowClass =
  */
 export const listFeedGroupRowClass = cn(listFeedRowClass, "list-row-group");
 
-/** Centered "load more" footer of a list card. While `loading`, skeleton rows stand in for the next page and the button is disabled. */
+/** Centered "load more" footer of a list card. While `loading`, `skeleton` (rows shaped like the list's own) stands in for the next page and the button is disabled. */
 export function ListLoadMore({
   className,
   children,
   loading = false,
+  skeleton,
   disabled,
   ...props
-}: React.ComponentProps<typeof Button> & { loading?: boolean }) {
+}: React.ComponentProps<typeof Button> & { loading?: boolean; skeleton?: React.ReactNode }) {
   return (
     <>
-      {loading && <ContentLoading rows={2} className="min-h-0 pt-4" />}
+      {loading && skeleton}
       <div className="flex justify-center py-4">
         <Button
           variant="outline"

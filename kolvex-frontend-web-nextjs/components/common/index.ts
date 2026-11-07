@@ -2,7 +2,6 @@ export * from "./EmptyState";
 export { default as ExpandableText } from "./ExpandableText";
 export * from "./FilterSheet";
 export { default as ImageGallery } from "./ImageGallery";
-export * from "./LoadingSkeleton";
 export { default as LogoIcon } from "./LogoIcon";
 export * from "./PageTransition";
 export { default as SearchWithAutocomplete } from "./SearchWithAutocomplete";

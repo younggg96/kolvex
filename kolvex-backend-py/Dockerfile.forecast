@@ -1,0 +1,13 @@
+FROM python:3.11-slim
+WORKDIR /app
+ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 HF_HOME=/app/hf-cache
+RUN pip install --no-cache-dir torch==2.15.0 --index-url https://download.pytorch.org/whl/cpu
+COPY requirements-forecast.txt .
+RUN pip install --no-cache-dir -r requirements-forecast.txt
+COPY forecast_service ./forecast_service
+# Bake the weights into the image so cold starts don't hit Hugging Face.
+RUN python -c "from forecast_service.engine import get_predictor; get_predictor()"
+RUN useradd --create-home forecast && chown -R forecast /app/hf-cache
+USER forecast
+EXPOSE 8090
+CMD ["python", "-m", "forecast_service"]

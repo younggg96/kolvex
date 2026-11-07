@@ -9,6 +9,7 @@ import DashboardLayout from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import CompanyLogo from "@/components/ui/company-logo";
 import { ContentLoading } from "@/components/ui/content-loading";
+import { Skeleton } from "@/components/ui/skeleton";
 import { ListCard, ListEmptyState, ListRow, ListRows, listRowTargetClass } from "@/components/ui/list-card";
 import { SegmentedControl } from "@/components/ui/segmented-control";
 import CreatorAvatar from "@/components/youtube/CreatorAvatar";
@@ -298,7 +299,10 @@ export default function SearchPage() {
               return <ResultRow key={report.id} {...item} leading={<span aria-hidden><CompanyLogo symbol={report.ticker} customSize={32} /></span>} onOpen={() => remember(item)} />;
             })}</Section>}
 
-            {!hasResults && (catalogueLoading || researchPending) && <ContentLoading className="mt-7 min-h-48" />}
+            {!hasResults && (catalogueLoading || researchPending) && <ContentLoading className="min-h-0">{[4, 3].map((rows, section) => <section key={section} className="mt-7">
+              <Skeleton className="mb-3 h-6 w-20 rounded-md" />
+              <ListCard>{Array.from({ length: rows }, (_, i) => <div key={i} className={cn(listRowTargetClass, "flex gap-3")}><Skeleton className="h-8 w-8 shrink-0 rounded-full" /><span className="flex min-w-0 flex-1 flex-col gap-2"><Skeleton className="h-4 w-16 rounded-md" /><Skeleton className={cn("h-3 rounded-md", i % 2 ? "w-28" : "w-40")} /></span></div>)}</ListCard>
+            </section>)}</ContentLoading>}
             {!catalogueLoading && !researchPending && !researchFailed && !hasResults && <div className="mt-7"><ListCard><ListEmptyState
               title={c("No results found", "没有找到结果")}
               description={filter === "all" ? c(`Nothing found for “${value.trim()}”. Try a ticker or company name.`, `没有找到“${value.trim()}”。试试股票代码或公司名称。`) : c("Nothing in this category. Switch to All to see other results.", "这个分类下没有结果，切换到“全部”看看其他内容。")}

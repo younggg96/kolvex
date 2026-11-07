@@ -1568,6 +1568,18 @@
       "collapse": "Collapse",
       "expandAria": "Expand {ticker} details",
       "collapseAria": "Collapse {ticker} details"
+    },
+    "forecast": {
+      "toggle": "Forecast",
+      "hint": "Experimental Kronos model forecast of the next 20 bars",
+      "title": "Kronos forecast · {days} bars",
+      "summary": "median {median} · P10–P90 {low} to {high} · P(up) {up}",
+      "disclaimer": "Experimental model output. In backtests it mostly reverts to the recent average and does not predict direction. Not investment advice.",
+      "errors": {
+        "not_configured": "Forecast service is not configured.",
+        "unauthorized": "Sign in to see the forecast.",
+        "unavailable": "Forecast unavailable right now."
+      }
     }
   },
   "research": {

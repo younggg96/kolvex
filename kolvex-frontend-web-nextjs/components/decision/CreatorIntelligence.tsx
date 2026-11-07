@@ -77,9 +77,20 @@ export default function CreatorIntelligence({
       action={<TextLink href={`/dashboard/youtube-opinions?tab=stocks&stock=${encodeURIComponent(ticker)}`}>{c("Full record", "完整记录")}</TextLink>}
     >
       {loading ? (
-        <div className="pt-5" role="status" aria-label={t("common.loadingStatus")}>
-          <div className="creator-opinion-groups grid gap-4">{groups.map((group) => <div key={group.side} className="space-y-4 rounded-3xl border border-foreground/10 glass-card bg-card-glass p-4"><Skeleton className="h-6 w-24" /><Skeleton className="h-12 w-full" /><Skeleton className="h-12 w-full" /></div>)}</div>
-          <Skeleton className="mt-8 h-28 w-full" />
+        <div className="mt-5" role="status" aria-label={t("common.loadingStatus")}>
+          <div aria-hidden="true" className="creator-opinion-groups grid items-start gap-4">{groups.map((group) => <div key={group.side} className="min-w-0 rounded-3xl border border-foreground/10 glass-card bg-card-glass">
+            <div className="flex items-center justify-between gap-2 border-b border-border px-4 py-4"><span className="flex items-center gap-2"><Skeleton className="h-2 w-2 rounded-full" /><Skeleton className="h-4 w-12 rounded-md" /></span><Skeleton className="h-3 w-14 rounded-md" /></div>
+            <div className="divide-y divide-border">{[0, 1].map((i) => <div key={i} className="px-4 py-4">
+              <span className="flex items-start gap-2.5"><Skeleton className="h-7 w-7 shrink-0 rounded-full" /><span className="flex flex-1 flex-col gap-1.5"><Skeleton className="h-4 w-24 rounded-md" /><Skeleton className="h-3 w-16 rounded-md" /></span></span>
+              <div className="mt-3 space-y-2"><Skeleton className="h-4 w-full rounded-md" /><Skeleton className="h-4 w-3/4 rounded-md" /></div>
+              <span className="mt-3 flex justify-between"><Skeleton className="h-3 w-16 rounded-md" /><Skeleton className="h-3.5 w-3.5 rounded" /></span>
+            </div>)}</div>
+          </div>)}</div>
+          <div aria-hidden="true" className="mt-8">
+            <div className="flex items-baseline justify-between gap-3"><Skeleton className="h-5 w-28 rounded-md" /><Skeleton className="h-3 w-40 rounded-md" /></div>
+            <div className="mt-4 flex gap-0 overflow-hidden pb-2">{[0, 1, 2, 3, 4, 5].map((i) => <div key={i} className="relative w-32 shrink-0"><span className="absolute left-0 right-0 top-5 h-px bg-border" /><div className="relative flex flex-col gap-2 pt-3"><Skeleton className="h-4 w-4 rounded-full" /><Skeleton className="h-3.5 w-16 rounded-md" /><Skeleton className="h-3 w-10 rounded-md" /></div></div>)}</div>
+            <div className="mt-4 flex gap-2">{[0, 1].map((i) => <Skeleton key={i} className="h-11 w-32 rounded-full" />)}</div>
+          </div>
         </div>
       ) : error ? (
         <div role="alert"><Empty action={onRetry && <Button variant="outline" size="sm" onClick={onRetry}>{t("common.retry")}</Button>}>{c("Creator opinions could not be loaded.", "暂时无法加载博主观点。")}</Empty></div>

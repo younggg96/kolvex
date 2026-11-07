@@ -274,10 +274,22 @@ export default function StockOptionsChain({ symbol }: { symbol: string }) {
       </div>
 
       {loading && !chain ? (
-        <div role="status" className="space-y-4">
+        <div role="status">
           <span className="sr-only">{c("Loading options…", "正在加载期权…")}</span>
-          <Skeleton className="h-20 w-full" />
-          <Skeleton className="h-96 w-full rounded-3xl" />
+          <div aria-hidden="true" className="space-y-6">
+            {[0, 1].map((group) => <div key={group} className="grid grid-cols-2 gap-6 border-b border-border pb-6 lg:grid-cols-4">
+              {[0, 1, 2, 3].map((i) => <div key={i}><Skeleton className="h-3 w-24 rounded-md" /><Skeleton className="mt-2 h-6 w-20 rounded-md" /></div>)}
+            </div>)}
+            <div className="flex flex-wrap items-center gap-2"><Skeleton className="h-9 w-48 rounded-full" /><Skeleton className="h-9 w-40 rounded-full" /></div>
+            <div className="overflow-hidden rounded-3xl border border-foreground/10">
+              <div className="flex justify-around bg-muted px-3 py-3"><Skeleton className="h-4 w-16 rounded-md" /><Skeleton className="h-4 w-12 rounded-md" /><Skeleton className="h-4 w-16 rounded-md" /></div>
+              {Array.from({ length: 10 }, (_, i) => <div key={i} className="grid grid-cols-[1fr_1fr_1fr_5rem_1fr_1fr_1fr] items-center gap-3 border-t border-border px-3 py-3">
+                {[0, 1, 2].map((j) => <Skeleton key={j} className="ml-auto h-4 w-12 rounded-md" />)}
+                <Skeleton className="mx-auto h-4 w-14 rounded-md" />
+                {[0, 1, 2].map((j) => <Skeleton key={j} className="ml-auto h-4 w-12 rounded-md" />)}
+              </div>)}
+            </div>
+          </div>
         </div>
       ) : failure && !chain ? (
         <div

@@ -1,6 +1,5 @@
 "use client";
 
-import { ContentLoading } from "@/components/ui/content-loading";
 import Link from "next/link";
 import { useState } from "react";
 import { loadClientCache, peekClientCache } from "@/lib/clientCache";
@@ -71,17 +70,17 @@ export default function CreatorProfileDialog({ creator, onLoaded, compact = fals
             <Badge variant="outline">{current.profile_source === "youtube" ? t("youtubeOpinions.profile.sourceYoutube") : t("youtubeOpinions.profile.sourceImported")}</Badge>
             {current.channel_url && /^https:\/\/www\.youtube\.com\//.test(current.channel_url) && <a href={current.channel_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-xs text-primary">{t("youtubeOpinions.profile.openChannel")}<ExternalLink className="h-3.5 w-3.5" /></a>}
           </div>
-          {loading && <ContentLoading variant="text" label={t("youtubeOpinions.profile.loading")} />}
+          {loading && <span role="status" className="sr-only">{t("youtubeOpinions.profile.loading")}</span>}
           {(error || (profile && profile.profile_status !== "available")) && <p role="status" className="text-sm text-muted-foreground">{error || t("youtubeOpinions.profile.unavailableImported")}</p>}
           <div className="grid grid-cols-2 gap-x-5 gap-y-6 border-y border-border py-5 sm:grid-cols-4">
             {statistics.map(([label, value]) => <div key={label}><p className="text-xs text-muted-foreground">{label}</p><div className="mt-2 text-xl font-medium tabular-nums" aria-busy={loading && !profile}>{loading && !profile ? <Skeleton className="h-7 w-16" /> : value}</div></div>)}
           </div>
-          <div className="space-y-2"><h3 className="text-sm font-medium">{t("youtubeOpinions.profile.about")}</h3>{loading && !current.description ? <Skeleton className="h-16 w-full" /> : <p className="max-h-48 overflow-y-auto whitespace-pre-wrap break-words text-sm leading-relaxed text-muted-foreground">{current.description || t("youtubeOpinions.profile.noDescription")}</p>}</div>
+          <div className="space-y-2"><h3 className="text-sm font-medium">{t("youtubeOpinions.profile.about")}</h3>{loading && !current.description ? <div aria-hidden="true" className="space-y-2 py-0.5"><Skeleton className="h-4 w-full rounded-md" /><Skeleton className="h-4 w-full rounded-md" /><Skeleton className="h-4 w-2/3 rounded-md" /></div> : <p className="max-h-48 overflow-y-auto whitespace-pre-wrap break-words text-sm leading-relaxed text-muted-foreground">{current.description || t("youtubeOpinions.profile.noDescription")}</p>}</div>
           <div className="flex flex-wrap gap-x-5 gap-y-2 text-xs text-muted-foreground">
             {current.country && <span>{t("youtubeOpinions.profile.country")}: {current.country}</span>}
             {current.channel_published_at && Number.isFinite(Date.parse(current.channel_published_at)) && <span>{t("youtubeOpinions.profile.created")}: {new Intl.DateTimeFormat(intlLocale, { dateStyle: "medium" }).format(new Date(current.channel_published_at))}</span>}
           </div>
-          <div className="flex flex-wrap gap-2">{current.top_tickers.map(stock => <Link key={stock.ticker} href={marketStockHref(stock.ticker)} aria-label={t("redditOpinions.openStock", { ticker: stock.ticker })} className="rounded-full underline-offset-4 hover:underline focus-visible:outline-none "><Badge variant="secondary" className="gap-2"><span aria-hidden="true"><CompanyLogo symbol={stock.ticker} size="sm" /></span>{stock.ticker}</Badge></Link>)}</div>
+          <div className="flex flex-wrap gap-2">{loading && !current.top_tickers.length && [0, 1, 2].map(i => <Skeleton key={i} aria-hidden="true" className="h-7 w-20 rounded-full" />)}{current.top_tickers.map(stock => <Link key={stock.ticker} href={marketStockHref(stock.ticker)} aria-label={t("redditOpinions.openStock", { ticker: stock.ticker })} className="rounded-full underline-offset-4 hover:underline focus-visible:outline-none "><Badge variant="secondary" className="gap-2"><span aria-hidden="true"><CompanyLogo symbol={stock.ticker} size="sm" /></span>{stock.ticker}</Badge></Link>)}</div>
           {current.profile_source === "youtube" && <p className="text-xs text-muted-foreground">{t("youtubeOpinions.profile.subscriberNote")}</p>}
         </div>
       </DialogContent>

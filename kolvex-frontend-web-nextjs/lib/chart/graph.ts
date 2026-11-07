@@ -116,7 +116,12 @@ export function priceTickValues(lo: number, hi: number, target = 5): number[] {
 }
 
 /** Padded y domain so the line never touches the top tag or the zero baseline. */
-export function priceDomain(bars: Array<{ close: number }>, view: GraphView): { lo: number; hi: number } {
+export function priceDomain(
+  bars: Array<{ close: number }>,
+  view: GraphView,
+  /** Extra prices the scale must include, e.g. a forecast band past the last bar. */
+  extent?: { lo: number; hi: number } | null,
+): { lo: number; hi: number } {
   const first = Math.max(Math.floor(view.start), 0);
   const last = Math.min(Math.ceil(view.end) - 1, bars.length - 1);
   let lo = Infinity;
@@ -128,6 +133,10 @@ export function priceDomain(bars: Array<{ close: number }>, view: GraphView): { 
     hi = Math.max(hi, close);
   }
   if (!Number.isFinite(lo)) return { lo: 0, hi: 1 };
+  if (extent) {
+    lo = Math.min(lo, extent.lo);
+    hi = Math.max(hi, extent.hi);
+  }
   const pad = (hi - lo || hi * 0.01 || 1) * 0.12;
   return { lo: lo - pad, hi: hi + pad };
 }

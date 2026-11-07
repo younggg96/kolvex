@@ -2,7 +2,6 @@
 
 import type { ReactNode } from "react";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
 import { useCachedResource } from "@/hooks/useCachedResource";
 import { secSourceUrl } from "@/lib/freeResearch";
 import { loadFundamentals } from "@/lib/stockFundamentals";
@@ -26,6 +25,7 @@ export function SecState({
   error,
   empty,
   retry,
+  skeleton,
   emptyText,
   errorText,
 }: {
@@ -33,16 +33,17 @@ export function SecState({
   error: unknown;
   empty: boolean;
   retry: () => void;
+  /** Placeholder in the shape of the content this state stands in for. */
+  skeleton: React.ReactNode;
   emptyText: string;
   errorText: string;
 }) {
   const c = useCopy();
   if (loading)
     return (
-      <div role="status" className="space-y-4 py-4">
+      <div role="status">
         <span className="sr-only">{c("Loading…", "正在加载…")}</span>
-        <Skeleton className="h-6 w-48" />
-        <Skeleton className="h-48 w-full" />
+        <div aria-hidden="true">{skeleton}</div>
       </div>
     );
   const failed = Boolean(error) && !isMissing(error);

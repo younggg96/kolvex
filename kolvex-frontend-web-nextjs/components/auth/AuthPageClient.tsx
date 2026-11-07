@@ -4,11 +4,10 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import AuthForm from "@/components/auth/AuthForm";
-import AuthLayout from "@/components/auth/AuthLayout";
+import AuthLayout, { AuthLayoutSkeleton } from "@/components/auth/AuthLayout";
 import { createClient } from "@/lib/supabase/client";
 import { getAuthRedirect } from "@/lib/supabase/redirect";
 import { useTranslation } from "@/lib/i18n";
-import { ContentLoading } from "@/components/ui/content-loading";
 
 type AuthMode = "login" | "signup";
 
@@ -152,12 +151,7 @@ export default function AuthPageClient() {
   // Show loading state while processing OAuth
   if (isProcessingOAuth) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
-        <div className="flex w-full max-w-sm flex-col gap-6 px-6">
-          <p className="text-center text-lg text-muted-foreground" aria-hidden="true">{t("auth.completingSignIn")}</p>
-          <ContentLoading variant="form" label={t("auth.completingSignIn")} className="animate-none" />
-        </div>
-      </div>
+      <AuthLayoutSkeleton label={t("auth.completingSignIn")} />
     );
   }
 

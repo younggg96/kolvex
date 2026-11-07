@@ -6,6 +6,7 @@ import { ChevronRight, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ContentLoading } from "@/components/ui/content-loading";
+import { Skeleton } from "@/components/ui/skeleton";
 import { ListEmptyState, ListFooterLink } from "@/components/ui/list-card";
 import { SegmentedControl } from "@/components/ui/segmented-control";
 import { SourceNote } from "@/components/decision/SecData";
@@ -101,17 +102,16 @@ export default function SuperinvestorsDirectory() {
   return (
     <div className="space-y-8 md:space-y-10">
       {loading && !data ? (
-        <div className="space-y-2">
-          <ContentLoading
-            className="min-h-48"
-            label={c("Reading the latest 13F filings from the SEC…", "正在从 SEC 读取最新 13F 申报…")}
-          />
-          <p className="text-center text-xs text-muted-foreground">
+        <div className="space-y-6">
+          <p className="text-xs text-muted-foreground">
             {c(
               "The first load reads each investor's filings from the SEC and can take a little while.",
               "首次加载需要从 SEC 逐一读取申报，可能稍慢。",
             )}
           </p>
+          <ContentLoading className="min-h-0" label={c("Reading the latest 13F filings from the SEC…", "正在从 SEC 读取最新 13F 申报…")}>
+            <DirectorySkeleton />
+          </ContentLoading>
         </div>
       ) : error && !data ? (
         <Card className="px-5 py-2">
@@ -404,4 +404,35 @@ function InvestorCard({ entry }: { entry: Loaded }) {
       <ChangeBreakdown compact changes={summary.changes} className="mt-auto border-t border-border pt-3" />
     </Link>
   );
+}
+
+/** Mirrors the loaded directory: the lead card (summary + top holdings) and one group of investor cards. */
+function DirectorySkeleton() {
+  return <div className="space-y-8 md:space-y-10">
+    <Card className="grid gap-6 p-5 md:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] md:gap-8 md:p-6">
+      <div className="flex min-w-0 flex-col gap-6">
+        <div className="flex items-start gap-3"><Skeleton className="h-12 w-12 shrink-0 rounded-full" /><div className="flex flex-1 flex-col gap-2"><Skeleton className="h-3 w-28 rounded-md" /><Skeleton className="h-6 w-48 rounded-md" /><Skeleton className="h-3 w-36 rounded-md" /></div></div>
+        <div className="grid grid-cols-3 gap-4">{[0, 1, 2].map(i => <div key={i} className="flex flex-col gap-2"><Skeleton className="h-3 w-16 rounded-md" /><Skeleton className="h-6 w-20 rounded-md" /></div>)}</div>
+        <div className="space-y-2"><div className="flex justify-between"><Skeleton className="h-3 w-32 rounded-md" /><Skeleton className="h-3 w-10 rounded-md" /></div><Skeleton className="h-2 w-full rounded-full" /></div>
+        <div className="space-y-2 border-t border-border pt-4"><Skeleton className="h-3 w-20 rounded-md" /><Skeleton className="h-4 w-56 rounded-md" /></div>
+      </div>
+      <div className="flex min-w-0 flex-col md:border-l md:border-border md:pl-8">
+        <Skeleton className="h-3 w-24 rounded-md" />
+        <div className="mt-2">{[0, 1, 2, 3, 4].map(i => <div key={i} className="grid min-h-12 grid-cols-[2rem_minmax(0,1fr)_auto] items-center gap-3 border-b border-border py-2 last:border-0">
+          <Skeleton className="h-3 w-5 rounded" /><Skeleton className={cn("h-4 rounded-md", i % 2 ? "w-28" : "w-40")} /><span className="flex flex-col items-end gap-1.5"><Skeleton className="h-4 w-12 rounded-md" /><Skeleton className="h-3 w-14 rounded-md" /></span>
+        </div>)}</div>
+      </div>
+    </Card>
+    <div className="space-y-6">
+      <div className="flex items-end justify-between gap-3"><div className="flex flex-col gap-2"><Skeleton className="h-6 w-40 rounded-md" /><Skeleton className="h-3 w-56 rounded-md" /></div><Skeleton className="h-11 w-44 rounded-full" /></div>
+      <div className="space-y-3">
+        <div className="flex justify-between border-b border-border pb-2"><Skeleton className="h-4 w-24 rounded-md" /><Skeleton className="h-3 w-12 rounded-md" /></div>
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">{[0, 1, 2, 3, 4, 5].map(i => <div key={i} className="flex flex-col gap-4 rounded-3xl border border-foreground/10 p-4 sm:p-5">
+          <div className="flex items-start gap-3"><Skeleton className="h-10 w-10 shrink-0 rounded-full" /><div className="flex flex-1 flex-col gap-1.5"><Skeleton className={cn("h-4 rounded-md", i % 2 ? "w-28" : "w-36")} /><Skeleton className="h-3 w-24 rounded-md" /></div></div>
+          <div className="flex items-end justify-between"><div className="flex flex-col gap-1.5"><Skeleton className="h-6 w-20 rounded-md" /><Skeleton className="h-3 w-16 rounded-md" /></div><div className="flex flex-col items-end gap-1.5"><Skeleton className="h-4 w-8 rounded-md" /><Skeleton className="h-3 w-10 rounded-md" /></div></div>
+          <div className="space-y-2"><Skeleton className="h-1.5 w-full rounded-full" /><Skeleton className="h-3 w-3/4 rounded-md" /></div>
+        </div>)}</div>
+      </div>
+    </div>
+  </div>;
 }

@@ -167,10 +167,23 @@ export default function MacroIndicators({ toolbar }: { toolbar: HTMLElement | nu
       {error === 401 && <Button asChild variant="outline" size="sm" className="mb-4 rounded-full"><Link href="/auth?redirectTo=%2Fdashboard%3Ftab%3Dmacro">{c("Sign in", "重新登录")}</Link></Button>}
       {isPhone ? (
         <ul className="mt-4 rounded-3xl border border-foreground/10 glass-card bg-card-glass px-3" aria-busy={loading}>
-          {loading && !snapshot ? Array.from({ length: 8 }, (_, index) => <li key={index} className="py-3"><Skeleton className="h-10 w-full" /></li>) : snapshot?.indicators.map((indicator) => <IndicatorRow key={indicator.id} indicator={error && indicator.value !== null ? { ...indicator, status: "stale" } : indicator} years={years} locale={intlLocale} />)}
+          {loading && !snapshot ? Array.from({ length: 8 }, (_, index) => <li key={index} aria-hidden="true" className="border-b border-border/60 last:border-b-0"><div className="grid min-h-16 grid-cols-[minmax(0,1fr)_3.5rem_minmax(5rem,auto)_1rem] items-center gap-2 py-2">
+            <span className="flex flex-col gap-1.5"><Skeleton className={cn("h-4 rounded-md", index % 2 ? "w-24" : "w-32")} /><Skeleton className="h-3 w-20 rounded-md" /></span>
+            <Skeleton className="h-8 w-full rounded-lg" />
+            <span className="flex flex-col items-end gap-1.5"><Skeleton className="h-5 w-14 rounded-md" /><Skeleton className="h-3 w-10 rounded-md" /></span>
+            <Skeleton className="h-3.5 w-3.5 rounded" />
+          </div></li>) : snapshot?.indicators.map((indicator) => <IndicatorRow key={indicator.id} indicator={error && indicator.value !== null ? { ...indicator, status: "stale" } : indicator} years={years} locale={intlLocale} />)}
         </ul>
       ) : <div className="mt-4 grid grid-cols-[repeat(auto-fit,minmax(min(100%,16.25rem),1fr))] items-start gap-4" aria-busy={loading}>
-        {loading && !snapshot ? Array.from({ length: 8 }, (_, index) => <div key={index} className="min-h-[22.5rem] space-y-5 rounded-3xl border border-foreground/10 glass-card bg-card-glass p-4"><Skeleton className="h-4 w-24" /><Skeleton className="h-5 w-40" /><Skeleton className="h-9 w-28" /><Skeleton className="h-24 w-full" /><Skeleton className="h-4 w-44" /></div>) : snapshot?.indicators.map((indicator) => <IndicatorCard key={indicator.id} indicator={error && indicator.value !== null ? { ...indicator, status: "stale" } : indicator} years={years} locale={intlLocale} />)}
+        {loading && !snapshot ? Array.from({ length: 8 }, (_, index) => <div key={index} aria-hidden="true" className="min-w-0 rounded-3xl border border-foreground/10 glass-card bg-card-glass p-4">
+          <div className="flex items-start justify-between gap-3"><Skeleton className="h-5 w-32 rounded-md" /><Skeleton className="h-3.5 w-12 rounded-md" /></div>
+          <Skeleton className="mt-1.5 h-3 w-20 rounded-md" />
+          <Skeleton className="mt-2 h-9 w-28 rounded-lg" />
+          <Skeleton className="mt-1 h-3.5 w-36 rounded-md" />
+          <Skeleton className="mt-3 h-24 w-full rounded-xl" />
+          <Skeleton className="mt-3 h-3.5 w-40 rounded-md" />
+          <div className="mt-3 border-t border-border/60 pt-1"><div className="flex min-h-10 items-center justify-between px-2"><Skeleton className="h-3 w-20 rounded-md" /><Skeleton className="h-3.5 w-3.5 rounded" /></div></div>
+        </div>) : snapshot?.indicators.map((indicator) => <IndicatorCard key={indicator.id} indicator={error && indicator.value !== null ? { ...indicator, status: "stale" } : indicator} years={years} locale={intlLocale} />)}
       </div>}
       {!loading && !snapshot?.indicators.length && <p className="py-12 text-center text-sm text-muted-foreground">{c("No indicators to display. Try refreshing.", "暂无可显示的指标，请尝试刷新。")}</p>}
       <details open={isPhone ? undefined : true} key={isPhone ? "phone" : "wide"} className="mt-5 text-xs leading-6 text-muted-foreground">

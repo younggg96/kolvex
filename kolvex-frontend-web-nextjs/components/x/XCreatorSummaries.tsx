@@ -48,7 +48,11 @@ export default function XCreatorSummaries({ author, creators }: { author: string
       </ListToolbar>
       <p className="mt-2 text-xs leading-5 text-muted-foreground">{c("A saved summary of selected collected posts, grouped by creator. Coverage is incomplete and may include other stocks. Reading does not generate a new summary.", "按博主归纳部分已采集推文，尚未覆盖全部内容，可能涉及多只股票。读取已保存摘要不会重新生成。")}</p>
       <div aria-live="polite">
-        {loading && <div role="status" className="space-y-4 py-5"><span className="sr-only">{c("Loading summaries…", "正在加载摘要…")}</span><Skeleton className="h-5 w-1/3" /><Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-2/3" /></div>}
+        {loading && <div role="status"><span className="sr-only">{c("Loading summaries…", "正在加载摘要…")}</span>{[0, 1].map(i => <div key={i} aria-hidden="true" className="border-b border-border py-5 last:border-0 last:pb-1">
+          <div className="flex items-center gap-3"><Skeleton className="h-10 w-10 shrink-0 rounded-full" /><div className="flex flex-col gap-1.5"><Skeleton className="h-4 w-28 rounded-md" /><Skeleton className="h-3 w-48 rounded-md" /></div></div>
+          <div className="mt-3 space-y-2"><Skeleton className="h-4 w-full rounded-md" /><Skeleton className={i ? "h-4 w-1/2 rounded-md" : "h-4 w-2/3 rounded-md"} /></div>
+          <div className="flex min-h-11 items-center"><Skeleton className="h-3 w-36 rounded-md" /></div>
+        </div>)}</div>}
         {error && <div role="alert" className="py-4"><p className="text-sm text-muted-foreground">{c("Could not load summaries. Posts remain available below.", "摘要暂时无法加载，下方仍可阅读推文。")}</p><Button variant="outline" size="sm" className="mt-3" onClick={() => setAttempt(value => value + 1)}>{c("Retry", "重试")}</Button></div>}
         {snapshot?.summaries.length === 0 && <p className="py-5 text-sm text-muted-foreground">{c("No saved summary for this creator yet. Read their posts below.", "这位博主暂无已保存的摘要，可先阅读下方推文。")}</p>}
       </div>

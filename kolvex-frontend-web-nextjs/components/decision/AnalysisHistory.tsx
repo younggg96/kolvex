@@ -1,5 +1,6 @@
 "use client";
 import { ContentLoading } from "@/components/ui/content-loading";
+import { Skeleton } from "@/components/ui/skeleton";
 import { loadClientCache, peekClientCache, subscribeClientCache, invalidateClientCache } from "@/lib/clientCache";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ChevronDown } from "lucide-react";
@@ -135,7 +136,7 @@ export function DrawingVersionSelector({ history, hidden, disabled = false }: {
   return <div className="mt-3 min-w-0 border-t border-border pt-3">
     <p className="mb-2 text-sm font-medium">{c("Saved AI drawings", "已保存的 AI 画线")}{!history.busy && ` (${history.total})`}</p>
     <HistoryScope history={history} />
-    <Select value={hidden ? "" : history.selected?.id || ""} disabled={blocked || !options.length}
+    {history.busy && !history.items.length ? <Skeleton aria-hidden="true" className="h-10 w-full rounded-full" /> : <Select value={hidden ? "" : history.selected?.id || ""} disabled={blocked || !options.length}
       onValueChange={id => { const item = options.find(option => option.id === id); if (item) void history.select(item); }}>
       <SelectTrigger aria-label={c("Switch AI drawing version", "切换 AI 画线版本")} className="w-full">
         <SelectValue placeholder={history.busy ? c("Loading drawings…", "正在加载画线…") : history.error !== null ? c("Drawings could not be loaded", "画线加载失败") : hidden ? c("Drawings hidden · select a version to show", "画线已隐藏，选择版本重新显示") : c("No saved drawings yet", "暂无已保存的画线")} />
@@ -150,9 +151,9 @@ export function DrawingVersionSelector({ history, hidden, disabled = false }: {
           </span>
         </SelectItem>)}
       </SelectContent>
-    </Select>
+    </Select>}
     <p className="mt-2 text-xs leading-5 text-muted-foreground">{c("All signed-in users can view these drawings. Your result opens first, otherwise the newest result. Switching only changes your view.", "所有已登录用户都可查看画线。优先显示自己的结果，否则显示最新结果；切换仅改变正在查看的版本。")}</p>
-    {history.busy && !history.items.length && <ContentLoading label={c("Loading drawings…", "正在加载画线…")} />}
+    {history.busy && !history.items.length && <span role="status" className="sr-only">{c("Loading drawings…", "正在加载画线…")}</span>}
     {history.error !== null && <p role="alert" className="mt-2 text-sm">{history.error === 401 ? c("Sign in to view shared drawings.", "请登录后查看共享画线。") : history.error === 409 ? c("The current version changed. Review and try again.", "当前版本已更新，请查看后重试。") : c("Drawing versions could not be loaded or saved. Please retry.", "画线版本加载或保存失败，请重试。")}</p>}
     <div className="mt-2 flex flex-wrap gap-2">
       {history.error !== null && <Button size="sm" variant="outline" disabled={blocked} onClick={() => void history.load(0, history.selected?.id)}>{c("Retry", "重试")}</Button>}
@@ -179,7 +180,7 @@ export default function AnalysisHistory<T>({ history, drawings = false, title }:
       <p>{history.error === 401 ? c("Sign in to view shared results.", "请登录后查看共享结果。") : history.error === 409 ? c("The current version changed. Review and try again.", "当前版本已更新，请查看最新状态后重试。") : c("History could not be loaded or saved. Please retry.", "历史记录加载或保存失败，请重试。")}</p>
       <Button size="sm" variant="outline" disabled={history.busy} onClick={() => void history.load()}>{c("Retry", "重试")}</Button>
     </div>}
-    {history.busy && !history.items.length && <ContentLoading label={c("Loading history…", "正在加载历史…")} />}
+    {history.busy && !history.items.length && <ContentLoading label={c("Loading history…", "正在加载历史…")} className="mt-3 min-h-0"><ListCard>{[0, 1, 2].map(i => <div key={i} className="flex min-h-11 items-center gap-x-3 px-2 py-2"><Skeleton className="h-4 w-36 rounded-md" /><Skeleton className={i % 2 ? "h-3 w-12 rounded-md" : "h-3 w-16 rounded-md"} /></div>)}</ListCard></ContentLoading>}
     {!history.busy && history.error === null && !history.items.length && <p className="mt-3 text-sm text-muted-foreground">{c("No saved analyses yet.", "暂无已保存分析。")}</p>}
     {!!history.items.length && <ListCard className="mt-3">
       <ListRows aria-label={drawings ? c("AI drawing history", "AI 画线历史") : c("Analysis history", "分析历史")}>
