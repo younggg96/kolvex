@@ -1256,7 +1256,8 @@ export function PriceGraphPlot({
           {activeBar && activeIndex !== null && (renderEventPopover ? renderEventPopover(activeIndex) : eventsAt?.(activeIndex))}
   
           {drawingLayer && (
-            <div className="absolute left-0 top-0 overflow-hidden" style={{ width: geometry.plotWidth, height: geometry.axisBlock.h }}>
+            // Spans the price axis too, so drawings can post their levels there; the layer clips its own lines.
+            <div className="absolute left-0 top-0 overflow-hidden" style={{ width: geometry.plotWidth + geometry.axisWidth, height: geometry.axisBlock.h }}>
               {typeof drawingLayer === "function" ? drawingLayer(geometry) : drawingLayer}
             </div>
           )}

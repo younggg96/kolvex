@@ -77,7 +77,7 @@ import {
 } from "@/lib/stockApi";
 import ChartDrawingLayer from "../ChartDrawingLayer";
 import OscillatorPane, { oscillatorLabels, type Oscillator } from "./OscillatorPane";
-import { drawingColors, newDrawingId, type Anchor, type Drawing, type DrawingTool, type SyncStatus } from "../chartDrawings";
+import { drawingColors, drawingGroups, newDrawingId, type Anchor, type Drawing, type DrawingGroup, type DrawingTool, type SyncStatus } from "../chartDrawings";
 import { toneText, type StrengthTone } from "../strength";
 import AiPriceActionSignals from "./AiPriceActionSignals";
 import AiDrawingSetup from "./AiDrawingSetup";
@@ -394,6 +394,27 @@ export default function ChartView({
   function changeOscillator(next: Oscillator | null) {
     setOscillator(next);
     try { window.localStorage.setItem("kolvex:chart-oscillator", next ?? "none"); } catch { /* Session-only preference. */ }
+  }
+
+  /** Explicit per-layer choices; unset layers follow the width default (phones hide trend + pattern). */
+  const [layerPrefs, setLayerPrefs] = useState<Partial<Record<DrawingGroup, boolean>>>({});
+  useEffect(() => {
+    try {
+      const saved = JSON.parse(window.localStorage.getItem("kolvex:chart-layers") || "null");
+      if (saved && typeof saved === "object") setLayerPrefs(saved);
+    } catch { /* Keep width defaults when storage is unavailable. */ }
+  }, []);
+  const narrowChart = size.width > 0 && size.width - GRAPH_AXIS_WIDTH < 480;
+  const layerOn = (group: DrawingGroup) => layerPrefs[group] ?? !(narrowChart && (group === "trend" || group === "pattern"));
+  const hiddenGroups = useMemo(
+    () => new Set(drawingGroups.filter(group => !layerOn(group))),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [layerPrefs, narrowChart],
+  );
+  function toggleLayer(group: DrawingGroup) {
+    const next = { ...layerPrefs, [group]: !layerOn(group) };
+    setLayerPrefs(next);
+    try { window.localStorage.setItem("kolvex:chart-layers", JSON.stringify(next)); } catch { /* Session-only preference. */ }
   }
 
   const lastHistoryAttempt = useRef(attempt);
@@ -1437,6 +1458,9 @@ export default function ChartView({
     <ChartDrawingLayer
       width={plot.plotWidth}
       height={plot.axisBlock.h}
+      axisWidth={plot.axisWidth}
+      hiddenGroups={hiddenGroups}
+      lastPrice={bars?.[count - 1]?.close}
       drawings={drawings}
       draft={draft?.drawing ?? null}
       selectedId={advanced ? selectedId : null}
@@ -1494,6 +1518,7 @@ export default function ChartView({
     </button>
   );
   const hideDrawingsSlot = showAi && drawingAi.status === "done" ? hideDrawingsControl() : null;
+  const presentGroups = drawingGroups.filter(group => drawings.some(item => item.group === group));
   const forecastControl = forecastable ? (
     <button
       type="button"
@@ -1878,6 +1903,16 @@ export default function ChartView({
         </div>
 
         {graph}
+
+        {presentGroups.length > 1 && (
+          <div role="group" aria-label={t("youtubeOpinions.ai.layers.label")} className="-mx-1 mt-1.5 flex shrink-0 gap-1 overflow-x-auto px-1 [scrollbar-width:none]">
+            {presentGroups.map(group => (
+              <button key={group} type="button" aria-pressed={layerOn(group)} onClick={() => toggleLayer(group)} className={cn(pill(layerOn(group)), "h-9 sm:h-8")}>
+                {t(`youtubeOpinions.ai.layers.${group}`)}
+              </button>
+            ))}
+          </div>
+        )}
 
         {!advanced && compactFooter && <div className="mt-1.5 flex shrink-0 flex-wrap items-center justify-between gap-x-3 gap-y-1">{compactFooter}</div>}
 

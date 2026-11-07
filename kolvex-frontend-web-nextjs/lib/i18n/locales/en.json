@@ -1482,7 +1482,15 @@
         }
       },
       "pendingRunHint": "Choose a model to start. The current result stays until the new one is ready.",
-      "startDrawings": "Start drawing"
+      "startDrawings": "Start drawing",
+      "layers": {
+        "label": "Drawing layers",
+        "plan": "Trade plan",
+        "levels": "S/R levels",
+        "trend": "Trendlines",
+        "fib": "Fibonacci",
+        "pattern": "Patterns"
+      }
     },
     "drawTools": "Drawing tools",
     "toolCursor": "Cursor (select and move drawings)",

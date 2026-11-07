@@ -556,7 +556,7 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
   // The link in rowClass already washes (wider than its ListRow), so the ListRow
   // around it stays flat; otherwise a hovered row shows two stacked greys.
   const flatListRowClass = "hover:bg-transparent has-[:focus-visible]:bg-transparent active:bg-transparent";
-  const stockRowClass = cn(rowClass, "grid-cols-[minmax(0,1fr)_auto] gap-x-3 sm:grid-cols-[minmax(0,1fr)_110px_160px] sm:gap-x-4");
+  const stockRowClass = cn(rowClass, "grid-cols-[minmax(0,1fr)_auto_auto] gap-x-3 sm:grid-cols-[minmax(0,1fr)_110px_160px] sm:gap-x-4");
   // Rows inside one card body reuse the shared row target metrics (rounded-2xl,
   // min-h-20, no ring) while the ListRow supplies the hover/focus-within surface.
   const cardRowClass = cn(
@@ -564,7 +564,7 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
     listRowTargetClass,
   );
   const cardStockRowClass = cn(
-    "group grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-2 sm:grid-cols-[minmax(0,1fr)_110px_160px] sm:gap-x-4",
+    "group grid min-w-0 grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-x-3 gap-y-2 sm:grid-cols-[minmax(0,1fr)_110px_160px] sm:gap-x-4",
     listRowTargetClass,
   );
   // Narrow rails keep the two-column mobile row layout at every breakpoint.
@@ -738,7 +738,7 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
                 </div>
               </div>
               {performanceCell(item.ticker, index < performanceLimit)}
-              <div className={cn("col-span-2 flex min-w-0 flex-wrap items-center justify-between gap-x-3 gap-y-1 text-right", !narrow && "sm:col-span-1 sm:flex-col sm:items-end sm:justify-center")} title={t("youtubeOpinions.directory.historicalConsensus")}>
+              <div className={cn("flex min-w-0 text-right", narrow ? "col-span-2 flex-wrap items-center justify-between gap-x-3 gap-y-1" : "flex-col items-end justify-center gap-y-1")} title={t("youtubeOpinions.directory.historicalConsensus")}>
                 <OpinionStrength value={item.avg_score} />
                 <p className="text-xs text-muted-foreground tabular-nums">
                   {/* Phones keep the verdict and who backs it; opinion volume lives on the stock page. */}
@@ -1358,7 +1358,7 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
                     ) : !context ? (
                       <ContentLoading label={t("common.loadingStatus")} className="mt-4 min-h-0"><div className="flex flex-wrap items-baseline gap-x-3 gap-y-2"><Skeleton className="h-7 w-28 rounded-lg" /><Skeleton className="h-4 w-48 rounded-md" /></div></ContentLoading>
                     ) : focused ? (
-                      <div className="mt-4 flex flex-wrap items-baseline gap-x-3 gap-y-1" aria-live="polite">
+                      <div className="mt-4 flex flex-col flex-wrap items-baseline gap-x-3 gap-y-1" aria-live="polite">
                         <p className={cn("text-xl font-semibold tracking-[-0.01em]", toneText[headline.tone])}>
                           {overview?.total_opinions ? headline.label : t("youtubeOpinions.noOpinionsYet")}
                         </p>

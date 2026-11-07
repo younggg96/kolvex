@@ -287,7 +287,7 @@ export default function StockWorkspace({
           <div className="min-w-0 space-y-6">
             <section className="min-w-0" aria-labelledby="stock-title">
               <PageBreadcrumb
-                className="mb-6 min-w-0"
+                className="mb-4 min-w-0 md:mb-6"
                 items={[
                   {
                     label: returnHref.startsWith("/dashboard/watchlist")
@@ -298,19 +298,19 @@ export default function StockWorkspace({
                   { label: ticker },
                 ]}
               />
-              <div className="flex items-start gap-3">
+              <div className="flex items-start gap-2 sm:gap-3">
                 <CompanyLogo symbol={ticker} size="md" />
                 <div className="min-w-0 flex-1">
                   <h1
                     id="stock-title"
-                    className="text-xl font-semibold leading-tight sm:text-2xl"
+                    className="text-lg font-semibold leading-tight sm:text-2xl"
                   >
                     {benchmark
                       ? c(benchmark.en, benchmark.zh)
                       : overview?.company.name || quote?.name || ticker}
                     {positions.length > 0 && <HeldMark />}
                   </h1>
-                  <p className="mt-2 text-sm text-muted-foreground">
+                  <p className="mt-1 text-xs text-muted-foreground sm:mt-2 sm:text-sm">
                     {ticker}
                     {overview?.quote.exchange &&
                       ` · ${overview.quote.exchange}`}{" "}
@@ -320,12 +320,12 @@ export default function StockWorkspace({
                 <WatchlistButton ticker={ticker} showLabel />
               </div>
               <div
-                className="mt-6 flex flex-wrap items-start gap-x-8 gap-y-4"
+                className="mt-4 flex flex-wrap items-start gap-x-6 gap-y-3 md:mt-6 md:gap-x-8 md:gap-y-4"
                 aria-live="polite"
               >
                 <div>
-                  <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                    <div className="figure text-3xl font-semibold tracking-tight sm:text-4xl">
+                  <div className="flex flex-col flex-wrap items-baseline gap-x-3 gap-y-1">
+                    <div className="figure text-2xl font-semibold tracking-tight sm:text-4xl">
                       {loading && !quote ? (
                         <Skeleton className="h-10 w-40" />
                       ) : (
@@ -335,7 +335,7 @@ export default function StockWorkspace({
                     {quote && (
                       <span
                         className={cn(
-                          "figure text-sm font-semibold",
+                          "figure text-xs font-semibold sm:text-sm",
                           up ? "text-positive" : "text-negative",
                         )}
                       >
@@ -345,7 +345,7 @@ export default function StockWorkspace({
                     )}
                   </div>
                   {/* Server and browser ICU can name the time zone differently. */}
-                  <p className="mt-2 text-xs text-muted-foreground" suppressHydrationWarning>
+                  <p className="mt-1 text-[0.6875rem] text-muted-foreground sm:mt-2 sm:text-xs" suppressHydrationWarning>
                     {quote?.marketTime
                       ? new Date(
                           quote.marketTime * 1000,
@@ -358,10 +358,10 @@ export default function StockWorkspace({
                 </div>
                 {latestQuote && latestQuote.session !== "regular" && (
                     <div className="border-border sm:border-l sm:pl-6">
-                      <p className="figure text-2xl font-semibold">
+                      <p className="figure text-xl font-semibold sm:text-2xl">
                         {priceLabel(latestQuote.price)}
                       </p>
-                      <p className="mt-2 text-xs text-muted-foreground" suppressHydrationWarning>
+                      <p className="mt-1 text-[0.6875rem] text-muted-foreground sm:mt-2 sm:text-xs" suppressHydrationWarning>
                         {latestQuote.session === "pre" ? c("Pre-market", "盘前") : c("After hours", "盘后")}
                         {" · "}{latestQuote.time && new Date(latestQuote.time * 1000).toLocaleTimeString(t("common.intlLocale"), { timeZone: "America/New_York", timeZoneName: "short" })}
                       </p>
@@ -393,49 +393,49 @@ export default function StockWorkspace({
             >
               <TabsList
                 variant="pill-solid"
-                className="sticky top-4 z-30 mb-6 flex max-w-full flex-nowrap overflow-x-auto"
+                className="sticky top-4 z-30 mb-6 flex max-w-full flex-nowrap overflow-x-auto max-md:min-h-12 max-md:gap-1 max-md:p-1"
                 aria-label={c("Stock sections", "个股研究导航")}
               >
-                <TabsTrigger value="summary">
+                <TabsTrigger value="summary" className="max-md:!min-h-10 max-md:!px-4 max-md:!text-[0.9375rem]">
                   {c("Overview", "概览")}
                 </TabsTrigger>
-                <TabsTrigger value="technical">
+                <TabsTrigger value="technical" className="max-md:!min-h-10 max-md:!px-4 max-md:!text-[0.9375rem]">
                   {c("Technicals", "技术分析")}
                 </TabsTrigger>
-                {!benchmark && <TabsTrigger value="paper-trading">{c("My virtual trades", "我的虚拟交易")}</TabsTrigger>}
-                <TabsTrigger value="creators">
+                {!benchmark && <TabsTrigger value="paper-trading" className="max-md:!min-h-10 max-md:!px-4 max-md:!text-[0.9375rem]">{c("My virtual trades", "我的虚拟交易")}</TabsTrigger>}
+                <TabsTrigger value="creators" className="max-md:!min-h-10 max-md:!px-4 max-md:!text-[0.9375rem]">
                   {c("Creators", "博主情报")}
                 </TabsTrigger>
-                <TabsTrigger value="research">
+                <TabsTrigger value="research" className="max-md:!min-h-10 max-md:!px-4 max-md:!text-[0.9375rem]">
                   {c("AI research", "AI 研究")}
                 </TabsTrigger>
-                <TabsTrigger value="news">{c("News", "新闻")}</TabsTrigger>
-                <TabsTrigger value="options">{c("Options", "期权")}</TabsTrigger>
+                <TabsTrigger value="news" className="max-md:!min-h-10 max-md:!px-4 max-md:!text-[0.9375rem]">{c("News", "新闻")}</TabsTrigger>
+                <TabsTrigger value="options" className="max-md:!min-h-10 max-md:!px-4 max-md:!text-[0.9375rem]">{c("Options", "期权")}</TabsTrigger>
                 {!benchmark && (
                   <>
-                    <TabsTrigger value="financials">
+                    <TabsTrigger value="financials" className="max-md:!min-h-10 max-md:!px-4 max-md:!text-[0.9375rem]">
                       {c("Financials", "财务报表")}
                     </TabsTrigger>
-                    <TabsTrigger value="valuation">{c("Valuation", "估值")}</TabsTrigger>
-                    <TabsTrigger value="earnings">
+                    <TabsTrigger value="valuation" className="max-md:!min-h-10 max-md:!px-4 max-md:!text-[0.9375rem]">{c("Valuation", "估值")}</TabsTrigger>
+                    <TabsTrigger value="earnings" className="max-md:!min-h-10 max-md:!px-4 max-md:!text-[0.9375rem]">
                       {c("Earnings", "盈利表现")}
                     </TabsTrigger>
-                    <TabsTrigger value="multicharts">
+                    <TabsTrigger value="multicharts" className="max-md:!min-h-10 max-md:!px-4 max-md:!text-[0.9375rem]">
                       {c("Metric trends", "指标趋势")}
                     </TabsTrigger>
-                    <TabsTrigger value="analyst">
+                    <TabsTrigger value="analyst" className="max-md:!min-h-10 max-md:!px-4 max-md:!text-[0.9375rem]">
                       {c("Target price", "分析师目标价")}
                     </TabsTrigger>
-                    <TabsTrigger value="peers">
+                    <TabsTrigger value="peers" className="max-md:!min-h-10 max-md:!px-4 max-md:!text-[0.9375rem]">
                       {c("Peers", "同行比较")}
                     </TabsTrigger>
-                    <TabsTrigger value="ownership">
+                    <TabsTrigger value="ownership" className="max-md:!min-h-10 max-md:!px-4 max-md:!text-[0.9375rem]">
                       {c("Insider trades", "内部人交易")}
                     </TabsTrigger>
                   </>
                 )}
                 {!benchmark && (
-                  <TabsTrigger value="profile">
+                  <TabsTrigger value="profile" className="max-md:!min-h-10 max-md:!px-4 max-md:!text-[0.9375rem]">
                     {c("Profile", "公司资料")}
                   </TabsTrigger>
                 )}

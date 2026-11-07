@@ -9,6 +9,10 @@ export interface Anchor {
   price: number;
 }
 
+/** AI layers the chart can toggle; manual drawings carry none and are always shown. */
+export type DrawingGroup = "plan" | "levels" | "trend" | "fib" | "pattern";
+export const drawingGroups: DrawingGroup[] = ["plan", "levels", "trend", "fib", "pattern"];
+
 export interface Drawing {
   id: string;
   type: DrawingType;
@@ -16,6 +20,9 @@ export interface Drawing {
   color: string;
   label?: string;
   source?: "ai";
+  group?: DrawingGroup;
+  /** Higher wins label space when labels collide (0–100). */
+  priority?: number;
 }
 
 /** `local`: signed out or sync not set up; `offline`: last sync attempt failed. */

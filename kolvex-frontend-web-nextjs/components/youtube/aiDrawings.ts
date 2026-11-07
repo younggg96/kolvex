@@ -7,14 +7,14 @@ export function analysisDrawings(result: AiTechnicalAnalysis, t: (key: string) =
   const entry = plan ? (plan.entry_low + plan.entry_high) / 2 : 0;
   const planLines: Drawing[] = plan ? [
     { id: `${prefix}-entry`, type: "hline", points: [{ time: Date.parse(result.view.end), price: entry }],
-      color: "rgb(var(--chart-level))", label: t("youtubeOpinions.ai.tradePlan.entryPoint"), source: "ai" },
+      color: "rgb(var(--chart-level))", label: t("youtubeOpinions.ai.tradePlan.entryPoint"), source: "ai", group: "plan", priority: 90 },
     { id: `${prefix}-stop`, type: "hline", points: [{ time: Date.parse(result.view.end), price: plan.invalidation }],
-      color: "rgb(var(--chart-down))", label: t("youtubeOpinions.ai.tradePlan.stop"), source: "ai" },
+      color: "rgb(var(--chart-down))", label: t("youtubeOpinions.ai.tradePlan.stop"), source: "ai", group: "plan", priority: 95 },
     ...plan.targets.map((price, index): Drawing => ({
       id: `${prefix}-target-${index}`, type: "hline", points: [{ time: Date.parse(result.view.end), price }],
       color: "rgb(var(--chart-up))",
       label: `${t("youtubeOpinions.ai.tradePlan.target")} ${index + 1}`,
-      source: "ai",
+      source: "ai", group: "plan", priority: 85 - index,
     })),
   ] : [];
   return [
@@ -25,22 +25,22 @@ export function analysisDrawings(result: AiTechnicalAnalysis, t: (key: string) =
       points: item.points.map(point => ({ time: Date.parse(point.date), price: point.price })),
       color: item.category === "moving_averages" ? (item.label === "EMA20" ? "rgb(168 85 247)" : item.label === "EMA50" ? "rgb(59 130 246)" : "rgb(125 175 205)")
         : item.direction === "bullish" ? "rgb(var(--chart-up))" : item.direction === "bearish" ? "rgb(var(--chart-down))" : "rgb(var(--chart-level))",
-      label: item.label, source: "ai" as const,
+      label: item.label, source: "ai" as const, group: "pattern" as const, priority: 30,
     })),
     ...result.levels.map((level, index) => ({
       id: `${prefix}-level-${index}`, type: "hline" as const,
       points: [{ time: Date.parse(result.view.end), price: level.price }],
       color: level.kind === "support" ? "rgb(var(--chart-up))" : "rgb(var(--chart-down))",
-      label: t(`youtubeOpinions.ai.${level.kind}`), source: "ai" as const,
+      label: t(`youtubeOpinions.ai.${level.kind}`), source: "ai" as const, group: "levels" as const, priority: 60,
     })),
     ...result.trendlines.map((line, index) => ({
       id: `${prefix}-line-${index}`, type: "ray" as const,
       points: [{ time: Date.parse(line.start.date), price: line.start.price }, { time: Date.parse(line.end.date), price: line.end.price }],
       color: line.kind === "support" ? "rgb(var(--chart-up))" : "rgb(var(--chart-down))",
-      label: t(`youtubeOpinions.ai.${line.kind}Line`), source: "ai" as const,
+      label: t(`youtubeOpinions.ai.${line.kind}Line`), source: "ai" as const, group: "trend" as const, priority: 50,
     })),
     ...(result.fib ? [{ id: `${prefix}-fib`, type: "fib" as const,
       points: [{ time: Date.parse(result.fib.from.date), price: result.fib.from.price }, { time: Date.parse(result.fib.to.date), price: result.fib.to.price }],
-      color: "rgb(var(--chart-level))", source: "ai" as const }] : []),
+      color: "rgb(var(--chart-level))", source: "ai" as const, group: "fib" as const, priority: 40 }] : []),
   ];
 }

@@ -13,7 +13,7 @@ export default function AiDrawingSetup({ setup, t, symbol }: {
   const key = "youtubeOpinions.ai.tradePlan";
   return (
     <section className="mt-4 border-t border-border pt-4" aria-label={t(`${key}.title`)}>
-      <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+      <div className="flex flex-col flex-wrap items-baseline gap-x-3 gap-y-1">
         <h4 className="break-words text-base font-semibold leading-6">{setup.name}</h4>
         <span className={cn("shrink-0 text-sm font-medium", setup.direction === "bullish" ? "text-positive" : "text-negative")}>
           {t(`${key}.${setup.direction === "bullish" ? "long" : "short"}`)}

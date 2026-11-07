@@ -51,7 +51,7 @@ export default function AiAnalysisPanel({ state, busy = false, interval, onRetry
   return (
     <section aria-live="polite" aria-label={t("youtubeOpinions.ai.title")} className={cn("min-w-0 text-sm text-foreground", className)}>
       <header>
-        <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+        <div className="flex flex-col flex-wrap items-baseline gap-x-3 gap-y-1">
           <h3 className="text-lg font-semibold leading-7">{result ? t(`youtubeOpinions.ai.trend.${result.trend}`) : t("youtubeOpinions.ai.title")}</h3>
           {result && <span className={cn("text-sm font-semibold", toneText[biasTone[result.bias]])}>{t(`youtubeOpinions.ai.bias.${result.bias}`)}</span>}
         </div>

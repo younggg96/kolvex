@@ -179,6 +179,11 @@ export default function StockObservationList({ range, catalogue, held, onRetry, 
     {state.scope === "active" && <p className="mt-1">{c("Volume multiple = accumulated session volume / full-day 3-month average. This is not a same-time-of-day comparison; early-session results may be empty.", "放量倍数 = 当日累计成交量 / 3个月全天日均成交量，不是与平常同一时刻比较；开盘初期可能暂无符合条件的股票。")}</p>}
     {board?.fetchedAt && <p className="mt-1">{c("Snapshot fetched", "榜单获取时间")} · {new Intl.DateTimeFormat(c("en-US", "zh-CN"), { timeZone: "America/New_York", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false }).format(new Date(board.fetchedAt))} {c("New York", "纽约时间")}</p>}
   </> : null;
+  const listInfo = <>
+    <p className="text-foreground">{listDescription}</p>
+    {board?.sessionDate && <p className="mt-1">{c(`Session ${board.sessionDate}`, `交易日 ${board.sessionDate}`)}</p>}
+    {rankingNotes}
+  </>;
   return <div ref={listRef}>
     <Panel title={c("Stock watch", "股票观察")} id="market-movers" surface="card" action={<>
       <div className="ml-auto flex min-w-0 items-center gap-1 lg:hidden">
@@ -188,10 +193,8 @@ export default function StockObservationList({ range, catalogue, held, onRetry, 
               <Info className="h-4 w-4" aria-hidden="true" />
             </Button>
           </PopoverTrigger>
-          <PopoverContent align="end" className="w-72 max-w-[calc(100vw-2rem)] p-3 text-xs leading-5 text-muted-foreground">
-            <p className="text-foreground">{listDescription}</p>
-            {board?.sessionDate && <p className="mt-1">{c(`Session ${board.sessionDate}`, `交易日 ${board.sessionDate}`)}</p>}
-            {rankingNotes}
+          <PopoverContent align="end" className="!w-72 max-w-[calc(100vw-2rem)] p-3 text-xs leading-5 text-muted-foreground">
+            {listInfo}
           </PopoverContent>
         </Popover>
         <FilterSheet title={c("Filter stocks", "筛选股票")} summary={scopeOptions.find(option => option.value === state.scope)?.label} active={filtered} onReset={resetAll}>
@@ -201,7 +204,19 @@ export default function StockObservationList({ range, catalogue, held, onRetry, 
           <FilterSheetGroup label={c("Sort", "排序")} options={stockSorts(state.scope, state.source).map(sort => ({ value: sort, label: c(...sortLabel(sort, state.source)) }))} value={state.sort} onChange={sort => update({ ...state, sort, rows: STOCK_PAGE_SIZE })} />
         </FilterSheet>
       </div>
-      <SegmentedControl label={c("Stock list", "股票列表")} value={state.scope} onChange={changeScope} wrap className="ml-auto hidden max-w-full border border-border lg:flex" itemClassName="min-h-9 px-3" options={scopeOptions} />
+      <div className="ml-auto hidden items-center gap-1 lg:flex">
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button type="button" variant="ghost" size="icon" className="h-9 w-9 shrink-0 rounded-full text-muted-foreground" aria-label={c("About this list", "名单说明")}>
+              <Info className="h-4 w-4" aria-hidden="true" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent align="end" className="!w-72 max-w-[calc(100vw-2rem)] p-3 text-xs leading-5 text-muted-foreground">
+            {listInfo}
+          </PopoverContent>
+        </Popover>
+        <SegmentedControl label={c("Stock list", "股票列表")} value={state.scope} onChange={changeScope} wrap className="max-w-full border border-border" itemClassName="min-h-9 px-3" options={scopeOptions} />
+      </div>
     </>}>
       <div id="stock-filters" className={cn("mb-3 grid grid-cols-2 items-end gap-3", state.scope === "core" ? "lg:grid-cols-[minmax(0,1fr)_9rem_9rem]" : creatorScope ? "lg:grid-cols-[minmax(0,1fr)_9rem_11rem]" : "lg:grid-cols-[minmax(0,1fr)_10rem]", "max-lg:hidden")}>
         <div className="hidden min-w-0 lg:block">
@@ -238,13 +253,8 @@ export default function StockObservationList({ range, catalogue, held, onRetry, 
         </div>
       </div>
       <div className="mb-3 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 text-xs leading-5 text-muted-foreground max-lg:mb-0">
-        <p className="max-lg:hidden">{listDescription}</p>
         {!blocking && (!sourceError || symbols.length > 0) && <p role="status" aria-live="polite" className="shrink-0 tabular-nums max-lg:sr-only">{c(`Showing ${visible.length} of ${symbols.length} stocks`, `已显示 ${visible.length} / ${symbols.length} 只`)}</p>}
       </div>
-      {marketScope && <details className="mb-3 text-xs leading-5 text-muted-foreground max-lg:hidden">
-        <summary className="cursor-pointer rounded-sm focus-visible:outline focus-visible:outline-primary">{c("Ranking scope and timing", "榜单范围与时间")}{board?.sessionDate ? c(` · Session ${board.sessionDate}`, ` · 交易日 ${board.sessionDate}`) : ""}</summary>
-        {rankingNotes}
-      </details>}
       {marketScope && (board?.partial && !board.unavailable || board?.stale) && <div role="status" className="mb-3 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
         <p>{board.stale ? c("Refresh unavailable. Showing a saved ranking snapshot (up to 15 minutes old).", "更新暂不可用，显示最多15分钟内的榜单快照。") : c("Some source lists are unavailable; this ranking has partial coverage.", "部分来源榜单暂不可用，当前仅显示已取得的候选。")}</p>
         <Button variant="ghost" size="sm" disabled={discovery.refreshing} onClick={discovery.refresh}>{c("Retry ranking", "重试榜单")}</Button>
@@ -268,7 +278,7 @@ export default function StockObservationList({ range, catalogue, held, onRetry, 
       </div>}
       {state.scope === "core" && catalogue.error && <p role="status" className="mb-3 text-xs text-muted-foreground">{c("Creator insights are temporarily unavailable. Quotes remain available.", "博主线索暂不可用，仍可查看行情。")}</p>}
       <div aria-busy={blocking || quoteLoading}>
-        <ListColumnHeader>
+        <ListColumnHeader className="hidden md:flex">
           <div className={cn(ROW_GRID, "min-w-0 flex-1 px-2 py-3")}>
             <span>{c("Stock", "股票")}{!blocking && symbols.length > 0 && <span className="ml-1.5 tabular-nums lg:hidden">{visible.length} / {symbols.length}</span>}</span>
             <span className="hidden text-center min-[360px]:block">{c(`Trend · ${trend.en}`, `走势 · ${trend.zh}`)}</span>

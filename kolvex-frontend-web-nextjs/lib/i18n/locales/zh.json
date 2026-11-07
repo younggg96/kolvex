@@ -1482,7 +1482,15 @@
         }
       },
       "pendingRunHint": "选择一个模型后即可开始。当前结果会保留，直到新结果生成。",
-      "startDrawings": "开始画线"
+      "startDrawings": "开始画线",
+      "layers": {
+        "label": "画线图层",
+        "plan": "交易计划",
+        "levels": "支撑阻力",
+        "trend": "趋势线",
+        "fib": "斐波那契",
+        "pattern": "形态"
+      }
     },
     "drawTools": "画图工具",
     "toolCursor": "光标（选择、拖动画线）",

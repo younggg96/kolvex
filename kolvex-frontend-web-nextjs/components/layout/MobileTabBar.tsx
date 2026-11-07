@@ -133,7 +133,7 @@ export default function MobileTabBar() {
         ref={dock}
         data-mobile-dock
         className={cn(
-          "mobile-nav-glass pointer-events-auto mx-auto w-full max-w-md origin-bottom rounded-[28px] p-1 transition-transform duration-200 ease-out motion-reduce:transition-none",
+          "glass-track glass-track-strong pointer-events-auto mx-auto w-full max-w-md origin-bottom rounded-[28px] p-1 transition-transform duration-200 ease-out motion-reduce:transition-none",
           midScroll && !menuOpen && "motion-safe:scale-[0.84]",
         )}
       >

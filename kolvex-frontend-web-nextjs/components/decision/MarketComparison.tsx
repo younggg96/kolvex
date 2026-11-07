@@ -97,14 +97,13 @@ export default function MarketComparison({ groups, attempt }: { groups: readonly
     <div role="region" aria-label={c("Performance comparison, scroll horizontally", "多区间表现对比，可横向滚动")} tabIndex={0} className="min-w-0 overflow-x-auto overscroll-x-contain rounded-3xl border border-foreground/10 glass-card bg-card-glass pb-2 focus-visible:outline-none ">
       <table className="w-full min-w-[54rem] table-fixed sm:min-w-[60rem] border-separate border-spacing-0">
         <caption className="sr-only">{c("Daily closing values and simultaneous period changes", "最新日度收盘或观测值及各区间变动对比")}</caption>
-        <colgroup><col className="w-[8.5rem] sm:w-[11.5rem]" /><col className="w-[7rem] sm:w-[8.25rem]" />{COMPARISON_PERIODS.map(period => <col key={period.key} />)}</colgroup>
+        <colgroup><col className="w-[7rem] sm:w-[11.5rem]" /><col className="w-[7rem] sm:w-[8.25rem]" />{COMPARISON_PERIODS.map(period => <col key={period.key} />)}</colgroup>
         <thead className="text-xs text-muted-foreground"><tr>
           <th scope="col" className="sticky left-0 z-20 border-r border-border/40 bg-muted px-3 py-4 text-left font-medium">{c("Instrument / Date", "标的 / 日期")}</th>
           <th scope="col" className="bg-muted px-3 py-4 text-right font-medium">{c("Latest close", "最新收盘")}</th>
           {COMPARISON_PERIODS.map(period => <th scope="col" key={period.key} className="bg-muted px-3 py-4 text-right font-medium" title={period.key === "QTD" ? c("Quarter to date", "本季度至今") : period.key === "YTD" ? c("Year to date", "今年至今") : undefined}>{c(period.en, period.zh)}</th>)}
         </tr></thead>
         {groups.map(group => <tbody key={group.key}>
-          <tr><th scope="rowgroup" colSpan={8} className="border-y border-border bg-muted/60 p-0 text-left"><span className="sticky left-0 inline-block px-3 py-3 text-sm font-semibold">{c(group.en, group.zh)}</span></th></tr>
           {group.instruments.map(instrument => <ComparisonRow key={instrument.symbol} instrument={instrument} attempt={attempt} />)}
         </tbody>)}
       </table>

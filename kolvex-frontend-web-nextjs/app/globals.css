@@ -1093,53 +1093,7 @@ a {
   min-height: 0;
 }
 
-/* The mobile dock is a translucent material, with a solid fallback for browsers
-   or accessibility preferences that disable backdrop filtering. */
-.mobile-nav-glass {
-  border: 1px solid rgb(var(--foreground) / 0.12);
-  background: rgb(var(--secondary));
-  box-shadow:
-    0 8px 24px -8px rgb(0 0 0 / 0.16),
-    inset 0 1px 0 rgb(255 255 255 / 0.65);
-}
-
-.dark .mobile-nav-glass {
-  border-color: rgb(255 255 255 / 0.2);
-  box-shadow:
-    0 8px 24px -8px rgb(0 0 0 / 0.24),
-    inset 0 1px 0 rgb(255 255 255 / 0.2);
-}
-
-@supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  .mobile-nav-glass {
-    background: rgb(255 255 255 / 0.52);
-    -webkit-backdrop-filter: blur(24px) saturate(180%);
-    backdrop-filter: blur(24px) saturate(180%);
-  }
-
-  .dark .mobile-nav-glass {
-    background: rgb(255 255 255 / 0.12);
-  }
-}
-
-@media (prefers-reduced-transparency: reduce) {
-  .mobile-nav-glass,
-  .dark .mobile-nav-glass {
-    background: rgb(var(--secondary));
-    -webkit-backdrop-filter: none;
-    backdrop-filter: none;
-  }
-}
-
 @media (prefers-contrast: more) {
-  .mobile-nav-glass,
-  .dark .mobile-nav-glass {
-    border-color: rgb(var(--foreground) / 0.55);
-    background: rgb(var(--secondary));
-    -webkit-backdrop-filter: none;
-    backdrop-filter: none;
-  }
-
   .mobile-nav-item {
     color: rgb(var(--foreground));
   }

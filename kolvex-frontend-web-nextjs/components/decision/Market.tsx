@@ -10,7 +10,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useVisiblePolling } from "@/hooks/useVisiblePolling";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import CompanyLogo from "@/components/ui/company-logo";
-import { ListCard, ListFooterLink, ListRow, ListRows } from "@/components/ui/list-card";
+import { ListCard, ListRow, ListRows } from "@/components/ui/list-card";
 import OpinionStrength from "@/components/youtube/OpinionStrength";
 import { Button } from "@/components/ui/button";
 import { SegmentedControl } from "@/components/ui/segmented-control";
@@ -36,7 +36,6 @@ import MarketEventCalendar from "./MarketEventCalendar";
 import StockObservationList from "./StockObservationList";
 import MarketComparison from "./MarketComparison";
 import MarketCompareDialog from "./MarketCompareChart";
-import { MarketRefreshButton } from "./MarketToolbar";
 import MarketWatchlistCard from "./MarketWatchlistCard";
 
 const OVERVIEW_GROUPS = MARKET_GROUPS.filter(group => group.key === "indices");
@@ -188,15 +187,18 @@ function MarketInstrumentCard({ benchmark, quote, quoteLoading, range, attempt, 
   );
 }
 
-function MarketRangeControls({ range, setRange, view, setView, refreshing, onRefresh }: { range: RangeKey; setRange: (range: RangeKey) => void; view: MarketView; setView: (view: MarketView) => void; refreshing: boolean; onRefresh: () => void }) {
+type MarketRangeControlsProps = { range: RangeKey; setRange: (range: RangeKey) => void; view: MarketView; setView: (view: MarketView) => void };
+
+/** `inline` sits beside a section title on phones instead of filling its own row. */
+function MarketRangeControls({ range, setRange, view, setView, inline = false }: MarketRangeControlsProps & { inline?: boolean }) {
   const c = useCopy();
   return (
-              <div className="flex min-w-0 items-center justify-end gap-2 max-md:w-full md:gap-3">
+              <div className={cn("flex min-w-0 items-center justify-end gap-2 md:gap-3", !inline && "max-md:w-full")}>
                 {view === "card" ? <SegmentedControl
                   label={c("Chart range", "走势区间")}
                   value={range}
                   onChange={setRange}
-                  className="min-w-0 !shrink flex-nowrap overflow-x-auto border border-border scrollbar-hide max-md:mr-auto max-md:!max-w-[9.75rem] max-md:!gap-0.5"
+                  className={cn("min-w-0 !shrink flex-nowrap overflow-x-auto border border-border scrollbar-hide max-md:!max-w-[9.75rem] max-md:!gap-0.5", !inline && "max-md:mr-auto")}
                   itemClassName="!min-h-9 max-md:!min-h-8 max-md:!px-2.5 max-md:!text-[0.8125rem]"
                   options={RANGES.map((item) => ({
                     value: item.key,
@@ -204,13 +206,13 @@ function MarketRangeControls({ range, setRange, view, setView, refreshing, onRef
                     ariaLabel: item.key === "QTD" ? c("QTD, quarter to date", "QTD，本季度至今") : item.key === "YTD" ? c("YTD, year to date", "YTD，今年至今") : undefined,
                     title: item.key === "QTD" ? c("Quarter to date", "本季度至今") : item.key === "YTD" ? c("Year to date", "今年至今") : undefined,
                   }))}
-                /> : <p className="min-w-0 truncate text-sm text-muted-foreground max-md:mr-auto">{c("Compare all periods", "多区间表现对比")}</p>}
+                /> : <p className={cn("min-w-0 truncate text-sm text-muted-foreground", inline ? "max-md:hidden" : "max-md:mr-auto")}>{c("Compare all periods", "多区间表现对比")}</p>}
                 <SegmentedControl
                   label={c("Display mode", "显示方式")}
                   value={view}
                   onChange={setView}
                   className="border border-border max-md:!gap-0.5"
-                  itemClassName="!min-h-9 max-md:!min-h-8 max-md:!px-2"
+                  itemClassName="!min-h-9 max-md:!min-h-8 max-md:!w-8 max-md:!px-0"
                   options={[
                     {
                       value: "card",
@@ -232,13 +234,14 @@ function MarketRangeControls({ range, setRange, view, setView, refreshing, onRef
                     },
                   ]}
                 />
-                <div className="shrink-0 md:hidden"><MarketRefreshButton refreshing={refreshing} onClick={onRefresh} /></div>
               </div>
   );
 }
 
-function MarketCharts({ groups, quotes, loading, range, attempt, onRetry, view, comparable = false }: {
+function MarketCharts({ groups, quotes, loading, range, attempt, onRetry, view, comparable = false, sectionControls }: {
   comparable?: boolean;
+  /** Controls shown beside the first section title. */
+  sectionControls?: React.ReactNode;
   groups: readonly (typeof MARKET_GROUPS)[number][];
   view: MarketView;
   quotes: Record<string, StockQuote>;
@@ -251,11 +254,15 @@ function MarketCharts({ groups, quotes, loading, range, attempt, onRetry, view, 
   const [comparing, setComparing] = useState<(typeof MARKET_GROUPS)[number] | null>(null);
   return (
             <section aria-label={groups.length === 1 ? c("Market indices", "市场指数") : c("Market trends", "市场走势")}>
-              {groups.length === 1 && <h2 id="market-indices-heading" className="sr-only">{c(groups[0].en, groups[0].zh)}</h2>}
-              {view === "list" ? <MarketComparison groups={groups} attempt={attempt} /> : groups.map(group => (
+              {view === "list" && <div className="mb-3 flex min-h-14 items-center justify-between gap-3">
+                <h2 className="min-w-0 truncate text-xl font-semibold tracking-[-0.01em]">{c(groups[0].en, groups[0].zh)}</h2>
+                {sectionControls}
+              </div>}
+              {view === "list" ? <MarketComparison groups={groups} attempt={attempt} /> : groups.map((group, index) => (
                 <section key={group.key} aria-labelledby={`market-${group.key}-heading`} className="first:mt-0">
-                  <div className="mb-4 flex min-h-9 items-center justify-between gap-3">
-                    <h2 id={`market-${group.key}-heading`} className="min-w-0 text-xl font-semibold tracking-tight">{c(group.en, group.zh)}</h2>
+                  <div className="mb-3 flex min-h-14 items-center justify-between gap-3">
+                    <h2 id={`market-${group.key}-heading`} className="min-w-0 truncate text-xl font-semibold tracking-[-0.01em]">{c(group.en, group.zh)}</h2>
+                    {index === 0 && sectionControls}
                     {comparable && <Button variant="outline" size="sm" className="shrink-0 gap-1.5" onClick={() => setComparing(group)}><LineChart className="h-3.5 w-3.5" aria-hidden />{c("Compare", "对比")}</Button>}
                   </div>
                   <div
@@ -290,12 +297,11 @@ function MarketCharts({ groups, quotes, loading, range, attempt, onRetry, view, 
   );
 }
 
-type MarketTabProps = { range: RangeKey; view: MarketView; attempt: number; retry: () => void; onRefreshing: (refreshing: boolean) => void };
+type MarketTabProps = { range: RangeKey; view: MarketView; attempt: number; retry: () => void };
 
-function MarketTrends({ range, view, attempt, retry, onRefreshing }: MarketTabProps) {
+function MarketTrends({ range, view, attempt, retry }: MarketTabProps) {
   const { setContext } = useDecisionCommand();
-  const { quotes, loading, refreshing } = useMarketQuotes(TREND_QUOTE_SYMBOLS, true, attempt);
-  useEffect(() => onRefreshing(refreshing), [refreshing, onRefreshing]);
+  const { quotes, loading } = useMarketQuotes(TREND_QUOTE_SYMBOLS, true, attempt);
 
   const context = JSON.stringify({ workspace: "Markets / Market trends", instruments: TREND_GROUPS.map(group => ({ group: group.en, symbols: group.instruments.map(item => item.symbol) })), range, quotes });
   useEffect(() => {
@@ -306,11 +312,10 @@ function MarketTrends({ range, view, attempt, retry, onRefreshing }: MarketTabPr
   return <div className="min-w-0 pt-6"><MarketCharts comparable view={view} groups={TREND_GROUPS} quotes={quotes} loading={loading} range={range} attempt={attempt} onRetry={retry} /></div>;
 }
 
-function MarketOverview({ range, view, attempt, retry, onRefreshing }: MarketTabProps) {
+function MarketOverview({ range, view, attempt, retry, sectionControls }: MarketTabProps & { sectionControls: React.ReactNode }) {
   const c = useCopy();
   const { setContext } = useDecisionCommand();
-  const { quotes, loading, refreshing, unavailable: failed } = useMarketQuotes(BENCHMARKS.map(item => item.symbol), true, attempt);
-  useEffect(() => onRefreshing(refreshing), [refreshing, onRefreshing]);
+  const { quotes, loading, unavailable: failed } = useMarketQuotes(BENCHMARKS.map(item => item.symbol), true, attempt);
 
   const held = useHeldTickers(attempt);
   const catalogue = useCreatorCatalogue(attempt);
@@ -329,7 +334,7 @@ function MarketOverview({ range, view, attempt, retry, onRefreshing }: MarketTab
   return (
         <div className="mx-auto grid gap-x-8 gap-y-2 pt-6 xl:grid-cols-[minmax(0,1fr)_320px] 2xl:gap-x-12">
           <div className="min-w-0 xl:col-span-2">
-            <MarketCharts view={view} groups={OVERVIEW_GROUPS} quotes={quotes} loading={loading} range={range} attempt={attempt} onRetry={retry} />
+            <MarketCharts view={view} groups={OVERVIEW_GROUPS} quotes={quotes} loading={loading} range={range} attempt={attempt} onRetry={retry} sectionControls={sectionControls} />
           </div>
           <div className="min-w-0 space-y-10">
             <StockObservationList range={range} catalogue={catalogue} held={held} refreshToken={attempt} onRetry={retry} />
@@ -340,9 +345,8 @@ function MarketOverview({ range, view, attempt, retry, onRefreshing }: MarketTab
             <section aria-labelledby="market-creator-updates-title" className="min-w-0">
               <header className="mb-3 flex min-h-14 items-center gap-2">
                 <h2 id="market-creator-updates-title" className="text-lg font-semibold">{c("Creator updates", "博主新动态")}</h2>
-                {catalogue.data && shifts.length > 0 && <span className="rounded-full bg-muted px-2 py-0.5 text-xs tabular-nums text-muted-foreground" aria-label={c(`Showing ${shifts.length} latest creator updates`, `展示最新 ${shifts.length} 条博主动态`)}>{shifts.length}/{shifts.length}</span>}
                 <div className="ml-auto flex items-center">
-                  <Button asChild variant="ghost" size="icon" className="h-11 w-11"><Link href="/dashboard/youtube-opinions" aria-label={c("Open all creator opinions", "查看全部观点")} title={c("Open all opinions", "查看全部观点")}><ArrowUpRight className="h-4 w-4" aria-hidden /></Link></Button>
+                  <Button asChild variant="outline" size="icon" className="h-11 w-11"><Link href="/dashboard/youtube-opinions" aria-label={c("Open all creator opinions", "查看全部观点")} title={c("Open all opinions", "查看全部观点")}><ArrowUpRight className="h-4 w-4" aria-hidden /></Link></Button>
                 </div>
               </header>
               <ListCard aria-busy={catalogue.loading && !catalogue.data}>
@@ -371,7 +375,6 @@ function MarketOverview({ range, view, attempt, retry, onRefreshing }: MarketTab
                 ) : (
                   <div className="px-3 py-6 text-center text-sm text-muted-foreground">{c("No creator updates yet.", "暂时没有博主新动态。")}</div>
                 )}
-                <ListFooterLink href="/dashboard/youtube-opinions/stocks">{c("Explore creator-covered stocks", "查看博主覆盖股票")}</ListFooterLink>
               </ListCard>
             </section>
           </aside>
@@ -389,7 +392,6 @@ export default function Market() {
   const [range, setRange] = useState<RangeKey>("1D");
   const [view, setViewState] = useState<MarketView>("card");
   const [attempt, setAttempt] = useState(0);
-  const [refreshing, setRefreshing] = useState(false);
   const retry = useCallback(() => setAttempt(value => value + 1), []);
   const [toolbar, setToolbar] = useState<HTMLDivElement | null>(null);
   const tabList = useRef<HTMLDivElement>(null);
@@ -421,7 +423,7 @@ export default function Market() {
   return (
     <DashboardLayout title={c("Markets", "行情")}>
       <main className="min-w-0 flex-1 overflow-y-auto">
-        <div className="mx-auto w-full min-w-0 max-w-[100rem] px-[16px] pb-16 pt-6 md:px-8 md:pt-8">
+        <div className="mx-auto w-full min-w-0 max-w-[100rem] px-[16px] pb-8 md:pb-16 pt-6 md:px-8 md:pt-8">
           <Tabs value={tab} onValueChange={selectTab} className="min-w-0">
             {/* On phones the row dissolves (`contents`) so the tab bar can stick for the whole page, not just this row. The bar is the page-level nav: larger than in-page tabs, left-aligned, and it scrolls if it overflows. */}
             <div className="flex flex-wrap items-center justify-between gap-3 max-md:contents">
@@ -431,12 +433,12 @@ export default function Market() {
                 <TabsTrigger variant="pill" value="calendar" className="max-md:!min-h-10 max-md:!px-4 max-md:!text-[0.9375rem]">{c("Event calendar", "事件日历")}</TabsTrigger>
                 <TabsTrigger variant="pill" value="macro" className="max-md:!min-h-10 max-md:!px-4 max-md:!text-[0.9375rem]">{c("Macro indicators", "宏观指标")}</TabsTrigger>
               </TabsList>
-              <div ref={setToolbar} className={cn("flex min-w-0 max-w-full items-center justify-end gap-3 max-md:mt-3 max-md:w-full max-md:justify-between md:ml-auto", tab === "calendar" && "max-md:hidden")}>
-                {(tab === "overview" || tab === "trends") && <MarketRangeControls range={range} setRange={setRange} view={view} setView={setView} refreshing={refreshing} onRefresh={retry} />}
+              <div ref={setToolbar} className={cn("flex min-w-0 max-w-full items-center justify-end gap-3 max-md:mt-3 max-md:w-full max-md:justify-between md:ml-auto", (tab === "calendar" || tab === "overview") && "max-md:hidden")}>
+                {tab === "trends" && <MarketRangeControls range={range} setRange={setRange} view={view} setView={setView} />}
               </div>
             </div>
-            <TabsContent value="overview"><MarketOverview range={range} view={view} attempt={attempt} retry={retry} onRefreshing={setRefreshing} /></TabsContent>
-            <TabsContent value="trends"><MarketTrends range={range} view={view} attempt={attempt} retry={retry} onRefreshing={setRefreshing} /></TabsContent>
+            <TabsContent value="overview"><MarketOverview range={range} view={view} attempt={attempt} retry={retry} sectionControls={<MarketRangeControls inline range={range} setRange={setRange} view={view} setView={setView} />} /></TabsContent>
+            <TabsContent value="trends"><MarketTrends range={range} view={view} attempt={attempt} retry={retry} /></TabsContent>
             <TabsContent value="calendar"><MarketEventCalendar toolbar={toolbar} /></TabsContent>
             <TabsContent value="macro"><MacroIndicators toolbar={toolbar} /></TabsContent>
           </Tabs>

@@ -24,7 +24,6 @@ import { cn } from "@/lib/utils";
 import { Change, money, useCopy } from "./shared";
 import StockTrend from "./StockTrend";
 import WatchlistButton from "./WatchlistButton";
-import WatchlistStatus from "./WatchlistStatus";
 
 const names = new Map<string, string>(CORE_STOCKS.map(stock => [stock.symbol, stock.name]));
 const PAGE_SIZE = 20;
@@ -110,7 +109,6 @@ export default function Watchlist() {
           </div>
           <p id="watchlist-ticker-help" role={invalid ? "alert" : undefined} className={`text-xs ${invalid ? "text-negative" : "text-muted-foreground"}`}>{invalid ? c("Enter a valid symbol, e.g. AAPL or BRK-B.", "请输入有效的股票代码，如 AAPL、BRK-B。") : c("Shared with your Reddit follows and synced to your account.", "与 Reddit 关注共用，登录后同步到账号。")}</p>
         </form>
-        <WatchlistStatus />
         {!ready ? <WatchlistCardSkeleton /> : (!userId || error) && !watchlist.length ? null : !watchlist.length ? <div className="glass-card bg-card-glass rounded-3xl border border-foreground/10 py-16 text-center">
           <Star className="mx-auto h-8 w-8 text-muted-foreground" aria-hidden="true" /><h2 className="mt-4 text-lg font-semibold">{c("No stocks in your Watchlist yet", "还没有自选股")}</h2><Button asChild variant="outline" className="mt-6"><Link href="/dashboard">{c("Browse Markets", "浏览行情")}</Link></Button>
         </div> : <section aria-label={c("Saved stocks", "已添加的股票")} className="space-y-3">

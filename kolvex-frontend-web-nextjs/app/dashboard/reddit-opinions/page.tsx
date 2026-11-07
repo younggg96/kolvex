@@ -11,7 +11,6 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { FilterSheet, FilterSheetGroup, FilterSheetToggle } from "@/components/ui/filter-sheet";
 import WatchlistButton from "@/components/decision/WatchlistButton";
-import WatchlistStatus from "@/components/decision/WatchlistStatus";
 import CompanyLogo from "@/components/ui/company-logo";
 import { ListCard, ListColumnHeader, ListRow } from "@/components/ui/list-card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -96,8 +95,6 @@ export default function RedditOpinionsPage() {
             </Button>
             </div>
           </div>
-
-          <div className="mt-3"><WatchlistStatus /></div>
 
           <section aria-label={t("redditOpinions.title")} className="mt-3 md:mt-4">
             <ListCard>
