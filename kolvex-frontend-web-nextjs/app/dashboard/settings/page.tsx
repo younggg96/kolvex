@@ -1,5 +1,6 @@
 "use client";
 
+import { InfoTip } from "@/components/ui/info-tip";
 import { ContentLoading } from "@/components/ui/content-loading";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useEffect, useState, Suspense, useCallback } from "react";
@@ -121,10 +122,10 @@ function SettingsSection({
     <section className="pt-2">
       <div className="flex items-start justify-between gap-4 border-b border-border pb-4">
         <div className="min-w-0">
-          <h2 className="text-[1.375rem] font-bold leading-tight text-foreground">{title}</h2>
-          {subtitle && (
-            <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p>
-          )}
+          <h2 className="flex items-center gap-2 text-[1.375rem] font-bold leading-tight text-foreground">
+            {title}
+            {subtitle && <InfoTip label={title}>{subtitle}</InfoTip>}
+          </h2>
         </div>
         {action}
       </div>
@@ -588,11 +589,6 @@ function SettingsContent() {
                 <TabsContent value="account" className="mt-0">
                   <SettingsSection
                     title={t("settings.account.title")}
-                    subtitle={
-                      isEditing
-                        ? t("settings.account.updateDetails")
-                        : t("settings.account.viewDetails")
-                    }
                     action={
                       !isEditing && !profileLoading ? (
                         <Button
@@ -1099,7 +1095,6 @@ function SettingsContent() {
                 >
                   <SettingsSection
                     title={t("settings.preferences.title")}
-                    subtitle={t("settings.preferences.subtitle")}
                   >
                     <div>
                       <FieldRow icon={Globe} label={t("settings.preferences.language")}>

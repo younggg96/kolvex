@@ -11,7 +11,7 @@ import "./auth.css";
 interface AuthLayoutProps {
   children: ReactNode;
   title: string;
-  subtitle: string;
+  subtitle?: string;
 }
 
 export default function AuthLayout({
@@ -29,9 +29,11 @@ export default function AuthLayout({
     >
       {title}
     </h1>
-    <p className="mt-3 text-sm leading-6 text-muted-foreground">
-      {subtitle}
-    </p>
+    {subtitle && (
+      <p className="mt-3 text-sm leading-6 text-muted-foreground">
+        {subtitle}
+      </p>
+    )}
   </>}>{children}</AuthFrame>;
 }
 

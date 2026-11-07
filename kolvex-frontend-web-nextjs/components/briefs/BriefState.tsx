@@ -11,8 +11,7 @@ export default function BriefState({ loading, error, retry }: { loading: boolean
   if (loading) return <ContentLoading label={t("common.loading")} className="min-h-0"><BriefSkeleton /></ContentLoading>;
   const auth = error === 401 || error === 403;
   return <div className="glass-card bg-card-glass space-y-4 rounded-3xl border border-foreground/10 p-6 sm:p-8">
-    <h2 className="text-lg font-semibold">{t(error === 404 ? "briefs.notFound" : auth ? "briefs.signInRequired" : "briefs.loadError")}</h2>
-    <p role="alert" className="text-sm leading-6 text-muted-foreground">{t(error === 404 ? "briefs.notFoundDetail" : auth ? "briefs.signInDetail" : "briefs.loadErrorDetail")}</p>
+    <h2 role="alert" className="text-lg font-semibold">{t(error === 404 ? "briefs.notFound" : auth ? "briefs.signInRequired" : "briefs.loadError")}</h2>
     {auth ? <Button asChild variant="outline"><Link href="/auth?redirectTo=%2Fdashboard%2Fbriefs">{t("briefs.signIn")}</Link></Button> : error !== 404 && <Button variant="outline" onClick={retry}>{t("common.retry")}</Button>}
   </div>;
 }

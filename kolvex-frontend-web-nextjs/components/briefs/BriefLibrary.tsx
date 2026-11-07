@@ -56,7 +56,6 @@ export default function BriefLibrary({ searchParams }: { searchParams?: BriefSea
             {error && data && <p role="alert" className="mb-4 text-sm text-muted-foreground">{t("common.error")} <Button variant="outline" size="sm" onClick={retry}>{t("common.retry")}</Button></p>}
             {loading || (error && error !== 404 && !data) ? <BriefState loading={loading} error={error} retry={retry} /> : error === 404 ? <div className="space-y-3 py-12 text-center">
               <h2 className="text-xl font-semibold">{t("briefs.emptyEdition", { edition: t(weekend ? "briefs.weekendEdition" : `briefs.${type}`) })}</h2>
-              <p className="text-sm leading-6 text-muted-foreground">{t(weekend ? "briefs.weekendEmptyDetail" : "briefs.emptyEditionDetail")}</p>
             </div> : data && <BriefContent key={id} document={data.payload} />}
           </TabsContent>
         </Tabs>

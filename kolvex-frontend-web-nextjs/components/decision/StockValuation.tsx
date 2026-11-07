@@ -1,5 +1,6 @@
 "use client";
 
+import { InfoTip } from "@/components/ui/info-tip";
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Area, CartesianGrid, ComposedChart, Line, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
@@ -80,7 +81,7 @@ function HistoricalValuation({ symbol }: { symbol: string }) {
 
   return <div className="space-y-6">
     <div className="flex flex-wrap items-center justify-between gap-3">
-      <div><h2 className="text-xl font-semibold">{c("Valuation analysis", "估值分析")}</h2><p className="mt-1 text-sm text-muted-foreground">{c("Historical PE references · USD · SEC filings", "历史 PE 参考估值 · USD · SEC 财报")}</p></div>
+      <div><h2 className="flex items-center gap-2 text-xl font-semibold">{c("Valuation analysis", "估值分析")}<InfoTip label={c("About this valuation", "关于估值")}>{c("Historical PE references, in USD, from SEC filings.", "基于 SEC 财报的历史 PE 参考估值，单位 USD。")}</InfoTip></h2></div>
       <Button variant="outline" disabled={resource.refreshing} onClick={resource.refresh}>{resource.refreshing ? c("Refreshing…", "更新中…") : c("Refresh", "刷新")}</Button>
     </div>
     {Boolean(resource.error) && <p role="status" className="text-sm text-muted-foreground">{c("Refresh failed. The previous snapshot remains visible.", "更新失败，正在显示上次成功读取的快照。")}</p>}
@@ -207,10 +208,9 @@ function SimulationPanel({ data, onSimulation }: { data: ValuationData; onSimula
   const ready = data.current.status === "complete" && data.current.share_basis_status === "verified";
   if (!ready) return null;
   return <Card className="space-y-5 p-4 sm:p-5">
-    <div className="flex flex-wrap justify-between gap-3"><div><h3 className="text-base font-semibold">{c("Assumptions & future scenarios", "假设与未来情景")}</h3><p className="mt-1 text-xs text-muted-foreground">{c("3, 6 and 9 calendar months ahead; not company fiscal-quarter dates.", "未来3、6、9个日历月的目标时点，不是公司财季末。")}</p></div>
+    <div className="flex flex-wrap justify-between gap-3"><div><h3 className="flex items-center gap-2 text-base font-semibold">{c("Assumptions & future scenarios", "假设与未来情景")}<InfoTip label={c("About scenarios", "关于情景")}>{c("3, 6 and 9 calendar months ahead; not company fiscal-quarter dates.", "未来3、6、9个日历月的目标时点，不是公司财季末。")}</InfoTip></h3></div>
       <Button variant="outline" size="sm" disabled={!edited} onClick={() => { setPe(Object.fromEntries(valuationScenarios.map((key) => [key, defaults ? String(Number(defaults[key].toFixed(2))) : ""]))); setGrowth({ conservative: "0", base: "0", optimistic: "0" }); onSimulation(null); }}>{c("Reset assumptions", "恢复系统假设")}</Button></div>
     <div className="min-h-6 text-sm" aria-live="polite">{state === "pending" ? c("Calculating…", "正在计算…") : state === "invalid" ? c("Check the three PE values and growth rates. Previous results have not been updated.", "请检查三种情景的 PE 顺序和增长率；下方保留上次有效结果。") : state === "failed" ? <span>{c("Calculation failed or scenarios cross. Check assumptions; refresh valuation if the snapshot changed.", "计算失败或目标价情景交叉，请检查假设；快照更新后请刷新估值。 ")}<Button size="sm" variant="ghost" onClick={() => setRetry((v) => v + 1)}>{c("Retry", "重试")}</Button></span> : edited ? c("Personal simulation applied to the current card; system history stays unchanged.", "个人模拟已应用于当前卡片，系统历史保持原样。") : c("System multiples with constant-earnings scenarios.", "采用系统参考倍数和盈利不变情景。")}</div>
-    {result && <p className="text-xs text-muted-foreground sm:hidden">{c("Swipe horizontally to see all scenarios.", "左右滑动查看全部情景。")}</p>}
     {result && <div className="overflow-x-auto" role="region" aria-label={c("Scenario prices", "情景目标价") } tabIndex={0}><table className="w-full min-w-[30rem] text-sm"><thead><tr className="border-b border-border text-xs text-muted-foreground"><th scope="col" className="py-3 text-left font-normal">{c("Target date", "目标日期")}</th>{valuationScenarios.map((key) => <th key={key} scope="col" className="px-3 py-3 text-right font-normal">{c(names[key][0], names[key][1])}</th>)}</tr></thead><tbody>{result.projections.map((row) => <tr key={row.target_date} className="border-b border-border last:border-0"><th scope="row" className="py-4 text-left font-normal">{row.target_date}</th>{valuationScenarios.map((key) => <td key={key} className="figure px-3 py-4 text-right"><div className="font-medium">{f.money(row.scenarios[key].target_price)}</div><div className={cn("mt-1 text-xs", row.scenarios[key].price_space >= 0 ? "text-positive" : "text-negative")}>{f.percent(row.scenarios[key].price_space)}</div></td>)}</tr>)}</tbody></table></div>}
     <details className="border-t border-border pt-3"><summary className="cursor-pointer rounded-lg py-2 text-sm font-medium hover:bg-foreground/[0.04]">{c("Adjust assumptions", "调整假设")}</summary><div className="mt-3 space-y-4">
     <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">{valuationScenarios.map((key) => <div key={key} className="space-y-3">

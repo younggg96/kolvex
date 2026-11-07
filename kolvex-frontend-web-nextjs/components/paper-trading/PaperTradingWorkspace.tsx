@@ -1,5 +1,6 @@
 "use client";
 
+import { InfoTip } from "@/components/ui/info-tip";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { RefreshCw } from "lucide-react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
@@ -164,18 +165,12 @@ export default function PaperTradingWorkspace() {
         <div className="mx-auto max-w-screen-2xl space-y-6 px-[16px] pb-16 pt-6 md:space-y-8 md:px-8 md:pt-8">
           <header className="flex flex-wrap items-start justify-between gap-4">
             <div>
-              <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                {c("Learn by trading", "在交易中学习")}
-              </p>
-              <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+              <h1 className="flex items-center gap-2 text-2xl font-semibold tracking-tight sm:text-3xl">
                 {c("Your virtual trading desk", "你的虚拟交易工作台")}
+                <InfoTip label={c("About paper trading", "关于模拟交易")}>
+                  {c("Every account starts with $100,000 in virtual funds.", "每个账户初始有 10 万美元虚拟资金。")}
+                </InfoTip>
               </h1>
-              <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground">
-                {c(
-                  "Turn a research idea into a trade, track what happens, and review the decision. Start with $100,000 in virtual funds.",
-                  "把分析变成交易计划，记录盈亏，也复盘每次判断。从 10 万美元虚拟资金开始。",
-                )}
-              </p>
             </div>
             <div className="flex flex-wrap gap-2">
               {account && (
@@ -260,8 +255,8 @@ export default function PaperTradingWorkspace() {
                 <p role="status" className="text-sm text-negative">
                   {autoSyncFailed
                     ? c(
-                        "Automatic sync failed. Data may be stale; use Sync account to retry.",
-                        "自动同步未成功，数据可能过期，请点击同步账户重试。",
+                        "Automatic sync failed. Data may be stale.",
+                        "自动同步未成功，数据可能已过期。",
                       )
                     : `${c("Quotes unavailable; keeping previous marks for", "行情暂不可用，以下股票保留上次估值")} ${account.state.quote_errors?.join(", ")}`}
                 </p>

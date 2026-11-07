@@ -36,7 +36,7 @@ class FakeRepo:
             "previous_filing": data.get("previous_filing"), "amendments": data.get("amendments") or [],
             "partial": data.get("partial"), "coverage": None, "summary": {"id": data["id"]},
             "sec_fetched_at": "t", "synced_at": "t", "complete": True, "sync_version": SYNC_VERSION,
-            "tickers_mapped_at": "t" if mapped else old.get("tickers_mapped_at")}
+            "tickers_mapped_at": "t" if mapped else None}
         self.rows[f["accession"]] = copy.deepcopy(data["holdings"])
         self.saves.append((f["accession"], mapped, [h.get("ticker") for h in data["holdings"]]))
 
@@ -149,6 +149,16 @@ class StoreTests(unittest.TestCase):
         self.assertEqual(self.run_sync(force=True), "synced")
         self.assertEqual(self.store.tickers.remembered, {"90353T100": "UBER"})
         self.assertEqual(self.repo.saves[-2], ("A2", False, ["UBER", None]))
+
+    def test_forced_rewrite_clears_mapping_until_refilled(self):
+        self.run_sync()
+        self.store.tickers.resolve = lambda cusips, wait=False: asyncio.sleep(0)
+        self.store.tickers.sent.clear()
+        self.run_sync(force=True, map_all=False)
+        self.assertIsNone(self.repo.filings["A2"]["tickers_mapped_at"])
+        self.store.tickers = FakeTickers({"90353T100": "UBER"})
+        self.assertEqual(self.run_sync(), "synced")
+        self.assertEqual(self.repo.saves[-1], ("A2", True, ["UBER", None]))
 
     def test_missing_snapshot_reads_none(self):
         self.assertIsNone(asyncio.run(self.store.latest("pershing")))

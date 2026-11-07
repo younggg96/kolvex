@@ -35,6 +35,7 @@
 import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent, type ReactNode, type RefObject } from "react";
 import { LocateFixed, Maximize2, MoveHorizontal, RotateCcw, ZoomIn, ZoomOut } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { InfoTip } from "@/components/ui/info-tip";
 import { cn } from "@/lib/utils";
 import { formatChangePercent, formatPrice, formatVolume, type PriceBar, type StockQuote } from "@/lib/stockApi";
 import { latestChartQuote } from "@/lib/chart/quote";
@@ -775,7 +776,7 @@ export default function PriceGraph({
                 onActiveChange(null);
               }}
               className={cn(
-                "inline-flex h-11 shrink-0 select-none items-center justify-center rounded-full px-3 text-[0.8125rem] font-semibold transition-colors duration-150 sm:h-8",
+                "inline-flex h-8 shrink-0 select-none items-center justify-center rounded-full px-3 text-[0.8125rem] font-semibold transition-colors duration-150",
                 "focus-visible:outline-none",
                 "disabled:pointer-events-none disabled:opacity-40",
                 selected ? "glass-thumb text-foreground" :"text-muted-foreground hover:bg-muted/70 hover:text-foreground focus-visible:bg-muted/60",
@@ -798,7 +799,7 @@ export default function PriceGraph({
               onViewChange(null);
             }}
             className={cn(
-              "inline-flex h-11 max-w-[min(15rem,52vw)] shrink-0 items-center justify-center rounded-full px-3 text-[0.8125rem] font-semibold transition-colors duration-150 sm:h-8",
+              "inline-flex h-8 max-w-[min(15rem,52vw)] shrink-0 items-center justify-center rounded-full px-3 text-[0.8125rem] font-semibold transition-colors duration-150",
               "focus-visible:outline-none",
               range === "CUSTOM" ? "glass-thumb text-foreground" :"text-muted-foreground hover:bg-muted/70 hover:text-foreground focus-visible:bg-muted/60",
             )}
@@ -812,7 +813,7 @@ export default function PriceGraph({
         <button
           type="button"
           onClick={resetView}
-          className="inline-flex h-11 shrink-0 items-center gap-1 rounded-full px-2.5 text-[0.75rem] font-semibold text-muted-foreground transition-colors hover:bg-muted/70 hover:text-foreground focus-visible:outline-none focus-visible:bg-muted/60 sm:h-8"
+          className="inline-flex h-8 shrink-0 items-center gap-1 rounded-full px-2.5 text-[0.75rem] font-semibold text-muted-foreground transition-colors hover:bg-muted/70 hover:text-foreground focus-visible:outline-none focus-visible:bg-muted/60"
         >
           <RotateCcw className="h-3.5 w-3.5" aria-hidden="true" />
           {t("youtubeOpinions.graph.resetZoom")}
@@ -891,6 +892,23 @@ export default function PriceGraph({
     />
   );
 
+  const showExtended = Boolean(extended && extended.session !== "regular");
+  const quoteProblem = Boolean(quoteError || (!latest && !quoteLoading));
+  /** Source, timestamps and the delay notice stay one tap away instead of two lines over the chart. */
+  const quoteDetails = quoteEnabled && latest ? (
+    <InfoTip label={t("youtubeOpinions.quoteMayBeDelayed")} className="self-center">
+      <span className="block">{quote?.source || "Yahoo Finance"} · {quoteTime}</span>
+      {extended && showExtended && extended.time ? (
+        <span className="block">
+          {t(`youtubeOpinions.quoteSession.${extended.session}`)} · {new Date(extended.time * 1000).toLocaleString(t("common.intlLocale"), {
+            timeZone: quote?.exchangeTimezone || "America/New_York", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit", timeZoneName: "short",
+          })}
+        </span>
+      ) : null}
+      <span className="block">{t("youtubeOpinions.quoteMayBeDelayed")}{showExtended ? ` · ${t("youtubeOpinions.regularSessionChart")}` : ""}</span>
+    </InfoTip>
+  ) : null;
+
   return (
     <div className={cn("min-w-0", advanced && "flex min-h-0 flex-1 flex-col")}>
       {/* header: price · change · window label, as in the reference */}
@@ -907,6 +925,7 @@ export default function PriceGraph({
                 ? t(`youtubeOpinions.quoteSession.${latest.session}`)
                 : quoteVsPreviousClose ? t("youtubeOpinions.quoteSession.regular")
                   : rangeChangeLabel || t("youtubeOpinions.priceRangeChange")}</span>
+              {quoteDetails}
             </span>
           ) : (
             loading || !bars ? <Skeleton className="h-5 w-32" aria-hidden="true" /> : null
@@ -927,19 +946,15 @@ export default function PriceGraph({
           </button>
         )}
       </div>
-      {quoteEnabled && (
+      {quoteEnabled && (showExtended || quoteProblem || (!latest && quoteLoading)) && (
         <div className="mt-1 flex flex-wrap items-baseline gap-x-2 gap-y-1 text-xs text-muted-foreground">
-          {latest && <span>{quote?.source || "Yahoo Finance"} · {quoteTime} · {t("youtubeOpinions.quoteMayBeDelayed")}</span>}
-          {extended && extended.session !== "regular" && <span>
+          {showExtended && extended && <span className="tabular-nums">
             {t(`youtubeOpinions.quoteSession.${extended.session}`)} {formatPrice(extended.price)}
             {extended.changePercent !== null && ` (${formatChangePercent(extended.changePercent)})`}
-            {" · "}{extended.time && new Date(extended.time * 1000).toLocaleString(t("common.intlLocale"), {
-              timeZone: quote?.exchangeTimezone || "America/New_York", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit", timeZoneName: "short",
-            })}{" · "}{t("youtubeOpinions.regularSessionChart")}
           </span>}
           {!latest && quoteLoading && <span>{t("youtubeOpinions.quoteLoading")}</span>}
-          {(quoteError || (!latest && !quoteLoading)) && <span role="status">{t(latest ? "youtubeOpinions.quoteRefreshFailed" : "youtubeOpinions.quoteUnavailable")}</span>}
-          {(quoteError || (!latest && !quoteLoading)) && onQuoteRetry && (
+          {quoteProblem && <span role="status">{t(latest ? "youtubeOpinions.quoteRefreshFailed" : "youtubeOpinions.quoteUnavailable")}</span>}
+          {quoteProblem && onQuoteRetry && (
             <button type="button" onClick={onQuoteRetry} className="rounded px-1 font-semibold text-foreground underline underline-offset-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2">{t("common.retry")}</button>
           )}
         </div>

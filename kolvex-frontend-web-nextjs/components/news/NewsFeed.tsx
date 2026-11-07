@@ -54,7 +54,7 @@ export default function NewsFeed() {
               </div>
             </ListToolbar>
             {(terminal.error || terminal.meta?.stale) && <p role="alert" className="shrink-0 border-b border-border/70 py-2 text-sm max-md:px-[16px]">
-              {c("Refresh failed. Showing the last available headlines; use Refresh to retry.", "更新失败，保留最近可用快讯；请点击刷新重试。")}
+              {c("Refresh failed. Showing the last available headlines.", "更新失败，正在显示最近可用的快讯。")}
             </p>}
             {(translation.failed > 0 && translation.pending === 0) && <div role="status" className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-border/70 py-2 text-xs text-muted-foreground max-md:px-[16px]">
               <span>{c("Some translations are unavailable; showing the original text.", "部分快讯暂未翻译，已保留原文。")}</span>
@@ -69,7 +69,6 @@ export default function NewsFeed() {
               {!terminal.feed.initialized && terminal.loading ? <NewsRowsSkeleton label={c("Loading headlines…", "正在加载快讯…")} /> : articles.length === 0 ? <div className="px-6 py-16 text-center">
                 <Newspaper aria-hidden className="mx-auto mb-3 h-6 w-6 text-muted-foreground" />
                 <h2 className="text-sm font-medium">{terminal.error ? c("News unavailable", "新闻暂不可用") : c("No headlines yet", "暂无快讯")}</h2>
-                <p className="mt-2 text-xs text-muted-foreground">{c("Refresh to check again later.", "可稍后刷新重试。")}</p>
                 <Button variant="outline" size="sm" className="mt-4" onClick={terminal.refresh}>
                   {c("Retry", "重试")}
                 </Button>

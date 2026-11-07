@@ -73,7 +73,6 @@ export default function CreatorIntelligence({
       id="creator-intelligence"
       className="[container-name:creator-intelligence] [container-type:inline-size]"
       title={c("Creator Intelligence", "博主情报")}
-      description={c("Latest opinion from each tracked creator in the past 30 days. Select a creator or date to read the evidence.", "按近 30 天每位博主的最新观点分组。点击博主或日期，查看对应观点。")}
       action={<TextLink href={`/dashboard/youtube-opinions?tab=stocks&stock=${encodeURIComponent(ticker)}`}>{c("Full record", "完整记录")}</TextLink>}
     >
       {loading ? (
@@ -130,7 +129,6 @@ export default function CreatorIntelligence({
           <section className="mt-8" aria-labelledby={`${detailId}-timeline-title`}>
             <div className="flex flex-wrap items-baseline justify-between gap-3">
               <h3 id={`${detailId}-timeline-title`} className="text-base font-semibold">{c("Opinion timeline", "观点时间线")}</h3>
-              <p className="text-xs text-muted-foreground">{c("Newest first · Includes historical opinions", "由新到旧 · 包含历史观点")}</p>
             </div>
             <div className="mt-4 overflow-x-auto pb-2">
               <ol className="flex min-w-full w-max" aria-label={c("Select an opinion date", "选择观点日期")}>

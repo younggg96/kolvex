@@ -158,7 +158,6 @@ export function AccountCard({
               <EmptyState
                 icon={Briefcase}
                 title={t("portfolio.holdings.noPositions")}
-                description={t("portfolio.holdings.noPositionsDesc")}
               />
             )}
           </CardContent>

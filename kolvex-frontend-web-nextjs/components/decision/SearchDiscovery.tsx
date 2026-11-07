@@ -53,7 +53,6 @@ function SourceState({ loading, error, retry, className, skeleton }: { loading: 
   return <div className={cn("flex min-h-40 items-center justify-center", className)}>
     {<ListEmptyState
       title={error ? c("This source is unavailable", "这个来源暂时不可用") : c("Nothing here yet", "暂时还没有内容")}
-      description={error ? c("Try again, or explore another source.", "可以重试，或切换到其他来源。") : c("Try another source, or search for a stock above.", "可以切换来源，或在上方搜索股票。")}
       action={error ? <Button type="button" variant="outline" size="sm" onClick={retry}>{c("Retry", "重试")}</Button> : undefined}
       alert={Boolean(error)}
     />}

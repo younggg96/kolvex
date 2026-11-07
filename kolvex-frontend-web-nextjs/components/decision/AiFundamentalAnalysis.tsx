@@ -1,5 +1,6 @@
 "use client";
 
+import { InfoTip } from "@/components/ui/info-tip";
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Sparkles } from "lucide-react";
@@ -138,13 +139,11 @@ export default function AiFundamentalAnalysis({ symbol }: { symbol: string }) {
         <div className="min-w-0 max-w-2xl">
           <h2 id="ai-fundamentals-title" className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
             {c("AI fundamental analysis", "AI 基本面分析")}
+            <InfoTip label={c("About AI fundamental analysis", "关于 AI 基本面分析")}>{c(
+              "Your selected model reads the figures on this page and assesses profitability, growth, balance sheet, cash flow, valuation, shareholder returns, and risk and performance.",
+              "由你选择的模型读取本页指标，从盈利、成长、资产负债、现金流、估值、股东回报与风险表现七个维度解读。",
+            )}</InfoTip>
           </h2>
-          <p className="mt-2 text-xs leading-5 text-muted-foreground">
-            {c(
-              "Your selected model reads the figures on this page and assesses profitability, growth, balance sheet, cash flow, valuation, shareholder returns, and risk and performance. It interprets data only; it is not a recommendation.",
-              "由你选择的模型读取本页指标，从盈利、成长、资产负债、现金流、估值、股东回报与风险表现七个维度解读。仅为数据解读，不构成投资建议。",
-            )}
-          </p>
         </div>
         <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
           <Select

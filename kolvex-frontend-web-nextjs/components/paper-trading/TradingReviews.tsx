@@ -1,4 +1,5 @@
 "use client";
+import { InfoTip } from "@/components/ui/info-tip";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -161,15 +162,12 @@ export default function TradingReviews({
     <section className="space-y-6">
       <header className="flex flex-wrap justify-between gap-4">
         <div>
-          <h2 className="text-xl font-semibold">
+          <h2 className="flex items-center gap-2 text-xl font-semibold">
             {c("Learn from your trades", "从自己的交易中学习")}
+            <InfoTip label={c("About trade reviews", "关于交易复盘")}>
+              {c("Review your entry thesis, executions and results while a trade is open. Once fully closed, you can choose to publish a review. Your ledger and account balance remain private.", "持仓中即可回看入场依据、成交与当前结果，完全平仓后可自愿公开复盘。个人账本和账户余额保持私密。")}
+            </InfoTip>
           </h2>
-          <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-            {c(
-              "Review your entry thesis, executions and results while a trade is open. Once fully closed, you can choose to publish a review. Your ledger and account balance remain private.",
-              "持仓中即可回看入场依据、成交与当前结果，完全平仓后可自愿公开复盘。个人账本和账户余额保持私密。",
-            )}
-          </p>
         </div>
         <Button
           disabled={busy}
@@ -193,21 +191,11 @@ export default function TradingReviews({
           <h3 id="my-trade-reviews" className="font-semibold">
             {c("My trade journal", "我的交易复盘")} · {trades.length}
           </h3>
-          <p className="mt-2 text-sm text-muted-foreground">
-            {c(
-              "Only you can see this ledger. Publishing is optional and requires a fully closed position.",
-              "以下账本仅自己可见。公开复盘为自愿操作，需对应持仓已完全平仓。",
-            )}
-          </p>
         </div>
         <ListCard>
           {!trades.length ? (
             <ListEmptyState
               title={c("No executions to review yet", "还没有可复盘的成交")}
-              description={c(
-                "After your first virtual order fills, its entry thesis and execution will appear here. Unfilled orders are available at the trading desk.",
-                "第一笔虚拟订单成交后，入场依据与成交记录会显示在这里。未成交的委托可在交易工作台查看。",
-              )}
               action={
                 <Button onClick={onTrade}>
                   {c("Go to trading desk", "前往交易工作台")}
@@ -399,10 +387,6 @@ export default function TradingReviews({
                   ? c("Reviews could not load", "无法加载复盘")
                   : c("No published reviews yet", "还没有公开复盘")
               }
-              description={c(
-                "Public reviews appear here when learners choose to share. Your own trade journal is available above.",
-                "学习者自愿公开后，复盘会显示在这里。你可以先查看上方自己的交易记录。",
-              )}
             />
           ) : (
             <ul>
@@ -618,8 +602,8 @@ export default function TradingReviews({
                 className="text-xs text-muted-foreground"
               >
                 {c(
-                  "At least 10 characters. Your text is published only when you confirm below.",
-                  "至少填写 10 个字，点击下方「公开复盘」后才会发布。",
+                  "At least 10 characters. Nothing is published until you confirm.",
+                  "至少 10 个字，确认后才会公开。",
                 )}
               </p>
             </div>

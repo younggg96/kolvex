@@ -250,9 +250,6 @@ export default function TradingAnalysisPage({ searchParams }: { searchParams?: {
                 <h2 className="text-[1.75rem] font-bold leading-tight md:text-[2rem]">
                   {t("tradingAnalysis.title")}
                 </h2>
-                <p className="mt-2 max-w-[60ch] text-[0.9375rem] leading-relaxed text-muted-foreground">
-                  {t("tradingAnalysis.heroDescription")}
-                </p>
               </div>
               <div className="flex flex-wrap items-center gap-2">
                 <Button variant="outline" asChild className="gap-1.5">

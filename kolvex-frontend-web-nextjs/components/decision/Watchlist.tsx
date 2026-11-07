@@ -13,6 +13,7 @@ import { PendingValue } from "@/components/ui/content-loading";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StockRowsSkeleton } from "@/components/decision/StockRowsSkeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { FilterSheet, FilterSheetGroup } from "@/components/ui/filter-sheet";
 import { ListCard, ListColumnHeader, ListLoadMore, ListRow, ListRows, listRowTargetClass } from "@/components/ui/list-card";
 import { useWatchlist } from "@/hooks/useWatchlist";
 import { MARKET_RANGES } from "@/lib/marketObservations";
@@ -49,6 +50,10 @@ export default function Watchlist() {
   useEffect(() => { if (!composing.current) setDraft(query); setRows(PAGE_SIZE); }, [query, sort]);
   useEffect(() => { document.title = c("Watchlist | Kolvex", "自选股 | Kolvex"); }, [c]);
 
+  const sortOptions = [
+    { value: "added", label: c("Recently added", "最近添加") }, { value: "symbol", label: c("Symbol A–Z", "代码 A–Z") },
+    { value: "gainers", label: c("Gainers first", "涨幅优先") }, { value: "losers", label: c("Losers first", "跌幅优先") },
+  ];
   function update(q: string, nextSort = sort) {
     const next = new URLSearchParams(window.location.search);
     q ? next.set("q", q) : next.delete("q");
@@ -91,7 +96,7 @@ export default function Watchlist() {
     <main className="flex-1 overflow-y-auto">
       <div className="mx-auto max-w-6xl space-y-6 px-[16px] pb-16 pt-6 md:px-8 md:pt-8">
         <div className="flex items-start justify-between gap-4">
-          <div><h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{c("Watchlist", "自选股")}</h1><p className="mt-2 text-sm text-muted-foreground">{c("Keep the stocks you follow in one place.", "把关注的股票放在一起，随时查看行情。")}</p></div>
+          <div><h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{c("Watchlist", "自选股")}</h1></div>
           <Button variant="ghost" size="icon" className="h-11 w-11 shrink-0" aria-label={c("Refresh Watchlist quotes", "刷新自选股行情")} title={c("Refresh quotes", "刷新行情")} disabled={!ready || loading || !watchlist.length} onClick={() => setAttempt(value => value + 1)}><RefreshCw className="h-4 w-4" aria-hidden="true" /></Button>
         </div>
         <form noValidate onSubmit={addTicker} aria-label={c("Add a stock", "添加自选股")} className="space-y-2">
@@ -107,13 +112,14 @@ export default function Watchlist() {
         </form>
         <WatchlistStatus />
         {!ready ? <WatchlistCardSkeleton /> : (!userId || error) && !watchlist.length ? null : !watchlist.length ? <div className="glass-card bg-card-glass rounded-3xl border border-foreground/10 py-16 text-center">
-          <Star className="mx-auto h-8 w-8 text-muted-foreground" aria-hidden="true" /><h2 className="mt-4 text-lg font-semibold">{c("Your Watchlist starts here", "从第一只自选股开始")}</h2><p className="mx-auto mt-2 max-w-sm px-4 text-sm leading-6 text-muted-foreground">{c("Add a symbol above, or use the star beside a stock in Markets.", "在上方输入代码，或点击行情列表中股票旁的星标。")}</p><Button asChild variant="outline" className="mt-6"><Link href="/dashboard">{c("Browse Markets", "浏览行情")}</Link></Button>
+          <Star className="mx-auto h-8 w-8 text-muted-foreground" aria-hidden="true" /><h2 className="mt-4 text-lg font-semibold">{c("No stocks in your Watchlist yet", "还没有自选股")}</h2><Button asChild variant="outline" className="mt-6"><Link href="/dashboard">{c("Browse Markets", "浏览行情")}</Link></Button>
         </div> : <section aria-label={c("Saved stocks", "已添加的股票")} className="space-y-3">
           <ListCard>
             <div className="flex items-center justify-between gap-3 lg:grid lg:grid-cols-[minmax(0,1fr)_12rem]">
               <p role="status" className="text-xs tabular-nums text-muted-foreground lg:hidden">{showingCount}</p>
               <div className="hidden lg:block"><label htmlFor="watchlist-search" className="mb-2 block text-xs text-muted-foreground">{c("Search Watchlist", "搜索自选股")}</label><div className="relative"><Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" /><Input id="watchlist-search" ref={search} value={draft} placeholder={c("Ticker or company name", "股票代码或公司名称")} className="h-11 pl-10 pr-11" maxLength={100} onChange={event => { setDraft(event.target.value); if (!composing.current) update(event.target.value); }} onCompositionStart={() => { composing.current = true; }} onCompositionEnd={event => { composing.current = false; update(event.currentTarget.value); }} onKeyDown={event => { if (event.key === "Escape" && !composing.current) clear(); }} />{draft && <Button type="button" variant="ghost" size="icon" className="absolute right-0 top-0 h-11 w-11" aria-label={c("Clear Watchlist search", "清除自选股搜索")} onClick={clear}><X className="h-4 w-4" aria-hidden="true" /></Button>}</div></div>
-              <div className="w-40 shrink-0 lg:w-auto"><label htmlFor="watchlist-sort" className="sr-only lg:not-sr-only lg:mb-2 lg:block lg:text-xs lg:text-muted-foreground">{c("Sort", "排序")}</label><Select value={sort} onValueChange={value => update(query, value)}><SelectTrigger id="watchlist-sort" className="h-11"><SelectValue /></SelectTrigger><SelectContent align="end"><SelectItem value="added">{c("Recently added", "最近添加")}</SelectItem><SelectItem value="symbol">{c("Symbol A–Z", "代码 A–Z")}</SelectItem><SelectItem value="gainers">{c("Gainers first", "涨幅优先")}</SelectItem><SelectItem value="losers">{c("Losers first", "跌幅优先")}</SelectItem></SelectContent></Select></div>
+              <FilterSheet title={c("Sort", "排序")} summary={sortOptions.find(option => option.value === sort)?.label} active={sort !== "added"} onReset={() => update(query, "added")} triggerClassName="shrink-0"><FilterSheetGroup label={c("Sort", "排序")} options={sortOptions} value={sort} onChange={value => update(query, value)} /></FilterSheet>
+              <div className="hidden lg:block"><label htmlFor="watchlist-sort" className="mb-2 block text-xs text-muted-foreground">{c("Sort", "排序")}</label><Select value={sort} onValueChange={value => update(query, value)}><SelectTrigger id="watchlist-sort" className="h-11"><SelectValue /></SelectTrigger><SelectContent align="end">{sortOptions.map(option => <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>)}</SelectContent></Select></div>
             </div>
             <div className="mt-3 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 text-xs leading-5 text-muted-foreground">
               <p role="status" className="hidden tabular-nums lg:block">{showingCount}</p>

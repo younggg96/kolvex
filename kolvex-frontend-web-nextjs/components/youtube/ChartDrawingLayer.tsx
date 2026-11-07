@@ -44,6 +44,22 @@ export default function ChartDrawingLayer({
 }) {
   if (!width || !height) return null;
 
+  /**
+   * Horizontal-line labels all sit at the right edge, so close prices pile up on narrow screens.
+   * Earlier drawings (entry, stop, targets come first) keep their label; a later one that would
+   * overlap is hidden until selected. The line and its axis position stay visible either way.
+   */
+  const LABEL_GAP = 13;
+  const shownLabelYs: number[] = [];
+  const hiddenLabels = new Set<string>();
+  for (const drawing of [...drawings].sort((a, b) => Number(b.id === selectedId) - Number(a.id === selectedId))) {
+    if (drawing.type !== "hline" || !drawing.points[0]) continue;
+    const y = toPx(drawing.points[0]).y;
+    if (y < -LABEL_GAP || y > height + LABEL_GAP) continue;
+    if (drawing.id !== selectedId && shownLabelYs.some((shown) => Math.abs(shown - y) < LABEL_GAP)) hiddenLabels.add(drawing.id);
+    else shownLabelYs.push(y);
+  }
+
   function hitLine(id: string, a: Point, b: Point, key?: string) {
     return (
       <line
@@ -138,9 +154,11 @@ export default function ChartDrawingLayer({
         body = (
           <>
             <line x1={0} y1={a.y} x2={width} y2={a.y} {...stroke} />
-            <text x={width - 4} y={a.y - 4} textAnchor="end" fill={color} {...labelProps}>
-              {drawing.label ? `${drawing.label} ${formatPrice(pa.price)}` : formatPrice(pa.price)}
-            </text>
+            {!hiddenLabels.has(id) && (
+              <text x={width - 4} y={Math.max(12, a.y - 4)} textAnchor="end" fill={color} {...labelProps}>
+                {drawing.label ? `${drawing.label} ${formatPrice(pa.price)}` : formatPrice(pa.price)}
+              </text>
+            )}
             {hitLine(id, { x: 0, y: a.y }, { x: width, y: a.y })}
           </>
         );
@@ -186,9 +204,12 @@ export default function ChartDrawingLayer({
                 strokeWidth={level === 0 || level === 1 ? 1.25 : 1}
                 strokeOpacity={level === 0 || level === 0.5 || level === 1 ? 0.9 : 0.45}
               />
-              <text x={left + 4} y={y - 3} fill={color} {...labelProps}>
-                {`${level} (${formatPrice(price)})`}
-              </text>
+              {/* Phones keep the key ratios only; the minor ones still draw their line. */}
+              {(width >= 480 || extension || [0, 0.382, 0.5, 0.618, 1].includes(level)) && (
+                <text x={Math.max(4, left + 4)} y={y - 3} fill={color} {...labelProps}>
+                  {`${level} (${formatPrice(price)})`}
+                </text>
+              )}
               {hitLine(id, { x: left, y }, { x: extension ? width : right, y }, String(level))}
             </g>
           );

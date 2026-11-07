@@ -417,8 +417,8 @@ export default function StockOptionsChain({ symbol }: { symbol: string }) {
           </div>
           <p className="text-xs text-muted-foreground">
             {c(
-              "Shaded cells are in the money. Select any contract for every field the source provides.",
-              "灰底为价内合约。点击任一合约可查看数据源提供的全部字段。",
+              "Shaded cells are in the money.",
+              "灰底为价内合约。",
             )}
           </p>
         </>

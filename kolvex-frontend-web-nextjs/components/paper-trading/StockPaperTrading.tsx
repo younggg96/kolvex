@@ -1,5 +1,6 @@
 "use client";
 
+import { InfoTip } from "@/components/ui/info-tip";
 import Link from "next/link";
 import { useRef, useState } from "react";
 import { RefreshCw } from "lucide-react";
@@ -93,15 +94,13 @@ export default function StockPaperTrading({
     <section aria-labelledby="stock-paper-title" className="space-y-6">
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h2 id="stock-paper-title" className="text-xl font-semibold">
+          <h2 id="stock-paper-title" className="flex items-center gap-2 text-xl font-semibold">
             {c("My virtual trades", "我的虚拟交易")} · {symbol}
-          </h2>
-          <p className="mt-2 text-sm leading-6 text-muted-foreground">
-            {c(
+            <InfoTip label={c("About virtual trades", "关于虚拟交易")}>{c(
               "Your positions, orders and results for this stock. Virtual funds only; the account is shared with your trading desk.",
               "查看这只股票的持仓、委托与交易结果。仅使用虚拟资金，与虚拟交易工作台共用同一账户。",
-            )}
-          </p>
+            )}</InfoTip>
+          </h2>
         </div>
         <div className="flex flex-wrap gap-2">
           <Button
@@ -186,10 +185,7 @@ export default function StockPaperTrading({
         <ListCard>
             <ListEmptyState
               title={c("Virtual trades could not load", "无法加载虚拟交易")}
-              description={c(
-                "Use Refresh to retry. Stock research remains available in the other tabs.",
-                "请点击刷新重试，其他标签中的股票分析仍可使用。 ",
-              )}
+              action={<Button variant="outline" size="sm" onClick={() => void resource.reload()}>{c("Retry", "重试")}</Button>}
             />
         </ListCard>
         )
@@ -481,10 +477,6 @@ export default function StockPaperTrading({
                     title={c(
                       "This position has already closed",
                       "该持仓已经关闭",
-                    )}
-                    description={c(
-                      "The account changed while you were reviewing it. Start a new order only if you want to reopen.",
-                      "账户已更新。如需重新开仓，请明确新建一笔虚拟订单。",
                     )}
                     action={
                       <Button

@@ -1,5 +1,6 @@
 "use client";
 
+import { InfoTip } from "@/components/ui/info-tip";
 import { useState } from "react";
 import Link from "next/link";
 import { ChevronDown } from "lucide-react";
@@ -30,8 +31,10 @@ const optionsHref = (symbol: string) => `${marketStockHref(symbol)}?tab=options`
 function SectionHeader({ title, note }: { title: string; note?: string }) {
   return (
     <div className="mb-4">
-      <h2 className="text-xl font-semibold">{title}</h2>
-      {note && <p className="mt-1 text-sm text-muted-foreground">{note}</p>}
+      <h2 className="flex items-center gap-2 text-xl font-semibold">
+        {title}
+        {note && <InfoTip label={title}>{note}</InfoTip>}
+      </h2>
     </div>
   );
 }
@@ -292,7 +295,7 @@ export function UnusualContracts({ run }: { run: ActivityRun }) {
   const max = Math.max(0, ...all.map((x) => x.premium));
   return (
     <section aria-labelledby="activity-contracts">
-      <SectionHeader title={c("Largest contracts", "异动合约")} note={c("Ranked by premium traded today", "按当日累计成交额排序")} />
+      <SectionHeader title={c("Largest contracts", "异动合约")} />
       <SegmentedControl
         size="sm"
         className="mb-4"

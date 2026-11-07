@@ -22,7 +22,7 @@ export default async function StocksPage({ searchParams }: Props) {
   const offset = (page - 1) * PUBLIC_PAGE_SIZE;
   if (page > 1 && offset >= stocks.length) notFound();
   return <>
-    <ReadingHeading title="股票目录">按股票阅读不同博主的观点，并查看相关的已发布 AI 研究。</ReadingHeading>
+    <ReadingHeading title="股票目录" />
     <ReadingSectionHeading title="已收录股票" count={stocks.length} />
     <StockDirectory stocks={stocks.slice(offset, offset + PUBLIC_PAGE_SIZE)} />
     {!stocks.length && <p className="py-12 text-muted-foreground">暂时没有可阅读的股票观点。</p>}

@@ -41,7 +41,6 @@ export default function SuperinvestorDetail({ manager }: { manager: string }) {
             <Card className="px-5 py-2">
               <ListEmptyState
                 title={c("Investor not tracked", "未收录该投资者")}
-                description={c("This investor is outside the curated list.", "该投资者不在精选名单中。")}
                 action={
                   <Button asChild variant="outline" size="sm">
                     <Link href={DIRECTORY}>{c("Back to all investors", "返回全部投资者")}</Link>

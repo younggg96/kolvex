@@ -9,6 +9,7 @@ import { ExternalLink, Search, RefreshCw } from "lucide-react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { FilterSheet, FilterSheetGroup } from "@/components/ui/filter-sheet";
 import {
   ListCard,
   ListRow,
@@ -122,7 +123,7 @@ export default function XContentExplorer() {
         <div className="mx-auto w-full space-y-6">
           <div className="grid gap-10 xl:grid-cols-[minmax(0,1fr)_300px]">
             <aside className="order-1 min-w-0 xl:col-start-2 xl:row-start-1">
-              <div className="mb-3 flex min-h-8 items-baseline justify-between gap-2">
+              <div className="mb-3 flex min-h-8 items-baseline justify-between gap-2 max-lg:hidden">
                 <h2 className="text-base font-semibold">
                   {c("Creators", "博主")}
                 </h2>
@@ -135,7 +136,7 @@ export default function XContentExplorer() {
                   </span>
                 )}
               </div>
-              <ListCard>
+              <ListCard className="max-lg:hidden">
                 <nav
                   aria-label={c("Filter by creator", "按博主筛选")}
                   className="max-h-80 overflow-y-auto overscroll-contain xl:max-h-none xl:overflow-visible"
@@ -217,6 +218,11 @@ export default function XContentExplorer() {
                       router.push(href({ ticker: value }));
                     }}
                   >
+                    {creators.length > 0 && <FilterSheet title={c("Filter by creator", "按博主筛选")} active={Boolean(author)} onReset={() => router.push(href({ author: "" }))}
+                      summary={selected?.display_name ?? c("All creators", "全部博主")}>
+                      <FilterSheetGroup label={c("Creators", "博主")} value={author} onChange={value => router.push(href({ author: value }))}
+                        options={[{ value: "", label: c("All creators", "全部博主") }, ...creators.map(creator => ({ value: creator.username, label: creator.display_name }))]} />
+                    </FilterSheet>}
                     <div className="relative hidden min-w-0 flex-1 sm:max-w-xs lg:block">
                       <label htmlFor="x-ticker" className="sr-only">
                         {c("Stock ticker", "股票代码")}
@@ -310,17 +316,6 @@ export default function XContentExplorer() {
                         <h2 className="text-base font-semibold">
                           {c("No posts yet", "暂无推文")}
                         </h2>
-                        <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                          {author || ticker
-                            ? c(
-                                "Try another creator or clear the stock filter.",
-                                "试试其他博主，或清除股票筛选。",
-                              )
-                            : c(
-                                "Posts will appear here once creators have been added and synced.",
-                                "添加博主并同步后，推文将显示在这里。",
-                              )}
-                        </p>
                         {(author || ticker || page > 1) && (
                           <Button variant="outline" asChild className="mt-4">
                             <Link href="/dashboard/x-opinions">

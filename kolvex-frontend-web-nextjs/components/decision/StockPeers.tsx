@@ -1,5 +1,6 @@
 "use client";
 
+import { InfoTip } from "@/components/ui/info-tip";
 import Link from "next/link";
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
@@ -193,13 +194,10 @@ export default function StockPeers({ symbol }: { symbol: string }) {
     <div className={cn("space-y-6", SERIES_VARS)}>
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="min-w-0">
-          <h2 className="text-xl font-semibold">{c("Peer comparison", "同行比较")}</h2>
-          <p className="mt-1 text-xs text-muted-foreground">
-            {c(
+          <h2 className="flex items-center gap-2 text-xl font-semibold">{c("Peer comparison", "同行比较")}<InfoTip label={c("About peers", "关于同行")}>{c(
               `You choose the peers, up to ${MAX_PEERS}. The link keeps your selection.`,
               `同行由你选择，最多 ${MAX_PEERS} 家，链接会保留所选公司。`,
-            )}
-          </p>
+            )}</InfoTip></h2>
         </div>
         <form onSubmit={add} className="flex w-full flex-wrap items-start gap-2 sm:w-auto">
           <div className="min-w-0 flex-1 sm:w-48 sm:flex-none">

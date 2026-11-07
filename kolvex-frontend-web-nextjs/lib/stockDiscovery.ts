@@ -218,6 +218,35 @@ export function stockEntryReason(scope: StockScope, symbol: string, stock: YouTu
   return sector ? [`${sector.en} · Curated stock`, `${sector.zh} · 精选观察股`] : ["Curated stock", "精选观察股"];
 }
 
+/**
+ * The one number from `stockEntryReason` worth keeping on a phone row, as a short tag. `null` when
+ * the row already shows it (a mover's change sits in the price column) or the list name says it.
+ */
+export function stockEntryTag(scope: StockScope, symbol: string, stock: YouTubeStockSummary | undefined, item: DiscoveryStock | undefined, now = Date.now(), social: SocialBuzz = {}, source: StockSource = "all"): [string, string] | null {
+  if (scope === "active") {
+    if (item?.volumeMultiple == null) return null;
+    const multiple = item.volumeMultiple.toFixed(2);
+    return [`${multiple}× vol`, `${multiple}倍量`];
+  }
+  if (scope === "creators") {
+    const count = recentStockOpinionCount(stock, now);
+    const reddit = social.reddit?.find(row => row.ticker === symbol);
+    const x = social.x?.find(row => row.ticker === symbol);
+    const tags = {
+      youtube: count !== null && count > 0 ? [`${count} opinions`, `${count}条观点`] as [string, string] : null,
+      reddit: reddit && reddit.mentions > 0 ? [`Reddit ${reddit.mentions.toLocaleString("en-US")}`, `Reddit ${reddit.mentions.toLocaleString("en-US")}`] as [string, string] : null,
+      x: x ? [`X ${x.posts} posts`, `X ${x.posts}帖`] as [string, string] : null,
+    };
+    const order = source === "all" ? ["youtube", "reddit", "x"] as const : [source, ...(["youtube", "reddit", "x"] as const).filter(key => key !== source)];
+    return order.map(key => tags[key]).find((tag): tag is [string, string] => tag !== null) ?? null;
+  }
+  if (scope === "core") {
+    const sector = STOCK_SECTORS.find(sector => sector.key === CORE_STOCKS.find(stock => stock.symbol === symbol)?.sector);
+    return sector ? [sector.en, sector.zh] : null;
+  }
+  return null;
+}
+
 /** Stock details only accept a return to the owning market list. */
 export function stockObservationReturnHref(value?: string | null) {
   if (!value || !/^\/dashboard(?:\/watchlist)?(?:\?|$)/.test(value) || value.includes("#") || /[\\\r\n]/.test(value)) return "/dashboard";

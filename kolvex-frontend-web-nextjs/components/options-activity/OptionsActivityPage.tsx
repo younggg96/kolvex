@@ -1,5 +1,6 @@
 "use client";
 
+import { InfoTip } from "@/components/ui/info-tip";
 import { useState } from "react";
 import { Loader2, RefreshCw } from "lucide-react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
@@ -70,13 +71,7 @@ export default function OptionsActivityPage() {
         <div className="mx-auto max-w-6xl px-[16px] pb-12 pt-4 md:px-8 md:py-8">
           <header className="mb-6 flex flex-wrap items-end justify-between gap-4 md:mb-8">
             <div className="min-w-0">
-              <h1 className="text-2xl font-semibold tracking-tight md:text-[2rem]">{c("Options activity", "期权异动")}</h1>
-              <p className="mt-2 max-w-prose text-sm text-muted-foreground">
-                {c(
-                  "Where options money traded across a watchlist of liquid ETFs and stocks, three times each trading day. A starting point for research, not a trading signal.",
-                  "每个交易日三次，扫描一组高流动性 ETF 和个股的期权成交，看资金集中在哪里。这是研究的起点，不是交易信号。",
-                )}
-              </p>
+              <h1 className="flex items-center gap-2 text-2xl font-semibold tracking-tight md:text-[2rem]">{c("Options activity", "期权异动")}<InfoTip label={c("About options activity", "关于期权异动")}>{c("Where options money traded across a watchlist of liquid ETFs and stocks, three times each trading day. A starting point for research, not a trading signal.", "每个交易日三次，扫描一组高流动性 ETF 和个股的期权成交，看资金集中在哪里。这是研究的起点，不是交易信号。")}</InfoTip></h1>
             </div>
             <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
               <div className="min-w-0 flex-1 sm:w-48 sm:flex-none">

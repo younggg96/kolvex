@@ -129,6 +129,8 @@ const config: Config = {
           "100%": { transform: "translateX(-33.33%)" },
         },
       },
+      // Overlay enter/exit (tailwindcss-animate `animate-in` / `animate-out`): the brief's 150–200ms grammar.
+      animationDuration: { DEFAULT: "200ms" },
       animation: {
         "accordion-down": "accordion-down 0.2s cubic-bezier(0.25, 1, 0.5, 1)",
         "accordion-up": "accordion-up 0.2s cubic-bezier(0.25, 1, 0.5, 1)",
@@ -146,6 +148,8 @@ const config: Config = {
       },
     },
   },
-  plugins: [require("@tailwindcss/typography")],
+  // `tailwindcss-animate` backs the `animate-in` / `fade-in-0` / `zoom-in-95` / `slide-in-from-*`
+  // classes every overlay in components/ui already uses; without it those classes compile to nothing.
+  plugins: [require("@tailwindcss/typography"), require("tailwindcss-animate")],
 };
 export default config;

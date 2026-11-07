@@ -82,7 +82,9 @@ class HoldingsRepository:
                "partial": bool(data.get("partial")), "coverage": data.get("coverage"),
                "summary": summarize_institution(data), "holdings_count": len(holdings),
                "sec_fetched_at": data.get("fetched_at") or now_iso(), "synced_at": now_iso(),
-               "sync_version": SYNC_VERSION}
+               "sync_version": SYNC_VERSION,
+               # A rewrite invalidates the previous mapping pass; only a completed pass sets it again below.
+               "tickers_mapped_at": None}
         self.db.table(FILINGS).upsert(row, on_conflict="accession").execute()
         rows = [{"accession": accession, "position": i, **{f: h.get(f) for f in HOLDING_FIELDS}} for i, h in enumerate(holdings)]
         for start in range(0, len(rows), CHUNK):

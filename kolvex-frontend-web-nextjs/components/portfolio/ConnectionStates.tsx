@@ -18,9 +18,6 @@ export function NotConnectedState({
       <h2 className="text-[1.75rem] font-bold leading-tight md:text-[2rem]">
         {t("portfolio.connect.title")}
       </h2>
-      <p className="mt-3 max-w-[52ch] text-[0.9375rem] leading-relaxed text-muted-foreground">
-        {t("portfolio.connect.description")}
-      </p>
 
       <ListCard className="mt-8 !p-0 sm:!p-0 max-md:-mx-[16px]">
       <ListRows className="divide-y divide-border">

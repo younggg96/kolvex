@@ -51,7 +51,6 @@ export default function MarketWatchlistCard() {
         : (!userId || error) && !symbols.length ? null : !symbols.length ? <div className="px-3 py-6 text-center">
           <Star className="mx-auto h-5 w-5 text-muted-foreground" aria-hidden />
           <p className="mt-3 text-sm font-medium">{c("Follow your first stock", "添加第一只自选股")}</p>
-          <p className="mt-2 text-xs leading-5 text-muted-foreground">{c("Use the star beside a stock, or add a symbol in your Watchlist.", "点击股票旁的星标，或前往自选股添加代码。")}</p>
           <Button asChild variant="outline" size="sm" className="mt-4"><Link href="/dashboard/watchlist">{c("Manage Watchlist", "管理自选股")}</Link></Button>
         </div> : <div className="space-y-2">
           {[...groups].map(([sector, stocks]) => <details key={sector} open className="group">

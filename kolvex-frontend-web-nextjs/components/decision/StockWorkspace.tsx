@@ -758,11 +758,6 @@ export default function StockWorkspace({
                 >
                   <Panel
                     title={c("AI research", "AI 研究")}
-                    description={
-                      research && completedAt
-                        ? `${c("Last completed", "最近完成")}：${date(completedAt)}`
-                        : undefined
-                    }
                   >
                     <div>
                       <Button
@@ -777,6 +772,11 @@ export default function StockWorkspace({
                             ? c("Update AI research", "更新 AI 研究")
                             : c("Generate AI research", "生成 AI 研究")}
                       </Button>
+                      {research && completedAt && (
+                        <span className="ml-3 text-xs text-muted-foreground">
+                          {c("Last completed", "最近完成")} {date(completedAt)}
+                        </span>
+                      )}
                       {personalResearch.busy && (() => {
                         const job = personalResearch.job;
                         const running = job?.status === "running";
@@ -956,8 +956,8 @@ export default function StockWorkspace({
                     ) : personalResearch.busy ? null : (
                       <Empty>
                         {c(
-                          "No AI research for this stock yet. Generate one to assess fundamentals and news.",
-                          "这只股票暂无 AI 研究，点击生成以分析基本面和新闻。",
+                          "No AI research for this stock yet.",
+                          "这只股票暂无 AI 研究。",
                         )}
                       </Empty>
                     )}

@@ -230,7 +230,6 @@ export default function SearchPage() {
       <div className={styles.page}>
         <header className="mb-7">
           <h1 className="text-[2rem] font-semibold tracking-tight">{c("Search", "探索")}</h1>
-          <p className="mt-2 text-sm text-muted-foreground">{c("Explore stocks, creators and the ideas behind them.", "从一只股票、一位创作者，发现更多市场线索。")}</p>
           <div className="mt-6 flex items-center gap-3">
             <form role="search" noValidate onSubmit={submit} className="min-w-0 flex-1">
               <div className={cn("glass-field relative flex h-14 items-center rounded-full border border-transparent bg-foreground/[0.06]", styles.searchField)}>
@@ -304,8 +303,7 @@ export default function SearchPage() {
               <ListCard>{Array.from({ length: rows }, (_, i) => <div key={i} className={cn(listRowTargetClass, "flex gap-3")}><Skeleton className="h-8 w-8 shrink-0 rounded-full" /><span className="flex min-w-0 flex-1 flex-col gap-2"><Skeleton className="h-4 w-16 rounded-md" /><Skeleton className={cn("h-3 rounded-md", i % 2 ? "w-28" : "w-40")} /></span></div>)}</ListCard>
             </section>)}</ContentLoading>}
             {!catalogueLoading && !researchPending && !researchFailed && !hasResults && <div className="mt-7"><ListCard><ListEmptyState
-              title={c("No results found", "没有找到结果")}
-              description={filter === "all" ? c(`Nothing found for “${value.trim()}”. Try a ticker or company name.`, `没有找到“${value.trim()}”。试试股票代码或公司名称。`) : c("Nothing in this category. Switch to All to see other results.", "这个分类下没有结果，切换到“全部”看看其他内容。")}
+              title={filter === "all" ? c(`Nothing found for “${value.trim()}”`, `没有找到“${value.trim()}”`) : c("Nothing in this category", "这个分类下没有结果")}
               action={<Button type="button" variant="outline" size="sm" onClick={filter === "all" ? clearSearch : () => setFilter("all")}>{filter === "all" ? c("Clear search", "清空搜索") : c("Show all results", "查看全部结果")}</Button>}
             /></ListCard></div>}
             {researchFailed && <div role="status" className="mt-5 flex flex-wrap items-center gap-x-2 text-sm text-muted-foreground">{c("Research is temporarily unavailable.", "研究暂时不可用。")}

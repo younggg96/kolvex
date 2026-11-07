@@ -59,6 +59,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { InfoTip } from "@/components/ui/info-tip";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from "@/components/ui/dialog";
@@ -973,7 +974,7 @@ export default function ChartView({
   );
   const pill = (isActive: boolean) =>
     cn(
-      "inline-flex h-11 shrink-0 items-center rounded-full px-3 text-[0.8125rem] font-semibold transition-colors duration-150 focus-visible:outline-none sm:h-8",
+      "inline-flex h-8 shrink-0 items-center rounded-full px-3 text-[0.8125rem] font-semibold transition-colors duration-150 focus-visible:outline-none",
       isActive ? "glass-thumb text-foreground" : "text-muted-foreground hover:bg-foreground/[0.06] hover:text-foreground active:bg-foreground/[0.1]",
     );
 
@@ -1343,23 +1344,24 @@ export default function ChartView({
       {forecastOn && (forecast || forecastErrorCode) && (
         <div
           role="note"
-          className="pointer-events-none absolute bottom-2 left-2 z-10 max-w-[min(22rem,calc(100%-1rem))] rounded-xl border border-border bg-background/85 px-2.5 py-1.5 text-[0.6875rem] leading-4 text-muted-foreground backdrop-blur-sm"
+          className="absolute bottom-2 left-2 z-10 flex max-w-[calc(100%-1rem)] items-center gap-1.5 rounded-full border border-border bg-background/85 py-0.5 pl-2.5 pr-1 text-[0.6875rem] leading-4 text-muted-foreground backdrop-blur-sm"
         >
           {forecast ? (
             <>
-              <span className="font-semibold text-foreground">{t("youtubeOpinions.forecast.title", { days: String(forecast.horizon) })}</span>{" "}
-              <span className="tabular-nums">
+              <span className="min-w-0 truncate tabular-nums">
+                <span className="font-semibold text-foreground">{t("youtubeOpinions.forecast.title", { days: String(forecast.horizon) })}</span>{" · "}
                 {t("youtubeOpinions.forecast.summary", {
                   median: pct(forecast.summary.median_return),
-                  low: pct(forecast.summary.p10_return),
-                  high: pct(forecast.summary.p90_return),
                   up: `${Math.round(forecast.summary.prob_up * 100)}%`,
                 })}
               </span>
-              <span className="mt-0.5 block">{t("youtubeOpinions.forecast.disclaimer")}</span>
+              <InfoTip label={t("youtubeOpinions.forecast.hint")}>
+                <span className="block tabular-nums">{t("youtubeOpinions.forecast.range", { low: pct(forecast.summary.p10_return), high: pct(forecast.summary.p90_return) })}</span>
+                <span className="mt-1 block">{t("youtubeOpinions.forecast.disclaimer")}</span>
+              </InfoTip>
             </>
           ) : (
-            t(`youtubeOpinions.forecast.errors.${forecastErrorCode === "not_configured" || forecastErrorCode === "unauthorized" ? forecastErrorCode : "unavailable"}`)
+            <span className="py-0.5 pr-1.5">{t(`youtubeOpinions.forecast.errors.${forecastErrorCode === "not_configured" || forecastErrorCode === "unauthorized" ? forecastErrorCode : "unavailable"}`)}</span>
           )}
         </div>
       )}
@@ -1468,7 +1470,7 @@ export default function ChartView({
       value={snapshotBars ? compactParams.interval : interval}
       onValueChange={(value) => setChartInterval(value as ChartInterval)}
     >
-      <SelectTrigger className="h-11 !w-[5.75rem] shrink-0 rounded-full text-[0.8125rem] sm:h-8" aria-label={t("youtubeOpinions.interval")}>
+      <SelectTrigger className="!h-8 !w-[5.75rem] shrink-0 rounded-full text-[0.8125rem]" aria-label={t("youtubeOpinions.interval")}>
         <SelectValue />
       </SelectTrigger>
       <SelectContent>

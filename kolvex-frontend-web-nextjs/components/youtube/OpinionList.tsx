@@ -87,7 +87,6 @@ export default function OpinionList() {
         <div className="mx-auto max-w-6xl px-[16px] pb-16 pt-6 md:px-8 md:pt-8">
           <header className="mb-6">
             <h1 className="text-[1.75rem] font-semibold tracking-tight sm:text-[2rem]">{c("All opinions", "全部观点")}</h1>
-            <p className="mt-2 text-sm text-muted-foreground">{c("Grouped by video, newest publication first", "按视频归并，按视频发布时间排序")}</p>
           </header>
           <ListCard>
             <div aria-busy={loading || moreLoading}>

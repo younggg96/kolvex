@@ -1,5 +1,6 @@
 "use client";
 
+import { InfoTip } from "@/components/ui/info-tip";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ChevronDown, ExternalLink } from "lucide-react";
@@ -43,10 +44,9 @@ export default function XCreatorSummaries({ author, creators }: { author: string
   return <section aria-labelledby="x-summary-heading" aria-busy={loading}>
     <ListCard>
       <ListToolbar>
-        <h2 id="x-summary-heading" className="text-base font-semibold">{c("AI opinion summary", "AI 观点摘要")}</h2>
+        <h2 id="x-summary-heading" className="flex items-center gap-2 text-base font-semibold">{c("AI opinion summary", "AI 观点摘要")}<InfoTip label={c("About this summary", "关于摘要")}>{c("A saved summary of selected collected posts, grouped by creator. Coverage is incomplete and may include other stocks.", "按博主归纳部分已采集推文，尚未覆盖全部内容，可能涉及多只股票。")}</InfoTip></h2>
         {snapshot && <time dateTime={snapshot.generated_at} className="text-xs text-muted-foreground">{c("Saved", "生成于")} {date.format(new Date(snapshot.generated_at))}</time>}
       </ListToolbar>
-      <p className="mt-2 text-xs leading-5 text-muted-foreground">{c("A saved summary of selected collected posts, grouped by creator. Coverage is incomplete and may include other stocks. Reading does not generate a new summary.", "按博主归纳部分已采集推文，尚未覆盖全部内容，可能涉及多只股票。读取已保存摘要不会重新生成。")}</p>
       <div aria-live="polite">
         {loading && <div role="status"><span className="sr-only">{c("Loading summaries…", "正在加载摘要…")}</span>{[0, 1].map(i => <div key={i} aria-hidden="true" className="border-b border-border py-5 last:border-0 last:pb-1">
           <div className="flex items-center gap-3"><Skeleton className="h-10 w-10 shrink-0 rounded-full" /><div className="flex flex-col gap-1.5"><Skeleton className="h-4 w-28 rounded-md" /><Skeleton className="h-3 w-48 rounded-md" /></div></div>

@@ -21,7 +21,7 @@ export default function StockNews({ ticker }: { ticker: string }) {
   const intlLocale = locale === "zh" ? "zh-CN" : "en-US";
 
   return <Panel id="stock-news" surface="card" title={c("Latest related news", "最新相关新闻")}
-    description={c(`${ticker} · Source headlines, checked every 5 minutes. Publication may be delayed.`, `${ticker} · 每 5 分钟检查更新，新闻发布可能存在延迟。`)}
+    description={c("Checked every 5 minutes. Publication may be delayed.", "每 5 分钟检查更新，新闻发布可能存在延迟。")}
     action={<Button variant="outline" size="sm" disabled={news.loading} onClick={news.refresh}>
       <RefreshCw aria-hidden className={`h-3.5 w-3.5 ${news.loading ? "animate-spin motion-reduce:animate-none" : ""}`} />
       {news.loading ? c("Refreshing…", "更新中…") : c("Refresh", "刷新")}

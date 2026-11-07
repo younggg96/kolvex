@@ -13,7 +13,7 @@ export function analysisDrawings(result: AiTechnicalAnalysis, t: (key: string) =
     ...plan.targets.map((price, index): Drawing => ({
       id: `${prefix}-target-${index}`, type: "hline", points: [{ time: Date.parse(result.view.end), price }],
       color: "rgb(var(--chart-up))",
-      label: `${t("youtubeOpinions.ai.tradePlan.target")} ${index + 1}${index === 0 ? ` · ${t("youtubeOpinions.ai.tradePlan.ratio")} ${plan.risk_reward.toFixed(2)} : 1` : ""}`,
+      label: `${t("youtubeOpinions.ai.tradePlan.target")} ${index + 1}`,
       source: "ai",
     })),
   ] : [];

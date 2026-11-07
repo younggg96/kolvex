@@ -156,13 +156,9 @@ export default function AuthPageClient() {
   }
 
   const title = mode === "login" ? t("auth.welcomeBack") : t("auth.createAccount");
-  const subtitle =
-    mode === "login"
-      ? t("auth.loginSubtitle")
-      : t("auth.signupSubtitle");
 
   return (
-    <AuthLayout title={title} subtitle={subtitle}>
+    <AuthLayout title={title}>
       <AuthForm mode={mode} onModeChange={setMode} />
     </AuthLayout>
   );

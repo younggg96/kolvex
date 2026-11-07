@@ -1,7 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { Search, SlidersHorizontal, X, RotateCcw } from "lucide-react";
+import { Info, Search, X, RotateCcw } from "lucide-react";
+import { FilterSheet, FilterSheetGroup } from "@/components/ui/filter-sheet";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -21,7 +23,7 @@ import type { DiscoveryStock } from "@/lib/marketDiscovery";
 import {
   CORE_STOCKS, STOCK_PAGE_SIZE, STOCK_PREFERENCE_KEY, STOCK_SECTORS,
   readStockObservationState,
-  selectObservationSymbols, stockSorts, stockEntryReason, writeStockObservationState,
+  selectObservationSymbols, stockSorts, stockEntryReason, stockEntryTag, writeStockObservationState,
   type StockObservationState, type StockScope, type StockSector, type StockSort,
 } from "@/lib/stockDiscovery";
 import type { YouTubeStockSummary } from "@/lib/youtubeOpinionsApi";
@@ -72,7 +74,6 @@ export default function StockObservationList({ range, catalogue, held, onRetry, 
   const composing = useRef(false);
   useEffect(() => { if (!composing.current) setSearchDraft(state.search ?? ""); }, [state.search]);
   const [ready, setReady] = useState(false);
-  const [filtersOpen, setFiltersOpen] = useState(false);
   const [attempt, setAttempt] = useState(0);
   const [now, setNow] = useState(Date.now);
   const listRef = useRef<HTMLDivElement>(null);
@@ -167,25 +168,42 @@ export default function StockObservationList({ range, catalogue, held, onRetry, 
   const commitSearch = (search: string) => update({ ...state, search, rows: STOCK_PAGE_SIZE });
   const clearSearch = () => { setSearchDraft(""); commitSearch(""); searchRef.current?.focus(); };
   const scopeOptions = scopes.filter(scope => scope.key !== "holdings" || holdingsEnabled).map(scope => ({ value: scope.key, label: c(scope.en, scope.zh) }));
-
+  const filtered = hasFilters || state.sort !== defaultSort || state.source !== "all";
+  const resetAll = () => {
+    setSearchDraft("");
+    update({ ...state, search: undefined, sector: "all", source: "all", sort: stockSorts(state.scope)[0], rows: STOCK_PAGE_SIZE });
+  };
+  const listDescription = state.scope === "movers" ? c("Yahoo gainers + losers · ranked by snapshot move", "Yahoo 涨跌榜候选 · 按快照涨跌排序") : state.scope === "active" ? c("Active stocks · volume ≥ 1.5× 3M daily average", "活跃股候选 · 成交量至少为3个月日均的1.5倍") : state.scope === "core" ? c("Curated list · ranked within this list", "精选观察名单 · 名单内排序") : state.scope === "holdings" ? c("Linked equity holdings", "已连接的股票持仓") : state.sort === "latest" ? c("Source publication date · includes history", "按原文发布时间 · 包含历史观点") : state.source === "reddit" ? c("Reddit stock mentions in the past 24 hours · ApeWisdom", "Reddit 近 24 小时股票提及 · 来自 ApeWisdom") : state.source === "x" ? c("Cashtags in tracked X accounts' posts · past 7 days", "已收录 X 博主帖子中的股票代码 · 近 7 天") : state.source === "youtube" ? c("Opinions published in the past 7 days", "近 7 天发布的观点") : c("YouTube opinions (7d) + Reddit mentions (24h) + X posts (7d) · ranked by combined place", "YouTube 观点（7天）+ Reddit 提及（24小时）+ X 帖子（7天）· 按各来源名次综合排序");
+  const rankingNotes = marketScope ? <>
+    <p className="mt-2">{c("Yahoo Finance screener candidates, not a complete market ranking. US equities in USD, price ≥ $5, market cap ≥ $2B, session volume ≥ 20,000. Up to 100 candidates per source list; refreshed every minute while visible. Prices on the right refresh separately.", "来自 Yahoo Finance 筛选候选，并非全市场完整排名。范围为美元美股，股价至少5美元、市值至少20亿美元、当日成交量至少2万股；每个来源榜单最多100只，页面可见时每分钟更新。右侧报价单独刷新。")}</p>
+    {state.scope === "active" && <p className="mt-1">{c("Volume multiple = accumulated session volume / full-day 3-month average. This is not a same-time-of-day comparison; early-session results may be empty.", "放量倍数 = 当日累计成交量 / 3个月全天日均成交量，不是与平常同一时刻比较；开盘初期可能暂无符合条件的股票。")}</p>}
+    {board?.fetchedAt && <p className="mt-1">{c("Snapshot fetched", "榜单获取时间")} · {new Intl.DateTimeFormat(c("en-US", "zh-CN"), { timeZone: "America/New_York", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false }).format(new Date(board.fetchedAt))} {c("New York", "纽约时间")}</p>}
+  </> : null;
   return <div ref={listRef}>
     <Panel title={c("Stock watch", "股票观察")} id="market-movers" surface="card" action={<>
-      <div className="ml-auto flex min-w-0 items-center gap-2 lg:hidden">
-        <span className="truncate text-sm text-muted-foreground">{scopeOptions.find(option => option.value === state.scope)?.label}</span>
-        <Button type="button" variant="outline" size="icon" className="relative h-11 w-11 shrink-0 rounded-full" aria-expanded={filtersOpen} aria-controls="stock-filters" aria-label={c("Filter stocks", "筛选股票")} title={c("Filter stocks", "筛选股票")} onClick={() => setFiltersOpen(value => !value)}>
-          <SlidersHorizontal className="h-4 w-4" aria-hidden="true" />
-          {(hasFilters || state.sort !== defaultSort || state.source !== "all") && <span aria-hidden="true" className="absolute right-2 top-2 h-2 w-2 rounded-full bg-foreground" />}
-        </Button>
+      <div className="ml-auto flex min-w-0 items-center gap-1 lg:hidden">
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button type="button" variant="ghost" size="icon" className="h-9 w-9 shrink-0 rounded-full text-muted-foreground" aria-label={c("About this list", "名单说明")}>
+              <Info className="h-4 w-4" aria-hidden="true" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent align="end" className="w-72 max-w-[calc(100vw-2rem)] p-3 text-xs leading-5 text-muted-foreground">
+            <p className="text-foreground">{listDescription}</p>
+            {board?.sessionDate && <p className="mt-1">{c(`Session ${board.sessionDate}`, `交易日 ${board.sessionDate}`)}</p>}
+            {rankingNotes}
+          </PopoverContent>
+        </Popover>
+        <FilterSheet title={c("Filter stocks", "筛选股票")} summary={scopeOptions.find(option => option.value === state.scope)?.label} active={filtered} onReset={resetAll}>
+          <FilterSheetGroup label={c("List", "名单")} options={scopeOptions} value={state.scope} onChange={changeScope} />
+          {state.scope === "core" && <FilterSheetGroup label={c("Sector", "行业")} options={STOCK_SECTORS.map(sector => ({ value: sector.key, label: c(sector.en, sector.zh) }))} value={state.sector} onChange={sector => update({ ...state, sector, rows: STOCK_PAGE_SIZE })} />}
+          {creatorScope && <FilterSheetGroup label={c("Source", "来源")} options={STOCK_SOURCES.map(source => ({ value: source.key, label: c(source.en, source.zh) }))} value={state.source} onChange={changeSource} />}
+          <FilterSheetGroup label={c("Sort", "排序")} options={stockSorts(state.scope, state.source).map(sort => ({ value: sort, label: c(...sortLabel(sort, state.source)) }))} value={state.sort} onChange={sort => update({ ...state, sort, rows: STOCK_PAGE_SIZE })} />
+        </FilterSheet>
       </div>
       <SegmentedControl label={c("Stock list", "股票列表")} value={state.scope} onChange={changeScope} wrap className="ml-auto hidden max-w-full border border-border lg:flex" itemClassName="min-h-9 px-3" options={scopeOptions} />
     </>}>
-      <div id="stock-filters" className={cn("mb-3 grid grid-cols-2 items-end gap-3", state.scope === "core" ? "lg:grid-cols-[minmax(0,1fr)_9rem_9rem]" : creatorScope ? "lg:grid-cols-[minmax(0,1fr)_9rem_11rem]" : "lg:grid-cols-[minmax(0,1fr)_10rem]", !filtersOpen && "max-lg:hidden")}>
-        <div className="min-w-0 lg:hidden">
-          <Select value={state.scope} onValueChange={value => changeScope(value as StockScope)}>
-            <SelectTrigger shape="pill" className="h-11" aria-label={c("Stock list", "股票列表")}><SelectValue /></SelectTrigger>
-            <SelectContent className="!rounded-2xl">{scopeOptions.map(option => <SelectItem key={option.value} value={option.value} className="min-h-11">{option.label}</SelectItem>)}</SelectContent>
-          </Select>
-        </div>
+      <div id="stock-filters" className={cn("mb-3 grid grid-cols-2 items-end gap-3", state.scope === "core" ? "lg:grid-cols-[minmax(0,1fr)_9rem_9rem]" : creatorScope ? "lg:grid-cols-[minmax(0,1fr)_9rem_11rem]" : "lg:grid-cols-[minmax(0,1fr)_10rem]", "max-lg:hidden")}>
         <div className="hidden min-w-0 lg:block">
           <label htmlFor="stock-search" className="sr-only">{c("Search this list", "搜索当前名单")}</label>
           <div className="relative">
@@ -219,21 +237,19 @@ export default function StockObservationList({ range, catalogue, held, onRetry, 
           </Select>
         </div>
       </div>
-      <div className="mb-3 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 text-xs leading-5 text-muted-foreground">
-        <p>{state.scope === "movers" ? c("Yahoo gainers + losers · ranked by snapshot move", "Yahoo 涨跌榜候选 · 按快照涨跌排序") : state.scope === "active" ? c("Active stocks · volume ≥ 1.5× 3M daily average", "活跃股候选 · 成交量至少为3个月日均的1.5倍") : state.scope === "core" ? c("Curated list · ranked within this list", "精选观察名单 · 名单内排序") : state.scope === "holdings" ? c("Linked equity holdings", "已连接的股票持仓") : state.sort === "latest" ? c("Source publication date · includes history", "按原文发布时间 · 包含历史观点") : state.source === "reddit" ? c("Reddit stock mentions in the past 24 hours · ApeWisdom", "Reddit 近 24 小时股票提及 · 来自 ApeWisdom") : state.source === "x" ? c("Cashtags in tracked X accounts' posts · past 7 days", "已收录 X 博主帖子中的股票代码 · 近 7 天") : state.source === "youtube" ? c("Opinions published in the past 7 days", "近 7 天发布的观点") : c("YouTube opinions (7d) + Reddit mentions (24h) + X posts (7d) · ranked by combined place", "YouTube 观点（7天）+ Reddit 提及（24小时）+ X 帖子（7天）· 按各来源名次综合排序")}</p>
-        {!blocking && (!sourceError || symbols.length > 0) && <p role="status" aria-live="polite" className="shrink-0 tabular-nums">{c(`Showing ${visible.length} of ${symbols.length} stocks`, `已显示 ${visible.length} / ${symbols.length} 只`)}</p>}
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 text-xs leading-5 text-muted-foreground max-lg:mb-0">
+        <p className="max-lg:hidden">{listDescription}</p>
+        {!blocking && (!sourceError || symbols.length > 0) && <p role="status" aria-live="polite" className="shrink-0 tabular-nums max-lg:sr-only">{c(`Showing ${visible.length} of ${symbols.length} stocks`, `已显示 ${visible.length} / ${symbols.length} 只`)}</p>}
       </div>
-      {marketScope && <details className="mb-3 text-xs leading-5 text-muted-foreground">
+      {marketScope && <details className="mb-3 text-xs leading-5 text-muted-foreground max-lg:hidden">
         <summary className="cursor-pointer rounded-sm focus-visible:outline focus-visible:outline-primary">{c("Ranking scope and timing", "榜单范围与时间")}{board?.sessionDate ? c(` · Session ${board.sessionDate}`, ` · 交易日 ${board.sessionDate}`) : ""}</summary>
-        <p className="mt-2">{c("Yahoo Finance screener candidates, not a complete market ranking. US equities in USD, price ≥ $5, market cap ≥ $2B, session volume ≥ 20,000. Up to 100 candidates per source list; refreshed every minute while visible. Prices on the right refresh separately.", "来自 Yahoo Finance 筛选候选，并非全市场完整排名。范围为美元美股，股价至少5美元、市值至少20亿美元、当日成交量至少2万股；每个来源榜单最多100只，页面可见时每分钟更新。右侧报价单独刷新。")}</p>
-        {state.scope === "active" && <p className="mt-1">{c("Volume multiple = accumulated session volume / full-day 3-month average. This is not a same-time-of-day comparison; early-session results may be empty.", "放量倍数 = 当日累计成交量 / 3个月全天日均成交量，不是与平常同一时刻比较；开盘初期可能暂无符合条件的股票。")}</p>}
-        {board?.fetchedAt && <p className="mt-1">{c("Snapshot fetched", "榜单获取时间")} · {new Intl.DateTimeFormat(c("en-US", "zh-CN"), { timeZone: "America/New_York", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false }).format(new Date(board.fetchedAt))} {c("New York", "纽约时间")}</p>}
+        {rankingNotes}
       </details>}
       {marketScope && (board?.partial && !board.unavailable || board?.stale) && <div role="status" className="mb-3 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
         <p>{board.stale ? c("Refresh unavailable. Showing a saved ranking snapshot (up to 15 minutes old).", "更新暂不可用，显示最多15分钟内的榜单快照。") : c("Some source lists are unavailable; this ranking has partial coverage.", "部分来源榜单暂不可用，当前仅显示已取得的候选。")}</p>
         <Button variant="ghost" size="sm" disabled={discovery.refreshing} onClick={discovery.refresh}>{c("Retry ranking", "重试榜单")}</Button>
       </div>}
-      {hasFilters && <div role="group" aria-label={c("Active stock filters", "当前股票筛选条件")} className={cn("mb-4 flex flex-wrap items-center gap-2", !filtersOpen && "max-lg:hidden")}>
+      {hasFilters && <div role="group" aria-label={c("Active stock filters", "当前股票筛选条件")} className="mb-3 flex flex-wrap items-center gap-2 [&_button]:max-lg:min-h-8">
         {state.search && <Button variant="secondary" size="sm" className="min-h-11 max-w-full gap-2" onClick={clearSearch} aria-label={c(`Remove search: ${state.search}`, `移除搜索：${state.search}`)}><span className="truncate">{state.search}</span><X className="h-3.5 w-3.5 shrink-0" aria-hidden="true" /></Button>}
         {state.sector !== "all" && <Button variant="secondary" size="sm" className="min-h-11 gap-2" onClick={() => update({ ...state, sector: "all", rows: STOCK_PAGE_SIZE })} aria-label={c("Remove sector filter", "移除行业筛选")}>{c(STOCK_SECTORS.find(item => item.key === state.sector)!.en, STOCK_SECTORS.find(item => item.key === state.sector)!.zh)}<X className="h-3.5 w-3.5" aria-hidden="true" /></Button>}
         <Button variant="ghost" size="sm" className="min-h-11 gap-2 text-muted-foreground" onClick={resetFilters}><RotateCcw className="h-3.5 w-3.5" aria-hidden="true" />{c("Reset filters", "重置筛选")}</Button>
@@ -254,7 +270,7 @@ export default function StockObservationList({ range, catalogue, held, onRetry, 
       <div aria-busy={blocking || quoteLoading}>
         <ListColumnHeader>
           <div className={cn(ROW_GRID, "min-w-0 flex-1 px-2 py-3")}>
-            <span>{c("Stock", "股票")}</span>
+            <span>{c("Stock", "股票")}{!blocking && symbols.length > 0 && <span className="ml-1.5 tabular-nums lg:hidden">{visible.length} / {symbols.length}</span>}</span>
             <span className="hidden text-center min-[360px]:block">{c(`Trend · ${trend.en}`, `走势 · ${trend.zh}`)}</span>
             <span className="text-right">{c("Price / Today", "价格 / 今日")}</span>
           </div>
@@ -269,11 +285,11 @@ export default function StockObservationList({ range, catalogue, held, onRetry, 
               <Link href={`${href}?${detailParams}`} onClick={rememberScroll} className={cn(ROW_GRID, listRowTargetClass, "gap-y-1")}>
                 <span className="flex min-w-0 items-center gap-2 sm:gap-3">
                   <span aria-hidden="true" className="shrink-0"><CompanyLogo symbol={symbol} size="sm" /></span>
-                  <span className="min-w-0"><span className="block truncate text-base font-semibold">{symbol}{state.scope !== "holdings" && held.tickers.includes(symbol) && <HeldMark />}</span><span className="mt-1 block truncate text-xs text-muted-foreground">{quotes[symbol]?.name || discoveryBySymbol.get(symbol)?.name || stock?.company_name || coreNames.get(symbol) || redditNames.get(symbol) || symbol}</span></span>
+                  <span className="min-w-0"><span className="flex min-w-0 items-center gap-1.5 text-base font-semibold"><span className="truncate">{symbol}</span>{state.scope !== "holdings" && held.tickers.includes(symbol) && <HeldMark />}{(() => { const tag = stockEntryTag(state.scope, symbol, stock, discoveryBySymbol.get(symbol), now, social, state.source); return tag && <span className="shrink-0 rounded-full bg-foreground/[0.08] px-1.5 py-px text-[0.6875rem] font-medium tabular-nums text-muted-foreground lg:hidden">{c(...tag)}</span>; })()}</span><span className="mt-1 block truncate text-xs text-muted-foreground">{quotes[symbol]?.name || discoveryBySymbol.get(symbol)?.name || stock?.company_name || coreNames.get(symbol) || redditNames.get(symbol) || symbol}</span></span>
                 </span>
                 <span className="hidden min-[360px]:block"><StockTrend symbol={symbol} period={trend.period} interval={trend.interval} rangeLabel={c(trend.en, trend.zh)} rangeKey={range} /></span>
                 <span className="min-w-0 text-right">{quoteLoading && !quotes[symbol] ? <PendingValue className="h-10" /> : <><span className="figure block text-base font-medium">{money(quotes[symbol]?.price)}</span><Change value={quotes[symbol]?.changePercent} className="mt-1 block text-xs font-semibold" /></>}</span>
-                <span className="col-span-full text-xs leading-5 text-muted-foreground">{c(...stockEntryReason(state.scope, symbol, stock, discoveryBySymbol.get(symbol), now, social, state.source))}</span>
+                <span className="col-span-full text-xs leading-5 text-muted-foreground max-lg:hidden">{c(...stockEntryReason(state.scope, symbol, stock, discoveryBySymbol.get(symbol), now, social, state.source))}</span>
               </Link>
               <div className="shrink-0 max-md:hidden"><WatchlistButton ticker={symbol} /></div>
             </ListRow>;

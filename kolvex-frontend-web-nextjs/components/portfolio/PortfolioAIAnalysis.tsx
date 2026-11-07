@@ -443,10 +443,7 @@ function AnalysisLoadingState() {
 function EmptyAnalysisState({ onAnalyze, loading, t }: { onAnalyze: () => void; loading: boolean; t: TFunction }) {
     return (
         <div className="text-center py-10">
-            <h3 className="text-lg font-semibold mb-2">{t("portfolio.ai.emptyTitle")}</h3>
-            <p className="text-sm text-muted-foreground max-w-sm mx-auto mb-6">
-                {t("portfolio.ai.emptyDescription")}
-            </p>
+            <h3 className="text-lg font-semibold mb-6">{t("portfolio.ai.emptyTitle")}</h3>
             <Button onClick={onAnalyze} disabled={loading} size="sm" className="gap-2">
                 <Zap className="w-4 h-4" />
                 {loading ? t("portfolio.ai.analyzing") : t("portfolio.ai.startAnalysis")}

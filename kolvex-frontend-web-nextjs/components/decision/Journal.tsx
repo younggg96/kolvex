@@ -1,5 +1,6 @@
 "use client";
 
+import { InfoTip } from "@/components/ui/info-tip";
 import { isProductFeatureEnabled } from "@/lib/productFeatures";
 
 import Link from "next/link";
@@ -47,8 +48,7 @@ export default function Journal() {
       <main className="flex-1 overflow-y-auto" aria-busy={loading}>
         <div className="mx-auto  space-y-10 px-[16px] pb-16 pt-6 md:px-8 md:pt-8">
           <section className="border-b border-border pb-7">
-            <h1 className="text-[1.75rem] font-semibold tracking-tight sm:text-[2rem]">{c("What changed in creator views", "博主观点有什么变化")}</h1>
-            <p className="mt-2 text-sm leading-6 text-muted-foreground">{c("Latest imported opinions and changes from the previous day with coverage. Open a stock to read the evidence and source videos.", "查看最新收录的观点，以及相较上一次有观点的日期发生的变化。点击股票，查看分析依据和原始视频。")}</p>
+            <h1 className="flex items-center gap-2 text-[1.75rem] font-semibold tracking-tight sm:text-[2rem]">{c("What changed in creator views", "博主观点有什么变化")}<InfoTip label={c("About this page", "说明")}>{c("Latest imported opinions, and what changed since the previous day that had coverage.", "最新收录的观点，以及与上一个有观点的日期相比发生的变化。")}</InfoTip></h1>
             <div className="mt-5 flex gap-2" role="group" aria-label={c("Update scope", "动态范围")}>
               <SegmentedControl size="sm" label={c("Update scope", "动态范围")} value={scope} onChange={setScope} options={([['all', c('All stocks', '全部股票')], ['holdings', c('My holdings', '我的持仓')]] as const).filter(([value]) => value !== "holdings" || isProductFeatureEnabled("portfolio")).map(([value, label]) => ({ value, label }))} />
             </div>

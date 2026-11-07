@@ -112,7 +112,6 @@ export default function SuperinvestorsDirectory() {
           <ListEmptyState
             alert
             title={c("Investor filings could not be loaded", "投资者申报加载失败")}
-            description={c("The SEC may be slow to respond. Try again in a moment.", "SEC 响应可能较慢，请稍后重试。")}
             action={
               <Button variant="outline" size="sm" onClick={refresh}>
                 {c("Retry", "重试")}

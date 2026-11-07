@@ -307,8 +307,8 @@ function StockSecFinancials({ symbol }: { symbol: string }) {
           </div>
           <SourceNote>
             {c(
-              `Source: SEC EDGAR company facts, as filed. Click a date for the filing. * is derived by subtracting cumulative figures. TTM adds the latest four contiguous quarters and is omitted when they don't connect; TTM EPS needs a reported fourth quarter, so it usually stays empty. EPS is as filed and not adjusted for later stock splits, so jumps across a split are not real changes. ROE uses period-end equity. Free cash flow is operating cash flow minus capital expenditure. History length depends on each company's XBRL filings (generally from 2009) and restatements use the latest filed value.`,
-              `来源：SEC EDGAR 公司披露数据，点击日期可查看申报原文。* 表示由累计披露数相减得出。TTM 为最近连续四个季度之和，季度不连续时不显示；第四季度通常没有单独披露 EPS，所以 TTM EPS 多为空。EPS 为申报时的原值，未按之后的拆股调整，拆股前后的跳变不代表真实变化。净资产收益率使用期末股东权益。自由现金流 = 经营现金流 − 资本支出。历史长度取决于公司的 XBRL 申报（一般始于 2009 年前后），重述数据以最新申报为准。`,
+              `Source: SEC EDGAR company facts, as filed. * is derived by subtracting cumulative figures. TTM adds the latest four contiguous quarters and is omitted when they don't connect; TTM EPS needs a reported fourth quarter, so it usually stays empty. EPS is as filed and not adjusted for later stock splits, so jumps across a split are not real changes. ROE uses period-end equity. Free cash flow is operating cash flow minus capital expenditure. History length depends on each company's XBRL filings (generally from 2009) and restatements use the latest filed value.`,
+              `来源：SEC EDGAR 公司披露数据。* 表示由累计披露数相减得出。TTM 为最近连续四个季度之和，季度不连续时不显示；第四季度通常没有单独披露 EPS，所以 TTM EPS 多为空。EPS 为申报时的原值，未按之后的拆股调整，拆股前后的跳变不代表真实变化。净资产收益率使用期末股东权益。自由现金流 = 经营现金流 − 资本支出。历史长度取决于公司的 XBRL 申报（一般始于 2009 年前后），重述数据以最新申报为准。`,
             )}
           </SourceNote>
         </>

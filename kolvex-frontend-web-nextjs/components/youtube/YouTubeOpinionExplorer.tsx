@@ -52,6 +52,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { SegmentedControl } from "@/components/ui/segmented-control";
+import { FilterSheet, FilterSheetGroup } from "@/components/ui/filter-sheet";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { useTranslation } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
@@ -71,7 +72,7 @@ import OpinionCard from "./OpinionCard";
 import OtherCreatorOpinions from "./OtherCreatorOpinions";
 import OpinionDistribution from "./OpinionDistribution";
 import OpinionStrength from "./OpinionStrength";
-import StockDirectoryRow from "./StockDirectoryRow";
+import StockDirectoryInsight from "./StockDirectoryRow";
 import PriceChart, { type PriceRange } from "./PriceChart";
 import { priceRangeToLegacyRange } from "@/lib/chart/range";
 import StrengthChart, { type StrengthPoint } from "./StrengthChart";
@@ -554,7 +555,7 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
     "group grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-2 border-b border-border py-3.5 transition-colors duration-150 hover:border-foreground/25 hover:bg-foreground/[0.06] focus-visible:bg-foreground/[0.06] focus-visible:outline-none sm:-mx-3 sm:rounded-3xl sm:border-transparent sm:px-3 sm:hover:border-transparent";
   // The link in rowClass already washes (wider than its ListRow), so the ListRow
   // around it stays flat; otherwise a hovered row shows two stacked greys.
-  const flatListRowClass = "hover:bg-transparent focus-within:bg-transparent active:bg-transparent";
+  const flatListRowClass = "hover:bg-transparent has-[:focus-visible]:bg-transparent active:bg-transparent";
   const stockRowClass = cn(rowClass, "grid-cols-[minmax(0,1fr)_auto] gap-x-3 sm:grid-cols-[minmax(0,1fr)_110px_160px] sm:gap-x-4");
   // Rows inside one card body reuse the shared row target metrics (rounded-2xl,
   // min-h-20, no ring) while the ListRow supplies the hover/focus-within surface.
@@ -697,85 +698,23 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
     }
   };
 
-  const performanceCell = (ticker: string, requested: boolean, compact = false) => {
+  const performanceCell = (ticker: string, requested: boolean) => {
     const entry = performance[ticker];
-    if (compact) {
-      return <div className="figure min-h-10 text-right sm:col-start-2 sm:row-start-1">
-        {entry ? <>
-          <p className="text-[0.875rem] font-semibold">{localPrice(ticker, entry.price)}</p>
-          <p className={cn("mt-1 text-xs font-semibold", percentTone(entry.change_1d_percent))}>
-            <span className="mr-1 font-normal text-muted-foreground">{t("youtubeOpinions.price1d")}</span>{formatPercent(entry.change_1d_percent)}
-          </p>
-        </> : performanceLoading || !requested ? <div role="status" aria-label={t("common.loadingStatus")} className="space-y-2"><Skeleton className="ml-auto h-4 w-16" /><Skeleton className="ml-auto h-3 w-12" /></div> : <span className="text-xs text-muted-foreground" aria-label={t("youtubeOpinions.performanceUnavailable")}>—</span>}
-      </div>;
-    }
-    const cellClass =
-      "min-w-0";
-    if (entry) {
-      const ariaLabel = t("youtubeOpinions.performanceAria", {
-        price: localPrice(ticker, entry.price),
-        day: formatPercent(entry.change_1d_percent),
-        week: formatPercent(entry.change_5d_percent),
-        month: formatPercent(entry.change_1mo_percent),
-      });
-      return (
-        <div
-          className={cn(cellClass, "space-y-4")}
-          role="group"
-          aria-label={ariaLabel}
-          title={t("youtubeOpinions.performanceNote", { date: entry.as_of })}
-        >
-          <div className="space-y-4">
-            <p className="whitespace-nowrap tabular-nums">
-              <span className="text-xs font-medium text-muted-foreground">
-                {t("youtubeOpinions.directory.currentPrice")}
-              </span>
-              <span className="ml-2 text-2xl font-semibold text-foreground">
-                {localPrice(ticker, entry.price)}
-              </span>
-            </p>
-            <p className="text-xs text-muted-foreground">{t("youtubeOpinions.directory.asOf", { date: formatDay(entry.as_of) })}</p>
-            <p className="grid grid-cols-3 gap-3">
-              {([
-                ["youtubeOpinions.price1d", entry.change_1d_percent],
-                ["youtubeOpinions.price5d", entry.change_5d_percent],
-                ["youtubeOpinions.price1mo", entry.change_1mo_percent],
-              ] as const).map(([key, value]) => (
-                <span key={key} className="flex flex-col items-start gap-1 whitespace-nowrap">
-                  <span className="text-xs text-muted-foreground">{t(key)}</span>
-                  <span className={cn("text-sm font-semibold tabular-nums", percentTone(value))}>
-                    {formatPercent(value)}
-                  </span>
-                </span>
-              ))}
-            </p>
-          </div>
-        </div>
-      );
-    }
-    return (
-      <div
-        className={cn(cellClass, "flex min-h-32 flex-wrap items-center gap-2")}
-        title={performanceLoading ? undefined : t("youtubeOpinions.performanceUnavailable")}
-      >
-        {performanceLoading || !requested ? (
-          <>
-            <span aria-hidden="true" className="h-3 w-16 animate-pulse rounded bg-muted motion-reduce:animate-none" />
-            <span aria-hidden="true" className="h-3 w-24 animate-pulse rounded bg-muted motion-reduce:animate-none" />
-            <span className="sr-only">{t("common.loadingStatus")}</span>
-          </>
-        ) : (
-          <span aria-label={t("youtubeOpinions.performanceUnavailable")} className="text-xs text-foreground/55">—</span>
-        )}
-      </div>
-    );
+    return <div className="figure min-h-10 text-right sm:col-start-2 sm:row-start-1">
+      {entry ? <>
+        <p className="text-[0.875rem] font-semibold">{localPrice(ticker, entry.price)}</p>
+        <p className={cn("mt-1 text-xs font-semibold", percentTone(entry.change_1d_percent))}>
+          <span className="mr-1 font-normal text-muted-foreground max-sm:hidden">{t("youtubeOpinions.price1d")}</span>{formatPercent(entry.change_1d_percent)}
+        </p>
+      </> : performanceLoading || !requested ? <div role="status" aria-label={t("common.loadingStatus")} className="space-y-2"><Skeleton className="ml-auto h-4 w-16" /><Skeleton className="ml-auto h-3 w-12" /></div> : <span className="text-xs text-muted-foreground" aria-label={t("youtubeOpinions.performanceUnavailable")}>—</span>}
+    </div>;
   };
 
   const stockRows = (inCard = false, narrow = false) => (
     <div className="min-w-0">
       <ListRows aria-label={t("youtubeOpinions.stocksDiscussedTitle")}>
         {shownStocks.map((item, index) => (
-          <StockDirectoryRow key={item.ticker} className={inCard ? undefined : flatListRowClass} stock={item} performance={performanceCell(item.ticker, index < performanceLimit)} change={changesByTicker.get(item.ticker)}>
+          <ListRow key={item.ticker} className={inCard ? undefined : flatListRowClass}>
             <ExplorerLink
               onNavigate={navigate}
               target={{
@@ -798,18 +737,21 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
                   </p>
                 </div>
               </div>
-              {performanceCell(item.ticker, index < performanceLimit, true)}
+              {performanceCell(item.ticker, index < performanceLimit)}
               <div className={cn("col-span-2 flex min-w-0 flex-wrap items-center justify-between gap-x-3 gap-y-1 text-right", !narrow && "sm:col-span-1 sm:flex-col sm:items-end sm:justify-center")} title={t("youtubeOpinions.directory.historicalConsensus")}>
                 <OpinionStrength value={item.avg_score} />
                 <p className="text-xs text-muted-foreground tabular-nums">
-                  {t("youtubeOpinions.creatorOpinionCount", {
+                  {/* Phones keep the verdict and who backs it; opinion volume lives on the stock page. */}
+                  <span className="sm:hidden">{c(`${item.creator_count} creators`, `${item.creator_count} 位博主`)}</span>
+                  <span className="max-sm:hidden">{t("youtubeOpinions.creatorOpinionCount", {
                     creators: String(item.creator_count),
                     opinions: String(item.total_opinions),
-                  })}
+                  })}</span>
                 </p>
               </div>
+              <StockDirectoryInsight stock={item} narrow={narrow} />
             </ExplorerLink>
-          </StockDirectoryRow>
+          </ListRow>
         ))}
       </ListRows>
       {hasMorePreviewStocks && (
@@ -826,7 +768,6 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
       {!visibleStocks.length && !(directoryActive && stockScope === "holdings" && (held.loading || held.error)) && (
         <EmptyLine
           text={filtering ? t("youtubeOpinions.noStocksMatch") : t("youtubeOpinions.noStocksDiscussed")}
-          description={!filtering ? t("youtubeOpinions.noStocksDiscussedHint") : undefined}
           action={filtering ? { label: t("common.clearFilters"), onClick: clearFilters } : undefined}
         />
       )}
@@ -870,7 +811,6 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
   ) : (
     <EmptyLine
       text={t("youtubeOpinions.noCreatorsDiscussing")}
-      description={t("youtubeOpinions.noCreatorsDiscussingHint")}
     />
   );
 
@@ -1087,8 +1027,7 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
                   <ListCard className="mt-8"><VideoGroupsSkeleton /></ListCard>
                 </> : <div className={cn("grid min-w-0 gap-8", allStocks ? "mx-auto" : "xl:grid-cols-[minmax(0,1fr)_20rem] 2xl:gap-x-12")}>
                   <ListCard>
-                    <div className="flex items-center gap-2"><SkeletonRepeat count={4}>{i => <Skeleton className={cn("h-9 rounded-full lg:h-10", i ? "w-16" : "w-12")} />}</SkeletonRepeat></div>
-                    <div className="mt-3 hidden items-center gap-2 lg:flex"><Skeleton className="h-11 w-64 rounded-full" /><Skeleton className="ml-auto h-11 w-36 rounded-xl" /></div>
+                    <div className="flex items-center gap-2 lg:gap-3"><div className="flex items-center gap-2"><SkeletonRepeat count={4}>{i => <Skeleton className={cn("h-9 rounded-full lg:h-10", i ? "w-16" : "w-12")} />}</SkeletonRepeat></div><Skeleton className="hidden h-11 w-64 rounded-full lg:block xl:w-72" /><Skeleton className="ml-auto hidden h-11 w-36 rounded-full lg:block" /></div>
                     <div className="mt-3 border-b border-border px-2 py-3"><Skeleton className="h-3.5 w-1/3 rounded-md" /></div>
                     {route.tab === "creators" ? <CreatorRowsSkeleton label={t("common.loadingStatus")} /> : <StockDirectorySkeleton label={t("common.loadingStatus")} />}
                   </ListCard>
@@ -1120,13 +1059,34 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
                           </p>
                         )}
                       </div>
-                      {!allStocks && <div className="shrink-0">{tabSwitcher}</div>}
+                      <div className="flex shrink-0 items-center gap-2">
+                        {!allStocks && tabSwitcher}
+                        <FilterSheet
+                          title={t("common.filter")}
+                          active={toneFilter !== "all" || sortBy !== "latest" || stockScope !== "all"}
+                          onReset={() => { setToneFilter("all"); setSortBy("latest"); setStockScope("all"); }}
+                          summary={[
+                            toneOptions.find(option => option.value === toneFilter)?.label,
+                            route.tab === "stocks" && stockScope === "holdings" && t("youtubeOpinions.directory.holdingsOnly"),
+                            sortOptions.find(option => option.value === sortBy)?.label,
+                          ].filter(Boolean).join(" · ")}
+                        >
+                          <FilterSheetGroup label={t("youtubeOpinions.filterBySentiment")} value={toneFilter} onChange={setToneFilter} options={toneOptions} />
+                          {route.tab === "stocks" && isProductFeatureEnabled("portfolio") && (
+                            <FilterSheetGroup label={t("youtubeOpinions.directory.allStocks")} value={stockScope} onChange={setStockScope} options={[
+                              { value: "all", label: t("youtubeOpinions.directory.allStocks") },
+                              { value: "holdings", label: t("youtubeOpinions.directory.holdingsOnly") },
+                            ]} />
+                          )}
+                          <FilterSheetGroup label={t("common.sort")} value={sortBy} onChange={setSortBy} options={sortOptions} />
+                        </FilterSheet>
+                      </div>
                     </header>
                     <section aria-labelledby="creator-directory-heading" className="min-w-0">
                       <ListCard>
-                        {/* Below lg the dock's search replaces this field: the filter and sort keep one row, the filter scrolls if a long locale overflows it, and the holdings scope takes its own row. */}
-                        <div className="flex min-w-0 flex-wrap items-center gap-x-2 lg:block">
-                        <ListToolbar className="min-w-0 flex-1 flex-nowrap lg:flex-wrap">
+                        {/* Below lg the dock's search replaces the field and every filter and sort lives in one sheet. */}
+                        <div className="flex min-w-0 flex-wrap items-center gap-x-2 lg:flex-nowrap lg:gap-x-3">
+                        <ListToolbar className="min-w-0 flex-1 flex-nowrap max-lg:hidden lg:flex-none">
                           <SegmentedControl
                             label={t("youtubeOpinions.filterBySentiment")}
                             semantics="radio"
@@ -1134,13 +1094,13 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
                             value={toneFilter}
                             onChange={setToneFilter}
                             options={toneOptions}
-                            className="min-w-0 shrink scrollbar-hide overflow-x-auto lg:shrink-0 lg:flex-wrap lg:gap-1 lg:overflow-visible"
+                            className="min-w-0 shrink scrollbar-hide overflow-x-auto lg:shrink-0 lg:gap-1 lg:overflow-visible"
                             size="sm"
                             itemClassName="font-medium max-lg:!px-2 max-lg:!text-xs lg:min-h-10 lg:px-4 lg:text-sm"
                           />
                         </ListToolbar>
-                        <div className="contents lg:mt-3 lg:flex lg:min-w-0 lg:flex-nowrap lg:items-center lg:gap-2">
-                          <div className="relative hidden min-w-0 shrink-0 lg:block">
+                        <div className="contents lg:flex lg:min-w-0 lg:flex-1 lg:flex-nowrap lg:items-center lg:gap-2">
+                          <div className="relative hidden min-w-0 shrink lg:block lg:w-64 xl:w-72">
                             <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                             <Input
                               ref={searchInput}
@@ -1163,6 +1123,7 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
                             <div className="order-last flex w-full shrink-0 items-center gap-1 lg:order-none lg:w-auto">
                               <SegmentedControl
                                 label={t("youtubeOpinions.directory.allStocks")}
+                                className="max-lg:hidden"
                                 bare
                                 value={stockScope}
                                 onChange={setStockScope}
@@ -1177,7 +1138,7 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
                               {stockScope === "holdings" && held.error && <div role="alert" className="flex items-center gap-2 text-xs text-negative">{c("Holdings could not be loaded.", "暂时无法加载持仓。")}<Button size="xs" variant="outline" onClick={refresh}>{t("common.retry")}</Button></div>}
                             </div>
                           )}
-                          <div className="ml-auto flex shrink-0 items-center justify-end">
+                          <div className="ml-auto flex shrink-0 items-center justify-end max-lg:hidden">
                             <Select value={sortBy} onValueChange={(value) => setSortBy(value as DirectorySort)}>
                               <SelectTrigger
                                 aria-label={t("common.sort")}
@@ -1602,7 +1563,6 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
                                   ? t("youtubeOpinions.noOpinionsMatch")
                                   : t("youtubeOpinions.noDiscussionYet")
                               }
-                              description={!historyFiltered ? t("youtubeOpinions.noDiscussionYetHint") : undefined}
                               action={
                                 historyFiltered
                                   ? { label: t("common.clearFilters"), onClick: () => setFilters(emptyFilters) }

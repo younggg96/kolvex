@@ -1,5 +1,6 @@
 "use client";
 
+import { InfoTip } from "@/components/ui/info-tip";
 import { useCachedResource } from "@/hooks/useCachedResource";
 import { isProductFeatureEnabled } from "@/lib/productFeatures";
 
@@ -91,12 +92,12 @@ export function Panel({
       <header className={cn("flex flex-wrap items-end justify-between gap-x-4 gap-y-2", title && (surface === "card" ? "mb-3 min-h-14 items-center" : "border-b border-border pb-3"))}>
         <div className="min-w-0">
           {title && (
-            <h2 id={id ? `${id}-title` : undefined} className="text-xl font-semibold tracking-[-0.01em]">
-              {title}
-            </h2>
-          )}
-          {description && (
-            <p className="mt-1 text-[0.8125rem] leading-5 text-muted-foreground">{description}</p>
+            <div className="flex items-center gap-2">
+              <h2 id={id ? `${id}-title` : undefined} className="text-xl font-semibold tracking-[-0.01em]">
+                {title}
+              </h2>
+              {description && <InfoTip label={title}>{description}</InfoTip>}
+            </div>
           )}
         </div>
         {action}

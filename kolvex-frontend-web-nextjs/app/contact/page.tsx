@@ -28,13 +28,9 @@ export default function ContactPage() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
           <div>
-            <h1 className="text-3xl sm:text-4xl font-bold text-foreground mb-6">
+            <h1 className="text-3xl sm:text-4xl font-bold text-foreground mb-8">
               Contact Us
             </h1>
-            <p className="text-muted-foreground mb-8 text-lg">
-              Have questions, suggestions, or need support? We&apos;re here to
-              help. Reach out to us through any of the following channels.
-            </p>
 
             <div className="space-y-6">
               <div>

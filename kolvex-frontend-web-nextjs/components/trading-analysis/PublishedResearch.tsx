@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { ContentLoading } from "@/components/ui/content-loading";
 import { groupResearchByStock, loadResearchCatalog, RESEARCH_GROUPS_KEY, STOCKS_PER_PAGE } from "@/lib/researchGroups";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { FilterSheet, FilterSheetGroup } from "@/components/ui/filter-sheet";
 import { ArrowUpDown } from "lucide-react";
 import { ListCard, ListEmptyState, ListRows, ListToolbar } from "@/components/ui/list-card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -60,6 +61,11 @@ export default function PublishedResearch({ page }: { page?: string }) {
     if (total > 0 && currentPage > Math.ceil(total / STOCKS_PER_PAGE)) router.replace(deepResearchPagePath(Math.ceil(total / STOCKS_PER_PAGE)));
   }, [currentPage, total, router]);
 
+  const planSortOptions: { value: PlanSort; label: string }[] = [
+    { value: "newest", label: t("tradingAnalysis.explore.sortNewest") },
+    { value: "ratioDesc", label: t("tradingAnalysis.explore.sortRatioDesc") },
+    { value: "ratioAsc", label: t("tradingAnalysis.explore.sortRatioAsc") },
+  ];
   return (
     <ResearchLayout>
       <main className="relative flex-1 overflow-y-auto" aria-busy={loading}>
@@ -69,9 +75,6 @@ export default function PublishedResearch({ page }: { page?: string }) {
               <h1 className="text-[1.75rem] font-bold leading-tight md:text-[2rem]">
                 {t("tradingAnalysis.title")}
               </h1>
-              <p className="mt-2 max-w-[60ch] text-[0.9375rem] leading-relaxed text-muted-foreground">
-                {t("tradingAnalysis.explore.groupedDescription")}
-              </p>
             </div>
             {profile?.is_admin && (
               <Button asChild variant="outline" size="sm">
@@ -102,21 +105,23 @@ export default function PublishedResearch({ page }: { page?: string }) {
                     ))}
                   </TabsList>
                 </Tabs>
-                {tab === "planned" && total > 1 && (
-                  <div className="ml-auto flex shrink-0 items-center justify-end">
+                {tab === "planned" && total > 1 && (<>
+                  <FilterSheet title={t("common.sort")} triggerClassName="ml-auto shrink-0" active={sort !== "newest"} onReset={() => { setSort("newest"); resetPage(); }}
+                    summary={planSortOptions.find(option => option.value === sort)?.label}>
+                    <FilterSheetGroup label={t("common.sort")} value={sort} onChange={(value) => { setSort(value); resetPage(); }} options={planSortOptions} />
+                  </FilterSheet>
+                  <div className="ml-auto hidden shrink-0 items-center justify-end lg:flex">
                     <Select value={sort} onValueChange={(value) => { setSort(value as PlanSort); resetPage(); }}>
                       <SelectTrigger aria-label={t("common.sort")} className="h-11 w-auto gap-1.5 rounded-full border-border bg-transparent px-3 text-[0.8125rem] font-semibold hover:border-foreground/25 hover:bg-foreground/[0.06] max-md:!w-11 max-md:justify-center max-md:!px-0 max-md:[&>svg:last-child]:hidden">
                         <ArrowUpDown aria-hidden="true" className="h-4 w-4 text-muted-foreground md:h-3.5 md:w-3.5" />
                         <span className="max-md:hidden"><SelectValue /></span>
                       </SelectTrigger>
                       <SelectContent align="end">
-                        <SelectItem value="newest">{t("tradingAnalysis.explore.sortNewest")}</SelectItem>
-                        <SelectItem value="ratioDesc">{t("tradingAnalysis.explore.sortRatioDesc")}</SelectItem>
-                        <SelectItem value="ratioAsc">{t("tradingAnalysis.explore.sortRatioAsc")}</SelectItem>
+                        {planSortOptions.map(option => <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>)}
                       </SelectContent>
                     </Select>
                   </div>
-                )}
+                </>)}
               </ListToolbar>
 
               {error && hasData && <p role="alert" className="px-2 py-3 text-sm text-muted-foreground">{t("common.error")} <Button variant="outline" size="sm" onClick={() => loadPublished()}>{t("common.retry")}</Button></p>}

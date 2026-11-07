@@ -1,5 +1,6 @@
 "use client";
 
+import { InfoTip } from "@/components/ui/info-tip";
 import { FundamentalsSkeleton, ProfileSkeleton } from "@/components/decision/StockTabSkeletons";
 import { ContentLoading } from "@/components/ui/content-loading";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -448,12 +449,10 @@ export default function StockFundamentalOverview({
             key={group.title}
             className="min-w-0 rounded-3xl border border-foreground/10 glass-card bg-card-glass p-4 sm:p-6"
           >
-            <h2 className="text-sm font-medium text-muted-foreground">
+            <h2 className="mb-3 flex items-center gap-2 text-sm font-medium text-muted-foreground">
               {group.title}
+              {group.note && <InfoTip label={group.title}>{group.note}</InfoTip>}
             </h2>
-            <p className="mb-3 mt-2 text-xs leading-5 text-muted-foreground">
-              {group.note}
-            </p>
             <dl className="divide-y divide-border">
               {group.rows.map(([label, value]) => (
                 <div

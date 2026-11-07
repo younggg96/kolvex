@@ -24,7 +24,7 @@ export default async function CreatorsPage({ searchParams }: Props) {
   const offset = (page - 1) * PUBLIC_PAGE_SIZE;
   if (page > 1 && offset >= creators.length) notFound();
   return <>
-    <ReadingHeading title="博主观点">查看财经博主最新一期已收录视频的股票观点。保留原视频与美东日期，方便回到来源核对。</ReadingHeading>
+    <ReadingHeading title="博主观点" />
     <ReadingSectionHeading title="已收录博主" count={creators.length} />
     <CreatorDirectory creators={creators.slice(offset, offset + PUBLIC_PAGE_SIZE)} />
     {!creators.length && <p className="py-12 text-muted-foreground">暂时没有已收录的博主观点。</p>}

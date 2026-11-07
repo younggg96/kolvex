@@ -1,7 +1,8 @@
 "use client";
 
 import { ReactNode } from "react";
-import OpinionSourceNav from "./OpinionSourceNav";
+import OpinionSourceNav, { useOpinionHeaderActive } from "./OpinionSourceNav";
+import { HeaderBackProvider, useHeaderBackState } from "./headerBack";
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -18,6 +19,8 @@ export default function DashboardLayout({
   breadcrumb,
   noTransition = false,
 }: DashboardLayoutProps) {
+  const headerActive = useOpinionHeaderActive();
+  const { back, register } = useHeaderBackState();
 
   return (
     <section aria-label={title} className="relative flex min-w-0 flex-1 flex-col overflow-hidden">
@@ -26,13 +29,16 @@ export default function DashboardLayout({
           noTransition ? "" : "animate-page-enter"
         }`}
       >
-        <OpinionSourceNav />
-        {breadcrumb && (
-          <div className="flex min-w-0 shrink-0 items-center px-[16px] py-4 md:px-8">
-            {breadcrumb}
-          </div>
-        )}
-        {children}
+        <HeaderBackProvider register={headerActive ? register : null}>
+          <OpinionSourceNav back={back} />
+          {/* With the phone header, its back button replaces this row below md. */}
+          {breadcrumb && (
+            <div data-header-back={headerActive || undefined} className="flex min-w-0 shrink-0 items-center px-[16px] py-1 md:px-8 md:py-4">
+              {breadcrumb}
+            </div>
+          )}
+          {children}
+        </HeaderBackProvider>
       </div>
     </section>
   );

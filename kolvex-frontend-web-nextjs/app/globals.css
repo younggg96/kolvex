@@ -9,6 +9,82 @@ html {
   scroll-padding-top: 80px;
 }
 
+/* Phones: a denser rem scale so more of each screen fits. Every Tailwind size is rem-based, so
+   text, spacing and control heights shrink together (14/16 = 87.5%). Fields below stay at 16px
+   (iOS focus zoom), and the smallest labels get pixel floors so they stay legible. */
+@media (max-width: 639.98px) {
+  html {
+    font-size: 14px;
+  }
+
+  .text-xs,
+  .text-\[0\.75rem\],
+  .text-\[0\.6875rem\] {
+    font-size: max(0.75rem, 11px);
+  }
+
+  .text-\[0\.625rem\] {
+    font-size: max(0.625rem, 10px);
+  }
+
+  .text-\[0\.5625rem\] {
+    font-size: max(0.5625rem, 9px);
+  }
+
+  .text-\[0\.5rem\] {
+    font-size: max(0.5rem, 8px);
+  }
+}
+
+/* Hover, press and selection colour changes ease instead of snapping. Lives in the base layer so
+   any component's own `transition-*` utility still wins; transforms are left out so layout and
+   drag feedback stay immediate. Reduced motion is handled by the global rule further down. */
+@layer base {
+  a,
+  button,
+  summary,
+  label,
+  input,
+  select,
+  textarea,
+  [role="button"],
+  [role="tab"],
+  [role="radio"],
+  [role="option"],
+  [role="menuitem"],
+  [role="menuitemcheckbox"],
+  [role="menuitemradio"],
+  [role="switch"],
+  [role="checkbox"] {
+    transition-property: color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow;
+    transition-timing-function: cubic-bezier(0.25, 1, 0.5, 1);
+    transition-duration: 150ms;
+  }
+}
+
+/* Overlay enter/exit (dropdowns, popovers, dialogs, sheets) decelerate into place instead of the
+   browser's default `ease`. Zero specificity, so an explicit `ease-*` utility still wins. */
+:where([class*="animate-in"], [class*="animate-out"]) {
+  animation-timing-function: cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+/* <details> disclosures expand instead of jumping open where the browser can animate to `auto`. */
+@supports (interpolate-size: allow-keywords) {
+  details {
+    interpolate-size: allow-keywords;
+  }
+
+  details::details-content {
+    block-size: 0;
+    overflow-y: clip;
+    transition: block-size 200ms cubic-bezier(0.25, 1, 0.5, 1), content-visibility 200ms allow-discrete;
+  }
+
+  details[open]::details-content {
+    block-size: auto;
+  }
+}
+
 /* iOS zooms focused fields below 16 CSS px, and local utilities such as
    text-sm would otherwise drop below it. Cover shared and native fields,
    including touch devices in landscape, before focus occurs. The font
@@ -254,21 +330,6 @@ a {
     to {
       opacity: 1;
     }
-  }
-
-  @keyframes stock-tab-enter {
-    from {
-      opacity: 0;
-      transform: translateY(6px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-
-  .stock-tab-panel[data-state="active"] {
-    animation: stock-tab-enter 180ms cubic-bezier(0.16, 1, 0.3, 1) both;
   }
 
   @keyframes slide-in {
@@ -1564,44 +1625,48 @@ a {
 /* Phone opinion-source header: a floating segmented control over an iOS-style
    scroll-edge effect. Content scrolls beneath it, so the page's first region is
    inset by the header's height instead of being pushed down by it. */
+/* Transparent: the glass segmented control carries its own surface, so the
+   bar adds no wash or blur over the page. */
 .opinion-header {
   padding-top: max(0.75rem, env(safe-area-inset-top, 0px));
-  padding-bottom: 0.75rem;
-}
-
-.opinion-header::before {
-  content: "";
-  position: absolute;
-  inset: 0 0 -1.25rem;
-  z-index: -1;
-  pointer-events: none;
-  background: linear-gradient(to bottom, rgb(var(--background) / 0.9), rgb(var(--background) / 0.6) 60%, rgb(var(--background) / 0));
-  -webkit-backdrop-filter: blur(12px) saturate(1.6);
-  backdrop-filter: blur(12px) saturate(1.6);
-  -webkit-mask-image: linear-gradient(to bottom, #000 55%, transparent);
-  mask-image: linear-gradient(to bottom, #000 55%, transparent);
-}
-
-@media (prefers-reduced-transparency: reduce) {
-  .opinion-header::before {
-    background: rgb(var(--background));
-    -webkit-backdrop-filter: none;
-    backdrop-filter: none;
-  }
+  padding-bottom: 0.25rem;
 }
 
 @media (max-width: 1023px) {
   .dashboard-content > [data-opinion-header] + :is(.overflow-y-auto, .overflow-auto) {
-    scroll-padding-top: calc(max(0.75rem, env(safe-area-inset-top, 0px)) + 3.75rem);
+    scroll-padding-top: calc(max(0.75rem, env(safe-area-inset-top, 0px)) + 3.25rem);
   }
 
   .dashboard-content > [data-opinion-header] + :is(.overflow-y-auto, .overflow-auto)::before {
     content: "";
     display: block;
-    height: calc(max(0.75rem, env(safe-area-inset-top, 0px)) + 3.75rem);
+    height: calc(max(0.75rem, env(safe-area-inset-top, 0px)) + 3.25rem);
   }
 
   .dashboard-content > [data-opinion-header] + :not(.overflow-y-auto, .overflow-auto) {
-    padding-top: calc(max(0.75rem, env(safe-area-inset-top, 0px)) + 3.75rem + 0.5rem);
+    padding-top: calc(max(0.75rem, env(safe-area-inset-top, 0px)) + 3.25rem);
+  }
+}
+
+/* The header is absolutely positioned, so the element after it is inset by its
+   height. Below md the breadcrumb row is replaced by the header's back button:
+   hide it and inset the content that follows instead. */
+@media (max-width: 767px) {
+  .dashboard-content > [data-opinion-header] + [data-header-back] {
+    display: none;
+  }
+
+  .dashboard-content > [data-opinion-header] + [data-header-back] + :is(.overflow-y-auto, .overflow-auto) {
+    scroll-padding-top: calc(max(0.75rem, env(safe-area-inset-top, 0px)) + 3.25rem);
+  }
+
+  .dashboard-content > [data-opinion-header] + [data-header-back] + :is(.overflow-y-auto, .overflow-auto)::before {
+    content: "";
+    display: block;
+    height: calc(max(0.75rem, env(safe-area-inset-top, 0px)) + 3.25rem);
+  }
+
+  .dashboard-content > [data-opinion-header] + [data-header-back] + :not(.overflow-y-auto, .overflow-auto) {
+    padding-top: calc(max(0.75rem, env(safe-area-inset-top, 0px)) + 3.25rem);
   }
 }

@@ -9,7 +9,6 @@ export default function ResetPasswordPageClient() {
   return (
     <AuthLayout
       title={t("auth.resetPasswordTitle")}
-      subtitle={t("auth.resetPasswordSubtitle")}
     >
       <ResetPasswordForm />
     </AuthLayout>

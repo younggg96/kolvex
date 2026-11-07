@@ -9,6 +9,7 @@ import DashboardLayout from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { FilterSheet, FilterSheetGroup, FilterSheetToggle } from "@/components/ui/filter-sheet";
 import WatchlistButton from "@/components/decision/WatchlistButton";
 import WatchlistStatus from "@/components/decision/WatchlistStatus";
 import CompanyLogo from "@/components/ui/company-logo";
@@ -67,6 +68,9 @@ export default function RedditOpinionsPage() {
     dateStyle: "medium", timeStyle: "short",
   }).format(new Date(data.fetchedAt)) : "";
   const communityLabel = (value: RedditCommunity) => value === "all-stocks" ? t("redditOpinions.allCommunities") : `r/${value}`;
+  const sortOptions = (["mentions", "mentionChange", "rankChange", "upvotes"] as const).map(value => ({ value, label: t(`redditOpinions.sortOptions.${value}`) }));
+  const filtered = community !== "all-stocks" || sort !== "mentions" || onlyWatchlist;
+  const resetFilters = () => { setCommunity("all-stocks"); setSort("mentions"); setOnlyWatchlist(false); };
   const watchButton = (row: RedditStock, compact = false) => <WatchlistButton ticker={row.ticker} showLabel={!compact} />;
 
   return (
@@ -75,18 +79,30 @@ export default function RedditOpinionsPage() {
         <div className="mx-auto max-w-6xl px-[16px] pb-6 pt-4 md:px-8 md:py-8">
           <div className="flex items-center justify-between gap-3">
             <h1 className="text-2xl font-semibold tracking-tight md:text-[2rem]">{t("redditOpinions.title")}</h1>
+            <div className="flex shrink-0 items-center gap-1">
+            <FilterSheet title={t("common.filter")} active={filtered} onReset={resetFilters}
+              summary={[communityLabel(community), sortOptions.find(option => option.value === sort)?.label, onlyWatchlist && t("redditOpinions.onlyWatchlist")].filter(Boolean).join(" · ")}>
+              <FilterSheetGroup label={t("redditOpinions.community")} value={community} onChange={setCommunity}
+                options={REDDIT_COMMUNITIES.map(value => ({ value, label: communityLabel(value) }))} />
+              <FilterSheetGroup label={t("redditOpinions.sort")} value={sort} onChange={setSort} options={sortOptions} />
+              <FilterSheetToggle label={t("redditOpinions.scope")} pressed={onlyWatchlist} onChange={setOnlyWatchlist} disabled={!ready}>
+                <Star className={cn("h-4 w-4", onlyWatchlist && "fill-current")} aria-hidden="true" />
+                {t("redditOpinions.onlyWatchlist")} <span className="tabular-nums">{watchlist.length}</span>
+              </FilterSheetToggle>
+            </FilterSheet>
             <Button variant="ghost" size="icon" className="h-10 w-10" onClick={refresh} disabled={busy}
               aria-label={t("redditOpinions.refresh")} title={t("redditOpinions.refresh")}>
               {busy ? <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" aria-hidden="true" /> : <RefreshCw className="h-4 w-4" aria-hidden="true" />}
             </Button>
+            </div>
           </div>
 
           <div className="mt-3"><WatchlistStatus /></div>
 
           <section aria-label={t("redditOpinions.title")} className="mt-3 md:mt-4">
             <ListCard>
-              <div className="grid grid-cols-2 items-center gap-3 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] xl:grid-cols-[minmax(0,1fr)_11rem_11rem_auto]">
-                <div className="relative hidden lg:col-span-3 lg:block xl:col-span-1">
+              <div className="hidden items-center gap-3 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] xl:grid-cols-[minmax(0,1fr)_11rem_11rem_auto]">
+                <div className="relative lg:col-span-3 xl:col-span-1">
                   <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
                   <Input ref={searchInput} type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder={t("redditOpinions.search")} aria-label={t("redditOpinions.search")} aria-describedby="reddit-scope" className="h-11 pl-9 pr-10 [&::-webkit-search-cancel-button]:hidden" />
                   {query && <Button variant="ghost" size="icon" className="absolute right-0 top-0 h-11 w-11" aria-label={t("redditOpinions.clearSearch")} title={t("redditOpinions.clearSearch")}
@@ -101,10 +117,10 @@ export default function RedditOpinionsPage() {
                 <div className="min-w-0">
                   <Select value={sort} onValueChange={value => setSort(value as RedditSort)}>
                     <SelectTrigger aria-label={t("redditOpinions.sort")} className="h-11"><SelectValue /></SelectTrigger>
-                    <SelectContent>{(["mentions", "mentionChange", "rankChange", "upvotes"] as const).map(value => <SelectItem key={value} value={value}>{t(`redditOpinions.sortOptions.${value}`)}</SelectItem>)}</SelectContent>
+                    <SelectContent>{sortOptions.map(option => <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>)}</SelectContent>
                   </Select>
                 </div>
-                <Button variant="secondary" className={`col-span-2 justify-self-start !px-3.5 !font-normal md:col-span-1 ${onlyWatchlist ? "" : "!bg-muted hover:!bg-foreground/[0.04]"}`} aria-pressed={onlyWatchlist} disabled={!ready} onClick={() => setOnlyWatchlist(value => !value)}>
+                <Button variant="secondary" className={`justify-self-start !px-3.5 !font-normal ${onlyWatchlist ? "" : "!bg-muted hover:!bg-foreground/[0.04]"}`} aria-pressed={onlyWatchlist} disabled={!ready} onClick={() => setOnlyWatchlist(value => !value)}>
                   <Star className={`h-4 w-4 ${onlyWatchlist ? "fill-current" : ""}`} aria-hidden="true" />
                   {t("redditOpinions.onlyWatchlist")} <span className="tabular-nums">{watchlist.length}</span>
                 </Button>
