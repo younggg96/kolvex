@@ -106,24 +106,50 @@ class CusipTickers:
                 result.append(cusip)
         return result
 
+    def remember(self, known):
+        """Seeds the cache with tickers known elsewhere (the stored holdings) so they are never re-requested."""
+        if self._map is None or not known:
+            return
+        now = int(time.time())
+        for cusip, ticker in known.items():
+            hit = self._map.get(cusip)
+            if ticker and (hit is None or hit[0] is None):
+                self._map[cusip] = [ticker, now]
+
+    def pending(self, cusips):
+        """CUSIPs not yet sent to OpenFIGI (or due for a retry)."""
+        return self._unknown(cusips) if self._map is not None else [c for c in cusips if c]
+
+    async def load(self):
+        await self._cache()
+
     async def resolve(self, cusips, wait=False):
-        """Map what the rate window allows now (or everything, when wait=True)."""
+        """Map what the rate window allows now (or everything, when wait=True).
+
+        The send lock covers one request at a time and is never held while waiting for the
+        window, so a caller that cannot wait is never stuck behind a background fill."""
         await self._cache()
         todo = self._unknown(cusips)
         changed = False
-        async with self._send:
-            for start in range(0, len(todo), self.batch):
-                while self._room() <= 0:
-                    if not wait:
+        for start in range(0, len(todo), self.batch):
+            while True:
+                async with self._send:
+                    if self._room() > 0:
+                        batch = [c for c in todo[start:start + self.batch] if c not in self._map]
+                        try:
+                            changed = (await self._request(batch) if batch else False) or changed
+                            sent = True
+                        except (httpx.HTTPError, ValueError):
+                            logger.warning("OpenFIGI mapping failed", exc_info=True)
+                            sent = None
                         break
-                    await asyncio.sleep(max(0.5, self.window - (time.monotonic() - self._sent[0])))
-                if self._room() <= 0:
+                    pause = max(0.5, self.window - (time.monotonic() - self._sent[0])) if self._sent else self.window
+                if not wait:
+                    sent = None
                     break
-                try:
-                    changed = await self._request(todo[start:start + self.batch]) or changed
-                except (httpx.HTTPError, ValueError):
-                    logger.warning("OpenFIGI mapping failed", exc_info=True)
-                    break
+                await asyncio.sleep(pause)
+            if sent is None:
+                break
         if changed:
             await self._save()
         return {c: self._map[c][0] for c in cusips if c and c in self._map}

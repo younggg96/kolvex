@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { ChartSkeleton } from "./Skeletons";
 import { Pressable, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import Svg, { Line, Polyline } from "react-native-svg";
@@ -312,7 +313,9 @@ export function StockPeers({ symbol }: { symbol: string }) {
           ))}
         </View>
         {historyLoading && !chart.rows.length ? (
-          <LoadingStatus />
+          <LoadingStatus>
+            <ChartSkeleton height={240} />
+          </LoadingStatus>
         ) : chart.rows.length ? (
           <ReturnChart
             rows={chart.rows}

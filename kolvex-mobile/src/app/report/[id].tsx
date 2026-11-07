@@ -1,4 +1,5 @@
 import { useLocalSearchParams } from "expo-router";
+import { ArticleSkeleton } from "../../components/Skeletons";
 import { useAuth } from "../../state/Auth";
 import { report } from "../../lib/contentApi";
 import { useResource } from "../../lib/useResource";
@@ -18,7 +19,7 @@ export default function Report() {
       onRefresh={r.refresh}
       refreshing={r.loading}
     >
-      <ResourceState
+      <ResourceState skeleton={<ArticleSkeleton />}
         resource={r}
         empty={!r.data}
         message="报告未公开、已删除或暂不可用。"

@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { CardsSkeleton } from "../../components/Skeletons";
 import { Pressable, View } from "react-native";
 import { router } from "expo-router";
 import { useAuth } from "../../state/Auth";
@@ -67,7 +68,7 @@ export default function Research() {
           {`按股票 · ${groups.length} 只股票 · ${resource.data?.length ?? 0} 个研究任务`}
         </Copy>
       )}
-      <ResourceState
+      <ResourceState skeleton={<CardsSkeleton lines={[{ size: 20, width: "25%" }, { size: 14, width: "40%" }, { size: 12, width: "30%" }, { size: 14, width: "60%" }]} gap={8} />}
         resource={resource}
         empty={!matched.length}
         message="当前筛选下没有已完成的研究报告。"

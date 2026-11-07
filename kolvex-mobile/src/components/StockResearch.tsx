@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { CardsSkeleton, ChartCardSkeleton, ChipsSkeleton } from "./Skeletons";
 import { ScrollView, View } from "react-native";
 import Svg, { Line, Rect, Text as SvgText } from "react-native-svg";
 import { exportCSV } from "../lib/exportFile";
@@ -99,7 +100,7 @@ export function Statements({ symbol }: { symbol: string }) {
         原始报表数值 · 财报币种 {currency.data || "未提供"} ·
         未自动换算为报价币种
       </Copy>
-      <ResourceState
+      <ResourceState skeleton={<><ChipsSkeleton count={2} /><ChartCardSkeleton height={200} /></>}
         resource={resource}
         empty={!rows.length}
         message="数据源没有返回此类报表。"
@@ -283,7 +284,7 @@ export function Multicharts({ symbol }: { symbol: string }) {
           </Button>
         ))}
       </View>
-      <ResourceState
+      <ResourceState skeleton={<CardsSkeleton count={2} lines={[{ size: 16, width: "40%" }, { size: 24, width: "30%" }]} chartHeight={160} />}
         resource={resource}
         empty={!periods.length}
         message="数据源暂未提供该股票在此周期的数据。"
@@ -447,7 +448,7 @@ export function Earnings({ symbol }: { symbol: string }) {
         title="盈利与预期"
         note="每股收益 · 币种及会计口径以原始财报为准"
       />
-      <ResourceState
+      <ResourceState skeleton={<CardsSkeleton lines={[{ size: 16, width: "25%" }, { size: 16, width: "60%" }, { size: 14, width: "50%" }]} />}
         resource={resource}
         empty={!rows.length}
         message="暂无盈利记录。"
@@ -493,7 +494,7 @@ export function Analysts({
   return (
     <View style={{ gap: 16 }}>
       <Section title="分析师观点" note={`目标价单位 ${currency || "未提供"}`} />
-      <ResourceState
+      <ResourceState skeleton={<CardsSkeleton count={1} lines={[{ size: 14, width: "40%" }, { size: 30, width: "40%" }, { size: 16, width: "60%" }]} />}
         resource={resource}
         empty={!data}
         message="暂无分析师数据。"

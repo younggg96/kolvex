@@ -62,9 +62,25 @@ async def lifespan(app: FastAPI):
     traffic_reporter = asyncio.create_task(run_traffic_reporter())
     from app.services.paper_trading.service import run_worker as run_paper_worker
     paper_worker = asyncio.create_task(run_paper_worker())
+    from app.services.sec.holdings_store import institution_store
+    holdings_worker = asyncio.create_task(institution_store.run_worker()) if os.getenv("SEC_13F_SYNC_ENABLED", "true").lower() == "true" else None
+    from app.services.options_activity.service import run_options_activity_worker
+    options_activity_worker = asyncio.create_task(run_options_activity_worker()) if settings.OPTIONS_ACTIVITY_WORKER_ENABLED else None
     try:
         yield
     finally:
+        if options_activity_worker:
+            options_activity_worker.cancel()
+            try:
+                await options_activity_worker
+            except asyncio.CancelledError:
+                pass
+        if holdings_worker:
+            holdings_worker.cancel()
+            try:
+                await holdings_worker
+            except asyncio.CancelledError:
+                pass
         paper_worker.cancel()
         try:
             await paper_worker

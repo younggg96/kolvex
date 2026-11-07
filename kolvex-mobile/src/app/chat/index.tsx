@@ -1,4 +1,5 @@
 import { usePreferences } from "../../state/Preferences";
+import { CardsSkeleton } from "../../components/Skeletons";
 import { useEffect, useRef, useState } from "react";
 import { router, useLocalSearchParams } from "expo-router";
 import { useAuth } from "../../state/Auth";
@@ -17,7 +18,7 @@ import { ChatActions } from "../../components/ChatActions";
 import { isSymbol } from "../../lib/models";
 export default function Chats() {
   return (
-    <AuthGate title="Ask Kolvex">
+    <AuthGate skeleton={<CardsSkeleton lines={[{ size: 16 }, { size: 12, width: "40%" }]} buttons={1} />} title="Ask Kolvex">
       <Library />
     </AuthGate>
   );
@@ -75,7 +76,7 @@ function Library() {
         {busy ? "正在创建…" : "新建对话"}
       </Button>
       {!!error && <Failure message={error} retry={resource.refresh} />}
-      <ResourceState
+      <ResourceState skeleton={<CardsSkeleton lines={[{ size: 16 }, { size: 12, width: "40%" }]} buttons={1} />}
         resource={resource}
         empty={!rows.length}
         message="还没有对话。新建对话后，可以查询市场、研究公司或理解已有持仓。"

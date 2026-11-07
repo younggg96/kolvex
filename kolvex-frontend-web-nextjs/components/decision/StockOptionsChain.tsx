@@ -281,7 +281,7 @@ export default function StockOptionsChain({ symbol }: { symbol: string }) {
               {[0, 1, 2, 3].map((i) => <div key={i}><Skeleton className="h-3 w-24 rounded-md" /><Skeleton className="mt-2 h-6 w-20 rounded-md" /></div>)}
             </div>)}
             <div className="flex flex-wrap items-center gap-2"><Skeleton className="h-9 w-48 rounded-full" /><Skeleton className="h-9 w-40 rounded-full" /></div>
-            <div className="overflow-hidden rounded-3xl border border-foreground/10">
+            <div className="glass-card overflow-hidden rounded-3xl border border-foreground/10 bg-card-glass">
               <div className="flex justify-around bg-muted px-3 py-3"><Skeleton className="h-4 w-16 rounded-md" /><Skeleton className="h-4 w-12 rounded-md" /><Skeleton className="h-4 w-16 rounded-md" /></div>
               {Array.from({ length: 10 }, (_, i) => <div key={i} className="grid grid-cols-[1fr_1fr_1fr_5rem_1fr_1fr_1fr] items-center gap-3 border-t border-border px-3 py-3">
                 {[0, 1, 2].map((j) => <Skeleton key={j} className="ml-auto h-4 w-12 rounded-md" />)}

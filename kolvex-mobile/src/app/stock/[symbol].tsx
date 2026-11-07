@@ -1,4 +1,5 @@
 import { router, useLocalSearchParams } from "expo-router";
+import { ChartSkeleton, TextLine } from "../../components/Skeletons";
 import { useState } from "react";
 import { View } from "react-native";
 import { history, quote } from "../../lib/api";
@@ -48,7 +49,13 @@ export default function Stock() {
     >
       {!!q.error && <Failure message={q.error} retry={q.refresh} />}
       {q.loading && !q.data ? (
-        <LoadingStatus />
+        <LoadingStatus>
+          <View style={{ gap: 4 }}>
+            <TextLine size={48} width="45%" />
+            <TextLine size={18} width="35%" />
+            <TextLine size={12} width="40%" />
+          </View>
+        </LoadingStatus>
       ) : (
         <View style={{ gap: 4 }}>
           <Copy size={48} bold>
@@ -94,7 +101,9 @@ export default function Stock() {
       {!!list.error && <Failure message={list.error} />}
       <Glass style={{ padding: 16, gap: 16 }}>
         {bars.loading ? (
-          <LoadingStatus />
+          <LoadingStatus>
+            <ChartSkeleton height={200} />
+          </LoadingStatus>
         ) : bars.error ? (
           <Failure message={bars.error} retry={bars.refresh} />
         ) : (

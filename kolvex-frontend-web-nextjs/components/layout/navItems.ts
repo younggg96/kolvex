@@ -8,11 +8,25 @@ import {
   Radio,
   Telescope,
   MessageSquareText,
+  Activity,
   type LucideIcon,
 } from "lucide-react";
 import { RedditIcon, XIcon, YouTubeIcon, type PlatformIconComponent } from "@/components/common/PlatformIcons";
 import type { ProductFeatureId } from "@/lib/productFeatures";
 export const SEARCH_HREF = "/dashboard/search";
+
+/** Sidebar sections, in display order, grouped by what the user is trying to do. */
+export const NAV_GROUPS = [
+  { id: "track", titleKey: "sidebar.groups.track" },
+  { id: "read", titleKey: "sidebar.groups.read" },
+  { id: "research", titleKey: "sidebar.groups.research" },
+  { id: "trade", titleKey: "sidebar.groups.trade" },
+] as const;
+export type NavGroupId = (typeof NAV_GROUPS)[number]["id"];
+
+/** Footer destinations. There is no pricing or help centre yet, so both route to contact. */
+export const HELP_HREF = "/contact";
+export const UPGRADE_HREF = "/contact";
 
 export interface MainNavItem {
   icon: LucideIcon;
@@ -21,6 +35,7 @@ export interface MainNavItem {
   href: string;
   type: "link";
   featureId: ProductFeatureId;
+  group: NavGroupId;
   children?: { title: string; href: string; icon: LucideIcon | PlatformIconComponent }[];
 }
 /** Each opinion source keeps the platform's own logo so the links stay distinct. */
@@ -38,6 +53,7 @@ export const MAIN_NAV_ITEMS: MainNavItem[] = [
     href: "/dashboard",
     type: "link",
     featureId: "home",
+    group: "track",
   },
   {
     icon: Star,
@@ -46,6 +62,7 @@ export const MAIN_NAV_ITEMS: MainNavItem[] = [
     href: "/dashboard/watchlist",
     type: "link",
     featureId: "watchlist",
+    group: "track",
   },
   {
     icon: Newspaper,
@@ -54,6 +71,7 @@ export const MAIN_NAV_ITEMS: MainNavItem[] = [
     href: "/dashboard/briefs",
     type: "link",
     featureId: "briefs",
+    group: "read",
   },
   {
     icon: Radio,
@@ -62,6 +80,7 @@ export const MAIN_NAV_ITEMS: MainNavItem[] = [
     href: "/dashboard/news",
     type: "link",
     featureId: "news",
+    group: "read",
   },
   {
     icon: MessageSquareText,
@@ -71,6 +90,7 @@ export const MAIN_NAV_ITEMS: MainNavItem[] = [
     href: "/dashboard/youtube-opinions",
     type: "link",
     featureId: "youtubeOpinions",
+    group: "read",
   },
   {
     icon: Telescope,
@@ -79,6 +99,7 @@ export const MAIN_NAV_ITEMS: MainNavItem[] = [
     href: "/dashboard/ai-research",
     type: "link",
     featureId: "tradingAnalysis",
+    group: "research",
   },
   {
     icon: Landmark,
@@ -87,6 +108,16 @@ export const MAIN_NAV_ITEMS: MainNavItem[] = [
     href: "/dashboard/superinvestors",
     type: "link",
     featureId: "superinvestors",
+    group: "research",
+  },
+  {
+    icon: Activity,
+    titleKey: "sidebar.optionsActivity",
+    shortTitleKey: "tabBar.optionsActivity",
+    href: "/dashboard/options-activity",
+    type: "link",
+    featureId: "optionsActivity",
+    group: "research",
   },
   {
     icon: BookOpen,
@@ -95,6 +126,7 @@ export const MAIN_NAV_ITEMS: MainNavItem[] = [
     href: "/dashboard/paper-trading",
     type: "link",
     featureId: "paperTrading",
+    group: "trade",
   },
   {
     icon: PieChart,
@@ -103,6 +135,7 @@ export const MAIN_NAV_ITEMS: MainNavItem[] = [
     href: "/dashboard/portfolio",
     type: "link",
     featureId: "portfolio",
+    group: "trade",
   },
 ];
 export function isNavItemActive(pathname: string, href: string) {

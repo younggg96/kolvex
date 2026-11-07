@@ -824,7 +824,7 @@ export default function PriceGraph({
   const iconButton = (active: boolean) =>
     cn(
       "inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full transition-colors duration-150 focus-visible:outline-none sm:h-8 sm:w-8",
-      active ? "glass-thumb text-foreground" : "text-muted-foreground hover:bg-muted/70 hover:text-foreground focus-visible:bg-muted/60",
+      active ? "glass-thumb glass-thumb-touch text-foreground" : "text-muted-foreground hover:bg-muted/70 hover:text-foreground focus-visible:bg-muted/60",
     );
 
   const plotTone = toneColor[tone];
@@ -955,12 +955,13 @@ export default function PriceGraph({
           {rangeBar}
         </div>
         {advanced && (
-          <div className="flex shrink-0 items-center justify-end gap-1 sm:justify-start">
+          <div className="-mx-1 flex min-w-0 items-center gap-1 overflow-x-auto overscroll-x-contain px-1 scrollbar-hide sm:mx-0 sm:shrink-0 sm:overflow-visible sm:px-0">
             {trailingControls}
-            <button type="button" aria-label={t("youtubeOpinions.zoomIn")} title={t("youtubeOpinions.zoomIn")} onClick={() => zoomBy(0.8, 0.5)} className={iconButton(false)}>
+            <span className="ml-auto" aria-hidden="true" />
+            <button type="button" aria-label={t("youtubeOpinions.zoomIn")} title={t("youtubeOpinions.zoomIn")} onClick={() => zoomBy(0.8, 0.5)} className={cn(iconButton(false), "max-sm:hidden")}>
               <ZoomIn className="h-4 w-4" aria-hidden="true" />
             </button>
-            <button type="button" aria-label={t("youtubeOpinions.zoomOut")} title={t("youtubeOpinions.zoomOut")} onClick={() => zoomBy(1.25, 0.5)} className={iconButton(false)}>
+            <button type="button" aria-label={t("youtubeOpinions.zoomOut")} title={t("youtubeOpinions.zoomOut")} onClick={() => zoomBy(1.25, 0.5)} className={cn(iconButton(false), "max-sm:hidden")}>
               <ZoomOut className="h-4 w-4" aria-hidden="true" />
             </button>
             <button

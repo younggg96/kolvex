@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { CardsSkeleton } from "../components/Skeletons";
 import { apiRequest } from "../lib/http";
 import { profile } from "../lib/contentApi";
 import { useAuth } from "../state/Auth";
@@ -17,7 +18,7 @@ import { MutationStatus } from "../components/MutationStatus";
 import { AdminBriefs, AdminSourceEditor } from "../components/AdminEditors";
 export default function Admin() {
   return (
-    <AuthGate title="管理中心">
+    <AuthGate skeleton={<CardsSkeleton count={2} lines={[{ size: 16 }]} padding={16} />} title="管理中心">
       <Gate />
     </AuthGate>
   );
@@ -28,7 +29,7 @@ function Gate() {
   if (!r.data)
     return (
       <Page title="管理中心">
-        <ResourceState resource={r} empty={false} message="读取权限中" />
+        <ResourceState skeleton={<CardsSkeleton count={2} lines={[{ size: 16 }]} padding={16} />} resource={r} empty={false} message="读取权限中" />
       </Page>
     );
   return r.data.is_admin ? (
@@ -84,7 +85,7 @@ function Overview({ user }: { user: string }) {
   );
   return (
     <>
-      <ResourceState resource={r} empty={!r.data} message="没有概览数据" />
+      <ResourceState skeleton={<CardsSkeleton count={4} lines={[{ size: 16 }]} padding={16} />} resource={r} empty={!r.data} message="没有概览数据" />
       {Object.entries(r.data?.tables || {}).map(([name, count]) => (
         <Glass key={name} style={{ padding: 16 }}>
           <Copy>
@@ -127,7 +128,7 @@ function Users({ user }: { user: string }) {
       >
         搜索
       </Button>
-      <ResourceState
+      <ResourceState skeleton={<CardsSkeleton lines={[{ size: 16 }, { size: 16, width: "50%" }]} buttons={1} />}
         resource={r}
         empty={!r.data?.users.length}
         message="无匹配用户"

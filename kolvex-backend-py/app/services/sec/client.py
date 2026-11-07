@@ -11,7 +11,7 @@ from xml.etree.ElementTree import ParseError
 
 import httpx
 
-from .parsers import compare_holdings, financial_history, filings_from, is_earnings_filing, parse_holdings, parse_insider
+from .parsers import value_multiplier, compare_holdings, financial_history, filings_from, is_earnings_filing, parse_holdings, parse_insider
 
 # An explicit, curated coverage list, not a claim to cover all institutional investors.
 MANAGERS = {
@@ -25,6 +25,34 @@ MANAGERS = {
     "third_point": {"cik": 1040273, "name": "Third Point"},
     "oaktree": {"cik": 949509, "name": "Oaktree Capital"},
     "renaissance": {"cik": 1037389, "name": "Renaissance Technologies"},
+    # Followed closely by Chinese-speaking investors.
+    "duan_yongping": {"cik": 1759760, "name": "H&H International Investment"},
+    "himalaya": {"cik": 1709323, "name": "Himalaya Capital"},
+    "hhlr": {"cik": 1762304, "name": "HHLR Advisors"},
+    "greenwoods": {"cik": 1848138, "name": "Greenwoods Asset Management"},
+    "temasek": {"cik": 1021944, "name": "Temasek Holdings"},
+    # Value investors.
+    "pabrai": {"cik": 1549575, "name": "Dalal Street (Pabrai)"},
+    "markel": {"cik": 1096343, "name": "Markel Group"},
+    "fairfax": {"cik": 915191, "name": "Fairfax Financial"},
+    "akre": {"cik": 1112520, "name": "Akre Capital Management"},
+    "gardner_russo": {"cik": 860643, "name": "Gardner Russo & Quinn"},
+    "ruane": {"cik": 1720792, "name": "Ruane, Cunniff & Goldfarb"},
+    "fundsmith": {"cik": 1569205, "name": "Fundsmith"},
+    # Activists.
+    "icahn": {"cik": 921669, "name": "Carl Icahn"},
+    "elliott": {"cik": 1791786, "name": "Elliott Investment Management"},
+    "trian": {"cik": 1345471, "name": "Trian Fund Management"},
+    "valueact": {"cik": 1418814, "name": "ValueAct Capital"},
+    "starboard": {"cik": 1517137, "name": "Starboard Value"},
+    # Growth and technology.
+    "ark": {"cik": 1697748, "name": "ARK Invest"},
+    "coatue": {"cik": 1135730, "name": "Coatue Management"},
+    "lone_pine": {"cik": 1061165, "name": "Lone Pine Capital"},
+    "altimeter": {"cik": 1541617, "name": "Altimeter Capital"},
+    # Macro and endowments.
+    "soros": {"cik": 1029160, "name": "Soros Fund Management"},
+    "gates": {"cik": 1166559, "name": "Gates Foundation Trust"},
 }
 FINANCIALS_TTL = 21600
 
@@ -194,9 +222,9 @@ class SecClient:
                 prior = await self._holdings_filing(identity["cik"], previous)
             except (SecUnavailable, ValueError):
                 failed = True
-        # SEC switched 13F values from thousands to dollars for reporting periods >= 2023-01-03.
         def dollars(rows, period):
-            return [{**r, "value": r["value"] * (1000 if period < "2023-01-03" else 1) if r["value"] is not None else None} for r in rows]
+            scale = value_multiplier(rows, period)
+            return [{**r, "value": r["value"] * scale if r["value"] is not None else None} for r in rows]
         now = dollars(now, current["period"])
         if prior is not None:
             prior = dollars(prior, previous["period"])

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { CardsSkeleton, ChipsSkeleton } from "./Skeletons";
 import { options, optionChain } from "../lib/featureApi";
 import { useResource } from "../lib/useResource";
 import { number } from "../lib/models";
@@ -24,7 +25,7 @@ export function Options({ symbol }: { symbol: string }) {
   );
   return (
     <>
-      <ResourceState
+      <ResourceState skeleton={<ChipsSkeleton count={4} />}
         resource={dates}
         empty={!dates.data?.expirations.length}
         message="暂无可用期权到期日"
@@ -56,7 +57,7 @@ export function Options({ symbol }: { symbol: string }) {
           setPage(1);
         }}
       />
-      <ResourceState
+      <ResourceState skeleton={<CardsSkeleton lines={[{ size: 16, width: "60%" }, { size: 16, width: "50%" }, { size: 16, width: "50%" }, { size: 16, width: "40%" }]} gap={8} />}
         resource={chain}
         empty={!!selected && !filtered.length}
         message="没有匹配合约"

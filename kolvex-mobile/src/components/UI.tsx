@@ -411,7 +411,7 @@ export function Skeleton({
   style?: StyleProp<ViewStyle>;
 }) {
   const t = useTheme();
-  const opacity = useRef(new Animated.Value(1)).current;
+  const [opacity] = useState(() => new Animated.Value(1));
   useEffect(() => {
     let loop: Animated.CompositeAnimation | undefined;
     let cancelled = false;

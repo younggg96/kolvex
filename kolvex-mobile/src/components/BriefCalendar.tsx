@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { ButtonsSkeleton } from "./Skeletons";
 import { apiRequest } from "../lib/http";
 import { useResource } from "../lib/useResource";
 import { marketCalendarDate } from "../lib/marketObservations";
@@ -47,7 +48,7 @@ export function BriefCalendar({
             value={month}
             onChangeText={setMonth}
           />
-          <ResourceState
+          <ResourceState skeleton={<ButtonsSkeleton count={7} />}
             resource={r}
             empty={!r.data?.days.length}
             message="此月没有日报"

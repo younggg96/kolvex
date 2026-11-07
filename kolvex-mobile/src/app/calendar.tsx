@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { CardsSkeleton } from "../components/Skeletons";
 import { View } from "react-native";
 import { useAuth } from "../state/Auth";
 import { apiRequest } from "../lib/http";
@@ -20,7 +21,7 @@ import { usePreferences } from "../state/Preferences";
 import { useTheme } from "../lib/theme";
 export default function Calendar() {
   return (
-    <AuthGate title="市场日历">
+    <AuthGate skeleton={<CardsSkeleton lines={[{ size: 16 }, { size: 16, width: "60%", lines: 2 }]} buttons={2} />} title="市场日历">
       <Events />
     </AuthGate>
   );
@@ -63,7 +64,7 @@ function Events() {
         {r.data?.timezone || "America/New_York"} · {r.data?.start_date} —{" "}
         {r.data?.end_date_exclusive}（不含结束日）
       </Copy>
-      <ResourceState
+      <ResourceState skeleton={<CardsSkeleton lines={[{ size: 16 }, { size: 16, width: "60%", lines: 2 }]} buttons={2} />}
         resource={r}
         empty={!events.length}
         message="此范围没有市场事件"

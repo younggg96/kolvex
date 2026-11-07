@@ -1,4 +1,5 @@
 import { usePreferences } from "../state/Preferences";
+import { CardsSkeleton } from "./Skeletons";
 import { apiRequest } from "../lib/http";
 import { useResource } from "../lib/useResource";
 import { Glass, Copy, Section } from "./UI";
@@ -27,7 +28,7 @@ export function XInsights({ author }: { author: string }) {
         仅覆盖已导入的部分原帖，不是博主的完整观点。读取不会调用模型。生成于{" "}
         {r.data?.generated_at || "未提供"}
       </Copy>
-      <ResourceState
+      <ResourceState skeleton={<CardsSkeleton count={2} lines={[{ size: 16, width: "50%" }, { size: 16, width: "70%", lines: 2 }, { size: 16, width: "60%", lines: 2 }, { size: 12, width: "40%" }]} padding={16} />}
         resource={r}
         empty={!r.data?.summaries.length}
         message="此博主暂无带完整来源的摘要。"

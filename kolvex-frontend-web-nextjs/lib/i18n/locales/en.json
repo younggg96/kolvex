@@ -55,6 +55,7 @@
     "optionsFlow": "Options Flow",
     "tradingAnalysis": "Research",
     "superinvestors": "Superinvestors",
+    "optionsActivity": "Options activity",
     "news": "News",
     "youtubeOpinions": "KOL Opinions",
     "portfolio": "Portfolio",
@@ -66,10 +67,19 @@
     "home": "Home",
     "research": "Research",
     "journal": "Updates",
-    "briefs": "Daily Briefs"
+    "briefs": "Daily Briefs",
+    "help": "Help",
+    "upgrade": "Upgrade",
+    "groups": {
+      "track": "Track",
+      "read": "Stay informed",
+      "research": "Dig deeper",
+      "trade": "Practice & holdings"
+    }
   },
   "tabBar": {
     "superinvestors": "Superinvestors",
+    "optionsActivity": "Options activity",
     "paperTrading": "Paper trading",
     "watchlist": "Watchlist",
     "news": "News",

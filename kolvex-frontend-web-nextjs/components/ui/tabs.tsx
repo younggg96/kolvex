@@ -92,7 +92,7 @@ const TabsTrigger = React.forwardRef<
             // paints a matching white fill of its own.
             // Unselected segments get a neutral wash: tabs are navigation, not
             // direction, so brand green here would compete with real signals.
-            "relative z-10 min-h-10 rounded-full px-4 data-[state=inactive]:hover:bg-foreground/[0.06] data-[state=inactive]:hover:text-foreground data-[state=inactive]:focus-visible:bg-foreground/[0.06] data-[state=inactive]:focus-visible:text-foreground data-[state=inactive]:active:bg-foreground/[0.1] data-[state=active]:bg-white data-[state=active]:text-glass-thumb-foreground group-data-[pill-ready=true]/tabs:data-[state=active]:bg-transparent"
+            "relative z-10 min-h-10 rounded-full px-4 [transform:translateZ(0)] data-[state=inactive]:hover:bg-foreground/[0.06] data-[state=inactive]:hover:text-foreground data-[state=inactive]:focus-visible:bg-foreground/[0.06] data-[state=inactive]:focus-visible:text-foreground data-[state=inactive]:active:bg-foreground/[0.1] data-[state=active]:bg-white data-[state=active]:text-glass-thumb-foreground group-data-[pill-ready=true]/tabs:data-[state=active]:bg-transparent"
           : // The underline variant uses border as its only active affordance, so
             // the rule itself has to go neutral too — a green indicator line
             // would read as state colour on what is just a tab position.

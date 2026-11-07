@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { CardsSkeleton, FormSkeleton } from "../components/Skeletons";
 import { View } from "react-native";
 import { useAuth } from "../state/Auth";
 import { apiURL } from "../lib/config";
@@ -13,7 +14,10 @@ export default function Account() {
   if (!auth.ready)
     return (
       <Page title="账户">
-        <LoadingStatus />
+        <LoadingStatus>
+          <CardsSkeleton count={1} gap={8} lines={[{ size: 20, width: "50%" }, { size: 14, width: "70%" }]} />
+          <FormSkeleton fields={3} />
+        </LoadingStatus>
       </Page>
     );
   // Signing out unmounts this route through the root layout's guard.

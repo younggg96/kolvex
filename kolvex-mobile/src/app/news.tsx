@@ -1,4 +1,5 @@
 import { usePreferences } from "../state/Preferences";
+import { CardsSkeleton } from "../components/Skeletons";
 import { news } from "../lib/contentApi";
 import { useResource } from "../lib/useResource";
 import { ResourceState, SourceLink } from "../components/Content";
@@ -22,7 +23,7 @@ export default function News() {
       refreshing={resource.loading && !!resource.data}
       header={
         <>
-          <ResourceState resource={resource} empty={false} message="" />
+          <ResourceState skeleton={<CardsSkeleton lines={[{ size: 12, width: "45%" }, { size: 16, width: "70%", lines: 2 }, { size: 14, width: "25%" }]} />} resource={resource} empty={false} message="" />
           {resource.data?.stale && (
             <Copy>当前显示缓存内容，数据源暂时不可用。可下拉刷新重试。</Copy>
           )}
@@ -48,7 +49,7 @@ export default function News() {
       }
       empty={
         !resource.loading && !resource.error ? (
-          <ResourceState
+          <ResourceState skeleton={<CardsSkeleton lines={[{ size: 12, width: "45%" }, { size: 16, width: "70%", lines: 2 }, { size: 14, width: "25%" }]} />}
             resource={resource}
             empty
             message="连接后端后显示最新新闻。"

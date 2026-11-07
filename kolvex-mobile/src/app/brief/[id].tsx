@@ -1,4 +1,5 @@
 import { usePreferences } from "../../state/Preferences";
+import { ArticleSkeleton, ChartSkeleton } from "../../components/Skeletons";
 import { useState } from "react";
 import { useLocalSearchParams } from "expo-router";
 import { useAuth } from "../../state/Auth";
@@ -17,7 +18,7 @@ import { number, percent } from "../../lib/models";
 import { briefNames, localizedBrief } from "../../lib/contentTypes";
 export default function Brief() {
   return (
-    <AuthGate title="日报">
+    <AuthGate skeleton={<><ChartSkeleton height={200} /><ArticleSkeleton /></>} title="日报">
       <Reader />
     </AuthGate>
   );
@@ -54,7 +55,7 @@ function Reader() {
         value={language}
         onChange={(v) => setLanguage(v as "zh" | "en")}
       />
-      <ResourceState
+      <ResourceState skeleton={<><ChartSkeleton height={200} /><ArticleSkeleton /></>}
         resource={resource}
         empty={!doc}
         message="这篇日报尚不可用。"

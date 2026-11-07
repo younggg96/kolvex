@@ -423,14 +423,15 @@ export default function Market() {
       <main className="min-w-0 flex-1 overflow-y-auto">
         <div className="mx-auto w-full min-w-0 max-w-[100rem] px-[16px] pb-16 pt-6 md:px-8 md:pt-8">
           <Tabs value={tab} onValueChange={selectTab} className="min-w-0">
-            <div className="flex flex-wrap items-center justify-between gap-3 max-md:justify-center">
-              <TabsList ref={tabList} variant="pill" aria-label={c("Market views", "行情视图")} className="max-md:w-full">
+            {/* On phones the row dissolves (`contents`) so the tab bar can stick for the whole page, not just this row. */}
+            <div className="flex flex-wrap items-center justify-between gap-3 max-md:contents">
+              <TabsList ref={tabList} variant="pill-solid" aria-label={c("Market views", "行情视图")} className="max-md:sticky max-md:top-3 max-md:z-30 max-md:w-full">
                 <TabsTrigger variant="pill" value="overview" className="max-md:!flex-1 max-md:!px-2 max-md:!text-[0.9375rem]">{c("Market overview", "市场概览")}</TabsTrigger>
                 <TabsTrigger variant="pill" value="trends" className="max-md:!flex-1 max-md:!px-2 max-md:!text-[0.9375rem]">{c("Market trends", "市场走势")}</TabsTrigger>
                 <TabsTrigger variant="pill" value="calendar" className="max-md:!flex-1 max-md:!px-2 max-md:!text-[0.9375rem]">{c("Event calendar", "事件日历")}</TabsTrigger>
                 <TabsTrigger variant="pill" value="macro" className="max-md:!flex-1 max-md:!px-2 max-md:!text-[0.9375rem]">{c("Macro indicators", "宏观指标")}</TabsTrigger>
               </TabsList>
-              <div ref={setToolbar} className={cn("flex min-w-0 max-w-full items-center justify-end gap-3 max-md:w-full max-md:justify-between md:ml-auto", tab === "calendar" && "max-md:hidden")}>
+              <div ref={setToolbar} className={cn("flex min-w-0 max-w-full items-center justify-end gap-3 max-md:mt-3 max-md:w-full max-md:justify-between md:ml-auto", tab === "calendar" && "max-md:hidden")}>
                 {(tab === "overview" || tab === "trends") && <MarketRangeControls range={range} setRange={setRange} view={view} setView={setView} refreshing={refreshing} onRefresh={retry} />}
               </div>
             </div>

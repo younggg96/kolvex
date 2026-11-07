@@ -1,5 +1,6 @@
 "use client";
 
+import { ListCard, phonePlainCardClass } from "@/components/ui/list-card";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { StockRowsSkeleton } from "@/components/decision/StockRowsSkeleton";
 import { useCopy } from "@/components/decision/shared";
@@ -22,7 +23,7 @@ export function RailRowsSkeleton({ rows = 4, ends = 2 }: { rows?: number; ends?:
 
 /** One benchmark card: name/date, symbol, value, change, sparkline, footnote. */
 function IndexCardSkeleton() {
-  return <div className="h-60 w-60 shrink-0 rounded-3xl border border-foreground/10 p-4 max-md:h-auto max-md:w-[11.25rem] max-md:p-3 xl:w-auto">
+  return <div className="glass-card bg-card-glass h-60 w-60 shrink-0 rounded-3xl border border-foreground/10 p-4 max-md:h-auto max-md:w-[11.25rem] max-md:p-3 xl:w-auto">
     <div className="flex h-6 items-center justify-between max-md:h-5"><Skeleton className="h-4 w-24 rounded-md" /><Skeleton className="h-3 w-10 rounded-md" /></div>
     <Skeleton className="mt-1 h-3 w-12 rounded-md" />
     <Skeleton className="mt-3 h-8 w-28 rounded-lg max-md:mt-1.5 max-md:h-7" />
@@ -49,16 +50,18 @@ export function MarketPageSkeleton({ noTransition = false }: { noTransition?: bo
           </div>
           <div className="min-w-0">
             <div className="mb-3 flex min-h-14 items-center justify-between"><Skeleton className="h-6 w-28 rounded-md" /><Skeleton className="h-9 w-24 rounded-full" /></div>
-            <div className="rounded-3xl border border-foreground/10 p-3 sm:p-4">
+            <ListCard>
               <div className="mb-3 flex gap-2">{[0, 1, 2, 3, 4].map(i => <Skeleton key={i} className="h-9 w-16 rounded-full" />)}</div>
               <div className="border-b border-border px-2 py-3"><Skeleton className="h-3.5 w-1/3 rounded-md" /></div>
               <StockRowsSkeleton grid={STOCK_GRID} trendClass="hidden min-[360px]:block" watchClass="max-md:hidden" reason />
-            </div>
+            </ListCard>
           </div>
           <aside className="min-w-0 space-y-8">
             {[2, 1].map((ends, i) => <section key={i}>
               <div className="mb-3 flex min-h-14 items-center gap-2"><Skeleton className="h-6 w-24 rounded-md" /><Skeleton className="ml-auto h-11 w-11 rounded-full" /></div>
-              <div className="rounded-3xl border border-foreground/10 p-3"><RailRowsSkeleton ends={ends as 1 | 2} /></div>
+              {ends === 2
+                ? <div className={cn("rounded-3xl border border-foreground/10 glass-card bg-card-glass p-3", phonePlainCardClass)}><RailRowsSkeleton ends={2} /></div>
+                : <ListCard><RailRowsSkeleton ends={1} /></ListCard>}
             </section>)}
           </aside>
         </div>

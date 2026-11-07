@@ -4,10 +4,23 @@ import Link from "next/link";
 import LogoIcon from "@/components/common/LogoIcon";
 import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
-import { Settings, PanelLeftClose, PanelLeft, Search, ShieldCheck, MessageSquareText } from "lucide-react";
+import {
+  Settings,
+  PanelLeftClose,
+  PanelLeft,
+  Search,
+  ShieldCheck,
+  MessageSquareText,
+} from "lucide-react";
 import { useDecisionCommand } from "@/components/decision/CommandLayer";
 import { useCopy } from "@/components/decision/shared";
-import { MAIN_NAV_ITEMS, SEARCH_HREF, isNavItemActive, isMainNavItemActive } from "./navItems";
+import {
+  MAIN_NAV_ITEMS,
+  NAV_GROUPS,
+  SEARCH_HREF,
+  isNavItemActive,
+  isMainNavItemActive,
+} from "./navItems";
 import UserMenu from "@/components/user/UserMenu";
 import { Button } from "@/components/ui/button";
 import {
@@ -31,20 +44,6 @@ import { useUserProfileContext } from "@/components/user/UserProfileProvider";
 import { useTranslation } from "@/lib/i18n";
 import { isProductFeatureEnabled } from "@/lib/productFeatures";
 
-const bottomNavItemDefs = [
-  {
-    icon: Settings,
-    titleKey: "sidebar.settings",
-    href: "/dashboard/settings",
-  },
-];
-
-const adminNavItemDef = {
-  icon: ShieldCheck,
-  titleKey: "sidebar.admin",
-  href: "/dashboard/admin",
-};
-
 interface AppSidebarProps {
   onNavigate?: () => void;
 }
@@ -55,35 +54,30 @@ function AppSidebar({ onNavigate }: AppSidebarProps) {
     state,
     toggleSidebar,
     isInitialized,
-    isMobile: sidebarIsMobile,
     setOpenMobile,
   } = useSidebar();
   const { profile } = useUserProfileContext();
   const { t } = useTranslation();
   const c = useCopy();
   const { openAsk, canAsk } = useDecisionCommand();
-
-  // Resolve translated nav items
-  const mainNavItems = MAIN_NAV_ITEMS.filter((item) =>
-    isProductFeatureEnabled(item.featureId),
-  ).map((item) => ({
-    ...item,
-    title: t(item.titleKey),
-  }));
-  const bottomNavItems = bottomNavItemDefs.map((item) => ({
-    ...item,
-    title: t(item.titleKey),
-  }));
-  const adminNavItem = {
-    ...adminNavItemDef,
-    title: t(adminNavItemDef.titleKey),
-  };
   const [isMounted, setIsMounted] = useState(false);
-
   const { isMobile, isTablet } = useBreakpoints();
 
-  // Check if user is admin
   const isAdmin = profile?.is_admin ?? false;
+
+  // Main entries, bucketed into their scenario groups; empty groups are dropped.
+  const groups = NAV_GROUPS.map((group) => ({
+    ...group,
+    title: t(group.titleKey),
+    items: MAIN_NAV_ITEMS.filter(
+      (item) => item.group === group.id && isProductFeatureEnabled(item.featureId),
+    ).map((item) => ({ ...item, title: t(item.titleKey) })),
+  })).filter((group) => group.items.length > 0);
+
+  const footerLinks = [
+    ...(isAdmin ? [{ icon: ShieldCheck, title: t("sidebar.admin"), href: "/dashboard/admin" }] : []),
+    { icon: Settings, title: t("sidebar.settings"), href: "/dashboard/settings" },
+  ];
 
   const handleNavigate = () => {
     setOpenMobile(false);
@@ -94,19 +88,20 @@ function AppSidebar({ onNavigate }: AppSidebarProps) {
     setOpenMobile(false);
   }, [pathname, setOpenMobile]);
 
-  const isActive = (href: string) => isNavItemActive(pathname, href);
-
   useEffect(() => {
     setIsMounted(true);
   }, []);
+
+  const isActive = (href: string) => isNavItemActive(pathname, href);
 
   return (
     <SidebarPrimitive
       variant="sidebar"
       collapsible="icon"
-      className="border-r border-border/70"
+      className="app-sidebar border-r border-border/70"
     >
-      <SidebarHeader>
+      {/* Fixed top: brand, collapse toggle, and the two global entry points. */}
+      <SidebarHeader className="gap-3 border-b border-border/40 pb-3">
         <div className="flex items-center justify-between gap-2 group-data-[collapsible=icon]:flex-col group-data-[collapsible=icon]:items-center">
           <Link
             href="/dashboard"
@@ -138,123 +133,113 @@ function AppSidebar({ onNavigate }: AppSidebarProps) {
             <span className="sr-only">{t("sidebar.toggleSidebar")}</span>
           </Button>
         </div>
+
+        <SidebarMenu>
+          {canAsk && (
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                onClick={() => {
+                  handleNavigate();
+                  openAsk();
+                }}
+                tooltip={c("Ask Kolvex", "询问 Kolvex")}
+                className="border border-border/70 bg-background/60 hover:border-foreground/25 group-data-[collapsible=icon]:border-transparent group-data-[collapsible=icon]:bg-transparent"
+              >
+                <MessageSquareText />
+                <span className="flex-1">{c("Ask Kolvex…", "询问 Kolvex…")}</span>
+                <kbd className="rounded border border-border px-1 font-sans text-[0.625rem] leading-4 text-muted-foreground group-data-[collapsible=icon]:hidden">
+                  ⌘K
+                </kbd>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          )}
+          <SidebarMenuItem>
+            <SidebarMenuButton
+              asChild
+              isActive={isActive(SEARCH_HREF)}
+              onClick={handleNavigate}
+              tooltip={c("Search", "探索")}
+            >
+              <Link href={SEARCH_HREF} aria-current={isActive(SEARCH_HREF) ? "page" : undefined}>
+                <Search aria-hidden="true" />
+                <span>{c("Search", "探索")}</span>
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
       </SidebarHeader>
 
-      <SidebarContent>
-        {/* Main Navigation */}
-        <SidebarGroup>
-          <SidebarGroupLabel className="sr-only">
-            <span>Kolvex</span>
-          </SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {canAsk && (
-                <SidebarMenuItem className="mb-2">
-                  <SidebarMenuButton
-                    onClick={() => {
-                      handleNavigate();
-                      openAsk();
-                    }}
-                    tooltip={c("Ask Kolvex", "询问 Kolvex")}
-                    className="border border-border/70 bg-background/60 text-muted-foreground hover:border-foreground/25 hover:text-foreground group-data-[collapsible=icon]:border-transparent group-data-[collapsible=icon]:bg-transparent"
-                  >
-                    {/* The row reads as a muted, secondary entry point: it inherits
-                        the link colour on hover instead of a brand-tinted icon. */}
-                    <MessageSquareText className="text-muted-foreground" />
-                    <span className="flex-1">{c("Ask Kolvex…", "询问 Kolvex…")}</span>
-                    <kbd className="rounded border border-border px-1 font-sans text-[0.625rem] leading-4 text-muted-foreground group-data-[collapsible=icon]:hidden">
-                      ⌘K
-                    </kbd>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              )}
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  asChild
-                  isActive={isActive(SEARCH_HREF)}
-                  onClick={handleNavigate}
-                  tooltip={c("Search", "探索")}
-                >
-                  <Link href={SEARCH_HREF} aria-current={isActive(SEARCH_HREF) ? "page" : undefined}>
-                    <Search aria-hidden="true" />
-                    <span>{c("Search", "探索")}</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              {mainNavItems.map((item) => {
-                const active = isMainNavItemActive(pathname, item);
-                return (
-                  <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton
-                      asChild
-                      isActive={active}
-                      onClick={handleNavigate}
-                    >
-                      <Link href={item.href} aria-current={!item.children && active ? "page" : undefined}>
-                        {item.icon && <item.icon />}
-                        <span>{item.title}</span>
-                      </Link>
-                    </SidebarMenuButton>
-                    {item.children && (
-                      <SidebarMenuSub className="ml-5 border-l border-border pl-3" aria-label={item.title}>
-                        {item.children.map((child) => (
-                          <SidebarMenuSubItem key={child.href}>
-                            <SidebarMenuSubButton asChild isActive={isActive(child.href)} onClick={handleNavigate}>
-                              <Link href={child.href} aria-current={isActive(child.href) ? "page" : undefined}>
-                                <child.icon aria-hidden="true" />
-                                <span>{child.title}</span>
-                              </Link>
-                            </SidebarMenuSubButton>
-                          </SidebarMenuSubItem>
-                        ))}
-                      </SidebarMenuSub>
-                    )}
-                  </SidebarMenuItem>
-                );
-              })}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
-        {/* Bottom Navigation */}
-        <SidebarGroup className="mt-auto">
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {/* Admin Menu - Only visible to admins */}
-              {isAdmin && (
-                <SidebarMenuItem>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={isActive(adminNavItem.href)}
-                    onClick={handleNavigate}
-                  >
-                    <Link href={adminNavItem.href}>
-                      <adminNavItem.icon className="size-4" />
-                      <span>{adminNavItem.title}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              )}
-              {bottomNavItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={isActive(item.href)}
-                    onClick={handleNavigate}
-                  >
-                    <Link href={item.href}>
-                      <item.icon className="size-4" />
-                      <span>{item.title}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+      {/* Scrolling middle: scenario groups. Spacing, not lines, separates them. */}
+      <SidebarContent className="gap-6 py-4 group-data-[collapsible=icon]:gap-3">
+        {groups.map((group) => (
+          <SidebarGroup key={group.id}>
+            <SidebarGroupLabel className="mb-1 h-6 text-[0.6875rem] font-semibold uppercase tracking-[0.06em] text-muted-foreground/80">
+              {group.title}
+            </SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {group.items.map((item) => {
+                  const active = isMainNavItemActive(pathname, item);
+                  const hasChildren = Boolean(item.children);
+                  return (
+                    <SidebarMenuItem key={item.href}>
+                      <SidebarMenuButton
+                        asChild
+                        // A parent with sub-links marks its section, not the page:
+                        // the child row carries the highlight so only one row is filled.
+                        isActive={!hasChildren && active}
+                        data-section-active={hasChildren && active ? "true" : undefined}
+                        onClick={handleNavigate}
+                        tooltip={item.title}
+                      >
+                        <Link href={item.href} aria-current={!hasChildren && active ? "page" : undefined}>
+                          <item.icon />
+                          <span>{item.title}</span>
+                        </Link>
+                      </SidebarMenuButton>
+                      {item.children && (
+                        <SidebarMenuSub className="ml-5 mt-1 border-l border-border/50 pl-3" aria-label={item.title}>
+                          {item.children.map((child) => (
+                            <SidebarMenuSubItem key={child.href}>
+                              <SidebarMenuSubButton asChild isActive={isActive(child.href)} onClick={handleNavigate}>
+                                <Link href={child.href} aria-current={isActive(child.href) ? "page" : undefined}>
+                                  <child.icon aria-hidden="true" />
+                                  <span>{child.title}</span>
+                                </Link>
+                              </SidebarMenuSubButton>
+                            </SidebarMenuSubItem>
+                          ))}
+                        </SidebarMenuSub>
+                      )}
+                    </SidebarMenuItem>
+                  );
+                })}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        ))}
       </SidebarContent>
 
-      <SidebarFooter>
+      {/* Fixed bottom: utilities, then the account menu. Upgrade and Help
+          (UPGRADE_HREF / HELP_HREF) are hidden until pricing and a help centre exist. */}
+      <SidebarFooter className="gap-3 border-t border-border/40 pt-3">
+        <SidebarMenu>
+          {footerLinks.map((item) => (
+            <SidebarMenuItem key={item.href}>
+              <SidebarMenuButton
+                asChild
+                isActive={isActive(item.href)}
+                onClick={handleNavigate}
+                tooltip={item.title}
+              >
+                <Link href={item.href} aria-current={isActive(item.href) ? "page" : undefined}>
+                  <item.icon aria-hidden="true" />
+                  <span>{item.title}</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          ))}
+        </SidebarMenu>
         <UserMenu
           isCollapsed={
             isMounted &&

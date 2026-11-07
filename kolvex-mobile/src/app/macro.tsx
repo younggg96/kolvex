@@ -1,4 +1,5 @@
 import { usePreferences } from "../state/Preferences";
+import { CardsSkeleton } from "../components/Skeletons";
 import { useState } from "react";
 import { View } from "react-native";
 import { indicators, type Indicator } from "../lib/featureApi";
@@ -30,7 +31,7 @@ function methodLabel(i: Indicator) {
 }
 export default function Macro() {
   return (
-    <AuthGate title="宏观指标">
+    <AuthGate skeleton={<CardsSkeleton lines={[{ size: 16, width: "60%" }, { size: 16, width: "40%" }, { size: 16, width: "20%" }, { size: 30, width: "40%" }, { size: 16, width: "30%" }]} chartHeight={120} />} title="宏观指标">
       <MacroContent />
     </AuthGate>
   );
@@ -58,7 +59,7 @@ function MacroContent() {
         value={years}
         onChange={setYears}
       />
-      <ResourceState
+      <ResourceState skeleton={<CardsSkeleton lines={[{ size: 16, width: "60%" }, { size: 16, width: "40%" }, { size: 16, width: "20%" }, { size: 30, width: "40%" }, { size: 16, width: "30%" }]} chartHeight={120} />}
         resource={r}
         empty={!r.data?.indicators.length}
         message="暂无可用宏观数据"

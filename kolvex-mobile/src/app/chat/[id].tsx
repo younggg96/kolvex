@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { CardsSkeleton } from "../../components/Skeletons";
 import { useLocalSearchParams } from "expo-router";
 import { ModelPicker } from "../../components/ModelPicker";
 import { View } from "react-native";
@@ -20,7 +21,7 @@ import {
 import { Button, Copy, Failure, Glass, Page } from "../../components/UI";
 export default function ChatRoom() {
   return (
-    <AuthGate title="Ask Kolvex">
+    <AuthGate skeleton={<CardsSkeleton count={2} lines={[{ size: 12, width: "30%" }, { size: 16, width: "60%", lines: 4 }]} />} title="Ask Kolvex">
       <Room />
     </AuthGate>
   );
@@ -180,7 +181,7 @@ function Room() {
       }}
       refreshing={recovering}
     >
-      <ResourceState resource={resource} empty={false} message="" />
+      <ResourceState skeleton={<CardsSkeleton count={2} lines={[{ size: 12, width: "30%" }, { size: 16, width: "60%", lines: 4 }]} />} resource={resource} empty={false} message="" />
       {(data?.messages ?? [])
         .filter((message) => message.role !== "system")
         .map((message) => (

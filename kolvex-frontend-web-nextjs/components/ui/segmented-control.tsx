@@ -311,7 +311,10 @@ export function SegmentedControl<T extends string>({
               select(option.value);
             }}
             className={cn(
-              "relative z-10 inline-flex shrink-0 select-none items-center justify-center gap-1.5",
+              // The thumb is a GPU layer (translate3d); inside a scrolling
+              // pill iOS WebKit paints it over non-composited labels despite
+              // z-index, hiding the selected label. Lift the labels too.
+              "relative z-10 inline-flex shrink-0 select-none items-center justify-center gap-1.5 [transform:translateZ(0)]",
               "whitespace-nowrap rounded-full font-semibold",
               "transition-colors duration-200 ease-out",
               "focus-visible:outline-none focus-visible:underline focus-visible:decoration-2 focus-visible:underline-offset-4",

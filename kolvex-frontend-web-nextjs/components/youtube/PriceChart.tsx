@@ -293,7 +293,7 @@ export default function PriceChart({
         >
           <DialogTitle className="sr-only">{t("youtubeOpinions.advancedChartTitle", { symbol })}</DialogTitle>
           <DialogDescription className="sr-only">{t("youtubeOpinions.zoomHint")}</DialogDescription>
-          {advancedOpen && <div className="min-h-0 flex-1 overflow-hidden p-3 sm:px-4">
+          {advancedOpen && <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:overflow-hidden sm:px-4 sm:pb-3">
             <ChartView mode="advanced" {...shared} escapeRef={escapeRef} headerActions={
               <DialogClose asChild>
                 <Button type="button" variant="ghost" size="icon" className="shrink-0" aria-label={t("common.close")} title={t("common.close")}>

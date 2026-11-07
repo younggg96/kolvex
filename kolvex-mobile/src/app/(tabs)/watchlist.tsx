@@ -1,4 +1,5 @@
 import { router } from "expo-router";
+import { QuoteRowsSkeleton } from "../../components/Skeletons";
 import { useState } from "react";
 import { View } from "react-native";
 import { QuoteRow } from "../../components/Quotes";
@@ -32,7 +33,9 @@ export default function Watchlist() {
       }
       empty={
         !list.ready && !list.error ? (
-          <LoadingStatus />
+          <LoadingStatus>
+            <QuoteRowsSkeleton withButton />
+          </LoadingStatus>
         ) : list.error ? undefined : (
           <View style={{ gap: 16 }}>
             <Empty

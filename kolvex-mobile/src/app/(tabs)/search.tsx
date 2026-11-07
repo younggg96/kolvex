@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { ResultRowsSkeleton, TextLine } from "../../components/Skeletons";
 import type { ComponentRef, ReactNode } from "react";
 import {
   Keyboard,
@@ -747,7 +748,14 @@ export default function Search() {
               </View>
             </Group>
           )}
-          {picksLoading && <LoadingStatus />}
+          {picksLoading && (
+            <LoadingStatus>
+              <View style={{ marginTop: 32, gap: 12 }}>
+                <TextLine size={16} width={120} />
+                <ResultRowsSkeleton count={5} />
+              </View>
+            </LoadingStatus>
+          )}
         </>
       ) : (
         <>
@@ -820,7 +828,14 @@ export default function Search() {
             </Group>
           )}
 
-          {catalogueLoading && !hasResults && <LoadingStatus />}
+          {catalogueLoading && !hasResults && (
+            <LoadingStatus>
+              <View style={{ marginTop: 32, gap: 12 }}>
+                <TextLine size={16} width={48} />
+                <ResultRowsSkeleton count={5} trailing />
+              </View>
+            </LoadingStatus>
+          )}
           {!catalogueLoading && !hasResults && (
             <View style={{ marginTop: 40 }}>
               <Copy size={14} muted>

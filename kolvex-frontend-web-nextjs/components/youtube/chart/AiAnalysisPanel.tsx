@@ -64,7 +64,7 @@ export default function AiAnalysisPanel({ state, busy = false, interval, onRetry
 
       {loading && <div className="mt-4"><p className="text-sm leading-6 text-muted-foreground" aria-hidden="true">{t("youtubeOpinions.ai.loading")}</p><ContentLoading label={t("youtubeOpinions.ai.loading")} className="mt-1 min-h-0">
         <div className="mt-4 space-y-2.5">{[0, 1, 2].map(i => <Skeleton key={i} className={cn("h-4 rounded-md", i === 2 ? "w-2/3" : "w-full")} />)}</div>
-        <Skeleton className="mt-4 h-24 w-full rounded-3xl" />
+        <div className="mt-4 rounded-3xl bg-muted/60 p-4"><Skeleton className="h-4 w-24 rounded-md" /><div className="mt-3 space-y-2.5"><Skeleton className="h-4 w-full rounded-md" /><Skeleton className="h-4 w-2/3 rounded-md" /></div></div>
         <div className="mt-6"><Skeleton className="h-4 w-20 rounded-md" /><div className="mt-2 divide-y divide-border">{[0, 1, 2].map(i => <div key={i} className="flex items-center gap-2 py-2.5"><Skeleton className="h-5 w-16 rounded-md" /><Skeleton className="ml-2 h-4 w-12 rounded-md" /><Skeleton className="ml-auto h-3 w-10 rounded-md" /><Skeleton className="h-4 w-4 rounded" /></div>)}</div></div>
       </ContentLoading></div>}
       {state.status === "error" && <p className="mt-4 text-sm leading-6 text-muted-foreground" role="alert">

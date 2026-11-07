@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { CardsSkeleton } from "./Skeletons";
 import * as Crypto from "expo-crypto";
 import { apiRequest } from "../lib/http";
 import { useAuth } from "../state/Auth";
@@ -164,7 +165,7 @@ export function TechnicalAI({
         ID；遇到连接中断请先刷新任务，不会自动重新生成。
       </Copy>
       <MutationStatus {...m} />
-      <ResourceState resource={jobs} empty={false} message="暂无任务" />
+      <ResourceState skeleton={<CardsSkeleton count={2} lines={[{ size: 16, width: "60%" }]} buttons={2} padding={12} gap={8} />} resource={jobs} empty={false} message="暂无任务" />
       {jobs.data?.items.map((j) => (
         <Glass key={j.id} style={{ padding: 12, gap: 8 }}>
           <Copy>
@@ -195,7 +196,7 @@ export function TechnicalAI({
           setPage(1);
         }}
       />
-      <ResourceState
+      <ResourceState skeleton={<CardsSkeleton count={2} lines={[{ size: 12, width: "40%" }, { size: 16, width: "60%", lines: 2 }]} buttons={1} padding={12} gap={8} />}
         resource={history}
         empty={!history.data?.items.length}
         message="尚无分析版本"

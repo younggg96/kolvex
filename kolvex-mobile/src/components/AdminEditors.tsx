@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { CardsSkeleton, ResultRowsSkeleton, ButtonsSkeleton } from "./Skeletons";
 import { apiRequest } from "../lib/http";
 import { useResource } from "../lib/useResource";
 import { useMutation } from "../lib/useMutation";
@@ -127,7 +128,7 @@ export function AdminBriefs({ user }: { user: string }) {
         新建另一份日报
       </Button>
       <MutationStatus {...m} />
-      <ResourceState
+      <ResourceState skeleton={<CardsSkeleton lines={[{ size: 16 }]} buttons={1} padding={16} gap={8} />}
         resource={r}
         empty={!r.data?.items.length}
         message="暂无日报"
@@ -273,7 +274,7 @@ function EventPreview({ user }: { user: string }) {
   );
   return (
     <>
-      <ResourceState
+      <ResourceState skeleton={<ResultRowsSkeleton count={6} />}
         resource={r}
         empty={!r.data?.events.length}
         message="暂无市场事件"
@@ -362,7 +363,7 @@ function CreatorAdmin({ user }: { user: string }) {
   return (
     <>
       <Section title="频道与观点编辑" />
-      <ResourceState
+      <ResourceState skeleton={<ButtonsSkeleton count={4} />}
         resource={r}
         empty={!r.data?.creators.length}
         message="暂无频道"
@@ -470,7 +471,7 @@ function CreatorAdmin({ user }: { user: string }) {
           >
             切换到新增观点
           </Button>
-          <ResourceState
+          <ResourceState skeleton={<CardsSkeleton lines={[{ size: 16, width: "60%", lines: 2 }]} buttons={1} padding={16} gap={8} />}
             resource={history}
             empty={!history.data?.opinions.length}
             message="暂无观点"

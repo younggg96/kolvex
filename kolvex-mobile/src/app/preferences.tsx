@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { FormSkeleton } from "../components/Skeletons";
 import { useAuth } from "../state/Auth";
 import { usePreferences, type Appearance } from "../state/Preferences";
 import { apiRequest } from "../lib/http";
@@ -43,7 +44,7 @@ export default function Preferences() {
         外观与 Web 使用相同颜色；iOS 使用 SwiftUI 玻璃按钮和原生 Liquid
         Glass。减少透明度时跟随系统。
       </Copy>
-      <AuthGate inline title="模型与 API 密钥">
+      <AuthGate skeleton={<FormSkeleton fields={2} />} inline title="模型与 API 密钥">
         <Keys />
       </AuthGate>
     </Page>
@@ -65,7 +66,7 @@ function Keys() {
   return (
     <>
       <Section title="模型服务密钥" />
-      <ResourceState resource={r} empty={!r.data} message="密钥设置暂不可用" />
+      <ResourceState skeleton={<FormSkeleton fields={2} />} resource={r} empty={!r.data} message="密钥设置暂不可用" />
       <Copy muted>
         密钥仅提交至现有 Kolvex 后端。读取时只显示掩码；不会写入手机本地存储。
       </Copy>

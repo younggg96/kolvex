@@ -68,7 +68,7 @@ export function CalculatorSkeleton({ label }: { label: string }) {
     <Card className="space-y-4 p-4 sm:p-5">
       <div className="flex justify-between gap-3"><Skeleton className="h-5 w-28 rounded-md" /><Skeleton className="h-3 w-16 rounded-md" /></div>
       <Skeleton className="h-4 w-2/3 rounded-md" />
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">{[0, 1, 2].map(i => <div key={i} className="flex flex-col gap-2 rounded-2xl border border-border p-4"><Skeleton className="h-3 w-16 rounded-md" /><Skeleton className="h-7 w-24 rounded-lg" /><Skeleton className="h-3 w-20 rounded-md" /></div>)}</div>
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">{[0, 1, 2].map(i => <div key={i} className="flex min-w-0 flex-col gap-2 rounded-2xl bg-muted/60 p-4"><Skeleton className="h-3 w-16 rounded-md" /><Skeleton className="h-7 w-24 rounded-lg" /><Skeleton className="h-3 w-20 rounded-md" /></div>)}</div>
     </Card>
     <Card className="space-y-4 p-4 sm:p-5">
       <Skeleton className="h-5 w-32 rounded-md" />

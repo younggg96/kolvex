@@ -137,7 +137,8 @@ const SNAP_PX = 12;
 const MIN_BARS = GRAPH_MIN_BARS;
 const HEIGHT_CLASS: Record<Mode, string> = {
   compact: "h-[18rem] sm:h-[20rem]",
-  advanced: "min-h-0 flex-1",
+  // Phones scroll the dialog, so the plot needs its own height instead of sharing a squeezed flex column.
+  advanced: "h-[clamp(16rem,50svh,28rem)] shrink-0 sm:h-auto sm:min-h-0 sm:flex-1 sm:shrink",
 };
 const defaultIndicators: Record<Mode, IndicatorKey[]> = {
   compact: [],
@@ -962,7 +963,7 @@ export default function ChartView({
   const iconButton = (isActive: boolean) =>
     cn(
       "inline-flex h-11 w-11 sm:h-8 sm:w-8 shrink-0 items-center justify-center rounded-full transition-colors duration-150 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-40",
-      isActive ? "glass-thumb text-foreground" : "text-muted-foreground hover:bg-foreground/[0.06] hover:text-foreground active:bg-foreground/[0.1]",
+      isActive ? "glass-thumb glass-thumb-touch text-foreground" : "text-muted-foreground hover:bg-foreground/[0.06] hover:text-foreground active:bg-foreground/[0.1]",
     );
   const stat = (label: string, value: string, tone?: string) => (
     <span className="whitespace-nowrap">
@@ -972,7 +973,7 @@ export default function ChartView({
   );
   const pill = (isActive: boolean) =>
     cn(
-      "inline-flex h-8 shrink-0 items-center rounded-full px-3 text-[0.8125rem] font-semibold transition-colors duration-150 focus-visible:outline-none ",
+      "inline-flex h-11 shrink-0 items-center rounded-full px-3 text-[0.8125rem] font-semibold transition-colors duration-150 focus-visible:outline-none sm:h-8",
       isActive ? "glass-thumb text-foreground" : "text-muted-foreground hover:bg-foreground/[0.06] hover:text-foreground active:bg-foreground/[0.1]",
     );
 
@@ -1467,7 +1468,7 @@ export default function ChartView({
       value={snapshotBars ? compactParams.interval : interval}
       onValueChange={(value) => setChartInterval(value as ChartInterval)}
     >
-      <SelectTrigger className="h-11 w-[5.75rem] rounded-full text-[0.8125rem] sm:h-8" aria-label={t("youtubeOpinions.interval")}>
+      <SelectTrigger className="h-11 !w-[5.75rem] shrink-0 rounded-full text-[0.8125rem] sm:h-8" aria-label={t("youtubeOpinions.interval")}>
         <SelectValue />
       </SelectTrigger>
       <SelectContent>
@@ -1590,7 +1591,7 @@ export default function ChartView({
   );
 
   return (
-    <div className={cn("min-w-0", advanced && "flex h-full min-h-0 gap-4")}>
+    <div className={cn("min-w-0", advanced && "flex min-h-full gap-4 sm:h-full sm:min-h-0")}>
       <div className={cn("min-w-0", advanced && "flex min-h-0 flex-1 flex-col")}>
         {advanced && (
           <div className="flex shrink-0 items-center gap-3">
@@ -1663,7 +1664,7 @@ export default function ChartView({
           id={drawingToolbarId}
           role="toolbar"
           aria-label={t("youtubeOpinions.drawTools")}
-          className={cn("shrink-0 flex-wrap items-center gap-1 border-b border-border sm:flex-nowrap sm:overflow-x-auto", advanced ? "flex my-1 pb-1" : "hidden")}
+          className={cn("shrink-0 flex-nowrap items-center gap-0.5 overflow-x-auto overscroll-x-contain border-b border-border scrollbar-hide sm:gap-1", advanced ? "flex my-1 pb-1" : "hidden")}
         >
           <Popover>
             <PopoverTrigger asChild>
@@ -1793,14 +1794,14 @@ export default function ChartView({
               </div>
             </PopoverContent>
           </Popover>
-          <div className="ml-auto flex w-full shrink-0 flex-wrap items-center justify-end gap-1 sm:w-auto sm:flex-nowrap">
+          <div className="ml-auto flex shrink-0 items-center gap-0.5 sm:gap-1">
             <button
               type="button"
               title={t("youtubeOpinions.zoomIn")}
               aria-label={t("youtubeOpinions.zoomIn")}
               disabled={!loaded}
               onClick={() => zoomRef.current(0.7, 0.85)}
-              className={iconButton(false)}
+              className={cn(iconButton(false), "max-sm:hidden")}
             >
               <ZoomIn className="h-4 w-4" />
             </button>
@@ -1810,7 +1811,7 @@ export default function ChartView({
               aria-label={t("youtubeOpinions.zoomOut")}
               disabled={!loaded}
               onClick={() => zoomRef.current(1.4, 0.85)}
-              className={iconButton(false)}
+              className={cn(iconButton(false), "max-sm:hidden")}
             >
               <ZoomOut className="h-4 w-4" />
             </button>
@@ -1820,18 +1821,20 @@ export default function ChartView({
               aria-label={t("youtubeOpinions.resetZoom")}
               disabled={!view}
               onClick={resetView}
-              className={iconButton(false)}
+              className={cn(iconButton(false), "max-sm:hidden")}
             >
               <RotateCcw className="h-4 w-4" />
             </button>
-            <span className="mx-1 h-5 w-px shrink-0 bg-border" aria-hidden="true" />
+            <span className="mx-1 h-5 w-px shrink-0 bg-border max-sm:hidden" aria-hidden="true" />
             <span
               role="status"
               title={t(`youtubeOpinions.sync.${syncStatus}`)}
               aria-label={t(`youtubeOpinions.sync.${syncStatus}`)}
               className={cn(
-                "inline-flex h-8 w-8 items-center justify-center",
+                "inline-flex h-8 w-8 shrink-0 items-center justify-center",
                 syncStatus === "offline" ? "text-negative" : "text-muted-foreground",
+                // a settled sync is not news on a phone; keep the row to one line
+                (syncStatus === "synced" || syncStatus === "local") && "max-sm:hidden",
               )}
             >
               <SyncIcon className={cn("h-4 w-4", (syncStatus === "loading" || syncStatus === "syncing") && "animate-spin")} />

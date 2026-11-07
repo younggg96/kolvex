@@ -103,13 +103,7 @@ export default function SuperinvestorsDirectory() {
     <div className="space-y-8 md:space-y-10">
       {loading && !data ? (
         <div className="space-y-6">
-          <p className="text-xs text-muted-foreground">
-            {c(
-              "The first load reads each investor's filings from the SEC and can take a little while.",
-              "首次加载需要从 SEC 逐一读取申报，可能稍慢。",
-            )}
-          </p>
-          <ContentLoading className="min-h-0" label={c("Reading the latest 13F filings from the SEC…", "正在从 SEC 读取最新 13F 申报…")}>
+          <ContentLoading className="min-h-0" label={c("Loading the latest 13F filings…", "正在加载最新 13F 申报…")}>
             <DirectorySkeleton />
           </ContentLoading>
         </div>
@@ -427,7 +421,7 @@ function DirectorySkeleton() {
       <div className="flex items-end justify-between gap-3"><div className="flex flex-col gap-2"><Skeleton className="h-6 w-40 rounded-md" /><Skeleton className="h-3 w-56 rounded-md" /></div><Skeleton className="h-11 w-44 rounded-full" /></div>
       <div className="space-y-3">
         <div className="flex justify-between border-b border-border pb-2"><Skeleton className="h-4 w-24 rounded-md" /><Skeleton className="h-3 w-12 rounded-md" /></div>
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">{[0, 1, 2, 3, 4, 5].map(i => <div key={i} className="flex flex-col gap-4 rounded-3xl border border-foreground/10 p-4 sm:p-5">
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">{[0, 1, 2, 3, 4, 5].map(i => <div key={i} className="glass-card flex flex-col gap-4 rounded-3xl border border-foreground/10 bg-card-glass p-4 sm:p-5">
           <div className="flex items-start gap-3"><Skeleton className="h-10 w-10 shrink-0 rounded-full" /><div className="flex flex-1 flex-col gap-1.5"><Skeleton className={cn("h-4 rounded-md", i % 2 ? "w-28" : "w-36")} /><Skeleton className="h-3 w-24 rounded-md" /></div></div>
           <div className="flex items-end justify-between"><div className="flex flex-col gap-1.5"><Skeleton className="h-6 w-20 rounded-md" /><Skeleton className="h-3 w-16 rounded-md" /></div><div className="flex flex-col items-end gap-1.5"><Skeleton className="h-4 w-8 rounded-md" /><Skeleton className="h-3 w-10 rounded-md" /></div></div>
           <div className="space-y-2"><Skeleton className="h-1.5 w-full rounded-full" /><Skeleton className="h-3 w-3/4 rounded-md" /></div>

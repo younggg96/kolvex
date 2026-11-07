@@ -211,6 +211,16 @@ def parse_holdings(raw):
     return result
 
 
+def value_multiplier(rows, period):
+    """13F values are in thousands before 2023-01-03 and in dollars after, but some filers kept reporting
+    thousands. A median implied price under $1 per share across plain share rows marks a thousands table."""
+    if period < "2023-01-03":
+        return 1000
+    prices = sorted(r["value"] / r["shares"] for r in rows
+                    if r.get("share_type") == "SH" and not r.get("put_call") and r.get("value") and r.get("shares"))
+    return 1000 if prices and prices[len(prices) // 2] < 1 else 1
+
+
 def compare_holdings(current, previous):
     def grouped(rows):
         result = {}

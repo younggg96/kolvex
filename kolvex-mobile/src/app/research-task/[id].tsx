@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { ArticleSkeleton } from "../../components/Skeletons";
 import { router, useLocalSearchParams } from "expo-router";
 import { useAuth } from "../../state/Auth";
 import { useResource } from "../../lib/useResource";
@@ -12,7 +13,7 @@ import { ConfirmAction } from "../../components/ConfirmAction";
 import { MutationStatus } from "../../components/MutationStatus";
 export default function Task() {
   return (
-    <AuthGate title="研究任务">
+    <AuthGate skeleton={<ArticleSkeleton />} title="研究任务">
       <Reader />
     </AuthGate>
   );
@@ -41,7 +42,7 @@ function Reader() {
       onRefresh={r.refresh}
       refreshing={r.loading}
     >
-      <ResourceState resource={r} empty={!r.data} message="任务不可用" />
+      <ResourceState skeleton={<ArticleSkeleton />} resource={r} empty={!r.data} message="任务不可用" />
       {running && (
         <Copy>
           研究正在服务器运行，每 5 秒更新；离开此页不会取消服务器任务。

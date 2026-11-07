@@ -1,5 +1,6 @@
 """Free research reads: SEC filings and the existing Yahoo provider only."""
 import asyncio
+import logging
 from typing import Literal
 
 from fastapi import APIRouter, HTTPException, Path
@@ -7,6 +8,9 @@ from app.services.sec.client import MANAGERS, SecNotFound, SecUnavailable, sec_c
 from app.services.yfinance.client import get_yfinance_service
 from app.services.sec.parsers import number, summarize_institution
 from app.services.sec.tickers import cusip_tickers
+from app.services.sec.holdings_store import institution_store
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/market/free-research", tags=["Market Data"])
 
@@ -32,15 +36,29 @@ async def tracked_institution(manager: str, map_now: int = 100):
     return data
 
 
+async def stored(manager, read):
+    """Supabase first; a manager not synced yet is served live once and queued for a sync."""
+    if manager not in MANAGERS:
+        raise HTTPException(404, "Manager is outside the tracked list")
+    try:
+        data = await read(manager)
+    except Exception:
+        logger.warning("Stored 13F read failed for %s", manager, exc_info=True)
+        data = None
+    if data is None:
+        institution_store.sync_later(manager)
+    return data
+
+
 @router.get("/institutions/{manager}")
 async def institution(manager: str):
-    return await tracked_institution(manager)
+    return await stored(manager, institution_store.latest) or await tracked_institution(manager)
 
 
 @router.get("/institutions/{manager}/summary")
 async def institution_summary(manager: str):
     """Card data for the Superinvestors list; the full table stays on the manager endpoint."""
-    return summarize_institution(await tracked_institution(manager, map_now=5))
+    return await stored(manager, institution_store.summary) or summarize_institution(await tracked_institution(manager, map_now=5))
 
 
 def revenue_outlook(symbol):

@@ -945,6 +945,13 @@ a {
   padding: 8px 12px 12px;
 }
 
+/* The icon rail is 3rem wide: 12px gutters would leave 24px for 32px buttons,
+   pushing them off-centre. Match the 8px gutter of the nav groups instead. */
+.app-workbench [data-collapsible="icon"] [data-sidebar="header"],
+.app-workbench [data-collapsible="icon"] [data-sidebar="footer"] {
+  padding-inline: 8px;
+}
+
 .app-workbench [data-sidebar="menu-button"] {
   min-height: 40px;
   border-radius: 9999px;
@@ -968,10 +975,37 @@ a {
   color: rgb(var(--foreground));
 }
 
-.app-workbench [data-sidebar="menu-button"][data-active="true"] {
-  background: rgb(var(--secondary));
+/* The current page is the one row with a high-contrast inverted fill, so it
+   reads at a glance against the sidebar surface in both themes. */
+.app-workbench [data-sidebar="menu-button"][data-active="true"],
+.app-workbench [data-sidebar="menu-sub-button"][data-active="true"] {
+  background: rgb(var(--foreground));
+  color: rgb(var(--background));
+  font-weight: 600;
+}
+
+.app-workbench [data-sidebar="menu-button"][data-active="true"]:hover,
+.app-workbench [data-sidebar="menu-sub-button"][data-active="true"]:hover {
+  background: rgb(var(--foreground) / 0.9);
+  color: rgb(var(--background));
+}
+
+/* A parent whose child is the current page: bold text, no fill. */
+.app-workbench [data-sidebar="menu-button"][data-section-active="true"] {
   color: rgb(var(--foreground));
   font-weight: 600;
+}
+
+/* Upgrade stays visible in the footer as the one solid brand action. */
+.app-workbench [data-sidebar="menu-button"][data-variant="upgrade"],
+.app-workbench [data-sidebar="menu-button"][data-variant="upgrade"]:hover {
+  background: rgb(var(--primary));
+  color: rgb(var(--primary-foreground));
+  font-weight: 600;
+}
+
+.app-workbench [data-sidebar="menu-button"][data-variant="upgrade"]:hover {
+  background: rgb(var(--primary) / 0.88);
 }
 
 .app-workbench [data-sidebar="menu-button"] svg {
@@ -1107,6 +1141,17 @@ a {
   box-shadow:
     0 4px 14px -4px rgb(0 0 0 / 0.6),
     inset 0 -1px 0 rgb(0 0 0 / 0.08);
+}
+
+/* Icon toggles outside a glass track: on phones a 44px white disc per active tool reads as a
+   row of primary buttons, so they fall back to a quiet tint there. */
+@media (max-width: 639.98px) {
+  .glass-thumb.glass-thumb-touch,
+  .dark .glass-thumb.glass-thumb-touch {
+    background: rgb(var(--foreground) / 0.12);
+    color: rgb(var(--foreground));
+    box-shadow: none;
+  }
 }
 
 @supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {

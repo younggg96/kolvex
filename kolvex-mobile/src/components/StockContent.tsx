@@ -1,4 +1,5 @@
 import { usePreferences } from "../state/Preferences";
+import { CardsSkeleton } from "./Skeletons";
 import { StockOpinions } from "./StockOpinions";
 import { Options } from "./Options";
 import { Multicharts, Earnings, Analysts } from "./StockResearch";
@@ -99,7 +100,7 @@ function StockReports({ symbol }: { symbol: string }) {
   );
   return (
     <>
-      <ResourceState
+      <ResourceState skeleton={<CardsSkeleton lines={[{ size: 16, width: "30%" }, { size: 14, width: "70%", lines: 2 }]} buttons={1} />}
         resource={resource}
         empty={!rows.length}
         message="这只股票还没有已发布的研究报告。"
@@ -127,7 +128,7 @@ function Company({ symbol }: { symbol: string }) {
   const data = resource.data;
   return (
     <>
-      <ResourceState
+      <ResourceState skeleton={<CardsSkeleton count={1} lines={[{ size: 20, width: "40%" }, { size: 12, width: "50%" }, { size: 16, width: "60%", lines: 4 }, { size: 14, width: "40%" }, { size: 14, width: "25%" }]} />}
         resource={resource}
         empty={!data}
         message="暂无公司资料。"
@@ -172,7 +173,7 @@ function Financials({ symbol }: { symbol: string }) {
   ];
   return (
     <>
-      <ResourceState
+      <ResourceState skeleton={<CardsSkeleton count={1} lines={[{ size: 20, width: "50%" }, { size: 12, width: "60%" }, { size: 14, width: "30%" }, { size: 16, width: "40%" }, { size: 14, width: "30%" }, { size: 16, width: "40%" }, { size: 14, width: "30%" }, { size: 16, width: "40%" }, { size: 14, width: "30%" }, { size: 16, width: "40%" }, { size: 14, width: "30%" }, { size: 16, width: "40%" }, { size: 14, width: "30%" }, { size: 16, width: "40%" }]} gap={16} />}
         resource={resource}
         empty={!data}
         message="暂无财务指标。"
@@ -229,7 +230,7 @@ function StockNews({ symbol }: { symbol: string }) {
   );
   return (
     <>
-      <ResourceState
+      <ResourceState skeleton={<CardsSkeleton lines={[{ size: 16, width: "70%", lines: 2 }, { size: 12, width: "30%" }]} />}
         resource={resource}
         empty={!rows.length}
         message="暂未返回这只股票的新闻。"

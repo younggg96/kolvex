@@ -67,6 +67,8 @@ class Settings(BaseSettings):
     ALPACA_API_KEY_ID: str = os.getenv("ALPACA_API_KEY_ID", "")
     ALPACA_API_SECRET_KEY: str = os.getenv("ALPACA_API_SECRET_KEY", "")
     ALPACA_OPTIONS_FEED: str = os.getenv("ALPACA_OPTIONS_FEED", "indicative")
+    # Scheduled options-activity report (3 runs per trading day). Off by default so local dev does not hit Alpaca.
+    OPTIONS_ACTIVITY_WORKER_ENABLED: bool = os.getenv("OPTIONS_ACTIVITY_WORKER_ENABLED", "false").lower() == "true"
 
     # Kronos K-line forecast service (forecast_service/, separate deployment). Empty = disabled.
     FORECAST_SERVICE_URL: str = os.getenv("FORECAST_SERVICE_URL", "")

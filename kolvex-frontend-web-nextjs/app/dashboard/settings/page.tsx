@@ -942,7 +942,7 @@ function SettingsContent() {
                     <div>
                       {apiKeysLoading ? (
                         <ContentLoading label={t("common.loading")} className="min-h-0">
-                          <Skeleton className="mt-4 h-[4.25rem] w-full rounded-3xl" />
+                          <div className="mt-4 space-y-2 rounded-3xl border border-foreground/10 glass-card bg-card-glass px-4 py-3"><Skeleton className="h-3.5 w-full rounded-md" /><Skeleton className="h-3.5 w-2/3 rounded-md" /></div>
                           <div className="divide-y divide-border">{[0, 1, 2, 3].map((i) => <div key={i} className="py-5">
                             <div className="mb-3 flex items-start justify-between gap-4"><div className="flex flex-col gap-2"><Skeleton className="h-4 w-24 rounded-md" /><Skeleton className="h-3.5 w-48 rounded-md" /></div><Skeleton className="h-4 w-16 rounded-md" /></div>
                             <div className="flex gap-2"><Skeleton className="h-11 flex-1 rounded-xl" /><Skeleton className="h-11 w-16 rounded-full" /></div>

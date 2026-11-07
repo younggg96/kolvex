@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { CardsSkeleton } from "../components/Skeletons";
 import { router } from "expo-router";
 import { catalogue, videos, xCreators } from "../lib/featureApi";
 import { useResource } from "../lib/useResource";
@@ -50,7 +51,7 @@ function Directory({ stocks }: { stocks: boolean }) {
         onChange={setSearch}
         placeholder={stocks ? "搜索股票代码" : "搜索创作者"}
       />
-      <ResourceState
+      <ResourceState skeleton={<CardsSkeleton lines={[{ size: 16, width: "20%" }, { size: 16, width: "60%", lines: 2 }]} buttons={1} />}
         resource={r}
         empty={!r.data?.creators.length}
         message="暂无收录资料"
@@ -99,7 +100,7 @@ function XDirectory() {
   const r = useResource("x-creators", xCreators);
   return (
     <>
-      <ResourceState
+      <ResourceState skeleton={<CardsSkeleton lines={[{ size: 16 }, { size: 16, width: "70%", lines: 2 }]} buttons={1} />}
         resource={r}
         empty={!r.data?.creators.length}
         message="暂无 X 博主"
@@ -128,7 +129,7 @@ function VideoFeed() {
   const r = useResource(`videos:${page}`, (s) => videos(page, s));
   return (
     <>
-      <ResourceState
+      <ResourceState skeleton={<CardsSkeleton lines={[{ size: 16, width: "50%", lines: 2 }, { size: 16, width: "40%" }, { size: 16, width: "60%", lines: 3 }]} buttons={1} />}
         resource={r}
         empty={!r.data?.videos.length}
         message="暂无视频"

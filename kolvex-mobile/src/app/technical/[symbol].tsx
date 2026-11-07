@@ -1,4 +1,5 @@
 import { View } from "react-native";
+import { ChartCardSkeleton, FormSkeleton } from "../../components/Skeletons";
 import { useChartGestures } from "../../lib/useChartGestures";
 import { useRef, useState } from "react";
 import { useLocalSearchParams } from "expo-router";
@@ -115,7 +116,7 @@ function Workspace({ symbol }: { symbol: string }) {
         value={count}
         onChange={setCount}
       />
-      <ResourceState
+      <ResourceState skeleton={<ChartCardSkeleton />}
         resource={r}
         empty={!bars.length}
         message="数据源未提供此周期 K 线"
@@ -214,7 +215,7 @@ function Workspace({ symbol }: { symbol: string }) {
         指标使用与 Web 相同的计算。缺少完整预热区间时以 — 显示；VWAP
         在日线及更长周期以首根为锚。
       </Copy>
-      <AuthGate inline title="画线与 AI 技术研究">
+      <AuthGate inline title="画线与 AI 技术研究" skeleton={<FormSkeleton fields={2} />}>
         <DrawingEditor
           symbol={symbol}
           bar={bars[current]}

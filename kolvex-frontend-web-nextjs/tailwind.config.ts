@@ -7,6 +7,8 @@ const config: Config = {
     "./app/**/*.{js,ts,jsx,tsx,mdx}",
   ],
   darkMode: "class",
+  // Touch screens keep `:hover` after a tap, which leaves a second "selected" pill behind on iOS.
+  future: { hoverOnlyWhenSupported: true },
   // Focus feedback uses background/text styling rather than ring shadows.
   corePlugins: {
     ringColor: false,

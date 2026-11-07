@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { CardsSkeleton } from "../components/Skeletons";
 import { router } from "expo-router";
 import { useAuth } from "../state/Auth";
 import { briefs } from "../lib/contentApi";
@@ -9,7 +10,7 @@ import { BriefCalendar } from "../components/BriefCalendar";
 import { briefNames } from "../lib/contentTypes";
 export default function Briefs() {
   return (
-    <AuthGate title="市场日报">
+    <AuthGate skeleton={<CardsSkeleton lines={[{ size: 12, width: "30%" }, { size: 20 }, { size: 16, width: "60%", lines: 2 }]} buttons={1} />} title="市场日报">
       <Library />
     </AuthGate>
   );
@@ -51,7 +52,7 @@ function Library() {
           setPage(1);
         }}
       />
-      <ResourceState
+      <ResourceState skeleton={<CardsSkeleton lines={[{ size: 12, width: "30%" }, { size: 20 }, { size: 16, width: "60%", lines: 2 }]} buttons={1} />}
         resource={resource}
         empty={!rows.length}
         message="此分类下暂无已发布的日报。"

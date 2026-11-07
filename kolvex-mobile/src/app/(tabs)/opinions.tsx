@@ -1,4 +1,5 @@
 import { usePreferences } from "../../state/Preferences";
+import { CardsSkeleton } from "../../components/Skeletons";
 import { useState } from "react";
 import { View } from "react-native";
 import { router } from "expo-router";
@@ -118,7 +119,7 @@ function YouTube({ revision }: { revision: number }) {
           setPage(1);
         }}
       />
-      <ResourceState
+      <ResourceState skeleton={<CardsSkeleton lines={[{ size: 20, width: "25%" }, { size: 14, width: "50%" }, { size: 16, width: "60%", lines: 3 }]} />}
         resource={resource}
         empty={!rows.length}
         message={
@@ -203,7 +204,7 @@ function XFeed({ revision }: { revision: number }) {
         onSubmit={apply}
       />
       <Button onPress={apply}>按股票筛选</Button>
-      <ResourceState
+      <ResourceState skeleton={<CardsSkeleton lines={[{ size: 16, width: "40%" }, { size: 12, width: "30%" }, { size: 16, width: "70%", lines: 3 }]} />}
         resource={resource}
         empty={!rows.length}
         message="暂无匹配的 X 原文，试试其他股票或稍后刷新。"
@@ -299,7 +300,7 @@ function Reddit({ revision }: { revision: number }) {
         </Copy>
       )}
       {!!list.error && <Failure message={list.error} retry={list.refresh} />}
-      <ResourceState
+      <ResourceState skeleton={<CardsSkeleton lines={[{ size: 20, width: "20%" }, { size: 14, width: "40%" }, { size: 16, width: "60%", lines: 2 }]} />}
         resource={resource}
         empty={!rows.length}
         message="此社区榜单中没有匹配的股票。榜单外的自选仍会保留。"

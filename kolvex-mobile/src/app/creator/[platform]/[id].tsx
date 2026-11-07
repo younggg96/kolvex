@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { CardsSkeleton } from "../../../components/Skeletons";
 import { useLocalSearchParams, router } from "expo-router";
 import {
   authorPosts,
@@ -45,7 +46,7 @@ function YouTube({ id }: { id: string }) {
       }}
       refreshing={profile.loading || history.loading}
     >
-      <ResourceState resource={profile} empty={!c} message="资料暂不可用" />
+      <ResourceState skeleton={<CardsSkeleton count={1} lines={[{ size: 16, width: "60%", lines: 3 }, { size: 16, width: "40%" }, { size: 16, width: "30%" }]} />} resource={profile} empty={!c} message="资料暂不可用" />
       {c && (
         <Glass style={{ padding: 20, gap: 12 }}>
           <Copy localize={!c.description}>{c.description || "暂无简介"}</Copy>
@@ -67,7 +68,7 @@ function YouTube({ id }: { id: string }) {
           <CreatorShare creator={c} />
         </Glass>
       )}
-      <ResourceState
+      <ResourceState skeleton={<CardsSkeleton lines={[{ size: 16, width: "40%" }, { size: 12, width: "50%" }, { size: 16, width: "60%", lines: 3 }]} buttons={1} />}
         resource={history}
         empty={!history.data?.latest.length}
         message="暂无观点"
@@ -94,7 +95,7 @@ function XProfile({ id }: { id: string }) {
       <Copy localize={!c?.bio}>{c?.bio || "原文来自 X，观点保留来源。"}</Copy>
       <Copy muted>关注者 {number(c?.followers_count, 0)}</Copy>
       <XInsights author={id} />
-      <ResourceState
+      <ResourceState skeleton={<CardsSkeleton lines={[{ size: 16, width: "30%" }, { size: 16, width: "70%", lines: 3 }]} buttons={1} />}
         resource={r}
         empty={!r.data?.posts.length}
         message="暂无原文"

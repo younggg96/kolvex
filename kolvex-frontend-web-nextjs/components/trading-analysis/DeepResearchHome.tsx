@@ -1,5 +1,6 @@
 "use client";
 
+import { ListCard } from "@/components/ui/list-card";
 import dynamic from "next/dynamic";
 import ResearchLayout from "@/components/decision/ResearchLayout";
 import { ContentLoading } from "@/components/ui/content-loading";
@@ -21,11 +22,11 @@ function ResearchLoading() {
             </div>
             <div>
               <div className="border-b border-border pb-3"><Skeleton className="h-5 w-24 rounded-md" /></div>
-              <div className="mt-4 rounded-3xl border border-foreground/10 p-3 sm:p-4">{[0, 1, 2, 3].map((i) => <div key={i} className="flex items-center gap-3 py-3.5 pr-2 sm:gap-4">
+              <ListCard className="mt-4">{[0, 1, 2, 3].map((i) => <div key={i} className="flex items-center gap-3 py-3.5 pr-2 sm:gap-4">
                 <Skeleton className="h-10 w-10 shrink-0 rounded-full max-md:h-8 max-md:w-8" />
                 <div className="flex min-w-0 flex-1 flex-col gap-1.5"><Skeleton className="h-4 w-14 rounded-md" /><Skeleton className={i % 2 ? "h-3 w-32 rounded-md" : "h-3 w-44 rounded-md"} /></div>
                 <Skeleton className="h-6 w-14 shrink-0 rounded-full" />
-              </div>)}</div>
+              </div>)}</ListCard>
             </div>
           </div>
         </ContentLoading>

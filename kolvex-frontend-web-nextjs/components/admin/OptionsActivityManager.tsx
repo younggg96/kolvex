@@ -1,0 +1,196 @@
+"use client";
+
+import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
+import { Loader2, RefreshCw } from "lucide-react";
+import { AdminRowsSkeleton } from "@/components/admin/AdminSkeletons";
+import { Button } from "@/components/ui/button";
+import { ACTIVITY_SESSIONS, type ActivitySession } from "@/lib/optionsActivity";
+import { cn } from "@/lib/utils";
+
+interface AdminRun {
+  id: string; trade_date: string; session: ActivitySession; status: "ok" | "skipped"; run_at: string;
+  data_date: string | null; universe_size: number; failed_symbols: string[]; model_id: string | null;
+  summary_source: "ai" | "template" | null;
+}
+interface ManualState {
+  session: ActivitySession | null; status: "idle" | "running" | "done" | "failed";
+  started_at: string | null; finished_at: string | null; error: string | null;
+  result: { status: string; data_date?: string | null; failed_symbols?: string[] } | null;
+}
+interface AdminStatus { configured: boolean; worker_enabled: boolean; manual: ManualState; runs: AdminRun[] }
+
+const SESSION_LABEL: Record<ActivitySession, string> = { pre: "盘前", intraday: "盘中", post: "盘后" };
+const SESSION_TIME: Record<ActivitySession, string> = { pre: "09:00", intraday: "12:30", post: "16:20" };
+const POLL_MS = 5000;
+
+async function request<T>(query = "", method: "GET" | "POST" = "GET", signal?: AbortSignal): Promise<T> {
+  const response = await fetch(`/api/admin/options-activity${query}`, { method, signal, cache: "no-store" });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(data.error || "请求失败，请重试。");
+  return data;
+}
+
+const etTime = (iso: string | null) =>
+  iso
+    ? new Date(iso).toLocaleString("zh-CN", { timeZone: "America/New_York", month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit", second: "2-digit" }) + " ET"
+    : "—";
+
+function Pill({ ok, children }: { ok: boolean; children: React.ReactNode }) {
+  return (
+    <span className={cn("rounded-full px-2.5 py-1 text-xs font-medium", ok ? "bg-positive/10 text-positive" : "bg-muted text-muted-foreground")}>
+      {children}
+    </span>
+  );
+}
+
+export default function OptionsActivityManager() {
+  const [status, setStatus] = useState<AdminStatus | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [message, setMessage] = useState("");
+  const [starting, setStarting] = useState<ActivitySession | null>(null);
+
+  const load = useCallback(async (signal?: AbortSignal) => {
+    try {
+      const data = await request<AdminStatus>("", "GET", signal);
+      if (!signal?.aborted) {
+        setStatus(data);
+        setError("");
+      }
+    } catch (e) {
+      if (!signal?.aborted) setError(e instanceof Error ? e.message : "无法读取运行状态。");
+    } finally {
+      if (!signal?.aborted) setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    void load(controller.signal);
+    return () => controller.abort();
+  }, [load]);
+
+  const running = status?.manual.status === "running";
+  // Poll while a manual run is in flight; runs take one to two minutes.
+  useEffect(() => {
+    if (!running) return;
+    const timer = window.setInterval(() => void load(), POLL_MS);
+    return () => window.clearInterval(timer);
+  }, [running, load]);
+
+  async function start(session: ActivitySession) {
+    setStarting(session);
+    setError("");
+    setMessage("");
+    try {
+      await request(`?session=${session}`, "POST");
+      setMessage(`已开始${SESSION_LABEL[session]}运行，通常需要 1–2 分钟。`);
+      await load();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "启动失败，请重试。");
+    } finally {
+      setStarting(null);
+    }
+  }
+
+  const manual = status?.manual;
+  return (
+    <div className="min-w-0 space-y-6">
+      <div className="space-y-2">
+        <h2 className="text-xl font-semibold">期权异动</h2>
+        <p className="text-sm leading-6 text-muted-foreground">
+          定时任务在交易日美东 09:00（盘前）、12:30（盘中）、16:20（盘后）各运行一次，休市日自动跳过。
+          手动运行会忽略休市判断，并覆盖同一天同一时点已有的结果。
+        </p>
+        <Link href="/dashboard/options-activity" className="inline-block text-sm font-semibold underline underline-offset-4">
+          查看报告页面
+        </Link>
+      </div>
+
+      {status && (
+        <div className="flex flex-wrap gap-2">
+          <Pill ok={status.configured}>{status.configured ? "Alpaca 已配置" : "Alpaca 未配置"}</Pill>
+          <Pill ok={status.worker_enabled}>{status.worker_enabled ? "定时任务已开启" : "定时任务未开启（OPTIONS_ACTIVITY_WORKER_ENABLED）"}</Pill>
+        </div>
+      )}
+
+      <div className="space-y-3">
+        <h3 className="text-sm font-medium">手动运行</h3>
+        <div className="flex flex-wrap gap-2">
+          {ACTIVITY_SESSIONS.map((session) => (
+            <Button
+              key={session}
+              variant="outline"
+              disabled={!status?.configured || running || starting !== null}
+              onClick={() => void start(session)}
+            >
+              {starting === session && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              运行{SESSION_LABEL[session]}
+              <span className="ml-1.5 text-xs text-muted-foreground">{SESSION_TIME[session]}</span>
+            </Button>
+          ))}
+          <Button variant="ghost" size="icon" aria-label="刷新状态" onClick={() => void load()}>
+            <RefreshCw className="h-4 w-4" />
+          </Button>
+        </div>
+        {manual && manual.status !== "idle" && manual.session && (
+          <p role="status" className={cn("text-sm", manual.status === "failed" ? "text-negative" : "text-muted-foreground")}>
+            {manual.status === "running" && (
+              <>
+                <Loader2 className="mr-1.5 inline h-3.5 w-3.5 animate-spin" />
+                {SESSION_LABEL[manual.session]}运行中，开始于 {etTime(manual.started_at)}
+              </>
+            )}
+            {manual.status === "done" &&
+              `上次手动运行（${SESSION_LABEL[manual.session]}）完成于 ${etTime(manual.finished_at)}：${
+                manual.result?.status === "skipped" ? "判定为休市，已跳过" : "已保存"
+              }${manual.result?.failed_symbols?.length ? `，未取到 ${manual.result.failed_symbols.join(", ")}` : ""}`}
+            {manual.status === "failed" && `上次手动运行（${SESSION_LABEL[manual.session]}）失败：${manual.error ?? "未知错误"}`}
+          </p>
+        )}
+        {message && <p role="status" className="text-sm text-muted-foreground">{message}</p>}
+        {error && <p role="alert" className="rounded-3xl bg-negative/10 px-4 py-3 text-sm text-foreground">{error}</p>}
+      </div>
+
+      <div className="space-y-3">
+        <h3 className="text-sm font-medium">最近运行</h3>
+        {loading ? (
+          <AdminRowsSkeleton label="正在读取运行记录" rows={3} actions={0} lines={2} />
+        ) : !status?.runs.length ? (
+          <p className="rounded-lg border border-border px-4 py-6 text-center text-sm text-muted-foreground">还没有运行记录。</p>
+        ) : (
+          <div className="overflow-x-auto rounded-lg border border-border">
+            <table className="w-full min-w-[720px] text-sm">
+              <thead className="bg-muted/50 text-xs text-muted-foreground">
+                <tr>
+                  {["交易日", "时点", "状态", "运行时间", "数据日期", "标的数", "未取到", "摘要"].map((label) => (
+                    <th key={label} scope="col" className="px-3 py-2 text-left font-medium">{label}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {status.runs.map((run) => (
+                  <tr key={run.id} className="border-t border-border">
+                    <td className="figure px-3 py-2">{run.trade_date}</td>
+                    <td className="px-3 py-2">{SESSION_LABEL[run.session]}</td>
+                    <td className="px-3 py-2">
+                      <Pill ok={run.status === "ok"}>{run.status === "ok" ? "已保存" : "休市跳过"}</Pill>
+                    </td>
+                    <td className="figure px-3 py-2">{etTime(run.run_at)}</td>
+                    <td className="figure px-3 py-2">{run.data_date ?? "—"}</td>
+                    <td className="figure px-3 py-2">{run.universe_size}</td>
+                    <td className="px-3 py-2 text-xs">{run.failed_symbols.length ? run.failed_symbols.join(", ") : "—"}</td>
+                    <td className="px-3 py-2 text-xs">
+                      {run.summary_source === "ai" ? `AI${run.model_id ? ` · ${run.model_id}` : ""}` : run.summary_source === "template" ? "模板（AI 不可用）" : "—"}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

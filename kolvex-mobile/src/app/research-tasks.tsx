@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { CardsSkeleton } from "../components/Skeletons";
 import { router } from "expo-router";
 import { apiRequest } from "../lib/http";
 import { profile } from "../lib/contentApi";
@@ -21,7 +22,7 @@ import { MODEL_CONFIGS, providerId } from "../lib/aiModels";
 import { MutationStatus } from "../components/MutationStatus";
 export default function Tasks() {
   return (
-    <AuthGate title="我的研究任务">
+    <AuthGate skeleton={<CardsSkeleton lines={[{ size: 16 }, { size: 16, width: "30%" }]} buttons={1} />} title="我的研究任务">
       <AdminOnly />
     </AuthGate>
   );
@@ -35,7 +36,7 @@ function AdminOnly() {
   if (account.data?.is_admin) return <Library />;
   return (
     <Page title="我的研究任务" onRefresh={account.refresh}>
-      <ResourceState
+      <ResourceState skeleton={<CardsSkeleton count={1} lines={[{ size: 16, width: "70%" }]} />}
         resource={account}
         empty={!!account.data}
         message="当前账户没有访问此内容的权限。"
@@ -194,7 +195,7 @@ function Library() {
       </Button>
       <MutationStatus {...m} />
       <Section title="历史任务" />
-      <ResourceState
+      <ResourceState skeleton={<CardsSkeleton lines={[{ size: 16 }, { size: 16, width: "30%" }]} buttons={1} />}
         resource={r}
         empty={!r.data?.items.length}
         message="尚无研究任务"
