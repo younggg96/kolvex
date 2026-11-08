@@ -1435,7 +1435,7 @@ Rules that follow from that:
   uses `listFeedGroupRowClass` so only the inner row washes, never both.
 - Tabs, `SegmentedControl`, `SwitchTab` and other tab-like pill groups use the
   iOS-style glass material from `app/globals.css`, matching the mobile dock: a
-  smoky, blurred `glass-track` with a bright rim, holding a translucent white
+  smoky, blurred `glass-track` with a bright rim, holding a solid white
   `glass-thumb` whose label is near-black (`--glass-thumb-foreground`) in both
   themes; unselected labels are `foreground` at 70%. Unselected options preview with the
   same grey wash. Solid fallbacks apply without backdrop filters and under

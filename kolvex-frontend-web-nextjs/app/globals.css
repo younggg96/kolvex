@@ -1135,7 +1135,7 @@ a {
 }
 
 /* iOS-style glass for tabs and segmented controls: a smoky frosted track with a
-   bright rim, holding a translucent white thumb with near-black text (the selected
+   bright rim, holding a solid white thumb with near-black text (the selected
    label colour comes from `--glass-thumb-foreground`, also exposed as the
    `text-glass-thumb-foreground` utility). `.glass-track-strong` is a denser
    material for tab bars that stick above scrolling content. The declared
@@ -1152,7 +1152,7 @@ a {
 }
 
 .glass-thumb {
-  background: rgb(255 255 255 / 0.72);
+  background: rgb(255 255 255 / 0.97);
   color: rgb(var(--glass-thumb-foreground));
   box-shadow:
     0 2px 8px -2px rgb(0 0 0 / 0.22),
@@ -1185,11 +1185,11 @@ a {
   }
 
   .glass-track-strong {
-    background: rgb(var(--background) / 0.42);
+    background: rgb(255 255 255 / 0.32);
   }
 
   .dark .glass-track-strong {
-    background: rgb(34 34 36 / 0.46);
+    background: rgb(0 0 0 / 0.28);
   }
 }
 

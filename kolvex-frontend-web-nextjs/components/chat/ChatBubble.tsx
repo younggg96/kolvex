@@ -3,12 +3,35 @@
 import { cn } from "@/lib/utils";
 import { Copy, Check, RotateCcw } from "lucide-react";
 import { useState } from "react";
-import ReactMarkdown from "react-markdown";
+import ReactMarkdown, { type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { visibleQuestion } from "./pageEvidence";
 import type { ChatBubbleProps } from "./types";
 import { Button } from "../ui/button";
 import { useTranslation } from "@/lib/i18n";
+import { MarkdownTable } from "@/components/trading-analysis/markdown";
+
+const CHAT_PROSE_CLASSES = cn(
+  "prose prose-sm dark:prose-invert w-full min-w-0 max-w-none break-words text-[0.9375rem] leading-7 text-foreground/90",
+  "prose-headings:mt-7 prose-headings:mb-3 prose-headings:font-semibold prose-headings:leading-snug prose-headings:tracking-tight prose-headings:text-foreground",
+  "prose-h1:text-xl prose-h2:text-[1.0625rem] prose-h3:text-base prose-h4:text-[0.9375rem]",
+  "prose-p:my-3 prose-p:text-[0.9375rem] prose-p:leading-7",
+  "prose-ul:my-3 prose-ul:pl-5 prose-ol:my-3 prose-ol:pl-5 prose-li:my-1.5 prose-li:text-[0.9375rem] prose-li:leading-7 marker:font-medium marker:text-muted-foreground [&_li>p]:my-1",
+  "prose-strong:text-foreground prose-strong:font-semibold prose-em:text-foreground/90",
+  "prose-hr:my-7 prose-hr:border-border",
+  "prose-a:text-foreground prose-a:decoration-border prose-a:underline-offset-4 hover:prose-a:decoration-foreground",
+  "prose-code:text-[0.8125rem] prose-code:bg-muted prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:font-normal prose-code:before:content-none prose-code:after:content-none",
+  "prose-pre:bg-muted prose-pre:text-foreground prose-pre:rounded-2xl prose-pre:text-[0.8125rem] prose-pre:overflow-x-auto",
+  "prose-blockquote:font-normal prose-blockquote:not-italic prose-blockquote:border-l prose-blockquote:border-l-border prose-blockquote:bg-muted/50 prose-blockquote:py-1 prose-blockquote:px-4 prose-blockquote:rounded-r-lg [&_blockquote_p:first-of-type]:before:content-none [&_blockquote_p:last-of-type]:after:content-none",
+  "prose-table:my-0 prose-table:w-full prose-table:text-[0.8125rem] prose-th:bg-muted/60 prose-th:whitespace-nowrap prose-th:px-3.5 prose-th:py-2.5 prose-th:font-semibold prose-td:px-3.5 prose-td:py-2.5 prose-td:align-top prose-td:tabular-nums",
+  "[&>*:first-child]:mt-0 [&>*:last-child]:mb-0"
+);
+
+const REMARK_PLUGINS = [remarkGfm];
+
+const MARKDOWN_COMPONENTS: Components = {
+  table: ({ children }) => <MarkdownTable className="my-4">{children}</MarkdownTable>,
+};
 
 export function ChatBubble({
   role,
@@ -74,23 +97,8 @@ export function ChatBubble({
           </div>
 
           <div className="text-foreground">
-            <div
-              className={cn(
-                "prose prose-sm dark:prose-invert max-w-none prose-a:text-positive",
-                "break-words prose-headings:mt-4 prose-headings:mb-2 prose-headings:font-semibold",
-                "prose-h1:text-xl prose-h1:leading-tight",
-                "prose-h2:text-base prose-h3:text-sm",
-                "prose-p:my-2 prose-p:leading-7 prose-p:text-[0.9375rem]",
-                "prose-ul:my-2 prose-ul:pl-4 prose-li:my-0.5 prose-li:text-[0.9375rem]",
-                "prose-ol:my-1.5 prose-ol:pl-4",
-                "prose-strong:text-foreground prose-strong:font-semibold",
-                "prose-code:text-xs prose-code:bg-muted prose-code:px-1 prose-code:py-0.5 prose-code:rounded",
-                "prose-pre:bg-muted prose-pre:text-foreground prose-pre:rounded-3xl prose-pre:text-xs",
-                "prose-table:block prose-table:max-w-full prose-table:overflow-x-auto prose-table:text-xs prose-th:px-2 prose-th:py-1 prose-td:px-2 prose-td:py-1",
-                "[&>*:first-child]:mt-0 [&>*:last-child]:mb-0"
-              )}
-            >
-              <ReactMarkdown remarkPlugins={[remarkGfm]}>
+            <div className={CHAT_PROSE_CLASSES}>
+              <ReactMarkdown remarkPlugins={REMARK_PLUGINS} components={MARKDOWN_COMPONENTS}>
                 {content}
               </ReactMarkdown>
               {isStreaming && (
