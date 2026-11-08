@@ -409,11 +409,11 @@
       "analyzeNvidia": "Analyze NVIDIA stock",
       "askCreators": "What did creators say about NVDA?",
       "holdingsOverlap": "Which opinions overlap my holdings?",
+      "compareOpinions": "Compare creator opinions",
       "whoShifted": "Who turned stronger or weaker recently?",
       "explainTrends": "Explain market trends",
       "trendingStocks": "Top trending stocks",
-      "latestNews": "Latest news",
-      "compareOpinions": "Compare creator opinions"
+      "latestNews": "Latest news"
     },
     "evidence": {
       "using": "Evidence",

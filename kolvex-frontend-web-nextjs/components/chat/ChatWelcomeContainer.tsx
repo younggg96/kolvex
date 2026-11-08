@@ -14,6 +14,8 @@ import type { AIModel, ChatWelcomeProps, SearchSource } from "./types";
 interface ChatWelcomeContainerProps {
   className?: string;
   variant?: ChatWelcomeProps["variant"];
+  /** Passed through so the composer can rise onto the tab bar while typing. */
+  docked?: boolean;
   suggestions?: string[];
   placeholder?: string;
   decisionContext?: string;
@@ -31,6 +33,7 @@ interface ChatWelcomeContainerProps {
 export function ChatWelcomeContainer({
   className,
   variant,
+  docked,
   suggestions,
   placeholder,
   onConversationChange,
@@ -128,6 +131,7 @@ export function ChatWelcomeContainer({
             placeholder={placeholder}
             evidenceLabel={evidenceLabel}
             onClearEvidence={onClearEvidence}
+            docked={docked}
           />
         </div>
       </div>

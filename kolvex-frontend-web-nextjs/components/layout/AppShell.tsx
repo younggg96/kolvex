@@ -21,7 +21,7 @@ export default function AppShell({ children }: AppShellProps) {
       <div className="app-workbench relative isolate flex w-full overflow-hidden bg-background font-display text-foreground">
         <DashboardBackground />
         <AppSidebar />
-        <SidebarInset className="mobile-nav-inset relative flex min-w-0 flex-col overflow-hidden pb-[calc(5.5rem+env(safe-area-inset-bottom))] dark:bg-transparent lg:pb-0">
+        <SidebarInset className="mobile-nav-inset relative flex min-w-0 flex-col overflow-hidden pb-[calc(5.5rem+env(safe-area-inset-bottom))] [html[data-chat-docked]_&]:pb-0 dark:bg-transparent lg:pb-0">
           {children}
           <MobileTabBar />
         </SidebarInset>

@@ -54,8 +54,22 @@ function useIsMidScroll(pathname: string, onScroll: () => void) {
   return midScroll;
 }
 
-export default function MobileTabBar() {
+interface MobileTabBarProps {
+  /** The page floats its own composer on the dock, so the shell skips reserving space for it. */
+  compact?: boolean;
+}
+
+export default function MobileTabBar({ compact = false }: MobileTabBarProps) {
   const pathname = usePathname();
+  // A page that docks its own composer (the new-chat page) releases the shell
+  // inset AppShell reserves for the dock so the two can meet without a gap.
+  useEffect(() => {
+    if (!compact) return;
+    document.documentElement.dataset.chatDocked = "";
+    return () => {
+      delete document.documentElement.dataset.chatDocked;
+    };
+  }, [compact]);
   const router = useRouter();
   const { t } = useTranslation();
   const c = useCopy();

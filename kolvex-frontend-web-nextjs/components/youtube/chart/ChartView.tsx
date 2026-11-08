@@ -31,6 +31,7 @@ import {
   AlertCircle,
   Cloud,
   ChevronDown,
+  ChevronLeft,
   CloudOff,
   Eye,
   EyeOff,
@@ -365,6 +366,9 @@ export default function ChartView({
   });
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [aiSheetOpen, setAiSheetOpen] = useState(false);
+  /** Phones put the settings one step inside the AI sheet; the sheet never stacks a second one. */
+  const [aiSheetView, setAiSheetView] = useState<"actions" | "settings">("actions");
+  const aiSheetStep = aiSheetView === "settings";
   /** A run the reader asked for before choosing a model; the settings sheet offers to start it. */
   const [pendingRun, setPendingRun] = useState<"analysis" | "drawings" | null>(null);
   const [hideDrawingsOpen, setHideDrawingsOpen] = useState(false);
@@ -968,9 +972,11 @@ export default function ChartView({
   async function runAi(operation: "analysis" | "drawings" = "analysis") {
     if (!bars || !count || aiBusy || ai.status === "loading" || drawingAi.status === "loading") return;
     if (!modelReady) {
-      // Keep whatever is on screen; ask for a model and offer to start right after.
+      // Keep whatever is on screen; ask for a model and offer to start right after. The phone
+      // sheet swaps to its settings step instead of opening a second sheet over itself.
       setPendingRun(operation);
-      setSettingsOpen(true);
+      if (aiSheetOpen) setAiSheetView("settings");
+      else setSettingsOpen(true);
       void refreshProviders();
       return;
     }
@@ -1070,89 +1076,122 @@ export default function ChartView({
     "min-h-11 min-w-0 gap-2 px-3 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
     advanced ? "w-full" : "sm:min-h-9 sm:min-w-[7rem]",
   );
+  const aiSettingsDescription = t(pendingRun ? "youtubeOpinions.ai.pendingRunHint" : "youtubeOpinions.ai.chartSettingsHint");
+  /** Model, focus and drawing-version controls, shared by the desktop dialog and the phone sheet. */
+  const aiSettings = (
+    <>
+      <label className="flex min-w-0 w-full flex-col gap-1.5">
+        <span className="text-xs font-medium text-muted-foreground">{t("youtubeOpinions.ai.modelLabel")}</span>
+        <Select value={modelReady ? selectedModel : ""} onValueChange={onModelChange}
+          onOpenChange={(open) => { if (open) void refreshProviders(); }}
+          disabled={providersLoading || aiBusy || ai.status === "loading" || drawingAi.status === "loading"}>
+          <SelectTrigger aria-label={t("youtubeOpinions.ai.selectModel")}>
+            <SelectValue placeholder={t("youtubeOpinions.ai.selectModel")} />
+          </SelectTrigger>
+          <SelectContent style={{ width: "var(--radix-select-trigger-width)", maxHeight: "min(20rem, var(--radix-select-content-available-height))" }}>
+            {MODEL_CONFIGS.map((model) => (
+              <SelectItem key={model.id} value={model.id} disabled={!availableProviders?.includes(PROVIDER_NAME_TO_ID[model.provider])}>
+                <span className="block break-words">{model.name}</span>
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </label>
+      {!providersLoading && !modelReady && !eligibleModels.length && <p className="mt-2 text-xs leading-5 text-muted-foreground">
+        {t("youtubeOpinions.ai.notConfigured")}{" "}
+        <Link href="/dashboard/settings?tab=api-keys" className="underline underline-offset-2 focus-visible:outline-none ">{t("youtubeOpinions.ai.openSettings")}</Link>
+      </p>}
+      {focusControls}
+      {drawingVersionControls}
+    </>
+  );
+  /** `back` is the previous step, `close` dismisses the surface, `start` launches `pendingRun`. */
+  const aiSettingsFooter = (actions: { back: () => void; close: () => void; start: () => void }) => (
+    <DialogFooter className="shrink-0 gap-2 border-t border-border sm:space-x-0">
+      {pendingRun ? <>
+        <Button type="button" variant="outline" onClick={actions.back}>{t("common.cancel")}</Button>
+        <Button type="button" disabled={!modelReady || providersLoading} onClick={actions.start}>
+          {pendingRun === "analysis" ? <ScanSearch className="h-4 w-4" aria-hidden="true" /> : <GanttChart className="h-4 w-4" aria-hidden="true" />}
+          {t(pendingRun === "analysis" ? "youtubeOpinions.ai.empty.start" : "youtubeOpinions.ai.startDrawings")}
+        </Button>
+      </> : <Button type="button" onClick={actions.close}>{t("common.close")}</Button>}
+    </DialogFooter>
+  );
+  const aiRunButtons = (
+    <div className={advanced ? "contents" : "contents sm:flex sm:items-center sm:gap-2"}>
+      <Button size="sm" variant="outline" className={aiActionClass} onClick={() => void runAi("analysis")} aria-busy={ai.status === "loading"}
+        disabled={!loaded || providersLoading || aiBusy || ai.status === "loading" || drawingAi.status === "loading"}
+        title={t("youtubeOpinions.ai.runAnalysis")}>
+        {ai.status === "loading" ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <ScanSearch className="h-4 w-4" aria-hidden="true" />}
+        {t("youtubeOpinions.ai.analysisButton")}
+      </Button>
+      <Button ref={drawingButtonRef} size="sm" variant="outline" className={aiActionClass} onClick={() => void runAi("drawings")} aria-busy={drawingAi.status === "loading"}
+        disabled={!loaded || providersLoading || aiBusy || ai.status === "loading" || drawingAi.status === "loading"}
+        title={t("youtubeOpinions.ai.runDrawings")}>
+        {drawingAi.status === "loading" ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <GanttChart className="h-4 w-4" aria-hidden="true" />}
+        {t("youtubeOpinions.ai.button")}
+      </Button>
+    </div>
+  );
+  /** One row of actions plus a settings control, so every surface keeps the same action order. */
+  const aiActionsRow = (settingsTrigger: ReactNode) => (
+    <div className={advanced ? "grid grid-cols-[1fr_1fr_auto] gap-2" : "grid grid-cols-[1fr_1fr_auto] gap-2 sm:flex sm:flex-wrap sm:items-center sm:gap-3"}>
+      {aiRunButtons}
+      <div className={advanced ? "contents" : "contents sm:ml-auto sm:flex sm:flex-wrap sm:items-center sm:gap-2"}>
+        {settingsTrigger}
+        {advanced && drawingAi.status === "done" && <div className="col-span-3 min-w-0 max-lg:hidden [&_button]:focus-visible:ring-2 [&_button]:focus-visible:ring-ring [&_button]:focus-visible:ring-offset-2 [&_button]:focus-visible:ring-offset-background">{hideDrawingsControl(true)}</div>}
+      </div>
+    </div>
+  );
+  const aiSettingsButtonClass = cn(aiActionClass, advanced ? "!w-11 px-0" : "!w-11 px-0 sm:!w-auto sm:px-3");
   const aiControls = (
     <div className="min-w-0" role="group" aria-label={t("youtubeOpinions.ai.actions")}>
-        {/* Advanced: one row, two actions plus a settings icon (Robinhood keeps sheet actions to a single line). */}
-        <div className={advanced ? "grid grid-cols-[1fr_1fr_auto] gap-2" : "grid grid-cols-[1fr_1fr_auto] gap-2 sm:flex sm:flex-wrap sm:items-center sm:gap-3"}>
-          <div className={advanced ? "contents" : "contents sm:flex sm:items-center sm:gap-2"}>
-            <Button size="sm" variant="outline" className={aiActionClass} onClick={() => void runAi("analysis")} aria-busy={ai.status === "loading"}
-              disabled={!loaded || providersLoading || aiBusy || ai.status === "loading" || drawingAi.status === "loading"}
-              title={t("youtubeOpinions.ai.runAnalysis")}>
-              {ai.status === "loading" ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <ScanSearch className="h-4 w-4" aria-hidden="true" />}
-              {t("youtubeOpinions.ai.analysisButton")}
+      {aiActionsRow(
+        <Dialog open={settingsOpen} onOpenChange={(open) => { setSettingsOpen(open); if (open) void refreshProviders(); else setPendingRun(null); }}>
+          <DialogTrigger asChild>
+            <Button type="button" size="sm" variant="outline" aria-label={t("youtubeOpinions.ai.chartSettings")} title={t("youtubeOpinions.ai.chartSettings")} className={aiSettingsButtonClass}>
+              <SlidersHorizontal className="h-4 w-4" aria-hidden="true" />
+              <span className={cn(advanced ? "sr-only" : "sr-only sm:not-sr-only")}>{t("youtubeOpinions.ai.chartSettings")}</span>
             </Button>
-            <Button ref={drawingButtonRef} size="sm" variant="outline" className={aiActionClass} onClick={() => void runAi("drawings")} aria-busy={drawingAi.status === "loading"}
-              disabled={!loaded || providersLoading || aiBusy || ai.status === "loading" || drawingAi.status === "loading"}
-              title={t("youtubeOpinions.ai.runDrawings")}>
-              {drawingAi.status === "loading" ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <GanttChart className="h-4 w-4" aria-hidden="true" />}
-              {t("youtubeOpinions.ai.button")}
-            </Button>
-          </div>
-          <div className={advanced ? "contents" : "contents sm:ml-auto sm:flex sm:flex-wrap sm:items-center sm:gap-2"}>
-          <Dialog open={settingsOpen} onOpenChange={(open) => { setSettingsOpen(open); if (open) void refreshProviders(); else setPendingRun(null); }}>
-            <DialogTrigger asChild>
-              <Button type="button" size="sm" variant="outline" aria-label={t("youtubeOpinions.ai.chartSettings")} title={t("youtubeOpinions.ai.chartSettings")} className={cn(aiActionClass, advanced ? "!w-11 px-0" : "!w-11 px-0 sm:!w-auto sm:px-3")}>
-                <SlidersHorizontal className="h-4 w-4" aria-hidden="true" />
-                <span className={cn(advanced ? "sr-only" : "sr-only sm:not-sr-only")}>{t("youtubeOpinions.ai.chartSettings")}</span>
+          </DialogTrigger>
+          <DialogContent layout="sheet" showCloseButton={false} className="flex flex-col" onEscapeKeyDown={(event) => event.stopPropagation()}>
+            <DialogHeader>
+              <DialogTitle>{t("youtubeOpinions.ai.chartSettings")}</DialogTitle>
+              <DialogDescription>{aiSettingsDescription}</DialogDescription>
+            </DialogHeader>
+            <DialogClose asChild>
+              <Button type="button" variant="ghost" size="icon" className="absolute right-2 top-2 min-h-11 min-w-11" aria-label={t("common.close")}>
+                <X className="h-4 w-4" aria-hidden="true" />
               </Button>
-            </DialogTrigger>
-            <DialogContent layout="sheet" showCloseButton={false} className="flex flex-col" onEscapeKeyDown={(event) => event.stopPropagation()}>
-              <DialogHeader>
-                <DialogTitle>{t("youtubeOpinions.ai.chartSettings")}</DialogTitle>
-                <DialogDescription>{t(pendingRun ? "youtubeOpinions.ai.pendingRunHint" : "youtubeOpinions.ai.chartSettingsHint")}</DialogDescription>
-              </DialogHeader>
-              <DialogClose asChild>
-                <Button type="button" variant="ghost" size="icon" className="absolute right-2 top-2 min-h-11 min-w-11" aria-label={t("common.close")}>
-                  <X className="h-4 w-4" aria-hidden="true" />
-                </Button>
-              </DialogClose>
-              <div className="mt-2 min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-contain pb-2">
-                <label className="flex min-w-0 w-full flex-col gap-1.5">
-                  <span className="text-xs font-medium text-muted-foreground">{t("youtubeOpinions.ai.modelLabel")}</span>
-                  <Select value={modelReady ? selectedModel : ""} onValueChange={onModelChange}
-                    onOpenChange={(open) => { if (open) void refreshProviders(); }}
-                    disabled={providersLoading || aiBusy || ai.status === "loading" || drawingAi.status === "loading"}>
-                    <SelectTrigger aria-label={t("youtubeOpinions.ai.selectModel")}>
-                      <SelectValue placeholder={t("youtubeOpinions.ai.selectModel")} />
-                    </SelectTrigger>
-                    <SelectContent style={{ width: "var(--radix-select-trigger-width)", maxHeight: "min(20rem, var(--radix-select-content-available-height))" }}>
-                      {MODEL_CONFIGS.map((model) => (
-                        <SelectItem key={model.id} value={model.id} disabled={!availableProviders?.includes(PROVIDER_NAME_TO_ID[model.provider])}>
-                          <span className="block break-words">{model.name}</span>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </label>
-                {!providersLoading && !modelReady && !eligibleModels.length && <p className="mt-2 text-xs leading-5 text-muted-foreground">
-                  {t("youtubeOpinions.ai.notConfigured")}{" "}
-                  <Link href="/dashboard/settings?tab=api-keys" className="underline underline-offset-2 focus-visible:outline-none ">{t("youtubeOpinions.ai.openSettings")}</Link>
-                </p>}
-                {focusControls}
-                {drawingVersionControls}
-              </div>
-              <DialogFooter className="shrink-0 gap-2 border-t border-border sm:space-x-0">
-                {pendingRun ? <>
-                  <DialogClose asChild><Button type="button" variant="outline">{t("common.cancel")}</Button></DialogClose>
-                  <Button type="button" disabled={!modelReady || providersLoading} onClick={() => {
-                    const operation = pendingRun;
-                    setSettingsOpen(false);
-                    setPendingRun(null);
-                    void runAi(operation);
-                  }}>
-                    {pendingRun === "analysis" ? <ScanSearch className="h-4 w-4" aria-hidden="true" /> : <GanttChart className="h-4 w-4" aria-hidden="true" />}
-                    {t(pendingRun === "analysis" ? "youtubeOpinions.ai.empty.start" : "youtubeOpinions.ai.startDrawings")}
-                  </Button>
-                </> : <DialogClose asChild><Button type="button">{t("common.close")}</Button></DialogClose>}
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-            {advanced && drawingAi.status === "done" && <div className="col-span-3 min-w-0 max-lg:hidden [&_button]:focus-visible:ring-2 [&_button]:focus-visible:ring-ring [&_button]:focus-visible:ring-offset-2 [&_button]:focus-visible:ring-offset-background">{hideDrawingsControl(true)}</div>}
-
-          </div>
-        </div>
-
-      </div>
+            </DialogClose>
+            <div className="mt-2 min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-contain pb-2">
+              {aiSettings}
+            </div>
+            {aiSettingsFooter({
+              back: () => setSettingsOpen(false),
+              close: () => setSettingsOpen(false),
+              start: () => {
+                const operation = pendingRun;
+                setSettingsOpen(false);
+                setPendingRun(null);
+                if (operation) void runAi(operation);
+              },
+            })}
+          </DialogContent>
+        </Dialog>,
+      )}
+    </div>
+  );
+  /** The phone sheet uses the same action row, but its settings trigger swaps the sheet's step. */
+  const mobileAiControls = (
+    <div className="min-w-0" role="group" aria-label={t("youtubeOpinions.ai.actions")}>
+      {aiActionsRow(
+        <Button type="button" size="sm" variant="outline" aria-label={t("youtubeOpinions.ai.chartSettings")} title={t("youtubeOpinions.ai.chartSettings")} className={cn(aiActionClass, "!w-11 px-0")}
+          onClick={() => { setAiSheetView("settings"); void refreshProviders(); }}>
+          <SlidersHorizontal className="h-4 w-4" aria-hidden="true" />
+        </Button>,
+      )}
+    </div>
   );
   const activeOperation = aiJobs.analysis.status === "loading" ? "analysis" as const : aiJobs.drawings.status === "loading" ? "drawings" as const : null;
   const activeJob = activeOperation ? aiJobs[activeOperation] : null;
@@ -1683,29 +1722,65 @@ export default function ChartView({
             )}
             <div className="ml-auto flex shrink-0 items-center gap-2">
               {showAi && <div className="lg:hidden">
-                {/* Phones: a bottom sheet over the chart instead of a cramped floating popover. */}
-                <Dialog open={aiSheetOpen} onOpenChange={setAiSheetOpen}>
+                {/* Phones: one sheet over the chart. Settings are a step inside this sheet, never a second stacked sheet. */}
+                <Dialog open={aiSheetOpen} onOpenChange={(open) => {
+                  setAiSheetOpen(open);
+                  if (!open) setPendingRun(null);
+                  // Every open starts on the actions step.
+                  setAiSheetView("actions");
+                }}>
                   <DialogTrigger asChild>
                     <Button size="sm" variant="outline" className="gap-1.5">
                       <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
                       {t("youtubeOpinions.ai.actions")}
                     </Button>
                   </DialogTrigger>
-                  <DialogContent layout="sheet" showCloseButton={false} className="flex flex-col px-4 pt-2" onEscapeKeyDown={(event) => event.stopPropagation()}>
+                  <DialogContent layout="sheet" showCloseButton={false} className="flex flex-col px-4 pt-2" onEscapeKeyDown={(event) => {
+                    event.stopPropagation();
+                    if (!aiSheetStep) return;
+                    // Escape walks back to the actions step instead of dismissing the whole sheet.
+                    event.preventDefault();
+                    setAiSheetView("actions");
+                    setPendingRun(null);
+                  }}>
                     <div className="mx-auto mb-2 h-1 w-9 shrink-0 rounded-full bg-foreground/20 sm:hidden" aria-hidden="true" />
-                    <div className="flex shrink-0 items-center justify-between gap-3 pb-3">
-                      <DialogTitle className="text-base font-semibold">{t("youtubeOpinions.ai.actions")}</DialogTitle>
-                      <DialogDescription className="sr-only">{symbol}</DialogDescription>
+                    <div className="flex shrink-0 items-start gap-1 pb-3">
+                      {aiSheetStep && (
+                        <Button type="button" variant="ghost" size="icon" className="-ml-2 min-h-11 min-w-11" aria-label={t("common.back")}
+                          onClick={() => { setAiSheetView("actions"); setPendingRun(null); }}>
+                          <ChevronLeft className="h-5 w-5" aria-hidden="true" />
+                        </Button>
+                      )}
+                      <div className="min-w-0 flex-1">
+                        <DialogTitle className="text-base font-semibold">{t(aiSheetStep ? "youtubeOpinions.ai.chartSettings" : "youtubeOpinions.ai.actions")}</DialogTitle>
+                        <DialogDescription className={cn("mt-0.5 text-xs leading-5 text-muted-foreground", !aiSheetStep && "sr-only")}>
+                          {aiSheetStep ? aiSettingsDescription : symbol}
+                        </DialogDescription>
+                      </div>
                       <DialogClose asChild>
                         <Button type="button" variant="ghost" size="icon" className="-mr-2 min-h-11 min-w-11" aria-label={t("common.close")}>
                           <X className="h-4 w-4" aria-hidden="true" />
                         </Button>
                       </DialogClose>
                     </div>
-                    <div className="shrink-0">{aiControls}{aiStatus}</div>
-                    <div className="-mx-4 mt-1 flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain px-4 pb-2">
-                      {aiResults}
-                    </div>
+                    {aiSheetStep ? <>
+                      <div className="min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-contain pb-2">{aiSettings}</div>
+                      {aiSettingsFooter({
+                        back: () => { setAiSheetView("actions"); setPendingRun(null); },
+                        close: () => setAiSheetOpen(false),
+                        start: () => {
+                          const operation = pendingRun;
+                          setAiSheetView("actions");
+                          setPendingRun(null);
+                          if (operation) void runAi(operation);
+                        },
+                      })}
+                    </> : <>
+                      <div className="shrink-0">{mobileAiControls}{aiStatus}</div>
+                      <div className="-mx-4 mt-1 flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain px-4 pb-2">
+                        {aiResults}
+                      </div>
+                    </>}
                   </DialogContent>
                 </Dialog>
               </div>}

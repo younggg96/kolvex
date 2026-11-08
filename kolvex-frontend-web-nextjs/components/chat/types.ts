@@ -62,11 +62,15 @@ export interface ChatInputProps {
   onKeyDown?: (e: React.KeyboardEvent) => void;
   isLoading?: boolean;
   isFocused?: boolean;
-  onFocus?: () => void;
-  onBlur?: () => void;
+  onFocus?: (event: React.FocusEvent<HTMLTextAreaElement>) => void;
+  onBlur?: (event: React.FocusEvent<HTMLTextAreaElement>) => void;
   placeholder?: string;
-  /** "inline" sits on the dialog ground; "panel" keeps the rounded composer used on the chat page. */
-  appearance?: "panel" | "inline";
+  /**
+   * "panel" is the rounded glass card used on the chat page, "inline" sits on
+   * the dialog ground, and "docked" is a bare field that the page places on the
+   * floating tab bar, with its footer controls in the row below.
+   */
+  appearance?: "panel" | "inline" | "docked";
   activeSources?: SearchSource[];
   onToggleSource?: (source: SearchSource) => void;
   showSourceToggle?: boolean;
@@ -80,6 +84,8 @@ export interface ChatInputProps {
   /** Human label for page evidence attached to this question. */
   evidenceLabel?: string;
   onClearEvidence?: () => void;
+  /** Extra classes for the typing area, e.g. a larger type size where it leads a surface. */
+  fieldClassName?: string;
 }
 
 export interface ChatBubbleProps {
@@ -112,8 +118,17 @@ export interface ChatWelcomeProps {
   onSelectModel?: (model: AIModel) => void;
   /** Backend provider IDs with usable keys */
   availableProviders?: string[];
-  /** "compact" drops the page heading and navigation links for use inside a dialog */
-  variant?: "page" | "compact";
+  /**
+   * "page" is the full landing layout, "compact" drops the heading and link
+   * rows for use inside a dialog, and "dock" keeps the option rows on the page
+   * ground above the composer, which then rests on the floating tab bar.
+   */
+  variant?: "page" | "compact" | "dock";
+  /**
+   * Lets the composer rise onto the tab bar when the field takes focus, so the
+   * phone keyboard never covers it.
+   */
+  docked?: boolean;
   /** Overrides the default suggested questions */
   suggestions?: string[];
   /** Overrides the input placeholder, for example when a page context is attached. */

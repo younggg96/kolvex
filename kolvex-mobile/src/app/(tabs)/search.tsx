@@ -14,6 +14,13 @@ import { router, useFocusEffect } from "expo-router";
 import { SymbolView } from "expo-symbols";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Chip, Copy, LoadingStatus } from "../../components/UI";
+import {
+  Pill,
+  PillRow,
+  ResultRow,
+  SearchGroup,
+} from "../../components/search/SearchSections";
+import { useDockSearch } from "../../components/Dock";
 import { briefs, news, reports } from "../../lib/contentApi";
 import type { TradingAnalysis } from "../../lib/contentTypes";
 import { catalogue, xCreators } from "../../lib/featureApi";
@@ -22,11 +29,9 @@ import { safeExternal } from "../../lib/links";
 import { companyNames, isSymbol } from "../../lib/models";
 import { redditRanking } from "../../lib/reddit";
 import {
-  addToSearchHistory,
-  readSearchHistory,
-  writeSearchHistory,
+  useSearchHistory,
   type SearchHistoryItem,
-} from "../../lib/searchHistory";
+} from "../../lib/useSearchHistory";
 import { useTheme } from "../../lib/theme";
 import { useResource } from "../../lib/useResource";
 import { useAuth } from "../../state/Auth";
@@ -41,6 +46,9 @@ const BRIEF_COUNT = 2;
 const RESULT_LIMIT = 8;
 const RESEARCH_LIMIT = 5;
 const RESEARCH_DEBOUNCE_MS = 250;
+/** Fallback until the dock reports how tall its recent-search strip rendered. */
+const RECENT_FALLBACK_HEIGHT = 52;
+const X_ICON = { ios: "xmark", android: "close", web: "close" } as const;
 const FILTERS: [Filter, string][] = [
   ["all", "全部"],
   ["stocks", "股票"],
@@ -50,7 +58,7 @@ const FILTERS: [Filter, string][] = [
 
 const go = (href: string) => router.push(href as never);
 const stockHref = (ticker: string) => `/stock/${encodeURIComponent(ticker)}`;
-const reportItem = (report: TradingAnalysis): SearchHistoryItem => ({
+const reportItem = (report: TradingAnalysis) => ({
   href: `/report/${encodeURIComponent(report.id)}`,
   title: `${report.ticker} 研究报告`,
   detail: report.trade_date,
@@ -65,123 +73,6 @@ function stockMatchScore({ ticker, name }: StockResult, query: string) {
   if (company.startsWith(query)) return 2;
   if (company.includes(` ${query}`)) return 3;
   return company.includes(query) ? 4 : null;
-}
-
-function Group({
-  title,
-  action,
-  onAction,
-  children,
-}: {
-  title: string;
-  action?: string;
-  onAction?: () => void;
-  children: ReactNode;
-}) {
-  return (
-    <View style={{ marginTop: 32, gap: 12 }}>
-      <View
-        style={{
-          minHeight: 24,
-          flexDirection: "row",
-          alignItems: "center",
-          justifyContent: "space-between",
-        }}
-      >
-        <Copy bold>{title}</Copy>
-        {!!action && (
-          <Pressable accessibilityRole="button" onPress={onAction} hitSlop={10}>
-            <Copy size={14} muted>
-              {action}
-            </Copy>
-          </Pressable>
-        )}
-      </View>
-      {children}
-    </View>
-  );
-}
-
-function PillRow({ children }: { children: ReactNode }) {
-  return (
-    <ScrollView
-      horizontal
-      showsHorizontalScrollIndicator={false}
-      keyboardShouldPersistTaps="handled"
-      style={{ marginHorizontal: -16 }}
-      contentContainerStyle={{ gap: 8, paddingHorizontal: 16 }}
-    >
-      {children}
-    </ScrollView>
-  );
-}
-
-function Pill({ label, onPress }: { label: string; onPress: () => void }) {
-  const t = useTheme();
-  return (
-    <Pressable
-      accessibilityRole="button"
-      onPress={onPress}
-      style={({ pressed }) => ({
-        height: 44,
-        maxWidth: 240,
-        paddingHorizontal: 16,
-        justifyContent: "center",
-        borderRadius: 22,
-        borderWidth: 1,
-        borderColor: t.border,
-        backgroundColor: pressed ? t.border : t.tint,
-      })}
-    >
-      <Copy size={14} bold localize={false} lines={1}>
-        {label}
-      </Copy>
-    </Pressable>
-  );
-}
-
-function ResultRow({
-  title,
-  detail,
-  trailing,
-  onPress,
-}: {
-  title: string;
-  detail: string;
-  trailing?: ReactNode;
-  onPress: () => void;
-}) {
-  const t = useTheme();
-  return (
-    <View
-      style={{
-        flexDirection: "row",
-        alignItems: "center",
-        gap: 12,
-        borderBottomWidth: 1,
-        borderBottomColor: t.border,
-      }}
-    >
-      <Pressable
-        accessibilityRole="button"
-        onPress={onPress}
-        style={({ pressed }) => ({
-          flex: 1,
-          paddingVertical: 14,
-          gap: 2,
-          opacity: pressed ? 0.7 : 1,
-        })}
-      >
-        <Copy localize={false} lines={1}>
-          {title}
-        </Copy>
-        <Copy size={14} muted localize={false} lines={1}>
-          {detail}
-        </Copy>
-      </Pressable>
-      {trailing}
-    </View>
-  );
 }
 
 function WatchToggle({ ticker }: { ticker: string }) {
@@ -220,20 +111,107 @@ function WatchToggle({ ticker }: { ticker: string }) {
   );
 }
 
+/** Recent searches sit directly above the dock field; the screen leaves them room. */
+function RecentSearches({
+  history,
+  onClear,
+  onMeasure,
+}: {
+  history: SearchHistoryItem[];
+  onClear: () => void;
+  onMeasure: (height: number) => void;
+}) {
+  const t = useTheme();
+  const text = useText();
+  if (history.length === 0) return null;
+  return (
+    <ScrollView
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      keyboardShouldPersistTaps="handled"
+      onLayout={(event) => onMeasure(event.nativeEvent.layout.height)}
+      style={{ marginHorizontal: -16, flexGrow: 0 }}
+      contentContainerStyle={{
+        gap: 8,
+        paddingHorizontal: 16,
+        paddingBottom: 8,
+        alignItems: "center",
+      }}
+    >
+      <Copy size={14} muted>
+        最近搜索
+      </Copy>
+      {history.map((item) => (
+        <Pressable
+          key={item.href}
+          accessibilityRole="button"
+          onPress={() => {
+            go(item.href);
+          }}
+          style={({ pressed }) => ({
+            height: 36,
+            maxWidth: 220,
+            flexDirection: "row",
+            alignItems: "center",
+            gap: 6,
+            paddingLeft: 12,
+            paddingRight: 4,
+            borderRadius: 18,
+            borderWidth: 1,
+            borderColor: t.border,
+            backgroundColor: pressed ? t.border : t.tint,
+          })}
+        >
+          <Copy size={14} localize={false} lines={1}>
+            {item.title}
+          </Copy>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={text(`从最近搜索中移除 ${item.title}`)}
+            onPress={() => onClear()}
+            hitSlop={8}
+            style={{
+              width: 28,
+              height: 28,
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <SymbolView name={X_ICON} size={12} tintColor={t.secondary} />
+          </Pressable>
+        </Pressable>
+      ))}
+      <Pressable
+        accessibilityRole="button"
+        onPress={onClear}
+        style={{
+          minHeight: 44,
+          justifyContent: "center",
+          paddingHorizontal: 4,
+        }}
+      >
+        <Copy size={14} muted>
+          清除
+        </Copy>
+      </Pressable>
+    </ScrollView>
+  );
+}
+
 export default function Search() {
   const t = useTheme();
   const text = useText();
   const insets = useSafeAreaInsets();
   const user = useAuth().session?.user.id;
-  const input = useRef<ComponentRef<typeof TextInput>>(null);
-  const [history, setHistory] = useState<SearchHistoryItem[]>([]);
   const [value, setValue] = useState("");
   const [filter, setFilter] = useState<Filter>("all");
   const [submitFailed, setSubmitFailed] = useState(false);
+  const [recentHeight, setRecentHeight] = useState(RECENT_FALLBACK_HEIGHT);
   const [research, setResearch] = useState<{
     ticker: string;
     items: TradingAnalysis[];
   } | null>(null);
+  const { history, replace: setHistory, remember } = useSearchHistory(user);
 
   const opinions = useResource("search-opinions", (signal) =>
     catalogue(signal),
@@ -252,28 +230,8 @@ export default function Search() {
     user ? briefs(signal, user, 1, "all") : Promise.resolve(null),
   );
 
-  useFocusEffect(
-    useCallback(() => {
-      input.current?.focus();
-    }, []),
-  );
-  useEffect(() => {
-    let active = true;
-    if (user)
-      void readSearchHistory(user).then((saved) => {
-        if (active) setHistory(saved);
-      });
-    return () => {
-      active = false;
-    };
-  }, [user]);
-
-  function saveHistory(next: SearchHistoryItem[]) {
-    setHistory(next);
-    if (user) writeSearchHistory(user, next);
-  }
-  function open(item: SearchHistoryItem) {
-    saveHistory(addToSearchHistory(history, item));
+  function open(item: { title: string; detail: string; href: string }) {
+    remember(item);
     go(item.href);
   }
   const openStock = ({ ticker, name }: StockResult) =>
@@ -401,13 +359,350 @@ export default function Search() {
     (filter === "all" || filter === "research") && researchResults.length > 0;
   const hasResults = showStocks || showCreators || showResearch;
 
+  const stockPick = (stock: StockResult) =>
+    openStock({ ticker: stock.ticker, name: stock.name });
+
+  // Bottom-up: results above the dock, then recent searches, then the discovery
+  // blocks (most specific first) so the primary content sits closest to the hand.
+  let lists: ReactNode[];
+  if (query) {
+    const groups: ReactNode[] = [];
+    if (showStocks)
+      groups.push(
+        <SearchGroup title="股票" key="stocks">
+          <View>
+            {stockResults.map((stock) => (
+              <ResultRow
+                key={stock.ticker}
+                title={stock.name}
+                detail={
+                  stock.name === stock.ticker
+                    ? text("打开股票页")
+                    : stock.ticker
+                }
+                onPress={() => openStock(stock)}
+                trailing={<WatchToggle ticker={stock.ticker} />}
+              />
+            ))}
+          </View>
+        </SearchGroup>,
+      );
+    if (showCreators)
+      groups.push(
+        <SearchGroup title="创作者" key="creators">
+          <View>
+            {creatorResults.map(({ key, ...creator }) => (
+              <ResultRow
+                key={key}
+                title={creator.title}
+                detail={creator.detail}
+                onPress={() => open(creator)}
+              />
+            ))}
+          </View>
+        </SearchGroup>,
+      );
+    if (showResearch)
+      groups.push(
+        <SearchGroup title="AI 研究" key="research">
+          <View>
+            {researchResults.map((report) => {
+              const item = reportItem(report);
+              return (
+                <ResultRow
+                  key={report.id}
+                  title={text(item.title)}
+                  detail={item.detail}
+                  onPress={() => open(item)}
+                />
+              );
+            })}
+          </View>
+        </SearchGroup>,
+      );
+    if (catalogueLoading && !hasResults)
+      groups.push(
+        <LoadingStatus key="loading">
+          <View style={{ gap: 12 }}>
+            <TextLine size={16} width={48} />
+            <ResultRowsSkeleton count={5} trailing />
+          </View>
+        </LoadingStatus>,
+      );
+    if (!catalogueLoading && !hasResults)
+      groups.push(
+        <Copy size={14} muted key="empty">
+          {filter === "all"
+            ? `没有找到“${value.trim()}”。试试股票代码或公司名称。`
+            : "这个分类下没有结果，切换到“全部”看看其他内容。"}
+        </Copy>,
+      );
+    if (catalogueFailed)
+      groups.push(
+        <Copy size={14} muted key="partial">
+          部分来源暂时不可用，结果可能不完整。
+        </Copy>,
+      );
+    lists = [...groups.reverse()];
+    lists.push(
+      <ScrollView
+        key="filters"
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        style={{ marginHorizontal: -16, maxHeight: 44 }}
+        contentContainerStyle={{ gap: 4, paddingHorizontal: 16 }}
+      >
+        {FILTERS.map(([key, label]) => (
+          <Chip
+            key={key}
+            selected={filter === key}
+            onPress={() => setFilter(key)}
+          >
+            {label}
+          </Chip>
+        ))}
+      </ScrollView>,
+    );
+  } else {
+    const blocks: ReactNode[] = [];
+    if (youtubePicks.length > 0)
+      blocks.push(
+        <SearchGroup
+          key="youtube-stocks"
+          title="YouTube 博主热议"
+          action="查看全部"
+          onAction={() => go("/opinions")}
+        >
+          <PillRow>
+            {youtubePicks.map((stock) => (
+              <Pill
+                key={stock.ticker}
+                label={stock.ticker}
+                onPress={() =>
+                  stockPick({ ticker: stock.ticker, name: stock.ticker })
+                }
+              />
+            ))}
+          </PillRow>
+        </SearchGroup>,
+      );
+    if (youtubeCreatorPicks.length > 0)
+      blocks.push(
+        <SearchGroup
+          key="youtube-creators"
+          title="YouTube 热门博主"
+          action="查看全部"
+          onAction={() => go("/creators")}
+        >
+          <PillRow>
+            {youtubeCreatorPicks.map((creator) => {
+              const name = creator.channel_title || creator.channel_id;
+              return (
+                <Pill
+                  key={creator.channel_id}
+                  label={name}
+                  onPress={() =>
+                    open({
+                      title: name,
+                      detail: "YouTube",
+                      href: `/creator/youtube/${encodeURIComponent(creator.channel_id)}`,
+                    })
+                  }
+                />
+              );
+            })}
+          </PillRow>
+        </SearchGroup>,
+      );
+    if (redditPicks.length > 0)
+      blocks.push(
+        <SearchGroup
+          key="reddit"
+          title="Reddit 讨论最热"
+          action="查看全部"
+          onAction={() => go("/opinions")}
+        >
+          <PillRow>
+            {redditPicks.map((stock) => (
+              <Pill
+                key={stock.ticker}
+                label={stock.ticker}
+                onPress={() => stockPick(stock)}
+              />
+            ))}
+          </PillRow>
+        </SearchGroup>,
+      );
+    if (xPicks.length > 0)
+      blocks.push(
+        <SearchGroup
+          key="x"
+          title="X 创作者"
+          action="查看全部"
+          onAction={() => go("/creators")}
+        >
+          <PillRow>
+            {xPicks.map((creator) => {
+              const title = creator.display_name || `@${creator.username}`;
+              return (
+                <Pill
+                  key={creator.username}
+                  label={title}
+                  onPress={() =>
+                    open({
+                      title,
+                      detail: `@${creator.username}`,
+                      href: `/creator/x/${encodeURIComponent(creator.username)}`,
+                    })
+                  }
+                />
+              );
+            })}
+          </PillRow>
+        </SearchGroup>,
+      );
+    if (reportPicks.length > 0)
+      blocks.push(
+        <SearchGroup
+          key="reports"
+          title="最新研究"
+          action="查看全部"
+          onAction={() => go("/research")}
+        >
+          <PillRow>
+            {reportPicks.map((report) => {
+              const item = reportItem(report);
+              return (
+                <Pill
+                  key={report.id}
+                  label={text(item.title)}
+                  onPress={() => open(item)}
+                />
+              );
+            })}
+          </PillRow>
+        </SearchGroup>,
+      );
+    if (newsPicks.length > 0)
+      blocks.push(
+        <SearchGroup
+          key="news"
+          title="最新新闻"
+          action="查看全部"
+          onAction={() => go("/news")}
+        >
+          <View>
+            {newsPicks.map((article) => (
+              <ResultRow
+                key={article.id ?? article.uuid ?? article.link}
+                title={article.title_zh || article.title}
+                detail={article.publisher ?? text("新闻来源")}
+                onPress={() => openExternal(article.link)}
+              />
+            ))}
+          </View>
+        </SearchGroup>,
+      );
+    if (briefPicks.length > 0)
+      blocks.push(
+        <SearchGroup
+          key="briefs"
+          title="最新日报"
+          action="查看全部"
+          onAction={() => go("/briefs")}
+        >
+          <View>
+            {briefPicks.map((brief) => {
+              const item = {
+                href: `/brief/${encodeURIComponent(brief.id)}`,
+                title: brief.headline || brief.title,
+                detail: brief.brief_date,
+              };
+              return (
+                <ResultRow
+                  key={brief.id}
+                  title={item.title}
+                  detail={item.detail}
+                  onPress={() => open(item)}
+                />
+              );
+            })}
+          </View>
+        </SearchGroup>,
+      );
+    if (picksLoading)
+      blocks.push(
+        <LoadingStatus key="loading">
+          <View style={{ gap: 12 }}>
+            <TextLine size={16} width={120} />
+            <ResultRowsSkeleton count={5} />
+          </View>
+        </LoadingStatus>,
+      );
+    lists = blocks.reverse();
+    const recent = [
+      ...history.map((item) => ({
+        key: `history:${item.href}`,
+        title: item.title,
+        detail: item.detail,
+        onPress: () => open(item),
+      })),
+      ...stockResults.slice(0, PILL_COUNT).map((stock) => ({
+        key: `stock:${stock.ticker}`,
+        title: stock.name,
+        detail: stock.ticker,
+        onPress: () => stockPick(stock),
+      })),
+      ...creatorResults.slice(0, PILL_COUNT).map((creator) => ({
+        key: `creator:${creator.key}`,
+        title: creator.title,
+        detail: creator.detail,
+        onPress: () => open(creator),
+      })),
+    ].slice(0, PILL_COUNT);
+    // A compact strip keeps the workspace bottom-first: long lists push the
+    // newest block off-screen, while chips stay a single row.
+    if (recent.length > 0)
+      lists.unshift(
+        <SearchGroup
+          key="recent"
+          title="最近搜索"
+          action="清除"
+          onAction={() => setHistory([])}
+        >
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+            style={{ marginHorizontal: -16 }}
+            contentContainerStyle={{ gap: 8, paddingHorizontal: 16 }}
+          >
+            {recent.map((item) => (
+              <Pill key={item.key} label={item.title} onPress={item.onPress} />
+            ))}
+          </ScrollView>
+        </SearchGroup>,
+      );
+  }
+
   function changeValue(next: string) {
     setValue(next);
     setSubmitFailed(false);
   }
   function submit() {
-    if (stockResults[0]) openStock(stockResults[0]);
-    else if (query) setSubmitFailed(true);
+    const top = stockResults[0];
+    if (!top) {
+      if (query) setSubmitFailed(true);
+      return;
+    }
+    remember({
+      title: top.name,
+      detail: top.ticker,
+      href: stockHref(top.ticker),
+    });
+    changeValue("");
+    openStock(top);
   }
   function cancel() {
     Keyboard.dismiss();
@@ -415,445 +710,126 @@ export default function Search() {
     if (router.canGoBack()) router.back();
     else router.navigate("/");
   }
+  // The dock renders the field above the keyboard; back clears the query first.
+  function back() {
+    if (!value) return true;
+    changeValue("");
+    return false;
+  }
+
+  const field = useRef<ComponentRef<typeof TextInput>>(null);
+  const { hold, release } = useDockSearch("search", {
+    field: (
+      <View
+        style={{
+          flex: 1,
+          height: 46,
+          flexDirection: "row",
+          alignItems: "center",
+          borderRadius: 23,
+          borderWidth: 1,
+          borderColor: t.border,
+          backgroundColor: t.tint,
+          paddingLeft: 14,
+        }}
+      >
+        <SymbolView
+          name={{ ios: "magnifyingglass", android: "search", web: "search" }}
+          size={18}
+          tintColor={t.text}
+        />
+        <TextInput
+          ref={field}
+          value={value}
+          onChangeText={changeValue}
+          onSubmitEditing={submit}
+          accessibilityLabel={text("搜索股票和创作者")}
+          placeholder={text("搜索股票、公司、创作者")}
+          placeholderTextColor={t.secondary}
+          autoCapitalize="none"
+          autoCorrect={false}
+          spellCheck={false}
+          returnKeyType="search"
+          maxLength={40}
+          style={{
+            flex: 1,
+            height: "100%",
+            paddingHorizontal: 12,
+            fontSize: 16,
+            color: t.text,
+          }}
+        />
+        {!!value && (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={text("清空搜索")}
+            onPress={() => {
+              changeValue("");
+              field.current?.focus();
+            }}
+            style={{
+              width: 44,
+              height: 44,
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <SymbolView
+              name={{ ios: "xmark", android: "close", web: "close" }}
+              size={14}
+              tintColor={t.secondary}
+            />
+          </Pressable>
+        )}
+      </View>
+    ),
+    recent: (
+      <RecentSearches
+        history={history}
+        onClear={() => setHistory([])}
+        onMeasure={setRecentHeight}
+      />
+    ),
+    onCancel: cancel,
+    onBack: back,
+  });
+
+  const scroll = useRef<ComponentRef<typeof ScrollView>>(null);
+  useFocusEffect(
+    useCallback(() => {
+      hold();
+      return () => release();
+    }, [hold, release]),
+  );
 
   return (
     <ScrollView
+      ref={scroll}
       style={{ flex: 1, backgroundColor: t.background }}
       contentInsetAdjustmentBehavior="automatic"
       keyboardShouldPersistTaps="handled"
       keyboardDismissMode="on-drag"
-      automaticallyAdjustKeyboardInsets
+      // The dock grows by its field and the recent searches above it; both
+      // keyboard insets and this padding keep the lists clear of it.
+      automaticallyAdjustKeyboardInsets={Platform.OS === "ios"}
       contentContainerStyle={{
         paddingHorizontal: 16,
         paddingTop: Platform.OS === "android" ? insets.top + 16 : 16,
-        paddingBottom: insets.bottom + 100,
+        paddingBottom:
+          insets.bottom + 100 + (history.length ? recentHeight : 0),
+        flexGrow: 1,
+        justifyContent: "space-between",
+        gap: 24,
       }}
     >
-      <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
-        <View
-          style={{
-            flex: 1,
-            height: 48,
-            flexDirection: "row",
-            alignItems: "center",
-            borderRadius: 24,
-            borderWidth: 1,
-            borderColor: t.border,
-            backgroundColor: t.tint,
-            paddingLeft: 16,
-          }}
-        >
-          <SymbolView
-            name={{
-              ios: "magnifyingglass",
-              android: "search",
-              web: "search",
-            }}
-            size={18}
-            tintColor={t.text}
-          />
-          <TextInput
-            ref={input}
-            value={value}
-            onChangeText={changeValue}
-            onSubmitEditing={submit}
-            accessibilityLabel={text("搜索股票和创作者")}
-            placeholder={text("搜索股票、公司、创作者")}
-            placeholderTextColor={t.secondary}
-            autoCapitalize="none"
-            autoCorrect={false}
-            spellCheck={false}
-            returnKeyType="search"
-            maxLength={40}
-            style={{
-              flex: 1,
-              height: "100%",
-              paddingHorizontal: 12,
-              fontSize: 16,
-              color: t.text,
-            }}
-          />
-          {!!value && (
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={text("清空搜索")}
-              onPress={() => {
-                changeValue("");
-                input.current?.focus();
-              }}
-              style={{
-                width: 44,
-                height: 44,
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <SymbolView
-                name={{ ios: "xmark", android: "close", web: "close" }}
-                size={14}
-                tintColor={t.secondary}
-              />
-            </Pressable>
-          )}
-        </View>
-        <Pressable
-          accessibilityRole="button"
-          onPress={cancel}
-          style={{ height: 44, justifyContent: "center" }}
-        >
-          <Copy>取消</Copy>
-        </Pressable>
-      </View>
-
       {submitFailed && (
-        <View
-          accessibilityRole="alert"
-          style={{ marginTop: 12, paddingLeft: 16 }}
-        >
+        <View accessibilityRole="alert" style={{ paddingLeft: 16 }}>
           <Copy size={14} color={t.negative}>
             没有匹配的股票。试试股票代码，如 AAPL、BRK-B。
           </Copy>
         </View>
       )}
-
-      {!query ? (
-        <>
-          {history.length > 0 && (
-            <Group
-              title="最近搜索"
-              action="清除"
-              onAction={() => saveHistory([])}
-            >
-              <View>
-                {history.map((item) => (
-                  <View
-                    key={item.href}
-                    style={{
-                      flexDirection: "row",
-                      alignItems: "center",
-                      gap: 12,
-                    }}
-                  >
-                    <SymbolView
-                      name={{
-                        ios: "clock",
-                        android: "schedule",
-                        web: "schedule",
-                      }}
-                      size={16}
-                      tintColor={t.secondary}
-                    />
-                    <Pressable
-                      accessibilityRole="button"
-                      onPress={() => open(item)}
-                      style={{
-                        flex: 1,
-                        minHeight: 44,
-                        flexDirection: "row",
-                        alignItems: "center",
-                        gap: 8,
-                      }}
-                    >
-                      <View style={{ flexShrink: 1 }}>
-                        <Copy localize={false} lines={1}>
-                          {item.title}
-                        </Copy>
-                      </View>
-                      {item.detail !== item.title && (
-                        <Copy size={14} muted localize={false} lines={1}>
-                          {item.detail}
-                        </Copy>
-                      )}
-                    </Pressable>
-                    <Pressable
-                      accessibilityRole="button"
-                      accessibilityLabel={text(
-                        `从最近搜索中移除 ${item.title}`,
-                      )}
-                      onPress={() =>
-                        saveHistory(
-                          history.filter(
-                            (existing) => existing.href !== item.href,
-                          ),
-                        )
-                      }
-                      style={{
-                        width: 44,
-                        height: 44,
-                        marginRight: -12,
-                        alignItems: "center",
-                        justifyContent: "center",
-                      }}
-                    >
-                      <SymbolView
-                        name={{ ios: "xmark", android: "close", web: "close" }}
-                        size={14}
-                        tintColor={t.secondary}
-                      />
-                    </Pressable>
-                  </View>
-                ))}
-              </View>
-            </Group>
-          )}
-          {(youtubePicks.length > 0 || youtubeCreatorPicks.length > 0) && (
-            <Group
-              title="YouTube 博主热议"
-              action="查看全部"
-              onAction={() => go("/opinions")}
-            >
-              <View style={{ gap: 4 }}>
-                {youtubePicks.length > 0 && (
-                  <PillRow>
-                    {youtubePicks.map((stock) => (
-                      <Pill
-                        key={stock.ticker}
-                        label={stock.ticker}
-                        onPress={() =>
-                          openStock({
-                            ticker: stock.ticker,
-                            name: stock.ticker,
-                          })
-                        }
-                      />
-                    ))}
-                  </PillRow>
-                )}
-                {youtubeCreatorPicks.length > 0 && (
-                  <PillRow>
-                    {youtubeCreatorPicks.map((creator) => {
-                      const name = creator.channel_title || creator.channel_id;
-                      return (
-                        <Pill
-                          key={creator.channel_id}
-                          label={name}
-                          onPress={() =>
-                            open({
-                              title: name,
-                              detail: "YouTube",
-                              href: `/creator/youtube/${encodeURIComponent(creator.channel_id)}`,
-                            })
-                          }
-                        />
-                      );
-                    })}
-                  </PillRow>
-                )}
-              </View>
-            </Group>
-          )}
-          {redditPicks.length > 0 && (
-            <Group
-              title="Reddit 讨论最热"
-              action="查看全部"
-              onAction={() => go("/opinions")}
-            >
-              <PillRow>
-                {redditPicks.map((stock) => (
-                  <Pill
-                    key={stock.ticker}
-                    label={stock.ticker}
-                    onPress={() => openStock(stock)}
-                  />
-                ))}
-              </PillRow>
-            </Group>
-          )}
-          {xPicks.length > 0 && (
-            <Group
-              title="X 创作者"
-              action="查看全部"
-              onAction={() => go("/creators")}
-            >
-              <PillRow>
-                {xPicks.map((creator) => {
-                  const title = creator.display_name || `@${creator.username}`;
-                  return (
-                    <Pill
-                      key={creator.username}
-                      label={title}
-                      onPress={() =>
-                        open({
-                          title,
-                          detail: `@${creator.username}`,
-                          href: `/creator/x/${encodeURIComponent(creator.username)}`,
-                        })
-                      }
-                    />
-                  );
-                })}
-              </PillRow>
-            </Group>
-          )}
-          {reportPicks.length > 0 && (
-            <Group
-              title="最新研究"
-              action="查看全部"
-              onAction={() => go("/research")}
-            >
-              <PillRow>
-                {reportPicks.map((report) => {
-                  const item = reportItem(report);
-                  return (
-                    <Pill
-                      key={report.id}
-                      label={text(item.title)}
-                      onPress={() => open(item)}
-                    />
-                  );
-                })}
-              </PillRow>
-            </Group>
-          )}
-          {newsPicks.length > 0 && (
-            <Group
-              title="最新新闻"
-              action="查看全部"
-              onAction={() => go("/news")}
-            >
-              <View>
-                {newsPicks.map((article) => (
-                  <ResultRow
-                    key={article.id ?? article.uuid ?? article.link}
-                    title={article.title_zh || article.title}
-                    detail={article.publisher ?? text("新闻来源")}
-                    onPress={() => openExternal(article.link)}
-                  />
-                ))}
-              </View>
-            </Group>
-          )}
-          {briefPicks.length > 0 && (
-            <Group
-              title="最新日报"
-              action="查看全部"
-              onAction={() => go("/briefs")}
-            >
-              <View>
-                {briefPicks.map((brief) => {
-                  const item = {
-                    href: `/brief/${encodeURIComponent(brief.id)}`,
-                    title: brief.headline || brief.title,
-                    detail: brief.brief_date,
-                  };
-                  return (
-                    <ResultRow
-                      key={brief.id}
-                      title={item.title}
-                      detail={item.detail}
-                      onPress={() => open(item)}
-                    />
-                  );
-                })}
-              </View>
-            </Group>
-          )}
-          {picksLoading && (
-            <LoadingStatus>
-              <View style={{ marginTop: 32, gap: 12 }}>
-                <TextLine size={16} width={120} />
-                <ResultRowsSkeleton count={5} />
-              </View>
-            </LoadingStatus>
-          )}
-        </>
-      ) : (
-        <>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            keyboardShouldPersistTaps="handled"
-            style={{ marginHorizontal: -16, marginTop: 16 }}
-            contentContainerStyle={{ gap: 4, paddingHorizontal: 16 }}
-          >
-            {FILTERS.map(([key, label]) => (
-              <Chip
-                key={key}
-                selected={filter === key}
-                onPress={() => setFilter(key)}
-              >
-                {label}
-              </Chip>
-            ))}
-          </ScrollView>
-
-          {showStocks && (
-            <Group title="股票">
-              <View>
-                {stockResults.map((stock) => (
-                  <ResultRow
-                    key={stock.ticker}
-                    title={stock.name}
-                    detail={
-                      stock.name === stock.ticker
-                        ? text("打开股票页")
-                        : stock.ticker
-                    }
-                    onPress={() => openStock(stock)}
-                    trailing={<WatchToggle ticker={stock.ticker} />}
-                  />
-                ))}
-              </View>
-            </Group>
-          )}
-          {showCreators && (
-            <Group title="创作者">
-              <View>
-                {creatorResults.map(({ key, ...creator }) => (
-                  <ResultRow
-                    key={key}
-                    title={creator.title}
-                    detail={creator.detail}
-                    onPress={() => open(creator)}
-                  />
-                ))}
-              </View>
-            </Group>
-          )}
-          {showResearch && (
-            <Group title="AI 研究">
-              <View>
-                {researchResults.map((report) => {
-                  const item = reportItem(report);
-                  return (
-                    <ResultRow
-                      key={report.id}
-                      title={text(item.title)}
-                      detail={item.detail}
-                      onPress={() => open(item)}
-                    />
-                  );
-                })}
-              </View>
-            </Group>
-          )}
-
-          {catalogueLoading && !hasResults && (
-            <LoadingStatus>
-              <View style={{ marginTop: 32, gap: 12 }}>
-                <TextLine size={16} width={48} />
-                <ResultRowsSkeleton count={5} trailing />
-              </View>
-            </LoadingStatus>
-          )}
-          {!catalogueLoading && !hasResults && (
-            <View style={{ marginTop: 40 }}>
-              <Copy size={14} muted>
-                {filter === "all"
-                  ? `没有找到“${value.trim()}”。试试股票代码或公司名称。`
-                  : "这个分类下没有结果，切换到“全部”看看其他内容。"}
-              </Copy>
-            </View>
-          )}
-          {catalogueFailed && (
-            <View style={{ marginTop: 24 }}>
-              <Copy size={14} muted>
-                部分来源暂时不可用，结果可能不完整。
-              </Copy>
-            </View>
-          )}
-        </>
-      )}
+      {lists}
     </ScrollView>
   );
 }

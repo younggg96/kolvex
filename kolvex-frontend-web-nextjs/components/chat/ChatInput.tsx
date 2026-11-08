@@ -259,9 +259,11 @@ export function ChatInput({
   availableProviders,
   evidenceLabel,
   onClearEvidence,
+  fieldClassName,
 }: ChatInputProps) {
   const { t } = useTranslation();
   const inline = appearance === "inline";
+  const docked = appearance === "docked";
   const prompt = placeholder ?? t("chat.input.placeholder");
   const internalRef = useRef<HTMLTextAreaElement>(null);
   const inputRef = externalRef || internalRef;
@@ -390,7 +392,9 @@ export function ChatInput({
       <div
         className={cn(
           "relative flex flex-col",
-          inline
+          // Inline and docked keep the typing area on the page ground; only the
+          // default panel draws its own card.
+          inline || docked
             ? "bg-transparent"
             : cn(
                 "glass-card glass-card-blur overflow-hidden rounded-[1.625rem] border border-foreground/10 bg-card-glass-strong transition-colors duration-150 focus-within:border-foreground/35"
@@ -424,15 +428,19 @@ export function ChatInput({
         <div
           className={cn(
             "flex items-end gap-3",
-            inline ? "px-0 pb-3 pt-1" : cn("px-5", evidenceLabel ? "pt-1" : "pt-4", hasFooter ? "pb-1" : "pb-3")
+            inline
+              ? "px-0 pb-3 pt-1"
+              : docked
+                ? "gap-2.5 px-3.5 pt-3.5"
+                : cn("px-5", evidenceLabel ? "pt-1" : "pt-4", hasFooter ? "pb-1" : "pb-3")
           )}
         >
           <textarea
             ref={inputRef as React.RefObject<HTMLTextAreaElement>}
             value={value}
             onChange={(e) => onChange(e.target.value)}
-            onFocus={onFocus}
-            onBlur={onBlur}
+            onFocus={(event) => onFocus?.(event)}
+            onBlur={(event) => onBlur?.(event)}
             onKeyDown={handleKeyDown}
             placeholder={isBlocked ? t("chat.input.addApiKeyPlaceholder") : prompt}
             disabled={isBlocked}
@@ -442,7 +450,8 @@ export function ChatInput({
               "disabled:cursor-not-allowed disabled:opacity-50",
               inline
                 ? "min-h-11 border-b-2 border-transparent text-[1.0625rem] leading-7 focus-visible:border-primary focus-visible:outline-none"
-                : "min-h-[1.75rem] max-h-[10rem] text-base leading-relaxed focus-visible:outline-none"
+                : "min-h-[1.75rem] max-h-[10rem] text-base leading-relaxed focus-visible:outline-none",
+              fieldClassName
             )}
             rows={1}
           />
@@ -464,11 +473,13 @@ export function ChatInput({
               "flex items-center justify-between gap-2",
               inline
                 ? "border-t border-border px-0 py-2"
-                : "px-2.5 pb-2.5 pt-1"
+                : docked
+                  ? "-ml-1 px-1.5 pb-1.5"
+                  : "px-2.5 pb-2.5 pt-1"
             )}
           >
             {/* Left Side - Source Toggles & Model Selector */}
-            <div className={cn("flex min-w-0 flex-wrap items-center gap-0.5", inline && "-ml-3")}>
+            <div className={cn("flex min-w-0 flex-wrap items-center gap-0.5", (inline || docked) && "-ml-3")}>
               {/* Source Toggles */}
               {showSourceToggle && onToggleSource && (
                 <>

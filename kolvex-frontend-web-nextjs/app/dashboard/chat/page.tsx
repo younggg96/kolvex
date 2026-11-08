@@ -13,7 +13,11 @@ export default function NewChatPage() {
       <div className="flex h-14 shrink-0 items-center pl-2 md:px-6">
         <ChatHistorySheet />
       </div>
-      <ChatWelcomeContainer className="min-h-0 flex-1" />
+      <ChatWelcomeContainer
+        className="min-h-0 flex-1"
+        variant="dock"
+        docked
+      />
     </DashboardLayout>
   );
 }

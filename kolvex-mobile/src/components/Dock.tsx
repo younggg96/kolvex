@@ -1,5 +1,19 @@
-import { useState, type ComponentProps } from "react";
-import { LayoutAnimation, Pressable, StyleSheet, View } from "react-native";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type ComponentProps,
+  type ComponentRef,
+  type ReactNode,
+} from "react";
+import {
+  LayoutAnimation,
+  Platform,
+  Pressable,
+  StyleSheet,
+  View,
+} from "react-native";
 import { router, type Tabs } from "expo-router";
 import { SymbolView } from "expo-symbols";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -94,6 +108,71 @@ const LOGOUT_ICON: SymbolName = {
   android: "logout",
   web: "logout",
 };
+const BACK_ICON: SymbolName = {
+  ios: "chevron.backward",
+  android: "arrow_back",
+  web: "arrow_back",
+};
+
+/** What the focused search screen shows inside the dock's expanded surface. */
+export type DockSearchSlot = {
+  /** The search field, rendered directly above the keyboard. */
+  field: ReactNode;
+  /** Recent searches, shown above the field. */
+  recent: ReactNode;
+  /** Leaves the search screen and restores the tab dock. */
+  onCancel: () => void;
+  /** Back out of the screen; returns false to stay and only clear the query. */
+  onBack: () => boolean;
+};
+
+/**
+ * The search screen owns the query, but the dock renders the field above the
+ * keyboard. Screens hold the slot while focused and release it on blur, so the
+ * dock shows at most one search at a time.
+ */
+type Held = { id: string; content: DockSearchSlot };
+const slot: { current: Held | null } = { current: null };
+const listeners = new Set<() => void>();
+function publish(next: Held | null) {
+  slot.current = next;
+  listeners.forEach((notify) => notify());
+}
+
+/**
+ * Ties one screen to the dock's search surface. `id` identifies the screen, so a
+ * screen that leaves only clears the slot when the dock still shows *its* copy.
+ */
+export function useDockSearch(id: string, content: DockSearchSlot) {
+  const latest = useRef(content);
+  useEffect(() => {
+    latest.current = content;
+  });
+  /** Claims the dock's expanded surface; call when the screen gains focus. */
+  const hold = useCallback(() => {
+    publish({ id, content: latest.current });
+  }, [id]);
+  // Leaving (or losing focus) releases only this screen's own slot, so a newer
+  // search that took the dock over keeps rendering.
+  const release = useCallback(() => {
+    if (slot.current?.id === id) publish(null);
+  }, [id]);
+  useEffect(() => release, [release]);
+  return { hold, release };
+}
+
+/** The dock's view of the slot, re-rendering when a screen claims or releases it. */
+function useDockSlot() {
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    const notify = () => setTick((tick) => tick + 1);
+    listeners.add(notify);
+    return () => {
+      listeners.delete(notify);
+    };
+  }, []);
+  return slot.current?.content;
+}
 
 /** Floating glass dock matching the Web phone navigation in components/layout/MobileTabBar.tsx. */
 export function Dock({ state }: DockProps) {
@@ -103,6 +182,25 @@ export function Dock({ state }: DockProps) {
   const auth = useAuth();
   const user = auth.session?.user.id;
   const [open, setOpen] = useState(false);
+  // The search screen expands the dock into its search bar, above the keyboard.
+  const search = useDockSlot();
+  // Browsers report no keyboard resize, so the focused field measures how far
+  // down the visible viewport ends and lifts itself above that edge.
+  const [webLift, setWebLift] = useState(0);
+  const surface = useRef<ComponentRef<typeof View>>(null);
+  const lift = () => {
+    const viewport =
+      typeof window === "undefined" ? undefined : window.visualViewport;
+    if (!viewport) return;
+    surface.current?.measureInWindow((_x, y, _width, height) => {
+      setWebLift(
+        Math.max(
+          0,
+          Math.round(y + height - (viewport.offsetTop + viewport.height)),
+        ),
+      );
+    });
+  };
   const account = useResource(`dock-profile:${user}`, (signal) =>
     user ? profile(user, signal) : Promise.resolve(null),
   );
@@ -141,75 +239,131 @@ export function Dock({ state }: DockProps) {
         pointerEvents="box-none"
         style={{
           paddingHorizontal: 20,
-          paddingBottom: Math.max(16, insets.bottom),
+          // Browsers report no keyboard resize, so the focused field lifts itself above it.
+          paddingBottom: Math.max(16, insets.bottom) + webLift,
           alignItems: "center",
         }}
       >
-        <Glass
-          material
-          style={{
-            width: "100%",
-            maxWidth: 448,
-            borderRadius: 28,
-            padding: 4,
-          }}
+        <View
+          ref={surface}
+          collapsable={false}
+          pointerEvents="box-none"
+          onFocus={() => Platform.OS === "web" && lift()}
+          style={{ width: "100%", maxWidth: 448, alignItems: "center" }}
         >
-          {open && (
-            <View
-              style={{
-                flexDirection: "row",
-                flexWrap: "wrap",
-                padding: 4,
-                paddingBottom: 8,
-              }}
-            >
-              {MENU.map((item) => (
-                <MenuItem
-                  key={item.href}
-                  label={item.label}
-                  icon={item.icon}
-                  active={item.route === current}
-                  onPress={() => openLink(item)}
-                />
-              ))}
-              {account.data?.is_admin && (
-                <MenuItem
-                  label="管理"
-                  icon={ADMIN_ICON}
-                  onPress={() => openLink({ href: "/admin" })}
-                />
-              )}
-              <MenuItem
-                label="退出登录"
-                icon={LOGOUT_ICON}
-                color={t.negative}
-                onPress={() => {
-                  toggle(false);
-                  void auth.signOut();
+          <Glass
+            material
+            style={{
+              width: "100%",
+              borderRadius: 28,
+              padding: 4,
+            }}
+          >
+            {open && (
+              <View
+                style={{
+                  flexDirection: "row",
+                  flexWrap: "wrap",
+                  padding: 4,
+                  paddingBottom: 8,
                 }}
-              />
-            </View>
-          )}
-          <View style={{ flexDirection: "row", height: 46 }}>
-            {TABS.map((tab) => (
-              <DockButton
-                key={tab.route}
-                label={tab.label}
-                icon={tab.icon}
-                selected={tab.route === current}
-                highlighted={tab.route === current && !open}
-                onPress={() => openTab(tab.route)}
-              />
-            ))}
-            <DockButton
-              label="打开导航菜单"
-              icon={MENU_ICON}
-              expanded={open}
-              highlighted={open}
-              onPress={() => toggle(!open)}
-            />
-          </View>
-        </Glass>
+              >
+                {MENU.map((item) => (
+                  <MenuItem
+                    key={item.href}
+                    label={item.label}
+                    icon={item.icon}
+                    active={item.route === current}
+                    onPress={() => openLink(item)}
+                  />
+                ))}
+                {account.data?.is_admin && (
+                  <MenuItem
+                    label="管理"
+                    icon={ADMIN_ICON}
+                    onPress={() => openLink({ href: "/admin" })}
+                  />
+                )}
+                <MenuItem
+                  label="退出登录"
+                  icon={LOGOUT_ICON}
+                  color={t.negative}
+                  onPress={() => {
+                    toggle(false);
+                    void auth.signOut();
+                  }}
+                />
+              </View>
+            )}
+            {!!search && (
+              <View pointerEvents="box-none" style={{ paddingBottom: 8 }}>
+                {search.recent}
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: 4,
+                    paddingTop: 4,
+                  }}
+                >
+                  {search.field}
+                  <Pressable
+                    accessibilityRole="button"
+                    onPress={() => search.onCancel()}
+                    style={{
+                      height: 46,
+                      minWidth: 44,
+                      paddingHorizontal: 8,
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    <Copy>取消</Copy>
+                  </Pressable>
+                </View>
+              </View>
+            )}
+            {search ? (
+              <View style={{ flexDirection: "row", height: 46 }}>
+                <DockButton
+                  label="返回"
+                  icon={BACK_ICON}
+                  highlighted={false}
+                  onPress={() => {
+                    if (!search.onBack()) search.onCancel();
+                  }}
+                />
+                <DockButton
+                  label="打开导航菜单"
+                  icon={MENU_ICON}
+                  expanded={open}
+                  highlighted={open}
+                  onPress={() => toggle(!open)}
+                />
+              </View>
+            ) : (
+              <View style={{ flexDirection: "row", height: 46 }}>
+                {TABS.map((tab) => (
+                  <DockButton
+                    key={tab.route}
+                    label={tab.label}
+                    icon={tab.icon}
+                    selected={tab.route === current}
+                    highlighted={tab.route === current && !open}
+                    onPress={() => openTab(tab.route)}
+                  />
+                ))}
+                <DockButton
+                  label="打开导航菜单"
+                  icon={MENU_ICON}
+                  expanded={open}
+                  highlighted={open}
+                  onPress={() => toggle(!open)}
+                />
+              </View>
+            )}
+          </Glass>
+        </View>
       </View>
     </View>
   );

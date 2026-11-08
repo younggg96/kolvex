@@ -409,11 +409,11 @@
       "analyzeNvidia": "分析英伟达股票",
       "askCreators": "NVDA 上博主最近怎么说？",
       "holdingsOverlap": "哪些观点和我的持仓有关？",
+      "compareOpinions": "比较博主的股票观点",
       "whoShifted": "最近谁转强、谁转弱？",
       "explainTrends": "解释市场趋势",
       "trendingStocks": "热门趋势股票",
-      "latestNews": "最新新闻",
-      "compareOpinions": "比较博主的股票观点"
+      "latestNews": "最新新闻"
     },
     "evidence": {
       "using": "依据",
