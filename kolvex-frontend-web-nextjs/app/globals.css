@@ -1002,6 +1002,16 @@ a {
   --sidebar-background: var(--card);
 }
 
+/* Fades out under the translucent chat history sheet. Only the property list is
+   set here, so the sidebar still has no duration until it has initialised. */
+.app-workbench .app-sidebar {
+  transition-property: left, right, width, opacity;
+}
+
+html[data-chat-history-open] .app-workbench .app-sidebar {
+  opacity: 0;
+}
+
 .dark .app-workbench [data-sidebar="sidebar"] {
   background: rgb(var(--card) / 0.72);
 }

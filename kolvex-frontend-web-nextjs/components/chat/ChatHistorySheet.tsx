@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { History } from "lucide-react";
 import { useCopy } from "@/components/decision/shared";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,15 @@ import { ChatSidebarContent } from "./ChatSidebarContent";
 export function ChatHistorySheet({ className }: { className?: string }) {
   const copy = useCopy();
   const [open, setOpen] = useState(false);
+  // The sheet is translucent glass, so the app sidebar under it would blur through.
+  // Hiding it (not collapsing it) keeps the layout and the user's sidebar preference.
+  useEffect(() => {
+    if (!open) return;
+    document.documentElement.dataset.chatHistoryOpen = "";
+    return () => {
+      delete document.documentElement.dataset.chatHistoryOpen;
+    };
+  }, [open]);
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
