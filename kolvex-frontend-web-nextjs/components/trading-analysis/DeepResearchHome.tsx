@@ -14,7 +14,7 @@ function ResearchLoading() {
   return (
     <ResearchLayout>
       <div className="relative flex-1 overflow-y-auto">
-        <ContentLoading label={t("common.loading")} className="mx-auto min-h-0 w-full px-[16px] pb-16 pt-6 md:px-8 md:pt-8">
+        <ContentLoading label={t("common.loading")} className="mx-auto min-h-0 w-full px-[16px] pb-10 pt-6 md:px-8 md:pt-8">
           <div className="space-y-8">
             <div className="flex flex-wrap items-end justify-between gap-4">
               <div className="flex flex-col gap-3"><Skeleton className="h-9 w-40 rounded-lg md:h-10" /><Skeleton className="h-4 w-80 max-w-full rounded-md" /></div>

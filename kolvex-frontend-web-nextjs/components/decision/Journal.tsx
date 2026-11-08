@@ -46,7 +46,7 @@ export default function Journal() {
   return (
     <DashboardLayout title={c("Updates", "变化动态")}>
       <main className="flex-1 overflow-y-auto" aria-busy={loading}>
-        <div className="mx-auto  space-y-10 px-[16px] pb-16 pt-6 md:px-8 md:pt-8">
+        <div className="mx-auto  space-y-10 px-[16px] pb-10 pt-6 md:px-8 md:pt-8">
           <section className="border-b border-border pb-7">
             <h1 className="flex items-center gap-2 text-[1.75rem] font-semibold tracking-tight sm:text-[2rem]">{c("What changed in creator views", "博主观点有什么变化")}<InfoTip label={c("About this page", "说明")}>{c("Latest imported opinions, and what changed since the previous day that had coverage.", "最新收录的观点，以及与上一个有观点的日期相比发生的变化。")}</InfoTip></h1>
             <div className="mt-5 flex gap-2" role="group" aria-label={c("Update scope", "动态范围")}>

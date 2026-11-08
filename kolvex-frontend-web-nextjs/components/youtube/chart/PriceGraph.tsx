@@ -376,6 +376,8 @@ export interface PriceGraphProps {
   renderPlot?: (geometry: GraphGeometry) => ReactNode;
   /** Rendered under the time axis (advanced: oscillator pane). */
   subPane?: ReactNode;
+  /** Sits at the end of the range row (the interval pill), Robinhood-style. */
+  rangeTrailing?: ReactNode;
   /** Controls placed in the graph's control row before the range bar. */
   leadingControls?: ReactNode;
   /** Controls placed in the graph's control row after the range bar. */
@@ -437,6 +439,7 @@ export default function PriceGraph({
   drawingLayer,
   renderPlot,
   subPane,
+  rangeTrailing,
   leadingControls,
   trailingControls,
   onGeometry,
@@ -961,13 +964,15 @@ export default function PriceGraph({
       )}
       {historyStale && <div role="status" className="mt-1 text-xs text-muted-foreground">{t("youtubeOpinions.historyRefreshFailed")}</div>}
 
-      <div className={cn("mt-1.5", advanced && "flex min-h-0 flex-1 flex-col")}>{body}</div>
+      {/* Phones give the plot every spare pixel (no gap above the controls); panes stack right under it. */}
+      <div className={cn("mt-1.5", advanced && "flex flex-1 flex-col sm:min-h-0")}>{body}</div>
 
       {/* Phones stack the range bar over the icon row so a long label never hides the icons. */}
       <div className="my-1.5 flex shrink-0 flex-col items-stretch gap-1 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-2">
         <div className="flex w-full min-w-0 flex-1 items-center gap-1 sm:w-auto">
           {leadingControls}
           {rangeBar}
+          {rangeTrailing}
         </div>
         {advanced && (
           <div className="-mx-1 flex min-w-0 items-center gap-1 overflow-x-auto overscroll-x-contain px-1 scrollbar-hide sm:mx-0 sm:shrink-0 sm:overflow-visible sm:px-0">
@@ -1002,7 +1007,6 @@ export default function PriceGraph({
           </div>
         )}
       </div>
-
       {subPane}
     </div>
   );

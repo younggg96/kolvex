@@ -162,7 +162,7 @@ export default function PaperTradingWorkspace() {
   return (
     <DashboardLayout title={c("Paper trading", "虚拟交易")}>
       <main className="flex-1 overflow-y-auto" aria-busy={loading}>
-        <div className="mx-auto max-w-screen-2xl space-y-6 px-[16px] pb-16 pt-6 md:space-y-8 md:px-8 md:pt-8">
+        <div className="mx-auto max-w-screen-2xl space-y-6 px-[16px] pb-10 pt-6 md:space-y-8 md:px-8 md:pt-8">
           <header className="flex flex-wrap items-start justify-between gap-4">
             <div>
               <h1 className="flex items-center gap-2 text-2xl font-semibold tracking-tight sm:text-3xl">

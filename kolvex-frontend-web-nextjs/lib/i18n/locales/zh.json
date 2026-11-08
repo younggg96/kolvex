@@ -1489,7 +1489,8 @@
         "levels": "支撑阻力",
         "trend": "趋势线",
         "fib": "斐波那契",
-        "pattern": "形态"
+        "pattern": "形态",
+        "allOff": "已全部隐藏"
       }
     },
     "drawTools": "画图工具",
@@ -1601,7 +1602,9 @@
         "unauthorized": "登录后查看预测。",
         "unavailable": "暂时无法获取预测。"
       }
-    }
+    },
+    "legendMore": "+{count} 个",
+    "legendLess": "收起"
   },
   "research": {
     "navigation": "研究内容",

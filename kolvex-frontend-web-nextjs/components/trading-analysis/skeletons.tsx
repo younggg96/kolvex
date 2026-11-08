@@ -7,7 +7,7 @@ import { REPORT_READER_GRID } from "./reader-styles";
  */
 export function DetailSkeleton() {
   return (
-    <div role="status" aria-label="Loading research report" className="space-y-10 px-[16px] pb-16 pt-6 md:px-8 md:pt-8">
+    <div role="status" aria-label="Loading research report" className="space-y-10 px-[16px] pb-10 pt-6 md:px-8 md:pt-8">
       <div aria-hidden="true" className="border-b border-border pb-6">
         <div className="flex flex-wrap items-center gap-3">
           <div className="flex min-h-11 items-center gap-3 px-1">

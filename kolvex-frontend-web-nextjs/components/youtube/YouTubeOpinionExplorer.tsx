@@ -1011,7 +1011,7 @@ export default function YouTubeOpinionExplorer({ allStocks = false }: { allStock
             </span>
           </div>
         )}
-        <div className="mx-auto w-full min-w-0 max-w-[100rem] px-[16px] pb-16 pt-2 md:px-8 md:pt-7">
+        <div className="mx-auto w-full min-w-0 max-w-[100rem] px-[16px] pb-10 pt-2 md:px-8 md:pt-7">
           <Tabs
             value={route.tab}
             onValueChange={(value) => navigate({ tab: value as Route["tab"] })}

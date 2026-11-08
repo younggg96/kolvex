@@ -94,7 +94,7 @@ function SettingsFallback() {
   const { t } = useTranslation();
   return <DashboardLayout title={t("settings.title")}>
     <div className="flex-1 overflow-y-auto">
-      <div className="mx-auto w-full min-w-0 max-w-[47.5rem] px-[16px] pb-16 pt-6 md:px-8 md:pt-8">
+      <div className="mx-auto w-full min-w-0 max-w-[47.5rem] px-[16px] pb-10 pt-6 md:px-8 md:pt-8">
         <div className="flex flex-col gap-8">
           <div className="flex gap-1">{settingsTabDefs.map((tab) => <Skeleton key={tab.value} className="h-10 w-20 rounded-full" />)}</div>
           <section className="pt-2">
@@ -571,7 +571,7 @@ function SettingsContent() {
   return (
     <DashboardLayout title={t("settings.title")}>
       <div className="flex-1 overflow-y-auto">
-        <div className="mx-auto w-full min-w-0 max-w-[47.5rem] px-[16px] pb-16 pt-6 md:px-8 md:pt-8">
+        <div className="mx-auto w-full min-w-0 max-w-[47.5rem] px-[16px] pb-10 pt-6 md:px-8 md:pt-8">
           {/* Settings Tabs */}
           <Tabs value={activeTab} onValueChange={handleTabChange}>
             <div className="flex flex-col gap-8">

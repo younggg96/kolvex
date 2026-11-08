@@ -86,7 +86,7 @@ export default function PublishedAnalysisDetailPage() {
       breadcrumb={breadcrumb}
     >
       <div className="relative flex-1 overflow-y-auto">
-        <div className="mx-auto w-full max-w-[70rem] space-y-10 px-[16px] pb-16 pt-6 md:px-8 md:pt-8">
+        <div className="mx-auto w-full max-w-[70rem] space-y-10 px-[16px] pb-10 pt-6 md:px-8 md:pt-8">
           {/* Header */}
           <div className="border-b border-border pb-6">
             <div>

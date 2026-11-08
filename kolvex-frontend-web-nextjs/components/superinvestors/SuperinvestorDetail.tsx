@@ -36,7 +36,7 @@ export default function SuperinvestorDetail({ manager }: { manager: string }) {
       }
     >
       <div className="min-h-0 flex-1 overflow-y-auto bg-background dark:bg-transparent">
-        <div className="mx-auto max-w-6xl px-[16px] pb-16 pt-4 md:px-8 md:py-8">
+        <div className="mx-auto max-w-6xl px-[16px] pb-10 pt-4 md:px-8 md:py-8">
           {unknown ? (
             <Card className="px-5 py-2">
               <ListEmptyState

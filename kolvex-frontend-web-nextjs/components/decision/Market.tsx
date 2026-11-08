@@ -423,7 +423,7 @@ export default function Market() {
   return (
     <DashboardLayout title={c("Markets", "行情")}>
       <main className="min-w-0 flex-1 overflow-y-auto">
-        <div className="mx-auto w-full min-w-0 max-w-[100rem] px-[16px] pb-8 md:pb-16 pt-6 md:px-8 md:pt-8">
+        <div className="mx-auto w-full min-w-0 max-w-[100rem] px-[16px] pb-8 md:pb-10 pt-6 md:px-8 md:pt-8">
           <Tabs value={tab} onValueChange={selectTab} className="min-w-0">
             {/* On phones the row dissolves (`contents`) so the tab bar can stick for the whole page, not just this row. The bar is the page-level nav: larger than in-page tabs, left-aligned, and it scrolls if it overflows. */}
             <div className="flex flex-wrap items-center justify-between gap-3 max-md:contents">

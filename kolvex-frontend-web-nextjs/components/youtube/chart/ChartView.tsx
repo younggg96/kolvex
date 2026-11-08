@@ -33,6 +33,7 @@ import {
   CloudOff,
   Eye,
   EyeOff,
+  Layers,
   GanttChart,
   Loader2,
   Lock,
@@ -76,6 +77,7 @@ import {
   type PriceHistoryParams,
 } from "@/lib/stockApi";
 import ChartDrawingLayer from "../ChartDrawingLayer";
+import ChartSection from "./ChartSection";
 import OscillatorPane, { oscillatorLabels, type Oscillator } from "./OscillatorPane";
 import { drawingColors, drawingGroups, newDrawingId, type Anchor, type Drawing, type DrawingGroup, type DrawingTool, type SyncStatus } from "../chartDrawings";
 import { toneText, type StrengthTone } from "../strength";
@@ -136,10 +138,14 @@ type Calls = {
 
 const SNAP_PX = 12;
 const MIN_BARS = GRAPH_MIN_BARS;
+/** Indicators named on the collapsed phone legend line before "+N". */
+const LEGEND_PREVIEW = 2;
+
 const HEIGHT_CLASS: Record<Mode, string> = {
   compact: "h-[18rem] sm:h-[20rem]",
-  // Phones scroll the dialog, so the plot needs its own height instead of sharing a squeezed flex column.
-  advanced: "h-[clamp(16rem,50svh,28rem)] shrink-0 sm:h-auto sm:min-h-0 sm:flex-1 sm:shrink",
+  // Phones scroll the dialog: the plot keeps a floor but also takes any spare height, so collapsing
+  // the oscillator never leaves a gap above the controls.
+  advanced: "min-h-[clamp(16rem,50svh,28rem)] flex-1 shrink-0 sm:min-h-0 sm:shrink",
 };
 const defaultIndicators: Record<Mode, IndicatorKey[]> = {
   compact: [],
@@ -357,6 +363,7 @@ export default function ChartView({
     status: "idle",
   });
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [aiSheetOpen, setAiSheetOpen] = useState(false);
   /** A run the reader asked for before choosing a model; the settings sheet offers to start it. */
   const [pendingRun, setPendingRun] = useState<"analysis" | "drawings" | null>(null);
   const [hideDrawingsOpen, setHideDrawingsOpen] = useState(false);
@@ -396,6 +403,8 @@ export default function ChartView({
     try { window.localStorage.setItem("kolvex:chart-oscillator", next ?? "none"); } catch { /* Session-only preference. */ }
   }
 
+  const [legendOpen, setLegendOpen] = useState(false);
+  const [layersOpen, setLayersOpen] = useState(false);
   /** Explicit per-layer choices; unset layers follow the width default (phones hide trend + pattern). */
   const [layerPrefs, setLayerPrefs] = useState<Partial<Record<DrawingGroup, boolean>>>({});
   useEffect(() => {
@@ -993,6 +1002,8 @@ export default function ChartView({
       <span className={cn("font-medium", tone || "text-foreground")}>{value}</span>
     </span>
   );
+  /** Outline for chips that are off, so "off" reads as a control rather than plain text. */
+  const offChip = "border border-foreground/20";
   const pill = (isActive: boolean) =>
     cn(
       "inline-flex h-8 shrink-0 items-center rounded-full px-3 text-[0.8125rem] font-semibold transition-colors duration-150 focus-visible:outline-none",
@@ -1026,14 +1037,14 @@ export default function ChartView({
     return upper.length ? `M${upper.join("L")}L${lower.join("L")}Z` : "";
   };
 
-  const hideDrawingsControl = (fill = false) => (
+  const hideDrawingsControl = (fill = false, chip = false) => (
             <Dialog open={hideDrawingsOpen} onOpenChange={setHideDrawingsOpen}>
-              {drawingAi.status === "done" && (drawingsHidden ? <Button ref={hideDrawingTriggerRef} type="button" size="sm" variant="outline" aria-label={t("youtubeOpinions.ai.showDrawings")} title={t("youtubeOpinions.ai.showDrawings")} aria-pressed={false} className={cn("min-h-11 w-full min-w-0 gap-2 px-2 sm:min-h-9 sm:w-auto sm:px-3", fill && "sm:min-h-11 sm:w-full")} disabled={aiBusy} onClick={() => onDrawingVisibilityChange?.(false)}>
-                <Eye className="h-4 w-4" aria-hidden="true" /><span className="sm:hidden">{t("youtubeOpinions.ai.showDrawingsShort")}</span><span className="hidden sm:inline">{t(fill ? "youtubeOpinions.ai.showDrawingsShort" : "youtubeOpinions.ai.showDrawings")}</span>
+              {drawingAi.status === "done" && (drawingsHidden ? <Button ref={hideDrawingTriggerRef} type="button" size="sm" variant="outline" aria-label={t("youtubeOpinions.ai.showDrawings")} title={t("youtubeOpinions.ai.showDrawings")} aria-pressed={false} className={chip ? cn(pill(false), "h-9 gap-1.5 bg-transparent sm:h-8", offChip) : cn("min-h-11 w-full min-w-0 gap-2 px-2 sm:min-h-9 sm:w-auto sm:px-3", fill && "sm:min-h-11 sm:w-full")} disabled={aiBusy} onClick={() => onDrawingVisibilityChange?.(false)}>
+                <Eye className="h-4 w-4" aria-hidden="true" /><span className={cn(!chip && "sm:hidden")}>{t("youtubeOpinions.ai.showDrawingsShort")}</span><span className={chip ? "hidden" : "hidden sm:inline"}>{t(fill ? "youtubeOpinions.ai.showDrawingsShort" : "youtubeOpinions.ai.showDrawings")}</span>
               </Button> : <DialogTrigger asChild>
-                <Button ref={hideDrawingTriggerRef} type="button" size="sm" variant="outline" aria-label={t("youtubeOpinions.ai.clear")} title={t("youtubeOpinions.ai.clear")} aria-pressed={true} className={cn("min-h-11 w-full min-w-0 gap-2 px-2 sm:min-h-9 sm:w-auto sm:px-3", fill && "sm:min-h-11 sm:w-full")} disabled={aiBusy}>
+                <Button ref={hideDrawingTriggerRef} type="button" size="sm" variant="outline" aria-label={t("youtubeOpinions.ai.clear")} title={t("youtubeOpinions.ai.clear")} aria-pressed={true} className={chip ? cn(pill(false), "h-9 gap-1.5 bg-transparent sm:h-8", offChip) : cn("min-h-11 w-full min-w-0 gap-2 px-2 sm:min-h-9 sm:w-auto sm:px-3", fill && "sm:min-h-11 sm:w-full")} disabled={aiBusy}>
                   <EyeOff className="h-4 w-4" aria-hidden="true" />
-                  <span className="sm:hidden">{t("youtubeOpinions.ai.hideDrawingsShort")}</span><span className="hidden sm:inline">{t(fill ? "youtubeOpinions.ai.hideDrawingsShort" : "youtubeOpinions.ai.clear")}</span>
+                  <span className={cn(!chip && "sm:hidden")}>{t("youtubeOpinions.ai.hideDrawingsShort")}</span><span className={chip ? "hidden" : "hidden sm:inline"}>{t(fill ? "youtubeOpinions.ai.hideDrawingsShort" : "youtubeOpinions.ai.clear")}</span>
                 </Button>
               </DialogTrigger>)}
               <DialogContent showCloseButton={false}
@@ -1059,9 +1070,10 @@ export default function ChartView({
     advanced ? "w-full" : "sm:min-h-9 sm:min-w-[7rem]",
   );
   const aiControls = (
-    <div className={advanced ? "min-w-0" : "mt-3 border-t border-border pt-3"} role="group" aria-label={t("youtubeOpinions.ai.actions")}>
-        <div className={advanced ? "flex flex-col gap-2" : "flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3"}>
-          <div className={cn("grid min-w-0 grid-cols-2 gap-2", !advanced && "sm:flex sm:items-center")}>
+    <div className="min-w-0" role="group" aria-label={t("youtubeOpinions.ai.actions")}>
+        {/* Advanced: one row, two actions plus a settings icon (Robinhood keeps sheet actions to a single line). */}
+        <div className={advanced ? "grid grid-cols-[1fr_1fr_auto] gap-2" : "grid grid-cols-[1fr_1fr_auto] gap-2 sm:flex sm:flex-wrap sm:items-center sm:gap-3"}>
+          <div className={advanced ? "contents" : "contents sm:flex sm:items-center sm:gap-2"}>
             <Button size="sm" variant="outline" className={aiActionClass} onClick={() => void runAi("analysis")} aria-busy={ai.status === "loading"}
               disabled={!loaded || providersLoading || aiBusy || ai.status === "loading" || drawingAi.status === "loading"}
               title={t("youtubeOpinions.ai.runAnalysis")}>
@@ -1075,12 +1087,12 @@ export default function ChartView({
               {t("youtubeOpinions.ai.button")}
             </Button>
           </div>
-          <div className={cn("grid min-w-0 grid-cols-2 gap-2", !advanced && "sm:ml-auto sm:flex sm:flex-wrap sm:items-center")}>
+          <div className={advanced ? "contents" : "contents sm:ml-auto sm:flex sm:flex-wrap sm:items-center sm:gap-2"}>
           <Dialog open={settingsOpen} onOpenChange={(open) => { setSettingsOpen(open); if (open) void refreshProviders(); else setPendingRun(null); }}>
             <DialogTrigger asChild>
-              <Button type="button" size="sm" variant="outline" aria-label={t("youtubeOpinions.ai.chartSettings")} title={t("youtubeOpinions.ai.chartSettings")} className={cn(aiActionClass, "w-full", !advanced && "sm:w-auto")}>
+              <Button type="button" size="sm" variant="outline" aria-label={t("youtubeOpinions.ai.chartSettings")} title={t("youtubeOpinions.ai.chartSettings")} className={cn(aiActionClass, advanced ? "!w-11 px-0" : "!w-11 px-0 sm:!w-auto sm:px-3")}>
                 <SlidersHorizontal className="h-4 w-4" aria-hidden="true" />
-                <span>{t("youtubeOpinions.ai.chartSettings")}</span>
+                <span className={cn(advanced ? "sr-only" : "sr-only sm:not-sr-only")}>{t("youtubeOpinions.ai.chartSettings")}</span>
               </Button>
             </DialogTrigger>
             <DialogContent layout="sheet" showCloseButton={false} className="flex flex-col" onEscapeKeyDown={(event) => event.stopPropagation()}>
@@ -1134,7 +1146,7 @@ export default function ChartView({
               </DialogFooter>
             </DialogContent>
           </Dialog>
-            {advanced && drawingAi.status === "done" && <div className="min-w-0 [&_button]:focus-visible:ring-2 [&_button]:focus-visible:ring-ring [&_button]:focus-visible:ring-offset-2 [&_button]:focus-visible:ring-offset-background">{hideDrawingsControl(true)}</div>}
+            {advanced && drawingAi.status === "done" && <div className="col-span-3 min-w-0 max-lg:hidden [&_button]:focus-visible:ring-2 [&_button]:focus-visible:ring-ring [&_button]:focus-visible:ring-offset-2 [&_button]:focus-visible:ring-offset-background">{hideDrawingsControl(true)}</div>}
 
           </div>
         </div>
@@ -1179,7 +1191,7 @@ export default function ChartView({
       onAnalyze={() => void runAi("analysis")}
       t={t}
     />}
-    {drawingAi.status === "done" && drawingAi.result && (drawingAi.result.model || drawingAi.result.setup || drawingAi.result.findings?.some(item => item.status === "unavailable") || drawingAi.result.overlays?.some(item => ["breakouts", "retests", "false_breakouts"].includes(item.category) && item.detected_at && typeof item.level === "number")) && <details className={cn("group/drawings min-w-0 border-t border-border pt-3", stackedResults ? "order-2 mt-6" : "mt-5")}>
+    {drawingAi.status === "done" && drawingAi.result && (drawingAi.result.model || drawingAi.result.setup || drawingAi.result.findings?.some(item => item.status === "unavailable") || drawingAi.result.overlays?.some(item => ["breakouts", "retests", "false_breakouts"].includes(item.category) && item.detected_at && typeof item.level === "number")) && <details className={cn("group/drawings min-w-0 border-t border-border pt-3", stackedResults ? "order-2 mt-6" : "mt-5", advanced && "order-last")}>
           <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 rounded text-sm font-medium hover:text-muted-foreground focus-visible:outline-none [&::-webkit-details-marker]:hidden">
             {t("youtubeOpinions.ai.button")}
             <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground group-open/drawings:rotate-180" aria-hidden="true" />
@@ -1388,10 +1400,11 @@ export default function ChartView({
       )}
       {legend.length > 0 && (
         <div
-          className="pointer-events-none absolute left-2 top-1 flex flex-wrap gap-x-3 gap-y-0.5 rounded-md bg-background/70 px-1.5 py-0.5 text-[0.6875rem] tabular-nums backdrop-blur-sm"
+          className="pointer-events-none absolute left-2 top-1 z-10 flex flex-wrap items-center gap-x-3 gap-y-0.5 rounded-md bg-background/70 px-1.5 py-0.5 text-[0.6875rem] tabular-nums backdrop-blur-sm"
           style={{ maxWidth: Math.max(size.width - GRAPH_AXIS_WIDTH - 16, 120) }}
         >
-          {legend.map((key) => (
+          {/* Phones show one line ("EMA 20, EMA 50, +2"), expanding on tap. */}
+          {(narrowChart && !legendOpen ? legend.slice(0, LEGEND_PREVIEW) : legend).map((key) => (
             <span key={key} className="whitespace-nowrap">
               <span className="text-muted-foreground">{indicatorMeta[key].label}</span>{" "}
               <span className="font-semibold" style={{ color: indicatorMeta[key].color }}>
@@ -1399,6 +1412,18 @@ export default function ChartView({
               </span>
             </span>
           ))}
+          {narrowChart && legend.length > LEGEND_PREVIEW && (
+            <button
+              type="button"
+              aria-expanded={legendOpen}
+              onPointerDown={(event) => event.stopPropagation()}
+              onClick={() => setLegendOpen(open => !open)}
+              className="pointer-events-auto -my-2 inline-flex min-h-8 items-center gap-0.5 font-semibold text-muted-foreground"
+            >
+              {legendOpen ? t("youtubeOpinions.legendLess") : t("youtubeOpinions.legendMore", { count: String(legend.length - LEGEND_PREVIEW) })}
+              <ChevronDown className={cn("h-3.5 w-3.5 transition-transform", legendOpen && "rotate-180")} aria-hidden="true" />
+            </button>
+          )}
         </div>
       )}
       {activeEvents.length > 0 && !drawing && !gesture.current && active !== null && (
@@ -1494,7 +1519,7 @@ export default function ChartView({
       value={snapshotBars ? compactParams.interval : interval}
       onValueChange={(value) => setChartInterval(value as ChartInterval)}
     >
-      <SelectTrigger className="!h-8 !w-[5.75rem] shrink-0 rounded-full text-[0.8125rem]" aria-label={t("youtubeOpinions.interval")}>
+      <SelectTrigger className="!h-8 !w-auto shrink-0 gap-1 rounded-full px-2.5 text-[0.8125rem] font-semibold sm:!w-[5.75rem] sm:px-3" aria-label={t("youtubeOpinions.interval")}>
         <SelectValue />
       </SelectTrigger>
       <SelectContent>
@@ -1518,7 +1543,58 @@ export default function ChartView({
     </button>
   );
   const hideDrawingsSlot = showAi && drawingAi.status === "done" ? hideDrawingsControl() : null;
+  /** ▲/▼ key for the creator-call markers; lives in the drawing-layers section when there is one. */
+  const callsLegend = showCalls && calls.size > 0 ? (
+    <span className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
+      <span className="inline-flex items-center gap-1">
+        <span className="text-positive" aria-hidden="true">
+          ▲
+        </span>
+        {t("youtubeOpinions.bullish")}
+        <span className="text-negative" aria-hidden="true">
+          ▼
+        </span>
+        {t("youtubeOpinions.bearish")}
+      </span>
+      <span>{t("youtubeOpinions.opinionMarkers")}</span>
+    </span>
+  ) : null;
   const presentGroups = drawingGroups.filter(group => drawings.some(item => item.group === group));
+  const shownGroups = presentGroups.filter(layerOn);
+  /**
+   * AI layers as one summary line under the plot ("AI 画线 · 交易计划、支撑阻力 ⌄"), Robinhood's
+   * collapsed-legend pattern: the line always says what is on, and taps open the toggles.
+   */
+  const layersRow = presentGroups.length > 0 || (drawingsHidden && hideDrawingsSlot) ? (
+    <ChartSection
+      className="mt-1"
+      icon={<Layers />}
+      label={t("youtubeOpinions.ai.layers.label")}
+      summary={shownGroups.length && !drawingsHidden ? shownGroups.map(group => t(`youtubeOpinions.ai.layers.${group}`)).join("、") : t("youtubeOpinions.ai.layers.allOff")}
+      summaryClassName={shownGroups.length && !drawingsHidden ? undefined : "text-negative"}
+      open={layersOpen}
+      onOpenChange={setLayersOpen}
+      closeLabel={t("common.close")}
+    >
+      <div className="flex flex-wrap items-center gap-2">
+        <div role="group" aria-label={t("youtubeOpinions.ai.layers.label")} className="contents">
+          {presentGroups.map(group => (
+            <button
+              key={group}
+              type="button"
+              aria-pressed={layerOn(group)}
+              onClick={() => toggleLayer(group)}
+              className={cn(pill(layerOn(group)), "h-9 sm:h-8", !layerOn(group) && offChip)}
+            >
+              {t(`youtubeOpinions.ai.layers.${group}`)}
+            </button>
+          ))}
+        </div>
+        {showAi && drawingAi.status === "done" && <div className="contents sm:hidden">{hideDrawingsControl(false, true)}</div>}
+      </div>
+      {callsLegend && <div className="mt-3">{callsLegend}</div>}
+    </ChartSection>
+  ) : null;
   const forecastControl = forecastable ? (
     <button
       type="button"
@@ -1539,21 +1615,7 @@ export default function ChartView({
     <span className="text-xs text-muted-foreground">
       {t((tool === "hline" || tool === "vline") ? "youtubeOpinions.drawHintSingle" : "youtubeOpinions.drawHint")}
     </span>
-  ) : showCalls && calls.size > 0 ? (
-    <span className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
-      <span className="inline-flex items-center gap-1">
-        <span className="text-positive" aria-hidden="true">
-          ▲
-        </span>
-        {t("youtubeOpinions.bullish")}
-        <span className="text-negative" aria-hidden="true">
-          ▼
-        </span>
-        {t("youtubeOpinions.bearish")}
-      </span>
-      <span>{t("youtubeOpinions.opinionMarkers")}</span>
-    </span>
-  ) : null;
+  ) : layersRow ? null : callsLegend;
 
   const graph = (
     <PriceGraph
@@ -1598,13 +1660,13 @@ export default function ChartView({
       priceExtent={priceExtent}
       drawingLayer={drawingLayerNode}
       overlay={advanced ? advancedOverlay : null}
-      subPane={oscillatorPane}
+      subPane={<>{layersRow}{oscillatorPane}</>}
+      rangeTrailing={advanced ? intervalControl : null}
       trailingControls={advanced ? (
         <>
-          {intervalControl}
           {autoScaleControl}
           {forecastControl}
-          {hideDrawingsSlot}
+          {hideDrawingsSlot && <div className="hidden sm:contents">{hideDrawingsSlot}</div>}
         </>
       ) : null}
       formatDate={formatDate}
@@ -1631,17 +1693,31 @@ export default function ChartView({
             )}
             <div className="ml-auto flex shrink-0 items-center gap-2">
               {showAi && <div className="lg:hidden">
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button size="sm" variant="outline">
+                {/* Phones: a bottom sheet over the chart instead of a cramped floating popover. */}
+                <Dialog open={aiSheetOpen} onOpenChange={setAiSheetOpen}>
+                  <DialogTrigger asChild>
+                    <Button size="sm" variant="outline" className="gap-1.5">
+                      <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
                       {t("youtubeOpinions.ai.actions")}
                     </Button>
-                  </PopoverTrigger>
-                  <PopoverContent align="end" className="max-h-[70dvh] w-80 max-w-[calc(100vw-2rem)] overflow-y-auto overscroll-contain p-4">
-                    {aiControls}
-                    {aiResults}
-                  </PopoverContent>
-                </Popover>
+                  </DialogTrigger>
+                  <DialogContent layout="sheet" showCloseButton={false} className="flex flex-col px-4 pt-2" onEscapeKeyDown={(event) => event.stopPropagation()}>
+                    <div className="mx-auto mb-2 h-1 w-9 shrink-0 rounded-full bg-foreground/20 sm:hidden" aria-hidden="true" />
+                    <div className="flex shrink-0 items-center justify-between gap-3 pb-3">
+                      <DialogTitle className="text-base font-semibold">{t("youtubeOpinions.ai.actions")}</DialogTitle>
+                      <DialogDescription className="sr-only">{symbol}</DialogDescription>
+                      <DialogClose asChild>
+                        <Button type="button" variant="ghost" size="icon" className="-mr-2 min-h-11 min-w-11" aria-label={t("common.close")}>
+                          <X className="h-4 w-4" aria-hidden="true" />
+                        </Button>
+                      </DialogClose>
+                    </div>
+                    <div className="shrink-0">{aiControls}{aiStatus}</div>
+                    <div className="-mx-4 mt-1 flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain px-4 pb-2">
+                      {aiResults}
+                    </div>
+                  </DialogContent>
+                </Dialog>
               </div>}
               {headerActions}
             </div>
@@ -1904,28 +1980,7 @@ export default function ChartView({
 
         {graph}
 
-        {presentGroups.length > 1 && (
-          <div role="group" aria-label={t("youtubeOpinions.ai.layers.label")} className="-mx-1 mt-1.5 flex shrink-0 gap-1 overflow-x-auto px-1 [scrollbar-width:none]">
-            {presentGroups.map(group => (
-              <button key={group} type="button" aria-pressed={layerOn(group)} onClick={() => toggleLayer(group)} className={cn(pill(layerOn(group)), "h-9 sm:h-8")}>
-                {t(`youtubeOpinions.ai.layers.${group}`)}
-              </button>
-            ))}
-          </div>
-        )}
-
-        {!advanced && compactFooter && <div className="mt-1.5 flex shrink-0 flex-wrap items-center justify-between gap-x-3 gap-y-1">{compactFooter}</div>}
-
-        {showAi && !advanced && <div className="mt-3 flex flex-wrap items-start justify-between gap-x-4 border-t border-border pt-2">
-          <details className="group/tools min-w-0 flex-1">
-            <summary className="flex min-h-11 w-fit cursor-pointer list-none items-center gap-2 rounded-full px-2 text-sm text-muted-foreground transition-colors hover:bg-foreground/[0.06] hover:text-foreground focus-visible:outline-none [&::-webkit-details-marker]:hidden">
-              <SlidersHorizontal className="h-4 w-4" aria-hidden="true" />
-              {t("youtubeOpinions.ai.actions")}
-              <ChevronDown className="h-4 w-4 group-open/tools:rotate-180" aria-hidden="true" />
-            </summary>
-            {aiControls}
-          </details>
-        </div>}
+        {!advanced && compactFooter && <div className="mt-3 mb-6 flex shrink-0 flex-wrap items-center justify-between gap-x-3 gap-y-1">{compactFooter}</div>}
 
         {showAi && !advanced &&
           compactLayout !== "workspace" &&

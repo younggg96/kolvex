@@ -84,7 +84,7 @@ export default function OpinionList() {
       { label: c("All opinions", "全部观点") },
     ]} />}>
       <main className="min-h-0 flex-1 overflow-y-auto">
-        <div className="mx-auto max-w-6xl px-[16px] pb-16 pt-6 md:px-8 md:pt-8">
+        <div className="mx-auto max-w-6xl px-[16px] pb-10 pt-6 md:px-8 md:pt-8">
           <header className="mb-6">
             <h1 className="text-[1.75rem] font-semibold tracking-tight sm:text-[2rem]">{c("All opinions", "全部观点")}</h1>
           </header>

@@ -26,7 +26,7 @@ export default function DashboardLoading() {
     <DashboardLayout noTransition>
       <RouteLoadingSignal />
       <main className="min-h-0 flex-1 overflow-hidden">
-        <ContentLoading label={t("common.loading")} className="mx-auto min-h-0 w-full max-w-6xl px-[16px] pb-16 pt-6 md:px-8 md:pt-8">
+        <ContentLoading label={t("common.loading")} className="mx-auto min-h-0 w-full max-w-6xl px-[16px] pb-10 pt-6 md:px-8 md:pt-8">
           <div className="mb-6 flex flex-col gap-3"><Skeleton className="h-8 w-40 rounded-lg sm:h-9" /><Skeleton className="h-4 w-64 max-w-full rounded-md" /></div>
           <ListCard>
             <div className="flex flex-wrap items-center justify-between gap-3"><div className="flex gap-1">{[0, 1, 2].map((i) => <Skeleton key={i} className="h-9 w-16 rounded-full" />)}</div><Skeleton className="h-9 w-28 rounded-full" /></div>

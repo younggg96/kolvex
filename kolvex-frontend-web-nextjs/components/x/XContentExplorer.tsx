@@ -118,7 +118,7 @@ export default function XContentExplorer() {
 
   return (
     <DashboardLayout title={c("X creator posts", "X 博主内容")}>
-      <div className="min-h-0 flex-1 overflow-y-auto bg-background dark:bg-transparent px-[16px] pb-16 pt-5 md:px-8 md:pt-7">
+      <div className="min-h-0 flex-1 overflow-y-auto bg-background dark:bg-transparent px-[16px] pb-10 pt-5 md:px-8 md:pt-7">
         <h1 className="sr-only">{c("X creator posts", "X 博主内容")}</h1>
         <div className="mx-auto w-full space-y-6">
           <div className="grid gap-10 xl:grid-cols-[minmax(0,1fr)_300px]">

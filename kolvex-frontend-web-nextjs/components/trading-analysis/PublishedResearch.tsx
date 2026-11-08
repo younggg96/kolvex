@@ -69,7 +69,7 @@ export default function PublishedResearch({ page }: { page?: string }) {
   return (
     <ResearchLayout>
       <main className="relative flex-1 overflow-y-auto" aria-busy={loading}>
-        <div className="mx-auto w-full  space-y-8 px-[16px] pb-16 pt-6 md:px-8 md:pt-8">
+        <div className="mx-auto w-full  space-y-8 px-[16px] pb-10 pt-6 md:px-8 md:pt-8">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
               <h1 className="text-[1.75rem] font-bold leading-tight md:text-[2rem]">

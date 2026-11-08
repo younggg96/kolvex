@@ -267,7 +267,7 @@ export default function PriceChart({
         setAdvancedOpen(true);
       }} />
       {showAi && (layout === "workspace" ? (
-        resultsContainer && (analysisHistory.busy || analysisHistory.error !== null || analysisHistory.total > 0 || analysisHistory.selected || analysisHistory.scope === "mine" || selectedHistory.selected) && createPortal(<div className="order-last mt-6 min-w-0 border-t border-border pt-1 [&>details]:mt-0 [&>details]:min-w-0 [&>details]:border-0 [&>details]:py-3">
+        resultsContainer && (analysisHistory.busy || analysisHistory.error !== null || analysisHistory.total > 0 || analysisHistory.selected || analysisHistory.scope === "mine" || selectedHistory.selected) && createPortal(<div className="order-last min-w-0 border-t border-border pt-1 [&>details]:mt-0 [&>details]:min-w-0 [&>details]:border-0 [&>details]:py-3">
           <AnalysisHistory history={analysisHistory} />
           {selectedHistory.selected && <SavedAnalysisData key={selectedHistory.selected.id} version={selectedHistory.selected} />}
         </div>, resultsContainer)

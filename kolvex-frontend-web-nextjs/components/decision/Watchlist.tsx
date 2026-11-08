@@ -93,7 +93,7 @@ export default function Watchlist() {
 
   return <DashboardLayout title={c("Watchlist", "自选股")}>
     <main className="flex-1 overflow-y-auto">
-      <div className="mx-auto max-w-6xl space-y-6 px-[16px] pb-16 pt-6 md:px-8 md:pt-8">
+      <div className="mx-auto max-w-6xl space-y-6 px-[16px] pb-10 pt-6 md:px-8 md:pt-8">
         <div className="flex items-start justify-between gap-4">
           <div><h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{c("Watchlist", "自选股")}</h1></div>
           <Button variant="ghost" size="icon" className="h-11 w-11 shrink-0" aria-label={c("Refresh Watchlist quotes", "刷新自选股行情")} title={c("Refresh quotes", "刷新行情")} disabled={!ready || loading || !watchlist.length} onClick={() => setAttempt(value => value + 1)}><RefreshCw className="h-4 w-4" aria-hidden="true" /></Button>
@@ -179,7 +179,7 @@ export function WatchlistPageSkeleton({ noTransition = false }: { noTransition?:
   const c = useCopy();
   return <DashboardLayout title={c("Watchlist", "自选股")} noTransition={noTransition}>
     <main className="flex-1 overflow-y-auto">
-      <div className="mx-auto max-w-6xl space-y-6 px-[16px] pb-16 pt-6 md:px-8 md:pt-8">
+      <div className="mx-auto max-w-6xl space-y-6 px-[16px] pb-10 pt-6 md:px-8 md:pt-8">
         <div className="flex items-start justify-between gap-4"><div className="flex flex-col gap-3"><Skeleton className="h-8 w-28 rounded-lg sm:h-9" /><Skeleton className="h-4 w-60 rounded-md" /></div><Skeleton className="h-11 w-11 rounded-full" /></div>
         <div className="space-y-2"><Skeleton className="h-4 w-20 rounded-md" /><div className="flex gap-2"><Skeleton className="h-11 flex-1 rounded-xl" /><Skeleton className="h-11 w-20 rounded-full" /></div><Skeleton className="h-3 w-64 rounded-md" /></div>
         <WatchlistCardSkeleton />

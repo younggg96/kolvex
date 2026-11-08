@@ -1489,7 +1489,8 @@
         "levels": "S/R levels",
         "trend": "Trendlines",
         "fib": "Fibonacci",
-        "pattern": "Patterns"
+        "pattern": "Patterns",
+        "allOff": "All hidden"
       }
     },
     "drawTools": "Drawing tools",
@@ -1601,7 +1602,9 @@
         "unauthorized": "Sign in to see the forecast.",
         "unavailable": "Forecast unavailable right now."
       }
-    }
+    },
+    "legendMore": "+{count} more",
+    "legendLess": "Less"
   },
   "research": {
     "navigation": "Research views",

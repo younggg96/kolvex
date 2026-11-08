@@ -38,7 +38,7 @@ export function MarketPageSkeleton({ noTransition = false }: { noTransition?: bo
   const c = useCopy();
   return <DashboardLayout title={c("Markets", "行情")} noTransition={noTransition}>
     <main className="min-w-0 flex-1 overflow-y-auto">
-      <ContentLoading label={c("Loading markets", "正在加载行情")} className="mx-auto w-full min-w-0 max-w-[100rem] px-[16px] pb-16 pt-6 md:px-8 md:pt-8">
+      <ContentLoading label={c("Loading markets", "正在加载行情")} className="mx-auto w-full min-w-0 max-w-[100rem] px-[16px] pb-10 pt-6 md:px-8 md:pt-8">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex gap-1 max-md:w-full">{[0, 1, 2, 3].map(i => <Skeleton key={i} className="h-10 w-28 rounded-full max-md:flex-1" />)}</div>
           <div className="flex items-center gap-3 max-md:w-full max-md:justify-between md:ml-auto"><Skeleton className="h-11 w-56 rounded-full max-md:w-40" /><Skeleton className="h-11 w-20 rounded-full" /><Skeleton className="h-11 w-11 rounded-full" /></div>
