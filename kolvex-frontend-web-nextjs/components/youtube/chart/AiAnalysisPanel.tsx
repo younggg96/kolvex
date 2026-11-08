@@ -81,17 +81,19 @@ export default function AiAnalysisPanel({ state, busy = false, interval, onRetry
 
         {levels.length > 0 && <section className="mt-6" aria-label={t("youtubeOpinions.ai.levels")}>
           <h4 className="text-sm font-semibold">{t("youtubeOpinions.ai.levels")}</h4>
-          <ul className="mt-2 divide-y divide-border">
-            {levels.map(level => <li key={`${level.kind}-${level.price}`}>
-              <details className="group/level">
-                <summary className={cn(disclosureClass, "gap-2 py-2")}>
-                  <span className={cn("shrink-0 text-base font-semibold tabular-nums", toneText[level.kind === "support" ? "positive" : "negative"])}>{formatPrice(level.price)}</span>
-                  <span className="ml-2 text-sm">{t(`youtubeOpinions.ai.${level.kind}`)}</span>
-                  <span className="ml-auto text-xs font-normal text-muted-foreground">{t(`youtubeOpinions.ai.strength.${level.strength}`)}</span>
-                  <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground group-open/level:rotate-180" aria-hidden="true" />
-                </summary>
-                <p className=" break-words pb-3 text-sm leading-7 text-muted-foreground">{level.reason}</p>
-              </details>
+          <ul className="mt-2 space-y-2">
+            {levels.map(level => <li key={`${level.kind}-${level.price}`} className="flex flex-wrap items-center gap-x-3 gap-y-1.5 py-3">
+              <div className="flex shrink-0 items-center gap-2">
+                <span className={cn("shrink-0 text-base font-semibold tabular-nums", toneText[level.kind === "support" ? "positive" : "negative"])}>{formatPrice(level.price)}</span>
+                <span className="text-sm">{t(`youtubeOpinions.ai.${level.kind}`)}</span>
+              </div>
+              <p className="min-w-[10rem] flex-1 break-words text-sm leading-6 text-muted-foreground">{level.reason}</p>
+              <span className={cn(
+                "ml-auto shrink-0 rounded-full border px-2 py-0.5 text-xs font-medium",
+                level.strength === "strong" ? "border-positive/25 bg-positive/10 text-positive"
+                  : level.strength === "weak" ? "border-border bg-muted/50 text-muted-foreground"
+                    : "border-border bg-secondary text-secondary-foreground",
+              )}>{t(`youtubeOpinions.ai.strength.${level.strength}`)}</span>
             </li>)}
           </ul>
         </section>}
@@ -128,7 +130,7 @@ export default function AiAnalysisPanel({ state, busy = false, interval, onRetry
         </details>}
       </div>}
 
-      <footer className="mt-4 flex flex-wrap items-center gap-2 border-t border-border pt-3">
+      <footer className="mt-4 flex flex-wrap items-center gap-2 border-t border-border py-3">
         <Button type="button" size="sm" variant="outline" onClick={onRetry} disabled={loading || busy} aria-busy={loading}>
           <RefreshCw className="h-3.5 w-3.5" aria-hidden="true" />{t("youtubeOpinions.ai.rerun")}
         </Button>
