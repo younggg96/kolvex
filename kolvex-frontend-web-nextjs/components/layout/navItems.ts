@@ -9,6 +9,8 @@ import {
   Telescope,
   MessageSquareText,
   Activity,
+  FolderKanban,
+  MessagesSquare,
   type LucideIcon,
 } from "lucide-react";
 import { RedditIcon, XIcon, YouTubeIcon, type PlatformIconComponent } from "@/components/common/PlatformIcons";
@@ -91,6 +93,24 @@ export const MAIN_NAV_ITEMS: MainNavItem[] = [
     type: "link",
     featureId: "youtubeOpinions",
     group: "read",
+  },
+  {
+    icon: MessagesSquare,
+    titleKey: "sidebar.chat",
+    shortTitleKey: "tabBar.chat",
+    href: "/dashboard/chat",
+    type: "link",
+    featureId: "chat",
+    group: "research",
+  },
+  {
+    icon: FolderKanban,
+    titleKey: "sidebar.workspaces",
+    shortTitleKey: "tabBar.workspaces",
+    href: "/dashboard/workspaces",
+    type: "link",
+    featureId: "chat",
+    group: "research",
   },
   {
     icon: Telescope,

@@ -74,3 +74,6 @@ class AgentState(MessagesState):
         RiskDebateState, "Current state of the debate on evaluating risk"
     ]
     final_trade_decision: Annotated[str, "Final decision made by the Risk Analysts"]
+
+    # Holdings and risk budget computed by code; empty when not trading live
+    portfolio_context: Annotated[str, "Current portfolio and risk budget"]

@@ -22,10 +22,11 @@ def create_trader(llm, memory):
         else:
             past_memory_str = "No past memories found."
 
-        context = {
-            "role": "user",
-            "content": f"Based on a comprehensive analysis by a team of analysts, here is an investment plan tailored for {company_name}. This plan incorporates insights from current technical market trends, macroeconomic indicators, and social media sentiment. Use this plan as a foundation for evaluating your next trading decision.\n\nProposed Investment Plan: {investment_plan}\n\nLeverage these insights to make an informed and strategic decision.",
-        }
+        content = f"Based on a comprehensive analysis by a team of analysts, here is an investment plan tailored for {company_name}. This plan incorporates insights from current technical market trends, macroeconomic indicators, and social media sentiment. Use this plan as a foundation for evaluating your next trading decision.\n\nProposed Investment Plan: {investment_plan}\n\nLeverage these insights to make an informed and strategic decision."
+        portfolio = state.get("portfolio_context") or ""
+        if portfolio:
+            content += f"\n\nYour current portfolio and risk budget (decide in light of what you already hold; say whether to open, add, reduce, close or hold):\n{portfolio}"
+        context = {"role": "user", "content": content}
 
         messages = [
             {

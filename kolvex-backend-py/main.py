@@ -55,6 +55,12 @@ async def lifespan(app: FastAPI):
     # 清理上次残留的 running 状态分析
     from app.services.trading_analysis_service import get_trading_analysis_service
     get_trading_analysis_service().cleanup_stale_analyses()
+    try:
+        from app.core.supabase import get_supabase_service
+        from app.services.research_workspace import fail_stale_runs
+        fail_stale_runs(get_supabase_service())
+    except Exception as error:  # noqa: BLE001 — tables may not exist before the migration
+        logger.warning("Research workspace cleanup skipped: %s", error)
     from app.services.stock_chart_jobs import run_worker
     worker = asyncio.create_task(run_worker()) if os.getenv("CHART_WORKER_ENABLED", "true").lower() == "true" else None
     from app.services.economic_indicators import run_economic_indicators_worker
@@ -66,9 +72,16 @@ async def lifespan(app: FastAPI):
     holdings_worker = asyncio.create_task(institution_store.run_worker()) if os.getenv("SEC_13F_SYNC_ENABLED", "true").lower() == "true" else None
     from app.services.options_activity.service import run_options_activity_worker
     options_activity_worker = asyncio.create_task(run_options_activity_worker()) if settings.OPTIONS_ACTIVITY_WORKER_ENABLED else None
+    from app.services.agent_signal_evaluation import run_signal_evaluation_worker
+    signal_eval_worker = asyncio.create_task(run_signal_evaluation_worker())
     try:
         yield
     finally:
+        signal_eval_worker.cancel()
+        try:
+            await signal_eval_worker
+        except asyncio.CancelledError:
+            pass
         if options_activity_worker:
             options_activity_worker.cancel()
             try:

@@ -16,7 +16,7 @@ import threading
 import time
 import uuid
 from concurrent.futures import ThreadPoolExecutor
-from datetime import datetime
+from datetime import date, datetime, timedelta
 from typing import Any, AsyncGenerator, Optional
 
 from app.agent.config import (
@@ -30,6 +30,13 @@ from app.agent.config import (
 )
 from app.core.redis import get_redis
 from app.core.supabase import get_supabase_service
+from app.services.agent_portfolio import (
+    build_portfolio_context,
+    format_portfolio_context,
+    is_live_trade_date,
+    load_paper_state,
+    resolve_action,
+)
 from app.services.research_translation import (
     DEFAULT_TIMEOUT as TRANSLATION_TIMEOUT,
     SUPPORTED_LANGUAGES,
@@ -122,6 +129,7 @@ def create_trading_graph(
     )
 
 TABLE = "trading_analyses"
+SIGNALS_TABLE = "agent_signals"
 PROGRESS_TTL = 3600
 DEFAULT_GRAPH_TIMEOUT = 900
 PROVIDER_TIMEOUTS: dict[str, int] = {
@@ -313,6 +321,7 @@ def _run_graph_sync(
     analysis_id: str,
     redis_progress_key: str,
     timeout_seconds: int = DEFAULT_GRAPH_TIMEOUT,
+    portfolio: Optional[dict[str, Any]] = None,
 ) -> dict[str, Any]:
     """
     Run TradingAgentsGraph via graph.stream(stream_mode='updates')
@@ -372,7 +381,9 @@ def _run_graph_sync(
     push_progress({"stage": "analysts", "message": "Starting analyst agents..."})
     logger.info(f"[TradingAnalysis] {analysis_id}: starting stream({ticker}, {trade_date})...")
 
-    init_state = graph.propagator.create_initial_state(ticker, trade_date)
+    init_state = graph.propagator.create_initial_state(
+        ticker, trade_date, format_portfolio_context(portfolio) if portfolio else "",
+    )
     stream_config = {"recursion_limit": 100}
     start_t = time.time()
 
@@ -433,13 +444,15 @@ def _run_graph_sync(
                 f"Analysis timed out after {timeout_seconds}s"
             )
 
-    decision = graph.process_signal(
-        accumulated_state.get("final_trade_decision", "")
+    extraction = graph.signal_processor.extract_structured(
+        accumulated_state.get("final_trade_decision", ""),
+        accumulated_state.get("trader_investment_plan", ""),
     )
+    decision = extraction.signal.rating
     total_elapsed = time.time() - start_t
     logger.info(
         f"[TradingAnalysis] {analysis_id}: stream done in {total_elapsed:.1f}s, "
-        f"decision={decision}"
+        f"decision={decision} signal={extraction.status}"
     )
 
     push_progress({
@@ -459,12 +472,75 @@ def _run_graph_sync(
         "risk_debate": _extract_risk_debate(accumulated_state.get("risk_debate_state")),
         "final_decision": decision,
         "full_signal": accumulated_state.get("final_trade_decision", ""),
+        "signal_extraction": extraction,
+        "portfolio": portfolio,
     }
 
     if rc:
         rc.close()
 
     return result
+
+
+def build_signal_row(
+    analysis_id: str,
+    user_id: str,
+    ticker: str,
+    trade_date: str,
+    config: dict[str, Any],
+    extraction: Any,
+    portfolio: Optional[dict[str, Any]] = None,
+) -> dict[str, Any]:
+    """Map a SignalExtraction onto an agent_signals row (pure, so it is testable)."""
+    from tradingagents.graph.signal_processing import SIGNAL_SCHEMA_VERSION
+
+    signal = extraction.signal
+    action, action_reason = resolve_action(signal.rating, signal.sell_size, portfolio)
+    expires_on = date.fromisoformat(trade_date) + timedelta(days=signal.horizon_days)
+    return {
+        "analysis_id": analysis_id,
+        "user_id": user_id,
+        "ticker": ticker.upper(),
+        "trade_date": trade_date,
+        "rating": signal.rating,
+        "conviction": round(signal.conviction, 3),
+        "horizon_days": signal.horizon_days,
+        "expires_on": expires_on.isoformat(),
+        "entry_plan": signal.entry_plan,
+        "invalidation": signal.invalidation,
+        "stop_loss_pct": signal.stop_loss_pct,
+        "take_profit_pct": signal.take_profit_pct,
+        "key_reasons": signal.key_reasons,
+        "key_risks": signal.key_risks,
+        "sell_size": signal.sell_size,
+        "position_action": action,
+        "action_reason": action_reason,
+        "portfolio_context": portfolio,
+        "extraction_status": extraction.status,
+        "extraction_error": (extraction.error or None) and extraction.error[:1000],
+        "schema_version": SIGNAL_SCHEMA_VERSION,
+        "llm_provider": config.get("llm_provider"),
+        "model_id": config.get("quick_think_llm"),
+    }
+
+
+def _load_portfolio(analysis_id: str, user_id: str, ticker: str, trade_date: str) -> Optional[dict[str, Any]]:
+    """Paper-account context for a live analysis; None for past dates or on any read failure."""
+    if not is_live_trade_date(trade_date):
+        return None
+    try:
+        return build_portfolio_context(load_paper_state(get_supabase_service(), user_id), ticker)
+    except Exception as error:  # noqa: BLE001
+        logger.warning(f"[TradingAnalysis] {analysis_id}: portfolio context unavailable: {error}")
+        return None
+
+
+def _save_signal(analysis_id: str, row: dict[str, Any]) -> None:
+    """Best-effort: a missing table or bad row must never fail the analysis itself."""
+    try:
+        get_supabase_service().table(SIGNALS_TABLE).upsert(row, on_conflict="analysis_id").execute()
+    except Exception as error:  # noqa: BLE001
+        logger.warning(f"[TradingAnalysis] {analysis_id}: saving structured signal failed: {error}")
 
 
 def _extract_debate(state: Optional[dict]) -> Optional[dict]:
@@ -546,6 +622,7 @@ class TradingAnalysisService:
             _executor,
             self._run_in_thread,
             analysis_id,
+            user_id,
             config,
             analysts,
             ticker.upper(),
@@ -579,6 +656,7 @@ class TradingAnalysisService:
     def _run_in_thread(
         self,
         analysis_id: str,
+        user_id: str,
         config: dict,
         analysts: list[str],
         ticker: str,
@@ -619,6 +697,7 @@ class TradingAnalysisService:
                 analysis_id=analysis_id,
                 redis_progress_key=progress_key,
                 timeout_seconds=timeout,
+                portfolio=_load_portfolio(analysis_id, user_id, ticker, trade_date),
             )
 
             translations = self._translate_result(analysis_id, progress_key, config, result)
@@ -651,6 +730,11 @@ class TradingAnalysisService:
                 except Exception as error:  # noqa: BLE001
                     logger.warning(f"[TradingAnalysis] {analysis_id}: saving translations failed: {error}")
             supabase.table(TABLE).update(update).eq("id", analysis_id).execute()
+            # After the analysis row is final: agent_signals.analysis_id references it.
+            _save_signal(analysis_id, build_signal_row(
+                analysis_id, user_id, ticker, trade_date, config, result["signal_extraction"],
+                result["portfolio"],
+            ))
             logger.info(f"Analysis {analysis_id} completed: {result['final_decision']} in {duration:.1f}s")
 
         except BaseException as e:

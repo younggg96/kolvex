@@ -44,10 +44,10 @@ export const PRODUCT_FEATURES = [
     id: "chat",
     label: "AI Chat",
     enabled: true,
-    routePrefixes: ["/dashboard/chat"],
-    apiPrefixes: ["/api/chat", "/api/chat-history"],
+    routePrefixes: ["/dashboard/chat", "/dashboard/workspaces"],
+    apiPrefixes: ["/api/chat", "/api/chat-history", "/api/research-workspaces"],
     componentDirs: ["components/chat"],
-    libFiles: ["lib/chatApi.ts"],
+    libFiles: ["lib/chatApi.ts", "lib/researchWorkspaceApi.ts"],
   },
   {
     id: "tradingAnalysis",

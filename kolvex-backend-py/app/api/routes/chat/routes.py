@@ -59,6 +59,24 @@ def attach_page_evidence(messages: list, context: Optional[str]) -> list:
     return updated
 
 
+async def turn_context(user_id: str, conversation_id: str, page_context: Optional[str]) -> Optional[str]:
+    """This turn's evidence: page evidence plus the chat's research workspace, if any.
+    The workspace part is best effort; a missing table or DB error never blocks the chat."""
+    import asyncio
+    from app.core.supabase import get_supabase_service
+    from app.services.research_workspace import chat_workspace_context
+
+    workspace_context = None
+    try:
+        workspace_context = await asyncio.to_thread(
+            chat_workspace_context, get_supabase_service(), user_id, conversation_id
+        )
+    except Exception as error:  # noqa: BLE001
+        logger.info("Workspace context skipped for chat: %s", error)
+    parts = [p.strip() for p in (page_context, workspace_context) if p and p.strip()]
+    return "\n\n".join(parts) or None
+
+
 # ===== Conversation Routes =====
 
 @router.get("/conversations", response_model=ConversationListResponse, summary="获取对话列表")
@@ -299,11 +317,12 @@ async def send_message(
 
     # 3. 加载用户自定义 API keys
     user_api_keys = await api_keys_service.get_keys_dict(current_user_id)
+    context = await turn_context(current_user_id, conversation_id, request.context)
 
     # 4. 运行 Agent（传入模型、数据源和用户 API keys）
     try:
         ai_response_text = await run_agent(
-            messages=attach_page_evidence(history, request.context),
+            messages=attach_page_evidence(history, context),
             user_id=current_user_id,
             conversation_id=conversation_id,
             model_id=request.model,
@@ -390,6 +409,7 @@ async def stream_message(
 
     # 3. 加载用户自定义 API keys
     user_api_keys = await api_keys_service.get_keys_dict(current_user_id)
+    context = await turn_context(current_user_id, conversation_id, request.context)
 
     # 4. SSE 流式生成器
     async def event_generator():
@@ -397,7 +417,7 @@ async def stream_message(
 
         try:
             async for event in stream_agent(
-                messages=attach_page_evidence(history, request.context),
+                messages=attach_page_evidence(history, context),
                 user_id=current_user_id,
                 conversation_id=conversation_id,
                 model_id=request.model,

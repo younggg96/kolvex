@@ -3,6 +3,7 @@ Trading Analysis Routes — TradingAgents multi-agent analysis
 
 POST   /trading-analysis/start              — Start a new analysis
 GET    /trading-analysis/history            — List user's analyses
+GET    /trading-analysis/signals/performance — Scored outcome of the user's agent signals
 GET    /trading-analysis/published/list     — List completed analyses (signed-in users)
 GET    /trading-analysis/published/{id}     — Get completed analysis (signed-in users)
 GET    /trading-analysis/public/list       — List explicitly published analyses (anonymous)
@@ -16,6 +17,7 @@ GET    /trading-analysis/{id}/translations/{language} — Poll a report translat
 DELETE /trading-analysis/{id}               — Delete analysis
 """
 
+import asyncio
 import json
 import logging
 from typing import Any, Optional
@@ -28,7 +30,8 @@ from supabase import Client
 from app.api.dependencies.auth import get_current_user_id
 from app.agent.config import LLM_PROVIDER, LLM_MODEL
 from app.services.technical_analysis import _choose_model
-from app.core.supabase import get_supabase
+from app.core.supabase import get_supabase, get_supabase_service
+from app.services.agent_signal_evaluation import load_user_performance
 from app.services.trading_analysis_service import (
     TRADINGAGENTS_AVAILABLE,
     get_trading_analysis_service,
@@ -189,6 +192,16 @@ async def list_analyses(
         offset=offset,
         ticker=ticker,
     )
+
+
+@router.get("/signals/performance")
+async def signal_performance(current_user_id: str = Depends(get_current_user_id)):
+    """How the current user's structured agent signals performed once their horizon passed."""
+    try:
+        return await asyncio.to_thread(load_user_performance, get_supabase_service(), current_user_id)
+    except Exception as error:  # missing tables before the migrations are applied, or DB outage
+        logger.warning("Signal performance unavailable: %s", error)
+        raise HTTPException(status_code=503, detail="Signal performance unavailable")
 
 
 @router.get("/public/list")

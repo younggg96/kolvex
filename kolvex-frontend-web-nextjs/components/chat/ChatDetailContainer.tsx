@@ -26,8 +26,16 @@ import {
   visibleQuestion,
 } from "./pageEvidence";
 import { useTranslation } from "@/lib/i18n";
+import { PanelRight } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
+import { useCopy } from "@/components/decision/shared";
+import { useChatWorkspace } from "./workspace/useChatWorkspace";
+import { WorkspacePicker } from "./workspace/WorkspacePicker";
+import { WorkspacePanel } from "./workspace/WorkspacePanel";
 
 // ===== localStorage helpers for persisting chat preferences =====
+const PANEL_PREF_KEY = "kolvex:workspacePanel";
 const PREFS_SOURCES_KEY = "kolvex:sources";
 const PREFS_MODEL_KEY = "kolvex:model";
 const AVAILABLE_SOURCES: SearchSource[] = [
@@ -144,6 +152,16 @@ export function ChatDetailContainer({
     return "deepseek-flash";
   });
   const [activeTools, setActiveTools] = useState<ToolStatus[]>([]);
+  const copy = useCopy();
+  const workspace = useChatWorkspace(conversationId);
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const [panelOpen, setPanelOpen] = useState(() => {
+    try {
+      return localStorage.getItem(PANEL_PREF_KEY) !== "0";
+    } catch {
+      return true;
+    }
+  });
   const { availableProviders } = useAvailableProviders();
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -462,9 +480,44 @@ export function ChatDetailContainer({
         !messageIdsBeforePendingRef.current.has(message.id)
     );
 
+  const hasWorkspace = Boolean(workspace.detail);
+  const togglePanel = () => {
+    // The docked panel needs the xl width; narrower screens get the same panel as a sheet.
+    if (typeof window !== "undefined" && !window.matchMedia("(min-width: 1280px)").matches) {
+      setSheetOpen(true);
+      return;
+    }
+    setPanelOpen((open) => {
+      try {
+        localStorage.setItem(PANEL_PREF_KEY, open ? "0" : "1");
+      } catch {}
+      return !open;
+    });
+  };
+
   return (
-    <div className={cn("flex h-full", className)}>
+    <div className={cn("flex h-full min-h-0", className)}>
       <div className="flex-1 flex flex-col min-w-0 relative">
+        <div className="flex h-14 shrink-0 items-center gap-2 px-4 md:px-8">
+          <h1 className="min-w-0 flex-1 truncate text-[0.9375rem] font-semibold text-foreground">
+            {currentConversation?.title && currentConversation.title !== "New Chat"
+              ? currentConversation.title
+              : copy("New chat", "新对话")}
+          </h1>
+          <WorkspacePicker workspace={workspace} suggestedTitle={currentConversation?.title} />
+          {hasWorkspace && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={togglePanel}
+              aria-label={copy("Show workspace research", "查看工作区研究")}
+              aria-pressed={panelOpen}
+              className={cn("max-md:h-11 max-md:w-11", panelOpen && "xl:bg-foreground/[0.06]")}
+            >
+              <PanelRight className="h-4 w-4" aria-hidden="true" />
+            </Button>
+          )}
+        </div>
 
         {/* Content Area */}
         <ChatMessageList
@@ -509,6 +562,24 @@ export function ChatDetailContainer({
           </div>
         </div>
       </div>
+
+      {hasWorkspace && panelOpen && (
+        <aside
+          aria-label={copy("Workspace research", "工作区研究")}
+          className="hidden w-[24rem] shrink-0 overflow-y-auto border-l border-border xl:block 2xl:w-[26rem]"
+        >
+          <WorkspacePanel workspace={workspace} conversationId={conversationId} model={selectedModel} />
+        </aside>
+      )}
+
+      <Sheet open={sheetOpen && hasWorkspace} onOpenChange={setSheetOpen}>
+        <SheetContent side="right" closeLabel={copy("Close", "关闭")} className="w-full overflow-y-auto bg-background sm:max-w-md">
+          <SheetTitle className="sr-only">{copy("Workspace research", "工作区研究")}</SheetTitle>
+          <div className="pt-8">
+            <WorkspacePanel workspace={workspace} conversationId={conversationId} model={selectedModel} />
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }
