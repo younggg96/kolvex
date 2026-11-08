@@ -52,7 +52,7 @@ function SourceChip({ icon, label, active, onClick }: SourceChipProps) {
         " ",
         active
           ? "bg-foreground/10 text-foreground"
-          : "text-muted-foreground hover:bg-foreground/[0.06] hover:text-foreground active:bg-foreground/[0.1]"
+          : "text-foreground/70 hover:bg-foreground/[0.06] hover:text-foreground active:bg-foreground/[0.1]"
       )}
       aria-pressed={active}
       title={label}
@@ -107,7 +107,7 @@ function ModelSelector({
             " ",
             !hasAnyAvailable
               ? "text-muted-foreground"
-              : "text-foreground hover:bg-foreground/[0.05] data-[state=open]:bg-foreground/[0.05]"
+              : "text-foreground/70 hover:bg-foreground/[0.06] hover:text-foreground active:bg-foreground/[0.1] data-[state=open]:bg-foreground/10 data-[state=open]:text-foreground"
           )}
         >
           {hasAnyAvailable ? (
@@ -394,9 +394,9 @@ export function ChatInput({
           "relative flex flex-col",
           inline
             ? "bg-transparent"
-            : cn(
-                "glass-card glass-card-blur overflow-hidden rounded-[1.625rem] border border-foreground/10 bg-card-glass-strong transition-colors duration-150 focus-within:border-foreground/35"
-              )
+            : // Same material, radius and rim as the mobile dock (MobileTabBar).
+              // The rim is a shadow, so focus brightens the shadow rather than a border.
+              "glass-track glass-track-strong overflow-hidden rounded-[28px] transition-shadow duration-150 focus-within:[box-shadow:var(--glass-drop),inset_0_0_0_1px_rgb(var(--foreground)/0.35),var(--glass-sheen)]"
         )}
       >
         {evidenceLabel && (
@@ -429,7 +429,7 @@ export function ChatInput({
             inline
               ? "px-0 pb-3 pt-1"
               : docked
-                ? "gap-2.5 px-4 pt-3.5"
+                ? "gap-2.5 px-5 pt-3.5"
                 : cn("px-5", evidenceLabel ? "pt-1" : "pt-4", hasFooter ? "pb-1" : "pb-3")
           )}
         >
@@ -473,13 +473,11 @@ export function ChatInput({
               "flex items-center justify-between gap-2",
               inline
                 ? "border-t border-border px-0 py-2"
-                : docked
-                  ? "-ml-1 px-2 pb-2 pt-0.5"
-                  : "px-2.5 pb-2.5 pt-1"
+                : "px-2.5 pb-2.5 pt-1"
             )}
           >
             {/* Left Side - Source Toggles & Model Selector */}
-            <div className={cn("flex min-w-0 flex-wrap items-center gap-0.5", (inline || docked) && "-ml-3")}>
+            <div className={cn("flex min-w-0 flex-wrap items-center gap-0.5", inline && "-ml-3")}>
               {/* Source Toggles */}
               {showSourceToggle && onToggleSource && (
                 <>

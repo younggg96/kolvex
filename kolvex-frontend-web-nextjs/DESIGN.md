@@ -1448,6 +1448,9 @@ Rules that follow from that:
   `app/globals.css`: the same rim, top and bottom highlight, drop shadow and blur.
   Only the fill changes by role (controls about 8%, fields 6%, cards `--card-glass`,
   popups about 75%). Change those tokens rather than a single component's shadow.
+  The chat composer and the mobile dock are one surface: both use
+  `glass-track glass-track-strong` with 28px corners and the same neutral control
+  states, and share a 16px gutter on phones.
 - `Button`, `ChipButton`, `TriggerButton` and hand-written action buttons are
   glass as well. `glass-button` adds the shared glass edge and blur (outline
   buttons use that rim instead of a border), while translucent

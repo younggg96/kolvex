@@ -142,7 +142,7 @@ export default function MobileTabBar({ compact = false }: MobileTabBarProps) {
   return (
     <nav
       aria-label={c("Main navigation", "主导航")}
-      className="pointer-events-none absolute inset-x-0 bottom-0 z-40 px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3 max-md:px-5 lg:hidden"
+      className="pointer-events-none absolute inset-x-0 bottom-0 z-40 px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3 lg:hidden"
     >
       <div
         ref={dock}
