@@ -11,7 +11,7 @@ import sys
 from urllib.parse import urlparse
 from urllib.request import Request, urlopen
 
-from pipeline import DEFAULT_MODEL, MAX_DURATION, atomic_json, normalize_url, ytdlp
+from pipeline import DEFAULT_MODEL, atomic_json, normalize_url, ytdlp
 from youtube_transcribe import process_video, require_environment
 
 ROOT = Path(__file__).parent
@@ -203,8 +203,6 @@ def discover(config, manifest_path):
                         day = datetime.strptime(uploaded, '%Y%m%d').date().isoformat()
                         if config['since'] and day < config['since'] or config['until'] and day > config['until']:
                             continue
-                    if duration and duration > MAX_DURATION:
-                        continue
                     count += 1
                     item = known.get(video_id)
                     if item is None:

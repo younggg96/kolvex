@@ -15,7 +15,6 @@ from urllib.request import Request, urlopen
 OLLAMA_URL = os.environ.get('OLLAMA_URL', 'http://127.0.0.1:11434').rstrip('/')
 DEFAULT_MODEL = os.environ.get('OLLAMA_MODEL', 'qwen2.5:7b')
 WHISPER_MODEL = os.environ.get('WHISPER_MODEL', 'mlx-community/whisper-small-mlx')
-MAX_DURATION = 3 * 60 * 60
 
 
 def normalize_url(value):
@@ -97,8 +96,8 @@ def caption_candidates(info):
 def fetch_transcript(url, folder, update):
     update(stage='captions', message='正在检查视频信息与现有字幕…')
     info = json.loads(ytdlp('--dump-single-json', '--skip-download', url))
-    if info.get('is_live') or not info.get('duration') or info['duration'] > MAX_DURATION:
-        raise ValueError('请选择已结束、时长不超过 3 小时的视频。')
+    if info.get('is_live') or not info.get('duration'):
+        raise ValueError('请选择已结束的视频。')
     metadata = {k: info.get(k) for k in ('title', 'duration', 'channel', 'id', 'channel_id',
                 'channel_url', 'uploader_id', 'webpage_url', 'upload_date', 'timestamp')}
     if isinstance(metadata.get('timestamp'), (int, float)):
@@ -124,12 +123,15 @@ def fetch_transcript(url, folder, update):
         raise RuntimeError('视频没有可读取的字幕，请先运行 ./setup.sh --whisper 安装本地转写依赖。')
     update(stage='audio', message='没有可读取的字幕，正在提取音频…', warnings=warnings)
     ytdlp('-f', 'bestaudio/best', '-x', '--audio-format', 'wav',
-          '--max-filesize', '500M', '-o', str(folder / 'audio.%(ext)s'), url, timeout=1800)
+          '--max-filesize', '500M', '-o', str(folder / 'audio.%(ext)s'), url, timeout=max(1800, int(info['duration'])))
+    # yt-dlp exits successfully when --max-filesize skips the download.
+    if not (folder / 'audio.wav').exists():
+        raise RuntimeError('音频未能下载：文件可能超过 500MB 上限，且视频没有可读取的字幕。')
     update(stage='transcribe', message='正在使用 MLX Whisper 本地转写；首次使用会下载模型…')
     # Separate process releases Apple GPU memory before Ollama loads its model.
     worker = subprocess.run([sys.executable, str(Path(__file__).with_name('whisper_worker.py')),
                              str(folder / 'audio.wav'), str(folder / 'whisper.json'), WHISPER_MODEL],
-                            capture_output=True, text=True, timeout=7200)
+                            capture_output=True, text=True, timeout=max(7200, int(info['duration']) * 2))
     if worker.returncode:
         raise RuntimeError('本地转写失败。请安装 mlx-whisper（需要 Apple Silicon），检查模型下载与磁盘空间。' + worker.stderr[-400:])
     result = json.loads((folder / 'whisper.json').read_text())

@@ -173,7 +173,7 @@ ollama pull qwen2.5:7b
 - YouTube 获取与首次模型下载需要网络。默认 AI 推理在本机；若改为远程 `OLLAMA_URL`，字幕将发送到该地址。
 - YouTube 的登录验证、429、PO Token 可能导致读取失败。先更新 yt-dlp 再重试；本版本没有 cookies 导入或 PO Token 提供器。
 - 某些视频需要 JavaScript runtime；程序会启用可找到的 Node.js，但版本也要符合 yt-dlp 要求。遇到 runtime 警告可安装 Deno：`brew install deno`。
-- MLX 转写仅支持 Apple Silicon；已有字幕路径不依赖 MLX。音频下载上限 500MB，视频时长上限 3 小时。
+- MLX 转写仅支持 Apple Silicon；已有字幕路径不依赖 MLX。音频下载上限 500MB（无字幕时才需要下载，约可覆盖 7 小时）；有字幕的视频没有时长限制。
 - 各批次内部串行；同一清单有进程锁，不同清单之间没有全局 GPU 锁。CLI 中断后，已经保存的结果仍保留；重新运行可恢复清单，失败项使用 `--retry-failed`。
 - 所有结果仅保存本地；整合 JSON 保留视频原始数据，不生成股票观点或自动上传。
 - 自动字幕、翻译与摘要均可能出错；引用和重要信息应核对原视频。只处理有权使用的内容。
